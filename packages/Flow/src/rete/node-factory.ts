@@ -49,17 +49,35 @@ export interface FuncInfo {
   category?: string;
 }
 
-/** The "what it does" category for a catalog function — domain (chem/bio) wins
- *  for operations on data, else the signature category; the same routing as the
- *  browser's `categorizeFunc` and the node title-bar coloring. Cached on the
- *  FuncInfo (Dart-proxy input/output reads aren't free). */
+/** A saved Flow — a `DG.Script` whose language is `flow`. Runnable like any
+ *  function, but grouped under its own 'Workflows' section in every browser
+ *  grouping (its signature would otherwise misfile it under Data Sources). */
+export function isWorkflowFunc(func: DG.Func): boolean {
+  try {
+    // `language` is typed as the core-language union, which doesn't know
+    // about `flow` — compare the raw value.
+    return func instanceof DG.Script && String((func as DG.Script).language) === 'flow';
+  } catch {
+    return false;
+  }
+}
+
+/** The "what it does" category for a catalog function — workflows (saved flows)
+ *  first, then domain (chem/bio) for operations on data, else the signature
+ *  category; the same routing as the browser's `categorizeFunc` and the node
+ *  title-bar coloring. Cached on the FuncInfo (Dart-proxy input/output reads
+ *  aren't free). */
 export function funcCategory(info: FuncInfo): string {
   if (info.category) return info.category;
   let cat = 'Other';
   try {
-    const ins = info.func.inputs.map((p) => String(p.propertyType));
-    const outs = info.func.outputs.map((p) => String(p.propertyType));
-    cat = domainCategory(info.packageName, ins) ?? categorizeBySignature(ins, outs, info.role);
+    if (isWorkflowFunc(info.func))
+      cat = 'Workflows';
+    else {
+      const ins = info.func.inputs.map((p) => String(p.propertyType));
+      const outs = info.func.outputs.map((p) => String(p.propertyType));
+      cat = domainCategory(info.packageName, ins) ?? categorizeBySignature(ins, outs, info.role);
+    }
   } catch {/* Dart proxy edge cases — keep 'Other' */}
   info.category = cat;
   return cat;

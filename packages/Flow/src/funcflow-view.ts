@@ -16,7 +16,7 @@ import * as DG from 'datagrok-api/dg';
 import '../css/funcflow.css';
 
 import {FlowEditor} from './rete/flow-editor';
-import {FlowNode} from './rete/scheme';
+import {FlowNode, isSetVarNode} from './rete/scheme';
 import {FunctionBrowser, FF_DRAG_MIME} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
 import {ColumnPicker} from './panel/column-picker';
@@ -509,10 +509,13 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Find the first output node in the graph (preferring one that has
-   *  captured runtime values) and programmatically select it. */
+   *  captured runtime values) and programmatically select it. SetVar nodes
+   *  count as outputs too (they compile to the same thing) — a flow whose
+   *  terminals are SetVars (e.g. an imported creation script) lands on its
+   *  first stored value just like one with Output nodes. */
   private autoSelectFirstOutputNode(): void {
     if (!this.flow) return;
-    const outputs = this.flow.getNodes().filter((n) => n.dgNodeType === 'output');
+    const outputs = this.flow.getNodes().filter((n) => n.dgNodeType === 'output' || isSetVarNode(n));
     if (outputs.length === 0) return;
     const withValue = outputs.find((n) => {
       const s = this.executionController?.state.getNodeState(n.id);

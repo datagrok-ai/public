@@ -141,6 +141,14 @@ export function isExecKey(key: string): boolean {
   return key === EXEC_IN_KEY || key === EXEC_OUT_KEY;
 }
 
+/** Whether a func node is the platform `SetVar`. Flow treats SetVar and Value
+ *  Output as the same concept: both register their value in the run context
+ *  under their name AND declare a script output of that name — they compile to
+ *  the same thing (see script-emitter / creation-script-emitter). */
+export function isSetVarNode(node: FlowNode): boolean {
+  return (node.dgFunc?.name?.toLowerCase() ?? '') === 'setvar';
+}
+
 /** The labels of a node's required inputs that are neither connected nor filled
  *  with a value — i.e. what the user still has to provide. Pure (no editor
  *  dependency): `isConnected(key)` is supplied by the caller. Drives the

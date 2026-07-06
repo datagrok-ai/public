@@ -201,9 +201,11 @@ Graph → script mapping (walks `topologicalSort`, exec/order ports filtered by 
   it stays a **bare call**.
 - **In-place mutator / side-effecting call** = no consumed real output → bare `f(...)`; its `__pt` outputs
   forward the same variable (`forwardPassthroughs`).
-- **SetVar node** = the variable-name anchor; `computeAnchors` walks its `value` back through the `__pt`
-  chain (`walkToProducer`) to name the producer at the head, so an imported chain re-emits as
-  `Mol1K = OpenFile(...)` / bare mutators / (no redundant `Mol1K = Mol1K`).
+- **SetVar node OR Output node** = the variable-name anchor (an Output's `paramName` IS its variable
+  name — SetVar and Output are the same concept); `computeAnchors` walks the anchored value back through
+  the `__pt` chain (`walkToProducer`) to name the producer at the head, so an imported chain re-emits as
+  `Mol1K = OpenFile(...)` / bare mutators / (no redundant `Mol1K = Mol1K`), and a flow terminated by a
+  Table Output emits `T = OpenFile(...)` with no intermediate variable.
 - **Select Table** → table-name string; **Select Column(s)** → column name(s); **Constants** → literals;
   **Input** node → bare `GetVar(paramName)` ref; **order edges** → ordering only, no line.
 - **Warn & skip**: JS-only nodes (comparisons, ToString, FromJSON, ToJSON, Log/Info/Warning, Add Table
@@ -252,14 +254,14 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 |---|---|---|
 | `type-map-tests.ts` | Flow: type-map | `areTypesCompatible` matrix, `dgTypeToSlotType`, colors, **`domainSection`/`domainCategory`/`isDomainOperation` chem/bio routing (operations only, not sources), disjoint package sets** |
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs, suggestion-menu labels (friendly name + `funcCategory`, no "Uncategorized"), suggestion ranking (domain-in-play tier, exact-over-wildcard, used-func float), reverse suggestions (`findNodeTypesProducingOutput`: matching Input node leads, real-output-over-passthrough, domain boost) |
-| `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
+| `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules, Select Table fail-fast guard, Output ⇄ SetVar same-contract emission |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
 | `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse, hidden on empty canvas / shown once a node exists |
 | `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
-| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers, **denylisted `nqName`s, machinery tags, `semantic_value`/filter-call, `meta.includeInFlow: false` opt-out; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
+| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers, **denylisted `nqName`s, machinery tags, `semantic_value`/filter-call, `meta.includeInFlow: false` opt-out; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out, flow scripts→Workflows in every mode**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
 | `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; panel state machine (hidden → expanded on first renderable output; minimize remembered — content updates never pop it up; `clear()` hides but keeps the preference; caret click toggles + fires `onStateChanged`, header body does not; disabled panels never show); same node + same state → no preview rebuild (new state / other node → rebuild); the panel is a pane of the view splitter, disabled in embedded views |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
@@ -269,7 +271,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `string-list-tests.ts` | Flow: string-list inputs, Flow: plain-list inputs | `string_list` inputs are seeded editable, render a text field, compile to a trimmed JS array, and omit when empty (`isStringListType`/`stringListToArrayLiteral` covered in `type-map-tests`); plain `list` inputs (incl. `list<string>` params) are seeded as arrays, render a DG List input via `forProperty`, compile to a JSON array literal, and omit when empty |
 | `func-editor-tests.ts` | Flow: func editor | `shouldUseFunctionEditor` routing (allowlist / `editor:` meta / plain majority), `editorValueToPanelValue` conversions (column→name, lists, dataframe rejected), `tableParamForColumn` ladder, `applyEditorResult` (connected inputs win, column→name write-back), the full launcher ladder live (gate refuses unconnected → captured table opens the function's own dialog → close → write-back), the header icon gating (needs a live backend) |
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
-| `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, warn-and-skip for JS-only nodes (needs a live backend) |
+| `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, an Output node anchors the producer like a SetVar, warn-and-skip for JS-only nodes (needs a live backend) |
 
 ## Rete Pipeline
 
@@ -340,13 +342,23 @@ Become `//output:` annotation lines.
 | Table Output | Fixed `dataframe` type |
 | Value Output | Configurable `outputType`. On connect, `FlowEditor.maybeAutoTypeValueOutput` copies the source slot's `dgType` into `properties.outputType` (skipping `dynamic` / `object`). |
 
+**Output ⇄ SetVar unification**: an Output node and a `SetVar` func node compile to the same
+thing (`isSetVarNode` in [scheme.ts](src/rete/scheme.ts)). The emitted JS gives an Output node a
+run-context registration (`grok.functions.call('SetVar', {variableName: <paramName>, …})` plus the
+dataframe-runtime-name variant) and gives a SetVar node a script output (`//output: <type> <name>`
+with the type inferred from the connected source socket — `setVarAsOutput` in
+[script-emitter.ts](src/compiler/script-emitter.ts) — plus the `<name> = <value>;` assignment;
+skipped when the variable name isn't a literal valid JS identifier). The creation-script emitter
+anchors producers through Output nodes exactly as through SetVars (`computeAnchors`), and the
+post-run auto-preview (`autoSelectFirstOutputNode`) treats SetVar terminals as outputs.
+
 ### Utility Nodes ([rete/nodes/utility-nodes.ts](src/rete/nodes/utility-nodes.ts))
 
 | Node | Generated Code |
 |------|----------------|
 | Select Column | `let v = df.col('name')` |
 | Select Columns | `let v = [df.col('a'), df.col('b')]` |
-| Select Table | `let v = grok.shell.tableByName('name') ?? grok.shell.getVar('name') ?? …` (tries the exact, no-spaces, and lower-camel name variants) |
+| Select Table | `let v = grok.shell.tableByName('name') ?? grok.shell.getVar('name') ?? …` (tries the exact, no-spaces, and lower-camel name variants), then **throws** `Select Table: no open table or variable named "…"` when all resolve to null — fail fast at the node instead of a cryptic downstream error |
 | Add Table View | `let v = grok.shell.addTableView(df)` |
 | Log | `console.log([label,] value)` |
 | Info | `grok.shell.info(msg)` |
@@ -458,7 +470,8 @@ This pipeline targets **JavaScript**. For the alternate **creation-script** targ
 - Disconnected non-input nodes → warning
 - Output node with no incoming connection → warning
 - Empty / invalid JS-identifier `paramName` → error
-- Duplicate `paramName` across input/output nodes → error
+- Duplicate variable name across input/output nodes **and SetVar `variableName`s** (one shared
+  namespace — a SetVar doubles as an output) → error
 
 ### Input qualifier emission
 
@@ -683,6 +696,10 @@ The bottom **Output panel** is a pane of the view's vertical splitter (not a doc
   - **Transform Tables** — 1 table in → table out, or table in → no output (Aggregate, Unpivot, FilterRows).
   - **Column Operations** — outputs column/column_list (AddNewColumn, descriptors).
   - **Compute Values** — outputs a scalar. **Visualize** — viewer/view/widget/graphics (or role `viewer`). **Other** — the rest.
+  - **Workflows** — saved flows (`DG.Script` with language `flow`, `isWorkflowFunc` in
+    [node-factory.ts](src/rete/node-factory.ts)); checked before everything else (their signature
+    would misfile them under Data Sources) and forced in **every** group-by mode, not just
+    category — a flow's role/tags/package say nothing useful.
 - Built-in sections (**Inputs / Outputs / Constants / Utilities / Debug**) are **all collapsed by default** — building-blocks reached for deliberately, not the first scan. (The **Comparisons** group is currently hidden from the toolbox — its nodes stay registered so saved flows still load.) The DG function categories below them are what leads.
 - DG functions follow, ordered by `FUNC_CATEGORIES` in category mode (alphabetical in other modes); each category section is collapsed until clicked. **Exception:** in category mode the **Cheminformatics** and **Bioinformatics** sections (`DOMAIN_CATEGORIES`) are rendered first, right after the Queries pane (before Viewers/Widgets/built-ins), then the remaining categories — so the domain science leads the toolbox.
 - **Parameter descriptions**: `FuncNode` captures each slot's description (`getParamDescription` → `inputDescriptions`/`outputDescriptions`) and the source package (`dgPackageName`) from the live `DG.Func`. The node component shows them as socket-row `title` tooltips; the property panel's input rows use `buildFuncInputTooltip` (which reads the same description) and the **Function** pane shows a **Package** row (`ff-prop-func-package`).

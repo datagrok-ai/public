@@ -2,6 +2,36 @@
 
 ## v.next
 
+### SetVar ⇄ Output unification
+
+* **SetVar nodes and Output nodes now compile to the same thing.** A SetVar node also declares a
+  script output: `//output: <type> <name>` (type inferred from the connected source socket, like
+  Value Output's on-connect auto-typing) plus the `<name> = <value>;` assignment. An Output node
+  also registers its value in the run context via `SetVar` (and, for a dataframe, under its
+  runtime name), so name-based consumers (Select Table, downstream scripts) resolve it either way.
+* Same in **creation scripts**: an Output node anchors the producer exactly like a SetVar —
+  `T = OpenFile(...)` with no intermediate variable and no redundant `T = T` line.
+* After a run, the first-output auto-preview now lands on SetVar terminals too (an imported
+  creation-script flow, whose only terminals are SetVars, opens its first stored value just like
+  a flow with Output nodes).
+* The validator's duplicate-name check now covers the shared namespace: two SetVars, two
+  outputs, or a SetVar and an output using the same variable name is an error (they would
+  silently overwrite each other).
+
+### Workflows section
+
+* Saved flows (a `DG.Script` with language `flow`) are themselves usable as functions inside
+  Flow. They no longer masquerade as Data Sources: they get their own **Workflows** section in
+  the function browser — in **every** grouping mode (category / role / tags / package) — and the
+  drag-out suggestion menu labels them `(Workflows)`.
+
+### Bug fixes (this round)
+
+* **Select Table fails fast**: when no open table or context variable matches the configured
+  name, the emitted lookup now throws `Select Table: no open table or variable named "…"`
+  instead of passing `null` downstream and failing far from the node that caused it (in
+  instrumented runs the throw surfaces as that node's error).
+
 ### Output panel rework
 
 * The run-output preview is now a **real part of the Flow view**: a bottom pane of a vertical

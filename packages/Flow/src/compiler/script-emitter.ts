@@ -6,7 +6,7 @@
  *     events for live execution visualization. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode, isExecKey} from '../rete/scheme';
+import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 
 export interface ScriptSettings {
@@ -77,6 +77,13 @@ export function emitScript(
         lines.push(...wrapInstrumented(line, step, options!, {outputExpr: step.variableName, declaredType}));
       else
         lines.push(line);
+      // An Output node doubles as a SetVar: register the value in the run
+      // context under the param name (and, for a dataframe, its runtime name)
+      // so name-based consumers (Select Table, downstream scripts) resolve it —
+      // Output and SetVar compile to the same thing.
+      lines.push(`await grok.functions.call('SetVar', ` +
+        `{variableName: ${JSON.stringify(step.variableName)}, value: ${inputExpr}});`);
+      lines.push(emitSetVarByDataframeName(inputExpr));
       continue;
     }
 
@@ -117,7 +124,14 @@ export function emitScript(
     // The dataframe check is emitted into the script (runtime instanceof), since
     // the value slot is often `dynamic` even when it carries a dataframe.
     const setVarValue = setVarValueExpr(step, flow);
-    if (setVarValue) lines.push(emitSetVarByDataframeName(setVarValue));
+    if (setVarValue) {
+      lines.push(emitSetVarByDataframeName(setVarValue));
+      // …and a SetVar doubles as a script output: assign the stored value to
+      // the output variable declared in the header (see setVarAsOutput) —
+      // SetVar and Value Output compile to the same thing.
+      const out = setVarAsOutput(step, flow);
+      if (out) lines.push(`${out.name} = ${setVarValue};`);
+    }
 
     // Auto-detect semantic types on dataframe outputs.
     lines.push(...emitDetectSemanticTypes(step, flow));
@@ -155,10 +169,21 @@ function buildHeaderLines(
     if (line) lines.push(line);
   }
 
+  const emittedOutputs = new Set<string>();
   for (const step of steps.filter((s) => s.nodeType === 'output')) {
     const node = flow.getNodeById(step.nodeId);
     if (!node) continue;
     lines.push(buildOutputLine(step, node));
+    emittedOutputs.add(String(step.properties['paramName']));
+  }
+  // SetVar nodes double as outputs — same `//output:` contract as a Value
+  // Output wired to the same source, type inferred from the connection.
+  for (const step of steps) {
+    if (step.nodeType !== 'func') continue;
+    const out = setVarAsOutput(step, flow);
+    if (!out || emittedOutputs.has(out.name)) continue;
+    emittedOutputs.add(out.name);
+    lines.push(`//output: ${out.type} ${out.name}`);
   }
   return lines;
 }
@@ -262,7 +287,11 @@ function emitUtilityStep(step: CompiledStep): string | null {
       const q = JSON.stringify(n);
       return `grok.shell.tableByName(${q}) ?? grok.shell.getVar(${q})`;
     }).join(' ?? ');
-    return `let ${step.variableName} = ${expr};`;
+    // Fail fast with the table name — a null table would otherwise surface as
+    // a cryptic downstream error far from the node that caused it.
+    const message = JSON.stringify(`Select Table: no open table or variable named "${raw}"`);
+    return `let ${step.variableName} = ${expr};\n` +
+      `if (${step.variableName} == null) throw new Error(${message});`;
   }
   case 'Add Table View': {
     const t = step.inputs.get('table') ?? 'undefined';
@@ -572,10 +601,31 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
  *  runtime (see emitSetVarByDataframeName). */
 function setVarValueExpr(step: CompiledStep, flow: FlowEditor): string | null {
   const node = flow.getNodeById(step.nodeId);
-  if (!node || node.dgFunc?.name?.toLowerCase() !== 'setvar') return null;
+  if (!node || !isSetVarNode(node)) return null;
   const valueExpr = step.inputs.get('value');
   if (!valueExpr || valueExpr === 'undefined') return null;
   return valueExpr;
+}
+
+const IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
+/** The `//output:` contract a SetVar node contributes — SetVar and Value Output
+ *  compile to the same thing, so a SetVar's variable becomes a script output of
+ *  that name. Null when it can't be one: not a SetVar, the name is dynamic
+ *  (wired in) or not a valid JS identifier (the run-context registration via
+ *  the SetVar call still happens), or no value is connected. The type is
+ *  inferred from the connected source socket — mirroring Value Output's
+ *  on-connect auto-typing. */
+function setVarAsOutput(step: CompiledStep, flow: FlowEditor): {name: string; type: string} | null {
+  const node = flow.getNodeById(step.nodeId);
+  if (!node || !isSetVarNode(node)) return null;
+  const name = String(step.inputValues['variableName'] ?? '').trim();
+  if (!IDENTIFIER_RE.test(name)) return null;
+  const src = flow.getInputSource(step.nodeId, 'value');
+  if (!src) return null;
+  const dgType = (src.node.outputs as Record<string, {socket: {dgType: string}} | undefined>)[src.outputKey]
+    ?.socket.dgType;
+  return {name, type: dgType && dgType !== 'dynamic' && dgType !== 'object' ? dgType : 'dynamic'};
 }
 
 /** Runtime-guarded second `SetVar` registration: when the value is a dataframe,

@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncInfo, getRegisteredFuncs, VIEWER_NODE_TYPES} from '../rete/node-factory';
+import {FuncInfo, getRegisteredFuncs, isWorkflowFunc, VIEWER_NODE_TYPES} from '../rete/node-factory';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
 import {categorizeBySignature, domainCategory} from '../types/type-map';
@@ -22,6 +22,7 @@ export type GroupByMode = 'category' | 'role' | 'tags' | 'package';
  *  visualize → everything else. Used both to bucket and to order the tree. */
 export const FUNC_CATEGORIES = [
   'Data Sources',
+  'Workflows',
   'Combine Tables',
   'Transform Tables',
   'Column Operations',
@@ -48,8 +49,11 @@ export type FuncCategory = (typeof FUNC_CATEGORIES)[number];
  *  - **Cheminformatics** / **Bioinformatics** — grouped by source package
  *    (domain wins over the signature category), so a scientist finds all
  *    chem/bio steps together regardless of what they do.
+ *  - **Workflows** — saved flows (`DG.Script`, language `flow`); checked
+ *    before everything else since their signature reads as a data source.
  *  - **Other** — expression/filter builders and dynamic helpers. */
 export function categorizeFunc(func: DG.Func, role: string | null, packageName?: string): FuncCategory {
+  if (isWorkflowFunc(func)) return 'Workflows';
   const inputTypes = func.inputs.map((i) => String(i.propertyType));
   const domain = domainCategory(packageName, inputTypes);
   if (domain) return domain;
@@ -643,21 +647,28 @@ export class FunctionBrowser {
 
     for (const f of funcs) {
       let keys: string[];
-      switch (this.groupBy) {
-      case 'role':
-        keys = [f.role || 'Uncategorized'];
-        break;
-      case 'tags':
-        keys = f.tags.length > 0 ? f.tags : ['Untagged'];
-        break;
-      case 'package':
-        keys = [f.packageName || 'Core'];
-        break;
-      case 'category':
-        keys = [categorizeFunc(f.func, f.role, f.packageName)];
-        break;
-      default:
-        keys = ['Other'];
+      // Saved flows get their own 'Workflows' section in EVERY grouping — their
+      // role/tags/package say nothing useful (a script from whatever package
+      // the user happened to save it in).
+      if (isWorkflowFunc(f.func))
+        keys = ['Workflows'];
+      else {
+        switch (this.groupBy) {
+        case 'role':
+          keys = [f.role || 'Uncategorized'];
+          break;
+        case 'tags':
+          keys = f.tags.length > 0 ? f.tags : ['Untagged'];
+          break;
+        case 'package':
+          keys = [f.packageName || 'Core'];
+          break;
+        case 'category':
+          keys = [categorizeFunc(f.func, f.role, f.packageName)];
+          break;
+        default:
+          keys = ['Other'];
+        }
       }
       for (const key of keys) {
         if (!groups[key]) groups[key] = [];
