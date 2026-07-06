@@ -808,7 +808,21 @@ To run MMP analysis:
     * **Cutoff**: The maximum allowed fragment size relative to the core (default 0.4).
       This ratio controls whether large substituents are included, but it does **not**
       affect H↔R pairs (see note below).
+    * **Run On Filtered Data**: When checked (default), only rows currently visible in
+      the active filter are included in the analysis.
 3. Click **OK**. An MMP analysis is added to the view with four tabs:
+
+> **Tip — Analyzing a subset (e.g., by Series ID).**
+> The MMP dialog does not have a built-in group or series filter. To restrict the
+> analysis to a specific series, pre-filter the table before opening the dialog
+> and keep **Run On Filtered Data** enabled:
+> 1. Open the **Filter Panel** (click the **Filter** icon in the toolbar).
+> 2. Apply a categorical filter on your Series ID column to show only the desired series.
+> 3. Launch **Chem > Analyze > Matched Molecular Pairs…** — the analysis will run on
+>    the filtered subset only.
+>
+> Alternatively, use **Data > Split Column…** to create separate per-series tables,
+> then run MMP on each table individually.
 
 > **Note — H↔R transformations are not shown by design.**
 > When one fragment is a bare hydrogen (e.g., adding a methyl group where only an H existed),
