@@ -548,87 +548,63 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     view.subs.push(sub);
   }
 
-  // `DG.Viewer.filters(df)` renders an empty panel — `createDefaultFilters` only exists on
-  // `TableView.getFiltersGroup()`, so a real (detached) TableView is required.
-  //
-  // A detached TableView leaks (host.innerHTML='' only drops the DOM node) unless closed explicitly
-  // — track the live one per host and close it before mounting a replacement.
-  const liveFilterViews = new Map<HTMLElement, DG.TableView>();
-  function closeLiveFilterView(host: HTMLElement): void {
-    const prevTv = liveFilterViews.get(host);
-    if (prevTv) {
-      liveFilterViews.delete(host);
-      // Known open issue: closing a detached TableView with manually-added filters throws the same
-      // uncaught async "rowCount" crash as below (reproduced even for a plain string column) — it
-      // fires after this returns, so this catch can't suppress it. Harmless; kept only for a
-      // hypothetical synchronous throw from .close() itself.
-      try {prevTv.close();} catch (e) {console.warn('Could not close previous filters view:', e);}
+  // Plain viewers (grid, filters) leak (host.innerHTML='' only drops the DOM node) unless closed
+  // explicitly — track the live ones per host and close them before mounting a replacement.
+  const mountedViewers = new Map<HTMLElement, DG.Viewer[]>();
+  function closeMountedViewers(host: HTMLElement): void {
+    const prev = mountedViewers.get(host);
+    if (!prev) return;
+    mountedViewers.delete(host);
+    for (const v of prev) {
+      try {v.close();} catch (e) {console.warn('Could not close previous viewer:', e);}
     }
   }
-  // Neither of the above runs on VIEW close — only on remount/no-table. Close every still-live
-  // filters view when the view itself tears down, or their Dart-side resources leak for the session.
+  // Neither of the above runs on VIEW close — only on remount/no-table. Close every still-mounted
+  // viewer when the view itself tears down, or their Dart-side resources leak for the session.
   view.subs.push(new Subscription(() => {
-    for (const tv of liveFilterViews.values()) {
-      try {tv.close();} catch (e) {console.warn('Could not close filters view on teardown:', e);}
-    }
-    liveFilterViews.clear();
+    for (const host of mountedViewers.keys()) closeMountedViewers(host);
   }));
 
-  // Semantic types for which the platform's own default-filter auto-detection
-  // (`getFiltersGroup({createDefaultFilters: true})`) crashes asynchronously (uncaught "Cannot read
-  // properties of null (reading 'rowCount')"), aborting filter creation for the WHOLE table, not
-  // just the offending column. Extend this list if another semType is found to trigger the same crash.
-  const FILTER_CRASH_SEMTYPES = ['ChemicalReaction'];
-
-  // A detached TableView never gets the shell's "added to dock tree" call, so filters silently fail
-  // to init — fire `_onAdded()` manually (as `mpo-create-profile.ts` does), DEFERRED a tick, or the
-  // panel stays empty even though `_onAdded()` itself ran.
-  //
-  // FILTER_CRASH_SEMTYPES fails asynchronously, so no try/catch can intercept it — build filters
-  // manually per column instead of asking the platform to auto-detect.
+  // ChemicalReaction has no meaningful substructure-filter semantics for a whole reaction template,
+  // so it's simply left out of the filters below (not a workaround for anything — DG.Viewer.filters
+  // only builds filters for the columns it's explicitly given).
   function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
-    closeLiveFilterView(host);
+    closeMountedViewers(host);
     host.innerHTML = '';
     const grid = DG.Viewer.grid(df);
     grid.props.rowHeight = GRID_ROW_HEIGHT;
-    grid.root.style.cssText += ';width:100%;height:100%';
+    grid.root.style.width = '100%';
+    grid.root.style.height = '100%';
     if (!withFilters) {
+      mountedViewers.set(host, [grid]);
       host.appendChild(grid.root);
       applyGridColumnSizing(grid);
       return;
     }
-    const tv = DG.TableView.create(df, false);
-    liveFilterViews.set(host, tv);
+    const filterStates = df.columns.toList()
+      .filter((col) => col.semType !== 'ChemicalReaction')
+      .map((col) => ({
+        type: col.isNumerical ? DG.FILTER_TYPE.HISTOGRAM :
+          col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
+        column: col.name,
+      }));
+    const filtersViewer = DG.Viewer.filters(df, {filters: filterStates});
+    mountedViewers.set(host, [grid, filtersViewer]);
+    filtersViewer.root.style.width = '100%';
+    filtersViewer.root.style.height = '100%';
+    filtersViewer.root.style.overflow = 'auto';
     const gridBox = ui.div([grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
-    const filtersBox = ui.div([], {style: {flex: '0 0 auto', width: '220px', height: '100%',
+    const filtersBox = ui.div([filtersViewer.root], {style: {flex: '0 0 auto', width: '220px', height: '100%',
       overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
     const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
     host.appendChild(split);
     applyGridColumnSizing(grid);
-    setTimeout(() => {
-      // Bail if this host has moved on to a different mount since this was scheduled (fast tab
-      // switching, or the panel closed) — liveFilterViews no longer pointing at this exact tv means
-      // `host` isn't showing it anymore.
-      if (liveFilterViews.get(host) !== tv) return;
-      tv._onAdded();
-      const filterGroup = tv.getFiltersGroup({createDefaultFilters: false});
-      for (const col of df.columns.toList()) {
-        if (FILTER_CRASH_SEMTYPES.includes(col.semType)) continue;
-        const type = col.isNumerical ? DG.FILTER_TYPE.HISTOGRAM :
-          col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL;
-        try {filterGroup.updateOrAdd({type, column: col.name});} catch (e) {
-          console.warn(`Could not add a default filter for column "${col.name}":`, e);
-        }
-      }
-      filterGroup.root.style.cssText += ';width:100%;height:100%;overflow:auto';
-      filtersBox.appendChild(filterGroup.root);
-      // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
-      // off the wrapper boxes it creates (children[0]/[2], skipping the divider at [1]) — set size there.
-      const filtersWrap = split.children[0] as HTMLElement;
-      const gridWrap = split.children[2] as HTMLElement;
-      if (gridWrap && filtersWrap)
-        sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
-    }, 0);
+    // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
+    // off the wrapper boxes it creates (children[0]/[2], skipping the divider at [1]) — set size there.
+    const filtersWrap = split.children[0] as HTMLElement;
+    const gridWrap = split.children[2] as HTMLElement;
+    if (gridWrap && filtersWrap)
+      sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
   }
 
   // ui.input.table is a ChoiceInput over the workspace tables list; setting .value to a DataFrame
@@ -662,9 +638,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return subset;
   }
 
+  // Assigning `subset`/`orig` below fires the input's onChanged (see wireTableInput's `onTableChanged`
+  // further down), which already re-renders the panel and revalidates — no separate mount/validate
+  // call is needed here, or the panel double-rebuilds its grid (and, previously, its filters view).
   function subsetBySelection(
-    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState,
-    mountFn: () => void, gridLabel: string, noTableMsg?: string,
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, gridLabel: string, noTableMsg?: string,
   ): void {
     const df = input.value;
     if (!df) {
@@ -677,8 +655,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const prev = state.prev;
     state.prev = subset;
     assignTableInput(input, subset, (v) => { state.suppress = v; });
-    mountFn();
-    refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev !== subset && prev !== df)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
@@ -687,7 +663,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Undo "Subset by selection": put the remembered full table back into the input and close the
   // subset clone. No-op (with a hint) when the full library is already in use.
   function restoreFullTable(
-    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void, noun: string,
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, noun: string,
   ): void {
     const orig = state.original;
     if (!orig || input.value === orig) {
@@ -697,8 +673,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const prev = state.prev;
     state.prev = null;
     assignTableInput(input, orig, (v) => { state.suppress = v; });
-    mountFn();
-    refreshValidation();
     if (prev && prev !== orig)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
@@ -1053,6 +1027,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
   interface DataPanel {
     panel: HTMLElement; render: () => void; onTableChanged: () => void; onRoundsChanged: () => void;
+    // Refreshes the bar + override dots only — for a mode/reagents change that can affect whether an
+    // override applies (see hasOverride's breadth-first check) without touching the grid itself.
+    refreshDisplay: () => void;
     // Applies this component's round-r override (if any) onto `out`; returns whether it did.
     // Lets buildPerRoundOverrides reach each panel's own stepState without a shared indexed array.
     applyOverrideForRound: (r: number, out: PerRoundOverride, cfg: EnumeratorConfig) => boolean;
@@ -1159,7 +1136,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       const tc = ui.tabControl(null, false);
       // tc.root must fill available height, not size to its header-strip content — each pane's own
       // content div (built below) needs the real space to lay its grid out in.
-      tc.root.style.cssText += ';width:100%;flex:1 1 0;min-height:0;overflow:hidden';
+      tc.root.style.width = '100%';
+      tc.root.style.flex = '1 1 0';
+      tc.root.style.minHeight = '0';
+      tc.root.style.overflow = 'hidden';
       // Builds one pane's persistent content (barHost+gridHost), recorded in paneHosts at its OWN
       // fixed index k (not push-order) — works whether TabControl's addPane factory runs eagerly or
       // lazily, since position k always lands at paneHosts[k] regardless of firing order.
@@ -1188,7 +1168,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const dot = ui.div([], {style: {position: 'absolute', left: '5px', top: '12px',
           width: '6px', height: '6px', borderRadius: '50%',
           background: 'var(--orange-2, #c98a1b)', display: 'none'}});
-        pane.header.style.cssText += ';position:relative';
+        pane.header.style.position = 'relative';
         pane.header.appendChild(dot);
         stepDots.push(dot);
       }
@@ -1222,8 +1202,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       const filterIcon = ui.iconFA('filter',
         () => { filtersOn = !filtersOn; renderGrid(); renderBar(); },
         filtersOn ? 'Hide filters' : 'Show filters');
-      filterIcon.style.cssText += `;cursor:pointer;padding:2px 5px;flex:0 0 auto;` +
-        `color:${filtersOn ? 'var(--blue-2)' : 'var(--grey-5)'}`;
+      filterIcon.style.cursor = 'pointer';
+      filterIcon.style.padding = '2px 5px';
+      filterIcon.style.flex = '0 0 auto';
+      filterIcon.style.color = filtersOn ? 'var(--blue-2)' : 'var(--grey-5)';
       if (selStep === 0) {
         // Warn only when the click actually swaps the table AND overrides existed to lose — a no-op
         // click already gets its own info toast from subsetBySelection/restoreFullTable.
@@ -1235,12 +1217,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
             grok.shell.info(`Per-step ${o.noun} overrides were cleared — every step now uses the ${clearedSuffix}.`);
         };
         const btn = ui.button('Subset by selection', () => doGlobalAction(
-          () => subsetBySelection(o.input, o.state, renderGrid, `${o.noun} grid`, o.noTableMsg),
+          () => subsetBySelection(o.input, o.state, `${o.noun} grid`, o.noTableMsg),
           `new ${o.noun} subset`));
         ui.tooltip.bind(btn, `Replace the ${o.noun} library with only the selected rows (applies to every ` +
           `step). Click "Use all" to restore the full set.`);
         const useAll = ui.button('Use all', () => doGlobalAction(
-          () => restoreFullTable(o.input, o.state, renderGrid, o.noun),
+          () => restoreFullTable(o.input, o.state, o.noun),
           `full ${o.noun} library again`));
         ui.tooltip.bind(useAll, `Restore the full ${o.noun} library (undo "Subset by selection").`);
         barHost.append(hintEl(`Full ${o.noun} library — used by every step unless a step overrides it.`),
@@ -1269,7 +1251,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       gridHost.innerHTML = '';
       currentDf = selStep === 0 ? o.input.value : stepClone(selStep);
       if (!currentDf) {
-        closeLiveFilterView(gridHost); // this branch bypasses mountDf, so it must close it directly
+        closeMountedViewers(gridHost); // this branch bypasses mountDf, so it must close directly
         gridHost.appendChild(ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
           {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
         if (selStep === 0) o.badge?.refresh(null);
@@ -1280,6 +1262,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
 
     function render(): void { renderGrid(); renderBar(); updateDots(); }
+    function refreshDisplay(): void { renderBar(); updateDots(); }
 
     const onTableChanged = (): void => {
       if (o.input.value) detectChemSemTypes(o.input.value);
@@ -1308,7 +1291,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const panel = ui.div([stepTabsHost], {style: {
       height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--white)', overflow: 'hidden'}});
     buildStepTabs(0); // also mounts the grid once hosts are in the DOM
-    return {panel, render, onTableChanged, onRoundsChanged, applyOverrideForRound};
+    return {panel, render, onTableChanged, onRoundsChanged, refreshDisplay, applyOverrideForRound};
   }
 
   const templatesCtl = makeDataPanel({idx: 0, noun: 'reaction templates',
@@ -1338,15 +1321,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }));
   view.subs.push(templatesInput.onChanged.subscribe(() => templatesCtl.onTableChanged()));
   view.subs.push(bbsInput.onChanged.subscribe(() => bbsCtl.onTableChanged()));
-  // BB override dot/status is mode-aware (hasOverride hides it in breadth-first) — re-render the
-  // OTHER panels on any mode switch so they don't show stale state. reagentsCtl itself already gets
-  // a full rebuild from onTableChanged below (its own table changed) — re-rendering it a second time
-  // here would be redundant work, so it's excluded from the mode-refresh pass.
-  view.subs.push(depthFirstInput.onChanged.subscribe(() => dataCtls.forEach((c) => c.render())));
+  // BB override dot/status is mode-aware (hasOverride hides it in breadth-first) — refresh the bar +
+  // dots on any mode switch so they don't show stale state. Neither the underlying table nor the
+  // grid changes here, so refreshDisplay (not render) is enough — no grid rebuild needed.
+  view.subs.push(depthFirstInput.onChanged.subscribe(() => dataCtls.forEach((c) => c.refreshDisplay())));
   view.subs.push(reagentsInput.onChanged.subscribe(() => {
-    reagentsCtl.onTableChanged();
-    templatesCtl.render();
-    bbsCtl.render();
+    reagentsCtl.onTableChanged(); // its own table changed — needs the full rebuild
+    templatesCtl.refreshDisplay();
+    bbsCtl.refreshDisplay();
   }));
 
   // A step's clone IS the subset once committed via "Subset by selection" — no deriving from a live
