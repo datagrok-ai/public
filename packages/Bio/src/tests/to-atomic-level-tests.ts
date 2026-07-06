@@ -8,7 +8,9 @@ import wu from 'wu';
 
 import {before, after, category, test, expectArray, expect} from '@datagrok-libraries/test/src/test';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
+import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -1274,6 +1276,193 @@ category('toAtomicLevelHelmRna', async () => {
       expect(hasSmarts(mol, '[#6]1[#6][#6][#6][#6][O]1'), true,
         'expected a pyranose ring from GalNAc');
     });
+  });
+
+  // ===================================================================
+  // Multi-chain (multi-strand) HELM support.
+  //
+  // A HELM with several disjoint chains (RNA1{...}|RNA2{...}$$$$) used to be
+  // assembled by the linear path as one continuous chain — chain 2's first
+  // sugar was bonded onto chain 1's 3' end. The chains are now assembled
+  // independently and stacked vertically into a single molfile: chain 1 keeps
+  // its coordinates, every later chain is shifted straight down below it.
+  // ===================================================================
+
+  /** Parse the V3K bond block into 0-based atom-index pairs. */
+  function parseV3KBonds(molfile: string): [number, number][] {
+    const bonds: [number, number][] = [];
+    const begin = molfile.indexOf('M  V30 BEGIN BOND');
+    if (begin < 0) return bonds;
+    const end = molfile.indexOf('M  V30 END BOND', begin);
+    const block = molfile.substring(begin, end >= 0 ? end : molfile.length);
+    const lineRe = /^M\s+V30\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/gm;
+    let m: RegExpExecArray | null;
+    while ((m = lineRe.exec(block)))
+      bonds.push([parseInt(m[3]) - 1, parseInt(m[4]) - 1]);
+    return bonds;
+  }
+
+  /** Connected components over the atom/bond graph, one atom-index list per
+   * component (order-independent — robust to any atom renumbering the OCL
+   * chirality pass might do). */
+  function connectedComponents(atomCount: number, bonds: [number, number][]): number[][] {
+    const parent = new Array(atomCount).fill(0).map((_, i) => i);
+    const find = (x: number): number => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+    for (const [a, b] of bonds) if (a < atomCount && b < atomCount && a >= 0 && b >= 0) parent[find(a)] = find(b);
+    const groups = new Map<number, number[]>();
+    for (let i = 0; i < atomCount; ++i) {
+      const r = find(i);
+      if (!groups.has(r)) groups.set(r, []);
+      groups.get(r)!.push(i);
+    }
+    return Array.from(groups.values());
+  }
+
+  /** Assert the molfile holds exactly `expectedChains` disconnected chains and
+   * that they are stacked vertically — each chain entirely below the previous
+   * one (no overlap of their Y bands). */
+  function expectStackedChains(molfile: string, expectedChains: number): void {
+    const atoms = parseV3KAtoms(molfile);
+    const comps = connectedComponents(atoms.length, parseV3KBonds(molfile));
+    expect(comps.length, expectedChains,
+      `expected ${expectedChains} disconnected chains, got ${comps.length}`);
+    // Order the chains top → bottom by their highest atom, then assert each
+    // subsequent chain's top sits strictly below the previous chain's bottom.
+    const bands = comps.map((c) => {
+      let minY = Infinity; let maxY = -Infinity;
+      for (const i of c) { minY = Math.min(minY, atoms[i].y); maxY = Math.max(maxY, atoms[i].y); }
+      return {minY, maxY};
+    }).sort((p, q) => q.maxY - p.maxY);
+    for (let i = 1; i < bands.length; ++i) {
+      expect(bands[i].maxY < bands[i - 1].minY, true,
+        `chain ${i + 1} must be entirely below chain ${i} ` +
+        `(top=${bands[i].maxY.toFixed(3)} vs previous bottom=${bands[i - 1].minY.toFixed(3)})`);
+    }
+  }
+
+  // Two simple RNA strands. The result must be ONE molfile holding TWO
+  // disconnected fragments, atom / phosphorus counts equal to the sum of the
+  // two strands converted separately, and the second strand stacked below the
+  // first.
+  test('rna-two-chains-basic', async () => {
+    const {molfile: chain1} = await helmRnaLinear(`RNA1{r(A)p.r(C)p}$$$$`);
+    const {molfile: chain2} = await helmRnaLinear(`RNA1{r(G)p.r(U)p}$$$$`);
+    const {molfile: both, smiles} = await helmRnaLinear(`RNA1{r(A)p.r(C)p}|RNA2{r(G)p.r(U)p}$$$$`);
+
+    expectNoNaN(both);
+    // Exactly two disconnected fragments (one '.').
+    expect((smiles.match(/\./g) ?? []).length, 1,
+      `expected exactly two fragments (one '.'), got: ${smiles}`);
+    // Combined atom count == sum of the two independently-assembled chains:
+    // nothing is added or lost by stacking them.
+    expect(parseV3KAtoms(both).length, parseV3KAtoms(chain1).length + parseV3KAtoms(chain2).length,
+      'combined molfile must contain exactly the atoms of both chains');
+
+    withMol(both, (mol) => {
+      expect(countAtoms(mol, 15), 4, 'expected 4 phosphorus atoms (2 per strand)');
+      expect(countSmarts(mol, SMARTS.FURANOSE), 4, 'expected 4 furanose rings (2 per strand)');
+      expect(countSmarts(mol, SMARTS.DIRECT_C_P), 0, 'expected zero direct C-P bonds');
+    });
+
+    expectStackedChains(both, 2);
+  });
+
+  // The user's exact two-strand modified RNA. Each strand must assemble on its
+  // own (no cross-strand bond), stack vertically, and the molfile must be free
+  // of NaN coordinates and hold exactly two fragments.
+  test('rna-two-chains-user-example', async () => {
+    const helm = `RNA1{[DBCO].m(C)[sp].[fl2r](A)[sp].m(U)p.[fl2r](G)p.m(G)p.[fl2r](U)p.m(U)p.[fl2r](G)p.m(A)p.[fl2r](A)p.m(C)p.[fl2r](A)p.m(U)p.[fl2r](G)p.m(A)p.[fl2r](G)p.m(C)[sp].[fl2r](A)[sp].m(A)}|RNA2{m(U)[sp].m(U)[sp].m(G)p.m(C)p.m(U)p.m(C)p.m(A)p.m(U)p.m(G)p.m(U)p.m(U)p.m(C)p.m(A)p.m(A)p.m(C)p.m(C)p.m(A)[sp].m(U)[sp].m(G)}$$$$`;
+    const {molfile, smiles} = await helmRnaLinear(helm);
+    expectNoNaN(molfile);
+    expect((smiles.match(/\./g) ?? []).length, 1,
+      `expected exactly two fragments (one '.'), got: ${smiles}`);
+    expectStackedChains(molfile, 2);
+  });
+});
+
+
+// Hover highlighting for the LINEAR (!throughPOM) path. The monomer→atom map
+// used for hover must be built the same way _toAtomicLevel builds the molfile
+// (polymer type from the parsed HELM graph, per-position RNA roles, multi-chain
+// stacking). Before the fix the linear HELM RNA map was built bases-only — every
+// r/A/p treated as a full nucleotide — producing a molecule ~3x larger whose
+// atom indices ran past the real molfile.
+category('toAtomicLevelHover', async () => {
+  let monomerLibHelper: IMonomerLibHelper;
+  let userLibSettings: UserLibSettings;
+  let seqHelper: ISeqHelper;
+  let monomerLib: IMonomerLib;
+  let rdKitModule: RDModule;
+
+  before(async () => {
+    rdKitModule = await getRdKitModule();
+    seqHelper = await getSeqHelper();
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
+    await monomerLibHelper.loadMonomerLibForTests();
+    monomerLib = monomerLibHelper.getMonomerLib();
+  });
+
+  after(async () => {
+    await setUserLibSettings(userLibSettings);
+    await monomerLibHelper.loadMonomerLib(true);
+  });
+
+  /** Build the linear hover monomer map (via the whole-molecule substruct
+   * provider) for a single-row HELM column, and return the union of highlighted
+   * atom indices together with the real linear molfile's atom count. */
+  async function linearHoverMap(helm: string): Promise<{atomsUnion: number[], atomCount: number}> {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('seq', [helm])]);
+    await grok.data.detectSemanticTypes(df);
+    const seqCol = df.getCol('seq');
+    expect(seqCol.semType, DG.SEMTYPE.MACROMOLECULE);
+
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
+    const molCol = res.molCol!;
+    const molfile = molCol.get(0)!;
+    const rdMol = rdKitModule.get_mol(molfile);
+    const atomCount = rdMol.get_num_atoms();
+    rdMol.delete();
+
+    // The whole-molecule substruct provider is gated on this tag.
+    molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, 'true');
+    const link = await buildMonomerHoverLink(seqCol, molCol, monomerLib, seqHelper, rdKitModule, false);
+    const sub = link.getSubstruct(0);
+    expect(sub != null, true, 'hover provider returned no substruct');
+    return {atomsUnion: (sub!.atoms ?? []) as number[], atomCount};
+  }
+
+  // Canonical RNA: the map must index into the real molfile and cover it
+  // (every atom but the terminal cap belongs to some monomer).
+  test('helm-rna-hover-map-in-range', async () => {
+    const {atomsUnion, atomCount} = await linearHoverMap(`RNA1{r(A)p.r(C)p.r(G)p}$$$$`);
+    expect(atomsUnion.length > 0, true, 'hover map must highlight atoms');
+    const maxIdx = Math.max(...atomsUnion);
+    expect(maxIdx < atomCount, true,
+      `hover atom indices must fall inside the real molfile (max=${maxIdx}, atomCount=${atomCount})`);
+    expect(atomsUnion.length >= atomCount - 2, true,
+      `hover map should cover the molecule (covered=${atomsUnion.length}, atomCount=${atomCount})`);
+  });
+
+  // Modified RNA detects as ALPHABET.UN — the polymer type must come from the
+  // parsed HELM graph (RNA), not the alphabet, or the RNA monomers can't be
+  // resolved and the map is wrong / throws.
+  test('helm-rna-modified-hover-map-in-range', async () => {
+    const {atomsUnion, atomCount} = await linearHoverMap(`RNA1{[fl2r]([m5C])[Rsp].r(A)p}$$$$`);
+    expect(atomsUnion.length > 0, true, 'hover map must highlight atoms');
+    expect(Math.max(...atomsUnion) < atomCount, true,
+      'hover atoms must index into the real molfile');
+  });
+
+  // Multi-chain HELM: the map keys/atoms are offset per chain, so the union
+  // must still index into the combined (vertically stacked) molfile.
+  test('helm-rna-two-chains-hover-map-in-range', async () => {
+    const {atomsUnion, atomCount} = await linearHoverMap(`RNA1{r(A)p.r(C)p}|RNA2{r(G)p.r(U)p}$$$$`);
+    expect(atomsUnion.length > 0, true, 'hover map must highlight atoms');
+    expect(Math.max(...atomsUnion) < atomCount, true,
+      `hover atoms must index into the combined molfile (max=${Math.max(...atomsUnion)}, atomCount=${atomCount})`);
+    expect(atomsUnion.length >= atomCount - 3, true,
+      `hover map should cover both chains (covered=${atomsUnion.length}, atomCount=${atomCount})`);
   });
 });
 
