@@ -4,11 +4,11 @@ import {Subscription} from 'rxjs';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from '../../package';
+import {_package, PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
 import {openConfigDialog} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
-import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput} from './enumerate';
+import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput, tryGetRxn} from './enumerate';
 
 const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
@@ -35,6 +35,35 @@ function detectChemSemTypes(df: DG.DataFrame): void {
       col.semType = 'ChemicalReaction';
   }
   df.meta.detectSemanticTypes();
+}
+
+// A column being SELECTED doesn't mean it holds the right data — e.g. the user picks "Name" where
+// "SMILES" was auto-detected. DG.Detector.sampleCategories is the same sampler Chem's own detectors
+// use (detectSmiles/detectReactions in detectors.js) — reuse it instead of a bespoke row scanner.
+// validate() reruns on every tracked input's onChanged, including ones unrelated to file/column
+// choice (rounds, depth-first, ...); a WeakMap keyed on the Column object itself means an RDKit
+// re-parse only happens the first time a given column is checked, not on every unrelated keystroke,
+// and it never needs manual invalidation — picking a different column or file yields a new Column.
+const columnContentValidCache = new WeakMap<DG.Column, boolean>();
+function cachedSampleValid(col: DG.Column, isValid: (s: string) => boolean): boolean {
+  let result = columnContentValidCache.get(col);
+  if (result === undefined) {
+    result = DG.Detector.sampleCategories(col, isValid, 1, 5, 0.8);
+    columnContentValidCache.set(col, result);
+  }
+  return result;
+}
+
+function isValidReactionSmarts(s: string): boolean {
+  const rxn = tryGetRxn(getRdKitModule(), s);
+  const ok = !!rxn;
+  rxn?.delete();
+  return ok;
+}
+
+// validateMolecule returns '' (not null) for a valid molecule — only a non-empty string is an error.
+function isValidSmiles(s: string): boolean {
+  return !PackageFunctions.validateMolecule(s);
 }
 
 async function loadBundledCsv(name: string): Promise<DG.DataFrame | null> {
@@ -460,19 +489,32 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   function validate(): string | null {
     syncQuickInputsToConfig();
+    // A table with no rows (e.g. an unparseable/empty upload that still produced a valid, if
+    // degenerate, DataFrame) is truthy and passes a plain null check — Enumerate stayed clickable
+    // and silently did nothing. Row-count checks close that gap.
     const tDf = templatesInput.value;
     if (!tDf) return 'Select a reaction templates file.';
+    if (tDf.rowCount === 0) return 'Reaction templates file has no rows.';
     if (!smartsColInput.value) return 'Select a reaction SMARTS column.';
+    if (!cachedSampleValid(smartsColInput.value, isValidReactionSmarts))
+      return 'Selected column does not contain valid reaction SMARTS — pick a different column.';
 
     const bDf = bbsInput.value;
     if (!bDf) return 'Select a building blocks file.';
-    if (!bbColInput.value) return 'Select a SMILES column.';
+    if (bDf.rowCount === 0) return 'Building blocks file has no rows.';
+    if (!bbColInput.value)
+      return 'Building blocks are missing, or the wrong column is selected.';
+    if (!cachedSampleValid(bbColInput.value, isValidSmiles))
+      return 'Selected column does not contain valid SMILES — pick a different column.';
 
     const rDf = reagentsInput.value;
+    if (rDf && rDf.rowCount === 0) return 'Reagents file has no rows — clear it or pick a non-empty one.';
     if (rDf && !reagentsColInput.value)
       return 'Select a reagent SMILES column or clear the reagents file.';
 
     const xDf = exclusionInput.value;
+    if (xDf && xDf.rowCount === 0)
+      return 'Exclusion substructures file has no rows — clear it or pick a non-empty one.';
     if (xDf && !exclusionColInput.value)
       return 'Select an exclusion substructures column or clear the exclusion file.';
 
@@ -751,7 +793,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // DOM (see the `runBtnRibbonItem` lookup after `view.append(root)` below); with pointer-events:none
   // on the disabled button, hover still reaches that ancestor since the button no longer intercepts it.
   let runBtnRibbonItem: HTMLElement | null = null;
+  // Hover-only discovery is easy to miss; a click on the disabled button (pointer-events:none, so
+  // the click actually lands on runBtnRibbonItem) surfaces the same message immediately instead of
+  // requiring the user to notice and wait out the hover delay.
+  let lastValidationMsg: string | null = null;
   const bindRunTooltip = (msg: string | null): void => {
+    lastValidationMsg = msg;
     ui.tooltip.bind(runBtnRibbonItem ?? runBtn,
       msg ?? 'Run enumeration with the current config and add the result to the workspace.');
   };
@@ -1590,6 +1637,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         el.style.border = 'none';
         if (el.classList.contains('d4-ribbon-item') && el.contains(runBtn)) runBtnRibbonItem = el;
       });
+    runBtnRibbonItem?.addEventListener('click', (e) => {
+      if (runBtn.disabled && lastValidationMsg)
+        ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
+    });
     bindRunTooltip(validate());
   }, 0);
 

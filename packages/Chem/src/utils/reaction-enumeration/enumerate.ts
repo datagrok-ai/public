@@ -121,7 +121,7 @@ function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
   }
 }
 
-function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
+export function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
   try {
     const r = rdkit.get_rxn(smarts);
     return r ?? null;
