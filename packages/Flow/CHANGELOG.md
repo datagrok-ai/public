@@ -23,8 +23,17 @@
 
 * New **ribbon toggle (bolt icon)** — faded outline when off (0.8 opacity, default font-weight),
   colored **and filled** when on (font-weight 600 renders the FA bolt as its solid variant), with a
-  state-aware tooltip. When on, the flow **reruns automatically** (debounced, 800 ms after the last
+  state-aware tooltip. When on, the flow **reruns automatically** (debounced, 2 s after the last
   edit) on any result-affecting change.
+* **In-place transforms are isolated per node** (instrumented runs): every dataframe crossing into a
+  function step is snapshot-cloned (`__ff_clone`) before the call; the pass-through, the live-value
+  stash, and inlined `table.col(...)` args all use the snapshot. Previously an in-place function
+  (descriptor calcs, AddNewColumn, …) mutated the very instance the upstream node had captured — so
+  a node's preview showed columns added by *downstream* nodes, an open shell table picked via Select
+  Table got modified, and an autorun slice re-run applied the transform **twice** (the boundary
+  value it read had already been mutated by the previous run). Now every node's captured value is
+  the state *at that node*, and re-runs are idempotent. Clean (exported) scripts are unchanged —
+  they run once from scratch and keep the platform's in-place idiom.
 * **Switching autorun on runs immediately**: everything without a fresh result (a never-run flow
   entirely; a half-run flow just the missing part + downstream) is scheduled at once — no need to
   make an edit first (`ExecutionController.pendingNodes` → `AutorunScheduler.kick`).

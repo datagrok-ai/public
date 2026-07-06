@@ -7,11 +7,14 @@
  *  stream the editor emits (`onGraphEdited`), the live-boundary expansion
  *  that plans a partial re-run, and the `AutorunScheduler` debounce. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {FlowEditor, GraphEdit} from '../rete/flow-editor';
 import {sliceDownFrom} from '../compiler/graph-compiler';
+import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
 import {AutorunScheduler} from '../execution/autorun';
@@ -304,6 +307,115 @@ category('Flow: invalidation', () => {
       const noLive = expandToLiveBoundary(e.flow, [c], () => false);
       expect([...noLive].sort().join(), [a, b, c].sort().join(), 'uncaptured upstream is pulled in');
     } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: in-place isolation', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  /** Column names of the first dataframe summary in a node's captured outputs. */
+  function previewColNames(ctrl: ExecutionController, nodeId: string): string[] | null {
+    const outputs = ctrl.state.getNodeState(nodeId)?.outputs ?? {};
+    for (const s of Object.values(outputs))
+      if (s.type === 'dataframe' && Array.isArray(s.colNames)) return s.colNames as string[];
+    return null;
+  }
+
+  test('instrumented emission snapshots dataframe inputs; clean emission does not', async () => {
+    const addCol = funcTypeName('AddNewColumn');
+    if (!addCol) {
+      expect(true, true);
+      return;
+    }
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input');
+      const anc = await addNode(e.flow, addCol);
+      await e.flow.addConnectionByKeys(src.id, 'table', anc.id, 'table');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'clone-1'});
+      expect(inst.includes('function __ff_clone'), true, 'clone helper defined');
+      const m = inst.match(/(\w+_table_in) = __ff_clone\(/);
+      expect(m !== null, true, 'the table input is snapshot-cloned');
+      const snap = m![1];
+      expect(inst.includes(`table: ${snap}`), true, 'the call receives the snapshot');
+      expect(inst.includes(`"table__pt": ${snap}`), true,
+        'the pass-through/stash carry the snapshot — the mutated copy flows on, not the upstream instance');
+
+      const clean = emitScript(e.flow, SETTINGS);
+      expect(clean.includes('__ff_clone'), false, 'clean scripts keep the platform in-place idiom');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('in-place transform runs on a clone: previews stay at-node, reruns are idempotent', async () => {
+    // The reported scenario (OpenFile → in-place calc → …): the calc mutated
+    // the very instance the upstream node had stashed, so its preview showed
+    // downstream columns and an autorun slice re-run applied the calc twice.
+    const addColType = funcTypeName('AddNewColumn');
+    const addColFunc = DG.Func.find({name: 'AddNewColumn'})[0];
+    if (!addColType || !addColFunc) {
+      expect(true, true);
+      return;
+    }
+    const nameParam = addColFunc.inputs.find((p) =>
+      String(p.propertyType) === 'string' && p.name.toLowerCase() === 'name')?.name;
+    const exprParam = addColFunc.inputs.find((p) =>
+      p.name.toLowerCase() === 'expression')?.name;
+    if (!nameParam || !exprParam) {
+      expect(true, true);
+      return;
+    }
+
+    const e = makeEditor();
+    const df = DG.DataFrame.fromCsv('x\n1\n2\n');
+    df.name = 'ffInplaceIsolation';
+    const shellTable = grok.shell.addTable(df);
+    try {
+      const sel = await addNode(e.flow, 'Utilities/Select Table');
+      sel.properties['tableName'] = 'ffInplaceIsolation';
+      const anc = await addNode(e.flow, addColType, 300, 0);
+      anc.inputValues[nameParam] = 'extra';
+      anc.inputValues[exprParam] = '1';
+      await e.flow.addConnectionByKeys(sel.id, 'table', anc.id, 'table');
+
+      const ctrl = new ExecutionController(e.flow);
+      const completedBoth = (): boolean => [sel.id, anc.id].every((id) =>
+        ctrl.state.getNodeState(id)?.status === NodeExecStatus.completed);
+
+      expect(ctrl.runAutorun(new Set(), SETTINGS), 'started', 'full run starts');
+      expect(await until(completedBoth, 10000), true, 'the full run completed');
+
+      const extraCols = (names: string[] | null): number =>
+        (names ?? []).filter((n) => n.startsWith('extra')).length;
+
+      expect(shellTable.columns.names().includes('extra'), false,
+        'the open shell table was never mutated (the calc worked on a clone)');
+      expect(extraCols(previewColNames(ctrl, sel.id)), 0,
+        'the upstream preview shows the state at that node');
+      expect(extraCols(previewColNames(ctrl, anc.id)), 1, 'the calc preview has its column');
+
+      // The autorun path after a parameter edit: rerun only the calc slice.
+      const affected = ctrl.applyGraphEdit({kind: 'params-changed', nodeId: anc.id});
+      expect(ctrl.runAutorun(affected, SETTINGS), 'started', 'slice rerun starts');
+      expect(await until(() =>
+        ctrl.state.getNodeState(anc.id)?.status === NodeExecStatus.completed, 10000), true,
+      'the slice rerun completed');
+
+      expect(extraCols(previewColNames(ctrl, anc.id)), 1,
+        'rerun is idempotent — the column is NOT added a second time');
+      expect(extraCols(previewColNames(ctrl, sel.id)), 0,
+        'the upstream captured value stayed pristine through the rerun');
+    } finally {
+      try {
+        grok.shell.closeTable(shellTable);
+      } catch {/* best effort */}
       destroyEditor(e);
     }
   });

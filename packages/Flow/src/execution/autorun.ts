@@ -17,7 +17,7 @@ import {GraphEdit} from '../rete/flow-editor';
 /** Delay between the last result-affecting edit and the automatic run. Long
  *  enough to swallow a burst (typing a value, dragging several wires), short
  *  enough to feel live. */
-export const AUTORUN_DEBOUNCE_MS = 800;
+export const AUTORUN_DEBOUNCE_MS = 1000;
 
 export class AutorunScheduler {
   /** Whether autorun is on — toggled from the ribbon; off by default. */

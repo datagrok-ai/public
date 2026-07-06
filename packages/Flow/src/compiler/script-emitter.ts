@@ -40,10 +40,13 @@ export function emitScript(
   flow: FlowEditor, settings: ScriptSettings, options?: EmitOptions,
 ): string {
   const liveBoundary = options?.liveExternalInputs && options.onlyNodeIds ? options.onlyNodeIds : undefined;
-  let steps = compileGraph(flow, liveBoundary);
+  const inst = options?.instrumented === true;
+  // Instrumented runs clone every dataframe crossing into a func step — see
+  // CompileOptions.cloneDataframeInputs (in-place functions must not mutate an
+  // upstream node's captured value).
+  let steps = compileGraph(flow, liveBoundary, {cloneDataframeInputs: inst});
   if (options?.onlyNodeIds) steps = steps.filter((s) => options.onlyNodeIds!.has(s.nodeId));
   const lines: string[] = [];
-  const inst = options?.instrumented === true;
 
   lines.push(...buildHeaderLines(steps, flow, settings, 'javascript'));
   lines.push('');
@@ -481,6 +484,13 @@ function emitPreamble(runId: string): string[] {
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
+    // Snapshot a dataframe crossing into a step (anything else passes through).
+    // Same duck-type check as __ff_summarize; a func step works on its own copy
+    // so in-place transformations never mutate the upstream captured value.
+    'function __ff_clone(v) {',
+    '  return (v != null && v.rowCount !== undefined && v.columns !== undefined &&',
+    '    typeof v.clone === \'function\') ? v.clone() : v;',
+    '}',
     // Live-value registry (on the tab global): each node stashes its outputs so a
     // later single-node re-run can read them without re-running upstream.
     '  function __ff_stash(nodeId, map) {',
@@ -536,7 +546,13 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   const lines: string[] = [];
   lines.push(`__ff_emit('node-start', '${step.nodeId}');`);
   lines.push(`let ${step.variableName};`);
+  // Dataframe input snapshots: declared in body scope (downstream steps read
+  // the pass-through through them), assigned inside try (a `_ffLive` source
+  // can throw — that must surface as THIS node's error).
+  const snapshots = Array.from(step.cloneInputs ?? []);
+  for (const [snapVar] of snapshots) lines.push(`let ${snapVar};`);
   lines.push('try {');
+  for (const [snapVar, srcExpr] of snapshots) lines.push(`  ${snapVar} = __ff_clone(${srcExpr});`);
   lines.push(`  ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`);
 
   // Build outputs summary.
