@@ -160,17 +160,18 @@ export class Db {
 export class DbTable {
   constructor(public readonly connectionId: string, public readonly tableName: string) {}
 
-  /** Inserts rows from a DataFrame (bulk) or an array of row objects. For an `object[]`,
-   * each column's type is inferred from its **first non-null value** and large payloads are
-   * streamed automatically. Caveat: a column whose first value is null, or whose later values
-   * widen the type (e.g. int → float), may be mis-typed — pass a typed DataFrame to be sure. */
+  /** Inserts rows from a DataFrame (bulk) or an array of row objects. An `object[]` is
+   * converted to a typed DataFrame at the API boundary: each column's type is inferred by
+   * scanning **all** of its values, `Date` values become a real datetime column, and nulls
+   * are preserved (a genuine null lands as SQL NULL). See {@link DbTable.toTypedDataFrame}
+   * for the exact typing rules; a mixed or all-null column throws. */
   insert(rows: DataFrame | object[],
     options: {allOrNothing?: boolean, errorOnDuplicate?: boolean} = {}): Promise<MutationResult> {
     return this._insert(rows, options, false);
   }
 
-  /** Inserts or updates rows, matching existing rows on `options.keys`. Same `object[]`
-   * type-inference caveat as {@link insert}. */
+  /** Inserts or updates rows, matching existing rows on `options.keys`. An `object[]` is
+   * typed the same way as {@link insert}. */
   upsert(rows: DataFrame | object[],
     options: {keys: string[], allOrNothing?: boolean}): Promise<MutationResult> {
     if (options?.keys == null || options.keys.length === 0)
@@ -194,21 +195,81 @@ export class DbTable {
   }
 
   private async _insert(rows: DataFrame | object[], options: any, upsert: boolean): Promise<MutationResult> {
-    let df: any = null;
-    let rowsJson: string | null = null;
+    let df: DataFrame;
     if (rows instanceof DataFrame)
-      df = rows.dart;
+      df = rows;
     else if (Array.isArray(rows))
-      // Sent to the interop as-is: one inference path (first-non-null) that preserves nulls
-      // and streams large payloads as a typed DataFrame, all on the Dart side.
-      rowsJson = JSON.stringify(rows);
+      df = DbTable.toTypedDataFrame(rows);
     else
       throw new Error('rows must be a DataFrame or an array of row objects');
     const optionsJson = JSON.stringify(options ?? {});
     const res: string = upsert
-      ? await api.grok_DbTable_Upsert(this.connectionId, this.tableName, df, rowsJson, optionsJson)
-      : await api.grok_DbTable_Insert(this.connectionId, this.tableName, df, rowsJson, optionsJson);
+      ? await api.grok_DbTable_Upsert(this.connectionId, this.tableName, df.dart, optionsJson)
+      : await api.grok_DbTable_Insert(this.connectionId, this.tableName, df.dart, optionsJson);
     return JSON.parse(res);
+  }
+
+  /** Builds a null-preserving, typed {@link DataFrame} from an array of row objects.
+   *
+   * Columns are the union of all row keys, in first-seen order. Each column's type is
+   * resolved by scanning **all** of its non-null values:
+   * - `boolean` → bool;
+   * - `Date` → datetime (detected on the live value, before any serialization, so dates
+   *   round-trip as a real datetime column rather than a stringified one);
+   * - numbers → int, widened to double if any value is fractional or outside the int32
+   *   range; an integer beyond 2^53 (not exactly representable in JS) throws — pass a
+   *   DataFrame with a bigint or string column instead;
+   * - anything else → string.
+   *
+   * A column that is entirely null, or that mixes incompatible types, throws a clear error
+   * naming the column. Nulls are preserved via {@link Column.fromList} — unlike
+   * `DataFrame.fromObjects`, which coerces a null to the empty string. */
+  private static toTypedDataFrame(rows: object[]): DataFrame {
+    const INT32_MIN = -2147483648, INT32_MAX = 2147483647;
+    const columns: string[] = [];
+    for (const row of rows)
+      for (const k of Object.keys(row as any))
+        if (!columns.includes(k)) columns.push(k);
+
+    const cols: Column[] = [];
+    for (const name of columns) {
+      const values = rows.map((row) => {
+        const v = (row as any)[name];
+        return v === undefined ? null : v;
+      });
+      let hasBool = false, hasDate = false, hasNumber = false, hasString = false;
+      let fractional = false, wideInt = false, sawValue = false;
+      for (const v of values) {
+        if (v === null) continue;
+        sawValue = true;
+        if (typeof v === 'boolean') hasBool = true;
+        else if (v instanceof Date) hasDate = true;
+        else if (typeof v === 'number') {
+          hasNumber = true;
+          if (!Number.isInteger(v)) fractional = true;
+          else if (v < INT32_MIN || v > INT32_MAX) {
+            if (!Number.isSafeInteger(v))
+              throw new Error(`Column "${name}": integer ${v} exceeds 2^53 and cannot be represented ` +
+                `exactly as a number. Pass a DataFrame with a bigint or string column instead.`);
+            wideInt = true;
+          }
+        }
+        else hasString = true;
+      }
+      if (!sawValue)
+        throw new Error(`Column "${name}": every value is null, so its type cannot be inferred. ` +
+          `Pass a DataFrame with typed columns, or include at least one non-null value.`);
+      const kinds = (hasBool ? 1 : 0) + (hasDate ? 1 : 0) + (hasNumber ? 1 : 0) + (hasString ? 1 : 0);
+      if (kinds > 1)
+        throw new Error(`Column "${name}": mixed value types. Every value in a column must share one type ` +
+          `(bool, number, Date, or string). Pass a DataFrame with typed columns to control the mapping.`);
+      const type = hasBool ? TYPE.BOOL
+        : hasDate ? TYPE.DATE_TIME
+        : hasNumber ? ((fractional || wideInt) ? TYPE.FLOAT : TYPE.INT)
+        : TYPE.STRING;
+      cols.push(Column.fromList(type as any, name, values));
+    }
+    return DataFrame.fromColumns(cols);
   }
 }
 
