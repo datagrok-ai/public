@@ -237,6 +237,8 @@ export class Permission {
 
   static DATA_CONNECTION_LIST_FILES = 'DataConnection.ListFiles';
 
+  static DATA_CONNECTION_WRITE = 'DataConnection.Write';
+
   // ===== Entity: DataQuery =====
   static DATA_QUERY_EXECUTE = 'DataQuery.Execute';
 
