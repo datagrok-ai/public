@@ -151,11 +151,23 @@ export class FuncEditorLauncher {
     // captured clone may not have been through detection yet).
     await detectSemanticTypes(tables.values());
 
+    // An in-flight run (autorun kicking in, manual run) executes funccalls that
+    // fire the same `d4-before-run-action` the dialog intercepts — let it drain
+    // first, and ignore any event that arrives while a later run executes.
+    await this.waitForRunIdle();
     const fc = func.prepare(this.buildParams(node, func, tables, dfParams));
-    const edited = await createFuncCallEditor(fc);
+    const edited = await createFuncCallEditor(fc, {ignoreEvent: () => this.exec.state.isRunning});
     applyEditorResult(node, func, edited, (name) => this.flow.isInputConnected(node.id, name));
     void this.flow.updateNode(node.id);
     return true;
+  }
+
+  /** Wait (bounded) for any in-flight run to finish before the dialog opens —
+   *  its funccalls must not reach the dialog's before-run interception. */
+  private async waitForRunIdle(timeoutMs = 15_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (this.exec.state.isRunning && Date.now() < deadline)
+      await new Promise((r) => setTimeout(r, 100));
   }
 
   /** Modal confirm before running slices to materialize the upstream tables. */

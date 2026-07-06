@@ -23,7 +23,7 @@
 
 * New **ribbon toggle (bolt icon)** — faded outline when off (0.8 opacity, default font-weight),
   colored **and filled** when on (font-weight 600 renders the FA bolt as its solid variant), with a
-  state-aware tooltip. When on, the flow **reruns automatically** (debounced, 2 s after the last
+  state-aware tooltip. When on, the flow **reruns automatically** (debounced, 1 s after the last
   edit) on any result-affecting change.
 * **In-place transforms are isolated per node** (instrumented runs): every dataframe crossing into a
   function step is snapshot-cloned (`__ff_clone`) before the call; the pass-through, the live-value
@@ -53,6 +53,18 @@
   more edits), no run dialog (flows whose run would prompt for script inputs are skipped), no
   selection stealing — but if the invalidation closed the output preview, the autorun re-opens it
   with fresh values once its node completes.
+* **Fixed: an autorun firing while a function-editor dialog was open hijacked the dialog.** The
+  dialog intercepts the global `d4-before-run-action` event to save values without executing — but
+  that event fires for **every** client funccall, and the interception matched by func. An autorun
+  slice re-running the same function (e.g. the AddNewColumn you were editing) mid-dialog was
+  mistaken for the dialog's run action: the rerun's call got canceled and the round-trip resolved
+  early with the wrong funccall — the user's OK then wrote nothing back (the "works the second
+  time" race). Three-layer fix: the autorun scheduler is **held** while an editor dialog is open
+  (edits accumulate; the rerun fires right after the writeback), the launcher waits for any
+  in-flight run to drain before opening, and the interception **ignores events while a Flow run is
+  executing** (`createFuncCallEditor`'s `ignoreEvent`). Reproduced deterministically in a test: a
+  concurrent same-function call while the dialog is open must execute uncanceled and must not
+  resolve the round-trip.
 
 ### SetVar ⇄ Output unification
 
