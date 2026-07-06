@@ -339,7 +339,25 @@ export function registerAllFunctions(): FuncInfo[] {
     }
   }
 
+  registerVariableFuncs();
+
   return funcRegistry;
+}
+
+/** SetVar / GetVar fall to the primitive-only exclusion rule, yet saved flows
+ *  depend on them (every imported creation script terminates in SetVar nodes,
+ *  and Flow treats SetVar as an output). Register them unconditionally —
+ *  otherwise a saved .ffjson with SetVar/GetVar nodes deserializes only in a
+ *  session where a creation-script import happened to register them first. */
+function registerVariableFuncs(): void {
+  for (const name of ['SetVar', 'GetVar']) {
+    try {
+      const func = DG.Func.find({name})[0];
+      if (func) ensureFuncNodeType(func);
+    } catch {
+      // No live backend / lookup failure — nothing to register.
+    }
+  }
 }
 
 export function getRegisteredFuncs(): FuncInfo[] {

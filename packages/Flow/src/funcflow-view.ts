@@ -77,6 +77,10 @@ export class FuncFlowView extends DG.ViewBase {
   private linkCountLabel!: HTMLElement;
   private validationLabel!: HTMLElement;
 
+  set isPinned(p: boolean) {
+    console.log('aaaaaaaaaa');
+  }
+
   /** Desired initial minimap state, applied once the editor is created (the
    *  editor is built async). Hosts set this before the editor exists — e.g. the
    *  creation-script preview dialog opens with the minimap minimized. */
@@ -171,7 +175,7 @@ export class FuncFlowView extends DG.ViewBase {
     if (!id) return;
     try {
       this.path = `/script/${id}`;
-    } catch { /* view not yet attached to the platform shell */ }
+    } catch {/* view not yet attached to the platform shell */}
   }
 
   private initUI(): void {
@@ -384,7 +388,7 @@ export class FuncFlowView extends DG.ViewBase {
 
     const rect = anchorEl.getBoundingClientRect();
     const popupRect = popup.getBoundingClientRect();
-    const vw = window.innerWidth, vh = window.innerHeight;
+    const vw = window.innerWidth; const vh = window.innerHeight;
     let left = rect.right + 12;
     if (left + popupRect.width > vw - 8) left = rect.left - popupRect.width - 12;
     if (left < 8) left = 8;
@@ -870,9 +874,9 @@ export class FuncFlowView extends DG.ViewBase {
 
     // Saving leads the ribbon; saveFlow routes to the right target (entity
     // update / Save As for never-saved flows / creation scripts).
-    const saveButton = creationMode
-      ? ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table')
-      : ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
+    const saveButton = creationMode ?
+      ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
+      ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
     const savePanel: HTMLElement[] = [setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save')];
     if (!creationMode)
       savePanel.push(ribbonIcon('folder-open', () => void this.openFromPlatform(), 'Open a flow', 'open'));
@@ -1026,11 +1030,12 @@ export class FuncFlowView extends DG.ViewBase {
         const clashes = (await grok.dapi.scripts
           .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
           .filter((s) => s.id !== this.boundScript?.id);
-        if (clashes.length > 0)
-          warningDiv.textContent = targetSpace
-            ? `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name`
-            : `A flow named "${name}" already exists`;
-      } catch { /* advisory only */ }
+        if (clashes.length > 0) {
+          warningDiv.textContent = targetSpace ?
+            `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name` :
+            `A flow named "${name}" already exists`;
+        }
+      } catch {/* advisory only */}
     };
     const updateSpace = (space: DG.Project | null) => {
       targetSpace = space;

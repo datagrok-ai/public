@@ -31,6 +31,10 @@
   name, the emitted lookup now throws `Select Table: no open table or variable named "…"`
   instead of passing `null` downstream and failing far from the node that caused it (in
   instrumented runs the throw surfaces as that node's error).
+* **SetVar / GetVar are always registered**: both fall to the primitive-only catalog exclusion
+  and were previously registered only as a side effect of importing a creation script — so a
+  saved `.ffjson` containing SetVar/GetVar nodes silently dropped them when opened in a fresh
+  session. `registerAllFunctions` now force-registers them.
 
 ### Output panel rework
 
