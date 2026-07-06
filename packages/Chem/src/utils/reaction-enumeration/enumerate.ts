@@ -385,11 +385,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
   const molCache = new MolCache(rdkit);
 
-  // Round 0 ("keep building blocks in output") must mirror round 1's ACTIVE BB pool, but only in the
-  // modes where a round-1 override actually narrows it (useReagents / depth_first — see
-  // `eligibleSmiles` below). In plain breadth-first mode the override is a no-op, so seeding round 0
-  // from it anyway would both misreport the kept-BB output AND leak the override into round 1's own
-  // pool via `allPriorPool` (which folds in every prior round, including round 0).
+  // Round 0 ("keep building blocks") must mirror round 1's ACTIVE BB pool, but only in modes where a
+  // round-1 override actually narrows it (useReagents/depth_first) — in breadth-first the override is
+  // a no-op, so seeding round 0 from it would misreport output AND leak into round 1 via allPriorPool.
   const round1OverrideActive = useReagents || config.enumeration.depth_first;
   const productPools: ProductRecord[][] = [];
   productPools.push((round1OverrideActive ? (roundBBs[0] ?? uniqueBBs) : uniqueBBs)
