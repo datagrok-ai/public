@@ -97,7 +97,9 @@ export class PackageFunctions {
     // creation script per table and save each via TableInfo.saveCreationScript.
     const loaded = await Promise.all((tableIds ?? []).map((id) => grok.dapi.tables.find(id)));
     const tableInfos = loaded.filter((t): t is DG.TableInfo => t != null);
-    const view = new FuncFlowView(tableInfos);
+    // No output panel inside the dialog — run results belong to the real
+    // editor view only; it is re-enabled below when promoted via Open In Editor.
+    const view = new FuncFlowView(tableInfos, {outputPanel: false});
     view.name = `Creation Script`;
     // Inside the cramped dialog the overview adds clutter — start it minimized;
     // expand it once the flow is opened in the full editor.
@@ -112,6 +114,7 @@ export class PackageFunctions {
       .add(view.root)
       .addButton('Open In Editor', () => {
         view.setMinimapCollapsed(false);
+        view.enableOutputPanel();
         grok.shell.addView(view);
         setTimeout(() => view.fitToScreen(), 100);
         d.close();

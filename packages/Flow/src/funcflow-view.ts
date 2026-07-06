@@ -36,6 +36,7 @@ import {SpacePicker} from './ui/space-picker';
 import {buildFlowFromCreationScript} from './import/creation-script-importer';
 import {FlowSettings, FuncFlowDocument} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
+import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
 import {_package} from './package';
@@ -58,6 +59,13 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
+  /** Bottom output panel — a pane of the view's vertical splitter (see
+   *  `initUI`). Public so hosts (the creation-script dialog) and tests can
+   *  reach it; created disabled when `options.outputPanel` is false. */
+  outputPreview!: OutputPreviewPanel;
+  /** Whether this view gets the bottom output panel (false for embedded
+   *  hosts — the creation-script dialog). */
+  private readonly outputPanelEnabled: boolean;
   private canvasContainer!: HTMLElement;
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
@@ -103,11 +111,16 @@ export class FuncFlowView extends DG.ViewBase {
   private pendingFitObserver: ResizeObserver | null = null;
 
   /** @param tableInfos tables whose creation scripts this view edits — passing a
-   *  non-empty array enables the **Save Creation Scripts** ribbon action. */
-  constructor(tableInfos: DG.TableInfo[] = []) {
+   *  non-empty array enables the **Save Creation Scripts** ribbon action.
+   *  @param options `outputPanel: false` creates the view without the bottom
+   *  output panel — for embedded hosts (the creation-script dialog), where a
+   *  run-results pane makes no sense. `enableOutputPanel()` turns it on later
+   *  (e.g. when that view is promoted into the real editor). */
+  constructor(tableInfos: DG.TableInfo[] = [], options: {outputPanel?: boolean} = {}) {
     super();
     this.name = 'FuncFlow';
     this.tableInfos = tableInfos;
+    this.outputPanelEnabled = options.outputPanel !== false;
 
     registerBuiltinNodes();
 
@@ -191,7 +204,27 @@ export class FuncFlowView extends DG.ViewBase {
     );
     setTid(this.statusBar, 'statusbar');
 
-    const mainLayout = setTid(ui.div([this.canvasContainer], 'funcflow-root'), 'root');
+    // Bottom output panel — a real pane of the view, not a dock-manager dock:
+    // canvas and panel share a vertical splitter (`ui.splitV`), so the panel is
+    // resizable via the divider, minimizes to its header strip, and can never
+    // linger over other views. Created disabled for embedded hosts.
+    this.outputPreview = new OutputPreviewPanel({enabled: this.outputPanelEnabled});
+    const canvasBox = ui.box(this.canvasContainer);
+    // The canvas absorbs all space the panel doesn't take — the panel's
+    // explicit height (its pane is `flex: 0 0 auto`) is the single source of
+    // truth, in every panel state and under `splitV`'s own resize handling.
+    canvasBox.style.flex = '1 1 0';
+    canvasBox.style.minHeight = '0';
+    const split = ui.splitV([canvasBox, this.outputPreview.root], {style: {flex: '1 1 0', width: '100%', height: '100%'}}, true);
+    // The divider only makes sense when there is something to resize.
+    const divider = split.querySelector('.ui-split-v-divider') as HTMLElement | null;
+    const syncDivider = (state: OutputPanelState): void => {
+      if (divider) divider.style.display = state === 'expanded' ? '' : 'none';
+    };
+    this.outputPreview.onStateChanged = syncDivider;
+    syncDivider(this.outputPreview.panelState);
+
+    const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
     setTid(this.root, 'view');
     this.root.appendChild(mainLayout);
@@ -396,8 +429,7 @@ export class FuncFlowView extends DG.ViewBase {
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);
-    this.executionController = new ExecutionController(this.flow);
-    this.executionController.outputPreview.setViewRoot(this.root);
+    this.executionController = new ExecutionController(this.flow, this.outputPreview);
 
     // Column inputs (column / column_list) get a picker dialog seeded by the
     // upstream table — running the flow up to that point on demand if needed.
@@ -432,21 +464,10 @@ export class FuncFlowView extends DG.ViewBase {
       this.autoSelectFirstOutputNode();
     };
 
-    // The bottom-docked output panel belongs to this view — when the user
-    // navigates to another view it would otherwise linger. Close it whenever
-    // the active view is no longer us. (Clicking a node reopens it later.)
-    this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
-      if (grok.shell.v !== this)
-        this.executionController?.outputPreview.close();
-    }));
-
     // "Edit settings" on a viewer preview → show the live viewer in the context
     // panel (Datagrok renders its full settings editor) and capture every change
     // back into the node's stored options, so a re-run reproduces the look.
-    this.executionController.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
-    // The bottom preview dock and the minimap share the same corner — minimize
-    // the minimap when the preview panel first opens so they never overlap.
-    this.executionController.outputPreview.onDocked = () => this.setMinimapCollapsed(true);
+    this.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
@@ -463,6 +484,13 @@ export class FuncFlowView extends DG.ViewBase {
       this.hintRaf = 0;
       for (const n of this.flow.getNodes()) void this.flow.updateNode(n.id);
     });
+  }
+
+  /** Turn the bottom output panel on for a view created without it (the
+   *  creation-script dialog) — e.g. when that view is promoted into the real
+   *  editor via "Open In Editor". */
+  enableOutputPanel(): void {
+    this.outputPreview.setEnabled(true);
   }
 
   /** Set the overview minimap's collapsed state. Remembered and (re)applied when

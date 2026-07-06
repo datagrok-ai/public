@@ -53,7 +53,7 @@ export class ExecutionController {
   /** When set, the next run is a headless slice (column picker); on completion
    *  we invoke this and skip the preview / end-of-run UI entirely. */
   private pendingOnComplete: (() => void) | null = null;
-  outputPreview: OutputPreviewPanel = new OutputPreviewPanel();
+  outputPreview: OutputPreviewPanel;
 
   /** Called when execution stops at a breakpoint (so the view can prompt Continue). */
   onBreakpointHit?: (nodeId: string) => void;
@@ -62,10 +62,13 @@ export class ExecutionController {
   /** Called on every per-node state change — used to refresh the property panel. */
   onNodeStateChanged?: (nodeId: string) => void;
 
-  constructor(flow: FlowEditor) {
+  /** @param outputPreview the view-owned bottom output panel (a pane of the
+   *  view's splitter). Defaults to a detached one for headless usage. */
+  constructor(flow: FlowEditor, outputPreview?: OutputPreviewPanel) {
     this.flow = flow;
     this.state = new ExecutionState();
     this.visualizer = new ExecutionVisualizer(flow);
+    this.outputPreview = outputPreview ?? new OutputPreviewPanel();
   }
 
   runInstrumented(settings: ScriptSettings): void {
@@ -132,7 +135,13 @@ export class ExecutionController {
   }
 
   private clearLiveRegistry(): void {
-    (globalThis as {__ffFlowLive?: unknown}).__ffFlowLive = {};
+    // The registry is page-global (the emitted script writes to it, outside any
+    // view), and several Flow views can be live at once — never wipe it
+    // wholesale. Node ids are unique per editor, so deleting this flow's ids
+    // leaves other views' captured values (and their single-node rerun) intact.
+    const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
+    if (!reg) return;
+    for (const node of this.flow.getNodes()) delete reg[node.id];
   }
 
   /** Whether "Rerun this node only" should be offered: it's a compute node whose
@@ -193,7 +202,7 @@ export class ExecutionController {
     } else {
       // A new full/slice run invalidates anything we were showing — and the
       // captured live values (they're recomputed by this run's `__ff_stash`).
-      this.outputPreview.close();
+      this.outputPreview.clear();
       this.state.startRun(runId, this.graphVersion);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
@@ -337,7 +346,7 @@ export class ExecutionController {
       this.visualizer.markAllStale();
       this.flow.clearConnectionLabels();
       // Stale values aren't worth previewing; close to avoid stale impressions.
-      this.outputPreview.close();
+      this.outputPreview.clear();
       // A structural change invalidates captured values — disable single-node
       // re-run (which reads them) until a fresh run repopulates the registry.
       this.clearLiveRegistry();
@@ -348,7 +357,7 @@ export class ExecutionController {
     this.visualizer.resetAllNodes();
     this.flow.clearConnectionLabels();
     this.state.reset();
-    this.outputPreview.close();
+    this.outputPreview.clear();
     this.clearLiveRegistry();
   }
 

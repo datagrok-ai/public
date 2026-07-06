@@ -1760,3 +1760,66 @@
   pointer-events: none !important;
   user-select: none !important;
 }
+/* ---------- bottom output panel (in-view splitter pane) ---------- */
+
+.ff-output-panel {
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ff-output-panel-header {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  background: var(--grey-1, #f7f8fa);
+  border-top: 1px solid var(--grey-2, #ddd);
+  border-bottom: 1px solid var(--grey-2, #ddd);
+  flex-grow: 0 !important;
+}
+
+.ff-output-panel-header:hover {
+  background: var(--grey-2, #eef0f4);
+}
+
+.ff-output-panel-title {
+  font-weight: 600;
+  color: var(--grey-6, #40484f);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 11px;
+}
+
+.ff-output-panel-node {
+  color: var(--grey-5, #666);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ff-output-panel-caret {
+  margin-left: auto;
+  color: var(--grey-5, #666);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.ff-output-panel-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.funcflow-value-previews {
+  height: 100%;
+}
+
+.funcflow-preview-block {
+  height: 100%;
+}

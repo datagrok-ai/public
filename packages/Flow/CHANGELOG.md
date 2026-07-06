@@ -2,6 +2,37 @@
 
 ## v.next
 
+### Output panel rework
+
+* The run-output preview is now a **real part of the Flow view**: a bottom pane of a vertical
+  splitter (`ui.splitV`) above the status bar — resizable via the divider — instead of a
+  `grok.shell.dockManager` dock with custom show/hide/lingering event handling.
+* It is **not closable**: it opens on the first renderable output (clicking a completed node, or
+  a run's focus node) and **minimizes to a slim header strip** via the header caret. The choice
+  is remembered — while minimized, new content updates in place and never pops the panel back up;
+  an explicit header click restores it. Cleared and hidden when the graph changes or a new run
+  starts (values are stale).
+* The panel exists only in the real editor view — embedded hosts (the creation-script dialog)
+  create the view with `{outputPanel: false}`; **Open In Editor** re-enables it.
+* Removed the dock-era hacks: the `onCurrentViewChanged` close subscription (an in-view pane
+  can't linger over other views) and the `onDocked` → minimap auto-minimize workaround (the
+  minimap lives inside the canvas pane, which now shrinks with the splitter).
+* Multiple-views hardening: `ExecutionController` no longer wipes the page-global live-value
+  registry (`__ffFlowLive`) wholesale — it deletes only its own flow's node ids, so a run in one
+  Flow view no longer disables single-node rerun in another. Added a standing rule to
+  [CLAUDE.md](CLAUDE.md): no page-global mutable state — several Flow views can be alive at once.
+
+### Bug fixes
+
+* Fixed connections detaching from collapsed nodes (edges frozen at stale positions after
+  moving nodes) and collapse carets going dead. Root cause: the editor↔React bridge was a
+  page-level global (`window.__ff_editor`) that any newer `FlowEditor` construction rebound
+  to itself (file previews, Browse entity previews, the creation-script dialog) and that any
+  `destroy()` deleted (detached compile editors, e.g. running a saved flow as a function).
+  The bridge now lives on each node (`FlowNode.editorBridge`, stamped by the owning editor
+  on `nodecreate`), so any number of editors coexist on a page
+  ([node-component.tsx](src/rete/node-component.tsx), [flow-editor.ts](src/rete/flow-editor.ts)).
+
 ### Editor
 
 * Every way of opening a flow — a saved flow entity (editor, preview, Open from platform),

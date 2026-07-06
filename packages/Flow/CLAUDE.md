@@ -6,6 +6,22 @@ Flow (FuncFlow) is an interactive visual function chain designer for Datagrok. I
 
 The renderer is React-based (`rete-react-plugin`), but React is contained to the canvas: the rest of the package — view, panels, ribbon, status bar — is plain TypeScript on top of the Datagrok UI helpers, exactly as KetcherSketcher mounts Ketcher inside a `ui.div`.
 
+## Rules — always follow
+
+- **No page-global mutable state.** Several Flow views and editors can be alive in one page at
+  the same time — file previews, Browse entity previews, the creation-script dialog, detached
+  compile editors, multiple open tabs. Anything stored on `window`/`globalThis` is shared by all
+  of them: a newer instance rebinding it, or a destroyed instance deleting it, silently breaks
+  the others. (This exact bug once detached collapsed-node sockets and killed collapse carets —
+  the old `window.__ff_editor` bridge.) Keep state on the owning instance and reach it through
+  back-references (e.g. `FlowNode.editorBridge`). UI that belongs to a view must live **inside
+  that view's root** (the bottom output panel is a splitter pane of the view — never a
+  `grok.shell.dockManager` dock, which outlives and overlaps views).
+  The one sanctioned global is `globalThis.__ffFlowLive`, the live-value registry the *emitted
+  script* writes to (it runs outside any view). It is keyed by node id — unique per editor — and
+  must only ever be cleared per-flow (`ExecutionController.clearLiveRegistry` deletes this flow's
+  node ids, never the whole object).
+
 ## Architecture
 
 ```
@@ -39,7 +55,7 @@ src/
 │   ├── execution-visualizer.ts   # Sets node.dgStatus → CSS handles all visuals
 │   ├── execution-controller.ts   # Run lifecycle, event subscriptions, breakpoints
 │   ├── value-inspector.ts        # Context panel runtime-value section
-│   └── output-preview.ts         # Bottom-docked output preview tabs
+│   └── output-preview.ts         # In-view bottom output panel (a pane of the view's splitter)
 ├── panel/
 │   ├── function-browser.ts       # Left sidebar catalog
 │   ├── property-panel.ts         # Side-panel node properties editor
@@ -245,7 +261,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 | `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers, **denylisted `nqName`s, machinery tags, `semantic_value`/filter-call, `meta.includeInFlow: false` opt-out; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
-| `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; `onDocked` fires once per dock creation (not on updates; again after close); same node + same state → no preview rebuild (new state / other node → rebuild) |
+| `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; panel state machine (hidden → expanded on first renderable output; minimize remembered — content updates never pop it up; `clear()` hides but keeps the preference; header click toggles + fires `onStateChanged`; disabled panels never show); same node + same state → no preview rebuild (new state / other node → rebuild); the panel is a pane of the view splitter, disabled in embedded views |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
 | `column-picker-tests.ts` | Flow: column picker | `column`/`column_list` inputs render a `ff-prop-pick-columns-<param>` icon; the request resolves the right dataframe input per column (JoinTables `keys1`→`table1`, `keys2`→`table2`); **viewer** axis options and **Select Column(s)** utilities get the picker too (resolving their `table` input); no icon without an `onPickColumns` handler |
 | `connect-interaction-tests.ts` | Flow: connect interaction | `soleCompatibleInput` (drop-on-node decision): one compatible free input → its key, several/zero → null, taken inputs excluded; `soleCompatibleOutput` (reverse drop): real output wins over passthroughs, sole-passthrough fallback, ambiguous/incompatible → null |
@@ -471,7 +487,7 @@ Each step is wrapped in try/catch and fires `funcflow.exec.<runId>` events: `run
 
 **In-place / threaded table capture**: when a func node has a dataframe input but **no real *dataframe* output**, the wrapper emits a synthetic entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the post-execution table is previewable. This covers both a pure in-place mutator (no outputs at all) AND a node whose real output isn't a table but still threads one through its passthrough — e.g. AddNewColumn returns a *column*, yet a viewer / the column picker wired to its `table →` passthrough needs that modified table (it's keyed off `!hasDataframeOutput`, not zero-outputs, so `cloneForNode` finds it).
 
-**SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the docked output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
+**SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the bottom output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
 
 **Live-value registry (single-node re-run)**: every instrumented step also stashes its live outputs into a tab-global registry — `__ff_stash('<nodeId>', {<outputKey>: <value>, ...})` (real outputs → their variable, dataframe passthroughs → the threaded post-execution value), keyed by output socket key. **“Rerun this node only”** ([`ExecutionController.rerunNode`](src/execution/execution-controller.ts)) runs a *one-node* slice with `EmitOptions.liveExternalInputs`: `compileGraph(flow, liveBoundary)` resolves any connection whose source is outside the slice to a `_ffLive(nodeId, outputKey)` registry read (defined in the preamble) instead of an in-script variable — so nothing upstream re-executes. It's `preserveState` (other nodes untouched) and opens the node's preview on completion. Gated by `canRerunNode(nodeId)`: a func/viewer/utility node whose required inputs are all satisfied AND every connected input has a captured value (`hasLiveValue`). The registry is cleared on any non-preserve run (fresh full/slice run) and on structural graph change, so stale values never drive a re-run. Menu wiring: `FlowEditorCallbacks.onRerunNode` / `canRerunNode` → `showNodeContextMenu`.
 
@@ -485,7 +501,7 @@ KNIME-inspired live feedback. The script runs in the same browser tab and commun
 - **ExecutionState** ([execution/execution-state.ts](src/execution/execution-state.ts)) — per-node status tracking (`idle` / `running` / `completed` / `errored` / `stale`) keyed by string node IDs.
 - **ExecutionVisualizer** ([execution/execution-visualizer.ts](src/execution/execution-visualizer.ts)) — sets `node.dgStatus` and calls `flow.updateNode(id)` to re-render. The React Node component reads `dgStatus` and writes it to a `data-status` attribute. CSS does the rest (status circle color, pulse animation, body tint).
 - **ValueInspector** ([execution/value-inspector.ts](src/execution/value-inspector.ts)) — runtime-value section in the side panel. DataFrame summaries embed a full `DG.Viewer.grid` preview with "Add to workspace". A **column** output previews as a **one-column DataFrame grid**: `__ff_summarize` captures `clone: DG.DataFrame.fromColumns([col.clone()])` and `buildPreview` renders it as a grid (falling back to a small text sample if no clone was captured). When a node outputs a column, `buildValuePreviews` **suppresses** the threaded `"<input> (modified)"` passthrough dataframe preview — that table is still captured in the state (the column picker / inspect read it), just not shown, since the column-as-grid is the meaningful result. A **widget/viewer** output keeps the live object (`{type:'widget'|'viewer', value}`, captured by reference during the in-tab run by `__ff_summarize`) and `buildPreview` mounts its `.root` directly; the property-panel meta names the kind (`widget`/`viewer`) instead of `[object Object]`.
-- **OutputPreviewPanel** ([execution/output-preview.ts](src/execution/output-preview.ts)) — single bottom-docked panel, opened lazily when the user clicks a node with captured values. `showForNode` re-checks `dockManager.findNode(hostEl)` before reusing the dock, so if the user manually closed it a later click **reopens** it. The view closes it on `grok.events.onCurrentViewChanged` when `grok.shell.v` is no longer the Flow view (the dock would otherwise linger over other views). An `onDocked` callback fires when the dock is **newly created** (not on in-place updates) — the view wires it to `setMinimapCollapsed(true)` so the minimap auto-minimizes instead of overlapping the fresh panel. **Re-render is identity-gated**: `showForNode` remembers the last `(nodeId, NodeExecState)` pair and skips rebuilding when both match and the dock is still open — `ExecutionState.setNodeStatus` always builds a fresh state object, so state reference identity IS value identity (re-clicking a node doesn't re-mount its grids; a re-run's new state does rebuild). The cache clears on `close()` and dock failure.
+- **OutputPreviewPanel** ([execution/output-preview.ts](src/execution/output-preview.ts)) — the bottom output panel, a **real pane of the view**: `FuncFlowView.initUI` mounts `panel.root` as the second item of a `ui.splitV([canvasBox, panel.root], …, true)`, so it is resizable via the splitter divider and can never linger over other views (no `grok.shell.dockManager` involvement — see Rules). The canvas pane is `flex: 1 1 0`; the panel pane is `flex: 0 0 auto`, making its explicit `height` the single source of truth (min/max clamps keep `splitV`'s own resize handling from drifting a minimized strip). Three states (`panelState`): **hidden** (start, and after `clear()` on graph change / new run), **expanded**, **minimized** (slim header strip; the header click toggles). It is **not closable**: the first renderable output (clicking a completed node, or a run's focus node) expands it; once the user minimizes it the choice is **remembered** — later content updates in place and never pops the panel back up; only an explicit header click restores it. `onStateChanged` lets the view show the divider only when expanded. Embedded hosts (the creation-script dialog) construct the view with `{outputPanel: false}` → the panel is disabled and never shows; `enableOutputPanel()` re-enables it (Open In Editor). **Re-render is identity-gated**: `showForNode` remembers the last `(nodeId, NodeExecState)` pair and skips rebuilding when both match and the panel is visible — `ExecutionState.setNodeStatus` always builds a fresh state object, so state reference identity IS value identity (re-clicking a node doesn't re-mount its grids; a re-run's new state does rebuild). The cache clears on `clear()`.
 
 ### Visual States (CSS, in [css/funcflow.css](css/funcflow.css))
 
@@ -617,13 +633,15 @@ When adding a UI element, give it a `data-testid` via the helper. Tests live in
 |   platform toolbox window — the view sets `this.toolbox =    |
 |   functionBrowser.root` and turns `showToolbox` on)          |
 +--------------------------------------------------------------+
+|  Output panel (splitter pane; hidden → minimized ↔ expanded) |
++--------------------------------------------------------------+
 |  Status bar: Nodes / Links / Validation                      |
 +--------------------------------------------------------------+
 ```
 
 Property panel goes into Datagrok's native context panel via `grok.shell.o = propertyPanel.root`. The function browser is the view's toolbox; toggling `grok.shell.windows.showToolbox` shows/hides it (ribbon icon `list-ul`).
 
-A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time the user clicks a node that has captured runtime values from a prior run, [`ExecutionController.showOutputsForNode`](src/execution/execution-controller.ts) creates the dock at the bottom; subsequent clicks update it in place. Closed when the graph changes or a new run starts.
+The bottom **Output panel** is a pane of the view's vertical splitter (not a dock) and is *lazy*: hidden until the first time the user clicks a node that has captured runtime values from a prior run ([`ExecutionController.showOutputsForNode`](src/execution/execution-controller.ts)); subsequent clicks update it in place, respecting a remembered minimized state. Emptied and hidden when the graph changes or a new run starts. See **OutputPreviewPanel** under Execution for the full state contract.
 
 ### Property Panel ([panel/property-panel.ts](src/panel/property-panel.ts))
 
