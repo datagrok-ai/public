@@ -121,7 +121,7 @@ test('SequenceTranslator — OligoNucleotide column lifecycle: convert, combine,
         semType: semValue ? semValue.semType : null,
       };
     });
-    expect(result.error, 'copyOligoAsHelm must not throw for OligoNucleotide SemanticValue').toBeNull();
+    expect(result.error, `copyOligoAsHelm must not throw for OligoNucleotide SemanticValue (got: ${result.error})`).toBeNull();
     expect(result.success, 'copyOligoAsHelm must succeed without error').toBe(true);
     expect(result.semType, 'SemanticValue semType must be OligoNucleotide').toBe('OligoNucleotide');
 

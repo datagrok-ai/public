@@ -54,7 +54,10 @@ async function importCoresFromTable(page: Page, tableName: string, colName: stri
   await page.evaluate(() => {
     const dlg = document.querySelector('[name="dialog-Markush-Enumerator"]');
     if (!dlg) throw new Error('dialog-Markush-Enumerator not found for core import');
-    const importBtns = Array.from(dlg.querySelectorAll('[name="button-↓-Import…"]'));
+    // Match the Import buttons by text/name (the literal name uses non-ASCII ↓/… glyphs
+    // that don't reliably match as an attribute selector across builds).
+    const importBtns = Array.from(dlg.querySelectorAll('[name^="button"], button'))
+      .filter((b) => /import/i.test(b.getAttribute('name') || b.textContent || ''));
     if (importBtns.length === 0) throw new Error('No import buttons found in Markush Enumerator dialog');
     (importBtns[0] as HTMLElement).click();
   });
@@ -92,7 +95,10 @@ async function importRGroupsFromTable(page: Page, tableName: string, colName: st
   await page.evaluate(() => {
     const dlg = document.querySelector('[name="dialog-Markush-Enumerator"]');
     if (!dlg) throw new Error('dialog-Markush-Enumerator not found for R-group import');
-    const importBtns = Array.from(dlg.querySelectorAll('[name="button-↓-Import…"]'));
+    // Match the Import buttons by text/name (the literal name uses non-ASCII ↓/… glyphs
+    // that don't reliably match as an attribute selector across builds).
+    const importBtns = Array.from(dlg.querySelectorAll('[name^="button"], button'))
+      .filter((b) => /import/i.test(b.getAttribute('name') || b.textContent || ''));
     if (importBtns.length < 2) throw new Error('Second import button not found in Markush Enumerator dialog');
     (importBtns[1] as HTMLElement).click();
   });
