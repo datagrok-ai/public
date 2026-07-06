@@ -262,7 +262,7 @@ export function buildPreview(
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     wrap.style.position = 'relative';
     obj.root.style.width = '100%';
-    if (!obj.root.style.minHeight) obj.root.style.minHeight = '300px';
+    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 20px)';
     wrap.appendChild(obj.root);
     // A viewer's full settings are editable live: a small gear in the top-right
     // corner (overlaid — no vertical space) hands the viewer to the host

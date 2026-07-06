@@ -7,6 +7,7 @@
  *  hides but keeps the preference, disabled panels (embedded hosts) never show.
  *  Pure DOM — no live backend needed. */
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {NodeExecState, NodeExecStatus} from '../execution/execution-state';
 import {
@@ -131,16 +132,22 @@ category('Flow: execution preview', () => {
     expect(panel.panelState, 'minimized', 'after a clear, new content respects the remembered preference');
   });
 
-  test('the header click toggles minimized/expanded and reports state changes', async () => {
+  test('the caret click toggles minimized/expanded and reports state changes', async () => {
     const panel = new OutputPreviewPanel();
     const states: OutputPanelState[] = [];
     panel.onStateChanged = (s): void => {states.push(s);};
 
     panel.showForNode({id: 'n1', label: 'a'}, renderableState());
-    const header = panel.root.querySelector('[data-testid="ff-output-panel-header"]') as HTMLElement;
-    header.click();
-    header.click();
+    const caret = panel.root.querySelector('[data-testid="ff-output-panel-caret"]') as HTMLElement;
+    caret.click();
+    caret.click();
     expect(states.join(','), 'expanded,minimized,expanded', 'every transition is reported (divider sync)');
+
+    // Only the caret toggles — the rest of the header sits right under the
+    // splitter divider, and a near-miss resize click must not collapse the panel.
+    const header = panel.root.querySelector('[data-testid="ff-output-panel-header"]') as HTMLElement;
+    header.dispatchEvent(new MouseEvent('click', {bubbles: false}));
+    expect(panel.panelState, 'expanded', 'clicking the header body does not toggle');
   });
 
   test('a disabled panel never shows — embedded hosts (dialogs)', async () => {
@@ -204,6 +211,32 @@ category('Flow: execution preview', () => {
       await new Promise((r) => setTimeout(r, 120));
       ((embedded as any).flow)?.destroy?.();
       embedded.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('the canvas container clips — no scrollbars around the transformed canvas', async () => {
+    // Regression: as a `div.ui-div` directly inside the splitter's `.ui-box`
+    // pane, the canvas matched the core rule `div.ui-box > div.ui-div
+    // { overflow: auto !important }`, which overrode the package's
+    // `overflow: hidden` and grew giant scrollbars around the Rete canvas
+    // (node views live at large canvas coordinates).
+    const view = new FuncFlowView();
+    const host = ui.div([view.root], {style: {
+      width: '900px', height: '600px', position: 'absolute', left: '-10000px',
+    }});
+    document.body.appendChild(host);
+    try {
+      await new Promise((r) => setTimeout(r, 150)); // let the deferred initEditor build the canvas
+      const canvas = view.root.querySelector('.funcflow-canvas-container') as HTMLElement;
+      expect(!!canvas, true, 'canvas container exists');
+      const style = getComputedStyle(canvas);
+      const diag = `self="${canvas.className}" style="${canvas.getAttribute('style') ?? ''}" ` +
+        `parent="${canvas.parentElement?.className}" grandparent="${canvas.parentElement?.parentElement?.className}"`;
+      expect(style.overflowX, 'hidden', `canvas clips horizontally — ${diag}`);
+      expect(style.overflowY, 'hidden', `canvas clips vertically — ${diag}`);
+    } finally {
+      ((view as any).flow)?.destroy?.();
+      host.remove();
     }
   }, {timeout: 30000});
 

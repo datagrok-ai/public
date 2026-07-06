@@ -93,9 +93,15 @@ export function emitScript(
       }
       const code = emitUtilityStep(step);
       if (!code) continue;
-      if (inst)
-        lines.push(...wrapInstrumented(code, step, options!, {outputExpr: step.variableName}));
-      else
+      if (inst) {
+        // Side-effect-only utilities (Log / Info / Warning) declare no variable
+        // — summarizing `step.variableName` there would reference an undeclared
+        // identifier and fail the node with a ReferenceError at run time. Only
+        // steps that actually declare their variable get an output summary.
+        const declaresVar = code.startsWith(`let ${step.variableName} =`);
+        lines.push(...wrapInstrumented(code, step, options!,
+          declaresVar ? {outputExpr: step.variableName} : undefined));
+      } else
         lines.push(code);
       stash(step);
       continue;

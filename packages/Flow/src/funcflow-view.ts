@@ -181,6 +181,14 @@ export class FuncFlowView extends DG.ViewBase {
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
     });
 
+    // The canvas is a direct `.ui-box` child (the splitter pane), where core
+    // css forces `overflow: auto !important` on EVERY child — `ui-div`-classed
+    // ones via `div.ui-box > div.ui-div`, all others via a huge
+    // `div.ui-box:not(…) > *:not(.ui-div):not(…)` rule that outranks anything
+    // reasonable. Keep `ui.div` (the exempt, low-specificity branch) and win
+    // it back with `div.ui-box > div.ui-div.funcflow-canvas-container
+    // { overflow: hidden !important }` in funcflow.css — otherwise the
+    // transformed Rete canvas grows giant scrollbars.
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
     setTid(this.canvasContainer, 'canvas');
     this.startPanel = this.buildStartPanel();

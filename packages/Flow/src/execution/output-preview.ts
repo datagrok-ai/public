@@ -65,14 +65,16 @@ export class OutputPreviewPanel {
   constructor(options: {enabled?: boolean} = {}) {
     this.enabled = options.enabled !== false;
 
+    // Only the caret toggles — a fully clickable header would sit right under
+    // the splitter divider and swallow near-miss resize clicks.
     this.caretEl = setTid(ui.div([], 'ff-output-panel-caret'), 'output-panel-caret');
+    this.caretEl.addEventListener('click', () => this.toggle());
+    ui.tooltip.bind(this.caretEl, () => this.state === 'minimized' ? 'Expand outputs' : 'Minimize outputs');
     this.nodeLabelEl = setTid(ui.div([], 'ff-output-panel-node'), 'output-panel-node');
     const title = ui.div([], 'ff-output-panel-title');
     title.textContent = 'Outputs';
     const header = setTid(
       ui.div([title, this.nodeLabelEl, this.caretEl], 'ff-output-panel-header'), 'output-panel-header');
-    header.addEventListener('click', () => this.toggle());
-    ui.tooltip.bind(header, () => this.state === 'minimized' ? 'Expand outputs' : 'Minimize outputs');
 
     this.contentEl = setTid(ui.div([], 'ff-output-panel-content'), 'output-panel-content');
 

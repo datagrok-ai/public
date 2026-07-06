@@ -8,10 +8,11 @@
   splitter (`ui.splitV`) above the status bar — resizable via the divider — instead of a
   `grok.shell.dockManager` dock with custom show/hide/lingering event handling.
 * It is **not closable**: it opens on the first renderable output (clicking a completed node, or
-  a run's focus node) and **minimizes to a slim header strip** via the header caret. The choice
-  is remembered — while minimized, new content updates in place and never pops the panel back up;
-  an explicit header click restores it. Cleared and hidden when the graph changes or a new run
-  starts (values are stale).
+  a run's focus node) and **minimizes to a slim header strip** via the caret at the right edge of
+  the header (only the caret is clickable, so near-miss clicks aimed at the splitter divider never
+  collapse the panel). The choice is remembered — while minimized, new content updates in place
+  and never pops the panel back up; an explicit caret click restores it. Cleared and hidden when
+  the graph changes or a new run starts (values are stale).
 * The panel exists only in the real editor view — embedded hosts (the creation-script dialog)
   create the view with `{outputPanel: false}`; **Open In Editor** re-enables it.
 * Removed the dock-era hacks: the `onCurrentViewChanged` close subscription (an in-view pane
@@ -24,6 +25,18 @@
 
 ### Bug fixes
 
+* Fixed instrumented runs failing with `log is not defined` when the flow contains a **Log**
+  (or Info / Warning) node: side-effect-only utilities declare no variable, but the compiler
+  gave them a phantom `value` output anyway, so both the instrumented output summary
+  (`__ff_summarize(log)`) and the live-value stash (`__ff_stash(…, {"value": log})`) referenced
+  an undeclared identifier. `compileUtilityNode` now declares no outputs for output-less
+  utilities, and the instrumented wrapper summarizes only steps that actually declare their
+  variable.
+* Fixed giant scrollbars around the canvas after the splitter rework: as a direct `.ui-box`
+  child, the canvas container is forced to `overflow: auto !important` by core css (both the
+  `div.ui-box > div.ui-div` rule and the huge `:not()`-chain fallback rule for other children).
+  A higher-specificity package rule (`div.ui-box > div.ui-div.funcflow-canvas-container`)
+  restores `overflow: hidden`; covered by a computed-style regression test.
 * Fixed connections detaching from collapsed nodes (edges frozen at stale positions after
   moving nodes) and collapse carets going dead. Root cause: the editor↔React bridge was a
   page-level global (`window.__ff_editor`) that any newer `FlowEditor` construction rebound

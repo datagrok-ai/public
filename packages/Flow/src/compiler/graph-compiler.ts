@@ -244,12 +244,15 @@ function compileUtilityNode(
     if (conn) inputMap.set(key, resolveConnExpr(conn, outputVarMap, liveBoundary));
   }
 
-  const firstOutKey = Object.keys(node.outputs).find((k) => !isExecKey(k)) ?? 'value';
+  // Side-effect-only utilities (Log / Info / Warning) have no data output
+  // socket — their step must declare NO outputs, or downstream instrumentation
+  // (`__ff_stash`, output summaries) would reference an undeclared variable.
+  const firstOutKey = Object.keys(node.outputs).find((k) => !isExecKey(k));
   return {
     nodeId: node.id, nodeType: 'utility', funcName: utilityKind(node),
     variableName: varName,
     inputs: inputMap,
-    outputs: new Map([[firstOutKey, varName]]),
+    outputs: new Map(firstOutKey ? [[firstOutKey, varName]] : []),
     properties: {...node.properties},
     inputValues: {...node.inputValues},
   };

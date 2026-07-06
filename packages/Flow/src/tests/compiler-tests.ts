@@ -166,6 +166,37 @@ category('Flow: script emitter', () => {
       destroyEditor(e);
     }
   });
+
+  test('side-effect-only utilities (Log) emit no output summary when instrumented', async () => {
+    // Log/Info/Warning declare no variable — the instrumented wrapper used to
+    // emit `__ff_summarize(log)` anyway, so any flow with a Log node failed
+    // at run time with "log is not defined" (ReferenceError).
+    const e = makeEditor();
+    try {
+      const c = await addNode(e.flow, 'Constants/String');
+      c.properties['value'] = 'hello';
+      const log = await addNode(e.flow, 'Utilities/Log');
+      await e.flow.addConnectionByKeys(c.id, 'value', log.id, 'value');
+      const toStr = await addNode(e.flow, 'Utilities/ToString');
+      await e.flow.addConnectionByKeys(c.id, 'value', toStr.id, 'value');
+
+      const script = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-log'});
+      expect(script.includes('console.log('), true, 'the Log body is emitted');
+      expect(script.includes('__ff_summarize(log'), false, 'no summary of an undeclared variable');
+      expect(script.includes(`__ff_stash(${JSON.stringify(log.id)}`), false,
+        'no stash of an undeclared variable (the compiler gives Log no phantom output)');
+      expect(script.includes(`__ff_emit('node-complete', '${log.id}');`), true,
+        'the Log node completes with no outputs payload');
+      // A value-producing utility on the same canvas still summarizes normally.
+      // In instrumented mode the `let` is hoisted out of the try block, so the
+      // body line is a bare assignment.
+      const toStringVar = script.match(/(\w+) = \(.*\)\.toString\(\);/)?.[1];
+      expect(!!toStringVar, true, 'the ToString step declares its variable');
+      expect(script.includes(`__ff_summarize(${toStringVar})`), true, 'ToString keeps its output summary');
+    } finally {
+      destroyEditor(e);
+    }
+  });
 });
 
 category('Flow: validator', () => {
