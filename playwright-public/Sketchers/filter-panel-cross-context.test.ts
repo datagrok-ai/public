@@ -133,12 +133,15 @@ test('Chem: Filter Panel sketcher — apply / clear / backend-switch sync / reop
   });
 
   await softStep('Block B: switch backend in the filter sketcher → global propagates (GROK-12581/12903)', async () => {
+    // ChemDraw/Marvin are proprietary backends absent from the public build, so
+    // this exercises bidirectional propagation across the two public backends:
+    // OpenChemLib (Chem) and Ketcher (KetcherSketcher).
     await openFilterSketcher(page);
     await switchBackendInDialog(page, 'Ketcher');
     expect(await getCurrentSketcherType(page),
       'switching in the Filter Panel sketcher must update the shared current sketcher (read by hamburger/Context Pane)').toBe('Ketcher');
-    await switchBackendInDialog(page, 'ChemDraw');
-    expect(await getCurrentSketcherType(page), 'second switch also propagates').toBe('ChemDraw');
+    await switchBackendInDialog(page, 'OpenChemLib');
+    expect(await getCurrentSketcherType(page), 'second switch also propagates').toBe('OpenChemLib');
   });
 
   await softStep('Block C: switch back to OpenChemLib, close, reopen filter sketcher (GROK-12905)', async () => {

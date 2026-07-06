@@ -127,7 +127,11 @@ function assertBattery(res: any, label: string) {
   expect(res.consoleErrs, `${label} sketcher console errors (GROK-12758): ${JSON.stringify(res.consoleErrsRaw)}`).toBe(0);
 }
 
-test('Chem: Sketcher battery — OpenChemLib → Ketcher → ChemDraw (UI backend switch)', async ({page}) => {
+// ChemDraw and Marvin are proprietary sketcher backends with no package in the
+// public repo, so they cannot be installed on the public CI stack — this suite
+// exercises the two backends that ship publicly: OpenChemLib (Chem) and Ketcher
+// (KetcherSketcher). Prereq packages: Chem, KetcherSketcher.
+test('Chem: Sketcher battery — OpenChemLib → Ketcher (UI backend switch)', async ({page}) => {
   test.setTimeout(420_000);
 
   await loginToDatagrok(page);
@@ -154,15 +158,7 @@ test('Chem: Sketcher battery — OpenChemLib → Ketcher → ChemDraw (UI backen
     assertBattery(res, 'Ketcher');
   });
 
-  await softStep('Switch to ChemDraw via hamburger menu — battery', async () => {
-    await switchBackendViaMenu(page, 'ChemDraw');
-    const res = await runBattery(page, 'ChemDraw');
-    console.log(`[sketcher] ChemDraw: ${JSON.stringify(res)}`);
-    expect(res.activeType, 'switched to ChemDraw (GROK-12581)').toBe('ChemDraw');
-    assertBattery(res, 'ChemDraw');
-  });
-
-  // Restore the user's default sketcher so this run doesn't leave ChemDraw persisted.
+  // Restore the user's default sketcher so this run doesn't leave a non-default persisted.
   await page.evaluate(() => {
     try { grok.userSettings.add('sketcher', 'selected', 'OpenChemLib'); } catch (e) {}
     grok.shell.closeAll();
