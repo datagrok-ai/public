@@ -582,7 +582,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       return;
     }
     const filterStates = df.columns.toList()
-      .filter((col) => col.semType !== 'ChemicalReaction')
+      // `~`-prefixed columns are internal/technical (e.g. `~SMILES.Pattern`, added by the
+      // substructure filter's own fingerprint cache) — never surface a filter for those.
+      .filter((col) => col.semType !== 'ChemicalReaction' && !col.name.startsWith('~'))
       .map((col) => ({
         type: col.isNumerical ? DG.FILTER_TYPE.HISTOGRAM :
           col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
@@ -638,11 +640,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return subset;
   }
 
-  // Assigning `subset`/`orig` below fires the input's onChanged (see wireTableInput's `onTableChanged`
-  // further down), which already re-renders the panel and revalidates — no separate mount/validate
-  // call is needed here, or the panel double-rebuilds its grid (and, previously, its filters view).
+  // NOTE: assignTableInput's null-then-real two-step assignment does NOT reliably re-render via the
+  // input's own onChanged -> onTableChanged reaction alone — live-verified: relying solely on that
+  // path left the grid empty after "Subset by selection" (reproduced with filters off too, so it
+  // isn't a filters-panel issue). The explicit calls below are intentionally redundant with
+  // onTableChanged's own re-render — correctness over the extra render.
   function subsetBySelection(
-    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, gridLabel: string, noTableMsg?: string,
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState,
+    mountFn: () => void, gridLabel: string, noTableMsg?: string,
   ): void {
     const df = input.value;
     if (!df) {
@@ -655,6 +660,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const prev = state.prev;
     state.prev = subset;
     assignTableInput(input, subset, (v) => { state.suppress = v; });
+    mountFn();
+    refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev !== subset && prev !== df)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
@@ -663,7 +670,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Undo "Subset by selection": put the remembered full table back into the input and close the
   // subset clone. No-op (with a hint) when the full library is already in use.
   function restoreFullTable(
-    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, noun: string,
+    input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void, noun: string,
   ): void {
     const orig = state.original;
     if (!orig || input.value === orig) {
@@ -673,6 +680,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const prev = state.prev;
     state.prev = null;
     assignTableInput(input, orig, (v) => { state.suppress = v; });
+    mountFn();
+    refreshValidation();
     if (prev && prev !== orig)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
@@ -1217,12 +1226,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
             grok.shell.info(`Per-step ${o.noun} overrides were cleared — every step now uses the ${clearedSuffix}.`);
         };
         const btn = ui.button('Subset by selection', () => doGlobalAction(
-          () => subsetBySelection(o.input, o.state, `${o.noun} grid`, o.noTableMsg),
+          () => subsetBySelection(o.input, o.state, renderGrid, `${o.noun} grid`, o.noTableMsg),
           `new ${o.noun} subset`));
         ui.tooltip.bind(btn, `Replace the ${o.noun} library with only the selected rows (applies to every ` +
           `step). Click "Use all" to restore the full set.`);
         const useAll = ui.button('Use all', () => doGlobalAction(
-          () => restoreFullTable(o.input, o.state, o.noun),
+          () => restoreFullTable(o.input, o.state, renderGrid, o.noun),
           `full ${o.noun} library again`));
         ui.tooltip.bind(useAll, `Restore the full ${o.noun} library (undo "Subset by selection").`);
         barHost.append(hintEl(`Full ${o.noun} library — used by every step unless a step overrides it.`),
