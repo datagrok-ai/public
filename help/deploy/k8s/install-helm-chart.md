@@ -8,12 +8,15 @@ in-cluster PostgreSQL with local PVCs (laptop / single-node clusters), as well a
 managed cloud databases (RDS / Cloud SQL) with object storage (S3 / GCS) on EKS or
 GKE.
 
-:::tip On AWS?
+:::tip Easiest Kubernetes deployment
 
-For turnkey EKS deployments, use the [AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.mdx)
-template — it provisions the cluster, RDS, S3, and IAM, and installs this chart
-automatically. This page covers manual Helm installs for any Kubernetes cluster
-(on-prem, GKE, AKS, kind, k3s, MicroK8s).
+The Helm chart is the easiest way to deploy Datagrok on any Kubernetes cluster
+(on-prem, GKE, AKS, kind, k3s, MicroK8s, or a pre-existing EKS cluster).
+
+For a fully turnkey AWS setup that also provisions the cluster itself, use the
+[AWS CloudFormation (EKS)](../aws/deploy-amazon-eks.mdx) template instead — it
+provisions EKS, RDS, S3, and IAM, and then installs this chart automatically.
+If you go that route, Helm is already handled for you.
 
 :::
 
