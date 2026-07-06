@@ -162,9 +162,8 @@ export class DbTable {
 
   /** Inserts rows from a DataFrame (bulk) or an array of row objects. An `object[]` is
    * converted to a typed DataFrame at the API boundary: each column's type is inferred by
-   * scanning **all** of its values, `Date` values become a real datetime column, and nulls
-   * are preserved (a genuine null lands as SQL NULL). See {@link DbTable.toTypedDataFrame}
-   * for the exact typing rules; a mixed or all-null column throws. */
+   * scanning **all** of its values, `Date`/`dayjs` values become a real datetime column, and
+   * nulls are preserved (a genuine null lands as SQL NULL). A mixed or all-null column throws. */
   insert(rows: DataFrame | object[],
     options: {allOrNothing?: boolean, errorOnDuplicate?: boolean} = {}): Promise<MutationResult> {
     return this._insert(rows, options, false);
@@ -214,11 +213,12 @@ export class DbTable {
    * Columns are the union of all row keys, in first-seen order. Each column's type is
    * resolved by scanning **all** of its non-null values:
    * - `boolean` → bool;
-   * - `Date` → datetime (detected on the live value, before any serialization, so dates
-   *   round-trip as a real datetime column rather than a stringified one);
-   * - numbers → int, widened to double if any value is fractional or outside the int32
-   *   range; an integer beyond 2^53 (not exactly representable in JS) throws — pass a
-   *   DataFrame with a bigint or string column instead;
+   * - `Date` or `dayjs` → datetime (detected on the live value, before any serialization, so
+   *   dates round-trip as a real datetime column rather than a stringified one);
+   * - numbers → int, widened to double if any value is fractional or outside the int32 range
+   *   (so large or fractional magnitudes like `1e21` become a float column). An exact integer
+   *   beyond 2^53 can't be represented as a JS number — pass a DataFrame with a bigint or
+   *   string column if you need one;
    * - anything else → string.
    *
    * A column that is entirely null, or that mixes incompatible types, throws a clear error
@@ -226,6 +226,10 @@ export class DbTable {
    * `DataFrame.fromObjects`, which coerces a null to the empty string. */
   private static toTypedDataFrame(rows: object[]): DataFrame {
     const INT32_MIN = -2147483648, INT32_MAX = 2147483647;
+    // dayjs values carry a stable `$isDayjsObject` marker (what `dayjs.isDayjs` checks);
+    // duck-type it so js-api needn't import dayjs here. Both Date and dayjs expose a
+    // `valueOf()` returning epoch ms, which `Column.fromList`'s datetime branch consumes.
+    const isDateLike = (v: any) => v instanceof Date || v.$isDayjsObject === true;
     const columns: string[] = [];
     for (const row of rows)
       for (const k of Object.keys(row as any))
@@ -238,21 +242,15 @@ export class DbTable {
         return v === undefined ? null : v;
       });
       let hasBool = false, hasDate = false, hasNumber = false, hasString = false;
-      let fractional = false, wideInt = false, sawValue = false;
+      let widen = false, sawValue = false;
       for (const v of values) {
         if (v === null) continue;
         sawValue = true;
         if (typeof v === 'boolean') hasBool = true;
-        else if (v instanceof Date) hasDate = true;
+        else if (isDateLike(v)) hasDate = true;
         else if (typeof v === 'number') {
           hasNumber = true;
-          if (!Number.isInteger(v)) fractional = true;
-          else if (v < INT32_MIN || v > INT32_MAX) {
-            if (!Number.isSafeInteger(v))
-              throw new Error(`Column "${name}": integer ${v} exceeds 2^53 and cannot be represented ` +
-                `exactly as a number. Pass a DataFrame with a bigint or string column instead.`);
-            wideInt = true;
-          }
+          if (!Number.isInteger(v) || v < INT32_MIN || v > INT32_MAX) widen = true;
         }
         else hasString = true;
       }
@@ -262,10 +260,10 @@ export class DbTable {
       const kinds = (hasBool ? 1 : 0) + (hasDate ? 1 : 0) + (hasNumber ? 1 : 0) + (hasString ? 1 : 0);
       if (kinds > 1)
         throw new Error(`Column "${name}": mixed value types. Every value in a column must share one type ` +
-          `(bool, number, Date, or string). Pass a DataFrame with typed columns to control the mapping.`);
+          `(bool, number, Date/dayjs, or string). Pass a DataFrame with typed columns to control the mapping.`);
       const type = hasBool ? TYPE.BOOL
         : hasDate ? TYPE.DATE_TIME
-        : hasNumber ? ((fractional || wideInt) ? TYPE.FLOAT : TYPE.INT)
+        : hasNumber ? (widen ? TYPE.FLOAT : TYPE.INT)
         : TYPE.STRING;
       cols.push(Column.fromList(type as any, name, values));
     }

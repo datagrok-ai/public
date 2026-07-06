@@ -3,6 +3,7 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import dayjs from 'dayjs';
 
 // WO-9 (GROK-20341) — the grok.data.db.table(...) structured-write surface.
 // WO-6 (GROK-20358) — object[] is now converted to a typed DataFrame in TS (scan-all typing,
@@ -136,6 +137,26 @@ category('Dapi: connector writes', () => {
     }
   });
 
+  test('insert object[] dayjs column becomes datetime', async () => {
+    if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
+    // WO-6 follow-up: Datagrok represents datetimes as dayjs across much of its surface, so a
+    // dayjs value must type as datetime too (duck-typed, not just `instanceof Date`).
+    const dt = `${schema}.apitests_cw_dj_${rnd()}`;
+    try {
+      await grok.data.db.query(conn.nqName, `create table ${dt} (id int primary key, ts timestamp)`);
+      const when = dayjs(new Date(Date.UTC(2021, 2, 14, 9, 30, 0))); // 2021-03-14 09:30:00 UTC
+      const res = await grok.data.db.table(conn.nqName, dt).insert([{id: 1, ts: when}, {id: 2, ts: null}]);
+      expect(res.affectedRows, 2);
+      const back = await grok.data.db.query(conn.nqName,
+        `select to_char(ts, 'YYYY-MM-DD HH24:MI:SS') as t from ${dt} where id = 1`);
+      expect(back.col('t')!.get(0), '2021-03-14 09:30:00');
+      const nulls = await grok.data.db.query(conn.nqName, `select count(*) as c from ${dt} where ts is null`);
+      expect(nulls.col('c')!.get(0), 1);
+    } finally {
+      try { await grok.data.db.query(conn.nqName, `drop table if exists ${dt}`); } catch (_) {}
+    }
+  });
+
   test('insert object[] widens int column to float', async () => {
     if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
     // WO-6: scan-all typing widens an int column to double when any value is fractional
@@ -149,6 +170,23 @@ category('Dapi: connector writes', () => {
       expect(back.col('v')!.get(0), 2.5);
     } finally {
       try { await grok.data.db.query(conn.nqName, `drop table if exists ${ft}`); } catch (_) {}
+    }
+  });
+
+  test('insert object[] large float magnitude does not throw', async () => {
+    if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
+    // WO-6 follow-up: an integer-valued number of float magnitude (1e21) types as a double
+    // column — the "exceeds 2^53" guard no longer throws for these.
+    const bt = `${schema}.apitests_cw_big_${rnd()}`;
+    try {
+      await grok.data.db.query(conn.nqName, `create table ${bt} (id int primary key, big double precision)`);
+      const res = await grok.data.db.table(conn.nqName, bt).insert([{id: 1, big: 1e21}, {id: 2, big: 3}]);
+      expect(res.affectedRows, 2);
+      // 1e21 loses exactness through the query float32 downcast, so compare by magnitude.
+      const c = await grok.data.db.query(conn.nqName, `select count(*) as c from ${bt} where big > 1e20`);
+      expect(c.col('c')!.get(0), 1);
+    } finally {
+      try { await grok.data.db.query(conn.nqName, `drop table if exists ${bt}`); } catch (_) {}
     }
   });
 
