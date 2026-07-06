@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {GritApp} from './grit-app';
 import {GritIssueHandler} from './grit-issue-handler';
+import {gritDb} from './generated/db';
 export * from './package.g';
 
 export const _package = new DG.Package();
@@ -17,6 +18,24 @@ export function info() {
 //meta.autostartImmediate: true
 export function _initGrit(): void {
   DG.ObjectHandler.register(new GritIssueHandler());
+  registerIssueHandleDetectors();
+}
+
+/** Registers a `<KEY>-\d+` detector per existing Grit project so that a real issue
+ * handle (e.g. `GRITEST-1`) typed into global search is tagged as a `grit.issue`
+ * and resolved by the handler (WO-31, ARCHITECTURE §8.6 discovery). Issue numbers
+ * are per-project, so the fixed part is the project's own key, not a literal. */
+async function registerIssueHandleDetectors(): Promise<void> {
+  try {
+    const projects = await gritDb.project.query({});
+    for (const p of projects) {
+      const key = (p.key ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (key.length > 0)
+        DG.SemanticValue.registerRegExpDetector('grit.issue', `${key}-\\d+`, `Grit issue (${p.key})`);
+    }
+  } catch (e) {
+    console.error('Grit issue-handle detectors not registered:', e);
+  }
 }
 
 //name: gritIssueHandler

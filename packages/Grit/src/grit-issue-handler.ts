@@ -1,10 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {gritDb} from './generated/db';
+import {gritDb, IssueRow} from './generated/db';
 
 /** semType (= entity type) of `grit.issue` rows. */
 const ISSUE_TYPE = 'grit.issue';
+
+/** A Grit issue handle: `<PROJECTKEY>-<number>`, e.g. `GRITEST-1` (per-project numbering). */
+const ISSUE_HANDLE_RE = /^([A-Za-z][A-Za-z0-9_]*)-(\d+)$/;
 
 const statusColors: {[key: string]: string} = {
   'open': '#1f8fff', 'in progress': '#e8912d', 'resolved': '#2a9d3a', 'closed': '#8b95a1',
@@ -44,9 +47,14 @@ export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
   isApplicable(x: any): boolean {
     if (x instanceof DG.DomainRow)
       return x.typeName === ISSUE_TYPE;
-    if (x instanceof DG.SemanticValue)
-      return x.semType === ISSUE_TYPE ||
-        (x.value instanceof DG.DomainRow && x.value.typeName === ISSUE_TYPE);
+    if (x instanceof DG.SemanticValue) {
+      if (x.value instanceof DG.DomainRow)
+        return x.value.typeName === ISSUE_TYPE;
+      // Claim ONLY the `<KEY>-<number>` handle shape; the `grit.issue:<uuid>` colon
+      // form falls through to the generic DomainHandleMeta (which navigates directly).
+      if (typeof x.value === 'string')
+        return x.semType === ISSUE_TYPE && ISSUE_HANDLE_RE.test(x.value);
+    }
     return false;
   }
 
@@ -54,26 +62,85 @@ export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
     return x instanceof DG.SemanticValue ? x.value : x;
   }
 
-  getCaption(x: DG.DomainRow): string { return this.issueOf(x).semValue; }
+  getCaption(x: DG.DomainRow): string {
+    const h = this.handleString(x);
+    return h != null ? h : this.issueOf(x).semValue;
+  }
+
+  /** Suggestion pattern for the global-search bar (DG.ObjectHandler.regexpExample).
+   * Issue handles are `<PROJECTKEY>-<number>` (per-project numbering), so there is no
+   * single fixed prefix; `_initGrit` registers a `<KEY>-\d+` detector per existing
+   * project so `SemanticValue.parse('GRITEST-1')` tags it as a `grit.issue`. */
+  get regexpExample(): {regexpMarkup: string, example: string, nonVariablePart: string} {
+    return {regexpMarkup: '<project>-[0-9]+', example: 'GRITEST-1', nonVariablePart: '-'};
+  }
+
+  /** Raw handle string when [x] is a parsed SemanticValue (e.g. `GRIT-123` typed
+   * into global search) rather than a resolved DomainRow. */
+  private handleString(x: any): string | null {
+    return x instanceof DG.SemanticValue && typeof x.value === 'string' ? x.value : null;
+  }
+
+  /** Resolves a `GRIT-123` handle (project key + per-project number) to its issue row. */
+  private async resolveHandle(handle: string): Promise<IssueRow | null> {
+    const m = ISSUE_HANDLE_RE.exec(handle);
+    if (m == null)
+      return null;
+    const projects = await gritDb.project.query({filter: `key = "${m[1]}"`, limit: 1});
+    if (projects.length === 0)
+      return null;
+    const issues = await gritDb.issue.query(
+      {filter: `project_id = "${projects[0].id}" and number = ${m[2]}`, limit: 1});
+    return issues.length === 1 ? issues[0] : null;
+  }
+
+  /** Card for a handle typed into search: resolves asynchronously, shows the issue,
+   * and opens its Entity View on click (the platform then renders it through this
+   * same handler's renderView). */
+  private renderHandleCard(handle: string): HTMLElement {
+    const card = ui.divV([ui.divText(handle, {style: {fontWeight: 'bold'}})], 'd4-gallery-item');
+    this.resolveHandle(handle).then((row) => {
+      ui.empty(card);
+      if (row == null) {
+        card.appendChild(ui.divText(`${handle} — not found`));
+        return;
+      }
+      card.appendChild(ui.divH([ui.divText(handle, {style: {fontWeight: 'bold'}}),
+        ...this.badgeEls(row.status, row.priority)]));
+      card.appendChild(ui.divText(row.title ?? ''));
+      card.style.cursor = 'pointer';
+      card.onclick = () => grok.shell.route(`/domains/grit/issue/${row.id}`);
+    }).catch(() => {});
+    return card;
+  }
+
+  private badgeEls(status?: string, priority?: string): HTMLElement[] {
+    const res: HTMLElement[] = [];
+    if (status != null)
+      res.push(badge(status, statusColors[status] ?? '#8b95a1'));
+    if (priority != null)
+      res.push(badge(priority, priorityColors[priority] ?? '#8b95a1'));
+    return res;
+  }
 
   private badges(row: DG.DomainRow): HTMLElement[] {
-    const v = row.values;
-    const res: HTMLElement[] = [];
-    if (v.status != null)
-      res.push(badge(v.status, statusColors[v.status] ?? '#8b95a1'));
-    if (v.priority != null)
-      res.push(badge(v.priority, priorityColors[v.priority] ?? '#8b95a1'));
-    return res;
+    return this.badgeEls(row.values.status, row.values.priority);
   }
 
   renderIcon(x: DG.DomainRow): HTMLElement { return ui.iconFA('bug'); }
 
   renderMarkup(x: DG.DomainRow): HTMLElement {
+    const h = this.handleString(x);
+    if (h != null)
+      return ui.span([this.renderIcon(x), ui.label(h)]);
     const row = this.issueOf(x);
     return ui.span([this.renderIcon(row), ui.label(row.values.title ?? row.semValue), ...this.badges(row)]);
   }
 
   renderTooltip(x: DG.DomainRow): HTMLElement {
+    const h = this.handleString(x);
+    if (h != null)
+      return ui.divText(h);
     const row = this.issueOf(x);
     return ui.divV([
       ui.divH([ui.label(row.values.title ?? row.semValue), ...this.badges(row)]),
@@ -82,6 +149,9 @@ export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
   }
 
   renderCard(x: DG.DomainRow): HTMLElement {
+    const h = this.handleString(x);
+    if (h != null)
+      return this.renderHandleCard(h);
     const row = this.issueOf(x);
     return ui.bind(x, ui.divV([
       ui.divH([
