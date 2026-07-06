@@ -41,6 +41,7 @@ export namespace funcs {
   }
 
   /**
+   * Convert a column of HELM macromolecules into a column of molfiles
    * @param {DG.Column} col
    *   semType: Macromolecule
    */

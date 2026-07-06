@@ -228,7 +228,9 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
         };
       });
       expect((result.viewName || '').toLowerCase()).toContain('monomer');
-      expect(result.viewType).toBe('view');
+      // 'Bio | Manage | Monomers' opens a DG.TableView (MonomerManager.getMonomersTableView ->
+      // DG.TableView.create), whose .type is 'TableView', not 'view' (const.ts:172).
+      expect(result.viewType).toBe('TableView');
       expect(result.rootIsElement).toBe(true);
       expect(result.hasChildElement,
         `expected the Manage Monomers monomer-list surface under the view root; firstChildTag=${result.firstChildTag}`).toBe(true);

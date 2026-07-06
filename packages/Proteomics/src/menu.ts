@@ -30,10 +30,12 @@ export interface ProteomicsMenuHandlers {
   importFragPipe: () => void;
   importGenericMatrix: () => void;
   annotateExperiment: () => void;
+  setLog2Scale: () => void;
   normalize: () => void;
   impute: () => void;
   differentialExpression: () => void;
   enrichmentAnalysis: () => void;
+  exportEnrichmentInputs: () => void;
   computeSpcStatus: () => void;
   showVolcanoPlot: () => void;
   showHeatmap: () => void;
@@ -107,10 +109,12 @@ export function buildProteomicsRibbonMenu(view: DG.TableView, h: ProteomicsMenuH
   root.item('Annotate Experiment...', h.annotateExperiment, null, sampleOnly);
 
   const analyze = root.group('Analyze');
+  analyze.item('Set Log2 Scale...', h.setLog2Scale, null, sampleOnly);
   analyze.item('Normalize...', h.normalize, null, sampleOnly);
   analyze.item('Impute Missing Values...', h.impute, null, sampleOnly);
   analyze.item('Differential Expression...', h.differentialExpression, null, sampleOnly);
   analyze.item('Enrichment Analysis...', h.enrichmentAnalysis);
+  analyze.item('Export Enrichment Inputs...', h.exportEnrichmentInputs);
   analyze.item('Compute SPC Status', h.computeSpcStatus, null, sampleOnly);
 
   const viz = root.group('Visualize');

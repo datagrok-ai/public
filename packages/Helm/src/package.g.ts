@@ -43,6 +43,8 @@ export async function propertiesWidget(sequence: DG.SemanticValue) : Promise<any
   return await PackageFunctions.propertiesWidget(sequence);
 }
 
+//name: Get Molfiles from HELM
+//description: Convert a column of HELM macromolecules into a column of molfiles
 //input: column col { semType: Macromolecule }
 //output: column result
 export function getMolfiles(col: DG.Column<any>) : any {

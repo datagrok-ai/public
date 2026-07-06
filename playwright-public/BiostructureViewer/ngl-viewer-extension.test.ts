@@ -38,6 +38,15 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
 
   await page.locator('[name="Browse"]').waitFor({timeout: 30_000});
 
+  // Prerequisite guard: the NGL viewer + PDB-id NGL panel live in BiostructureViewer. If the
+  // NGL extension isn't registered on this deployment, skip fast with a clear message instead
+  // of burning the full 180s budget on a viewer/pane that can never mount.
+  const nglReady = await page.evaluate(() => {
+    const has = (name: string) => (DG.Func.find({package: 'BiostructureViewer', name}) || []).length > 0;
+    return has('pdbIdNglPanelWidget') && has('importWithNgl');
+  });
+  test.skip(!nglReady, 'BiostructureViewer NGL extension not registered on this deployment');
+
   try {
     // SCENARIO 1 — NGL viewer add via tv.addViewer('NGL') + Style/Data/Behaviour props round-trip.
     let scenario1Mounted = false;
@@ -550,6 +559,11 @@ test('BiostructureViewer / NGL viewer extension (mount + props + file-routing + 
         await pollUntil(() => !!document.querySelector('[name="viewer-Grid"]'));
         df.currentRowIdx = 0;
         try { df.currentCell = df.cell(0, 'pdb_id'); } catch (_) { /* setter variants */ }
+        // Force the context panel visible and set the current object explicitly to the PDB_ID
+        // cell: the baseline sets simpleMode=true (hides the context panel), and the semantic
+        // panes only surface into a shown panel driven by grok.shell.o.
+        grok.shell.windows.showProperties = true;
+        try { grok.shell.o = DG.SemanticValue.fromTableCell(df.cell(0, 'pdb_id')); } catch (_) { /* fall back to currentCell */ }
         await pollUntil(() => df.currentRowIdx === 0);
         return {
           rowCount: df.rowCount,

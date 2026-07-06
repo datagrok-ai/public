@@ -5,6 +5,16 @@ import {TypedSocket} from './sockets';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 
+/** The narrow callback surface a `FlowEditor` exposes to the React node
+ *  components it renders. Stamped onto every node that enters an editor's data
+ *  layer (`FlowNode.editorBridge`), so a component always talks to the editor
+ *  that owns it — several editors can coexist on a page (file previews, the
+ *  creation-script dialog, detached compile editors). */
+export interface FlowEditorBridge {
+  toggleCollapsed(id: string): void;
+  isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+}
+
 /** Base class for every node we put on the canvas.
  *
  * Extends `ClassicPreset.Node` with FuncFlow-specific metadata (Datagrok
@@ -82,6 +92,11 @@ export class FlowNode extends ClassicPreset.Node<
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */
   pos: {x: number; y: number} = {x: 0, y: 0};
 
+  /** Back-reference to the owning editor's callback surface, stamped by
+   *  `FlowEditor` when the node enters its data layer. Runtime-only — the
+   *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
+  editorBridge?: FlowEditorBridge;
+
   /** Human-friendly title — `label` from the Rete superclass is what we
    *  render, so this is just an alias for symmetry with the LiteGraph world. */
   get title(): string {
@@ -124,6 +139,14 @@ export const EXEC_OUT_KEY = '__exec_out';
 /** Whether a port key is one of the execution-ordering ports. */
 export function isExecKey(key: string): boolean {
   return key === EXEC_IN_KEY || key === EXEC_OUT_KEY;
+}
+
+/** Whether a func node is the platform `SetVar`. Flow treats SetVar and Value
+ *  Output as the same concept: both register their value in the run context
+ *  under their name AND declare a script output of that name — they compile to
+ *  the same thing (see script-emitter / creation-script-emitter). */
+export function isSetVarNode(node: FlowNode): boolean {
+  return (node.dgFunc?.name?.toLowerCase() ?? '') === 'setvar';
 }
 
 /** The labels of a node's required inputs that are neither connected nor filled

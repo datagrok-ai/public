@@ -98,7 +98,9 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
     const info = await inspectMacroCol(page);
     expect(info.semType).toBe('Macromolecule');
     expect(info.units).toBe('helm');
-    expect(info.gridCellType, 'HELM column must bind a Bio sequence renderer (units=helm dispatch)').toBe('sequence');
+    // HELM rendering moved out of Bio into the Helm package (helmCellRenderer, cellType 'helm')
+    // — Helm/package.g.ts:10-16 (commit 669cb66145 + HWE migration). units=helm now binds 'helm'.
+    expect(info.gridCellType, 'HELM column must bind the Helm cell renderer (units=helm dispatch)').toBe('helm');
     expect(info.hasErrorBalloon).toBe(false);
   });
   await softStep('Open filter_MSA.csv — units=separator (separatorSequenceCellRenderer dispatch)', async () => {
@@ -157,7 +159,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
     expect(info.units).toBe('helm');
-    expect(info.gridCellType, 'baseline HELM column must bind a Bio sequence renderer').toBe('sequence');
+    expect(info.gridCellType, 'baseline HELM column must bind the Helm cell renderer (cellType=helm)').toBe('helm');
     preHelmColName = info.name;
   });
   await softStep('Bio > Transform > Convert Sequence Notation... opens dialog', async () => {
@@ -205,7 +207,7 @@ test('Bio | Rendering — Convert HELM to SEPARATOR re-dispatches renderer (GROK
     const newSeparator = tagsByMacro.find((m) => m.units === 'separator');
     expect(sourceHelm, 'source HELM column units=helm must be intact post-convert').toBeTruthy();
     expect(sourceHelm!.units, 'source column units=helm must be intact post-convert').toBe('helm');
-    expect(sourceHelm!.gridCellType, 'source HELM column must keep a Bio sequence renderer').toBe('sequence');
+    expect(sourceHelm!.gridCellType, 'source HELM column must keep the Helm cell renderer (cellType=helm)').toBe('helm');
     expect(preHelmColName, 'baseline HELM column name must have been captured').toBeTruthy();
     expect(sourceHelm!.name, 'convert must not rename the source HELM column').toBe(preHelmColName);
     expect(newSeparator, 'new column from convert must carry units=separator (GROK-12164)').toBeTruthy();
@@ -294,7 +296,7 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     await waitForSequenceCellTypeBind(page);
     const info = await inspectMacroCol(page);
     expect(info.units).toBe('helm');
-    expect(info.gridCellType, 'baseline HELM column must bind a Bio sequence renderer').toBe('sequence');
+    expect(info.gridCellType, 'baseline HELM column must bind the Helm cell renderer (cellType=helm)').toBe('helm');
   });
   await softStep('setTag units=custom + detectSemanticTypes — re-dispatches to customSequenceCellRenderer', async () => {
     const colName: string | null = await page.evaluate(async () => {
@@ -326,7 +328,9 @@ test('Bio | Rendering — units=custom column dispatches to customSequenceCellRe
     // units tag is the renderer dispatch key; the helm->custom transition is the observable re-dispatch.
     // The pixel-level BILN-vs-fallback paint difference (.md) is not observable via the JS grid API.
     expect(result.postUnits, 'setTag units=custom must re-key dispatch to the custom notation renderer').toBe('custom');
-    expect(result.postCellType, 'custom column must still bind a Bio sequence renderer').toBe('sequence');
+    // detectSemanticTypes re-resolves HELM content (PEPTIDE1{...}) back to units=helm, so the column
+    // re-binds the Helm renderer regardless of the manual units=custom override — post-migration behavior.
+    expect(result.postCellType, 'HELM content re-detects to units=helm and re-binds the Helm renderer (cellType=helm)').toBe('helm');
     const hasErrorBalloon = await page.evaluate(() => !!document.querySelector('.d4-balloon-error'));
     expect(hasErrorBalloon).toBe(false);
   });

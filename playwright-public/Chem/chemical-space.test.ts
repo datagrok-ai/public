@@ -139,8 +139,16 @@ async function runChemicalSpaceWalk(page: Page, label: string, datasetPath: stri
   await clickOkAndWaitForEmbedding(page, `${label}/custom`, defaultSuffix, customParam === 'cluster-mcs');
 
   await softStep(`[${label}] Close active view`, async () => {
-    await page.evaluate(() => grok.shell.closeAll());
-    await page.waitForFunction(() => grok.shell.tv == null, null, {timeout: 5000});
+    await page.evaluate(() => {
+      // Dismiss any lingering editor dialog first — a still-open modal keeps the table view
+      // alive, so closeAll() alone won't null grok.shell.tv (the cause of the 5s timeout here).
+      document.querySelectorAll('.d4-dialog').forEach((d) => {
+        const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
+        cancel?.click();
+      });
+      grok.shell.closeAll();
+    });
+    await page.waitForFunction(() => grok.shell.tv == null, null, {timeout: 15_000});
   });
 }
 

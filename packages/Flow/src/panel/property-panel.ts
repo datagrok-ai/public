@@ -106,6 +106,8 @@ export class PropertyPanel {
   root: HTMLElement;
   private contentDiv: HTMLElement;
   private flow: FlowEditor;
+  /** The node the panel currently renders — the target of change reports. */
+  private currentNode: FlowNode | null = null;
 
   /** Set by the view: opens a column / columns picker dialog for a func-node
    *  column input, seeded by the upstream table (running the flow up to that
@@ -126,14 +128,16 @@ export class PropertyPanel {
 
   showNode(node: FlowNode, execState?: NodeExecState): void {
     this.contentDiv.innerHTML = '';
+    this.currentNode = node;
 
     // Coerce: labels can be derived from non-string values (constant nodes
     // title themselves after their value) and DG string inputs throw on
-    // anything but a string.
+    // anything but a string. Title is cosmetic — it never changes what the
+    // flow computes, so it must not invalidate run results.
     const titleInput = this.createTextarea('Title', String(node.label ?? ''), (v) => {
       node.label = String(v ?? '');
       void this.flow.updateNode(node.id);
-    });
+    }, undefined, true);
     const typeBadge = setTid(ui.div([], 'funcflow-type-badge'), 'property-type-badge');
     typeBadge.textContent = node.dgNodeType || 'function';
     const titleRow = setTid(ui.div([titleInput, typeBadge], 'funcflow-title-row'), 'property-title-row');
@@ -141,10 +145,11 @@ export class PropertyPanel {
 
     // Per-node description: rendered under the title in the canvas, and
     // embedded as the [description] suffix in //input:/output: lines.
+    // Cosmetic like the title — annotations don't change computed values.
     this.contentDiv.appendChild(this.createTextarea('Description', node.description, (v) => {
       node.description = v;
       void this.flow.updateNode(node.id);
-    }));
+    }, undefined, true));
 
     const acc = ui.accordion('funcflow-context-panel');
 
@@ -170,8 +175,52 @@ export class PropertyPanel {
   }
 
   clear(): void {
+    this.currentNode = null;
     this.contentDiv.innerHTML = '';
     this.contentDiv.appendChild(ui.divText('Select a node to view its properties'));
+  }
+
+  /** Report a (non-cosmetic) parameter edit on the shown node — routed to the
+   *  editor so run results downstream of the node get invalidated (and autorun,
+   *  when enabled, reruns the affected slice). Every semantic editor helper
+   *  below funnels its change through a {@link changeReporter}, never here
+   *  directly. */
+  private paramsChanged(): void {
+    if (this.currentNode) this.flow.notifyNodeParamsChanged(this.currentNode.id);
+  }
+
+  /** A change reporter for ONE editor: report a parameter edit only when the
+   *  value ACTUALLY differs from the last seen one.
+   *
+   *  Why: creating/initializing a Datagrok input (`ui.input.forProperty`,
+   *  `initInputValue` setting `stringValue`, …) can fire `onValueChanged`
+   *  immediately — but not for every input type, so "skip the first event" is
+   *  wrong too. Without this guard, merely clicking a node (which rebuilds the
+   *  panel) would count as an edit — invalidating results and, with autorun
+   *  on, rerunning the flow on every selection. */
+  private changeReporter(initial: unknown): (v: unknown) => void {
+    let last = initial;
+    return (v: unknown): void => {
+      if (PropertyPanel.sameValue(last, v)) return;
+      last = v;
+      this.paramsChanged();
+    };
+  }
+
+  /** Loose equality across the forms an editor and the stored value can take:
+   *  scalars compare by string form (`5` vs `'5'`, `null`/`undefined` vs `''`),
+   *  arrays/objects (list inputs) by JSON. */
+  static sameValue(a: unknown, b: unknown): boolean {
+    if (a === b) return true;
+    const isObj = (x: unknown): boolean => typeof x === 'object' && x !== null;
+    if (isObj(a) || isObj(b)) {
+      try {
+        return JSON.stringify(a) === JSON.stringify(b);
+      } catch {
+        return false;
+      }
+    }
+    return String(a ?? '') === String(b ?? '');
   }
 
   // ---------- panes ----------
@@ -538,9 +587,16 @@ export class PropertyPanel {
     return el;
   }
 
-  private createTextarea(label: string, value: string, onChange: (v: string) => void, inputTooltip?: string): HTMLElement {
+  private createTextarea(
+    label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, cosmetic = false,
+  ): HTMLElement {
+    const report = this.changeReporter(value);
+    const apply = cosmetic ? onChange : (v: string): void => {
+      onChange(v);
+      report(v);
+    };
     return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
-      this.buildTextareaEl(value, onChange, inputTooltip)], 'funcflow-prop-row'), label);
+      this.buildTextareaEl(value, apply, inputTooltip)], 'funcflow-prop-row'), label);
   }
 
   /** Initialize a DG input's editor from a stored value via the `stringValue`
@@ -560,9 +616,13 @@ export class PropertyPanel {
    *  property. The row (not the DG root) carries the `data-param` / test-id so
    *  the field stays addressable by name. */
   private createPropertyInput(param: DG.Property, node: FlowNode, inputTooltip: string): HTMLElement {
+    const report = this.changeReporter(node.inputValues[param.name]);
     const input = ui.input.forProperty(param, null, {
       tooltipText: inputTooltip,
-      onValueChanged: (v) => {node.inputValues[param.name] = v;},
+      onValueChanged: (v) => {
+        node.inputValues[param.name] = v;
+        report(v);
+      },
     });
     PropertyPanel.initInputValue(input, node.inputValues[param.name]);
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
@@ -574,9 +634,13 @@ export class PropertyPanel {
   private createStringInput(
     label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, caption?: string,
   ): HTMLElement {
+    const report = this.changeReporter(value);
     const input = ui.input.string(caption ?? label, {
       tooltipText: inputTooltip,
-      onValueChanged: (v) => onChange(String(v ?? '')),
+      onValueChanged: (v) => {
+        onChange(String(v ?? ''));
+        report(String(v ?? ''));
+      },
     });
     PropertyPanel.initInputValue(input, value);
     // Display caption may differ from the identity; keep the row keyed by name.
@@ -622,9 +686,13 @@ export class PropertyPanel {
     // `forProperty`, which would build a column picker bound to a live table we
     // don't have here. The table chooser (multi-table funcs) and the picker icon
     // are appended *inside* the input via `addOptions` (trailing controls).
+    const report = this.changeReporter(opts.getValue());
     const nameInput = ui.input.string(opts.caption ?? opts.label, {
       tooltipText: opts.tip,
-      onValueChanged: (v) => opts.setValue(String(v ?? '')),
+      onValueChanged: (v) => {
+        opts.setValue(String(v ?? ''));
+        report(String(v ?? ''));
+      },
     });
     PropertyPanel.initInputValue(nameInput, opts.getValue());
     nameInput.input.style.minWidth = '70px';
@@ -696,9 +764,13 @@ export class PropertyPanel {
     input.value = decimals === 0 ? String(Math.round(value)) : value.toFixed(decimals);
     input.step = String(step);
     input.className = 'funcflow-prop-input';
+    const report = this.changeReporter(value);
     input.addEventListener('change', () => {
       const parsed = parseFloat(input.value);
-      if (!isNaN(parsed)) onChange(parsed);
+      if (!isNaN(parsed)) {
+        onChange(parsed);
+        report(parsed);
+      }
     });
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
     return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row'), label);
@@ -709,7 +781,11 @@ export class PropertyPanel {
     input.type = 'checkbox';
     input.checked = value;
     input.className = 'funcflow-prop-checkbox';
-    input.addEventListener('change', () => onChange(input.checked));
+    const report = this.changeReporter(value);
+    input.addEventListener('change', () => {
+      onChange(input.checked);
+      report(input.checked);
+    });
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
     const lbl = this.labelWithTooltip(label, inputTooltip);
     return this.propRow(ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row'), label);
@@ -725,7 +801,11 @@ export class PropertyPanel {
       if (opt === value) optEl.selected = true;
       select.appendChild(optEl);
     }
-    select.addEventListener('change', () => onChange(select.value));
+    const report = this.changeReporter(value);
+    select.addEventListener('change', () => {
+      onChange(select.value);
+      report(select.value);
+    });
     if (inputTooltip) ui.tooltip.bind(select, inputTooltip);
     return select;
   }

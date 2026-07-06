@@ -39,8 +39,7 @@ is made to the codebase in Git. It automatically executes the following tasks:
   2. Unit tests
   3. Compilation
   4. Packaging the platform in Docker containers
-  5. [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/)
-  check for vulnerabilities
+  5. [Snyk](https://snyk.io/)
 * Docker Hub stores built artifacts, such as compiled code and packages that
 are generated during the build process.
 * Ansible automates the process of provisioning and configuring servers for

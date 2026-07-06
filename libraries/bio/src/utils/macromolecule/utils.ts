@@ -102,13 +102,18 @@ export class HelmSplitted extends StringListSeqSplitted {
       disjointSeqStarts: [],
       polymerTypes: this.polymerTypes
     };
+    // Start positions of each disjoint sequence part (chain). This is
+    // independent of connections: a HELM like RNA1{...}|RNA2{...}$$$$ has two
+    // disjoint chains even though it declares no inter-chain connections.
+    // Always record the chain boundaries so downstream consumers (multi-chain
+    // atomic-level assembly, the '|' chain separator in the cell renderer)
+    // can see them.
+    let seqStart = 0;
+    for (let i = 0; i < this.mListSeparated.length; ++i) {
+      graphInfo.disjointSeqStarts.push(seqStart);
+      seqStart += this.mListSeparated[i].length;
+    }
     if ((this.connections?.length ?? 0) > 0) {
-    // parse helm connections
-      let seqStart = 0;
-      for (let i = 0; i < this.mListSeparated.length; ++i) {
-        graphInfo.disjointSeqStarts.push(seqStart);
-        seqStart += this.mListSeparated[i].length;
-      };
       // parse connections like PEPTIDE2,PEPTIDE2,16:R2-1:R1
       const connectionParts = (this.connections ?? '').split('|').filter((cp) => (cp?.length ?? 0) > 0);
       const sequenceConSeqIdxRe = /^(PEPTIDE|RNA|BLOB|CHEM)\d{1,2}$/;

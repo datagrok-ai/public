@@ -46,15 +46,35 @@ export function getFormattedMonomerLib(
  * @param {PolymerType} polymerType - Polymer type
  * @param {Array} roles - Optional per-position NucleotideRole tags. When set, RNA assembly
  *   uses per-position sugars/phosphates from monomerSeq directly (HELM triples mode).
+ * @param {number[]} chainStarts - Optional 0-based start positions of disjoint HELM chains.
+ *   When more than one chain is present each chain is assembled independently and the
+ *   chains are stacked vertically into a single molfile (multi-strand HELM support).
  * @return {MolfileWithMap} - Molfile V3000 + per-position monomer index map */
 export function monomerSeqToMolfile(
   monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType,
-  roles?: NucleotideRole[]
+  roles?: NucleotideRole[], chainStarts?: number[]
 ): MolfileWithMap {
   if (monomerSeq.length === 0) {
     // throw new Error('monomerSeq is empty');
     return MolfileWithMap.createEmpty();
+  }
+
+  // Multi-chain HELM (e.g. RNA1{...}|RNA2{...}): assemble each disjoint chain
+  // on its own, then stack them vertically into a single molfile. Each chain
+  // reuses the exact single-chain assembly below, so its geometry, capping and
+  // per-monomer atom/bond map are unchanged; combineMolfilesVertically shifts
+  // the coordinates and re-bases the atom/bond indices and monomer-map keys.
+  if (chainStarts && chainStarts.length > 1) {
+    const parts: MolfileWithMap[] = new Array(chainStarts.length);
+    for (let c = 0; c < chainStarts.length; ++c) {
+      const s = chainStarts[c];
+      const e = c + 1 < chainStarts.length ? chainStarts[c + 1] : monomerSeq.length;
+      const subSeq = monomerSeq.slice(s, e);
+      const subRoles = roles ? roles.slice(s, e) : undefined;
+      parts[c] = monomerSeqToMolfile(subSeq, monomersDict, alphabet, polymerType, subRoles);
+    }
+    return combineMolfilesVertically(parts, chainStarts);
   }
 
   // Triples mode is on only when the caller flagged the row with roles
@@ -537,5 +557,180 @@ function runTriplesAssembly(
  */
 export function keepPrecision(x: number): number {
   return Math.round(C.PRECISION_FACTOR * x) / C.PRECISION_FACTOR;
+}
+
+// Vertical gap (in molfile coordinate units) inserted between stacked chains
+// of a multi-strand HELM. Roughly two bond lengths — enough to read the strands
+// as separate without pushing them far apart.
+const CHAIN_VERTICAL_GAP = 3.0;
+
+const STEABS_MARKER = 'M  V30 MDLV30/STEABS ATOMS=(';
+
+type ParsedAtom = { type: string, xStr: string, y: number, tail: string };
+type ParsedBond = { btype: string, a1: number, a2: number, tail: string };
+type ParsedMol = { atoms: ParsedAtom[], bonds: ParsedBond[], steabs: number[] };
+
+/** Split `body` into its first `n` space-separated tokens plus a trailing
+ * remainder token (so the result has n+1 entries). The remainder keeps any
+ * embedded spaces of the tail verbatim.
+ * @param {string} body - the line body to split
+ * @param {number} n - number of leading tokens to peel off
+ * @return {string[]} - the n tokens followed by the remainder */
+function splitLeadingTokens(body: string, n: number): string[] {
+  const out: string[] = [];
+  let s = body;
+  for (let i = 0; i < n; ++i) {
+    const sp = s.indexOf(' ');
+    if (sp === -1) { out.push(s); s = ''; continue; }
+    out.push(s.substring(0, sp));
+    s = s.substring(sp + 1);
+  }
+  out.push(s);
+  return out;
+}
+
+/** Extract the data lines (`M  V30 ...`) between a BEGIN/END marker pair.
+ * @param {string} molfile - the V3000 molfile
+ * @param {string} beginMarker - the block BEGIN marker line
+ * @param {string} endMarker - the block END marker line
+ * @return {string[]} - the data lines of the block, newline stripped */
+function extractBlockDataLines(molfile: string, beginMarker: string, endMarker: string): string[] {
+  const begin = molfile.indexOf(beginMarker);
+  if (begin === -1) return [];
+  const start = molfile.indexOf('\n', begin) + 1;
+  const end = molfile.indexOf(endMarker, start);
+  return molfile.substring(start, end === -1 ? molfile.length : end)
+    .split('\n')
+    .filter((l) => l.startsWith(C.V3K_BEGIN_DATA_LINE))
+    .map((l) => l.substring(C.V3K_BEGIN_DATA_LINE.length));
+}
+
+/** Parse a molfile produced by monomerSeqToMolfile back into atoms / bonds /
+ * stereo-atom indices. Robust because we control the exact serialization
+ * format; only the fields we need to renumber (indices) and shift (y) are
+ * parsed, everything past them is preserved verbatim as an opaque tail.
+ * @param {string} molfile - the V3000 molfile
+ * @return {ParsedMol} - parsed atoms, bonds and STEABS atom indices */
+function parseGeneratedMolfile(molfile: string): ParsedMol {
+  const atoms: ParsedAtom[] = [];
+  for (const body of extractBlockDataLines(molfile, C.V3K_BEGIN_ATOM_BLOCK, C.V3K_END_ATOM_BLOCK)) {
+    // body: "<idx> <type> <x> <y> <z> <...kwargs>"
+    const t = splitLeadingTokens(body, 4); // [idx, type, x, y, tail]
+    atoms.push({type: t[1], xStr: t[2], y: parseFloat(t[3]), tail: t[4]});
+  }
+
+  const bonds: ParsedBond[] = [];
+  for (const body of extractBlockDataLines(molfile, C.V3K_BEGIN_BOND_BLOCK, C.V3K_END_BOND_BLOCK)) {
+    // body: "<idx> <btype> <a1> <a2> <...cfg/kwargs>"
+    const t = splitLeadingTokens(body, 4); // [idx, btype, a1, a2, tail]
+    bonds.push({btype: t[1], a1: parseInt(t[2]), a2: parseInt(t[3]), tail: t[4]});
+  }
+
+  const steabs: number[] = [];
+  let idx = molfile.indexOf(STEABS_MARKER);
+  while (idx !== -1) {
+    idx += STEABS_MARKER.length;
+    const closeIdx = molfile.indexOf(')', idx);
+    // first entry inside the parens is the atom count, not an atom index
+    steabs.push(...molfile.substring(idx, closeIdx).split(' ').slice(1)
+      .map((s) => parseInt(s)).filter((n) => !Number.isNaN(n)));
+    idx = molfile.indexOf(STEABS_MARKER, closeIdx);
+  }
+
+  return {atoms, bonds, steabs};
+}
+
+/** Combine several already-assembled single-chain molfiles into one molfile,
+ * stacking them vertically: the first chain keeps its coordinates, every
+ * subsequent chain is shifted straight down so its top-most atom sits just
+ * below the running bottom of everything placed so far. Atom / bond indices
+ * and per-monomer maps are re-based, STEABS collections merged, and the
+ * monomer-map keys offset by each chain's start position so the combined map
+ * still keys by original flat HELM position.
+ * @param {MolfileWithMap[]} parts - per-chain assembled molfiles (chain order)
+ * @param {number[]} chainStarts - flat start position of each chain
+ * @return {MolfileWithMap} - single combined molfile + merged monomer map */
+export function combineMolfilesVertically(parts: MolfileWithMap[], chainStarts: number[]): MolfileWithMap {
+  const combinedAtomLines: string[] = [];
+  const combinedBondLines: string[] = [];
+  const combinedSteabs: number[] = [];
+  const combinedMap: MonomerMap = new MonomerMap();
+
+  let atomOffset = 0;
+  let bondOffset = 0;
+  let runningBottom = Number.POSITIVE_INFINITY; // lowest y placed so far
+  let anyPlaced = false;
+
+  for (let c = 0; c < parts.length; ++c) {
+    const part = parts[c];
+    if (!part || !part.molfile) continue;
+    const pm = parseGeneratedMolfile(part.molfile);
+    if (pm.atoms.length === 0) continue;
+
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (const a of pm.atoms) {
+      if (a.y < minY) minY = a.y;
+      if (a.y > maxY) maxY = a.y;
+    }
+
+    // First placed chain keeps its coordinates; later chains drop below the
+    // current bottom, leaving CHAIN_VERTICAL_GAP between the strands.
+    const yShift = anyPlaced ? keepPrecision(runningBottom - CHAIN_VERTICAL_GAP - maxY) : 0;
+
+    for (let ai = 0; ai < pm.atoms.length; ++ai) {
+      const a = pm.atoms[ai];
+      const newIdx = atomOffset + ai + 1;
+      const newY = keepPrecision(a.y + yShift);
+      combinedAtomLines.push(
+        C.V3K_BEGIN_DATA_LINE + newIdx + ' ' + a.type + ' ' + a.xStr + ' ' + newY + ' ' + a.tail + '\n');
+    }
+
+    for (let bi = 0; bi < pm.bonds.length; ++bi) {
+      const b = pm.bonds[bi];
+      const newIdx = bondOffset + bi + 1;
+      const tail = b.tail ? ' ' + b.tail : '';
+      combinedBondLines.push(
+        C.V3K_BEGIN_DATA_LINE + newIdx + ' ' + b.btype + ' ' + (b.a1 + atomOffset) + ' ' + (b.a2 + atomOffset) + tail + '\n');
+    }
+
+    for (const s of pm.steabs) combinedSteabs.push(s + atomOffset);
+
+    const posOffset = chainStarts[c] ?? 0;
+    for (const [pos, val] of part.monomers) {
+      combinedMap.set(posOffset + pos, {
+        biotype: val.biotype,
+        symbol: val.symbol,
+        atoms: val.atoms.map((x) => x + atomOffset),
+        bonds: val.bonds.map((x) => x + bondOffset),
+      });
+    }
+
+    const newBottom = keepPrecision(minY + yShift);
+    runningBottom = anyPlaced ? Math.min(runningBottom, newBottom) : newBottom;
+    anyPlaced = true;
+    atomOffset += pm.atoms.length;
+    bondOffset += pm.bonds.length;
+  }
+
+  if (!anyPlaced) return MolfileWithMap.createEmpty();
+
+  let result = '';
+  result += C.V3K_HEADER_FIRST_LINE;
+  result += C.V3K_HEADER_SECOND_LINE;
+  result += C.V3K_BEGIN_CTAB_BLOCK;
+  result += C.V3K_BEGIN_COUNTS_LINE + atomOffset + ' ' + bondOffset + C.V3K_COUNTS_LINE_ENDING;
+  result += C.V3K_BEGIN_ATOM_BLOCK;
+  result += combinedAtomLines.join('');
+  result += C.V3K_END_ATOM_BLOCK;
+  result += C.V3K_BEGIN_BOND_BLOCK;
+  result += combinedBondLines.join('');
+  result += C.V3K_END_BOND_BLOCK;
+  if (combinedSteabs.length > 0)
+    result += getCollectionBlock(combinedSteabs);
+  result += C.V3K_END_CTAB_BLOCK;
+  result += C.V3K_END;
+
+  return {molfile: result, monomers: combinedMap};
 }
 

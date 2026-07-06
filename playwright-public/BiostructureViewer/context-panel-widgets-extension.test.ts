@@ -62,10 +62,22 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
     grok.shell.tv?.dataFrame?.name === 'context-panel-fixture' &&
     grok.shell.tv.dataFrame.columns.length === 4, null, {timeout: 15_000});
 
+  // Prerequisite guard: the 3D Structure / PDB Information panels live in BiostructureViewer.
+  // If they aren't registered on this deployment, skip fast with a clear message instead of
+  // hanging the full 180s test budget on accordion panes that can never appear.
+  const bsvPanelsReady = await page.evaluate(() => {
+    const has = (name: string) => (DG.Func.find({package: 'BiostructureViewer', name}) || []).length > 0;
+    return has('structure3D') && has('pdbFileInfoPanel');
+  });
+  test.skip(!bsvPanelsReady, 'BiostructureViewer context-panel widgets not registered on this deployment');
+
   try {
     // SCENARIO 1 — 3D Structure pane for a Molecule3D cell; assert mount via .bsv-container-info-panel.
     await softStep('Scenario 1 — 3D Structure pane mounts for Molecule3D cell; container class .bsv-container-info-panel present', async () => {
       await page.evaluate(() => {
+        // Force the context panel visible: the baseline sets simpleMode=true which hides it,
+        // and the accordion panes ([name="pane-*"]) only render into a shown context panel.
+        grok.shell.windows.showProperties = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });
@@ -153,6 +165,9 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
     // SCENARIO 2 — PDB Information pane on a Molecule3D cell (file-info from the PDB string).
     await softStep('Scenario 2 — PDB Information pane (Molecule3D) renders pdbFileInfoWidget content', async () => {
       await page.evaluate(() => {
+        // Force the context panel visible: the baseline sets simpleMode=true which hides it,
+        // and the accordion panes ([name="pane-*"]) only render into a shown context panel.
+        grok.shell.windows.showProperties = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });
@@ -189,6 +204,8 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
     // SCENARIO 3 — PDB Information pane on a PDB_ID cell (async pdbInfoWidget assembling RCSB metadata).
     await softStep('Scenario 3 — PDB Information pane (PDB_ID) renders async pdbInfoWidget metadata', async () => {
       await page.evaluate(() => {
+        // Context panel must be shown for the accordion panes to render (see scenario 1).
+        grok.shell.windows.showProperties = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'pdb_id');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });
@@ -232,6 +249,9 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
     //   Path C: PDB_ID via RCSB fetchProxy.
     await softStep('Scenario 4 Path A — ProLIF panel (Molecule3D + hasNonWaterHetatm) renders pdbInteractionsWidget LigNetwork', async () => {
       const surface = await page.evaluate(async () => {
+        // Force the context panel visible: the baseline sets simpleMode=true which hides it,
+        // and the accordion panes ([name="pane-*"]) only render into a shown context panel.
+        grok.shell.windows.showProperties = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'structure');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
         // Live-confirm the gating predicate on the fixture.
@@ -319,6 +339,8 @@ test('BiostructureViewer / context-panel widgets extension (3D Structure / PDB I
 
     await softStep('Scenario 4 Path C — ProLIF panel (PDB_ID) renders pdbIdInteractionsWidget via RCSB fetchProxy', async () => {
       await page.evaluate(() => {
+        // Context panel must be shown for the accordion panes to render (see scenario 1).
+        grok.shell.windows.showProperties = true;
         const cell = grok.shell.tv.dataFrame.cell(0, 'pdb_id');
         grok.shell.o = DG.SemanticValue.fromTableCell(cell);
       });

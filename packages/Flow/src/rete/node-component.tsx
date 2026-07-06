@@ -26,22 +26,16 @@ interface NodeProps {
   emit: RenderEmit<FlowScheme>;
 }
 
-/** The host `FlowEditor` exposes a narrow callback surface on
- *  `window.__ff_editor` so React components can call back into it without
- *  threading the editor through React context (we have only one editor at a
- *  time per page). */
-interface EditorBridge {
-  toggleCollapsed(id: string): void;
-  isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+/** The host `FlowEditor` exposes a narrow callback surface on every node it
+ *  owns (`FlowNode.editorBridge`, stamped when the node enters the editor's
+ *  data layer). Resolving it from the node — never from a global — keeps each
+ *  component bound to its own editor: several editors coexist on a page (file
+ *  previews, the creation-script dialog, detached compile editors). */
+function toggleCollapsed(node: FlowNode): void {
+  node.editorBridge?.toggleCollapsed(node.id);
 }
-function bridge(): EditorBridge | undefined {
-  return (window as unknown as {__ff_editor?: EditorBridge}).__ff_editor;
-}
-function toggleCollapsed(nodeId: string): void {
-  bridge()?.toggleCollapsed(nodeId);
-}
-function isConnected(nodeId: string, side: 'input' | 'output', key: string): boolean {
-  return bridge()?.isSocketConnected(nodeId, side, key) ?? false;
+function isConnected(node: FlowNode, side: 'input' | 'output', key: string): boolean {
+  return node.editorBridge?.isSocketConnected(node.id, side, key) ?? false;
 }
 
 export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
@@ -67,7 +61,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   // Pre-run hint: structural inputs the user still has to provide. Shown only
   // when the node hasn't successfully run (idle/stale), so a "Done"/"Error"
   // status from a real run always takes precedence.
-  const needs = missingRequiredInputs(node, (key) => isConnected(node.id, 'input', key));
+  const needs = missingRequiredInputs(node, (key) => isConnected(node, 'input', key));
   const idle = !dgStatus || dgStatus === 'idle' || dgStatus === 'stale';
   const attention = idle && needs.length > 0;
 
@@ -80,7 +74,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   // clicking the run indicator never hides the node out from under you.
   const onCaretClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    toggleCollapsed(node.id);
+    toggleCollapsed(node);
   };
   const stopPointer = (e: React.PointerEvent): void => {
     // Keep the AreaPlugin's node-drag handler from grabbing a click on a
@@ -233,7 +227,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       {collapsed && (
         <div className="ff-node-collapsed-sockets">
           <div className="ff-collapsed-inputs">
-            {inputs.map(([key, input]) => input && isConnected(node.id, 'input', key) && (
+            {inputs.map(([key, input]) => input && isConnected(node, 'input', key) && (
               <RefSocket
                 key={key}
                 name="input-socket"
@@ -246,7 +240,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
             ))}
           </div>
           <div className="ff-collapsed-outputs">
-            {outputs.map(([key, output]) => output && isConnected(node.id, 'output', key) && (
+            {outputs.map(([key, output]) => output && isConnected(node, 'output', key) && (
               <RefSocket
                 key={key}
                 name="output-socket"

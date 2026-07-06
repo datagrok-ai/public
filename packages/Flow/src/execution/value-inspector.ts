@@ -193,7 +193,7 @@ export function buildPreview(
     try {
       summary.clone.meta.detectSemanticTypes();
       const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
-      grid.root.style.cssText = 'width:100%;min-height:350px;';
+      grid.root.style.cssText = 'width:100%;height: calc(100% - 30px);';
       wrap.appendChild(grid.root);
     } catch { /* grid render failed — show nothing rather than a placeholder */ }
     return wrap;
@@ -206,7 +206,7 @@ export function buildPreview(
       try {
         (summary.clone as DG.DataFrame).meta.detectSemanticTypes();
         const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
-        grid.root.style.cssText = 'width:100%;min-height:350px;';
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 30px);';
         wrap.appendChild(grid.root);
         return wrap;
       } catch { /* grid failed — fall back to the text sample below */ }
@@ -262,7 +262,7 @@ export function buildPreview(
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     wrap.style.position = 'relative';
     obj.root.style.width = '100%';
-    if (!obj.root.style.minHeight) obj.root.style.minHeight = '300px';
+    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 20px)';
     wrap.appendChild(obj.root);
     // A viewer's full settings are editable live: a small gear in the top-right
     // corner (overlaid — no vertical space) hands the viewer to the host

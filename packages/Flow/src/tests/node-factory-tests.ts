@@ -41,6 +41,23 @@ category('Flow: node-factory', () => {
       expect(names.has(t), true, `registry has ${t}`);
   });
 
+  test('SetVar and GetVar are always registered — saved flows depend on them', async () => {
+    // Both fall to the primitive-only catalog exclusion, but every imported
+    // creation script terminates in SetVar nodes: a saved .ffjson with them
+    // must deserialize without a prior import having registered them.
+    if (DG.Func.find({name: 'SetVar'}).length === 0) {
+      expect(true, true); // no live backend — nothing to check
+      return;
+    }
+    for (const name of ['setvar', 'getvar']) {
+      const info = getRegisteredFuncs().find((f) => (f.func.name ?? '').toLowerCase() === name);
+      expect(!!info, true, `${name} is in the registry after registerAllFunctions()`);
+      const node = createNode(info!.nodeTypeName);
+      expect(!!node, true, `${name} node type instantiates`);
+      expect(node!.dgNodeType, 'func');
+    }
+  });
+
   test('ensureFuncNodeType is idempotent for the same function', async () => {
     const func = DG.Func.find({name: 'AddNewColumn'})[0] ?? DG.Func.find({})[0];
     expect(func != null, true);

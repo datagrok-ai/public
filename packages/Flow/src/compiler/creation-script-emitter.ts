@@ -211,16 +211,27 @@ class CreationScriptEmitter {
     }
   }
 
-  /** Propagate each SetVar node's variable name back through the pass-through
+  /** Propagate each anchor node's variable name back through the pass-through
    *  chain to the producer at its head, so the producer materializes under that
-   *  name (`Mol1K = OpenFile(...)` rather than an auto-generated name). */
+   *  name (`Mol1K = OpenFile(...)` rather than an auto-generated name). Anchors
+   *  are SetVar nodes AND Output nodes — an Output's paramName IS its variable
+   *  name (SetVar and Output are the same concept; the emitted script is
+   *  identical whichever terminal the flow uses). */
   private computeAnchors(): void {
     for (const node of this.flow.getNodes()) {
-      if (!isSetVar(node)) continue;
-      const varName = String(node.inputValues['variableName'] ?? '').trim();
+      let varName: string;
+      let inputKey: string;
+      if (isSetVar(node)) {
+        varName = String(node.inputValues['variableName'] ?? '').trim();
+        inputKey = 'value';
+      } else if (node.dgNodeType === 'output') {
+        varName = String(node.properties['paramName'] ?? '').trim();
+        inputKey = dataInputKeys(node)[0] ?? 'value';
+      } else
+        continue;
       if (varName === '') continue;
       this.usedNames.add(varName);
-      const conn = this.incoming.get(node.id)?.get('value');
+      const conn = this.incoming.get(node.id)?.get(inputKey);
       if (!conn) continue;
       const producer = this.walkToProducer(conn.source, String(conn.sourceOutput), new Set());
       if (producer && !this.anchorName.has(producer))

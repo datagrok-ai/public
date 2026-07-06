@@ -5,15 +5,38 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {FlowEditor} from '../rete/flow-editor';
+import {FlowEditor, GraphEdit} from '../rete/flow-editor';
 import {ExecutionState, NodeExecStatus, ExecEvent} from './execution-state';
 import {ExecutionVisualizer} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
-import {sliceUpTo} from '../compiler/graph-compiler';
+import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
 import {isExecKey, missingRequiredInputs} from '../rete/scheme';
+
+/** Grow a dirty node set upstream until every connection crossing into it
+ *  comes from a node whose output value is already captured (`hasLive`) — the
+ *  smallest self-contained slice that can re-run with `liveExternalInputs`.
+ *  Order (exec) edges never carry values, so they never force expansion. */
+export function expandToLiveBoundary(
+  flow: FlowEditor, dirty: Iterable<string>, hasLive: (nodeId: string, outputKey: string) => boolean,
+): Set<string> {
+  const slice = new Set(dirty);
+  const connections = flow.getConnections();
+  const stack = [...slice];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    for (const c of connections) {
+      if (c.target !== id || slice.has(c.source)) continue;
+      if (isExecKey(String(c.sourceOutput))) continue;
+      if (hasLive(c.source, String(c.sourceOutput))) continue;
+      slice.add(c.source);
+      stack.push(c.source);
+    }
+  }
+  return slice;
+}
 
 /** Short count label for a wire from a source output's summary — "1,204 rows"
  *  for a table, "1,204" for a column. Null when there's nothing countable. */
@@ -46,14 +69,16 @@ export class ExecutionController {
   private visualizer: ExecutionVisualizer;
   private flow: FlowEditor;
   private subscription: {unsubscribe(): void} | null = null;
-  private graphVersion = 0;
+  /** The output panel's node when an invalidation closed it — the next autorun
+   *  re-opens it (without stealing selection) so the preview stays live. */
+  private autorunPreviewNodeId: string | null = null;
   /** When set, the next run is a single-node preview; on completion we open
    *  this node's data panel instead of the normal end-of-run behavior. */
   private pendingPreviewNodeId: string | null = null;
   /** When set, the next run is a headless slice (column picker); on completion
    *  we invoke this and skip the preview / end-of-run UI entirely. */
   private pendingOnComplete: (() => void) | null = null;
-  outputPreview: OutputPreviewPanel = new OutputPreviewPanel();
+  outputPreview: OutputPreviewPanel;
 
   /** Called when execution stops at a breakpoint (so the view can prompt Continue). */
   onBreakpointHit?: (nodeId: string) => void;
@@ -62,10 +87,13 @@ export class ExecutionController {
   /** Called on every per-node state change — used to refresh the property panel. */
   onNodeStateChanged?: (nodeId: string) => void;
 
-  constructor(flow: FlowEditor) {
+  /** @param outputPreview the view-owned bottom output panel (a pane of the
+   *  view's splitter). Defaults to a detached one for headless usage. */
+  constructor(flow: FlowEditor, outputPreview?: OutputPreviewPanel) {
     this.flow = flow;
     this.state = new ExecutionState();
     this.visualizer = new ExecutionVisualizer(flow);
+    this.outputPreview = outputPreview ?? new OutputPreviewPanel();
   }
 
   runInstrumented(settings: ScriptSettings): void {
@@ -132,7 +160,13 @@ export class ExecutionController {
   }
 
   private clearLiveRegistry(): void {
-    (globalThis as {__ffFlowLive?: unknown}).__ffFlowLive = {};
+    // The registry is page-global (the emitted script writes to it, outside any
+    // view), and several Flow views can be live at once — never wipe it
+    // wholesale. Node ids are unique per editor, so deleting this flow's ids
+    // leaves other views' captured values (and their single-node rerun) intact.
+    const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
+    if (!reg) return;
+    for (const node of this.flow.getNodes()) delete reg[node.id];
   }
 
   /** Whether "Rerun this node only" should be offered: it's a compute node whose
@@ -166,6 +200,64 @@ export class ExecutionController {
     });
   }
 
+  /** Every node with no fresh result (never ran, stale, errored, mid-run) plus
+   *  everything downstream of it — what switching autorun ON should
+   *  immediately schedule, so enabling it on a new/half-run flow runs the
+   *  missing part instead of idling until the first edit. */
+  pendingNodes(): Set<string> {
+    const pending = new Set<string>();
+    for (const n of this.flow.getNodes()) {
+      if (pending.has(n.id)) continue;
+      if (this.state.getNodeState(n.id)?.status === NodeExecStatus.completed) continue;
+      for (const id of sliceDownFrom(this.flow, n.id)) pending.add(id);
+    }
+    return pending;
+  }
+
+  /** Debounced autorun entry. Re-runs only the invalidated slice when its
+   *  boundary can be fed from captured live values; falls back to a full run
+   *  otherwise (nothing ran yet, upstream never completed, …). Everything is
+   *  silent — no validation toasts, no run dialog, no selection stealing —
+   *  because it fires after every edit. The outcome tells the scheduler
+   *  whether to retry ('busy') or wait for the next edit ('skipped'). */
+  runAutorun(dirty: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
+    if (this.state.isRunning) return 'busy';
+    // A mid-edit graph is often momentarily invalid; just wait for more edits.
+    if (validateGraph(this.flow).some((e) => e.severity === 'error')) return 'skipped';
+
+    let slice: Set<string> | null = null;
+    if (dirty.size > 0 && this.state.nodeStates.size > 0) {
+      const expanded = expandToLiveBoundary(this.flow, dirty,
+        (nodeId, outputKey) => this.hasLiveValue(nodeId, outputKey));
+      if (expanded.size < this.flow.getNodeCount()) slice = expanded;
+    }
+
+    // A run touching an input node would emit `//input:` headers → a dialog on
+    // every keystroke. Skip; the user runs parameterized flows explicitly.
+    // (A slice whose boundary covers the input nodes still autoruns fine.)
+    const runsNode = (id: string): boolean => slice === null || slice.has(id);
+    if (this.flow.getNodes().some((n) => n.dgNodeType === 'input' && runsNode(n.id))) return 'skipped';
+
+    const restorePreviewId = this.autorunPreviewNodeId;
+    this.autorunPreviewNodeId = null;
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: slice ?? undefined,
+      liveExternalInputs: slice !== null,
+      preserveState: slice !== null,
+      skipValidation: true,
+      onComplete: () => {
+        // Bring back the preview the invalidation closed — content only, no
+        // selection change (the user may be mid-edit in the property panel).
+        if (!restorePreviewId) return;
+        const node = this.flow.getNodeById(restorePreviewId);
+        const state = this.state.getNodeState(restorePreviewId);
+        if (node && state?.status === NodeExecStatus.completed)
+          this.outputPreview.showForNode(node, state);
+      },
+    });
+    return 'started';
+  }
+
   private executeInstrumented(
     settings: ScriptSettings, debug: boolean,
     opts?: {onlyNodeIds?: Set<string>; focusNodeId?: string; skipValidation?: boolean;
@@ -184,17 +276,17 @@ export class ExecutionController {
 
     const runId = crypto.randomUUID();
     if (opts?.preserveState) {
-      // Headless slice (column picker): keep prior node states, visuals,
-      // connection labels and the output panel — only the slice's nodes get
-      // recomputed and re-highlighted; everything else stays as it was.
+      // Headless slice (column picker) or autorun slice: keep prior node
+      // states, visuals, connection labels and the output panel — only the
+      // slice's nodes get recomputed and re-highlighted; everything else
+      // stays as it was.
       this.state.runId = runId;
       this.state.isRunning = true;
-      this.state.graphVersionAtRun = this.graphVersion;
     } else {
       // A new full/slice run invalidates anything we were showing — and the
       // captured live values (they're recomputed by this run's `__ff_stash`).
-      this.outputPreview.close();
-      this.state.startRun(runId, this.graphVersion);
+      this.outputPreview.clear();
+      this.state.startRun(runId);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
       this.clearLiveRegistry();
@@ -329,26 +421,78 @@ export class ExecutionController {
     }
   }
 
-  /** Bumped every time the graph changes; if results are stale, mark them so. */
-  onGraphChanged(): void {
-    this.graphVersion++;
-    if (this.state.nodeStates.size > 0 && this.state.isStale(this.graphVersion)) {
-      this.state.markAllStale();
-      this.visualizer.markAllStale();
-      this.flow.clearConnectionLabels();
-      // Stale values aren't worth previewing; close to avoid stale impressions.
-      this.outputPreview.close();
-      // A structural change invalidates captured values — disable single-node
-      // re-run (which reads them) until a fresh run repopulates the registry.
-      this.clearLiveRegistry();
+  /** React to a classified graph edit: invalidate exactly what the change can
+   *  affect, and nothing else. Returns the set of node ids whose results must
+   *  be recomputed — the autorun scheduler accumulates these.
+   *
+   *  - a fresh node has no wiring, so adding one invalidates nothing;
+   *  - a connection change invalidates its *target* and everything downstream
+   *    (the source's value is untouched — it still computed what it computed);
+   *  - a parameter edit invalidates the edited node and everything downstream;
+   *  - removing a node just drops its state (its connections' removal events
+   *    have already invalidated the affected downstream nodes). */
+  applyGraphEdit(edit: GraphEdit): Set<string> {
+    switch (edit.kind) {
+    case 'node-added':
+      return new Set();
+    case 'node-removed':
+      this.forgetNode(edit.nodeId);
+      return new Set();
+    case 'connection-added':
+    case 'connection-removed':
+      return this.invalidateDownstream(edit.targetId);
+    case 'params-changed':
+      return this.invalidateDownstream(edit.nodeId);
+    case 'cleared':
+      this.resetVisuals();
+      return new Set();
     }
+  }
+
+  /** Mark the node and its transitive successors "Out of date": state, node
+   *  visuals, outgoing wire labels, captured live values. Upstream nodes keep
+   *  their completed results (and stay eligible for live-value reuse). */
+  invalidateDownstream(rootId: string): Set<string> {
+    const affected = sliceDownFrom(this.flow, rootId);
+    this.state.markStale(affected);
+    this.visualizer.markStale(affected);
+    // Wire labels announce the value that flowed through — gone for any wire
+    // *leaving* an invalidated node; wires feeding the cone from valid
+    // upstream nodes keep theirs (that data is still what will flow in).
+    for (const c of this.flow.getConnections())
+      if (affected.has(c.source)) this.flow.setConnectionLabel(c.id, null);
+    // Captured live values of invalidated nodes are lies now — drop them so
+    // single-node rerun / column-picker reuse recompute instead.
+    const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
+    if (reg)
+      for (const id of affected) delete reg[id];
+    // Stale values aren't worth previewing; close (and remember the node so an
+    // autorun can bring the preview back once fresh values exist).
+    const previewId = this.outputPreview.currentNodeId;
+    if (previewId !== null && affected.has(previewId)) {
+      this.outputPreview.clear();
+      this.autorunPreviewNodeId = previewId;
+    }
+    for (const id of affected) this.onNodeStateChanged?.(id);
+    return affected;
+  }
+
+  /** A node was deleted — drop every trace of it (state, visuals tracking,
+   *  captured values, preview). */
+  private forgetNode(nodeId: string): void {
+    this.state.forgetNode(nodeId);
+    this.visualizer.forgetNode(nodeId);
+    const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
+    if (reg) delete reg[nodeId];
+    if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.clear();
+    if (this.autorunPreviewNodeId === nodeId) this.autorunPreviewNodeId = null;
   }
 
   resetVisuals(): void {
     this.visualizer.resetAllNodes();
     this.flow.clearConnectionLabels();
     this.state.reset();
-    this.outputPreview.close();
+    this.outputPreview.clear();
     this.clearLiveRegistry();
   }
 

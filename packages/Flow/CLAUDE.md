@@ -6,6 +6,22 @@ Flow (FuncFlow) is an interactive visual function chain designer for Datagrok. I
 
 The renderer is React-based (`rete-react-plugin`), but React is contained to the canvas: the rest of the package — view, panels, ribbon, status bar — is plain TypeScript on top of the Datagrok UI helpers, exactly as KetcherSketcher mounts Ketcher inside a `ui.div`.
 
+## Rules — always follow
+
+- **No page-global mutable state.** Several Flow views and editors can be alive in one page at
+  the same time — file previews, Browse entity previews, the creation-script dialog, detached
+  compile editors, multiple open tabs. Anything stored on `window`/`globalThis` is shared by all
+  of them: a newer instance rebinding it, or a destroyed instance deleting it, silently breaks
+  the others. (This exact bug once detached collapsed-node sockets and killed collapse carets —
+  the old `window.__ff_editor` bridge.) Keep state on the owning instance and reach it through
+  back-references (e.g. `FlowNode.editorBridge`). UI that belongs to a view must live **inside
+  that view's root** (the bottom output panel is a splitter pane of the view — never a
+  `grok.shell.dockManager` dock, which outlives and overlaps views).
+  The one sanctioned global is `globalThis.__ffFlowLive`, the live-value registry the *emitted
+  script* writes to (it runs outside any view). It is keyed by node id — unique per editor — and
+  must only ever be cleared per-flow (`ExecutionController.clearLiveRegistry` deletes this flow's
+  node ids, never the whole object).
+
 ## Architecture
 
 ```
@@ -39,7 +55,7 @@ src/
 │   ├── execution-visualizer.ts   # Sets node.dgStatus → CSS handles all visuals
 │   ├── execution-controller.ts   # Run lifecycle, event subscriptions, breakpoints
 │   ├── value-inspector.ts        # Context panel runtime-value section
-│   └── output-preview.ts         # Bottom-docked output preview tabs
+│   └── output-preview.ts         # In-view bottom output panel (a pane of the view's splitter)
 ├── panel/
 │   ├── function-browser.ts       # Left sidebar catalog
 │   ├── property-panel.ts         # Side-panel node properties editor
@@ -185,9 +201,11 @@ Graph → script mapping (walks `topologicalSort`, exec/order ports filtered by 
   it stays a **bare call**.
 - **In-place mutator / side-effecting call** = no consumed real output → bare `f(...)`; its `__pt` outputs
   forward the same variable (`forwardPassthroughs`).
-- **SetVar node** = the variable-name anchor; `computeAnchors` walks its `value` back through the `__pt`
-  chain (`walkToProducer`) to name the producer at the head, so an imported chain re-emits as
-  `Mol1K = OpenFile(...)` / bare mutators / (no redundant `Mol1K = Mol1K`).
+- **SetVar node OR Output node** = the variable-name anchor (an Output's `paramName` IS its variable
+  name — SetVar and Output are the same concept); `computeAnchors` walks the anchored value back through
+  the `__pt` chain (`walkToProducer`) to name the producer at the head, so an imported chain re-emits as
+  `Mol1K = OpenFile(...)` / bare mutators / (no redundant `Mol1K = Mol1K`), and a flow terminated by a
+  Table Output emits `T = OpenFile(...)` with no intermediate variable.
 - **Select Table** → table-name string; **Select Column(s)** → column name(s); **Constants** → literals;
   **Input** node → bare `GetVar(paramName)` ref; **order edges** → ordering only, no line.
 - **Warn & skip**: JS-only nodes (comparisons, ToString, FromJSON, ToJSON, Log/Info/Warning, Add Table
@@ -236,16 +254,16 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 |---|---|---|
 | `type-map-tests.ts` | Flow: type-map | `areTypesCompatible` matrix, `dgTypeToSlotType`, colors, **`domainSection`/`domainCategory`/`isDomainOperation` chem/bio routing (operations only, not sources), disjoint package sets** |
 | `node-factory-tests.ts` | Flow: node-factory | `createNode`, registry, `ensureFuncNodeType` idempotency, pass-throughs, suggestion-menu labels (friendly name + `funcCategory`, no "Uncategorized"), suggestion ranking (domain-in-play tier, exact-over-wildcard, used-func float), reverse suggestions (`findNodeTypesProducingOutput`: matching Input node leads, real-output-over-passthrough, domain boost) |
-| `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules |
+| `compiler-tests.ts` | Flow: topological sort / script emitter / validator | order, cycles, emitted headers + body, instrumented mode, validation rules, Select Table fail-fast guard, Output ⇄ SetVar same-contract emission |
 | `serializer-tests.ts` | Flow: serializer | serialize shape + round-trip topology, unknown-type skip |
 | `minimap-tests.ts` | Flow: minimap | node rects + viewport drawn, `setMinimapCollapsed`, header-click collapse, hidden on empty canvas / shown once a node exists |
 | `order-edge-tests.ts` | Flow: order edges | type isolation, exec ports on every node, order overrides `y` in the sort, sequenced-but-data-free emission, cycle detection, serialization round-trip |
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
-| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers, **denylisted `nqName`s, machinery tags, `semantic_value`/filter-call, `meta.includeInFlow: false` opt-out; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
+| `function-browser-tests.ts` | Flow: function browser | exclusion list (no dev/test pkgs, `test*`, funccall wrappers, **denylisted `nqName`s, machinery tags, `semantic_value`/filter-call, `meta.includeInFlow: false` opt-out; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out, flow scripts→Workflows in every mode**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
-| `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; `onDocked` fires once per dock creation (not on updates; again after close); same node + same state → no preview rebuild (new state / other node → rebuild) |
+| `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; panel state machine (hidden → expanded on first renderable output; minimize remembered — content updates never pop it up; `clear()` hides but keeps the preference; caret click toggles + fires `onStateChanged`, header body does not; disabled panels never show); same node + same state → no preview rebuild (new state / other node → rebuild); the panel is a pane of the view splitter, disabled in embedded views |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
 | `column-picker-tests.ts` | Flow: column picker | `column`/`column_list` inputs render a `ff-prop-pick-columns-<param>` icon; the request resolves the right dataframe input per column (JoinTables `keys1`→`table1`, `keys2`→`table2`); **viewer** axis options and **Select Column(s)** utilities get the picker too (resolving their `table` input); no icon without an `onPickColumns` handler |
 | `connect-interaction-tests.ts` | Flow: connect interaction | `soleCompatibleInput` (drop-on-node decision): one compatible free input → its key, several/zero → null, taken inputs excluded; `soleCompatibleOutput` (reverse drop): real output wins over passthroughs, sole-passthrough fallback, ambiguous/incompatible → null |
@@ -253,7 +271,8 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `string-list-tests.ts` | Flow: string-list inputs, Flow: plain-list inputs | `string_list` inputs are seeded editable, render a text field, compile to a trimmed JS array, and omit when empty (`isStringListType`/`stringListToArrayLiteral` covered in `type-map-tests`); plain `list` inputs (incl. `list<string>` params) are seeded as arrays, render a DG List input via `forProperty`, compile to a JSON array literal, and omit when empty |
 | `func-editor-tests.ts` | Flow: func editor | `shouldUseFunctionEditor` routing (allowlist / `editor:` meta / plain majority), `editorValueToPanelValue` conversions (column→name, lists, dataframe rejected), `tableParamForColumn` ladder, `applyEditorResult` (connected inputs win, column→name write-back), the full launcher ladder live (gate refuses unconnected → captured table opens the function's own dialog → close → write-back), the header icon gating (needs a live backend) |
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
-| `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, warn-and-skip for JS-only nodes (needs a live backend) |
+| `invalidation-tests.ts` | Flow: invalidation, Flow: autorun, Flow: in-place isolation | **In-place isolation**: instrumented emission snapshot-clones dataframe inputs (`__ff_clone`; the snapshot feeds the call, pass-through, and stash) while clean emission doesn't; a real Select Table → AddNewColumn run leaves the shell table + upstream capture pristine, previews show at-node state, and an autorun slice re-run is idempotent (validated by disabling `cloneDataframeInputs` → the shell table gets mutated). `sliceDownFrom` (forward closure), `applyGraphEdit` per-kind semantics (node-added → nothing; connection change → target+downstream stale, source + its live value kept; params-changed → node+downstream; node-removed → state forgotten), the editor's classified `onGraphEdited` stream (incl. `notifyNodeParamsChanged`, delete = connection-removed then node-removed, clear), **the user-side click guard** (opening the panel 3× per value-bearing node — Constants, Select Table/Column, Output, Int Input, OpenFile — emits zero `params-changed`; a real textarea edit reports once, same value again nothing; validated by disabling the guard → 3 spurious edits), `pendingNodes` (never-run/stale + downstream; fresh flow → empty), `expandToLiveBoundary` (captured boundary vs full ancestry), `AutorunScheduler` (debounce coalescing + dirty union, disabled/non-invalidating edits never run, `kick` on enable, busy → retry with kept set, skipped → wait for next edit, toggle-off cancels) |
+| `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, an Output node anchors the producer like a SetVar, warn-and-skip for JS-only nodes (needs a live backend) |
 
 ## Rete Pipeline
 
@@ -324,13 +343,23 @@ Become `//output:` annotation lines.
 | Table Output | Fixed `dataframe` type |
 | Value Output | Configurable `outputType`. On connect, `FlowEditor.maybeAutoTypeValueOutput` copies the source slot's `dgType` into `properties.outputType` (skipping `dynamic` / `object`). |
 
+**Output ⇄ SetVar unification**: an Output node and a `SetVar` func node compile to the same
+thing (`isSetVarNode` in [scheme.ts](src/rete/scheme.ts)). The emitted JS gives an Output node a
+run-context registration (`grok.functions.call('SetVar', {variableName: <paramName>, …})` plus the
+dataframe-runtime-name variant) and gives a SetVar node a script output (`//output: <type> <name>`
+with the type inferred from the connected source socket — `setVarAsOutput` in
+[script-emitter.ts](src/compiler/script-emitter.ts) — plus the `<name> = <value>;` assignment;
+skipped when the variable name isn't a literal valid JS identifier). The creation-script emitter
+anchors producers through Output nodes exactly as through SetVars (`computeAnchors`), and the
+post-run auto-preview (`autoSelectFirstOutputNode`) treats SetVar terminals as outputs.
+
 ### Utility Nodes ([rete/nodes/utility-nodes.ts](src/rete/nodes/utility-nodes.ts))
 
 | Node | Generated Code |
 |------|----------------|
 | Select Column | `let v = df.col('name')` |
 | Select Columns | `let v = [df.col('a'), df.col('b')]` |
-| Select Table | `let v = grok.shell.tableByName('name') ?? grok.shell.getVar('name') ?? …` (tries the exact, no-spaces, and lower-camel name variants) |
+| Select Table | `let v = grok.shell.tableByName('name') ?? grok.shell.getVar('name') ?? …` (tries the exact, no-spaces, and lower-camel name variants), then **throws** `Select Table: no open table or variable named "…"` when all resolve to null — fail fast at the node instead of a cryptic downstream error |
 | Add Table View | `let v = grok.shell.addTableView(df)` |
 | Log | `console.log([label,] value)` |
 | Info | `grok.shell.info(msg)` |
@@ -402,7 +431,7 @@ A second, **data-free** connection type that expresses pure run-order — "node1
 
 `shouldExcludeFunc` drops a function when **any** holds: **`meta.includeInFlow: false`** declared on the function (checked first — the author opt-out; meta surfaces as `func.options.includeInFlow`, honoured as boolean `false` or string `'false'`; Flow's own `openCreationScriptFlowDialog` uses it); no inputs *and* no outputs; package ∈ `EXCLUDED_PACKAGES`; `nqName` ∈ the curated denylist [excluded-funcs.ts](src/rete/excluded-funcs.ts); name is/starts-with `test`; **role** ∈ `EXCLUDED_ROLES` (exact) **or a tag** ∈ `EXCLUDED_TAGS` (case-insensitive — sketchers/renderers/`Internal`/`Viewers`/… usually declare their kind as a *tag*, so the tag check is the biggest declutter lever); a `funccall` **or** `semantic_value` input; a `view`/`viewer` **or** `tablerowfiltercall`/`colfiltercall` output; or primitive-only signature. **`EXCLUDED_TAGS` deliberately omits `panel`/`widget`/`widgets`/`tooltip`** — widget-producing functions are usable in Flow (Widgets pane + preview); the `semantic_value` rule is what keeps right-click/context widgets out. The `EXCLUDED_FUNC_NQNAMES` denylist (incl. core plumbing: cache drops, project/publish, raw DB-query builders, UI-container builders) is empirically derived and **meant to be edited by hand** — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md). This cut the catalog ~568 → ~283.
 
-`registerBuiltinNodes()` populates the `FACTORIES` map with all built-in types. `registerAllFunctions()` discovers DG functions via `DG.Func.find({})` and registers a per-func factory under name `DG Functions/<role>/<funcName>` (or `DG Functions/<role>/<pkg>:<funcName>` on collision).
+`registerBuiltinNodes()` populates the `FACTORIES` map with all built-in types. `registerAllFunctions()` discovers DG functions via `DG.Func.find({})` and registers a per-func factory under name `DG Functions/<role>/<funcName>` (or `DG Functions/<role>/<pkg>:<funcName>` on collision). It ends with `registerVariableFuncs()`: **SetVar / GetVar are force-registered** (via `ensureFuncNodeType`) even though the primitive-only rule excludes them from the catalog scan — every imported creation script terminates in SetVar nodes and Flow treats SetVar as an output, so a saved `.ffjson` containing them must deserialize without a prior import having registered them as a side effect.
 
 `createNode(typeName)` looks up the factory and stamps `dgTypeName` on the new instance — this is what the serializer persists.
 
@@ -442,7 +471,8 @@ This pipeline targets **JavaScript**. For the alternate **creation-script** targ
 - Disconnected non-input nodes → warning
 - Output node with no incoming connection → warning
 - Empty / invalid JS-identifier `paramName` → error
-- Duplicate `paramName` across input/output nodes → error
+- Duplicate variable name across input/output nodes **and SetVar `variableName`s** (one shared
+  namespace — a SetVar doubles as an output) → error
 
 ### Input qualifier emission
 
@@ -469,9 +499,11 @@ Each step is wrapped in try/catch and fires `funcflow.exec.<runId>` events: `run
 
 **Variable hoisting**: when wrapping `let x = ...`, the declaration is hoisted before `try` and only the assignment goes inside, so downstream nodes can reference `x`.
 
+**Dataframe input snapshots (in-place isolation)**: instrumented emission compiles with `CompileOptions.cloneDataframeInputs` — every **connected dataframe input of a func step** is snapshot-cloned before the call (`<snapVar> = __ff_clone(<srcExpr>)`, declared hoisted / assigned inside `try` since a `_ffLive` source can throw). The call args, the pass-through outputs, the `__ff_stash` entries, and inlined `table.col(...)` args (the compiler rewrites the input expression **before** column pass 2) all use the snapshot. Why: many platform functions transform tables **in place**; without the clone they'd mutate the very instance stashed as the *upstream* node's live value — upstream previews would show downstream columns, a shell table picked via Select Table would get modified, and an autorun slice re-run would apply the transform twice (non-idempotent). The mutated snapshot flows on through the passthrough, so downstream sees the transformed table; the upstream capture stays "the state at that node". Clean scripts don't clone (they run once from scratch; platform in-place idiom preserved). Viewers/utilities/SetVar don't clone (non-mutating; SetVar's `value` slot is `dynamic`, and its registered output should be the live final instance).
+
 **In-place / threaded table capture**: when a func node has a dataframe input but **no real *dataframe* output**, the wrapper emits a synthetic entry `'<inputName> (modified)': __ff_summarize(<inputExpr>, 'dataframe')` so the post-execution table is previewable. This covers both a pure in-place mutator (no outputs at all) AND a node whose real output isn't a table but still threads one through its passthrough — e.g. AddNewColumn returns a *column*, yet a viewer / the column picker wired to its `table →` passthrough needs that modified table (it's keyed off `!hasDataframeOutput`, not zero-outputs, so `cloneForNode` finds it).
 
-**SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the docked output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
+**SetVar preview**: `SetVar` declares no output, but the instrumented wrapper captures its incoming `value` as a synthetic output keyed by the variable name (`'<varName>': __ff_summarize(<valueExpr>)`), so clicking a SetVar node opens the bottom output panel and renders the stored value by type (table → grid, column → sample, …) — same as any output-bearing node.
 
 **Live-value registry (single-node re-run)**: every instrumented step also stashes its live outputs into a tab-global registry — `__ff_stash('<nodeId>', {<outputKey>: <value>, ...})` (real outputs → their variable, dataframe passthroughs → the threaded post-execution value), keyed by output socket key. **“Rerun this node only”** ([`ExecutionController.rerunNode`](src/execution/execution-controller.ts)) runs a *one-node* slice with `EmitOptions.liveExternalInputs`: `compileGraph(flow, liveBoundary)` resolves any connection whose source is outside the slice to a `_ffLive(nodeId, outputKey)` registry read (defined in the preamble) instead of an in-script variable — so nothing upstream re-executes. It's `preserveState` (other nodes untouched) and opens the node's preview on completion. Gated by `canRerunNode(nodeId)`: a func/viewer/utility node whose required inputs are all satisfied AND every connected input has a captured value (`hasLiveValue`). The registry is cleared on any non-preserve run (fresh full/slice run) and on structural graph change, so stale values never drive a re-run. Menu wiring: `FlowEditorCallbacks.onRerunNode` / `canRerunNode` → `showNodeContextMenu`.
 
@@ -485,7 +517,7 @@ KNIME-inspired live feedback. The script runs in the same browser tab and commun
 - **ExecutionState** ([execution/execution-state.ts](src/execution/execution-state.ts)) — per-node status tracking (`idle` / `running` / `completed` / `errored` / `stale`) keyed by string node IDs.
 - **ExecutionVisualizer** ([execution/execution-visualizer.ts](src/execution/execution-visualizer.ts)) — sets `node.dgStatus` and calls `flow.updateNode(id)` to re-render. The React Node component reads `dgStatus` and writes it to a `data-status` attribute. CSS does the rest (status circle color, pulse animation, body tint).
 - **ValueInspector** ([execution/value-inspector.ts](src/execution/value-inspector.ts)) — runtime-value section in the side panel. DataFrame summaries embed a full `DG.Viewer.grid` preview with "Add to workspace". A **column** output previews as a **one-column DataFrame grid**: `__ff_summarize` captures `clone: DG.DataFrame.fromColumns([col.clone()])` and `buildPreview` renders it as a grid (falling back to a small text sample if no clone was captured). When a node outputs a column, `buildValuePreviews` **suppresses** the threaded `"<input> (modified)"` passthrough dataframe preview — that table is still captured in the state (the column picker / inspect read it), just not shown, since the column-as-grid is the meaningful result. A **widget/viewer** output keeps the live object (`{type:'widget'|'viewer', value}`, captured by reference during the in-tab run by `__ff_summarize`) and `buildPreview` mounts its `.root` directly; the property-panel meta names the kind (`widget`/`viewer`) instead of `[object Object]`.
-- **OutputPreviewPanel** ([execution/output-preview.ts](src/execution/output-preview.ts)) — single bottom-docked panel, opened lazily when the user clicks a node with captured values. `showForNode` re-checks `dockManager.findNode(hostEl)` before reusing the dock, so if the user manually closed it a later click **reopens** it. The view closes it on `grok.events.onCurrentViewChanged` when `grok.shell.v` is no longer the Flow view (the dock would otherwise linger over other views). An `onDocked` callback fires when the dock is **newly created** (not on in-place updates) — the view wires it to `setMinimapCollapsed(true)` so the minimap auto-minimizes instead of overlapping the fresh panel. **Re-render is identity-gated**: `showForNode` remembers the last `(nodeId, NodeExecState)` pair and skips rebuilding when both match and the dock is still open — `ExecutionState.setNodeStatus` always builds a fresh state object, so state reference identity IS value identity (re-clicking a node doesn't re-mount its grids; a re-run's new state does rebuild). The cache clears on `close()` and dock failure.
+- **OutputPreviewPanel** ([execution/output-preview.ts](src/execution/output-preview.ts)) — the bottom output panel, a **real pane of the view**: `FuncFlowView.initUI` mounts `panel.root` as the second item of a `ui.splitV([canvasBox, panel.root], …, true)`, so it is resizable via the splitter divider and can never linger over other views (no `grok.shell.dockManager` involvement — see Rules). The canvas pane is `flex: 1 1 0`; the panel pane is `flex: 0 0 auto`, making its explicit `height` the single source of truth (min/max clamps keep `splitV`'s own resize handling from drifting a minimized strip). Three states (`panelState`): **hidden** (start, and after `clear()` on graph change / new run), **expanded**, **minimized** (slim header strip; **only the caret** at the right edge of the header toggles — a fully clickable header would swallow near-miss clicks aimed at the splitter divider right above it). It is **not closable**: the first renderable output (clicking a completed node, or a run's focus node) expands it; once the user minimizes it the choice is **remembered** — later content updates in place and never pops the panel back up; only an explicit caret click restores it. `onStateChanged` lets the view show the divider only when expanded. Embedded hosts (the creation-script dialog) construct the view with `{outputPanel: false}` → the panel is disabled and never shows; `enableOutputPanel()` re-enables it (Open In Editor). **Re-render is identity-gated**: `showForNode` remembers the last `(nodeId, NodeExecState)` pair and skips rebuilding when both match and the panel is visible — `ExecutionState.setNodeStatus` always builds a fresh state object, so state reference identity IS value identity (re-clicking a node doesn't re-mount its grids; a re-run's new state does rebuild). The cache clears on `clear()`.
 
 ### Visual States (CSS, in [css/funcflow.css](css/funcflow.css))
 
@@ -506,9 +538,25 @@ The status circle is part of the title bar; CSS keyframes drive the pulse animat
 - **Run Script (Classic)** — clean (non-instrumented) script run via `DG.Script.create(script).prepare()`, outputs piped into the same `OutputPreviewPanel`.
 - **View Script** — opens a dialog with the generated source; buttons: Copy / Export `.js` / Open in ScriptView / Run.
 
-### Invalidation
+### Invalidation (classified, downstream-only)
 
-`onGraphChanged()` increments a graph version. Completed/errored nodes become **stale** when the graph changes after a run.
+The editor emits a **classified `GraphEdit`** (`onGraphEdited` callback in [flow-editor.ts](src/rete/flow-editor.ts): `node-added` / `node-removed` / `connection-added` / `connection-removed` / `params-changed` / `cleared`) for every result-affecting change; the coarse `onGraphChanged` stays as the "refresh UI" hook (status bar, hints, minimap) and also fires for cosmetic changes (annotations). `ExecutionController.applyGraphEdit(edit)` invalidates **only the downstream cone** (`sliceDownFrom` in [graph-compiler.ts](src/compiler/graph-compiler.ts) — forward mirror of `sliceUpTo`, follows data/pass-through/order edges alike) and returns the affected node-id set:
+
+- `node-added` → nothing (not wired yet); `node-removed` → forget its state/visuals/live values (its connections' removal events already invalidated downstream).
+- `connection-added/removed` → the **target** and downstream go stale; the source keeps its completed result (and its captured live value — still eligible for slice-boundary reuse).
+- `params-changed` → the node and downstream. Reported by the **property panel** from every semantic editor helper — but only through a per-editor **`changeReporter`** guard (DG inputs fire `onValueChanged` on initialization, so an unguarded report would make every node click an "edit"; see the Property Panel section) → `PropertyPanel.paramsChanged()` → `FlowEditor.notifyNodeParamsChanged(nodeId)`. **Title/Description are cosmetic** and don't report. The function-editor dialog writeback reports from the view.
+- Invalidation touches: `ExecutionState.markStale`, `ExecutionVisualizer.markStale` (node + incoming edges), outgoing-wire labels of invalidated nodes, their `__ffFlowLive` entries, and the output preview **only if it shows an invalidated node** (the node id is remembered so autorun can re-open it fresh).
+
+There is no graph-version counter anymore — invalidation is entirely event-driven.
+
+### Autorun ([execution/autorun.ts](src/execution/autorun.ts))
+
+Ribbon **bolt icon** (`data-testid` ribbon/autorun; `.ff-autorun-toggle` = off: 0.8 opacity, default weight (outline glyph); `+ .ff-autorun-on` = on: blue + **font-weight 600**, which renders the FA bolt filled — the weight must NOT apply to the off state; dynamic tooltip) toggles `AutorunScheduler` (view-owned, off by default). **Turning it on immediately schedules `ExecutionController.pendingNodes()`** (every node without a completed result — never-run/stale/errored — plus downstream) via `AutorunScheduler.kick(dirty)`, so a fresh flow runs at once instead of waiting for the first edit. The scheduler accumulates the invalidated ids from `applyGraphEdit` and, `AUTORUN_DEBOUNCE_MS` (2 s) after the last edit, calls `ExecutionController.runAutorun(dirty, settings)`:
+
+- `expandToLiveBoundary(flow, dirty, hasLive)` grows the dirty set upstream past nodes whose outputs are **not** captured; if the boundary is fully captured, only the slice runs (`onlyNodeIds` + `liveExternalInputs` + `preserveState` — same machinery as single-node rerun), else full run.
+- Outcomes: `'started'` (dirty consumed) / `'busy'` (run in progress → retry next interval, set kept) / `'skipped'` (validation errors, or the run would prompt for script inputs — an input node inside the run set → wait for the next edit, set kept).
+- Silent by design: no toasts, no dialog, no `autoSelectFirstOutputNode`; the only UI side effect is re-opening the output preview (content only, no selection change) if invalidation had closed it.
+- `FuncFlowView.detach()` resets the scheduler so a pending debounce can't fire into a closed view.
 
 ## File Format
 
@@ -617,13 +665,15 @@ When adding a UI element, give it a `data-testid` via the helper. Tests live in
 |   platform toolbox window — the view sets `this.toolbox =    |
 |   functionBrowser.root` and turns `showToolbox` on)          |
 +--------------------------------------------------------------+
+|  Output panel (splitter pane; hidden → minimized ↔ expanded) |
++--------------------------------------------------------------+
 |  Status bar: Nodes / Links / Validation                      |
 +--------------------------------------------------------------+
 ```
 
 Property panel goes into Datagrok's native context panel via `grok.shell.o = propertyPanel.root`. The function browser is the view's toolbox; toggling `grok.shell.windows.showToolbox` shows/hides it (ribbon icon `list-ul`).
 
-A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time the user clicks a node that has captured runtime values from a prior run, [`ExecutionController.showOutputsForNode`](src/execution/execution-controller.ts) creates the dock at the bottom; subsequent clicks update it in place. Closed when the graph changes or a new run starts.
+The bottom **Output panel** is a pane of the view's vertical splitter (not a dock) and is *lazy*: hidden until the first time the user clicks a node that has captured runtime values from a prior run ([`ExecutionController.showOutputsForNode`](src/execution/execution-controller.ts)); subsequent clicks update it in place, respecting a remembered minimized state. Emptied and hidden when the graph changes or a new run starts. See **OutputPreviewPanel** under Execution for the full state contract.
 
 ### Property Panel ([panel/property-panel.ts](src/panel/property-panel.ts))
 
@@ -637,6 +687,7 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
   - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).
   - **Connections** pane (collapsed by default): Inputs / Pass-through / Outputs grouped, with connection status from `flow.isInputConnected()` / `flow.getConnections()`.
 - Editor helpers: primitives use native DG inputs (`createPropertyInput`); the bespoke helpers (auto-resizing textarea, number, toggle, combo) remain for the non-func panes (Title/Description, Input/Output config, Utility/Constants — which edit ad-hoc `properties`, not `DG.Property` objects) and all support optional tooltips.
+- **Every semantic editor reports edits through a per-editor `changeReporter(initial)`** — NEVER call `paramsChanged()` directly from a handler. Creating/initializing a DG input (`ui.input.forProperty`, `initInputValue` setting `stringValue`) can fire `onValueChanged` immediately (not guaranteed for every input type, so "skip the first event" is wrong too); unguarded, merely clicking a node (which rebuilds the panel) counts as an edit — invalidating results and, with autorun on, rerunning the flow per click. The reporter keeps the last-seen value and reports only a REAL change (`sameValue`: scalars by string form — `5`≡`'5'`, `null`≡`''` — arrays/objects by JSON). Any new input wired into the panel must follow this pattern. Title/Description are cosmetic and never report. User-side regression test: `invalidation-tests.ts` opens the panel 3× per value-bearing node (incl. OpenFile with a fullPath) and asserts zero `params-changed`.
 - After each property change, calls `flow.updateNode(node.id)` to re-render visible state (label, etc.).
 
 ### Function Browser ([panel/function-browser.ts](src/panel/function-browser.ts))
@@ -665,6 +716,10 @@ A bottom-docked **Output panel** is *lazy*: never auto-opened. The first time th
   - **Transform Tables** — 1 table in → table out, or table in → no output (Aggregate, Unpivot, FilterRows).
   - **Column Operations** — outputs column/column_list (AddNewColumn, descriptors).
   - **Compute Values** — outputs a scalar. **Visualize** — viewer/view/widget/graphics (or role `viewer`). **Other** — the rest.
+  - **Workflows** — saved flows (`DG.Script` with language `flow`, `isWorkflowFunc` in
+    [node-factory.ts](src/rete/node-factory.ts)); checked before everything else (their signature
+    would misfile them under Data Sources) and forced in **every** group-by mode, not just
+    category — a flow's role/tags/package say nothing useful.
 - Built-in sections (**Inputs / Outputs / Constants / Utilities / Debug**) are **all collapsed by default** — building-blocks reached for deliberately, not the first scan. (The **Comparisons** group is currently hidden from the toolbox — its nodes stay registered so saved flows still load.) The DG function categories below them are what leads.
 - DG functions follow, ordered by `FUNC_CATEGORIES` in category mode (alphabetical in other modes); each category section is collapsed until clicked. **Exception:** in category mode the **Cheminformatics** and **Bioinformatics** sections (`DOMAIN_CATEGORIES`) are rendered first, right after the Queries pane (before Viewers/Widgets/built-ins), then the remaining categories — so the domain science leads the toolbox.
 - **Parameter descriptions**: `FuncNode` captures each slot's description (`getParamDescription` → `inputDescriptions`/`outputDescriptions`) and the source package (`dgPackageName`) from the live `DG.Func`. The node component shows them as socket-row `title` tooltips; the property panel's input rows use `buildFuncInputTooltip` (which reads the same description) and the **Function** pane shows a **Package** row (`ff-prop-func-package`).

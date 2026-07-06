@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {
-  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES,
+  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES, isWorkflowFunc,
 } from '../rete/node-factory';
 import {EXCLUDED_FUNC_NQNAMES} from '../rete/excluded-funcs';
 import {
@@ -140,6 +140,21 @@ category('Flow: function browser', () => {
       expect(categorizeFunc(f, null), expected, `${name} -> ${expected}`);
     }
     expect(checked > 0, true, 'at least one known function was available to classify');
+  });
+
+  test('saved flows classify as Workflows in every grouping', async () => {
+    // A flow entity is a DG.Script with language `flow`; its signature would
+    // otherwise read as a data source — it gets its own section instead.
+    const flowScript = DG.Script.create('//name: MyFlow\n//language: flow\n');
+    expect(isWorkflowFunc(flowScript), true, 'a flow script is a workflow');
+    expect(categorizeFunc(flowScript, null, 'Flow'), 'Workflows', 'category routing');
+    expect((FUNC_CATEGORIES as readonly string[]).includes('Workflows'), true,
+      'Workflows is an ordered category');
+
+    const jsScript = DG.Script.create('//name: MyJs\n//language: javascript\nlet x = 1;');
+    expect(isWorkflowFunc(jsScript), false, 'other script languages stay in their signature category');
+    const plainFunc = DG.Func.find({name: 'OpenFile'})[0];
+    if (plainFunc) expect(isWorkflowFunc(plainFunc), false, 'a non-script func is not a workflow');
   });
 
   test('Data Sources leads the category order', async () => {

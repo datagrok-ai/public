@@ -11,15 +11,19 @@ import {parseSpectronautCandidatesText, COMPARISON_COLUMNS}
   from './parsers/spectronaut-candidates-parser';
 import {parseFragPipeText} from './parsers/fragpipe-parser';
 import {showGenericImportDialog} from './parsers/generic-parser';
-import {showAnnotationDialog, getGroups} from './analysis/experiment-setup';
+import {showAnnotationDialog, getGroups, getOrganism, setOrganism} from './analysis/experiment-setup';
+import {detectOrganismCode} from './utils/organisms';
 import {computeSpcMetrics, evaluateNelsonRulesAllMetrics, setSpcStatus, getRunMeta,
   defaultRulesEnabledAllMetrics, BaselineSnapshot} from './analysis/spc';
 import {upsertRun, loadRuns, loadBaseline, SpcRunRow} from './analysis/spc-storage';
 import {showNormalizationDialog, quantileNormalize, vsnNormalize} from './analysis/normalization';
+import {showLog2ScaleDialog} from './analysis/log2-scale';
+import {showEnrichmentInputExportDialog} from './analysis/enrichment-export';
 import {showImputationDialog, imputeKnn, imputeZero, imputeMean, imputeMedian} from './analysis/imputation';
 import {showDEDialog, requireDifferentialExpression} from './analysis/differential-expression';
 import {createVolcanoPlot, recomputeVolcano, readVolcanoState, MetricKind, applyTopNLabels,
   getVolcanoTopN, showVolcanoBusy, updateVolcanoBusy, hideVolcanoBusy,
+  getVolcanoAxisMax, setVolcanoAxisMax,
   LOCATION_COL} from './viewers/volcano';
 import {STORE as SUBCELL_STORE} from './analysis/subcellular-location';
 import {createExpressionHeatmap} from './viewers/heatmap';
@@ -131,6 +135,17 @@ export async function sniffIsPrecursor(file: File): Promise<boolean> {
  * search-match → df.selection wiring. Disposed on re-entry so a second
  * multi-contrast import does not leak the prior handler. */
 let activeFilterSubscriptions: rxjs.Subscription[] = [];
+
+/** Sets `proteomics.organism` from the data's organism column at import when it
+ * resolves to a single supported species, so enrichment and the subcellular-
+ * location fetch narrow to the right organism without waiting for a dialog.
+ * No-op when already set, absent, or ambiguous (multi-species) — the user then
+ * picks in the Annotate/Enrichment dialog. */
+function autoDetectOrganism(df: DG.DataFrame): void {
+  if (getOrganism(df)) return;
+  const code = detectOrganismCode(df);
+  if (code) setOrganism(df, code);
+}
 
 /**
  * R4/D-07 + G4 + D-05: when a Spectronaut Candidates file carries more than one
@@ -288,10 +303,12 @@ export class PackageFunctions {
       importFragPipe: () => PackageFunctions.importFragPipe(),
       importGenericMatrix: () => PackageFunctions.importGenericMatrix(),
       annotateExperiment: () => PackageFunctions.annotateExperiment(),
+      setLog2Scale: () => PackageFunctions.setLog2Scale(),
       normalize: () => PackageFunctions.normalizeProteomics(),
       impute: () => PackageFunctions.imputeMissingValues(),
       differentialExpression: () => PackageFunctions.differentialExpression(),
       enrichmentAnalysis: () => PackageFunctions.enrichmentAnalysis(),
+      exportEnrichmentInputs: () => PackageFunctions.exportEnrichmentInputs(),
       computeSpcStatus: () => PackageFunctions.computeSpcStatus(),
       showVolcanoPlot: () => PackageFunctions.showVolcanoPlot(),
       showHeatmap: () => PackageFunctions.showHeatmap(),
@@ -335,6 +352,7 @@ export class PackageFunctions {
           const text = await file.text();
           const df = await parseSpectronautCandidatesText(text);
           df.name = file.name.replace(/\.[^.]+$/, '');
+          autoDetectOrganism(df);
           const tv = grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
           dockComparisonFilterIfMultiContrast(tv, df);
@@ -355,6 +373,7 @@ export class PackageFunctions {
           const df = (await sniffIsPrecursor(file)) ?
             await parseSpectronautStream(file) : await parseSpectronautText(await file.text());
           df.name = file.name.replace(/\.[^.]+$/, '');
+          autoDetectOrganism(df);
           grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} protein groups from Spectronaut`);
           focusProtein(df);
@@ -380,6 +399,7 @@ export class PackageFunctions {
           const text = await file.text();
           const df = await parseMaxQuantText(text);
           df.name = file.name.replace(/\.[^.]+$/, '');
+          autoDetectOrganism(df);
           grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} protein groups`);
           focusProtein(df);
@@ -399,6 +419,7 @@ export class PackageFunctions {
           const text = await file.text();
           const df = await parseFragPipeText(text);
           df.name = file.name.replace(/\.[^.]+$/, '');
+          autoDetectOrganism(df);
           grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} protein groups from FragPipe`);
           focusProtein(df);
@@ -420,6 +441,14 @@ export class PackageFunctions {
     if (!df) { grok.shell.warning('No table open'); return; }
     if (!requireSampleLevelData(df, 'Annotate Experiment')) return;
     showAnnotationDialog(df);
+  }
+
+  @grok.decorators.func()
+  static async setLog2Scale(): Promise<void> {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) { grok.shell.warning('No table open'); return; }
+    if (!requireSampleLevelData(df, 'Set Log2 Scale')) return;
+    showLog2ScaleDialog(df);
   }
 
   @grok.decorators.func()
@@ -614,13 +643,39 @@ export class PackageFunctions {
       'How many of the most significant proteins get name labels. 0 = none. ' +
       'Labels no longer touch your row selection.');
 
+    // Optional axis-max overrides so volcanoes from different contrasts can be
+    // pinned to a shared scale and compared side-by-side. Empty = auto-scale.
+    const axis = getVolcanoAxisMax(df);
+    const xMaxInput = ui.input.float('X-axis max (|log2FC|)', {
+      value: axis.xMax ?? undefined,
+      min: 0,
+      nullable: true,
+    });
+    xMaxInput.setTooltip(
+      'Pin the X axis to ±this |log2FC|. Leave empty to auto-scale. ' +
+      'Set the same value on two volcanoes to compare them side-by-side.');
+    const yMaxInput = ui.input.float('Y-axis max (−log10 p)', {
+      value: axis.yMax ?? undefined,
+      min: 0,
+      nullable: true,
+    });
+    yMaxInput.setTooltip(
+      'Pin the Y axis to 0…this −log10(p). Leave empty to auto-scale. ' +
+      'Set the same value on two volcanoes to compare them side-by-side.');
+
     ui.dialog('Volcano Options')
       .add(metricInput)
       .add(colorInput)
       .add(labelTopNInput)
+      .add(xMaxInput)
+      .add(yMaxInput)
       .onOK(async () => {
         const metric = (metricInput.value ?? 'adj.p-value') as MetricKind;
         const colorDim = colorInput.value === 'location' ? 'location' : 'significance';
+
+        // Persist the axis-max overrides before recompute — recomputeVolcano
+        // ends with applyVolcanoAxisBounds, which reads these tags back.
+        setVolcanoAxisMax(df, xMaxInput.value ?? null, yMaxInput.value ?? null);
 
         // First-time path: create the volcano NOW (on OK), so it isn't drawn
         // until the user confirms. topNLabels=0 here — applyTopNLabels below
@@ -702,13 +757,25 @@ export class PackageFunctions {
     if (!requireSampleLevelData(df, 'Heatmap')) return;
     if (!requireDifferentialExpression(df,
       'Run Differential Expression first (Proteomics | Analyze | Differential Expression)')) return;
-    const pi = DG.TaskBarProgressIndicator.create('Creating heatmap...');
-    try {
-      const grid = await createExpressionHeatmap(df, {title: 'Heatmap: Top 50 DE Proteins'});
-      tv.addViewer(grid);
-    } finally {
-      pi.close();
-    }
+
+    // M4 — top-N is now user-configurable (was hardcoded 50). Small dialog so the
+    // analyst can widen/narrow the heatmap; the ellipsis menu item implies it.
+    const topNInput = ui.input.int('Top N proteins', {value: 50, min: 1});
+    topNInput.setTooltip('How many of the most significant proteins (by adj. p-value) to show.');
+    ui.dialog('Heatmap Options')
+      .add(topNInput)
+      .onOK(async () => {
+        const topN = topNInput.value ?? 50;
+        const pi = DG.TaskBarProgressIndicator.create('Creating heatmap...');
+        try {
+          const grid = await createExpressionHeatmap(df,
+            {topN, title: `Heatmap: Top ${topN} DE Proteins`});
+          tv.addViewer(grid);
+        } finally {
+          pi.close();
+        }
+      })
+      .show();
   }
 
   @grok.decorators.func()
@@ -795,6 +862,15 @@ export class PackageFunctions {
     const df = grok.shell.tv?.dataFrame;
     if (!df) { grok.shell.warning('No table open'); return; }
     showEnrichmentDialog(df);
+  }
+
+  @grok.decorators.func()
+  static async exportEnrichmentInputs(): Promise<void> {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) { grok.shell.warning('No table open'); return; }
+    if (!requireDifferentialExpression(df,
+      'Run Differential Expression first (Proteomics | Analyze | Differential Expression)')) return;
+    showEnrichmentInputExportDialog(df);
   }
 
   @grok.decorators.func()
