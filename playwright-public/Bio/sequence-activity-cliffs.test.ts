@@ -47,7 +47,9 @@ for (const ds of datasets) {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Activity-Cliffs...');
       await page.locator('.d4-dialog [name="button-OK"]').waitFor({timeout: 60_000});
       const title = await page.locator('.d4-dialog .d4-dialog-title').textContent();
-      expect(title?.trim()).toBe('Activity Cliffs');
+      // The Bio editor is registered as 'Sequence Activity Cliffs' (packages/Bio/src/package.ts:527);
+      // tolerate the 'Sequence ' prefix rather than pinning the exact string.
+      expect(title?.trim()).toContain('Activity Cliffs');
     });
     await softStep(`${ds.name}: Run with default parameters — ScatterPlot + embeddings appended`, async () => {
       const baseCols: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);

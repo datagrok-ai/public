@@ -73,9 +73,10 @@ for (const ds of datasets) {
     await softStep(`${ds.name}: Calculate > Extract Region adds a Macromolecule sub-region column`, async () => {
       const before: number = await page.evaluate(() => grok.shell.tv.dataFrame.columns.length);
       await openBioMenuItem(page, 'Calculate', 'Extract-Region...');
-      // Dialog name is `dialog-Get-Region` (named after API getRegion, not the menu label).
-      await page.locator('[name="dialog-Get-Region"]').waitFor({timeout: 60_000});
-      await page.locator('[name="dialog-Get-Region"] [name="button-OK"]').click();
+      // Canonical editor: the platform hosts the widget and names the dialog after the function's
+      // friendly name 'Get Sequence Region' (Bio/package.ts:473) -> [name="dialog-Get-Sequence-Region"].
+      await page.locator('[name="dialog-Get-Sequence-Region"]').waitFor({timeout: 60_000});
+      await page.locator('[name="dialog-Get-Sequence-Region"] [name="button-OK"]').click();
       await page.waitForFunction(
         (b) => grok.shell.tv.dataFrame.columns.length > b, before, {timeout: 30_000});
       const info: {hasRegion: boolean, units: string | null, name: string | null} = await page.evaluate(() => {
@@ -88,7 +89,7 @@ for (const ds of datasets) {
       expect(info.hasRegion).toBe(true);
       expect(info.units).toBe(ds.units);
       await page.waitForFunction(
-        () => document.querySelectorAll('[name="dialog-Get-Region"]').length === 0,
+        () => document.querySelectorAll('[name="dialog-Get-Sequence-Region"]').length === 0,
         null, {timeout: 15_000}).catch(() => {});
     });
     await softStep(`${ds.name}: Transform > Convert Sequence Notation adds a new Macromolecule column`, async () => {

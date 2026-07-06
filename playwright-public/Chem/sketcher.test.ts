@@ -69,6 +69,15 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   await loginToDatagrok(page);
   await page.waitForTimeout(3000);
 
+  // navigator.clipboard is only defined in a secure context (https:// or localhost). CI runs
+  // against a plain-http dev host, so the Copy/Paste round-trip steps (8/8b/9/9b) can't read the
+  // clipboard there — grantPermissions above cannot conjure the API. Detect availability once and
+  // skip only those steps; the menu-presence assertions (Step 3) still run everywhere.
+  const clipboardOk = await page.evaluate(() => {
+    try { return !!(navigator.clipboard && typeof navigator.clipboard.readText === 'function'); }
+    catch { return false; }
+  });
+
   await softStep('Step 1: Open smiles-50.csv + Molecule semType ready', async () => {
     await page.evaluate(async (favKeys) => {
       try { (grok as any).shell.settings.showFiltersIconsConstantly = true; } catch (e) {}
@@ -155,12 +164,14 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   });
 
   await softStep('Step 8: Copy as SMILES places the current molecule SMILES on the clipboard', async () => {
+    if (!clipboardOk) { console.warn('[SKIP] Step 8 — navigator.clipboard unavailable (insecure origin)'); return; }
     await openHamburger();
     await clickLabel(/Copy as SMILES/);
     await expect.poll(() => clipboard(), {timeout: 10_000}).toBe(CYCLOHEXANE);
   });
 
   await softStep('Step 8b: Paste the copied SMILES restores it into the molecular input', async () => {
+    if (!clipboardOk) { console.warn('[SKIP] Step 8b — navigator.clipboard unavailable (insecure origin)'); return; }
     await typeSmiles(ETHANOL);
     await smilesInput.click();
     await page.keyboard.press('Control+A');
@@ -170,6 +181,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   });
 
   await softStep('Step 9: Copy as MOLBLOCK places a V2000 molblock on the clipboard', async () => {
+    if (!clipboardOk) { console.warn('[SKIP] Step 9 — navigator.clipboard unavailable (insecure origin)'); return; }
     await openHamburger();
     await clickLabel(/Copy as MOL/);
     await expect.poll(() => clipboard(), {timeout: 10_000}).toContain('V2000');
@@ -178,6 +190,7 @@ test('Chem: Sketcher Favorites + Recent + Copy as SMILES/MOLBLOCK + input round-
   });
 
   await softStep('Step 9b: Paste the copied MOLBLOCK restores the pre-edit molecule', async () => {
+    if (!clipboardOk) { console.warn('[SKIP] Step 9b — navigator.clipboard unavailable (insecure origin)'); return; }
     await typeSmiles(ETHANOL);
     await smilesInput.click();
     await page.keyboard.press('Control+A');

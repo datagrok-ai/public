@@ -313,9 +313,11 @@ test('Bio Calculate scoring — Identity / Similarity top-menu + seqIdentity / g
       let regionCol: any;
       let callError: string | null = null;
       try {
+        // Positions are looked up by 1-indexed NAME against posList (get-region.ts:128,137-142),
+        // so start must be >= '1'; '0' has no matching position name and is correctly rejected.
         regionCol = await (grok as any).functions.call('Bio:getRegion', {
           sequence: macroCol,
-          start: '0',
+          start: '1',
           end: '4',
           name: 'region_0_4',
         });
