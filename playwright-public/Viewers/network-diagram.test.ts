@@ -4,7 +4,7 @@ import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-test('Network diagram', async ({page}) => {
+test('Network diagram tests', async ({page}) => {
   test.setTimeout(300_000);
 
   await loginToDatagrok(page);
