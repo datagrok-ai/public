@@ -7,22 +7,15 @@ import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from '../utils/prote
 import {openEnrichmentVisualization} from '../viewers/enrichment-viewers';
 import {requireDifferentialExpression} from './differential-expression';
 import {getOrganism, setOrganism} from './experiment-setup';
+import {ORGANISM_LIST, detectOrganismCode, organismDisplayForCode} from '../utils/organisms';
+
+// ORGANISM_LIST now lives in utils/organisms (single source); re-exported here so
+// existing importers (and the enrichment tests) keep resolving it from this module.
+export {ORGANISM_LIST};
 
 // --- Constants ---
 
 const GPROFILER_BASE = 'https://biit.cs.ut.ee/gprofiler';
-
-export const ORGANISM_LIST = [
-  {display: 'Homo sapiens (Human)', code: 'hsapiens'},
-  {display: 'Mus musculus (Mouse)', code: 'mmusculus'},
-  {display: 'Rattus norvegicus (Rat)', code: 'rnorvegicus'},
-  {display: 'Saccharomyces cerevisiae (Yeast)', code: 'scerevisiae'},
-  {display: 'Escherichia coli (K12)', code: 'ecoli'},
-  {display: 'Danio rerio (Zebrafish)', code: 'drerio'},
-  {display: 'Drosophila melanogaster (Fruit fly)', code: 'dmelanogaster'},
-  {display: 'Arabidopsis thaliana', code: 'athaliana'},
-  {display: 'Caenorhabditis elegans', code: 'celegans'},
-] as const;
 
 // --- Types ---
 
@@ -328,6 +321,7 @@ export async function runEnrichmentPipeline(
   organismCode: string,
   sources: string[],
   smartFilterEnabled: boolean = true,
+  maxTermsPerSource: number = 15,
 ): Promise<{enrichmentDf: DG.DataFrame; mapped: number; total: number; unmapped: number}> {
   const cols = findProteomicsColumns(df);
   if (!cols.proteinId)
@@ -423,7 +417,7 @@ export async function runEnrichmentPipeline(
   if (upGenes.length > 0) {
     let upResults = await gGOSt(upGenes, bgArray, organismCode, sources, pThreshold);
     if (smartFilterEnabled) {
-      const filtered = applySmartPathwayFilter(upResults, 15);
+      const filtered = applySmartPathwayFilter(upResults, maxTermsPerSource);
       upResults = filtered.kept;
       upStats = filtered.stats;
     }
@@ -432,7 +426,7 @@ export async function runEnrichmentPipeline(
   if (downGenes.length > 0) {
     let downResults = await gGOSt(downGenes, bgArray, organismCode, sources, pThreshold);
     if (smartFilterEnabled) {
-      const filtered = applySmartPathwayFilter(downResults, 15);
+      const filtered = applySmartPathwayFilter(downResults, maxTermsPerSource);
       downResults = filtered.kept;
       downStats = filtered.stats;
     }
@@ -470,7 +464,7 @@ export async function runEnrichmentPipeline(
       enrichmentDf.setTag('proteomics.enrichment_smart_filtered_kept', String(totalKept));
       enrichmentDf.setTag('proteomics.enrichment_smart_filtered_total', String(totalInput));
       enrichmentDf.setTag('proteomics.enrichment_smart_filtered_dropped_parents', String(totalDropped));
-      enrichmentDf.setTag('proteomics.enrichment_smart_filtered_cap', '15');
+      enrichmentDf.setTag('proteomics.enrichment_smart_filtered_cap', String(maxTermsPerSource));
     }
   }
 
@@ -494,11 +488,12 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
   const pInput = ui.input.float('Adj. p-value threshold', {value: DEFAULT_P_THRESHOLD});
   pInput.setTooltip('Maximum adjusted p-value for significance');
 
-  // Seed from a previously chosen organism (df tag) so the choice is sticky and
-  // shared with the subcellular-location fetch; default to human when unset.
-  const seededOrganism = ORGANISM_LIST.find((o) => o.code === getOrganism(df));
+  // Seed from the chosen/persisted organism, else auto-detect from the data's
+  // organism column (covers the Candidates path, which skips Annotate), else human.
+  // Sticky + shared with the subcellular-location fetch via the proteomics.organism tag.
+  const seededDisplay = organismDisplayForCode(getOrganism(df) ?? detectOrganismCode(df));
   const organismInput = ui.input.choice('Organism', {
-    value: (seededOrganism?.display ?? 'Homo sapiens (Human)') as string,
+    value: (seededDisplay ?? 'Homo sapiens (Human)') as string,
     items: ORGANISM_LIST.map((o) => o.display) as unknown as string[],
     nullable: false,
   });
@@ -517,6 +512,16 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
     'Drops generic GO parent terms when more specific child terms are present; ' +
     'caps each source at top-N by FDR. Recommended for cleaner results; ' +
     'uncheck for raw g:Profiler output.');
+
+  // M3 — the per-source top-N cap the smart filter applies (was hardcoded 15).
+  // Only meaningful when the smart filter is on; greyed out otherwise.
+  const maxTermsInput = ui.input.int('Max terms per source', {value: 15, min: 1});
+  maxTermsInput.setTooltip(
+    'Upper bound on terms kept per enrichment source (top-N by FDR). ' +
+    'Applies only when the smart pathway filter is on.');
+  const syncMaxTermsEnabled = () => maxTermsInput.enabled = smartFilterInput.value ?? true;
+  smartFilterInput.onChanged.subscribe(syncMaxTermsEnabled);
+  syncMaxTermsEnabled();
 
   // Live count of significant proteins
   const countDiv = ui.divText('');
@@ -544,6 +549,7 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
     .add(reactomeInput)
     .add(wpInput)
     .add(smartFilterInput)
+    .add(maxTermsInput)
     .onOK(async () => {
       const pi = DG.TaskBarProgressIndicator.create('Running enrichment analysis...');
       try {
@@ -573,7 +579,8 @@ export function showEnrichmentDialog(df: DG.DataFrame): void {
         }
 
         const result = await runEnrichmentPipeline(
-          df, fc, p, organismCode, selectedSources, smartFilterInput.value ?? true);
+          df, fc, p, organismCode, selectedSources, smartFilterInput.value ?? true,
+          maxTermsInput.value ?? 15);
 
         // Show mapping stats
         const pct = result.total > 0 ? (result.mapped / result.total * 100).toFixed(1) : '0.0';

@@ -5,6 +5,8 @@ import dayjs from 'dayjs';
 
 import {SEMTYPE} from '../utils/proteomics-types';
 import {RunMeta, setRunMeta, getRunMeta} from './spc';
+import {ORGANISM_LIST, detectOrganismCode, organismDisplayForCode,
+  organismCodeForDisplay} from '../utils/organisms';
 
 /** Describes which intensity columns belong to each experimental group. */
 export interface GroupAssignment {
@@ -127,12 +129,24 @@ export function showAnnotationDialog(df: DG.DataFrame): void {
     tooltipText: 'When the samples were acquired on the instrument. ' +
       'Used to order runs on the SPC trend chart — not the file-import time.',
   } as any);
+  // Organism: persisted choice, else auto-detected from the data's organism
+  // column, else human. Sets proteomics.organism early so enrichment and the
+  // subcellular-location fetch narrow to the right species (not always human).
+  const organismInput = ui.input.choice('Organism', {
+    value: (organismDisplayForCode(getOrganism(df) ?? detectOrganismCode(df)) ??
+      'Homo sapiens (Human)') as string,
+    items: ORGANISM_LIST.map((o) => o.display) as unknown as string[],
+    nullable: false,
+    tooltipText: 'Species for enrichment (g:Profiler) and UniProt subcellular-location ' +
+      'lookup. Auto-detected from the data when available.',
+  });
 
   ui.dialog('Annotate Experiment')
     .add(group1Name)
     .add(group1Cols)
     .add(group2Name)
     .add(group2Cols)
+    .add(organismInput)
     .add(instrumentInput)
     .add(datetimeInput)
     .onOK(() => {
@@ -156,6 +170,7 @@ export function showAnnotationDialog(df: DG.DataFrame): void {
       applyAnnotation(df, {
         group1: groups.group1,
         group2: groups.group2,
+        organism: organismCodeForDisplay(organismInput.value ?? undefined),
         runMeta: (instrumentValue.length > 0 || isoDatetime.length > 0)
           ? {instrument_id: instrumentValue, acquisition_datetime: isoDatetime}
           : undefined,
@@ -174,9 +189,11 @@ export function applyAnnotation(
   payload: {
     group1: GroupAssignment['group1'];
     group2: GroupAssignment['group2'];
+    organism?: string;
     runMeta?: RunMeta;
   },
 ): void {
   setGroups(df, {group1: payload.group1, group2: payload.group2});
+  if (payload.organism) setOrganism(df, payload.organism);
   if (payload.runMeta) setRunMeta(df, payload.runMeta);
 }

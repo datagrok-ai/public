@@ -63,6 +63,10 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:AnnotateExperiment', {});
   }
 
+  export async function setLog2Scale(): Promise<void> {
+    return await grok.functions.call('Proteomics:SetLog2Scale', {});
+  }
+
   export async function normalizeProteomics(): Promise<void> {
     return await grok.functions.call('Proteomics:NormalizeProteomics', {});
   }

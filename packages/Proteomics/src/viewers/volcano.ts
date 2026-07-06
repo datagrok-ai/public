@@ -42,6 +42,25 @@ export const VOLCANO_METRIC_TAG = 'proteomics.volcano_metric';
  * overlays / frozen counters on viewer re-entry (Pitfall 6). */
 let activeVolcanoSubscriptions: rxjs.Subscription[] = [];
 
+/** Marker class on a volcano's scatter root; scopes the axis-chip-hiding
+ * stylesheet so it only affects our volcanoes, never other scatterplots. */
+const VOLCANO_ROOT_CLASS = 'proteomics-volcano';
+
+/** Injects the scoped stylesheet that hides the platform's X/Y axis
+ * column-selector chips inside a volcano (they duplicated our custom axis
+ * labels). `.d4-vertical` (Y) and `.d4-bottom-center` (X) only — the color
+ * (`.d4-vertical-right`) and size selectors stay. Idempotent: injected once. */
+function ensureVolcanoStyles(): void {
+  const id = 'proteomics-volcano-styles';
+  if (document.getElementById(id)) return;
+  const style = document.createElement('style');
+  style.id = id;
+  style.textContent =
+    `.${VOLCANO_ROOT_CLASS} .d4-column-selector.d4-vertical,` +
+    `.${VOLCANO_ROOT_CLASS} .d4-column-selector.d4-bottom-center{display:none !important;}`;
+  document.head.appendChild(style);
+}
+
 /** Resolves the significance column for the requested metric. `p-value` falls
  * back to `adj.p-value` when the raw p-value column is absent (D-06 guard — no
  * throw, stays on adj.p-value). Throws only when adj.p-value itself is missing
@@ -452,6 +471,63 @@ export const VOLCANO_LABEL_COL = '~Volcano label';
 /** Persisted top-N label count so the options dialog + search path can read it. */
 export const VOLCANO_TOPN_TAG = 'proteomics.volcano_top_n';
 
+/** Optional pinned axis maxima, stored as df tags so they survive the metric /
+ * color toggles that re-enter recomputeVolcano (tag-based state, like the metric
+ * and top-N). Empty = auto-scale. X is the symmetric |log2FC| bound (pins
+ * xMin=-xMax, xMax=+xMax); Y pins the −log10(p) maximum with yMin at 0. Lets
+ * analysts fix identical axes across contrasts for side-by-side comparison
+ * (CK x_max_var / y_max_var). */
+export const VOLCANO_XMAX_TAG = 'proteomics.volcano_x_max';
+export const VOLCANO_YMAX_TAG = 'proteomics.volcano_y_max';
+
+/** Reads the pinned axis maxima; a tag that is absent, non-numeric, or ≤ 0 reads
+ * as null (auto-scale). */
+export function getVolcanoAxisMax(df: DG.DataFrame): {xMax: number | null; yMax: number | null} {
+  const parse = (tag: string): number | null => {
+    const v = parseFloat(df.getTag(tag) ?? '');
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  return {xMax: parse(VOLCANO_XMAX_TAG), yMax: parse(VOLCANO_YMAX_TAG)};
+}
+
+/** Persists the pinned axis maxima; null / non-positive clears the tag (auto). */
+export function setVolcanoAxisMax(df: DG.DataFrame, xMax: number | null, yMax: number | null): void {
+  const write = (tag: string, v: number | null) =>
+    df.setTag(tag, v != null && Number.isFinite(v) && v > 0 ? String(v) : '');
+  write(VOLCANO_XMAX_TAG, xMax);
+  write(VOLCANO_YMAX_TAG, yMax);
+}
+
+/** Applies the pinned axis bounds from the df tags onto the scatterplot. When a
+ * bound is unset, resets that axis to the data's actual min/max (a fit-to-data
+ * reset) rather than NaN — the platform rejects a NaN viewport ("Viewport can't
+ * be infinite"). Called by createVolcanoPlot and every recomputeVolcano so a
+ * metric / color toggle keeps the pinned axes. */
+export function applyVolcanoAxisBounds(sp: DG.ScatterPlotViewer, df: DG.DataFrame): void {
+  const {xMax, yMax} = getVolcanoAxisMax(df);
+  if (xMax != null) {
+    sp.props.xMin = -xMax;
+    sp.props.xMax = xMax;
+  } else {
+    const fc = df.col('log2FC');
+    if (fc != null && Number.isFinite(fc.min) && Number.isFinite(fc.max)) {
+      const pad = Math.max((fc.max - fc.min) * 0.05, 1e-6);
+      sp.props.xMin = fc.min - pad;
+      sp.props.xMax = fc.max + pad;
+    }
+  }
+  if (yMax != null) {
+    sp.props.yMin = 0;
+    sp.props.yMax = yMax;
+  } else {
+    const y = df.col(NEG_LOG_COL);
+    if (y != null && Number.isFinite(y.max)) {
+      sp.props.yMin = 0;
+      sp.props.yMax = y.max * 1.05 + 1e-6;
+    }
+  }
+}
+
 /** Display Name (Plan 14-01) is canonical; Gene name is the pre-14-01 fallback. */
 function findLabelSource(df: DG.DataFrame): DG.Column | null {
   return findColumn(df, SEMTYPE.DISPLAY_NAME, ['display name']) ??
@@ -551,6 +627,16 @@ export function createVolcanoPlot(
   applyThresholdLines(df, yColName, fcThreshold, pThreshold);
   sp.props.showViewerFormulaLines = true;
 
+  // Hide the platform's interactive axis column-selector chips. They render the
+  // raw column name ('log2FC' / 'negLog10P') next to each axis and collided with
+  // our custom rotated axis labels below (the two overlapping Y titles the fix
+  // targets). The `showXSelector`/`showYSelector` props don't suppress them on
+  // the current runtime, so we hide the chips with a scoped stylesheet keyed off
+  // a marker class; the color/size selectors and canvas ticks are untouched.
+  // attachAxisLabels supplies the sole, pretty axis titles.
+  ensureVolcanoStyles();
+  sp.root.classList.add(VOLCANO_ROOT_CLASS);
+
   // G1 title synthesis — runs AFTER any caller-passed options.title so the
   // contract is the synthesized string. Callers that need an explicit title
   // can read the synthesized value back via sp.getOptions().look.title.
@@ -559,6 +645,7 @@ export function createVolcanoPlot(
 
   attachAxisLabels(sp, df);
   attachCounterOverlay(sp, df);
+  applyVolcanoAxisBounds(sp, df);
 
   // D-03 (decoupled): label the top-N by significance via the sparse label
   // column — NOT via df.selection. topNLabels=0 opts out (no labels).
@@ -599,4 +686,5 @@ export async function recomputeVolcano(
     sp.props.colorColumnName = dirName;
 
   refreshVolcanoAxisLabel(sp, df);
+  applyVolcanoAxisBounds(sp, df);
 }
