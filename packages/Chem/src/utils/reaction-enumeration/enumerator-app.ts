@@ -498,10 +498,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // "Subset by selection" clones by the selection mask and registers the clone with the workspace,
   // since the table input's choice widget silently rejects unregistered values. `original` restores
   // the user's own table for "Use all".
-  type SubsetState = {prev: DG.DataFrame | null; original: DG.DataFrame | null; suppress: boolean};
-  const templatesState: SubsetState = {prev: null, original: null, suppress: false};
-  const bbsState: SubsetState = {prev: null, original: null, suppress: false};
-  const reagentsState: SubsetState = {prev: null, original: null, suppress: false};
+  type SubsetState = {prev: DG.DataFrame | null; original: DG.DataFrame | null};
+  const templatesState: SubsetState = {prev: null, original: null};
+  const bbsState: SubsetState = {prev: null, original: null};
+  const reagentsState: SubsetState = {prev: null, original: null};
 
   // ---- Per-step (per-round) subsetting state ----
   // Each component (reactions/BBs/reagents) can be narrowed per round via a display-only clone
@@ -612,14 +612,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // ui.input.table is a ChoiceInput over the workspace tables list; setting .value to a DataFrame
   // not in that list is silently rejected. Register via grok.shell.addTable first, and dip through
   // null to drop any cached pointer-equality with the previous selection.
-  function assignTableInput(input: DG.InputBase<DG.DataFrame | null>, df: DG.DataFrame,
-    setSuppress: (v: boolean) => void): void {
+  function assignTableInput(input: DG.InputBase<DG.DataFrame | null>, df: DG.DataFrame): void {
     grok.shell.addTable(df);
-    setSuppress(true);
-    try {
-      try {input.value = null;} catch {/* nullable: false rejects */}
-      input.value = df;
-    } finally {setSuppress(false);}
+    try {input.value = null;} catch {/* nullable: false rejects */}
+    input.value = df;
   }
 
   // Shared clone/rename/detect core for both the global ("All steps") and per-step "Subset by
@@ -656,14 +652,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
     const subset = cloneSubsetByRows(df, `Select rows in the ${gridLabel} first (Ctrl/Shift+click).`);
     if (!subset) return;
-    if (df !== state.prev) state.original = df; // remember the user's own table for "Use all"
+    // `input` is a ChoiceInput whose `.value` getter re-wraps the underlying table on every read, so
+    // `df` is never reference-equal to `state.prev` even when it's the same table — compare by name
+    // instead (live-verified via diagnostic logging: same `.name`, but `!==` by reference).
+    if (df.name !== state.prev?.name) state.original = df; // remember the user's own table for "Use all"
     const prev = state.prev;
     state.prev = subset;
-    assignTableInput(input, subset, (v) => { state.suppress = v; });
+    assignTableInput(input, subset);
     mountFn();
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
-    if (prev && prev !== subset && prev !== df)
+    if (prev && prev.name !== subset.name && prev.name !== df.name)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
 
@@ -673,16 +672,16 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void, noun: string,
   ): void {
     const orig = state.original;
-    if (!orig || input.value === orig) {
+    if (!orig || input.value?.name === orig.name) {
       grok.shell.info(`The full ${noun} library is already in use.`);
       return;
     }
     const prev = state.prev;
     state.prev = null;
-    assignTableInput(input, orig, (v) => { state.suppress = v; });
+    assignTableInput(input, orig);
     mountFn();
     refreshValidation();
-    if (prev && prev !== orig)
+    if (prev && prev.name !== orig.name)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
   }
 
@@ -1275,10 +1274,16 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
     const onTableChanged = (): void => {
       if (o.input.value) detectChemSemTypes(o.input.value);
-      // Guarded: subsetBySelection/restoreFullTable reassign o.input.value under suppress=true so
-      // THIS handler won't treat their own programmatic swap as a genuine user file change and erase
-      // "Use all"'s remembered original.
-      if (!o.state.suppress) o.state.original = null;
+      // `state.original` is deliberately NOT touched here. onChanged's exact timing relative to
+      // subsetBySelection's own synchronous assignment isn't reliable enough to gate a reset on
+      // (two earlier attempts — a suppress flag, then a direct o.state.prev comparison here — were
+      // both live-verified to occasionally wipe `original` mid-chain, making "Use all" undo only the
+      // last "Subset by selection" instead of the whole chain back to the true original). Ownership
+      // of `original`'s lifecycle lives entirely in subsetBySelection/restoreFullTable's own
+      // synchronous, user-triggered logic instead — see subsetBySelection's `df.name !== state.prev?.name`
+      // check, which self-corrects even after an unrelated file swap. Trade-off: if the user swaps
+      // to a different file WITHOUT ever subsetting it, then clicks "Use all", it restores the
+      // previous file's original instead of a no-op — an edge case outside "Use all"'s intended use.
       for (const s of stepState) s?.sub?.unsubscribe();
       stepState.length = 0;
       buildStepTabs(0);
