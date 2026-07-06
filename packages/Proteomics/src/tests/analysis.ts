@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {setGroups, getGroups, GroupAssignment, seedAnnotationDialogInputs,
-  setOrganism, getOrganism} from '../analysis/experiment-setup';
+  setOrganism, getOrganism, applyAnnotation} from '../analysis/experiment-setup';
 import {medianNormalize, quantileNormalize, vsnNormalize} from '../analysis/normalization';
 import {imputeMinProb, imputeKnn, imputeZero, imputeMean, imputeMedian} from '../analysis/imputation';
 import {runDifferentialExpression, copyDEResultsToFrame, getDefaultComparison}
@@ -70,6 +70,24 @@ category('Experiment Setup', () => {
     expect(getOrganism(df) === undefined, true);
     setOrganism(df, 'rnorvegicus');
     expect(getOrganism(df), 'rnorvegicus');
+  });
+
+  test('applyAnnotation persists the organism alongside the groups', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('id', ['P0'])]);
+    applyAnnotation(df, {
+      group1: {name: 'Control', columns: ['s1', 's2']},
+      group2: {name: 'Treatment', columns: ['s3', 's4']},
+      organism: 'rnorvegicus',
+    });
+    expect(getOrganism(df), 'rnorvegicus');
+    expect(getGroups(df)!.group1.name, 'Control');
+    // Organism is optional — omitting it leaves the tag untouched.
+    const df2 = DG.DataFrame.fromColumns([DG.Column.fromStrings('id', ['P0'])]);
+    applyAnnotation(df2, {
+      group1: {name: 'A', columns: ['s1']},
+      group2: {name: 'B', columns: ['s2']},
+    });
+    expect(getOrganism(df2) === undefined, true);
   });
 
   test('getGroups round-trips GroupAssignment correctly', async () => {

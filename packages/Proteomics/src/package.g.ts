@@ -43,6 +43,11 @@ export async function annotateExperiment() : Promise<void> {
   await PackageFunctions.annotateExperiment();
 }
 
+//name: setLog2Scale
+export async function setLog2Scale() : Promise<void> {
+  await PackageFunctions.setLog2Scale();
+}
+
 //name: normalizeProteomics
 export async function normalizeProteomics() : Promise<void> {
   await PackageFunctions.normalizeProteomics();
@@ -101,6 +106,11 @@ export async function showAllVisualizations() : Promise<void> {
 //name: enrichmentAnalysis
 export async function enrichmentAnalysis() : Promise<void> {
   await PackageFunctions.enrichmentAnalysis();
+}
+
+//name: exportEnrichmentInputs
+export async function exportEnrichmentInputs() : Promise<void> {
+  await PackageFunctions.exportEnrichmentInputs();
 }
 
 //name: enrichmentCharts

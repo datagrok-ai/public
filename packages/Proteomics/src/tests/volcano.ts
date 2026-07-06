@@ -4,6 +4,7 @@ import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/t
 import {ensureNegLog10Column, ensureDirectionColumn, ensureLocationColumn,
   createVolcanoPlot, recomputeVolcano, applyTopNLabels, VOLCANO_LABEL_COL, readVolcanoState,
   showVolcanoBusy, updateVolcanoBusy, hideVolcanoBusy,
+  getVolcanoAxisMax, setVolcanoAxisMax, applyVolcanoAxisBounds,
   DIRECTION_COLORS_BASE, VOLCANO_METRIC_TAG} from '../viewers/volcano';
 import {LOCATION_COLORS} from '../analysis/subcellular-location';
 import {SEMTYPE} from '../utils/proteomics-types';
@@ -121,6 +122,23 @@ category('Volcano', () => {
     expect(col.semType, SEMTYPE.SUBCELLULAR_LOCATION);
     expect(col.get(0), 'Unknown');
     expect(Object.keys(LOCATION_COLORS).length, 12);
+  });
+
+  test('createVolcanoPlot: axis-chip-hiding stylesheet + marker class (custom labels are sole titles)', async () => {
+    const df = makeDeDf();
+    const sp = createVolcanoPlot(df, {topNLabels: 0});
+    // The platform's native axis column-name chips collided with the custom
+    // rotated labels; a scoped stylesheet keyed off the marker class hides just
+    // the X (.d4-bottom-center) and Y (.d4-vertical) chips.
+    expect(sp.root.classList.contains('proteomics-volcano'), true, 'volcano marker class set');
+    const style = document.getElementById('proteomics-volcano-styles');
+    expect(style !== null, true, 'scoped stylesheet injected');
+    expect(style!.textContent!.includes('.d4-vertical') &&
+      style!.textContent!.includes('.d4-bottom-center'), true, 'hides both axis chips');
+    // Scoped to the marker class so other scatterplots are untouched.
+    expect(style!.textContent!.includes('.proteomics-volcano'), true, 'rule is scoped');
+    // Color chip class (.d4-vertical-right) is NOT in the rule — color selector stays.
+    expect(style!.textContent!.includes('.d4-vertical-right'), false, 'color selector preserved');
   });
 
   test('recomputeVolcano: Y, class, threshold lines stay consistent across Q↔P toggle', async () => {
@@ -242,6 +260,56 @@ category('Volcano', () => {
     } finally {
       restore();
     }
+  });
+
+  test('axis-max override: set/get round-trips, pins symmetric X + 0-based Y, empty clears', async () => {
+    const df = makeDeDf();
+    const sp = createVolcanoPlot(df, {topNLabels: 0});
+
+    // Default: nothing pinned.
+    expect(getVolcanoAxisMax(df).xMax === null, true, 'xMax defaults to null');
+    expect(getVolcanoAxisMax(df).yMax === null, true, 'yMax defaults to null');
+
+    // Pin both axes.
+    setVolcanoAxisMax(df, 5, 8);
+    const pinned = getVolcanoAxisMax(df);
+    expect(pinned.xMax, 5, 'xMax round-trips');
+    expect(pinned.yMax, 8, 'yMax round-trips');
+    applyVolcanoAxisBounds(sp, df);
+    expect(sp.props.xMin, -5, 'X pins symmetric: xMin = -xMax');
+    expect(sp.props.xMax, 5, 'X pins symmetric: xMax');
+    expect(sp.props.yMin, 0, 'Y pins from 0');
+    expect(sp.props.yMax, 8, 'Y pins to yMax');
+
+    // Clear both → fit-to-data reset (never NaN — platform rejects an infinite
+    // viewport). log2FC spans [-2, 2] so X fits to ~±2 with padding; Y starts at 0.
+    setVolcanoAxisMax(df, null, null);
+    expect(getVolcanoAxisMax(df).xMax === null, true, 'xMax cleared');
+    expect(getVolcanoAxisMax(df).yMax === null, true, 'yMax cleared');
+    applyVolcanoAxisBounds(sp, df);
+    expect(Number.isFinite(sp.props.xMax) && sp.props.xMax >= 2 && sp.props.xMax < 3, true,
+      `X resets to a finite fit-to-data bound; got ${sp.props.xMax}`);
+    expect(Number.isFinite(sp.props.xMin) && sp.props.xMin <= -2 && sp.props.xMin > -3, true,
+      `X min resets symmetric-ish to data; got ${sp.props.xMin}`);
+    expect(sp.props.yMin, 0, 'Y still starts at 0 after reset');
+    expect(Number.isFinite(sp.props.yMax), true, 'Y max resets to a finite bound');
+
+    // Non-positive values are rejected (treated as auto).
+    setVolcanoAxisMax(df, -3, 0);
+    expect(getVolcanoAxisMax(df).xMax === null, true, 'negative xMax rejected');
+    expect(getVolcanoAxisMax(df).yMax === null, true, 'zero yMax rejected');
+  });
+
+  test('axis-max override: survives a metric recompute (tag-based state)', async () => {
+    const df = makeDeDf({withPValue: true});
+    setGroups(df, {group1: {name: 'A', columns: []}, group2: {name: 'B', columns: []}});
+    const sp = createVolcanoPlot(df, {topNLabels: 0});
+    setVolcanoAxisMax(df, 4, 6);
+    await recomputeVolcano(df, sp, 'p-value', 'significance', 1.0, 0.05);
+    // recomputeVolcano ends with applyVolcanoAxisBounds — pinned axes persist.
+    expect(sp.props.xMin, -4, 'X still pinned after recompute');
+    expect(sp.props.xMax, 4, 'X still pinned after recompute');
+    expect(sp.props.yMax, 6, 'Y still pinned after recompute');
   });
 });
 

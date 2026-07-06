@@ -97,6 +97,21 @@ category('Proteomics: 14-05', () => {
     }
   });
 
+  test('smartFilterHonorsCustomCap (M3 — configurable max terms per source)', async () => {
+    // 30 GO:BP + 30 non-GO:BP; a custom cap of 5 must apply to each partition.
+    const results: GostResult[] = [];
+    for (let i = 0; i < 30; i++)
+      results.push(gost({name: `bp ${i}`, source: 'GO:BP', p_value: 0.001 * (i + 1)}));
+    for (let i = 0; i < 30; i++)
+      results.push(gost({name: `kegg ${i}`, source: 'KEGG', p_value: 0.01 * (i + 1)}));
+    const {kept, stats} = applySmartPathwayFilter(results, 5);
+    // 5 GO:BP + 5 non-GO:BP (combined) = 10.
+    expect(kept.length, 10, 'custom cap 5 applied to each partition');
+    expect(stats.cappedAtN, 5, 'stats echo the custom cap');
+    expect(kept.filter((r) => r.source === 'GO:BP').length, 5, 'GO:BP capped at 5');
+    expect(kept.filter((r) => r.source === 'KEGG').length, 5, 'non-GO:BP capped at 5');
+  });
+
   test('smartFilterCombinedCapForNonGoBp (Assumption A4)', async () => {
     // 5 GO:BP (all kept because <15) + 20 non-GO:BP mixed across KEGG/REAC/WP.
     // CK-omics line 4731: combined .head(maxPerSource), NOT per-source.
