@@ -96,6 +96,12 @@ export class OutputPreviewPanel {
     return this.enabled;
   }
 
+  /** The node whose values the panel currently renders, or null when empty —
+   *  lets the invalidator close the panel only when *its* node went stale. */
+  get currentNodeId(): string | null {
+    return this.lastNodeId;
+  }
+
   /** Turn the panel on/off. Off = never shows (embedded hosts). Turning it on
    *  does not show anything by itself — the next renderable output does. */
   setEnabled(enabled: boolean): void {

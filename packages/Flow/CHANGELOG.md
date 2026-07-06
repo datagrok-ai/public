@@ -2,6 +2,49 @@
 
 ## v.next
 
+### Precise run-state invalidation
+
+* Graph edits are now **classified** (`GraphEdit`: node added/removed, connection added/removed,
+  parameters changed, cleared) and invalidate **only the affected downstream cone** — previously
+  *any* change (even adding a disconnected node) flipped every node to "Out of date".
+  * Adding a node invalidates nothing (it isn't wired to anything yet).
+  * Adding or removing a connection (data, pass-through, or order edge) invalidates its **target**
+    and everything downstream; the source keeps its completed result.
+  * Editing a node's parameters or inputs — property panel, function-editor dialog, column picker —
+    invalidates that node and everything downstream. This previously invalidated **nothing** (the
+    panel wrote values silently); title and description edits stay cosmetic and invalidate nothing.
+  * Removing a node drops its state; its connections' removal events handle the downstream cone.
+* Invalidation is precise across all run artifacts: node status/visuals, incoming-wire styling,
+  outgoing wire labels, captured live values (`__ffFlowLive` — so single-node rerun and column-picker
+  reuse stay available for still-valid nodes), and the output preview (closed only when it shows an
+  invalidated node).
+
+### Autorun
+
+* New **ribbon toggle (bolt icon)** — faded outline when off (0.8 opacity, default font-weight),
+  colored **and filled** when on (font-weight 600 renders the FA bolt as its solid variant), with a
+  state-aware tooltip. When on, the flow **reruns automatically** (debounced, 800 ms after the last
+  edit) on any result-affecting change.
+* **Switching autorun on runs immediately**: everything without a fresh result (a never-run flow
+  entirely; a half-run flow just the missing part + downstream) is scheduled at once — no need to
+  make an edit first (`ExecutionController.pendingNodes` → `AutorunScheduler.kick`).
+* **Clicking a node is not an edit**: building the context panel initializes its inputs, and DG
+  inputs can fire `onValueChanged` during initialization — previously each selection reported a
+  parameter edit (invalidating results and, with autorun on, rerunning the flow on every click).
+  Every property-panel change handler is now guarded by a per-editor **value-change reporter**
+  (`PropertyPanel.changeReporter`): an edit is reported only when the value actually differs from
+  the last seen one (scalars compared by string form, arrays/objects by JSON). Covered by a
+  user-side test (repeatedly opening the panel for value-bearing nodes, incl. OpenFile, emits zero
+  `params-changed`; a real edit reports exactly once, re-entering the same value not at all).
+* Reruns are **incremental**: only the invalidated slice runs, with its boundary inputs read from
+  values captured by the previous run (the single-node-rerun machinery); falls back to a full run
+  when nothing was captured yet. Consecutive edits coalesce into one run; a run in progress
+  postpones the next one.
+* Autorun is deliberately silent: no validation toasts (an invalid mid-edit graph just waits for
+  more edits), no run dialog (flows whose run would prompt for script inputs are skipped), no
+  selection stealing — but if the invalidation closed the output preview, the autorun re-opens it
+  with fresh values once its node completes.
+
 ### SetVar ⇄ Output unification
 
 * **SetVar nodes and Output nodes now compile to the same thing.** A SetVar node also declares a

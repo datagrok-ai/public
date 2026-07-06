@@ -1838,3 +1838,18 @@ div.ui-box > div.ui-div.funcflow-canvas-container {
 .funcflow-preview-block {
   height: 100%;
 }
+/* ---------- autorun ribbon toggle ---------- */
+
+/* The bolt reads as "live" only when clearly distinct from the other ribbon
+   icons: the OFF state is slightly faded (and keeps the default font-weight —
+   a thin outline glyph); the ON state is colored AND font-weight 600, which
+   renders the Font Awesome bolt as its filled variant. */
+.ff-autorun-toggle {
+  opacity: 0.8;
+}
+
+.ff-autorun-toggle.ff-autorun-on {
+  color: var(--blue-1, #2083d5) !important;
+  font-weight: 600;
+  opacity: 1;
+}

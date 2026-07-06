@@ -271,6 +271,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `string-list-tests.ts` | Flow: string-list inputs, Flow: plain-list inputs | `string_list` inputs are seeded editable, render a text field, compile to a trimmed JS array, and omit when empty (`isStringListType`/`stringListToArrayLiteral` covered in `type-map-tests`); plain `list` inputs (incl. `list<string>` params) are seeded as arrays, render a DG List input via `forProperty`, compile to a JSON array literal, and omit when empty |
 | `func-editor-tests.ts` | Flow: func editor | `shouldUseFunctionEditor` routing (allowlist / `editor:` meta / plain majority), `editorValueToPanelValue` conversions (column→name, lists, dataframe rejected), `tableParamForColumn` ladder, `applyEditorResult` (connected inputs win, column→name write-back), the full launcher ladder live (gate refuses unconnected → captured table opens the function's own dialog → close → write-back), the header icon gating (needs a live backend) |
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
+| `invalidation-tests.ts` | Flow: invalidation, Flow: autorun | `sliceDownFrom` (forward closure), `applyGraphEdit` per-kind semantics (node-added → nothing; connection change → target+downstream stale, source + its live value kept; params-changed → node+downstream; node-removed → state forgotten), the editor's classified `onGraphEdited` stream (incl. `notifyNodeParamsChanged`, delete = connection-removed then node-removed, clear), **the user-side click guard** (opening the panel 3× per value-bearing node — Constants, Select Table/Column, Output, Int Input, OpenFile — emits zero `params-changed`; a real textarea edit reports once, same value again nothing; validated by disabling the guard → 3 spurious edits), `pendingNodes` (never-run/stale + downstream; fresh flow → empty), `expandToLiveBoundary` (captured boundary vs full ancestry), `AutorunScheduler` (debounce coalescing + dirty union, disabled/non-invalidating edits never run, `kick` on enable, busy → retry with kept set, skipped → wait for next edit, toggle-off cancels) |
 | `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, an Output node anchors the producer like a SetVar, warn-and-skip for JS-only nodes (needs a live backend) |
 
 ## Rete Pipeline
@@ -535,9 +536,25 @@ The status circle is part of the title bar; CSS keyframes drive the pulse animat
 - **Run Script (Classic)** — clean (non-instrumented) script run via `DG.Script.create(script).prepare()`, outputs piped into the same `OutputPreviewPanel`.
 - **View Script** — opens a dialog with the generated source; buttons: Copy / Export `.js` / Open in ScriptView / Run.
 
-### Invalidation
+### Invalidation (classified, downstream-only)
 
-`onGraphChanged()` increments a graph version. Completed/errored nodes become **stale** when the graph changes after a run.
+The editor emits a **classified `GraphEdit`** (`onGraphEdited` callback in [flow-editor.ts](src/rete/flow-editor.ts): `node-added` / `node-removed` / `connection-added` / `connection-removed` / `params-changed` / `cleared`) for every result-affecting change; the coarse `onGraphChanged` stays as the "refresh UI" hook (status bar, hints, minimap) and also fires for cosmetic changes (annotations). `ExecutionController.applyGraphEdit(edit)` invalidates **only the downstream cone** (`sliceDownFrom` in [graph-compiler.ts](src/compiler/graph-compiler.ts) — forward mirror of `sliceUpTo`, follows data/pass-through/order edges alike) and returns the affected node-id set:
+
+- `node-added` → nothing (not wired yet); `node-removed` → forget its state/visuals/live values (its connections' removal events already invalidated downstream).
+- `connection-added/removed` → the **target** and downstream go stale; the source keeps its completed result (and its captured live value — still eligible for slice-boundary reuse).
+- `params-changed` → the node and downstream. Reported by the **property panel** from every semantic editor helper — but only through a per-editor **`changeReporter`** guard (DG inputs fire `onValueChanged` on initialization, so an unguarded report would make every node click an "edit"; see the Property Panel section) → `PropertyPanel.paramsChanged()` → `FlowEditor.notifyNodeParamsChanged(nodeId)`. **Title/Description are cosmetic** and don't report. The function-editor dialog writeback reports from the view.
+- Invalidation touches: `ExecutionState.markStale`, `ExecutionVisualizer.markStale` (node + incoming edges), outgoing-wire labels of invalidated nodes, their `__ffFlowLive` entries, and the output preview **only if it shows an invalidated node** (the node id is remembered so autorun can re-open it fresh).
+
+There is no graph-version counter anymore — invalidation is entirely event-driven.
+
+### Autorun ([execution/autorun.ts](src/execution/autorun.ts))
+
+Ribbon **bolt icon** (`data-testid` ribbon/autorun; `.ff-autorun-toggle` = off: 0.8 opacity, default weight (outline glyph); `+ .ff-autorun-on` = on: blue + **font-weight 600**, which renders the FA bolt filled — the weight must NOT apply to the off state; dynamic tooltip) toggles `AutorunScheduler` (view-owned, off by default). **Turning it on immediately schedules `ExecutionController.pendingNodes()`** (every node without a completed result — never-run/stale/errored — plus downstream) via `AutorunScheduler.kick(dirty)`, so a fresh flow runs at once instead of waiting for the first edit. The scheduler accumulates the invalidated ids from `applyGraphEdit` and, `AUTORUN_DEBOUNCE_MS` (800 ms) after the last edit, calls `ExecutionController.runAutorun(dirty, settings)`:
+
+- `expandToLiveBoundary(flow, dirty, hasLive)` grows the dirty set upstream past nodes whose outputs are **not** captured; if the boundary is fully captured, only the slice runs (`onlyNodeIds` + `liveExternalInputs` + `preserveState` — same machinery as single-node rerun), else full run.
+- Outcomes: `'started'` (dirty consumed) / `'busy'` (run in progress → retry next interval, set kept) / `'skipped'` (validation errors, or the run would prompt for script inputs — an input node inside the run set → wait for the next edit, set kept).
+- Silent by design: no toasts, no dialog, no `autoSelectFirstOutputNode`; the only UI side effect is re-opening the output preview (content only, no selection change) if invalidation had closed it.
+- `FuncFlowView.detach()` resets the scheduler so a pending debounce can't fire into a closed view.
 
 ## File Format
 
@@ -668,6 +685,7 @@ The bottom **Output panel** is a pane of the view's vertical splitter (not a doc
   - Utility nodes: **Configuration** for non-underscore properties (bool/number/text auto-detected).
   - **Connections** pane (collapsed by default): Inputs / Pass-through / Outputs grouped, with connection status from `flow.isInputConnected()` / `flow.getConnections()`.
 - Editor helpers: primitives use native DG inputs (`createPropertyInput`); the bespoke helpers (auto-resizing textarea, number, toggle, combo) remain for the non-func panes (Title/Description, Input/Output config, Utility/Constants — which edit ad-hoc `properties`, not `DG.Property` objects) and all support optional tooltips.
+- **Every semantic editor reports edits through a per-editor `changeReporter(initial)`** — NEVER call `paramsChanged()` directly from a handler. Creating/initializing a DG input (`ui.input.forProperty`, `initInputValue` setting `stringValue`) can fire `onValueChanged` immediately (not guaranteed for every input type, so "skip the first event" is wrong too); unguarded, merely clicking a node (which rebuilds the panel) counts as an edit — invalidating results and, with autorun on, rerunning the flow per click. The reporter keeps the last-seen value and reports only a REAL change (`sameValue`: scalars by string form — `5`≡`'5'`, `null`≡`''` — arrays/objects by JSON). Any new input wired into the panel must follow this pattern. Title/Description are cosmetic and never report. User-side regression test: `invalidation-tests.ts` opens the panel 3× per value-bearing node (incl. OpenFile with a fullPath) and asserts zero `params-changed`.
 - After each property change, calls `flow.updateNode(node.id)` to re-render visible state (label, etc.).
 
 ### Function Browser ([panel/function-browser.ts](src/panel/function-browser.ts))

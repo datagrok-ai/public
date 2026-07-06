@@ -29,10 +29,28 @@ import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
 import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
+/** A classified graph edit — tells listeners *what* changed, so run results
+ *  can be invalidated precisely (only downstream of the change) instead of
+ *  wholesale. Cosmetic changes (node moves, annotations, titles) do not emit
+ *  one. `params-changed` is reported by the property panel via
+ *  {@link FlowEditor.notifyNodeParamsChanged}. */
+export type GraphEdit =
+  | {kind: 'node-added'; nodeId: string}
+  | {kind: 'node-removed'; nodeId: string}
+  | {kind: 'connection-added'; sourceId: string; targetId: string}
+  | {kind: 'connection-removed'; sourceId: string; targetId: string}
+  | {kind: 'params-changed'; nodeId: string}
+  | {kind: 'cleared'};
+
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
   onGraphChanged?: () => void;
+  /** Fired with the classified edit for every change that can affect run
+   *  results — drives precise invalidation and autorun. Fires alongside (not
+   *  instead of) `onGraphChanged`, which remains the coarse "refresh UI" hook
+   *  and also covers cosmetic changes (annotations). */
+  onGraphEdited?: (edit: GraphEdit) => void;
   /** Run the slice up to this node and preview its output ("inspect anywhere").
    *  Wired from the node's right-click menu in addition to the output-port menu. */
   onPreviewNode?: (nodeId: string) => void;
@@ -285,6 +303,7 @@ export class FlowEditor {
         context.type === 'cleared'
       ) {
         this.callbacks.onGraphChanged?.();
+        this.callbacks.onGraphEdited?.(this.classifyEdit(context));
         this.scheduleMinimapRedraw();
       }
       return context;
@@ -338,6 +357,33 @@ export class FlowEditor {
         this.tagConnectionElement(context.data as {element: HTMLElement; payload: FlowConnection});
       return context;
     });
+  }
+
+  /** Map a rete editor event to the classified {@link GraphEdit} handed to
+   *  `onGraphEdited`. Only called for the five event types listed in
+   *  `wireEvents` — anything else would be a programming error. */
+  private classifyEdit(context:
+    | {type: 'nodecreated' | 'noderemoved'; data: {id: string}}
+    | {type: 'connectioncreated' | 'connectionremoved'; data: {source: string; target: string}}
+    | {type: 'cleared'},
+  ): GraphEdit {
+    switch (context.type) {
+    case 'nodecreated': return {kind: 'node-added', nodeId: context.data.id};
+    case 'noderemoved': return {kind: 'node-removed', nodeId: context.data.id};
+    case 'connectioncreated':
+      return {kind: 'connection-added', sourceId: context.data.source, targetId: context.data.target};
+    case 'connectionremoved':
+      return {kind: 'connection-removed', sourceId: context.data.source, targetId: context.data.target};
+    default: return {kind: 'cleared'};
+    }
+  }
+
+  /** Report that a node's parameters (its `inputValues` / `properties`) were
+   *  edited — the property panel calls this so run results downstream of the
+   *  node can be invalidated. Cosmetic edits (title, description) must NOT be
+   *  reported. */
+  notifyNodeParamsChanged(nodeId: string): void {
+    this.callbacks.onGraphEdited?.({kind: 'params-changed', nodeId});
   }
 
   /** Update the canvas dot-grid background to track the AreaPlugin transform.

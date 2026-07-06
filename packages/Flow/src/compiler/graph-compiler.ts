@@ -53,6 +53,24 @@ export function sliceUpTo(flow: FlowEditor, targetId: string): Set<string> {
   return result;
 }
 
+/** Every node whose result can be affected by a change at `rootId`: the node
+ *  itself plus all its transitive successors (walking connections forward —
+ *  data, pass-through, and order edges alike). The mirror of {@link sliceUpTo};
+ *  used to invalidate run results precisely after a graph edit. */
+export function sliceDownFrom(flow: FlowEditor, rootId: string): Set<string> {
+  const connections = flow.getConnections();
+  const result = new Set<string>();
+  const stack = [rootId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (result.has(id)) continue;
+    result.add(id);
+    for (const c of connections)
+      if (c.source === id) stack.push(c.target);
+  }
+  return result;
+}
+
 /** When `liveBoundary` is set, a connection whose *source* node is not in the
  *  set resolves to a `_ffLive(nodeId, outputKey)` call — reading the value that
  *  node produced in a prior instrumented run from the live-value registry —
