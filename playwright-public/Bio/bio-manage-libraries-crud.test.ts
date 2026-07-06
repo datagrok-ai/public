@@ -66,9 +66,16 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
       // from the same-named func that opens a dialog.
       const invokeErr = await page.evaluate(async () => {
         try {
-          const fns = (window as any).DG.Func.find({package: 'Bio', name: 'Manage Monomer Libraries', tags: ['app']});
+          // DG.Func.find matches the runtime Func.name (the JS export identifier), not the
+          // decorator's friendly `name:` — the app registers as `manageMonomerLibrariesView`
+          // (friendlyName 'Manage Monomer Libraries'). Querying the friendly name returns [].
+          const fns = (window as any).DG.Func.find({package: 'Bio', name: 'manageMonomerLibrariesView', tags: ['app']});
           if (!fns || fns.length === 0) return 'Bio app "Manage Monomer Libraries" not registered';
-          await fns[0].apply();
+          // The app entry returns its view with addView=false; when invoking the function
+          // directly (not through the platform app-launcher) the returned view must be
+          // attached to the shell ourselves so it becomes grok.shell.v.
+          const v = await fns[0].apply();
+          if (v && (window as any).grok.shell.v !== v) (window as any).grok.shell.addView(v);
           return null;
         } catch (e) { return String(e).slice(0, 250); }
       });
@@ -98,7 +105,9 @@ test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Ma
           return {invokeErr: 'ui.tree() factory not available', nodeCount: 0, nodeNames: [] as string[], firstNodeClickErr: null};
         let invokeErr: string | null = null;
         try {
-          await (grok as any).functions.call('Bio:Monomer Manager Tree Browser', {treeNode: treeRoot});
+          // Call by the runtime nqName (JS export), not the space-containing friendly name —
+          // grok.functions.call cannot parse 'Bio:Monomer Manager Tree Browser'.
+          await (grok as any).functions.call('Bio:manageMonomerLibrariesViewTreeBrowser', {treeNode: treeRoot});
         } catch (e) {
           invokeErr = String(e).slice(0, 250);
         }

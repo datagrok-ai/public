@@ -100,10 +100,15 @@ test('BiostructureViewer / GROK-14442 file-handler search disambiguation regress
 
     // SCENARIO 1 — .pdb double-click must route to importPdb (function-call spy + UI inference).
     await softStep('Scenario 1 step 1 — DOM-driving: open Files browser via Browse tab', async () => {
-      await page.locator('[name="Browse"]').click();
-      // Verify the Files browser tree actually opened, not just that the Browse tab exists.
-      await page.locator('.d4-tree-view-root').first().waitFor({state: 'visible', timeout: 30_000});
-      expect(await page.locator('.d4-tree-view-root').first().isVisible()).toBe(true);
+      // The Browse panel is open by default after login, so a blind click on the
+      // sidebar toggle would CLOSE it and hide the tree. Only click to open when the
+      // tree isn't already visible (idempotent — mirrors browse/helpers ensureBrowsePanelOpen).
+      const tree = page.locator('.d4-tree-view-root').first();
+      if (!(await tree.isVisible().catch(() => false))) {
+        await page.locator('[name="Browse"]').click();
+        await tree.waitFor({state: 'visible', timeout: 30_000});
+      }
+      expect(await tree.isVisible()).toBe(true);
     });
 
     let scenario1SpyCaptured: string[] = [];
