@@ -6,6 +6,7 @@ import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
   specTestOptions, softStep, stepErrors, baseUrl,
 } from '../spec-login';
+import {setPredict, selectFeaturesByName} from '../helpers/models-helpers';
 
 test.use(specTestOptions);
 
@@ -13,11 +14,70 @@ const MODEL_NAME = 'shareModelPermSpec_' + Date.now();
 
 let modelId = '';
 
+// Seed a real model by training a tiny EDA classifier (demog.csv SEX ~ HEIGHT+WEIGHT)
+// via the Train-Model UI — the minimal CI stack starts with ZERO saved models, so we
+// cannot clone one. Mirrors the Models suite's seed recipe. Requires the EDA prereq.
+async function seedModel(page: Page, name: string): Promise<string> {
+  await page.evaluate(async () => {
+    document.body.classList.add('selenium');
+    const g: any = (window as any).grok;
+    g.shell.windows.simpleMode = true;
+    g.shell.closeAll();
+    const df = await g.dapi.files.readCsv('System:DemoFiles/demog.csv');
+    g.shell.addTableView(df);
+    await new Promise((r) => {
+      const s = df.onSemanticTypeDetected.subscribe(() => { s.unsubscribe(); r(null); });
+      setTimeout(r, 3000);
+    });
+  });
+  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+  await page.evaluate(async () => {
+    const ml = document.querySelector('[name="div-ML"]') as HTMLElement | null;
+    ml?.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+    let item: HTMLElement | null = null;
+    for (let i = 0; i < 30; i++) {
+      await new Promise((r) => setTimeout(r, 100));
+      item = document.querySelector('[name="div-ML---Models---Train-Model..."]') as HTMLElement | null;
+      if (item) break;
+    }
+    item?.click();
+  });
+  await page.waitForFunction(() => (window as any).grok.shell.v?.type === 'PredictiveModel', null, {timeout: 15_000});
+  await setPredict(page, 'SEX');
+  await selectFeaturesByName(page, ['HEIGHT', 'WEIGHT']);
+  await page.locator('[name="input-Ignore-missing"]').click().catch(() => {});
+  await page.waitForFunction(() => {
+    const b = document.querySelector('[name="button-Save"]') as HTMLElement | null;
+    return !!b && !b.classList.contains('d4-disabled');
+  }, null, {timeout: 120_000});
+  await page.locator('[name="button-Save"]').click();
+  const nameInput = page.locator('.d4-dialog [name="input-host-Name"] input');
+  await nameInput.waitFor({timeout: 60_000});
+  await nameInput.focus();
+  await nameInput.fill(name);
+  await page.locator('.d4-dialog [name="button-OK"]').click();
+  await page.waitForFunction(() => !document.querySelector('.d4-dialog [name="input-host-Name"]'),
+    null, {timeout: 30_000}).catch(() => {});
+  await page.evaluate(async () => {
+    const v = (window as any).grok.shell.v as any;
+    if (v && typeof v.close === 'function' && v.type === 'PredictiveModel') v.close();
+  }).catch(() => {});
+  const id = await page.evaluate(async (mName: string) => {
+    const g: any = (window as any).grok;
+    const byName = await g.dapi.models.filter(`friendlyName = "${mName}"`).list();
+    const m = byName[0] ?? (await g.dapi.models.list()).find((x: any) => !!x.id);
+    return m ? (m.id as string) : null;
+  }, name);
+  if (!id) throw new Error('seeded model not discoverable via dapi.models after train+save');
+  return id;
+}
+
 async function createModel(page: Page, name: string): Promise<string> {
+  const hasModel = await page.evaluate(async () => (await grok.dapi.models.list({pageSize: 1})).length > 0);
+  if (!hasModel)
+    return await seedModel(page, name);
   return await page.evaluate(async (mName) => {
-    const list = await grok.dapi.models.list({pageSize: 1});
-    if (!list.length) throw new Error('no source model on server to clone');
-    const src: any = list[0];
+    const src: any = (await grok.dapi.models.list({pageSize: 1}))[0];
     src.name = mName;
     try { src.id = null; } catch (_) {  }
     const saved = await grok.dapi.models.save(src);
@@ -104,7 +164,7 @@ async function expandSharingPaneAndWaitShare(page: Page) {
 test('Sharing & Permissions — Model', async ({page}) => {
   // UI lifecycle + two-user login switches + permission round-trips (60s reachability/View
   // polls under the recipient identity); 240s covers the re-auths plus the UI steps.
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
 
   
   await loginToDatagrok(page);

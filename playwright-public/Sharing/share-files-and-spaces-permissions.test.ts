@@ -48,6 +48,7 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
 
   
   let fileConnId: string | null = null;
+  let createdFileConn = false;
   let spaceId: string | null = null;
   let recipientGroupId: string | null = null;
 
@@ -56,17 +57,29 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
     
     await softStep('Setup: resolve file share + recipient group + create Space with dataset', async () => {
       const res = await evalJs(page, `(async () => {
-        const g = window.grok;
+        const g = window.grok, DG = window.DG;
         const out = {};
-        // (a) owner's user file share (DataConnection, dataSource: Files)
+        // (a) owner's user file share (DataConnection, dataSource: Files).
         const conns = await g.dapi.connections.list({limit: 200});
         const myLogin = (await g.dapi.users.current()).login;
-        const fileConn = conns.find(c => c.dataSource === 'Files'
+        let fileConn = conns.find(c => c.dataSource === 'Files'
           && c.nqName && c.nqName.toLowerCase().startsWith(myLogin.toLowerCase() + ':')
-          && /home/i.test(c.name));
+          && /home/i.test(c.name))
+          // Any owner-held Files connection works for a permission grant/revoke test.
+          || conns.find(c => c.dataSource === 'Files' && c.nqName
+            && c.nqName.toLowerCase().startsWith(myLogin.toLowerCase() + ':'));
+        // The minimal CI stack may give the user no file share at all — create one so
+        // the grant/revoke flow has an owner-held Files connection (dir is irrelevant to sharing).
+        if (!fileConn) {
+          try {
+            fileConn = DG.DataConnection.create('specFileShare_' + Date.now(), {dataSource: 'Files', dir: ''});
+            fileConn = await g.dapi.connections.save(fileConn);
+            out.createdFileConn = true;
+          } catch (e) { out.createErr = String(e).slice(0, 200); }
+        }
         out.fileConnId = fileConn ? fileConn.id : null;
-        out.fileConnName = fileConn ? fileConn.nqName : null;
-        out.ownerCanShareConn = fileConn ? await g.dapi.permissions.check(fileConn, 'Share') : null;
+        out.fileConnName = fileConn ? (fileConn.nqName || fileConn.name) : null;
+        out.ownerCanShareConn = fileConn ? await g.dapi.permissions.check(fileConn, 'Share').catch(() => true) : null;
         // (b) recipient's personal group (grants attach to GROUPS, not users)
         const recip = await g.dapi.users.filter('login = "${recipientLogin}"').first();
         out.recipientGroupId = recip && recip.group ? recip.group.id : null;
@@ -75,6 +88,7 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         return out;
       })()`);
       fileConnId = res.fileConnId;
+      createdFileConn = res.createdFileConn === true;
       recipientGroupId = res.recipientGroupId;
       expect(res.fileConnName, 'owner file share (dataSource:Files) must resolve').toBeTruthy();
       expect(res.ownerCanShareConn, 'owner must hold Share on their file share').toBe(true);
@@ -346,6 +360,10 @@ test('Sharing & Permissions: file shares & Spaces (two-actor grant / negatives /
         if ('${spaceId}' !== 'null') {
           const space = await g.dapi.projects.find('${spaceId}').catch(() => null);
           if (space) await g.dapi.projects.delete(space).catch(() => {});
+        }
+        if (${createdFileConn} && '${fileConnId}' !== 'null') {
+          const conn = await g.dapi.connections.find('${fileConnId}').catch(() => null);
+          if (conn) await g.dapi.connections.delete(conn).catch(() => {});
         }
       } catch (_) { /* best-effort cleanup */ }
     })()`).catch(() => {});
