@@ -35,6 +35,12 @@ export default defineConfig({
     // Grant clipboard access so headless-CI copy flows (copy-as-HELM, sketcher
     // Copy as SMILES/MOLBLOCK) can use navigator.clipboard instead of throwing.
     permissions: ['clipboard-read', 'clipboard-write'],
+    launchOptions: {
+      // The CI stack serves over plain HTTP (xamgle-nginx:8889). navigator.clipboard
+      // only exists in a secure context, so copy flows fail with "writeText on null".
+      // Treat the target origin as secure to expose the Clipboard API on HTTP.
+      args: [`--unsafely-treat-insecure-origin-as-secure=${(process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai').replace(/\/$/, '')}`],
+    },
   },
   projects: [
     {name: 'chromium', use: {...devices['Desktop Chrome']}},
