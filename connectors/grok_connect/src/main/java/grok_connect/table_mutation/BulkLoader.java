@@ -12,14 +12,6 @@ public interface BulkLoader {
     /** Consumes one decoded d42 chunk (already read off the copied Jetty buffer). */
     void feed(DataFrame chunk) throws Exception;
 
-    /**
-     * Consumes one CSV byte chunk (legacy transport, {@code payloadFormat == "csv"}). Throwing by
-     * default — only {@link BatchInsertBulkLoader} still supports it; deleted in WO-7.
-     */
-    default void feedCsv(byte[] csvChunk) throws Exception {
-        throw new UnsupportedOperationException("CSV payload is not supported by this loader; send payloadFormat='d42'");
-    }
-
     /** Flushes the remainder and returns the affected-row count. */
     MutationResult finish() throws Exception;
 

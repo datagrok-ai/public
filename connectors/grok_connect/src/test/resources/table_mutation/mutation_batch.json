@@ -14,7 +14,7 @@
       "mode": "insert",
       "allOrNothing": true,
       "bulk": false,
-      "payloadFormat": "csv"
+      "payloadFormat": "d42"
     },
     {
       "#type": "UpdateRows",
@@ -64,7 +64,7 @@
           "matchKeys": ["id"],
           "allOrNothing": true,
           "bulk": false,
-          "payloadFormat": "csv"
+          "payloadFormat": "d42"
         }
       ]
     }

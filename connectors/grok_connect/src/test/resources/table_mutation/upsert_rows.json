@@ -13,5 +13,5 @@
   "matchKeys": ["id"],
   "allOrNothing": true,
   "bulk": false,
-  "payloadFormat": "csv"
+  "payloadFormat": "d42"
 }

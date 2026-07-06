@@ -2,7 +2,6 @@ package grok_connect.providers;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
@@ -50,14 +49,14 @@ import serialization.StringColumn;
  * typed d42 frames, through {@link MutationManager} against a containerized Postgres, for both the COPY
  * fast path ({@code CopyCsvFormatter}) and the default typed-batch loader. Re-drives the WO-6 batch
  * matrix (allOrNothing / partial / upsert / update / errorOnDuplicate / atomic replay), proves the two
- * loaders store identical values (loader-parity pin), replays committed Dart d42 fixtures (exotic
- * encoders) through the real transport, and keeps the legacy CSV path green through the batch loader.
+ * loaders store identical values (loader-parity pin), and replays committed Dart d42 fixtures (exotic
+ * encoders) through the real transport. The CSV transport was deleted in WO-7 — {@code payloadFormat='csv'}
+ * is now rejected at construction.
  */
 class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresBulkMutationTest.class);
     private static final int ROWS = 100_000;
     private static final int CHUNK_ROWS = 20_000;
-    private static final int CHUNK_BYTES = 64 * 1024;
     private static final List<String> COLUMNS = Arrays.asList("id", "big", "val", "active", "note");
     private static final List<String> TYPES = Arrays.asList("int", "bigint", "double", "bool", "string");
 
@@ -103,7 +102,7 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     public void dropScratchTables() throws SQLException {
         for (String table : new String[] {"mut_bulk_copy", "mut_bulk_batch", "mut_bulk_abort", "mut_bulk_bad",
                 "mut_aon", "mut_partial", "mut_bulk_ups", "mut_upd_key", "mut_dup", "mut_null_copy", "mut_null_batch",
-                "mut_nondeterm", "mut_ups_atomic", "mut_parity_copy", "mut_parity_batch", "mut_csv_batch", "mut_mismatch",
+                "mut_nondeterm", "mut_ups_atomic", "mut_parity_copy", "mut_parity_batch", "mut_mismatch",
                 "mut_fx_forced_string_prefixes", "mut_fx_forced_string_squash",
                 "mut_fx_natural_string_categories", "mut_fx_natural_float64"})
             execDirect("DROP TABLE IF EXISTS " + table);
@@ -321,31 +320,6 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
             conn.close();
         }
         assertSpecialsAndCount("mut_bulk_batch");
-    }
-
-    @DisplayName("Legacy CSV path (dual-format): 100k CSV via the batch loader feedCsv still lands (+ timing)")
-    @Test
-    public void csvBatch_100k_dualFormat() throws Exception {
-        execDirect("DROP TABLE IF EXISTS mut_csv_batch");
-        execDirect("CREATE TABLE mut_csv_batch (id int PRIMARY KEY, big bigint, val double precision, active boolean, note text)");
-        InsertRows m = bulkInsert("mut_csv_batch");
-        m.payloadFormat = "csv"; // exercise the surviving CSV branch through the batch loader
-        byte[] csv = buildCsv();
-        long t0 = System.nanoTime();
-        Connection conn = provider.getConnection(connection);
-        try {
-            provider.configureAutoCommit(conn);
-            BatchInsertBulkLoader loader = new BatchInsertBulkLoader(provider, conn, m);
-            for (byte[] c : chunkBytes(csv))
-                loader.feedCsv(c);
-            MutationResult result = loader.finish();
-            conn.commit();
-            long ms = (System.nanoTime() - t0) / 1_000_000;
-            LOGGER.info("BULK CSV BATCH (legacy): {} rows in {} ms (affected {})", ROWS, ms, result.affectedRows);
-        } finally {
-            conn.close();
-        }
-        assertSpecialsAndCount("mut_csv_batch");
     }
 
     @DisplayName("Abort after a chunk rolls back to zero rows")
@@ -585,6 +559,14 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertThrows(MutationValidationException.class, () -> new MutationManager(header(m)));
     }
 
+    @DisplayName("Legacy CSV payloadFormat is rejected at construction (transport deleted, WO-7)")
+    @Test
+    public void csvPayloadFormat_rejected() {
+        InsertRows m = insert("mut_unknown", Arrays.asList("id"), Arrays.asList("int"));
+        m.payloadFormat = "csv";
+        Assertions.assertThrows(MutationValidationException.class, () -> new MutationManager(header(m)));
+    }
+
     @DisplayName("Fix 1: a non-reproducing atomic batch failure still forces full rollback (no silent partial commit)")
     @Test
     public void atomicReplay_nonReproducingFailure_rollsBackFully() throws Exception {
@@ -727,39 +709,6 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
     public void dartFixtures_viaBatchBind() throws Exception {
         replaySingleColumn("natural_string_categories", true);
         replaySingleColumn("natural_float64", true);
-    }
-
-    // ---- CSV helpers (legacy dual-format path) ----
-
-    private String csvField(String value) {
-        if (value == null)
-            return "";
-        if (value.indexOf(',') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0)
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        return value;
-    }
-
-    private byte[] buildCsv() {
-        StringBuilder sb = new StringBuilder(ROWS * 24);
-        for (int id = 0; id < ROWS; id++) {
-            sb.append(id).append(',')
-              .append(9007199254740995L + id).append(',')
-              .append(id * 0.25).append(',')
-              .append(id % 2 == 0).append(',')
-              .append(csvField(note(id))).append('\n');
-        }
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    private List<byte[]> chunkBytes(byte[] data) {
-        List<byte[]> chunks = new ArrayList<>();
-        for (int off = 0; off < data.length; off += CHUNK_BYTES) {
-            int len = Math.min(CHUNK_BYTES, data.length - off);
-            byte[] c = new byte[len];
-            System.arraycopy(data, off, c, 0, len);
-            chunks.add(c);
-        }
-        return chunks;
     }
 
     // ---- query helpers ----

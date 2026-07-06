@@ -18,8 +18,8 @@ import serialization.DataFrame;
 /**
  * Drives one streamed bulk mutation over the WebSocket transport (connector-writes WO-5) — the
  * QueryManager sibling for writes. Owns its own connection, transaction and {@link BulkLoader}
- * lifecycle: {@link #start()} opens the connection and loader, {@link #feed} consumes CSV chunks,
- * {@link #finish()} flushes and commits, {@link #abort()} rolls back. The connection is always
+ * lifecycle: {@link #start()} opens the connection and loader, {@link #feed} consumes decoded d42
+ * chunks, {@link #finish()} flushes and commits, {@link #abort()} rolls back. The connection is always
  * closed before it returns to the pool (GROK-20323 contract). Unlike QueryManager this never
  * commits on close — commit happens only in {@link #finish()}.
  */
@@ -49,8 +49,11 @@ public class MutationManager {
             throw new MutationValidationException("Bulk mutation header must set bulk=true");
         if (mutation.connection == null)
             throw new MutationValidationException("Mutation has no connection");
-        if (!CSV.equals(mutation.payloadFormat) && !D42.equals(mutation.payloadFormat))
-            throw new MutationValidationException("Unknown payloadFormat '" + mutation.payloadFormat + "' (expected csv|d42)");
+        if (CSV.equals(mutation.payloadFormat))
+            throw new MutationValidationException("CSV bulk payload is no longer supported; this GrokConnect requires "
+                    + "payloadFormat='d42'. Datlas and GrokConnect must be upgraded together (java-d42-reader).");
+        if (!D42.equals(mutation.payloadFormat))
+            throw new MutationValidationException("Unknown payloadFormat '" + mutation.payloadFormat + "' (expected d42)");
         provider = GrokConnect.providerManager.getByName(mutation.connection.dataSource);
         if (provider == null)
             throw new MutationValidationException("Unknown data source: " + mutation.connection.dataSource);
@@ -75,13 +78,9 @@ public class MutationManager {
     public void feed(byte[] bytes) throws Exception {
         if (finished || loader == null)
             throw new MutationValidationException("Mutation session is not active");
-        if (D42.equals(mutation.payloadFormat)) {
-            DataFrame chunk = DataFrame.fromByteArray(bytes);
-            validateChunkSchema(chunk);
-            loader.feed(chunk);
-        }
-        else
-            loader.feedCsv(bytes);
+        DataFrame chunk = DataFrame.fromByteArray(bytes);
+        validateChunkSchema(chunk);
+        loader.feed(chunk);
     }
 
     /**

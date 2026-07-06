@@ -91,11 +91,13 @@ connectors/
 │   ├── lib/                             # Pre-built JDBC drivers
 │   └── pom.xml
 │
-├── serialization/      # Binary data serialization module
+├── serialization/      # Binary (d42) DataFrame serialization module: read + write
 │   ├── src/main/java/serialization/
-│   │   ├── DataFrame.java               # Columnar data container
-│   │   ├── Column.java                  # Typed column with data
+│   │   ├── DataFrame.java               # Columnar container; toByteArray() writes, fromByteArray() reads
+│   │   ├── Column.java                  # Typed column: encode() writes, decode() reads
+│   │   ├── BufferAccessor.java          # d42 primitives — write* and read* halves
 │   │   ├── Types.java                   # Type constants
+│   │   ├── codecs/                      # decode-only ports (BitIntList, FloatFcp, StringSquash, ...)
 │   │   └── BigIntColumn.java, etc.      # Type-specific columns
 │   └── pom.xml
 │
