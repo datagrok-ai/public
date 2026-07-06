@@ -32,6 +32,9 @@ export default defineConfig({
     navigationTimeout: 60_000,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // Grant clipboard access so headless-CI copy flows (copy-as-HELM, sketcher
+    // Copy as SMILES/MOLBLOCK) can use navigator.clipboard instead of throwing.
+    permissions: ['clipboard-read', 'clipboard-write'],
   },
   projects: [
     {name: 'chromium', use: {...devices['Desktop Chrome']}},

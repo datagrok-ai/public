@@ -6,6 +6,17 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 
 test.use(specTestOptions);
 
+// Datagrok hides (display:none) rather than detaches a dialog on close, so the
+// repeated Markush opens across scenarios pile up stale [name="dialog-Markush-Enumerator"]
+// nodes. That trips strict-mode locators and makes first-match querySelector probes read a
+// stale dialog. Keep only the newest (last in DOM = the just-opened one) and drop the rest.
+async function dropStaleMarkush(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const dlgs = Array.from(document.querySelectorAll('[name="dialog-Markush-Enumerator"]'));
+    for (let i = 0; i < dlgs.length - 1; i++) dlgs[i].remove();
+  });
+}
+
 async function clickChemTransformItem(page: Page, itemName: string): Promise<void> {
   await page.locator('[name="div-Chem"]').waitFor({state: 'visible', timeout: 15_000});
   await page.locator('[name="div-Chem"]').click();
@@ -218,6 +229,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
 
   await softStep('Scenario 1 step 2: Chem | Transform | Markush Enumeration... opens Markush Enumerator dialog', async () => {
     await clickChemTransformItem(page, 'div-Chem---Transform---Markush-Enumeration...');
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 20_000});
 
     const dlgProbe = await page.evaluate(() => {
@@ -256,6 +268,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
       await (window as any).grok.functions.call('SequenceTranslator:chemEnumerateMarkushTopMenu', {});
       await new Promise((r) => setTimeout(r, 1500));
     });
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
 
     await importCoresFromTable(page, 'Table (2)', 'Core');
@@ -332,6 +345,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
       await new Promise((r) => setTimeout(r, 1500));
     });
 
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
 
     const dlgTitle = await page.evaluate(() => {
@@ -361,6 +375,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
       await new Promise((r) => setTimeout(r, 1500));
     });
 
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
 
     const dlgProbe = await page.evaluate(() => {
@@ -394,6 +409,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
       await (window as any).grok.functions.call('SequenceTranslator:getPtChemEnumeratorDialog', {cell});
       await new Promise((r) => setTimeout(r, 1500));
     });
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
 
     await importCoresFromTable(page, 'Table (2)', 'Core');
@@ -459,7 +475,8 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
         await new Promise((r) => setTimeout(r, 1500));
       }, rowIdx);
 
-      await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
+      await dropStaleMarkush(page);
+    await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
       await page.locator('[name="dialog-Markush-Enumerator"] [name="button-CANCEL"]').click();
       await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'hidden', timeout: 10_000});
     }
@@ -517,6 +534,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
       await (window as any).grok.functions.call('SequenceTranslator:chemEnumerateMarkushTopMenu', {});
       await new Promise((r) => setTimeout(r, 1500));
     });
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
 
     await importCoresFromTable(page, zipCoreTableName as string, 'ZipCore');
@@ -576,6 +594,7 @@ test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-
       await (window as any).grok.functions.call('SequenceTranslator:chemEnumerateMarkushTopMenu', {});
       await new Promise((r) => setTimeout(r, 1500));
     });
+    await dropStaleMarkush(page);
     await page.locator('[name="dialog-Markush-Enumerator"]').waitFor({state: 'visible', timeout: 15_000});
 
     await importCoresFromTable(page, zipCoreTableName as string, 'ZipCore');
