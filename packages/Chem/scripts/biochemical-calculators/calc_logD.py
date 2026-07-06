@@ -6,6 +6,7 @@
 #input: dataframe table
 #input: column molecules {semType: Molecule}
 #input: double pH = 7.4 {caption: pH}
+#meta.timeout: 900000
 #meta.method_info.author: Datagrok Hybrid Method
 #meta.method_info.year: 2024
 #meta.method_info.package: https://github.com/datagrok-ai/public
@@ -57,4 +58,4 @@ def calculate_logd(mol_str: str, pH: float, index: int) -> float:
 
 molecule_data = table[molecules]
 logd_values = [calculate_logd(m, pH, i) for i, m in enumerate(molecule_data)]
-result = pd.DataFrame({f'logD @ pH {pH}': logd_values}, index=table.index)
+result = pd.DataFrame({f'clogD @ pH {pH}': logd_values}, index=table.index)
