@@ -60,7 +60,16 @@ async function runBattery(page: import('@playwright/test').Page, backend: string
 
     // C1: SMILES round-trip + no-"undefined" guard (GROK-12685)
     sk.setMolecule('c1ccccc1');
-    await sleep(2500);
+    // External backends (Ketcher) build the molfile asynchronously via a remote
+    // widget and can be slower than a fixed wait on a cold CI stack — poll until
+    // getMolFile() materializes a valid V2000/V3000 block rather than sampling once.
+    {
+      const t0 = Date.now();
+      while (Date.now() - t0 < 15000) {
+        if (/V2000|V3000/.test(sk.getMolFile() ?? '')) break;
+        await sleep(400);
+      }
+    }
     res.checks.smiles = sk.getSmiles();
     res.checks.smilesNotUndefined = sk.getSmiles() !== 'undefined' && sk.molInput.value !== 'undefined';
     res.checks.molfileValid = /V2000|V3000/.test(sk.getMolFile() ?? '');
