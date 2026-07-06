@@ -21,7 +21,7 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowNode, FlowScheme, isExecKey} from './scheme';
+import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
@@ -180,17 +180,20 @@ export class FlowEditor {
     this.installHoverDocs();
     this.installWaypointInteractions();
     this.installMinimap();
-
-    // Expose a narrow callback surface to React components that need to talk
-    // back into the editor.
-    (window as unknown as {__ff_editor: {
-      toggleCollapsed(id: string): void;
-      isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
-    }}).__ff_editor = {
-      toggleCollapsed: (id) => void this.toggleCollapsed(id),
-      isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
-    };
   }
+
+  /** Narrow callback surface for the React node components, stamped onto every
+   *  node this editor owns (`FlowNode.editorBridge` — see the `nodecreate` pipe
+   *  in `wireEvents`). Resolving it from the node instead of a page-level
+   *  global keeps each component bound to its own editor: several editors
+   *  coexist on a page (file previews, the creation-script dialog, detached
+   *  compile editors), and a global bridge that any construction rebinds and
+   *  any `destroy()` deletes broke collapse toggling and collapsed-socket
+   *  rendering in whichever editor didn't own it last. */
+  private readonly bridge: FlowEditorBridge = {
+    toggleCollapsed: (id) => void this.toggleCollapsed(id),
+    isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
+  };
 
   /** Configure ClassicFlow to reject incompatible socket connections at pick
    *  time, before any connection ever enters the editor's data layer. */
@@ -261,6 +264,10 @@ export class FlowEditor {
 
   private wireEvents(): void {
     this.editor.addPipe((context) => {
+      // Stamp the owning editor's bridge BEFORE the node ever renders, so the
+      // React node component always talks back to this editor (not a global).
+      if (context.type === 'nodecreate')
+        context.data.editorBridge = this.bridge;
       // Stamp `_color` on every new connection BEFORE the area-plugin emits
       // 'render', so the React Connection component picks up the right color
       // on its very first render.
@@ -1918,6 +1925,5 @@ export class FlowEditor {
     this.minimapEl = null;
     this.minimapSvg = null;
     this.area.destroy();
-    delete (window as unknown as {__ff_editor?: unknown}).__ff_editor;
   }
 }

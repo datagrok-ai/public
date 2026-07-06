@@ -5,6 +5,16 @@ import {TypedSocket} from './sockets';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 
+/** The narrow callback surface a `FlowEditor` exposes to the React node
+ *  components it renders. Stamped onto every node that enters an editor's data
+ *  layer (`FlowNode.editorBridge`), so a component always talks to the editor
+ *  that owns it — several editors can coexist on a page (file previews, the
+ *  creation-script dialog, detached compile editors). */
+export interface FlowEditorBridge {
+  toggleCollapsed(id: string): void;
+  isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+}
+
 /** Base class for every node we put on the canvas.
  *
  * Extends `ClassicPreset.Node` with FuncFlow-specific metadata (Datagrok
@@ -81,6 +91,11 @@ export class FlowNode extends ClassicPreset.Node<
   /** Visual position — kept in sync with AreaPlugin's NodeView for
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */
   pos: {x: number; y: number} = {x: 0, y: 0};
+
+  /** Back-reference to the owning editor's callback surface, stamped by
+   *  `FlowEditor` when the node enters its data layer. Runtime-only — the
+   *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
+  editorBridge?: FlowEditorBridge;
 
   /** Human-friendly title — `label` from the Rete superclass is what we
    *  render, so this is just an alias for symmetry with the LiteGraph world. */
