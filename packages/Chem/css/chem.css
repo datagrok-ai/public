@@ -1340,6 +1340,17 @@
   border-color: var(--blue-2);
 }
 
+/* Platform's own `.d4-ribbon-item > :hover:not(.d4-ribbon-wrapper)` rule (background: var(--grey-1);
+   border-radius: 4px) has the SAME specificity (0,3,0) as this rule, so without !important the
+   winner depends on stylesheet load order — !important on the two properties it actually sets
+   (background, border-radius) makes this deterministic. border-color isn't touched by that platform
+   rule, so it doesn't need !important here. */
+.d4-ribbon-item > .chem-enum-chip:hover {
+  border-radius: 10px !important;
+  background: #e9f3fb !important;
+  border-color: var(--blue-2);
+}
+
 .chem-enum-chip--err {
   background: var(--red-1);
   border-color: var(--red-3);

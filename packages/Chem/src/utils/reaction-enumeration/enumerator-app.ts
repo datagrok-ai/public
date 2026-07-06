@@ -491,6 +491,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const err = validate();
     validationDiv.textContent = err ?? '';
     runBtn.disabled = err != null;
+    bindRunTooltip(err);
   }
   if (!pushingConfigToInputs) syncQuickInputsToConfig();
 
@@ -618,19 +619,28 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     input.value = df;
   }
 
+  // Shared wording for the two identically-phrased "how to subset" prompts below (per-step's empty-
+  // selection message and its hint text) — kept as one constant so the two stay in sync.
+  const SELECT_ROWS_OR_FILTER = 'Select rows (Ctrl/Shift+click) or apply a filter';
+
   // Shared clone/rename/detect core for both the global ("All steps") and per-step "Subset by
   // selection" actions — returns null (after an info toast) when there's nothing to subset.
+  // Falls back to the active filter when nothing is explicitly selected, so filtering alone is
+  // enough to subset without an extra manual "select all" step — explicit selection still wins
+  // when both are present, since it's the more deliberate action.
   function cloneSubsetByRows(df: DG.DataFrame, emptyMsg: string): DG.DataFrame | null {
     const sel = df.selection;
-    if (sel.trueCount === 0) {
+    const mask = sel.trueCount === 0 ? df.filter : sel;
+    if (mask.trueCount === 0) {
       grok.shell.info(emptyMsg);
       return null;
     }
-    if (sel.trueCount === df.rowCount) {
+    // Also covers the trivial "filter matches every row" case — nothing left to narrow either way.
+    if (mask.trueCount === df.rowCount) {
       grok.shell.info('All rows are selected — nothing to subset.');
       return null;
     }
-    const subset = df.clone(sel);
+    const subset = df.clone(mask);
     subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
     detectChemSemTypes(subset);
     return subset;
@@ -650,7 +660,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (noTableMsg) grok.shell.info(noTableMsg);
       return;
     }
-    const subset = cloneSubsetByRows(df, `Select rows in the ${gridLabel} first (Ctrl/Shift+click).`);
+    const subset = cloneSubsetByRows(df,
+      `Select rows in the ${gridLabel} (Ctrl/Shift+click) or apply a filter first.`);
     if (!subset) return;
     // `input` is a ChoiceInput whose `.value` getter re-wraps the underlying table on every read, so
     // `df` is never reference-equal to `state.prev` even when it's the same table — compare by name
@@ -730,7 +741,20 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
   let cancelled = false;
   const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
-  ui.tooltip.bind(runBtn, 'Run enumeration with the current config and add the result to the workspace.');
+  // A disabled button gets `pointer-events: none` (confirmed live), which blocks hover entirely —
+  // binding the tooltip to runBtn itself would never show it while disabled, exactly when the user
+  // most needs to know why. No wrapper div here, though — runBtn must be the direct child of its
+  // ribbon item (matching the Markush Enumerator) or the platform's own hover-highlight rule
+  // (`.d4-ribbon-item > :hover:not(.d4-ribbon-wrapper) { background: var(--grey-1) }`) paints the
+  // *wrapper* grey instead of being hidden behind the button's own opaque background — a visible
+  // halo around the button. Tooltip is instead bound to the ribbon item itself once it exists in the
+  // DOM (see the `runBtnRibbonItem` lookup after `view.append(root)` below); with pointer-events:none
+  // on the disabled button, hover still reaches that ancestor since the button no longer intercepts it.
+  let runBtnRibbonItem: HTMLElement | null = null;
+  const bindRunTooltip = (msg: string | null): void => {
+    ui.tooltip.bind(runBtnRibbonItem ?? runBtn,
+      msg ?? 'Run enumeration with the current config and add the result to the workspace.');
+  };
 
   const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
   cancelBtn.style.display = 'none';
@@ -939,8 +963,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   cfgEstEl.className = 'chem-enum-cfg-est';
   const ribbonArrow = ui.iconFA('arrow-right');
   ribbonArrow.classList.add('chem-enum-ribbon-arrow');
-  const runGroup = ui.divH([runBtn, cancelBtn, progressLabel],
-    {style: {alignItems: 'center', gap: '6px'}});
+  // No custom wrapping div and no manual gap/margin — passed straight into their own ribbon group
+  // (see setRibbonPanels below), same as the Markush Enumerator; the native ribbon group's own flex
+  // layout handles spacing between runBtn/cancelBtn/progressLabel.
 
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value;
@@ -1120,7 +1145,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       const w = stepState[k - 1]?.df;
       if (!w) return; // grid must be mounted (via stepClone) before this button is reachable
       const subset = cloneSubsetByRows(w,
-        `Select rows (Ctrl/Shift+click) to use only those ${o.noun} in step ${k} first.`);
+        `${SELECT_ROWS_OR_FILTER} to use only those ${o.noun} in step ${k}.`);
       if (!subset) return;
       setStepWork(k, subset);
       stepState[k - 1].committed = true;
@@ -1231,8 +1256,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const btn = ui.button('Subset by selection', () => doGlobalAction(
           () => subsetBySelection(o.input, o.state, renderGrid, `${o.noun} grid`, o.noTableMsg),
           `new ${o.noun} subset`));
-        ui.tooltip.bind(btn, `Replace the ${o.noun} library with only the selected rows (applies to every ` +
-          `step). Click "Use all" to restore the full set.`);
+        ui.tooltip.bind(btn, `Replace the ${o.noun} library with only the selected rows, or — if nothing is ` +
+          `selected — the currently filtered rows (applies to every step). Click "Use all" to restore the ` +
+          `full set.`);
         const useAll = ui.button('Use all', () => doGlobalAction(
           () => restoreFullTable(o.input, o.state, renderGrid, o.noun),
           `full ${o.noun} library again`));
@@ -1245,14 +1271,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
           w ? (hasOverride(selStep) ? `using ${w.rowCount} / ${o.input.value?.rowCount ?? w.rowCount}` : `all ${w.rowCount}`) : '',
           {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
         const btn = ui.button('Subset by selection', () => subsetStepBySelection(selStep));
-        ui.tooltip.bind(btn, `Narrow step ${selStep} to only the selected rows (select rows with ` +
-          `Ctrl/Shift+click first). Click "Use all" to go back to the full ${o.noun} library.`);
+        ui.tooltip.bind(btn, `Narrow step ${selStep} to only the selected rows (Ctrl/Shift+click), or — if ` +
+          `nothing is selected — the currently filtered rows. Click "Use all" to go back to the full ` +
+          `${o.noun} library.`);
         const useAll = ui.button('Use all', () => useAllForStep(selStep));
         ui.tooltip.bind(useAll, `Undo "Subset by selection" so step ${selStep} uses the full ${o.noun} library ` +
           `(same as "All steps").`);
         barHost.append(
-          hintEl(`Select rows (Ctrl/Shift+click), then "Subset by selection" to use only those ${o.noun} in ` +
-            `step ${selStep}.`),
+          hintEl(`${SELECT_ROWS_OR_FILTER}, then "Subset by selection" to use only those ${o.noun} in step ` +
+            `${selStep}.`),
           status, filterIcon, btn, useAll);
       }
     }
@@ -1536,8 +1563,35 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
     classes: 'chem-enumerator'});
 
-  view.setRibbonPanels([[appInfoIcon, runGroup, chipReactions, ribbonArrow, chipBbs, chipCombine, cfgEstEl]]);
+  // Enumerate gets its own ribbon group, matching the Markush Enumerator (pt-chem-enum-dialog.ts) —
+  // its `appActionHost` (the run button) is also its own group, never bundled with other items into
+  // one custom flex div. A run button sharing a group with unrelated items is what picks up the
+  // platform's own group-level background/shadow oddly.
+  view.setRibbonPanels([
+    [appInfoIcon],
+    [runBtn, cancelBtn, progressLabel],
+    [chipReactions, ribbonArrow, chipBbs, chipCombine, cfgEstEl],
+  ]);
   view.append(root);
+
+  // The platform's own `.d4-ribbon-group`/`.d4-ribbon-item` chrome (background + box-shadow +
+  // border) reads as a stray "shadow" under the Enumerate button and chips once this view's own
+  // content renders alongside it — the Markush Enumerator (pt-chem-enum-dialog.ts) hits the same
+  // thing and strips it the same way. Both this and resolving runBtnRibbonItem (see runBtn's own
+  // comment above) need a 0ms setTimeout since the ribbon DOM isn't attached yet at this point in
+  // view construction — two independent fixups sharing that one wait, done in a single DOM pass
+  // (the ribbon-item that contains runBtn is captured while already iterating over ribbon items,
+  // rather than re-walking the tree with a separate `.closest()` call).
+  setTimeout(() => {
+    view.root.closest('.d4-root')?.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item')
+      .forEach((el) => {
+        el.style.background = 'transparent';
+        el.style.boxShadow = 'none';
+        el.style.border = 'none';
+        if (el.classList.contains('d4-ribbon-item') && el.contains(runBtn)) runBtnRibbonItem = el;
+      });
+    bindRunTooltip(validate());
+  }, 0);
 
   // Render each component panel (step strip + "All steps" grid) and run validation once wired up.
   templatesCtl.render();
