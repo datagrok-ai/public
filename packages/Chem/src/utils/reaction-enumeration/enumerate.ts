@@ -370,8 +370,16 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       roundAllowedSmarts.push(null);
     }
     const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'round BB') : null;
+    if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
+      warnings.push(`Round ${r + 1}: building-block override has no valid SMILES after ` +
+        `canonicalization; using the global building-block pool instead.`);
+    }
     roundBBs.push(bbs && bbs.length > 0 ? bbs : null);
     const rgs = o?.reagents ? canonUnique(o.reagents, 'round reagent') : null;
+    if (o?.reagents && (!rgs || rgs.length === 0)) {
+      warnings.push(`Round ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
+        `using the global reagent pool instead.`);
+    }
     roundReagents.push(rgs && rgs.length > 0 ? rgs : null);
   }
 
@@ -449,6 +457,12 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       if (!useReagents && !config.enumeration.depth_first && roundBBs[round - 1] != null) {
         warnings.push(`Round ${round}: building-block override has no effect in breadth-first ` +
           `mode — a round draws from all earlier products regardless of the per-step BB subset.`);
+      }
+      // Mirror of the above: a per-round reagent override is only ever read via `activeReagents`
+      // inside the `useReagents` branch further down — outside reagents mode it's a silent no-op.
+      if (!useReagents && roundReagents[round - 1] != null) {
+        warnings.push(`Round ${round}: reagent override has no effect outside reagents mode — a ` +
+          `round only draws from the reagents library when a reagents file is active.`);
       }
 
       for (let ti = 0; ti < parsedTemplates.length; ti++) {

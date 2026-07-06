@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
+import {Subscription} from 'rxjs';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -477,6 +478,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
     const rounds = numRoundsInput.value ?? 0;
     if (rounds < 1) return 'Number of rounds must be at least 1.';
+    if (rounds > MAX_ROUNDS) return `Number of rounds must be at most ${MAX_ROUNDS}.`;
 
     if (config.max_num_components < 1) return 'Max # components must be at least 1.';
 
@@ -506,109 +508,128 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Each component (0 = reactions, 1 = BBs, 2 = reagents) can be narrowed per round. We keep a
   // display-only clone (NOT registered in the workspace) per (component, round); its row SELECTION
   // is the per-step subset — empty/full selection means "use the global table". null = not built yet.
-  interface StepCompDef {
-    idx: number;
-    getGlobal: () => DG.DataFrame | null;
-    apply: (o: PerRoundOverride, work: DG.DataFrame, cfg: EnumeratorConfig) => void;
-  }
-  const stepCompDefs: StepCompDef[] = [
-    {idx: 0, getGlobal: () => templatesInput.value,
-      apply: (o, work, cfg) => { o.templates = extractTemplates(cfg, work); }},
-    {idx: 1, getGlobal: () => bbsInput.value,
-      apply: (o, work, cfg) => { o.buildingBlocks = extractBuildingBlocks(cfg, work); }},
-    {idx: 2, getGlobal: () => reagentsInput.value,
-      apply: (o, work, cfg) => { o.reagents = extractReagents(cfg, work); }},
-  ];
-  const stepWork: (DG.DataFrame | null)[][] = [[], [], []];
-  // Per-clone selection subscriptions, parallel to `stepWork` — unsubscribed explicitly when a
-  // clone is dropped, so repeated file swaps don't accumulate dead subscriptions in `view.subs`.
-  const stepWorkSubs: ({unsubscribe: () => void} | null)[][] = [[], [], []];
+  // `stepState` lives INSIDE makeDataPanel (one array per panel, not one shared array indexed by
+  // component) — see DataPanel.applyOverrideForRound for how buildPerRoundOverrides reaches in.
 
-  const templatesGridHost = ui.div([]);
-  const bbsGridHost = ui.div([]);
-  const reagentsGridHost = ui.div([]);
-
-  // Nullable refs to tab row-count badges — null until tabs are built; closures use optional chaining.
+  // Tab row-count badges. Created upfront (they're standalone DOM + closure, no pane dependency) so
+  // makeDataPanel can take them directly rather than through a nullable thunk; `.el` gets attached to
+  // its actual pane header later, once the panes exist.
   type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
-  let templatesBadge: TabBadge | null = null;
-  let bbsBadge: TabBadge | null = null;
-  let reagentsBadge: TabBadge | null = null;
+  const makeTabBadge = (): TabBadge => {
+    const el = document.createElement('span');
+    el.className = 'chem-enum-tab-badge';
+    return {el, refresh: (n: number | null) => {
+      el.textContent = n != null ? String(n) : '';
+      el.style.display = n != null ? '' : 'none';
+    }};
+  };
+  const templatesBadge = makeTabBadge();
+  const bbsBadge = makeTabBadge();
+  const reagentsBadge = makeTabBadge();
 
   const GRID_ROW_HEIGHT = 75;
 
   function applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
     try {
       grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
-      if (extendLast && grid.props.hasProperty('extendLastColumn'))
-        (grid.props as any).extendLastColumn = true;
+      if (extendLast) grid.props.extendLastColumn = true;
     } catch { /* setColumnsWidthType not available on older Dart builds */ }
   }
 
   // A single RAF after appending a resizable ui.splitH isn't enough for children to report a real
-  // clientWidth (view may not be attached yet; observed live: 10 retries still left `total` at 0).
-  // Worse, RAF never fires while the tab is backgrounded (verified: 2+s with zero ticks), so an
-  // RAF-based retry can stall forever. setTimeout keeps firing regardless of visibility — use that,
-  // retrying generously (~10s) until both children have real width.
-  function sizeSplitOnceLaidOut(
-    a: HTMLElement, b: HTMLElement, computeAWidth: (total: number) => number, retriesLeft = 300,
-  ): void {
-    setTimeout(() => {
+  // clientWidth (view may not be attached yet). ui.onSizeChanged is ResizeObserver-backed, so it
+  // fires once real layout completes (and again on later resizes) instead of polling — subscribe,
+  // size on the first nonzero total, then unsubscribe (this only needs to run once, on initial
+  // layout). Tracked in view.subs so a view closed before that first size ever arrives doesn't leak.
+  function sizeSplitOnceLaidOut(a: HTMLElement, b: HTMLElement, computeAWidth: (total: number) => number): void {
+    const sub = ui.onSizeChanged(a).subscribe(() => {
       const total = a.clientWidth + b.clientWidth;
-      if (total === 0) {
-        if (retriesLeft > 0) sizeSplitOnceLaidOut(a, b, computeAWidth, retriesLeft - 1);
-        return;
-      }
+      if (total === 0) return;
       const aWidth = computeAWidth(total);
       a.style.width = aWidth + 'px';
       a.style.flexGrow = String(aWidth / total);
       b.style.width = (total - aWidth) + 'px';
       b.style.flexGrow = String((total - aWidth) / total);
-    }, 33);
+      sub.unsubscribe();
+    });
+    view.subs.push(sub);
   }
 
+  // REVERTED (live-verified): DG.Viewer.filters(df) was tried here — a standalone Viewer needs no
+  // TableView at all — but with no explicit `filters`/`columnNames` config it renders a genuinely
+  // EMPTY panel (confirmed live: toggling "Show filters" showed no per-column filters whatsoever).
+  // `createDefaultFilters` (the auto-detect-and-populate behavior we actually need, including
+  // substructure search for molecule/reaction columns) is exclusively a `TableView.getFiltersGroup()`
+  // option (view.ts:404, bound to `api.grok_TableView_GetFilters`) — a different Dart call than the
+  // standalone `Viewer.filters()` binding (`api.grok_Viewer_Filters`), despite view.ts's deprecated
+  // `filters()` method looking like the same call at the JS layer. A TableView is genuinely required
+  // for auto-populated defaults; back to that.
+  //
   // mountDf creates a detached DG.TableView per call when withFilters is on; `host.innerHTML = ''`
   // only drops the DOM node, so the TableView leaks unless explicitly closed. Track the live view
   // per host and close the previous one before mounting a replacement.
   const liveFilterViews = new Map<HTMLElement, DG.TableView>();
-
-  // `withFilters` adds the platform's real auto-detected default filters panel. A detached TableView
-  // (addToWorkspace=false) never gets the shell's "added to dock tree" call, so grid/filters silently
-  // fail to init (verified: blank grid, substructure filter errors) — fire `_onAdded()` manually,
-  // same trick as `mpo-create-profile.ts`. We keep only the grid + default FilterGroup, not tv.root.
-  function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
+  function closeLiveFilterView(host: HTMLElement): void {
     const prevTv = liveFilterViews.get(host);
     if (prevTv) {
       liveFilterViews.delete(host);
       try {prevTv.close();} catch (e) {console.warn('Could not close previous filters view:', e);}
     }
+  }
+  // Neither of the above runs on VIEW close — only on remount/no-table. Close every still-live
+  // filters view when the view itself tears down, or their Dart-side resources leak for the session.
+  view.subs.push(new Subscription(() => {
+    for (const tv of liveFilterViews.values()) {
+      try {tv.close();} catch (e) {console.warn('Could not close filters view on teardown:', e);}
+    }
+    liveFilterViews.clear();
+  }));
+
+  // `withFilters` adds the platform's real auto-detected default filters panel. A detached TableView
+  // (addToWorkspace=false) never gets the shell's "added to dock tree" call, so grid/filters silently
+  // fail to init (verified live: blank grid AND an empty filter panel — 0 filters, not just missing
+  // substructure search). Firing `_onAdded()` manually (same trick as `mpo-create-profile.ts`) fixes
+  // the grid, but ONLY fixes the filters too if it's DEFERRED a tick, exactly like
+  // `mpo-create-profile.ts`'s own `setTimeout(() => this.tableView._onAdded(), 0)` — calling it
+  // synchronously in the same tick as `DG.TableView.create()` (what this code did before) leaves
+  // `getFiltersGroup({createDefaultFilters: true})` producing a real FilterGroup object with zero
+  // populated filters inside it (confirmed live via DOM inspection: innerHTML empty vs. populated
+  // after a deferred call). We keep only the grid + default FilterGroup, not tv.root.
+  function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
+    closeLiveFilterView(host);
     host.innerHTML = '';
+    const grid = DG.Viewer.grid(df);
+    grid.props.rowHeight = GRID_ROW_HEIGHT;
+    grid.root.style.cssText += ';width:100%;height:100%';
     if (!withFilters) {
-      const grid = DG.Viewer.grid(df);
-      grid.props.rowHeight = GRID_ROW_HEIGHT;
-      grid.root.style.cssText += ';width:100%;height:100%';
       host.appendChild(grid.root);
       applyGridColumnSizing(grid);
       return;
     }
     const tv = DG.TableView.create(df, false);
-    (tv as any)._onAdded();
     liveFilterViews.set(host, tv);
-    tv.grid.props.rowHeight = GRID_ROW_HEIGHT;
-    tv.grid.root.style.cssText += ';width:100%;height:100%';
-    const filterGroup = tv.getFiltersGroup({createDefaultFilters: true});
-    filterGroup.root.style.cssText += ';width:100%;height:100%;overflow:auto';
-    const gridBox = ui.div([tv.grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
-    const filtersBox = ui.div([filterGroup.root], {style: {flex: '0 0 auto', width: '220px', height: '100%',
+    const gridBox = ui.div([grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
+    const filtersBox = ui.div([], {style: {flex: '0 0 auto', width: '220px', height: '100%',
       overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
     const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
     host.appendChild(split);
-    // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
-    // off the wrapper boxes it creates (children[0]/[2], skipping the divider at [1]) — set size there.
-    const filtersWrap = split.children[0] as HTMLElement;
-    const gridWrap = split.children[2] as HTMLElement;
-    if (gridWrap && filtersWrap)
-      sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
-    applyGridColumnSizing(tv.grid);
+    applyGridColumnSizing(grid);
+    setTimeout(() => {
+      // Bail if this host has moved on to a different mount since this was scheduled (fast tab
+      // switching, or the panel closed) — liveFilterViews no longer pointing at this exact tv means
+      // `host` isn't showing it anymore.
+      if (liveFilterViews.get(host) !== tv) return;
+      tv._onAdded();
+      const filterGroup = tv.getFiltersGroup({createDefaultFilters: true});
+      filterGroup.root.style.cssText += ';width:100%;height:100%;overflow:auto';
+      filtersBox.appendChild(filterGroup.root);
+      // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
+      // off the wrapper boxes it creates (children[0]/[2], skipping the divider at [1]) — set size there.
+      const filtersWrap = split.children[0] as HTMLElement;
+      const gridWrap = split.children[2] as HTMLElement;
+      if (gridWrap && filtersWrap)
+        sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
+    }, 0);
   }
 
   // ui.input.table is a ChoiceInput over the workspace tables list; setting .value to a DataFrame
@@ -1025,40 +1046,53 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     idx: number; noun: string;
     input: DG.InputBase<DG.DataFrame | null>;
     state: SubsetState;
-    gridHost: HTMLElement;
-    badge?: () => TabBadge | null;
+    badge: TabBadge;
     noTableMsg?: string;
     emptyMsg?: string;
+    // How to fold this component's per-round work df into a PerRoundOverride fragment.
+    apply: (o: PerRoundOverride, work: DG.DataFrame, cfg: EnumeratorConfig) => void;
   }
   interface DataPanel {
     panel: HTMLElement; render: () => void; onTableChanged: () => void; onRoundsChanged: () => void;
+    // Applies this component's round-r override (if any) onto `out`; returns whether it did.
+    // Lets buildPerRoundOverrides reach each panel's own stepState without a shared indexed array.
+    applyOverrideForRound: (r: number, out: PerRoundOverride, cfg: EnumeratorConfig) => boolean;
   }
   function makeDataPanel(o: DataPanelOpts): DataPanel {
     let selStep = 0; // 0 = All steps (full library); 1..rounds = that round's subset
-    let filtersOn = false; // funnel toggle: swap the grid for an embedded TableView with its filters group
+    let filtersOn = false; // funnel toggle: show the standard Datagrok filters panel next to the grid
     let currentDf: DG.DataFrame | null = null;
-    // Step selector: a real ui.tabControl. All steps share the SAME barHost + gridHost (one grid,
-    // not one per step) — on tab switch, relocate that content node into the current pane and
-    // re-render. Since contentHost ends up nested inside stepTabsHost's own subtree (not a flex
-    // sibling), stepTabsHost must be flex:1 1 0 to fill available height, not size to content.
+    // Per-round state (index k-1 = round k), one record per round — a single array instead of
+    // parallel ones, so the df/subscription/committed-flag for a given round can never drift out of
+    // sync with each other (they're always read and written together).
+    // `committed`: explicit "did the user click Subset by selection for this round" flag — NOT
+    // inferred from row-count comparison. A step's clone is a full snapshot of the global table
+    // taken at whatever moment the user first visits that tab; if the global table is edited in
+    // place afterward (row add/delete on the same DataFrame object — no onChanged fires, since the
+    // object reference is unchanged), the clone's row count silently drifts from the global's.
+    // Inferring "override" from that drift is wrong in both directions (a merely-visited, never-
+    // committed clone could look like an override, or a real committed override could look like a
+    // stale non-override) and was confirmed to let deleted rows quietly resurrect as part of a
+    // round's reactant pool. The flag is set only by subsetStepBySelection and cleared only by
+    // useAllForStep/a table swap.
+    interface StepState { df: DG.DataFrame | null; sub: Subscription | null; committed: boolean; }
+    const stepState: StepState[] = [];
+    // Step selector: a real ui.tabControl. Each pane (All steps + Step k) owns its OWN persistent
+    // barHost/gridHost, built once via that pane's own addPane content factory — nothing is shared
+    // or relocated between panes. The grid itself is still destroyed and rebuilt on every switch
+    // (renderGrid), so a shared, relocated node bought no reuse, only the "relocating a live grid
+    // corrupts it" hazard the old design had to work around. `paneHosts[selStep]` gives renderBar/
+    // renderGrid the current pane's own hosts; rebuilt fresh whenever buildStepTabs rebuilds the tabs.
     const stepTabsHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', display: 'flex',
       flexDirection: 'column', overflow: 'hidden'}});
-    let stepTabsSub: {unsubscribe: () => void} | null = null;
+    let stepTabsSub: Subscription | null = null;
     const stepDots: (HTMLElement | null)[] = []; // index k = 1..rounds; index 0 ("All steps") unused
-    const barHost = ui.div([], {style: {display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
-      padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)'}});
-    o.gridHost.style.cssText += ';display:flex;flex-direction:column;flex:1 1 0;min-height:0;overflow:hidden';
-    const contentHost = ui.div([barHost, o.gridHost], {style: {
-      height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}});
+    let paneHosts: {barHost: HTMLElement; gridHost: HTMLElement}[] = [];
 
-    // A step "has an override" once its clone has FEWER rows than "All steps" — i.e. "Subset by
-    // selection" was committed for it. A freshly-visited step's clone starts full-size, so merely
-    // browsing/selecting doesn't count, only committing does. Row-count comparison (not clone-
-    // nullness) also lets a step track "All steps" narrowing/reverting automatically.
+    // A step "has an override" only once stepState[k-1].committed is explicitly set — see the flag's
+    // own comment above for why row-count inference was wrong.
     const hasOverride = (k: number): boolean => {
-      const w = stepWork[o.idx][k - 1];
-      const global = o.input.value;
-      if (!w || !global || w.rowCount >= global.rowCount) return false;
+      if (!stepState[k - 1]?.committed) return false;
       // Breadth-first ignores per-round BB overrides entirely (enumerate() draws round-R's reactant
       // pool from the union of all prior products, see `eligibleSmiles`) — don't show the override
       // dot/status as if it did something. Reactions/reagents overrides are unaffected. NOTE:
@@ -1069,7 +1103,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (o.idx === 1 && currentMode() === 'breadth') return false;
       return true;
     };
-    const roundCount = (): number => Math.max(1, numRoundsInput.value ?? config.enumeration.num_rounds);
+    // Capped defensively regardless of validation state — an invalid (too-high) input value still
+    // blocks Run via `validate()`, but must not make buildStepTabs try to build hundreds of tabs.
+    const roundCount = (): number =>
+      Math.min(MAX_ROUNDS, Math.max(1, numRoundsInput.value ?? config.enumeration.num_rounds));
     const updateDots = (): void => {
       for (let k = 1; k <= stepDots.length - 1; k++) {
         const dot = stepDots[k];
@@ -1084,17 +1121,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     };
 
     // Shared bookkeeping behind every place a step's clone changes: unsubscribe the old selection
-    // listener, subscribe the new one (if any), and keep `stepWork`/`stepWorkSubs` in lockstep.
+    // listener, subscribe the new one (if any), and replace the round's state record. Preserves the
+    // existing `committed` value — callers that need to change it do so explicitly right after.
     const setStepWork = (k: number, work: DG.DataFrame | null): void => {
-      stepWorkSubs[o.idx][k - 1]?.unsubscribe();
+      stepState[k - 1]?.sub?.unsubscribe();
       const sub = work ? work.onSelectionChanged.subscribe(() => { updateDots(); renderBar(); }) : null;
       if (sub) view.subs.push(sub);
-      stepWorkSubs[o.idx][k - 1] = sub;
-      stepWork[o.idx][k - 1] = work;
+      stepState[k - 1] = {df: work, sub, committed: stepState[k - 1]?.committed ?? false};
     };
 
     const stepClone = (k: number): DG.DataFrame | null => {
-      const existing = stepWork[o.idx][k - 1];
+      const existing = stepState[k - 1]?.df;
       if (existing) return existing;
       const global = o.input.value;
       if (!global) return null;
@@ -1109,19 +1146,21 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // Per-step mirror of the global "Subset by selection": selecting rows in a step's grid is just
     // staging, the round only narrows once this commits it by swapping in a new clone.
     const subsetStepBySelection = (k: number): void => {
-      const w = stepWork[o.idx][k - 1];
+      const w = stepState[k - 1]?.df;
       if (!w) return; // grid must be mounted (via stepClone) before this button is reachable
       const subset = cloneSubsetByRows(w,
         `Select rows (Ctrl/Shift+click) to use only those ${o.noun} in step ${k} first.`);
       if (!subset) return;
       setStepWork(k, subset);
-      renderBar(); renderGrid(); updateDots();
+      stepState[k - 1].committed = true;
+      renderGrid(); renderBar(); updateDots();
     };
 
     // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
     const useAllForStep = (k: number): void => {
       setStepWork(k, null);
-      renderBar(); renderGrid(); updateDots();
+      stepState[k - 1].committed = false;
+      renderGrid(); renderBar(); updateDots();
     };
 
     // (Re)build the step tab strip, landing on `initialStep` (clamped). TabControl has no
@@ -1130,18 +1169,34 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       stepTabsSub?.unsubscribe();
       stepTabsHost.innerHTML = '';
       stepDots.length = 0;
+      paneHosts = [];
       const tc = ui.tabControl(null, false);
-      // Same reasoning as stepTabsHost above: contentHost lives in this tabControl's active-pane
-      // content div, so tc.root must fill available height, not size to its header-strip content.
+      // tc.root must fill available height, not size to its header-strip content — each pane's own
+      // content div (built below) needs the real space to lay its grid out in.
       tc.root.style.cssText += ';width:100%;flex:1 1 0;min-height:0;overflow:hidden';
-      const allPane = tc.addPane('All steps', () => ui.div([]));
+      // Builds one pane's persistent content: its own barHost + gridHost, recorded in paneHosts at
+      // its OWN fixed index k (not push-order) so renderBar/renderGrid can find "the currently
+      // selected pane's own hosts" regardless of whether TabControl calls addPane's factory eagerly
+      // for every pane up front or lazily on first visit — either way, position k always lands at
+      // paneHosts[k], never at "whatever order the factories happened to fire in."
+      const makePaneContent = (k: number): () => HTMLElement => () => {
+        const barHost = ui.div([], {style: {display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
+          padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)'}});
+        const gridHost = ui.div([], {style: {display: 'flex', flexDirection: 'column', flex: '1 1 0',
+          minHeight: '0', overflow: 'hidden'}});
+        paneHosts[k] = {barHost, gridHost};
+        return ui.div([barHost, gridHost], {style: {
+          height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}});
+      };
+      const allPane = tc.addPane('All steps', makePaneContent(0));
       ui.tooltip.bind(allPane.header, 'Narrow this component for one round only. "All steps" is the full ' +
         'library used by every round; pick a step to restrict just that round. Per-step building-block ' +
         'subsets apply in depth-first / reagents mode; in breadth-first mode a round draws from all earlier ' +
-        'products, so a BB subset has no effect. Resets when you change the round count or swap an input file.');
+        'products, so a BB subset has no effect. Resets when you swap the input file (in-range overrides ' +
+        'survive a round-count change).');
       stepDots.push(null);
       for (let k = 1; k <= roundCount(); k++) {
-        const pane = tc.addPane(`Step ${k}`, () => ui.div([]));
+        const pane = tc.addPane(`Step ${k}`, makePaneContent(k));
         // Position dot absolutely (header stacks children vertically, so marginLeft lands below the
         // label). Positive left offset only — a negative one bleeds into the adjacent tab (tabs sit
         // flush, live-verified). Fixed top offset, not top:50% — the header's box shrinks ~7px when
@@ -1153,36 +1208,38 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         pane.header.appendChild(dot);
         stepDots.push(dot);
       }
-      // Relocating `contentHost` while it holds a LIVE mounted DG.Grid corrupts it (verified live:
-      // clicking a row after a tab switch threw and froze the page) — DG.Grid ties bookkeeping to
-      // its DOM parent. So: destroy the grid first, move the empty container, then mount fresh.
-      const relocateAndRender = (): void => {
-        o.gridHost.innerHTML = '';
-        const target = tc.currentPane;
-        target?.content.appendChild(contentHost);
-        renderBar(); renderGrid(); updateDots();
-      };
+      const renderCurrent = (): void => { renderGrid(); renderBar(); updateDots(); };
       stepTabsSub = tc.onTabChanged.subscribe(() => {
-        const name = tc.currentPane?.name;
-        selStep = !name || name === 'All steps' ? 0 : parseInt(name.slice('Step '.length), 10);
-        relocateAndRender();
+        // Index into tc.panes IS selStep (0 = "All steps", k = "Step k", by insertion order above)
+        // — no need to parse the pane's label, which would break if it were ever reworded.
+        const idx = tc.currentPane ? tc.panes.indexOf(tc.currentPane) : -1;
+        selStep = idx < 0 ? 0 : idx;
+        renderCurrent();
       });
+      // Each rebuild's OWN unsubscribe (above, at the top of buildStepTabs) handles every prior
+      // instance — but the LAST one built before the view closes has no later rebuild to retire it.
+      // Track it in view.subs too so it isn't the one subscription in this panel that view close
+      // never reaches (already-unsubscribed entries left behind here are inert, same tradeoff as
+      // the per-step selection subs in setStepWork).
+      view.subs.push(stepTabsSub);
       stepTabsHost.appendChild(tc.root);
       // Select explicitly — onTabChanged may not fire if the target is already the control's default.
       const clamped = Math.min(Math.max(0, initialStep), roundCount());
       selStep = clamped;
       const target = tc.panes[clamped] ?? allPane;
       if (target !== tc.currentPane) tc.currentPane = target;
-      relocateAndRender();
+      renderCurrent();
     }
 
     function renderBar(): void {
+      const barHost = paneHosts[selStep]?.barHost;
+      if (!barHost) return; // pane not built yet (shouldn't happen once buildStepTabs has run once)
       barHost.innerHTML = '';
       const hintEl = (t: string): HTMLElement =>
         ui.divText(t, {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px'}});
       // Funnel toggle — shows the standard Datagrok filters panel for the visible grid. Off by default.
       const filterIcon = ui.iconFA('filter',
-        () => { filtersOn = !filtersOn; renderBar(); renderGrid(); },
+        () => { filtersOn = !filtersOn; renderGrid(); renderBar(); },
         filtersOn ? 'Hide filters' : 'Show filters');
       filterIcon.style.cssText += `;cursor:pointer;padding:2px 5px;flex:0 0 auto;` +
         `color:${filtersOn ? 'var(--blue-2)' : 'var(--grey-5)'}`;
@@ -1208,7 +1265,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         barHost.append(hintEl(`Full ${o.noun} library — used by every step unless a step overrides it.`),
           filterIcon, btn, useAll);
       } else {
-        const w = stepWork[o.idx][selStep - 1];
+        const w = stepState[selStep - 1]?.df;
         const status = ui.divText(
           w ? (hasOverride(selStep) ? `using ${w.rowCount} / ${o.input.value?.rowCount ?? w.rowCount}` : `all ${w.rowCount}`) : '',
           {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
@@ -1226,19 +1283,22 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
 
     function renderGrid(): void {
-      o.gridHost.innerHTML = '';
+      const gridHost = paneHosts[selStep]?.gridHost;
+      if (!gridHost) return; // pane not built yet (shouldn't happen once buildStepTabs has run once)
+      gridHost.innerHTML = '';
       currentDf = selStep === 0 ? o.input.value : stepClone(selStep);
       if (!currentDf) {
-        o.gridHost.appendChild(ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
+        closeLiveFilterView(gridHost); // this branch bypasses mountDf, so it must close it directly
+        gridHost.appendChild(ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
           {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
-        if (selStep === 0) o.badge?.()?.refresh(null);
+        if (selStep === 0) o.badge.refresh(null);
         return;
       }
-      mountDf(o.gridHost, currentDf, filtersOn);
-      if (selStep === 0) o.badge?.()?.refresh(currentDf.rowCount);
+      mountDf(gridHost, currentDf, filtersOn);
+      if (selStep === 0) o.badge.refresh(currentDf.rowCount);
     }
 
-    function render(): void { renderBar(); renderGrid(); updateDots(); }
+    function render(): void { renderGrid(); renderBar(); updateDots(); }
 
     const onTableChanged = (): void => {
       if (o.input.value) detectChemSemTypes(o.input.value);
@@ -1246,35 +1306,42 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       // THIS handler won't treat their own programmatic swap as a genuine user file change and erase
       // "Use all"'s remembered original.
       if (!o.state.suppress) o.state.original = null;
-      for (const sub of stepWorkSubs[o.idx]) sub?.unsubscribe();
-      stepWorkSubs[o.idx].length = 0;
-      stepWork[o.idx].length = 0;
+      for (const s of stepState) s?.sub?.unsubscribe();
+      stepState.length = 0;
       buildStepTabs(0);
       refreshValidation();
     };
-    const onRoundsChanged = (): void => {
-      // Drop only clones for rounds that no longer exist — must not wipe overrides still in range.
-      const n = roundCount();
-      if (stepWork[o.idx].length > n) {
-        for (let i = n; i < stepWorkSubs[o.idx].length; i++) stepWorkSubs[o.idx][i]?.unsubscribe();
-        stepWorkSubs[o.idx].length = n;
-        stepWork[o.idx].length = n;
-      }
-      buildStepTabs(selStep);
+    // Deliberately does NOT drop stepState entries for rounds beyond the new count. Dart int inputs
+    // fire onChanged per keystroke, so typing "10" over "5" transiently passes through "1" — eagerly
+    // truncating there would irreversibly destroy committed overrides on steps 2-5 before the user
+    // finishes typing. buildStepTabs already only builds tabs up to roundCount() (capped at
+    // MAX_ROUNDS), so out-of-range entries are simply invisible/unused, not leaked — nothing ever
+    // writes past index MAX_ROUNDS-1 in the first place.
+    const onRoundsChanged = (): void => buildStepTabs(selStep);
+
+    const applyOverrideForRound = (r: number, out: PerRoundOverride, cfg: EnumeratorConfig): boolean => {
+      const entry = stepState[r - 1];
+      if (!entry?.committed || !entry.df) return false; // !entry.df shouldn't happen if committed
+      const work = entry.df;
+      o.apply(out, work, cfg);
+      return true;
     };
 
-    const panel = ui.div([stepTabsHost, contentHost], {style: {
+    const panel = ui.div([stepTabsHost], {style: {
       height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--white)', overflow: 'hidden'}});
     buildStepTabs(0); // also mounts the grid once hosts are in the DOM
-    return {panel, render, onTableChanged, onRoundsChanged};
+    return {panel, render, onTableChanged, onRoundsChanged, applyOverrideForRound};
   }
 
   const templatesCtl = makeDataPanel({idx: 0, noun: 'reaction templates',
-    input: templatesInput, state: templatesState, gridHost: templatesGridHost, badge: () => templatesBadge});
+    input: templatesInput, state: templatesState, badge: templatesBadge,
+    apply: (o, work, cfg) => { o.templates = extractTemplates(cfg, work); }});
   const bbsCtl = makeDataPanel({idx: 1, noun: 'building blocks',
-    input: bbsInput, state: bbsState, gridHost: bbsGridHost, badge: () => bbsBadge});
+    input: bbsInput, state: bbsState, badge: bbsBadge,
+    apply: (o, work, cfg) => { o.buildingBlocks = extractBuildingBlocks(cfg, work); }});
   const reagentsCtl = makeDataPanel({idx: 2, noun: 'reagents',
-    input: reagentsInput, state: reagentsState, gridHost: reagentsGridHost, badge: () => reagentsBadge,
+    input: reagentsInput, state: reagentsState, badge: reagentsBadge,
+    apply: (o, work, cfg) => { o.reagents = extractReagents(cfg, work); },
     noTableMsg: 'No reagents file selected.', emptyMsg: 'No reagents file selected. Add one in the Extras ' +
       'section to subset reagents per step.'});
   const templatesPanel = templatesCtl.panel;
@@ -1287,15 +1354,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // committed override, since "All steps" is the fallback source of truth. Runs unconditionally, not
   // gated by `*State.suppress` (that only guards `state.original` inside onTableChanged).
   //
-  // `max` on an int input only shows a tooltip, it doesn't clamp — do it here. Must defer via
-  // setTimeout: correcting synchronously while still inside this same input's onChanged dispatch is
-  // Dart-side re-entrant (verified live — breaks the rebuild or corrupts the ribbon).
+  // `max` on an int input only shows a tooltip, it doesn't clamp the value — an over-max entry is
+  // instead caught by validate() (which disables Run), same as every other invalid-input case in
+  // this file; roundCount() separately caps at MAX_ROUNDS so an invalid value can't blow up tab count.
   view.subs.push(numRoundsInput.onChanged.subscribe(() => {
-    const v = numRoundsInput.value;
-    if (v != null && v > MAX_ROUNDS) {
-      setTimeout(() => setAndFire(numRoundsInput, MAX_ROUNDS), 0);
-      return;
-    }
     refreshValidation();
     dataCtls.forEach((c) => c.onRoundsChanged());
   }));
@@ -1320,12 +1382,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     let any = false;
     for (let r = 0; r < cfg.enumeration.num_rounds; r++) {
       const o: PerRoundOverride = {};
-      for (const def of stepCompDefs) {
-        const work = stepWork[def.idx][r];
-        const global = def.getGlobal();
-        if (!work || !global || work.rowCount === global.rowCount) continue; // no override committed
-        def.apply(o, work, cfg);
-        any = true;
+      for (const ctl of dataCtls) {
+        if (ctl.applyOverrideForRound(r + 1, o, cfg)) any = true;
       }
       overrides.push(o);
     }
@@ -1476,17 +1534,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     else previewRunId++;
   }));
   // Row-count badges on each data tab header — updated whenever the underlying grid changes.
-  const makeTabBadge = (): TabBadge => {
-    const el = document.createElement('span');
-    el.className = 'chem-enum-tab-badge';
-    return {el, refresh: (n: number | null) => {
-      el.textContent = n != null ? String(n) : '';
-      el.style.display = n != null ? '' : 'none';
-    }};
-  };
-  templatesBadge = makeTabBadge();
-  bbsBadge = makeTabBadge();
-  reagentsBadge = makeTabBadge();
   templatesPane.header.appendChild(templatesBadge.el);
   bbsPane.header.appendChild(bbsBadge.el);
   reagentsPane.header.appendChild(reagentsBadge.el);

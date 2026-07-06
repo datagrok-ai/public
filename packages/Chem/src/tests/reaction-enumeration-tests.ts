@@ -46,7 +46,7 @@ function colAsStrings(df: DG.DataFrame, name: string): string[] {
 // wrong template) — sort by a composite key so row order (which can differ between the two run
 // paths) doesn't matter, then compare field-by-field for a precise failure message.
 function rowSortKey(r: OutputRow): string {
-  return [r.product, r.round, r.reaction_name, r.route].join('');
+  return [r.product, r.round, r.reaction_name, r.template, r.route].join('');
 }
 function expectSameRows(a: OutputRow[], b: OutputRow[], label: string): void {
   const sa = [...a].sort((x, y) => rowSortKey(x).localeCompare(rowSortKey(y)));
@@ -57,6 +57,7 @@ function expectSameRows(a: OutputRow[], b: OutputRow[], label: string): void {
     expect(sa[i].round, sb[i].round, `${label}: row[${i}].round differs for product "${sa[i].product}"`);
     expect(sa[i].reaction_name, sb[i].reaction_name,
       `${label}: row[${i}].reaction_name differs for product "${sa[i].product}"`);
+    expect(sa[i].template, sb[i].template, `${label}: row[${i}].template differs for product "${sa[i].product}"`);
     expect(sa[i].route, sb[i].route, `${label}: row[${i}].route differs for product "${sa[i].product}"`);
   }
 }
