@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-19652: Chem: SMILES→Molfile V2000 now sets the chiral flag for defined absolute stereocenters, so opening the sketcher from a molecule preview no longer drops/racemizes stereochemistry
 * GROK-20239: Chem: OCL renderer: Structures do not appear in labels in some visualisations
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
 

@@ -36,6 +36,27 @@ Malformed
   0  0  0  0  0  0            999 V3000
 M  END`;
 
+/** True when the molecule has a defined absolute tetrahedral stereocenter (CIP R/S). */
+export function hasDefinedStereo(mol: RDMol): boolean {
+  try {
+    return /\([RrSs]\)/.test(mol.get_stereo_tags());
+  } catch (e) {
+    return false;
+  }
+}
+
+// Sets the V2000 counts-line chiral flag so absolute stereo is not loaded as racemate by OCL/Ketcher.
+export function setMolBlockChiralFlag(molBlock: string, chiral: boolean): string {
+  if (!chiral)
+    return molBlock;
+  const eol = molBlock.includes('\r\n') ? '\r\n' : '\n';
+  const lines = molBlock.split(/\r?\n/);
+  if (lines.length < 4 || !lines[3].includes('V2000'))
+    return molBlock;
+  lines[3] = lines[3].substring(0, 12) + '  1' + lines[3].substring(15);
+  return lines.join(eol);
+}
+
 /**
  * Convert between the following notations: SMILES, SMARTS, Molfile V2000 and Molfile V3000
  *
@@ -77,7 +98,7 @@ export function _convertMolNotation(
             mol.add_hs_in_place();
           } catch (e) {}
         }
-        result = mol.get_molblock();
+        result = setMolBlockChiralFlag(mol.get_molblock(), hasDefinedStereo(mol));
       }
       if (targetNotation === MolNotation.Smiles)
         result = mol.get_smiles();
