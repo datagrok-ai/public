@@ -555,15 +555,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     view.subs.push(sub);
   }
 
-  // REVERTED (live-verified): DG.Viewer.filters(df) was tried here — a standalone Viewer needs no
-  // TableView at all — but with no explicit `filters`/`columnNames` config it renders a genuinely
-  // EMPTY panel (confirmed live: toggling "Show filters" showed no per-column filters whatsoever).
-  // `createDefaultFilters` (the auto-detect-and-populate behavior we actually need, including
-  // substructure search for molecule/reaction columns) is exclusively a `TableView.getFiltersGroup()`
-  // option (view.ts:404, bound to `api.grok_TableView_GetFilters`) — a different Dart call than the
-  // standalone `Viewer.filters()` binding (`api.grok_Viewer_Filters`), despite view.ts's deprecated
-  // `filters()` method looking like the same call at the JS layer. A TableView is genuinely required
-  // for auto-populated defaults; back to that.
+  // `DG.Viewer.filters(df)` (no TableView) was tried first but renders an empty panel without an
+  // explicit `filters`/`columnNames` config — `createDefaultFilters` is exclusively a
+  // `TableView.getFiltersGroup()` option, so a real (detached) TableView is required.
   //
   // mountDf creates a detached DG.TableView per call when withFilters is on; `host.innerHTML = ''`
   // only drops the DOM node, so the TableView leaks unless explicitly closed. Track the live view
@@ -573,6 +567,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const prevTv = liveFilterViews.get(host);
     if (prevTv) {
       liveFilterViews.delete(host);
+      // Known open issue: closing a detached TableView that had filters manually added via
+      // updateOrAdd throws the same uncaught ASYNC "Cannot read properties of null (reading
+      // 'rowCount')" error as the createDefaultFilters crash below (reproduced live even for a
+      // plain string column, so it isn't ChemicalReaction-specific) — it fires after this call
+      // returns, so this catch cannot and does not suppress it. Harmless to functionality (grid/
+      // filters remount fine on the next toggle); kept only in case .close() itself ever throws
+      // synchronously for an unrelated reason.
       try {prevTv.close();} catch (e) {console.warn('Could not close previous filters view:', e);}
     }
   }
@@ -585,6 +586,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     liveFilterViews.clear();
   }));
 
+  // Semantic types for which the platform's own default-filter auto-detection
+  // (`getFiltersGroup({createDefaultFilters: true})`) crashes asynchronously (uncaught "Cannot read
+  // properties of null (reading 'rowCount')"), aborting filter creation for the WHOLE table, not
+  // just the offending column. Extend this list if another semType is found to trigger the same crash.
+  const FILTER_CRASH_SEMTYPES = ['ChemicalReaction'];
+
   // `withFilters` adds the platform's real filters panel. A detached TableView (addToWorkspace=false)
   // never gets the shell's "added to dock tree" call, so grid/filters silently fail to init (verified
   // live: blank grid AND an empty filter panel) — fire `_onAdded()` manually (same trick as
@@ -592,16 +599,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // `setTimeout(() => this.tableView._onAdded(), 0)` does — calling it synchronously in the same tick
   // as `DG.TableView.create()` leaves the filters panel empty even though `_onAdded()` itself runs.
   //
-  // `createDefaultFilters: true` (the platform's own auto-detect-every-column path) is NOT used here:
-  // verified live that it throws an uncaught async error ("Cannot read properties of null (reading
-  // 'rowCount')") specifically when a `ChemicalReaction`-semType column is present (this table's
-  // `reaction_smarts` column always is) — the error aborts default-filter creation for EVERY column,
-  // not just the reaction one, leaving the whole panel empty. It works fine for plain Molecule/numeric
-  // columns (verified on the Building Blocks table). Since the failure is thrown asynchronously deep
-  // in Dart-side filter detection, no JS try/catch around this call can intercept it — the only
-  // reliable fix is to never ask the platform to auto-detect a filter for that column type. Build
-  // filters manually instead, one per column, skipping ChemicalReaction entirely (substructure
-  // filtering doesn't have a clear meaning for a whole reaction template anyway).
+  // Since the FILTER_CRASH_SEMTYPES failure above is thrown asynchronously deep in Dart-side filter
+  // detection, no JS try/catch around that call can intercept it — the only reliable fix is to never
+  // ask the platform to auto-detect a filter for those columns. Build filters manually instead, one
+  // per column, skipping FILTER_CRASH_SEMTYPES entirely (substructure filtering doesn't have a clear
+  // meaning for a whole reaction template anyway).
   function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
     closeLiveFilterView(host);
     host.innerHTML = '';
@@ -629,10 +631,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       tv._onAdded();
       const filterGroup = tv.getFiltersGroup({createDefaultFilters: false});
       for (const col of df.columns.toList()) {
-        if (col.semType === 'ChemicalReaction') continue; // the one type that crashes auto-detection
-        const isNumeric = col.type === DG.COLUMN_TYPE.INT || col.type === DG.COLUMN_TYPE.FLOAT ||
-          col.type === DG.COLUMN_TYPE.BIG_INT;
-        const type = isNumeric ? DG.FILTER_TYPE.HISTOGRAM :
+        if (FILTER_CRASH_SEMTYPES.includes(col.semType)) continue;
+        const type = col.isNumerical ? DG.FILTER_TYPE.HISTOGRAM :
           col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL;
         try {filterGroup.updateOrAdd({type, column: col.name});} catch (e) {
           console.warn(`Could not add a default filter for column "${col.name}":`, e);
@@ -1144,7 +1144,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       stepState[k - 1]?.sub?.unsubscribe();
       const sub = work ? work.onSelectionChanged.subscribe(() => { updateDots(); renderBar(); }) : null;
       if (sub) view.subs.push(sub);
-      stepState[k - 1] = {df: work, sub, committed: stepState[k - 1]?.committed ?? false};
+      const entry = stepState[k - 1];
+      if (entry) { entry.df = work; entry.sub = sub; }
+      else stepState[k - 1] = {df: work, sub, committed: false};
     };
 
     const stepClone = (k: number): DG.DataFrame | null => {
