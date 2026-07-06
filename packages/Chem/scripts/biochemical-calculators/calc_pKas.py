@@ -16,12 +16,35 @@
 #meta.method_info.github: https://github.com/AstraZeneca/peptide-tools
 #output: dataframe result {action:join(table)}
 
-
+import functools
 import pandas as pd
 from rdkit import Chem
-from pichemist.api import pichemist_from_dict
-from pichemist.model import InputAttribute, OutputFragAttribute
-import traceback
+from pichemist.api import pkas_and_charges_from_list
+from pichemist.molecule import MolStandardiser, PeptideCutter
+import pichemist.fasta.matcher as _fasta_matcher
+
+# --- One-time speedup: cache the work pichemist's FASTA matcher throws away ---
+# _pattern_match_rdkit re-parses each fragment (MolFromSmiles+AddHs) and recompiles
+# each of the 186 amino-acid SMARTS on every call. Memoize both.
+_compile_smarts = functools.lru_cache(maxsize=None)(Chem.MolFromSmarts)
+
+@functools.lru_cache(maxsize=None)
+def _mol_with_hs(smiles: str):
+    m = Chem.MolFromSmiles(smiles)
+    return Chem.AddHs(m) if m is not None else None
+
+def _fast_pattern_match(smiles: str, smarts: str) -> int:
+    mol = _mol_with_hs(smiles)
+    if mol is None:
+        return 0
+    return len(mol.GetSubstructMatches(_compile_smarts(smarts)))
+
+# matcher.py imported the name directly, so patch it there
+_fasta_matcher.pattern_match = _fast_pattern_match
+
+_standardiser = MolStandardiser()
+_cutter = PeptideCutter()
+
 
 def get_pka_values(mol_str: str, index: int) -> dict:
     """Calculates pKa values for a single molecule."""
@@ -29,20 +52,22 @@ def get_pka_values(mol_str: str, index: int) -> dict:
         return {}
     try:
         mol = Chem.MolFromSmiles(mol_str) if 'M  END' not in mol_str else Chem.MolFromMolBlock(mol_str.replace('\\n', '\n'))
-        if not mol: return {}
-        input_dict = {0: {InputAttribute.MOL_OBJECT.value: mol, InputAttribute.MOL_NAME.value: f"mol_{index}"}}
-        results = pichemist_from_dict(input_dict, method="pkamatcher", print_fragments=True)
-        properties = results.get(0, {})
-        acidic_pkas, basic_pkas = [], []
-        for key in ['frag_acid_pkas_calc', 'frag_base_pkas_calc']:
-            for frag_data in properties.get(key, {}).values():
-                pka = frag_data.get(OutputFragAttribute.PKA)
-                if pka is not None:
-                    (acidic_pkas if 'acid' in key else basic_pkas).append(pka)
-        return {'acidic': sorted(acidic_pkas), 'basic': sorted(basic_pkas)}
+        if not mol:
+            return {}
+        # Same standardise + amide-bond fragmentation the full pipeline does,
+        # then FASTA gate + pKa matcher only -- skips the unused pI/charge curve.
+        mol = _standardiser.standardise_molecule(mol)
+        frags = _cutter.break_amide_bonds_and_cap(mol)
+        res = pkas_and_charges_from_list(frags, method="pkamatcher")
+        base_pkas_calc, acid_pkas_calc = res[3], res[4]  # (pka, smiles) tuples
+        return {
+            'acidic': sorted(pka for pka, _ in acid_pkas_calc),
+            'basic': sorted(pka for pka, _ in base_pkas_calc),
+        }
     except Exception as e:
         print(f"ERROR on pKa for row {index}: {e}")
         return {}
+
 
 molecule_data = table[molecules]
 pka_results = [get_pka_values(m, i) for i, m in enumerate(molecule_data)]
