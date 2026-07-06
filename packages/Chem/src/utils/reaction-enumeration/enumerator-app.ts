@@ -585,16 +585,23 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     liveFilterViews.clear();
   }));
 
-  // `withFilters` adds the platform's real auto-detected default filters panel. A detached TableView
-  // (addToWorkspace=false) never gets the shell's "added to dock tree" call, so grid/filters silently
-  // fail to init (verified live: blank grid AND an empty filter panel — 0 filters, not just missing
-  // substructure search). Firing `_onAdded()` manually (same trick as `mpo-create-profile.ts`) fixes
-  // the grid, but ONLY fixes the filters too if it's DEFERRED a tick, exactly like
-  // `mpo-create-profile.ts`'s own `setTimeout(() => this.tableView._onAdded(), 0)` — calling it
-  // synchronously in the same tick as `DG.TableView.create()` (what this code did before) leaves
-  // `getFiltersGroup({createDefaultFilters: true})` producing a real FilterGroup object with zero
-  // populated filters inside it (confirmed live via DOM inspection: innerHTML empty vs. populated
-  // after a deferred call). We keep only the grid + default FilterGroup, not tv.root.
+  // `withFilters` adds the platform's real filters panel. A detached TableView (addToWorkspace=false)
+  // never gets the shell's "added to dock tree" call, so grid/filters silently fail to init (verified
+  // live: blank grid AND an empty filter panel) — fire `_onAdded()` manually (same trick as
+  // `mpo-create-profile.ts`), and DEFER it a tick like that file's own
+  // `setTimeout(() => this.tableView._onAdded(), 0)` does — calling it synchronously in the same tick
+  // as `DG.TableView.create()` leaves the filters panel empty even though `_onAdded()` itself runs.
+  //
+  // `createDefaultFilters: true` (the platform's own auto-detect-every-column path) is NOT used here:
+  // verified live that it throws an uncaught async error ("Cannot read properties of null (reading
+  // 'rowCount')") specifically when a `ChemicalReaction`-semType column is present (this table's
+  // `reaction_smarts` column always is) — the error aborts default-filter creation for EVERY column,
+  // not just the reaction one, leaving the whole panel empty. It works fine for plain Molecule/numeric
+  // columns (verified on the Building Blocks table). Since the failure is thrown asynchronously deep
+  // in Dart-side filter detection, no JS try/catch around this call can intercept it — the only
+  // reliable fix is to never ask the platform to auto-detect a filter for that column type. Build
+  // filters manually instead, one per column, skipping ChemicalReaction entirely (substructure
+  // filtering doesn't have a clear meaning for a whole reaction template anyway).
   function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
     closeLiveFilterView(host);
     host.innerHTML = '';
@@ -620,7 +627,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       // `host` isn't showing it anymore.
       if (liveFilterViews.get(host) !== tv) return;
       tv._onAdded();
-      const filterGroup = tv.getFiltersGroup({createDefaultFilters: true});
+      const filterGroup = tv.getFiltersGroup({createDefaultFilters: false});
+      for (const col of df.columns.toList()) {
+        if (col.semType === 'ChemicalReaction') continue; // the one type that crashes auto-detection
+        const isNumeric = col.type === DG.COLUMN_TYPE.INT || col.type === DG.COLUMN_TYPE.FLOAT ||
+          col.type === DG.COLUMN_TYPE.BIG_INT;
+        const type = isNumeric ? DG.FILTER_TYPE.HISTOGRAM :
+          col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL;
+        try {filterGroup.updateOrAdd({type, column: col.name});} catch (e) {
+          console.warn(`Could not add a default filter for column "${col.name}":`, e);
+        }
+      }
       filterGroup.root.style.cssText += ';width:100%;height:100%;overflow:auto';
       filtersBox.appendChild(filterGroup.root);
       // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
