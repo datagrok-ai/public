@@ -1138,6 +1138,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // add/remove-pane API, only clear()+re-addPane(); `tc.panes` insertion order lines up with selStep.
     function buildStepTabs(initialStep = 0): void {
       stepTabsSub?.unsubscribe();
+      // Close each pane's mounted viewer(s) BEFORE wiping stepTabsHost — otherwise their gridHost
+      // divs are dropped from the DOM while still registered in `mountedViewers`, orphaning the
+      // Viewer instances (never closed) instead of releasing their Dart-side resources.
+      for (const ph of paneHosts) if (ph) closeMountedViewers(ph.gridHost);
       stepTabsHost.innerHTML = '';
       stepDots.length = 0;
       paneHosts = [];
@@ -1256,16 +1260,20 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     function renderGrid(): void {
       const gridHost = paneHosts[selStep]?.gridHost;
       if (!gridHost) return; // pane not built yet (shouldn't happen once buildStepTabs has run once)
-      gridHost.innerHTML = '';
       currentDf = selStep === 0 ? o.input.value : stepClone(selStep);
       if (!currentDf) {
-        closeMountedViewers(gridHost); // this branch bypasses mountDf, so it must close directly
+        // Close mounted viewers BEFORE wiping the DOM — closing after innerHTML='' hands the viewer
+        // a detached container, which throws ("Cannot read properties of null") deep in the Dart-side
+        // close path. Under rapid re-triggering (e.g. the filter icon clicked several times in quick
+        // succession) that cascades badly enough to crash the tab's renderer.
+        closeMountedViewers(gridHost);
+        gridHost.innerHTML = '';
         gridHost.appendChild(ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
           {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
         if (selStep === 0) o.badge?.refresh(null);
         return;
       }
-      mountDf(gridHost, currentDf, filtersOn);
+      mountDf(gridHost, currentDf, filtersOn); // mountDf itself closes-then-clears the host
       if (selStep === 0) o.badge?.refresh(currentDf.rowCount);
     }
 
