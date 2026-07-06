@@ -7,7 +7,7 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {TreeHelper} from '../../src/utils/tree-helper';
 import {GridTreeRendererBase} from './tree-renderers/grid-tree-renderer-base';
 import {LeafRangeGridTreeRenderer} from '../../src/viewers/tree-renderers/grid-tree-renderer';
-import {NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {attachDivToGrid} from '../utils';
@@ -23,8 +23,13 @@ import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 //@ts-ignore
 import '../css/injected-dendrogram.css';
 
+/** Options enabling the "mark cluster representatives (medoids)" feature in the Assign Clusters
+ * dialog. `colNames` are the feature columns the tree was built on; `distance` is the metric used. */
+export type MedoidOptions = {colNames: string[], distance: DistanceMetric};
+
 export function injectTreeForGridUI2(
-  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
+  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100,
+  cut?: TreeCutOptions, medoidOptions?: MedoidOptions
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
@@ -59,7 +64,7 @@ export function injectTreeForGridUI2(
   function assingClusters() {
     if (!treeRoot)
       return;
-    showClusterAsignmentDialog(treeRoot, th, grid.dataFrame, renderer);
+    showClusterAsignmentDialog(treeRoot, th, grid.dataFrame, renderer, medoidOptions);
   }
 
   treeNb.root?.addEventListener('contextmenu', (ev) => {
@@ -375,7 +380,8 @@ export function injectTreeForGridUI2(
 }
 
 function showClusterAsignmentDialog(
-  treeRoot: NodeType, th: ITreeHelper, dataFrame: DG.DataFrame, renderer: GridTreeRendererBase<MarkupNodeType>
+  treeRoot: NodeType, th: ITreeHelper, dataFrame: DG.DataFrame, renderer: GridTreeRendererBase<MarkupNodeType>,
+  medoidOptions?: MedoidOptions
 ) {
   const dialog = ui.dialog('Assign Clusters');
   const treeHeight = (treeRoot as MarkupNodeType).subtreeLength!;
@@ -385,6 +391,8 @@ function showClusterAsignmentDialog(
   const cutSlider = ui.input.float('Threshold', {value: treeHeight / 2, min: 0, max: treeHeight,
     showSlider: true, tooltipText: 'Cutting threshold for clusters (height of dendrogram from the root)'});
   const clusterInput = ui.input.int('Clusters', {value: 1, min: 1, tooltipText: 'Number of clusters after cutting'});
+  const medoidInput = ui.input.bool('Medoid columns', {value: true,
+    tooltipText: 'Add per-cluster medoid rank (1 = most representative) and average distance-to-cluster columns'});
   let processing = false;
 
   const getClusterCount = (threshold: number) => {
@@ -445,28 +453,63 @@ function showClusterAsignmentDialog(
 
   dialog.add(cutSlider.root);
   dialog.add(clusterInput.root);
+  if (medoidOptions)
+    dialog.add(medoidInput.root);
   cutSlider.fireChanged();
 
-  dialog.addButton('Assign', () => {
+  dialog.addButton('Assign', async () => {
     const threshold = cutSlider.value ?? 0;
     const clusters = th.treeCutAsLeaves(treeRoot, threshold);
     const colName = dataFrame.columns.getUnusedName(`Cluster (${threshold.toFixed(2)})`);
     const clusterCol = DG.Column.fromType(DG.TYPE.STRING, colName, dataFrame.rowCount);
 
+    // collect the row indices of each cluster while writing the cluster id column
+    const clusterRowIndexes: number[][] = [];
     clusters.forEach((node, idx) => {
       const clusterId = (idx + 1).toString();
       const leaves = th.getLeafList(node);
+      const rows: number[] = [];
       for (const leaf of leaves) {
         const row = parseInt(leaf.name);
-        if (row !== undefined && !Number.isNaN(row))
+        if (row !== undefined && !Number.isNaN(row)) {
           clusterCol.set(row, clusterId, false);
+          rows.push(row);
+        }
       }
+      clusterRowIndexes.push(rows);
     });
     const categoryOrder = clusters.map((_, idx) => (idx + 1).toString());
     clusterCol.setCategoryOrder(categoryOrder);
 
+    clusterCol.setTag(DG.TAGS.DESCRIPTION,
+      `Cluster assignment from cutting the dendrogram at height ${threshold.toFixed(2)}.`);
     clusterCol.fireValuesChanged();
     dataFrame.columns.add(clusterCol);
+
+    if (medoidOptions && medoidInput.value) {
+      const pi = DG.TaskBarProgressIndicator.create('Finding cluster representatives ...');
+      try {
+        const treeHelper = new TreeHelper();
+        const {rankByRow, avgDistByRow} = await treeHelper.calcMedoids(
+          dataFrame, medoidOptions.colNames, clusterRowIndexes, medoidOptions.distance);
+        const rankColName = dataFrame.columns.getUnusedName(`Medoid Rank (${threshold.toFixed(2)})`);
+        const rankCol = DG.Column.fromList(DG.TYPE.INT, rankColName, rankByRow);
+        rankCol.setTag(DG.TAGS.DESCRIPTION,
+          'Representativeness rank within the cluster (1 = medoid, the most central member). ' +
+          'Filter to rank ≤ N to extract the top-N representatives per cluster.');
+        dataFrame.columns.add(rankCol);
+        const distColName = dataFrame.columns.getUnusedName(`Avg Distance to Cluster (${threshold.toFixed(2)})`);
+        const distCol = DG.Column.fromList(DG.TYPE.FLOAT, distColName, avgDistByRow);
+        distCol.setTag(DG.TAGS.DESCRIPTION,
+          'Mean distance from this row to the other members of its cluster (lower = more central).');
+        dataFrame.columns.add(distCol);
+      } catch (e) {
+        grok.shell.error('Failed to compute cluster representatives. See console for details.');
+        console.error(e);
+      } finally {
+        pi.close();
+      }
+    }
     dialog.close();
   });
 

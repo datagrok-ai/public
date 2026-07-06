@@ -25,12 +25,21 @@ export default async function globalSetup(_config: FullConfig) {
     // Mirror what `grok test`'s Puppeteer pass does (test-utils.ts:135):
     // navigate to /oauth/ first so cookies attach to the right origin, then
     // drop the auth token into both cookie and localStorage.
-    await page.goto(baseURL.replace(/\/$/, '') + '/oauth/');
+    //
+    // `waitUntil: 'domcontentloaded'` + a generous timeout: the CI client is a
+    // cold `pub serve` (debug Dart) behind nginx that compiles bundles on first
+    // request, so the `load` event (all dart.js fetched) can exceed Playwright's
+    // default 30 s — this is what timed out global-setup on the CI client while
+    // it succeeds on warm dev. We only need the document parsed here; the real
+    // readiness gate is the preloader + Browse waits after the reload below.
+    const gotoOpts = {waitUntil: 'domcontentloaded' as const, timeout: 120_000};
+    await page.goto(baseURL.replace(/\/$/, '') + '/oauth/', gotoOpts);
     const u = new URL(baseURL);
     await ctx.addCookies([{name: 'auth', value: token, domain: u.hostname, path: '/'}]);
     await page.evaluate((t) => window.localStorage.setItem('auth', t), token);
-    await page.goto(baseURL);
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, undefined, {timeout: 120_000});
+    await page.goto(baseURL, gotoOpts);
+    await page.waitForFunction(() => document.querySelector('#grok-preloader, .grok-preloader') == null, undefined, {timeout: 30_000}).catch(() => {});
+    await page.addStyleTag({content: '#grok-preloader,.grok-preloader{pointer-events:none!important}.d4-tooltip{display:none!important}'}).catch(() => {});
     await page.locator('[name="Browse"]').first().waitFor({timeout: 60_000});
 
     const state = await ctx.storageState();

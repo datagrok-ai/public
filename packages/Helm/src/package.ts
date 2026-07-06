@@ -186,7 +186,10 @@ export class PackageFunctions {
     return getPropertiesWidget(sequence);
   }
 
-  @grok.decorators.func()
+  @grok.decorators.func({
+    'name': 'Get Molfiles from HELM',
+    'description': 'Convert a column of HELM macromolecules into a column of molfiles',
+  })
   static getMolfiles(
     @grok.decorators.param({'type': 'column', 'options': {'semType': 'Macromolecule'}}) col: DG.Column<string>): DG.Column<string> {
     const helmStrList = col.toList();

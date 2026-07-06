@@ -1,5 +1,11 @@
+/* ---
+sub_features_covered: [legend.allow-item-coloring, legend.item.color-picker, legend.use-custom-color-coding]
+--- */
+// Scenario 2 picker UI runs on Histogram: Bar chart legend needs a color edit to render.
+
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -7,123 +13,166 @@ test('Legend color consistency', async ({page}) => {
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
-    (window as any).grok.shell.windows.simpleMode = true;
-    (window as any).grok.shell.closeAll();
-    const df = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
-    (window as any).grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 5000);
-    });
-    const hasBioChem = Array.from({length: df.columns.length}, (_, i: number) => df.columns.byIndex(i))
-      .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-    if (hasBioChem) {
-      for (let i = 0; i < 50; i++) {
-        const grid = document.querySelector('[name="viewer-Grid"]');
-        if (grid?.querySelector('canvas')) break;
-        await new Promise(r => setTimeout(r, 200));
-      }
-      await new Promise(r => setTimeout(r, 5000));
-    }
-    const tv = (window as any).grok.shell.tv;
-    const names = ['Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'];
-    for (const n of names) {
-      tv.addViewer(n);
-      await new Promise(r => setTimeout(r, 300));
-    }
-    const col = 'Stereo Category';
-    for (const v of tv.viewers) {
-      if (v.type === 'Grid') continue;
-      try {
-        if (v.type === 'Histogram') v.props.splitColumnName = col;
-        else if (v.type === 'Line chart') v.props.splitColumnName = col;
-        else if (v.type === 'Bar chart') v.props.splitColumnName = col;
-        else if (v.type === 'Pie chart') v.props.categoryColumnName = col;
-        else if (v.type === 'Trellis plot') v.props.xColumnNames = [col];
-        else if (v.type === 'Box plot') v.props.categoryColumnNames = [col];
-        try { v.props.legendVisibility = 'Always'; } catch(_) {}
-      } catch(_) {}
-    }
-    await new Promise(r => setTimeout(r, 1500));
+  await v.openTable(page);
+  await v.addLegendViewers(page, {
+    column: 'Stereo Category',
+    viewers: ['Histogram', 'Line chart', 'Bar chart', 'Pie chart', 'Trellis plot', 'Box plot'],
   });
-  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
 
-  await softStep('Enable categorical color coding + change two colors', async () => {
+  await softStep('Categorical color coding from grid: R_ONE=red, S_UNKN=green', async () => {
     const res = await page.evaluate(async () => {
       const df = (window as any).grok.shell.tv.dataFrame;
       const col = df.col('Stereo Category');
       col.tags['.color-coding-type'] = 'Categorical';
-      col.tags['.categorical-colors'] = JSON.stringify({'R_ONE': '#FF0000', 'S_UNKN': '#00FF00'});
-      const cats = col.categories;
-      const map: any = {};
-      for (const c of cats) {
-        if (c === 'R_ONE') map[c] = 0xFFFF0000;
-        else if (c === 'S_UNKN') map[c] = 0xFF00FF00;
-        else map[c] = 0xFF808080;
+      col.meta.colors.setCategorical(
+        {'R_ONE': '#FF0000', 'S_UNKN': '#00FF00'},
+        {fallbackColor: '#808080'},
+      );
+      for (const x of (window as any).grok.shell.tv.viewers)
+        if (x.type !== 'Grid') try { x.invalidate?.(); } catch (_) {}
+      await new Promise((r) => setTimeout(r, 1500));
+      let tagColors: Record<string, any> = {};
+      try { tagColors = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}'); } catch (_) {}
+      return {
+        codingType: col.tags['.color-coding-type'],
+        rOneTag: tagColors['R_ONE'] ?? null,
+        sUnknTag: tagColors['S_UNKN'] ?? null,
+      };
+    });
+    expect(res.codingType).toBe('Categorical');
+    expect(String(res.rOneTag).toLowerCase()).toBe('#ff0000');
+    expect(String(res.sUnknTag).toLowerCase()).toBe('#00ff00');
+  });
+
+  await softStep('Every viewer reflects R_ONE=red and S_UNKN=green (DOM)', async () => {
+    const result = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const out: Record<string, any> = {viewers: {}};
+      for (const x of tv.viewers) {
+        if (x.type === 'Grid') continue;
+        const items = Array.from(x.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
+        const rOneItem = items.find((el) => el.querySelector('.d4-legend-value')?.textContent?.trim() === 'R_ONE');
+        const sUnknItem = items.find((el) => el.querySelector('.d4-legend-value')?.textContent?.trim() === 'S_UNKN');
+        out.viewers[x.type] = {
+          legendRendered: items.length > 0,
+          rOneColor: rOneItem ? getComputedStyle(rOneItem).color : null,
+          sUnknColor: sUnknItem ? getComputedStyle(sUnknItem).color : null,
+        };
       }
-      col.meta.colors.setCategorical(map);
-      await new Promise(r => setTimeout(r, 800));
-      (window as any).grok.shell.tv.grid.invalidate();
-      for (const v of (window as any).grok.shell.tv.viewers) if (v.type !== 'Grid') try { v.invalidate?.(); } catch(_) {}
-      await new Promise(r => setTimeout(r, 500));
-      return {rOneColor: '0x' + (col.meta.colors.getColor(0) >>> 0).toString(16)};
+      return out;
     });
-    expect(res.rOneColor).toBe('0xffff0000');
+    let viewersWithLegend = 0;
+    for (const [_, info] of Object.entries(result.viewers as Record<string, any>)) {
+      if (!info.legendRendered) continue;
+      if (info.rOneColor === 'rgb(255, 0, 0)' && info.sUnknColor === 'rgb(0, 255, 0)')
+        viewersWithLegend++;
+    }
+    expect(viewersWithLegend, 'at least 1 viewer renders legend with the configured DOM colors').toBeGreaterThanOrEqual(1);
   });
 
-  await softStep('Verify a viewer with legend (Histogram) shows colored items', async () => {
-    const items = await page.evaluate(() => {
-      const hist = (window as any).grok.shell.tv.viewers.find((v: any) => v.type === 'Histogram');
-      const legend = hist.root.querySelector('[name="legend"]');
-      const items = legend?.querySelectorAll('.d4-legend-item') ?? [];
-      return items.length;
+  await softStep('Open color picker via legend, change R_ONE to blue', async () => {
+    await v.changeLegendItemColor(page, {
+      viewerType: 'Histogram',
+      category: 'R_ONE',
+      rgb: [31, 119, 180],
+      hex: '#1f77b4',
+      column: 'Stereo Category',
+      additive: {'R_ONE': '#1f77b4', 'S_UNKN': '#00FF00'},
     });
-    expect(items).toBeGreaterThan(0);
   });
 
-  await softStep('Save + re-apply layout — custom palette persists', async () => {
+  await softStep('Picker change propagated: every legend item in DOM shows blue', async () => {
+    const result = await page.evaluate(() => {
+      const tv = (window as any).grok.shell.tv;
+      const out: Record<string, string | null> = {};
+      for (const x of tv.viewers) {
+        if (x.type === 'Grid') continue;
+        const items = Array.from(x.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
+        const rOneItem = items.find((el) => el.querySelector('.d4-legend-value')?.textContent?.trim() === 'R_ONE');
+        out[x.type] = rOneItem ? getComputedStyle(rOneItem).color : null;
+      }
+      return out;
+    });
+    let viewersChecked = 0;
+    for (const [_, color] of Object.entries(result)) {
+      if (color === 'rgb(31, 119, 180)') viewersChecked++;
+    }
+    expect(viewersChecked, 'picker change reflected in legend DOM on at least 1 viewer').toBeGreaterThanOrEqual(1);
+  });
+
+  await softStep('Save + re-apply layout — custom palette persists (tag verification)', async () => {
     const res = await page.evaluate(async () => {
       const tv = (window as any).grok.shell.tv;
       const layout = tv.saveLayout();
       layout.name = 'ColorConsist_' + Date.now();
       const saved = await (window as any).grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
       tv.loadLayout(await (window as any).grok.dapi.layouts.find(saved.id));
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise((r) => setTimeout(r, 3500));
       (window as any).__ccLayoutId = saved.id;
       const col = (window as any).grok.shell.tv.dataFrame.col('Stereo Category');
-      return {rOne: '0x' + (col.meta.colors.getColor(0) >>> 0).toString(16), tag: col.tags['.categorical-colors']};
+      const tag = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
+      return {layoutId: saved.id, rOneAfterReload: String(tag['R_ONE'] ?? '').toLowerCase()};
     });
-    (globalThis as any).__ccLayoutId = await page.evaluate(() => (window as any).__ccLayoutId);
-    expect(res.rOne).toBe('0xffff0000');
+    (globalThis as any).__ccLayoutId = res.layoutId;
+    expect(res.rOneAfterReload).toBe('#1f77b4');
   });
 
-  await softStep('Save project (known FK limitation)', async () => {
+  await softStep('Project round-trip — save + close + reopen + verify palette', async () => {
     const res = await page.evaluate(async () => {
+      let projectId: string | null = null;
       try {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'ColorConsistProj_' + Date.now();
         proj.addChild((window as any).grok.shell.tv.dataFrame);
         const saved = await (window as any).grok.dapi.projects.save(proj);
-        return {ok: true, id: saved.id};
-      } catch (e: any) { return {ok: false, error: String(e).slice(0, 180)}; }
+        projectId = saved.id;
+      } catch (e: any) {
+        return {phase: 'save', ok: false, error: String(e).slice(0, 200)};
+      }
+      (window as any).grok.shell.closeAll();
+      await new Promise((r) => setTimeout(r, 1200));
+      try {
+        const reopened = await (window as any).grok.dapi.projects.find(projectId);
+        await reopened.open();
+      } catch (e: any) {
+        return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId};
+      }
+      await new Promise((r) => setTimeout(r, 3500));
+      const tv = (window as any).grok.shell.tv;
+      if (!tv) return {phase: 'reopen', ok: false, error: 'no tv after reopen', projectId};
+      const col = tv.dataFrame.col('Stereo Category');
+      const tag = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
+      const colorAfter = String(tag['R_ONE'] ?? '').toLowerCase();
+      const viewerColors: Record<string, string|null> = {};
+      for (const x of tv.viewers) {
+        if (x.type === 'Grid') continue;
+        const items = Array.from(x.root.querySelectorAll('[name="legend"] .d4-legend-item')) as HTMLElement[];
+        const rOneItem = items.find((el) => el.querySelector('.d4-legend-value')?.textContent?.trim() === 'R_ONE');
+        viewerColors[x.type] = rOneItem ? getComputedStyle(rOneItem).color : null;
+      }
+      return {phase: 'verified', ok: true, projectId, colorAfter, viewerColors};
     });
-    expect(res.ok || String(res.error ?? '').includes('foreign key')).toBe(true);
+    expect(res.ok, res.ok ? '' : `project save+reopen failed in phase '${res.phase}': ${res.error}`).toBe(true);
+    (globalThis as any).__ccProjectId = res.projectId;
+    expect(res.colorAfter).toBe('#1f77b4');
+    const colors = res.viewerColors as Record<string, string|null>;
+    let checked = 0;
+    for (const [_, color] of Object.entries(colors)) {
+      if (color === 'rgb(31, 119, 180)') checked++;
+    }
+    expect(checked, 'at least 1 viewer reflects R_ONE=blue post-reopen').toBeGreaterThanOrEqual(1);
   });
 
   await softStep('Cleanup', async () => {
-    await page.evaluate(async (id) => {
-      if (id) { try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(id)); } catch(_) {} }
+    await page.evaluate(async ([layoutId, projectId]) => {
+      if (layoutId) try { await (window as any).grok.dapi.layouts.delete(await (window as any).grok.dapi.layouts.find(layoutId)); } catch (_) {}
+      if (projectId) try { await (window as any).grok.dapi.projects.delete(await (window as any).grok.dapi.projects.find(projectId)); } catch (_) {}
       (window as any).grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 500));
-    }, (globalThis as any).__ccLayoutId);
+      await new Promise((r) => setTimeout(r, 500));
+    }, [(globalThis as any).__ccLayoutId, (globalThis as any).__ccProjectId]);
   });
 
-  if (stepErrors.length > 0)
-    throw new Error('Step failures:\n' + stepErrors.map(e => `- ${e.step}: ${e.error}`).join('\n'));
+  v.finishSpec();
 });

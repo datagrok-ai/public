@@ -38,7 +38,8 @@ import type {
   OptimizationResult,
 } from '../../types';
 import type {LBFGSBSettings, LBFGSBLineSearchSettings} from './types';
-import {runSync, runAsync} from './driver';
+import {runAsync} from './driver';
+import {runSync} from './driver-sync';
 
 export type {
   LBFGSBSettings,

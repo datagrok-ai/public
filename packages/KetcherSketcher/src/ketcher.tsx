@@ -132,10 +132,10 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       return this.explicitMol.value;
     if (this._smiles !== null)
       return this._smiles;
-    if (this._molV2000 !== null)
-      return DG.chem.convert(this._molV2000, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
     if (this._molV3000 !== null)
       return DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
+    if (this._molV2000 !== null)
+      return DG.chem.convert(this._molV2000, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
     if (this._smarts !== null)
       return DG.chem.smilesFromSmartsWarning();
     return '';
@@ -155,8 +155,11 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   get molFile() {
     if (this.explicitMol?.notation === 'molblock')
       return this.explicitMol.value;
-    if (this._molV2000 !== null)
+    if (this._molV2000 !== null) {
+      if (this._molV3000 !== null && this._molV3000.includes('MDLV30/STE'))
+        return DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock);
       return this._molV2000;
+    }
     if (this._molV3000 !== null)
       return DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock);
     if (this._smiles !== null)

@@ -261,6 +261,36 @@
   margin: 0 auto;
 }
 
+.statistics-mpo-plot-wrap {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.statistics-mpo-plot-wrap .statistics-mpo-plot {
+  margin: 0;
+}
+
+.statistics-mpo-curve-btn {
+  padding: 1px 6px;
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 3px;
+  background: var(--grey-1, #f2f2f5);
+}
+
+.statistics-mpo-curve-btn.statistics-mpo-toggle-on {
+  color: #fff;
+  background: var(--blue-1, #1f77b4);
+  border-color: var(--blue-1, #1f77b4);
+}
+
+.statistics-mpo-curve-btn + .statistics-mpo-curve-btn {
+  margin-top: 4px;
+}
+
 @media (max-width: 500px) {
   .statistics-mpo-row {
     flex-direction: column;

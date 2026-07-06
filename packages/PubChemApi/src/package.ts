@@ -24,6 +24,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Databases | PubChem | Substructure Search',
+    'description': 'Finds PubChem compounds that contain the query structure as a substructure.',
     'meta': {role: 'widgets'},
   })
   static async pubChemSubstructureSearchPanel(
@@ -34,6 +35,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Databases | PubChem | Similarity Search',
+    'description': 'Finds PubChem compounds most similar to the query structure.',
     'meta': {role: 'widgets'},
   })
   static async pubChemSimilaritySearchPanel(
@@ -44,6 +46,7 @@ export class PackageFunctions {
 
   @grok.decorators.panel({
     'name': 'Databases | PubChem | Identity Search',
+    'description': 'Finds the PubChem compound identical to the query structure.',
     'meta': {role: 'widgets'},
   })
   static async pubChemIdentitySearchPanel(

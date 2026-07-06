@@ -13,7 +13,10 @@ import type {
   LibraryScreenStartParams as ProteinLibraryScreenStartParams,
 } from 'boltz-api/resources/protein/library-screen';
 
-import {BOLTZ_API_BASE_URL, BoltzJob, TERMINAL_STATUSES} from './boltz-api-constants';
+import {_package} from '../package';
+import {
+  BOLTZ_API_BASE_URL, BOLTZ_API_KEY_PARAM, BOLTZ_POLL_INTERVAL_MS, BoltzJob, TERMINAL_STATUSES,
+} from './boltz-api-constants';
 
 const proxyFetch: Fetch = (input, init) => {
   const url = input instanceof Request ? input.url : input.toString();
@@ -21,6 +24,14 @@ const proxyFetch: Fetch = (input, init) => {
   new Headers(init?.headers).forEach((value, key) => headers[key] = value);
   return grok.dapi.fetchProxy(url, {...init, headers});
 };
+
+export async function getInitializedService(): Promise<BoltzService> {
+  const credentials = await _package.getCredentials();
+  const apiKey = credentials?.parameters[BOLTZ_API_KEY_PARAM];
+  const svc = BoltzService.getInstance();
+  await svc.init(apiKey);
+  return svc;
+}
 
 /** Singleton over the Boltz hosted API: caches the authenticated client and runs each task end-to-end. */
 export class BoltzService {
@@ -34,7 +45,7 @@ export class BoltzService {
     return BoltzService._instance ??= new BoltzService();
   }
 
-  async init(apiKey: string): Promise<void> {
+  async init(apiKey: string | undefined): Promise<void> {
     if (this.boltzClient)
       return;
     if (!apiKey)
@@ -86,7 +97,10 @@ export class BoltzService {
   }
 
   /** Polls a job via its retrieve method until it reaches a terminal status; throws if it failed. */
-  private async pollJob<T extends BoltzJob>(retrieve: () => Promise<T>, intervalMs = 10000): Promise<T> {
+  private async pollJob<T extends BoltzJob>(
+    retrieve: () => Promise<T>,
+    intervalMs = BOLTZ_POLL_INTERVAL_MS,
+  ): Promise<T> {
     let job = await retrieve();
     while (!TERMINAL_STATUSES.has(job.status)) {
       await new Promise((resolve) => setTimeout(resolve, intervalMs));

@@ -32,8 +32,11 @@ import {
 const PROVIDER = 'Postgres';
 const QUERY_NAME = 'test_query';
 const RENAMED_QUERY_NAME = 'new_test_query';
-const SQL_PRODUCTS = 'select * from products';
-const SQL_ORDERS = 'select * from orders';
+// CI: query Datagrok metadata tables instead of Northwind ones — they always
+// exist and the lifecycle (typing SQL, running, renaming) doesn't care what
+// the rows actually are.
+const SQL_PRODUCTS = 'select * from entities';
+const SQL_ORDERS = 'select * from groups';
 
 test.describe.serial(`Query lifecycle (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   // Guard against leftovers from a previous interrupted run.

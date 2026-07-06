@@ -9,17 +9,38 @@ export interface ExecError {
 
 export async function executeSingleBlock(
   code: string, view: DG.ViewBase, blockIndex: number,
-): Promise<{element: HTMLElement | null; error: ExecError | null}> {
+): Promise<{element: HTMLElement | null; value: any; error: ExecError | null}> {
   try {
     const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
     const result = await new Function('grok', 'ui', 'DG', 'view', 't',
       'return (async () => {' + code + '})()',
     )(grok, ui, DG, view, t);
-    return {element: result instanceof HTMLElement ? result : null, error: null};
+    const element = result instanceof HTMLElement ? result : null;
+    return {element, value: element ? undefined : result, error: null};
   } catch (e: any) {
-    grok.shell.error(`datagrok-exec error: ${e.message}`);
-    return {element: null, error: {blockIndex, error: e?.message ?? String(e)}};
+    return {element: null, value: undefined, error: {blockIndex, error: e?.message ?? String(e)}};
   }
+}
+
+const VERIFY_TIMEOUT_MS = 30000;
+
+export interface VerificationResult {
+  passed: boolean;
+  observed: any;
+  error: string | null;
+}
+
+export async function runVerification(
+  assertion: string, view: DG.ViewBase,
+): Promise<VerificationResult> {
+  const liveView = grok.shell.v ?? view;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), VERIFY_TIMEOUT_MS));
+  const res = await Promise.race([executeSingleBlock(assertion, liveView, 0), timeout]);
+  if (res === null)
+    return {passed: false, observed: undefined, error: `Verification timed out after ${VERIFY_TIMEOUT_MS / 1000}s`};
+  if (res.element)
+    return {passed: false, observed: undefined, error: 'Assertion must return the observed value, not a DOM element'};
+  return {passed: res.error == null && !!res.value, observed: res.value, error: res.error?.error ?? null};
 }
 
 export function buildViewContext(view: DG.ViewBase): string {
@@ -40,8 +61,8 @@ export function buildViewContext(view: DG.ViewBase): string {
   return '';
 }
 
-interface DgEntityRef {
-  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space';
+export interface DgEntityRef {
+  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space' | 'group' | 'user';
   name: string;
   id?: string;
   connector?: string;
@@ -69,6 +90,10 @@ async function fetchEntity(ref: DgEntityRef): Promise<any> {
     return ref.id ? grok.dapi.projects.find(ref.id) : null;
   case 'space':
     return ref.id ? grok.dapi.spaces.find(ref.id) : null;
+  case 'group':
+    return ref.id ? grok.dapi.groups.find(ref.id) : null;
+  case 'user':
+    return ref.id ? grok.dapi.users.find(ref.id) : null;
   }
 }
 
@@ -81,22 +106,8 @@ function renderEntityRef(ref: DgEntityRef): HTMLElement | null {
   return placeholder;
 }
 
-export function renderEntityBlocks(container: HTMLElement): void {
-  for (const block of Array.from(container.querySelectorAll('code.language-datagrok-entities'))) {
-    const pre = block.parentElement;
-    if (!pre || pre.tagName !== 'PRE')
-      continue;
-    try {
-      const refs: DgEntityRef[] = JSON.parse(block.textContent ?? '[]');
-      if (!Array.isArray(refs) || refs.length === 0)
-        continue;
-      const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
-      if (cards.length === 0)
-        continue;
-      const cardsContainer = ui.divV(cards, 'grokky-entity-cards');
-      pre.replaceWith(cardsContainer);
-    } catch (e) {
-      console.warn('Failed to parse datagrok-entities block:', e);
-    }
-  }
+export function renderEntityRefList(refs: DgEntityRef[]): HTMLElement {
+  const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
+  return ui.divV(cards, 'grokky-entity-cards');
 }
+

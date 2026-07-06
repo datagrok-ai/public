@@ -67,6 +67,69 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
+/** Whether a function input parameter is optional (declared `{optional: true}`).
+ *  Read defensively from the Dart-proxy `options` map. */
+export function isInputOptional(prop: DG.Property): boolean {
+  try {
+    const opt = safeGet((prop as unknown as {options?: unknown}).options, 'optional');
+    return opt === true || opt === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** The human description of a function parameter, read defensively from the
+ *  Dart-proxy `options` map (`description` set via `@grok.decorators.param`),
+ *  falling back to a `caption`. Empty string when none is declared. */
+export function getParamDescription(prop: DG.Property): string {
+  try {
+    const opts = (prop as unknown as {options?: unknown}).options;
+    const desc = safeGet(opts, 'description') ?? safeGet(opts, 'caption') ??
+      (prop as unknown as {description?: unknown}).description;
+    return desc ? String(desc).trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+/** Strip one pair of wrapping quotes from a default that arrives
+ *  double-encoded from the annotation (`"'something'"` / `'"something"'`). */
+export function unquoteDefault(s: string): string {
+  const t = s.trim();
+  if (t.length >= 2 && ((t.startsWith('\'') && t.endsWith('\'')) || (t.startsWith('"') && t.endsWith('"'))))
+    return t.slice(1, -1);
+  return t;
+}
+
+/** A parameter's declared default — `defaultValue ?? initialValue` — read
+ *  defensively from the Dart proxy. String values are unquoted (annotation
+ *  defaults often arrive double-encoded). `undefined` when none is declared. */
+export function getParamDefault(prop: DG.Property): unknown {
+  let v: unknown;
+  try {v = prop.defaultValue;} catch {/* proxy read failed */}
+  if (v === undefined || v === null)
+    try {v = (prop as unknown as {initialValue?: unknown}).initialValue;} catch {/* proxy read failed */}
+  if (v === undefined || v === null) return undefined;
+  return typeof v === 'string' ? unquoteDefault(v) : v;
+}
+
+/** Display label for a function parameter: its `caption` when one is declared
+ *  (via `{caption: ...}` / `@grok.decorators.param`), else the property name.
+ *  Purely for UI — the internal identity (`prop.name`, used for slot keys,
+ *  `inputValues`, connections, compilation) is unchanged. The caption may be
+ *  null or empty; both fall back to the name. Reads the raw `options.caption`
+ *  first, then `friendlyName` (the Dart caption getter, which itself falls back
+ *  to the name). */
+export function getParamDisplayName(prop: DG.Property): string {
+  try {
+    const cap = safeGet((prop as unknown as {options?: unknown}).options, 'caption');
+    if (typeof cap === 'string' && cap.trim() !== '') return cap.trim();
+    const fn = (prop as unknown as {friendlyName?: unknown}).friendlyName;
+    if (typeof fn === 'string' && fn.trim() !== '') return fn.trim();
+  } catch {/* fall through to name */}
+  return prop.name;
+}
+
 /** Returns the display name for a function node header.
  * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
 export function getFuncDisplayName(func: DG.Func): string {

@@ -126,7 +126,7 @@ test.describe.serial('Scripts: Run', () => {
 
     // Verify: no error balloon
     const errorBalloon = page.locator('.d4-balloon-error');
-    await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
+    await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 });
   });
 
   // ──────────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ test.describe.serial('Scripts: Run', () => {
 
     // Verify: no error balloon
     const errorBalloon = page.locator('.d4-balloon-error');
-    await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
+    await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 });
   });
 
   // ──────────────────────────────────────────────────────────────────
@@ -258,7 +258,7 @@ test.describe.serial('Scripts: Run', () => {
     }
 
     const errorBalloon = page.locator('.d4-balloon-error');
-    await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
+    await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 });
   });
 
   // ──────────────────────────────────────────────────────────────────

@@ -38,6 +38,20 @@ Two ways to pin an entity:
 - Drag-and-drop entities right to the "Workspace" widget. Several drop zones (one for each group a user is admin of)
   should appear, plus the "Myself only" drop zone.
 
+### Pinning a space as a spotlight tab
+
+In addition to pinning spaces as items in the workspace tab, we want the ability to pin
+them as separate tabs within the spotlight widget. 
+
+To pin a space, drag it to the spotlight tab header - a special drop zone appears.
+When you open this tab, space preview gets shown in the left part (where list of entities is 
+shown in the `Workspace` tab). Current object's properties get shown in the details/editor
+panel, using `ObjectHandler.forEntity(object).renderCard()`. 
+Preview is shown using `ObjectHandler.forEntity(object).renderView()`
+
+A space can be favorited either in the `workspace` tab, or as a tab. At the moment, let's 
+store it as the user settings level (if not specified, it should be within the `workspace` tab)
+
 ### Usability
 
 On the left, there should be a list of pinned entities. When you click on any of them,

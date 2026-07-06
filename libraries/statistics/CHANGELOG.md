@@ -1,5 +1,12 @@
 # statistics changelog
 
+## 1.12.8 (2026-07-03)
+
+* MPO: Format score columns adaptively
+* MPO: Add an option to invert numerical desirability profiles
+* MPO: Add logarithmic scale support for numerical desirability profiles
+* MPO: Fix a freeze when reopening dialogs containing large profiles
+
 ## 1.12.7 (2026-06-04)
 
 * MPO: Optimized score calculation for large datasets

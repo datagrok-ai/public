@@ -34,6 +34,7 @@ export class Func extends Entity {
   }
 
   get description(): string { return api.grok_Func_Get_Description(this.dart); }
+  set description(s: string) { api.grok_Func_Set_Description(this.dart, s); }
 
   get type(): string { return api.grok_Func_Get_Type(this.dart); }
 

@@ -4,7 +4,7 @@
 #meta.function_family: biochem-calculator
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.9, pip, rdkit, {pip: [pichemist]}]
 #input: dataframe table
-#input: column molecules
+#input: column molecules {semType: Molecule}
 #input: bool pKa_acidic_list = true {caption: Acidic List}
 #input: bool pKa_basic_list = true {caption: Basic List}
 #input: bool pKa_strongest_acidic = false {caption: Strongest Acidic}

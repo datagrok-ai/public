@@ -17,11 +17,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
+import {setTid} from '../utils/test-ids';
 
 // ---------- property-panel side: status, duration, metadata ----------
 
 export function buildExecutionMeta(state: NodeExecState): HTMLElement {
-  const container = ui.div([], 'funcflow-value-inspector');
+  const container = setTid(ui.div([], 'funcflow-value-inspector'), 'value-inspector');
   container.appendChild(buildStatusBadge(state));
 
   if (state.outputs && Object.keys(state.outputs).length > 0) {
@@ -124,6 +125,12 @@ function buildMetaRow(name: string, summary: ValueSummary): HTMLElement {
   case 'graphics':
     row.appendChild(ui.divText(`${name}: Graphics`));
     break;
+  case 'widget':
+  case 'viewer':
+    // The live object renders in the docked panel; here just name its kind
+    // (was "[object Object]" when it fell through to the generic object case).
+    row.appendChild(ui.divText(`${name}: ${summary.type}`));
+    break;
   case 'primitive':
     row.appendChild(ui.divText(`${name} = ${JSON.stringify(summary.value)}`));
     break;
@@ -147,17 +154,27 @@ export function hasRenderablePreview(state: NodeExecState): boolean {
   if (!state.outputs) return false;
   for (const summary of Object.values(state.outputs)) {
     if (summary.type === 'dataframe' && summary.clone) return true;
-    if (summary.type === 'column' && Array.isArray(summary.sample) && summary.sample.length > 0) return true;
+    if (summary.type === 'column' && (summary.clone || (Array.isArray(summary.sample) && summary.sample.length > 0))) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
+    if ((summary.type === 'widget' || summary.type === 'viewer') && summary.value?.root instanceof Element) return true;
   }
   return false;
 }
 
-export function buildValuePreviews(state: NodeExecState): HTMLElement {
-  const container = ui.div([], 'funcflow-value-previews');
+export function buildValuePreviews(
+  state: NodeExecState, onEditViewer?: (viewer: unknown) => void,
+): HTMLElement {
+  const container = setTid(ui.div([], 'funcflow-value-previews'), 'value-previews');
   if (!state.outputs) return container;
-  for (const [name, summary] of Object.entries(state.outputs)) {
-    const preview = buildPreview(name, summary);
+  const entries = Object.entries(state.outputs);
+  // When the node's real output is a column, its preview is that column rendered
+  // as a one-column DataFrame — so suppress the threaded "<input> (modified)"
+  // passthrough table (it's kept in the state for the column picker / inspect,
+  // but here it's redundant with, and noisier than, the column itself).
+  const hasColumnOutput = entries.some(([, s]) => s.type === 'column');
+  for (const [name, summary] of entries) {
+    if (hasColumnOutput && summary.type === 'dataframe' && name.endsWith('(modified)')) continue;
+    const preview = buildPreview(name, summary, onEditViewer);
     if (preview) container.appendChild(preview);
   }
   return container;
@@ -166,11 +183,13 @@ export function buildValuePreviews(state: NodeExecState): HTMLElement {
 /** A single rich preview for one output value. Returns null for primitives /
  *  null / object — those don't merit dedicating space in the docked panel.
  *  Exported because the per-port "View output" popup uses it directly. */
-export function buildPreview(name: string, summary: ValueSummary): HTMLElement | null {
+export function buildPreview(
+  name: string, summary: ValueSummary, onEditViewer?: (viewer: unknown) => void,
+): HTMLElement | null {
   switch (summary.type) {
   case 'dataframe': {
     if (!summary.clone) return null;
-    const wrap = ui.div([], 'funcflow-preview-block');
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     try {
       summary.clone.meta.detectSemanticTypes();
       const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
@@ -180,8 +199,20 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
     return wrap;
   }
   case 'column': {
+    // Preferred: the instrumented run captured a one-column DataFrame clone
+    // built from the output column — render it as a real grid.
+    if (summary.clone) {
+      const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+      try {
+        (summary.clone as DG.DataFrame).meta.detectSemanticTypes();
+        const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
+        grid.root.style.cssText = 'width:100%;min-height:350px;';
+        wrap.appendChild(grid.root);
+        return wrap;
+      } catch { /* grid failed — fall back to the text sample below */ }
+    }
     if (!summary.sample || summary.sample.length === 0) return null;
-    const wrap = ui.div([], 'funcflow-preview-block');
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const title = ui.divText(`${name}: ${summary.name ?? ''}`);
     title.style.cssText = 'font-size:12px;color:#444;margin-bottom:4px;';
     wrap.appendChild(title);
@@ -211,7 +242,7 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
   case 'graphics': {
     const imageData = summary.value as string;
     if (typeof imageData !== 'string') return null;
-    const wrap = ui.div([], 'funcflow-preview-block');
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const img = ui.div([], {style: {
       width: '100%', minHeight: '200px',
       backgroundPosition: 'left', backgroundRepeat: 'no-repeat', backgroundSize: 'contain',
@@ -220,6 +251,28 @@ export function buildPreview(name: string, summary: ValueSummary): HTMLElement |
     if (imageData.startsWith('<svg')) img.innerHTML = imageData;
     else img.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;
     wrap.appendChild(img);
+    return wrap;
+  }
+  case 'widget':
+  case 'viewer': {
+    // The live DG.Widget / DG.Viewer captured during the run — mount its root
+    // directly. Its root isn't attached anywhere else, so this just adopts it.
+    const obj = summary.value as {root?: HTMLElement} | undefined;
+    if (!obj?.root || !(obj.root instanceof Element)) return null;
+    const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+    wrap.style.position = 'relative';
+    obj.root.style.width = '100%';
+    if (!obj.root.style.minHeight) obj.root.style.minHeight = '300px';
+    wrap.appendChild(obj.root);
+    // A viewer's full settings are editable live: a small gear in the top-right
+    // corner (overlaid — no vertical space) hands the viewer to the host
+    // (→ grok.shell.o = viewer), which captures changes back onto the node.
+    if (summary.type === 'viewer' && onEditViewer) {
+      const gear = setTid(ui.iconFA('cog', () => onEditViewer(obj),
+        'Edit viewer settings'), 'viewer-edit');
+      gear.classList.add('ff-viewer-edit-gear');
+      wrap.appendChild(gear);
+    }
     return wrap;
   }
   default:

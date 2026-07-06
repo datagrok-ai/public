@@ -67,32 +67,25 @@ export async function libraryPanel(_seqColumn: DG.Column) : Promise<any> {
   return await PackageFunctions.libraryPanel(_seqColumn);
 }
 
-//tags: editor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function GetRegionEditor(call: DG.FuncCall) : void {
-  PackageFunctions.GetRegionEditor(call);
+export function GetRegionEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.GetRegionEditor(call);
 }
 
-//tags: editor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function SplitToMonomersEditor(call: DG.FuncCall) : void {
-  PackageFunctions.SplitToMonomersEditor(call);
+export function SequenceSpaceEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.SequenceSpaceEditor(call);
 }
 
-//tags: editor
 //input: funccall call 
+//output: widget result
 //meta.role: editor
-export function SequenceSpaceEditor(call: DG.FuncCall) : void {
-  PackageFunctions.SequenceSpaceEditor(call);
-}
-
-//tags: editor
-//input: funccall call 
-//meta.role: editor
-export function SeqActivityCliffsEditor(call: DG.FuncCall) : void {
-  PackageFunctions.SeqActivityCliffsEditor(call);
+export function SeqActivityCliffsEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.SeqActivityCliffsEditor(call);
 }
 
 //tags: cellRenderer
@@ -210,17 +203,18 @@ export function vdRegionsViewer() {
   return PackageFunctions.vdRegionsViewer();
 }
 
-//description: Gets a new column with sequences of the region between start and end
+//name: Get Region
+//description: Extracts a sub-region of each macromolecule sequence into a new column between the given start and end positions
 //input: column sequence 
-//input: string start { optional: true }
-//input: string end { optional: true }
+//input: string start { optional: true; description: Start position name (inclusive) empty means the sequence start }
+//input: string end { optional: true; description: End position name (inclusive) empty means the sequence end }
 //input: string name { optional: true; description: Name of the column to be created }
 //output: column result
 export function getRegion(sequence: DG.Column<any>, start?: string, end?: string, name?: string) : any {
   return PackageFunctions.getRegion(sequence, start, end, name);
 }
 
-//name: Get Region Top Menu
+//name: Get Sequence Region
 //description: Get sequences for a region specified from a Macromolecule
 //input: dataframe table { description: Input data table }
 //input: column sequence { semType: Macromolecule; description: Sequence column }
@@ -266,11 +260,11 @@ export function sequenceColumnInput(name: string, options: any) : any {
 //name: Sequence Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }
-//input: string molecules { semType: Macromolecule; description: Input data table }
-//input: column activities 
+//input: string molecules { semType: Macromolecule; description: Macromolecule sequence column }
+//input: column activities { description: Numeric activity column to look for cliffs in }
 //input: double similarity = 80 { description: Similarity cutoff }
-//input: string methodName { choices: ["UMAP","t-SNE"] }
-//input: string similarityMetric { choices: ["Hamming","Levenshtein","Monomer chemical distance"] }
+//input: string methodName { choices: ["UMAP","t-SNE"]; description: Dimensionality reduction method for the 2D projection }
+//input: string similarityMetric { choices: ["Hamming","Levenshtein","Monomer chemical distance"]; description: Sequence distance metric }
 //input: func preprocessingFunction 
 //input: object options { optional: true }
 //input: bool demo { optional: true }
@@ -434,10 +428,10 @@ export function multipleSequenceAlignmentDialog() : void {
 }
 
 //name: Multiple Sequence Alignment
-//description: Multiple sequence alignment
+//description: Aligns a set of macromolecule sequences adding a new aligned (gapped) sequence column
 //input: column sequenceCol { semType: Macromolecule }
-//input: column clustersCol 
-//input: object options { optional: true }
+//input: column clustersCol { description: Optional cluster column sequences are aligned separately within each cluster }
+//input: object options { optional: true; description: Alignment options (engine method gap penalties selected-rows-only etc.) }
 //output: column result
 //meta.domain: bio
 export async function alignSequences(sequenceCol: any, clustersCol: any, options?: any) : Promise<any> {
@@ -447,9 +441,9 @@ export async function alignSequences(sequenceCol: any, clustersCol: any, options
 //name: PepSeA
 //description: Aligns non-canonical peptide sequences using PepSeA Docker container (MAFFT)
 //input: column sequenceCol { semType: Macromolecule }
-//input: string method = 'mafft --auto' { choices: ["mafft --auto","mafft","linsi","ginsi","einsi","fftns","fftnsi","nwns","nwnsi"] }
-//input: double gapOpen = 1.53 
-//input: double gapExtend = 0 
+//input: string method = 'mafft --auto' { choices: ["mafft --auto","mafft","linsi","ginsi","einsi","fftns","fftnsi","nwns","nwnsi"]; description: MAFFT alignment strategy }
+//input: double gapOpen = 1.53 { description: Gap opening penalty }
+//input: double gapExtend = 0 { description: Gap extension penalty }
 //output: column result
 //meta.role: sequenceMSA
 export async function pepseaMsa(sequenceCol: DG.Column<any>, method: string, gapOpen: number, gapExtend: number) : Promise<any> {
@@ -531,11 +525,11 @@ export async function testDetectMacromolecule(path: string) : Promise<any> {
 }
 
 //name: Split to Monomers
+//description: Splits a macromolecule column into per-position monomer columns one column per sequence position
 //input: dataframe table 
 //input: column sequence { semType: Macromolecule }
 //output: dataframe result
 //top-menu: Bio | Transform | Split to Monomers...
-//editor: Bio:SplitToMonomersEditor
 export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.Column) : Promise<any> {
   return await PackageFunctions.splitToMonomersTopMenu(table, sequence);
 }
@@ -811,9 +805,11 @@ export async function getSeqHelper() : Promise<any> {
   return await PackageFunctions.getSeqHelper();
 }
 
+//name: HELM to Molecule
+//description: Converts a column of HELM sequences to atomic-level molecules (V3000 molblocks)
 //input: dataframe df 
-//input: column helmCol 
-//input: bool chiralityEngine = true 
+//input: column helmCol { semType: Macromolecule; description: Column of HELM sequences to convert }
+//input: bool chiralityEngine = true { description: Preserve monomer stereochemistry using the chirality engine }
 //output: column result
 export async function getMolFromHelm(df: DG.DataFrame, helmCol: DG.Column<any>, chiralityEngine: boolean) : Promise<any> {
   return await PackageFunctions.getMolFromHelm(df, helmCol, chiralityEngine);

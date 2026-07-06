@@ -29,7 +29,7 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, getViewers} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, getViewers} from '../../utils';
 
 
 interface ScalarsState {
@@ -268,6 +268,13 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: true,
     },
+    // Autorun (standalone) hosts set this so export icons stay put while isOutputOutdated cycles,
+    // avoiding a ribbon rebuild/flicker. Clicks are guarded either way. Default keeps the original
+    // hide-when-outdated behaviour for non-autorun RFV.
+    keepExportsVisible: {
+      type: Boolean,
+      default: false,
+    },
     skipInit: {
       type: Boolean,
       dafault: true,
@@ -500,6 +507,15 @@ export const RichFunctionView = Vue.defineComponent({
       return activeExports;
     });
 
+    // When keepExportsVisible is set the export icons stay put regardless of isOutputOutdated
+    // (no ribbon rebuild/flicker); guard the click so a stale/in-flight run surfaces a shell
+    // message instead of exporting partial output.
+    const guardedExport = (handler: () => void) => {
+      if (canUseResults(props.callState, 'exporting'))
+        handler();
+    };
+    const exportsVisible = Vue.computed(() => props.keepExportsVisible || !isOutputOutdated.value);
+
     ////
     // DockManager related
     ////
@@ -564,7 +580,7 @@ export const RichFunctionView = Vue.defineComponent({
       const ranges = getRanges('rangeSA');
       const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
       const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup});
+      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
     };
 
     const runFitting = async () => {
@@ -578,7 +594,7 @@ export const RichFunctionView = Vue.defineComponent({
         const targets = getTargets();
         const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
         const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup});
+        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true, diffGrok, inputsLookup, disableLookupDefault: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
@@ -595,11 +611,11 @@ export const RichFunctionView = Vue.defineComponent({
     const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { !isOutputOutdated.value && !uiBlocked.value && exports.value?.length > 1 &&
+      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value?.length > 1 &&
         <RibbonMenu groupName='Step exports' view={currentView.value}>
           {
             exports.value.map(({ name, handler }) =>
-              <span onClick={handler}>
+              <span onClick={() => guardedExport(handler)}>
                 <div> {name} </div>
               </span>
             )
@@ -637,9 +653,9 @@ export const RichFunctionView = Vue.defineComponent({
           </span> }
         </RibbonMenu>
         <RibbonPanel view={currentView.value}>
-          { !isOutputOutdated.value && !uiBlocked.value && exports.value?.length === 1 && <IconFA
+          { exportsVisible.value && !uiBlocked.value && exports.value?.length === 1 && <IconFA
             name='arrow-to-bottom'
-            onClick={exports.value[0].handler}
+            onClick={() => guardedExport(exports.value[0].handler)}
             tooltip='Generate report for the current step'
           /> }
           { isFittingEnabled.value && !uiBlocked.value && <IconImage
@@ -656,9 +672,9 @@ export const RichFunctionView = Vue.defineComponent({
             tooltip='Run sensitivity analysis'
             style={{width: '24px', height: '24px'}}
           /> }
-          { props.stepHistory && !uiBlocked.value && <IconFA
-            name='cloud-upload-alt'
-            tooltip='Save this step to history'
+          { (props.historyEnabled || (props.stepHistory && exportsVisible.value)) && !uiBlocked.value && <IconFA
+            name={props.stepHistory ? 'cloud-upload-alt' : 'save'}
+            tooltip='Save run to history'
             onClick={() => emit('saveToHistory', currentCall.value)}
           /> }
           { (props.historyEnabled || props.stepHistory) && <IconFA

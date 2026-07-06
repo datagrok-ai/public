@@ -281,7 +281,8 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | **Size** | | |
 | Size Column Name | string | A numerical column to use for size-coding markers. See also *Marker Min Size* and *Marker Max Size*. |
 | Show Size Selector | boolean |  |
-| Show Markers With Empty Size | boolean | When a *Size* column is set, render rows with empty values using the minimum marker size instead of hiding them. |
+| Show Markers With Empty Size | boolean | When a *Size* column is set, show rows with empty values instead of hiding them. |
+| Marker Size Scaling | string | Linear or logarithmic scale for the *Size* column. |
 | **Marker** | | |
 | Markers Column Name | string | A categorical column that determines the shape of the markers. |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
@@ -326,7 +327,7 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Current Point | boolean | Controls the indication of the current row |
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
 | Show Mouse Over Row Group | boolean | Highlight ''mouse-over'' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
-| Show Selected Rows | boolean | When true, selected markers are highlighted using the selected rows color. When false, selected markers use their regular color coding. |
+| Show Selected Rows | boolean | When checked, selected markers are highlighted using the selected rows color. When unchecked, selected markers use their regular color coding. |
 | Reset Selection On Background Click | boolean | When true, clicking on the background (no point hit) clears the current selection. Set to false to preserve the selection when accidentally clicking outside of the markers. |
 | **Style** | | |
 | Auto Layout | boolean |  |
@@ -351,6 +352,8 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
 | Regression Line Transparency | number |  |
+| Moving Average Line Color | number |  |
+| Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
 | **Tooltip** | | |
@@ -370,6 +373,11 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Show Mean Absolute Error | boolean |  |
 | Show Root Mean Square Error | boolean |  |
 | Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis. |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |

@@ -1,5 +1,9 @@
 # ml changelog
 
+## 6.10.14 (2026-06-23)
+
+DistanceMatrixService: added `calcMedoids` — for each cluster, ranks members by mean distance to the rest (rank 1 = medoid) and returns their mean distances, using a dedicated worker pool that reduces distances to row sums on the fly, without materializing the distance matrix
+
 ## 6.10.13 (2026-01-04)
 
 GROK-20199: Bio | Diversity Search: Fix console errors for datasets that do not contain macromolecules

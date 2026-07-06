@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {Observable, Subject} from 'rxjs';
 import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
@@ -12,24 +13,108 @@ const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 let descriptors: any;
 
-export async function openDescriptorsDialogDocker() {
-  const table: DG.DataFrame = grok.shell.t;
-  if (!table) throw new Error('There is no open table');
-  openDescriptorsDialog(await getSelected(), async (selected: string[], molecules: DG.Column | undefined) => {
-    if (molecules) {
-      const prog = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
-      try {
-        await DG.Func.find({name: 'calculateDescriptorsTransform'})[0].prepare({
-          table: table,
-          molecules: molecules,
-          selected: selected}).call(undefined, undefined, {processed: false});
-      } catch (e) {
-        throw e;
-      } finally {
-        prog.close();
-      }
+/** FuncCall editor for the `Chem:descriptorsDocker` function: edits the live funccall inputs
+ * (table, molecules, selected); the platform hosts it in a dialog and runs the call on OK. */
+export class DescriptorsEditor extends DG.FuncCallEditor {
+  tableInput: DG.InputBase<DG.DataFrame | null>;
+  columnInput!: DG.InputBase<DG.Column | null>;
+  treeHost: HTMLElement;
+  private treeControl?: DescriptorsTreeControl;
+  private inputChangedSubject: Subject<any> = new Subject<any>();
+  /** History applied before the async tree finished loading; consumed by {@link initTree}. */
+  private pendingHistorySelection?: string[];
+
+  constructor(private funcCall: DG.FuncCall) {
+    const root = ui.divV([]);
+    super(root);
+    this.tableInput = ui.input.table('Table', {value: funcCall.inputs['table'] ?? grok.shell.t, nullable: false,
+      onValueChanged: () => {
+        funcCall.inputs['table'] = this.tableInput.value;
+        this.updateColumnInput();
+        this.inputChangedSubject.next();
+      }, tooltipText: 'Input data frame containing molecule column'});
+    root.appendChild(this.tableInput.root);
+    this.treeHost = ui.div([ui.loader()]);
+    root.appendChild(this.treeHost);
+    this.updateColumnInput();
+    // trigger changes to init the funccall
+    this.tableInput.fireChanged();
+    this.initTree();
+  }
+
+  private async initTree(): Promise<void> {
+    try {
+      const stored = await getSelected();
+      const selected: string[] = this.pendingHistorySelection ?? this.funcCall.inputs['selected'] ?? stored;
+      this.pendingHistorySelection = undefined;
+      this.treeControl = buildDescriptorsTreeControl(selected, () => {
+        this.funcCall.inputs['selected'] = this.treeControl!.getSelected();
+        this.inputChangedSubject.next();
+      });
+      removeChildren(this.treeHost);
+      this.treeHost.appendChild(this.treeControl.root);
+      this.funcCall.inputs['selected'] = this.treeControl.getSelected();
+      this.inputChangedSubject.next();
+    } catch (e: any) {
+      // the descriptor tree comes from the chem-chem Docker container; if it is unavailable,
+      // surface it in the widget instead of leaving an unhandled rejection (isValid stays false).
+      removeChildren(this.treeHost);
+      this.treeHost.appendChild(ui.divText('Could not load descriptors. The Chem service may be unavailable.'));
+      grok.log.error(e);
+      this.inputChangedSubject.next();
     }
-  }, table);
+  }
+
+  updateColumnInput(): void {
+    const table = this.tableInput.value;
+    if (table == null)
+      return;
+    this.columnInput?.root?.remove();
+    this.columnInput = ui.input.column('Molecules', {
+      table: table, nullable: false,
+      filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE,
+      value: table.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? undefined,
+      onValueChanged: () => {
+        this.funcCall.inputs['molecules'] = this.columnInput.value;
+        this.inputChangedSubject.next();
+      }, tooltipText: 'Column with molecules to calculate descriptors for'});
+    this.columnInput.root.children[0]?.classList.add('d4-chem-descriptors-molecule-column-input');
+    this.root.insertBefore(this.columnInput.root, this.treeHost ?? null);
+    this.columnInput.fireChanged();
+  }
+
+  get isValid(): boolean {
+    return this.tableInput.value != null && this.columnInput.value != null &&
+      (this.treeControl?.getSelected().length ?? 0) > 0;
+  }
+
+  inputFor(propertyName: string): DG.InputBase {
+    switch (propertyName) {
+    case 'table':
+      return this.tableInput;
+    case 'molecules':
+      return this.columnInput;
+    default:
+      throw new Error(`Unknown property name: ${propertyName}`);
+    }
+  }
+
+  getHistoryString(): string {
+    return (this.treeControl?.getSelected() ?? this.funcCall.inputs['selected'] as string[] ?? []).join(',');
+  }
+
+  loadHistoryString(history: string): void {
+    const selected = (history ?? '').split(',').filter((s) => s !== '');
+    // the tree is built asynchronously; if history arrives first, initTree picks it up
+    if (this.treeControl)
+      this.treeControl.setSelected(selected); // fires onChanged -> writes funcCall.inputs['selected']
+    else
+      this.pendingHistorySelection = selected;
+  }
+
+  get onInputChanged(): Observable<any> {
+    return this.inputChangedSubject;
+  }
 }
 
 export function addDescriptorsColsToDf(table: DG.DataFrame, colsArr: DG.Column[]) {
@@ -162,10 +247,19 @@ export function getDescriptorsApp(): void {
   });
 }
 
-type onOk = (selectedDescriptors: string[], molecules?: DG.Column) => void;
+type onOk = (selectedDescriptors: string[]) => void;
 
-//description: Open descriptors selection dialog
-function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFrame): void {
+interface DescriptorsTreeControl {
+  root: HTMLElement;
+  getSelected(): string[];
+  setSelected(names: string[]): void;
+  saveHistory(): {[_: string]: string};
+  loadHistory(history: any): void;
+}
+
+/** Builds the descriptors selection tree (groups with checkboxes, All/None links, counter).
+ * Requires the module-level `descriptors` tree to be loaded (call `getSelected()` first). */
+function buildDescriptorsTreeControl(selected: string[], onChanged?: () => void): DescriptorsTreeControl {
   const tree = ui.tree();
   tree.root.style.width = '300px';
   tree.root.style.minWidth = 'max-content';
@@ -179,16 +273,52 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
   countLabel.style.marginLeft = '24px';
   countLabel.style.display = 'inline-flex';
 
+  const getSelectedNames = () => items.filter((i) => i.checked).map((i: any) => i.value['name']);
+
+  ui.tooltip.bind(countLabel, () => {
+    const names = getSelectedNames();
+    if (names.length === 0)
+      return 'No descriptors selected';
+    const shown = names.slice(0, 30);
+    const rest = names.length - shown.length;
+    return ui.divV([
+      ...shown.map((n) => ui.divText(n)),
+      ...(rest > 0 ? [ui.divText(`...and ${rest} more`)] : []),
+    ]);
+  });
+
   function setCount(count: number) {
     countLabel.textContent = `${count} checked`;
   }
+
+  /** Sets the group checkbox to checked / unchecked / indeterminate based on its items. */
+  const updateGroupState = (group: DG.TreeViewGroup) => {
+    const checkBox = group.checkBox as HTMLInputElement | null;
+    if (!checkBox)
+      return;
+    const checkedCount = group.items.filter((i) => i.checked).length;
+    const all = group.items.length > 0 && checkedCount === group.items.length;
+    const partial = checkedCount > 0 && !all;
+    checkBox.indeterminate = partial;
+    // for the partial state the group's own checked flag is left alone: flipping it would
+    // propagate to the children and destroy the very selection we are reflecting
+    if (!partial && group.checked !== all)
+      group.checked = all;
+  };
+
+  const updateAllGroupStates = () => {
+    for (const g of Object.values(groups))
+      updateGroupState(g);
+  };
 
   const checkAll = (val: boolean) => {
     for (const g of Object.values(groups))
       g.checked = val;
     for (const i of items)
       i.checked = val;
+    updateAllGroupStates();
     setCount(val ? items.length : 0);
+    onChanged?.();
   };
 
   const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => checkAll(true)});
@@ -206,13 +336,16 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
     groups[groupName] = group;
 
     group.checkBox!.onchange = (_e) => {
-      countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+      setCount(items.filter((i) => i.checked).length);
       if (group.checked)
         selectedDescriptors[group.text] = group.text;
       group.items.filter((i) => {
         if (i.checked)
           selectedDescriptors[i.text] = group.text;
       });
+      // a user click resolves the indeterminate state: the group is now fully on or off
+      (group.checkBox as HTMLInputElement).indeterminate = false;
+      onChanged?.();
     };
 
     for (const descriptor of descriptors[groupName]['descriptors']) {
@@ -224,9 +357,12 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
         setCount(items.filter((i) => i.checked).length);
         if (item.checked)
           selectedDescriptors[item.text] = groupName;
+        updateGroupState(group);
+        onChanged?.();
       };
     }
   }
+  updateAllGroupStates();
 
   const saveInputHistory = (): any => {
     const resultHistory: { [_: string]: any } = {};
@@ -236,37 +372,39 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
     return resultHistory;
   };
 
-  const loadInputHistory = (history: any): void => {
-    checkAll(false);
-    const keys: string[] = Object.keys(history);
-    for (const key of keys) {
-      groups[history[key]].items.filter(function(i: any) {
-        if (i.text === key)
-          i.checked = true;
-      });
-      if (key === history[key])
-        groups[history[key]].checked = true;
-    }
-    countLabel.textContent = `${keys.length} checked`;
+  const setSelected = (names: string[]): void => {
+    const nameSet = new Set(names);
+    for (const i of items)
+      i.checked = nameSet.has((i as any).value['name']);
+    updateAllGroupStates();
+    setCount(items.filter((i) => i.checked).length);
+    onChanged?.();
   };
 
-  const dialog = ui.dialog('Descriptors');
-  let columnSelector: DG.InputBase;
-  if (dataFrame) {
-    //@ts-ignore
-    columnSelector = ui.input.column('Molecules', {table: dataFrame, value: dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)
-      .find((_) => true) ?? null, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
-    columnSelector.root.children[0].classList.add('d4-chem-descriptors-molecule-column-input');
-    dialog.add(columnSelector.root);
-  }
-  dialog
-    .add(ui.divH([selectAll, selectNone, countLabel]))
-    .add(tree.root)
-    .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name']), columnSelector?.value))
+  // legacy dialog history: a {descriptorName: groupName} map (group entries have key === value)
+  const loadInputHistory = (history: any): void => {
+    setSelected(Object.keys(history));
+  };
+
+  return {
+    root: ui.divV([ui.divH([selectAll, selectNone, countLabel]), tree.root]),
+    getSelected: getSelectedNames,
+    setSelected: setSelected,
+    saveHistory: saveInputHistory,
+    loadHistory: loadInputHistory,
+  };
+}
+
+//description: Open descriptors selection dialog
+function openDescriptorsDialog(selected: string[], onOK: onOk): void {
+  const control = buildDescriptorsTreeControl(selected);
+  ui.dialog('Descriptors')
+    .add(control.root)
+    .onOK(() => onOK(control.getSelected()))
     .show()
     .history(
-      () => saveInputHistory(),
-      (x) => loadInputHistory(x),
+      () => control.saveHistory(),
+      (x) => control.loadHistory(x),
     );
 }
 
@@ -287,17 +425,4 @@ export async function getSelected() : Promise<string[]> {
 function removeChildren(node: any): void {
   while (node.firstChild)
     node.removeChild(node.firstChild);
-}
-
-//description: add columns into table.
-function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
-  if (table.columns.length > 0) {
-    const descriptors: string[] = table.columns.names();
-
-    for (let i = 0; i < descriptors.length; i++) {
-      const column: DG.Column = table.columns.byName(descriptors[i]);
-      column.name = viewTable.columns.getUnusedName(column.name);
-      viewTable.columns.add(column);
-    }
-  }
 }

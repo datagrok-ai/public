@@ -23,7 +23,11 @@ import {
 
 const PROVIDER = 'Postgres';
 const SCHEMA = 'public';
-const TABLES = ['products', 'orders', 'customers'] as const;
+// CI: target three Datagrok metadata tables (System:Datagrok). They always
+// exist, each exposes its full column list, and together cover the same
+// "click every column of three different tables" intent as the original
+// Northwind triplet (products/orders/customers).
+const TABLES = ['users', 'groups', 'entities'] as const;
 
 test.describe.serial(`DB schema column inspection (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test('Clicking each column of products/orders/customers sets it as current object without errors', async ({ page }) => {
@@ -58,8 +62,13 @@ test.describe.serial(`DB schema column inspection (${PROVIDER} / ${POSTGRES_CONN
         // segment of the node `name=` attribute.
         const expectedColName = colNode.split('---').pop()!;
         const actualName = await getCurrentObjectName(page);
-        expect(actualName, `clicking ${colNode} should select the column as current object`)
-          .toBe(expectedColName);
+        // The tree-node `name=` attribute substitutes `_` with `-` (so the
+        // `first_name` column appears as `…---first-name`), while
+        // `grok.shell.o.name` returns the actual DB column name with
+        // underscores. Normalise both sides for a single canonical compare.
+        const normalise = (s: string | null) => (s ?? '').replace(/[_-]+/g, '_');
+        expect(normalise(actualName), `clicking ${colNode} should select the column as current object`)
+          .toBe(normalise(expectedColName));
 
         // Context Panel should not surface any error balloons as a side effect.
         expect(await getVisibleErrorBalloons(page),

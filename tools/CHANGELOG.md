@@ -1,5 +1,17 @@
 # Datagrok-tools changelog
 
+## 6.4.5 (2026-06-23)
+
+* `grok test` — screen recording (`--record`) is now optional: if `page.screencast()` can't start (e.g. `ffmpeg` is missing on the runner, `spawnSync ffmpeg ENOENT`), the run warns and continues instead of failing the whole Puppeteer pass with 0 tests executed.
+
+## 6.4.4 (2026-06-22)
+
+* `grok publish` — fixed every publish failing with a silent `exit 1` after a successful upload: a stray `fs.unlinkSync('zip')` threw `ENOENT` (the archive is streamed in-memory, no `zip` file is ever written), and the surrounding `catch` only logged under `--verbose`. The errant unlink is removed and publish errors are now always surfaced.
+
+## 6.4.3 (2026-06-22)
+
+* `grok api` — numeric IVP model inputs are now generated with `nullable: false`, so an emptied input field fails form validation instead of running the solver with a null.
+
 ## 6.4.2 (2026-06-18)
 
 * `grok publish` — registry-aware Docker fallback: when a package's image isn't built locally and the target server has no compatible record, `grok publish` now checks the configured registry and Docker Hub (`docker manifest inspect`) for the expected `datagrok/<name>:<version>` (and content-hashed) tag and uses it, instead of reporting "No fallback available" and failing. Fixes dependency publishes (e.g. Bio → @datagrok/chem) on CI runners where the image exists in the registry but not locally.

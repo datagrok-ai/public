@@ -7,6 +7,10 @@ node_modules/
 # Webpack outputs
 dist/
 
+# Playwright runtime artifacts (per-developer; never committed)
+test-results/
+playwright-report/
+
 # IDEs
 # VS Code (https://github.com/github/gitignore/blob/master/Global/VisualStudioCode.gitignore)
 .vscode/*

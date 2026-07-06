@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   AUTH_STATE,
   PG_EXT_DB,
@@ -37,6 +37,34 @@ const QUERIES: { name: string; sql: string }[] = [
   { name: 'TestDropTable', sql: 'DROP TABLE tmp_table_test' },
 ];
 
+/** Fill and submit the Add-connection dialog for PostgreSQLDBTests2. */
+async function createConnectionViaUi(page: Page): Promise<void> {
+  await openAddConnectionDialog(page, PROVIDER);
+  await fillConnectionField(page, 'Name', CONNECTION);
+  await fillConnectionField(page, 'Server', PG_EXT_SERVER);
+  await fillConnectionField(page, 'Port', PG_EXT_PORT);
+  await fillConnectionField(page, 'Db', PG_EXT_DB);
+  await fillConnectionField(page, 'Login', PG_EXT_LOGIN);
+  await fillConnectionField(page, 'Password', PG_EXT_PASSWORD);
+  await clickConnectionOk(page);
+}
+
+/**
+ * Bring the page home and guarantee the PostgreSQLDBTests2 connection exists,
+ * creating it via the UI when missing. The query tests below are `serial` and
+ * normally rely on test 1 to create the connection, but a query test selected
+ * in isolation (e.g. a title-grep matching only one query) would otherwise fail
+ * on a missing tree node — this self-provisions so each query test stands alone.
+ */
+async function ensureConnectionExists(page: Page): Promise<void> {
+  await goHome(page);
+  await applyAutomationSetup(page);
+  if ((await findConnectionByFriendlyName(page, CONNECTION)) != null) return;
+  await createConnectionViaUi(page);
+  const saved = await findConnectionByFriendlyName(page, CONNECTION);
+  expect(saved, `connection "${CONNECTION}" should exist (self-provisioned)`).not.toBeNull();
+}
+
 test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () => {
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
@@ -74,16 +102,7 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
     await goHome(page);
     await applyAutomationSetup(page);
 
-    await openAddConnectionDialog(page, PROVIDER);
-
-    await fillConnectionField(page, 'Name', CONNECTION);
-    await fillConnectionField(page, 'Server', PG_EXT_SERVER);
-    await fillConnectionField(page, 'Port', PG_EXT_PORT);
-    await fillConnectionField(page, 'Db', PG_EXT_DB);
-    await fillConnectionField(page, 'Login', PG_EXT_LOGIN);
-    await fillConnectionField(page, 'Password', PG_EXT_PASSWORD);
-
-    await clickConnectionOk(page);
+    await createConnectionViaUi(page);
 
     const saved = await findConnectionByFriendlyName(page, CONNECTION);
     expect(saved, `connection "${CONNECTION}" should exist after OK`).not.toBeNull();
@@ -93,8 +112,7 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
     test(`2. Save and run query "${q.name}" via UI editor`, async ({ page }) => {
       test.skip(!PG_EXT_PASSWORD, 'DG_PG_EXT_PASSWORD env var not set');
 
-      await goHome(page);
-      await applyAutomationSetup(page);
+      await ensureConnectionExists(page);
       await expandDbProvider(page, PROVIDER);
 
       // Right-click connection → New Query...
@@ -135,11 +153,15 @@ test.describe.serial('Connections / External Provider (PostgreSQLDBTests2)', () 
       // platform reports completion via a green balloon or by clearing the
       // running indicator. Wait for either: a balloon appears, or the play
       // icon's spinner stops. We assert no error balloons remain.
+      // 90s, not 60s: the first DDL query against the in-network `world` demo
+      // Postgres pays a cold grok_connect connection-pool warm-up, which can
+      // exceed 60s on a loaded CI agent (build 62 timed out here while build 55
+      // passed). The query itself is trivial once the pool is up.
       await page.waitForFunction(() =>
         !!document.querySelector('.grok-balloon, .d4-balloon')
         || !!document.querySelector('[name="viewer-Grid"] canvas'),
         undefined,
-        { timeout: 60_000 });
+        { timeout: 90_000 });
       await page.waitForTimeout(1500);
 
       const errors = await page.evaluate(() => Array.from(document.querySelectorAll('.d4-balloon-error, .grok-balloon-error'))

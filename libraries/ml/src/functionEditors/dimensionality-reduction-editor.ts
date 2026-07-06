@@ -379,8 +379,8 @@ export class DimReductionBaseEditor {
 
     public getInput() {
       return {
-        table: this.tableInput.value!.name,
-        col: this.colInput.value!.name,
+        table: this.tableInput.value?.name!,
+        col: this.colInput.value?.name!,
         methodName: this.methodInput.value!,
         preprocessingFunction: this.preprocessingFunctionInput.value!,
         similarityMetric: this.similarityMetricInput.value!,
@@ -392,6 +392,7 @@ export class DimReductionBaseEditor {
     }
 
     public getStringInput() {
+      // p.s. the only non-primitive here is the options.progressfunc, which is never passed here
       return JSON.stringify(this.getInput());
     }
 
@@ -407,10 +408,11 @@ export class DimReductionBaseEditor {
 
     public async applyInput(input: ReturnType<typeof this.getInput>) {
       try {
-        const cols = this.tableInput.value?.col(input.col);
-        if (!cols)
-          throw new Error('Column not found');
-        this.colInput.value = cols;
+        const col = this.tableInput.value?.col(input.col);
+        if (!col && !this.colInput.value)
+          throw new Error('Column not Configured. Could not apply history');
+        if (col)
+          this.colInput.value = col;
         this.preprocessingFunctionInput.value = input.preprocessingFunction;
         this.similarityMetricInput.value = input.similarityMetric;
         this.plotEmbeddingsInput.value = input.plotEmbeddings;

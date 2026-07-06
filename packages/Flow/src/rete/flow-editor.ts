@@ -21,16 +21,26 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowNode, FlowScheme} from './scheme';
+import {FlowConnection, FlowNode, FlowScheme, isExecKey} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
+import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
   onGraphChanged?: () => void;
+  /** Run the slice up to this node and preview its output ("inspect anywhere").
+   *  Wired from the node's right-click menu in addition to the output-port menu. */
+  onPreviewNode?: (nodeId: string) => void;
+  /** Re-run just this node using values captured from a prior run (no upstream
+   *  re-run). Offered in the node menu only when `canRerunNode` returns true. */
+  onRerunNode?: (nodeId: string) => void;
+  /** Whether the "Rerun this node only" menu item should be shown for a node. */
+  canRerunNode?: (nodeId: string) => boolean;
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
@@ -93,10 +103,26 @@ export class FlowEditor {
   private vGuide: HTMLElement | null = null;
   private hGuide: HTMLElement | null = null;
 
+  /** Bottom-right overview minimap (screen-space overlay; not part of the
+   *  transformed canvas). `null` until `installMinimap`. */
+  private minimapEl: HTMLElement | null = null;
+  private minimapSvg: SVGSVGElement | null = null;
+  private minimapRedrawScheduled = false;
+  /** Minimap inner drawing area in px (SVG viewport). */
+  private readonly minimapW = 200;
+  private readonly minimapH = 130;
+
   /** Suggestion-menu drag state. Set on `connectionpick` for an output
    *  socket; cleared on `connectiondrop`. If the drop didn't create a
    *  connection AND wasn't on a target socket, the suggestion popup opens. */
   private dragOutSource: {nodeId: string; outputKey: string; dgType: string} | null = null;
+
+  /** Input-side drag state (dragging out of an input socket, or the tail of an
+   *  existing connection). Drives the reverse drop-on-node shortcut — dropping
+   *  on a node body connects from that node's compatible output (a real output
+   *  wins over a passthrough) — and, on empty canvas, the reverse suggestion
+   *  menu ("what produces this?"). */
+  private dragInSource: {nodeId: string; inputKey: string; dgType: string} | null = null;
 
   constructor(container: HTMLElement, callbacks: FlowEditorCallbacks = {}) {
     this.callbacks = callbacks;
@@ -153,6 +179,7 @@ export class FlowEditor {
     this.installRectSelect();
     this.installHoverDocs();
     this.installWaypointInteractions();
+    this.installMinimap();
 
     // Expose a narrow callback surface to React components that need to talk
     // back into the editor.
@@ -189,6 +216,8 @@ export class FlowEditor {
   /** When a connection lands on a ValueOutput node and the source slot has a
    *  meaningful type, copy that type into the output node's `outputType`. */
   private maybeAutoTypeValueOutput(connection: FlowScheme['Connection']): void {
+    // Execution-ordering edges carry no data type — never derive an output type from one.
+    if (isExecKey(String(connection.targetInput)) || isExecKey(String(connection.sourceOutput))) return;
     const targetNode = this.editor.getNode(connection.target) as FlowNode | undefined;
     // Match by registered type, not label — titles are user-editable.
     if (!targetNode || targetNode.dgTypeName !== 'Outputs/Value Output') return;
@@ -247,8 +276,10 @@ export class FlowEditor {
         context.type === 'nodecreated' || context.type === 'noderemoved' ||
         context.type === 'connectioncreated' || context.type === 'connectionremoved' ||
         context.type === 'cleared'
-      )
+      ) {
         this.callbacks.onGraphChanged?.();
+        this.scheduleMinimapRedraw();
+      }
       return context;
     });
 
@@ -283,14 +314,17 @@ export class FlowEditor {
       if (context.type === 'nodetranslated') {
         const node = this.editor.getNode(context.data.id);
         if (node) node.pos = {...context.data.position};
+        this.scheduleMinimapRedraw();
       }
       if (context.type === 'nodedragged') this.hideGuides();
       // Keep the CSS dot-grid background aligned to the area transform — the
       // grid is screen-space, the canvas content lives in a transformed
       // space, so we rescale and shift the bg whenever pan/zoom changes.
       if (context.type === 'translated' || context.type === 'zoomed' ||
-          context.type === 'render')
+          context.type === 'render') {
         this.updateGridTransform();
+        this.scheduleMinimapRedraw();
+      }
       // Tag each rendered connection wrapper with its id + status for the
       // CSS-driven execution-state animations (`[data-status="active"]` etc).
       if (context.type === 'rendered' && (context.data as {type?: string}).type === 'connection')
@@ -317,6 +351,7 @@ export class FlowEditor {
     if (this.container.style.position === '') this.container.style.position = 'relative';
     const overlay = document.createElement('div');
     overlay.className = 'ff-guide-overlay';
+    setTid(overlay, 'guide-overlay');
     this.guideOverlay = overlay;
     const v = document.createElement('div');
     v.className = 'ff-guide-v';
@@ -394,6 +429,216 @@ export class FlowEditor {
     if (this.hGuide) this.hGuide.style.display = 'none';
   }
 
+  // ---------- minimap ----------
+
+  /** Build the bottom-right overview minimap: an SVG that draws every node as a
+   *  small rect plus the current viewport rectangle. Click/drag inside it pans
+   *  the canvas; the header button minimizes it to a title bar. Lives directly
+   *  in `this.container` (screen-space), so it doesn't pan/zoom with the graph. */
+  private installMinimap(): void {
+    const el = document.createElement('div');
+    el.className = 'ff-minimap';
+    el.dataset.collapsed = 'false';
+    setTid(el, 'minimap');
+
+    const header = document.createElement('div');
+    header.className = 'ff-minimap-header';
+    setTid(header, 'minimap-header');
+    const title = document.createElement('span');
+    title.className = 'ff-minimap-title';
+    title.textContent = 'Overview';
+    const toggle = document.createElement('span');
+    toggle.className = 'ff-minimap-toggle';
+    setTid(toggle, 'minimap-toggle');
+    toggle.title = 'Minimize';
+    toggle.textContent = '▾';
+    header.appendChild(title);
+    header.appendChild(toggle);
+
+    const body = document.createElement('div');
+    body.className = 'ff-minimap-body';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'ff-minimap-svg');
+    svg.setAttribute('width', String(this.minimapW));
+    svg.setAttribute('height', String(this.minimapH));
+    svg.setAttribute('viewBox', `0 0 ${this.minimapW} ${this.minimapH}`);
+    body.appendChild(svg);
+
+    el.appendChild(header);
+    el.appendChild(body);
+    this.container.appendChild(el);
+    this.minimapEl = el;
+    this.minimapSvg = svg;
+
+    // Clicking anywhere on the header minimizes/restores. stopPropagation so it
+    // never pans the canvas. (The chevron is just a visual affordance — the
+    // click bubbles to the header handler.)
+    header.addEventListener('pointerdown', (e) => e.stopPropagation());
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleMinimapCollapsed();
+    });
+
+    this.installMinimapNavigation(body);
+    this.scheduleMinimapRedraw();
+  }
+
+  /** Click/drag in the minimap body → pan so the clicked graph point centers in
+   *  the viewport. We map minimap px → canvas coords using the same fit the
+   *  draw step computed (stored on the svg via data-* for reuse). */
+  private installMinimapNavigation(body: HTMLElement): void {
+    const panToEvent = (e: PointerEvent): void => {
+      const svg = this.minimapSvg;
+      if (!svg) return;
+      const fit = this.readMinimapFit();
+      if (!fit) return;
+      const rect = svg.getBoundingClientRect();
+      const mmx = e.clientX - rect.left;
+      const mmy = e.clientY - rect.top;
+      // minimap px → canvas coords (inverse of the draw transform)
+      const cx = (mmx - fit.offsetX) / fit.scale + fit.minX;
+      const cy = (mmy - fit.offsetY) / fit.scale + fit.minY;
+      const cont = this.container.getBoundingClientRect();
+      const k = this.area.area.transform.k;
+      void this.area.area.translate(cont.width / 2 - cx * k, cont.height / 2 - cy * k);
+    };
+
+    body.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      panToEvent(e);
+      body.setPointerCapture(e.pointerId);
+      const onMove = (ev: PointerEvent): void => panToEvent(ev);
+      const onUp = (): void => {
+        body.removeEventListener('pointermove', onMove);
+        body.removeEventListener('pointerup', onUp);
+        body.removeEventListener('pointercancel', onUp);
+      };
+      body.addEventListener('pointermove', onMove);
+      body.addEventListener('pointerup', onUp);
+      body.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  /** Collapse the minimap to its header bar, or restore it. Public so hosts can
+   *  set the initial state (e.g. collapsed inside a preview dialog). */
+  setMinimapCollapsed(collapsed: boolean): void {
+    const el = this.minimapEl;
+    if (!el) return;
+    el.dataset.collapsed = collapsed ? 'true' : 'false';
+    const toggle = el.querySelector<HTMLElement>('.ff-minimap-toggle');
+    if (toggle) {
+      toggle.textContent = collapsed ? '▸' : '▾';
+      toggle.title = collapsed ? 'Expand' : 'Minimize';
+    }
+    if (!collapsed) this.scheduleMinimapRedraw();
+  }
+
+  private toggleMinimapCollapsed(): void {
+    if (this.minimapEl) this.setMinimapCollapsed(this.minimapEl.dataset.collapsed !== 'true');
+  }
+
+  /** Read the fit transform stashed on the svg by the last redraw. */
+  private readMinimapFit(): {scale: number; offsetX: number; offsetY: number; minX: number; minY: number} | null {
+    const svg = this.minimapSvg;
+    if (!svg || svg.dataset.scale === undefined) return null;
+    return {
+      scale: parseFloat(svg.dataset.scale),
+      offsetX: parseFloat(svg.dataset.offsetX!),
+      offsetY: parseFloat(svg.dataset.offsetY!),
+      minX: parseFloat(svg.dataset.minX!),
+      minY: parseFloat(svg.dataset.minY!),
+    };
+  }
+
+  /** Coalesce minimap redraws to one per frame — the area pipe fires many
+   *  translate/render events during a single drag. */
+  /** Re-evaluate the overview after a graph edit (visibility + redraw). */
+  refreshMinimap(): void {
+    this.scheduleMinimapRedraw();
+  }
+
+  private scheduleMinimapRedraw(): void {
+    if (!this.minimapEl) return;
+    // Nothing to overview on an empty canvas — hide the panel entirely (it
+    // reappears the moment the first node lands). Done before the collapsed/
+    // scheduled early-returns so an empty canvas hides regardless of either.
+    this.minimapEl.style.display = this.editor.getNodes().length === 0 ? 'none' : '';
+    if (this.minimapRedrawScheduled) return;
+    if (this.minimapEl.dataset.collapsed === 'true') return;
+    this.minimapRedrawScheduled = true;
+    requestAnimationFrame(() => {
+      this.minimapRedrawScheduled = false;
+      this.redrawMinimap();
+    });
+  }
+
+  private redrawMinimap(): void {
+    const svg = this.minimapSvg;
+    if (!svg) return;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const nodes = this.editor.getNodes();
+    const pad = 8;
+    if (nodes.length === 0) {
+      delete svg.dataset.scale;
+      return;
+    }
+
+    // Graph bounds in canvas coords.
+    let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+    const boxes: Array<{x: number; y: number; w: number; h: number; color: string}> = [];
+    for (const node of nodes) {
+      const sz = this.measureNode(node.id);
+      const color = (node as unknown as {color?: string}).color ?? '#90a4ae';
+      boxes.push({x: node.pos.x, y: node.pos.y, w: sz.w, h: sz.h, color});
+      minX = Math.min(minX, node.pos.x);
+      minY = Math.min(minY, node.pos.y);
+      maxX = Math.max(maxX, node.pos.x + sz.w);
+      maxY = Math.max(maxY, node.pos.y + sz.h);
+    }
+
+    const graphW = Math.max(1, maxX - minX);
+    const graphH = Math.max(1, maxY - minY);
+    const scale = Math.min((this.minimapW - 2 * pad) / graphW, (this.minimapH - 2 * pad) / graphH);
+    const offsetX = (this.minimapW - graphW * scale) / 2 - minX * scale;
+    const offsetY = (this.minimapH - graphH * scale) / 2 - minY * scale;
+    svg.dataset.scale = String(scale);
+    svg.dataset.offsetX = String(offsetX);
+    svg.dataset.offsetY = String(offsetY);
+    svg.dataset.minX = String(minX);
+    svg.dataset.minY = String(minY);
+
+    const toMapX = (cx: number): number => cx * scale + offsetX;
+    const toMapY = (cy: number): number => cy * scale + offsetY;
+
+    for (const b of boxes) {
+      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      r.setAttribute('x', String(toMapX(b.x)));
+      r.setAttribute('y', String(toMapY(b.y)));
+      r.setAttribute('width', String(Math.max(2, b.w * scale)));
+      r.setAttribute('height', String(Math.max(2, b.h * scale)));
+      r.setAttribute('rx', '1.5');
+      r.setAttribute('fill', b.color);
+      r.setAttribute('class', 'ff-minimap-node');
+      svg.appendChild(r);
+    }
+
+    // Viewport rectangle (canvas coords visible through the container).
+    const t = this.area.area.transform;
+    const cont = this.container.getBoundingClientRect();
+    const vx = -t.x / t.k; const vy = -t.y / t.k;
+    const vw = cont.width / t.k; const vh = cont.height / t.k;
+    const vp = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    vp.setAttribute('x', String(toMapX(vx)));
+    vp.setAttribute('y', String(toMapY(vy)));
+    vp.setAttribute('width', String(Math.max(0, vw * scale)));
+    vp.setAttribute('height', String(Math.max(0, vh * scale)));
+    vp.setAttribute('class', 'ff-minimap-viewport');
+    svg.appendChild(vp);
+  }
+
   // ---------- drag-output-to-empty suggestion menu ----------
 
   /** Hook into the connection plugin's own `connectionpick` / `connectiondrop`
@@ -410,6 +655,9 @@ export class FlowEditor {
     // Always track — cheap, and lets us fall back without the listener
     // dance per-pick.
     window.addEventListener('pointermove', trackPointer, true);
+    // Safety net: a pick that ends without a `connectiondrop` (e.g. Esc) still
+    // releases the pointer — clear the compatibility hints then. Idempotent.
+    window.addEventListener('pointerup', () => this.endConnectHints(), true);
 
     this.connection.addPipe((context) => {
       const c = context as {type: string; data: any};
@@ -420,33 +668,237 @@ export class FlowEditor {
         // opening it accidentally.
         if (this.lastPointerButton !== 0) {
           this.dragOutSource = null;
+          this.dragInSource = null;
           return context;
         }
         const sock = c.data.socket as {nodeId: string; key: string; side: 'input' | 'output'};
-        // Suggestions are output-driven only — input-side picks (drag the
-        // tail of an existing connection) shouldn't open the menu.
-        if (sock.side !== 'output') {
-          this.dragOutSource = null;
-          return context;
-        }
+        // Dim the canvas and light up only the sockets/nodes this pick can
+        // legally connect to (compatible type, opposite side).
+        this.beginConnectHints(sock.nodeId, sock.key, sock.side);
         const node = this.editor.getNode(sock.nodeId);
-        const slot = node?.outputs[sock.key] as {socket: TypedSocket} | undefined;
-        if (node && slot)
-          this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
+        if (sock.side === 'output') {
+          this.dragInSource = null;
+          const slot = node?.outputs[sock.key] as {socket: TypedSocket} | undefined;
+          if (node && slot)
+            this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
+        } else {
+          // Input-side pick (a fresh drag out of an input, or the tail of an
+          // existing connection) — arms the reverse drop-on-node shortcut.
+          this.dragOutSource = null;
+          const slot = node?.inputs[sock.key] as {socket: TypedSocket} | undefined;
+          this.dragInSource = (node && slot && !isExecKey(sock.key)) ?
+            {nodeId: sock.nodeId, inputKey: sock.key, dgType: slot.socket.dgType} : null;
+        }
       }
       if (c.type === 'connectiondrop') {
+        this.endConnectHints();
         const data = c.data as {created: boolean; socket: {nodeId: string} | null};
-        const src = this.dragOutSource;
+        const srcOut = this.dragOutSource;
+        const srcIn = this.dragInSource;
         this.dragOutSource = null;
-        if (!src) return context;
+        this.dragInSource = null;
+        if (!srcOut && !srcIn) return context;
         // A real connection happened, or the user dropped on a socket the
-        // plugin didn't accept (e.g. type mismatch). Either way they were
-        // aiming at something specific — don't second-guess them.
+        // plugin handled (accepted, or rejected on type mismatch) — either way
+        // they aimed at a specific socket, so don't second-guess them.
         if (data.created || data.socket) return context;
-        void this.openSuggestionMenu(lastPointer.x, lastPointer.y, src);
+        // Dropped without hitting a socket: if it landed on a node body,
+        // connect to its one obvious counterpart slot (no need to hit the tiny
+        // pin). Empty-canvas drops open the suggestion menu for the matching
+        // direction — consumers for an output drag, producers for an input drag.
+        if (srcOut) void this.handleOutputDrop(srcOut, lastPointer.x, lastPointer.y);
+        else if (srcIn) void this.handleInputDrop(srcIn, lastPointer.x, lastPointer.y);
       }
       return context;
     });
+  }
+
+  /** The rendered DOM element for a node (or null if not painted). */
+  private nodeEl(nodeId: string): HTMLElement | null {
+    return this.container.querySelector(`.ff-node[data-node-id="${CSS.escape(nodeId)}"]`);
+  }
+
+  /** Drop of an output-drag that missed every socket: connect to a node's sole
+   *  compatible free input if it landed on one, else open the suggestion menu. */
+  private async handleOutputDrop(
+    src: {nodeId: string; outputKey: string; dgType: string}, x: number, y: number,
+  ): Promise<void> {
+    // `elementsFromPoint` (not `elementFromPoint`) so a transient overlay on top
+    // of the node doesn't hide it.
+    const stack = document.elementsFromPoint(x, y) as HTMLElement[];
+    let nodeEl: HTMLElement | null = null;
+    for (const el of stack) {
+      const n = el.closest?.('.ff-node') as HTMLElement | null;
+      if (n) {nodeEl = n; break;}
+    }
+    const targetNodeId = nodeEl?.dataset.nodeId;
+    if (targetNodeId && targetNodeId !== src.nodeId) {
+      const key = this.soleCompatibleInput(src.nodeId, src.outputKey, targetNodeId);
+      // Dropped on a node: connect to its one obvious input, or do nothing when
+      // it has zero / several candidates (don't guess, don't pop the menu).
+      if (key) await this.addConnectionByKeys(src.nodeId, src.outputKey, targetNodeId, key);
+      return;
+    }
+    await this.openSuggestionMenu(x, y, src);
+  }
+
+  /** Drop of an input-drag that missed every socket: if it landed on another
+   *  node's body, connect from that node's one obvious output (a real output
+   *  wins over a passthrough — see `soleCompatibleOutput`; ambiguity aborts).
+   *  On empty canvas: open the reverse suggestion menu ("what produces this?"). */
+  private async handleInputDrop(
+    src: {nodeId: string; inputKey: string; dgType: string}, x: number, y: number,
+  ): Promise<void> {
+    const stack = document.elementsFromPoint(x, y) as HTMLElement[];
+    let nodeEl: HTMLElement | null = null;
+    for (const el of stack) {
+      const n = el.closest?.('.ff-node') as HTMLElement | null;
+      if (n) {
+        nodeEl = n;
+        break;
+      }
+    }
+    const sourceNodeId = nodeEl?.dataset.nodeId;
+    if (sourceNodeId && sourceNodeId !== src.nodeId) {
+      const key = this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
+      if (key) await this.addConnectionByKeys(sourceNodeId, key, src.nodeId, src.inputKey);
+      return;
+    }
+    if (!sourceNodeId) await this.openReverseSuggestionMenu(x, y, src);
+  }
+
+  /** The reverse suggestion menu: an input drag dropped on empty canvas offers
+   *  every node type with a compatible output — or pass-through — (real
+   *  producers first), creates the chosen one at the drop point, and wires its
+   *  first compatible output (real over pass-through) into the dragged input. */
+  private async openReverseSuggestionMenu(
+    clientX: number, clientY: number,
+    target: {nodeId: string; inputKey: string; dgType: string},
+  ): Promise<void> {
+    const {findNodeTypesProducingOutput, createNode} = await import('./node-factory');
+    const nodes = this.editor.getNodes();
+    const candidates = findNodeTypesProducingOutput(target.dgType, {
+      sourcePackageName: this.editor.getNode(target.nodeId)?.dgPackageName,
+      graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
+      graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
+    });
+    if (candidates.length === 0) return;
+
+    const choice = await this.promptSuggestion(clientX, clientY, candidates);
+    if (!choice) return;
+
+    const node = createNode(choice);
+    if (!node) return;
+    const {x, y} = this.screenToCanvas(clientX, clientY);
+    await this.addNodeAt(node, x, y);
+
+    // Auto-connect: the new node's first compatible output drives the dragged
+    // input — a real output wins over a pass-through.
+    const targetSocket = (this.editor.getNode(target.nodeId)?.inputs[target.inputKey] as
+      {socket: TypedSocket} | undefined)?.socket;
+    if (!targetSocket) return;
+    let realKey: string | null = null;
+    let ptKey: string | null = null;
+    for (const [key, out] of Object.entries(node.outputs) as Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!out || isExecKey(key)) continue;
+      if (!out.socket.isCompatibleWith(targetSocket)) continue;
+      if (key.endsWith('__pt')) {
+        if (!ptKey) ptKey = key;
+      } else {
+        realKey = key;
+        break;
+      }
+    }
+    const outKey = realKey ?? ptKey;
+    if (outKey) await this.addConnectionByKeys(node.id, outKey, target.nodeId, target.inputKey);
+  }
+
+  /** The output on `sourceNodeId` that can drive the dragged input: the sole
+   *  compatible **real** output wins; only when no real output is compatible
+   *  does the sole compatible **pass-through** qualify. Zero or several
+   *  candidates in the winning group → null (don't guess — aim at a pin).
+   *  Execution-order ports are ignored. Already-wired outputs stay eligible
+   *  (an output legitimately feeds many consumers). Drives the reverse
+   *  drop-on-node shortcut (drop an input drag anywhere on a producer node). */
+  soleCompatibleOutput(dragNodeId: string, dragInputKey: string, sourceNodeId: string): string | null {
+    const inSocket = (this.editor.getNode(dragNodeId)?.inputs[dragInputKey] as
+      {socket: TypedSocket} | undefined)?.socket;
+    const sourceNode = this.editor.getNode(sourceNodeId);
+    if (!inSocket || !sourceNode) return null;
+    const real: string[] = [];
+    const passthrough: string[] = [];
+    for (const [key, out] of Object.entries(sourceNode.outputs) as
+      Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!out || isExecKey(key)) continue;
+      if (!out.socket.isCompatibleWith(inSocket)) continue;
+      (key.endsWith('__pt') ? passthrough : real).push(key);
+    }
+    if (real.length === 1) return real[0];
+    if (real.length === 0 && passthrough.length === 1) return passthrough[0];
+    return null;
+  }
+
+  /** The single input on `targetNodeId` that the source output can drive AND is
+   *  not already wired — or null if there are zero or several such inputs.
+   *  Execution-order ports are ignored (they're aimed at deliberately). Drives
+   *  the drop-on-node shortcut (drop anywhere on a node with one obvious input). */
+  soleCompatibleInput(srcNodeId: string, srcOutputKey: string, targetNodeId: string): string | null {
+    const srcSocket = (this.editor.getNode(srcNodeId)?.outputs[srcOutputKey] as
+      {socket: TypedSocket} | undefined)?.socket;
+    const targetNode = this.editor.getNode(targetNodeId);
+    if (!srcSocket || !targetNode) return null;
+    const candidates: string[] = [];
+    for (const [key, input] of Object.entries(targetNode.inputs) as Array<[string, {socket: TypedSocket} | undefined]>) {
+      if (!input || isExecKey(key)) continue;
+      if (!srcSocket.isCompatibleWith(input.socket)) continue;
+      if (this.isInputConnected(targetNodeId, key)) continue;
+      candidates.push(key);
+    }
+    return candidates.length === 1 ? candidates[0] : null;
+  }
+
+  /** Dim the canvas and highlight only the opposite-side sockets (and their
+   *  nodes) that a pick from `srcKey` could legally connect to. Cleared by
+   *  `endConnectHints` on drop / pointer release. Symmetric: an output pick
+   *  lights compatible inputs, an input pick (existing-connection tail) lights
+   *  compatible outputs. */
+  private beginConnectHints(srcNodeId: string, srcKey: string, srcSide: 'input' | 'output'): void {
+    this.endConnectHints();
+    const srcNode = this.editor.getNode(srcNodeId);
+    const srcSlot = (srcSide === 'output' ? srcNode?.outputs[srcKey] : srcNode?.inputs[srcKey]) as
+      {socket: TypedSocket} | undefined;
+    const srcSocket = srcSlot?.socket;
+    if (!srcSocket) return;
+    this.container.classList.add('ff-connecting');
+    this.nodeEl(srcNodeId)?.classList.add('ff-node-source');
+    const targetSide: 'input' | 'output' = srcSide === 'output' ? 'input' : 'output';
+    for (const node of this.editor.getNodes()) {
+      if (node.id === srcNodeId) continue;
+      const nodeEl = this.nodeEl(node.id);
+      if (!nodeEl) continue;
+      const slots = (targetSide === 'input' ? node.inputs : node.outputs) as
+        Record<string, {socket: TypedSocket} | undefined>;
+      let nodeCompat = false;
+      for (const [key, slot] of Object.entries(slots)) {
+        if (!slot || isExecKey(key)) continue;
+        const ok = srcSide === 'output' ?
+          srcSocket.isCompatibleWith(slot.socket) :
+          slot.socket.isCompatibleWith(srcSocket);
+        if (!ok) continue;
+        nodeCompat = true;
+        nodeEl.querySelector(`[data-testid="${tid('socket-' + targetSide, key)}"]`)
+          ?.classList.add('ff-socket-compat');
+      }
+      if (nodeCompat) nodeEl.classList.add('ff-node-compat');
+    }
+  }
+
+  /** Remove every connect-mode hint class. Idempotent. */
+  private endConnectHints(): void {
+    if (!this.container.classList.contains('ff-connecting')) return;
+    this.container.classList.remove('ff-connecting');
+    this.container.querySelectorAll('.ff-node-source, .ff-node-compat, .ff-socket-compat')
+      .forEach((el) => el.classList.remove('ff-node-source', 'ff-node-compat', 'ff-socket-compat'));
   }
 
   private async openSuggestionMenu(
@@ -454,7 +906,15 @@ export class FlowEditor {
     source: {nodeId: string; outputKey: string; dgType: string},
   ): Promise<void> {
     const {findNodeTypesAcceptingInput, createNode} = await import('./node-factory');
-    const candidates = findNodeTypesAcceptingInput(source.dgType);
+    // Canvas context for the ranking heuristics: the science the drag came
+    // from (source node's package), what's already on the canvas (packages →
+    // domain fallback), and which functions the user already reached for.
+    const nodes = this.editor.getNodes();
+    const candidates = findNodeTypesAcceptingInput(source.dgType, {
+      sourcePackageName: this.editor.getNode(source.nodeId)?.dgPackageName,
+      graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
+      graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
+    });
     if (candidates.length === 0) return;
 
     const choice = await this.promptSuggestion(clientX, clientY, candidates);
@@ -492,6 +952,7 @@ export class FlowEditor {
   private installHoverDocs(): void {
     const popup = document.createElement('div');
     popup.className = 'ff-hover-docs';
+    setTid(popup, 'hover-docs');
     popup.style.display = 'none';
     document.body.appendChild(popup);
     this.hoverDocsEl = popup;
@@ -864,7 +1325,7 @@ export class FlowEditor {
       if (ev.button !== 0) return;
       if (!ev.ctrlKey && !ev.metaKey) return;
       const target = ev.target as HTMLElement | null;
-      if (target?.closest('.ff-node, .ff-socket')) return;
+      if (target?.closest('.ff-node, .ff-socket, .ff-minimap')) return;
       ev.preventDefault();
       ev.stopPropagation();
 
@@ -923,6 +1384,7 @@ export class FlowEditor {
 
       const popup = document.createElement('div');
       popup.className = 'ff-suggest-popup';
+      setTid(popup, 'suggest-popup');
       popup.style.left = `${clientX}px`;
       popup.style.top = `${clientY}px`;
 
@@ -930,10 +1392,12 @@ export class FlowEditor {
       search.type = 'text';
       search.placeholder = 'Add node…';
       search.className = 'ff-suggest-search';
+      setTid(search, 'suggest-search');
       popup.appendChild(search);
 
       const list = document.createElement('div');
       list.className = 'ff-suggest-list';
+      setTid(list, 'suggest-list');
       popup.appendChild(list);
 
       let filtered = candidates;
@@ -945,6 +1409,8 @@ export class FlowEditor {
           const row = document.createElement('div');
           row.className = 'ff-suggest-item' + (i === activeIdx ? ' ff-suggest-item-active' : '');
           row.textContent = c.label;
+          row.dataset.testid = tid('suggest-item', c.typeName);
+          row.dataset.nodeTypeName = c.typeName;
           if (c.isBuiltin) row.classList.add('ff-suggest-item-builtin');
           row.addEventListener('mouseenter', () => {
             activeIdx = i;
@@ -1032,6 +1498,8 @@ export class FlowEditor {
   private tagConnectionElement(data: {element: HTMLElement; payload: FlowConnection}): void {
     data.element.dataset.connectionId = data.payload.id;
     data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
+    // Execution-ordering edges render dashed/gray (CSS keys off data-order).
+    data.element.dataset.order = isExecKey(String(data.payload.sourceOutput)) ? 'true' : 'false';
   }
 
   /** Set the status of a connection (drives the data-flow animation). */
@@ -1046,6 +1514,27 @@ export class FlowEditor {
     for (const id of this.connectionStatuses.keys())
       this.setConnectionStatus(id, 'idle');
     this.connectionStatuses.clear();
+  }
+
+  /** Show (or clear, when `text` is null) a small data-count label at a
+   *  connection's midpoint — the row/value count flowing through it after a run.
+   *  Stuffed into the payload as `_count` and re-rendered, mirroring `_color`. */
+  setConnectionLabel(connectionId: string, text: string | null): void {
+    const conn = this.editor.getConnections().find((c) => c.id === connectionId) as
+      (FlowConnection & {_count?: string}) | undefined;
+    if (!conn) return;
+    conn._count = text ?? undefined;
+    void this.area.update('connection', connectionId);
+  }
+
+  /** Drop every wire's count label (between/after runs, or on edit). */
+  clearConnectionLabels(): void {
+    for (const c of this.editor.getConnections() as Array<FlowConnection & {_count?: string}>) {
+      if (c._count !== undefined) {
+        c._count = undefined;
+        void this.area.update('connection', c.id);
+      }
+    }
   }
 
   // ---------- context menu + delete key ----------
@@ -1083,7 +1572,18 @@ export class FlowEditor {
   }
 
   private showNodeContextMenu(event: MouseEvent, node: FlowNode): void {
-    DG.Menu.popup()
+    const menu = DG.Menu.popup();
+    let hasRunItem = false;
+    if (this.callbacks.onPreviewNode) {
+      menu.item('Run up to here & preview', () => this.callbacks.onPreviewNode!(node.id));
+      hasRunItem = true;
+    }
+    if (this.callbacks.onRerunNode && this.callbacks.canRerunNode?.(node.id)) {
+      menu.item('Rerun this node only', () => this.callbacks.onRerunNode!(node.id));
+      hasRunItem = true;
+    }
+    if (hasRunItem) menu.separator();
+    menu
       .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
       .item('Duplicate', () => void this.duplicateNode(node.id))
       .separator()
@@ -1167,7 +1667,7 @@ export class FlowEditor {
     this.container.addEventListener('dblclick', (e) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (target.closest('.ff-node, .ff-socket, .ff-control, .d4-menu-item, input, textarea, select'))
+      if (target.closest('.ff-node, .ff-socket, .ff-control, .ff-minimap, .d4-menu-item, input, textarea, select'))
         return;
       e.preventDefault();
       void this.zoomToFit();
@@ -1375,6 +1875,30 @@ export class FlowEditor {
     await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
   }
 
+  /** Re-arrange the whole graph with the layered/banded layout used by the
+   *  creation-script importer (`rete/graph-layout.ts`): layers from the
+   *  connection structure (every edge points right), one band per disjoint
+   *  path, producer paths above the paths that consume them. Repositions every
+   *  node and zooms to fit. */
+  async autoLayout(): Promise<void> {
+    const nodes = this.editor.getNodes();
+    if (nodes.length === 0) return;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges: LayoutEdge[] = [];
+    for (const c of this.editor.getConnections()) {
+      // Order edges ARE included. computeLayers runs fresh here (unlike the
+      // importer's stale incremental layer map), so an order edge is just
+      // another forward dependency — it places the "after" node further right,
+      // letting explicit run-order shape the layout left-to-right.
+      const source = byId.get(c.source);
+      const target = byId.get(c.target);
+      if (source && target) edges.push({source, target});
+    }
+    layoutGraph(nodes, edges, computeLayers(nodes, edges));
+    for (const node of nodes) await this.area.translate(node.id, {x: node.pos.x, y: node.pos.y});
+    await this.zoomToFit();
+  }
+
   // ---------- lifecycle ----------
 
   async clear(): Promise<void> {
@@ -1389,6 +1913,10 @@ export class FlowEditor {
     if (this.pointerDownTracker)
       window.removeEventListener('pointerdown', this.pointerDownTracker, true);
     if (this.hoverDocsEl) this.hoverDocsEl.remove();
+    if (this.minimapEl) this.minimapEl.remove();
+    // Null these so a still-pending rAF redraw after teardown is a no-op.
+    this.minimapEl = null;
+    this.minimapSvg = null;
     this.area.destroy();
     delete (window as unknown as {__ff_editor?: unknown}).__ff_editor;
   }

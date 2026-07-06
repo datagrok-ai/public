@@ -1,6 +1,8 @@
 --name: MostRecentEntities
+--friendlyName: Most Recent Entities
+--description: Entities the user interacted with most recently (last 30 days)
 --connection: System:Datagrok
---input: string user
+--input: string user [User ID whose recent activity to fetch]
 WITH user_events AS (
   SELECT e.id, e.event_time
   FROM events e
@@ -27,8 +29,10 @@ LIMIT 16;
 --end
 
 --name: RecentlySharedWithMe
+--friendlyName: Recently Shared With Me
+--description: Entities recently shared with the user or their groups (last 30 days)
 --connection: System:Datagrok
---input: string user
+--input: string user [User ID whose shared entities to fetch]
 WITH RECURSIVE user_groups AS (
   SELECT group_id AS gid FROM users WHERE id = @user
   UNION

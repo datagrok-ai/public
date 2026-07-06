@@ -80,7 +80,9 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
 
     public async applyInput(input: ReturnType<typeof this.getInput>) {
       super.applyInput(input);
-      this.activitiesInput.value = this.tableInput.value!.col(input.activityCol);
+      const actCol = this.tableInput.value?.col(input.activityCol);
+      if (actCol)
+        this.activitiesInput.value = actCol;
       this.similarityInput.value = input.simThreshold;
     }
 }

@@ -1,5 +1,5 @@
 --name: _cbAllChemblStructures
---friendlyName: Browse | All ChEMBL structures
+--friendlyName: Browse | All ChEMBL Structures
 --description: Returns a limited set of all ChEMBL compound structures with canonical SMILES and molregno identifiers.
 --connection: Chembl
 select
@@ -10,10 +10,10 @@ limit 1000
 --end
 
 --name: _cbFindByMolregno
---friendlyName: Misc | Find by Molregno
+--friendlyName: Misc | Find Compound By Molregno
 --description: Retrieves detailed compound information by molregno including structure, names, properties, and synonyms.
 --connection: Chembl
---input: int molregno = 1234
+--input: int molregno = 1234 [ChEMBL internal compound registration number]
 select
   compound_structures.canonical_smiles,
   compound_structures.molregno,
@@ -34,14 +34,14 @@ where
 
 
 --name: _cbChemblBrowserQuery
---friendlyName: Browse | Summary
+--friendlyName: Browse | Compounds By Filters
 --description: Searches ChEMBL compounds by multiple filters including substructure, molecule type, name, max phase, and Lipinski violations.
 --connection: Chembl
---input: string substructure
---input: string molecule_type
---input: string subname
---input: int max_phase
---input: int num_ro5_violations
+--input: string substructure [SMILES fragment to match within the canonical SMILES]
+--input: string molecule_type [Molecule type, or 'All' for no filter]
+--input: string subname [Substring to match against compound name]
+--input: int max_phase [Highest clinical phase (0-4); use -1 for no filter]
+--input: int num_ro5_violations [Number of Lipinski rule-of-five violations; use -1 for no filter]
 select
   compound_structures.canonical_smiles,
   compound_structures.molregno,

@@ -1,23 +1,17 @@
 import {test, expect, Page} from '@playwright/test';
-import {specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
-const baseUrl = 'https://dev.datagrok.ai';
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 test('Heat map tests', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
-  await page.goto(baseUrl);
-  await page.waitForFunction(() => {
-    try { return typeof grok !== 'undefined' && grok.shell &&
-      typeof grok.shell.settings?.showFiltersIconsConstantly === 'boolean'; }
-    catch (e) { return false; }
-  }, {timeout: 30000});
+  await loginToDatagrok(page);
 
-  // Phase 2: Open demog
   await page.evaluate(async (path: string) => {
     document.body.classList.add('selenium');
     (grok.shell.settings as any).showFiltersIconsConstantly = true;
@@ -32,7 +26,6 @@ test('Heat map tests', async ({page}: {page: Page}) => {
   }, datasetPath);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  // Phase 3: Add Heat Map
   await page.evaluate(() => {
     const icon = document.querySelector('[name="icon-heat-map"]');
     if (icon) (icon as HTMLElement).click();
@@ -396,8 +389,5 @@ test('Heat map tests', async ({page}: {page: Page}) => {
     expect(result.isHeatmap).toBe(false);
   });
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

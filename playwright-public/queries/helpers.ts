@@ -1,10 +1,32 @@
 import { Page, expect } from '@playwright/test';
 
 // Connection name constant — easy to swap between environments.
-// On `public` the Northwind connection is named `Northwind`;
-// on `dev` the test track expects `NorthwindTest`.
-export const POSTGRES_CONNECTION = 'Northwind';
+//
+// CI: the ephemeral Datlas auto-provisions the platform's own metadata DB
+// as a Postgres connection named "Datagrok" (System:Datagrok, see
+// `ServiceConnectionsMigration.createDatagrokConnection`). It always
+// exists, contains the `public` schema with platform tables
+// (`users`, `groups`, `entities`, …), and is reachable from grok_connect
+// inside the test docker network — so queries-suite specs target it
+// instead of Northwind / NorthwindTest, which exist only on dev/public.
+// MS_SQL_CONNECTION isn't used in the CI flow (mssql-query-lifecycle is
+// skipped — no MS SQL service in the CI compose); kept for parity with
+// the dev playwright-tests/ copy.
+export const POSTGRES_CONNECTION = 'Datagrok';
 export const MS_SQL_CONNECTION = 'Northwind';
+
+// Shared Northwind test DB for the parameterised-query fixtures (it has the
+// `customers` table the `… customers in @country` fixture queries). Coordinates
+// are non-secret and default in-code; LOGIN/PASSWORD come from env only —
+// Jenkins Credentials in CI, `.env` on dev — and are NEVER hardcoded. The
+// `datagrok` user is used, never the `postgres` superuser (randomised password;
+// see connections/helpers.ts). Tests that need this DB
+// `test.skip(!PG_NW_PASSWORD, …)` when creds are absent.
+export const PG_NW_SERVER = process.env.DG_PG_SERVER ?? 'db.datagrok.ai';
+export const PG_NW_PORT = Number(process.env.DG_PG_PORT ?? '54322');
+export const PG_NW_DB = process.env.DG_PG_DB ?? 'northwind';
+export const PG_NW_LOGIN = process.env.DG_PG_LOGIN ?? '';
+export const PG_NW_PASSWORD = process.env.DG_PG_PASSWORD ?? '';
 
 // Auth state file produced by queries/global-setup.ts (public-env login).
 // Used by beforeAll/afterAll hooks that build their own browser context.
@@ -20,6 +42,18 @@ export async function goHome(page: Page): Promise<void> {
   // (`.d4-ribbon` may be empty on home view, and `view-handle: Browse` only exists
   //  when Browse is opened as a view rather than the side panel.)
   await page.locator('[name="Browse"]').first().waitFor({ state: 'visible', timeout: 60_000 });
+  // Wait for #grok-preloader to detach. On a cold CI Datlas the Browse sidebar
+  // becomes visible BEFORE the preloader is dismissed; while present, the
+  // preloader covers rootDiv and intercepts every click (including inside
+  // dialogs), surfacing as "subtree intercepts pointer events" timeouts.
+  // Best-effort: a cold CI Datlas occasionally keeps the preloader element in
+  // the DOM well past 90s even though the app is interactive. The style-tag
+  // below neutralises its pointer interception regardless, so a lingering
+  // preloader must not hard-fail goHome (this was the "11b" 90s timeout).
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    undefined, { timeout: 90_000 },
+  ).catch(() => { /* tolerate a lingering preloader — neutralised below */ });
   await page.waitForTimeout(500);
   // Suppress Datagrok hover-tooltips for the duration of this page. They overlay tree
   // nodes and other clickable elements during Playwright's wait-for-stable check,
@@ -27,7 +61,14 @@ export async function goHome(page: Page): Promise<void> {
   // (handlers run, content is built) — only visual rendering and pointer interception
   // are disabled. `addStyleTag` lives in the page DOM, so it is re-injected after each
   // `goto('/')` automatically because every test calls `goHome`.
-  await page.addStyleTag({ content: '.d4-tooltip { display: none !important; }' });
+  // Additionally make `#grok-preloader` transparent to pointer events: it can
+  // re-appear AFTER goHome on cold CI Datlas (e.g. while opening a dialog that
+  // does an async server fetch) and time-out the next click. Platform JS still
+  // drives it; only the pointer-events intercept is neutralised.
+  await page.addStyleTag({ content: `
+    .d4-tooltip { display: none !important; }
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+  ` });
   // Activate the Browse sidebar so the Databases tree is actually visible. Otherwise
   // tree helpers operate on hidden DOM — the platform still handles the events, but
   // UI-mode timelines and human reviewers see no visual navigation.
@@ -70,7 +111,11 @@ export async function expandDbProvider(page: Page, provider: string): Promise<vo
 
 /** Expand an individual DB connection (e.g. Postgres > Northwind) to show its saved queries. */
 export async function expandDbConnection(page: Page, provider: string, connection: string): Promise<void> {
-  await expandTreeNode(page, `tree-Databases---${provider.replace(/ /g, '-')}---${connection.replace(/ /g, '-')}`);
+  // Mirror connections/helpers.ts:connectionNodeName — the platform's
+  // tree-node `name=` attribute normalises BOTH spaces and underscores to
+  // `-`, so e.g. `pw_visual_postgres` is rendered as `pw-visual-postgres`.
+  await expandTreeNode(page,
+    `tree-Databases---${provider.replace(/ /g, '-')}---${connection.replace(/_/g, '-').replace(/ /g, '-')}`);
 }
 
 /** Click the connection label in the Browse tree to open its preview/queries view. */
@@ -126,11 +171,46 @@ export async function clickTransformationAction(page: Page, actionName: string):
 /** Add an "Add New Column" transformation step with the given expression, then confirm the dialog. */
 export async function addNewColumnTransformation(page: Page, expression: string): Promise<void> {
   await clickTransformationAction(page, 'Add New Column');
-  // Expression editor is a CodeMirror 6 contenteditable — focus it and type.
-  const cm = page.locator('.add-new-column-dialog-cm-div .cm-content');
-  await cm.focus();
-  await page.keyboard.type(expression);
-  await page.locator('[name="button-Add-New-Column---OK"]').click();
+  // The formula editor in `_showAddNewColumnDialog`
+  // (core/client/xamgle/lib/src/commands/edit/edit_add_new_column.dart:61)
+  // is a plain `TextAreaInput` — a `<textarea class="ui-input-editor">`
+  // with placeholder "Formula. Press '$' to select a column, or drag a
+  // column here". Datagrok overlays the textarea with a formula-display
+  // div, so the textarea itself is hidden — `state: 'visible'` fails (CI
+  // build #24: "locator resolved to hidden <textarea ...>"). Wait for
+  // attachment only, then set value programmatically and dispatch the
+  // events `TextAreaInput.onChanged` listens for.
+  const dialog = page.locator('.d4-dialog').first();
+  await dialog.waitFor({ state: 'visible', timeout: 10_000 });
+  const editor = dialog.locator('textarea').first();
+  await editor.waitFor({ state: 'attached', timeout: 30_000 });
+  await editor.evaluate((el, val) => {
+    const ta = el as HTMLTextAreaElement;
+    ta.focus();
+    ta.value = val;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new Event('change', { bubbles: true }));
+  }, expression);
+  // The OK button used to be tagged `[name="button-Add-New-Column---OK"]` on
+  // dev, but newer Datagrok builds drop the per-dialog prefix and the
+  // footer button is simply `[name="button-OK"]` inside the Modal. Try
+  // both, then fall back to the role/text-based locator so the dialog is
+  // confirmed regardless of attribute naming.
+  const okSelectors = [
+    '[name="button-Add-New-Column---OK"]',
+    '[name="button-OK"]',
+  ];
+  let okClicked = false;
+  for (const sel of okSelectors) {
+    const btn = dialog.locator(sel).first();
+    if (await btn.isVisible({ timeout: 1_500 }).catch(() => false)) {
+      await btn.click();
+      okClicked = true;
+      break;
+    }
+  }
+  if (!okClicked)
+    await dialog.getByRole('button', { name: /^OK$/ }).first().click();
   await expect(page.locator('.d4-dialog')).toHaveCount(0, { timeout: 10_000 });
 }
 
@@ -377,15 +457,26 @@ export async function waitForQuerySql(page: Page, expected: string): Promise<voi
 /** Click the Play icon in the query editor ribbon and wait for the result grid to appear. */
 export async function runQueryViaPlay(page: Page): Promise<void> {
   await page.locator('[name="icon-play"]').first().click();
+  // After Play the page may contain multiple `[name="viewer-Grid"]` nodes:
+  // stale 0×0 placeholders from earlier views + the live result grid. A bare
+  // selector resolves to the first match (often 0×0 and "visible" per
+  // Playwright's check). Poll until at least one canvas under viewer-Grid
+  // has non-zero size.
+  const waitForLiveGrid = async (timeoutMs: number) => {
+    await expect.poll(async () => page.evaluate(() => {
+      const canvases = Array.from(document.querySelectorAll('[name="viewer-Grid"] canvas')) as HTMLCanvasElement[];
+      return canvases.some((c) => c.width > 0 && c.height > 0);
+    }), { timeout: timeoutMs }).toBe(true);
+  };
   try {
-    await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 30_000 });
+    await waitForLiveGrid(30_000);
   }
   catch {
     // Public-env MS SQL occasionally drops the first call ("Socket closed" appears
     // in the Messages tab and no grid renders). A real user clicks Play again — the
     // second call typically succeeds against the now-warmed connection.
     await page.locator('[name="icon-play"]').first().click();
-    await page.waitForSelector('[name="viewer-Grid"] canvas', { timeout: 30_000 });
+    await waitForLiveGrid(30_000);
   }
 }
 

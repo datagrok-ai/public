@@ -19,8 +19,8 @@ const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
 // Test track: Browser.md (order: 4)
 // Shared-context serial suite: one login + one Dart boot + one script create
 // for the whole suite, instead of per-test (saves ~5-8s × 9 tests).
-// All tests here are read-only w.r.t. the script body (test 5 runs it but
-// that's expected to increase activity count — the assertion tolerates that).
+// All tests here are read-only w.r.t. the script body except the run test, which
+// launches the script via the context menu and asserts the Run dialog flow.
 test.describe.serial('Scripts: Browser', () => {
   let sharedContext: BrowserContext;
   let page: Page;
@@ -100,41 +100,29 @@ test.describe.serial('Scripts: Browser', () => {
     expect(scriptText).toContain('#language');
   });
 
-  // Test track: Browser.md, step 3C — Run via context menu, Activity count increases
-  test('Run script from context menu increases Activity run count', async () => {
+  // Test track: Browser.md, step 3C — Run via context menu launches the script.
+  // Scope is the browser/context-menu UI: assert the Run dialog opens and the run is
+  // accepted (dialog dismisses). Actual R execution + result is covered by
+  // scripts-run-debugged (the R compute container can cold-start for minutes, so the
+  // Activity-count increment is not a reliable signal to assert here).
+  test('Run script from context menu launches the script', async () => {
     await loadCarsDemoTable(page);
     await resetToScripts(page);
 
     const card = await searchScript(page, SCRIPT_NAME);
     await card.click();
 
-    const activityHeader = page.locator('.d4-accordion-pane-header', { hasText: /Activity/i }).first();
-    await expect(activityHeader).toBeVisible({ timeout: 8_000 });
-
-    const activityTextBefore = await activityHeader.textContent() ?? '';
-    const runsBefore = parseInt(activityTextBefore.replace(/\D/g, '') || '0', 10);
-
-    // Run the script via context menu
+    // Run the script via context menu — the dialog must open and accept the run.
     await rightClickScript(page, SCRIPT_NAME);
     await clickMenuItem(page, 'Run...');
 
     const dialog = page.locator('.d4-dialog').first();
-    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog, 'Run dialog must open from the context menu').toBeVisible({ timeout: 8_000 });
     const okBtn = dialog.locator('button.ui-btn-ok').first();
-    if (await okBtn.isVisible()) await okBtn.click();
-    await page.waitForTimeout(3000);
-
-    // Re-select the script to refresh the context panel
-    const cardAfterRun = getScriptCard(page, SCRIPT_NAME);
-    await expect(cardAfterRun).toBeVisible({ timeout: 10_000 });
-    await cardAfterRun.click();
-    await page.waitForTimeout(1500);
-
-    // Activity count should have increased
-    const activityHeaderAfter = page.locator('.d4-accordion-pane-header', { hasText: /Activity/i }).first();
-    const activityTextAfter = await activityHeaderAfter.textContent() ?? '';
-    const runsAfter = parseInt(activityTextAfter.replace(/\D/g, '') || '0', 10);
-    expect(runsAfter).toBeGreaterThanOrEqual(runsBefore);
+    await expect(okBtn, 'Run dialog must expose an OK button').toBeVisible({ timeout: 5_000 });
+    await okBtn.click();
+    // The dialog dismisses once the run is launched.
+    await expect(dialog, 'Run dialog must dismiss after launching the run').toBeHidden({ timeout: 15_000 });
   });
 
   // Test track: Browser.md, step 3C (Sharing) — Sharing accordion is visible

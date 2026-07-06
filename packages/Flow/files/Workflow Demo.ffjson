@@ -3,16 +3,17 @@
   "name": "Workflow Demo",
   "description": "Demo of workflow with multiple outputs",
   "author": "admin",
-  "created": "2026-03-24T15:23:52.934Z",
-  "modified": "2026-03-24T15:23:52.934Z",
+  "created": "2026-06-25T11:49:31.089Z",
+  "modified": "2026-06-25T11:49:31.089Z",
   "nodes": [
     {
-      "id": "25",
+      "id": "2e73353d30bf5b24",
       "typeName": "DG Functions/Uncategorized/OpenFile",
       "label": "Open HELM File",
+      "description": "",
       "pos": {
-        "x": -1,
-        "y": 586
+        "x": 40,
+        "y": 40
       },
       "properties": {},
       "inputValues": {
@@ -21,12 +22,13 @@
       }
     },
     {
-      "id": "23",
+      "id": "80728b3113fcb6db",
       "typeName": "DG Functions/Uncategorized/ChemblNumberOfStructures",
       "label": "Chembl query",
+      "description": "",
       "pos": {
-        "x": -1,
-        "y": 480
+        "x": 40,
+        "y": 216
       },
       "properties": {},
       "inputValues": {
@@ -34,65 +36,84 @@
       }
     },
     {
-      "id": "24",
+      "id": "c498b9d6eb9ca667",
       "typeName": "Outputs/Table Output",
       "label": "CHEMBL Output",
+      "description": "",
       "pos": {
-        "x": 679,
-        "y": 480
+        "x": 320,
+        "y": 226
       },
       "properties": {
-        "paramName": "CHemblResult",
-        "description": ""
+        "paramName": "CHemblResult"
       },
       "inputValues": {}
     },
     {
-      "id": "22",
-      "typeName": "DG Functions/Uncategorized/AddNewColumn",
-      "label": "AddNewColumn",
+      "id": "b332dd7740241563",
+      "typeName": "Outputs/Table Output",
+      "label": "Molecules Table",
+      "description": "",
       "pos": {
-        "x": 436,
-        "y": 358
+        "x": 820,
+        "y": 372
+      },
+      "properties": {
+        "paramName": "Molecules"
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "4aa8994fdd218b1f",
+      "typeName": "Outputs/Table Output",
+      "label": "HELM Table Output",
+      "description": "",
+      "pos": {
+        "x": 320,
+        "y": 60
+      },
+      "properties": {
+        "paramName": "helmResult"
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "32ad12738b7a915b",
+      "typeName": "DG Functions/Uncategorized/OpenFile",
+      "label": "Open Mol File",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 40,
+        "y": 372
       },
       "properties": {},
       "inputValues": {
-        "expression": "${MW} * 2",
-        "name": "Double Weight",
-        "type": "auto",
-        "treatAsString": false,
-        "subscribeOnChanges": false,
-        "errorBehavior": null
+        "fullPath": "System:AppData/Chem/mol1K.csv",
+        "sheetName": ""
       }
     },
     {
-      "id": "12",
-      "typeName": "Outputs/Table Output",
-      "label": "Molecules Table",
+      "id": "0b9e0bcbce58667a",
+      "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
+      "label": "Chemical Properties",
+      "description": "",
+      "collapsed": true,
       "pos": {
-        "x": 673,
-        "y": 358
+        "x": 320,
+        "y": 372
       },
       "properties": {
-        "paramName": "Molecules",
-        "description": ""
+        "columnTables": {
+          "molecules": "table"
+        }
       },
-      "inputValues": {}
-    },
-    {
-      "id": "21",
-      "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
-      "label": "addChemPropertiesColumns",
-      "pos": {
-        "x": 206,
-        "y": 373
-      },
-      "properties": {},
       "inputValues": {
+        "molecules": "molecule",
         "MW": true,
         "HBA": true,
         "HBD": true,
-        "logP": false,
+        "logP": true,
         "logS": false,
         "PSA": false,
         "rotatableBonds": false,
@@ -101,134 +122,63 @@
       }
     },
     {
-      "id": "2",
-      "typeName": "Utilities/Select Column",
-      "label": "Select Column",
+      "id": "42a68450bff93ca9",
+      "typeName": "DG Functions/Uncategorized/AddNewColumn",
+      "label": "Add New Column",
+      "description": "",
+      "collapsed": true,
       "pos": {
-        "x": 1,
-        "y": 390
-      },
-      "properties": {
-        "columnName": "molecule"
-      },
-      "inputValues": {}
-    },
-    {
-      "id": "27",
-      "typeName": "DG Functions/panel/ChemistryGasteigerPartialCharges",
-      "label": "ChemistryGasteigerPartialCharges",
-      "pos": {
-        "x": 0,
-        "y": 650
+        "x": 600,
+        "y": 372
       },
       "properties": {},
       "inputValues": {
-        "mol": "C1CCCCC1CC",
-        "contours": 10
-      }
-    },
-    {
-      "id": "28",
-      "typeName": "Outputs/Value Output",
-      "label": "Partial Charges",
-      "pos": {
-        "x": 679,
-        "y": 648
-      },
-      "properties": {
-        "paramName": "charges",
-        "outputType": "graphics",
-        "description": ""
-      },
-      "inputValues": {}
-    },
-    {
-      "id": "26",
-      "typeName": "Outputs/Table Output",
-      "label": "HELM Table Output",
-      "pos": {
-        "x": 680,
-        "y": 585
-      },
-      "properties": {
-        "paramName": "helmResult",
-        "description": ""
-      },
-      "inputValues": {}
-    },
-    {
-      "id": "20",
-      "typeName": "DG Functions/Uncategorized/OpenFile",
-      "label": "Open Mol File",
-      "pos": {
-        "x": 1,
-        "y": 357
-      },
-      "properties": {},
-      "inputValues": {
-        "fullPath": "System:AppData/Chem/mol1K.csv",
-        "sheetName": ""
+        "expression": "${MW} + ${HBA}",
+        "name": "New Col",
+        "type": "auto",
+        "treatAsString": false,
+        "subscribeOnChanges": false
       }
     }
   ],
   "connections": [
     {
-      "id": "21",
-      "source": "20",
+      "id": "5e2bb5de78dcc42d",
+      "source": "80728b3113fcb6db",
       "sourceOutput": "result",
-      "target": "21",
+      "target": "c498b9d6eb9ca667",
       "targetInput": "table"
     },
     {
-      "id": "22",
-      "source": "2",
-      "sourceOutput": "column",
-      "target": "21",
-      "targetInput": "molecules"
+      "id": "9fdebca2d9c4b4fa",
+      "source": "2e73353d30bf5b24",
+      "sourceOutput": "result",
+      "target": "4aa8994fdd218b1f",
+      "targetInput": "table"
     },
     {
-      "id": "23",
-      "source": "21",
+      "id": "4ff40217a00c0cda",
+      "source": "32ad12738b7a915b",
+      "sourceOutput": "result",
+      "target": "0b9e0bcbce58667a",
+      "targetInput": "table"
+    },
+    {
+      "id": "039fa5a438f3d7a8",
+      "source": "0b9e0bcbce58667a",
       "sourceOutput": "table__pt",
-      "target": "22",
+      "target": "42a68450bff93ca9",
       "targetInput": "table"
     },
     {
-      "id": "24",
-      "source": "22",
+      "id": "49de6b7de56091cd",
+      "source": "42a68450bff93ca9",
       "sourceOutput": "table__pt",
-      "target": "12",
+      "target": "b332dd7740241563",
       "targetInput": "table"
-    },
-    {
-      "id": "25",
-      "source": "20",
-      "sourceOutput": "result",
-      "target": "2",
-      "targetInput": "table"
-    },
-    {
-      "id": "26",
-      "source": "23",
-      "sourceOutput": "result",
-      "target": "24",
-      "targetInput": "table"
-    },
-    {
-      "id": "27",
-      "source": "25",
-      "sourceOutput": "result",
-      "target": "26",
-      "targetInput": "table"
-    },
-    {
-      "id": "28",
-      "source": "27",
-      "sourceOutput": "charges",
-      "target": "28",
-      "targetInput": "value"
     }
   ],
+  "annotations": [],
   "metadata": {
     "settings": {
       "scriptName": "Workflow Demo",

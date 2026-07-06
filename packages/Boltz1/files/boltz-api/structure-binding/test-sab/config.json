@@ -1,0 +1,4 @@
+{
+  "protein": { "value": "MKTIIALSYIFCLVFA", "chain_ids": ["A"] },
+  "ligand_chain_id": "B"
+}

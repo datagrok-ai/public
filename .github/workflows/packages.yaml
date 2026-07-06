@@ -574,6 +574,17 @@ jobs:
           sudo chown root:root chrome_sandbox
           sudo chmod 4755 chrome_sandbox
           sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
+      - name: Install ffmpeg
+        # `grok test --record` records the run via Puppeteer page.screencast(),
+        # which spawns ffmpeg. The runner image doesn't ship it, so install it
+        # here — otherwise the whole Puppeteer pass fails with `spawnSync ffmpeg ENOENT`.
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -n 1
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples' }}
@@ -696,6 +707,33 @@ jobs:
           for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
             docker push $image
           done
+
+      # Vulnerability scan of the published package image(s) via GCP Container
+      # Analysis — the same scan as the weekly Vulnerability-Scan Jenkins job
+      # (GROK-18695): push to Artifact Registry, poll the scan, publish OpenVEX +
+      # CSV to the public datagrok-data S3 bucket, then delete the GAR copy.
+      # Report-only: continue-on-error never blocks the publish.
+      # See core/docs/VULNERABILITY_MANAGEMENT.md.
+      - name: Scan published Docker image for vulnerabilities
+        if: steps.publish-docker.outcome == 'success'
+        id: scan-docker
+        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-vuln-sa.json
+          GCP_SA_KEY: ${{ secrets.GCP_VULN_SA_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.VULN_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VULN_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+        run: |
+          printf '%s' "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod +x ./.github/scripts/gcp-vuln-scan.sh
+          for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
+            repo="${image#datagrok/}"; repo="${repo%%:*}"; tag="${image##*:}"
+            echo "::group::GCP vuln scan $image"
+            ./.github/scripts/gcp-vuln-scan.sh "$image" "$repo" "$tag" || echo "scan failed for $image"
+            echo "::endgroup::"
+          done
+          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
 
       - name: Commit package-lock.json
         id: git

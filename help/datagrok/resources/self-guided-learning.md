@@ -192,18 +192,12 @@ Planned
 
 * [Bioinformatics capabilities](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics)
 
-<!----
-
 <h5>Complete tutorials</h5>
 
-|Tutorial                 | Description  |
-|-------------------------|--------------|
-|Peptide SAR   |<li></li><li></li><li></li> |
-|Polytool   |<li></li><li></li><li></li> |
+* [Peptides SAR](https://public.datagrok.ai/apps/tutorials/Tutorials/Bioinformatics/PeptidesSAR)
 
---->
 
-### Data science
+### Data science and ML
 
 <h5>Read</h5>
 
@@ -223,3 +217,11 @@ Planned
 * [Sensitivity analysis](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Sensitivityanalysis)
 * [Differential equations](https://public.datagrok.ai/apps/tutorials/Tutorials/Scientificcomputing/Differentialequations)
 
+### Scripting
+
+<h5>Read</h5>
+* [Scripting](../../compute/scripting/scripting.mdx)
+
+<h5>Complete tutorials</h5>
+
+* [Scripting](https://public.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/Scripting)

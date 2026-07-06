@@ -3,7 +3,7 @@
 #language: python
 #meta.function_family: biochem-calculator
 #input: dataframe table
-#input: column molecules
+#input: column molecules {semType: Molecule}
 #meta.role: transform
 #meta.method_info.author: RDKit Team
 #meta.method_info.year: 2024

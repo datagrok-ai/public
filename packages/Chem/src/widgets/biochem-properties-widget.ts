@@ -214,7 +214,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       checkbox.onChanged.subscribe((v) => {state.selected = v;});
       functionState.set(funcName, state);
       navList.appendChild(navItem);
-      navItem.addEventListener('click', (e) => {if (e.target !== checkbox.input) setActiveFunction(funcName);});
+      navItem.addEventListener('click', () => setActiveFunction(funcName));
     }
   }; ;
 

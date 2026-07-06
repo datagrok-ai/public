@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
-import {isViewerPresent, uploadProject, findViewer, showToolbox} from '../gui-utils';
+import {isViewerPresent, findViewer, showToolbox} from '../gui-utils';
 
 
 category('Viewers: Line Chart', () => {
@@ -64,30 +64,48 @@ category('Viewers: Line Chart', () => {
       .querySelector('.panel-titlebar') as HTMLElement)!.innerText === 'Test Line chart', 'title property has not been set', 2000);
   });
 
-  // Does not work through Test Manager
+  // Verifies that Line Chart settings survive layout (view state) serialization —
+  // the same serialization the platform uses to persist views in projects.
   test('lineChart.serialization', async () => {
-    await uploadProject('Test project with Line Chart', demog.getTableInfo(), v, demog);
-    grok.shell.closeAll();
-    await grok.dapi.projects.open('Test project with Line Chart');
-    v = grok.shell.getTableView('demog 1000');
-    isViewerPresent(Array.from(v.viewers), 'Line chart');
-    const lineChart = findViewer('Line chart', v);
+    const source = grok.shell.addTableView(grok.data.demo.demog(1000));
+    const lineChart = source.lineChart({
+      xColumnName: 'age',
+      yColumnNames: ['height', 'weight'],
+      yAggrTypes: ['avg', 'min'],
+      splitColumnName: 'race',
+    });
+    await awaitCheck(() => document.querySelector('.d4-line-chart') !== null, 'line chart not found', 3000);
+    lineChart.setOptions({lineWidth: 3, showMarkers: 'Always', multiAxis: true, invertXAxis: true});
+    const layout = source.saveLayout();
 
-    if (lineChart!.props.splitColumnName != 'race')
-      throw 'Split column has not been set';
-    if (lineChart!.props.valueColumnName != 'height')
-      throw 'Value column has not been set';
-    if (lineChart!.props.valueAggrType != 'max')
-      throw 'Aggregation has not been set';
-    if (!lineChart!.props.relativeValues)
-      throw 'relativeValues property has not been set';
-    if (lineChart!.props.onClick != 'Filter')
-      throw 'onClick property has not been set';
-    if (lineChart!.props.barBorderLineMouseOverWidth != 10)
-      throw 'barBorderLineMouseOverWidth property has not been set';
-    if (lineChart!.props.barSortOrder != 'desc')
-      throw 'barSortOrder property (default) has not been set';
-    if (lineChart!.props.barSortType != 'by value')
-      throw 'barSortType property (default) has not been set';
+    const target = grok.shell.addTableView(grok.data.demo.demog(1000));
+    target.loadLayout(layout);
+    await awaitCheck(() => findViewer('Line chart', target) !== undefined,
+      'Line chart not found after layout deserialization', 3000);
+    isViewerPresent(Array.from(target.viewers), 'Line chart');
+    const restored = findViewer('Line chart', target);
+
+    if (restored!.props.splitColumnName != 'race')
+      throw 'Split column has not been deserialized';
+    if (restored!.props.xColumnName != 'age')
+      throw 'X column has not been deserialized';
+    if (restored!.props.yColumnNames[0] != 'height')
+      throw 'Value column has not been deserialized';
+    if (restored!.props.yColumnNames[1] != 'weight')
+      throw 'Second value column has not been deserialized';
+    if (restored!.props.yAggrTypes[0] != 'avg')
+      throw 'Aggregation has not been deserialized';
+    if (restored!.props.lineWidth != 3)
+      throw 'lineWidth property has not been deserialized';
+    if (restored!.props.showMarkers != 'Always')
+      throw 'showMarkers property has not been deserialized';
+    if (!restored!.props.multiAxis)
+      throw 'multiAxis property has not been deserialized';
+    if (!restored!.props.invertXAxis)
+      throw 'invertXAxis property has not been deserialized';
+  });
+
+  after(async () => {
+    grok.shell.closeAll();
   });
 }, { owner: 'dkovalyov@datagrok.ai' });

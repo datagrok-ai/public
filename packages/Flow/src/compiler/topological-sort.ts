@@ -13,9 +13,38 @@
 
 import {FlowEditor} from '../rete/flow-editor';
 
+/** The minimal node/edge shape the sort needs — so it can run on the live editor
+ *  *and* on plain lists (e.g. the flow summary), guaranteeing one canonical order. */
+export interface SortNode {
+  id: string;
+  pos?: {x: number; y: number};
+  label?: string;
+}
+export interface SortEdge {
+  source: string;
+  target: string;
+}
+
+/** The execution order, the editor way (strict: throws on a cycle). */
 export function topologicalSort(flow: FlowEditor): string[] {
   const nodes = flow.getNodes();
+  const sorted = topologicalSortNodes(nodes, flow.getConnections());
+  if (sorted.length !== nodes.length) {
+    const done = new Set(sorted);
+    const remaining = nodes.filter((n) => !done.has(n.id)).map((n) => n.label || n.id);
+    throw new Error(`Cycle detected in graph involving nodes: ${remaining.join(', ')}`);
+  }
+  return sorted;
+}
+
+/** Pure core: the same deterministic, layout-aware ordering on plain node/edge
+ *  lists. On a cycle it returns the acyclic prefix (shorter than `nodes`) rather
+ *  than throwing — callers choose strict vs lenient handling. */
+export function topologicalSortNodes(nodes: SortNode[], connections: SortEdge[]): string[] {
   if (nodes.length === 0) return [];
+
+  const posY = (n: SortNode): number => n.pos?.y ?? 0;
+  const posX = (n: SortNode): number => n.pos?.x ?? 0;
 
   const insertionIndex = new Map<string, number>();
   nodes.forEach((n, i) => insertionIndex.set(n.id, i));
@@ -23,7 +52,7 @@ export function topologicalSort(flow: FlowEditor): string[] {
   // ---- weakly connected components, ranked by their topmost node ----
   const adjacency = new Map<string, string[]>();
   for (const n of nodes) adjacency.set(n.id, []);
-  for (const c of flow.getConnections()) {
+  for (const c of connections) {
     if (adjacency.has(c.source) && adjacency.has(c.target)) {
       adjacency.get(c.source)!.push(c.target);
       adjacency.get(c.target)!.push(c.source);
@@ -52,9 +81,9 @@ export function topologicalSort(flow: FlowEditor): string[] {
     Array.from({length: componentCount}, () => ({y: Number.POSITIVE_INFINITY, x: Number.POSITIVE_INFINITY}));
   for (const n of nodes) {
     const top = tops[componentOf.get(n.id)!];
-    if (n.pos.y < top.y || (n.pos.y === top.y && n.pos.x < top.x)) {
-      top.y = n.pos.y;
-      top.x = n.pos.x;
+    if (posY(n) < top.y || (posY(n) === top.y && posX(n) < top.x)) {
+      top.y = posY(n);
+      top.x = posX(n);
     }
   }
   const componentRank = new Array<number>(componentCount);
@@ -75,7 +104,7 @@ export function topologicalSort(flow: FlowEditor): string[] {
     inDegree.set(node.id, 0);
     outEdges.set(node.id, []);
   }
-  for (const c of flow.getConnections()) {
+  for (const c of connections) {
     if (inDegree.has(c.target))
       inDegree.set(c.target, (inDegree.get(c.target) ?? 0) + 1);
     if (outEdges.has(c.source))
@@ -88,8 +117,8 @@ export function topologicalSort(flow: FlowEditor): string[] {
     if (rankA !== rankB) return rankA < rankB;
     const nodeA = byId.get(a)!;
     const nodeB = byId.get(b)!;
-    if (nodeA.pos.y !== nodeB.pos.y) return nodeA.pos.y < nodeB.pos.y;
-    if (nodeA.pos.x !== nodeB.pos.x) return nodeA.pos.x < nodeB.pos.x;
+    if (posY(nodeA) !== posY(nodeB)) return posY(nodeA) < posY(nodeB);
+    if (posX(nodeA) !== posX(nodeB)) return posX(nodeA) < posX(nodeB);
     return (insertionIndex.get(a) ?? 0) < (insertionIndex.get(b) ?? 0);
   };
 
@@ -111,9 +140,8 @@ export function topologicalSort(flow: FlowEditor): string[] {
     }
   }
 
-  if (sorted.length !== nodes.length) {
-    const remaining = nodes.filter((n) => !sorted.includes(n.id)).map((n) => n.label || n.id);
-    throw new Error(`Cycle detected in graph involving nodes: ${remaining.join(', ')}`);
-  }
+  // Lenient: on a cycle, `sorted` is the acyclic prefix. The strict wrapper
+  // (topologicalSort) turns that into a thrown error; the summary appends the
+  // remainder instead.
   return sorted;
 }

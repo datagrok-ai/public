@@ -1,9 +1,9 @@
 --name: patternSimilaritySearch
---friendlyName: Search | Pattern Similarity
+--friendlyName: Search | Similar Compounds
 --description: Searches ChEMBL compounds by molecular fingerprint similarity to a given pattern using Tanimoto coefficient.
 --connection: Chembl
---input: string pattern {semType: Molecule}
---input: int maxRows = 1000
+--input: string pattern {semType: Molecule} [Query molecule as SMILES]
+--input: int maxRows = 1000 [Maximum number of compounds to return]
 select md.chembl_id, fps.molregno, cs.canonical_smiles as smiles, tanimoto_sml(morganbv_fp(mol_from_smiles($1::cstring)),mfp2) as similarity
 from rdk.fps fps
 join compound_structures cs on cs.molregno = fps.molregno
@@ -14,23 +14,23 @@ limit @maxRows
 --end
 
 --name: patternSimilaritySearchWithThreshold
---friendlyName: Search | Pattern Similarity With Threshold
---description: Search for a given pattern in the ChEMBL database with a specified threshold of similarity.
+--friendlyName: Search | Similar Compounds Above Threshold
+--description: Finds ChEMBL compounds whose Tanimoto similarity to the query molecule is above the given threshold.
 --connection: Chembl
 --meta.batchMode: true
---input: string pattern {semType: Molecule}
---input: double threshold = 0.6 { min: 0; max: 1 }
+--input: string pattern {semType: Molecule} [Query molecule as SMILES]
+--input: double threshold = 0.6 { min: 0; max: 1 } [Minimum Tanimoto similarity, between 0 and 1]
 select set_config('rdkit.tanimoto_threshold', @threshold::text, true);
 --batch
 select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 --end
 
 --name: patternSubstructureSearch
---friendlyName: Search | Substructure
---description: Search for a given substructure in the ChEMBL database.
+--friendlyName: Search | Compounds By Substructure
+--description: Finds ChEMBL compounds that contain the given substructure.
 --connection: Chembl
---input: string pattern {semType: Substructure}
---input: int maxRows = 1000
+--input: string pattern {semType: Substructure} [Substructure query as SMILES/SMARTS]
+--input: int maxRows = 1000 [Maximum number of compounds to return]
  select md.chembl_id, md.molregno, m as smiles from rdk.mols mols
  join molecule_dictionary md on mols.molregno = md.molregno
  where m@>@pattern::qmol
@@ -38,9 +38,9 @@ select molregno, m as molecule, similarity from get_mfp2_neighbors(@pattern);
 --end
 
 --name: ChemblNumberOfStructures
---friendlyName: Browse | Specified number of ChEMBL structures
+--friendlyName: Browse | ChEMBL Structures (Limited)
 --description: Returns a specified number of ChEMBL compound structures with canonical SMILES and molregno identifiers.
---input: int maxNumberOfMolecules = 1000
+--input: int maxNumberOfMolecules = 1000 [Maximum number of structures to return]
 --connection: Chembl
 select
   canonical_smiles, molregno
@@ -50,9 +50,9 @@ limit @maxNumberOfMolecules
 --end
 
 --name: ChemblMolregNoBySmiles
---friendlyName: Chembl Molregno by smiles
+--friendlyName: Converters | SMILES To Molregno
 --description: Retrieves the molregno identifier for a compound by its canonical SMILES structure.
---input: string smiles {semType: Molecule}
+--input: string smiles {semType: Molecule} [Compound structure as canonical SMILES]
 --connection: Chembl
 select
   molregno
@@ -64,10 +64,10 @@ limit 1
 --end
 
 --name: StructuresByOrganism
---friendlyName: Chembl Targets by organism
+--friendlyName: Browse | Compound Structures By Organism
 --description: Retrieves compound structures and bioactivity data for bacterial targets of a specified organism.
---input: int maxNumberOfMolecules = 1000
---input: string organism = "Shigella" {suggestions: Chembl:organisms}
+--input: int maxNumberOfMolecules = 1000 [Maximum number of rows to return]
+--input: string organism = "Shigella" {suggestions: Chembl:organisms} [Target organism name, e.g. Shigella]
 --connection: Chembl
 SELECT md.chembl_id AS compound_chembl_id,
 cs.canonical_smiles,

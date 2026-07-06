@@ -24,6 +24,9 @@ export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'graphics': {slotType: 'graphics', color: '#66BB6A'},
   'blob': {slotType: 'byte_array', color: '#607D8B'},
   'view': {slotType: 'view', color: '#5C6BC0'},
+  // Execution-ordering ports (control flow, not data). Gray, and deliberately
+  // isolated from every other type (see areTypesCompatible).
+  'order': {slotType: 'order', color: '#9E9E9E'},
 };
 
 /** Role → title-bar color (white body). Looked up by `FuncNode` from
@@ -49,6 +52,95 @@ export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
 export const DEFAULT_NODE_COLOR = '#BDBDBD';
 export const DEFAULT_NODE_BGCOLOR = '#ffffff';
 
+// ---- domain sections (cheminformatics / bioinformatics) ----
+
+/** Packages whose functions are grouped under **Cheminformatics** (small
+ *  molecules: structures, descriptors, similarity/substructure, ADMET, docking,
+ *  reactions, chemical DBs). Membership is by source package — a domain a
+ *  scientist recognizes at a glance, orthogonal to the signature-based task
+ *  categories used for everything else. */
+export const CHEMINFORMATICS_PACKAGES = new Set<string>([
+  'Chem', 'Chembl', 'ChemblApi', 'PubchemApi', 'Chemspace', 'Surechembl',
+  'Admetica', 'Docking', 'Retrosynthesis', 'Marvin', 'ChemDrawSketcher',
+  'KetcherSketcher', 'HitTriage', 'Datagrokdsmf', 'Curves',
+]);
+
+/** Packages whose functions are grouped under **Bioinformatics** (sequences,
+ *  peptides, macromolecules, structures, oligos). */
+export const BIOINFORMATICS_PACKAGES = new Set<string>([
+  'Bio', 'SequenceTranslator', 'Helm', 'Proteomics', 'Bionemo', 'Biologics',
+  'OligoBatchCalculator', 'Parabilisseq', 'Sequenceutils', 'BiostructureViewer',
+  'PhyloTreeViewer', 'Peptides',
+]);
+
+/** The domain section a function belongs to based on its source package, or
+ *  `null` for general (task-categorized) functions. Chem wins over Bio for the
+ *  (currently empty) intersection. */
+export function domainSection(packageName: string | null | undefined): 'Cheminformatics' | 'Bioinformatics' | null {
+  if (!packageName) return null;
+  if (CHEMINFORMATICS_PACKAGES.has(packageName)) return 'Cheminformatics';
+  if (BIOINFORMATICS_PACKAGES.has(packageName)) return 'Bioinformatics';
+  return null;
+}
+
+/** Whether a function *operates on data it is given* — i.e. takes a dataframe or
+ *  column input. The domain sections hold only such operations; a chem/bio
+ *  function that merely *produces* a table from scalars (a DB query, fetch, or
+ *  generator) is a data source, not an operation, and is left to its signature
+ *  category (Data Sources) so "Cheminformatics"/"Bioinformatics" stay about
+ *  doing something to the scientist's table — never queries. */
+export function isDomainOperation(inputTypes: string[]): boolean {
+  return inputTypes.some((t) => t === 'dataframe' || t === 'column' || t === 'column_list');
+}
+
+/** The domain section for a function only when it's an operation on data (see
+ *  `isDomainOperation`); otherwise `null` (fall back to the task category). */
+export function domainCategory(
+  packageName: string | null | undefined, inputTypes: string[]): 'Cheminformatics' | 'Bioinformatics' | null {
+  const section = domainSection(packageName);
+  return section && isDomainOperation(inputTypes) ? section : null;
+}
+
+// ---- categorize a function by what it does (shared by the browser + coloring) ----
+
+const VIS_TYPES = ['viewer', 'view', 'widget', 'graphics'];
+const SCALAR_TYPES = ['string', 'int', 'double', 'bool', 'datetime', 'num', 'bigint', 'qnum'];
+const COL_TYPES = ['column', 'column_list'];
+
+/** Bucket a function by its input/output signature (and viewer role). Pure —
+ *  operates on the lists of DG property-type strings, so it's shared by the
+ *  function browser's grouping AND the node title-bar coloring. */
+export function categorizeBySignature(ins: string[], outs: string[], role: string | null): string {
+  const has = (arr: string[], set: string[]): boolean => arr.some((t) => set.includes(t));
+  const dfIn = ins.filter((t) => t === 'dataframe').length;
+  const outDf = outs.includes('dataframe');
+  const noOut = outs.length === 0;
+  const roleHasViewer = !!role && role.split(',').some((r) => r.trim() === 'viewer');
+
+  if (has(outs, VIS_TYPES) || roleHasViewer) return 'Visualize';
+  if (dfIn >= 2) return 'Combine Tables';
+  if (outDf && dfIn === 0) return 'Data Sources';
+  if ((outDf && dfIn === 1) || (noOut && dfIn >= 1)) return 'Transform Tables';
+  if (has(outs, COL_TYPES)) return 'Column Operations';
+  if (has(outs, SCALAR_TYPES)) return 'Compute Values';
+  return 'Other';
+}
+
+/** Title-bar color per task category — so a function with no role (most of them:
+ *  JoinTables, AddNewColumn, chem properties, …) still reads its job from color
+ *  instead of all being gray. */
+export const CATEGORY_COLORS: Record<string, {color: string; bgcolor: string}> = {
+  'Data Sources': {color: '#FF8A65', bgcolor: '#ffffff'},      // orange — bring data in
+  'Combine Tables': {color: '#BA68C8', bgcolor: '#ffffff'},    // purple — join/union
+  'Transform Tables': {color: '#4DB6AC', bgcolor: '#ffffff'},  // teal — reshape
+  'Column Operations': {color: '#5C9DED', bgcolor: '#ffffff'}, // blue — derive columns
+  'Compute Values': {color: '#9CCC65', bgcolor: '#ffffff'},    // green — scalars
+  'Visualize': {color: '#4DD0E1', bgcolor: '#ffffff'},         // cyan — viewers
+  'Cheminformatics': {color: '#EC407A', bgcolor: '#ffffff'},   // pink — small molecules
+  'Bioinformatics': {color: '#7E57C2', bgcolor: '#ffffff'},    // deep purple — sequences
+  'Other': {color: '#90A4AE', bgcolor: '#ffffff'},             // blue-gray — the rest
+};
+
 /** Per-function title-bar colors, keyed by simple function name
  *  (case-insensitive). Checked before role-based coloring, so specific
  *  functions can be visually pinned regardless of their role. Add an entry to
@@ -72,6 +164,9 @@ const COMPATIBLE_TYPES: Record<string, string[]> = {
 
 export function areTypesCompatible(outputType: string, inputType: string): boolean {
   if (outputType === inputType) return true;
+  // Execution-ordering ports connect ONLY to each other — checked before the
+  // dynamic/object wildcards so a data port can never plug into an exec port.
+  if (outputType === 'order' || inputType === 'order') return false;
   if (outputType === 'dynamic' || inputType === 'dynamic') return true;
   if (outputType === 'object' || inputType === 'object') return true;
   const inCompat = COMPATIBLE_TYPES[inputType];
@@ -82,8 +177,27 @@ export function areTypesCompatible(outputType: string, inputType: string): boole
 }
 
 export function dgTypeToSlotType(dgType: string): string {
+  // `list<string>` is just the parametrized spelling of `string_list` — fold it
+  // so the socket type (and everything keyed off it) is the same.
+  if (dgType === 'list<string>') return 'string_list';
   const mapped = DG_TYPE_MAP[dgType];
   return mapped ? mapped.slotType : dgType;
+}
+
+/** A comma-separated string-list input — editable inline like a column-list
+ *  (the value is a comma-separated string; the compiler turns it into a JS
+ *  array of trimmed, non-empty strings). `list<string>` is the same as
+ *  `string_list`; plain `list` (which may hold non-strings) is intentionally
+ *  excluded. Matches either a raw DG `propertyType` or a resolved slot type. */
+export function isStringListType(dgType: string): boolean {
+  return dgType === 'string_list' || dgType === 'list<string>';
+}
+
+/** Comma-separated string → JS array literal of trimmed, non-empty strings
+ *  (`"a, b ,c"` → `["a", "b", "c"]`, empty → `[]`). Shared by the compilers. */
+export function stringListToArrayLiteral(value: unknown): string {
+  const items = String(value ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  return `[${items.map((s) => JSON.stringify(s)).join(', ')}]`;
 }
 
 export function getSlotColor(slotType: string): string {
@@ -91,11 +205,16 @@ export function getSlotColor(slotType: string): string {
   return mapped ? mapped.color : '#95A5A6';
 }
 
-export function getNodeColors(role: string | null, funcName?: string): {color: string; bgcolor: string} {
+export function getNodeColors(
+  role: string | null, funcName?: string, category?: string,
+): {color: string; bgcolor: string} {
   if (funcName) {
     const override = FUNC_NAME_COLORS[funcName.toLowerCase()];
     if (override) return override;
   }
   if (role && ROLE_COLORS[role]) return ROLE_COLORS[role];
+  // Fall back to the task category — gives role-less functions (the gray
+  // majority) a color that reflects what they do.
+  if (category && CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
   return {color: DEFAULT_NODE_COLOR, bgcolor: DEFAULT_NODE_BGCOLOR};
 }

@@ -126,8 +126,8 @@ category('top menu similarity/diversity', () => {
 
   test('testSimilaritySearch.smiles', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : molecules;
-    await chemSimilaritySearch(df, df.getCol('smiles'), df.get('smiles', 0),
-      BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan, DG.BitSet.create(df.rowCount).setAll(true));
+    await chemSimilaritySearch(df.getCol('smiles'), df.get('smiles', 0),
+      BitArrayMetricsNames.Tanimoto, 10, 0.01, Fingerprint.Morgan);
   }, {benchmark: true});
 
   test('testDiversitySearch.smiles', async () => {
@@ -277,13 +277,13 @@ async function _testSimilaritySearchViewerOpen() {
 async function _testSimilaritySearchFunctionality(distanceMetric: BitArrayMetrics, fingerprint: string) {
   const molecules = await readDataframe('tests/sar-small_test.csv');
   const moleculeColumn = molecules.col('smiles');
-  const similarityDf = await chemSimilaritySearch(molecules, moleculeColumn!, moleculeColumn!.get(0),
-    distanceMetric, 10, 0.01, fingerprint as Fingerprint, DG.BitSet.create(molecules.rowCount).setAll(true));
+  const similarityRes = await chemSimilaritySearch(moleculeColumn!, moleculeColumn!.get(0),
+    distanceMetric, 10, 0.01, fingerprint as Fingerprint);
     //@ts-ignore
   const testResults = testSimilarityResults[`${distanceMetric}/${fingerprint}`];
   for (let i = 0; i < testResults.length; i++) {
     console.log(testResults);
-    Object.keys(testResults[i]).forEach((it) => expect(similarityDf!.get(it, i), testResults[i][it]));
+    Object.keys(testResults[i]).forEach((it) => expect(similarityRes!.get(it, i), testResults[i][it]));
   }
 }
 

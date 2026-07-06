@@ -38,6 +38,8 @@ To edit the form, right-click and select "Edit form...".
 | Description Visibility Mode | visibilitymode |  |
 | **Style** | | |
 | Tiles Font | string |  |
+| **Selection** | | |
+| Show Selected Rows | boolean | When checked, selected tiles are highlighted using the selected rows color. When unchecked, selected tiles keep their regular appearance. |
 | **Data** | | |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |

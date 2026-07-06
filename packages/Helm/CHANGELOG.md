@@ -1,5 +1,19 @@
 # Helm changelog
 
+## 3.0.1 (2026-06-20)
+
+### Features
+
+* Migration to Datagrok Helm Web Editor
+* Support for new Helm Service, editor, parsing and rendering
+* Helm editor panes including molecular structure, composition and conversion
+* Monomer highlighting in HELM grid cells: cells respond to macromolecule highlight events, drawing a translucent overlay around the highlighted monomers
+* Improved RNA splitting: support for complex RNA and complex triplets, and more inclusive matching
+
+### Bug Fixes
+
+* Fixed async renderer invalidation
+
 ## 2.13.4 (2026-03-31)
 
 ### Features

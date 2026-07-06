@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 
 import {FlowEditor} from '../rete/flow-editor';
-import {createNode} from '../rete/node-factory';
+import {createNode, ensureFunctionsRegistered} from '../rete/node-factory';
 import {FlowSettings, FuncFlowDocument, FuncFlowConnection} from './flow-schema';
 
 export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlowDocument {
@@ -50,6 +50,9 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
  *  registered type is not currently known (e.g. a DG.Func that disappeared).
  *  Connections referencing missing nodes are silently skipped. */
 export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): Promise<void> {
+  // DG-func node factories exist only after catalog registration; make it
+  // deterministic here so no load path can race the view's deferred timer.
+  ensureFunctionsRegistered();
   await flow.clear();
 
   // Map old node ids → new node ids (Rete generates a fresh id on construction).
