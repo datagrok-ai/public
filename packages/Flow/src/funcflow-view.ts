@@ -98,6 +98,10 @@ export class FuncFlowView extends DG.ViewBase {
     this.editorReadyResolve = resolve;
   });
 
+  /** Watches the canvas for its first real layout when a fit-to-screen was
+   *  requested before the view was attached (see `fitToScreen`). */
+  private pendingFitObserver: ResizeObserver | null = null;
+
   /** @param tableInfos tables whose creation scripts this view edits — passing a
    *  non-empty array enables the **Save Creation Scripts** ribbon action. */
   constructor(tableInfos: DG.TableInfo[] = []) {
@@ -757,7 +761,6 @@ export class FuncFlowView extends DG.ViewBase {
       const json = await _package.files.readAsText(file);
       await this.loadFromJson(json);
       this.hideStartPanel();
-      await this.flow?.zoomToFit();
       grok.shell.info(`Opened template: ${file.replace(/\.ffjson$/i, '')}`);
     } catch (e: any) {
       grok.shell.error(`Could not open template "${file}": ${e?.message ?? e}`);
@@ -908,10 +911,8 @@ export class FuncFlowView extends DG.ViewBase {
       if (!file) return;
       try {
         const doc = await loadFlowFromFile(file);
-        await deserializeFlow(doc, this.flow);
-        if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+        await this.loadFromDoc(doc);
         this.boundScript = null; // an imported file is a new, unsaved flow
-        this.updateStatusBar();
         grok.shell.info(`Loaded flow: ${doc.name}`);
       } catch (e: any) {
         grok.shell.error(`Failed to load flow: ${e.message}`);
@@ -1332,6 +1333,33 @@ export class FuncFlowView extends DG.ViewBase {
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
     this.name = doc.name || 'FuncFlow';
     this.updateStatusBar();
+    this.fitToScreen();
+  }
+
+  /** Fit the whole graph into the viewport, so an opened flow is always shown
+   *  fitted. Load paths usually run before the view is attached to the shell
+   *  (file viewers, `forScript`, the creation-script dialog), when the canvas
+   *  is still 0×0 and zooming would target a degenerate viewport — in that
+   *  case the fit is deferred to the canvas's first real layout. Never blocks
+   *  the load itself: a view that is never shown just never fits. */
+  public fitToScreen(): void {
+    this.pendingFitObserver?.disconnect();
+    this.pendingFitObserver = null;
+    if (!this.flow || this.flow.getNodeCount() === 0) return;
+    const el = this.canvasContainer;
+    if (el.clientWidth > 0 && el.clientHeight > 0) {
+      void this.flow.zoomToFit();
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === 0 || el.clientHeight === 0) return;
+      observer.disconnect();
+      if (this.pendingFitObserver === observer) this.pendingFitObserver = null;
+      // The graph may have been cleared while the fit was pending.
+      if (this.flow && this.flow.getNodeCount() > 0) void this.flow.zoomToFit();
+    });
+    this.pendingFitObserver = observer;
+    observer.observe(el);
   }
 
   /** Rebuild the canvas from a table-creation script — the cascade of
@@ -1343,7 +1371,7 @@ export class FuncFlowView extends DG.ViewBase {
       await this.flow.clear();
       const result = await buildFlowFromCreationScript(this.flow, script);
       this.updateStatusBar();
-      await this.flow.zoomToFit();
+      this.fitToScreen();
       for (const warning of result.warnings) grok.shell.warning(warning);
       grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
     } catch (e: any) {

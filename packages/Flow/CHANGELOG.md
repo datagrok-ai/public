@@ -2,6 +2,14 @@
 
 ## v.next
 
+### Editor
+
+* Every way of opening a flow — a saved flow entity (editor, preview, Open from platform),
+  an `.ffjson` / `.flow` file, the Import .ffjson dialog, a template, or a creation script —
+  now fits the graph to the screen before it is shown. When the flow loads while the view is
+  not yet attached (canvas not laid out), the fit is deferred to the canvas's first real
+  layout instead of zooming against a 0×0 viewport (`FuncFlowView.fitToScreen`).
+
 ### First-class Flow entities
 
 * Introduced a hierarchical **space picker** ([space-picker.ts](src/ui/space-picker.ts)): browse

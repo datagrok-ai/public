@@ -113,6 +113,7 @@ export class PackageFunctions {
       .addButton('Open In Editor', () => {
         view.setMinimapCollapsed(false);
         grok.shell.addView(view);
+        setTimeout(() => view.fitToScreen(), 100);
         d.close();
       });
     if (show)
