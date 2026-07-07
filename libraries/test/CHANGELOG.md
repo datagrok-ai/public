@@ -1,7 +1,11 @@
 # test changelog
 
-## 1.3.0 (WIP)
+## 1.3.1 (WIP)
 
-* Added `src/playwright/` — shared Playwright-driver E2E helpers (spec-login, viewers, projects, openers, bio, chem, models-helpers, session), `global-setup`, and `base-config` for playwright-public and package-owned `playwright/` suites (excluded from the lib's tsc build; `@playwright/test` declared as an optional peer)
+* Compiled `src/playwright/` to CommonJS `.js` + `.d.ts` (via `src/playwright/tsconfig.build.json`) so consumers can `require()` the helpers from `node_modules` — Playwright does not transpile `.ts` inside `node_modules`, so 1.3.0 shipped without usable helper output
+
+## 1.3.0 (2026-07-07)
+
+* Added `src/playwright/` — shared Playwright-driver E2E helpers (spec-login, viewers, projects, openers, bio, chem, models-helpers, session), `global-setup`, and `base-config` for playwright-public and package-owned `playwright/` suites; `@playwright/test` declared as an optional peer
 
 ## 1.0.0 (2021-03-18)

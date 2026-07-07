@@ -24,7 +24,7 @@ export const baseConfig = defineConfig({
   // Absolute path so it resolves to this lib regardless of which consumer config
   // imports baseConfig (Playwright would otherwise resolve a relative globalSetup
   // against the consumer's config dir).
-  globalSetup: path.join(__dirname, 'global-setup.ts'),
+  globalSetup: path.join(__dirname, 'global-setup'),
   reporter: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME
     ? [['list'], ['json', {outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME}]]
     : [['list']],
