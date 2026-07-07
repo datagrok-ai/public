@@ -289,11 +289,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     `products and (in depth-first mode) reacts each one with original BBs. Increase for deeper ` +
     `libraries (capped at ${MAX_ROUNDS} — a step tab is built for every round, and product counts ` +
     `grow combinatorially with each one).`);
-  // `min`/`max` above only affect the tooltip/spinner, not actual validation — an out-of-range value
-  // (e.g. 99) still blocked Run via validate() while the step-tab strip silently clamped to
-  // MAX_ROUNDS and rendered as if 10 rounds were accepted, disagreeing with the disabled button.
-  // Ties the invalid state to the field the user is actually editing, matching how other required
-  // inputs (e.g. Building blocks SMILES column) already show red/invalid styling in this app.
+  // `min`/`max` above only affect the tooltip/spinner, not validation — add that separately.
   numRoundsInput.addValidator((v) => {
     const n = Number(v);
     if (!Number.isFinite(n) || n < 1) return 'Must be at least 1.';
@@ -610,12 +606,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (!prev) return;
     mountedViewers.delete(host);
     for (const v of prev) {
-      // Expected on initial load: the panel's first render (inside makeDataPanel's constructor)
-      // can still be mid-Dart-side-construction when the second, explicit `.render()` call (see
-      // the end of buildEnumeratorView) supersedes it moments later — closing that half-built
-      // viewer throws (confirmed: root-caused this exact race, tried removing the second render
-      // to avoid it, that instead made the grid stay empty on some loads — reverted). Not
-      // actionable, so don't warn; only surface a genuinely unexpected failure.
+      // A viewer mid-Dart-side-construction throws TypeError on close — expected on initial
+      // load, not actionable.
       try {v.close();} catch (e) {
         if (!(e instanceof TypeError)) console.warn('Could not close previous viewer:', e);
       }
@@ -648,7 +640,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       // substructure filter's own fingerprint cache) — never surface a filter for those.
       .filter((col) => col.semType !== 'ChemicalReaction' && !col.name.startsWith('~'))
       .map((col) => ({
-        type: col.isNumerical ? DG.FILTER_TYPE.HISTOGRAM :
+        // A numeric column with zero variance (every value equal — common right after subsetting to
+        // the exact value it was filtered on) makes the histogram filter widget clobber the whole
+        // dataframe's .filter to all-false, both on construction and again if the user later toggles
+        // it histogram<->categorical (live-verified — unrelated to and not fixed by the subset-clone
+        // filter reset above). A categorical filter has no degenerate-range code path, so route
+        // zero-variance numeric columns there instead of ever constructing the buggy histogram widget.
+        type: col.isNumerical ? (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
           col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
         column: col.name,
       }));
@@ -704,6 +702,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const subset = df.clone(mask);
     subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
     detectChemSemTypes(subset);
+    // df.clone(mask) leaves the SOURCE df's own .selection set to `mask` as a side effect
+    // (confirmed live) — left uncleared, a later filter-only "Subset by selection" on the restored
+    // original table picks up this stale selection instead of the new filter, since selection is
+    // checked first above.
+    df.selection.setAll(false, false);
+    // Same clone-carries-BitSet-state issue on the other side: the new subset's OWN .filter comes
+    // back all-false (confirmed live) when cloning off a filtered source — reset it so the subset
+    // isn't born with every row hidden.
+    subset.filter.setAll(true, false);
     return subset;
   }
 
@@ -732,6 +739,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     state.prev = subset;
     assignTableInput(input, subset);
     mountFn();
+    // The just-mounted Filters viewer clobbers subset.filter back to all-false when a filtered
+    // column has zero variance in the subset (e.g. the very HBD value it was filtered to) — its
+    // histogram widgets recompute their range shortly after construction and reset the bitset in the
+    // process. Live-verified via staged timing diagnostics: the clobber lands within ~100ms of mount
+    // and never recurs after that, so a single reset at 200ms (past that window) sticks permanently —
+    // an immediate or same-tick reset does not survive it.
+    setTimeout(() => subset.filter.setAll(true, true), 200);
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev.name !== subset.name && prev.name !== df.name)
@@ -745,6 +759,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ): void {
     const orig = state.original;
     if (!orig || input.value?.name === orig.name) {
+      // No pending subset swap to undo, but the user may still have an active filter (via the
+      // filters panel, with no "Subset by selection" click in between) — "Use all" reads as "show
+      // every row", not just "undo the last subset", so clear it too instead of no-op'ing.
+      const current = input.value;
+      if (current && current.filter.trueCount < current.rowCount) {
+        current.filter.setAll(true, true);
+        return;
+      }
       grok.shell.info(`The full ${noun} library is already in use.`);
       return;
     }
@@ -802,22 +824,26 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
   let cancelled = false;
   const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
-  // A disabled button gets `pointer-events: none` (confirmed live), which blocks hover entirely —
-  // binding the tooltip to runBtn itself would never show it while disabled, exactly when the user
-  // most needs to know why. No wrapper div here, though — runBtn must be the direct child of its
-  // ribbon item (matching the Markush Enumerator) or the platform's own hover-highlight rule
-  // (`.d4-ribbon-item > :hover:not(.d4-ribbon-wrapper) { background: var(--grey-1) }`) paints the
-  // *wrapper* grey instead of being hidden behind the button's own opaque background — a visible
-  // halo around the button. Tooltip is instead bound to the ribbon item itself once it exists in the
-  // DOM (see the `runBtnRibbonItem` lookup after `view.append(root)` below); with pointer-events:none
-  // on the disabled button, hover still reaches that ancestor since the button no longer intercepts it.
+  // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind the
+  // tooltip to the ribbon-item ancestor instead (must stay its direct, unwrapped child).
   let runBtnRibbonItem: HTMLElement | null = null;
-  // Hover-only discovery is easy to miss; a click on the disabled button (pointer-events:none, so
-  // the click actually lands on runBtnRibbonItem) surfaces the same message immediately instead of
-  // requiring the user to notice and wait out the hover delay.
   let lastValidationMsg: string | null = null;
+  // WeakSet survives the platform replacing the ribbon-item node mid-session (e.g. after
+  // "Subset by selection") — re-attaches on a new node, no-ops on an unchanged one.
+  const ribbonItemsWithClickListener = new WeakSet<HTMLElement>();
   const bindRunTooltip = (msg: string | null): void => {
     lastValidationMsg = msg;
+    const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
+    if (el) {
+      runBtnRibbonItem = el;
+      if (!ribbonItemsWithClickListener.has(el)) {
+        ribbonItemsWithClickListener.add(el);
+        el.addEventListener('click', (e) => {
+          if (runBtn.disabled && lastValidationMsg)
+            ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
+        });
+      }
+    }
     ui.tooltip.bind(runBtnRibbonItem ?? runBtn,
       msg ?? 'Run enumeration with the current config and add the result to the workspace.');
   };
@@ -1216,6 +1242,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       setStepWork(k, subset);
       stepState[k - 1].committed = true;
       renderGrid(); renderBar(); updateDots();
+      // See subsetBySelection's identical fix and comment on the 200ms delay.
+      setTimeout(() => subset.filter.setAll(true, true), 200);
     };
 
     // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
@@ -1640,51 +1668,26 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ]);
   view.append(root);
 
-  // The platform's own `.d4-ribbon-group`/`.d4-ribbon-item` chrome (background + box-shadow +
-  // border) reads as a stray "shadow" under the Enumerate button and chips once this view's own
-  // content renders alongside it — the Markush Enumerator (pt-chem-enum-dialog.ts) hits the same
-  // thing and strips it the same way.
-  // `.d4-root` is NOT an ancestor of the ribbon — it's the data-grid viewer's own internal wrapper
-  // class (confirmed live: `document.querySelector('.d4-root')` resolves to the step-preview grid's
-  // root div, `d4-layout-root d4-root d4-viewer d4-grid`), so `view.root.closest('.d4-root')`
-  // always returned null and this whole fixup silently never ran. Walk up from `runBtn` itself
-  // (reliably connected once the ribbon exists) instead of down from a wrong anchor.
-  // Also confirmed live: the ribbon-item is found on the very first attempt, but something in the
-  // platform's own startup rendering (RDKit WASM init, other package init — the app takes ~10s to
-  // settle) wipes the inline style back out afterward, at least once, before things stabilize — a
-  // single apply-and-stop wasn't enough even once the element existed. Keep reasserting the style
-  // on every poll tick instead of stopping at first find; only the listener attach needs a
-  // once-only guard.
-  let ribbonFixupListenerAttached = false;
+  // Strips the platform's default ribbon-group shadow/background (Markush Enumerator does the
+  // same). Walk up from `runBtn`, not down from `.d4-root` — that's the grid viewer's own
+  // wrapper class, not a ribbon ancestor. Style gets wiped by platform startup, so reassert on
+  // every tick rather than stopping at first find; click-listener attach lives in bindRunTooltip.
   function applyRibbonFixup(attempt = 0): void {
     const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
     if (el) {
-      runBtnRibbonItem = el;
       document.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item').forEach((g) => {
         g.style.background = 'transparent';
         g.style.boxShadow = 'none';
         g.style.border = 'none';
       });
-      if (!ribbonFixupListenerAttached) {
-        ribbonFixupListenerAttached = true;
-        el.addEventListener('click', (e) => {
-          if (runBtn.disabled && lastValidationMsg)
-            ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
-        });
-        bindRunTooltip(validate());
-      }
     }
     if (attempt < 200) setTimeout(() => applyRibbonFixup(attempt + 1), 50);
   }
   applyRibbonFixup();
+  bindRunTooltip(validate());
 
-  // Render each component panel (step strip + "All steps" grid) and run validation once wired up.
-  // NOTE: this LOOKS redundant with the renderGrid() that buildStepTabs(0) already ran inside
-  // makeDataPanel's constructor, and removing it does silence the "Could not close previous
-  // viewer" warning below — but it is NOT actually redundant: doing so made the initial grid
-  // render into a not-yet-sized host and stay empty on a real, reproducible fraction of loads
-  // (confirmed live — reverted after finding this out the hard way). Keep it; the warning is a
-  // separate, cosmetic problem (see mountDf/closeMountedViewers) that needs its own fix.
+  // Looks redundant with buildStepTabs(0)'s own render, but isn't: removing it left the
+  // initial grid rendered into a not-yet-sized host and empty on some loads.
   templatesCtl.render();
   bbsCtl.render();
   reagentsCtl.render();
