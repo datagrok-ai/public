@@ -697,40 +697,32 @@ test('Trellis plot tests', async ({page}) => {
 
   // #### To Script
   await softStep('To Script', async () => {
+    // A synthetic contextmenu dispatched on a canvas is untrusted (isTrusted === false), so d4
+    // viewers don't open their menu from it — that broke this on CI. Open the menu with a REAL
+    // right-click; then drive the "To Script" > "To JavaScript" submenu in the DOM (the submenu
+    // doesn't reliably expand *visibly*, but its item is clickable once the menu is open).
+    const canvas = page.locator('[name="viewer-Trellis-plot"] canvas').first();
+    const box = (await canvas.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, {button: 'right'});
+    await page.locator('.d4-menu-item-label').filter({hasText: /^To Script$/}).first()
+      .waitFor({state: 'visible', timeout: 10_000});
     const result = await page.evaluate(async () => {
-      const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
-      const canvas = root.querySelector('canvas') as HTMLElement;
-      const rect = canvas.getBoundingClientRect();
-      canvas.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2,
-        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
-      }));
-      await new Promise(r => setTimeout(r, 800));
-
-      let labels = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-      const toScript = labels.find(el => (el as HTMLElement).textContent?.trim() === 'To Script');
-      if (!toScript) {
-        document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-        return {error: 'To Script not found'};
-      }
+      const vis = (el: Element) => (el as HTMLElement).offsetParent !== null;
+      const labels = () => Array.from(document.querySelectorAll('.d4-menu-item-label'));
+      const toScript = labels().find((el) => vis(el) && el.textContent?.trim() === 'To Script');
+      if (!toScript) return {error: 'To Script not found'};
       (toScript.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('mousemove', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
-      labels = Array.from(document.querySelectorAll('.d4-menu-item-label'));
-      const toJs = labels.find(el => (el as HTMLElement).textContent?.trim() === 'To JavaScript');
-      if (toJs) {
-        (toJs.closest('.d4-menu-item') as HTMLElement).click();
-        await new Promise(r => setTimeout(r, 1500));
-        const balloon = document.querySelector('.d4-balloon');
-        if (balloon) {
-          const close = balloon.querySelector('.close') || balloon.querySelector('[name="icon-times"]');
-          if (close) (close as HTMLElement).click();
-        }
-        return {scriptGenerated: true};
-      }
-      document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-      return {error: 'To JavaScript not found'};
+      await new Promise((r) => setTimeout(r, 800));
+      const toJs = labels().find((el) => el.textContent?.trim() === 'To JavaScript');
+      if (!toJs) return {error: 'To JavaScript not found'};
+      (toJs.closest('.d4-menu-item') as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 1500));
+      const balloon = document.querySelector('.d4-balloon');
+      if (balloon) { const c = balloon.querySelector('.close, [name="icon-times"]'); if (c) (c as HTMLElement).click(); }
+      return {scriptGenerated: true};
     });
-    expect(result.scriptGenerated).toBe(true);
+    await page.keyboard.press('Escape').catch(() => {});
+    expect(result.scriptGenerated, `To Script > To JavaScript failed: ${result.error ?? ''}`).toBe(true);
   });
 
   v.finishSpec();
