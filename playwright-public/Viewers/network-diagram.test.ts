@@ -23,7 +23,7 @@ test('Network diagram tests', async ({page}) => {
     });
     tv.getFiltersGroup();
   });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await page.locator('.d4-grid[name="viewer-Grid"]').first().waitFor({timeout: 30000});
 
   await softStep('Step 2: Add Network diagram via Toolbox icon', async () => {
     await page.locator('[name="icon-network-diagram"]').click();
