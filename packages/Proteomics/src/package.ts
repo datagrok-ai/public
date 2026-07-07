@@ -276,6 +276,34 @@ export function dockComparisonFilterIfMultiContrast(
   return true;
 }
 
+/**
+ * Opens the standard Candidates analysis view: table view, auto-volcano,
+ * multi-contrast comparison filter, and protein focus. Extracted from the
+ * import handler so the auto-volcano behavior is testable without the file
+ * dialog. Returns the created TableView.
+ *
+ * The volcano is opened HERE because Candidates arrive with the DE result
+ * already computed (the parser sets `proteomics.de_complete`), so the pipeline's
+ * DE step — where the Report path auto-opens the volcano — never runs. Opening
+ * it here lands both entry points on the same primary deliverable. Best-effort:
+ * skip silently if the volcano's columns are somehow absent, exactly as the
+ * DE-completion path tolerates.
+ */
+export function openCandidatesAnalysisView(df: DG.DataFrame): DG.TableView {
+  const tv = grok.shell.addTableView(df);
+  grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
+  try {
+    tv.addViewer(createVolcanoPlot(df));
+  } catch (volcanoErr: any) {
+    grok.shell.warning(
+      `Imported, but could not auto-open the volcano: ${volcanoErr?.message ?? volcanoErr}. ` +
+      `Open it via Proteomics | Visualize | Volcano Plot.`);
+  }
+  dockComparisonFilterIfMultiContrast(tv, df);
+  focusProtein(df);
+  return tv;
+}
+
 export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async initProteomics(): Promise<void> {
@@ -353,23 +381,7 @@ export class PackageFunctions {
           const df = await parseSpectronautCandidatesText(text);
           df.name = file.name.replace(/\.[^.]+$/, '');
           autoDetectOrganism(df);
-          const tv = grok.shell.addTableView(df);
-          grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
-          // Candidates arrive with the DE result already computed (the parser
-          // sets proteomics.de_complete), so the pipeline's DE step — which is
-          // where the Report path auto-opens the volcano — never runs. Open the
-          // volcano here instead so both paths land the user on the same primary
-          // deliverable. Best-effort: skip silently if the volcano's columns are
-          // somehow absent, exactly as the DE-completion path tolerates.
-          try {
-            tv.addViewer(createVolcanoPlot(df));
-          } catch (volcanoErr: any) {
-            grok.shell.warning(
-              `Imported, but could not auto-open the volcano: ${volcanoErr?.message ?? volcanoErr}. ` +
-              `Open it via Proteomics | Visualize | Volcano Plot.`);
-          }
-          dockComparisonFilterIfMultiContrast(tv, df);
-          focusProtein(df);
+          openCandidatesAnalysisView(df);
         } catch (e: any) {
           grok.shell.error(`Failed to import Spectronaut Candidates file: ${e?.message ?? e}`);
         }
