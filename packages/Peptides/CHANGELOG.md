@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## v.next
+
+* Moved the Peptides Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
 ## 1.27.4 - 1.27.7 (2026-03-20)
 
 ### Features
