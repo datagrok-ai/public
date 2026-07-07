@@ -2,8 +2,8 @@
 sub_features_covered: [peptides.panels, peptides.panels.peptides, peptides.rendering, peptides.rendering.monomer]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 test('Peptides — Info Panels', async ({page}) => {

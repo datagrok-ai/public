@@ -3,7 +3,7 @@ sub_features_covered: [projects.api.save, projects.api.get-by-id, projects.api.l
 generated_from: lifecycle-api.md (no MCP) — references: projects.md
 --- */
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {projectsTestOptions, evalJs, gotoApp, deleteProjectByName} from './_helpers';
 
 test.use(projectsTestOptions);

@@ -2,8 +2,8 @@
 sub_features_covered: [chem.analyze.chemical-space, chem.analyze.chemical-space.editor, chem.analyze.chemical-space.embeddings, chem.analyze.chemical-space.top-menu, chem.analyze.chemical-space.transform]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

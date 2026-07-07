@@ -2,8 +2,8 @@
 sub_features_covered: [bio.manage.libraries-app, bio.manage.libraries-app.tree-browser, bio.manage.match-with-library, bio.manage.monomers-view, bio.manage.standardize-library]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 test('Bio Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Match dispatch + standardize)', async ({page}) => {
   test.setTimeout(120_000);

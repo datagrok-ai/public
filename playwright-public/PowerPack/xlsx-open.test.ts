@@ -4,9 +4,9 @@ sub_features_covered: [powerpack.io, powerpack.io.exceljs-service, powerpack.io.
 // GROK-19329 regression: XLSX opens across all 5 entry paths + optional sheetName.
 
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, loginAsSecondUser, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
-import {openTableFromFile} from '../helpers/openers';
+import {loginToDatagrok, loginAsSecondUser, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {openTableFromFile} from '@datagrok-libraries/test/src/playwright/openers';
 
 test.use(specTestOptions);
 

@@ -2,8 +2,8 @@
 sub_features_covered: [bio.detector, bio.manage.libraries-view]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 test('Bio Manage Monomer Libraries (filter_HELM.csv)', async ({page}) => {
   test.setTimeout(120_000);

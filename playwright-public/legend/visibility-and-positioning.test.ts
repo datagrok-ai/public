@@ -2,8 +2,8 @@
 sub_features_covered: [legend.allow-item-coloring, legend.auto-position, legend.auto-show, legend.column, legend.corner.collapse, legend.item.click, legend.item.color-picker, legend.item.cross-click, legend.mini-icon, legend.position, legend.show-nulls, legend.splitter-resize, legend.visibility]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

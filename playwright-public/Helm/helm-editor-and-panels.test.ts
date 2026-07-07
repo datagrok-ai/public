@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginAndOpenFile, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginAndOpenFile, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

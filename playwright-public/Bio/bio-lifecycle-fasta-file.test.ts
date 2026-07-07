@@ -2,13 +2,13 @@
 sub_features_covered: [bio.api.get-seq-helper, bio.detector, bio.io.fasta-handler, bio.io.save-as-fasta, bio.lifecycle.init, bio.rendering, bio.rendering.fasta]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
 test('Bio fasta_file source-class lifecycle: programmatic + drop entry-path detector-sync → FASTA round-trip → save+reopen', async ({page}) => {
   test.setTimeout(180_000);

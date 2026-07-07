@@ -2,8 +2,8 @@
 sub_features_covered: [chem.notation.detect-smiles, chem.panels, chem.panels.descriptors, chem.panels.drug-likeness, chem.panels.highlights, chem.panels.identifiers, chem.panels.pharmacophore, chem.panels.properties, chem.panels.rendering, chem.panels.structural-alerts, chem.panels.structure-2d, chem.panels.structure-3d, chem.panels.toxicity, chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

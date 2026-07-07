@@ -2,8 +2,8 @@
 sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.top-menu, bio.search.diversity, bio.search.diversity.top-menu, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.diversity-search, bio.viewers.similarity-search]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 type ViewerCase = {
   label: string;

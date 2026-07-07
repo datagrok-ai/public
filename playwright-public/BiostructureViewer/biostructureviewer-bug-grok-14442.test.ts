@@ -4,7 +4,7 @@ sub_features_covered: [biostructure.file-open, biostructure.file-open.importPdb,
 // GROK-14442: file-handler search must disambiguate by exact extension — .pdb -> importPdb only,
 // .pdbqt -> importPdbqt only (prefix-containment match was the pre-fix bug).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

@@ -3,10 +3,10 @@ sub_features_covered: [projects.api.files.sync, projects.api.save, projects.shel
 --- */
 // GROK-19103: joining two source tables and saving must create exactly ONE project, not a stray join-only project.
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs} from './_helpers';
-import {deleteProjectWithCleanup} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

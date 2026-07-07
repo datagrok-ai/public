@@ -9,7 +9,7 @@ sub_features_covered: [notebooks.menu.open-in-notebook, notebooks.meta.open-tabl
 //   GROK-16296 — Open in Notebook logs a console error during init (findProjectByView type cast).
 //   GROK-13999 — clicking HTML throws a localStorage DOMException / 404 from a data: URL context.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

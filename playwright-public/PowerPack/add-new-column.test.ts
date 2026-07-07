@@ -11,8 +11,8 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-n
 // (locator.click), not dispatchEvent — applyInput is wired to native click only.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

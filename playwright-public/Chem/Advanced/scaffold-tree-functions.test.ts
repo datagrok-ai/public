@@ -3,8 +3,8 @@ sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.ad
 --- */
 // Paired scenario: Advanced/scaffold-tree-functions.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../../spec-login';
-import {finishSpec} from '../../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

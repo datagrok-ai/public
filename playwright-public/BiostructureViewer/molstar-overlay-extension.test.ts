@@ -6,7 +6,7 @@ sub_features_covered: [biostructure.overlay.screenshot, biostructure.overlay.sel
 // test is skipped (visible), otherwise every overlay-button behavior below is asserted unconditionally.
 // Scenario 2 also asserts the layoutShowControls property round-trip (mirrors the Toggle Controls button).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

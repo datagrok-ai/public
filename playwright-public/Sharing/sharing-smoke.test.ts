@@ -2,7 +2,7 @@
 sub_features_covered: [sharing.advanced-editor, sharing.context-panel-pane, sharing.permissions-editor, sharing.share-dialog]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

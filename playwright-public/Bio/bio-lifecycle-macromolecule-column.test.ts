@@ -2,14 +2,14 @@
 sub_features_covered: [bio.analyze.sequence-space.transform, bio.api.get-seq-helper, bio.detector, bio.io.fasta-handler, bio.io.save-as-fasta, bio.rendering, bio.transform.convert-notation, bio.transform.convert-notation.action]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
-import * as bio from '../helpers/bio';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import * as bio from '@datagrok-libraries/test/src/playwright/bio';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
 test('Bio macromolecule_column source-class lifecycle: detect → convert → fasta round-trip → save+reopen', async ({page}) => {
   test.setTimeout(300_000);

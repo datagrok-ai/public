@@ -3,9 +3,9 @@ sub_features_covered: [chem.analyze.r-groups, chem.analyze.r-groups.decompositio
 --- */
 // Paired scenario: r-group-analysis.md
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
-import * as chem from '../helpers/chem';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import * as chem from '@datagrok-libraries/test/src/playwright/chem';
 
 test.use(specTestOptions);
 

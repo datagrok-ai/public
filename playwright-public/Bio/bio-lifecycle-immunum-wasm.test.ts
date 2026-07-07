@@ -2,13 +2,13 @@
 sub_features_covered: [bio.annotate.numbering-scheme, bio.api.get-seq-helper, bio.engines.numbering-immunum, bio.lifecycle.init]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
 test('Bio immunum_wasm source-class lifecycle: init → IMGT numbering → save+reopen → re-run', async ({page}) => {
   test.setTimeout(240_000);

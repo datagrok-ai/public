@@ -4,8 +4,8 @@ sub_features_covered: [legend.column, legend.item.color-picker]
 // GROK-17278: legend color customizations serialize into both layout and project state.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

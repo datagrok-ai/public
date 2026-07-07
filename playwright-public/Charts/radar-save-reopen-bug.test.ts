@@ -2,8 +2,8 @@
 sub_features_covered: [charts.echart-base.table, charts.radar]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {saveAllTablesWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {saveAllTablesWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(specTestOptions);
 

@@ -2,7 +2,7 @@
 sub_features_covered: [bio.detector, bio.rendering, bio.rendering.biln, bio.rendering.custom, bio.rendering.monomer, bio.rendering.separator]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 test.use(specTestOptions);
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const MSA_PATH = 'System:AppData/Bio/tests/filter_MSA.csv';

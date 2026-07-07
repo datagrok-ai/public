@@ -5,8 +5,8 @@ sub_features_covered: [projects.api.files.sync, projects.api.save, projects.uplo
 // Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
 // before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.
 import {test, expect, type Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   projectsTestOptions,
   evalJs,
@@ -29,13 +29,13 @@ import {
   SYSTEM_DATAGROK_DB_TABLE,
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   SavedAllTables,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

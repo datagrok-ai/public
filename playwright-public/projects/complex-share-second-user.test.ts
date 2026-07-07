@@ -4,8 +4,8 @@ sub_features_covered: [projects.api.namespaces, projects.shell.open, projects.sh
 // GROK-18345: share a project with a second user at View-and-Use + Full, then verify recipient can open it.
 // Share grant uses grok.dapi.permissions.grant; recipient re-auth via loginAsSecondUser (needs DATAGROK_AUTH_TOKEN_2).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, loginAsSecondUser, getSecondUserLogin, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, loginAsSecondUser, getSecondUserLogin, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
 test.use(projectsTestOptions);

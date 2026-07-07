@@ -6,8 +6,8 @@ sub_features_covered: [dendrogram.api.tree-helper.newick-to-df, dendrogram.filev
 // TableView via grok.shell.addTableView. previewNewick needs a server-resident FileInfo from
 // dapi.files.list — a path-string-only synthetic fails with FileSystemException.
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

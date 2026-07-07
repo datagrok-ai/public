@@ -2,7 +2,7 @@
 sub_features_covered: [sequencetranslator.api.get-code-to-weights-map, sequencetranslator.lifecycle.init-lib-data, sequencetranslator.polytool.create-monomer-library]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

@@ -2,11 +2,11 @@
 sub_features_covered: [projects.shell.open, projects.url-params.apply, projects.url-params.build-share-link, projects.view.browse]
 --- */
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, BASE_URL, evalJs, gotoApp, setupSession} from './_helpers';
-import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {openTableFromFile, resetShell, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveProjectWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

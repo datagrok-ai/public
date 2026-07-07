@@ -2,8 +2,8 @@
 sub_features_covered: [bio.detector, bio.rendering, bio.search.diversity, bio.search.diversity.top-menu, bio.viewers.diversity-search]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const FASTA_DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
 const HELM_DATASET_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';

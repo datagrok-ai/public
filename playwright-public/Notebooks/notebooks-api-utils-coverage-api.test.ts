@@ -9,7 +9,7 @@ sub_features_covered: [notebooks.routes.count, notebooks.editor.utils, notebooks
 // Scope-reduced: get-auth-token (per-page SESSION_TOKEN) and render-preview have no
 // JS bridge, so they're asserted structurally here and covered server-side.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

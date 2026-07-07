@@ -4,8 +4,8 @@ sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.
 // Query-source lifecycle on a provisioned System:Datagrok query.
 // Step 4 = github-3550 reproduction: rename the owned query and assert reference-resolution invariant.
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
@@ -15,13 +15,13 @@ import {
   PROVENANCE_PATTERNS,
   ProvisionedQuery,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

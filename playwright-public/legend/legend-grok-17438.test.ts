@@ -4,8 +4,8 @@ sub_features_covered: [legend.item.color-picker, legend.splitter-resize, legend.
 // GROK-17438: color change on one viewer keeps the legend visible on shared-legend viewers.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

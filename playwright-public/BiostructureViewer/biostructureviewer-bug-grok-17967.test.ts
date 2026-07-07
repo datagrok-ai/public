@@ -5,7 +5,7 @@ sub_features_covered: [biostructure.ngl-viewer, biostructure.prop.ligand-column,
 // JS property contract (same wired ligandColumnName + showSelectedRowsLigands + shared selection count
 // on both engines) rather than a canvas pixel-diff. Fixture: dock.csv (multi-row 'ligand' column).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

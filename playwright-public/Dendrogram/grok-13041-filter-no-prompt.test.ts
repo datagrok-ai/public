@@ -8,8 +8,8 @@ sub_features_covered: [dendrogram.clustering.inject-tree-for-grid, dendrogram.ev
 // sort via grid.sort() (grid column headers are canvas, not DOM); both fire the same df events as
 // the UI. Resource-load 404s on every neighbor mount are non-fatal noise (see isFatalConsoleError).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

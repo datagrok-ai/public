@@ -6,7 +6,7 @@ sub_features_covered: [biostructure.data-provider.rcsb-mmcif, biostructure.file-
 // (Reset Camera, viewport context menu) are gated on .msp-plugin / .msp-viewport being present.
 // Scenarios 4, 7, 8 make outbound RCSB calls (bounded 30-90s; absence treated as a precondition).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

@@ -10,7 +10,7 @@ sub_features_covered: [notebooks.entity.environment, notebooks.meta.render-toolt
 //     entity; the setter mirrors into both metadata.kernelspec.name and .display_name (notebook.dart#L21).
 //     No save() is called, so shared server notebooks are never mutated.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

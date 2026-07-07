@@ -3,8 +3,8 @@ sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.
 --- */
 // Script-source lifecycle on a provisioned dataframe-output script (wraps grok.data.getDemoTable('demog.csv')).
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromScript,
@@ -12,13 +12,13 @@ import {
   assertProvenanceScript,
   resetShell,
   PROVENANCE_PATTERNS,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

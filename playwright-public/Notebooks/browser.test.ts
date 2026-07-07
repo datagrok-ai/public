@@ -17,7 +17,7 @@ sub_features_covered: [notebooks.browser, notebooks.browser.render-card, noteboo
 // and the search-filter poll for a non-zero card count before asserting. The search query matches by
 // case-insensitive substring ("Demog" matches both "Demog" and "Demog-100").
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

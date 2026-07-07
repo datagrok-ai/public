@@ -2,7 +2,7 @@
 sub_features_covered: [sequencetranslator.detectors.context-menu-molecule, sequencetranslator.polytool.enumerate-markush-top-menu, sequencetranslator.polytool.get-pt-chem-enumerator-dialog]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

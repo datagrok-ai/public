@@ -2,8 +2,8 @@
 sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-new-column-func]
 --- */
 import {test, expect, Page, Locator} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const COLS_GRID = '.d4-dialog .add-new-column-columns-grid';
 const FUNCS_ROOT = '.d4-dialog .ui-widget-addnewcolumn-functions';

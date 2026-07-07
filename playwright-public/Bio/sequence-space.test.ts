@@ -2,9 +2,9 @@
 sub_features_covered: [bio.analyze.sequence-space, bio.analyze.sequence-space.editor, bio.analyze.sequence-space.top-menu, bio.analyze.sequence-space.transform]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
-import * as bio from '../helpers/bio';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import * as bio from '@datagrok-libraries/test/src/playwright/bio';
 test.use(specTestOptions);
 const datasets = [
   {name: 'FASTA', path: 'System:AppData/Bio/tests/filter_FASTA.csv'},

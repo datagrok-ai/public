@@ -8,8 +8,8 @@ sub_features_covered: [peptides.rendering.draw-logo-in-bounds, peptides.renderin
 // (a small row-marker canvas is first). 100-row Extract subset makes MCL/LST attach in ~4s.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

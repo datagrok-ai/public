@@ -2,8 +2,8 @@
 sub_features_covered: [bio.actions.copy-as, bio.editors.get-region, bio.editors.split-to-monomers, bio.panels.composition-analysis, bio.panels.monomer-info]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
 test('Bio cell-context actions + Context Pane info panels + custom editors', async ({page}) => {

@@ -2,8 +2,8 @@
 sub_features_covered: [peptides.model.fire-bitset-changed, peptides.rendering.weblogo-header, peptides.util.get-selection-bitset, peptides.util.modify-selection, peptides.widgets.distribution, peptides.widgets.selection]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 function isNullReceiverCrash(lastError: string): boolean {

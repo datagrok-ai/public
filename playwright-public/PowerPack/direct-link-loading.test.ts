@@ -2,8 +2,8 @@
 sub_features_covered: [powerpack.dashboards, powerpack.lifecycle.init, powerpack.welcome.view]
 --- */
 import {test, expect, BrowserContext, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 async function injectTokenInNewContext(ctx: BrowserContext): Promise<Page> {
   const token = process.env.DATAGROK_AUTH_TOKEN;

@@ -4,8 +4,8 @@ sub_features_covered: [dendrogram.lifecycle.on-property-changed, dendrogram.life
 // Newick resolution priority: literal `newick` prop > newickTag > .newick tag > empty.
 // Property-panel row selectors are name-mangled (e.g. nodeColumnName -> [name="prop-node"]).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

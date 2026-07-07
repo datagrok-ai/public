@@ -2,8 +2,8 @@
 sub_features_covered: [bio.analyze.alignment-pairwise, bio.calculate.get-region, bio.calculate.get-region.api, bio.calculate.identity, bio.calculate.seq-identity, bio.calculate.similarity]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const HELM_DATASET_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const FASTA_DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';

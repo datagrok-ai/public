@@ -3,8 +3,8 @@ sub_features_covered: [projects.add-link, projects.add-relation, projects.api.fi
 --- */
 // Multi-source integration: file + ad-hoc DB table + saved query + dataframe-output script in one project.
 import {test, expect, Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
@@ -20,8 +20,8 @@ import {
   SYSTEM_DATAGROK_DB_TABLE,
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
-import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '@datagrok-libraries/test/src/playwright/projects';
 
 // OpenFile with colon-form fullPath — dot-form .script provenance makes JS-API Save mis-attribute children.
 async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCount: number; script: string}> {

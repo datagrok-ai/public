@@ -6,7 +6,7 @@ sub_features_covered: [powerpack.search, powerpack.search.power, powerpack.searc
 // Invariant: assert no new pageerror / "reported error: null" console error after each probe.
 
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

@@ -4,8 +4,8 @@ sub_features_covered: [projects.api.files.sync, projects.api.get-by-id, projects
 // Spaces-source lifecycle: provision a transient root Space with demog.csv, save with Sync ON, reopen.
 // GROK-18345: share to the second user's GROUP at View-and-Use + Full and verify recipient can open it.
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   projectsTestOptions,
   gotoApp,
@@ -19,14 +19,14 @@ import {
   assertProvenanceScript,
   resetShell,
   PROVENANCE_PATTERNS,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   shareWithSecondUserAndVerify,
   deleteProjectWithCleanup,
   SavedAllTables,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

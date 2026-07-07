@@ -2,7 +2,7 @@
 sub_features_covered: [sequencetranslator.api.validate-sequence, sequencetranslator.detectors.context-menu-macromolecule, sequencetranslator.oligo-renderer.combine-sense-antisense]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

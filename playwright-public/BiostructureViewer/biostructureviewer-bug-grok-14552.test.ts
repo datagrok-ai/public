@@ -5,7 +5,7 @@ sub_features_covered: [biostructure.cell-renderer.molecule3d, biostructure.grid-
 // whitespace right-click) while still injecting Copy/Download/Show items on populated Molecule3D cells.
 // In-package sentinel: window.$biostructureViewer.contextMenuError. Grid overlay = canvas[2] of tv.grid.root.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

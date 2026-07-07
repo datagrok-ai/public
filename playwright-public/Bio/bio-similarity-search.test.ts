@@ -2,8 +2,8 @@
 sub_features_covered: [bio.detector, bio.rendering, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.similarity-search]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const DATASET_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';
 test('Bio Similarity Search docks KNN viewer + row-click re-queries neighbours', async ({page}) => {

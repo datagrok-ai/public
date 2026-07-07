@@ -3,21 +3,21 @@ sub_features_covered: [projects.api.files.sync, projects.api.get-by-id, projects
 --- */
 // File-source lifecycle: open, save with provenance, reopen-verify, share, rename, delete.
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromFile,
   assertProvenanceScript,
   resetShell,
   PROVENANCE_PATTERNS,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

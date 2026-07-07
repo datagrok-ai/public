@@ -2,8 +2,8 @@
 sub_features_covered: [peptides.viewers.monomer-position, peptides.viewers.sar-base, peptides.viewers.sar-base.export-mutation-cliffs, peptides.workflow.start-analysis]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 const BASE_EXPORT_COLS = ['Seq 1', 'Seq 2', 'Mutation', 'Seq 1 IC50', 'Seq 2 IC50', 'Delta'];

@@ -6,7 +6,7 @@ sub_features_covered: [biostructure.file-open.importWithNgl, biostructure.file-p
 // (Scenarios 2-3) is asserted via DG.Func.find registry probes (no NGL-format fixtures on disk).
 // Canvas pixels are not asserted; mount + props round-trip + menu labels + widget roots are.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

@@ -10,14 +10,14 @@ sub_features_covered: [powerpack.db-explorer, powerpack.db-explorer.config-wrapp
 // enrichments) — guaranteed-fail expects are replaced with console.warn until tickets land.
 
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {
   openTableFromDbTable,
   provisionSystemDatagrokQuery,
   getSystemDatagrokConnection,
   SYSTEM_DATAGROK_NQNAME,
-} from '../helpers/openers';
-import {shareWithSecondUserAndVerify} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/openers';
+import {shareWithSecondUserAndVerify} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(specTestOptions);
 

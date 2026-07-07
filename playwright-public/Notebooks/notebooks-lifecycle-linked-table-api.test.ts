@@ -12,7 +12,7 @@ sub_features_covered: [notebooks.entity.link, notebooks.entity.is-applicable, no
 // path here, and asserted directly server-side. delete requires the entity (not an
 // id string), so steps resolve via find(id) first.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

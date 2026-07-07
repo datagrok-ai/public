@@ -2,7 +2,7 @@
 sub_features_covered: [sequencetranslator.api.get-code-to-weights-map, sequencetranslator.api.translate-oligonucleotide-sequence, sequencetranslator.detectors.context-menu-oligo, sequencetranslator.oligo-renderer, sequencetranslator.oligo-renderer.combine-sense-antisense, sequencetranslator.oligo-renderer.convert-helm-to-oligo, sequencetranslator.oligo-renderer.copy-as-helm, sequencetranslator.oligo-renderer.open-helm-editor]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

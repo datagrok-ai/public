@@ -2,13 +2,13 @@
 sub_features_covered: [bio.api.get-monomer-lib-helper, bio.lifecycle.init, bio.manage.libraries-app, bio.manage.libraries-dialog, bio.manage.libraries-view]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 test.use(specTestOptions);
 
 // Opens ribbon Bio | Manage | Monomer Libraries, waiting on each submenu instead of blind sleeps.

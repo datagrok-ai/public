@@ -4,8 +4,8 @@ sub_features_covered: [chem.sketcher, chem.sketcher.ocl]
 // Sketcher wired into the FILTER PANEL: apply/clear substructure filter (GROK-14028),
 // backend-switch sync to global currentSketcherType (GROK-12581/12903), close+reopen (GROK-12905).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

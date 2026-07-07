@@ -32,7 +32,7 @@ sub_features_covered: [notebooks.menu.open, notebooks.meta.open, notebooks.menu.
 //   - Share dialog is detected by ATTACHMENT (offsetParent is transiently null while it lays out).
 //   - grok.dapi.notebooks.delete REQUIRES the DG.Notebook entity, NOT an id string; fetch via find(id).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

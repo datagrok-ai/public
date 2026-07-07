@@ -3,8 +3,8 @@ sub_features_covered: [chem.notation, chem.notation.action, chem.notation.conver
 --- */
 // GROK-17964: Convert Notation column-action must register exactly once across cancel/commit/repeat invocations.
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

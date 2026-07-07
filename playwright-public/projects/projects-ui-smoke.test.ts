@@ -4,8 +4,8 @@ sub_features_covered: [projects.api.delete, projects.api.save, projects.api.sear
 // UI-only lifecycle smoke (no JS API substitution for Steps 2-11). Step 1 opens via Browse-tree right-click
 // → Open — the flow that sets df.tags['.script'] AND keeps the toolbar SAVE button clickable.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs} from './_helpers';
 
 test.use(projectsTestOptions);

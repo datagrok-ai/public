@@ -3,8 +3,8 @@ sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.
 --- */
 // DB-source lifecycle: provisioned saved query + ad-hoc DB table on System:Datagrok public.groups.
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
@@ -17,13 +17,13 @@ import {
   SYSTEM_DATAGROK_DB_TABLE,
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

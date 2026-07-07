@@ -4,8 +4,8 @@ sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.
 // Derived-source lifecycle via the UI Aggregate Rows / Pivot Table → Add to workspace flow.
 // GROK-19103 invariant: derivation lands in the active workspace (tables grows by 1), not a stray project.
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromFile,
@@ -13,13 +13,13 @@ import {
   assertProvenanceScript,
   resetShell,
   PROVENANCE_PATTERNS,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

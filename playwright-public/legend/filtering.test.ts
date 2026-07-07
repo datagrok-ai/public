@@ -2,8 +2,8 @@
 sub_features_covered: [legend.column, legend.extra-column, legend.refresh.on-data-change, legend.show-nulls]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

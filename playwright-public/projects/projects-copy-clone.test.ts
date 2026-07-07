@@ -4,17 +4,17 @@ sub_features_covered: [projects.add-link, projects.add-relation, projects.api.sa
 // UI-driven Save Project mode chooser: 4 sub-flows (original / copy+link / copy+clone / PVC) + Step 5 re-share.
 // GROK-19750: after Save-Copy-with-Link the original project's table must still re-materialize on reopen.
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
-import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
+import {openTableFromFile, resetShell, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   saveCopy,
   shareProjectViaContextMenu,
   shareWithSecondUserAndVerify,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 

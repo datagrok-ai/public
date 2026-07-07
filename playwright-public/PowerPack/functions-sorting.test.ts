@@ -14,8 +14,8 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.dialogs.add-n
 //     land on top, so sort-by-type is asserted at the order-changed level (top-5 differs), not by family.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

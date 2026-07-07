@@ -2,8 +2,8 @@
 sub_features_covered: [legend.allow-item-coloring, legend.color-scale.numerical, legend.column, legend.extra-column, legend.item.click, legend.item.color-picker, legend.refresh.on-data-change, legend.show-main-item-icons, legend.use-custom-color-coding]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

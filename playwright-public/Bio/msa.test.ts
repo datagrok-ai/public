@@ -2,8 +2,8 @@
 sub_features_covered: [bio.analyze.msa, bio.analyze.msa.align-sequences, bio.analyze.msa.dialog, bio.detector, bio.rendering.column-header]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 test('Bio MSA on FASTA', async ({page}) => {
   test.setTimeout(150_000);

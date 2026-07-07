@@ -2,8 +2,8 @@
 sub_features_covered: [charts.echart-base.table, charts.radar, charts.radar.color-column, charts.radar.color-palette, charts.radar.show-current-row]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

@@ -4,8 +4,8 @@ sub_features_covered: [projects.api.save, projects.shell.open]
 // GROK-19212: rename a referenced table inside a project, reopen, verify it loads without resolution error.
 // Test 1 = table rename (GROK-19212); Test 2 = query rename (github-3550); Test 3 = script rename (sister).
 import {test, expect, Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   openTableFromFile,
   openTableFromDbQuery,
@@ -16,11 +16,11 @@ import {
   ProvisionedQuery,
   ProvisionedScript,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
 test.use(projectsTestOptions);

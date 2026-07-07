@@ -4,8 +4,8 @@ sub_features_covered: [legend.allow-item-coloring, legend.item.color-picker]
 // github-3132: each legend color change persists independently; changing B must not reset A.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

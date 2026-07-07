@@ -9,8 +9,8 @@ sub_features_covered: [dendrogram.api.tree-helper.calc-distance-matrix, dendrogr
 // neighbor mount are non-fatal noise (see isFatalConsoleError). Centroid linkage crashes (WASM OOB
 // at hierarchical-clustering.ts:217) so this spec uses manhattan+complete on the second build.
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

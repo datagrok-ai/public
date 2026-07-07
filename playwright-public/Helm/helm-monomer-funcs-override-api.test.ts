@@ -1,5 +1,5 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 // Pattern 2 self-documented spec — paired scenario is
 // helm-monomer-funcs-override-api.md (API-contract scenario; no UI flow drives it).

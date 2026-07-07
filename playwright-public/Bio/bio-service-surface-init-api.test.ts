@@ -8,7 +8,7 @@ sub_features_covered:
   - bio.lifecycle.init
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 test.use(specTestOptions);
 const HELM_PATH = 'System:AppData/Bio/tests/filter_HELM.csv';
 const FASTA_PATH = 'System:AppData/Bio/tests/filter_FASTA.csv';

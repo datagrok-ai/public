@@ -157,7 +157,7 @@ sub_features_covered: [dendrogram.clustering.api, dendrogram.api.get-tree-helper
 // (this is an apitest — no selectors used).
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

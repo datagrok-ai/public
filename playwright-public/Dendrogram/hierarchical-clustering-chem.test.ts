@@ -8,8 +8,8 @@ sub_features_covered: [dendrogram.clustering.dialog, dendrogram.clustering.injec
 // scenario's "(or median)" alternative. DataFrame name from readCsv is "Table" (not "mol1K").
 // Resource-load 404s on every neighbor mount are non-fatal noise (see isFatalConsoleError).
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

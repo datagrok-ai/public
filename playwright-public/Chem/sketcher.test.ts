@@ -2,8 +2,8 @@
 sub_features_covered: [chem.actions.copy-as, chem.actions.copy-molfile-v2000, chem.actions.copy-smiles, chem.sketcher, chem.sketcher.cell-editor, chem.sketcher.ocl]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

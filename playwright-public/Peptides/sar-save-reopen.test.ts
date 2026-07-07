@@ -2,8 +2,8 @@
 sub_features_covered: [peptides.model, peptides.model.init, peptides.viewers.monomer-position, peptides.workflow.sar-dialog, peptides.workflow.start-analysis]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/bio/peptides.csv';
 const projectName = 'SarSaveReopenAuto' + Date.now();

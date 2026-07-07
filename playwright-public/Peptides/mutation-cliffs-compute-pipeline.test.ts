@@ -5,8 +5,8 @@ sub_features_covered: [peptides.compute, peptides.compute.calculate-cliffs-stati
 // end-to-end into SVM Mutation-Cliffs mode, SMC viewer, Export TableView, LST grid, Distribution accordion.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

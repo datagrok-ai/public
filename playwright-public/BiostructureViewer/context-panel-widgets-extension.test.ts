@@ -7,7 +7,7 @@ sub_features_covered: [biostructure.panel.link-molecule-column, biostructure.pan
 // WebGL canvas pixels are not asserted (CI WebGL is unreliable) — widget mount + data-source + text
 // content are. 1bdq.pdb: hasNonWaterHetatm=true, isAutoDockPose=false (Docking ProLIF path deferred).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

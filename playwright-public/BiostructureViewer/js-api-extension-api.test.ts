@@ -183,7 +183,7 @@ sub_features_covered: [biostructure.api.viewPdbById, biostructure.api.viewPdbByD
 //     whichever the apitest harness already supports without introducing
 //     a new fixture".
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

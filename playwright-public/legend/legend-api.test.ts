@@ -26,7 +26,7 @@ sub_features_covered: [legend.column, legend.extra-column, legend.refresh.on-dat
 // Sister scenario: Charts/charts-api.md + Charts/charts-api.ts (also target_layer: apitest).
 // Closes documented follow-up from modernize-legacy-specs.md §4.
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

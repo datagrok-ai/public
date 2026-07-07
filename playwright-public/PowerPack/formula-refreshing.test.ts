@@ -16,10 +16,10 @@ sub_features_covered: [powerpack.dialogs, powerpack.dialogs.add-new-column, powe
 //   - The JS API path PowerPack:formulaWidget(col) is a deterministic fallback exercising the same widget code.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
-import {openTableFromFile, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
+import {openTableFromFile, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveProjectWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(specTestOptions);
 

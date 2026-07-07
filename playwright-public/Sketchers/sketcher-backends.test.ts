@@ -8,8 +8,8 @@ sub_features_covered: [chem.sketcher, chem.sketcher.backend-switch, chem.sketche
 //   (GROK-12297/12966); C6 malformed no-throw (CLAUDE-5); C7 resize no-throw (GROK-12826);
 //   C8 clear empties input (GROK-14028); active==selected (GROK-12581/12905); no console errors (GROK-12758).
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 

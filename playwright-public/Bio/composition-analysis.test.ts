@@ -2,8 +2,8 @@
 sub_features_covered: [bio.analyze.composition, bio.viewers.web-logo]
 --- */
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {finishSpec} from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
 // Row counts of the deployed AppData fixtures drift over time (the in-repo samples are stale),
 // so assert only that each dataset loads with rows — the real signal is the composition/WebLogo below.

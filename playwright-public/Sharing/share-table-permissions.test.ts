@@ -5,7 +5,7 @@ import {test, expect, Page} from '@playwright/test';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin,
   specTestOptions, softStep, stepErrors,
-} from '../spec-login';
+} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

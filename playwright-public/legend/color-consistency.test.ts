@@ -4,8 +4,8 @@ sub_features_covered: [legend.allow-item-coloring, legend.item.color-picker, leg
 // Scenario 2 picker UI runs on Histogram: Bar chart legend needs a color edit to render.
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 
