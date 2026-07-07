@@ -1,5 +1,15 @@
 # EDA changelog
 
+## 1.7.0 (2026-07-07)
+
+Upgrade XGBoost
+
+* XGBoost v3.3.0, minimal build
+* Fixed classification objectives
+* Training 1.3 - 2.2× faster
+* Prediction 1.4 - 3.4× faster
+* Input validation in TypeScript
+
 ## 1.6.2 (2026-06-23)
 
 Fix the package build

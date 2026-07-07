@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "Exploratory Data Analysis Tools",
   "license": "MIT",
   "dependencies": {
@@ -66,9 +66,6 @@
     "directory": "packages/EDA"
   },
   "category": "Machine Learning",
-  "sources": [
-    "wasm/XGBoostAPI.js"
-  ],
   "meta": {
     "menu": {
       "ML": {
