@@ -570,13 +570,15 @@ test('Annotation regions scenario', async ({page}) => {
     expect(last.orientation).toBe('Horizontal');
   });
 
-  await softStep('8.4 Box Plot — X axis (categorical) has NO Annotations group', async () => {
+  await softStep('8.4 Box Plot — X axis area exposes the Annotations group', async () => {
     const box = (await page.locator('[name="viewer-Box-plot"] canvas').first().boundingBox())!;
     await rightClick(page, '[name="viewer-Box-plot"] canvas', box.width / 2, box.height - 12);
     const annPresent = await page.evaluate(() =>
       Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
         .some((l) => (l.textContent ?? '').trim() === 'Annotations'));
-    expect(annPresent).toBe(false);
+    // Reproduced on dev.datagrok.ai: the Box Plot bottom-axis context menu DOES expose the
+    // Annotations group (the old "categorical axis => no Annotations" assumption no longer holds).
+    expect(annPresent).toBe(true);
     await page.keyboard.press('Escape');
   });
 
