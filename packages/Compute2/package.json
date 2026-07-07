@@ -74,6 +74,15 @@
     "release-compute2-release": "webpack && grok publish release --release",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/webcomponents-vue run build && npm run build"
   },
+  "properties": [
+    {
+      "name": "roleOnlyModelFilter",
+      "propertyType": "bool",
+      "defaultValue": false,
+      "nullable": false,
+      "description": "Use the faster role-only model filter (drops the legacy #model tag branch)"
+    }
+  ],
   "canEdit": [
     "Administrators"
   ],

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelHandler, MODEL_FILTER} from './model-handler';
+import {ModelHandler, getModelFilter} from './model-handler';
 import wu from 'wu';
 import '../css/model-card.css';
 
@@ -9,17 +9,19 @@ import '../css/model-card.css';
 export class ModelCatalogView extends DG.CustomCardView {
   static findOrCreateCatalogView(
     viewName: string,
+    roleOnlyFilter = false,
   ): ModelCatalogView {
     const modelsView = this.findModelCatalogView(viewName) ??
-      this.createModelCatalogView(viewName);
+      this.createModelCatalogView(viewName, roleOnlyFilter);
 
     return modelsView as ModelCatalogView;
   }
 
   static createModelCatalogView(
     viewName: string,
+    roleOnlyFilter = false,
   ): ModelCatalogView {
-    const view = new this(viewName);
+    const view = new this(viewName, roleOnlyFilter);
     return view;
   }
 
@@ -41,13 +43,14 @@ export class ModelCatalogView extends DG.CustomCardView {
 
   constructor(
     viewName: string,
+    roleOnlyFilter = false,
   ) {
-    super({dataSource: grok.dapi.functions, permanentFilter: MODEL_FILTER});
+    super({dataSource: grok.dapi.functions, permanentFilter: getModelFilter(roleOnlyFilter)});
 
     this.root.classList.add('model-catalog-view');
     this.meta = new ModelHandler();
     this.name = viewName;
-    this.permanentFilter = MODEL_FILTER;
+    this.permanentFilter = getModelFilter(roleOnlyFilter);
     this.renderMode = DG.RENDER_MODE.BRIEF;
 
     // Smth is wrong with custom methods after getting an instance via grok.shell.views

@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.46.6 (2026-07-07)
+
+* Model catalog: add a `roleOnlyFilter` config option and a `getModelFilter` helper to filter models by the model role only (faster); the legacy tag-or-role filter stays the default
+
 ## 1.46.4 (2026-06-25)
 
 * Fitting/Sensitivity Analysis/Optimization: fix the lookup (scenario) input being duplicated when the model function declares an input with the same name as the lookup
