@@ -1,19 +1,9 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.entity.get-applicable-cases
-  - notebooks.entity.is-applicable
-  - notebooks.meta.bind
-  - notebooks.meta.get-applicable-cases
-  - notebooks.menu.delete
-  - notebooks.meta.delete
-  - notebooks.entity.environment
-  - notebooks.meta.render-tooltip
-  - notebooks.meta.render-details
-  - notebooks.editor.ribbon.edit-mode
-  - notebooks.editor.notebook-to-code
 target_layer: playwright
 coverage_type: edge
+priority: p2
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -104,13 +94,14 @@ gate_verdicts:
 
 # Notebooks — Edge Cases
 
-Covers the automatable edge cases declared in the atlas `edge_cases[]` array:
-(1) no applicable table — `getApplicableCases` returns `[]` and the context
-menu falls back to the standard param-command menu; (2) Delete is gated to
-server-persisted notebooks only (`isOnServer`); (3) environment defaults to
-`"default"` when `kernelspec` is absent. Excludes edge cases requiring a
-live Docker container or fleet config change (those are `manual_only[]` or
-env-level).
+Covers three edge cases in notebook behavior: (1) when no table is open, the
+right-click context menu has no **Apply to** entry, because `getApplicableCases`
+returns an empty list and the menu falls back to the standard actions; (2) **Delete**
+only appears for notebooks that have been saved to the server, not for in-memory
+ones; (3) a notebook's environment defaults to `"default"` when it has no kernel
+specification. Edge cases that require a live Docker container or a fleet
+configuration change are excluded — those are covered manually or are blocked in
+standard test environments.
 
 ## Setup
 
@@ -123,7 +114,7 @@ env-level).
 
 ## Scenarios
 
-### Scenario 1: No applicable table — context menu falls back (get-applicable-cases returns [])
+### Scenario 1: No applicable table — context menu falls back to standard actions
 
 Steps:
 1. Confirm no tables are open (Setup step 2).
@@ -177,7 +168,7 @@ Expected:
 - The setter writes both `name` and `display_name` onto `metadata.kernelspec`
   (`notebook.dart#L21`).
 
-### Scenario 4: Notebook tooltip and details render (render-tooltip + render-details)
+### Scenario 4: Notebook tooltip and details panel render correctly
 
 Steps:
 1. In the Notebooks browser, hover over the test notebook card.
@@ -192,7 +183,7 @@ Expected:
   non-empty HTML (`notebook_meta.dart#L25`).
 - The Details pane is present and non-empty in the context panel.
 
-### Scenario 5: Convert notebook to script via edit-mode ribbon (notebook-to-code)
+### Scenario 5: Convert notebook to script via edit-mode ribbon
 
 Steps:
 1. Open the test notebook in the editor via context menu **Edit**.
@@ -212,22 +203,10 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: Scenarios 1, 2, 3 exercise entity model logic
-  (`getApplicableCases`, `isApplicable`, `environment` getter/setter) that
-  is directly callable via JS API and observable in the Datagrok UI via
-  context-menu presence/absence. Scenarios 4–5 require UI navigation
-  (hover, context panel, edit-mode ribbon) making `playwright` the
-  appropriate layer.
-- Deferrals: edge case "Notebooks plugin not installed → entity.apply throws"
-  (`edge_cases[1]`, `notebook.dart#L79`) is deferred — `notebooks.entity.apply`
-  is atlas `manual_only[]` (live container required; no deterministic
-  Playwright path). Edge case "fleet without NOTEBOOKS capability" (`edge_cases[2]`)
-  requires fleet-level config change and is env-blocked for standard test
-  environments.
-- Atlas manual_only[] excluded: notebooks.entity.apply,
-  notebooks.plugin.convert-notebook, and the JupyterLab iframe interior
-  (editor.edit-mode). Scenario 5 only asserts the ribbon button trigger and
-  the resulting ScriptView visible outside the iframe.
-- # atlas entry derived from source: core/shared/grok_shared/lib/src/notebook.dart#L55
-- # atlas entry derived from source: core/client/xamgle/lib/src/meta/notebook_meta.dart#L18
-- # atlas entry derived from source: core/shared/grok_shared/lib/src/notebook.dart#L21
+- Deferred: the edge case where the Notebooks plugin isn't installed (calling `apply`
+  throws) requires a live container and has no deterministic Playwright path. The edge
+  case where a fleet lacks notebook capability requires a fleet-level configuration
+  change and is blocked in standard test environments.
+- Applying a notebook and converting it to code, along with anything inside the
+  JupyterLab iframe, are excluded from automated coverage. Scenario 5 only checks that
+  clicking the ribbon button opens a ScriptView — not what happens inside the editor.

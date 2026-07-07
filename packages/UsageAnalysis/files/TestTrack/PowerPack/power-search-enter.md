@@ -1,14 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.search.power
-  - powerpack.search.power.dispatch
-  - powerpack.search.power.init
-  - powerpack.welcome.view
-  - powerpack.welcome.suggestion-nav
-  - powerpack.search
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [powerpack.cp.power-search-dispatch]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Powerpack/power-search-enter.md
 migration_date: 2026-05-23
@@ -51,30 +46,15 @@ gate_verdicts:
 
 # PowerPack — Power Search ENTER-key dispatch (GROK-18656 regression)
 
-Bug-focused regression scenario for `GROK-18656`: pressing **Enter**
-in the Welcome View search input must safely dispatch the Power Search
-engine across all 8 dispatch paths
-(`powerSearch` in
-`public/packages/PowerPack/src/search/power-search.ts#L26`:
-view-search → regex-entity → project → JS-eval → function-call →
-table-query → specific-widget → function-evaluation). Before the fix,
-short or ambiguous queries (e.g., `QA`) caused the dispatch to throw
-(`reported error: null`) because one of the 8 path branches did not
-null-check its intermediate state. Each path must either produce a
-result, produce a graceful empty-result, or surface a user-friendly
-error — none may throw.
-
-Atlas surface exercised: `powerpack.search.power` (the parallel free-
-text power-search engine), `powerpack.search.power.dispatch`
-(the 8-path top-level dispatch — primary regression surface),
-`powerpack.search.power.init` (wires the engine to the platform input;
-covered implicitly by every Enter-key dispatch on the welcome view),
-`powerpack.welcome.view` (`welcomeView` autostart-immediate; the host
-of the search input that this scenario types into),
-`powerpack.welcome.suggestion-nav` (`suggestionMenuKeyNavigation` —
-the Enter-on-highlighted-suggestion path that must remain functional
-after the fix), and `powerpack.search` (the umbrella search
-infrastructure).
+Regression test for GROK-18656: pressing **Enter** in the Welcome View
+search input must safely dispatch the Power Search engine across all
+of its lookup paths (view search, entity name match, project match, JS
+expression evaluation, function call, table query, widget match,
+function evaluation). Before the fix, short or ambiguous queries (e.g.
+`QA`) caused the dispatch to throw an error, because one of the paths
+did not check for a missing intermediate value. Each path must either
+produce a result, a graceful empty result, or a user-friendly error —
+never an uncaught exception.
 
 ## Setup
 
@@ -118,10 +98,8 @@ Expected:
 
 ### Scenario 2: Pressing Enter across additional dispatch shapes (8-path exercise)
 
-This scenario exercises multiple of the 8 dispatch paths within
-`powerSearch` to guard against null-safety regressions in any single
-branch (per atlas `powerpack.search.power.dispatch`: 8-path complex
-code; any path may harbor a similar regression).
+This scenario exercises several more of the search dispatch paths to
+guard against null-safety regressions in any of them.
 
 For each of the following queries, repeat the same 4-step probe:
 
@@ -155,11 +133,8 @@ Expected (each query, independently):
 
 ### Scenario 3: Enter-on-highlighted-suggestion path is preserved (suggestion-nav regression guard)
 
-The GROK-18656 fix must not break the `suggestionMenuKeyNavigation`
-Enter-on-highlighted-suggestion path
-(`public/packages/PowerPack/src/welcome-view.ts#L118` —
-atlas `powerpack.welcome.suggestion-nav` declares
-`press Enter on highlighted suggestion → click suggestion`).
+The GROK-18656 fix must not break the existing behavior where pressing
+Enter on a highlighted suggestion activates it.
 
 1. **Focus the Welcome view search input.**
 2. **Type a query that surfaces a suggestion menu** (e.g., type
@@ -190,79 +165,8 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale.** `playwright`. The scenario exercises
-  the Welcome view search input's Enter-key handler and the resulting
-  Power Search dispatch — a UI surface backed by DOM keyboard events,
-  rendered suggestion menus, and rendered result panes. Headless
-  JS-API (`apitest`) cannot drive a real Enter-key dispatch through
-  the welcome-view input element nor verify suggestion-menu
-  rendering. No pixel-precision drag or native file picker is
-  involved, so `manual-only` is not required.
-- **coverage_type rationale.** `regression`. Bug-focused
-  (`pyramid_layer: bug-focused` per Rule 3 — canonical GROK-18656
-  reproduction surface); guards against re-regression on the Power
-  Search Enter-key dispatch path. Not `smoke` (this is not a section
-  golden path — the section's smoke is the top-level
-  `add-new-column.md` per chain `ui_coverage_plan`). Not `edge`
-  (the bug surfaces on a common entry path — typing a short query
-  and pressing Enter — not on a boundary value). Not `perf`.
-- **Pyramid layer.** `bug-focused` per Rule 3 — discriminator
-  test: GROK-18656 fails Scenario 1 (and the `QA` row of Scenario 2)
-  before the fix (`reported error: null` thrown on the dispatcher).
-  After the fix, Scenarios 1-3 all pass. Atlas `coverage_type`
-  on edge-case entries is `[]` (Phase 0 bootstrap), so this
-  scenario's `coverage_type: regression` is derived from STEP E
-  heuristics (general bug-focused coverage of a common feature
-  shape) rather than from an atlas `edge_cases[]` entry — no
-  cross-check mismatch.
-- **Atlas sub_features traceability.**
-  - `powerpack.search.power` — the parallel free-text power-search
-    engine (`public/packages/PowerPack/src/search/power-search.ts#L1`);
-    the umbrella sub_feature exercised by every Enter-key dispatch
-    in this scenario.
-  - `powerpack.search.power.dispatch` — `powerSearch(s, host,
-    inputElement)`
-    (`public/packages/PowerPack/src/search/power-search.ts#L26`);
-    the 8-path top-level dispatch that GROK-18656 broke. Primary
-    regression surface.
-  - `powerpack.search.power.init` — `initSearch()`
-    (`public/packages/PowerPack/src/search/power-search.ts#L21`);
-    wires the engine to the platform input. Covered implicitly by
-    every Enter-key dispatch on the welcome view (if `initSearch`
-    had not run, the input would not dispatch through `powerSearch`).
-  - `powerpack.welcome.view` — `welcomeView`
-    (`public/packages/PowerPack/src/package.ts#L134`); the
-    autostart-immediate home view that hosts the search input.
-  - `powerpack.welcome.suggestion-nav` —
-    `suggestionMenuKeyNavigation`
-    (`public/packages/PowerPack/src/welcome-view.ts#L118`); the
-    ArrowDown / ArrowUp / Enter-on-highlighted-suggestion handler.
-    Scenario 3 guards against accidental regression of this path
-    by the GROK-18656 fix.
-  - `powerpack.search` — the umbrella search infrastructure
-    (`public/packages/PowerPack/src/package.ts#L219`).
-- **Related bug.** `GROK-18656` (p2, regression-risk).
-  Reproduction: open Welcome view → type `QA` → press Enter →
-  error fires (`reported error: null`). Expected: Power Search
-  engine must safely handle Enter-key dispatch from the Welcome
-  View search input across all 8 dispatch paths. Short queries
-  like `QA` must dispatch gracefully (results, empty results, or
-  user-friendly error — never throw).
-- **Chain context.** This scenario is the section's bug-focused
-  witness for GROK-18656 — Critic F's
-  `bug_focused_candidates[]` entry for the bug (added in
-  `cycle-2026-05-20-powerpack-coverage`) had empty `spans[]`
-  pending this scenario's authoring. The chain's
-  `order_from_files[]` is updated to include this scenario at
-  the end of the section's order.
-- **Deferrals.** None. The three scenarios fully cover the bug's
-  reproduction surface (Scenario 1: canonical `QA` repro;
-  Scenario 2: 5 additional dispatch shapes exercising multiple
-  of the 8 paths; Scenario 3: preserved suggestion-nav Enter
-  path). No deferral required.
-- **Coverage map.** Coverage map for PowerPack
-  (`references/coverage-map/powerpack.yaml`) is not present at
-  authoring time — gap-vs-coverage cross-check skipped per
-  STEP B fallback. The Critic F coverage-gap dispatch
-  (`gap: bug-uncovered :: GROK-18656`) drove this scenario's
-  authoring directly.
+- **Related bug.** GROK-18656: opening the Welcome view, typing `QA`,
+  and pressing Enter threw an error (`reported error: null`). The
+  Power Search engine must handle Enter-key dispatch gracefully for
+  short queries like this — producing results, an empty-results
+  message, or a user-friendly error, but never throwing.

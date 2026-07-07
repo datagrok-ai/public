@@ -1,13 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.manage.libraries-view
-  - bio.manage.libraries-dialog
-  - bio.manage.libraries-app
-  - bio.api.get-monomer-lib-helper
-  - bio.lifecycle.init
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [load_monomer_library, save_monomer_library]
 produced_from: atlas-driven
 realized_as:
   - bio-lifecycle-monomer-library-spec.ts
@@ -45,42 +41,29 @@ gate_verdicts:
     review_round: 1
 ---
 
-# Bio — `monomer_library` source-class lifecycle
+# Bio — Monomer libraries: load, edit & save, save project & reopen
 
-Proactive lifecycle scenario for the `monomer_library` source
-class per
-`scenario-chains/bio.yaml#proactive_lifecycle_specs[1]`. Walks the
-monomer library through every non-agnostic `dep_lifecycle_op`
-declared in atlas `dep_lifecycle_ops[].affected_source_classes`
-that touches the shape: load from
-`System:AppData/Bio/monomer-libraries` →
-edit / save back via the shared `lib-manager` write code path →
-save a project that references the library → reopen and verify
-the library reference survives the round trip.
+Walks a monomer library through its lifecycle: loading it from
+`System:AppData/Bio/monomer-libraries`, editing and saving it back,
+and saving/reopening a project that references it.
 
-`external_deps: [FileShare]` per chain `proactive_lifecycle_specs[1]`
-— the lifecycle requires `FileShare` connection permissions on
-`System:AppData/Bio/monomer-libraries`. `env_requirements:
-["FileShare connection with per-user permissions"]` —
-authenticated user must have write access to the monomer-libraries
-AppData subpath.
+Distinct from `manage.md` (which is a quick smoke check of the
+**Bio | Manage | Monomer Libraries** dialog — open it, see the
+checkboxes, done) in that this scenario covers the full lifecycle of
+a library: load, edit, save, and project-reference persistence across
+a save/reopen round trip.
 
-Distinct from `manage.md` (section ui-smoke covers the
-`Bio | Manage | Monomer Libraries` dialog at the open-and-checkbox
-granularity only) in that this scenario covers the **lifecycle**
-of the library shape (load / edit / save / project-reference
-persistence) rather than a single-action dialog smoke check.
+Requires a FileShare connection with write access to
+`System:AppData/Bio/monomer-libraries`.
 
 ## Setup
 
 - Authenticate to Datagrok as the test user (Playwright session)
   with write access to `System:AppData/Bio/monomer-libraries`.
 - Library under test:
-  `System:AppData/Bio/monomer-libraries/HELMCoreLibrary.json`
-  (atlas `source_classes[monomer_library].examples[0]`). If
-  absent on the target server, fall back to
-  `polytool-lib.json` (`examples[1]`) or `sample-lib.json`
-  (`examples[2]`).
+  `System:AppData/Bio/monomer-libraries/HELMCoreLibrary.json`.
+  If absent on the target server, fall back to
+  `polytool-lib.json` or `sample-lib.json`.
 - Working copy name: `bio-lifecycle-monomer-library-${Date.now()}.json`
   (unique per run to keep parallel-run safe; cleaned in Step 4).
 - Project name:
@@ -88,7 +71,7 @@ persistence) rather than a single-action dialog smoke check.
 - Service-surface dependency:
   `await grok.functions.call('Bio:getMonomerLibHelper')` is used
   in Step 1 and Step 3 as the supported entry-point for monomer
-  library access (atlas `bio.api.get-monomer-lib-helper`).
+  library access.
 - Cleanup: Step 4 deletes the working copy library file, the
   saved project, and any open Manage Monomer Libraries dialogs.
 
@@ -97,24 +80,20 @@ persistence) rather than a single-action dialog smoke check.
 ### Scenario 1: Load library via service surface
 
 Steps:
-1. Trigger `Bio:initBio` if not yet initialized (atlas
-   `bio.lifecycle.init`). Verify `getMonomerLibHelper()` returns
-   a non-null `IMonomerLibHelper` singleton (atlas
-   `bio.api.get-monomer-lib-helper`,
-   `bio.cp.bio-service-surface-init`).
+1. Trigger `Bio:initBio` if not yet initialized. Verify
+   `getMonomerLibHelper()` returns a non-null
+   `IMonomerLibHelper` singleton.
 2. Read the source library via
    `grok.dapi.files.readAsText('System:AppData/Bio/monomer-libraries/HELMCoreLibrary.json')`.
    Parse the JSON and verify it conforms to the HELM monomer
    library schema (root key `monomers[]` present, each monomer
    has `symbol` and `molfile` / `smiles`).
 3. Open the management UI: ribbon `Bio | Manage | Monomer
-   Libraries` (atlas `bio.manage.libraries-view`,
-   `bio.cp.manage-monomer-libraries`). Verify the loaded library
-   appears in the listing with the expected entry count.
+   Libraries`. Verify the loaded library appears in the listing
+   with the expected entry count.
 4. Verify the manage dialog opens via the alternate entry point
-   too: `Bio | Manage | Monomer Libraries` dialog mode (atlas
-   `bio.manage.libraries-dialog`) lists the same library with a
-   per-library checkbox.
+   too: `Bio | Manage | Monomer Libraries` dialog mode lists the
+   same library with a per-library checkbox.
 
 Expected:
 - The MonomerLibManager singleton is populated after init.
@@ -128,14 +107,11 @@ Expected:
 Steps:
 1. Make a working copy:
    `await grok.dapi.files.writeAsText('System:AppData/Bio/monomer-libraries/${WORKING_COPY}', sourceJson)`.
-   Verify it appears in the manage view after reload (atlas
-   `bio.manage.libraries-view`).
+   Verify it appears in the manage view after reload.
 2. Modify the JSON in memory: add one synthetic monomer entry
    (e.g. `{ "symbol": "XYZ_TEST", "molfile": "..." }`) and write
    the edited content back through the same
-   `grok.dapi.files.writeAsText` path. Atlas
-   `dep_lifecycle_ops[save_monomer_library]` covers this write
-   surface.
+   `grok.dapi.files.writeAsText` path.
 3. Reload the library via `getMonomerLibHelper()` → trigger the
    manager's reload entry point. Verify the synthetic monomer is
    now present in the in-memory library cache.
@@ -158,16 +134,12 @@ Steps:
 1. Open a Bio dataset that exercises the library (e.g. a HELM
    table from `System:AppData/Bio/tests/filter_HELM.csv`) so the
    detector classifies a `Macromolecule` column whose renderer
-   consults the monomer library for color coding (atlas
-   `bio.rendering` color-coding from monomer library).
+   consults the monomer library for color coding.
 2. Save the project via the ribbon SAVE button (NOT Ctrl+S, per
    the `feedback_no_ctrlS_for_layouts` policy); project name
    from Setup; **Data Sync** toggle ON. Cancel the auto-share
    dialog if it appears. Verify `POST /projects` succeeds and
    `grok.dapi.projects.find(<id>)` returns the saved project.
-   Atlas `dep_lifecycle_ops[save_project_with_analysis]` (which
-   spans `affected_source_classes: [all]` for the project save
-   path).
 3. Close the project and reopen via
    `grok.dapi.projects.find(<id>)` → `project.open()`. Verify
    the reopened project:
@@ -205,63 +177,13 @@ Expected:
 
 ## Notes
 
-- Origin: chain rev 8
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[1]`
-  (`source_class: monomer_library`, `spec_target:
-  bio-lifecycle-monomer-library-spec.ts`). Lands the
-  intent-layer `.md` realization that
-  `F-PROACTIVE-COVERAGE-01` (SCOPE_REDUCTION, cycle
-  2026-06-01-bio-migrate-01) cited as the gap. `.ts`
-  realization (`spec_target`) is downstream Automator / Phase
-  C, not gated by F.
-- atlas entry derived from
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[1]`
-  (chain author, cycle 2026-05-30-bio-chain-bootstrap-01).
-- `dep_lifecycle_ops` exercised (per
-  `proactive_lifecycle_specs[1].bundled_ops`):
-  `load_monomer_library` (Scenario 1.2, 1.3),
-  `save_monomer_library` (Scenario 2.1, 2.2),
-  `save_project_with_analysis` (Scenario 3.2).
-- target_layer rationale: `playwright` — the lifecycle spans
-  the ribbon `Bio | Manage | Monomer Libraries` dispatch,
-  the manage view / dialog UI surface, and the Save Project
-  ribbon path. `apitest` cannot exercise the ribbon nor the
-  save dialog; JS API substitutes are used for FileShare
-  read / write and project persistence assertions per the
-  same pattern as the sibling
-  `bio-lifecycle-macromolecule-column.md` scenario.
-- Sibling tests considered:
-  - `public/packages/Bio/src/tests/lib-manager-tests.ts`
-    covers the `MonomerLibManager` CRUD code path at the API
-    layer; this scenario adds the UI-layer + project-
-    persistence lifecycle layer the apitest does not exercise.
-- This scenario covers 5 sub_features
-  (`F-STRUCT-DENSITY-01` floor: 2 — well above;
-  `F-STRUCT-INTERACTION-01` floor: 3 — satisfied).
-  Scenario cardinality (per `## Scenarios` section): 4 (one
-  cleanup + three substantive lifecycle scenarios) — meets
-  the >= 2 scenarios floor.
-- Manual-only subset: none of the five covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas rev
-  3 `manual_only[]` list).
-- `coverage_type: regression` per STEP E heuristic: this is
-  general coverage of the monomer-library lifecycle shape
-  (not a single critical_path golden path → not smoke; not a
-  boundary value → not edge; not stress/latency-sensitive →
-  not perf). Atlas `bio.cp.monomer-library-crud` (priority p1)
-  and `bio.cp.manage-monomer-libraries` (p1) inform the
-  lifecycle steps but neither is exclusively realized here.
-- Deferrals: none mandatory. Per-monomer SMILES↔molfile
-  standardization UI (atlas `bio.manage.monomers-view`,
-  `bio.manage.standardize-library`) is NOT exercised here —
-  out-of-scope for the library-shape lifecycle; would be a
-  dedicated `bio-manage-monomer-libraries-crud.md` scenario
-  (chain `gaps[type: sub-feature-coverage-gap]` first-pass
-  proposal).
-- env_requirements: `FileShare connection with per-user
-  permissions` per chain `proactive_lifecycle_specs[1]`.
-- Related-bug context: `related_bugs: []` per chain
-  `proactive_lifecycle_specs[1].bugs_reinforcing` (empty).
+- Sibling coverage: `lib-manager-tests.ts` covers the
+  `MonomerLibManager` CRUD code path at the API layer; this
+  scenario adds the UI layer and project-persistence lifecycle
+  layer the apitest doesn't exercise.
+- Deferrals: per-monomer SMILES↔molfile standardization and the
+  full Manage Monomers CRUD UI aren't exercised here — that's
+  covered separately in `bio-manage-libraries-crud.md`.
 
 ---
 {

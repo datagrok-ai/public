@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## v.next
+
+* Moved the SequenceTranslator Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
 ## 1.11.4 (2026-07-03)
 
 * Markush enumerator redesign

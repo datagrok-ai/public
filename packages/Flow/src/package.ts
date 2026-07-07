@@ -45,17 +45,6 @@ export class PackageFunctions {
     tags: ['app'],
   })
   static funcflowApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): DG.ViewBase {
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
-    console.log(params);
-    setTimeout(() => {
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = false;
-      grok.shell.windows.showContextPanel = true;
-      grok.shell.windows.showHelp = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.windows.showToolbox = true;
-    }, 200);
     return new FuncFlowView();
   }
 
@@ -63,14 +52,6 @@ export class PackageFunctions {
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
     file.readAsString().then((json) => view.loadFromJson(json));
-    setTimeout(() => {
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = false;
-      grok.shell.windows.showContextPanel = true;
-      grok.shell.windows.showHelp = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.windows.showToolbox = true;
-    }, 200);
     return view;
   }
 

@@ -1,3 +1,14 @@
+---
+feature: histogram
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - histogram-spec.ts
+related_bugs: []
+---
+
 # Histogram tests (Playwright)
 
 All scenarios should start with the following sequence of events:

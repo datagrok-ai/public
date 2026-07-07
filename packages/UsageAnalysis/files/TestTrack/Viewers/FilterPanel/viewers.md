@@ -1,3 +1,14 @@
+---
+feature: filters
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes: []
+realized_as:
+  - viewers-spec.ts
+related_bugs: []
+---
+
 1. Open SPGI
 2. Open the **Filter Panel**
 
@@ -46,7 +57,7 @@
 #### 7. Trellis Plot
 
 1. Add a **Trellis Plot** viewer from the Toolbox
-2. Right-click the trellis plot viewer, from the context menu selest On Click > Filter
+2. Right-click the trellis plot viewer, from the context menu select On Click > Filter
 3. Click on a cell in the Trellis Plot — verify the grid and Filter Panel row count update to show only the rows corresponding to the clicked cell. If the clicked cell is empty, row count expected to be 0
 4. Esc to return to the previous filtered state
 5. Close the Trellis Plot viewer

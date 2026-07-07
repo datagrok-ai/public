@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [notebooks.menu.open, notebooks.meta.open, notebooks.menu.edit, notebooks.meta.edit, notebooks.menu.rename, notebooks.menu.save-as-json, notebooks.meta.save-as-json, notebooks.menu.share, notebooks.menu.delete, notebooks.meta.delete, notebooks.api.delete, notebooks.meta.render-icon, notebooks.meta.render-tooltip, notebooks.meta.render-details, notebooks.meta.bind, notebooks.meta.get-applicable-cases, notebooks.entity.get-applicable-cases]
---- */
 // ui-smoke OWNER of the seven pcmd* notebook context-menu flows. Each flow is DOM-driven:
 // right-click the seeded notebook card link -> click the context-menu item -> assert the
 // platform-side result. The seven flows verify:

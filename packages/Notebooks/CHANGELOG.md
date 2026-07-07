@@ -2,6 +2,8 @@
 
 ## v.next
 
+
+* Moved the Notebooks Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * jupyter-notebook container: Migrated to `datagrok-api==0.1.0` (resource-based `api.tables.download`/`upload`); updated "Open as script" parser accordingly
 
 ## 1.6.2 (2026-06-16)

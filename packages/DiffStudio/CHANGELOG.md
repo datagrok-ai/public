@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* Moved the DiffStudio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
 ## 1.6.5 (2026-06-26)
 
 * Inputs lookup: Apply the preselected input set's values on form load (previously they appeared only after toggling the choice)

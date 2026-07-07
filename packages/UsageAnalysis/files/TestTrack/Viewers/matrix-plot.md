@@ -1,3 +1,14 @@
+---
+feature: matrixplot
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - matrix-plot-spec.ts
+related_bugs: []
+---
+
 # Matrix plot tests (Playwright)
 
 All scenarios should start with the following sequence of events:

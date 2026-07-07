@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.api.namespaces, projects.shell.open, projects.shell.share-via-context-menu]
---- */
 // GROK-18345: share a project with a second user at View-and-Use + Full, then verify recipient can open it.
 // Share grant uses grok.dapi.permissions.grant; recipient re-auth via loginAsSecondUser (needs DATAGROK_AUTH_TOKEN_2).
 import {test, expect, Page} from '@playwright/test';

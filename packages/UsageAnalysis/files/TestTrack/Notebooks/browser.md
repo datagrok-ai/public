@@ -1,15 +1,5 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.browser
-  - notebooks.browser.render-card
-  - notebooks.browser.commands
-  - notebooks.browser.sortable-by
-  - notebooks.menu.browse-notebooks
-  - notebooks.menu.new-notebook
-  - notebooks.menu.apply-notebook
-  - notebooks.meta.render-accordion
-  - notebooks.entity.get-applicable-cases
 original_path: public/packages/UsageAnalysis/files/TestTrack/notebooks/browser.md
 migration_date: 2026-06-17
 source_text_fixes:
@@ -24,6 +14,8 @@ target_layer: playwright
 realized_as:
   - browser-spec.ts
 coverage_type: regression
+priority: p0
+realizes: [browse-and-open-html]
 produced_from: migrated
 related_bugs:
   - GROK-11693
@@ -109,8 +101,8 @@ See: `public/help/compute/jupyter-notebook.md#Notebooks browser`
 
 > **Ambiguity:** The exact selector for the "Filter templates" icon is not documented
 > in the refdoc; it may be the same as the `[name="icon-filter"]` Toggle filters
-> control or a distinct control. Needs MCP recon to confirm the selector before
-> automation. (Recorded as `filter-templates-icon-selector-unclear`.)
+> control or a distinct control. Needs recon to confirm the selector before
+> automation.
 
 ---
 
@@ -149,12 +141,11 @@ See: `public/help/compute/jupyter-notebook.md#Notebooks browser`
 
 > **Ambiguity:** The test fixture must open `demog.csv` before navigating to the
 > Notebooks browser; the original scenario states `(available if the demog dataset is
-> open)` as an inline condition. This must be a Playwright `beforeAll` fixture step.
-> (Recorded as `apply-to-demog-requires-demog-table-open-in-fixture`.)
+> open)` as an inline condition. This must be a fixture step run before the scenario.
 >
-> Note: The `apply_to_tables` dep lifecycle op requires a live `Notebooks-jupyter-notebook`
-> Docker container for execution. If the container is not running this step may fail
-> with an infra-level error; treat as environmental-flake in that case.
+> Note: Executing the notebook against the table requires a live Docker container for
+> Jupyter notebook execution. If the container is not running this step may fail with
+> an infra-level error; treat as environmental flakiness in that case.
 
 ---
 
@@ -188,16 +179,7 @@ See: `public/help/compute/jupyter-notebook.md#Notebooks browser`
 
 ## Notes
 
-- **Atlas coverage:** Sub-features covered include `notebooks.browser` (NotebooksView),
-  `notebooks.browser.render-card` (double-click to open HTML), `notebooks.browser.commands`
-  (ribbon `New Notebook`), `notebooks.menu.browse-notebooks`, `notebooks.menu.new-notebook`,
-  `notebooks.menu.apply-notebook`, `notebooks.meta.render-accordion` (context panel tabs),
-  and `notebooks.entity.get-applicable-cases` (Apply-to applicability logic).
-- **Integration classification:** This scenario exercises multiple sub_features in
-  co-existence (browser navigation, filter, context panel, apply-to, new-notebook) per the
-  chain analyzer's integration classification; `coverage_type: regression` aligns with
-  `pyramid_layer: integration`.
-- **GROK-11693** (Sharing tab NullError for notebook created via Open in Notebook) is
+- **GROK-11693** (Sharing tab NullError for a notebook created via Open in Notebook) is
   directly exercised in Step 3. This scenario is the primary regression guard for that bug.
 - See `public/help/compute/jupyter-notebook.md` for the help-page navigation reference.
 

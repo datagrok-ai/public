@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.transform.helm-to-mol, bio.transform.molecules-to-helm, bio.transform.to-atomic-level, bio.transform.to-atomic-level.action, bio.transform.to-atomic-level.api, bio.transform.to-atomic-level.single]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

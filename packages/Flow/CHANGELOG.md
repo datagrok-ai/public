@@ -2,6 +2,132 @@
 
 ## v.next
 
+### Precise run-state invalidation
+
+* Graph edits are now **classified** (`GraphEdit`: node added/removed, connection added/removed,
+  parameters changed, cleared) and invalidate **only the affected downstream cone** — previously
+  *any* change (even adding a disconnected node) flipped every node to "Out of date".
+  * Adding a node invalidates nothing (it isn't wired to anything yet).
+  * Adding or removing a connection (data, pass-through, or order edge) invalidates its **target**
+    and everything downstream; the source keeps its completed result.
+  * Editing a node's parameters or inputs — property panel, function-editor dialog, column picker —
+    invalidates that node and everything downstream. This previously invalidated **nothing** (the
+    panel wrote values silently); title and description edits stay cosmetic and invalidate nothing.
+  * Removing a node drops its state; its connections' removal events handle the downstream cone.
+* Invalidation is precise across all run artifacts: node status/visuals, incoming-wire styling,
+  outgoing wire labels, captured live values (`__ffFlowLive` — so single-node rerun and column-picker
+  reuse stay available for still-valid nodes), and the output preview (closed only when it shows an
+  invalidated node).
+
+### Autorun
+
+* New **ribbon toggle (bolt icon)** — faded outline when off (0.8 opacity, default font-weight),
+  colored **and filled** when on (font-weight 600 renders the FA bolt as its solid variant), with a
+  state-aware tooltip. When on, the flow **reruns automatically** (debounced, 1 s after the last
+  edit) on any result-affecting change.
+* **In-place transforms are isolated per node** (instrumented runs): every dataframe crossing into a
+  function step is snapshot-cloned (`__ff_clone`) before the call; the pass-through, the live-value
+  stash, and inlined `table.col(...)` args all use the snapshot. Previously an in-place function
+  (descriptor calcs, AddNewColumn, …) mutated the very instance the upstream node had captured — so
+  a node's preview showed columns added by *downstream* nodes, an open shell table picked via Select
+  Table got modified, and an autorun slice re-run applied the transform **twice** (the boundary
+  value it read had already been mutated by the previous run). Now every node's captured value is
+  the state *at that node*, and re-runs are idempotent. Clean (exported) scripts are unchanged —
+  they run once from scratch and keep the platform's in-place idiom.
+* **Switching autorun on runs immediately**: everything without a fresh result (a never-run flow
+  entirely; a half-run flow just the missing part + downstream) is scheduled at once — no need to
+  make an edit first (`ExecutionController.pendingNodes` → `AutorunScheduler.kick`).
+* **Clicking a node is not an edit**: building the context panel initializes its inputs, and DG
+  inputs can fire `onValueChanged` during initialization — previously each selection reported a
+  parameter edit (invalidating results and, with autorun on, rerunning the flow on every click).
+  Every property-panel change handler is now guarded by a per-editor **value-change reporter**
+  (`PropertyPanel.changeReporter`): an edit is reported only when the value actually differs from
+  the last seen one (scalars compared by string form, arrays/objects by JSON). Covered by a
+  user-side test (repeatedly opening the panel for value-bearing nodes, incl. OpenFile, emits zero
+  `params-changed`; a real edit reports exactly once, re-entering the same value not at all).
+* Reruns are **incremental**: only the invalidated slice runs, with its boundary inputs read from
+  values captured by the previous run (the single-node-rerun machinery); falls back to a full run
+  when nothing was captured yet. Consecutive edits coalesce into one run; a run in progress
+  postpones the next one.
+* Autorun is deliberately silent: no validation toasts (an invalid mid-edit graph just waits for
+  more edits), no run dialog (flows whose run would prompt for script inputs are skipped), no
+  selection stealing — but if the invalidation closed the output preview, the autorun re-opens it
+  with fresh values once its node completes.
+* **Fixed: an autorun firing while a function-editor dialog was open hijacked the dialog.** The
+  dialog intercepts the global `d4-before-run-action` event to save values without executing — but
+  that event fires for **every** client funccall, and the interception matched by func. An autorun
+  slice re-running the same function (e.g. the AddNewColumn you were editing) mid-dialog was
+  mistaken for the dialog's run action: the rerun's call got canceled and the round-trip resolved
+  early with the wrong funccall — the user's OK then wrote nothing back (the "works the second
+  time" race). Three-layer fix: the autorun scheduler is **held** while an editor dialog is open
+  (edits accumulate; the rerun fires right after the writeback), the launcher waits for any
+  in-flight run to drain before opening, and the interception **ignores events while a Flow run is
+  executing** (`createFuncCallEditor`'s `ignoreEvent`). Reproduced deterministically in a test: a
+  concurrent same-function call while the dialog is open must execute uncanceled and must not
+  resolve the round-trip.
+
+### Only ready nodes run
+
+* **Runs (autorun and the manual Run/Debug) never execute an unready node** — one missing a
+  required input or property — nor anything downstream of it. Previously a plot with no table, a
+  Select Column / Add Table View with no table, or a function missing a required column would be
+  emitted and fault at run time (or silently do nothing); now the whole downstream cone of every
+  unready node is pruned from the run and the ready subgraph runs on its own.
+  * **Readiness = required inputs + required properties.** Node requirements were widened beyond the
+    func/viewer required *inputs* (`requiredInputs`) with a new **`requiredProps`** (panel
+    properties that must be filled). Declared on the custom nodes that needed it: **Select Column**
+    (`table` + `columnName`), **Select Columns** (`table` + `columnNames`), **Select Table**
+    (`tableName`), **Add Table View** (`table`). `nodeMissingRequirements` unions both and drives
+    the run gate **and** the on-node **"Needs input"** hint (which now flags an empty Select Table
+    name, an unset column, …, not just unwired sockets).
+  * **Autorun** silently drops the unready cone; if nothing is left ready, it waits for the next
+    edit. **Manual Run/Debug** runs the ready subgraph and shows a one-line warning naming the
+    nodes it skipped; if *nothing* is ready it says so instead of running an empty script.
+  * `ExecutionController.runnableNodes()` exposes the ready set (pure — used by the gate and tests).
+
+### Output preview: add to workspace, in-place column view
+
+* **"Add to workspace" is now on every preview**, not just the context-panel dataframe row — a small
+  `+` overlaid in the preview's top-right corner (same corner treatment as the viewer gear).
+  * **DataFrame / column** → opens a fresh table view over a clone
+    (`grok.shell.addTableView(t.clone())`).
+  * **Viewer** → every viewer is DataFrame-backed, so it opens a table view over a clone of the
+    viewer's dataframe, recreates the viewer on that clone (a **new** viewer, same look via
+    `getOptions().look` → `setOptions`), and docks it to the **right** of the table view. Enabled for
+    any viewer-output node.
+* **Column outputs of in-place transforms now preview the whole table, scrolled to the produced
+  column.** Most column-producing functions (e.g. Add New Column) mutate their input table and return
+  the added column. Showing that column alone hid the context it belongs to. The instrumented run now
+  detects — **by instance** (Dart-handle identity, since each wrapper access makes a fresh JS object)
+  — whether the output column is one of the node's *single* input table's columns; if so it captures a
+  clone of the whole table plus the column name (`__ff_col_summary` → `tableClone` / `scrollToColumn`)
+  and the preview renders the table scrolled to that column. Zero or several input tables, or a
+  genuinely standalone column, keep the one-column grid. Add-to-workspace works in both modes.
+
+### Demo flows shipped as `.flow` scripts
+
+* The two bundled demos (`Workflow Demo`, `Sequence demo`) are now also committed as first-class
+  **flow scripts** under `scripts/` (`.flow` — the language the `flow` scriptHandler registers), so
+  they register as runnable/reusable functions on publish, not just Start-panel templates. Each
+  carries the proper annotation header (`//name` / `//language: flow` / `//tags: flow` /
+  execution-ordered `//output:` lines) followed by the ffjson body — the exact `flowScriptText`
+  format. A new **Flow: bundled flow scripts** test regenerates the canonical body from each
+  `files/*.ffjson` and asserts the committed headers match, so the hand-committed files can't drift.
+
+### Tutorials & how-tos updated for everything above
+
+* The **interface tour** gained stops for the Autorun bolt and the bottom output panel; the status
+  step explains the downstream-only "Out of date" marking; the Save & Open step now describes the
+  **platform** save (with `.ffjson` import/export in the Flow menu).
+* Stale how-tos fixed: `how-save` / `how-open` no longer claim Save downloads a `.ffjson` file.
+* Five new how-tos: **rerun automatically** (autorun toggle, hands-on), **why "Out of date"**,
+  **edit parameters in the function's own dialog** (full demog → AddNewColumn → Open editor ladder,
+  gated on the real dialog), **reuse a saved flow** (Workflows section), and **rerun just one node**.
+* The tutorials mention the output panel, autorun, and Workflows where relevant ("Load data…"
+  finale, "Find the right function" group-by step, "See & reuse the generated script" save/finish
+  steps). The guide content test now pins this coverage (the five question ids + the two new tour
+  stops must exist).
+
 ### SetVar ⇄ Output unification
 
 * **SetVar nodes and Output nodes now compile to the same thing.** A SetVar node also declares a

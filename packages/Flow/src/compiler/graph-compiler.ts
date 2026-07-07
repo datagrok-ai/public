@@ -27,6 +27,12 @@ export interface CompiledStep {
   inputs: Map<string, string>;
   /** real output slot key → variable name we declared. */
   outputs: Map<string, string>;
+  /** With `cloneDataframeInputs` (instrumented runs): snapshot variable →
+   *  original source expression, one per connected dataframe input. The call,
+   *  the pass-through outputs, and the live-stash all use the snapshot, so an
+   *  in-place function mutates its own copy — never the upstream node's
+   *  captured value (which must stay "the state at that node"). */
+  cloneInputs?: Map<string, string>;
   /** Snapshot of node.properties at compile time. */
   properties: Record<string, unknown>;
   /** Snapshot of node.inputValues (hardcoded primitive defaults). */
@@ -53,12 +59,44 @@ export function sliceUpTo(flow: FlowEditor, targetId: string): Set<string> {
   return result;
 }
 
+/** Every node whose result can be affected by a change at `rootId`: the node
+ *  itself plus all its transitive successors (walking connections forward —
+ *  data, pass-through, and order edges alike). The mirror of {@link sliceUpTo};
+ *  used to invalidate run results precisely after a graph edit. */
+export function sliceDownFrom(flow: FlowEditor, rootId: string): Set<string> {
+  const connections = flow.getConnections();
+  const result = new Set<string>();
+  const stack = [rootId];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (result.has(id)) continue;
+    result.add(id);
+    for (const c of connections)
+      if (c.source === id) stack.push(c.target);
+  }
+  return result;
+}
+
 /** When `liveBoundary` is set, a connection whose *source* node is not in the
  *  set resolves to a `_ffLive(nodeId, outputKey)` call — reading the value that
  *  node produced in a prior instrumented run from the live-value registry —
  *  instead of an in-script variable. This is what lets a single node be re-run
  *  in isolation (its upstream inputs come from the registry, not a re-run). */
-export function compileGraph(flow: FlowEditor, liveBoundary?: Set<string>): CompiledStep[] {
+export interface CompileOptions {
+  /** Snapshot-clone every connected dataframe input of a func step (see
+   *  `CompiledStep.cloneInputs`). On for instrumented emission: many platform
+   *  functions transform tables **in place**, and without per-step clones they
+   *  would mutate the very instance stashed as the upstream node's live value —
+   *  corrupting node previews (a node's preview must show the state AT that
+   *  node) and making autorun slice re-runs non-idempotent (e.g. re-running a
+   *  descriptor calc appends its columns a second time). Off for clean scripts,
+   *  which run once from scratch and keep the platform's in-place idiom. */
+  cloneDataframeInputs?: boolean;
+}
+
+export function compileGraph(
+  flow: FlowEditor, liveBoundary?: Set<string>, opts?: CompileOptions,
+): CompiledStep[] {
   const sortedIds = topologicalSort(flow);
   const connections = flow.getConnections();
 
@@ -186,6 +224,25 @@ export function compileGraph(flow: FlowEditor, liveBoundary?: Set<string>): Comp
       if (val !== undefined)
         inputMap.set(key, formatLiteral(val, slotType ?? 'dynamic'));
     }
+    // Snapshot-clone connected dataframe inputs (instrumented runs): rewrite
+    // the input expression to a fresh snapshot variable BEFORE pass 2, so
+    // inlined `table.col(...)` args select from the very instance the call
+    // receives. The pass-through mapping below then also picks up the snapshot
+    // — the (possibly mutated) copy flows on, the upstream value stays intact.
+    const cloneMap = new Map<string, string>();
+    if (opts?.cloneDataframeInputs) {
+      for (const key of inputKeys) {
+        if (!incoming.get(nodeId)?.get(key)) continue; // literals aren't shared
+        if (slotTypeOf(node, key) !== 'dataframe') continue;
+        const srcExpr = inputMap.get(key);
+        if (!srcExpr || srcExpr === 'undefined') continue;
+        const snapVar = uniqueVarName(`${varName}_${key}_in`, usedVarNames);
+        usedVarNames.add(snapVar);
+        cloneMap.set(snapVar, srcExpr);
+        inputMap.set(key, snapVar);
+      }
+    }
+
     // Pass 2: inline unconnected column / column-list values as `table.col(...)`
     // expressions, resolving the table from the node's `columnTables` association.
     for (const key of inputKeys) {
@@ -219,6 +276,7 @@ export function compileGraph(flow: FlowEditor, liveBoundary?: Set<string>): Comp
       nodeId, nodeType: 'func', funcName,
       variableName: varName,
       inputs: inputMap, outputs: outputMap,
+      cloneInputs: cloneMap.size > 0 ? cloneMap : undefined,
       properties: {...node.properties, _passthroughCount: ptCount},
       inputValues: {...node.inputValues},
     });

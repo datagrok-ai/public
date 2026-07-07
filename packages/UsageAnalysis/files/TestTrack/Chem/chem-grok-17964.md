@@ -1,9 +1,10 @@
 ---
 feature: chem
-sub_features_covered: [chem.notation, chem.notation.action, chem.notation.convert-mol]
 target_layer: playwright
 pyramid_layer: bug-focused
 coverage_type: edge
+priority: p1
+realizes: [GROK-17964]
 produced_from: atlas-driven
 produced_for: chem-grok-17964-spec.ts
 authored_date: 2026-05-11
@@ -20,18 +21,12 @@ completion, multiple invocations, and emergence of new molecule columns from the
 conversion itself**. Duplicate registration after a handler invocation (the literal
 GROK-17964 surface) is the regression this scenario catches.
 
-Per chain YAML (`scenario-chains/chem.yaml` rev 2
-`bug_focused_candidates[chem-grok-17964-spec.ts]`): independent scenario
-(`depends_on: []`), `pyramid_layer: bug-focused`, `target_layer: playwright`,
-strategy `simple`. Parallel-coverage on `chem.notation.*` with `info-panels.md`
-(Context Panel walk, `coverage_type: regression`) and `sketcher.md` (notation round-
-trip via clipboard, `coverage_type: regression`). This spec owns the exactly-once
+This spec runs parallel to `info-panels.md` (Context Panel walk) and `sketcher.md`
+(notation round-trip via clipboard) — it owns specifically the exactly-once
 registration invariant.
 
-Bug-library reference: `references/bug-library/chem.yaml :: GROK-17964` —
-title *Chem: Duplicate "Convert Notations" option appears in the context panel*,
-priority p2, status `fixed`, `test_coverage: needed`. Atlas surface:
-`chem.notation.action` (column-action surface for notation conversion).
+Bug reference: GROK-17964 — *Chem: Duplicate "Convert Notations" option appears in
+the context panel* (priority p2, fixed).
 
 ## Setup
 
@@ -59,9 +54,9 @@ entry each.
    so the Context Panel renders in column-context mode (Actions pane visible).
 2. **Baseline — assert single Convert Notation registration.** Count the
    `label.d4-link-action` elements whose text starts with `"Convert Notation"`.
-   Expected: exactly 1. (If 0 — the Chem package's `chem.notation.action`
-   surface failed to register at all; if ≥2 — GROK-17964 regression has
-   already landed at initial render.)
+   Expected: exactly 1. (If 0 — the Chem package's notation-conversion action
+   failed to register at all; if ≥2 — GROK-17964 regression has already
+   landed at initial render.)
 3. **Cancellation path.** Click the `Convert Notation...` link → the
    `Convert Notation` dialog (`.d4-dialog`) opens with controls
    `[name="input-Target-Notation"]` (SELECT), `[name="input-Overwrite"]`
@@ -104,55 +99,16 @@ de-coupling the spec from conversion-output-naming behavior.
 
 ## Notes
 
-- **`coverage_type: edge`** — registration-leak edge case after handler
-  invocation; this scenario asserts the exactly-once invariant for
-  `chem.notation.action`. Happy-path Context Panel walk (Chemistry section
-  rendering across notation formats) is owned by the parallel `info-panels.md`
-  scenario (`coverage_type: regression`, `pyramid_layer: integration`).
-- **Selector anchoring — `label.d4-link-action` only.** The literal text
-  `"Convert Notation..."` appears in TWO classes of element: (1)
-  `label.d4-link-action` inside `span.d4-entity-markup-row` (the panel-
-  attached entry — our target), and (2) `div.d4-menu-item-label` inside
-  `div.d4-menu-item.d4-menu-item-vert` (a hidden menu fragment with
-  `rect = {x:0, y:0, w:0}`). The selector
-  `label.d4-link-action` excludes the menu fragment cleanly; never select on
-  the broader `.d4-menu-item-label` text alone or the count is poisoned by
-  the hidden duplicate.
-- **Column-context mode required.** The Actions pane that lists Convert
-  Notation renders only when `grok.shell.o` is a column object (column-
-  context Context Panel). Cell-context mode (`grok.shell.o = df.cell(...)`)
-  shows molecule-level tabs (Chemistry / Biology / Structure) WITHOUT the
-  column-Actions pane. The bug-library repro says "click Convert Notations
-  in the context panel" — the actionable label lives on the column-context
-  pane, not the cell-context tabs.
-- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, test
-  account, Chem package v1.17.6).** All seven steps pass on the current build:
-  baseline=1, post-CANCEL=1, post-OK on original=1, on new column=1, post
-  multi-cancel=1. GROK-17964 is `status: fixed` per bug-library;
-  test exercises the post-fix invariant as a regression-lock. No
-  `test.fixme()` — the spec is enabled.
-- **Helpers usage.** Standard `loginToDatagrok` + `softStep` from
-  `helpers-registry.yaml`. Inline patterns for dataset open and Context
-  Panel focus — no new helper authored under reuse threshold (single-use
-  pattern; helper authoring threshold ≥3 not reached).
-- **Project save/reopen NOT included.** Bug edge_case_for_atlas mentions
-  "Worse, this duplicate state persists across project reload (suggesting
-  it is serialized somewhere)". The reload-persistence channel is excluded
-  from this spec for two reasons: (a) the exactly-once invariant during the
-  action lifecycle is the primary registration-leak surface — if the action
-  doesn't duplicate during the lifecycle, it cannot duplicate via reload;
-  (b) project save+reload incurs cross-suite state coupling
-  (auth.json + project upload + reload navigation) that pushes the spec
-  beyond `strategy: simple` for marginal regression-coverage gain. A
-  separate cross-cutting "context panel state persistence" scenario could
-  be authored in a future cycle if a related project-reload regression
-  surfaces.
-- **No JS API substitution.** Steps 3, 4, 7 (click `Convert Notation...`
-  link, click OK, multi-CANCEL flow) exercise the column-Actions pane
-  UI vector under test (`chem.notation.action`). JS API direct invocation
-  of `convertMoleculeNotation` would NOT exercise the action-registration
-  lifecycle that the bug lives in (registration is a panel-rendering
-  side-effect, not an API-call side-effect).
-- **Order in chain.** Bug-focused candidate; placed parallel to
-  `info-panels.md` and `sketcher.md`. No `depends_on:` ordering —
-  independent scenario.
+- **Column-context mode required.** The Actions pane that lists Convert Notation renders
+  only when the Context Panel is in column-context mode (column selected). Cell-context
+  mode (a single molecule cell selected) shows Chemistry / Biology / Structure tabs
+  instead, without the column-Actions pane.
+- **Why the action must be clicked, not called directly.** Convert Notation registration
+  is a panel-rendering side effect, not an API-call side effect — invoking
+  `convertMoleculeNotation` via the JS API would not exercise the registration-leak
+  surface the bug lives in.
+- **Project save/reopen not covered.** The bug report notes the duplicate can persist
+  across a project reload, but this spec doesn't test that path — if the action doesn't
+  duplicate during a single session's lifecycle, it can't duplicate via reload, and
+  project save+reload adds cross-suite state coupling for marginal extra coverage. A
+  separate scenario could be authored later if a reload-specific regression surfaces.

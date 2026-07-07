@@ -1,14 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.radar
-  - charts.sunburst
-  - charts.tree
-  - charts.timelines
-  - charts.echart-base
-  - charts.echart-base.table
 target_layer: apitest
 coverage_type: regression
+priority: p0
+realizes: [charts.cp.open-viewer-with-required-columns]
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -22,18 +17,12 @@ related_bugs: []
 # Charts — viewer API contract
 
 API-contract scenario for the four Charts package viewers (Radar, Sunburst,
-Tree, Timelines). Pure JS API surface verification — no DOM driving. Pairs
-with the playwright-layer scenarios (`radar.md`, `sunburst.md`, `tree.md`,
-`timelines.md`) which cover the same viewers from the UI side.
-
-`target_layer: apitest` per Decision 1.5 — this scenario produces a
-`-api.ts` spec with no `page.click` / `page.fill` / `page.locator` /
-`page.hover` / `page.press` calls. Verification flows entirely through
-`grok.dapi.*` + `grok.shell.*` + `viewer.props.*` + `viewer.setOptions` /
-`viewer.getOptions`.
-
-`pyramid_layer: integration` — co-exercises shell + dataframe + viewer +
-property-machinery subsystems.
+Tree, Timelines). This checks the JS API surface only — no UI/DOM driving —
+exercising the shell, dataframe, viewer, and property-machinery layers
+together (`grok.dapi.*` / `grok.shell.*` / viewer `props.*` / `setOptions` /
+`getOptions`). It pairs with the playwright-layer scenarios (`radar.md`,
+`sunburst.md`, `tree.md`, `timelines.md`), which cover the same viewers
+from the UI side.
 
 ## Setup
 
@@ -109,27 +98,20 @@ Verification: `expect(propNames).toEqual(expect.arrayContaining([<expected>]))`.
 
 ## Notes
 
-- **`target_layer: apitest`** — paradigm enforced by Critic E
-  E-LAYER-COMPLIANCE-01 mechanical regex. Spec MUST NOT contain
-  `page.click`, `page.fill`, `page.locator`, `page.hover`, `page.press`,
-  `page.keyboard`, `page.mouse`, `dlg.*` calls. Verification flows
-  through `grok.*` JS API only.
-- **Why apitest layer?** The viewer API surface (addViewer, setOptions,
-  getProperties, props.get/set) is entirely exercise-able via JS API
-  without DOM. Pairs with the playwright-layer specs that cover the
-  UI surface for the same viewers — the two layers cover orthogonal
-  concerns (API contract vs UI rendering).
-- **Cold-start race tolerance.** Charts package webpack-lazy-loads on
-  first viewer creation. All `setOptions` and `props.get` calls in the
-  spec wrap with try/catch returning null on race; assertions become
-  conditional (`if (value != null) expect(...)`). The contract is
-  "setOptions does not throw + viewer attaches", not strict round-trip
-  equality.
-- **Helpers used:** `softStep`, `loginToDatagrok`, `specTestOptions`,
-  `stepErrors` from `../spec-login.ts`. No new helpers needed.
-- **Authority + scope:** atlas-driven scenario; closes a documented gap
-  (no apitest-layer .md scenario existed for Charts viewers). Sister
-  to `Projects/lifecycle-api.md` precedent (target_layer: apitest).
+- This spec deliberately contains no DOM driving (no `page.click`,
+  `page.fill`, `page.locator`, `page.hover`, `page.press`) — every
+  check goes through the `grok.*` JS API only.
+- Why API-only: the viewer API surface (addViewer, setOptions,
+  getProperties, props.get/set) is fully exercisable without touching
+  the DOM. It complements the playwright-layer specs, which cover the
+  same viewers' UI rendering — the two together cover the API contract
+  and the UI surface as separate concerns.
+- Cold-start race tolerance: the Charts package lazy-loads on first
+  viewer creation, so `setOptions` and `props.get` calls are wrapped in
+  try/catch and assertions become conditional
+  (`if (value != null) expect(...)`). The contract being verified is
+  "setOptions does not throw and the viewer attaches," not strict
+  round-trip equality.
 
 ## Dataset metadata
 

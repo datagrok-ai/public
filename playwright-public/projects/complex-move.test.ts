@@ -1,10 +1,12 @@
-// Verifies moving a saved project to a different namespace/space via the
-// JS API and confirming the move committed.
+/* ---
+sub_features_covered: [projects.api.namespaces, projects.api.save, projects.move.commit, projects.move.move-entity]
+--- */
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
-import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {openTableFromFile, resetShell, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveProjectWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 
@@ -44,20 +46,20 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
           return {ok: false, reason: String(e).slice(0, 200)};
         }
       })()`);
-      if (!r.ok) {
-        console.warn('Move skipped: ' + r.reason);
+      // Legitimate skip ONLY when the API isn't shipped on this build; any other
+      // reason (a thrown move error) must fail so a real regression is caught.
+      if (!r.ok && r.reason === 'projects.move not implemented') {
+        test.skip(true, 'projects.move not implemented on this build');
         return;
       }
-      expect(r.ok).toBe(true);
+      expect(r.ok, r.ok ? '' : `project move to Home failed: ${r.reason}`).toBe(true);
     });
 
     await softStep('Step 4: create Space, move project to Spaces namespace', async () => {
       if (!saved) throw new Error('no saved project');
       const r = await evalJs<{ok: boolean; reason?: string; spaceId?: string}>(page, `(async () => {
         try {
-          // Note: shipped API is createRootSpace(name), NOT createRoot — verified
-          // 2026-05-05. Older specs/scenarios sometimes name createRoot; that
-          // symbol does not exist on js-api/src/dapi.ts (SpacesDataSource).
+          // Shipped API is createRootSpace(name), NOT createRoot.
           if (typeof grok.dapi.spaces?.createRootSpace !== 'function')
             return {ok: false, reason: 'spaces.createRootSpace not implemented'};
           const space = await grok.dapi.spaces.createRootSpace('${spaceName}');
@@ -71,18 +73,19 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
         }
       })()`);
       if (r.spaceId) createdSpaceId = r.spaceId;
-      if (!r.ok) {
-        console.warn('Space move skipped: ' + r.reason);
+      // Legitimate skip ONLY when an API isn't shipped on this build; any other
+      // reason (a thrown create/move error) must fail so a real regression is caught.
+      if (!r.ok && (r.reason === 'spaces.createRootSpace not implemented' || r.reason === 'projects.move not implemented')) {
+        test.skip(true, r.reason);
         return;
       }
-      expect(r.ok).toBe(true);
+      expect(r.ok, r.ok ? '' : `space create + move failed: ${r.reason}`).toBe(true);
     });
   } finally {
-    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
-    if (s)
+    if (saved)
       await deleteProjectWithCleanup(page, {
-        projectId: s.projectId,
-        tableInfoId: s.tableInfoId,
+        projectId: saved.projectId,
+        tableInfoId: saved.tableInfoId,
       });
     if (createdSpaceId) {
       await evalJs(page, `(async () => {
@@ -94,8 +97,5 @@ test('Projects / Complex Move: move project across namespaces via JS API', async
     }
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

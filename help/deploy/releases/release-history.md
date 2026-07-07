@@ -23,6 +23,39 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../../deploy/docker-compose/docker-compose.mdx)
 
+## 2026-07-02 Datagrok 1.27.7 release
+
+### Improvements:
+
+* [#3857](https://github.com/datagrok-ai/public/issues/3857): Filters: regular expression search now supports pasting lists of compounds
+* Date inputs: Added a calendar icon
+* Formats: Introduced the `G<N>` number format to eliminate floating-point conversion artifacts
+* Server settings can now be propagated from service parameters
+* JS API:
+  * Added support for `categoryGroups` in forms, enabling developers to build complex category hierarchies
+  * Exposed the `Project.close()` method.
+  * Added the `DG.SpaceView` wrapper and the `Project.isSpace` getter
+  * Exposed `InputForm.validateInputs` and the `onFormPropertyChanged` event
+  * Added `InputForm.showInput()` and `hideInput()` methods
+  * Added the visible property to `InputBase`.
+  * Added support for custom history definitions in custom editors
+  * Added a DAPI endpoint for retrieving favorites across multiple groups
+  * `nullable` is now a setter and automatically revalidates inputs when changed
+  * Function annotation `nullable` is now respected for input parameters
+  * Table and choice inputs now correctly support null values, no longer auto-select data frames, and can be cleared manually.
+  * Optional inputs are no longer pre-filled when they shouldn't be.
+  * Fixed styling of boolean and switch inputs in compact forms.
+ 
+### Fixed:
+
+* Filters added from the column menu are now correctly disabled
+* Search: Fixed parsing of numeric filter range expressions
+* Queries now resolve relative date/time patterns using the client's time zone
+* Refreshing doesn't break copy/paste behavior
+* Toolbox: Fixed query parameter search fields collapsing in narrow Source pane layouts
+* [#3830](https://github.com/datagrok-ai/public/issues/3830): Projects now keep the Save button visible after saving personal view customizations
+* Model Hub: Fixed errors when switching between views and  preview rendering for models
+
 ## 2026-05-20 Datagrok 1.27.5 release
 
 ### Improvements:

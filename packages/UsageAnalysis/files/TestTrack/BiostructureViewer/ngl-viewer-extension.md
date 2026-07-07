@@ -1,16 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.ngl-viewer
-  - biostructure.ngl-viewer.props
-  - biostructure.file-open.importWithNgl
-  - biostructure.file-preview.ngl-structure
-  - biostructure.file-preview.ngl-surface
-  - biostructure.file-preview.ngl-density
-  - biostructure.grid-context-menu.show-ngl-viewer
-  - biostructure.panel.pdb-id-ngl
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -77,16 +70,11 @@ gate_verdicts:
 
 # BiostructureViewer — NGL viewer extension
 
-Coverage extension scenario authored under cycle
-2026-06-04-biostructureviewer-migrate-01 Gate F SR routing. Extends the section
-beyond the Mol*-centric smoke + bug-focused guards to the sibling NGL viewer
-surface (file-handler routing for Mol*-incapable extensions, NGL preview
-viewers, NGL-specific grid context-menu, NGL property surface, PDB_ID context
-panel widget that wraps an NGL canvas). All sub_features below have a non-empty
-net-new contribution against the live covered-union of 24 (the NGL viewer
-itself, `biostructure.ngl-viewer`, was already in the union via the
-`biostructureviewer-bug-grok-17967.md` regression guard; this scenario adds
-seven NGL-extension sub_features around it).
+Covers the sibling NGL viewer surface, beyond the main smoke test and the
+bug-focused guards: file-handler routing for structure formats Mol* cannot
+open, NGL preview panes in the Files browser, the NGL-specific grid
+context-menu entry, the NGL property surface, and the PDB_ID context-panel
+widget that wraps an NGL canvas.
 
 ## Setup
 
@@ -104,8 +92,6 @@ seven NGL-extension sub_features around it).
 ## Scenarios
 
 ### Scenario 1: NGL viewer add via JS API + property surface (Style + Data + Behaviour)
-
-Exercises `biostructure.ngl-viewer`, `biostructure.ngl-viewer.props`.
 
 Steps:
 1. Open a small table containing a Molecule3D column (PDB strings).
@@ -133,10 +119,6 @@ Expected:
 
 ### Scenario 2: NGL file-handler routing — extensions Mol* cannot open
 
-Exercises `biostructure.file-open.importWithNgl` plus
-`biostructure.ngl-viewer` (the viewer that receives the structure when the
-NGL-path handler dispatches).
-
 Steps:
 1. In the Files browser, navigate to a folder containing structure files of
    formats Mol* cannot parse — at least one each of `.mmtf`, `.cns`,
@@ -159,10 +141,6 @@ Expected:
 
 ### Scenario 3: NGL file pre-viewers — structure / surface / density
 
-Exercises `biostructure.file-preview.ngl-structure`,
-`biostructure.file-preview.ngl-surface`,
-`biostructure.file-preview.ngl-density`.
-
 Steps:
 1. In the Files browser, single-click a `.mmtf` file (do NOT double-click —
    single-click renders the preview pane, double-click opens via the file
@@ -184,9 +162,8 @@ Expected:
 
 ### Scenario 4: Grid context menu — Show NGL Viewer on a Molecule3D cell
 
-Exercises `biostructure.grid-context-menu.show-ngl-viewer` (the NGL twin of
-the existing `show-biostructure-viewer` flow covered by
-`biostructureviewer-bug-grok-14552.md`).
+This is the NGL twin of the "Show Biostructure Viewer" flow covered by
+`biostructureviewer-bug-grok-14552.md`.
 
 Steps:
 1. Open the prepared Molecule3D table from Setup step 3.
@@ -207,8 +184,6 @@ Expected:
 
 ### Scenario 5: PDB id context-panel widget — PDB id viewer (NGL wrapped)
 
-Exercises `biostructure.panel.pdb-id-ngl`.
-
 Steps:
 1. Use the prepared DataFrame from Setup step 3 (PDB_ID column with at least
    one valid PDB ID, e.g. `1QBS`).
@@ -226,36 +201,9 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale**: All five scenarios are UI-driven — they exercise
-  the NGL WebGL canvas, the Files-browser file-handler dispatch, the preview
-  pane, the grid-cell context menu, and the right-hand context panel widget.
-  None of these surfaces can be asserted from `apitest` alone (the WebGL canvas
-  needs a real browser, the file-handler dispatch is wired through the Files
-  browser UI, and the panel widget mount is a context-panel render). Hence
-  `target_layer: playwright`.
-- **coverage_type rationale**: `regression`. The scenarios are general
-  coverage of the sibling-viewer (NGL) surface — they do not map onto any of
-  the atlas's 7 `edge_cases[]` entries (which are bug-anchored to the Mol*
-  surface plus two documentation pitfalls — raw `pdb` prop without name, and
-  the async-render await pattern). They are not a critical_path / golden path
-  (no `priority: p0` mapping), so `smoke` is inappropriate; they are not a
-  boundary value or atlas-edge_case, so `edge` is inappropriate; they are not
-  stress / latency-sensitive, so `perf` is inappropriate. `regression` is the
-  STEP E heuristic default for general coverage.
-- **Bug coverage**: `related_bugs: []`. This scenario covers no bug-library
-  entries — Gate F's F-BUG-COVERAGE-01 has already closed in this cycle's
-  prior F dispatch (all 5 known bugs are covered by the 5 bug-focused
-  scenarios). This is a pure breadth-extension scenario.
-- **net_new**: Against `live_covered_union` (24 ids) and atlas `manual_only[]`
-  (empty), 7 of the 8 listed sub_features (all except `biostructure.ngl-viewer`)
-  are net-new. The eighth (`biostructure.ngl-viewer`) is included as the shared
-  surface that each NGL scenario lights up; it overlaps the union but the
-  scenario's *justification* is breadth (the seven new ids), so the
-  STEP C net-new refusal does not apply.
-- **Atlas citations**:
+- Source citations:
   - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md
-    (universal-refdoc; resolved via atlas `ui_reference_doc:` since path lives
-    off the default convention under `viewers/`).
+    (viewers reference doc).
   - See: public/packages/BiostructureViewer/src/package.ts#L142 — `importPdb`
     family registration; sibling `importWithNgl` at #L168.
   - See: public/packages/BiostructureViewer/src/package.ts#L190 — NGL preview

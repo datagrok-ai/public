@@ -1,10 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column
-  - powerpack.dialogs.add-new-column-func
 target_layer: playwright
 coverage_type: smoke
+priority: p1
+realizes: []
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-function-plus-icon
@@ -103,38 +102,18 @@ gate_verdicts:
 
 # Add New Column dialog — function insertion mechanisms (plus icon, drag-and-drop, auto-bound column parameter)
 
-Medium-length UI scenario verifying the function-insertion mechanics of
-the Add New Column dialog on the SPGI chem dataset: inserting a function
-via the hover plus-icon, repeating via drag-and-drop, and verifying that
+UI scenario verifying the function-insertion mechanics of the Add New
+Column dialog on the SPGI chem dataset: inserting a function via the
+hover plus-icon, repeating via drag-and-drop, and verifying that
 selected columns are auto-bound to the function's parameter when (and
 only when) the column type matches the parameter type.
 
-`pyramid_layer: ui-smoke` per `scenario-chains/powerpack.yaml` rev 1
-(Rule 1 fallback — single source (SPGI), `classification: simple`, no
-related bugs in frontmatter). NOT the chain's elected smoke witness;
-`coverage_type: regression` is used here (the chain reserves
-`coverage_type: smoke` for the elected smoke scenario at top-level
-`add-new-column.md`).
-
-`ui_coverage_delegated_to: add-new-column.md` — this scenario owns the
-function-insertion-mechanism specialty flows (plus-icon, drag-n-drop,
-auto-bound column parameter on type match) on its responsibility list
-and delegates the basic dialog-open-and-add flow to the smoke witness.
-
-`related_bugs: []` — no curated bug in `bug-library/powerpack.yaml`
-directly intersects this scenario's reproduction surface. (Cross-cutting
-candidates GROK-17109 and GROK-17004 affect the same `powerpack.dialogs.add-new-column`
-+ `powerpack.dialogs.add-new-column-func` sub-features, but their
-reproduction surfaces — datasync-persistence-and-recalc-on-rename and
-complex-paste-handler-crash respectively — are not exercised by the
-plus-icon / drag-and-drop / auto-bind flow here. See
-`scenario-chains/powerpack.yaml :: bug_focused_candidates[]` — neither
-GROK-17109 nor GROK-17004 lists this scenario in `spans`.)
+The dialog's basic open-and-add flow is covered by `add-new-column.md`.
 
 ## Setup
 
 A clean Datagrok session is the only shared setup. The scenario opens
-its own dataset; no fixture chaining (`depends_on: []` per chain rev 1).
+its own dataset; no fixture chaining is required.
 
 ## Scenarios
 
@@ -194,88 +173,3 @@ its own dataset; no fixture chaining (`depends_on: []` per chain rev 1).
     the `Id` column's type does not match `Abs`'s expected numeric
     input parameter type.
 
-## Notes
-
-- **target_layer: playwright** — chosen because a sibling
-  `input-functions-spec.ts` already exists at the playwright layer
-  (`existing-test-index.yaml` line 33501, layer `playwright`,
-  category `PowerPack`). All other Add-New-Column siblings
-  (`autocomplete-spec.ts`, `highlight-spec.ts`, `hints-spec.ts`,
-  `functions-sorting-spec.ts`, `formula-refreshing-spec.ts`,
-  `add-new-column-spec.ts`) are also Playwright specs, so the house
-  style is consistent.
-- **coverage_type: regression** — per the chain's smoke-scenario
-  election (`ui_coverage_plan.smoke_scenario: add-new-column.md`),
-  the top-level `add-new-column.md` owns the `smoke` slot. This
-  narrower per-flow scenario lands in `regression`.
-- **Helpers (already in registry, available for downstream
-  Automator):** `softStep`, `loginToDatagrok`, `specTestOptions`,
-  `stepErrors` from
-  `public/packages/UsageAnalysis/files/TestTrack/spec-login.ts` —
-  used by the existing `input-functions-spec.ts`.
-- **Bug-library status:** consulted —
-  `bug-library/powerpack.yaml` exists and was scanned. No curated
-  bug intersects this scenario's reproduction surface. Cross-cutting
-  candidates GROK-17109 (calculated-column persistence across
-  project save+datasync+reopen) and GROK-17004 (complex-paste-handler
-  crash) touch the same `powerpack.dialogs.add-new-column` /
-  `powerpack.dialogs.add-new-column-func` sub-features but their
-  invariants are not exercised by the plus-icon / drag-and-drop /
-  auto-bind flows. Chain `bug_focused_candidates[]` does not list
-  this scenario in `spans` for either bug.
-- **Decision log status:** queried — no
-  `failed_attempts WHERE feature == powerpack` entries that touch
-  the `AddNewColumn/input-functions.md` migration. No retry-skip
-  approaches apply.
-- **Atlas linkage (`derived_from:` provenance):**
-  - `powerpack.dialogs.add-new-column` interaction "click function
-    entry in functions panel → inserts function into formula with
-    auto-bound matching column" is derived from
-    `public/packages/PowerPack/src/tests/add-new-column.ts#L87`
-    (atlas `interactions[]` entry, test-mined). This is the
-    closest atlas-side analogue for the plus-icon / drag-and-drop
-    / auto-bind mechanics this scenario exercises.
-  - `powerpack.dialogs.add-new-column-func` interactions "click
-    Add New Column toolbar icon → opens AddNewColumnDialog" and
-    "Edit | Add New Column top-menu → opens AddNewColumnDialog"
-    are code-derived from
-    `public/packages/PowerPack/src/package.ts#L405`.
-- **Source-text fixes applied:**
-  - `add-new-column-dialog-title-case-normalization` — original
-    body referred to the dialog as `*Add new column*` (sentence
-    case in italics); migrated body uses the canonical product
-    title `**Add New Column**` (title case in bold) to match the
-    dialog's `[name="dialog-Add-New-Column"]` selector and the
-    convention used in sibling migrated scenarios (`hints.md`,
-    `highlight.md`).
-  - `text-filed-to-text-field-typo` — original body contained the
-    typo `text filed` (Steps 3 and 5); migrated body uses
-    `text field`.
-  - `fucntion-typo-corrected-to-function` — original body contained
-    the typo `fucntion` (Step 10, `The fucntion should be added`);
-    migrated body uses `function`.
-  - `drag-n-drop-phrase-normalization` — original body alternated
-    between `drag'n'drop` and `*plus* and drag'n'drop`; migrated
-    body uses the normalized phrasing `drag-and-drop` and
-    `+ icon` consistently. This matches the responsibility-key
-    spellings `add-new-column-function-plus-icon` and
-    `add-new-column-function-drag-drop` from the chain YAML.
-- **Unresolved ambiguities (surfaced for downstream awareness):**
-  - `sort-icon-glyph-described-not-named` — Step 9 describes the
-    sort control as "the sort-type icon in the top right corner /
-    two-blue-arrows icon". The existing `input-functions-spec.ts`
-    selects this control via `[name="icon-sort-alt"]`. The original
-    scenario text does not name the selector; the migrated body
-    keeps the visual description for human readers and leaves
-    selector-key resolution to the downstream Automator (the
-    selector is already present in the on-disk spec, so no
-    reference-file gap is introduced).
-  - `id-column-type-classification` — Step 10 verifies that the
-    `Id` column is NOT auto-bound to `Abs`'s numeric parameter,
-    because the column type does not match. The on-disk
-    `input-functions-spec.ts` line 244 asserts the formula text
-    is `Abs(num)` (no substitution). The SPGI `Id` column is
-    typed as string/qnum-like in the test fixture, so the
-    type-mismatch claim holds; the migrated body preserves the
-    original "type doesn't match the input parameter type"
-    wording without further classification.

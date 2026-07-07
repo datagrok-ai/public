@@ -1,39 +1,13 @@
-import {defineConfig, devices} from '@playwright/test';
+import {defineConfig} from '@playwright/test';
+import {baseConfig} from '@datagrok-libraries/test/src/playwright/base-config';
 
+// playwright-public hosts the core/platform E2E suites. All general config lives in
+// the shared base (@datagrok-libraries/test/src/playwright/base-config); here we only
+// set what is specific to this run dir.
 export default defineConfig({
+  ...baseConfig,
   testDir: '.',
-  testMatch: '**/*.test.ts',
-  // `helpers/` hosts utility modules + the headed-only `session-helpers.test.ts`
-  // that validates `logoutAndLoginAs` against a real second user. It cannot
-  // run headlessly (manual password entry) and is not a project-feature test,
-  // so we exclude the whole folder from test discovery.
+  // `helpers/` still holds the headed-only `session-helpers.test.ts` (manual second
+  // user, not CI-runnable). Exclude the folder from discovery.
   testIgnore: ['**/helpers/**'],
-  // Many specs share UI/server state across tests in a file (connection lifecycle,
-  // query lifecycle, scripts CRUD). Keep one worker by default — the suite is
-  // designed to be sequential. CI can opt into parallelism per-file via
-  // `test.describe.parallel` if/when specs are made independent.
-  fullyParallel: false,
-  workers: 1,
-  retries: process.env.CI ? 1 : 0,
-  // Per-test default timeout (2 minutes). Some Browse-tree drill-downs and
-  // identifier-config flows wait on cold-cache server fetches.
-  timeout: 120_000,
-  expect: {timeout: 15_000},
-  globalSetup: './e2e/global-setup.ts',
-  reporter: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME
-    ? [['list'], ['json', {outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME}]]
-    : [['list']],
-  outputDir: 'test-output',
-  use: {
-    baseURL: process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai',
-    storageState: 'e2e/.auth.json',
-    viewport: {width: 1920, height: 1080},
-    actionTimeout: 15_000,
-    navigationTimeout: 60_000,
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-  },
-  projects: [
-    {name: 'chromium', use: {...devices['Desktop Chrome']}},
-  ],
 });

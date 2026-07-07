@@ -1,14 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.add-relation
-  - projects.shell.share-via-context-menu
-  - projects.api.get-by-id
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [derive-then-save-inside-project, share_with_recipient_open, rename_project]
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -21,18 +16,16 @@ related_bugs:
 
 # Projects — Derived-source lifecycle (Pivot / Aggregate / Join)
 
-Chained lifecycle for projects whose tables include **derived** results
-(Pivot Table, Aggregate Rows, Join Tables). Exercises proactive
-coverage cell `source_class=derived × dep_lifecycle_op=
-share_with_recipient_open` per chain rev 3
-`proactive_lifecycle_specs[5]`. Reinforces GROK-19103 (derivation
-chain integrity — the bug where a Join result silently saved as a
-separate project that fails to open).
+Covers the lifecycle of a project containing derived tables — Pivot
+Table, Aggregate Rows, and Join Tables results built on top of a
+file-share source. Verifies save/reopen, sharing with a second user,
+and project rename all correctly preserve the derivation chain, and
+reinforces GROK-19103: a Join result must land in the active
+workspace, not get silently saved as a separate, broken project.
 
-UI coverage delegated to `projects-ui-smoke.md`. Derivations use the
-existing UI surfaces (Pivot dialog, Aggregate dialog, Join Tables
-dialog) — those are matrix-cell coverage owned by `uploading.md`'s
-source-matrix scenarios; this scenario does not own them.
+UI coverage delegated to `projects-ui-smoke.md`. The Pivot / Aggregate
+/ Join dialogs themselves are exercised by `uploading.md`'s
+source-matrix scenarios, not here.
 
 ## Setup
 
@@ -94,29 +87,18 @@ source-matrix scenarios; this scenario does not own them.
 
 ## Notes
 
-- **Origin: chain rev 3 proactive_lifecycle_specs[5]** with
-  `bugs_reinforcing: [GROK-19103]`. Variant C derived class.
-  Authored in Phase A.
-- **bugs_reinforcing: GROK-19103.** Step 2 explicitly asserts
-  the GROK-19103 invariant (Join result lands in active project,
-  not stray). This is reinforcement — the primary bug-focused
-  spec is `complex-derived-tables-spec.ts` per
-  PROJECTS-SPLIT-COMPLETION-PLAN bug-traceability line 304.
-- **`projects.add-relation` in sub_features.** Derived tables
-  create relations in the project (parent → derived chain).
-  Save persists those relations; reopen reconstructs them.
-- **No external rename for derived.** Per chain rev 3, derived
-  source class has `rename_external_dep` NOT in
-  `dep_lifecycle_ops_covered`. Derivations inherit parent's
-  external surface.
-- **UI coverage delegated.** Pivot / Aggregate / Join UI surfaces
-  are owned by `uploading.md` (source-matrix Cases 8 and 9 for
-  Pivot+Aggregate Add; Cases 6 and 7 for Join). This scenario
-  does NOT exercise those UI surfaces — uses JS API or assumes
-  matrix coverage.
-- **Helper 3 deferral.** Same pattern as
+- **Reinforces GROK-19103.** Step 2 explicitly asserts the
+  GROK-19103 invariant (a Join result lands in the active project,
+  not a stray one). This is a reinforcement — the primary bug-focused
+  spec for that bug is `complex-derived-tables-spec.ts`.
+- **No external rename for derived sources.** Derived tables inherit
+  their parent's source (here, a fixed file path with no rename
+  surface), so external-dependency rename isn't applicable to this
+  entry.
+- **UI coverage delegated.** The Pivot / Aggregate / Join UI surfaces
+  are owned by `uploading.md`'s source-matrix cases; this scenario
+  uses the JS API and assumes that matrix coverage.
+- **Deferred.** Recipient-side assertions are blocked on a
+  not-yet-registered login-as-another-user test helper, same as
   `projects-lifecycle-files.md`.
-- **Self-cleaning.** Step 7 deletes project. NOT in
-  `deleting.md.depends_on`.
-- **Sequencing within Wave 2C.** Second lifecycle scenario per
-  Plan line 217: blocker is Helper 3, no env provisioning.
+- **Self-cleaning.** Step 7 deletes the project.

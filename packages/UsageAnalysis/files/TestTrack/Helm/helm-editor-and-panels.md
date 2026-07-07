@@ -1,9 +1,26 @@
+---
+feature: helm
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [helm-cell-edit-roundtrip]
+realized_as:
+  - helm-editor-and-panels-spec.ts
+related_bugs: []
+---
+
 # Helm — cell rendering, Web Editor & Properties panel
 
-> **2026-06 editor rewrite.** The Pistoia/JSDraw2/Dojo stack was removed and
-> replaced by a Datagrok-native SVG HELM editor instrumented with `data-testid`
-> hooks. This scenario targets the new editor surface. See grok-browser
-> `references/helm.md` for the full selector map.
+Verifies that HELM sequences render as connected monomer structures in the
+grid, and that the HELM Web Editor — opened by double-clicking a cell or via
+the right-click **Edit Helm...** menu — lets a user inspect, edit, and
+validate a sequence (drawing, raw HELM text, and computed Formula / Molecular
+Weight / Extinction Coefficient) before saving it back to the cell with OK or
+discarding changes with Cancel. Also covers the editor's monomer palette,
+undo/redo, RNA builder, and the read-only Properties context panel. This
+targets the HELM editor after its 2026 rewrite from the old JSDraw2/Dojo
+drawing surface to a native SVG editor; see grok-browser `references/helm.md`
+for the UI selector map used by the steps below.
 
 ## Setup
 

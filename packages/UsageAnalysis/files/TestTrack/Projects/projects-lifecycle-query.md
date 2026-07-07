@@ -1,15 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.api.relations.list
-  - projects.add-relation
-  - projects.shell.share-via-context-menu
-  - projects.api.get-by-id
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [rename-dependent-entity-reopen, rename_external_dep, share_with_recipient_open, rename_project]
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -22,14 +16,15 @@ related_bugs:
 
 # Projects — Query-source lifecycle
 
-Chained lifecycle for projects sourced from a **provisioned saved
-query** on `System:Datagrok` (the platform's built-in metadata
-Postgres connection — always present). Exercises proactive coverage
-cells `source_class=query × dep_lifecycle_op=rename_external_dep`
-AND `source_class=query × dep_lifecycle_op=share_with_recipient_open`
-per chain rev 3 `proactive_lifecycle_specs[1]`. Full reproduction
-of github-3550 (external-Query rename invalidation, sister bug to
-GROK-19212 for tables).
+Covers the lifecycle of a project sourced from a saved query on
+`System:Datagrok` (the platform's built-in metadata Postgres
+connection, always present): save, share with a second user, rename
+the underlying query, and rename the project itself. This is the full
+reproduction of github-3550 — renaming a query that a project depends
+on must not silently break the project's reference to it (the table
+should either auto-resolve or fail with an explicit error, never go
+silently null). github-3550 is the query-side sibling of GROK-19212,
+which covers the same failure mode for renamed tables.
 
 UI coverage delegated to `projects-ui-smoke.md`.
 
@@ -113,18 +108,14 @@ UI coverage delegated to `projects-ui-smoke.md`.
   env-provisioned DB. The `System:Datagrok` connection is
   built-in (created by `ServiceConnectionsMigration` on every
   deploy) and shared with `allUsers`.
-- **github-3550 full reproduction.** Step 4 walks the bug's
-  exact reproduction path: external Query rename + project
-  reopen + relation-resolution check. Now that the test owns
-  the query, the rename always executes — no permission-based
-  skip path remains.
-- **`projects.api.relations.list` in sub_features.** Step 4
-  asserts on `(await grok.dapi.projects.find(<id>))`'s
-  relations list to verify rename impact. This sub_feature is
-  a primary observation surface for github-3550.
+- **github-3550 full reproduction.** Step 4 walks the bug's exact
+  reproduction path: rename the external query, reopen the project,
+  and check relation resolution. Because the test owns the query,
+  the rename always succeeds — there's no permission-based skip.
 - **UI coverage delegated.** All UI surfaces touched here
   (right-click rename, Save dialog, Sharing tab) are owned
-  by `projects-ui-smoke.md`. JS API path used here.
-- **Helper 3 deferral.** Recipient-side assertions blocked.
-- **Self-cleaning.** Cleanup deletes project + invokes
+  by `projects-ui-smoke.md`. This scenario uses the JS API path.
+- **Deferred.** Recipient-side assertions are blocked on a
+  not-yet-registered login-as-another-user test helper.
+- **Self-cleaning.** Cleanup deletes the project and invokes
   `provisioned.cleanup()` to delete the saved query.

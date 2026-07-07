@@ -1,5 +1,9 @@
 # Dendrogram changelog
 
+## v.next
+
+* Moved the Dendrogram Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
 ## 1.4.15 (2026-06-23)
 
 * Assign Clusters: optionally add per-cluster medoid columns — `Medoid Rank` (1 = most representative, enabling Top-N extraction) and `Avg Distance to Cluster` (each member's mean distance to the other cluster members). Computed per cluster without materializing the full distance matrix.

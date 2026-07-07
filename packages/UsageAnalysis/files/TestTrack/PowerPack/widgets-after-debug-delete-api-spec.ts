@@ -1,10 +1,6 @@
-/* ---
-sub_features_covered: [powerpack.widgets, powerpack.lifecycle.init, powerpack.dashboards, powerpack.welcome.view]
---- */
 // Frontmatter extraction (pre-author hooks):
 //   target_layer: apitest
 //   pyramid_layer: bug-focused (per scenario Notes block)
-//   sub_features_covered: [powerpack.widgets, powerpack.lifecycle.init, powerpack.dashboards, powerpack.welcome.view]
 //   ui_coverage_responsibility: [] (no DOM driving — apitest layer)
 //   related_bugs: [GROK-16915]
 //   produced_from: migrated

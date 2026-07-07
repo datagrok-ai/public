@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [notebooks.lifecycle.init-container, notebooks.lifecycle.notebooks-enabled, notebooks.lifecycle.init-plugin-dart, notebooks.lifecycle.init-meta, notebooks.plugin.notebook-view-func, notebooks.plugin.init-container-func, notebooks.browser.requires-capabilities, notebooks.editor.init-notebook, notebooks.editor.save-state-map, notebooks.editor.to-html, notebooks.assets.fleet-capability, notebooks.routes.save-file, notebooks.service.save-notebook-file]
---- */
 // Verifies the jupyter_container source-class lifecycle at the PLATFORM level across 6
 // scenarios: capability gate (Sc 6), container init + DOM-driven New Notebook seed (Sc 1),
 // notebook-view URL routing (Sc 2), save-file reachability / clean .ipynb round-trip (Sc 4),

@@ -1,4 +1,20 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [molecule_column]
+realized_as:
+  - st-lifecycle-molecule-column-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — Molecule Column Lifecycle
+
+Checks Markush structure enumeration on a Molecule (SMILES) column that
+contains R-group placeholders, launched from both the top menu and the cell
+context menu, and confirms that Zip and Cartesian enumeration modes produce
+the expected row counts.
 
 ## Setup
 

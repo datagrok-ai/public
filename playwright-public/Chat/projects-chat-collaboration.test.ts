@@ -13,7 +13,7 @@
 import {test, expect, Page} from '@playwright/test';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin, specTestOptions,
-} from '../spec-login';
+} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {
   gotoApp, setupSession, createProject, shareProjectWithUser, deleteProjectById,
   selectProjectAsCurrentObject, openChatsPane, postComment, commentByText, commentTexts,

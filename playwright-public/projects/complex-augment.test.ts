@@ -1,15 +1,17 @@
-// Verifies augmenting a saved project with additional tables via the
-// addRelation/addLink JS API and reopening it with all tables intact.
+/* ---
+sub_features_covered: [projects.add-relation, projects.api.save, projects.tree.add-entity-node]
+--- */
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
-import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {openTableFromFile, resetShell, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveProjectWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 
 test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(360_000);
   stepErrors.length = 0;
 
   const projectName = `augment-test-${Date.now()}`;
@@ -35,17 +37,13 @@ test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page
         const p = await grok.dapi.projects.find('${saved.projectId}');
         const skipped = [];
         let added = 0;
-        // dapi.files.list requires trailing slash on the namespace path
-        // (verified live 2026-05-05); without it errors with handlerPath/null url.
+        // dapi.files.list requires trailing slash on the namespace path, else handlerPath/null url error.
         const list = await grok.dapi.files.list('System:DemoFiles/');
         for (const fn of ${JSON.stringify(additional)}) {
           try {
             const file = (list || []).find(f => f.name === fn);
             if (!file) { skipped.push(fn + ': not found'); continue; }
-            // Register the FileInfo as an entity (gets a UUID), then link
-            // to the project via the instance addLink method. addRelation
-            // does NOT exist on dapi.projects (verified live 2026-05-05);
-            // the canonical Link mode API is project.addLink(entity).
+            // Register the FileInfo as an entity (gets a UUID), then link via project.addLink (addRelation doesn't exist).
             const saved = await file.save();
             p.addLink(saved);
             added++;
@@ -76,16 +74,12 @@ test('Projects / Complex Augment: addRelation 4 tables via JS API', async ({page
       expect(r.tables).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
-    if (s)
+    if (saved)
       await deleteProjectWithCleanup(page, {
-        projectId: s.projectId,
-        tableInfoId: s.tableInfoId,
+        projectId: saved.projectId,
+        tableInfoId: saved.tableInfoId,
       });
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,4 +1,20 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [monomer_library_file]
+realized_as:
+  - st-lifecycle-monomer-library-file-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — Monomer Library File Lifecycle
+
+Checks how SequenceTranslator's monomer library file is created, loaded, and
+falls back to a bundled sample library when the configured one is missing —
+covering the CSV-to-JSON library generator, lazy library loading on first
+use, and the monomer-to-molecular-weight lookup.
 
 ## Setup
 

@@ -1,13 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.workflow.start-analysis
-  - peptides.util.get-selection-bitset
-  - peptides.compute.calculate-monomer-position-statistics
-  - peptides.rendering.weblogo-header
-  - peptides.workflow.sar-dialog
 target_layer: playwright
 coverage_type: edge
+priority: p1
+realizes: [GROK-19145]
 produced_from: atlas-driven
 related_bugs:
   - GROK-19145
@@ -40,6 +36,10 @@ gate_verdicts:
     failure_keys: []
 ---
 
+# Peptides — SAR completes cleanly across Similarity threshold values, including the edge case that crashed before
+
+Launching SAR with the Similarity threshold set to low, medium, high, and an extreme value should never crash with a null-reference error, even when the extreme value produces very sparse or no qualifying pairs. This guards against GROK-19145, where a high Similarity threshold could throw on a null BitSet; on sparse output the expected behavior is either a rendered (possibly sparse) result or an explicit "no qualifying pairs" message — never a silent blank WebLogo with no error.
+
 ## Setup
 
 1. Open the linked Peptides demo dataset (`System:DemoFiles/bio/peptides.csv`) — a TableView with the peptides grid and a `Macromolecule`-semtype `AlignedSequence` column should be the active view.
@@ -47,9 +47,9 @@ gate_verdicts:
 
 ## Scenarios
 
-### Scenario 1 — Similarity threshold matrix: SAR completes without null-receiver crash across low / medium / high / extreme values
+### Scenario 1 — Similarity threshold matrix: SAR completes without a crash across low / medium / high / extreme values
 
-Atlas anchor: `edge_cases[0]` (`coverage_type: edge`, `source_bug: GROK-19145`). Exercises the post-OK compute path with the Similarity threshold ranging across representative values, including the extreme value (`90`) that triggered the original `setTrue` on null-BitSet crash. The scenario asserts graceful behavior: SAR either completes and shows the configured viewers, or surfaces an explicit informative error — but never throws a null-receiver runtime crash.
+Runs the SAR launch four times with increasingly aggressive Similarity threshold values, including `90` — the value that originally triggered the GROK-19145 crash. At every value, SAR must either complete and show the configured viewers, or surface an explicit informative message — never an uncaught null-reference crash.
 
 1. Launch the SAR configuration dialog via top-menu `Bio | Analyze | SAR...`. The `Analyze Peptides` dialog opens (`peptidesDialog` → `analyzePeptidesUI`).
 2. Set the **Similarity** threshold to `10` (low value — sparse filter, most pairwise comparisons qualify) leaving all other inputs at their defaults (Activity column auto-detected, Scaling `-lg`).
@@ -63,9 +63,9 @@ Expected (assertion summary across all four Similarity values):
 - For each Similarity value, either the `Sequence Variability Map` viewer is attached AND WebLogo column-headers are rendered (populated or sparsely populated but visibly drawn), OR an informative platform message is surfaced explaining that the filter produced no qualifying pairs.
 - The TableView remains responsive after each parametrized launch (no frozen UI, no lingering modal blocking subsequent dialog opens).
 
-### Scenario 2 — Similarity threshold = 90 on a sparser-input dataset preserves WebLogo rendering contract
+### Scenario 2 — Similarity threshold = 90 preserves the WebLogo rendering contract even with sparse output
 
-Atlas anchor: same `edge_cases[0]` entry; isolates the WebLogo-empty-on-sparse-stats failure mode described in the bug body. Uses a single-launch path against the dataset configuration most likely to trip the empty-output branch, so the empty-WebLogo regression risk surfaces independently of the multi-launch matrix.
+Isolates the "WebLogo silently renders blank on sparse stats" failure mode described in the bug report, using a single minimal-viewer launch so the sparse-output risk isn't diluted by the broader matrix in Scenario 1.
 
 1. Launch SAR via top-menu `Bio | Analyze | SAR...`, set **Similarity** to `90`, leave Activity / Scaling at defaults, and additionally toggle off any optional viewers (Most Potent Residues, Logo Summary Table, etc.) in the dialog so the launch produces only the minimal Sequence Variability Map configuration — minimizing the surface area on which to assert.
 2. Click **OK** and wait for SAR launch to settle.
@@ -80,13 +80,8 @@ Expected:
 
 ## Notes
 
-- **Atlas provenance.** Both scenarios derive from atlas `edge_cases[0]` (`feature-atlas/peptides.yaml` edge_cases block, `source_bug: GROK-19145`, `coverage_type: edge`, `derived_from: bug-library/peptides.yaml#GROK-19145`). The `sub_features_covered:` frontmatter list mirrors the atlas entry's `sub_features:` verbatim, preserving the canonical mapping required by Critic E spec-mode cross-checks.
-- **target_layer rationale.** Multi-step UI dialog flow (open `Analyze Peptides` dialog, set Similarity input, click OK, observe TableView mutation, assert against the rendered Sequence Variability Map + WebLogo headers, optionally inspect Datagrok error-balloon surface). The Similarity threshold is a dialog input that must be driven through the UI to faithfully reproduce the post-OK compute-path crash described in the bug — `apitest` cannot exercise the same code path because the dialog's `analyzePeptidesUI` → `startAnalysis` callback wraps the same code with UI-bound validation and toast routing. The failure mode is also asserted against the UI-bound `peptides.rendering.weblogo-header` renderer and the Datagrok error-balloon surface, both of which are UI-only.
-- **coverage_type rationale.** Atlas `edge_cases[0].coverage_type: edge` is canonical per the rule "When the scenario being authored maps onto an atlas `edge_cases[]` entry, the frontmatter `coverage_type:` MUST match that entry's `coverage_type:` verbatim. Do NOT re-derive." Scenario carries `coverage_type: edge` to match the atlas entry. This scenario simultaneously retires the section-wide `F-STRUCT-NEGATIVE-01` gap (no edge / perf coverage_type scenario across the section) flagged in `scenario-chains/peptides.yaml :: gate_f_verdict.gaps[type: negative-coverage-missing]`.
-- **Coverage contribution.** Sub_features added to the section's union: `peptides.util.get-selection-bitset` (previously uncovered, on the `util.*` uncovered family from the Gate F gaps), and `peptides.compute.calculate-monomer-position-statistics` (previously uncovered, on the `compute.*` uncovered family). `peptides.workflow.start-analysis`, `peptides.rendering.weblogo-header`, and `peptides.workflow.sar-dialog` were already in the section's union via `sar.md` / `peptides.md` — re-coverage here is intentional (the edge-class anchoring is on the same workflow shape but exercises the post-OK compute path that the smoke / regression scenarios do not).
-- **Related bugs.** `GROK-19145` is the single curated bug whose `affects[]` matches this scenario's `sub_features_covered[]` verbatim per `bug-library/peptides.yaml#GROK-19145`. The chain's existing `bug_focused_candidates[0]` (`peptides-grok-19145-spec.ts`) proposes a dedicated cross-scenario regression spec covering the same threshold-parameter surface; this `.md` is the migrated-scenario anchor those candidates extend.
-- **Deferrals.** None. Scenario steps map to existing Playwright-driveable surfaces (top-menu invocation, dialog interaction, viewer attachment assertion, WebLogo header rendering assertion, error-balloon absence assertion).
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Analysis options` (atlas help_docs rich-object form maps the `Analysis options` heading to `peptides.workflow.analyze-ui` + `peptides.workflow.sar-dialog`); `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View` (maps to `peptides.workflow.start-analysis`).
+- **Related bug — GROK-19145.** Both scenarios exist to reproduce and guard against this bug (a high Similarity threshold could throw on a null BitSet). This `.md` is the primary anchor scenario for that bug; a dedicated regression spec extends the same threshold-parameter surface.
+- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Analysis options`; `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`.
 
 ## Original trailing metadata
 

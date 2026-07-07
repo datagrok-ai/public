@@ -1,16 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.api.namespaces
-  - projects.api.relations.list
-  - projects.add-relation
-  - projects.shell.share-via-context-menu
-  - projects.api.get-by-id
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [share-spaces-datasync, rename_external_dep, share_with_recipient_open, rename_project]
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -23,15 +16,14 @@ related_bugs:
 
 # Projects — Spaces-source lifecycle
 
-Chained lifecycle for projects sourced from a **Space** (SPGIs Space
-populated via JS API prelude). Exercises proactive coverage cells
-`source_class=spaces × dep_lifecycle_op=rename_external_dep` AND
-`source_class=spaces × dep_lifecycle_op=share_with_recipient_open`
-per chain rev 3 `proactive_lifecycle_specs[3]`. Full reproduction of
-GROK-18345 (recipient cannot open shared project that uses Spaces
-dataset saved with data sync — triple cross-feature interaction:
-ownership transfer + datasync under different user context + binary
-dataframe resolution).
+Covers the lifecycle of a project sourced from a Space (created via
+JS API for the test): save with Data Sync on, share with a second
+user, rename the Space, and rename the project. This is the full
+reproduction of GROK-18345 — a recipient can't open a shared project
+whose table comes from a Space and was saved with Data Sync, because
+resolving that data under the recipient's own identity involves a
+three-way interaction of ownership transfer, data-sync execution as a
+different user, and binary dataframe resolution from the Space.
 
 UI coverage delegated to `projects-ui-smoke.md`.
 
@@ -104,35 +96,24 @@ UI coverage delegated to `projects-ui-smoke.md`.
 
 ## Notes
 
-- **Origin: chain rev 3 proactive_lifecycle_specs[3]** with
-  `bugs_reinforcing: [GROK-18345]` and
-  `dep_lifecycle_ops_covered: [rename_external_dep,
-  share_with_recipient_open]`. Authored in Phase A.
-- **GROK-18345 full reproduction (Trigger 2 motivating
-  example).** This bug is the primary motivating example for
-  chain-analyzer-prompt.md Edit 5 Trigger 2 (single-scenario
-  non-adjacent steps). In `complex.md` it spans Step 1 + Step 2
-  + Step 12 + Step 13 — non-adjacent. This scenario realizes
-  the equivalent in a single linear flow: open from Space + save
-  with sync + share + recipient-open. The cross-cutting bug spec
-  `projects-grok-18345-spec.ts` (chain rev 3
-  bug_focused_candidates with spans `uploading.md:Step 7 +
-  complex.md:Step 12`) targets the cross-scenario invariant; this
-  scenario reinforces with full Spaces lifecycle.
-- **`projects.api.namespaces` in sub_features.** Spaces are
-  namespaces in atlas terms. Step 1 navigates `Browse > Spaces`
-  which uses this endpoint family.
-- **Spaces prelude / postlude.** Per
-  `sa-2026-05-03-spaces-inline-prelude-pattern`, the Space is
-  created and torn down within the scenario's lifetime. Same
-  pattern as `complex.md` Setup point 4.
-- **Recipient must have Space access.** Precondition for the
-  share path to succeed — recipient lacking Space access is a
-  different bug (GROK-19403-style un-shared-deps).
+- **GROK-18345 full reproduction.** In `complex.md`, this bug's
+  reproduction path is spread across four non-adjacent steps
+  (Step 1 + Step 2 + Step 12 + Step 13). This scenario realizes the
+  equivalent in one linear flow: open from a Space, save with sync,
+  share, then verify the recipient can open it. A separate
+  cross-cutting spec also targets the cross-scenario version of this
+  invariant (spanning a step in `uploading.md` and a step in
+  `complex.md`); this scenario reinforces it with the full Spaces
+  lifecycle.
+- **Spaces prelude / postlude.** The Space used by this scenario is
+  created via JS API at the start and deleted at the end — same
+  pattern as `complex.md`'s Setup.
+- **Recipient must have Space access.** This is a precondition for
+  the share path to succeed — a recipient lacking Space access would
+  hit a different bug (the GROK-19403-style un-shared-dependency
+  failure).
 - **UI coverage delegated.** All UI surfaces are owned by
-  `projects-ui-smoke.md`. JS API path used here.
-- **Helper 3 deferral.** Recipient-side assertions blocked.
-- **Self-cleaning.** Step 6 deletes project + Space.
-- **Sequencing within Wave 2C.** Fifth lifecycle scenario per
-  Plan line 220: needs SPGIs Space commit. Sequencing flexible
-  with specs 3, 4, 6.
+  `projects-ui-smoke.md`. This scenario uses the JS API path.
+- **Deferred.** Recipient-side assertions are blocked on a
+  not-yet-registered login-as-another-user test helper.
+- **Self-cleaning.** Step 6 deletes the project and the Space.

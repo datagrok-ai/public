@@ -1,15 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.api.relations.list
-  - projects.add-relation
-  - projects.shell.share-via-context-menu
-  - projects.api.get-by-id
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [share-with-unshared-deps, view-and-use-failure-state, rename_external_dep, share_with_recipient_open, rename_project]
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -23,16 +17,15 @@ related_bugs:
 
 # Projects — Script-source lifecycle
 
-Chained lifecycle for projects sourced from a **provisioned dataframe-
-output Script** (created in-test via
-`helpers/openers.ts:provisionDataframeScript`). Exercises proactive
-coverage cells `source_class=script ×
-dep_lifecycle_op=rename_external_dep` AND `source_class=script ×
-dep_lifecycle_op=share_with_recipient_open` per chain rev 3
-`proactive_lifecycle_specs[2]`. Targets GROK-19403 (recipient cannot
-open shared project when underlying script not also shared) AND
-GROK-19728 (view-and-use users edit creation script under failure
-state — broken-script variant).
+Covers the lifecycle of a project sourced from a script that outputs
+a dataframe: save, share with a second user without also sharing the
+script, rename the script, and rename the project. Targets two bugs:
+GROK-19403 (a recipient can't open a shared project when its
+underlying script isn't also shared with them — they should see an
+explicit permission error, not a silent null table) and GROK-19728 (a
+view-and-use recipient should not be able to edit the creation
+script, even when it's broken — this sub-flow is currently deferred,
+see Notes).
 
 UI coverage delegated to `projects-ui-smoke.md`.
 
@@ -129,32 +122,22 @@ UI coverage delegated to `projects-ui-smoke.md`.
 ## Notes
 
 - **Self-contained source provisioning.** This spec creates and
-  deletes its own dataframe-output script — no Samples package,
-  no env-provisioned fixture. The previous `Samples:Cars`
-  reference was scalar-output (rejected no-input call) and the
-  spec silently skipped; the in-test provisioned script wraps
-  `grok.data.getDemoTable('demog.csv')` and returns a real
-  dataframe.
-- **Origin: chain rev 3 proactive_lifecycle_specs[2]** with
-  `bugs_reinforcing: [GROK-19403]` and
-  `dep_lifecycle_ops_covered: [rename_external_dep,
-  share_with_recipient_open]`. GROK-19728 added as a
-  reinforcement.
-- **GROK-19403 full reproduction.** Step 3 walks the exact bug
-  path: un-shared script as a project dependency + recipient
-  share + recipient-open expectation. The provisioned script is
-  owned by the test user and not auto-shared, so the GROK-19403
-  precondition holds without extra setup.
-- **GROK-19728 sub-flow deferred.** Step 6 needs Helper 3
-  (logoutAndLoginAs) to assert recipient-side behavior. Broken-
-  script provisioning is now trivial via the helper.
-- **`projects.api.relations.list` in sub_features.** Used in
-  Step 4 to assert on relation resolution after Script
-  rename.
-- **UI coverage delegated.** All UI surfaces (right-click
-  rename, Save dialog, Sharing tab) are owned by
-  `projects-ui-smoke.md`. JS API path used here.
-- **Helper 3 deferral.** Recipient-side assertions in Step
-  3.3 + Step 5 + Step 6 require Helper 3.
-- **Self-cleaning.** Step 7 deletes project + provisioned
+  deletes its own dataframe-output script — no Samples package, no
+  env-provisioned fixture. It wraps
+  `grok.data.getDemoTable('demog.csv')` so it always returns a real
+  dataframe (a prior version referenced a scalar-output Samples
+  script that the test would silently skip).
+- **GROK-19403 full reproduction.** Step 3 walks the exact bug path:
+  an un-shared script as a project dependency, then the recipient
+  shares and opens the project. The provisioned script is owned by
+  the test user and not auto-shared with anyone else, so the
+  GROK-19403 precondition holds without extra setup.
+- **UI coverage delegated.** All UI surfaces (right-click rename,
+  Save dialog, Sharing tab) are owned by `projects-ui-smoke.md`.
+  This scenario uses the JS API path.
+- **Deferred.** Recipient-side assertions (Step 3's share
+  verification, Step 5's rename verification, and the GROK-19728
+  sub-flow in Step 6) all require a login-as-another-user test
+  helper that isn't registered yet.
+- **Self-cleaning.** Step 7 deletes the project and the provisioned
   script.

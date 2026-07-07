@@ -1,3 +1,14 @@
+---
+feature: chem
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - database-search-panels-spec.ts
+related_bugs: []
+---
+
 # Chem | Context Panel — External Database Search Panels (ChEMBL / Chemspace / PubChem / DrugBank)
 
 Manual test of the **external database integrations** that appear under the

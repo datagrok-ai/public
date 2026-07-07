@@ -1,4 +1,21 @@
+---
+feature: models
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes: []
+realized_as:
+  - models-bug-grok-3525-spec.ts
+related_bugs: [GROK-3525]
+---
+
 # Models — GROK-3525 regression: target nulls blocked by validation
+
+Verifies that training a model against a target (prediction) column
+containing null values is blocked with a clear validation message,
+for both categorical and numerical targets, and that ticking
+**Ignore missing** lets training proceed by dropping the null-target
+rows. Regression guard for GROK-3525.
 
 ## Setup
 
@@ -70,8 +87,7 @@ Expected:
   is null before the validator runs on the residual frame).
 - Training completes without a console error; the Interactive
   modeling preview on the right pane populates with regression
-  metrics (MSE / RMSE / R² — surfaces the
-  `models.metrics.regression` sub_feature on success).
+  metrics (MSE / RMSE / R²) on success.
 - The trained-model row count reflects the post-drop residual
   (input row count minus the null-target rows). The exact row count
   is asserted from the preview-side metrics widget rather than from

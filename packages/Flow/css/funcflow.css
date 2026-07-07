@@ -491,6 +491,31 @@
   background: #fff;
 }
 
+/* "Add to workspace" overlay on a preview block — same corner treatment as the
+   gear (top-right, no vertical footprint). `right` is set inline so it can sit
+   to the gear's left on viewer previews. */
+.ff-preview-workspace-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #607d8b;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ff-preview-workspace-btn:hover {
+  color: #1976d2;
+  background: #fff;
+}
+
 .ff-port-preview {
   position: fixed;
   z-index: 10001;
@@ -1837,4 +1862,19 @@ div.ui-box > div.ui-div.funcflow-canvas-container {
 
 .funcflow-preview-block {
   height: 100%;
+}
+/* ---------- autorun ribbon toggle ---------- */
+
+/* The bolt reads as "live" only when clearly distinct from the other ribbon
+   icons: the OFF state is slightly faded (and keeps the default font-weight —
+   a thin outline glyph); the ON state is colored AND font-weight 600, which
+   renders the Font Awesome bolt as its filled variant. */
+.ff-autorun-toggle {
+  opacity: 0.8;
+}
+
+.ff-autorun-toggle.ff-autorun-on {
+  color: var(--blue-1, #2083d5) !important;
+  font-weight: 600;
+  opacity: 1;
 }

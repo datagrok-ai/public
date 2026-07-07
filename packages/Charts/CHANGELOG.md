@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Moved the Charts Playwright E2E suite into the package (`playwright/`); helpers sourced from `@datagrok-libraries/test/src/playwright`
+
 * GROK-19683: Charts | Tree viewer: Option to customize molecule label size
 * GROK-20084: Radar, Tree, Timelines: Broken help page
 * GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked

@@ -1,17 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.prop.data-json
-  - biostructure.prop.pdb
-  - biostructure.prop.pdb-tag
-  - biostructure.prop.show-mouseover-row-ligand
-  - biostructure.prop.show-selected-rows-ligands
-  - biostructure.prop.binding-site-whole-residues
-  - biostructure.prop.layout
-  - biostructure.prop.controls
-  - biostructure.api.viewBiostructure
 target_layer: playwright
 coverage_type: edge
+priority: p2
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -78,24 +70,16 @@ gate_verdicts:
 
 # BiostructureViewer — Property surface extension (Data / Layout / Controls / Behaviour) and the raw-`pdb` no-name pitfall
 
-Coverage-extension scenario authored under cycle
-`2026-06-04-biostructureviewer-migrate-01` Gate F SR routing. Extends the
-section beyond the Mol*-centric smoke, the five bug-focused regression guards,
-and the NGL-viewer breadth extension to the **Mol\* (Biostructure) viewer
-property surface** — Data properties (`dataJson`, `pdb`, `pdbTag`), the
-remaining Behaviour ligand toggles (`showMouseOverRowLigand`,
+Covers the Mol\* (Biostructure) viewer's property surface beyond what the
+main smoke test exercises: Data properties (`dataJson`, `pdb`, `pdbTag`),
+the remaining Behaviour ligand toggles (`showMouseOverRowLigand`,
 `showSelectedRowsLigands`), the Binding Site `bindingSiteWholeResidues`
 boundary, the Layout property group, and the Controls property group —
-together with the canonical safe JS API entry point `viewBiostructure(content,
-format, name)`. Anchors atlas `edge_cases[5]` (raw `pdb` prop without a name
-fails to parse — documented pitfall) and `edge_cases[6]` (async-render await
-pattern) by reproducing the pitfall and asserting the canonical fix path.
-
-All 9 sub_features below have a non-empty net-new contribution against the
-live covered-union of 31 (the entire Property-surface +8 residual breadth
-candidate listed in the chain `gate_f_verdict.gaps[sub-feature-coverage-gap]`
-plus `biostructure.api.viewBiostructure` from the JS-API +3 residual). The
-breadth ratio rises from 31/67 = 46.27% to 40/67 = 59.7%.
+together with the canonical safe JS API entry point
+`viewBiostructure(content, format, name)`. Scenario 2 reproduces a
+documented pitfall: passing a raw PDB string to the `pdb` property without
+a name fails to parse; the scenario reproduces the failure and demonstrates
+the safe recovery path.
 
 ## Setup
 
@@ -120,10 +104,6 @@ breadth ratio rises from 31/67 = 46.27% to 40/67 = 59.7%.
 
 ### Scenario 1: Data properties — `dataJson` round-trip via `BiostructureDataJson.fromData`
 
-Exercises `biostructure.prop.data-json`, `biostructure.api.viewBiostructure`
-(supporting role), and `biostructure.prop.layout` (Mol* viewport must render
-before assertion).
-
 Steps:
 1. Open the prepared Molecule3D + Molecule DataFrame from Setup step 3.
 2. Add the Biostructure viewer via `tv.addViewer('Biostructure')`.
@@ -144,21 +124,17 @@ Steps:
 Expected:
 - The `dataJson` payload renders inside the Mol\* viewport without a `Parsed
   object is empty` console error (the `name:` option satisfies the pitfall
-  documented in atlas `edge_cases[5]`).
+  reproduced in Scenario 2).
 - The viewer canvas is non-empty (axis gizmo plus visible structure
-  geometry, not the blank dark "not rendered yet" canvas described in atlas
-  `edge_cases[6]`).
+  geometry, not the blank dark "not rendered yet" canvas).
 - The property panel's Data category shows `dataJson` populated (read-only
   view).
 - No JS console errors during the swap.
 
 ### Scenario 2: Edge — raw `pdb` prop without a name fails to parse (the canonical pitfall)
 
-Exercises `biostructure.prop.pdb` and `biostructure.api.viewBiostructure`,
-mapped to atlas `edge_cases[5]` (raw pdb prop without name pitfall;
-`derived_from: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L216`).
-This is the negative-path scenario that the `coverage_type: edge` frontmatter
-declares — reproducing the failure mode AND asserting the safe entry point.
+This is the negative-path scenario: reproducing the documented failure mode
+and asserting the safe entry point that avoids it.
 
 Steps:
 1. Open the prepared Molecule3D DataFrame from Setup step 3.
@@ -181,15 +157,13 @@ Expected:
   current Mol\* version) — the documented pitfall reproduces.
 - The viewport remains blank (no structure rendered) after the failed
   parse — the viewport shows only the axis gizmo, matching the
-  "not rendered yet" symptom described in atlas `edge_cases[6]`.
+  "not rendered yet" symptom.
 - The recovery step (step 7) calling `viewBiostructure(content, format,
   name)` renders the structure successfully — the canonical safe entry
   point supplies the `name` parameter the raw-`pdb` path lacked.
 - After recovery, no further `Parsed object is empty` errors appear.
 
 ### Scenario 3: Data property — `pdbTag` populated from a DataFrame tag
-
-Exercises `biostructure.prop.pdb-tag`.
 
 Steps:
 1. Open the prepared tag-carrying DataFrame from Setup step 4 (column has a
@@ -213,10 +187,8 @@ Expected:
 
 ### Scenario 4: Behaviour properties — `showMouseOverRowLigand` and `showSelectedRowsLigands`
 
-Exercises `biostructure.prop.show-mouseover-row-ligand` and
-`biostructure.prop.show-selected-rows-ligands`. These are the two remaining
-Behaviour toggles not covered by the smoke's `showCurrentRowLigand` and
-`showBindingSite` flows.
+These are the two remaining Behaviour toggles not covered by the smoke
+test's `showCurrentRowLigand` and `showBindingSite` flows.
 
 Steps:
 1. Open the prepared Molecule3D + Molecule DataFrame from Setup step 3.
@@ -248,9 +220,8 @@ Expected:
 
 ### Scenario 5: Binding Site boundary — `bindingSiteWholeResidues`
 
-Exercises `biostructure.prop.binding-site-whole-residues` (the boundary
-property paired with `showBindingSite` + `bindingSiteRadius` covered by the
-smoke).
+This is the boundary property paired with `showBindingSite` +
+`bindingSiteRadius`, which are covered by the smoke test.
 
 Steps:
 1. Open the prepared Molecule3D + Molecule DataFrame from Setup step 3.
@@ -279,10 +250,10 @@ Expected:
 
 ### Scenario 6: Layout property group — toggle `layoutShowControls` two ways
 
-Exercises `biostructure.prop.layout`. Layout is a property group covering
-~12 individual Mol\* layout flags; this scenario covers the two access
-paths — property panel and the Mol\* viewport overlay button — that both
-flip the same flag (`layoutShowControls`).
+Layout is a property group covering roughly a dozen individual Mol\* layout
+flags; this scenario covers the two access paths — property panel and the
+Mol\* viewport overlay button — that both flip the same flag
+(`layoutShowControls`).
 
 Steps:
 1. Open the prepared Molecule3D DataFrame from Setup step 3.
@@ -312,9 +283,8 @@ Expected:
 
 ### Scenario 7: Controls property group — `showWelcomeToast` and `showImportControls`
 
-Exercises `biostructure.prop.controls`. The Controls property group has two
-flags; this scenario verifies the property panel surface and the
-default-off state of `showWelcomeToast`.
+The Controls property group has two flags; this scenario verifies the
+property panel surface and the default-off state of `showWelcomeToast`.
 
 Steps:
 1. Open the prepared Molecule3D DataFrame from Setup step 3.
@@ -339,56 +309,13 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale**: All seven scenarios are UI-driven — they
-  exercise the Mol\* WebGL canvas, the Datagrok property panel editors, the
-  Mol\* overlay buttons, and the grid's row mouse-over / selection behaviour.
-  None of these surfaces can be asserted from `apitest` alone (the WebGL
-  canvas needs a real browser; the property panel binding is wired through
-  the Datagrok UI; the Mol\* overlay buttons live inside the Mol\* DOM
-  surface, not the JS API). Scenario 2 specifically captures a JS console
-  warning whose surface is the browser console. Hence
-  `target_layer: playwright`.
-- **coverage_type rationale**: `edge`. Scenario 2 maps directly onto atlas
-  `edge_cases[5]` (raw `pdb` prop without name pitfall;
-  `derived_from: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L216`,
-  `coverage_type: edge`). Per the STEP E rule, when a scenario maps onto an
-  atlas `edge_cases[]` entry, the frontmatter `coverage_type:` MUST match
-  the atlas entry's canonical value verbatim — `edge`. The other six
-  scenarios cover the Property-surface breadth around the documented edge
-  case (the safe canonical paths the pitfall scenario contrasts against),
-  and they ride the same file-level `coverage_type: edge`. This satisfies
-  the Critic E spec-mode cross-check and, at section level, closes
-  F-STRUCT-NEGATIVE-01 against atlas `edge_cases[5]` (Scenario 2 directly
-  addresses the documented pitfall; Scenarios 1/3 demonstrate the canonical
-  safe entry points via `dataJson` and `pdbTag` paths).
-- **Bug coverage**: `related_bugs: []`. This scenario covers no bug-library
-  entries — Gate F's F-BUG-COVERAGE-01 has already closed in this cycle's
-  prior F dispatch (all 5 known bugs are covered by the 5 bug-focused
-  scenarios). This is a pure breadth + edge_case scenario.
-- **net_new (breadth-loop progress)**: Against `live_covered_union` (31 ids
-  from the seven on-disk scenarios) and atlas `manual_only[]` (empty), ALL
-  9 listed sub_features are net-new — `biostructure.prop.data-json`,
-  `biostructure.prop.pdb`, `biostructure.prop.pdb-tag`,
-  `biostructure.prop.show-mouseover-row-ligand`,
-  `biostructure.prop.show-selected-rows-ligands`,
-  `biostructure.prop.binding-site-whole-residues`,
-  `biostructure.prop.layout`, `biostructure.prop.controls`, and
-  `biostructure.api.viewBiostructure`. `round_net_new = +9`, the
-  breadth-loop progress bound is strictly satisfied (covered_union climbs
-  31 → 40). Coverage ratio rises from 46.27% to 59.7%.
-- **Density**: Section-level `F-STRUCT-DENSITY-01` only counts non-smoke
-  scenarios. This file's `coverage_type: edge` is not smoke-exempt; its
-  seven scenarios cover {3, 2, 1, 2, 1, 1, 1} sub_features respectively for
-  an average of 11/7 = 1.57. The file-level frontmatter
-  `sub_features_covered: 9` carries the cohesive total across the file —
-  the predicate evaluates at file level using the frontmatter cardinality
-  (9), satisfying the ≥ 2 density bar. The smoke (16) and the
-  bug-focused / extension scenarios in this section maintain the section
-  average above the threshold.
-- **Atlas citations**:
+- Scenario 2 is the documented edge case; Scenarios 1 and 3 demonstrate
+  the canonical safe entry points (`dataJson` and `pdbTag` paths) that
+  contrast with it. The other scenarios cover the rest of the property
+  surface as general breadth around that edge case.
+- Source citations:
   - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md
-    (universal-refdoc; resolved via atlas `ui_reference_doc:` since path
-    lives off the default convention under `viewers/`).
+    (viewers reference doc).
   - See: public/packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer.ts#L235
     — `dataJson` Data property declaration.
   - See: public/packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer.ts#L239
@@ -409,5 +336,3 @@ Expected:
     — `viewBiostructure(content, format?, name?)` package function (the
     canonical safe entry point demonstrated in Scenario 2's recovery
     step).
-  # atlas entry derived from .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L216
-  # atlas entry derived from .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L50

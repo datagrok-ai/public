@@ -1,24 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.viewer
-  - biostructure.viewer.add-via-dropdown
-  - biostructure.viewer.settings-panel
-  - biostructure.prop.representation
-  - biostructure.prop.biostructure-id-column
-  - biostructure.prop.biostructure-data-provider
-  - biostructure.prop.ligand-column
-  - biostructure.prop.show-current-row-ligand
-  - biostructure.prop.show-binding-site
-  - biostructure.prop.binding-site-radius
-  - biostructure.overlay.reset-camera
-  - biostructure.viewport-context-menu.download-pdb
-  - biostructure.viewport-context-menu.download-cif
-  - biostructure.file-open.importPdb
-  - biostructure.data-provider.rcsb-mmcif
-  - biostructure.top-menu.fetch-pdb-sequences
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [biostructure-viewer-add-and-render-pdb, biostructure-file-open-pdb-routes-to-molstar, biostructure-pdb-id-data-provider-roundtrip, biostructure-ligand-overlay-row-driven]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/BiostructureViewer/biostructure-viewer.md
 migration_date: '2026-06-04'
@@ -65,44 +50,17 @@ gate_verdicts:
 
 # BiostructureViewer — Happy-path smoke across viewer, properties, overlays, viewport menu, and Bio top-menu
 
-Realizes the BiostructureViewer section's single happy-path smoke per the chain
-plan (`scenario-chains/biostructureviewer.yaml`, `pyramid_layer: ui-smoke`,
-Rule 1 residual): this scenario is the section's only `.md` and absorbs the
-cross-subsystem coverage (viewer mount + property panel + camera + data
-provider + ligand/binding-site overlay + viewport context menu + Bio top-menu)
-into a single smoke by design. The section has no peer scenario to specialize
-integration coverage to.
+This is the section's single happy-path smoke test for the Biostructure
+(Mol\*) viewer, covering the full workflow end to end: opening structure
+files from the Files browser, switching rendering styles, camera controls,
+loading a structure by PDB ID via the RCSB data provider, ligand and
+binding-site highlighting, exporting structures via the viewport context
+menu, and the Bio top-menu's Fetch PDB Sequences function.
 
-Atlas critical paths realized (`feature-atlas/biostructureviewer.yaml`):
-
-- `biostructure-viewer-add-and-render-pdb` (p0) — viewer can mount and draw
-  something; if this breaks every other biostructureviewer test cascades
-  (Scenario 1).
-- `biostructure-file-open-pdb-routes-to-molstar` (p0) — double-click a `.pdb`
-  in the Files browser routes through `importPdb` (NOT `importPdbqt`) and
-  opens the Biostructure (Molstar) viewer (Scenario 2).
-- `biostructure-pdb-id-data-provider-roundtrip` (p1) — set
-  `biostructureIdColumnName` + `biostructureDataProvider` (RCSB mmCIF), assert
-  the structure fetches and renders for the current row's PDB ID (Scenario 4).
-- `biostructure-ligand-overlay-row-driven` (p1) — wire `ligandColumnName`,
-  assert `showCurrentRowLigand` overlays the row ligand and
-  `showBindingSite` + `bindingSiteRadius` highlight the binding pocket
-  (Scenario 5).
-
-Atlas top-level interactions realized:
-
-- `biostructure-pdb-id-data-provider-pipeline` (smoke) — Scenario 4.
-- `biostructure-ligand-row-linkage` (regression) — Scenario 5.
-- `biostructure-binding-site-overlay` (regression) — Scenario 5.
-- `biostructure-file-open-routing` (regression) — Scenarios 1, 2.
-
-Scope routing: Scenarios 1, 2, 3, 6 are purely local (no outbound network);
-Scenarios 4 and 7 require outbound access to RCSB (download endpoint and
-GraphQL endpoint respectively) and should be skipped on air-gapped servers.
-Scenario 8 chains off Scenario 7 to verify the non-destructive re-run
-invariant. The scenario does not exercise the bug-reproduction paths for the
-five curated bugs in `bug-library/biostructureviewer.yaml`; the audit trail
-lives in the chain YAML's `bug_match_attempts_skipped`.
+Scenarios 1, 2, 3 and 6 run entirely locally; Scenarios 4, 7 and 8 require
+outbound network access to RCSB and should be skipped on air-gapped servers.
+Scenario 8 chains off Scenario 7 to verify that re-running Fetch PDB
+Sequences does not destroy existing data.
 
 ## Setup
 
@@ -136,11 +94,9 @@ lives in the chain YAML's `bug_match_attempts_skipped`.
 
 ### Scenario 1 — Open `.mmcif` from the Files browser; cartoon renders; mouse rotates the structure
 
-Realizes atlas critical path `biostructure-viewer-add-and-render-pdb` (p0).
-Exercises sub_features `biostructure.file-open.importPdb` (mmcif is one of
-the `importPdb` extensions, `public/packages/BiostructureViewer/src/package.ts#L142`),
-`biostructure.viewer`, `biostructure.prop.representation` (the default
-`cartoon` assertion), and the viewer rotate interaction.
+This is the most basic path: opening a structure file must render it. Covers
+opening an `.mmcif` file, the default cartoon rendering style, and rotating
+the structure with the mouse.
 
 Steps:
 
@@ -162,11 +118,9 @@ Steps:
 
 ### Scenario 2 — Open `.pdb` from the Files browser; switch representation cartoon → ball-and-stick → molecular-surface → cartoon
 
-Realizes atlas critical path `biostructure-file-open-pdb-routes-to-molstar`
-(p0). Exercises `biostructure.file-open.importPdb` for the canonical `.pdb`
-extension, `biostructure.viewer.settings-panel`, and
-`biostructure.prop.representation` across three of the live Mol\* choices
-(`cartoon`, `ball-and-stick`, `molecular-surface`).
+Covers opening a `.pdb` file and switching between the three main rendering
+styles — cartoon, ball-and-stick, and molecular surface — via the viewer's
+Settings panel.
 
 Steps:
 
@@ -202,9 +156,8 @@ Steps:
 
 ### Scenario 3 — Camera controls: rotate / zoom / pan / Reset Camera
 
-Exercises `biostructure.viewer` (rotate/zoom/pan), and the Mol\* overlay
-button `biostructure.overlay.reset-camera`. Reuses the loaded structure
-from Scenario 1 or 2 (driver may pick either as setup).
+Covers the camera controls — zoom, pan, and the Reset Camera overlay button.
+Reuses the structure loaded in Scenario 1 or 2.
 
 Steps:
 
@@ -226,14 +179,9 @@ Steps:
 
 ### Scenario 4 — Load a structure by PDB ID via the RCSB mmCIF data provider
 
-Realizes atlas critical path `biostructure-pdb-id-data-provider-roundtrip`
-(p1) and atlas top-level interaction
-`biostructure-pdb-id-data-provider-pipeline` (smoke). Exercises
-`biostructure.viewer.add-via-dropdown`,
-`biostructure.prop.biostructure-id-column`,
-`biostructure.prop.biostructure-data-provider`, and
-`biostructure.data-provider.rcsb-mmcif`. Requires outbound network access
-to `files.rcsb.org`; skip on air-gapped servers.
+Covers loading a structure directly by its PDB ID through the RCSB mmCIF
+data provider, rather than opening a local file. Requires outbound network
+access to `files.rcsb.org`; skip on air-gapped servers.
 
 Steps:
 
@@ -258,8 +206,7 @@ Steps:
 
 5. Set **biostructureDataProvider** to
    **BiostructureViewer:getBiostructureRcsbMmcif** (one of the three RCSB
-   providers; per atlas
-   `biostructure.data-provider.rcsb-mmcif`, cached client-side hourly).
+   providers; cached client-side hourly).
 
    * Expected result: the viewer fetches the mmCIF for the current row's PDB
      ID (`1CRN`) from RCSB (`files.rcsb.org/download/1CRN.cif`) and renders
@@ -274,11 +221,8 @@ Steps:
 
 ### Scenario 5 — Ligand highlighting on the current row + binding site overlay
 
-Realizes atlas critical path `biostructure-ligand-overlay-row-driven` (p1)
-and atlas top-level interactions `biostructure-ligand-row-linkage`
-(regression) and `biostructure-binding-site-overlay` (regression). Exercises
-`biostructure.prop.ligand-column`, `biostructure.prop.show-current-row-ligand`,
-`biostructure.prop.show-binding-site`, and `biostructure.prop.binding-site-radius`.
+Covers highlighting the current row's ligand on the receptor structure, and
+the binding-site overlay that highlights nearby protein residues.
 
 Steps:
 
@@ -315,11 +259,8 @@ Steps:
 
 ### Scenario 6 — Export the structure via the viewport context menu (Download > As PDB / As CIF)
 
-Exercises `biostructure.viewport-context-menu.download-pdb` and
-`biostructure.viewport-context-menu.download-cif`. The viewport context menu
-is the Mol\* right-click menu inside `.msp-viewport`; the **Download** group
-is the only group asserted by this scenario (the menu also contains other
-Mol\* native groups not relevant to this smoke).
+Covers exporting the loaded structure via the viewport's right-click
+Download menu, as both PDB and CIF files.
 
 Steps:
 
@@ -342,13 +283,10 @@ Steps:
 
 ### Scenario 7 — Bio top-menu: Fetch PDB Sequences appends `Chain N` Macromolecule columns
 
-Exercises `biostructure.top-menu.fetch-pdb-sequences` — the single in-package
-Bio top-menu leaf registered by BiostructureViewer
-(`public/packages/BiostructureViewer/src/package.ts#L897`,
-`fetchSequencesFromPdb`). The function takes a `PDB_ID` column, fetches
-protein sequences from RCSB via GraphQL (RcsbGraphQLAdapter), and appends
-one `Chain N` macromolecule column per chain. Requires outbound network
-access to the RCSB GraphQL endpoint; skip on air-gapped servers.
+Covers the Bio top-menu's Fetch PDB Sequences function, which takes a
+PDB_ID column, fetches protein sequences from RCSB, and appends one
+Chain N macromolecule column per chain. Requires outbound network access to
+the RCSB GraphQL endpoint; skip on air-gapped servers.
 
 Steps:
 
@@ -388,14 +326,10 @@ Steps:
 
 ### Scenario 8 — Fetch PDB Sequences re-run is non-destructive (chained off Scenario 7)
 
-Chains off Scenario 7 (the Chain columns produced there must still be
-present). Re-runs `Bio > Transform > Fetch PDB Sequences...` on the same
-`pdb_id` column and verifies the second invocation does not overwrite the
-existing Chain columns — instead it adds a fresh non-conflicting set
-(`Chain 1 (2)`, `Chain 2 (2)`, …) via unused-name resolution. Requires
-outbound network access to the RCSB GraphQL endpoint; skip on air-gapped
-servers. Block-internal reuse of Scenario 7's state is intra-scenario and
-not a chain-level fixture per the chain YAML.
+Chained off Scenario 7 — verifies that re-running Fetch PDB Sequences on the
+same column does not overwrite the existing Chain columns, but adds a fresh
+non-conflicting set instead. Requires outbound network access to the RCSB
+GraphQL endpoint; skip on air-gapped servers.
 
 Steps:
 

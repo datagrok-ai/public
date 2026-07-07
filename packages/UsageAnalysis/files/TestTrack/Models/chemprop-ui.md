@@ -1,5 +1,11 @@
 ﻿# Chemprop Docker container lifecycle
 
+Verifies that the `chem-chemprop` Docker container backing Chemprop
+training/apply can be stopped and restarted from
+**Browse > Platform > Dockers** without breaking the model
+workflow — training and applying a Chemprop model still works once
+the container comes back up.
+
 ## Block 3: Manage the chem-chemprop Docker container
 
 1. Go to **Browse > Platform > Dockers** and locate the container

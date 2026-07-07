@@ -96,6 +96,12 @@ export class OutputPreviewPanel {
     return this.enabled;
   }
 
+  /** The node whose values the panel currently renders, or null when empty —
+   *  lets the invalidator close the panel only when *its* node went stale. */
+  get currentNodeId(): string | null {
+    return this.lastNodeId;
+  }
+
   /** Turn the panel on/off. Off = never shows (embedded hosts). Turning it on
    *  does not show anything by itself — the next renderable output does. */
   setEnabled(enabled: boolean): void {
@@ -179,17 +185,18 @@ export class OutputPreviewPanel {
     // `ui.splitV`'s container-resize handler keeps rewriting `style.height` on
     // every pane; min/max clamp the rendered size so a minimized strip stays a
     // strip and an expanded pane can't be squeezed below its header.
-    s.minHeight = `${HEADER_HEIGHT}px`;
     if (this.state === 'minimized') {
       s.height = `${HEADER_HEIGHT}px`;
       s.maxHeight = `${HEADER_HEIGHT}px`;
       this.contentEl.style.display = 'none';
       this.caretEl.textContent = '▴';
+      s.minHeight = `${HEADER_HEIGHT}px`;
     } else {
       s.height = `${this.expandedHeight}px`;
       s.maxHeight = '';
       this.contentEl.style.display = '';
       this.caretEl.textContent = '▾';
+      s.minHeight = `${180}px`;
     }
   }
 }

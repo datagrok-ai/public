@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.api.get-by-id, projects.api.relations.list, projects.api.save, projects.shell.share-via-context-menu, projects.upload]
---- */
 // Query-source lifecycle on a provisioned System:Datagrok query.
 // Step 4 = github-3550 reproduction: rename the owned query and assert reference-resolution invariant.
 import {test, expect} from '@playwright/test';

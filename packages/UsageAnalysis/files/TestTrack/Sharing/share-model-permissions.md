@@ -1,5 +1,22 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-model-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — Model (predictive model)
+
+Verifies the Share dialog and the Advanced editor permissions matrix for a predictive
+model: opening the Sharing pane from the Context Panel, sharing at "View and use", and
+confirming that a recipient with that grant can open and apply the model to a dataset —
+but cannot edit, delete, or re-share it — until the owner revokes access. Also confirms
+a standalone model shares only itself, with no cascade to other entities.
 
 ## Setup
 

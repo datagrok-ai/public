@@ -1,13 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column
-  - powerpack.dialogs.add-new-column-func
-  - powerpack.dialogs.prepare-add-column-call
-  - powerpack.formula.is-formula-column
-  - powerpack.dialogs
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [add-new-column-paste-complex-formula]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/highlight.md
 migration_date: 2026-05-20
@@ -62,6 +58,16 @@ gate_verdicts:
     review_round: 1
 ---
 
+# Add New Column — Column-Name Highlighting in Formulas (GROK-17004 regression)
+
+Regression test for GROK-17004: when a formula in the Add New Column
+dialog references a column (via `${col}` or `$[col]`), the referenced
+column name should be highlighted in blue in the formula editor —
+whether the formula was pasted, typed with autocomplete, or built by
+dragging a column into the editor. Before the fix, pasting a complex
+multi-column formula could crash the dialog instead of highlighting
+the column references.
+
 ## Setup
 
 1. Open the Demog dataset (`System:DemoFiles/demog.csv`) — a TableView with the Demog grid should be the active view.
@@ -71,10 +77,9 @@ gate_verdicts:
 
 ### Column-name highlight on pasted formula referencing one column
 
-Verifies the paste-handler highlight invariant (GROK-17004 regression surface) for the
-canonical `${col}` reference form. The pasted-formula path is the entry point at which
-GROK-17004's `getColumnNamesAndSelections` crash manifested for complex pIC50-style
-formulas; the simple-paste case here exercises the same highlight-on-paste codepath.
+Verifies that pasting a formula referencing a column (`${col}` form) highlights
+the column name in blue — this is the code path that crashed under GROK-17004
+for complex formulas.
 
 1. Paste the literal text `Abs(${age})` into the expression editor (`text field` in the
    dialog body).
@@ -82,17 +87,16 @@ formulas; the simple-paste case here exercises the same highlight-on-paste codep
 
 ### Column-name highlight on pasted formula using bracket-reference form
 
-Verifies that the highlight invariant also covers the `$[col]` bracket-reference form.
-The two reference forms are independently parsed by the column-resolution path, and the
-bug surface includes both.
+Verifies that the highlight also works for the `$[col]` bracket-reference form,
+which is parsed independently from `${col}`.
 
 1. Paste the literal text `Avg($[age])` into the expression editor.
 2. The referenced column name `age` inside `$[...]` is highlighted in blue.
 
 ### Column-name highlight on column added via autocomplete
 
-Verifies the highlight invariant for column references inserted through the in-editor
-autocomplete path (typed `${` or `$[` triggers the column-suggestion menu).
+Verifies that a column reference inserted via autocomplete (typing `${` or `$[`
+triggers the column-suggestion menu) is also highlighted.
 
 1. Type a different function into the expression editor (for example `Round(`).
 2. Trigger column autocomplete (type `${` inside the function arguments) and select a
@@ -112,12 +116,10 @@ header from the Demog grid into the expression editor.
 
 ### Complex multi-column nested-conditional paste (GROK-17004 verbatim repro)
 
-Verifies the highlight invariant against the exact GROK-17004 bug-repro paste —
-a multi-column pIC50-style pharmacokinetic formula with nested `if` / `Contains` /
-species discrimination / dose-normalization arithmetic. This is the canonical
-NIBR-workflow paste that triggered `TypeError: Cannot read properties of undefined
-(reading 'to')` on `add-new-column.ts:611:67` (in `getColumnNamesAndSelections`)
-on pre-1.23.0 builds (`bug-library/powerpack.yaml:115-156`).
+Verifies the highlight against the exact formula that triggered GROK-17004: a
+complex, multi-column pharmacokinetic formula with nested conditionals. This is
+the paste that crashed the dialog with `TypeError: Cannot read properties of
+undefined (reading 'to')` on builds before 1.23.0.
 
 Bug-invariant assertions:
 - The paste handler does NOT throw (no `TypeError` / uncaught exception in console).
@@ -150,24 +152,7 @@ Bug-invariant assertions:
 
 ## Notes
 
-- Bug coverage: this scenario walks the GROK-17004 regression surface (column-name
-  highlight on paste). Scenarios 1-4 exercise the highlight-on-paste / autocomplete /
-  drag-n-drop invariant on Demog with simple single-column references — sufficient
-  to detect any regression in the `updateListener → getColumnNamesAndSelections →
-  addColHighlight` pipeline that GROK-17004 broke. Scenario 5 (added 2026-05-28)
-  exercises the verbatim GROK-17004 bug-repro paste on SPGI: a multi-column nested-
-  conditional pharmacokinetic formula that triggered the original `TypeError` on
-  pre-1.23.0 builds. Together the two halves close the `test_coverage: needed` slot
-  on `bug-library/powerpack.yaml :: GROK-17004` once Validator confirms Scenario 5
-  PASS — Gate F (coverage adjudication) is the authoritative gate for that flip.
-- UI coverage delegation: basic dialog-open and toolbar-icon flows are owned by the
-  section smoke `AddNewColumn/add-new-column.md` per the chain
-  `ui_coverage_plan.smoke_covers`. This scenario owns the paste-handler column-name-
-  highlight specialty flow and the per-reference-form coverage on its
-  `ui_coverage_responsibility[]`.
-- Highlight-color token: the original TestTrack scenario specifies "blue" without a
-  CSS token. The migrated assertions remain at semantic "highlighted in blue" level;
-  downstream Automator may resolve this to a concrete CSS selector / computed-style
-  check against the editor's highlight class. Surfaced in `unresolved_ambiguities`.
-- Helpers used by name in this scenario do not yet exist in
-  `helpers-registry.yaml`; surfaced as `candidate_helpers` for the registry curator.
+- This scenario covers the GROK-17004 regression: scenarios 1-4 exercise the
+  highlight-on-paste / autocomplete / drag-and-drop code path with simple
+  single-column formulas on Demog; scenario 5 replays the exact multi-column
+  formula from the original bug report on SPGI.

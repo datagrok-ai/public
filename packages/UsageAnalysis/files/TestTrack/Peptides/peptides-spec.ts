@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [peptides.panels.peptides, peptides.rendering.weblogo-header, peptides.util.modify-selection, peptides.widgets.distribution]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

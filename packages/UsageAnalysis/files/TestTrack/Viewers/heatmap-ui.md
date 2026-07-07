@@ -1,7 +1,5 @@
 # Heat map — manual test checklist
 
-Ручной чеклист. Не входит в автоматизацию PW.
-
 All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog

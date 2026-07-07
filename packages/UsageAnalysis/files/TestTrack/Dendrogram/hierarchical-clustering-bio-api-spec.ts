@@ -1,14 +1,6 @@
-/* ---
-sub_features_covered: [dendrogram.clustering.api, dendrogram.api.get-tree-helper, dendrogram.api.tree-helper.calc-distance-matrix, dendrogram.api.tree-helper.parse-cluster-matrix, dendrogram.clustering.inject-tree-for-grid]
---- */
 // Frontmatter extraction (pre-author hooks):
 //   target_layer: apitest
 //   pyramid_layer: integration
-//   sub_features_covered: [dendrogram.clustering.api,
-//     dendrogram.api.get-tree-helper,
-//     dendrogram.api.tree-helper.calc-distance-matrix,
-//     dendrogram.api.tree-helper.parse-cluster-matrix,
-//     dendrogram.clustering.inject-tree-for-grid]
 //   ui_coverage_responsibility: [] (delegated_to: null — pure JS-API spec)
 //   related_bugs: []
 //   produced_from: atlas-driven

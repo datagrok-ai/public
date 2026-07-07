@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [peptides.panels.peptides, peptides.viewers.logo-summary-table, peptides.viewers.monomer-position, peptides.viewers.most-potent-residues, peptides.viewers.mutation-cliffs, peptides.widgets.distribution, peptides.widgets.mutation-cliffs, peptides.widgets.settings-dialog, peptides.workflow.analyze-ui, peptides.workflow.sar-dialog, peptides.workflow.start-analysis]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

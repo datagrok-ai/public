@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Moved the BiostructureViewer Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * Added Protein-Ligand Interactions feature: ProLIF-based interactive LigNetwork diagrams + per-residue breakdown in the context panel for Molecule3D, PDB_ID, and AutoDock-pose cells, with a "Compute for whole dataset" batch that produces a `PL Diagram` (rawPng) column and per-interaction-type count columns
 * GROK-20115: Demo | Docking: Transform 'sequence-visual' is already present in the tree
 

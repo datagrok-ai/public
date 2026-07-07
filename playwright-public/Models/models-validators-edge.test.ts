@@ -2,7 +2,7 @@
 sub_features_covered: [models.validators.class-imbalance, models.validators.highly-correlated, models.validators.string-features, models.validators.too-many-unique-categories]
 --- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 test.use(specTestOptions);
 

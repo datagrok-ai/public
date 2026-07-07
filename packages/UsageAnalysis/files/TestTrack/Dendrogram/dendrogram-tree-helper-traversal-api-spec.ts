@@ -1,15 +1,6 @@
-/* ---
-sub_features_covered: [dendrogram.api.tree-helper.to-newick, dendrogram.api.tree-helper.get-leaf-list, dendrogram.api.tree-helper.get-node-list, dendrogram.api.tree-helper.tree-cut-as-leaves, dendrogram.api.tree-helper.tree-cut-as-tree, dendrogram.api.tree-helper.set-grid-order]
---- */
 // Frontmatter extraction (pre-author hooks):
 //   target_layer: apitest
 //   pyramid_layer: absent
-//   sub_features_covered: [dendrogram.api.tree-helper.to-newick,
-//     dendrogram.api.tree-helper.get-leaf-list,
-//     dendrogram.api.tree-helper.get-node-list,
-//     dendrogram.api.tree-helper.tree-cut-as-leaves,
-//     dendrogram.api.tree-helper.tree-cut-as-tree,
-//     dendrogram.api.tree-helper.set-grid-order]
 //   ui_coverage_responsibility: [] (delegated_to: null - pure JS-API spec)
 //   related_bugs: []
 //   produced_from: atlas-driven

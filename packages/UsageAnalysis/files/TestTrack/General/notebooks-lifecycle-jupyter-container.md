@@ -1,19 +1,5 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.lifecycle.init-container
-  - notebooks.lifecycle.notebooks-enabled
-  - notebooks.lifecycle.init-plugin-dart
-  - notebooks.lifecycle.init-meta
-  - notebooks.plugin.notebook-view-func
-  - notebooks.plugin.init-container-func
-  - notebooks.browser.requires-capabilities
-  - notebooks.editor.init-notebook
-  - notebooks.editor.save-state-map
-  - notebooks.editor.to-html
-  - notebooks.assets.fleet-capability
-  - notebooks.routes.save-file
-  - notebooks.service.save-notebook-file
 target_layer: playwright
 coverage_type: regression
 produced_from: atlas-driven
@@ -71,30 +57,30 @@ gate_verdicts:
         run_mode: headless-cold
 ---
 
-# Notebooks — Lifecycle: Jupyter Container Source Class
+# Notebooks — Jupyter container lifecycle: start, open, save, and reload
 
-Exercises the `jupyter_container` source class lifecycle at the Datagrok
-platform level: container start-up (`initContainer`), capability gating
-(`ServerCapabilities.NOTEBOOKS`), notebook view initialisation
-(`initNotebook`, `handlePath`), HTML rendering path (`toHtml`), and the
-save-file route (`saveNotebookFile` clearing `session_token`). The
-container's interior (kernel execution, cell DOM) is not asserted — those
-paths are atlas `manual_only[]`.
+Verifies that Jupyter notebooks work correctly across their full
+platform-level lifecycle: starting the notebook container, opening a
+notebook and routing to its URL, rendering it in HTML mode, saving it
+(making sure a stray session token is never persisted), restoring view
+state, and gating the Notebooks browser behind the platform's notebook
+capability. The interior of the running Jupyter kernel (cell execution,
+cell content) is out of scope here — that is checked manually.
 
 ## Setup
 
 1. Log in to Datagrok (use `loginToDatagrok` helper).
 2. Verify the server advertises `ServerCapabilities.NOTEBOOKS` (required
-   for `notebooks.browser.requires-capabilities` gate and `notebooksEnabled`
-   flag). If the fleet does not advertise this capability skip Scenarios 1–3
-   and proceed directly to Scenario 4.
+   for the capability gate and the `notebooksEnabled` flag). If the fleet
+   does not advertise this capability skip Scenarios 1–3 and proceed
+   directly to Scenario 4.
 3. Create a test notebook for use in subsequent scenarios:
    `await grok.functions.call('Notebooks:initContainer')` — confirm the
    container is running before navigating to the editor.
 
 ## Scenarios
 
-### Scenario 1: Container cold-start detection and warm-up (init-container)
+### Scenario 1: Container cold-start detection and warm-up
 
 Steps:
 1. Navigate to **ML | Notebooks | New Notebook...** — this triggers
@@ -112,7 +98,7 @@ Expected:
   started, then resolves within the 3-second nginx warm-up window.
 - The notebook view URL is `/notebook/<id>` (routed by `handlePath`).
 
-### Scenario 2: Notebook view init — URL routing and entity load (init-notebook + handle-path)
+### Scenario 2: Notebook view init — URL routing and entity load
 
 Steps:
 1. After Setup / Scenario 1, note the URL of the opened notebook view:
@@ -129,7 +115,7 @@ Expected:
   handles the `/notebook/<id>` path.
 - The view title equals the notebook `friendlyName`.
 
-### Scenario 3: HTML mode rendering (editor.to-html + editor.html-mode)
+### Scenario 3: HTML mode rendering
 
 Steps:
 1. Open the test notebook in HTML mode (double-click the card in the browser
@@ -145,7 +131,7 @@ Expected:
 - No unhandled promise rejection is logged for `toHtml` or `convertNotebook`.
 - The view transitions from loading state to rendered state.
 
-### Scenario 4: Save-file route clears session_token (service.save-notebook-file)
+### Scenario 4: Save-file route clears the session token
 
 Steps:
 1. Create a notebook entity whose `.notebook` metadata contains a fake
@@ -168,7 +154,7 @@ Expected:
 - The persisted .ipynb never contains the raw `session_token`.
 - `fetched.notebook.metadata.datagrok.session_token` is absent/null after save.
 
-### Scenario 5: State map persistence (editor.save-state-map)
+### Scenario 5: State map persistence
 
 Steps:
 1. Open the test notebook view (from Scenario 2).
@@ -182,7 +168,7 @@ Expected:
 - `saveStateMap()` returns `{ id: '<notebook_id>' }`.
 - A view restored from the state map loads the correct notebook.
 
-### Scenario 6: Notebooks browser capability gate (requires-capabilities)
+### Scenario 6: Notebooks browser capability gate
 
 Steps:
 1. Check `grok.shell.startupData.fleetCapabilities` for the presence of
@@ -200,24 +186,8 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: the jupyter_container lifecycle is observable
-  through Datagrok platform selectors and JS API calls — `initContainer`
-  progress, notebook view URL routing, ribbon rendering, and the save-file
-  route all have platform-level observability. The JupyterLab iframe interior
-  (kernel, cell content) remains manual-only; this scenario asserts only
-  the platform-level container gate and view wiring.
-- Deferrals: full `apply_to_tables` execution (`notebooks.entity.apply`,
-  `notebooks.plugin.convert-notebook`) is deferred — both are atlas
-  `manual_only[]` (require live kernel + non-deterministic container timing;
-  `notebook.dart#L79`). The `toHtml` / HTML-mode rendering path (Scenario 3)
-  is best-effort: if the container is not running the test is skipped with
-  a descriptive reason.
-- Net-new sub_features beyond live_covered_union: notebooks.lifecycle.init-container,
-  notebooks.lifecycle.notebooks-enabled, notebooks.lifecycle.init-plugin-dart,
-  notebooks.lifecycle.init-meta, notebooks.plugin.notebook-view-func,
-  notebooks.plugin.init-container-func, notebooks.browser.requires-capabilities,
-  notebooks.editor.init-notebook, notebooks.editor.save-state-map,
-  notebooks.editor.to-html, notebooks.assets.fleet-capability,
-  notebooks.routes.save-file, notebooks.service.save-notebook-file.
-- # atlas entry derived from source: public/packages/Notebooks/src/package.js#L512
-- # atlas entry derived from source: core/server/datlas/lib/src/services/notebooks_service.dart#L25
+- Deferrals: fully applying a notebook's results back onto tables, and the
+  notebook-conversion path, are not exercised here — both require a live
+  running kernel with non-deterministic timing, and are covered manually
+  instead. The HTML-mode rendering check (Scenario 3) is best-effort: if
+  the container isn't running, that check is skipped with a clear reason.

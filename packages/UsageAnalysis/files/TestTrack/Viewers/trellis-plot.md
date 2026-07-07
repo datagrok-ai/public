@@ -1,3 +1,14 @@
+---
+feature: trellisplot
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - trellis-plot-spec.ts
+related_bugs: []
+---
+
 # Trellis plot tests (Playwright)
 
 All scenarios should start with the following sequence of events:
@@ -120,10 +131,10 @@ All scenarios should start with the following sequence of events:
 
 ## Scrolling
 
-1. Set X to SITE -- many categories should appear
+1. Set X to DIS_POP -- several categories should appear
 2. Verify horizontal scroll slider appears at the bottom
 3. Drag the horizontal slider to scroll through categories
-4. Set Y to RACE and X to SITE -- verify vertical scroll also appears
+4. Set Y to RACE and X to DIS_POP -- verify vertical scroll also appears
 5. Use mouse wheel over the trellis to scroll vertically
 
 ## Legend

@@ -72,7 +72,7 @@ test('Pivot table tests', async ({ page }) => {
   });
 
   // Group by configuration
-  await softStep('Group by: add SEX, remove DIS_POP, add SITE, remove all', async () => {
+  await softStep('Group by: add SEX, remove DIS_POP, add RACE, remove all', async () => {
     const result = await page.evaluate(async () => {
       const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
       pv.props.groupByColumnNames = ['DIS_POP', 'SEX'];
@@ -81,7 +81,7 @@ test('Pivot table tests', async ({ page }) => {
       pv.props.groupByColumnNames = ['SEX'];
       await new Promise(r => setTimeout(r, 300));
       const step4 = pv.props.groupByColumnNames.slice();
-      pv.props.groupByColumnNames = ['SEX', 'SITE'];
+      pv.props.groupByColumnNames = ['SEX', 'RACE'];
       await new Promise(r => setTimeout(r, 300));
       const step6 = pv.props.groupByColumnNames.slice();
       pv.props.groupByColumnNames = ['SEX'];
@@ -93,7 +93,7 @@ test('Pivot table tests', async ({ page }) => {
     });
     if (!result.step2.includes('SEX') || !result.step2.includes('DIS_POP')) throw new Error('Step 2 failed');
     if (result.step4.length !== 1 || result.step4[0] !== 'SEX') throw new Error('Step 4 failed');
-    if (!result.step6.includes('SEX') || !result.step6.includes('SITE')) throw new Error('Step 6 failed');
+    if (!result.step6.includes('SEX') || !result.step6.includes('RACE')) throw new Error('Step 6 failed');
     if (result.step8.length !== 0) throw new Error('Step 8: group by not empty');
   });
 
@@ -347,7 +347,7 @@ test('Pivot table tests', async ({ page }) => {
       }
       const savedGroup = pv.props.groupByColumnNames.slice();
       // Change config
-      pv.props.groupByColumnNames = ['SITE'];
+      pv.props.groupByColumnNames = ['RACE'];
       await new Promise(r => setTimeout(r, 300));
       // Click refresh
       const refreshBtn = pvEl?.querySelector('[name="icon-refresh"]') as HTMLElement
@@ -397,11 +397,11 @@ test('Pivot table tests', async ({ page }) => {
   });
 
   // Layout save and restore
-  await softStep('Layout save and restore: SITE/sum(HEIGHT)/SEX/Pivot Test', async () => {
+  await softStep('Layout save and restore: RACE/sum(HEIGHT)/SEX/Pivot Test', async () => {
     const result = await page.evaluate(async () => {
       const pv = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Pivot table') as any;
       const tv = grok.shell.tv;
-      pv.props.groupByColumnNames = ['SITE'];
+      pv.props.groupByColumnNames = ['RACE'];
       pv.props.aggregateColumnNames = ['HEIGHT'];
       pv.props.aggregateAggTypes = ['sum'];
       pv.props.pivotColumnNames = ['SEX'];
@@ -412,7 +412,7 @@ test('Pivot table tests', async ({ page }) => {
       await grok.dapi.layouts.save(layout);
       const layoutId = layout.id;
       await new Promise(r => setTimeout(r, 1000));
-      pv.props.groupByColumnNames = ['RACE'];
+      pv.props.groupByColumnNames = ['DIS_POP'];
       pv.props.pivotColumnNames = [];
       await new Promise(r => setTimeout(r, 300));
       const saved = await grok.dapi.layouts.find(layoutId);
@@ -429,7 +429,7 @@ test('Pivot table tests', async ({ page }) => {
       if (pv2) { pv2.props.showTitle = false; pv2.props.title = ''; }
       return { layoutId, restored };
     });
-    if (!result.restored.groupBy?.includes('SITE')) throw new Error('Group by not restored');
+    if (!result.restored.groupBy?.includes('RACE')) throw new Error('Group by not restored');
     if (!result.restored.agg?.includes('HEIGHT')) throw new Error('Aggregate not restored');
     if (!result.restored.pivot?.includes('SEX')) throw new Error('Pivot not restored');
     if (result.restored.title !== 'Pivot Test') throw new Error('Title not restored');

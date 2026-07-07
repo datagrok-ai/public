@@ -1,9 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.viewer
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [CLAUDE-33]
 produced_from: atlas-driven
 related_bugs:
   - CLAUDE-33
@@ -71,61 +71,21 @@ realized_as:
 
 # BiostructureViewer — Molstar viewer survives unrelated-view close (CLAUDE-33 regression guard)
 
-## Overview
-
 Regression guard for [CLAUDE-33](https://reddata.atlassian.net/browse/CLAUDE-33)
 ("BiostructureViewer: Molstar viewer crashes on unrelated view close"). The
 bug surfaced as a `TypeError: Cannot read properties of undefined (reading
-'children')` raised from the BiostructureViewer package's `onViewRemoved`
-event subscription
-(`public/packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts#L155`)
-when ANY view — not just the view that hosts the Molstar viewer — is closed
-while a Molstar (Biostructure) viewer is docked.
+'children')` when ANY view — not just the view that hosts the Molstar
+viewer — is closed while a Molstar (Biostructure) viewer is docked.
 
 The root cause is an over-broad event subscription with an unguarded DOM
-access. The subscription handler reads
+access: the package's `onViewRemoved` handler read
 `evtView.root.children[0].children[0].classList.contains('msp-plugin')`
-into a `fallbackPreviewCheck` local BEFORE comparing
-`evtView.id === view.id`. Because the subscription fires for ALL
-`onViewRemoved` events (every closed view, regardless of identity), the
-nested `children[0].children[0]` access executes against the root DOM of
-views that may not have any nested children — a leaf preview view, a
-detached help pane, a view whose DOM is already torn down — and throws
-the documented `TypeError`. The correct behaviour is "the handler MUST
-no-op for non-matching views" (per the bug-library `expected:` clause):
-the view-ID equality check (or a null-safe DOM probe) must gate the
-fallback before the nested children access.
-
-This scenario is the dedicated regression guard authored to close the
-F-BUG-COVERAGE-01 gap for this bug (no prior scenario's `related_bugs[]`
-listed `CLAUDE-33`, and the affected sub_feature `biostructure.viewer`
-is outside atlas `manual_only[]` — which is `[]` for this feature).
-
-The bug surfaces on the single sub_feature tracked in the atlas:
-
-- `biostructure.viewer` — Biostructure (Molstar) 3D macromolecular
-  structure viewer registered as the `Biostructure` viewer type
-  (`public/packages/BiostructureViewer/src/package.ts#L455`). The
-  viewer's lifecycle hook
-  (`public/packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts#L155`)
-  installs the `onViewRemoved` subscription whose unguarded DOM access
-  is the bug's defect site.
-
-Atlas cross-references:
-
-- `feature-atlas/biostructureviewer.yaml#edge_cases[1]`
-  (Molstar viewer onViewRemoved unrelated-view-close crash;
-  `source_bug: CLAUDE-33`;
-  `derived_from: bug-library:biostructureviewer.yaml#CLAUDE-33`).
-- `feature-atlas/biostructureviewer.yaml#known_issues[CLAUDE-33]`
-  (`affects_sub_features: [biostructure.viewer]`;
-  `test_coverage.exists: false` — the hole this scenario fills).
-- Chain YAML
-  `scenario-chains/biostructureviewer.yaml#bug_focused_candidates[CLAUDE-33]`
-  proposed_spec verbatim:
-  "Open Molstar (Biostructure) viewer, open and close several
-  unrelated views → assert no 'Cannot read properties of undefined
-  (reading 'children')' crash from onViewRemoved handler."
+before checking whether the closed view was even the one hosting the
+viewer. Because it fired for every closed view regardless of identity, it
+crashed whenever the DOM of the closed (unrelated) view didn't have that
+nested shape — a leaf preview view, a detached help pane, a view whose DOM
+was already torn down. The fix null-guards that access and gates it on the
+view-ID equality check, so closing an unrelated view is a no-op.
 
 ## Setup
 
@@ -143,17 +103,14 @@ Atlas cross-references:
   - Open `1bdq.pdb` via the Files browser
     (`System:AppData/BiostructureViewer/samples/1bdq.pdb`); the
     package's `importPdb` handler routes it into the Biostructure
-    viewer. Atlas reference: `biostructure.file-open.importPdb`
-    (`package.ts#L142`).
+    viewer.
   - Add the viewer programmatically via
     `tv.addViewer('Biostructure')` or
     `grok.functions.call('BiostructureViewer:viewBiostructure',
-    {content, format, name})`. Atlas reference:
-    `biostructure.api.viewBiostructure` (`package.ts#L130`).
+    {content, format, name})`.
   - In either path, `await viewer.awaitRendered(timeoutMs)` before
     closing any sibling view, so the Molstar viewport is fully
-    mounted and the `onViewRemoved` subscription is active. Atlas
-    `edge_cases[6]` (async-render await pattern) applies.
+    mounted and the `onViewRemoved` subscription is active.
 - For the regression assertion ("no `TypeError: Cannot read properties
   of undefined (reading 'children')`"), the load-bearing question is
   "did the `onViewRemoved` handler raise that signature error when an
@@ -192,10 +149,9 @@ Steps:
    over the resulting table view.
 
    * Expected result: the Biostructure viewer renders the structure
-     (await `viewer.awaitRendered(timeoutMs)` per atlas
-     `edge_cases[6]`); the table view holds at least one
-     `Molecule3D` column; the `.msp-viewport canvas` is non-empty.
-     No error balloon, no console error.
+     (await `viewer.awaitRendered(timeoutMs)`); the table view holds
+     at least one `Molecule3D` column; the `.msp-viewport canvas` is
+     non-empty. No error balloon, no console error.
 
 2. Confirm the Molstar viewer is active and that its
    `onViewRemoved` subscription is registered. Inspecting the
@@ -279,9 +235,8 @@ Steps:
    rendered.
 
    * Expected result: `.msp-viewport canvas` is non-empty; the
-     viewer's settings panel is reachable
-     (atlas `biostructure.viewer.settings-panel`,
-     `molstar-viewer.ts#L90`). No error balloon, no console error.
+     viewer's settings panel is reachable. No error balloon, no
+     console error.
 
 2. Begin console-error capture again (clean buffer).
 
@@ -330,70 +285,20 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: **playwright**. The bug manifests at the
-  intersection of the platform's view-lifecycle event dispatch
-  (`grok.events.onViewRemoved`) and the BiostructureViewer
-  package's per-instance subscription handler that reads nested
-  DOM children of the closed view. The canonical reproduction
-  action is "close an unrelated view while Molstar is docked" —
-  a UI close-button click (or programmatic `view.close()`) that
-  triggers the platform's view-removal event, which in turn fires
-  the package's subscription against a `root` DOM shape that
-  varies per view. The assertion is "no `TypeError.*reading
-  'children'` from the BiostructureViewer subscription AND the
-  Molstar viewer's own teardown still works". A pure-apitest
-  variant could emit a synthetic `onViewRemoved` event with a
-  mocked `evtView.root`, but that would BYPASS the platform's
-  real event dispatch (the layer through which the bug actually
-  manifests) and the real DOM shapes that varying views produce
-  — both load-bearing for the regression — so the test is
-  playwright-only.
-
-- coverage_type rationale: **regression** per the dispatch
-  `inputs.bug_brief.coverage_type`. The bug is fixed (per
-  bug-library `status: fixed`) and this scenario is a regression
-  guard against re-emergence of the unrelated-view-close crash.
-  Note that the chain-YAML SR proposal for this bug recommended
-  `coverage_type: edge` so the authoring would double up against
-  F-STRUCT-NEGATIVE-01 (atlas `edge_cases[1]` carries
-  `coverage_type: edge`). The dispatch explicitly resolved to
-  `regression` — the operator may re-classify this scenario to
-  `edge` post-author to satisfy F-STRUCT-NEGATIVE-01 in addition
-  to F-BUG-COVERAGE-01.
-
 - Deferrals: a fallback no-toast / no-balloon assertion path is
   documented in Setup for environments where `page.on('pageerror')`
-  console-error capture is not feasible. This is NOT a deferral
-  against a missing helper — the playwright primitives (UI
-  selectors, view-tab close affordances, error-listener wiring,
-  and `view.close()` JS-API calls) are first-party — but a
-  documented fallback for environments without direct console
-  instrumentation. No sub_features are deferred to another layer.
+  console-error capture is not feasible. This is a documented
+  fallback for environments without direct console instrumentation,
+  not a gap in coverage.
 
-- Cross-reference with the existing migrated smoke
-  `biostructure-viewer.md`: its `bug_match_attempts_skipped[]`
-  audit record for CLAUDE-33 reads "bug.affects intersects scenario
-  sub_features_covered on biostructure.viewer; but bug reproduction
-  requires opening an unrelated view and closing it while a Molstar
-  viewer is docked — the scenario never opens or closes unrelated
-  views, so semantic_match_all_steps returns []". This is the
-  dedicated regression guard authored to close that gap
-  (F-BUG-COVERAGE-01 branch (ii) anchor via
-  `related_bugs: [CLAUDE-33]`).
-
-- Cross-reference with atlas `edge_cases[1]`
-  (`feature-atlas/biostructureviewer.yaml`): that edge case is
-  exactly this bug's unrelated-view-close scenario, derived from
-  `bug-library:biostructureviewer.yaml#CLAUDE-33`. This scenario
-  is its concrete realization — the regression-guard test for
-  the documented edge case.
+- The existing smoke scenario (`biostructure-viewer.md`) does not
+  cover this bug — it opens and interacts with the Molstar viewer
+  but never opens and closes an unrelated view while it is docked,
+  which is the reproduction path. This scenario is the dedicated
+  regression guard for that gap.
 
 - Source citation for the defect site:
   `public/packages/BiostructureViewer/src/viewers/molstar-viewer/utils.ts#L155-L157`
   — the `grok.events.onViewRemoved.subscribe(...)` handler whose
-  unguarded `evtView.root.children[0].children[0]` access is the
-  reproduction target. The atlas-binding sourcing rule is
-  preserved: step content is derived from the code (the
-  subscription's DOM access pattern) and the bug-library's
-  structural `affects` / `reproduction` fields; no scenario step
-  is derived from prose in user-help articles.
+  unguarded `evtView.root.children[0].children[0]` access was the
+  reproduction target.

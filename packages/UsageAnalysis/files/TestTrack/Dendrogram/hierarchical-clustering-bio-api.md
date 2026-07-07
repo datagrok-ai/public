@@ -1,19 +1,15 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.clustering.api
-  - dendrogram.api.get-tree-helper
-  - dendrogram.api.tree-helper.calc-distance-matrix
-  - dendrogram.api.tree-helper.parse-cluster-matrix
-  - dendrogram.clustering.inject-tree-for-grid
 target_layer: apitest
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-bio-api.md
 related_bugs: []
 realized_as:
-  - hierarchical-clustering-bio-api.ts
+  - hierarchical-clustering-bio-api-spec.ts
 scope_reductions:
   - id: SR-FRONTMATTER-ATLAS-RESOLUTION
     rationale: |
@@ -84,7 +80,7 @@ scope_reductions:
       via the bug-library cross-reference convention, then on landing
       the fix this scope_reduction can be reverted: change the two
       `if (isCentroidGap && ...) console.warn(...) else expect(...)`
-      blocks in hierarchical-clustering-bio-api.ts back to
+      blocks in hierarchical-clustering-bio-api-spec.ts back to
       unconditional `expect(result.fatalErrors).toEqual([])` +
       `expect(result.mounted).toBe(true)` calls (and apply the same
       revert to the chem-api sibling's SR-03 once that scenario passes
@@ -101,7 +97,7 @@ gate_verdicts:
     cycle_id: 2026-06-03-dendrogram-automate-02
     timestamp: 2026-06-03T21:15:00Z
     spec_runs:
-      - spec: hierarchical-clustering-bio-api.ts
+      - spec: hierarchical-clustering-bio-api-spec.ts
         result: passed
         attempts: 3
         duration_seconds: 53
@@ -109,6 +105,10 @@ gate_verdicts:
 ---
 
 # Hierarchical Clustering (bio) — Distance × Linkage matrix (JS API)
+
+Verifies that hierarchical clustering builds a valid tree for every
+supported Distance × Linkage combination on the Bio (sequence) path,
+using the JS API directly (no UI).
 
 Dataset: **FASTA_PT_activity** (`System:AppData/Bio/samples/FASTA_PT_activity.csv`, ~99
 rows). 
