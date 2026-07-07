@@ -208,7 +208,10 @@ test('Sharing & Permissions — Model', async ({page}) => {
     const shareTitle = dlg.locator('.d4-dialog-title', {hasText: 'Share'});
     for (let attempt = 0; attempt < 4; attempt++) {
       if (await shareTitle.isVisible().catch(() => false)) break;
-      await page.locator('[name="button-Share..."]').click();
+      // Only click SHARE when no dialog is open yet — otherwise a slow first dialog gets a second
+      // click and two dialogs stack (later blocks then hit "2 button-CANCEL" strict-mode violations).
+      if ((await page.locator('.d4-dialog').count().catch(() => 0)) === 0)
+        await page.locator('[name="button-Share..."]').click();
       await shareTitle.waitFor({state: 'visible', timeout: 20_000}).catch(() => {});
     }
     await expect(shareTitle).toBeVisible({timeout: 5_000});
