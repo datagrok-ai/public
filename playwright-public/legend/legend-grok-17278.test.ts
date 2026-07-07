@@ -79,7 +79,11 @@ test('GROK-17278: line chart legend color persists across layout + project round
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'GROK17278Proj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const __df = (window as any).grok.shell.tv.dataFrame;
+        const __ti = __df.getTableInfo();
+        proj.addChild(__ti);
+        await (window as any).grok.dapi.tables.uploadDataFrame(__df);
+        await (window as any).grok.dapi.tables.save(__ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {

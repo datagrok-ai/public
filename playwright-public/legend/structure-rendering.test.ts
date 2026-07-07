@@ -125,7 +125,11 @@ test('Legend structure rendering', async ({page}) => {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'StructRenderProj_' + Date.now();
-        proj.addChild(tv.dataFrame);
+        const __ti = tv.dataFrame.getTableInfo();
+        proj.addChild(__ti);
+        // Persist the table entity before saving the project (avoids project_relations FK).
+        await (window as any).grok.dapi.tables.uploadDataFrame(tv.dataFrame);
+        await (window as any).grok.dapi.tables.save(__ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         return {ok: true, id: saved.id};
       } catch (e: any) {

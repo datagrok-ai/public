@@ -108,7 +108,11 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'ScatterCombinedProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const __df = (window as any).grok.shell.tv.dataFrame;
+        const __ti = __df.getTableInfo();
+        proj.addChild(__ti);
+        await (window as any).grok.dapi.tables.uploadDataFrame(__df);
+        await (window as any).grok.dapi.tables.save(__ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
@@ -529,7 +533,11 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         const DG = (window as any).DG;
         const proj = DG.Project.create();
         proj.name = 'ScatterGridColorProj_' + Date.now();
-        proj.addChild((window as any).grok.shell.tv.dataFrame);
+        const __df = (window as any).grok.shell.tv.dataFrame;
+        const __ti = __df.getTableInfo();
+        proj.addChild(__ti);
+        await (window as any).grok.dapi.tables.uploadDataFrame(__df);
+        await (window as any).grok.dapi.tables.save(__ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
         pid = saved.id;
       } catch (e: any) {
