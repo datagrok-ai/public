@@ -99,6 +99,15 @@ export class FuncFlowView extends DG.ViewBase {
     tags: ['funcflow'],
   };
 
+  protected override afterPersist(): void {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = false;
+    grok.shell.windows.showContextPanel = true;
+    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showBrowse = true;
+    grok.shell.windows.showToolbox = true;
+  }
+
   /** The platform Script entity (language 'flow') this view edits, when opened
    *  from / saved to the server. Null for scratch flows — Save asks for a name. */
   private boundScript: DG.Script | null = null;
@@ -473,14 +482,23 @@ export class FuncFlowView extends DG.ViewBase {
       description: this.flowSettings.scriptDescription,
       tags: this.flowSettings.tags,
     }));
-    this.propertyPanel.onEditFuncParams = (node) => void funcEditorLauncher.open(node).then((applied) => {
-      if (applied) {
-        // The editor dialog wrote new values into `inputValues` — the same
-        // invalidation as any parameter edit in the panel.
-        this.flow.notifyNodeParamsChanged(node.id);
-        this.propertyPanel.showNode(node, this.executionController?.state.getNodeState(node.id));
-      }
-    }).catch((e) => grok.shell.error(`Function editor failed: ${e instanceof Error ? e.message : e}`));
+    this.propertyPanel.onEditFuncParams = (node) => {
+      // No autorun while the editor dialog is open: the dialog intercepts the
+      // global `d4-before-run-action` event, and a mid-dialog rerun of the same
+      // function would be mistaken for the dialog's own run action — canceling
+      // the rerun's call and resolving the round-trip with stale values. The
+      // writeback below reports the edit, so the rerun happens right after.
+      this.autorunScheduler?.hold();
+      void funcEditorLauncher.open(node).then((applied) => {
+        if (applied) {
+          // The editor dialog wrote new values into `inputValues` — the same
+          // invalidation as any parameter edit in the panel.
+          this.flow.notifyNodeParamsChanged(node.id);
+          this.propertyPanel.showNode(node, this.executionController?.state.getNodeState(node.id));
+        }
+      }).catch((e) => grok.shell.error(`Function editor failed: ${e instanceof Error ? e.message : e}`))
+        .finally(() => this.autorunScheduler?.release());
+    };
     this.executionController.onBreakpointHit = () => {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };

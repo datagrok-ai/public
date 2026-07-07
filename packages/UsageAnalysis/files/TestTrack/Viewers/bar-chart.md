@@ -1,3 +1,14 @@
+---
+feature: barchart
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - bar-chart-spec.ts
+related_bugs: []
+---
+
 # Bar chart tests (Playwright)
 
 All scenarios should start with the following sequence of events:
@@ -125,9 +136,9 @@ All scenarios should start with the following sequence of events:
 Setup: Close all, open demog and SPGI 
 
 1. Go to the demog table
-1. Add Bar chart
-2. Open Context Panel > **Data > Row Source** — switch between All, Selected, Filtered
-3. On the Context Panel > Data > Table, switch table to SPGI — bar chart should rebind to new table
+2. Add Bar chart
+3. Open Context Panel > **Data > Row Source** — switch between All, Selected, Filtered
+4. On the Context Panel > Data > Table, switch table to SPGI — bar chart should rebind to new table
 5. Set **Filter** to `${CAST Idea ID} < 636500` — chart should show only matching rows
 6. Set **Color > Color Column** to Chemical Space Y
 7. Save layout via JS API

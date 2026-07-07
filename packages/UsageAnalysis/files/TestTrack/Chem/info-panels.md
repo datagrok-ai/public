@@ -1,8 +1,9 @@
 ---
 feature: chem
-sub_features_covered: [chem.panels, chem.panels.rendering, chem.panels.highlights, chem.panels.descriptors, chem.panels.drug-likeness, chem.panels.properties, chem.panels.structural-alerts, chem.panels.pharmacophore, chem.panels.identifiers, chem.panels.structure-2d, chem.panels.structure-3d, chem.panels.toxicity, chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer, chem.notation.detect-smiles]
 target_layer: playwright
 coverage_type: regression
+priority: p2
+realizes: []
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md
 migration_date: 2026-05-11
@@ -41,12 +42,6 @@ End-to-end exercise of the Chem Context Panel surface. Two phases:
   applicable tabs, expand each tab and verify content renders without
   errors.
 
-Per chain YAML (`scenario-chains/chem.yaml` rev 1): independent scenario,
-`classification: medium`, `pyramid_layer: integration`, target_layer
-`playwright`, strategy `simple`. UI coverage owned (`chem-info-panel-*`,
-`context-panel-column-header-click`, `context-panel-cell-click`) — not
-delegated. No cross-file fixtures.
-
 ## Setup
 
 1. **Provision linked datasets.** The scenario consumes five Datagrok
@@ -82,9 +77,8 @@ the cell-level Context Panel surface on the first molecule of
 
 1. Open `System:DemoFiles/chem/smiles.csv`.
 2. Verify the `canonical_smiles` column auto-detects as a Molecule
-   column (RDKit renderer renders cells; SMILES auto-detection via
-   `chem.notation.detect-smiles` populated units / semType / cell
-   renderer).
+   column (RDKit renderer renders cells; SMILES auto-detection populates
+   units / semType / cell renderer).
 3. Click the `canonical_smiles` column header to drive Context Panel
    into column-context mode.
 4. In the Context Panel, walk every Chemistry / Biology / Structure
@@ -131,7 +125,7 @@ one iteration of the same step sequence (Steps 1-6 below) against the
 named dataset.
 
 | format    | dataset                                                                          |
-|-----------|----------------------------------------------------------------------------------|
+|-----------|------------------------------------------------------------------------------------|
 | smiles    | `System:DemoFiles/chem/smiles.csv`                                               |
 | molV2000  | `System:AppData/Chem/mol1K.sdf`                                                  |
 | molV3000  | `System:DemoFiles/chem/sdf/ApprovedDrugs2015.sdf`                                 |
@@ -159,50 +153,15 @@ on the dataset for that row:
 
 ## Notes
 
-- **Renderer assumption.** This scenario assumes the default Chem
-  package property `Renderer` is set to RDKit. If the environment has
-  switched the package property to OpenChemLib, the assertions on
-  scaffold-highlight and substructure-highlight may differ in the OCL
-  renderer branch — out of scope for this scenario; OCL coverage is
-  parallel and lives in the `chem.rendering.ocl-renderer` test surface
-  (no dedicated current test in section).
-- **Tab inventory caveat.** The exact set of tabs visible in the Context
-  Panel is environment-dependent — packages like Bio, Peptides, or
-  ChemDraw may inject additional tabs not authored by Chem. Phase A
-  step 4 / Phase B step 4 verify "all applicable Chem info panels" —
-  the Chem-authored set per atlas `chem.panels.*` (12 panel ids) — not
-  the universal-and-superset of every tab any installed package
-  contributes.
-- **No JS API substitution.** Phase A steps 3-9 and Phase B step 3
-  exercise the Context Panel mode-switch (column-header click vs. cell
-  click) which is itself the UI behavior under test (`context-panel-
-  column-header-click`, `context-panel-cell-click` per chain
-  `ui_coverage_responsibility`). UI driving is required for those
-  steps; JS API direct invocation of panel computation functions would
-  not exercise the mode-switch or the tab-render lifecycle.
-- **Cross-cutting bug awareness — GROK-16870.** Per chain
-  `bug_focused_candidates[]`, `chem-grok-16870-spec.ts` is the bug-
-  focused candidate spec for the RDKit cell renderer crash on null
-  DataFrame in tooltip context of non-Chem viewers (Box Plot / Scatter
-  Plot / Histogram / Grid). info-panels.md exercises Chem context-panel
-  rendering across Chem panels but does NOT exercise non-Chem viewer
-  tooltip rendering of molecule cells — that invariant lives in the
-  parallel bug-focused spec. `related_bugs: []` in the frontmatter
-  because the bug-focused candidate owns the invariant; awareness only
-  here.
-- **Cross-cutting bug awareness — GROK-17964.** Per chain
-  `bug_focused_candidates[]`, `chem-grok-17964-spec.ts` is the bug-
-  focused candidate for the Convert Notations action-registration leak
-  invariant. info-panels.md walks the Chem Context Panel surface but
-  does NOT trigger a Convert Notations error to assert exactly-once
-  registration after handler error + project reload. Awareness only;
-  not added to `related_bugs` (parallel-coverage candidate owns the
-  invariant).
-- **Helpers usage.** No registered helper in `helpers-registry.yaml`
-  currently abstracts the "open dataset → click cell → walk Chem context
-  panel tabs" pattern. Candidate helper surfaced in migration report
-  Decisions section; spec implementation can inline the pattern until a
-  helper lands.
-- **Order in chain.** `order: 1` per source JSON; tie-broken
-  lexicographically before `Advanced/scaffold-tree-functions.md`. Runs
-  early in section. No `must_run_last` constraint.
+- **Renderer assumption.** This scenario assumes the default Chem package property `Renderer` is
+  set to RDKit. If the environment has switched to OpenChemLib, the scaffold-highlight and
+  substructure-highlight assertions may differ under the OCL renderer branch — that's out of
+  scope here and is a separate coverage surface.
+- **Tab inventory caveat.** The exact set of tabs visible in the Context Panel is
+  environment-dependent — packages like Bio, Peptides, or ChemDraw may inject additional tabs not
+  authored by Chem. This scenario verifies only the Chem-authored panel set, not the union of
+  every tab any installed package contributes.
+- **Bugs not covered here.** Two related bugs are covered by dedicated bug-focused specs, not this
+  scenario: the RDKit cell renderer crashing in non-Chem viewer tooltips (GROK-16870) — this
+  scenario only walks Chem Context Panel rendering, not other viewers' tooltips — and the Convert
+  Notations duplicate-registration leak (GROK-17964) — this scenario never triggers that action.

@@ -1,5 +1,3 @@
-Ручной чеклист. Не входит в автоматизацию PW.
-
 # Statistics viewer — manual tests
 
 All scenarios should start with the following sequence of events:

@@ -1,12 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.viewers.sar-base.export-mutation-cliffs
-  - peptides.viewers.sar-base
-  - peptides.viewers.monomer-position
-  - peptides.workflow.start-analysis
 target_layer: playwright
 coverage_type: smoke
+priority: p2
+realizes: [export-mutation-cliffs-from-sar-viewer]
 produced_from: atlas-driven
 realized_as:
   - export-mutation-cliffs-spec.ts
@@ -38,6 +35,10 @@ gate_verdicts:
         failure_keys: []
 ---
 
+# Peptides — Export Mutation Cliffs from the SAR viewer
+
+After running SAR analysis, the Sequence Variability Map viewer's context menu offers an **Export Mutation Cliffs** action that opens a new table listing pairs of sequences differing by a single mutation, along with their activity delta. This scenario checks the exported table's column shape, and that extra columns chosen in the export dialog are emitted as paired Seq-1/Seq-2 values.
+
 ## Setup
 
 1. Open the linked Peptides demo dataset (`System:DemoFiles/bio/peptides.csv`) — a TableView with the peptides grid and a `Macromolecule`-semtype `AlignedSequence` column should be the active view.
@@ -45,9 +46,9 @@ gate_verdicts:
 
 ## Scenarios
 
-### Scenario 1 — Export Mutation Cliffs opens a new TableView with the documented column shape
+### Scenario 1 — Export Mutation Cliffs opens a new table with the documented column shape
 
-Atlas anchor: `critical_paths[export-mutation-cliffs-from-sar-viewer]` (p2) + `interactions[sar-export-mutation-cliffs-to-table]` (smoke). Exercises the context-menu Export surface on `SARViewer` and confirms the exported TableView has the columns produced by `SARViewer.exportMutationCliffs()`.
+Checks the context-menu Export action on the Sequence Variability Map viewer and confirms the exported table has the expected columns.
 
 1. Right-click on the `Sequence Variability Map` viewer body to open the viewer's context menu.
 2. Hover the **Export** submenu and click **Export Mutation Cliffs**.
@@ -67,12 +68,8 @@ Same context-menu entry path, but the column-picker selects one additional colum
 
 ## Notes
 
-- **Atlas provenance.** Scenario 1 derives from `critical_paths[export-mutation-cliffs-from-sar-viewer]` (atlas `peptides.yaml`); the atlas entry's `derived_from:` cites `public/packages/Peptides/src/viewers/sar-viewer.ts#L560`. Scenario 2 derives from `interactions[sar-export-mutation-cliffs-to-table]` (atlas `peptides.yaml`).
-- **target_layer rationale.** Multi-step UI flow — viewer context menu, column-picker dialog OK roundtrip, and assertion against the resulting TableView grid shape — requires DOM/UI driving. `apitest` is not viable because the entry point is a context-menu command bound to a Viewer instance and the exported artifact is a new `TableView` (UI surface, not a JS-API return value).
-- **Coverage rationale.** `coverage_type: smoke` matches atlas `interactions[sar-export-mutation-cliffs-to-table].coverage_type` verbatim per the canonical rule (atlas value is authoritative when scenario maps onto an atlas interaction/edge entry). The atlas `critical_paths[export-mutation-cliffs-from-sar-viewer].priority: p2` maps via the p0→smoke / p1→regression / p2-p3→author's-discretion heuristic; the dominant atlas declaration here is the `interactions[]` entry's `smoke`, taken as canonical.
-- **Coverage contribution.** This scenario retires the largest atlas-anchored uncovered sub_feature in the SAR Export family: `peptides.viewers.sar-base.export-mutation-cliffs` (`viewers.sar-base.export-*` per the chain's Gate F gaps[type: sub-feature-coverage-gap] uncovered family enumeration; see `scenario-chains/peptides.yaml :: gate_f_verdict.gaps[2].uncovered_sub_feature_families`). Sister scenario for the invariant-map export surface (`peptides.viewers.sar-base.export-invariant-map` via atlas `critical_paths[export-invariant-map-from-sar-viewer]` p2 + `interactions[sar-export-invariant-map-to-table]` smoke) remains an open Test Designer authoring item.
-- **Setup composition.** Step 2 of Setup launches SAR via the top-menu entry path (`peptides.workflow.sar-dialog` → `peptides.workflow.analyze-ui` → `peptides.workflow.start-analysis`). The context-panel `Launch SAR` button entry path is owned by `sar.md`; this scenario picks the top-menu path so it does not duplicate `sar.md`'s entry-flow coverage and instead focuses the body on the export surface.
-- **Related bugs.** Atlas `known_issues[]` carries no curated bug intersecting `peptides.viewers.sar-base.export-mutation-cliffs` or `peptides.viewers.sar-base` as of atlas revision 3; `related_bugs:` is empty by intent.
+- **Setup composition.** SAR is launched via the top-menu entry path so this scenario does not duplicate `sar.md`'s context-panel entry-flow coverage and can focus on the export surface.
+- **No related bugs.** No curated bug currently anchors the Export Mutation Cliffs surface.
 
 ## Original trailing metadata
 

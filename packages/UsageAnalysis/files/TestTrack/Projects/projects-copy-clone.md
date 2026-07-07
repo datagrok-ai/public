@@ -1,8 +1,9 @@
 ---
 feature: projects
-sub_features_covered: [projects.view.browse, projects.view.single, projects.shell.open, projects.shell.share-via-context-menu, projects.api.save, projects.add-relation, projects.add-link]
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [save-copy-with-link-mode]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-copy-clone.md
 migration_date: 2026-05-04
@@ -29,46 +30,36 @@ ui_coverage_delegated_to: null
 related_bugs: [GROK-19750, GROK-19103, GROK-19403]
 ---
 
-# Projects Copy Clone
+# Projects — Save Copy modes: Link, Clone & Personal View Customizations
 
-For each previously-created project (consumed from `upload-project.md`'s
-`demog` and `uploading.md`'s `Test_Case<N>_Sync` / `_NoSync` projects),
-preview in Browse, share with a recipient, open, and run a sequence of
-edit-and-save operations across three save modes (Link, Clone, Personal
-View Customizations). Verify the GROK-19750 invariant: after Save-Copy-
-with-Link, the original project's viewers must remain intact. Re-share
-the newly-created variant projects.
+For each previously-saved project (the `demog` project, and the
+`Test_Case<N>` projects from
+`uploading.md`), this scenario previews it in Browse, shares it with a
+recipient, opens it, and runs it through three different "Save Copy"
+modes — **Link**, **Clone**, and **Personal View Customizations** —
+verifying that each variant reopens correctly and, critically, that
+Save-Copy-with-Link never leaks changes back into the original
+project (the GROK-19750 regression).
 
-This scenario is the producer of three variant fixtures consumed by
-`project-url.md`: `<original>-link`, `<original>-clone`,
-`<original>-personal-view-customizations`. Implemented as
-`chained_tests` per `scenario-chains/projects.yaml` rev 3 — same
-fixture (`multi-source-saved-projects`) reused across all chained steps;
-no tear-down between steps within a chain.
-
-This scenario is also the chain's `bug-focused` witness for
-**GROK-19750** (sub-flow 4b walks the bug's reproduction path; step 7
-asserts the regression-coverage invariant and would fail before fix).
-Cross-cutting cover for **GROK-19103** (Step 4 derive-and-save inside
-active project) and **GROK-19403** (Steps 2 + 5 right-click Share +
-recipient open) is delegated here per chain
-`bug_focused_candidates`. Per chain rev 3 `pyramid_layer: bug-focused`
-and per `ui_coverage_plan.delegated_scenarios`, this scenario OWNS the
-right-click Share dialog UI surface delegated from `share-project.md`
-(steps 2 and 5 drive `pcmdShareProject`).
+It also produces the three copy-mode project variants
+(`<original>-link`, `<original>-clone`,
+`<original>-personal-view-customizations`) that `project-url.md`
+later deep-links into, and it is the section's main test of the
+right-click Share dialog — this is where the Share dialog UI itself
+gets exercised (steps 2 and 5).
 
 ## Setup
 
 1. **Fixture prerequisite:** the `multi-source-saved-projects` fixture
    produced by upstream scenarios must exist on the server: at minimum
-   the `demog` project from `upload-project.md`, optionally augmented
+   the `demog` project, optionally augmented
    with `Test_Case<N>_Sync` / `_NoSync` projects from `uploading.md`.
    In `chained_tests` strategy, the Automator stage will reuse these
    from a prior chain run OR replay them via `js-api-replay` in a
    `beforeAll` block.
 2. **Recipient identity for Share operations:** required for steps 2
-   and 5 (right-click Share dialog). Same recipient pattern as
-   `share-project.md`: the recipient is the placeholder user
+   and 5 (right-click Share dialog). Same recipient pattern: the
+   recipient is the placeholder user
    `<RECIPIENT_USERNAME_TBD>` (single test account, pending
    provisioning) AND/OR an email recipient (auto-creates a user
    account on the server). The Automator stage owns `afterAll`
@@ -98,9 +89,8 @@ chain (no `closeAll` between steps unless explicitly noted).
 
    > Drives `pcmdShareProject` + `share-dialog-recipients` +
    > `context-panel-sharing-tab` UI flows. Per chain rev 3
-   > `ui_coverage_plan.delegated_scenarios`, `share-project.md`
-   > delegates the right-click Share dialog UI coverage to this
-   > scenario.
+   > `ui_coverage_plan.delegated_scenarios`, the right-click Share
+   > dialog UI coverage is delegated to this scenario.
 3. Open each previously-created project: double-click in Browse >
    Dashboards. **Verify on open:** project loads, its tables and
    viewers render in the workspace, no errors in the browser console.
@@ -201,99 +191,26 @@ chain (no `closeAll` between steps unless explicitly noted).
 
 ## Notes
 
-- **Original `order: 5`** — runs after `upload-project.md` /
-  `uploading.md` (`order: 1`), `share-project.md` (`order: 2`),
-  `opening.md` (`order: 3`), `project-url.md` (`order: 4`). Captured
-  in `scenario-chains/projects.yaml` rev 3.
-- **GROK-19750 invariant addition (sub-flow 4b step 7).** The original
-  source `.md` does NOT contain an explicit "reopen the original after
-  Save-Copy-with-Link and verify original's viewers are intact" step.
-  This assertion was added at migration time per the per-cycle prompt's
-  pre-known context: "MUST add an explicit assertion ... mandatory
-  migration-time addition, not a candidate". Without this assertion,
-  GROK-19750 regression coverage is missed by the chain. The bug's
-  reproduction (per `bug-library/projects.yaml` rev 2 entry GROK-19750)
-  is exactly the sub-flow 4b sequence; verifying the original's
-  viewer-intactness on reopen IS the regression test.
-- **Harmonization gap addition (sub-flow 4d steps 4-6).** The original
-  source's 4th sub-bullet ("save personal view customizations")
-  lacked the "close all, reopen it. Close all" verification that the
-  preceding sub-bullets (link, clone) include. Sibling sub-flows 4b
-  and 4c BOTH have the close-and-reopen verification; sub-flow 4d
-  did not. This was harmonized at migration time — not a behavior
-  change, just symmetry with the sibling pattern. See migration
-  report for the source-text-correction history (`mig-2026-04-29-source-
-  text-correction` recorded the "with layout" → "personal view
-  customizations" terminology change but did NOT add the missing
-  close-and-reopen verification — that gap is closed here).
-- **Pyramid layer (chain rev 3): `bug-focused`.** Discriminator: the
-  scenario was authored to walk GROK-19750's reproduction path
-  (sub-flow 4b: open original → add viewer → Save Copy with Link →
-  close all → reopen original → assert viewers intact). Sub-flow 4b
-  step 7 IS the GROK-19750 regression test; without the bug fix, this
-  scenario fails. Bug-focused dominates over Rule 4 multi-source per
-  the heuristic priority 3 → 4.
-- **UI coverage (chain rev 3): owns 6 flows.** This scenario owns the
-  full Save-Copy mode dialog surface (`save-copy-with-link-dialog`,
-  `save-copy-with-clone-dialog`,
-  `save-personal-view-customizations-dialog`) plus the right-click
-  Share dialog (`pcmdShareProject`, `share-dialog-recipients`,
-  `context-panel-sharing-tab`). Per
-  `ui_coverage_plan.delegated_scenarios`, `share-project.md`
-  delegates UI coverage of the right-click Share dialog
-  (`pcmdShareProject`) to this scenario — share-project.md uses
-  JS API (`grok.dapi.permissions.grant`) for the registered-user
-  share path, and the right-click Share dialog UI surface lives
-  here in steps 2 and 5.
-- **Cross-cutting bug awareness (chain rev 3 `bug_focused_candidates`):**
-  - **GROK-19750**: cross-cutting candidate spec
-    `projects-grok-19750-spec.ts` proposed (spans
-    `upload-project.md:Step 1` + `projects-copy-clone.md:Step 4`).
-    F-BUG-COVERAGE-01 at section-complete is the authoritative gate
-    for cross-cutting bug coverage; this scenario is the primary
-    bug-focused witness inside the chain.
-  - **GROK-19103**: cross-cutting candidate spec
-    `projects-grok-19103-spec.ts` proposed (spans include
-    `projects-copy-clone.md:Step 4`). The Save Copy + viewer-add flow
-    here intersects the bug's `affects: [projects.api.save,
-    projects.add-relation]` surface.
-  - **GROK-19403**: cross-cutting candidate spec
-    `projects-grok-19403-spec.ts` proposed (spans include
-    `projects-copy-clone.md:Step 5`). Step 5 right-click Share +
-    recipient open is the share-with-deps reproduction path; if the
-    variant has un-shared script/query deps (out of scope here) the
-    recipient sees a silent null per the bug.
-  - All three bugs are listed in `related_bugs:` frontmatter as
-    chain-cross-cutting watch-list. Per Edit 5 Design point A, the
-    citation is RECOMMENDED (early visibility) — the authoritative
-    coverage gate is F-BUG-COVERAGE-01 at section-complete.
-- **Invariant 3 (atlas-aware sub_features_covered for share) APPLIES.**
-  Steps 2 and 5 both exercise the right-click Share dialog
-  (`pcmdShareProject` per atlas rev 11 sub_feature
-  `projects.shell.share-via-context-menu`). The sub_feature is
-  correctly INCLUDED in `sub_features_covered`.
-- **Cleanup responsibility.** Steps 4b, 4c, 4d each produce a NEW
+- **GROK-19750 invariant (sub-flow 4b, step 7).** The "reopen the
+  original after Save-Copy-with-Link and verify its viewers are still
+  intact" assertion was deliberately added here — without it, a
+  GROK-19750 regression would go undetected. It's exactly the bug's
+  reproduction path: open original, add a viewer, Save Copy with
+  Link, close, reopen the copy, close, then reopen the *original* and
+  confirm nothing leaked back into it.
+- **Harmonization: sub-flow 4d now closes and reopens too.** Sub-flows
+  4b (Link) and 4c (Clone) both close-and-reopen the resulting variant
+  to verify it. Sub-flow 4d (Personal View Customizations) originally
+  didn't — that's been fixed here for consistency; it's not a
+  behavior change, just closing a gap between the sibling sub-flows.
+- **Cross-cutting bug coverage.** Besides GROK-19750, this scenario's
+  Step 4 (derive-and-save inside an active project) touches
+  GROK-19103's affected surface, and Step 5 (right-click Share +
+  recipient open) touches GROK-19403's — a variant with un-shared
+  script/query dependencies could reproduce that bug's silent-null
+  failure, though that's out of scope for this scenario's assertions.
+- **Cleanup responsibility.** Steps 4b, 4c, 4d each produce a new
   variant project (`<original>-link`, `<original>-clone`,
-  `<original>-personal-view-customizations`). These ARE the
-  consumed-by-`project-url.md` fixture (`copy-clone-customizations-
-  variants` per scenario-chains rev 3). They are NOT cleaned up by
-  this scenario — `deleting.md` (terminal, must_run_last) owns
-  terminal cleanup. Step 5's email-invite-creates-account side
-  effect IS owned by Automator's `afterAll` per per-cycle convention
-  (same as `share-project.md`).
-- **Sibling spec convention.** `projects-copy-clone-spec.ts` exists
-  from a prior cycle; per-cycle Invariant 2 (existing -spec.ts /
-  -api.ts READ-ONLY) applies — Migrator does NOT modify it. Adjacent
-  specs (`opening-spec.ts`, `uploading-spec.ts`, `share-project-spec.ts`,
-  `deleting-spec.ts`) all use the `loginToDatagrok`, `softStep`,
-  `evalJs`, `closeAll` convention and `Date.now()` suffix naming
-  pattern; consulted READ-ONLY for house style.
-- **"Add any viewer" cross-feature touch.** Sub-flows 4a/4b/4c/4d each
-  begin with "add any viewer". Adding a viewer to a TableView is a
-  cross-feature operation (viewer system, not projects.* directly).
-  The closest projects.* sub_features touched are
-  `projects.shell.add-dataframe` (when the viewer addition triggers
-  a project state mutation) and `projects.api.save` (when the project
-  is saved with the new viewer). Listed in `sub_features_covered`
-  for the saving aspect; viewer addition itself is rendered in the
-  D4 viewer system, out of projects.* scope.
+  `<original>-personal-view-customizations`). These are consumed by
+  `project-url.md`, so they are NOT cleaned up here — `projects-ui-smoke.md`
+  (the section's terminal cleanup scenario) owns that.

@@ -1,12 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.panels
-  - peptides.panels.peptides
-  - peptides.rendering
-  - peptides.rendering.monomer
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [sar-context-panel-info-panels]
 produced_from: migrated
 realized_as:
   - info-panels-spec.ts
@@ -84,6 +81,10 @@ gate_verdicts:
     failure_keys: []
 ---
 
+# Peptides — Context Panel info panels on the Macromolecule column
+
+Checks the entry-point smoke path for the Peptides context panel: each amino acid in the sequence column should render in a distinct color, and selecting the column should reveal a Details pane (platform-wide) and a Peptides pane (registered by the Peptides package) that both expand and render content.
+
 ## Setup
 
 1. Open the linked Peptides demo dataset (`System:DemoFiles/bio/peptides.csv`) — a TableView with the peptides grid and a `Macromolecule`-semtype `AlignedSequence` column should be the active view.
@@ -102,7 +103,7 @@ Entry-point smoke for the Peptides info-panel surface. Verifies (a) per-cell ami
 
 ## Notes
 
-- Pyramid role: this scenario is the chain's `ui-smoke` residual per `scenario-chains/peptides.yaml :: ui_coverage_plan.smoke_scenario` (no entity create/share/delete in the Peptides feature shape; shortest scenario by step count; lowest `order`). Sibling scenarios `peptides.md`, `sar.md`, `peptide-space.md` delegate the shared `peptides-context-panel-peptides-tab` entry-point flow to this scenario.
-- Bug coverage: cross-cutting bug `GROK-17557` (SAR launched from the Peptides context panel raises "SeqHelper is not initialized") affects the `peptides.panels.peptides` surface this scenario exercises; the dedicated cross-cutting spec is proposed under chain `bug_focused_candidates` as `peptides-grok-17557-spec.ts`. This scenario verifies the panel-rendering smoke; the Launch-SAR-from-panel init-prerequisite invariant lives in the dedicated spec.
-- Renderer-tag mapping: the original source text says "each amino acid is rendered with a different color" without specifying the renderer key. The sibling Playwright spec `info-panels-spec.ts` (test "Peptides — Info Panels") asserts `col.getTag('cell.renderer') === 'sequence'`; this mapping is not declared in the original scenario body and is surfaced as an unresolved ambiguity for downstream resolution.
-- Panel-content verification: step 5 of the original asks for "content for each panel is displayed correctly". The migrated text constrains "each panel" to the two panels explicitly enumerated in step 4 (Details + Peptides) and lists representative content shapes per pane; the absence of a concrete per-pane invariant in the source is surfaced as an unresolved ambiguity.
+- **Shared entry point.** This is the shortest, entry-point-only smoke for the Peptides context panel. Sibling scenarios `peptides.md`, `sar.md`, and `peptide-space.md` all rely on the same "select column → Peptides pane expands" flow but delegate verifying it to this scenario, rather than re-checking it themselves.
+- **Related bug.** GROK-17557 ("SAR launched from the Peptides context panel raises 'SeqHelper is not initialized'") affects the Peptides pane this scenario renders. This scenario only verifies the pane renders; the actual Launch-SAR-from-panel init-prerequisite behavior is checked by a dedicated spec.
+- **Deferral — renderer tag.** The per-cell amino-acid coloring is asserted generically ("each amino acid rendered in a distinct color"); the exact renderer key is not pinned down here.
+- **Deferral — panel content detail.** "Each panel renders correctly" is checked at a representative level (Details shows column metadata; Peptides shows the SAR analyze/Launch-SAR entry surface) rather than against an exhaustive per-pane content spec.

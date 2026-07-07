@@ -1,10 +1,5 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.refresh.on-data-change
-  - legend.column
-  - legend.show-nulls
-  - legend.extra-column
 target_layer: playwright
 coverage_type: regression
 priority: p1
@@ -22,6 +17,10 @@ scope_reductions: []
 related_bugs:
   - GROK-17222
 ---
+
+# Legend — stays in sync with filtering
+
+Verifies that a viewer's legend always reflects the currently visible rows, no matter how those rows got filtered: the Filter Panel (numerical, categorical, structure filters), a viewer's own in-viewer filter property, click-to-filter interactions, and the different Row Source modes (All / Filtered / FilteredSelected / Selected). Checked across seven viewer types.
 
 ## Setup
 
@@ -93,7 +92,7 @@ related_bugs:
 3. Set **Row Source** to `Filtered`
 4. Verify legend reflects only filtered rows
 5. Set **Row Source** to `FilteredSelected`
-6. Verify legend reflects only filtered + selected rows (see Unresolved ambiguities for behavior when no rows are selected)
+6. Verify legend reflects only filtered + selected rows
 7. Set **Row Source** to `Selected`
 8. Verify legend reflects only selected rows
 
@@ -108,12 +107,10 @@ related_bugs:
 
 ## Notes
 
-- Specialty: filter-source matrix (Filter Panel × in-viewer filter × click-to-filter) verified across 7 viewer types. Bar chart Stack edge case adds `includeNulls=false` ghost-entry coverage.
-- Delegates standard legend UI flows (visibility / position / color picker / save-dialog widgets) to `visibility-and-positioning.md`.
-- `pyramid_layer: integration` — multi-subsystem (7 viewer types × 3 filter source mechanisms × Row Source modes).
-- Strategy `chained_tests` per chain — Scenario 9 continues from Scenario 8 state. Scenarios 1–8 share the 7-viewer setup via `beforeAll`; Scenario 9 is its own `test()` referencing the live state of the Bar chart from earlier.
-- Bug GROK-17222 ("Line chart: legend is not consistent with filtering") is the primary cross-cutting bug for this scenario; the bug-focused spec `legend-grok-17222-spec.ts` (proposed by chain) reproduces the legend-skips-filter-event invariant. This scenario verifies the positive baseline (legend SHOULD update on every filter source).
-- Helpers: `loginToDatagrok`, `softStep`, `specTestOptions`, `stepErrors` from `spec-login`. No new helpers proposed.
+- Covers the full filter-source matrix (Filter Panel x in-viewer filter x click-to-filter) across 7 viewer types. The Bar chart edge case (Scenario 9) additionally checks that unchecking "Include nulls" doesn't leave ghost legend entries for deselected stack categories.
+- Standard legend UI flows (visibility, position, color picker, save-dialog behavior) are covered once in `visibility-and-positioning.md` and not repeated here.
+- Scenario 9 continues from the Bar chart state left by Scenario 8 rather than starting fresh.
+- Bug GROK-17222 ("Line chart: legend is not consistent with filtering") is the primary related bug — its dedicated repro (`legend-grok-17222-spec.ts`) reproduces the case where the legend misses a filter event. This scenario verifies the positive baseline: the legend should update on every filter source.
 
 ---
 {

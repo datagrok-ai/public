@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [models.engines.api.apply, models.preprocessing.one-hot]
---- */
 ﻿import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

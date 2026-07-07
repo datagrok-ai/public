@@ -1,10 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.sunburst
-  - charts.sunburst.inherit-from-grid
 target_layer: playwright
 coverage_type: edge
+priority: p1
+realizes: [sunburst-scatterplot-shared-color-isolation]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -18,21 +17,19 @@ related_bugs:
 
 # Sunburst × Scatterplot — color-state pollution (github-3412)
 
-Bug-focused regression scenario for github-3412: opening the color editor
-on a Scatterplot legend item removes color from a Sunburst that shares
-the same color column. The pollution serializes into shared storage and
-persists across viewer reopen. Fix landed in Charts 1.25 — this scenario
-locks the cross-viewer color-state isolation invariant.
-
-`pyramid_layer: bug-focused`. The canonical `sunburst.md` is single-viewer;
-this scenario adds the cross-viewer pairing that is the bug-class
-invariant. Color-editor popup driving requires DOM selectors deferred
-per cycle charts-migrate-2026-05-07; programmatic substitute via
-`grok.shell` color category APIs where available.
-
-`related_bugs: [github-3412]` — bug-library reproduction class:
-two viewers (Sunburst, Scatterplot) sharing a color column must not
-pollute each other's color state when one's editor is opened.
+Bug-focused regression scenario for github-3412: opening the color
+editor on a Scatterplot legend item was removing color from a Sunburst
+viewer that shares the same color column — the pollution serialized
+into shared storage and persisted across viewer reopen. The fix landed
+in Charts 1.25; this scenario locks in the cross-viewer color-state
+isolation invariant: two viewers (Sunburst, Scatterplot) sharing a
+color column must not pollute each other's color state when one
+viewer's editor is opened. The canonical `sunburst.md` only covers a
+single viewer at a time — this scenario adds the cross-viewer pairing
+that the bug class requires. Driving the actual color-editor popup
+needs DOM selectors that aren't available yet, so the steps use a
+programmatic substitute via the `grok.shell` color-category API where
+possible.
 
 ## Setup
 
@@ -89,17 +86,16 @@ Steps:
 
 ## Notes
 
-- **github-3412 invariant carrier:** Sunburst's color binding survives
-  Scatterplot's color-state mutation (Step 6 → Step 7). If the color
-  editor DOM mutation is selector-pending, the programmatic substitute
-  via `dataFrame.col.meta.colors` covers the bug-class invariant in
-  effect (the bug is about shared storage corruption, which is
-  observable via API).
-- **No molecule data on SPGI.csv** — Stereo Category may not be
-  directly present in SPGI.csv; the spec picks the first string column
-  that fits the cross-viewer color pairing pattern.
-- **Authority:** atlas-driven; closes the bug coverage gap for
-  github-3412 surfaced in chain rev 2.
+- The github-3412 invariant is carried by the Step 6 → Step 7
+  transition: the Sunburst's color binding must survive the
+  Scatterplot's color-state mutation. If the actual color-editor DOM
+  interaction isn't available, the programmatic substitute via
+  `dataFrame.col.meta.colors` still covers the invariant in effect,
+  since the bug is about shared-storage corruption, which is
+  observable via the API.
+- SPGI.csv doesn't have a "Stereo Category" column like the original
+  bug ticket — the spec picks the first string column that fits the
+  cross-viewer color-pairing pattern instead.
 
 ## Dataset metadata
 

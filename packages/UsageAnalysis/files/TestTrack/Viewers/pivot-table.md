@@ -1,3 +1,14 @@
+---
+feature: pivottable
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - pivot-table-spec.ts
+related_bugs: []
+---
+
 # Pivot table tests (Playwright)
 
 All scenarios should start with the following sequence of events:
@@ -25,9 +36,9 @@ All scenarios should start with the following sequence of events:
 2. Verify SEX tag appears in Group by alongside DIS_POP
 3. Click × on the DIS_POP tag to remove it
 4. Verify only SEX remains in Group by
-5. Click + next to Group by and select SITE
-6. Verify both SEX and SITE appear as Group by tags
-7. Click × on the SITE tag to remove it — Group by returns to SEX only
+5. Click + next to Group by and select RACE
+6. Verify both SEX and RACE appear as Group by tags
+7. Click × on the RACE tag to remove it — Group by returns to SEX only
 8. Click × on the SEX tag — Group by is now empty
 
 ## Pivot column configuration
@@ -136,7 +147,7 @@ All scenarios should start with the following sequence of events:
 1. Set Group by to RACE, Aggregate to avg(AGE), Pivot to SEX
 2. Click the History icon in the pivot viewer command bar
 3. Select Save parameters — current configuration is saved to history
-4. Change Group by to SITE and Aggregate to sum(WEIGHT)
+4. Change Group by to RACE and Aggregate to sum(WEIGHT)
 5. Click the History icon again and select the previously saved entry (RACE / avg(AGE) / SEX)
 6. Verify Group by restores to RACE, Aggregate to avg(AGE), Pivot to SEX
 7. Click the Refresh icon in the command bar
@@ -152,12 +163,12 @@ All scenarios should start with the following sequence of events:
 
 ## Layout save and restore
 
-1. Set Group by to SITE, Aggregate to sum(HEIGHT), Pivot to SEX
+1. Set Group by to RACE, Aggregate to sum(HEIGHT), Pivot to SEX
 2. Open Settings and set Show Title to true, set Title to "Pivot Test"
 3. Save the current layout via JS API
 4. Change Group by to RACE and remove the Pivot tag
 5. Restore the saved layout via JS API
-6. Verify Group by = SITE, Aggregate = sum(HEIGHT), Pivot = SEX, Title = "Pivot Test"
+6. Verify Group by = RACE, Aggregate = sum(HEIGHT), Pivot = SEX, Title = "Pivot Test"
 7. Delete the saved layout (cleanup)
 
 ## Title inline edit

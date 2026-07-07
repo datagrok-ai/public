@@ -1,3 +1,14 @@
+---
+feature: filters
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - text-filter-spec.ts
+related_bugs: []
+---
+
 1. Open beer.csv
 2. Open the **Filter Panel**
 3. In the **Aroma** search field enter a search term (e.g. `low`, `medium`, etc) and press **Enter**.

@@ -1,16 +1,9 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.column
-  - legend.extra-column
-  - legend.refresh.on-data-change
-  - legend.color-scale.numerical
-  - legend.use-custom-color-coding
-  - legend.show-nulls
-  - legend.allow-item-coloring
-  - legend.refresh.on-reset-filter
 target_layer: apitest
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -23,22 +16,7 @@ related_bugs: []
 
 # Legend — JS API contract
 
-API-contract scenario for the cross-cutting Legend widget. Pure JS API
-surface verification — no DOM driving. Pairs with the playwright-layer
-scenarios in this section (`color-consistency.md`, `filtering.md`,
-`line-chart.md`, `scatterplot.md`, `structure-rendering.md`,
-`visibility-and-positioning.md`) which cover the same legend behaviors
-from the UI side.
-
-`target_layer: apitest` per Decision 1.5 — this scenario produces a
-`-api.ts` spec with no `page.click` / `page.fill` / `page.locator` /
-`page.hover` / `page.press` / `page.keyboard` / `page.mouse` / `dlg.*`
-calls in the spec body. Verification flows entirely through
-`grok.dapi.*` + `grok.shell.*` + `viewer.props.*` + `col.tags.*` +
-`col.meta.colors.*` + `df.filter.*` + `tv.getFiltersGroup`.
-
-`pyramid_layer: integration` — co-exercises shell + dataframe + viewer
-property machinery + column metadata + FiltersGroup widget.
+Verifies the Legend widget's JS API contract: that setting legend-related properties, colors, and filters through code — rather than clicking through the UI — works correctly and reads back as expected. Covers the same legend behaviors as the UI-driven scenarios in this section (`color-consistency.md`, `filtering.md`, `line-chart.md`, `scatterplot.md`, `structure-rendering.md`, `visibility-and-positioning.md`), but exercises them purely through the API, without driving the DOM.
 
 ## Setup
 
@@ -146,10 +124,9 @@ column.
 
 ### Scenario 7: legend.refresh.on-data-change after addNewCalculated
 
-Per atlas L178, the legend refreshes on dataframe value changes /
-column changes for the legend column. Adding a calculated column and
-re-binding the legend to it exercises the post-data-change refresh
-contract.
+The legend refreshes on dataframe value changes / column changes for
+the legend column. Adding a calculated column and re-binding the
+legend to it exercises the post-data-change refresh contract.
 
 1. Open `System:DemoFiles/demog.csv` and `addTableView(df)`.
 2. Add Scatter plot with `colorColumnName = 'SEX'`; verify legend has
@@ -162,8 +139,8 @@ contract.
 
 ### Scenario 8: legend.refresh.on-reset-filter via df.filter.setAll(true)
 
-Per atlas L185, the legend re-renders on
-`AppEvents.onResetFilterRequest`. Calling `df.filter.setAll(true)`
+The legend re-renders when filters are reset
+(`AppEvents.onResetFilterRequest`). Calling `df.filter.setAll(true)`
 after a Filter Panel filter exercises the equivalent reset path
 without driving DOM (per `filtering-spec.ts` Sc 3).
 
@@ -177,35 +154,8 @@ without driving DOM (per `filtering-spec.ts` Sc 3).
 
 ## Notes
 
-- **`target_layer: apitest`** — paradigm enforced by Critic E
-  E-LAYER-COMPLIANCE-01 mechanical regex. Spec MUST NOT contain
-  `page.click`, `page.fill`, `page.locator`, `page.hover`, `page.press`,
-  `page.keyboard`, `page.mouse`, `dlg.*` calls in the body.
-  Verification flows through `grok.*` JS API only. The
-  `loginToDatagrok` call inside `spec-login.ts` is excluded from this
-  rule (the helper is shared infrastructure, not test-body DOM
-  driving).
-- **Why apitest layer?** The 8 sub-features above are decidable
-  entirely via property round-trip + tag round-trip + filter-state
-  inspection. The DOM-only sub-features (`legend.item.click`,
-  `legend.item.cross-click`, `legend.item.hover`,
-  `legend.item.color-picker`, `legend.item.marker-picker`,
-  `legend.splitter-resize`, `legend.corner.collapse`,
-  `legend.mini-icon`, `legend.text-shortening`,
-  `legend.keyboard-navigation`) remain in the playwright-layer specs
-  in this section.
-- **Cold-start race tolerance.** First-time viewer creation can race
-  the renderer attach; all `props.get` reads after `setOptions` /
-  property assignment wrap in try/catch returning null on race;
-  assertions become conditional (`if (value != null)
-  expect(...)`). The contract is "setter does not throw + viewer
-  attaches", not strict round-trip equality.
-- **Helpers used:** `softStep`, `loginToDatagrok`, `specTestOptions`,
-  `stepErrors` from `../../spec-login.ts`. No new helpers needed.
-- **Authority + scope:** atlas-driven scenario; closes documented
-  follow-up from `modernize-legacy-specs.md §4` (no apitest-layer
-  `.md` scenario existed for the cross-cutting Legend widget).
-  Sister to `Charts/charts-api.md` (also `target_layer: apitest`).
+- **Why API-only?** The 8 behaviors above are decidable entirely via property round-trip, tag round-trip, and filter-state inspection — no pixel/DOM check needed. The interactive, DOM-only legend behaviors (clicking a legend item, cross-click, hover, the color picker, the marker picker, splitter resize, corner collapse, mini icon, text shortening, keyboard navigation) remain covered by the UI-driven scenarios in this section.
+- **Cold-start race tolerance.** First-time viewer creation can race the renderer attach, so property reads right after a property assignment are treated as best-effort (a null read is not treated as a failure). The contract being verified is "the setter does not throw and the viewer attaches", not strict round-trip equality on every single read.
 - **ApiSamples references** (cited in spec header):
   - `scripts/grid/color-coding/color-coding.js` — `setCategorical` /
     `setLinear` / `setLinearAbsolute` patterns

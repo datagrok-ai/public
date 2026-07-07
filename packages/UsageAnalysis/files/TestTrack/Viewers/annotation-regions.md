@@ -1,3 +1,14 @@
+---
+feature: annotation-regions
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - annotation-regions-spec.ts
+related_bugs: []
+---
+
 # Annotation regions
 
 Visual overlays on Scatter Plot, Line Chart, Density Plot, Box Plot, Histogram, and Bar Chart viewers

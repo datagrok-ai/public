@@ -1,3 +1,14 @@
+---
+feature: map
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - map-spec.ts
+related_bugs: []
+---
+
 1. Open ***MYmeteoritesTest.csv***.
 2. Go to **Tables > Viewers** and add a map viewer. A map with points should appear.
 3. On the top of the viewer click the **Gear** icon. A **Property Pane** opens.

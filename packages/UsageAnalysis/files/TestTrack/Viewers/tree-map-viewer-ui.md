@@ -1,5 +1,3 @@
-Ручной чеклист. Не входит в автоматизацию PW.
-
 # Tree Map — manual test checklist
 
 ## Hover tooltip

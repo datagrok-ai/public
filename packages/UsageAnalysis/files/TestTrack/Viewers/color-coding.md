@@ -1,3 +1,14 @@
+---
+feature: color-coding
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - color-coding-spec.ts
+related_bugs: []
+---
+
 ### 1. Setup
 Open the **demog** table.
 

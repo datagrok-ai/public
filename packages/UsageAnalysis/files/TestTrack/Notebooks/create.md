@@ -1,19 +1,9 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.menu.open-in-notebook
-  - notebooks.meta.open-tables-in-notebook
-  - notebooks.entity.template
-  - notebooks.api.save
-  - notebooks.editor.html-mode
-  - notebooks.editor.ribbon.html-mode
-  - notebooks.entity.create
-  - notebooks.editor.handle-path
-  - notebooks.menu.delete
-  - notebooks.meta.delete
-  - notebooks.api.delete
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [open-table-in-notebook]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/notebooks/create.md
 migration_date: 2026-06-17
@@ -69,6 +59,10 @@ gate_verdicts:
 
 # Create Notebook
 
+Verifies the core notebook-creation flow: turning an open table into a notebook via
+**Open in Notebook**, viewing it as rendered HTML, downloading it in different formats,
+importing an existing `.ipynb` file by drag-and-drop, and deleting the notebook afterwards.
+
 ## Setup
 
 - Open `System:DemoFiles/demog.csv` via the platform demo files panel (the datasets marked
@@ -100,8 +94,7 @@ gate_verdicts:
    - **As PDF** — opens a print dialog in a new window.
 6. Verify: each download action completes without error; the downloaded file is non-empty.
    _Note: "all offered formats" in the original step refers to the two options exposed
-   by the HTML-mode ribbon Download combo (As HTML, As PDF). See `unresolved_ambiguities`
-   if the set of formats changes._
+   by the HTML-mode ribbon Download combo (As HTML, As PDF)._
 
 ### 4. Import .ipynb via drag and drop
 
@@ -109,7 +102,7 @@ gate_verdicts:
 8. Verify: the notebook view opens, the entity is initialised from the uploaded `.ipynb` content,
    and no import errors are shown.
    _Note: the exact drop target (platform canvas / file drop zone) is not yet documented in the
-   UI reference doc. See `unresolved_ambiguities`._
+   UI reference doc._
 
 ### 5. Delete the created notebook (former standalone delete scenario)
 
@@ -126,23 +119,11 @@ gate_verdicts:
 
 ## Notes
 
-- **atlas entry derived from** `notebooks.menu.open-in-notebook`:
-  `core/client/xamgle/lib/src/meta/notebook_meta.dart#L157`
-- **atlas entry derived from** `notebooks.entity.template`:
-  `core/shared/grok_shared/lib/src/notebook.dart#L119`
-- **atlas entry derived from** `notebooks.editor.html-mode`:
-  `public/packages/Notebooks/src/package.js#L135`
-- **atlas entry derived from** `notebooks.editor.ribbon.html-mode`:
-  `public/packages/Notebooks/src/package.js#L153`
-- **atlas entry derived from** `notebooks.entity.create`:
-  `core/shared/grok_shared/lib/src/notebook.dart#L36`
-- **atlas entry derived from** `notebooks.editor.handle-path`:
-  `public/packages/Notebooks/src/package.js#L117`
-- GROK-16296: silent console error on `Open in Notebook` init (`findProjectByView` unguarded type cast).
+- GROK-16296: silent console error on `Open in Notebook` init (unguarded type cast in `findProjectByView`).
 - GROK-13999: `localStorage` DOMException when rendering HTML from a `data:` URL context.
-- This is the smoke scenario for the notebooks chain (pyramid_layer: ui-smoke per notebooks chain
-  analysis). It produces the `demog-notebook-persisted` fixture consumed by `edit.md` and `browser.md`.
-- See: `public/help/compute/jupyter-notebook.md#Create a notebook` (navigation pointer).
+- This is the smoke scenario for the notebooks flow: it creates the `demog` notebook that
+  `edit-ui.md` and `browser.md` depend on.
+- See: `public/help/compute/jupyter-notebook.md#Create a notebook`
 
 ---
 {

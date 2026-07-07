@@ -1,10 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.sunburst
-  - charts.echart-base
 target_layer: playwright
 coverage_type: edge
+priority: p1
+realizes: [sunburst-unsupported-column-defense]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -18,19 +17,16 @@ related_bugs:
 
 # Sunburst viewer — date-column hierarchy graceful handling (github-2954)
 
-Bug-focused regression scenario for github-2954: Sunburst's column selector
-accepts unsupported column types (e.g., date), and the viewer crashes
-during `toForest`/`toTree` conversion with a NullError. The fix landed in
-Charts 1.21.0 — this scenario locks the regression bound.
-
-`pyramid_layer: bug-focused`. The canonical `sunburst.md` exercises
-hierarchy configuration via Select Columns dialog but does NOT specifically
-test date-column rejection — that's the bug-class invariant.
-
-`related_bugs: [github-2954]` — bug-library reproduction class:
-configure Sunburst hierarchy with a date column and verify either (a)
-the column selector pre-filters the unsupported type, OR (b) the viewer
-handles the column gracefully with no console error / crash.
+Bug-focused regression scenario for github-2954: Sunburst's column
+selector accepts unsupported column types (e.g. date), and the viewer
+used to crash during hierarchy conversion with a NullError. The fix
+landed in Charts 1.21.0 — this scenario locks the regression bound:
+configure the Sunburst hierarchy with a date column and verify either
+the column selector pre-filters the unsupported type, or the viewer
+handles it gracefully with no console error / crash. The canonical
+`sunburst.md` exercises hierarchy configuration via the Select Columns
+dialog but doesn't specifically test date-column rejection — that's
+the gap this scenario closes.
 
 ## Setup
 
@@ -64,18 +60,14 @@ Steps:
 
 ## Notes
 
-- **github-2954 invariant carrier:** Step 3 — no console error during
-  date-column hierarchy setup. Console-error capture filters benign
-  network noise (404, Failed to load resource, favicon).
-- **Why ae.csv:** SDTM Adverse Events shape has date-time columns
-  (AESTDTC/AEENDTC/AEDTC) and is reachable on dev (MCP confirmed
-  `System:AppData/Charts/ae.csv` exists; ApiSamples is NOT deployed on
-  dev so System:AppData/ApiSamples/ae.csv is unreachable).
-- **Authority:** atlas-driven; closes the bug coverage gap surfaced in
-  chain rev 2 `bug_match_attempts_skipped` for github-2954
-  (skip_category: below_trigger_threshold; sunburst.md weakly matches
-  hierarchy step but doesn't specifically test date-column type).
-- **Helpers used:** `softStep`, `loginToDatagrok`, `specTestOptions`.
+- The github-2954 invariant is carried by Step 3: no console error
+  during date-column hierarchy setup (console-error capture filters
+  out benign network noise like 404s and favicon requests).
+- Why `ae.csv`: the SDTM Adverse Events dataset has date-time columns
+  (AESTDTC/AEENDTC/AEDTC) and is reachable at
+  `System:AppData/Charts/ae.csv` (the `ApiSamples` package isn't
+  deployed on dev, so `System:AppData/ApiSamples/ae.csv` isn't
+  reachable there).
 
 ## Dataset metadata
 

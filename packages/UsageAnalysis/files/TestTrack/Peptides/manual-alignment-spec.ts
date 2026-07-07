@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [peptides.model.fire-bitset-changed, peptides.panels.manual-alignment, peptides.widgets.manual-alignment, peptides.workflow.sar-dialog, peptides.workflow.start-analysis]
---- */
 // Manual Alignment — panel surfaces via overlay-canvas click on a Monomer cell (not via grok.shell.o),
 // Apply rewrites AlignedSequence + at least one per-position column, Reset is non-destructive,
 // post-edit broadcast (model.fireBitsetChanged) stays functional. Apply/Reset driven by

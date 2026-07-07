@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [chem.analyze.elemental, chem.analyze.elemental.run, chem.analyze.elemental.top-menu]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

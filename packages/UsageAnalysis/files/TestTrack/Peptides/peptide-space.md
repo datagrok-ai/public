@@ -1,16 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.workflow.sar-dialog
-  - peptides.workflow.analyze-ui
-  - peptides.workflow.start-analysis
-  - peptides.model.add-sequence-space
-  - peptides.viewers.cluster-max-activity
-  - peptides.viewers.logo-summary-table
-  - peptides.widgets.settings-dialog
-  - peptides.compute.calculate-cluster-statistics
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [peptide-space-sar-with-mcl]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/peptides/peptide-space.md
 migration_date: 2026-05-27
@@ -110,6 +103,8 @@ gate_verdicts:
 
 # Peptide Space — SAR launch with sequence-space dim-reduction and MCL clustering (top-menu entry path)
 
+Launching SAR from the top menu with Sequence Space and MCL clustering enabled should produce a sequence-space scatter plot, an MCL cluster viewer, and a cluster-aware Logo Summary Table. This scenario also checks that adjusting an MCL parameter through the Settings dialog re-renders the MCL viewer with a different cluster outcome.
+
 ## Setup
 
 - **Dataset:** `System:DemoFiles/bio/peptides.csv` — the same demo
@@ -194,66 +189,16 @@ via one representative MCL-parameter change.
 
 ## Notes
 
-- **Entry path.** This scenario uses the **top-menu**
-  (`Bio | Analyze | SAR...`) SAR entry path. The sister entry path
-  (Peptides context-panel **Launch SAR** button) is covered by
-  `sar.md` plus atlas critical_path
-  `sar-from-context-panel-launch-button` (p1, GROK-17557
-  init-prerequisite regression target).
-- **MCL Viewer naming.** The atlas registers the cluster scatter
-  viewer as **Active peptide selection**
-  (`clusterMaxActivity` -> `ClusterMaxActivityViewer`); the source
-  scenario and the Datagrok UI both refer to it informally as the
-  **MCL Viewer**. Both names are accepted in this scenario body for
-  alignment with the original wording; the Playwright sibling
-  `peptide-space-spec.ts` resolves the canonical viewer name from
-  the registered type.
-- **Related bugs.** This scenario's surface intersects five
-  curated Peptides bugs per `bug-library/peptides.yaml`. All five
-  emit as Trigger 1 cross-scenario `bug_focused_candidates[]` in
-  the chain YAML with `peptide-space.md` in their spans:
-  - **GROK-19145** (post-OK compute crash on edge-case Similarity
-    threshold): spans Step 4 wrench-driven settings change. The
-    dedicated cross-cutting repro lives in the chain-proposed
-    `peptides-grok-19145-spec.ts`; this scenario exercises the
-    settings-dialog surface generically (a single representative
-    MCL parameter change), not the full threshold matrix.
-  - **GROK-14357** (silent settings propagation failure to Logo
-    Summary Table): spans Step 3 open-settings-via-wrench. This
-    scenario asserts MCL-viewer re-render; the dedicated
-    LST-column-add-via-settings repro lives in the chain-proposed
-    `peptides-grok-14357-spec.ts`.
-  - **GROK-18058** (in-dialog empty-activity validation gap):
-    spans Step 1 SAR-launch invoking `Analyze Peptides` dialog.
-    This scenario accepts default config; the empty/null/
-    non-numeric Activity input case lives in the chain-proposed
-    `peptides-grok-18058-spec.ts`.
-  - **github-1549** (Monomer-Position viewer empty on
-    different-length sequences): spans Step 1 SAR-launch on a
-    uniform-length dataset. This scenario uses the demo
-    peptides.csv (uniform-length); the ragged-input case lives in
-    the chain-proposed `peptides-github-1549-spec.ts`.
-  - **GROK-14461** (saved Peptides project layout not restored):
-    spans Step 1 SAR-launch (creates a model whose state should be
-    persistence-restorable). This scenario does not exercise
-    save/reopen; the dedicated persistence repro lives in the
-    chain-proposed `peptides-grok-14461-spec.ts` (sister-bug
-    pattern with Bio GROK-19928 / Chem GROK-17595 /
-    PowerPack GROK-17451 / GROK-17109).
-- **Calculation completion timing.** Step 2's "Wait for calculation
-  results" and Step 5's settings-driven MCL re-render both require
-  explicit wait conditions in the Playwright translation (MCL /
-  DBSCAN compute runs in a Web Worker; atlas notes the MCL Viewer
-  "Can take some time"). Surfaced as
-  `unresolved_ambiguities[step-2-calculation-completion-marker-needed]`.
-- **Settings-dialog parameter location.** The wrench-icon Settings
-  button opens the full SAR `getSettingsDialog(model)` accordion
-  (General, Viewers, Columns, Sequence Space, MCL). The migrated
-  Step 4 narrows the source's "arbitrary parameters" to a
-  representative **MCL** parameter change so the assertion in
-  Step 5 (MCL Viewer re-render) has a deterministic cause. This
-  narrowing is the basis for **SR-01** and the candidate helper
-  `peptides.adjustMclClusteringParameter`.
+- **Entry path.** This scenario uses the top-menu (`Bio | Analyze | SAR...`) entry path. The sister entry path — the Peptides context-panel **Launch SAR** button — is covered by `sar.md` (also the regression target for GROK-17557, an init-prerequisite race on that path).
+- **MCL Viewer naming.** The cluster scatter viewer is registered internally as "Active peptide selection" but is referred to informally as the **MCL Viewer** throughout this scenario and in the Datagrok UI — both names refer to the same viewer.
+- **Related bugs.** This scenario's surface touches five curated Peptides bugs, each with its own dedicated repro test elsewhere:
+  - GROK-19145 — a post-OK compute crash on an edge-case Similarity threshold value. This scenario exercises the settings-dialog surface generically (one representative MCL parameter change), not the full threshold matrix.
+  - GROK-14357 — a settings change silently failing to propagate to the Logo Summary Table. This scenario asserts the MCL-viewer re-renders; the LST-specific repro lives elsewhere.
+  - GROK-18058 — a validation gap for an empty Activity input in the SAR dialog. This scenario always uses a valid default config.
+  - github-1549 — the Monomer-Position viewer renders empty on different-length (ragged) sequences. This scenario uses the demo dataset, which has uniform-length sequences.
+  - GROK-14461 — a saved Peptides project's layout isn't restored on reopen. This scenario doesn't exercise save/reopen (see `sar-save-reopen.md`).
+- **Deferral — calculation completion timing.** "Wait for calculation results" (Step 2) and the settings-driven MCL re-render (Step 5) both depend on a Web Worker completing (MCL/DBSCAN can take some time); the exact wait condition is left to the automation, not pinned down as a fixed duration here.
+- **Deferral — representative parameter only.** The Settings dialog exposes a full accordion (General, Viewers, Columns, Sequence Space, MCL). Step 4 narrows the original "change arbitrary parameters" wording to a single representative MCL parameter change, so Step 5's re-render assertion has a deterministic cause. Exhaustive per-parameter verification across the whole dialog is not covered here.
 
 ## Original trailing metadata (preserved verbatim from source)
 

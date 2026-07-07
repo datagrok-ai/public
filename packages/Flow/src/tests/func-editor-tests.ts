@@ -4,6 +4,7 @@
  *  the Input Parameters header icon. The dialog round-trip itself
  *  (`createFuncCallEditor`) is interactive and exercised manually. */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
@@ -11,7 +12,7 @@ import {PropertyPanel} from '../panel/property-panel';
 import {
   FuncEditorLauncher, applyEditorResult, detectSemanticTypes, editorValueToPanelValue, tableParamForColumn,
 } from '../panel/func-editor-launcher';
-import {shouldUseFunctionEditor, pollDialogCreation} from '../utils/func-editor-utils';
+import {shouldUseFunctionEditor, pollDialogCreation, createFuncCallEditor} from '../utils/func-editor-utils';
 import {ExecutionController} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
 import {FuncNode} from '../rete/nodes/func-node';
@@ -192,6 +193,46 @@ category('Flow: func editor', () => {
     } finally {
       destroyEditor(e);
     }
+  });
+
+  test('a concurrent run cannot hijack the editor dialog round-trip', async () => {
+    // The race (autorun + editor): `d4-before-run-action` fires for EVERY
+    // client funccall, and the dialog interception matches by func — so an
+    // autorun executing the same function mid-dialog used to be mistaken for
+    // the dialog's own run action: that call got canceled and the round-trip
+    // resolved early with the wrong funccall (the user's OK then wrote
+    // nothing). `ignoreEvent` (wired to `state.isRunning` by the launcher)
+    // must let such events pass through untouched.
+    const ancFunc = DG.Func.find({name: 'AddNewColumn'})[0];
+    if (!ancFunc) return;
+    const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+    const seed = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'a', [1, 2, 3])]);
+    let running = true; // simulates an in-flight Flow run (state.isRunning)
+    const fc = ancFunc.prepare({table: seed});
+    let resolved = false;
+    const roundTrip = createFuncCallEditor(fc, {ignoreEvent: () => running})
+      .then((f) => {
+        resolved = true;
+        return f;
+      });
+    const dlg = await pollDialogCreation(10_000);
+    expect(!!dlg, true, 'the editor dialog opened');
+    await sleep(300); // let the util's own dialog poll attach its subscriptions
+
+    // The "autorun": a funccall of the SAME function while the dialog is open.
+    const other = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'b', [1, 2])]);
+    await grok.functions.call('AddNewColumn', {table: other, name: 'extra', expression: '1'});
+    expect(other.columns.names().includes('extra'), true,
+      'the concurrent call executed — it was NOT canceled by the dialog interception');
+    await sleep(200);
+    expect(resolved, false, 'the round-trip did not resolve early with the wrong funccall');
+
+    // The user closes the dialog → the round-trip resolves with the dialog fc.
+    running = false;
+    dlg!.close();
+    const out = await roundTrip;
+    expect(out === fc, true, 'resolved with the dialog funccall');
   });
 
   test('the Input Parameters header shows the editor icon only when applicable', async () => {

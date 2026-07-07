@@ -42,10 +42,6 @@ test('Word Cloud tests', async ({page}) => {
       await new Promise(res => setTimeout(res, 600));
       r.push({col: wc.props.columnColumnName, error: !!document.querySelector('[name="viewer-Word-cloud"] .d4-viewer-error')});
 
-      // SITE is not in demog.csv — skip but record available columns
-      const hasSite = df.columns.names().includes('SITE');
-      r.push({siteAvailable: hasSite});
-
       wc.props.columnColumnName = 'SEX';
       await new Promise(res => setTimeout(res, 600));
       const sexCats = df.getCol('SEX').categories.length;
@@ -61,9 +57,8 @@ test('Word Cloud tests', async ({page}) => {
     expect(result[0].error).toBe(false);
     expect(result[1].col).toBe('DIS_POP');
     expect(result[1].error).toBe(false);
-    // SITE column is not present in demog.csv; skip its check
-    expect(result[3].col).toBe('SEX');
-    expect(result[3].sexCats).toBe(2);
+    expect(result[2].col).toBe('SEX');
+    expect(result[2].sexCats).toBe(2);
   });
 
   // #### Shape

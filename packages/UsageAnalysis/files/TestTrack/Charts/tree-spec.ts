@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [charts.tree]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import * as v from '../helpers/viewers';

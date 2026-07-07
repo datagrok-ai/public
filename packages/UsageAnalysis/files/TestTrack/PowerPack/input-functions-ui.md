@@ -1,8 +1,5 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column
-  - powerpack.dialogs.add-new-column-func
 target_layer: manual-only
 coverage_type: smoke
 pyramid_layer: ui-smoke
@@ -38,6 +35,14 @@ scope_reductions: []
 related_bugs: []
 ---
 
+# Add New Column dialog — Function Drag-and-Drop and Column Auto-Bind (manual)
+
+Manual companion to `input-functions.md`. Covers two function-insertion
+flows that can't be reliably automated: dragging a function from the
+functions panel onto the formula editor, and selecting a column in the
+dialog's column list to auto-bind it as a function parameter when the
+column type matches. Verify these by hand on a live Datagrok instance.
+
 ## Setup
 
 A clean Datagrok session. Open the `spgi.csv` dataset (the SPGI chem
@@ -50,10 +55,9 @@ toolbar, or **Edit** > **Add New Column** from the top menu.
 
 ### Drag-and-drop a function entry onto the formula editor
 
-Verifies the drag-and-drop affordance for inserting a function from the
-functions panel into the formula text field. The drop end-state must
-match the plus-icon insertion end-state (parameter-typed form, e.g.
-`Abs(num)`).
+Verifies that dragging a function from the functions panel into the
+formula editor produces the same result as the plus-icon insertion
+(parameter-typed form, e.g. `Abs(num)`).
 
 1. In the functions list on the right, locate any function entry (for
    example, `Abs`).
@@ -64,10 +68,9 @@ match the plus-icon insertion end-state (parameter-typed form, e.g.
 
 ### Auto-bound column parameter on type match (column selected in column-grid)
 
-Verifies that selecting a column in the dialog's column-grid widget
-auto-binds it as the function's parameter when the column type matches
-the parameter type. The trigger is column-grid selection; the
-behavioural assertion is the `${ColName}` form in the editor.
+Verifies that selecting a column in the dialog's column list auto-binds
+it as the function's parameter when the column type matches the
+parameter type.
 
 1. In the columns list on the left of the dialog, click the `Structure`
    column row.
@@ -107,34 +110,12 @@ function's parameter type results in the parameter placeholder
 
 ## Notes
 
-- **Why manual-only**: MCP recon 2026-05-26 (cycle
-  2026-05-26-powerpack-automate-03, Round-2) conclusively refuted all
-  JS-accessible paths to the dialog's private column-grid `columnsDf`
-  and the CodeMirror `cmView` reference. Playwright's `dragTo` on the
-  function-entry → formula-editor pair did not trigger the PowerPack
-  `ui.makeDroppable` subscription (seeded only by source-side Dart
-  `dragstart` handler). Both affordances are exercised correctly by a
-  human tester but not from outside the Dart runtime under current
-  build. See parent scenario's `gate_verdicts.e.scope_reduction_proposal`
-  for the full MCP recon evidence.
-- **Parent scenario coverage**: `input-functions.md` retains ownership
-  of `add-new-column-function-plus-icon` (the plus-icon insertion path,
-  which uses trusted `.click()` on `[name="icon-plus"]` and is fully
-  scriptable; Gate B PASSED on this in
-  cycle-1 of 2026-05-26-powerpack-automate-03).
-- **Reinstate as Playwright**: if a future PowerPack build exposes
-  either (a) the column-grid `columnsDf` via `DG.Dialog.getOpenDialogs()`
-  with a public accessor, OR (b) the CodeMirror `cmView` on the
-  `.cm-editor` host, OR (c) a public `setSelectedColumn(name)` API on
-  the dialog wrapper, the affordances become scriptable and the flows
-  can be lifted back to the parent Playwright spec. The split is
-  reversible; track via `companion_to` ↔ `ui_coverage_split_to`
-  back-links.
-- **Bug-library status**: the affordance gaps are not catalogued in
-  `bug-library/powerpack.yaml` because they are platform-architecture
-  constraints (Dart event-bus binding, private wrapper internals), not
-  fixable bugs. If a JIRA ticket is filed to expose the affordances
-  publicly, link it via `related_bugs[]` here.
+- The plus-icon insertion path is covered by the automated test in
+  `input-functions.md`; only the drag-and-drop and column-list-selection
+  triggers require manual verification.
+- If a future PowerPack build exposes the dialog's internals (column
+  selection, or the formula editor) via a public API, these flows could
+  be automated and moved back into `input-functions.md`.
 
 ---
 {

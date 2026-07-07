@@ -1,10 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.radar
-  - charts.echart-base.table
 target_layer: playwright
 coverage_type: edge
+priority: p1
+realizes: [radar-table-rebind-project-roundtrip]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -18,18 +17,14 @@ related_bugs:
 
 # Radar viewer — table-rebind on project save/reopen (GROK-18085)
 
-Bug-focused regression scenario for GROK-18085: Radar table-rebind state
-serializes incorrectly across project save → close-all → reopen, causing
-a null error on deserialization.
-
-`pyramid_layer: bug-focused` per Edit 4 SR routing for
-`gaps[type: bug-uncovered]`. The canonical `radar.md` smoke scenario does
-NOT exercise project save/reopen — that's the bug-class invariant
-specifically. This scenario locks in the GROK-18085 reproduction.
-
-`related_bugs: [GROK-18085]` — bug-library `curated_bugs[]` reproduction
-class: rebind a Radar viewer's bound table mid-session, save the project,
-reopen, verify Radar deserializes correctly with the new table binding.
+Bug-focused regression scenario for GROK-18085: a Radar viewer's
+table-rebind state serializes incorrectly across project save →
+close-all → reopen, causing a null error on deserialization. The
+canonical `radar.md` smoke scenario does not exercise project
+save/reopen, so this scenario exists specifically to lock in the
+GROK-18085 reproduction: rebind a Radar viewer's bound table
+mid-session, save the project, reopen it, and verify Radar deserializes
+correctly with the new table binding.
 
 ## Setup
 
@@ -69,18 +64,11 @@ Steps:
 
 ## Notes
 
-- **GROK-18085 invariant carrier:** Step 6 — project reopens without null
-  error / deserialization exception. Console-error capture filters benign
-  network noise (`Failed to load resource`, 404, favicon) per cycle
-  charts-migrate-2026-05-07 lessons.
-- **Cleanup contract:** Step 8 deletes the saved project. `try/finally`
-  block in the spec ensures cleanup runs even on assertion failure.
-- **Helpers used:** `softStep`, `loginToDatagrok`, `specTestOptions`,
-  `stepErrors` from `../spec-login.ts`.
-- **Authority:** atlas-driven; closes the bug coverage gap surfaced in
-  `scenario-chains/charts.yaml` rev 2 `bug_match_attempts_skipped` for
-  GROK-18085 (skip_category: reproduction_unparseable on radar.md
-  because radar.md has no save/reopen).
+- GROK-18085 invariant: Step 6 — the project must reopen without a null
+  error / deserialization exception. Console-error capture filters out
+  benign network noise (404s, favicon, "Failed to load resource").
+- Cleanup: Step 8 deletes the saved project; the spec wraps this in
+  try/finally so cleanup runs even if an assertion fails.
 
 ## Dataset metadata
 

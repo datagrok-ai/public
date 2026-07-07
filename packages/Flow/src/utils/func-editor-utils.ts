@@ -42,7 +42,19 @@ export async function pollDialogCreation(timeout = 30_000): Promise<DG.Dialog | 
   });
 }
 
-export async function createFuncCallEditor(fc: DG.FuncCall): Promise<DG.FuncCall> {
+export async function createFuncCallEditor(
+  fc: DG.FuncCall,
+  opts?: {
+    /** Return true to skip a `d4-before-run-action` event that does NOT come
+     *  from this dialog. That event fires for EVERY client funccall — including
+     *  the ones an emitted Flow script runs — and the func match below can't
+     *  tell them apart. Without this guard, an autorun/slice run executing the
+     *  same function while the dialog is open gets its call canceled and
+     *  resolves this round-trip early with the wrong funccall (stale values).
+     *  Callers pass e.g. `() => controller.state.isRunning`. */
+    ignoreEvent?: () => boolean;
+  },
+): Promise<DG.FuncCall> {
   // here we expect that fc is generated from func.prepare and all needed parames are already passed to it,
   // especially table
   return new Promise<DG.FuncCall>( async (res) => {
@@ -56,6 +68,7 @@ export async function createFuncCallEditor(fc: DG.FuncCall): Promise<DG.FuncCall
     d.root.classList.add('d4-flow-function-funccall-editor'); // style for disabling table inputs
     let dialogSub: rxjs.Subscription | null = null;
     const sub = grok.events.onEvent('d4-before-run-action').subscribe((f: DG.FuncCall) => {
+      if (opts?.ignoreEvent?.()) return; // someone else's funccall (e.g. a Flow run) — not this dialog
       if (f?.func === fc.func) {
         try {
           f.status = 'Canceled'; // this ,makes sure the funccall not be run,

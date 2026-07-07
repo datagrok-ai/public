@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.editor, bio.analyze.activity-cliffs.init, bio.analyze.activity-cliffs.top-menu, bio.analyze.activity-cliffs.transform]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

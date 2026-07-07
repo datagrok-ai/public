@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.calculate.get-region, bio.calculate.get-region.top-menu, bio.detector, bio.transform.convert-notation, bio.transform.convert-notation.top-menu, bio.transform.split-to-monomers, bio.transform.to-atomic-level]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

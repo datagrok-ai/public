@@ -1,10 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column-func
-  - powerpack.dialogs.add-new-column
 target_layer: playwright
 coverage_type: smoke
+priority: p1
+realizes: []
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-autocomplete
@@ -52,13 +51,11 @@ gate_verdicts:
 
 # Add New Column — autocomplete (demog)
 
-Short focused UI scenario for the autocomplete mechanics of the
-**Add New Column** dialog: type-triggered function tooltip,
-**Ctrl+Space** explicit invocation, and **$** column-suggestion
-tooltip. Delegates the basic dialog UI surface (open / close,
-preview grid, OK/Cancel) to the chain smoke `add-new-column.md`
-per `scenario-chains/powerpack.yaml` rev 1
-`ui_coverage_plan.delegated_scenarios`.
+Focused UI scenario for the autocomplete mechanics of the
+**Add New Column** dialog: the type-triggered function tooltip,
+explicit invocation via **Ctrl+Space**, and the **$**
+column-suggestion tooltip. The dialog's basic open/close and
+OK/Cancel behavior is covered by `add-new-column.md`.
 
 ## Setup
 
@@ -107,36 +104,14 @@ per `scenario-chains/powerpack.yaml` rev 1
 
 ## Notes
 
-- **Chain context.** `scenario-chains/powerpack.yaml` rev 1
-  classifies this scenario as `pyramid_layer: ui-smoke` /
-  `classification: simple`. The chain's elected smoke is the
-  top-level `add-new-column.md` (Rule 1 edge case — shortest
-  step-count + broader sub-feature coverage); this scenario
-  owns the specialty autocomplete mechanics on its
-  `ui_coverage_responsibility:` list
-  (`add-new-column-autocomplete`,
-  `add-new-column-ctrl-space`,
-  `add-new-column-dollar-column-suggestions`).
 - **Related bug GROK-17004** (paste-handler crash on complex
   formulas) touches the dialog's autocomplete / paste surface
   but is NOT directly reproduced here — this scenario tests
-  autocomplete on **typing**, not paste. The cross-cutting
-  bug-focused candidate for GROK-17004 is emitted at chain
-  level (`bug_focused_candidates`) spanning `highlight.md`
-  + the top-level `add-new-column.md`; frontmatter
-  `related_bugs: []` for this scenario reflects that
-  scope-split.
-- **Sibling spec.** A Playwright spec already exists at
-  `autocomplete-spec.ts` (same directory). Its test name is
-  `AddNewColumn: autocomplete (demog)`. It drives the dialog
-  via the toolbar icon (`[name="icon-add-new-column"]`),
-  uses CodeMirror selectors (`.d4-dialog .cm-content`,
-  `.cm-tooltip-autocomplete`), and asserts columns
-  `HEIGHT`, `WEIGHT`, `AGE` for the `$` case — patterns to
-  reuse if the Automator regenerates the spec.
-- **Source dataset** — `demog.csv` is platform-provided
-  (`System:DemoFiles`); no fixture is produced or consumed by
-  any other scenario in this section.
+  autocomplete on **typing**, not paste. The paste-crash regression
+  is covered by `highlight.md`.
+- **Source dataset.** `demog.csv` is platform-provided
+  (`System:DemoFiles`); no other scenario in this section depends
+  on it.
 
 ---
 {

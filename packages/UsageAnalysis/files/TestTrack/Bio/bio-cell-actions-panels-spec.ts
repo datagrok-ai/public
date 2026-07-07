@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.actions.copy-as, bio.editors.get-region, bio.editors.split-to-monomers, bio.panels.composition-analysis, bio.panels.monomer-info]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

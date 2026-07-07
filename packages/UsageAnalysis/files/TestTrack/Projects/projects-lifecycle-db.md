@@ -1,14 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.add-relation
-  - projects.shell.share-via-context-menu
-  - projects.api.get-by-id
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [share_with_recipient_open, rename_project]
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -18,27 +13,17 @@ migration_date: 2026-05-04
 related_bugs: []
 ---
 
-# Projects — DB-source lifecycle (proactive)
+# Projects — Database-source project lifecycle
 
-Chained lifecycle for projects sourced from a **DB table** on
-`System:Datagrok` (the platform's built-in metadata Postgres connection,
-created by `ServiceConnectionsMigration` on every deploy — always
-present). Exercises proactive coverage cell `source_class=db_table ×
-dep_lifecycle_op=share_with_recipient_open` per chain rev 3
-`proactive_lifecycle_specs[4]`. Pure proactive coverage — no GROK
-ticket targets DB-source share+recipient-open today; this scenario
-exists to catch regressions in DB-connection-permission gating
-proactively.
+Covers the lifecycle of a project whose table comes from a database —
+specifically `System:Datagrok`, the platform's built-in metadata
+Postgres connection that's always present on any deploy. Verifies
+save/reopen, sharing with a second user, and project rename, for both
+a saved-query source and an ad-hoc double-clicked DB table. There's no
+known bug behind this scenario; it exists to proactively catch
+regressions in DB-connection permission handling.
 
 UI coverage delegated to `projects-ui-smoke.md`.
-
-Note: chain rev 3 names the spec `projects-lifecycle-db-table-spec.ts`
-with `kebab(source_class.id) = "db-table"`. Per Olena's plan line 324
-the canonical filename uses `db` shorthand (target file:
-`projects-lifecycle-db.md` / `projects-lifecycle-db-spec.ts`) for
-authoring brevity. This is a deviation from chain rev 3's strict
-canonical naming convention — surfaced for B14 retro / chain rev 4
-reconciliation.
 
 ## Setup
 
@@ -124,20 +109,13 @@ reconciliation.
   `ServiceConnectionsMigration` on every deploy and shared with
   `allUsers` (or `admins` on public). The `groups` table is part
   of the metadata schema and always non-empty.
-- **Origin: chain rev 3 proactive_lifecycle_specs[4]** with
-  `bugs_reinforcing: []` and
-  `dep_lifecycle_ops_covered: [share_with_recipient_open]`.
-  Pure proactive — no GROK ticket targets this cell. Authored
-  in Phase A.
-- **Filename deviation from canonical `db-table` →
-  `db`.** Per Plan line 324, authoring shorthand. Chain rev
-  4 should reconcile (either rename canonical to `db` or
-  rename file to `projects-lifecycle-db-table.md`).
-- **No external rename for db_table.** Per chain rev 3,
-  external DB table rename is a connection-layer concern,
-  not project-relation; not in scope for this entry.
+- **No external rename for DB-table sources.** Renaming an external
+  DB table is a connection-layer concern, not a project-relation
+  concern, so it's not in scope for this scenario.
 - **UI coverage delegated.** All UI surfaces are owned by
-  `projects-ui-smoke.md`. JS API path used here.
-- **Helper 3 deferral.** Recipient-side assertions blocked.
-- **Self-cleaning.** Cleanup deletes project + invokes
+  `projects-ui-smoke.md`. This scenario uses the JS API path.
+- **Deferred.** Recipient-side assertions (logging in as the second
+  user to verify their view) are blocked on a not-yet-registered
+  login-as-another-user test helper.
+- **Self-cleaning.** Cleanup deletes the project and invokes
   `provisioned.cleanup()` for the saved query.

@@ -1,5 +1,21 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-layout-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — Layout
+
+Verifies the Share dialog and the Advanced editor permissions matrix for a saved view
+layout: opening the Sharing pane from the Context Panel, sharing at "View and use", and
+confirming that a recipient with that grant can see and apply the layout to a table —
+but cannot rename, delete, or re-share it — until the owner revokes access.
 
 ## Setup
 
@@ -8,8 +24,8 @@
 - `Custom group` — a dedicated group containing the recipient, for the group-sharing block
 - Entity under test — a ViewLayout owned by the owner. The owner must NOT have previously shared this layout (start from a clean grant list — owner only). Create a layout for the demog dataset by adding a scatterplot viewer.
 
-> Atlas: `sharing.entity-types.layout` is listed in `manual_only[]` — two independent browser sessions
-> (owner + non-admin recipient) required for Blocks D, E, F. No Playwright automation possible.
+> Two independent browser sessions (owner + non-admin recipient) are required for Blocks
+> D, E, F — no single-session automation is possible.
 > Source: `core/client/xamgle/lib/src/commands/file/share_dataset.dart#L7`.
 
 ## Scenarios

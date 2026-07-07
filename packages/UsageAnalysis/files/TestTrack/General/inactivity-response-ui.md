@@ -17,8 +17,11 @@ manual_only_reason: |
   as manual (or a long nightly soak), not a standard Playwright spec.
 ---
 
-### Platform Behavior After 20 Minutes of Inactivity
-Verify that the platform functions correctly after a period of 20 minutes of inactivity.
+# Platform behavior after 20 minutes of inactivity
+
+Verifies that the platform stays stable and responsive after being left idle
+for 20 minutes, and that resuming interaction (navigating, opening a file,
+running a query and a script) does not produce console errors.
 
 1. Open platform. (User is logged in). Begin a timer to track 20 minutes of inactivity on the platform.
 2. Do not interact. Leave the platform idle without any user interaction for the duration of the 20-minute timer.

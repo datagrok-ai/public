@@ -1,13 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.sunburst
-  - charts.sunburst.title
-  - charts.sunburst.inherit-from-grid
-  - charts.sunburst.include-nulls
-  - charts.echart-base
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
 pyramid_layer: integration
 ui_coverage_responsibility:
   - add-viewer-sunburst
@@ -45,9 +41,9 @@ empty-category select/filter, project save → close-all → reopen
 restoration, layout save + apply, old-layout compatibility (issue #2979),
 and collaborative filtering (internal viewer filter ∧ panel filter).
 
-Pyramid layer is `integration` per chain (charts.yaml rev 1) — Sunburst
-co-exercises the viewer + Layouts + Projects + Filters subsystems.
-This is NOT a single-viewer ui-smoke; do not consolidate.
+This is an integration-level scenario: Sunburst is exercised together
+with the property panel, the Select Columns dialog, Layouts, Projects,
+and Filters — not as an isolated single-viewer smoke test.
 
 ## Setup
 
@@ -179,8 +175,7 @@ This is NOT a single-viewer ui-smoke; do not consolidate.
 
 > NOTE: The layout fixture for issue #2979 is referenced by URL in
 > the original scenario but is NOT stored in the repo or
-> `System:DemoFiles`. Provisioning is unresolved — see the
-> Unresolved ambiguities section of the migration report. Downstream
+> `System:DemoFiles`. Provisioning is unresolved. Downstream
 > Automator must either commit a fixture layout, provision via
 > `grok.dapi.layouts`, or `test.skip` this scenario citing the
 > missing fixture.
@@ -201,67 +196,25 @@ This is NOT a single-viewer ui-smoke; do not consolidate.
 
 ## Notes
 
-- **Origin:** migrated from `sunburst.md` original (9 numbered steps,
-  several with sub-steps).
-- **`pyramid_layer: integration`** per chain (`charts.yaml` rev 1):
-  multi-subsystem coupling — Sunburst viewer + Property panel + Select
-  Columns dialog + Layouts + Projects (save/close-all/reopen) + Filters
-  (collaborative). Do not consolidate to ui-smoke; the smoke slot in
-  the chain is owned by `radar.md`.
-- **`target_layer: playwright`** because Step "Project save and reopen"
-  requires save → close-all → reopen across a navigation boundary, and
-  Step "Layout save and apply" requires UI menu interaction. Sibling
-  spec `sunburst-spec.ts` already exists at the playwright layer per
-  `existing-test-index.yaml` (currently `test.skip`'d).
-- **Helpers (registry-only references; no helper invented here):**
-  - `findViewer(viewerName, view)` — locate the Sunburst viewer.
-  - `isViewerPresent(viewers, viewerName)` — assertion in
-    `### Viewer creation smoke`.
-  - `uploadProject(projectName, tableInfo, view, df)` — registry helper
-    that may simplify `### Project save and reopen` Step 2; downstream
-    Automator decides whether to use it or drive the Save dialog UI
-    explicitly. (See `helpers-registry.yaml :: grok_test_layer`.)
-- **Bug coverage cited in `related_bugs`:**
-  - `github-2954` (Sunburst date-column selector validation) —
-    `### Hierarchy configuration via Select Columns dialog` and
-    atlas edge_cases reference column-type defense-in-depth. The
-    explicit date-column repro is NOT exercised here (chain analyzer
-    flagged this as a coverage gap; cite for awareness, do not invent
-    the date-column step).
-  - `github-3412` (cross-viewer Sunburst × Scatterplot color editor
-    pollution) — `### Inherit from grid (demog.csv)` exercises the
-    inherit-from-grid path that the bug pollutes; the cross-viewer
-    Scatterplot pairing is NOT added here (single-viewer scenario per
-    chain).
-- **No fixture extraction** — chain `fixtures_extracted: []`.
-  `sunburst.md` is independent (`depends_on: []`).
-- **Self-cleaning** — Setup Step 5 deletes any project saved during
+- Sibling scenarios: `radar.md` owns the Add-Viewer + property-panel
+  smoke coverage for the Charts section; this scenario is the
+  integration-level counterpart and isn't meant to be merged into the
+  smoke test.
+- This runs at the playwright/UI-driving layer because the "Project
+  save and reopen" and "Layout save and apply" steps need real UI
+  navigation and menus, not just JS-API calls.
+- `github-2954` (Sunburst date-column hierarchy handling) isn't
+  specifically tested here — see `sunburst-date-column-bug.md`.
+  `github-3412` (Sunburst × Scatterplot color-state pollution) isn't
+  tested here either — see `sunburst-scatterplot-color-pollution-bug.md`.
+- Setup Step 5 is self-cleaning: it deletes any project saved during
   the run.
-- **Remediation cycle scope decision (charts-remediate-2026-05-09):**
-  Critic E canonical subagent surfaced `### Project save and reopen`
-  heading (L146-156) as uncovered in predecessor cycle
-  charts-automator-only-2026-05-08 (FAIL with E-TRACE-02 +
-  E-LAYER-COMPLIANCE-01). Migrator Decision: **KEEP "Project save
-  and reopen"** as a softStep in sunburst-spec.ts. Rationale:
-  Sunburst-specialty UI (Select-Columns dialog, Reset View, Save
-  Layout) is exercised on the saved project in a way Radar-specific
-  tests don't witness. The save/reopen serialization regression class
-  (github-3412 for Sunburst×Scatterplot is a related precedent) can
-  manifest differently per viewer. Distinct from
-  radar-save-reopen-bug-spec.ts (Radar-specific GROK-18085
-  reproduction). Automator implements between current Step 7
-  (Layout) and Step 8 (#2979): save project, closeAll, find by
-  name, open, assert Sunburst viewer present + hierarchy preserved.
-  Cleanup deletes saved project in `finally`.
-- **E-LAYER-COMPLIANCE-01 follow-up (deferred):** spec body
-  currently uses `page.evaluate` + `dispatchEvent` exclusively for
-  DOM driving; canonical critic flagged FAIL on strict regex.
-  Per legend-* failed_attempts precedent, refactor to
-  `page.locator(...).click()` is the canonical fix. **Deferred to
-  next charts cycle** (charts-evaluate-extract-2026-05-09 in
-  decision-log) — pairing the refactor with tree-spec.ts (which
-  is being refactored in this remediation cycle) is the symmetric
-  approach. Sunburst defer rationale: this cycle's primary scope
-  is Project save+reopen softStep insertion; bundling a body-wide
-  refactor risks scope creep and lengthens Validator B re-run
-  surface. Documented in scenario Notes for traceability.
+- Project save/reopen is tested per-viewer rather than once centrally
+  — the same save/reopen serialization bug class can manifest
+  differently per viewer type. See also `radar-save-reopen-bug.md` for
+  the Radar-specific GROK-18085 reproduction.
+- The spec currently drives the DOM via `page.evaluate` +
+  `dispatchEvent` rather than `page.locator(...).click()`. Refactoring
+  to locator-based clicks is deferred to a follow-up pass (planned
+  alongside the same refactor for `tree-spec.ts`) to avoid scope creep
+  in this change.

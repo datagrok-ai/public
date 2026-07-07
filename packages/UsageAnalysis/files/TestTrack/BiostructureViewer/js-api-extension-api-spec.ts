@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [biostructure.api.viewPdbById, biostructure.api.viewPdbByData]
---- */
 // Frontmatter extraction (pre-author hooks):
 //   target_layer: apitest
 //   pyramid_layer: absent on scenario .md — apitest paradigm; FORBIDDEN list
@@ -12,8 +9,6 @@ sub_features_covered: [biostructure.api.viewPdbById, biostructure.api.viewPdbByD
 //     grok.shell.* + viewer.props/setOptions/getOptions); Bio/bio-service-
 //     surface-init-api.ts (target_layer: apitest, body pure
 //     grok.functions.call probes via tryCall helper).
-//   sub_features_covered: 2 ids mirrored above per E-STRUCT-MECH-06.
-//   ui_coverage_responsibility: [] (apitest layer; no DOM driving on body).
 //   ui_coverage_delegated_to: null.
 //   related_bugs: [] — coverage-extension scenario; no GROK ticket
 //     invariant asserted. Atlas edge_cases[5] (raw-pdb pitfall) is referenced
@@ -231,8 +226,6 @@ test('BiostructureViewer — JS API extension (viewPdbById / viewPdbByData)', as
     //   pattern as sibling property-surface-extension-spec.ts Scenario 2
     //   step 7 (viewBiostructure registration probe).
     //
-    //   sub_features_covered: biostructure.api.viewPdbById (registration
-    //   shape), biostructure.api.viewPdbByData (registration shape).
     //   Atlas source: src/package.ts#L105 (viewPdbById), #L115 (viewPdbByData).
     // ========================================================================
 
@@ -303,7 +296,6 @@ test('BiostructureViewer — JS API extension (viewPdbById / viewPdbByData)', as
     //   wraps the call with a known structure name per byId, supplying the
     //   name byData requires to avoid the bare-pdb pitfall.
     //
-    //   sub_features_covered: biostructure.api.viewPdbById.
     // ========================================================================
 
     await softStep('Scenario 1 — viewPdbById opens PDB by ID; shell state + DOM host mount', async () => {
@@ -431,7 +423,6 @@ test('BiostructureViewer — JS API extension (viewPdbById / viewPdbByData)', as
     //   signature 'Parsed object is empty, name 'undefined'' MUST NOT
     //   surface.
     //
-    //   sub_features_covered: biostructure.api.viewPdbByData.
     // ========================================================================
 
     await softStep('Scenario 2 — viewPdbByData opens PDB from raw string + name; shell state + DOM host mount', async () => {

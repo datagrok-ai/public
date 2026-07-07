@@ -1,12 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.url-params.build-share-link
-  - projects.url-params.apply
-  - projects.shell.open
-  - projects.view.browse
 target_layer: playwright
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility:
   - context-panel-links-url-copy
@@ -25,7 +22,19 @@ unresolved_ambiguities:
   - new-tab-vs-incognito-tab
   - order-vs-dependency-contradiction
   - source-text-correction-recurrence
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      The existing `project-url-spec.ts` exercises only the `demog`
+      representative source (1 of the 4 project variants) via direct URL
+      navigation; the copied-with-link / copied-with-clone /
+      personal-view-customizations variants are not deep-linked in the spec.
+      The URL build/apply/shell-open contract is source-agnostic, so the
+      single-variant walk preserves the invariant. NOTE: gate_verdicts.b is
+      FAIL (spec unstable, [B-RUN-PASS, B-STAB-01]) — a separate open issue,
+      not addressed by this scope reduction.
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 gate_verdicts:
   a:
@@ -57,30 +66,27 @@ gate_verdicts:
         failure_keys: [B-RUN-PASS, B-STAB-01]
 ---
 
-# Project URL
+# Project URL — Deep-link reopen for saved project variants
 
-For the `demog` representative project (file-share source class — Variant
-C representative source per chain rev 3 `pyramid_layer: integration`,
-source-agnostic Context-Panel-Links URL deep-link reopen flow), navigate
-to Browse > Dashboards, locate each of the four available variants
-(original; copied-with-link; copied-with-clone; saved-with-personal-view-
-customizations), copy the deep-link URL from Context Panel > Links, then
-open the URL in a new browser tab and verify the corresponding project
-loads.
+For the `demog` project (a file-share source, used here as the
+representative case since the URL deep-link flow is identical
+regardless of the underlying data source), navigate to Browse >
+Dashboards, locate each of its four variants — the original, the copy
+made with Link mode, the copy made with Clone mode, and the copy
+saved with Personal View Customizations — copy the deep-link URL from
+Context Panel > Links for each, open that URL in a new browser tab,
+and verify the corresponding project loads correctly.
 
-This scenario depends on the composite fixture
-`copy-clone-customizations-variants` (the three copy-mode variants
-produced by `projects-copy-clone.md`) plus the upstream "original"
-project — `demog` from `upload-project.md` is the Variant C
-representative source for this scenario; `Test_Case<N>_Sync` /
-`_NoSync` from `uploading.md` may also satisfy the "original" role
-when the chain runs the matrix path.
+This scenario depends on the three copy-mode variants produced by
+`projects-copy-clone.md`, plus the original `demog` project (the
+`Test_Case<N>` projects from `uploading.md` can substitute for the
+"original" role when needed).
 
 ## Setup
 
 1. **Fixture prerequisite:** the four project variants must exist on
    the server:
-   - **original**: the saved `demog` project from `upload-project.md`
+   - **original**: the saved `demog` project
      (Variant C representative source — file-share). The
      `Test_Case<N>_Sync` projects from `uploading.md` are an
      acceptable substitute when `demog` is unavailable in the chain
@@ -99,7 +105,7 @@ when the chain runs the matrix path.
    on top of the `demog-project-with-viewers` baseline fixture.
 2. The browser session is authenticated as the project owner (the
    user who produced the four variants upstream). Cross-user share
-   verification is OUT of scope here — `share-project.md` covers that.
+   verification is OUT of scope here.
 
 ## Scenarios
 
@@ -129,69 +135,34 @@ For each `<variant>` in the 4-variant list:
 
 ## Notes
 
-- **Variant C representative source — `demog` (file-share).** Per
-  chain rev 3 `pyramid_layer: integration` rationale (Rule 4 Variant
-  C), this scenario is source-agnostic — the Context-Panel-Links URL
-  copy + new-tab URL-apply path works identically across all source
-  classes (files, query, script, spaces, db_table, derived). The
-  representative source picked for the test is **file-share
-  (`demog`)** because `upload-project.md` produces it as the smallest,
-  cheapest baseline fixture (`demog-project-with-viewers`), and
-  `projects-copy-clone.md` derives the three copy-mode variants from
-  the same `demog` source. Other source classes are covered by
-  parallel atlas-driven `proactive_lifecycle_specs` (one per
-  source_class × dep_op cell), not by this scenario.
-- **UI coverage owned (rev 3 `ui_coverage_responsibility`):**
-  - `context-panel-links-url-copy` — Step 3's clipboard-copy of the
-    deep-link URL from the Context Panel > Links section.
-  - `new-tab-open-url` — Step 4's open-new-tab + paste/navigate flow.
-  These two flows are NOT covered by any other scenario in the
-  Projects chain (`ui_coverage_delegated_to: null`); save / share /
-  open / delete dialogs are owned by other scenarios and are NOT
-  exercised here.
-- **Original `order: 4`** — runs after `upload-project.md` /
-  `uploading.md` (`order: 1`), `share-project.md` (`order: 2`), and
-  `opening.md` (`order: 3`). Captured in
-  `scenario-chains/projects.yaml` rev 3 `order_from_files`. The
-  `order: 4` vs. dependency on `projects-copy-clone.md` (`order: 5`)
-  apparent contradiction is recorded in `unresolved_ambiguities`
-  (rev 3) — `order` is treated as advisory; the named-variant
-  evidence drives the dependency graph.
-- **Source-text correction history.** Per `decision-log.yaml ::
-  migration_decisions` entry `mig-2026-04-29-source-text-correction`,
-  the original step 2 listed a "with layout" variant; this was
-  replaced with "saved with personal view customizations" mode
-  terminology because the "with layout" variant had no producer in
-  the Projects section. The source on disk already reflects the
-  corrected wording; this migrated body preserves the corrected
-  4-variant list verbatim.
-- **Cross-fixture dependency complexity.** This is the only scenario
-  in the chain that requires a cross-fixture composite — variants
-  produced by both `projects-copy-clone.md` AND an upstream upload.
-  The Automator's `beforeAll` block needs to coordinate fixture
-  setup across two producers. Surfaced as a candidate for a
-  `helpers.playwright.projects.buildVariantsComposite(...)`
-  registry entry in the migration report.
-- **URL deep-link is generic.** Step 3's "Context Panel > Links"
-  surfaces the same URL format used by `projects.url-params.build-
-  share-link` for any saved project. The `<variant>` distinction
-  is in WHICH project is selected, not in the URL-construction or
-  URL-apply path shape (which is identical across variants). The
-  4-path matrix exercises that the URL-apply behavior is uniform
-  across variant modes (link / clone / personal-customizations /
-  original) — directly supporting the `pyramid_layer: integration`
-  source-agnostic claim.
-- **No right-click Share operation.** Step 3 copies the URL from
-  Context Panel > Links section — this is a clipboard-copy of a
-  deep-link, NOT the right-click Share dialog. Per-cycle
-  Invariant 3 (atlas-aware sub_features_covered for share) does
-  NOT apply here; `projects.shell.share-via-context-menu` is
-  correctly OMITTED from `sub_features_covered`.
-- **Existing `project-url-spec.ts`.** A spec already exists at
-  `public/packages/UsageAnalysis/files/TestTrack/Projects/project-url-spec.ts`
-  (Wave 1a B70 follow-up — single-variant SCOPE_REDUCTION using
-  the `demog` representative source via `page.goto({BASE}/p/{nqName})`).
-  Per per-cycle Invariant 2, the existing spec is **READ-ONLY for
-  Migrator**; this rev-3 migration aligns the `.md` with the chain's
-  rev-3 schema and the spec's existing `demog`-as-representative-
-  source choice — a coherent end-state.
+- **Why `demog` (file-share) is the representative source.** The
+  Context-Panel-Links URL copy + new-tab open flow works identically
+  regardless of the underlying data source, so testing it once is
+  enough. `demog` was picked because it is the smallest, cheapest
+  baseline project, and
+  `projects-copy-clone.md` derives its three copy-mode variants from
+  that same source. Other source classes (query, script, Spaces, DB
+  table, derived) are covered by the separate
+  `projects-lifecycle-*.md` scenarios, not by this one.
+- **UI coverage owned here.** The clipboard-copy of the deep-link URL
+  from Context Panel > Links, and the open-in-new-tab flow, are not
+  covered by any other scenario in this section. Save / share / open
+  / delete dialogs are owned elsewhere and are not exercised here.
+- **Source-text correction.** The original scenario listed a
+  "with layout" variant that had no actual producer in this section;
+  it was corrected to "saved with personal view customizations" to
+  match the mode that `projects-copy-clone.md` actually produces.
+- **Cross-fixture dependency.** This is the only scenario in the
+  section that needs a fixture composed from two different
+  producers — the three copy-mode variants from
+  `projects-copy-clone.md`, plus the original `demog` project.
+  Coordinating that setup is more involved than
+  the section's other scenarios.
+- **No Share operation tested.** Step 3 copies the URL from Context
+  Panel > Links — a clipboard copy of a deep-link, not the
+  right-click Share dialog. Sharing is not exercised here.
+- **Existing spec covers one variant only.** The existing
+  `project-url-spec.ts` is a scope reduction that exercises only the
+  `demog` representative source via direct URL navigation
+  (`page.goto({BASE}/p/{nqName})`), not the full 4-variant loop
+  described above.

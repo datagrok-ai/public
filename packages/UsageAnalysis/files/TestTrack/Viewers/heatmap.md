@@ -1,3 +1,14 @@
+---
+feature: heatmap
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - heatmap-spec.ts
+related_bugs: []
+---
+
 # Heat map tests
 
 All scenarios should start with the following sequence of events:

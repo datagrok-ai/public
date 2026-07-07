@@ -1,4 +1,20 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [oligonucleotide_column]
+realized_as:
+  - st-lifecycle-oligonucleotide-column-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — OligoNucleotide Column Lifecycle
+
+Checks the right-click actions available on an OligoNucleotide duplex cell —
+Copy as HELM, editing via the HELM Web Editor, and Enumerate Oligos — plus
+building an OligoNucleotide column by combining sense and antisense HELM
+columns, and looking up monomer molecular weights.
 
 ## Setup
 

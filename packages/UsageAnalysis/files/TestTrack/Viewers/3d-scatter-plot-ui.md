@@ -1,6 +1,4 @@
-Ручной чеклист. Не входит в автоматизацию PW.
-
-# 3D Scatter Plot — ручной чеклист
+# 3D Scatter Plot — manual checklist
 
 All scenarios should start with the following sequence of events:
 1. Close all

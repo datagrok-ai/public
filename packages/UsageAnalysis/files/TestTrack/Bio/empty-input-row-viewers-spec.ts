@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.analyze.activity-cliffs, bio.analyze.activity-cliffs.top-menu, bio.search.diversity, bio.search.diversity.top-menu, bio.search.similarity, bio.search.similarity.top-menu, bio.viewers.diversity-search, bio.viewers.similarity-search]
---- */
 // GROK-16111: the three Bio current-row viewers silently KNN on empty input (unfixed; balloon assertion softened, see SR-01 below).
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';

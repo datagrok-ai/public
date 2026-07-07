@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.analyze.alignment-pairwise, bio.calculate.get-region, bio.calculate.get-region.api, bio.calculate.identity, bio.calculate.seq-identity, bio.calculate.similarity]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

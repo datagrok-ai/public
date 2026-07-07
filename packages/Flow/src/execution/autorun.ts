@@ -26,6 +26,8 @@ export class AutorunScheduler {
   /** Invalidated node ids accumulated since the last successful run. */
   private dirty = new Set<string>();
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** While > 0, firing is suspended (edits still accumulate) — see {@link hold}. */
+  private holds = 0;
 
   /** @param run attempt a run for the accumulated dirty set:
    *  - `'started'` — a run began; the set is consumed;
@@ -73,6 +75,28 @@ export class AutorunScheduler {
     this.schedule();
   }
 
+  /** Suspend firing while a modal interaction is in progress (edits still
+   *  accumulate). Concretely: a function-editor dialog intercepts the global
+   *  `d4-before-run-action` event, which fires for EVERY client funccall — an
+   *  autorun kicking in mid-dialog would run the same function, get its call
+   *  canceled by the dialog's interceptor, and resolve the dialog round-trip
+   *  early with the wrong funccall (the user's OK then writes nothing back).
+   *  Re-entrant: every `hold` needs a `release`. */
+  hold(): void {
+    this.holds++;
+    if (this.timer !== null) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+  }
+
+  /** Undo one {@link hold}; when the last one lifts, anything accumulated in
+   *  the meantime is scheduled. */
+  release(): void {
+    this.holds = Math.max(0, this.holds - 1);
+    if (this.holds === 0 && this.enabled && this.dirty.size > 0) this.schedule();
+  }
+
   /** Cancel any pending run and forget the accumulated dirty set. */
   reset(): void {
     if (this.timer !== null) {
@@ -83,10 +107,11 @@ export class AutorunScheduler {
   }
 
   private schedule(): void {
+    if (this.holds > 0) return; // suspended — release() reschedules
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       this.timer = null;
-      if (!this.enabled) return;
+      if (!this.enabled || this.holds > 0) return;
       const outcome = this.run(new Set(this.dirty));
       if (outcome === 'started')
         this.dirty.clear();

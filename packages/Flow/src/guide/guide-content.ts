@@ -238,8 +238,10 @@ const loadDataAddColumn: Guide = {
     },
     {
       title: 'You built a working flow! 🎉',
-      text: 'Inputs → transform → output, wired and run. To peek at any node\'s data, right-click its ' +
-        'output dot and choose “Run up to here & preview”.',
+      text: 'Inputs → transform → output, wired and run. Click any completed node to see its data in ' +
+        'the bottom output panel, or right-click an output dot and choose “Run up to here & preview”. ' +
+        'Tip: toggle the ⚡ bolt in the ribbon and the flow reruns by itself after every change — ' +
+        'only the nodes the change affected.',
     },
   ],
 };
@@ -260,7 +262,8 @@ const findFunctions: Guide = {
     {
       title: 'Group by what it does',
       text: 'This dropdown buckets functions into Data Sources, Combine Tables, Transform Tables, ' +
-        'Column Operations, and more — Data Sources first. Click Next when you\'ve seen it.',
+        'Column Operations, and more — Data Sources first. Flows you saved get their own ' +
+        '“Workflows” section, in every grouping. Click Next when you\'ve seen it.',
       target: byTid('browser-groupby'),
     },
     {
@@ -386,14 +389,18 @@ const reuseScript: Guide = {
     },
     {
       title: 'Save your flow',
-      text: 'Click Save (highlighted) to keep your flow as a .ffjson file you can reopen and share.',
+      text: 'Click Save (highlighted) to store your flow on the platform — the first save asks for a ' +
+        'name. It becomes a script entity you can reopen from anywhere. (To share a file instead, ' +
+        'use Flow → Export .ffjson.)',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
     },
     {
       title: 'No black box',
-      text: 'You can always see exactly what a flow does and hand the script to a colleague. Done!',
+      text: 'You can always see exactly what a flow does and hand the script to a colleague. Saved ' +
+        'flows even appear in the toolbox under “Workflows” — drop one into another flow like any ' +
+        'function. Done!',
     },
   ],
 };
@@ -487,6 +494,14 @@ const interfaceTour: Guide = {
       position: 'bottom',
     },
     {
+      title: 'Autorun',
+      text: 'The ⚡ bolt toggles autorun: after any change — a new wire, an edited parameter — the ' +
+        'flow reruns by itself, and only the nodes your change affected. It\'s grey when off and ' +
+        'lights up when on.',
+      target: byTid('ribbon', 'autorun'),
+      position: 'bottom',
+    },
+    {
       title: 'See the script',
       text: 'The 👁 eye opens the real, readable Datagrok script your flow compiles to — copy it, export ' +
         'a .js file, or open it in the Script editor. Flow is a glass box.',
@@ -495,8 +510,10 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Save & Open',
-      text: 'Save (💾) downloads your flow as a .ffjson file; Open (📂, just right of it) loads one back. ' +
-        'Share the file with a colleague to hand off the whole flow.',
+      text: 'Save stores your flow on the platform (the first save asks for a name) — it becomes a ' +
+        'script others can find and run, and it shows up in the toolbox under Workflows for reuse ' +
+        'inside other flows. Open (📂) loads a saved flow back; the Flow menu also imports/exports ' +
+        '.ffjson files for sharing.',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
     },
@@ -560,7 +577,8 @@ const interfaceTour: Guide = {
     {
       title: 'Status indicator',
       text: 'This dot shows the node\'s run state — idle, running, done, or error — and turns amber when a ' +
-        'required input is still missing.',
+        'required input is still missing. After you change something, only the nodes your change ' +
+        'affects flip to “Out of date”; everything upstream keeps its result.',
       target: bySel('.ff-node [data-testid="ff-node-status"]'),
       position: 'right',
     },
@@ -585,6 +603,12 @@ const interfaceTour: Guide = {
         'problems with the flow.',
       target: byTid('statusbar'),
       position: 'top',
+    },
+    {
+      title: 'The output panel',
+      text: 'Just above the status bar, an output panel appears once a run produces something to show. ' +
+        'Click any completed node to see its data there — tables render as real grids, viewers as ' +
+        'live charts. The ▾ caret at its right edge minimizes it to a slim strip.',
     },
 
     // ---------------- Context panel (right) ----------------
@@ -666,6 +690,14 @@ const openFileHasPath = (ctx: GuideContext): boolean =>
     (n.dgFuncName ?? '').toLowerCase().includes('openfile') &&
     !!String((n.inputValues ?? {})['fullPath'] ?? '').trim());
 
+/** True once some Add New Column node has a table wired into it. */
+const ancTableConnected = (ctx: GuideContext): boolean => {
+  const flow = ctx.host.getFlow();
+  if (!flow) return false;
+  return flow.getNodes().some((n) =>
+    (n.dgFuncName ?? '').toLowerCase().includes('addnewcolumn') && flow.isInputConnected(n.id, 'table'));
+};
+
 export const QUESTIONS: Guide[] = [
   q('how-add-function', 'How do I add a function?', {
     title: 'Add a function',
@@ -738,6 +770,75 @@ export const QUESTIONS: Guide[] = [
       until: untilClick(byTid('ribbon', 'run')),
     },
   ]),
+  q('how-autorun', 'How do I rerun automatically after every change?', [
+    {
+      title: 'Toggle Autorun',
+      text: 'Click the ⚡ bolt (highlighted) in the ribbon. While it\'s on (colored), any change — a ' +
+        'new wire, an edited parameter — reruns the flow by itself after a short pause. Click it ' +
+        'again anytime to turn it off.',
+      target: byTid('ribbon', 'autorun'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'autorun')),
+    },
+    {
+      title: 'Only what changed',
+      text: 'Autorun is incremental: results upstream of your change are reused, only the affected ' +
+        'nodes recompute, and the output panel refreshes with fresh values. Flows that would ask ' +
+        'for input values are left alone — run those with ▶.',
+    },
+  ]),
+  q('how-out-of-date', 'Why do nodes say “Out of date”?', {
+    title: '“Out of date” = a change affects this node',
+    text: 'When you edit a node\'s parameters or rewire a connection, that node and everything ' +
+      'downstream of it lose their last result — they show “Out of date”. Upstream nodes keep ' +
+      'theirs. Rerun with ▶, toggle Autorun (the ⚡ bolt) to rerun automatically, or right-click ' +
+      'one node and choose “Rerun this node only”.',
+  }),
+  q('how-func-editor', 'How do I edit parameters in the function\'s own dialog?', [
+    ...loadDemogViaFiles(openFileHasPath),
+    ensureFuncNode('AddNewColumn', 'Add New Column'),
+    {
+      title: 'Wire the table in',
+      text: 'The editor needs real data. Drag from Open File\'s result output dot (highlighted) to ' +
+        'Add New Column\'s table input dot (highlighted) — drag the nodes apart first if they overlap.',
+      skipIf: ancTableConnected,
+      target: byNodeFunc('AddNewColumn'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
+        socketOf(byNodeFunc('AddNewColumn'), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Select the node',
+      text: 'Click the “Add New Column” node so its settings open on the right.',
+      target: byNodeFunc('AddNewColumn'),
+      until: untilNodeSelectedOfFunc('AddNewColumn'),
+    },
+    {
+      title: 'Open the function\'s editor',
+      text: 'In the Input Parameters pane header, click “Open editor” (highlighted). Flow opens the ' +
+        'function\'s own dialog seeded with the real upstream table — running the flow up to that ' +
+        'point first if it hasn\'t run yet.',
+      target: byTid('prop-func-editor'),
+      position: 'left',
+      until: untilExists('.d4-flow-function-funccall-editor'),
+    },
+    {
+      title: 'Edit and confirm',
+      text: 'Configure the column in the dialog — real column pickers, live preview — then click OK. ' +
+        'The values are written back into the node; with Autorun on, the affected nodes rerun ' +
+        'right after.',
+    },
+  ]),
+  q('how-rerun-node', 'How do I rerun just one node?', {
+    title: 'Rerun this node only',
+    text: 'After a run, right-click a node and choose “Rerun this node only”. Its inputs are fed ' +
+      'from the values captured by the last run, so nothing upstream re-executes — ideal for ' +
+      'tweaking one step of an expensive flow. (Offered once the node\'s inputs have captured ' +
+      'values; a graph change invalidates them until the next run.)',
+  }),
   q('how-preview', 'How do I preview a node\'s data?', [
     ...loadDemogViaFiles(openFileHasPath),
     {
@@ -806,13 +907,22 @@ export const QUESTIONS: Guide[] = [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
     {
       title: 'Save / share',
-      text: 'Click Save (highlighted) to download a .ffjson file. Open it later from anywhere in ' +
-        'Datagrok — or hand the file to a colleague — to restore the flow exactly.',
+      text: 'Click Save (highlighted) to store the flow on the platform — the first save asks for a ' +
+        'name. Saved flows reopen from anywhere, and they appear in the toolbox under “Workflows” so ' +
+        'other flows can use them. To hand a colleague a file instead, use Flow → Export .ffjson.',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
     },
   ]),
+  q('how-reuse-flow', 'How do I reuse a saved flow inside another flow?', {
+    title: 'Saved flows are functions',
+    text: 'Save your flow (the Save button) — it becomes a platform script. Every saved flow then ' +
+      'shows up in this toolbox under its own “Workflows” section, in every grouping. Search for ' +
+      'its name and double-click or drag it in like any other function.',
+    setup: (ctx) => ctx.host.showFunctionBrowser(),
+    target: byTid('browser'),
+  }),
   q('how-view-script', 'How do I see the generated script?', [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
     {
@@ -826,7 +936,8 @@ export const QUESTIONS: Guide[] = [
   ]),
   q('how-open', 'How do I open a saved flow?', {
     title: 'Open a flow',
-    text: 'Click the Open (folder) icon (highlighted) in the ribbon and pick a .ffjson file.',
+    text: 'Click the Open (folder) icon (highlighted) in the ribbon and pick one of your saved flows ' +
+      'from the platform. (A .ffjson file from a colleague? Use Flow → Import .ffjson… instead.)',
     target: byTid('ribbon', 'open'),
     position: 'bottom',
     until: untilClick(byTid('ribbon', 'open')),

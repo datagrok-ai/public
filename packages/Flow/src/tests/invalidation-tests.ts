@@ -539,6 +539,37 @@ category('Flow: autorun', () => {
     }
   });
 
+  test('hold suspends autorun (editor dialog open); release fires the backlog', async () => {
+    const runs: Set<string>[] = [];
+    const s = new AutorunScheduler((dirty) => {
+      runs.push(dirty);
+      return 'started';
+    }, 20);
+    s.toggle();
+    s.hold();
+    s.onEdit(edit('a'), new Set(['a']));
+    await sleep(60);
+    expect(runs.length, 0, 'held — nothing fires');
+    s.hold(); // re-entrant: a second holder
+    s.release();
+    await sleep(60);
+    expect(runs.length, 0, 'still one hold outstanding');
+    s.release();
+    await sleep(60);
+    expect(runs.length, 1, 'the backlog fired after the last release');
+    expect([...runs[0]].join(), 'a', 'with the accumulated set');
+
+    // A hold placed while the debounce timer is already pending cancels it.
+    s.onEdit(edit('b'), new Set(['b']));
+    s.hold();
+    await sleep(60);
+    expect(runs.length, 1, 'pending timer canceled by hold');
+    s.release();
+    await sleep(60);
+    expect(runs.length, 2, 'released — the kept set ran');
+    expect([...runs[1]].join(), 'b');
+  });
+
   test('turning autorun off cancels the pending run and clears the set', async () => {
     let runs = 0;
     const s = new AutorunScheduler(() => {

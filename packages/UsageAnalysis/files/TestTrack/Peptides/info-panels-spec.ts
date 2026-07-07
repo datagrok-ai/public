@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [peptides.panels, peptides.panels.peptides, peptides.rendering, peptides.rendering.monomer]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

@@ -1,13 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.api.save
-  - projects.api.get-by-id
-  - projects.api.list
-  - projects.api.delete
-  - projects.api.count
 target_layer: apitest
 coverage_type: regression
+priority: p0
+realizes: [search-list-recent]
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -18,6 +14,13 @@ related_bugs: []
 ---
 
 # Projects — REST lifecycle contract
+
+Exercises the project REST/JS-API contract directly — save, fetch by
+id, list with filters and pagination, count, and delete — independent
+of any UI. Confirms that a deleted project is truly gone (not
+soft-deleted-but-still-returned), that list and count results agree,
+and that deleting a non-existent or already-deleted project is
+rejected rather than silently succeeding.
 
 ## Setup
 
@@ -82,51 +85,23 @@ Negative-path contract for the delete endpoint.
 
 ## Notes
 
-- **Origin (atlas-driven):** this scenario is `produced_from:
-  atlas-driven`. Its content is derived from the `projects` feature
-  atlas (rev 11) `sub_features` for the REST surface — `projects.api.save`,
-  `projects.api.get-by-id`, `projects.api.list`, `projects.api.delete`,
-  `projects.api.count` — and from the `search-list-recent` critical
-  path. The scenario is NOT a migration of a TestTrack-original `.md`;
-  it was generated to fill the api-contract layer that the chain's
-  TestTrack scenarios do not cover (every other scenario in the chain
-  is `target_layer: playwright`).
-- **target_layer rationale:** every step is a JS API call against
-  `grok.dapi.projects`; no UI surface is exercised. This is the
-  `api-contract` shape per chain YAML rev 3 `output_plan` (target_layer:
-  api-contract, strategy: simple).
-- **pyramid_layer: integration (Rule 4 fallthrough):** Rule 1
-  (ui-smoke) inapplicable — no UI surface to drive. Rule 2
-  inapplicable — no matrix. Rule 3 inapplicable — no
-  `related_bugs` frontmatter. Rule 5 inapplicable — not
-  `manual_only`. Falls through to Rule 4 (source-agnostic op): the
-  REST contract holds for any project regardless of its underlying
-  source class.
-- **No UI delegation:** `ui_coverage_responsibility: []` and
-  `ui_coverage_delegated_to: null` — there is no UI by design, so
-  there is nothing to delegate. Per chain rev 3
-  `ui_coverage_plan.delegated_scenarios` entry for lifecycle-api.md,
-  rationale recorded: "UI coverage N/A by design — api-contract
-  target_layer".
-- **Self-cleaning:** every sub-scenario deletes the projects it
-  creates. lifecycle-api.md is intentionally NOT in
-  `deleting.md.depends_on` (chain rev 3) — its ephemeral
-  `api-lifecycle-${Date.now()}` and `api-lifecycle-batch-<n>`
-  projects do not survive past the contract test.
-- **Deferrals (cite real prerequisites):**
+- **No UI surface.** Every step is a direct JS API call against
+  `grok.dapi.projects`; there's nothing to delegate to a UI-driven
+  scenario.
+- **Self-cleaning.** Every sub-scenario deletes the projects it
+  creates; its ephemeral `api-lifecycle-${Date.now()}` and
+  `api-lifecycle-batch-<n>` projects don't survive past the contract
+  test, so this scenario doesn't need to be cleaned up by
+  `projects-ui-smoke.md`.
+- **Deferrals.**
   - File-storage and relation sub-APIs (`projects.api.files.*`,
-    `projects.api.relations.*`) — deferred. Real dependency
-    cited: file-upload contract requires fixture binaries already
-    on the server, which depend on a curated test data set that
-    is not yet in `helpers-registry.yaml`. To be picked up after
-    a fixture-builder helper for project files is added.
-  - Namespace endpoints (`projects.api.namespaces.*`) — deferred.
-    Requires a pre-existing namespace tree with known names; the
-    `helpers-registry.yaml` does not yet expose a namespace-fixture
-    builder. Tracked alongside the file-storage gap.
-- **Coverage gap candidates for atlas-driven follow-up:** chain rev
-  3 `proactive_lifecycle_specs` already enumerates source-class ×
-  dep-op cells (files / query / script / spaces / db_table /
-  derived). The REST surface in this scenario complements those
-  per-source-class specs — it covers the source-agnostic CRUD
-  contract, not the per-source lifecycle.
+    `projects.api.relations.*`) are not covered here — a file-upload
+    contract test needs fixture binaries on the server, which needs
+    a curated test data set that doesn't exist yet.
+  - Namespace endpoints (`projects.api.namespaces.*`) are not
+    covered here either — that needs a pre-existing namespace tree
+    with known names, which has no fixture builder yet.
+- **Complements the per-source-class lifecycle scenarios.** This
+  scenario covers the source-agnostic CRUD contract; the other
+  `projects-lifecycle-*.md` scenarios cover per-source-class
+  behavior (files / query / script / spaces / db_table / derived).

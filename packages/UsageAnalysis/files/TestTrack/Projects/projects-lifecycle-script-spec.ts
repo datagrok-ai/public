@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.api.get-by-id, projects.api.relations.list, projects.api.save, projects.shell.share-via-context-menu, projects.upload]
---- */
 // Script-source lifecycle on a provisioned dataframe-output script (wraps grok.data.getDemoTable('demog.csv')).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';

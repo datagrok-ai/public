@@ -1,3 +1,14 @@
+---
+feature: grid
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - grid-spec.ts
+related_bugs: []
+---
+
 # Grid tests (Playwright)
 
 All scenarios should start with the following sequence of events:

@@ -1,3 +1,14 @@
+---
+feature: tileviewer
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - tile-viewer-spec.ts
+related_bugs: []
+---
+
 # Tile Viewer tests
 
 All scenarios should start with the following sequence of events:

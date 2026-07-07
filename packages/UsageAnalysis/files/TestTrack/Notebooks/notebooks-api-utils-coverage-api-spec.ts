@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [notebooks.routes.count, notebooks.editor.utils, notebooks.editor.utils.get-auth-token, notebooks.editor.utils.remove-children, notebooks.meta.render-preview, notebooks.meta.get-view]
---- */
 // Pure JS-API apitest for Notebooks utility/route coverage. Seeds a temporary
 // server notebook via CmdNewNotebook, then exercises: the count route, the
 // Notebooks package + auth-token function surface, the removeChildren DOM helper,
