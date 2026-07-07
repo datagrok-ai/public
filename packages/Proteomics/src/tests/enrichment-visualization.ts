@@ -3,8 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {
-  createTopNEnrichmentDf,
+  CHART_TOP_MARKER_COL,
+  NEG_LOG10_FDR_COL,
   openEnrichmentVisualization,
+  prepareEnrichmentChartColumns,
   wireEnrichmentToVolcano,
 } from '../viewers/enrichment-viewers';
 import {SEMTYPE} from '../utils/proteomics-types';
@@ -95,48 +97,61 @@ function countAllViewers(tv: DG.TableView): number {
   return n;
 }
 
+/** Counts `true` cells in a boolean column without relying on stats semantics. */
+function trueCount(col: DG.Column): number {
+  let n = 0;
+  for (let i = 0; i < col.length; i++) {
+    if (col.get(i) === true) n++;
+  }
+  return n;
+}
+
 // --- Tests ---
 
 category('Enrichment Visualization', () => {
-  test('createTopNEnrichmentDf filters to top N rows', async () => {
+  test('prepareEnrichmentChartColumns adds negLog10FDR on the same frame', async () => {
     const df = makeMockEnrichmentDf(20);
-    const topDf = createTopNEnrichmentDf(df, 15);
-    expect(topDf.rowCount, 15);
-  });
-
-  test('createTopNEnrichmentDf sorts by FDR ascending', async () => {
-    const df = makeMockEnrichmentDf(20);
-    const topDf = createTopNEnrichmentDf(df, 15);
-    const fdrCol = topDf.col('FDR')!;
-    const firstFdr = fdrCol.get(0) as number;
-    const lastFdr = fdrCol.get(topDf.rowCount - 1) as number;
-    expect(firstFdr <= lastFdr, true);
-  });
-
-  test('createTopNEnrichmentDf adds negLog10FDR column', async () => {
-    const df = makeMockEnrichmentDf(5);
-    const topDf = createTopNEnrichmentDf(df, 5);
-    const negLogCol = topDf.col('negLog10FDR');
+    prepareEnrichmentChartColumns(df, 15);
+    const negLogCol = df.col(NEG_LOG10_FDR_COL);
     expect(negLogCol !== null, true);
-    // First row FDR = 0.001, -log10(0.001) = 3.0
+    // Row 0 FDR = 0.001, -log10(0.001) = 3.0
     const val = negLogCol!.get(0) as number;
     expect(Math.abs(val - 3.0) < 0.01, true);
+    // The charts bind to the passed frame — no cloned subset is produced.
+    expect(df.rowCount, 20);
   });
 
-  test('createTopNEnrichmentDf truncates long Term Name', async () => {
-    const longName = 'A'.repeat(60); // 60 chars
-    const df = makeMockEnrichmentDf(3, longName);
-    const topDf = createTopNEnrichmentDf(df, 3);
-    const termCol = topDf.col('Term Name')!;
-    const truncated = termCol.get(0) as string;
-    expect(truncated.length, 53); // 50 chars + "..."
-    expect(truncated.endsWith('...'), true);
+  test('prepareEnrichmentChartColumns marks exactly topN terms (no Direction)', async () => {
+    const df = makeMockEnrichmentDf(20);
+    prepareEnrichmentChartColumns(df, 15);
+    const marker = df.col(CHART_TOP_MARKER_COL)!;
+    expect(trueCount(marker), 15);
   });
 
-  test('createTopNEnrichmentDf handles fewer rows than topN', async () => {
+  test('prepareEnrichmentChartColumns marks topN per direction', async () => {
+    const df = makeMockEnrichmentDf(20);
+    // First 10 rows Up, last 10 Down (rows are FDR-ascending by construction).
+    addDirectionColumn(df, Array.from({length: 20}, (_, i) => (i < 10 ? 'Up' : 'Down')));
+    prepareEnrichmentChartColumns(df, 5);
+    const marker = df.col(CHART_TOP_MARKER_COL)!;
+    // 5 Up + 5 Down = 10 marked terms.
+    expect(trueCount(marker), 10);
+  });
+
+  test('prepareEnrichmentChartColumns marks all when fewer rows than topN', async () => {
     const df = makeMockEnrichmentDf(5);
-    const topDf = createTopNEnrichmentDf(df, 15);
-    expect(topDf.rowCount, 5);
+    prepareEnrichmentChartColumns(df, 15);
+    const marker = df.col(CHART_TOP_MARKER_COL)!;
+    expect(trueCount(marker), 5);
+  });
+
+  test('prepareEnrichmentChartColumns is idempotent on re-run', async () => {
+    const df = makeMockEnrichmentDf(20);
+    prepareEnrichmentChartColumns(df, 15);
+    const colsAfterFirst = df.columns.length;
+    prepareEnrichmentChartColumns(df, 15);
+    // Re-run replaces (ensureFreshFloat pattern) rather than duplicating.
+    expect(df.columns.length, colsAfterFirst);
   });
 
   test('wireEnrichmentToVolcano returns EMPTY without gene column', async () => {
