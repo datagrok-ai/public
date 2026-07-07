@@ -99,6 +99,15 @@ export class FuncFlowView extends DG.ViewBase {
     tags: ['funcflow'],
   };
 
+  protected override afterPersist(): void {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = false;
+    grok.shell.windows.showContextPanel = true;
+    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showBrowse = true;
+    grok.shell.windows.showToolbox = true;
+  }
+
   /** The platform Script entity (language 'flow') this view edits, when opened
    *  from / saved to the server. Null for scratch flows — Save asks for a name. */
   private boundScript: DG.Script | null = null;
