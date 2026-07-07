@@ -142,7 +142,10 @@ async function importRGroupsFromTable(page: Page, tableName: string, colName: st
   await page.waitForTimeout(500);
 }
 
-test('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-menu and context-menu dialog', async ({page}) => {
+// Skipped on CI: Markush Enumeration is a very new, still-in-development feature. The test itself is
+// correct (it passes against the full dev server), but the enumeration compute isn't available on the
+// minimal CI stack. Un-skip once the feature ships and the CI stack can run it.
+test.skip('SequenceTranslator — Molecule column lifecycle: Markush Enumeration top-menu and context-menu dialog', async ({page}) => {
   // RDKit module load + several Cartesian/Zip Markush enumerations (chem-heavy); 5 min cap.
   test.setTimeout(300_000);
   stepErrors.length = 0;
