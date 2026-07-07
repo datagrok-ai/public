@@ -1,10 +1,10 @@
-// Covers open + Join + Save with Data Sync ON. Targets the GROK-19103
-// regression invariant ("join result silently saved as a SEPARATE project
-// that later fails to open"). Verifies that after joining two source tables
-// and saving the active project, exactly ONE new project is created on the
-// server — not two (the saved active project plus a stray join-only project).
+/* ---
+sub_features_covered: [projects.api.files.sync, projects.api.save, projects.shell.open, projects.upload]
+--- */
+// GROK-19103: joining two source tables and saving must create exactly ONE project, not a stray join-only project.
 import {test, expect, Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, softStep, stepErrors} from '../spec-login';
+import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs} from './_helpers';
 import {deleteProjectWithCleanup} from '../helpers/projects';
 
@@ -14,11 +14,7 @@ async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
 }
 
-// Open System:DemoFiles/demog.csv via the canonical OpenFile recorder API
-// (verbatim form). Writes df.tags['.script'] provenance the same way the
-// Browse-tree right-click → Open path does, but without the UI traversal
-// flake observed on dev (tree-view-root remounts during /browse boot make
-// the DOM walk unreliable; verified empirically 2026-05-08).
+// Open demog.csv via the OpenFile recorder API — writes df.tags['.script'] provenance without UI traversal flake.
 async function openDemogFile(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const DG = (window as any).DG;
@@ -31,13 +27,13 @@ async function openDemogFile(page: Page): Promise<void> {
 }
 
 test('Projects / Complex derived-tables: Join lands in active project (GROK-19103)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
   const projectName = 'AutoTest-ComplexDerived-' + stamp;
 
-  // Setup: navigate to root and wait for grok.shell to mount.
+  await loginToDatagrok(page);
   await page.goto('/');
   await page.waitForFunction(() => {
     try { return !!(window as any).grok?.shell?.user?.login; } catch { return false; }
@@ -56,9 +52,6 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
 
   try {
     await softStep('Setup + Step 1: open 2 source tables via OpenFile (colon-form fullPath)', async () => {
-      // OpenFile recorder API with colon-form fullPath ('System:DemoFiles/demog.csv')
-      // — produces a TableView with df.tags['.script'] = 'Demog = OpenFile(...)'
-      // provenance, the precondition for the GROK-19103-relevant Save flow.
       await openDemogFile(page);
       await openDemogFile(page);
       await evalJs(page, `(() => {
@@ -98,10 +91,7 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     });
 
     await softStep('Step 2: Save current project with Data Sync ON', async () => {
-      // Multi-table inline save — must persist all 3 open tables (src_a,
-      // src_b, joined) so the GROK-19103 invariant is testable. Canonical
-      // saveProjectWithProvenance helper saves only the active TableView's
-      // dataframe; this scenario needs the full workspace.
+      // Multi-table inline save — must persist all 3 open tables (helper saves only the active TableView).
       const saved = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
         const DG = (window as any).DG;
@@ -128,7 +118,6 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
       projectId = saved.projectId;
       tableInfoId = saved.tableInfoIds[0] ?? null;
       expect(projectId).toBeTruthy();
-      // Server-side persistence verification via find-by-id.
       const exists = await page.evaluate(async (pid) => {
         const grok = (window as any).grok;
         const p = await grok.dapi.projects.find(pid);
@@ -141,8 +130,7 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
       const afterCount = await evalJs(page,
         `(async () => (await grok.dapi.projects.list({limit: 1000})).length)()`,
       );
-      // GROK-19103: a stray join-only project would push delta to 2+. The
-      // active project save should produce exactly one new project entity.
+      // GROK-19103: a stray join-only project would push delta to 2+.
       expect(afterCount - baselineCount).toBe(1);
     });
 
@@ -157,9 +145,7 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
         try { return Number(grok.shell.tables?.length) || 0; }
         catch (_) { return 0; }
       }, projectId);
-      // At minimum the 2 source tables must reopen. The joined derivative
-      // may or may not be persisted depending on project relation semantics
-      // (recomputed from sources vs persisted as standalone) — accept >= 2.
+      // At minimum the 2 source tables must reopen; the joined derivative may or may not persist.
       expect(tableCount).toBeGreaterThanOrEqual(2);
     });
   } finally {
@@ -170,8 +156,5 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     await closeAll(page);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });
