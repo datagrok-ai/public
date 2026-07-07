@@ -68,5 +68,6 @@
     "skipLibCheck": false,                          /* Skip type checking of declaration files. */
     "forceConsistentCasingInFileNames": true,       /* Disallow inconsistently-cased references to the same file. */
     //"jsx": "react"
-  }
+  },
+  "exclude": ["node_modules", "playwright"]
 }
