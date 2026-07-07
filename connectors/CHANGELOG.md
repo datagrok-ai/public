@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.7.0 (2026-07-07)
+
+* Athena: Fixed "No suitable driver found" when connecting with temporary/STS session credentials (register JDBC driver before the direct DriverManager path)
+
 # 2.6.5 (2026-06-22)
 
 * Set default locale to C.UTF-8 for container build
