@@ -260,6 +260,17 @@ category('Flow: guide', () => {
     for (const t of TUTORIALS) expect(t.steps.length >= 3, true, `${t.id} is multi-step`);
     // The Start-panel tour launches the first tutorial: keep it the hands-on one.
     expect(TUTORIALS[0].id, 'load-data-add-column');
+
+    // Feature coverage added after the initial guide set — autorun, precise
+    // invalidation, the function-editor dialog, platform save + Workflows
+    // reuse, single-node rerun. Each must keep a how-to answer.
+    for (const id of ['how-autorun', 'how-out-of-date', 'how-func-editor', 'how-reuse-flow', 'how-rerun-node'])
+      expect(QUESTIONS.some((g) => g.id === id), true, `question ${id} exists`);
+    // The interface tour walks the ribbon — it must include the autorun toggle
+    // and the output panel among its stops.
+    const tour = TUTORIALS.find((t) => t.id === 'interface-tour')!;
+    expect(tour.steps.some((s) => s.title === 'Autorun'), true, 'tour covers the autorun toggle');
+    expect(tour.steps.some((s) => s.title === 'The output panel'), true, 'tour covers the output panel');
   });
 });
 

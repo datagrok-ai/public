@@ -66,6 +66,20 @@
   concurrent same-function call while the dialog is open must execute uncanceled and must not
   resolve the round-trip.
 
+### Tutorials & how-tos updated for everything above
+
+* The **interface tour** gained stops for the Autorun bolt and the bottom output panel; the status
+  step explains the downstream-only "Out of date" marking; the Save & Open step now describes the
+  **platform** save (with `.ffjson` import/export in the Flow menu).
+* Stale how-tos fixed: `how-save` / `how-open` no longer claim Save downloads a `.ffjson` file.
+* Five new how-tos: **rerun automatically** (autorun toggle, hands-on), **why "Out of date"**,
+  **edit parameters in the function's own dialog** (full demog → AddNewColumn → Open editor ladder,
+  gated on the real dialog), **reuse a saved flow** (Workflows section), and **rerun just one node**.
+* The tutorials mention the output panel, autorun, and Workflows where relevant ("Load data…"
+  finale, "Find the right function" group-by step, "See & reuse the generated script" save/finish
+  steps). The guide content test now pins this coverage (the five question ids + the two new tour
+  stops must exist).
+
 ### SetVar ⇄ Output unification
 
 * **SetVar nodes and Output nodes now compile to the same thing.** A SetVar node also declares a
