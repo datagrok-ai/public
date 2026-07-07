@@ -863,6 +863,8 @@ export class PackageFunctions {
     const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
     try {
       await initBioPromise;
+      const sh = _package.seqHelper.getSeqHandler(seqCol);
+      await sh.refinerPromise;
       const monomerLib = seqCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
       const seqHelper = _package.seqHelper;
       const rdKitModule = _package.rdKitModule;

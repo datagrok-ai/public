@@ -66,6 +66,25 @@
   concurrent same-function call while the dialog is open must execute uncanceled and must not
   resolve the round-trip.
 
+### Output preview: add to workspace, in-place column view
+
+* **"Add to workspace" is now on every preview**, not just the context-panel dataframe row — a small
+  `+` overlaid in the preview's top-right corner (same corner treatment as the viewer gear).
+  * **DataFrame / column** → opens a fresh table view over a clone
+    (`grok.shell.addTableView(t.clone())`).
+  * **Viewer** → every viewer is DataFrame-backed, so it opens a table view over a clone of the
+    viewer's dataframe, recreates the viewer on that clone (a **new** viewer, same look via
+    `getOptions().look` → `setOptions`), and docks it to the **right** of the table view. Enabled for
+    any viewer-output node.
+* **Column outputs of in-place transforms now preview the whole table, scrolled to the produced
+  column.** Most column-producing functions (e.g. Add New Column) mutate their input table and return
+  the added column. Showing that column alone hid the context it belongs to. The instrumented run now
+  detects — **by instance** (Dart-handle identity, since each wrapper access makes a fresh JS object)
+  — whether the output column is one of the node's *single* input table's columns; if so it captures a
+  clone of the whole table plus the column name (`__ff_col_summary` → `tableClone` / `scrollToColumn`)
+  and the preview renders the table scrolled to that column. Zero or several input tables, or a
+  genuinely standalone column, keep the one-column grid. Add-to-workspace works in both modes.
+
 ### Demo flows shipped as `.flow` scripts
 
 * The two bundled demos (`Workflow Demo`, `Sequence demo`) are now also committed as first-class

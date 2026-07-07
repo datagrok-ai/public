@@ -412,10 +412,43 @@ category('Flow: in-place isolation', () => {
         'rerun is idempotent — the column is NOT added a second time');
       expect(extraCols(previewColNames(ctrl, sel.id)), 0,
         'the upstream captured value stayed pristine through the rerun');
+
+      // The column output now previews the whole in-place table, scrolled to the
+      // produced column — captured by __ff_col_summary (by-instance detection).
+      const outputs = ctrl.state.getNodeState(anc.id)?.outputs ?? {};
+      const colS = Object.values(outputs).find((s) => s.type === 'column');
+      expect(colS != null, true, 'the calc has a column output summary');
+      expect(colS!.scrollToColumn, 'extra', 'the preview scrolls to the produced column');
+      expect(colS!.tableClone instanceof DG.DataFrame, true, 'the whole input table is captured');
+      expect((colS!.tableClone as DG.DataFrame).columns.names().includes('extra'), true,
+        'the captured table contains the produced column (it belongs to that table)');
     } finally {
       try {
         grok.shell.closeTable(shellTable);
       } catch {/* best effort */}
+      destroyEditor(e);
+    }
+  });
+
+  test('a single-input column output is emitted with in-place table detection', async () => {
+    const addCol = funcTypeName('AddNewColumn');
+    if (!addCol) {
+      expect(true, true);
+      return;
+    }
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input');
+      const anc = await addNode(e.flow, addCol);
+      await e.flow.addConnectionByKeys(src.id, 'table', anc.id, 'table');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'colsum-1'});
+      expect(inst.includes('function __ff_col_summary'), true, 'the helper is defined');
+      // The column output is summarized against the same snapshot the call
+      // mutates (`<var>_table_in`), so an added column is detectable by instance.
+      expect(/__ff_col_summary\(\w+, \w+_table_in, 'column'\)/.test(inst), true,
+        'the column output is summarized against its snapshot input table');
+    } finally {
       destroyEditor(e);
     }
   });

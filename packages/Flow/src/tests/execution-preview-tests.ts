@@ -248,4 +248,53 @@ category('Flow: execution preview', () => {
     expect(hasRenderablePreview(state), false, 'no .root → nothing to render');
     expect(buildPreview('result', state.outputs!.result), null, 'buildPreview returns null');
   });
+
+  const wsBtn = (el: HTMLElement | null): Element | null =>
+    el?.querySelector('[data-testid="ff-add-to-workspace"]') ?? null;
+
+  test('a dataframe preview carries an "Add to workspace" button', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b'])]);
+    const preview = buildPreview('result', {type: 'dataframe', rows: 2, cols: 1, clone: df});
+    expect(!!wsBtn(preview), true, 'the button is overlaid on the grid');
+  });
+
+  test('a column preview carries an "Add to workspace" button', async () => {
+    const col = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b', 'c'])]);
+    const preview = buildPreview('result', {type: 'column', name: 'x', length: 3, clone: col});
+    expect(!!wsBtn(preview), true, 'the one-column grid gets the button too');
+  });
+
+  test('an in-place column output previews the whole table (scrolled), not a lone column', async () => {
+    // The output column belongs to the node's single input table (Add New Column
+    // idiom): the summary carries the full table + the column to scroll to, so
+    // the column is shown in the context of its table.
+    const table = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('name', ['a', 'b']),
+      DG.Column.fromFloat32Array('extra', new Float32Array([1, 2])),
+    ]);
+    const oneCol = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('extra', new Float32Array([1, 2]))]);
+    const summary = {
+      type: 'column', name: 'extra', length: 2, clone: oneCol,
+      tableClone: table, scrollToColumn: 'extra',
+    } as const;
+    const preview = buildPreview('result', summary);
+    expect(!!preview, true, 'preview built');
+    // Grid mode → the fallback text-sample <table> must NOT appear.
+    expect(preview!.querySelector('table'), null, 'renders a grid, not a text sample');
+    expect(preview!.childElementCount > 0, true, 'grid mounted');
+    expect(!!wsBtn(preview), true, 'the in-place table preview is addable to the workspace');
+  });
+
+  test('a viewer preview has the workspace button, plus the gear when editable', async () => {
+    const {state} = widgetState('viewer');
+    const summary = state.outputs!.result;
+
+    const noGear = buildPreview('result', summary);
+    expect(!!wsBtn(noGear), true, 'the workspace button is always present on a viewer');
+    expect(noGear!.querySelector('[data-testid="ff-viewer-edit"]'), null, 'no gear without an edit handler');
+
+    const withGear = buildPreview('result', summary, () => {});
+    expect(!!wsBtn(withGear), true, 'the workspace button coexists with the gear');
+    expect(!!withGear!.querySelector('[data-testid="ff-viewer-edit"]'), true, 'the edit gear is present');
+  });
 });
