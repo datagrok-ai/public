@@ -575,6 +575,12 @@ Ribbon **bolt icon** (`data-testid` ribbon/autorun; `.ff-autorun-toggle` = off: 
 
 `serializeFlow(flow, settings)` produces the doc; `deserializeFlow(doc, flow)` clears and rebuilds. Unknown `typeName`s are skipped with a console warning. Connections referencing missing nodes are silently dropped.
 
+### Bundled demos: `files/*.ffjson` vs `scripts/*.flow`
+
+Two forms of the same two demos ship in the package:
+- **`files/Workflow Demo.ffjson` / `files/Sequence demo.ffjson`** — raw ffjson docs, loaded by the Start panel's template cards (`FLOW_TEMPLATES` in [funcflow-view.ts](src/funcflow-view.ts), read via `_package.files.readAsText`).
+- **`scripts/Workflow Demo.flow` / `scripts/Sequence demo.flow`** — the same graphs as **first-class flow scripts** (the platform auto-registers everything in `scripts/`; the `flow` scriptHandler declares `extensions: flow`). Each file is a `.flow` body: the annotation header (`//name` / `//language: flow` / `//tags: flow` / execution-ordered `//output:` lines) followed by the ffjson JSON — exactly what `flowScriptText` writes. They are **hand-committed** (generated from the ffjson), so they can drift; the **Flow: bundled flow scripts** test category regenerates the canonical body from each `.ffjson` via `flowScriptText` and asserts the header/output-ordering the committed files carry. If a future change alters that output (e.g. header ordering), the test fails — regenerate the `.flow` files to match.
+
 ## Guide system (tutorials + how-to) — [`src/guide/`](src/guide)
 
 Interactive, in-app onboarding. A non-invasive floating help button (`ff-help-fab`, bottom-left of

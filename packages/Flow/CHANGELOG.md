@@ -66,6 +66,16 @@
   concurrent same-function call while the dialog is open must execute uncanceled and must not
   resolve the round-trip.
 
+### Demo flows shipped as `.flow` scripts
+
+* The two bundled demos (`Workflow Demo`, `Sequence demo`) are now also committed as first-class
+  **flow scripts** under `scripts/` (`.flow` — the language the `flow` scriptHandler registers), so
+  they register as runnable/reusable functions on publish, not just Start-panel templates. Each
+  carries the proper annotation header (`//name` / `//language: flow` / `//tags: flow` /
+  execution-ordered `//output:` lines) followed by the ffjson body — the exact `flowScriptText`
+  format. A new **Flow: bundled flow scripts** test regenerates the canonical body from each
+  `files/*.ffjson` and asserts the committed headers match, so the hand-committed files can't drift.
+
 ### Tutorials & how-tos updated for everything above
 
 * The **interface tour** gained stops for the Autorun bolt and the bottom output panel; the status

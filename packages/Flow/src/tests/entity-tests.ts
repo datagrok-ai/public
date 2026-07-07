@@ -11,6 +11,8 @@ import {flowScriptText, parseFlowBody, isFlowBody, FLOW_LANGUAGE} from '../seria
 import {serializeFlow, deserializeFlow} from '../serialization/flow-serializer';
 import {FlowEntityHandler} from '../entity/flow-entity-handler';
 import {FuncFlowView} from '../funcflow-view';
+import {FuncFlowDocument, FlowSettings} from '../serialization/flow-schema';
+import {_package} from '../package';
 import {makeEditor, destroyEditor, addNode, TestEditor} from './test-utils';
 
 const SETTINGS = {scriptName: 'EntityFlow', scriptDescription: 'entity test', tags: ['funcflow']};
@@ -162,6 +164,76 @@ category('Flow: entity loading', () => {
     } finally {
       destroyEditor(e);
     }
+  }, {timeout: 30000});
+});
+
+/** The bundled `scripts/*.flow` files are hand-committed from the `files/*.ffjson`
+ *  demos (see the `.flow` header format). This guards them against drift: each
+ *  must equal the canonical `flowScriptText` the app would write for that graph —
+ *  same header (name / language / tags / ordered `//output:` lines) and body. */
+category('Flow: bundled flow scripts', () => {
+  before(async () => {
+    ensureFunctionsRegistered();
+  });
+
+  const settingsOf = (doc: FuncFlowDocument): FlowSettings => {
+    const s = doc.metadata?.settings;
+    return {
+      scriptName: s?.scriptName ?? doc.name ?? 'Flow',
+      scriptDescription: s?.scriptDescription ?? doc.description ?? '',
+      tags: (s?.tags ?? []).filter((t) => t !== 'flow'), // flowScriptText re-adds it
+    };
+  };
+
+  /** Regenerate the canonical `.flow` body for a bundled `.ffjson` demo. */
+  async function canonicalFlow(ffjsonFile: string): Promise<{header: string; outputs: string[]}> {
+    const json = await _package.files.readAsText(ffjsonFile);
+    const doc = JSON.parse(json) as FuncFlowDocument;
+    const e = makeEditor();
+    try {
+      await deserializeFlow(doc, e.flow);
+      const text = flowScriptText(e.flow, settingsOf(doc));
+      const {header} = parseFlowBody(text);
+      const outputs = header.split('\n').filter((l) => l.startsWith('//output:'));
+      return {header, outputs};
+    } finally {
+      destroyEditor(e);
+    }
+  }
+
+  test('Workflow Demo: canonical header, outputs ordered by execution', async () => {
+    let gen: {header: string; outputs: string[]};
+    try {
+      gen = await canonicalFlow('Workflow Demo.ffjson');
+    } catch {
+      expect(true, true, 'files/ not available on this stand — skipped');
+      return;
+    }
+    expect(gen.header.includes('//name: Workflow Demo'), true);
+    expect(gen.header.includes(`//language: ${FLOW_LANGUAGE}`), true);
+    expect(gen.header.includes('//tags: flow'), true);
+    // Three Table Outputs, ordered by the topological (execution) order — the
+    // exact order the committed scripts/Workflow Demo.flow header carries.
+    const expected = [
+      '//output: dataframe helmResult',
+      '//output: dataframe CHemblResult',
+      '//output: dataframe Molecules',
+    ].join('\n');
+    expect(gen.outputs.join('\n'), expected,
+      'the committed .flow header must match this order — regenerate the file if this changes');
+  }, {timeout: 30000});
+
+  test('Sequence demo: canonical header with the single result output', async () => {
+    let gen: {header: string; outputs: string[]};
+    try {
+      gen = await canonicalFlow('Sequence demo.ffjson');
+    } catch {
+      expect(true, true, 'files/ not available on this stand — skipped');
+      return;
+    }
+    expect(gen.header.includes('//name: Sequence demo'), true);
+    expect(gen.header.includes(`//language: ${FLOW_LANGUAGE}`), true);
+    expect(gen.outputs.join('\n'), '//output: dataframe result');
   }, {timeout: 30000});
 });
 
