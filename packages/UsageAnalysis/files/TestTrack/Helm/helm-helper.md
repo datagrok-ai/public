@@ -1,9 +1,26 @@
+---
+feature: helm
+target_layer: apitest
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - helm-helper-api-spec.ts
+related_bugs: []
+---
+
 # Helm — HelmHelper accessor + factory + hit-test API surface
 
-> **2026-06 editor rewrite.** Pistoia/JSDraw2/Dojo removed; the helper now wraps
-> a Datagrok-native SVG editor. The public `IHelmHelper` method surface is
-> preserved (verified live). `createHelmWebEditor().editor` is now a plain adapter
-> object (no JSDraw2 `viewonly` flag). See grok-browser `references/helm.md`.
+Exercises the `IHelmHelper` singleton returned by `Helm:getHelmHelper` — the
+JS API surface plugins use to parse HELM sequences, build the HELM input and
+editor widgets, and hit-test a point against a drawn structure. Confirms the
+singleton and its full method set are present, that `createHelmInput` and
+`createHelmWebEditor` build working widgets bound to the active monomer
+library, and that `getHoveredAtom` returns the correct atom (or `null`) for a
+given point. This targets the API after the 2026 rewrite that replaced the
+JSDraw2/Dojo editor with a native SVG one — the public method surface is
+unchanged, but `createHelmWebEditor().editor` is now a plain adapter object
+rather than a JSDraw2 instance; see grok-browser `references/helm.md`.
 
 ## Setup
 

@@ -35,14 +35,12 @@ selects the CSV file with the highest numeric suffix from
 and reopen, then verifies the reopened project loads the new highest-
 suffixed file.
 
-This scenario is **UI-only manual** — see frontmatter `moved_to_ui_reason`
-for rationale. There is no Playwright spec for this scenario. Human QA
-runs this scenario manually when validating dynamic-data-resolution
+This scenario is **UI-only manual** — there is no Playwright spec for
+it. Human QA runs it manually when validating dynamic-data-resolution
 behavior.
 
-This scenario is **self-contained** per
-`scenario-chains/projects.yaml` rev 2 (`depends_on: []`,
-classification `medium`); no upstream fixture consumed.
+This scenario is **self-contained**: it consumes no fixtures produced
+by other scenarios.
 
 The scenario contains a **destructive shared-state mutation** in
 step 4 (modifies `System:DemoFiles/chem`, which is a shared file-
@@ -163,15 +161,7 @@ dated entry.
 
 ## Notes
 
-- **Atlas critical_path partial coverage.** This scenario covers the
-  creation-script-rebuild-on-reopen behavior; URL-param + share
-  aspects of `url-parameterized-share` critical_path are NOT
-  exercised here. Atlas may benefit from a dedicated
-  `projects.creation-script.*` sub_feature for non-URL-param
-  creation-script flows (flagged in migration report Section 1
-  for review).
-- **No spec / no automation tracking.** Per 2026-05-01 decision,
-  this scenario is fully manual. No corresponding `-spec.ts` exists.
-  No bucket-a coverage gaps tracked in `coverage-gaps/projects.md`
-  for this scenario (excluded — see "Test cases marked UI-only"
-  section in coverage-gaps/projects.md).
+- **Coverage scope.** This scenario covers only the
+  creation-script-rebuild-on-reopen behavior; it does not exercise
+  the URL-parameter + share aspects of dynamic creation scripts —
+  that would need separate coverage.

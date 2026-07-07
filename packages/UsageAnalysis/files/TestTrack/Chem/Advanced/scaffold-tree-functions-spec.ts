@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.add, chem.analyze.scaffold-tree.filter, chem.analyze.scaffold-tree.generate, chem.analyze.scaffold-tree.viewer]
---- */
 // Paired scenario: Advanced/scaffold-tree-functions.md
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../../spec-login';

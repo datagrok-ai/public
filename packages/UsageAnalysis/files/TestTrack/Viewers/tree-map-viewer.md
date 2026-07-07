@@ -1,3 +1,14 @@
+---
+feature: treemap
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - tree-map-viewer-spec.ts
+related_bugs: []
+---
+
 # Tree Map tests
 
 All scenarios should start with the following sequence of events:

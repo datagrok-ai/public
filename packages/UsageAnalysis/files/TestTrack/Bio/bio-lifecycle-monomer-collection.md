@@ -1,12 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.manage.monomer-collections-app
-  - bio.manage.libraries-view
-  - bio.api.get-monomer-lib-helper
-  - bio.lifecycle.init
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [save_monomer_library]
 produced_from: atlas-driven
 realized_as:
   - bio-lifecycle-monomer-collection-spec.ts
@@ -44,33 +41,22 @@ gate_verdicts:
         failure_keys: []
 ---
 
-# Bio — `monomer_collection` source-class lifecycle
+# Bio — Monomer collections: write, reload via app, save & reopen
 
-Proactive lifecycle scenario for the `monomer_collection` source
-class per
-`scenario-chains/bio.yaml#proactive_lifecycle_specs[2]`. Walks a
-monomer collection through every non-agnostic
-`dep_lifecycle_op` declared in atlas
-`dep_lifecycle_ops[].affected_source_classes` that touches the
-shape: write to `System:AppData/Bio/monomer-collections` via the
-shared `lib-manager` write code path → reload via the
-`Monomer Collections` app → save a project referencing the
-collection → reopen and verify the collection reference survives
-the round trip.
+Walks a monomer collection through its lifecycle: writing a new
+collection file to `System:AppData/Bio/monomer-collections`,
+confirming it shows up when reloaded via the **Monomer Collections**
+app, and saving/reopening a project that references it.
 
-`external_deps: [FileShare]` per chain `proactive_lifecycle_specs[2]`
-— the lifecycle requires `FileShare` connection permissions on
-`System:AppData/Bio/monomer-collections`. `env_requirements:
-["FileShare connection with per-user permissions"]`.
+This is a smaller surface than the `bio-lifecycle-monomer-library.md`
+lifecycle — monomer collections don't support the load-into-editor
+flow that libraries do, so only the write path and project-persistence
+path are exercised here. Distinct from `bio-lifecycle-monomer-library.md`
+in that this scenario covers the **collections** app specifically, a
+sibling surface to the libraries manager.
 
-Smaller surface than `monomer_library` lifecycle: the
-`load_monomer_library` op does NOT affect `monomer_collection`
-per atlas `dep_lifecycle_ops[load_monomer_library].affected_source_classes`,
-so only the write side and the project-persistence path are
-exercised here. Distinct from
-`bio-lifecycle-monomer-library.md` in that this scenario covers
-the **collections** subpath and app surface (per atlas
-`bio.manage.monomer-collections-app`).
+Requires a FileShare connection with permission to write under
+`System:AppData/Bio/monomer-collections`.
 
 ## Setup
 
@@ -87,7 +73,7 @@ the **collections** subpath and app surface (per atlas
   `bio-lifecycle-monomer-collection-project-${Date.now()}`.
 - Service-surface dependency:
   `await grok.functions.call('Bio:getMonomerLibHelper')` is used
-  in Step 1 (atlas `bio.api.get-monomer-lib-helper`).
+  in Step 1.
 - Cleanup: Step 4 deletes the working collection file, the
   saved project, and any open `Monomer Collections` app
   instances.
@@ -97,17 +83,13 @@ the **collections** subpath and app surface (per atlas
 ### Scenario 1: Write a new collection via the shared lib-manager path
 
 Steps:
-1. Trigger `Bio:initBio` if not yet initialized (atlas
-   `bio.lifecycle.init`). Verify `getMonomerLibHelper()` returns
-   a non-null `IMonomerLibHelper` singleton (atlas
-   `bio.api.get-monomer-lib-helper`).
+1. Trigger `Bio:initBio` if not yet initialized. Verify
+   `getMonomerLibHelper()` returns a non-null
+   `IMonomerLibHelper` singleton.
 2. Write the synthetic collection content:
    `await grok.dapi.files.writeAsText('System:AppData/Bio/monomer-collections/${WORKING_COLLECTION}', collectionJson)`.
-   Atlas `dep_lifecycle_ops[save_monomer_library]` covers this
-   write path (the op spans both `monomer_library` and
-   `monomer_collection` source classes; the collections subpath
-   uses the same lib-manager write code path with a different
-   AppData root).
+   This write path uses the same lib-manager write code path as
+   monomer libraries, with a different AppData root.
 3. Verify the file lands on FileShare:
    `await grok.dapi.files.exists('System:AppData/Bio/monomer-collections/${WORKING_COLLECTION}')`
    returns `true`; readback content matches what was written.
@@ -125,16 +107,15 @@ Steps:
 1. Open the `Monomer Collections` app via the platform browse
    path (`Apps | Peptides | Monomer Collections`, or the
    `Bio | Manage | Monomer Libraries` view's sibling tab if
-   accessible from there). Atlas
-   `bio.manage.monomer-collections-app`.
+   accessible from there).
 2. Verify the working collection appears in the app's listing.
    The listing should reflect the FileShare state set in
    Scenario 1.
 3. Optionally also check the `Bio | Manage | Monomer Libraries`
-   view (atlas `bio.manage.libraries-view`) for cross-surface
-   visibility — collections may or may not appear in the
-   libraries view depending on platform configuration; assert
-   presence in the dedicated collections app at minimum.
+   view for cross-surface visibility — collections may or may
+   not appear in the libraries view depending on platform
+   configuration; assert presence in the dedicated collections
+   app at minimum.
 
 Expected:
 - The working collection is visible in the `Monomer Collections`
@@ -155,8 +136,6 @@ Steps:
    project name from Setup; **Data Sync** toggle ON. Cancel the
    auto-share dialog if it appears. Verify
    `grok.dapi.projects.find(<id>)` returns the saved project.
-   Atlas `dep_lifecycle_ops[save_project_with_analysis]`
-   (`affected_source_classes: [all]`).
 3. Close and reopen the project via
    `grok.dapi.projects.find(<id>)` → `project.open()`. Verify:
    - The HELM dataset is restored.
@@ -187,63 +166,14 @@ Expected:
 
 ## Notes
 
-- Origin: chain rev 8
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[2]`
-  (`source_class: monomer_collection`, `spec_target:
-  bio-lifecycle-monomer-collection-spec.ts`). Lands the
-  intent-layer `.md` realization that
-  `F-PROACTIVE-COVERAGE-01` (SCOPE_REDUCTION, cycle
-  2026-06-01-bio-migrate-01) cited as the gap. `.ts`
-  realization (`spec_target`) is downstream Automator /
-  Phase C, not gated by F.
-- atlas entry derived from
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[2]`
-  (chain author, cycle 2026-05-30-bio-chain-bootstrap-01).
-- `dep_lifecycle_ops` exercised (per
-  `proactive_lifecycle_specs[2].bundled_ops` — note that
-  `load_monomer_library` is intentionally excluded since
-  atlas declares `monomer_collection` is NOT in
-  `load_monomer_library.affected_source_classes`):
-  `save_monomer_library` (Scenario 1.2),
-  `save_project_with_analysis` (Scenario 3.2).
-- target_layer rationale: `playwright` — the lifecycle spans
-  the `Monomer Collections` app browse path and the Save
-  Project ribbon path. `apitest` covers the FileShare
-  read/write API at the unit layer but cannot exercise the
-  app browse-path UI. JS API substitutes are used for the
-  FileShare writes and project persistence per the same
-  pattern as sibling `bio-lifecycle-*.md` scenarios.
-- Sibling tests considered:
-  - `public/packages/Bio/src/tests/lib-manager-tests.ts`
-    exercises the lib-manager CRUD code path at the API
-    layer; covers both monomer-libraries and monomer-
-    collections subpaths via the same code. This scenario
-    adds the UI-layer (`Monomer Collections` app) +
-    project-persistence layer the apitest does not exercise.
-- This scenario covers 4 sub_features
-  (`F-STRUCT-DENSITY-01` floor: 2 — above; cardinality 4
-  meets the >= 3 floor for `F-STRUCT-INTERACTION-01`).
-  Scenario cardinality (per `## Scenarios` section): 4 (one
-  cleanup + three substantive lifecycle scenarios) — meets
-  the >= 2 scenarios floor.
-- Manual-only subset: none of the four covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas
-  rev 3 `manual_only[]` list).
-- `coverage_type: regression` per STEP E heuristic: this is
-  general coverage of the monomer-collection lifecycle shape
-  (not a single critical_path golden path → not smoke; not a
-  boundary value → not edge; not stress/latency-sensitive →
-  not perf). Atlas has no `bio.cp.*` entry exclusively
-  scoped to the collections subpath; STEP E fallback to
-  `regression` applies.
-- Deferrals: none mandatory. Per-collection edit / delete UI
-  flows from inside the `Monomer Collections` app (atomic
-  CRUD of single collection entries) are NOT exercised here
-  — out-of-scope; would be a dedicated CRUD scenario.
-- env_requirements: `FileShare connection with per-user
-  permissions` per chain `proactive_lifecycle_specs[2]`.
-- Related-bug context: `related_bugs: []` per chain
-  `proactive_lifecycle_specs[2].bugs_reinforcing` (empty).
+- Sibling coverage: `lib-manager-tests.ts` exercises the shared
+  lib-manager CRUD code path at the API layer, covering both
+  monomer-libraries and monomer-collections. This scenario adds the
+  UI layer (the Monomer Collections app) and the project-persistence
+  layer that the apitest doesn't exercise.
+- Deferrals: per-collection edit/delete flows inside the Monomer
+  Collections app (editing or deleting a single collection entry)
+  aren't exercised here — that would be a dedicated CRUD scenario.
 
 ---
 {

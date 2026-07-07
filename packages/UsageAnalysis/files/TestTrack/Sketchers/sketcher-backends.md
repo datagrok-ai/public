@@ -1,19 +1,9 @@
 ---
 feature: chem
-sub_features_covered:
-  [
-    chem.sketcher,
-    chem.sketcher.ocl,
-    chem.sketcher.ketcher,
-    chem.sketcher.chemdraw,
-    chem.sketcher.backend-switch,
-    chem.sketcher.hamburger-menu,
-    chem.sketcher.copy-as,
-    chem.sketcher.roundtrip,
-    chem.sketcher.molecular-input
-  ]
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [chem.cp.sketcher-open-set-readback, chem.cp.sketcher-backend-switch]
 produced_from: atlas-driven
 pyramid_layer: bug-focused
 migration_date: 2026-06-01
@@ -65,16 +55,14 @@ gate_verdicts:
 
 # Chem | Sketcher — battery across OpenChemLib → Ketcher → ChemDraw (UI backend switch)
 
-ONE rich, bug-derived test-case **battery** run against three sketcher backends on a **single
-persistent sketcher panel**, switching backend **manually through the hamburger ≡ menu** (the
-real user gesture): open sketcher → **select OpenChemLib** → battery → **select Ketcher** →
-battery → **select ChemDraw** → battery. The same battery (C1-C8) runs for every backend, so
-each backend gets identical functional coverage. Each check maps to a fixed Jira bug.
+Runs the same battery of functional checks (C1-C8 below) against each molecule sketcher backend —
+OpenChemLib, Ketcher, and ChemDraw — on a single sketcher panel, switching backends manually
+through the hamburger ≡ menu the way a user would. Each check in the battery guards a specific,
+previously reported bug, so every backend gets identical coverage.
 
-A backend is a func tagged `meta.role: moleculeSketcher`. The active backend is chosen from the
-sketcher's hamburger menu (radio items `OpenChemLib / Ketcher / Marvin / ChemDraw`). This scenario
-covers **OpenChemLib, Ketcher, ChemDraw** (Marvin is excluded — it returns an empty molecule on
-dev without a license).
+A sketcher backend is one of the molecule-drawing widgets available from the sketcher's hamburger
+menu (`OpenChemLib / Ketcher / Marvin / ChemDraw`). This scenario covers OpenChemLib, Ketcher, and
+ChemDraw (Marvin is excluded — it returns an empty molecule on dev without a license).
 
 ## The battery (per backend)
 
@@ -130,7 +118,7 @@ across 3 consecutive Playwright runs (Gate B: 3/3).
   Switching backend **in place on a single panel** via the menu is stable (3/3 green headless).
 - **Why JS-API for the checks.** Neither the OCL canvas nor the external iframes (Ketcher /
   ChemDraw) can be reliably "drawn into" with Playwright; `setMolecule` / `getSmiles` /
-  `getMolFile` / `getSmarts` / `resize` is the robust functional probe (same SR rationale as
+  `getMolFile` / `getSmarts` / `resize` is the robust functional probe (same reasoning as
   `sketcher-spec.ts`).
 - **Console-error scope.** The zero-console-error assertion (GROK-12758) counts only
   **sketcher-relevant** errors (filtered by sketcher/search-pattern/copy-as/molfile patterns);
@@ -151,6 +139,3 @@ across 3 consecutive Playwright runs (Gate B: 3/3).
 - **Sibling specs.** `sketcher.md` / `sketcher-spec.ts` cover the OCL cell-editor walk
   (Favorites / Recent / Copy / Paste); `sketcher-ui.md` carries the #2448 stereo-on-highlight
   manual invariant. This scenario is the cross-backend functional battery.
-- **Chain registration.** New scenario — add its basename to
-  `references/scenario-chains/sketcher.yaml` `order_from_files[]` via the test-designer safe-write
-  path when integrating into the orchestrated cycle.

@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [models.api.run, models.api.save, models.command.apply, models.command.delete, models.command.train, models.engines.api.apply, models.engines.package, models.view.browser, models.view.training, models.workflow.apply-dialog, models.workflow.remove]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

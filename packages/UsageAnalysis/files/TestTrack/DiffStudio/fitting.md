@@ -11,9 +11,9 @@ To validate the functionality of the Fitting tool in Diff Studio, ensuring that 
   * switch at
   * FFox from 0.15 to 1.0
   * FKox from 0 to 3
-4. Scroll to the **Target Block** to locate the Target block in the Fitting view. 
-5. Input **Bioreactor Data**: In the Bioreactor table input field, add the file from Files: App Data > Diff Studio > library > bioreactor-experiment.csv
-6. Run the Fitting Process. Click the **Run** icon on the ribbon to start the fitting process.
+5. Scroll to the **Target Block** to locate the Target block in the Fitting view. 
+6. Input **Bioreactor Data**: In the Bioreactor table input field, add the file from Files: App Data > Diff Studio > library > bioreactor-experiment.csv
+7. Run the Fitting Process. Click the **Run** icon on the ribbon to start the fitting process.
 (REMARK. Grid may contain another number of rows)
 
 

@@ -1,4 +1,8 @@
-### Molecule column in exported CSV
+# Molecule column in exported CSV
+
+Verifies that a molecule column exported to CSV is written out as SMILES
+text, and reads back correctly when the exported file is reopened.
+
 1. Open the Dataset: Open the SPGI dataset.
 2. Select Columns: select a few columns, ensuring that the 'Structure' column is included.
 3. Export as CSV:

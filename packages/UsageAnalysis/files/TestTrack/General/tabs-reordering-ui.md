@@ -18,7 +18,11 @@ manual_only_reason: |
   covers column reordering on the grid canvas — this is tab reordering.
 ---
 
-### Tabs Ordering and Persistence
+# Tabs ordering and persistence
+
+Verifies that open dataset tabs can be reordered by drag-and-drop, that
+reordering is reliable and doesn't disrupt other tabs, and that a modified
+tab order survives saving and reopening the project.
 
 1. Open multiple datasets.
 - Drag and drop two different datasets into the workspace.

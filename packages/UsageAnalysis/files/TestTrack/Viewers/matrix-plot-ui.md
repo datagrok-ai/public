@@ -1,5 +1,3 @@
-> Ручной чеклист. Не входит в автоматизацию PW.
-
 # Matrix plot — manual test checklist
 
 All scenarios should start with the following sequence of events:

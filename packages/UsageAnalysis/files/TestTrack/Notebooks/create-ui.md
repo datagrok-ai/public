@@ -1,9 +1,5 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.editor.ribbon.html-mode
-  - notebooks.entity.create
-  - notebooks.editor.handle-path
 target_layer: manual-only
 pyramid_layer: ui-smoke
 companion_to: create.md
@@ -58,8 +54,7 @@ deterministic Scenarios 1-2 (Open in Notebook, View as HTML) live in
      downloaded `.html` file is non-empty.
    - **As PDF** — verify a print dialog opens in a new window.
    _Note: "all offered formats" maps to the two options exposed by the HTML-mode
-   ribbon Download combo (As HTML, As PDF). See `create.md` unresolved_ambiguities
-   if the set of formats changes._
+   ribbon Download combo (As HTML, As PDF)._
 
    _Blocked-on-dev: on a build affected by GROK-13999 the HTML render fails
    (404 / localStorage DOMException) and the Download combo never appears._

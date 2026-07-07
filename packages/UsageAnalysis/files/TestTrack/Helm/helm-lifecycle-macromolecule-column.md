@@ -1,10 +1,28 @@
-# Helm — lifecycle chain for the Macromolecule HELM column
+---
+feature: helm
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [macromolecule_helm_column]
+realized_as:
+  - helm-lifecycle-macromolecule-column-spec.ts
+related_bugs: []
+---
 
-> **2026-06 editor rewrite.** Pistoia/JSDraw2/Dojo removed; the cell editor is
-> now a Datagrok-native SVG editor (`data-testid`-instrumented). API contract
-> (`parse` / `removeGaps` / `getMolfiles`) is preserved; `getMolfiles` now
-> returns an `HWE pseudo-molfile` (not V2000/V3000). See grok-browser
-> `references/helm.md`.
+# Helm — Macromolecule HELM column: render, edit, compute properties, convert & parse
+
+Runs the full lifecycle of a grid column detected as Macromolecule/HELM: the
+grid renders each HELM sequence as connected monomer structures (with correct
+re-rendering after scrolling and cache invalidation), the cell editor lets a
+user edit and save a sequence back to the cell, the Properties context panel
+computes formula / molecular weight / extinction coefficient (including a
+safeguard for very long sequences), and the underlying parse / convert-to-
+molfile / remove-gaps functions behave correctly on peptide and RNA fixtures.
+This targets the column lifecycle after the 2026 HELM editor rewrite
+(JSDraw2/Dojo replaced by a native SVG editor); the parse / removeGaps /
+getMolfiles API contract is unchanged, though `getMolfiles` now returns an
+HWE pseudo-molfile instead of a V2000/V3000 molfile. See grok-browser
+`references/helm.md`.
 
 ## Setup
 

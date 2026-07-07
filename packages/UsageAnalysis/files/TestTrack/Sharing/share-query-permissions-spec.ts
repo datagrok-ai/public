@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [sharing.advanced-editor, sharing.browse-shared-with-me, sharing.context-panel-pane, sharing.entity-types.query, sharing.notification, sharing.permissions-editor, sharing.share-dialog]
---- */
 import {test, expect, Page} from '@playwright/test';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin,

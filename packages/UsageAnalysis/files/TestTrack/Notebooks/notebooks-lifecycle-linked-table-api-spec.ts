@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [notebooks.entity.link, notebooks.entity.is-applicable, notebooks.entity.get-applicable-cases, notebooks.entity.from-json, notebooks.entity.generate-file-name, notebooks.api.find, notebooks.api.list, notebooks.api.save, notebooks.api.filter, notebooks.repository.save, notebooks.repository.find, notebooks.repository.delete, notebooks.repository.delete-tables-relations, notebooks.repository.by-tag, notebooks.repository.audit-hooks, notebooks.routes.save, notebooks.routes.get, notebooks.routes.delete, notebooks.routes.list, notebooks.service.save-notebook, notebooks.service.get-notebook, notebooks.service.delete-notebook, notebooks.service.get-notebooks-filtered, notebooks.service.get-notebooks-count, notebooks.meta.open-tables-in-notebook, notebooks.meta.new-notebook]
---- */
 // Pure JS-API apitest for the Notebooks CRUD lifecycle via grok.dapi.notebooks.
 // Seeds a server notebook with CmdNewNotebook (no JS-API Notebook factory exists),
 // then round-trips it: find (name + .ipynb body intact), list/count/order, rename

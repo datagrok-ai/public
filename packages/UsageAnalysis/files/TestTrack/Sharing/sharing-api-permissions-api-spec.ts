@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [sharing.api.check, sharing.api.get, sharing.api.grant, sharing.api.revoke, sharing.server.privileges-router]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

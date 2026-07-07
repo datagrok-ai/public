@@ -1,3 +1,5 @@
+# Formula Lines — Known Issues
+
 ### Formula lines tickets:
 
 * [#2487](https://github.com/datagrok-ai/public/issues/2487) Scatter plot: datetime columns are not supported when adding formula lines

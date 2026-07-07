@@ -1,4 +1,21 @@
-﻿# Models — Lifecycle on a CSV-backed model (trained_on_csv_table source class)
+---
+feature: models
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [trained_on_csv_table]
+realized_as:
+  - models-lifecycle-csv-table-spec.ts
+related_bugs: []
+---
+
+# Models — CSV-backed model: train, apply, evaluate, edit, share & delete
+
+Walks a model's full lifecycle when it is trained directly on an
+in-session CSV table (no query in between): train and save it,
+apply it to a freshly reopened copy of the same table, re-run its
+performance evaluation, then edit its metadata, share it, and
+delete it — all from **Browse > Platform > Predictive models**.
 
 ## Setup
 
@@ -21,7 +38,7 @@
 
 ## Scenarios
 
-### Scenario 1: Train and save model on CSV-backed trainedOn (train_and_save_model + save)
+### Scenario 1: Train and save a model on the open CSV table
 
 1. Open **Browse > Files > Demo > Sensors > accelerometer.csv** — the dataset opens in a table view.
 2. Go to **ML > Models > Train Model...** — the training dialog opens.
@@ -37,7 +54,7 @@
    DataFrame through `dapi.tables` and (b) `POST /ml` registers the
    entity. The model surfaces under **Browse > Platform > Predictive models**.
 
-### Scenario 2: Apply model on a fresh open of the same CSV (apply_model_on_table — non-agnostic)
+### Scenario 2: Apply the saved model to a freshly reopened copy of the same CSV
 
 1. Close the current table view (or open a second view) of
    accelerometer.csv so the apply step exercises the full
@@ -55,7 +72,7 @@
    the table view, tagged `Tags.PredictiveModel`; the column header
    shows the model's prediction marker.
 
-### Scenario 3: Run Evaluation from the Performance pane (run_performance_evaluation — non-agnostic to CSV trainedOn)
+### Scenario 3: Re-run evaluation from the model's Performance pane
 
 1. In **Browse > Platform > Predictive models**, find `LifecycleCsvModel`.
 2. Click the model card to open its **Context Panel**.
@@ -71,7 +88,7 @@
    non-agnostic differentiator vs `trained_on_query_table`). The
    regenerated metrics map and images render in the pane.
 
-### Scenario 4: Edit metadata via context menu (edit_model_metadata)
+### Scenario 4: Edit the model's metadata via the context menu
 
 1. In **Browse > Platform > Predictive models**, right-click the
    `LifecycleCsvModel` card.
@@ -84,7 +101,7 @@
    panel reflects the updated description; `AppEvents.ENTITY_EDITED`
    fires (the model row in Browse re-renders).
 
-### Scenario 5: Share via context menu (share_model)
+### Scenario 5: Share the model via the context menu
 
 1. In **Browse > Platform > Predictive models**, right-click the
    `LifecycleCsvModel` card.
@@ -100,7 +117,7 @@
    level (visible in the model card's Permissions context-panel
    section on a subsequent open).
 
-### Scenario 6: Delete via context menu (delete_model + cleanup)
+### Scenario 6: Delete the model via the context menu
 
 1. In **Browse > Platform > Predictive models**, right-click the
    `LifecycleCsvModel` card.

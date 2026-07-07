@@ -1,10 +1,9 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.clustering.inject-tree-for-grid
-  - dendrogram.event.selection-changed
 target_layer: playwright
 coverage_type: edge
+priority: p1
+realizes: [GROK-13041]
 produced_from: atlas-driven
 related_bugs:
   - GROK-13041
@@ -39,9 +38,7 @@ Bug-focused regression for [GROK-13041](https://reddata.atlassian.net/browse/GRO
 attached as a grid neighbor, applying a column filter to the host grid MUST
 NOT trigger the remove-dendrogram / revert-sort prompt that is intended only
 for sort-driven row reordering. The bug is fixed; this scenario is the
-regression guard that pins the post-fix behavior. Anchors atlas edge case
-`dendrogram.ec.filter-does-not-trigger-remove-revert-prompt`
-(`source_bug: GROK-13041`, `coverage_type: regression`).
+regression guard that pins the post-fix behavior.
 
 ## Setup
 
@@ -52,8 +49,7 @@ regression guard that pins the post-fix behavior. Anchors atlas edge case
 - Dataset: `System:AppData/Chem/mol1K.csv` (1000-row dataset with a
   `molecule` column carrying SMILES).
 - A dendrogram is built and injected as a grid neighbor via
-  `Chem | Analyze | Hierarchical Clustering...` (the canonical entry point
-  for `dendrogram.clustering.inject-tree-for-grid`). The magic-wand button
+  `Chem | Analyze | Hierarchical Clustering...`. The magic-wand button
   `.dendrogram-assign-clusters-bttn` is the mounted-and-ready signal.
 
 ## Scenarios
@@ -129,45 +125,11 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: filter-vs-sort prompt-triggering is a UI
-  surface (Filter Panel input + grid header click + prompt dialog +
-  overlay text), not assertable through the JS API alone. `playwright`
-  is the canonical layer per the STEP D heuristic (multi-step UI flow
-  with cross-dialog state).
-- coverage_type rationale: `edge` per the dispatch bug brief and the
-  Critic-F SR proposed_action — the bug brief's `coverage_type:
-  regression` is overridden to `edge` to also discharge
-  F-STRUCT-NEGATIVE-01 (the section has no `coverage_type: edge` or
-  `coverage_type: perf` scenario; this one closes that gap as the
-  Critic-F SR explicitly recommends). The atlas edge case itself is
-  recorded as `coverage_type: regression` in
-  `feature-atlas/dendrogram.yaml#edge_cases`, but the scenario's
-  surface here is the boundary-condition trigger discrimination (filter
-  vs sort), which is the canonical `edge` shape.
-- related_bugs: [GROK-13041] is load-bearing — it is the signal Critic
-  F's F-BUG-COVERAGE-01 branch (ii) re-checks on the next round to
-  clear the `bug-uncovered` gap (anchored on the realized .md, not on
-  the chain `bug_focused_candidates[]` proposal).
-- Net-new vs atlas-resolved coverage union: 0 breadth (both `affects`
-  ids are already in the union via `assign-clusters.md` and
-  `hierarchical-clustering-bio.md`). Value here is non-breadth per the
-  Test Designer net-new-differencing rule's escape clause for
-  justified-non-breadth scenarios — F-BUG-COVERAGE-01 closure +
-  F-STRUCT-NEGATIVE-01 closure are the value axes.
-- See: `feature-atlas/dendrogram.yaml#edge_cases[dendrogram.ec.filter-does-not-trigger-remove-revert-prompt]`
-  (`source_bug: GROK-13041`, `coverage_type: regression`,
-  `derived_from: bug-library:dendrogram.yaml#GROK-13041`).
-- See: `bug-library/dendrogram.yaml#GROK-13041` (`status: fixed`,
-  `priority: p2`, `test_coverage: needed`).
+- See: `bug-library/dendrogram.yaml#GROK-13041` — marked `status:
+  fixed`, `priority: p2`.
 - See: `.claude/skills/grok-browser/references/dendrogram.md`
-  `## bug-grok-13041-filter-no-prompt` (DOM-validated 2026-06-03;
-  sort-prompt selectors flagged as follow-up MCP recon).
-- atlas entry derived from public/packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts#L326
-  (sort-overlay registration site; `Revert columns sort order to see
-  Dendrogram Tree` text).
-- Deferrals: the sort-prompt-dialog selectors are explicitly deferred
-  per the ref doc's Forward TODO — pinning them requires a follow-up
-  MCP recon round against `dev.datagrok.ai` (real dependency:
-  dialog-selectors not in the 2026-06-03 recon's selector validation
-  matrix). Per Lattice Rule 13 / A-MERIT-02 this is a cited real
-  technical dependency, not a TODO-add-later.
+  `## bug-grok-13041-filter-no-prompt`.
+- **Deferred.** The exact selectors for the remove/revert prompt
+  dialog haven't been pinned against the live UI yet; until they are,
+  the spec asserts the overlay text instead of the dialog selector
+  (see Scenario 2 step 2).

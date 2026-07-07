@@ -1,14 +1,9 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.routes.count
-  - notebooks.editor.utils
-  - notebooks.editor.utils.get-auth-token
-  - notebooks.editor.utils.remove-children
-  - notebooks.meta.render-preview
-  - notebooks.meta.get-view
 target_layer: apitest
 coverage_type: regression
+priority: p2
+realizes: []
 produced_from: atlas-driven
 realized_as:
   - notebooks-api-utils-coverage-api-spec.ts
@@ -49,24 +44,15 @@ gate_verdicts:
 
 # Notebooks — API Utilities and Route Coverage
 
-Covers the `notebooks.routes.count` server route, the `notebooks.editor.utils`
-JS helper module (grouping node plus the two container-free helpers:
-`getAuthToken` and `removeChildren`), and the `NotebookMeta` view-resolution
-helpers `renderPreview` and `getView`. These surfaces are exercisable through
-the JS API without a live Jupyter Docker container, filling the F-STRUCT-COVERAGE-01
-gap identified in cycle 2026-06-17-notebooks-migrate-01.
+Covers the server route that returns the number of saved notebooks, the small JS
+helper module used by the notebook editor (an auth-token getter and a DOM
+child-clearing helper), and the notebook metadata helpers that resolve and preview a
+notebook's view. These surfaces can all be exercised through the JS API without
+needing a live Jupyter Docker container.
 
-Deferred sub-features (require live container):
-- `notebooks.editor.utils.setup-environment` — calls container endpoint; deferred
-  because no deterministic container fixture is available.
-- `notebooks.editor.utils.edit-notebook` — materialises the .ipynb into the
-  container filesystem; same container dependency.
-- `notebooks.meta.apply` / `notebooks.meta.log-run` — call `notebooks.entity.apply`
-  which POSTs to the Docker convert endpoint (atlas `manual_only` rationale applies).
-
-# atlas entry derived from: core/server/datlas/lib/src/routers/notebooks.dart#L12
-# atlas entry derived from: public/packages/Notebooks/src/utils.js#L1
-# atlas entry derived from: core/client/xamgle/lib/src/meta/notebook_meta.dart#L108
+Not covered here (all require a live Jupyter container): setting up the editor's
+environment, materialising an uploaded `.ipynb` into the container filesystem, and
+applying/logging a notebook run (which POSTs to the Docker convert endpoint).
 
 ## Setup
 
@@ -142,9 +128,8 @@ Steps:
 
 Expected:
 - Step 2: `view` is non-null and `view.type === 'Notebook'`.
-- Covers `notebooks.meta.get-view` (the `NotebookMeta.getView` path resolves via
-  `View.byType("Notebook", params: {id})`) and `notebooks.meta.render-preview`
-  (the async view construction triggered by `View.fromViewAsync` in `renderPreview`).
+- This confirms both the view-resolution path (`View.byType("Notebook", params: {id})`)
+  and the async preview-rendering path (`View.fromViewAsync` in `renderPreview`) work.
 
 ### Scenario 5: Cleanup — delete the temporary test notebook
 
@@ -159,21 +144,16 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: all exercised surfaces are accessible through `grok.dapi.notebooks`
-  (HttpDataSource, routes the count/list/find/delete routes) and JS API function calls
-  (`grok.functions.call('Notebooks:notebookView')`) without requiring a live Docker container
-  or Playwright browser navigation.
-- Deferrals: `notebooks.editor.utils.setup-environment` and `notebooks.editor.utils.edit-notebook`
-  deferred — both call Docker container endpoints (`setupEnvironment` posts to the container's
-  environment-setup path; `editNotebook` POSTs the .ipynb to the container's filesystem). No
-  deterministic container fixture available (real dependency: live `Notebooks-jupyter-notebook`
-  container).
-- `notebooks.meta.apply` / `notebooks.meta.log-run` deferred — `NotebookMeta.apply` delegates
-  to `Notebook.apply` which posts to the Docker convert endpoint; the atlas marks
-  `notebooks.entity.apply` as `manual_only` for this reason.
-- `notebooks.editor.commands.mode` deferred — operates inside the JupyterLab iframe DOM
-  (atlas `manual_only` rationale: not reachable via platform selectors).
-- `notebooks.editor.environment-input` deferred — "currently disabled in rendering pipeline"
-  per atlas description; no automatable surface available.
-- See: public/help/compute/jupyter-notebook.md#Environments (covers notebooks.entity.environment,
-  notebooks.editor.environment-input — navigation pointer, not derivation source).
+- Deferred: setting up the editor's environment and materialising an uploaded `.ipynb`
+  into the container filesystem both call Docker container endpoints (`setupEnvironment`
+  posts to the container's environment-setup path; `editNotebook` POSTs the .ipynb to the
+  container's filesystem) and have no deterministic container fixture available — they
+  need a live Jupyter notebook container.
+- Applying a notebook run (and logging it) is deferred too — it delegates to code that
+  POSTs to the Docker convert endpoint, so it's covered only manually.
+- Switching editor command mode is deferred — it operates inside the JupyterLab iframe
+  DOM, which automated tests cannot reach.
+- The environment-selection input is deferred — it is currently disabled in the
+  rendering pipeline, so there's no surface to automate against.
+- See: `public/help/compute/jupyter-notebook.md#Environments` for background on notebook
+  environments.

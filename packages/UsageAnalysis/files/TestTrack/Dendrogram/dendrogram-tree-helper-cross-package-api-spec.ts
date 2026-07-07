@@ -1,12 +1,6 @@
-/* ---
-sub_features_covered: [dendrogram.api.get-tree-helper, dendrogram.api.get-dendrogram-service, dendrogram.api.dendrogram-service.inject-tree-for-grid]
---- */
 // Frontmatter extraction (pre-author hooks):
 //   target_layer: apitest
 //   pyramid_layer: absent
-//   sub_features_covered: [dendrogram.api.get-tree-helper,
-//     dendrogram.api.get-dendrogram-service,
-//     dendrogram.api.dendrogram-service.inject-tree-for-grid]
 //   ui_coverage_responsibility: [] (delegated_to: null - pure JS-API spec)
 //   related_bugs: []
 //   produced_from: atlas-driven

@@ -1,3 +1,14 @@
+---
+feature: filters
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: [filters.path.add-categorical-and-select, filters.path.reset-clears-all]
+realized_as:
+  - basic-operations-spec.ts
+related_bugs: []
+---
+
 1. Open spgi-100
 2. Open the Filter Panel
 

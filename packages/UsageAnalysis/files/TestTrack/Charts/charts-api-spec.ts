@@ -1,10 +1,6 @@
-/* ---
-sub_features_covered: [charts.radar, charts.sunburst, charts.tree, charts.timelines, charts.echart-base, charts.echart-base.table]
---- */
 // Frontmatter extraction (Edit X7):
 //   target_layer: apitest
 //   pyramid_layer: integration
-//   sub_features_covered: [charts.radar, charts.sunburst, charts.tree, charts.timelines, charts.echart-base, charts.echart-base.table]
 //   ui_coverage_responsibility: [] (no DOM driving — apitest layer)
 //   related_bugs: []
 //   produced_from: atlas-driven

@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.add-relation, projects.api.save, projects.shell.open, projects.shell.share-via-context-menu, projects.upload]
---- */
 // Thin smoke: save + rename + share on a single file source (full scope in satellite specs).
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '../spec-login';

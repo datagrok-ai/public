@@ -1,3 +1,14 @@
+---
+feature: boxplot
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - box-plot-spec.ts
+related_bugs: []
+---
+
 # Box plot tests (Playwright)
 
 All scenarios should start with the following sequence of events:

@@ -1,12 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.search.subsequence
-  - bio.search.subsequence.top-menu
-  - bio.search.subsequence.editor
-  - bio.search.subsequence.filter
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [bio.cp.subsequence-search]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/search.md
 migration_date: 2026-06-01
@@ -60,6 +57,12 @@ gate_verdicts:
         failure_keys: []
 ---
 
+# Bio | Search | Subsequence Search — filter panel search & reset
+
+Checks the **Bio | Search | Subsequence Search** filter-panel widget:
+searching for a subsequence narrows the table to matching rows, and
+clicking **Reset Filter** restores all rows.
+
 ## Setup
 
 1. Open the dataset `System.AppData/Bio/tests/filter_FASTA.csv`.
@@ -77,27 +80,8 @@ gate_verdicts:
 
 ## Notes
 
-- Atlas critical path `bio.cp.subsequence-search` (priority p0)
-  covers this end-to-end flow: open sequences dataset → Subsequence
-  Search top-menu → filter widget docks into Filters panel → filter
-  rows by subsequence query → Reset Filter restores all rows.
-- Atlas sub-features covered:
-  `bio.search.subsequence` (umbrella),
-  `bio.search.subsequence.top-menu`,
-  `bio.search.subsequence.editor` (Macromolecule-column picker —
-  runs non-interactively on single-Macromolecule-column datasets like
-  `filter_FASTA.csv`; this is the `unresolved_ambiguities` entry),
-  `bio.search.subsequence.filter` (`bioSubstructureFilter` widget).
-- Helper coverage: `bio.flow.subsequence-search` in helpers-registry
-  (see `.claude/skills/grok-browser/references/bio.md:202`)
-  documents the selector surface and the `14 → 1 → 14 trueCount`
-  invariant.
-- Chain context (`scenario-chains/bio.yaml`): `pyramid_layer:
-  integration` (multi-subsystem path top-menu → filter widget
-  docking → filter-panel input → grid-filter callback). The
-  ui-smoke slot is held by `manage.md` (Rule 1 cardinality), so
-  this scenario carries `coverage_type: regression`.
-- `related_bugs: []` — no bug in `bug-library/bio.yaml` intersects
-  `sub_features_covered`. GROK-16111 (`bio.search.similarity.*`)
-  is a sibling-search-mode bug that does not apply to Subsequence
+- The Macromolecule-column picker in the search dialog runs
+  non-interactively here, since `filter_FASTA.csv` only has one
+  Macromolecule column to pick from.
+- GROK-16111 (a Similarity Search bug) doesn't apply to Subsequence
   Search.

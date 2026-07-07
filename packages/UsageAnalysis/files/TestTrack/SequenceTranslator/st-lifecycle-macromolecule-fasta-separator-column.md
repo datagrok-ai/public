@@ -1,4 +1,21 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [macromolecule_fasta_separator_column]
+realized_as:
+  - st-lifecycle-macromolecule-fasta-separator-column-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — Macromolecule FASTA/Separator Column Lifecycle
+
+Checks that Macromolecule columns using non-HELM notations (cyclized/separator
+format, Axolabs) are correctly recognized and can be converted, combined, and
+translated through SequenceTranslator — including PolyTool's automatic pivot
+through HELM and the detector that attaches the right notation handler to
+cyclized sequences.
 
 ## Setup
 

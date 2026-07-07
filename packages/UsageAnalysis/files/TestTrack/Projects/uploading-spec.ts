@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.api.files.sync, projects.api.save, projects.upload]
---- */
 // Source-matrix scenario covering uploading.md cases 1-6, 8, 9 in both Sync ON and Sync OFF variants.
 // Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
 // before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.

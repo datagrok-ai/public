@@ -1,12 +1,5 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.browser
-  - notebooks.browser.render-card
-  - notebooks.menu.edit
-  - notebooks.editor.edit-mode
-  - notebooks.editor.commands.cells
-  - notebooks.editor.commands.run
 target_layer: manual-only
 pyramid_layer: manual
 ui_coverage_responsibility:
@@ -92,6 +85,12 @@ gate_verdicts:
 
 # Edit Notebook
 
+Verifies editing a notebook in JupyterLab and running a cell: opening the existing
+`demog` notebook, switching from the read-only HTML view into edit mode, adding Python
+code to a cell, and running it to see the output. Steps 3-5 must be run by hand because
+the JupyterLab editor lives inside a sandboxed iframe that automated browser tests
+cannot reach.
+
 ## Setup
 
 - A notebook named "demog" must already exist on the server (created by the `create.md` scenario:
@@ -103,8 +102,6 @@ gate_verdicts:
 
 **Manual-only.** Steps 3–5 require JupyterLab edit mode, which runs inside a sandboxed iframe.
 Cell content and kernel execution are not reachable by Datagrok platform selectors.
-Atlas `manual_only`: `notebooks.editor.edit-mode`, `notebooks.editor.commands.cells`,
-`notebooks.editor.commands.run`.
 
 1. Go to **Browse > Platform > Notebooks**.
 2. Find the notebook named "demog" and double-click it.
@@ -132,17 +129,7 @@ Atlas `manual_only`: `notebooks.editor.edit-mode`, `notebooks.editor.commands.ce
 - Known regression risk: **GROK-6630** — after saving a notebook and re-entering Edit, the editor
   may serve stale (pre-save) content instead of the current persisted state. If step 3 is run
   immediately after a prior save, verify the content reflects the saved version before adding code.
-- Step 2 depends on the "demog" notebook having been created by the `create.md` scenario in the
-  same chain.
-- Step-mapping table (D-STEP-01):
-
-  | Original step | Disposition | Migrated step |
-  |---|---|---|
-  | 1. Go to Browse > Platform > Notebooks | preserved | Step 1 |
-  | 2. Find "demog" and double-click | preserved | Step 2 |
-  | 3. Click Edit in menu ribbon | preserved | Step 3 |
-  | 4. Add Python code to notebook body (code block had missing closing ``` in source) | preserved + source_text_fix applied | Step 4 |
-  | 5. Click Play (was unnumbered in source — continued from malformed code fence) | preserved + source_text_fix applied | Step 5 |
+- Step 2 depends on the "demog" notebook having been created by the `create.md` scenario.
 
 ---
 {

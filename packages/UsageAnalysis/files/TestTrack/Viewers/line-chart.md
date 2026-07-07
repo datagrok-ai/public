@@ -1,3 +1,14 @@
+---
+feature: linechart
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - line-chart-spec.ts
+related_bugs: [GROK-17835]
+---
+
 # Line chart tests (Playwright)
 
 All scenarios should start with the following sequence of events:
@@ -235,11 +246,11 @@ Setup: Close all, open SPGI (not demog)
 ## Selection checkboxes
 
 1. Close all and open demog
-1. On the viewer, set X to AGE, Y to HEIGHT
-2. Hold Shift and drag a rectangle to select points — verify selection in the grid
-3. Go to the Context Panel > Selection
-4. Toggle the available checkboxes (e.g., Show Selected Only, Invert Selection) — verify the line chart interaction updates accordingly
-5. Save the layout, close the line chart, apply the layout — verify selection settings are preserved
+2. On the viewer, set X to AGE, Y to HEIGHT
+3. Hold Shift and drag a rectangle to select points — verify selection in the grid
+4. Go to the Context Panel > Selection
+5. Toggle the available checkboxes (e.g., Show Selected Only, Invert Selection) — verify the line chart interaction updates accordingly
+6. Save the layout, close the line chart, apply the layout — verify selection settings are preserved
 
 ## Data panel checkboxes
 

@@ -1,3 +1,14 @@
+---
+feature: networkdiagram
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - network-diagram-spec.ts
+related_bugs: []
+---
+
 ### Network diagram
 
 1. Open the **demog** dataset.

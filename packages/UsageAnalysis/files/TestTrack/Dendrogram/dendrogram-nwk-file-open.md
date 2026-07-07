@@ -1,11 +1,9 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.fileviewer.newick
-  - dendrogram.api.tree-helper.newick-to-df
-  - dendrogram.viewer.dendrogram-app
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [dendrogram.cp.newick-file-open-via-files-browser]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -34,14 +32,8 @@ gate_verdicts:
 
 # Dendrogram — Open a .nwk / .newick file via the Files browser
 
-Realizes atlas critical path `dendrogram.cp.newick-file-open-via-files-browser`
-(priority `p2`, `derived_from: public/packages/Dendrogram/src/package.ts#L285`)
-and atlas top-level interaction `dendrogram.cross.newick-file-to-viewer`
-(`coverage_type: smoke`,
-`sub_features: [dendrogram.fileviewer.newick,
-dendrogram.api.tree-helper.newick-to-df, dendrogram.viewer.dendrogram-app]`).
-
-Two file-role registrations are exercised end-to-end:
+Covers opening and previewing a `.nwk` / `.newick` file from the Files
+browser. Two file-role handlers are exercised end-to-end:
 
 - `importNwk` (the `meta.role: fileHandler` for `ext: nwk, newick`,
   `public/packages/Dendrogram/src/package.ts#L274-L294`) — fires when the user
@@ -203,36 +195,9 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: this is a Files-browser UI flow that drives
-  `meta.role: fileHandler` and `meta.role: fileViewer` registrations
-  (file open / file preview), then mounts viewer surfaces
-  (`DendrogramApp`, `PhylocanvasGL`) — none of which is observable from
-  a JS-API-only harness without a real browser. `playwright` is the
-  required layer. The chain's `gap_description` proposes
-  `pyramid_layer: integration` for this scenario; that is a chain-side
-  classification, not a Gate A frontmatter check, and is left for the
-  chain-analyzer to record under `dependency_graph[]`.
-- coverage_type rationale: atlas critical_path priority is `p2` →
-  `regression` per the STEP E mapping table (`p0 → smoke`, `p1 →
-  regression`, `p2/p3 → discretion, default regression`); the chain's
-  proposed_action also specifies `regression`. No atlas `edge_cases[]`
-  entry maps directly onto this scenario, so the priority-derived
-  default applies.
-- atlas entry derived from public/packages/Dendrogram/src/package.ts#L285
-  (the `importNewick` static handler that backs the `Dendrogram:importNwk`
-  fileHandler registration).
-- See:
-  `.claude/skills/grok-browser/references/dendrogram.md#nwk-file-open` —
-  the ref doc's `## nwk-file-open` section flags that the actual DOM
-  selectors of `DendrogramApp` and the `PhylocanvasGL` preview view
-  were NOT captured by the 2026-06-03 live MCP recon (no convenient
-  `.nwk` sample was on disk under `AppData/Dendrogram/`). The
-  selectors used in this scenario
-  (`[name="viewer-Dendrogram"]`, `[name="viewer-PhylocanvasGL"]`,
-  the Files-browser row selector, the preview-pane selector) are
-  derived from atlas + source citations; the spec author MUST pin
-  them against the live UI via a follow-up MCP recon before the
-  Playwright spec is determinized. Listed as an
-  `unresolved_ambiguities[]` candidate for the next-cycle Critic-A
-  re-entry, but not blocking authoring of this scenario.
-- No deferrals on this scenario.
+- Selector note: the DOM selectors used for the `DendrogramApp` view
+  and the `PhylocanvasGL` preview view (`[name="viewer-Dendrogram"]`,
+  `[name="viewer-PhylocanvasGL"]`, the Files-browser row selector, the
+  preview-pane selector) were not verified against a live `.nwk`
+  sample during authoring — confirm them against the running UI
+  before relying on this spec as a regression baseline.

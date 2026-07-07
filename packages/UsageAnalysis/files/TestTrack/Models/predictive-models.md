@@ -1,9 +1,25 @@
-﻿# Predictive models: end-to-end lifecycle (Train / Apply / Apply on new dataset / Delete)
+---
+feature: models
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: [train-regression-end-to-end]
+realized_as:
+  - predictive-models-spec.ts
+related_bugs: []
+---
+
+# Predictive models: end-to-end lifecycle (Train / Apply / Apply on new dataset / Delete)
+
+Canonical smoke test of the predictive-model lifecycle: train two
+models on the accelerometer demo dataset, apply each of them (both
+to the original table and to an unrelated synthetic dataset), then
+delete both from **Browse > Platform > Models**.
 
 ## Setup
 
 - Test account has access to **Demo > Sensors > accelerometer.csv**.
-- Test account has access to **Tools > Dev > Open test dataset** (dev-mode tooling — see Notes).
+- Test account has access to **Tools > Dev > Open test dataset** (dev-mode tooling).
 - The EDA package is installed (provides the `Eda: PLS Regression` and `Eda: Linear Regression` engines).
 
 ## Scenarios

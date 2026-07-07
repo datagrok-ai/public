@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [models.api.save, models.api.suggested, models.command.apply, models.command.compare, models.command.delete, models.command.train, models.engines.api.apply, models.postprocessing.binary-classification, models.preprocessing.ignore-missing, models.preprocessing.impute-missing, models.view.browser, models.view.training, models.view.training.actions, models.workflow.apply-dialog, models.workflow.apply-model, models.workflow.compare-models, models.workflow.remove]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {setPredict, selectFeaturesByName} from '../helpers/models-helpers';

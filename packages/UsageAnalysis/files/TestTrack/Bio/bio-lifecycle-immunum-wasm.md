@@ -1,18 +1,24 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.engines.numbering-immunum
-  - bio.annotate.numbering-scheme
-  - bio.api.get-seq-helper
-  - bio.lifecycle.init
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [save_project_with_analysis]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
 candidate_helpers: []
 unresolved_ambiguities: []
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      This scenario does not assert on the WASM module's internal state
+      (e.g. whether a fresh session re-uses vs. re-loads the numbering-engine
+      module handle) — only on its observable outputs (the numbering result).
+      Asserting internal module state would require test-only hooks, so it is
+      deferred.
+    verdict_status: SCOPE_REDUCTION
 realized_as:
   - bio-lifecycle-immunum-wasm-spec.ts
 gate_verdicts:
@@ -44,33 +50,16 @@ gate_verdicts:
     failure_keys: []
 ---
 
-# Bio — `immunum_wasm` source-class lifecycle
+# Bio — Antibody numbering (Immunum WASM): run, save & reopen
 
-Proactive lifecycle scenario for the `immunum_wasm` source
-class per
-`scenario-chains/bio.yaml#proactive_lifecycle_specs[5]`. Walks
-the immunum WASM module through the only non-agnostic
-`dep_lifecycle_op` declared in atlas
-`dep_lifecycle_ops[].affected_source_classes` that touches the
-shape (the `[all]` shorthand on
-`save_project_with_analysis`): load WASM in worker (bundled
-with package version) → IMGT/Kabat numbering on an antibody
-column via the Immunum engine
-(`bio.engines.numbering-immunum`) → save project with the
-numbering output → reopen and verify the numbering annotation
-survives the round trip.
+Runs antibody numbering (IMGT/Kabat schemes) via the Immunum WASM
+engine on an antibody sequence column, then checks that the
+numbering output survives a project save and reopen.
 
-`external_deps: []` per chain `proactive_lifecycle_specs[5]`
-— the WASM asset travels with the package version and runs
-in-process in a dedicated worker; no runtime entity-type
-dependency. `env_requirements: []` — runs against a synthetic
-antibody-sequences dataset.
-
-This is the smallest of the six proactive lifecycle cells per
-chain rationale: "Only one non-agnostic op affects this source
-class (`save_project_with_analysis` via [all] shorthand) since
-the WASM asset travels with the package version and has no
-runtime entity-type dep — load is in-process."
+The Immunum WASM module ships bundled with the Bio package and loads
+in-process in a worker — no external server or file-share dependency
+is needed, so this scenario runs against a small synthetic antibody
+dataset built in-memory.
 
 ## Setup
 
@@ -86,7 +75,7 @@ runtime entity-type dep — load is in-process."
   `bio-lifecycle-immunum-wasm-${Date.now()}`.
 - Service-surface dependency:
   `await grok.functions.call('Bio:getSeqHelper')` is used in
-  Step 1 (atlas `bio.api.get-seq-helper`).
+  Step 1.
 - Cleanup: Step 4 deletes the saved project and closes any
   open viewers.
 
@@ -95,22 +84,16 @@ runtime entity-type dep — load is in-process."
 ### Scenario 1: Load WASM and run numbering
 
 Steps:
-1. Trigger `Bio:initBio` if not yet initialized (atlas
-   `bio.lifecycle.init`). Verify `getSeqHelper()` resolves
-   (atlas `bio.api.get-seq-helper`).
+1. Trigger `Bio:initBio` if not yet initialized. Verify
+   `getSeqHelper()` resolves.
 2. Materialize the antibody-sequences DataFrame in memory
    (CSV-from-string into `DG.DataFrame`). Verify the
-   detector classifies the sequence column as Macromolecule
-   (atlas `bio.detector` — not in this scenario's
-   `sub_features_covered` because the immunum lifecycle is
-   the primary surface, not the detector).
+   detector classifies the sequence column as Macromolecule.
 3. Trigger ribbon `Bio | Annotate | Apply Numbering
-   Scheme...` (atlas `bio.annotate.numbering-scheme`). In the
-   dialog, select the Immunum engine (`meta.role:
-   antibodyNumbering` registration; per atlas
-   `bio.engines.numbering-immunum`) and the IMGT scheme.
-4. Verify the numbering result. Per atlas
-   `bio.engines.numbering-immunum`:
+   Scheme...`. In the dialog, select the Immunum engine
+   (`meta.role: antibodyNumbering` registration) and the IMGT
+   scheme.
+4. Verify the numbering result:
    - A 5-column result DataFrame is produced
      (`position_names`, `chain_type`, `annotations_json`,
      `numbering_detail`, `numbering_map`).
@@ -135,11 +118,7 @@ Steps:
    (NOT Ctrl+S); project name from Setup; **Data Sync**
    toggle ON. Cancel the auto-share dialog if it appears.
    Verify `grok.dapi.projects.find(<id>)` returns the saved
-   project. Atlas
-   `dep_lifecycle_ops[save_project_with_analysis]`
-   (`affected_source_classes: [all]` shorthand applies to
-   `immunum_wasm` per chain
-   `proactive_lifecycle_specs[5].rationale`).
+   project.
 2. Verify the project record persists the numbering output
    columns (column shape + values).
 
@@ -183,69 +162,16 @@ Expected:
 
 ## Notes
 
-- Origin: chain rev 8
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[5]`
-  (`source_class: immunum_wasm`, `spec_target:
-  bio-lifecycle-immunum-wasm-spec.ts`). Lands the
-  intent-layer `.md` realization that
-  `F-PROACTIVE-COVERAGE-01` (SCOPE_REDUCTION, cycle
-  2026-06-01-bio-migrate-01) cited as the gap. `.ts`
-  realization (`spec_target`) is downstream Automator /
-  Phase C, not gated by F.
-- atlas entry derived from
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[5]`
-  (chain author, cycle 2026-05-30-bio-chain-bootstrap-01).
-- `dep_lifecycle_ops` exercised (per
-  `proactive_lifecycle_specs[5].bundled_ops`):
-  `save_project_with_analysis` (Scenario 2.1). Only one
-  non-agnostic op affects this source class — chain
-  rationale clarifies the lifecycle surface is minimal
-  because the WASM asset is bundled with the package
-  version and load is in-process (no separate
-  load_xxx / save_xxx op against immunum_wasm).
-- target_layer rationale: `playwright` — the lifecycle
-  spans the `Bio | Annotate | Apply Numbering Scheme...`
-  ribbon path + the Save Project ribbon path; both
-  surfaces require DOM driving. `apitest` covers the
-  Immunum engine result-shape at the API layer but does
-  not exercise the ribbon dispatch nor the project save
-  UI. JS API substitutes are used for project persistence
-  assertions per the same pattern as sibling
-  `bio-lifecycle-*.md` scenarios.
-- Sibling tests considered:
-  - Antibody numbering engine API tests (if present under
-    `public/packages/Bio/src/tests/`) cover the
-    `applyNumberingScheme` engine surface at the API
-    layer; this scenario adds the UI ribbon-dispatch +
-    project-persistence lifecycle layer.
-- This scenario covers 4 sub_features
-  (`F-STRUCT-DENSITY-01` floor: 2 — above;
-  `F-STRUCT-INTERACTION-01` floor: 3 — satisfied per
-  scenario). Scenario cardinality (per `## Scenarios`
-  section): 4 (one cleanup + three substantive lifecycle
-  scenarios) — meets the >= 2 scenarios floor.
-- Manual-only subset: none of the four covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas
-  rev 3 `manual_only[]` list).
-- `coverage_type: regression` per STEP E heuristic: this is
-  general coverage of the immunum_wasm lifecycle shape (not
-  a single critical_path golden path → not smoke; not a
-  boundary value → not edge; not stress/latency-sensitive
-  → not perf). Atlas `bio.cp.numbering-scheme` (priority
-  p1) informs the workflow; priority p1 maps to
-  `coverage_type: regression`.
-- Deferrals: none mandatory. The WASM-loading mechanism
-  (lazy init pattern) is exercised implicitly via the
-  first-call path in Scenario 1.3 and the re-load path in
-  Scenario 3.3 — no explicit WASM module-handle assertions
-  are made beyond observable outputs (would require
-  test-internal hooks).
-- env_requirements: `[]` per chain
-  `proactive_lifecycle_specs[5]`. No external dependencies
-  — WASM asset travels with the package version, loads
-  in-process in a dedicated worker.
-- Related-bug context: `related_bugs: []` per chain
-  `proactive_lifecycle_specs[5].bugs_reinforcing` (empty).
+- Sibling coverage: dedicated API-level tests for the Immunum
+  numbering engine (if present under `Bio/src/tests/`) cover the
+  `applyNumberingScheme` call directly; this scenario adds the UI
+  ribbon-dispatch and project-persistence layers those tests don't
+  exercise.
+- Deferrals: this scenario doesn't assert on the WASM module's
+  internal state (e.g. whether a fresh session re-uses vs. re-loads
+  the module handle) — only on its observable outputs (the numbering
+  result). Asserting internal module state would require test-only
+  hooks.
 
 ---
 {
