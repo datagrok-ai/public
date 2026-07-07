@@ -289,6 +289,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     `products and (in depth-first mode) reacts each one with original BBs. Increase for deeper ` +
     `libraries (capped at ${MAX_ROUNDS} — a step tab is built for every round, and product counts ` +
     `grow combinatorially with each one).`);
+  // `min`/`max` above only affect the tooltip/spinner, not actual validation — an out-of-range value
+  // (e.g. 99) still blocked Run via validate() while the step-tab strip silently clamped to
+  // MAX_ROUNDS and rendered as if 10 rounds were accepted, disagreeing with the disabled button.
+  // Ties the invalid state to the field the user is actually editing, matching how other required
+  // inputs (e.g. Building blocks SMILES column) already show red/invalid styling in this app.
+  numRoundsInput.addValidator((v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 1) return 'Must be at least 1.';
+    if (n > MAX_ROUNDS) return `Must be at most ${MAX_ROUNDS} — the step strip shows the first ${MAX_ROUNDS} rounds only.`;
+    return null;
+  });
 
   const depthFirstInput = ui.input.bool('Depth first', {value: config.enumeration.depth_first});
   depthFirstInput.setTooltip(
@@ -599,7 +610,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (!prev) return;
     mountedViewers.delete(host);
     for (const v of prev) {
-      try {v.close();} catch (e) {console.warn('Could not close previous viewer:', e);}
+      // Expected on initial load: the panel's first render (inside makeDataPanel's constructor)
+      // can still be mid-Dart-side-construction when the second, explicit `.render()` call (see
+      // the end of buildEnumeratorView) supersedes it moments later — closing that half-built
+      // viewer throws (confirmed: root-caused this exact race, tried removing the second render
+      // to avoid it, that instead made the grid stay empty on some loads — reverted). Not
+      // actionable, so don't warn; only surface a genuinely unexpected failure.
+      try {v.close();} catch (e) {
+        if (!(e instanceof TypeError)) console.warn('Could not close previous viewer:', e);
+      }
     }
   }
   // Neither of the above runs on VIEW close — only on remount/no-table. Close every still-mounted
@@ -1624,27 +1643,48 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // The platform's own `.d4-ribbon-group`/`.d4-ribbon-item` chrome (background + box-shadow +
   // border) reads as a stray "shadow" under the Enumerate button and chips once this view's own
   // content renders alongside it — the Markush Enumerator (pt-chem-enum-dialog.ts) hits the same
-  // thing and strips it the same way. Both this and resolving runBtnRibbonItem (see runBtn's own
-  // comment above) need a 0ms setTimeout since the ribbon DOM isn't attached yet at this point in
-  // view construction — two independent fixups sharing that one wait, done in a single DOM pass
-  // (the ribbon-item that contains runBtn is captured while already iterating over ribbon items,
-  // rather than re-walking the tree with a separate `.closest()` call).
-  setTimeout(() => {
-    view.root.closest('.d4-root')?.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item')
-      .forEach((el) => {
-        el.style.background = 'transparent';
-        el.style.boxShadow = 'none';
-        el.style.border = 'none';
-        if (el.classList.contains('d4-ribbon-item') && el.contains(runBtn)) runBtnRibbonItem = el;
+  // thing and strips it the same way.
+  // `.d4-root` is NOT an ancestor of the ribbon — it's the data-grid viewer's own internal wrapper
+  // class (confirmed live: `document.querySelector('.d4-root')` resolves to the step-preview grid's
+  // root div, `d4-layout-root d4-root d4-viewer d4-grid`), so `view.root.closest('.d4-root')`
+  // always returned null and this whole fixup silently never ran. Walk up from `runBtn` itself
+  // (reliably connected once the ribbon exists) instead of down from a wrong anchor.
+  // Also confirmed live: the ribbon-item is found on the very first attempt, but something in the
+  // platform's own startup rendering (RDKit WASM init, other package init — the app takes ~10s to
+  // settle) wipes the inline style back out afterward, at least once, before things stabilize — a
+  // single apply-and-stop wasn't enough even once the element existed. Keep reasserting the style
+  // on every poll tick instead of stopping at first find; only the listener attach needs a
+  // once-only guard.
+  let ribbonFixupListenerAttached = false;
+  function applyRibbonFixup(attempt = 0): void {
+    const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
+    if (el) {
+      runBtnRibbonItem = el;
+      document.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item').forEach((g) => {
+        g.style.background = 'transparent';
+        g.style.boxShadow = 'none';
+        g.style.border = 'none';
       });
-    runBtnRibbonItem?.addEventListener('click', (e) => {
-      if (runBtn.disabled && lastValidationMsg)
-        ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
-    });
-    bindRunTooltip(validate());
-  }, 0);
+      if (!ribbonFixupListenerAttached) {
+        ribbonFixupListenerAttached = true;
+        el.addEventListener('click', (e) => {
+          if (runBtn.disabled && lastValidationMsg)
+            ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
+        });
+        bindRunTooltip(validate());
+      }
+    }
+    if (attempt < 200) setTimeout(() => applyRibbonFixup(attempt + 1), 50);
+  }
+  applyRibbonFixup();
 
   // Render each component panel (step strip + "All steps" grid) and run validation once wired up.
+  // NOTE: this LOOKS redundant with the renderGrid() that buildStepTabs(0) already ran inside
+  // makeDataPanel's constructor, and removing it does silence the "Could not close previous
+  // viewer" warning below — but it is NOT actually redundant: doing so made the initial grid
+  // render into a not-yet-sized host and stay empty on a real, reproducible fraction of loads
+  // (confirmed live — reverted after finding this out the hard way). Keep it; the warning is a
+  // separate, cosmetic problem (see mountDf/closeMountedViewers) that needs its own fix.
   templatesCtl.render();
   bbsCtl.render();
   reagentsCtl.render();
