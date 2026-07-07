@@ -355,6 +355,19 @@ export class PackageFunctions {
           autoDetectOrganism(df);
           const tv = grok.shell.addTableView(df);
           grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
+          // Candidates arrive with the DE result already computed (the parser
+          // sets proteomics.de_complete), so the pipeline's DE step — which is
+          // where the Report path auto-opens the volcano — never runs. Open the
+          // volcano here instead so both paths land the user on the same primary
+          // deliverable. Best-effort: skip silently if the volcano's columns are
+          // somehow absent, exactly as the DE-completion path tolerates.
+          try {
+            tv.addViewer(createVolcanoPlot(df));
+          } catch (volcanoErr: any) {
+            grok.shell.warning(
+              `Imported, but could not auto-open the volcano: ${volcanoErr?.message ?? volcanoErr}. ` +
+              `Open it via Proteomics | Visualize | Volcano Plot.`);
+          }
           dockComparisonFilterIfMultiContrast(tv, df);
           focusProtein(df);
         } catch (e: any) {
