@@ -128,6 +128,7 @@ test('Legend color consistency', async ({page}) => {
         const __df = (window as any).grok.shell.tv.dataFrame;
         const __ti = __df.getTableInfo();
         proj.addChild(__ti);
+        proj.addChild((window as any).grok.shell.tv.saveLayout());
         // Persist the table entity BEFORE saving the project, else project_relations
         // references a not-yet-persisted entity id -> FK violation on the CI stack.
         await (window as any).grok.dapi.tables.uploadDataFrame(__df);

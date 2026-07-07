@@ -111,6 +111,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
         const __df = (window as any).grok.shell.tv.dataFrame;
         const __ti = __df.getTableInfo();
         proj.addChild(__ti);
+        proj.addChild((window as any).grok.shell.tv.saveLayout());
         await (window as any).grok.dapi.tables.uploadDataFrame(__df);
         await (window as any).grok.dapi.tables.save(__ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
@@ -536,6 +537,7 @@ test('Legend scatterplot — grid color coding linear/categorical', async ({page
         const __df = (window as any).grok.shell.tv.dataFrame;
         const __ti = __df.getTableInfo();
         proj.addChild(__ti);
+        proj.addChild((window as any).grok.shell.tv.saveLayout());
         await (window as any).grok.dapi.tables.uploadDataFrame(__df);
         await (window as any).grok.dapi.tables.save(__ti);
         const saved = await (window as any).grok.dapi.projects.save(proj);
