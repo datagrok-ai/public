@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {parseSpectronautCandidatesText} from '../parsers/spectronaut-candidates-parser';
-import {dockComparisonFilterIfMultiContrast} from '../package';
+import {dockComparisonFilterIfMultiContrast, openCandidatesAnalysisView} from '../package';
 import {SEMTYPE} from '../utils/proteomics-types';
 import {_package} from '../package-test';
 
@@ -106,6 +106,33 @@ category('SpectronautCandidates E2E', () => {
       const docked = dockComparisonFilterIfMultiContrast(tv, df);
       expect(docked, false);
       expect(hasFiltersViewer(tv), false);
+    } finally {
+      tv.close();
+    }
+  });
+
+  // --- Auto-volcano on import (parity with the Report path's DE-completion
+  //     volcano; Candidates skip DE because it's already computed). ---
+
+  test('candidates import auto-opens the volcano', async () => {
+    const df = await parseSpectronautCandidatesText(candidatesTsv([
+      ['T1 / Control', 'P1', 'G1', '2.0', '0.001', '0.0001'],
+      ['T1 / Control', 'P2', 'G2', '-1.7', '0.002', '0.0005'],
+      ['T1 / Control', 'P3', 'G3', '0.1', '0.9', '0.8'],
+    ]));
+    const tv = openCandidatesAnalysisView(df);
+    try {
+      let scatterCount = 0;
+      let volcano: DG.ScatterPlotViewer | null = null;
+      for (const v of tv.viewers) {
+        if (v.type === DG.VIEWER.SCATTER_PLOT) {
+          scatterCount++;
+          volcano = v as DG.ScatterPlotViewer;
+        }
+      }
+      expect(scatterCount, 1); // exactly one auto-volcano, no duplicates
+      // It is the DE volcano: X is the fold-change column.
+      expect(volcano!.props.xColumnName, 'log2FC');
     } finally {
       tv.close();
     }

@@ -275,15 +275,17 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     project.addChild(viewInfo);
 
     // ─── Step 6.6 — re-create the enrichment Up/Down 2×2 on the published
-    // enrichment view, and bundle the chart-backing top-N subset tables so the
-    // charts have data on reopen (they bind to clones, not frozenEnrich). ─────
+    // enrichment view. The charts bind to frozenEnrich itself (dockEnrichmentCharts
+    // adds the derived negLog10FDR / ~enrichChartTop columns onto it and splits
+    // Up/Down via per-viewer formula filters), so there are no chart-backing
+    // subset tables to bundle — the enrichment frame is fully self-contained and
+    // the charts survive the project round-trip. ─────────────────────────────
     let enrichViewInfo: any = null;
-    const enrichSubsets: DG.DataFrame[] = [];
     if (frozenEnrich) {
       pi.description = 'Re-rendering enrichment charts...';
       const enrichTv = grok.shell.addTableView(frozenEnrich);
       await delay(100);
-      enrichSubsets.push(...dockEnrichmentCharts(enrichTv, frozenEnrich));
+      dockEnrichmentCharts(enrichTv, frozenEnrich);
       await delay(100);
       enrichViewInfo = enrichTv.getInfo();
       project.addChild(enrichViewInfo);
@@ -295,13 +297,9 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     await grok.dapi.tables.uploadDataFrame(frozen);
     await grok.dapi.tables.save(frozen.getTableInfo());
     if (frozenEnrich) {
+      // Upload AFTER dockEnrichmentCharts so the derived chart columns persist.
       await grok.dapi.tables.uploadDataFrame(frozenEnrich);
       await grok.dapi.tables.save(frozenEnrich.getTableInfo());
-    }
-    for (const sub of enrichSubsets) {
-      project.addChild(sub.getTableInfo());
-      await grok.dapi.tables.uploadDataFrame(sub);
-      await grok.dapi.tables.save(sub.getTableInfo());
     }
     await grok.dapi.views.save(viewInfo);
     if (enrichViewInfo) await grok.dapi.views.save(enrichViewInfo);
