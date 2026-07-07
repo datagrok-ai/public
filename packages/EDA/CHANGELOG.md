@@ -1,5 +1,9 @@
 # EDA changelog
 
+## v.next
+
+* Moved the EDA Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
 ## 1.6.2 (2026-06-23)
 
 Fix the package build
