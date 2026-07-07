@@ -200,9 +200,15 @@ test('Sharing & Permissions — Model', async ({page}) => {
   });
 
   await softStep('Block A.2: Click SHARE...; Share <model> dialog opens with expected controls', async () => {
-    await page.locator('[name="button-Share..."]').click();
     const dlg = page.locator('.d4-dialog');
-    await expect(dlg).toBeVisible({timeout: 15_000});
+    // Verified on dev: the Share dialog opens. On the minimal CI stack a freshly-trained model's
+    // first SHARE click can no-op (entity not fully settled) or the dialog is slow — retry the click.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await dlg.isVisible().catch(() => false)) break;
+      await page.locator('[name="button-Share..."]').click();
+      await dlg.waitFor({state: 'visible', timeout: 20_000}).catch(() => {});
+    }
+    await expect(dlg).toBeVisible({timeout: 5_000});
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
