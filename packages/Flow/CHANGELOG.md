@@ -66,6 +66,25 @@
   concurrent same-function call while the dialog is open must execute uncanceled and must not
   resolve the round-trip.
 
+### Only ready nodes run
+
+* **Runs (autorun and the manual Run/Debug) never execute an unready node** — one missing a
+  required input or property — nor anything downstream of it. Previously a plot with no table, a
+  Select Column / Add Table View with no table, or a function missing a required column would be
+  emitted and fault at run time (or silently do nothing); now the whole downstream cone of every
+  unready node is pruned from the run and the ready subgraph runs on its own.
+  * **Readiness = required inputs + required properties.** Node requirements were widened beyond the
+    func/viewer required *inputs* (`requiredInputs`) with a new **`requiredProps`** (panel
+    properties that must be filled). Declared on the custom nodes that needed it: **Select Column**
+    (`table` + `columnName`), **Select Columns** (`table` + `columnNames`), **Select Table**
+    (`tableName`), **Add Table View** (`table`). `nodeMissingRequirements` unions both and drives
+    the run gate **and** the on-node **"Needs input"** hint (which now flags an empty Select Table
+    name, an unset column, …, not just unwired sockets).
+  * **Autorun** silently drops the unready cone; if nothing is left ready, it waits for the next
+    edit. **Manual Run/Debug** runs the ready subgraph and shows a one-line warning naming the
+    nodes it skipped; if *nothing* is ready it says so instead of running an empty script.
+  * `ExecutionController.runnableNodes()` exposes the ready set (pure — used by the gate and tests).
+
 ### Output preview: add to workspace, in-place column view
 
 * **"Add to workspace" is now on every preview**, not just the context-panel dataframe row — a small

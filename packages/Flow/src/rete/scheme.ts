@@ -78,6 +78,12 @@ export class FlowNode extends ClassicPreset.Node<
    *  Populated by `FuncNode`/output nodes; drives the "Needs input" hint. */
   requiredInputs: string[] = [];
 
+  /** Property keys that must carry a non-empty value for the node to run — the
+   *  node's non-socket requirements (Select Column's column name, Select Table's
+   *  table name). The panel-property analogue of {@link requiredInputs}; also
+   *  drives the "Needs input" hint and the run gate. */
+  requiredProps: string[] = [];
+
   /** Per-slot descriptions (from the DG.Func param `description`/`caption`),
    *  keyed by input/output slot key — shown as hover tooltips on the node's
    *  sockets and in the context panel. Empty entries are omitted. */
@@ -163,4 +169,25 @@ export function missingRequiredInputs(node: FlowNode, isConnected: (key: string)
     missing.push(input?.label ?? key);
   }
   return missing;
+}
+
+/** The labels of a node's {@link FlowNode.requiredProps} left empty (undefined /
+ *  null / blank) — the panel-property requirements the user still has to fill
+ *  (a Select Column's column name, a Select Table's table name). */
+export function missingRequiredProps(node: FlowNode): string[] {
+  const missing: string[] = [];
+  for (const key of node.requiredProps) {
+    const v = node.properties[key];
+    if (v === undefined || v === null || String(v).trim() === '') missing.push(key);
+  }
+  return missing;
+}
+
+/** Everything the user still has to provide before the node can run: required
+ *  inputs (sockets) not wired/filled AND required properties left empty. Drives
+ *  the node's "Needs input" hint and the run gate — a node with any missing
+ *  requirement (a plot with no table, a Select Column with no column) is not
+ *  run, and neither is anything downstream of it. */
+export function nodeMissingRequirements(node: FlowNode, isConnected: (key: string) => boolean): string[] {
+  return [...missingRequiredInputs(node, isConnected), ...missingRequiredProps(node)];
 }

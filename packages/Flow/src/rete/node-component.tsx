@@ -15,7 +15,7 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, missingRequiredInputs} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, nodeMissingRequirements} from './scheme';
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
 import {tid} from '../utils/test-ids';
@@ -61,7 +61,7 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   // Pre-run hint: structural inputs the user still has to provide. Shown only
   // when the node hasn't successfully run (idle/stale), so a "Done"/"Error"
   // status from a real run always takes precedence.
-  const needs = missingRequiredInputs(node, (key) => isConnected(node, 'input', key));
+  const needs = nodeMissingRequirements(node, (key) => isConnected(node, 'input', key));
   const idle = !dgStatus || dgStatus === 'idle' || dgStatus === 'stale';
   const attention = idle && needs.length > 0;
 

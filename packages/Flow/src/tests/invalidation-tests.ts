@@ -11,8 +11,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNode} from '../rete/node-factory';
 import {FlowEditor, GraphEdit} from '../rete/flow-editor';
+import {missingRequiredProps, nodeMissingRequirements} from '../rete/scheme';
 import {sliceDownFrom} from '../compiler/graph-compiler';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
@@ -614,5 +615,123 @@ category('Flow: autorun', () => {
     s.toggle(); // off before the debounce fires
     await sleep(60);
     expect(runs, 0);
+  });
+});
+
+category('Flow: run readiness', () => {
+  const SET = {name: 'ReadinessFlow', description: '', tags: ['funcflow']};
+
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('custom nodes declare their required inputs and properties', async () => {
+    const selCol = createNode('Utilities/Select Column')!;
+    expect(selCol.requiredInputs.includes('table'), true, 'Select Column needs a table');
+    expect(selCol.requiredProps.includes('columnName'), true, 'Select Column needs a column name');
+
+    const selCols = createNode('Utilities/Select Columns')!;
+    expect(selCols.requiredInputs.includes('table'), true, 'Select Columns needs a table');
+    expect(selCols.requiredProps.includes('columnNames'), true, 'Select Columns needs column names');
+
+    const selTable = createNode('Utilities/Select Table')!;
+    expect(selTable.requiredProps.includes('tableName'), true, 'Select Table needs a table name');
+
+    const atv = createNode('Utilities/Add Table View')!;
+    expect(atv.requiredInputs.includes('table'), true, 'Add Table View needs a table');
+
+    const scatter = createNode('Viewers/Scatter Plot')!;
+    expect(scatter.requiredInputs.includes('table'), true, 'a plot needs a table');
+  });
+
+  test('missing requirements combine unset inputs and unset properties', async () => {
+    const selTable = createNode('Utilities/Select Table')!;
+    expect(missingRequiredProps(selTable).includes('tableName'), true, 'empty table name is missing');
+    expect(nodeMissingRequirements(selTable, () => false).length > 0, true, 'the node is not ready');
+    selTable.properties['tableName'] = 'demog';
+    expect(missingRequiredProps(selTable).length, 0, 'a set table name satisfies the requirement');
+    expect(nodeMissingRequirements(selTable, () => false).length, 0, 'the node is ready');
+  });
+
+  test('runnableNodes excludes an unready node and everything downstream of it', async () => {
+    const e = makeEditor();
+    try {
+      // Unready Select Table (no name) → Add Table View (its own table requirement
+      // is met by the connection, yet it is downstream of an unready node).
+      const sel = await addNode(e.flow, 'Utilities/Select Table');
+      const atv = await addNode(e.flow, 'Utilities/Add Table View', 300, 0);
+      await e.flow.addConnectionByKeys(sel.id, 'table', atv.id, 'table');
+      const konst = await addNode(e.flow, 'Constants/String', 0, 300);
+
+      const ctrl = new ExecutionController(e.flow);
+      let runnable = ctrl.runnableNodes();
+      expect(runnable.has(sel.id), false, 'the unready Select Table is excluded');
+      expect(runnable.has(atv.id), false, 'the node downstream of it is excluded too');
+      expect(runnable.has(konst.id), true, 'an unrelated ready node still runs');
+
+      // Filling the required property makes the whole chain runnable.
+      sel.properties['tableName'] = 'demog';
+      runnable = ctrl.runnableNodes();
+      expect(runnable.has(sel.id) && runnable.has(atv.id) && runnable.has(konst.id), true,
+        'once the requirement is set, the chain is runnable');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a plot without a table is excluded from the run set', async () => {
+    const e = makeEditor();
+    try {
+      const scatter = await addNode(e.flow, 'Viewers/Scatter Plot');
+      const konst = await addNode(e.flow, 'Constants/String', 0, 300);
+      const ctrl = new ExecutionController(e.flow);
+      const runnable = ctrl.runnableNodes();
+      expect(runnable.has(scatter.id), false, 'the table-less plot is not run');
+      expect(runnable.has(konst.id), true, 'the ready node is');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('autorun skips entirely when nothing is ready', async () => {
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, 'Viewers/Scatter Plot'); // no table → unready
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runAutorun(new Set(), SET), 'skipped', 'no runnable node → nothing autoruns');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('autorun runs the ready part and never runs an unready node', async () => {
+    const e = makeEditor();
+    const df = DG.DataFrame.fromCsv('x\n1\n2\n');
+    df.name = 'ffReadiness';
+    const shellTable = grok.shell.addTable(df);
+    try {
+      const sel = await addNode(e.flow, 'Utilities/Select Table');
+      sel.properties['tableName'] = 'ffReadiness';
+      // Add Table View with NO table: without the readiness gate this would emit
+      // `addTableView(undefined)` and fault at run time — the gate must keep it
+      // out of the run entirely (it stays idle, never errors).
+      const atv = await addNode(e.flow, 'Utilities/Add Table View', 300, 0);
+
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runnableNodes().has(atv.id), false, 'the table-less Add Table View is not runnable');
+      expect(ctrl.runAutorun(new Set(), SET), 'started', 'the ready Select Table triggers a run');
+      expect(await until(() =>
+        ctrl.state.getNodeState(sel.id)?.status === NodeExecStatus.completed, 10000), true,
+      'the ready node ran to completion');
+      const atvStatus = ctrl.state.getNodeState(atv.id)?.status;
+      expect(atvStatus === NodeExecStatus.completed || atvStatus === NodeExecStatus.errored, false,
+        'the unready node was never run — no error, no completion');
+    } finally {
+      try {
+        grok.shell.closeTable(shellTable);
+      } catch {/* best effort */}
+      destroyEditor(e);
+    }
   });
 });

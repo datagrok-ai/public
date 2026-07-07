@@ -24,6 +24,9 @@ export class SelectColumnNode extends FlowNode {
     (this as unknown as {color: string}).color = COLOR_UTILITY;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
     this.addOutput('column', new ClassicPreset.Output(getSocket('column'), 'column'));
+    // Needs a table to select from and a column name to select.
+    this.requiredInputs = ['table'];
+    this.requiredProps = ['columnName'];
   }
 }
 
@@ -35,6 +38,9 @@ export class SelectColumnsNode extends FlowNode {
     (this as unknown as {color: string}).color = COLOR_UTILITY;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
     this.addOutput('columns', new ClassicPreset.Output(getSocket('column_list'), 'columns'));
+    // Needs a table to select from and at least one column name.
+    this.requiredInputs = ['table'];
+    this.requiredProps = ['columnNames'];
   }
 }
 
@@ -47,6 +53,8 @@ export class SelectTableNode extends FlowNode {
     this.properties = {tableName: ''};
     (this as unknown as {color: string}).color = COLOR_UTILITY;
     this.addOutput('table', new ClassicPreset.Output(getSocket('dataframe'), 'table'));
+    // Resolves a table by name — that name must be set.
+    this.requiredProps = ['tableName'];
   }
 }
 
@@ -58,6 +66,8 @@ export class AddTableViewNode extends FlowNode {
     (this as unknown as {color: string}).color = COLOR_VIEW;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
     this.addOutput('view', new ClassicPreset.Output(getSocket('view'), 'view'));
+    // Needs a table to open a view for.
+    this.requiredInputs = ['table'];
   }
 }
 
