@@ -103,24 +103,58 @@ data-shape gating cannot guarantee, because it depends on which file they happen
 Add an **identity/role** axis on top of the existing data-shape and access gating, so the
 🚫 capabilities are unavailable to a biologist regardless of file type.
 
-Direction (to be specified in an implementation phase):
+### What the platform can and cannot enforce
 
-1. **A "Proteomics Analysts" Datagrok group.** Analyst-only actions require membership.
-2. **Menu enforcement.** Extend the `sampleOnly` predicate in `src/menu.ts` to an
-   `analystOnly` predicate that also greys out (with a clear reason) when the current user
-   is not in the analysts group — so the interpretation-changing items disappear for
-   biologists on *any* table, not just Candidates.
-3. **Handler enforcement.** Guard the mutating handlers in `src/package.ts` (the same place
-   `requireSampleLevelData` already lives) so the capability is enforced even if a function
-   is invoked directly, not only via the menu — the menu grey-out is UX, the handler guard
-   is the security boundary.
-4. **Reviewer mode is the default for biologists.** A biologist's normal entry point stays
-   the view-only shared snapshot; the role gate is the backstop for the live-table case.
+This constrains the design, so it comes first. Datagrok's permission model
+(`grok.dapi.permissions`) grants **View / Edit / Share / Delete** on *entities* — projects,
+connections, scripts, queries, packages. There is **no per-function "Execute" permission for
+client-side TypeScript package functions** (a `Func` extends `Entity` but carries no ACL). So
+you **cannot** express "grant the Proteomics group execute on `Normalize`, deny Biologics"
+as a native grant.
+
+That leaves two enforcement tiers, with very different strength:
+
+- **Application-level group gating (a deterrent, not a wall).** A package function can check
+  `grok.dapi.groups.currentUserGroups()` at runtime and refuse to run for non-analysts. This
+  is real and has precedent (PowerPack, Grokky), but it runs in the browser and the
+  DataFrame mutation is client-side — a determined user could invoke the function from the
+  console. It hides analyst actions from biologists; it does **not** guarantee they can't
+  change data locally.
+- **Server-enforced boundaries (the real walls).** Three exist: (a) the **view-only shared
+  snapshot** — already built (Share for Review); the reviewer group has only View on the
+  project, so the server blocks any *save*, and a locally re-run analysis can't be persisted;
+  (b) **package-level sharing** — deny the package to a group entirely, but that is
+  all-or-nothing and would also remove the volcano/enrichment/UniProt biologists legitimately
+  need; (c) **server-side Script/Query Execute permission** — real per-step gating, but only
+  for the R scripts, and the package's client-side fallbacks (`limma`/`vsn` → client t-test /
+  quantile) are a loophole that would have to be disabled for non-analysts.
+
+**The strongest guarantee that already exists is the view-only shared snapshot.** If
+biologists only ever receive analyses via Share for Review, the interpretation of record is
+server-protected today. Everything below is about the *live-table* case.
+
+### Direction (to be specified in an implementation phase)
+
+1. **A "Proteomics Analysts" Datagrok group.** Analyst-only actions key off membership.
+2. **Menu gating (UX layer).** Extend the `sampleOnly` predicate in `src/menu.ts` to an
+   `analystOnly` predicate that also greys out (with a clear reason) when the current user is
+   not in the analysts group — so interpretation-changing items disappear for biologists on
+   *any* table, not just Candidates. This is a deterrent, not a security boundary.
+3. **Handler gating (defense in depth, still client-side).** Guard the mutating handlers in
+   `src/package.ts` (where `requireSampleLevelData` already lives) so a directly-invoked
+   function also refuses for non-analysts. This closes the menu-bypass path but, being
+   client-side, is still not a hard wall — the console can reach the same code.
+4. **The hard wall stays server-side.** For a genuine guarantee, rely on the view-only shared
+   snapshot as the default biologist entry point; a true block on *live* tables would require
+   moving the mutating steps to server-side Scripts with Execute permission **and** disabling
+   the client fallbacks for non-analysts (a larger architectural change — scope only if
+   biologists must edit live tables and still be hard-blocked).
 
 Open questions for the implementation phase: whether Enrichment re-runs count as "changing
-the interpretation" (currently treated as non-destructive exploration), how the analysts
-group is provisioned per client/deployment, and whether to expose an explicit read-only
-"Reviewer mode" toggle vs. inferring it from group membership.
+the interpretation" (currently treated as non-destructive exploration); where CK's biologists
+actually work (shared snapshots only vs. live files — this decides whether steps 2–4 are even
+needed); how the analysts group is provisioned per client/deployment; and whether to expose
+an explicit read-only "Reviewer mode" toggle vs. inferring it from group membership.
 
 ## See also
 
