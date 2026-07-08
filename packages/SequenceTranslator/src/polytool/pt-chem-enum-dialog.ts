@@ -39,7 +39,7 @@ import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
 
-/** Registered description for the Markush Enumerator (keep in sync with `chemEnumerateMarkushTopMenu` in package.ts). */
+/** Mirrors `chemEnumerateMarkushTopMenu`'s description in package.ts (the app entry registers none of its own). */
 const MARKUSH_DESCRIPTION = 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)';
 
 const DEFAULT_TABLE_NAME = 'Markush enumeration';
@@ -458,7 +458,7 @@ async function openImportWizard(
       } else {
         vv.setData(items.length, (i) => buildCard({smiles: items[i].smi, subtitle: items[i].subtitle, error: items[i].err}));
       }
-      // Don't allow importing invalid data — OK stays disabled until every entry parses cleanly.
+      // Block import while any entry is invalid.
       if (okButton) okButton.disabled = values.length === 0 || errs.length > 0;
     };
 
@@ -717,8 +717,7 @@ function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => v
       if (errs.length === 0) { root.style.display = 'none'; return; }
       root.style.display = 'inline-flex';
       root.innerText = `⚠ ${errs.length} issue${errs.length === 1 ? '' : 's'}`;
-      // Collapse near-identical messages (a bad import can produce hundreds of copies) and cap the
-      // list, so the tooltip stays a small readable box instead of a full-screen wall of text.
+      // Collapse duplicate messages and cap the list so the tooltip stays a small box.
       const byBody = new Map<string, number>();
       for (const e of errs) {
         const body = e.replace(/^[^:]+:\s*/, ''); // drop the positional prefix ("R-group 393: ")
@@ -1001,7 +1000,7 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     view.root.appendChild(ui.div([panel.root],
       {style: {height: '100%', width: '100%', padding: '8px', boxSizing: 'border-box'}}));
 
-    // Populate the left toolbox so it isn't empty when switching to this view from another tab.
+    // Fill the toolbox so this view's sidebar isn't empty.
     const aboutAcc = ui.accordion('markushEnumeratorAbout');
     aboutAcc.addPane('About', () => ui.divV([
       ui.divText(MARKUSH_DESCRIPTION),
@@ -1041,6 +1040,24 @@ interface ChemEnumPanel {
 
 type ChemEnumLayout = 'dialog' | 'app';
 
+// Horizontal scroll of a virtualView row lives on the root or its viewport; setData resets it, so
+// callers snapshot with readRowScrollLeft before a rebuild and restore with restoreRowScrollLeft after.
+function readRowScrollLeft(vvRoot: HTMLElement): number {
+  const viewport = vvRoot.firstElementChild as HTMLElement | null;
+  return Math.max(vvRoot.scrollLeft, viewport?.scrollLeft ?? 0);
+}
+
+function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
+  if (scrollLeft <= 0) return;
+  const apply = () => {
+    const viewport = vvRoot.firstElementChild as HTMLElement | null;
+    vvRoot.scrollLeft = scrollLeft;
+    if (viewport) viewport.scrollLeft = scrollLeft;
+  };
+  apply();
+  setTimeout(apply, 0); // deferred too: virtualView lays out async
+}
+
 export function buildChemEnumPanel(
   rdkit: RDModule, preloadCore: ChemEnumCore | null, layout: ChemEnumLayout = 'dialog',
   opts: {hideAppendToTable?: boolean} = {},
@@ -1053,6 +1070,16 @@ export function buildChemEnumPanel(
     removeDuplicates: DEFAULT_REMOVE_DUPLICATES,
     tableName: DEFAULT_TABLE_NAME,
   };
+
+  /** Confirm before a bulk removal. */
+  const confirmDelete = (message: string, action: () => void) => {
+    ui.dialog({title: 'Confirm removal'})
+      .add(ui.divText(message))
+      .onOK(action)
+      .show();
+  };
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const rGroupTotal = () => [...state.rGroupsByNum.values()].reduce((sum, l) => sum + l.length, 0);
 
   // ── Cores: single-row horizontal virtualView (dialog) or wrapped flow (app) ─
   const ROW_H = CARD_H + 16; // card height + horizontal scrollbar breathing room
@@ -1115,31 +1142,12 @@ export function buildChemEnumPanel(
       applyHorizontalRowStyle(coresVv.root);
       coresVvHost.appendChild(coresVv.root);
     } else {
-      // setData rebuilds the row's content and resets its horizontal scroll — capture and restore it.
+      // setData resets scroll; preserve it.
       const scrollLeft = readRowScrollLeft(coresVv.root);
       coresVv.setData(state.cores.length, coresRenderer);
       restoreRowScrollLeft(coresVv.root, scrollLeft);
     }
   };
-
-  /** Read the horizontal scroll offset of a virtualView row (either root or its viewport scrolls). */
-  function readRowScrollLeft(vvRoot: HTMLElement): number {
-    const viewport = vvRoot.firstElementChild as HTMLElement | null;
-    return Math.max(vvRoot.scrollLeft, viewport?.scrollLeft ?? 0);
-  }
-
-  /** Restore a horizontal scroll offset onto both the row root and its viewport (setData resets it). */
-  function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
-    if (scrollLeft <= 0) return;
-    const apply = () => {
-      const viewport = vvRoot.firstElementChild as HTMLElement | null;
-      vvRoot.scrollLeft = scrollLeft;
-      if (viewport) viewport.scrollLeft = scrollLeft;
-    };
-    // Restore synchronously and again after layout settles (virtualView re-renders asynchronously).
-    apply();
-    setTimeout(apply, 0);
-  }
 
   /** VirtualView defaults to a vertical-scroll viewport; clamp it to horizontal-only for our rows. */
   function applyHorizontalRowStyle(vvRoot: HTMLElement) {
@@ -1166,8 +1174,7 @@ export function buildChemEnumPanel(
   interface RGroupRow { row: HTMLElement; vv: DG.VirtualView; countEl: HTMLElement; }
   const rGroupsRenderers = new Map<number, RGroupRow>();
 
-  // Card renderer for R#`n`, bound to the current substituent list. Rebuilt each redraw and fed to
-  // vv.setData — the same virtualView instance is reused (recreating it would reset scroll to 0).
+  // Rebuilt each redraw and fed to vv.setData so the same virtualView is reused (recreating resets scroll).
   const makeRGroupRenderer = (n: number, list: ChemEnumRGroup[]) => (i: number): HTMLElement => {
     const rg = list[i];
     const subtitle = rg.error ? 'invalid' :
@@ -1208,8 +1215,7 @@ export function buildChemEnumPanel(
     });
   };
 
-  // Persistent row (color strip + one horizontal virtualView) for R#`n`. Built once, kept in
-  // rGroupsRenderers; redraws update it via setData rather than tearing it down and recreating it.
+  // Built once per R# and kept in rGroupsRenderers; redraws update it via setData, not by recreating.
   const buildRGroupRow = (n: number): RGroupRow => {
     const color = getRGroupColor(n);
     const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
@@ -1226,9 +1232,10 @@ export function buildChemEnumPanel(
         });
       }),
       stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
-      stripIcon('trash-alt', `Remove all R${n}`, () => { state.rGroupsByNum.delete(n); refresh(); }),
+      stripIcon('trash-alt', `Remove all R${n}`, () => confirmDelete(`Remove all ${plural(state.rGroupsByNum.get(n)?.length ?? 0, 'substituent')} for R${n}?`, () => { state.rGroupsByNum.delete(n); refresh(); })),
     ];
     const countEl = ui.divText('0', {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}});
+    ui.tooltip.bind(countEl, `Number of R${n} substituents`);
     const strip = ui.divV([
       ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
       ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
@@ -1260,9 +1267,7 @@ export function buildChemEnumPanel(
     for (const [n, entry] of [...rGroupsRenderers]) {
       if (!wanted.has(n)) { entry.row.remove(); rGroupsRenderers.delete(n); }
     }
-    // Create/update one row per R#, kept in ascending order. The row (and its virtualView) is reused
-    // rather than recreated; setData still resets the row's scroll, so capture it before the move and
-    // restore it after the content swap — that's what keeps a delete from jumping the row to the start.
+    // Reuse each row via setData (recreating resets scroll); capture scroll before the move, restore after.
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
       let entry = rGroupsRenderers.get(n);
@@ -1450,13 +1455,14 @@ export function buildChemEnumPanel(
     onDraw?: () => void, onImport?: () => void, onClear?: () => void, onTemplate?: () => void,
   ): {root: HTMLElement, clearBtn?: HTMLButtonElement} => {
     const parts: HTMLElement[] = [
-      ui.divText(label, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
+      ui.divText(label, {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
     ];
     const iconBtn = (fa: string, onClick: () => void, tip: string): HTMLButtonElement => {
       const icon = ui.iconFA(fa);
       icon.style.cssText = 'font-size:inherit;';
       const btn = ui.button([icon], onClick, tip);
-      btn.style.marginLeft = '4px';
+      btn.style.margin = '0';
+      btn.style.padding = '2px 3px';
       parts.push(btn);
       return btn;
     };
@@ -1480,7 +1486,7 @@ export function buildChemEnumPanel(
   // ── Section headers (shared between layouts) ──────────────────────────────
   const coresHeader = sectionHeader(
     'Cores', addCoreFromSketcher, addCoresFromImport,
-    () => { state.cores.splice(0, state.cores.length); refresh(); },
+    () => confirmDelete(`Remove all ${plural(state.cores.length, 'core')}?`, () => { state.cores.splice(0, state.cores.length); refresh(); }),
   );
   coresClearBtn = coresHeader.clearBtn;
 
@@ -1489,7 +1495,7 @@ export function buildChemEnumPanel(
 
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
-    () => { state.rGroupsByNum.clear(); refresh(); },
+    () => confirmDelete(`Remove all ${plural(rGroupTotal(), 'R-group substituent')}?`, () => { state.rGroupsByNum.clear(); refresh(); }),
     addRGroupsFromTemplate,
   );
   rGroupsClearBtn = rGroupsHeader.clearBtn;
@@ -1513,7 +1519,7 @@ export function buildChemEnumPanel(
     const rGroupsCell = ui.divV([rGroupsHeader.root, rGroupsHost], {style: growCellStyle});
 
     // Preview header: title on left, live count + error badge on right.
-    const previewTitle = ui.divText('Preview', {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
+    const previewTitle = ui.divText('Preview', {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', alignSelf: 'center'}});
     countText.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:auto;align-self:center;';
     const previewHeaderRow = ui.divH([previewTitle, countText, errorBadge.root],
       {style: {alignItems: 'center', gap: '8px', margin: '0 0 2px', flex: '0 0 auto'}});
@@ -1543,11 +1549,11 @@ export function buildChemEnumPanel(
     }, 'Show recent enumerations');
     historyBtn.style.cssText = 'font-size:16px;padding:4px 6px;cursor:pointer;color:var(--blue-3);';
 
-    const clearAllBtn = ui.button('Clear all', () => {
+    const clearAllBtn = ui.button('Clear all', () => confirmDelete(`Remove all ${plural(state.cores.length, 'core')} and ${plural(rGroupTotal(), 'R-group substituent')}?`, () => {
       state.cores.splice(0, state.cores.length);
       state.rGroupsByNum.clear();
       refresh();
-    });
+    }));
     ui.tooltip.bind(clearAllBtn, 'Remove all cores and R-groups');
 
     ribbonGroups = [
