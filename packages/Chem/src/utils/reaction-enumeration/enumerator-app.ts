@@ -1219,6 +1219,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     let selStep = 0; // 0 = All steps (full library); 1..rounds = that round's subset
     let filtersOn = false; // funnel toggle: show the standard Datagrok filters panel next to the grid
     let currentDf: DG.DataFrame | null = null;
+    // host -> last (table name, filtersOn) successfully mounted there. "Subset by selection"/"Use all"
+    // both trigger a render twice — once via assignTableInput's onChanged -> onTableChanged ->
+    // buildStepTabs cascade, once via the caller's own explicit follow-up render — a real double DOM
+    // rebuild per review feedback. Rather than risk dropping either render call (the explicit one is a
+    // documented safety net for cases where the cascade alone was live-verified unreliable), renderGrid
+    // itself now no-ops the second call once it sees nothing actually changed. Compared by name, not
+    // reference — `o.input.value`'s ChoiceInput getter re-wraps a new object on every read.
+    const lastMounted = new Map<HTMLElement, {name: string; filtersOn: boolean}>();
     // Per-round state (index k-1 = round k) — one array instead of parallel ones, so df/sub/committed
     // can't drift out of sync. `committed` is an explicit flag, NOT inferred from row-count: a step's
     // clone can silently drift from the global table if rows are added/removed in place (no onChanged
@@ -1319,6 +1327,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       // divs are dropped from the DOM while still registered in `mountedViewers`, orphaning the
       // Viewer instances (never closed) instead of releasing their Dart-side resources.
       for (const ph of paneHosts) if (ph) closeMountedViewers(ph.gridHost);
+      // Every gridHost below is about to be discarded and rebuilt from scratch — drop renderGrid's
+      // per-host dedup entries too, or they'd hold the old (now-detached) elements alive forever.
+      lastMounted.clear();
       stepTabsHost.innerHTML = '';
       stepDots.length = 0;
       paneHosts = [];
@@ -1441,6 +1452,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (!gridHost) return; // pane not built yet (shouldn't happen once buildStepTabs has run once)
       currentDf = selStep === 0 ? o.input.value : stepClone(selStep);
       if (!currentDf) {
+        lastMounted.delete(gridHost);
         // Close mounted viewers BEFORE wiping the DOM — closing after innerHTML='' hands the viewer
         // a detached container, which throws ("Cannot read properties of null") deep in the Dart-side
         // close path. Under rapid re-triggering (e.g. the filter icon clicked several times in quick
@@ -1452,7 +1464,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         if (selStep === 0) o.badge?.refresh(null);
         return;
       }
+      const key = {name: currentDf.name, filtersOn};
+      const prevMounted = lastMounted.get(gridHost);
+      if (prevMounted && prevMounted.name === key.name && prevMounted.filtersOn === key.filtersOn) {
+        if (selStep === 0) o.badge?.refresh(currentDf.rowCount);
+        return;
+      }
       mountDf(gridHost, currentDf, filtersOn); // mountDf itself closes-then-clears the host
+      lastMounted.set(gridHost, key);
       if (selStep === 0) o.badge?.refresh(currentDf.rowCount);
     }
 
