@@ -352,10 +352,12 @@ export class FormsViewer extends DG.JsViewer {
                 input.input.classList.add(`d4-multi-form-molecule-input-${this.rendererSize}`);
               input.input.setAttribute('column', name);
               input.input.style.font = this.font;
-              const fmt = numberFormats[this.numberFormat];
-              if (fmt && col.type === DG.TYPE.FLOAT)
+              const fmt = col.type === DG.TYPE.FLOAT ? numberFormats[this.numberFormat] : null;
+              if (fmt) {
                 input.format = fmt;
-              input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
+                input.value = col.isNone(row) ? null : this.dataFrame.get(name, row);
+              } else
+                input.stringValue = col.getString(row);
               input.readOnly = true;
 
               if (this.colorCode) {
