@@ -39,6 +39,9 @@ import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
 
+/** Registered description for the Markush Enumerator (keep in sync with `chemEnumerateMarkushTopMenu` in package.ts). */
+const MARKUSH_DESCRIPTION = 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)';
+
 const DEFAULT_TABLE_NAME = 'Markush enumeration';
 const DEFAULT_REMOVE_DUPLICATES = true;
 
@@ -982,6 +985,20 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     }
     view.root.appendChild(ui.div([panel.root],
       {style: {height: '100%', width: '100%', padding: '8px', boxSizing: 'border-box'}}));
+
+    // Populate the left toolbox so it isn't empty when switching to this view from another tab.
+    const aboutAcc = ui.accordion('markushEnumeratorAbout');
+    aboutAcc.addPane('About', () => ui.divV([
+      ui.divText(MARKUSH_DESCRIPTION),
+      ui.info([
+        ui.divText('1. Draw or import cores — molecules with [*:N] R-labels.'),
+        ui.divText('2. Add an R-group substituent list for each R#.'),
+        ui.divText('3. Pick Zip (same-length lists, paired) or Cartesian (all combinations).'),
+        ui.divText('4. Enumerate to build the molecule table.'),
+      ], 'How it works'),
+    ], {style: {padding: '8px', gap: '8px'}}), true);
+    view.toolbox = aboutAcc.root;
+
     return view;
   } catch (err: any) {
     defaultErrorHandler(err);
@@ -1066,8 +1083,6 @@ export function buildChemEnumPanel(
     if (layout === 'app') {
       // Cores are realistically dozens at most — render all directly in a wrapped flow so
       // the top-left cell uses its full area instead of constraining cards to one row.
-      // Preserve the vertical scroll so deleting a card doesn't jump the flow back to the top.
-      const savedScrollTop = coresVvHost.scrollTop;
       ui.empty(coresVvHost);
       coresVv = null;
       const wrap = ui.div([], {style: {
@@ -1077,8 +1092,6 @@ export function buildChemEnumPanel(
       for (let i = 0; i < state.cores.length; i++)
         wrap.appendChild(coresRenderer(i));
       coresVvHost.appendChild(wrap);
-      coresVvHost.scrollTop = savedScrollTop;
-      setTimeout(() => { coresVvHost.scrollTop = savedScrollTop; }, 0);
       return;
     }
     if (!coresVv) {
@@ -1086,7 +1099,7 @@ export function buildChemEnumPanel(
       applyHorizontalRowStyle(coresVv.root);
       coresVvHost.appendChild(coresVv.root);
     } else {
-      // setData rebuilds the row's content and can reset its horizontal scroll — preserve it.
+      // setData rebuilds the row's content and resets its horizontal scroll — capture and restore it.
       const scrollLeft = readRowScrollLeft(coresVv.root);
       coresVv.setData(state.cores.length, coresRenderer);
       restoreRowScrollLeft(coresVv.root, scrollLeft);
@@ -1099,7 +1112,7 @@ export function buildChemEnumPanel(
     return Math.max(vvRoot.scrollLeft, viewport?.scrollLeft ?? 0);
   }
 
-  /** Restore a previously-read horizontal scroll offset onto both the row root and its viewport. */
+  /** Restore a horizontal scroll offset onto both the row root and its viewport (setData resets it). */
   function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
     if (scrollLeft <= 0) return;
     const apply = () => {
@@ -1107,7 +1120,7 @@ export function buildChemEnumPanel(
       vvRoot.scrollLeft = scrollLeft;
       if (viewport) viewport.scrollLeft = scrollLeft;
     };
-    // Restore synchronously and again after layout settles (virtualView may lay out asynchronously).
+    // Restore synchronously and again after layout settles (virtualView re-renders asynchronously).
     apply();
     setTimeout(apply, 0);
   }
@@ -1134,102 +1147,116 @@ export function buildChemEnumPanel(
   }});
   const rGroupsEmpty = ui.divText('No R-groups — draw or import for each R number used by your cores.', {style: {color: 'var(--grey-4)', padding: '12px', fontSize: '12px'}});
 
-  const rGroupsRenderers = new Map<number, {row: HTMLElement, vv: DG.VirtualView, header: HTMLElement}>();
+  interface RGroupRow { row: HTMLElement; vv: DG.VirtualView; countEl: HTMLElement; }
+  const rGroupsRenderers = new Map<number, RGroupRow>();
+
+  // Card renderer for R#`n`, bound to the current substituent list. Rebuilt each redraw and fed to
+  // vv.setData — the same virtualView instance is reused (recreating it would reset scroll to 0).
+  const makeRGroupRenderer = (n: number, list: ChemEnumRGroup[]) => (i: number): HTMLElement => {
+    const rg = list[i];
+    const subtitle = rg.error ? 'invalid' :
+      rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
+        `r group ${i + 1} · R${rg.rNumber}`;
+    return buildCard({
+      smiles: rg.error ? '' : rg.smiles,
+      subtitle,
+      error: rg.error,
+      onEdit: async () => {
+        const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+        if (!edited) return;
+        // If the R# changed, move between lists.
+        if (edited.rNumber !== rg.rNumber) {
+          list.splice(i, 1);
+          if (list.length === 0) state.rGroupsByNum.delete(rg.rNumber);
+          const target = state.rGroupsByNum.get(edited.rNumber) ?? [];
+          target.push(edited);
+          state.rGroupsByNum.set(edited.rNumber, target);
+        } else {
+          list[i] = edited;
+        }
+        refresh();
+      },
+      onDuplicate: async () => {
+        const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+        if (!dup) return;
+        const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
+        target.push(dup);
+        state.rGroupsByNum.set(dup.rNumber, target);
+        refresh();
+      },
+      onRemove: () => {
+        list.splice(i, 1);
+        if (list.length === 0) state.rGroupsByNum.delete(n);
+        refresh();
+      },
+    });
+  };
+
+  // Persistent row (color strip + one horizontal virtualView) for R#`n`. Built once, kept in
+  // rGroupsRenderers; redraws update it via setData rather than tearing it down and recreating it.
+  const buildRGroupRow = (n: number): RGroupRow => {
+    const color = getRGroupColor(n);
+    const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
+      const el = ui.iconFA(fa, onClick, tip);
+      el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
+      return el;
+    };
+    const stripIcons = [
+      stripIcon('pencil', `Draw an R${n} substituent`, () => {
+        openRGroupSketchDialog(rdkit, '', n).then((rg) => {
+          if (!rg) return;
+          const l = state.rGroupsByNum.get(rg.rNumber) ?? [];
+          l.push(rg); state.rGroupsByNum.set(rg.rNumber, l); refresh();
+        });
+      }),
+      stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
+      stripIcon('trash-alt', `Remove all R${n}`, () => { state.rGroupsByNum.delete(n); refresh(); }),
+    ];
+    const countEl = ui.divText('0', {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}});
+    const strip = ui.divV([
+      ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
+      ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
+      countEl,
+      ...stripIcons,
+    ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
+
+    const vv = ui.virtualView(0, () => ui.div(), false, 1);
+    applyHorizontalRowStyle(vv.root);
+    vv.root.style.flex = '1 1 0';
+    const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
+    // Strip icons stay hidden until the R# row is hovered.
+    ui.tools.setHoverVisibility(row, stripIcons);
+    return {row, vv, countEl};
+  };
 
   const redrawRGroups = () => {
-    // Snapshot each R# row's horizontal scroll (and the host's vertical scroll) before the rebuild
-    // so deleting a card doesn't jump every row back to the start.
-    const savedScrollLeft = new Map<number, number>();
-    for (const [n, {vv}] of rGroupsRenderers)
-      savedScrollLeft.set(n, readRowScrollLeft(vv.root));
-    const savedScrollTop = rGroupsHost.scrollTop;
-
-    ui.empty(rGroupsHost);
-    rGroupsRenderers.clear();
-
-    if (state.rGroupsByNum.size === 0) { rGroupsHost.appendChild(rGroupsEmpty); return; }
+    if (state.rGroupsByNum.size === 0) {
+      ui.empty(rGroupsHost);
+      rGroupsRenderers.clear();
+      rGroupsHost.appendChild(rGroupsEmpty);
+      return;
+    }
+    if (rGroupsEmpty.parentElement === rGroupsHost) rGroupsEmpty.remove();
 
     const sortedNums = [...state.rGroupsByNum.keys()].sort((a, b) => a - b);
+    const wanted = new Set(sortedNums);
+    // Drop rows for R#s that no longer exist.
+    for (const [n, entry] of [...rGroupsRenderers]) {
+      if (!wanted.has(n)) { entry.row.remove(); rGroupsRenderers.delete(n); }
+    }
+    // Create/update one row per R#, kept in ascending order. The row (and its virtualView) is reused
+    // rather than recreated; setData still resets the row's scroll, so capture it before the move and
+    // restore it after the content swap — that's what keeps a delete from jumping the row to the start.
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
-      const color = getRGroupColor(n);
-      const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
-        const el = ui.iconFA(fa, onClick, tip);
-        el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
-        return el;
-      };
-      const stripIcons = [
-        stripIcon('pencil', `Draw an R${n} substituent`, () => {
-          openRGroupSketchDialog(rdkit, '', n).then((rg) => {
-            if (!rg) return;
-            const l = state.rGroupsByNum.get(rg.rNumber) ?? [];
-            l.push(rg); state.rGroupsByNum.set(rg.rNumber, l); refresh();
-          });
-        }),
-        stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
-        stripIcon('trash-alt', `Remove all R${n}`, () => { state.rGroupsByNum.delete(n); refresh(); }),
-      ];
-      const strip = ui.divV([
-        ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
-        ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
-        ui.divText(String(list.length), {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}}),
-        ...stripIcons,
-      ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
-
-      const renderer = (i: number): HTMLElement => {
-        const rg = list[i];
-        const subtitle = rg.error ? 'invalid' :
-          rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
-            `r group ${i + 1} · R${rg.rNumber}`;
-        return buildCard({
-          smiles: rg.error ? '' : rg.smiles,
-          subtitle,
-          error: rg.error,
-          onEdit: async () => {
-            const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
-            if (!edited) return;
-            // If the R# changed, move between lists.
-            if (edited.rNumber !== rg.rNumber) {
-              list.splice(i, 1);
-              if (list.length === 0) state.rGroupsByNum.delete(rg.rNumber);
-              const target = state.rGroupsByNum.get(edited.rNumber) ?? [];
-              target.push(edited);
-              state.rGroupsByNum.set(edited.rNumber, target);
-            } else {
-              list[i] = edited;
-            }
-            refresh();
-          },
-          onDuplicate: async () => {
-            const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
-            if (!dup) return;
-            const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
-            target.push(dup);
-            state.rGroupsByNum.set(dup.rNumber, target);
-            refresh();
-          },
-          onRemove: () => {
-            list.splice(i, 1);
-            if (list.length === 0) state.rGroupsByNum.delete(n);
-            refresh();
-          },
-        });
-      };
-      const vv = ui.virtualView(list.length, renderer, false, 1);
-      applyHorizontalRowStyle(vv.root);
-      vv.root.style.flex = '1 1 0';
-      const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
-      // Strip icons stay hidden until the R# row is hovered.
-      ui.tools.setHoverVisibility(row, stripIcons);
-      rGroupsHost.appendChild(row);
-      rGroupsRenderers.set(n, {row, vv, header: strip});
-      // Restore this R#'s horizontal scroll (only if it still existed before the rebuild).
-      const prev = savedScrollLeft.get(n);
-      if (prev !== undefined) restoreRowScrollLeft(vv.root, prev);
+      let entry = rGroupsRenderers.get(n);
+      if (!entry) { entry = buildRGroupRow(n); rGroupsRenderers.set(n, entry); }
+      const scrollLeft = readRowScrollLeft(entry.vv.root);
+      rGroupsHost.appendChild(entry.row); // moves the existing node into sorted position
+      entry.countEl.textContent = String(list.length);
+      entry.vv.setData(list.length, makeRGroupRenderer(n, list));
+      restoreRowScrollLeft(entry.vv.root, scrollLeft);
     }
-    // Restore the host's vertical scroll after all rows are laid out.
-    rGroupsHost.scrollTop = savedScrollTop;
-    setTimeout(() => { rGroupsHost.scrollTop = savedScrollTop; }, 0);
   };
 
   // ── Preview (up to 12 random samples, wrapped flex) ───────────────────────
