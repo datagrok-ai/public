@@ -1,5 +1,9 @@
 # DB Tests changelog
 
+## v.next
+
+* Security: pinned the DB test image to `postgres:17-bookworm` and added `apt-get upgrade` to clear stale Debian base CVEs (gnutls28/perl/glibc).
+
 ## 1.3.0 (2025-07-28)
 
 * Datagrok api dependency >= 1.26.0
