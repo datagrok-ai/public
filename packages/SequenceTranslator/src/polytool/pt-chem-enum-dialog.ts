@@ -1066,6 +1066,8 @@ export function buildChemEnumPanel(
     if (layout === 'app') {
       // Cores are realistically dozens at most — render all directly in a wrapped flow so
       // the top-left cell uses its full area instead of constraining cards to one row.
+      // Preserve the vertical scroll so deleting a card doesn't jump the flow back to the top.
+      const savedScrollTop = coresVvHost.scrollTop;
       ui.empty(coresVvHost);
       coresVv = null;
       const wrap = ui.div([], {style: {
@@ -1075,6 +1077,8 @@ export function buildChemEnumPanel(
       for (let i = 0; i < state.cores.length; i++)
         wrap.appendChild(coresRenderer(i));
       coresVvHost.appendChild(wrap);
+      coresVvHost.scrollTop = savedScrollTop;
+      setTimeout(() => { coresVvHost.scrollTop = savedScrollTop; }, 0);
       return;
     }
     if (!coresVv) {
@@ -1082,9 +1086,31 @@ export function buildChemEnumPanel(
       applyHorizontalRowStyle(coresVv.root);
       coresVvHost.appendChild(coresVv.root);
     } else {
+      // setData rebuilds the row's content and can reset its horizontal scroll — preserve it.
+      const scrollLeft = readRowScrollLeft(coresVv.root);
       coresVv.setData(state.cores.length, coresRenderer);
+      restoreRowScrollLeft(coresVv.root, scrollLeft);
     }
   };
+
+  /** Read the horizontal scroll offset of a virtualView row (either root or its viewport scrolls). */
+  function readRowScrollLeft(vvRoot: HTMLElement): number {
+    const viewport = vvRoot.firstElementChild as HTMLElement | null;
+    return Math.max(vvRoot.scrollLeft, viewport?.scrollLeft ?? 0);
+  }
+
+  /** Restore a previously-read horizontal scroll offset onto both the row root and its viewport. */
+  function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
+    if (scrollLeft <= 0) return;
+    const apply = () => {
+      const viewport = vvRoot.firstElementChild as HTMLElement | null;
+      vvRoot.scrollLeft = scrollLeft;
+      if (viewport) viewport.scrollLeft = scrollLeft;
+    };
+    // Restore synchronously and again after layout settles (virtualView may lay out asynchronously).
+    apply();
+    setTimeout(apply, 0);
+  }
 
   /** VirtualView defaults to a vertical-scroll viewport; clamp it to horizontal-only for our rows. */
   function applyHorizontalRowStyle(vvRoot: HTMLElement) {
@@ -1111,6 +1137,13 @@ export function buildChemEnumPanel(
   const rGroupsRenderers = new Map<number, {row: HTMLElement, vv: DG.VirtualView, header: HTMLElement}>();
 
   const redrawRGroups = () => {
+    // Snapshot each R# row's horizontal scroll (and the host's vertical scroll) before the rebuild
+    // so deleting a card doesn't jump every row back to the start.
+    const savedScrollLeft = new Map<number, number>();
+    for (const [n, {vv}] of rGroupsRenderers)
+      savedScrollLeft.set(n, readRowScrollLeft(vv.root));
+    const savedScrollTop = rGroupsHost.scrollTop;
+
     ui.empty(rGroupsHost);
     rGroupsRenderers.clear();
 
@@ -1190,7 +1223,13 @@ export function buildChemEnumPanel(
       ui.tools.setHoverVisibility(row, stripIcons);
       rGroupsHost.appendChild(row);
       rGroupsRenderers.set(n, {row, vv, header: strip});
+      // Restore this R#'s horizontal scroll (only if it still existed before the rebuild).
+      const prev = savedScrollLeft.get(n);
+      if (prev !== undefined) restoreRowScrollLeft(vv.root, prev);
     }
+    // Restore the host's vertical scroll after all rows are laid out.
+    rGroupsHost.scrollTop = savedScrollTop;
+    setTimeout(() => { rGroupsHost.scrollTop = savedScrollTop; }, 0);
   };
 
   // ── Preview (up to 12 random samples, wrapped flex) ───────────────────────
