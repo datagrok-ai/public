@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-6166: Query viewers: Surface query-load failures in the UI — missing/failing queries now clear the loader spinner and show an error balloon instead of silently swallowing the rejection
 * Stress tests: Replaced the old stress dashboards/queries with `StressTestsSummary` (all builds — median/avg/min/max/p95 of ms by threads, pass rate as the mean per-test pass fraction), `StressTestsRaw` (per-build raw runs incl. error text, latest default, boxplot of ms), and `StressTestsFailures` (failing test×thread combos with a sample error); rewired the CI/CD tests project. Backed by the new server `stress_tests` table populated from the Jenkins stress job.
 * GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)
 * GROK-12108: Usage Analysis: Errors tab
