@@ -144,6 +144,46 @@ function buildMetaRow(name: string, summary: ValueSummary): HTMLElement {
   return row;
 }
 
+// ---------- "Add to workspace" — overlay button on a preview block ----------
+
+/** A small "add to workspace" button overlaid in the top-right corner of a
+ *  preview block (same corner treatment as the viewer gear — no vertical
+ *  footprint). `onClick` opens the value in the platform workspace. When a
+ *  gear also occupies the corner (viewer previews), pass `rightPx` to sit it to
+ *  the gear's left. */
+function addWorkspaceButton(title: string, onClick: () => void, rightPx = 6): HTMLElement {
+  const btn = setTid(ui.iconFA('plus-circle', (e: Event) => {
+    e.stopPropagation();
+    onClick();
+  }, title), 'add-to-workspace');
+  btn.classList.add('ff-preview-workspace-btn');
+  btn.style.right = `${rightPx}px`;
+  return btn;
+}
+
+/** Add a viewer's data to the workspace: opens a fresh table view over a clone
+ *  of the viewer's DataFrame, recreates the viewer on that clone (a *new*
+ *  viewer — never the previewed instance) with the same look, and docks it to
+ *  the right of the table view. */
+async function addViewerToWorkspace(viewer: DG.Viewer): Promise<void> {
+  try {
+    const df = viewer.dataFrame;
+    if (!df) {
+      grok.shell.warning('This viewer has no table to add.');
+      return;
+    }
+    const tv = grok.shell.addTableView(df.clone());
+    const opts = viewer.getOptions();
+    const newViewer = await tv.dataFrame.plot.fromType(opts.type, {}) as DG.Viewer;
+    try {
+      newViewer.setOptions(opts.look ?? {});
+    } catch {/* look may reference removed columns — leave defaults */}
+    tv.dockManager.dock(newViewer, DG.DOCK_TYPE.RIGHT, null, opts.type, 0.4);
+  } catch (e) {
+    grok.shell.error(`Could not add the viewer to the workspace: ${e instanceof Error ? e.message : e}`);
+  }
+}
+
 // ---------- docked-panel side: just the rich previews ----------
 
 /** True if this state has at least one output worth rendering as a preview
@@ -189,25 +229,59 @@ export function buildPreview(
   switch (summary.type) {
   case 'dataframe': {
     if (!summary.clone) return null;
+    const df = summary.clone as DG.DataFrame;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+    wrap.style.position = 'relative';
     try {
-      summary.clone.meta.detectSemanticTypes();
-      const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
-      grid.root.style.cssText = 'width:100%;min-height:350px;';
+      df.meta.detectSemanticTypes();
+      const grid = DG.Viewer.grid(df);
+      grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
       wrap.appendChild(grid.root);
+      wrap.appendChild(addWorkspaceButton('Add table to workspace',
+        () => grok.shell.addTableView(df.clone())));
     } catch { /* grid render failed — show nothing rather than a placeholder */ }
     return wrap;
   }
   case 'column': {
+    // In-place case: the output column was added by instance to the node's
+    // single input table (e.g. Add New Column). Show the *whole* table scrolled
+    // to the new column — the column in the context of the data it belongs to —
+    // rather than a lone one-column grid. (Captured by __ff_col_summary.)
+    if (summary.tableClone && summary.scrollToColumn) {
+      const df = summary.tableClone as DG.DataFrame;
+      const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+      wrap.style.position = 'relative';
+      try {
+        df.meta.detectSemanticTypes();
+        const grid = DG.Viewer.grid(df);
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+        wrap.appendChild(grid.root);
+        // Scroll to the produced column once the grid has laid out (it isn't
+        // attached yet here — defer so the horizontal scroll actually applies).
+        const colName = summary.scrollToColumn as string;
+        requestAnimationFrame(() => {
+          try {
+            grid.scrollToCell(colName, 0);
+          } catch {/* column gone / grid detached — leave at default scroll */}
+        });
+        wrap.appendChild(addWorkspaceButton('Add table to workspace',
+          () => grok.shell.addTableView(df.clone())));
+        return wrap;
+      } catch {/* grid failed — fall back to the one-column grid / sample below */}
+    }
     // Preferred: the instrumented run captured a one-column DataFrame clone
     // built from the output column — render it as a real grid.
     if (summary.clone) {
+      const df = summary.clone as DG.DataFrame;
       const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
+      wrap.style.position = 'relative';
       try {
-        (summary.clone as DG.DataFrame).meta.detectSemanticTypes();
-        const grid = DG.Viewer.grid(summary.clone as DG.DataFrame);
-        grid.root.style.cssText = 'width:100%;min-height:350px;';
+        df.meta.detectSemanticTypes();
+        const grid = DG.Viewer.grid(df);
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
         wrap.appendChild(grid.root);
+        wrap.appendChild(addWorkspaceButton('Add column to workspace',
+          () => grok.shell.addTableView(df.clone())));
         return wrap;
       } catch { /* grid failed — fall back to the text sample below */ }
     }
@@ -262,16 +336,25 @@ export function buildPreview(
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     wrap.style.position = 'relative';
     obj.root.style.width = '100%';
-    if (!obj.root.style.minHeight) obj.root.style.minHeight = '300px';
+    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 10px)';
     wrap.appendChild(obj.root);
     // A viewer's full settings are editable live: a small gear in the top-right
     // corner (overlaid — no vertical space) hands the viewer to the host
     // (→ grok.shell.o = viewer), which captures changes back onto the node.
-    if (summary.type === 'viewer' && onEditViewer) {
-      const gear = setTid(ui.iconFA('cog', () => onEditViewer(obj),
+    const hasGear = summary.type === 'viewer' && !!onEditViewer;
+    if (hasGear) {
+      const gear = setTid(ui.iconFA('cog', () => onEditViewer!(obj),
         'Edit viewer settings'), 'viewer-edit');
       gear.classList.add('ff-viewer-edit-gear');
       wrap.appendChild(gear);
+    }
+    // Every viewer is DataFrame-backed — "Add to workspace" recreates it (a new
+    // viewer, same look) on a fresh table view. Sits to the gear's left when
+    // both are shown, else in the corner.
+    if (summary.type === 'viewer') {
+      const viewer = summary.value as DG.Viewer;
+      wrap.appendChild(addWorkspaceButton('Add viewer to workspace',
+        () => {void addViewerToWorkspace(viewer);}, hasGear ? 32 : 6));
     }
     return wrap;
   }

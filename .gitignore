@@ -103,3 +103,8 @@ CLAUDE.local.md
 test-console-output-?.log
 test-record-?.mp4
 .claude/settings.local.json
+
+# Internal Playwright CI planning notes — local-only, must not be published to the public repo
+playwright-public/MIGRATION-PROMPT.md
+playwright-public/PLAYWRIGHT-CI-PORT-SUMMARY.md
+playwright-public/PLAYWRIGHT-SWEEP-SUMMARY.md

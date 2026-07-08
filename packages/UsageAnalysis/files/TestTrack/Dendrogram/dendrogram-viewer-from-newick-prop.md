@@ -1,29 +1,9 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.viewer
-  - dendrogram.prop.newick
-  - dendrogram.prop.newick-tag
-  - dendrogram.prop.node-column-name
-  - dendrogram.prop.color-column-name
-  - dendrogram.prop.color-aggr-type
-  - dendrogram.prop.line-width
-  - dendrogram.prop.node-size
-  - dendrogram.prop.show-grid
-  - dendrogram.prop.main-color
-  - dendrogram.prop.light-color
-  - dendrogram.prop.current-color
-  - dendrogram.prop.mouse-over-color
-  - dendrogram.prop.selections-color
-  - dendrogram.prop.show-labels
-  - dendrogram.prop.font
-  - dendrogram.prop.step-zoom
-  - dendrogram.prop.show-tooltip
-  - dendrogram.prop.step
-  - dendrogram.lifecycle.on-table-attached
-  - dendrogram.lifecycle.on-property-changed
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [dendrogram.cp.viewer-from-newick-prop]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -52,16 +32,12 @@ gate_verdicts:
 
 # Dendrogram — Viewer from literal newick property + full property-panel surface
 
-Realizes atlas critical path `dendrogram.cp.viewer-from-newick-prop` (priority
-`p0`, `derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L309`).
 Opens the Dendrogram viewer through `addViewer('Dendrogram', {newick: '...'})`
-on a small synthetic 4-leaf DataFrame, then exercises every property panel
-surface on the viewer so that each property is observed to either restyle the
+on a small synthetic 4-leaf DataFrame, then exercises every property-panel
+surface on the viewer so each property is observed to either restyle the
 canvas (style props) or rebuild the view (data props) — verifying the
-`onPropertyChanged` dispatch path
-(`public/packages/Dendrogram/src/viewers/dendrogram.ts#L233`) and the
-`onTableAttached` lifecycle path
-(`public/packages/Dendrogram/src/viewers/dendrogram.ts#L210`).
+viewer's property-change dispatch and its table-attached lifecycle
+(re-populating the `newickTag` choice list when a new table is attached).
 
 Scenario 1 is the smoke load (verifies the viewer mounts and the canvas
 renders four leaves from the literal newick). Scenario 2 is the regression
@@ -156,9 +132,8 @@ Steps:
    locate the row. The full mangling matrix lives in the ref doc's
    `## Selector validation matrix`.
 
-2. **newickTag rebuild path (data-prop, exercises
-   `dendrogram.lifecycle.on-table-attached` choice-repopulation +
-   `dendrogram.lifecycle.on-property-changed` rebuild branch).** Set
+2. **newickTag rebuild path (data prop; exercises the table-attached
+   choice-repopulation and the property-changed rebuild branch).** Set
    `newickTag` = `.newick-alt` via the property panel input. Wait for the
    canvas redraw.
 
@@ -277,79 +252,25 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: every step is a UI-surface action (property
-  panel input edits, canvas pixel-level observations, hover/wheel
-  interactions over the canvas). Per the STEP D heuristic this is a
-  multi-step UI flow with cross-pane state — `playwright` is the
-  canonical layer.
-- coverage_type rationale: this is a positive-path regression sweep over
-  the full property surface, not a smoke load and not a negative/edge
-  boundary path. `regression` per the STEP E heuristic ("General
-  coverage of common feature shapes"). The smoke-shape sub-flow (load +
-  leaf count + no console error) lives inside Scenario 1 of this file;
-  the section's section-wide ui-smoke is `hierarchical-clustering-chem.md`
-  per the chain `ui_coverage_plan`, so this file does not need to claim
-  `coverage_type: smoke`.
-- Decomposition option: per the Critic-F SR proposed_action, if the
-  scenario grows beyond ~15 steps in body it may be split into (a)
-  `viewer-from-newick-prop-smoke.md` (Scenario 1 alone, 3-step smoke)
-  and (b) `viewer-property-panel.md` (Scenario 2, the 17-prop regression
-  sweep). Decomposition does not change atlas-resolved net-new count.
-  Kept as one file here to preserve the smoke + sweep continuity (the
-  smoke seeds the viewer that the sweep then mutates).
+- This file combines the smoke load and the full property sweep in one
+  scenario (rather than splitting into a separate smoke file and a
+  property-panel file) to preserve continuity — the smoke step seeds
+  the viewer that the property sweep then mutates. It can be split
+  later without changing what's covered.
 - Selector pinning: per
   `.claude/skills/grok-browser/references/dendrogram.md`
-  `## dendrogram-viewer-property-panel`, the property-row anchors use
-  the framework's name-mangling rule — `nodeColumnName` mangles to
-  `prop-node` (not `prop-node-column-name`), and `colorColumnName`
-  mangles to `prop-color` (not `prop-color-column-name`). Tests that
-  pin the un-mangled forms will not locate the row. Author SHOULD
-  consult the ref doc's `## Selector validation matrix` (DOM-validated
-  2026-06-03) for the full mangling map before writing the Playwright
-  spec; the matrix is the source of truth for the property-row anchors
-  exercised in Scenario 2.
-- Net-new vs atlas-resolved coverage union (`live_covered_union` of 10
-  ids at this round): 17 `dendrogram.prop.*` ids plus
-  `dendrogram.lifecycle.on-property-changed` plus
-  `dendrogram.lifecycle.on-table-attached` are all out of the union →
-  +19 net-new atlas-resolved sub_features. `dendrogram.viewer` is on
-  atlas `manual_only[]` (rationale: tree-canvas visual regression
-  requires pixel-diff) and is already in the union; it contributes to
-  density only, not to the coverage denominator. Round-baseline density
-  for the section continues to comfortably exceed the threshold (this
-  scenario's `sub_features_covered` cardinality is 21 — well above the
-  ≥3 interaction threshold and lifting the section's density average).
-- See: `feature-atlas/dendrogram.yaml#critical_paths[dendrogram.cp.viewer-from-newick-prop]`
-  (`priority: p0`,
-  `derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L309`).
-- See: `feature-atlas/dendrogram.yaml#sub_features[dendrogram.prop.newick]`
-  (the priority-order edge case
-  `public/packages/Dendrogram/src/viewers/dendrogram.ts#L309` —
-  property > newickTag > .newick tag > NEWICK_EMPTY).
-- See: `feature-atlas/dendrogram.yaml#sub_features[dendrogram.lifecycle.on-property-changed]`
-  (`derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L233`)
-  — the dispatch site this scenario's sweep exercises.
-- See: `feature-atlas/dendrogram.yaml#sub_features[dendrogram.lifecycle.on-table-attached]`
-  (`derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L210`)
-  — the `newickTag` choice-repopulation site exercised in Scenario 2
-  step 2.
-- See: `.claude/skills/grok-browser/references/dendrogram.md`
-  `## dendrogram-viewer-newick-prop` and
-  `## dendrogram-viewer-property-panel` (DOM-validated 2026-06-03;
-  property-row selectors and the prop-node / prop-color mangling rule).
-- atlas entry derived from
-  public/packages/Dendrogram/src/viewers/dendrogram.ts#L309
-  (the `setData()` priority-order site that Scenario 1 step 4
-  asserts).
-- Deferrals: pixel-level canvas-output assertions
-  (rectangle-tree-placer geometry, exact leaf-row spacing under `step`,
-  stroke-width clamping under `lineWidth`, label rendering under
-  `showLabels`+`font`) are explicitly out of scope per atlas
-  `manual_only[dendrogram.mo.tree-canvas-visual-regression]`
-  (`derived_from: public/packages/Dendrogram/src/viewers/dendrogram.ts#L91`)
-  — pixel-diff infrastructure is not available in the deterministic UI
-  automation layer. This is a cited real technical dependency, not a
-  TODO-add-later. The scenario asserts the property dispatch semantics
-  (no-console-error, prop reflection on viewer instance, no-throw
-  rebuild/restyle branch coverage) without reaching for canvas
+  `## dendrogram-viewer-property-panel`, property-row anchors use a
+  name-mangling rule — `nodeColumnName` mangles to `prop-node` (not
+  `prop-node-column-name`), and `colorColumnName` mangles to
+  `prop-color` (not `prop-color-column-name`). Tests that pin the
+  un-mangled forms will not locate the row; see the ref doc's
+  `## Selector validation matrix` for the full mapping before writing
+  the Playwright spec.
+- **Deferred.** Pixel-level canvas-output assertions (tree-layout
+  geometry, exact leaf-row spacing under `step`, stroke-width clamping
+  under `lineWidth`, label rendering under `showLabels`+`font`) are
+  out of scope — pixel-diff infrastructure isn't available in the
+  automated UI layer. The scenario instead asserts property-dispatch
+  semantics (no console error, property reflected on the viewer
+  instance, no-throw rebuild/restyle) without reaching for canvas
   pixel-equality.

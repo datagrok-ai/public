@@ -1,5 +1,23 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-query-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — Query
+
+Verifies the Share dialog and the Advanced editor permissions matrix for a data query:
+opening the Sharing pane from the Context Panel, sharing at "View and use", and
+confirming that a recipient with that grant can open and run the query — but cannot
+edit, delete, or re-share it — until the owner revokes access. Also confirms that
+sharing a query which depends on a connection cascades a "View and use" grant to that
+connection.
 
 ## Setup
 

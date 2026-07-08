@@ -1,11 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.file-open
-  - biostructure.file-open.importPdb
-  - biostructure.file-open.importPdbqt
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [GROK-14442]
 produced_from: atlas-driven
 related_bugs:
   - GROK-14442
@@ -46,51 +44,18 @@ gate_verdicts:
 
 # BiostructureViewer — File-handler search disambiguation between `.pdb` and `.pdbqt` (GROK-14442 regression guard)
 
-## Overview
-
 Regression guard for [GROK-14442](https://reddata.atlassian.net/browse/GROK-14442)
 ("Fix file-handler search"). The bug surfaced as a file-handler-search
-collision in the platform's extension-to-importer dispatcher: opening a
-plain `.pdb` file from the Files browser routed to
-`BiostructureViewer:importPdbqt()` instead of
-`BiostructureViewer:importPdb()`. The two handlers exist side by side in
-`public/packages/BiostructureViewer/src/package.ts` (importPdb at L142
-declares extensions `mmcif, cifCore, pdb, gro`; importPdbqt at L177
-declares extension `pdbqt`); the search-by-extension logic was selecting
-the longer-prefix match (`pdbqt`) when the user opened a file with the
-shorter prefix (`pdb`). Because importPdbqt expects AutoDock pose
-records (PDBQT parser, AutoDock-pose UI route via `importPdbqtUI`), a
-plain `.pdb` routed to it either fails the parse or displays the file
-under the wrong pipeline, masking the canonical
-`viewBiostructure(content, 'pdb')` happy path entirely.
-
-The bug surfaces across three sub_features tracked in the atlas:
-
-- `biostructure.file-open` — the file-handler family registered by the
-  package (`package.ts#L142`). The dispatcher invariant lives at this
-  level: each declared extension MUST resolve to exactly one handler,
-  and the choice MUST be by exact extension equality, not prefix
-  containment.
-- `biostructure.file-open.importPdb` — the handler that MUST fire when
-  the file extension is `.pdb` (or `.mmcif`, `.cif`, `.gro`). Opens
-  content via `viewBiostructure(content, 'pdb')` in the Mol*
-  Biostructure viewer.
-- `biostructure.file-open.importPdbqt` — the handler that MUST fire
-  when (and only when) the file extension is `.pdbqt`. Routes to the
-  AutoDock-pose UI via `importPdbqtUI`.
-
-Atlas cross-references:
-
-- `feature-atlas/biostructureviewer.yaml#edge_cases[2]`
-  (file-handler extension disambiguation,
-  `source_bug: GROK-14442`,
-  `derived_from: bug-library:biostructureviewer.yaml#GROK-14442`).
-- `feature-atlas/biostructureviewer.yaml#interactions[biostructure-file-open-routing]`
-  (cross-feature interaction entry — extension routing across
-  importPdb / importPdbqt / importXYZ / importWithNgl — that already
-  carries `related_bugs: [GROK-14442]`).
-- `feature-atlas/biostructureviewer.yaml#critical_paths[biostructure-file-open-pdb-routes-to-molstar]`
-  (p0 smoke path, `derived_from` cites this bug-library entry directly).
+collision: opening a plain `.pdb` file from the Files browser routed to
+the AutoDock-pose importer (`importPdbqt`) instead of the regular
+Biostructure importer (`importPdb`). The two handlers are declared side
+by side in the package (`importPdb` covers `mmcif, cifCore, pdb, gro`;
+`importPdbqt` covers `pdbqt`); the search-by-extension logic was matching
+the longer prefix (`pdbqt`) even when the user opened a file with the
+shorter extension (`pdb`). Because `importPdbqt` expects AutoDock pose
+records, a plain `.pdb` routed to it either failed to parse or displayed
+under the wrong UI, masking the normal "open a PDB and see it in the
+Biostructure viewer" happy path entirely.
 
 ## Setup
 
@@ -106,8 +71,7 @@ Atlas cross-references:
 - Two structure fixtures are available under
   `System:AppData/BiostructureViewer/samples/`:
   - `1bdq.pdb` — a plain `.pdb` file (the file used in the bug
-    report's reproduction). It is also the fixture cited by atlas
-    `critical_paths[biostructure-file-open-pdb-routes-to-molstar]`.
+    report's reproduction).
   - A `.pdbqt` AutoDock-pose fixture under the same `samples/`
     directory (any package-shipped `.pdbqt`, e.g. a docking output).
     If no in-package `.pdbqt` is shipped, fall back to the AutoDock
@@ -138,9 +102,8 @@ Atlas cross-references:
     regression signature; a `.pdbqt` that opens into a Mol* viewport
     is the inverse regression.
 - Await render / route settle before asserting: for the Mol* side,
-  `viewer.awaitRendered(timeoutMs)` (see atlas edge_cases[6] —
-  async-render await pattern); for the importPdbqt side, await the
-  AutoDock-pose UI mount.
+  `viewer.awaitRendered(timeoutMs)`; for the importPdbqt side, await
+  the AutoDock-pose UI mount.
 
 ## Scenarios
 
@@ -160,8 +123,6 @@ Steps:
 
    * Expected result: the Files browser lists at least one `.pdb`
      fixture (`1bdq.pdb`); no error balloon, no fatal console error.
-     Atlas reference: `biostructure.file-open` family
-     (`package.ts#L142`).
 
 2. Begin function-call monitoring (capture the fully-qualified name
    of any `BiostructureViewer:*` function invoked over the next
@@ -176,26 +137,21 @@ Steps:
 
    * Expected result: exactly one
      `BiostructureViewer:importPdb` call is captured. NO
-     `BiostructureViewer:importPdbqt` call is captured. Atlas
-     reference: `biostructure.file-open.importPdb` →
-     `viewBiostructure(content, 'pdb')` (`package.ts#L142`).
+     `BiostructureViewer:importPdbqt` call is captured.
      **Regression signature**: if
      `BiostructureViewer:importPdbqt` fires instead, the test
      FAILS with diagnostic "GROK-14442 file-handler search
      regressed: .pdb routed to importPdbqt".
 
 4. Await the resulting UI mount via
-   `viewer.awaitRendered(timeoutMs)` (see atlas edge_cases[6] —
-   async-render await pattern).
+   `viewer.awaitRendered(timeoutMs)`.
 
    * Expected result: a **Biostructure** viewer is mounted —
      `[name="viewer-Biostructure"]` exists; `.msp-viewport canvas`
      is non-empty; default `representation: cartoon`. The
      AutoDock-pose UI (the destination of `importPdbqt` via
      `importPdbqtUI`) is NOT mounted. No "Parsed object is empty"
-     toast (atlas edge_cases[5] pitfall — the canonical
-     `viewBiostructure(content, 'pdb')` entry point supplies the
-     name internally, so this guard holds).
+     toast.
 
 5. Close the Biostructure viewer to leave a clean state for
    Scenario 2 (`viewer.close()` or `grok.shell.closeAll()` on the
@@ -234,8 +190,7 @@ Steps:
 
    * Expected result: exactly one
      `BiostructureViewer:importPdbqt` call is captured. NO
-     `BiostructureViewer:importPdb` call is captured. Atlas
-     reference: `biostructure.file-open.importPdbqt` (`package.ts#L177`).
+     `BiostructureViewer:importPdb` call is captured.
      **Inverse-regression signature**: if
      `BiostructureViewer:importPdb` fires instead, the test
      FAILS with diagnostic "GROK-14442 file-handler search inverse
@@ -270,68 +225,26 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: **playwright**. The bug manifests at the
-  intersection of the platform's file-handler dispatcher (a Datagrok
-  shell behaviour) and the Files-browser double-click UI affordance.
-  The canonical reproduction action is "double-click a file in the
-  Files browser"; the assertion is "which registered function fired".
-  A pure-apitest variant could call `grok.functions.call('BiostructureViewer:importPdb', {fileContent})`
-  and `grok.functions.call('BiostructureViewer:importPdbqt', {fileContent})`
-  directly, but that BYPASSES the file-handler search (the layer
-  where the bug lives) — it asserts only that each importer parses
-  its own content, not that the dispatcher routes by exact extension.
-  The bug is the dispatcher choosing the wrong handler, which only
-  manifests through the Files-browser double-click path; that path is
-  playwright-only.
-
-- coverage_type rationale: **regression** per the dispatch
-  `inputs.bug_brief.coverage_type`. The bug is fixed and this
-  scenario is a regression guard against re-emergence of the
-  file-handler search collision. Note that the chain-YAML SR
-  proposal recommended `coverage_type: edge` for the three residual
-  bug-focused scenarios so each authoring would double up against
-  F-STRUCT-NEGATIVE-01 (atlas edge_cases[2] carries
-  `coverage_type: edge`). The dispatch explicitly resolved to
-  `regression` — operator may re-classify this scenario to `edge`
-  post-author to satisfy F-STRUCT-NEGATIVE-01 in addition to
-  F-BUG-COVERAGE-01.
-
 - Deferrals: a fallback resulting-UI-inference assertion path is
   documented in Setup for environments where wrapping
   `grok.functions.call` to spy on the dispatched function name is
-  not feasible. This is NOT a deferral against a missing helper —
-  the playwright primitives (UI selectors, DOM queries) are
-  first-party — but a documented fallback for environments without
-  function-call instrumentation. No sub_features are deferred to
-  another layer.
+  not feasible — a documented fallback, not a coverage gap.
 
 - Fixture availability note: the `.pdbqt` fixture in step 1 of
   Scenario 2 may not ship inside the BiostructureViewer package's
   `samples/` directory. The documented fallback (a `.pdbqt` under
   `System:AppData/Docking/`) keeps the scenario runnable without
   authoring net-new fixtures. If neither location yields a
-  `.pdbqt`, the scenario operator may stage a minimal AutoDock-pose
-  `.pdbqt` under `System:AppData/BiostructureViewer/samples/` as a
-  one-time setup; this is fixture-staging, not test logic, and
-  does not affect the assertions.
+  `.pdbqt`, stage a minimal AutoDock-pose `.pdbqt` under
+  `System:AppData/BiostructureViewer/samples/` as a one-time setup.
 
-- Cross-reference with the existing migrated smoke
-  `biostructure-viewer.md`: its `bug_match_attempts_skipped[]`
-  audit record for GROK-14442 reads "the scenario opens .pdb files
-  (Blocks A/B/E) but does not assert which import handler fires,
-  so semantic_match_all_steps cannot deterministically extract step
-  references that exercise the discrimination invariant". This is
-  the dedicated regression guard authored to close that gap
-  (F-BUG-COVERAGE-01 branch (ii) anchor via
-  `related_bugs: [GROK-14442]`).
+- The existing smoke scenario (`biostructure-viewer.md`) opens `.pdb`
+  files but never asserts which import handler actually fires, so it
+  does not exercise this discrimination invariant. This scenario is
+  the dedicated regression guard for that gap.
 
-- Cross-reference with atlas `interactions[biostructure-file-open-routing]`
-  (`feature-atlas/biostructureviewer.yaml#L857-L872`): that
-  cross-feature interaction declares the broader extension-routing
-  invariant across importPdb / importPdbqt / importXYZ /
-  importWithNgl, and already carries `related_bugs: [GROK-14442]`.
-  This scenario is the concrete realization of the `.pdb` vs
-  `.pdbqt` slice of that broader invariant — the slice where the
-  bug actually manifested. A future breadth-coverage scenario
-  exercising importXYZ / importWithNgl can extend coverage to the
+- This scenario is the `.pdb` vs `.pdbqt` slice of the broader
+  extension-routing invariant across `importPdb` / `importPdbqt` /
+  `importXYZ` / `importWithNgl`. A future breadth-coverage scenario
+  exercising `importXYZ` / `importWithNgl` can extend coverage to the
   remaining slices without touching this scenario.

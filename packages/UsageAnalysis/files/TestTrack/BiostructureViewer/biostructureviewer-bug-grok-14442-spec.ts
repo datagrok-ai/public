@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [biostructure.file-open, biostructure.file-open.importPdb, biostructure.file-open.importPdbqt]
---- */
 // GROK-14442: file-handler search must disambiguate by exact extension — .pdb -> importPdb only,
 // .pdbqt -> importPdbqt only (prefix-containment match was the pre-fix bug).
 import {test, expect} from '@playwright/test';

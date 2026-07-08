@@ -1,7 +1,3 @@
-/* ---
-sub_features_covered: [general.toolbox-search, general.toolbox-search-compound, general.toolbox-search-date, general.toolbox-search-whitespace, general.toolbox-search-quoted, general.toolbox-search-null-date-crash]
---- */
-
 import {test, expect, Page, Locator} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

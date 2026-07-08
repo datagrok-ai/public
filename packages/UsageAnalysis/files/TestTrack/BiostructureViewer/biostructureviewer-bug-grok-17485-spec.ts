@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [biostructure.file-open, biostructure.project-persistence, biostructure.viewer]
---- */
 // GROK-17485: an ad-hoc PDB payload (viewer.props.get('pdb')) must survive a project save/reopen;
 // the bug drops the Biostructure viewer on reopen. KNOWN_REGRESSION_SOFT_WARN gates a soft-warn
 // branch (set false to restore the hard assertion once the platform fix lands).

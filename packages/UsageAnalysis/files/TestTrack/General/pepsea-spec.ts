@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.analyze.msa, bio.analyze.msa.dialog, bio.detector, bio.engines.msa-pepsea, bio.rendering.column-header]
---- */
 // NOTE: This spec was REMOVED from the playwright-public CI suite (Bio folder) and is kept here in
 // TestTrack/General for reference only. Reason for removal: PepSeA MSA runs through the on-demand `bio`
 // Docker container (dockerfiles/, on_demand:true — datagrok/python + mafft). On the minimal ui_tests CI

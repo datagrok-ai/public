@@ -1,14 +1,9 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.api.tree-helper.to-newick
-  - dendrogram.api.tree-helper.get-leaf-list
-  - dendrogram.api.tree-helper.get-node-list
-  - dendrogram.api.tree-helper.tree-cut-as-leaves
-  - dendrogram.api.tree-helper.tree-cut-as-tree
-  - dendrogram.api.tree-helper.set-grid-order
 target_layer: apitest
 coverage_type: regression
+priority: p2
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -51,24 +46,24 @@ scope_reductions:
           order) is asserted exactly.
       All three are scenario authoring parameter / mechanism corrections,
       not feature scope reductions. The atlas sub_features under test
-      remain fully exercised. Migrator should review the .md and either
-      re-author the steps with corrected parameters/wording or accept
-      this Automator note as canonical for future cycles.
+      remain fully exercised. These corrections have now been applied to
+      the scenario body (steps and Expected results match the spec), so
+      this block is a record of the fix, not a pending reduction.
 realized_as:
-  - dendrogram-tree-helper-traversal-api.ts
+  - dendrogram-tree-helper-traversal-api-spec.ts
 gate_verdicts:
   b:
     verdict: PASS
     cycle_id: 2026-06-03-dendrogram-automate-02
     timestamp: 2026-06-03T17:43:13Z
     spec_runs:
-      - spec: dendrogram-tree-helper-traversal-api.ts
+      - spec: dendrogram-tree-helper-traversal-api-spec.ts
         result: passed
         attempts: 3
         duration_seconds: 9
         failure_keys: []
   e:
-    verdict: SCOPE_REDUCTION
+    verdict: PASS
     cycle_id: 2026-06-03-dendrogram-automate-02
     timestamp: 2026-06-03T00:00:00Z
     failure_keys: []
@@ -76,36 +71,31 @@ gate_verdicts:
 
 # Dendrogram — TreeHelper public traversal / serialization surface
 
-Realizes the public `TreeHelper` traversal / serialization / grid-order
-surface that the atlas declares but no other Dendrogram scenario
-currently covers. The six sub_features all live behind the public
-`getTreeHelper()` entry point
-(`public/packages/Dendrogram/src/package.ts#L69`) and route to methods
-on `TreeHelper` in
-`public/packages/Dendrogram/src/utils/tree-helper.ts`:
+Covers the public `TreeHelper` traversal, serialization, and grid-order
+surface that no other Dendrogram scenario currently covers. All six
+functions live behind the public `getTreeHelper()` entry point and
+route to methods on `TreeHelper`:
 
-- `toNewick(rootNode)` — serializes a `NodeType` tree back to a newick
-  string (`tree-helper.ts#L97`).
+- `toNewick(rootNode)` — serializes a tree back to a newick string.
 - `getLeafList(rootNode)` — depth-first traversal returning all leaf
-  nodes (`tree-helper.ts#L119`).
-- `getNodeList(rootNode)` — depth-first traversal returning leaves
-  first then internal nodes in post-order (`tree-helper.ts#L134`).
+  nodes.
+- `getNodeList(rootNode)` — post-order depth-first traversal
+  (children before their parent; the root is the last entry).
 - `treeCutAsLeaves(rootNode, cutHeight)` — cuts the tree at a
-  cumulative-height threshold and returns cluster-root nodes
-  (`tree-helper.ts#L212`).
+  cumulative-height threshold and returns cluster-root nodes.
 - `treeCutAsTree(rootNode, cutHeight, keepShorts?)` — like
-  `treeCutAsLeaves` but returns a `NodeCuttedType` whose
-  `branch_length` is shortened at the cut and original subtrees are
-  preserved under `cuttedChildren` (`tree-helper.ts#L234`).
+  `treeCutAsLeaves` but returns a node whose branch length is
+  shortened at the cut and whose original subtrees are preserved
+  underneath.
 - `setGridOrder(rootNode, grid, leafColName?, removeMissingDataRows?)`
-  — reorders rows of the supplied `DG.Grid` so leaf order matches the
-  tree's leaf order (`tree-helper.ts#L273`).
+  — reorders rows of the supplied grid so leaf order matches the
+  tree's leaf order.
 
-The surface has no DOM observable of its own — apitest layer only.
-Scenario 1 is the cardinality / round-trip assertions over a small
+This surface has no UI of its own, so all assertions run through the
+JS API. Scenario 1 covers cardinality / round-trip over a small
 deterministic 4-leaf tree; Scenario 2 covers the two `treeCut*` shapes
 at a chosen interior cut height; Scenario 3 asserts `setGridOrder`
-reorders a non-trivially permuted `DG.Grid` to match leaf order.
+reorders a non-trivially permuted grid to match leaf order.
 
 ## Setup
 
@@ -149,9 +139,10 @@ Steps:
    values equals `{A, B, C, D}`.
 5. Call `treeHelper.getNodeList(rootNode)` and capture as `nodes`.
 6. Assert `nodes.length` equals the total tree cardinality
-   (4 leaves + 2 interior + 1 root = 7), and that the first four
-   entries are the four leaves (leaves-first traversal contract per
-   the atlas `derived_from:` `tree-helper.ts#L134`).
+   (4 leaves + 2 interior + 1 root = 7), that the last entry is the
+   root, and that every leaf-named entry is a shape-leaf (post-order
+   traversal contract — children precede parents, so the leaves are
+   NOT contiguous at the start of the list).
 7. Re-parse `roundTripped` through `treeHelper.newickToDf` and walk
    its leaf list — assert the resulting leaf-name set equals the
    original `{A, B, C, D}`.
@@ -162,22 +153,22 @@ Expected:
   round-trip is preserved.
 - `getLeafList(rootNode)` returns exactly 4 leaves whose `name` set
   equals `{A, B, C, D}`.
-- `getNodeList(rootNode)` returns 7 nodes total, with the four leaves
-  coming first in the list (per the leaves-first / post-order
-  contract).
+- `getNodeList(rootNode)` returns 7 nodes total in post-order — the
+  root is the last entry and the leaves are not contiguous at the
+  start of the list.
 - No console errors or unhandled promise rejections during the
   traversal calls.
 
 ### Scenario 2: treeCutAsLeaves + treeCutAsTree at an interior cut height
 
 Steps:
-1. Pick an interior cut height of `1.5`. With the balanced
-   `((A:1,B:1):1,(C:1,D:1):1):0;` tree, the two interior nodes sit at
-   cumulative height `1` (leaves at `0`, the root at `2`). A cut at
-   `1.5` therefore lands between the interior nodes and the root —
-   yielding exactly two cluster-roots: the `(A,B)` interior and the
-   `(C,D)` interior.
-2. Call `treeHelper.treeCutAsLeaves(rootNode, 1.5)` and capture as
+1. Pick an interior cut height of `0.5`. `TreeHelper` accumulates
+   cumulative height from the root downward (root at `0`, the two
+   interior nodes at `1`, leaves at `2`) and cuts with a strict `<`
+   comparison (tree-helper.ts#L216), so any value in `(0, 1]` lands
+   between the root and the two interior nodes — yielding exactly two
+   cluster-roots: the `(A,B)` interior and the `(C,D)` interior.
+2. Call `treeHelper.treeCutAsLeaves(rootNode, 0.5)` and capture as
    `cutLeaves`.
 3. Assert `cutLeaves.length === 2` (two cluster-root nodes returned).
 4. Assert the descendant-leaf names of the two cluster-roots,
@@ -185,21 +176,20 @@ Steps:
    original leaf set into `{A, B}` and `{C, D}` (order between the
    two clusters is implementation-defined; assert on the set
    partition, not on positional order).
-5. Call `treeHelper.treeCutAsTree(rootNode, 1.5)` and capture as
+5. Call `treeHelper.treeCutAsTree(rootNode, 0.5)` and capture as
    `cutTree`.
 6. Assert `cutTree` is a `NodeCuttedType` whose direct children's
    `branch_length` values have been shortened at the cut (the
-   summed cumulative depth at each child is the cut height, per the
-   atlas derived_from anchor `tree-helper.ts#L234`).
+   summed cumulative depth at each child equals the cut height).
 7. Assert `cutTree`'s direct children expose `cuttedChildren`
    carrying the original `(A,B)` and `(C,D)` subtrees — the
    un-cut original branches are preserved underneath, not erased.
 
 Expected:
-- `treeCutAsLeaves(rootNode, 1.5)` returns exactly two cluster-root
+- `treeCutAsLeaves(rootNode, 0.5)` returns exactly two cluster-root
   nodes; their descendant-leaf sets partition `{A, B, C, D}` into
   `{A, B}` and `{C, D}`.
-- `treeCutAsTree(rootNode, 1.5)` returns a `NodeCuttedType` whose
+- `treeCutAsTree(rootNode, 0.5)` returns a `NodeCuttedType` whose
   direct children carry shortened `branch_length` values reflecting
   the cut, and whose `cuttedChildren` preserve the original
   pre-cut subtrees.
@@ -217,10 +207,11 @@ Steps:
 2. Call `treeHelper.setGridOrder(rootNode, grid, 'leaf')` against the
    `TableView`'s grid.
 3. Await DOM settle.
-4. Read the `leaf` column values back out of the grid in visual row
-   order — iterate `grid.rowCount` calling `grid.row(i)` for
-   `i = 0..rowCount-1` and read the row's underlying `leaf` cell
-   value.
+4. Read the `leaf` column values back out in visual row order using
+   `grid.getRowOrder()`, and for each grid position read the
+   underlying value via `df.getCol('leaf').get(dfIdx)` (the
+   authoritative row-order API; the `grid.row(i).cell()` loop returns
+   nothing in a headless context).
 5. Capture the resulting sequence as `observedOrder`.
 6. Capture `treeHelper.getLeafList(rootNode)` again and extract its
    sequence of `name` values as `expectedOrder` (this is the leaf
@@ -238,25 +229,9 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: `apitest`. All six sub_features sit behind
-  `grok.functions.call('Dendrogram:getTreeHelper')` and resolve to
-  methods on `TreeHelper` with no DOM observable of their own
-  (Pattern 7 — js-api-method). The one grid interaction in
-  Scenario 3 (`setGridOrder` against an open `TableView`'s grid) is
-  asserted by reading back row values through the public `DG.Grid`
-  API, not by querying the DOM — the assertion is data-shaped,
-  apitest-eligible.
-- coverage_type rationale: `regression`. The surface is the
-  cross-package consumption contract that the atlas declares
-  uncovered; assertions exercise the documented post-order /
-  partition / round-trip / reorder contracts on a deterministic
-  4-leaf tree. No critical_path or atlas `interactions[]` /
-  `edge_cases[]` entry maps onto this specific scenario shape, so
-  the STEP E heuristic applies (general coverage of common feature
-  shapes → `regression`).
-- Deferrals: none. The six atlas sub_features all map cleanly to
-  `treeHelper.*` assertions; no UI-layer or manual-only path is
-  split off.
+- The one grid interaction in Scenario 3 (`setGridOrder` against an
+  open `TableView`'s grid) is asserted by reading back row values
+  through the public `DG.Grid` API, not by querying the DOM.
 - See: `public/packages/Dendrogram/src/package.ts#L69`
   (getTreeHelper entry point).
 - See: `public/packages/Dendrogram/src/utils/tree-helper.ts#L97`

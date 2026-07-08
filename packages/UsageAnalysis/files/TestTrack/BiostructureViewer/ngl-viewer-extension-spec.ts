@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [biostructure.file-open.importWithNgl, biostructure.file-preview.ngl-density, biostructure.file-preview.ngl-structure, biostructure.file-preview.ngl-surface, biostructure.grid-context-menu.show-ngl-viewer, biostructure.ngl-viewer, biostructure.ngl-viewer.props, biostructure.panel.pdb-id-ngl]
---- */
 // NGL viewer extension: mount + Style/Data/Behaviour props + file-handler routing + grid context menu
 // + PDB id panel. NGL representation uses 'ball+stick' (Mol* uses 'ball-and-stick'). File-routing
 // (Scenarios 2-3) is asserted via DG.Func.find registry probes (no NGL-format fixtures on disk).

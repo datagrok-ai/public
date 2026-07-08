@@ -32,8 +32,8 @@
  */
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {logoutAndLoginAs} from './session';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {logoutAndLoginAs} from '@datagrok-libraries/test/src/playwright/session';
 
 test.use({...specTestOptions, navigationTimeout: 180_000});
 

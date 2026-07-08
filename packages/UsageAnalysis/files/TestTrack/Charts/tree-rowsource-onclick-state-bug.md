@@ -1,11 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.tree
-  - charts.tree.on-click
-  - charts.tree.color-palette
 target_layer: playwright
 coverage_type: edge
+priority: p1
+realizes: [tree-rowsource-onclick-state-machine]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -19,21 +17,15 @@ related_bugs:
 
 # Tree viewer — Row Source × On Click state machine (github-3245)
 
-Bug-focused regression scenario for github-3245: Tree's `rowSource` ×
-`onClick` state machine exhibits non-orthogonal behavior — the same
-logical state can produce different visual results depending on
-transition history. Fix landed in Charts 1.24.0 — this scenario locks
-the state-machine consistency invariant.
-
-`pyramid_layer: bug-focused`. The canonical `tree.md` does NOT exercise
-the rowSource × onClick combinations — it only does collaborative
-filtering at default settings. This scenario covers each of the 9
-combinations (3 rowSource × 3 onClick) for state consistency.
-
-`related_bugs: [github-3245]` — bug-library reproduction class:
-combinations of `rowSource` (All/Filtered/Selected) × `onClick`
-(Select/Filter/None) must produce consistent viewer state regardless of
-transition path.
+Bug-focused regression scenario for github-3245: the Tree viewer's
+`rowSource` × `onClick` combination used to behave non-orthogonally —
+the same logical state could produce different visual results
+depending on the order transitions happened in. The fix landed in
+Charts 1.24.0; this scenario locks in state-machine consistency across
+all 9 combinations of `rowSource` (All/Filtered/Selected) × `onClick`
+(Select/Filter/None), regardless of the path taken to reach them. The
+canonical `tree.md` only exercises collaborative filtering at default
+settings, not these combinations.
 
 ## Setup
 
@@ -81,17 +73,15 @@ Steps:
 
 ## Notes
 
-- **github-3245 invariant carrier:** all 9 rowSource × onClick
-  combinations satisfy the 3 invariants (state-consistency, visual
-  stability, no console error) AND the transition-history independence
-  check (reverse-order iteration).
-- **ESC behavior:** the bug ticket cites ESC clearing table selection
-  but viewer highlight remaining stuck. Programmatic equivalent
-  (`df.selection.setAll(false)` + `fireChanged()`) is the
-  selector-pending substitute. Real DOM ESC awaits
-  `references/viewers/charts.md` UI registry per cycle deferral.
-- **Authority:** atlas-driven; closes the bug coverage gap for
-  github-3245 surfaced in chain rev 2.
+- The github-3245 invariant: all 9 `rowSource` × `onClick`
+  combinations satisfy state-consistency, visual stability, and
+  no-console-error — and the same holds when the combinations are
+  iterated in reverse order (transition-history independence).
+- The original bug ticket describes pressing ESC to clear the table
+  selection while the Tree viewer's highlight stays stuck. This
+  scenario uses the programmatic equivalent (`df.selection.setAll(false)`
+  + `fireChanged()`) as a substitute — an actual DOM ESC keypress
+  isn't exercised yet.
 
 ## Dataset metadata
 

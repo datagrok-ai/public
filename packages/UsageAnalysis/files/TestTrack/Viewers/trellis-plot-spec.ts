@@ -324,7 +324,7 @@ test('Trellis plot tests', async ({page}) => {
   await softStep('Scrolling', async () => {
     const result = await page.evaluate(async () => {
       const tp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Trellis plot') as any;
-      tp.props.xColumnNames = ['SITE'];
+      tp.props.xColumnNames = ['DIS_POP'];
       await new Promise(r => setTimeout(r, 1000));
       const x1 = [...tp.props.xColumnNames];
 
@@ -339,7 +339,7 @@ test('Trellis plot tests', async ({page}) => {
       return {x1, y1};
       // Note: scroll slider drag and mouse wheel are canvas interactions
     });
-    expect(result.x1).toEqual(['SITE']);
+    expect(result.x1).toEqual(['DIS_POP']);
     expect(result.y1).toEqual(['RACE']);
   });
 

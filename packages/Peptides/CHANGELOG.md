@@ -1,5 +1,12 @@
 # Peptides changelog
 
+## 1.27.10 (2026-07-08)
+
+### Features
+
+* Peptide Generation: New viewer that designs new candidate peptides from monomer-position statistics using an additive positional model, ranked by predicted activity (High/Low target) with per-peptide statistical support and novelty flags. Reuses the SAR viewers'/model's cached statistics when available, reacts to the dataframe filter, applies empirical-Bayes shrinkage to damp low-support noise, and carries an info icon explaining the model and its caveats. Appends per-position "basis" columns that render each chosen monomer (colored from the monomer library, width-fitted) with an effect circle (size = per-row-normalized effect magnitude, color = direction × significance: red raises, blue lowers, pale ≈ weak, grey = untestable) and the signed contribution value, with Most-Potent-Residues-style activity-distribution tooltips that explain the encoding. A header "+" button opens the generated peptides as a standalone table view, flattening the basis columns to "monomer, contribution, p-value" text. Not added to SAR analysis by default — add it manually from the viewers menu.
+
+* Moved the Peptides Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 ## 1.27.4 - 1.27.7 (2026-03-20)
 
 ### Features

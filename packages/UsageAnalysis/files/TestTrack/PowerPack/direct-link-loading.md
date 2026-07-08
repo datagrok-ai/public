@@ -1,11 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.lifecycle.init
-  - powerpack.welcome.view
-  - powerpack.dashboards
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [direct-link-loading-window]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Powerpack/direct-link-loading.md
 migration_date: 2026-05-23
@@ -48,31 +46,14 @@ gate_verdicts:
 
 # PowerPack — Direct-link entry path loading window rendering (GROK-18721 regression)
 
-Bug-focused regression scenario for `GROK-18721`: when a Datagrok app
-or dashboard is opened by following a direct link (URL paste in a
-fresh browser context, bookmark, or external deeplink), PowerPack's
-loading window must render fully and properly — the same visual
-quality as when navigating to the same app or dashboard from inside
-the platform. Before the fix, the direct-link entry path produced a
-cropped / incomplete loading-window layout: PowerPack's
-`powerPackInit` (the package's `@init` handler at
-`public/packages/PowerPack/src/package.ts#L315`) ran before the page's
-layout dimensions were established, and the welcome / home dashboard
-host rendered against undefined viewport sizing.
-
-Atlas surface exercised:
-- `powerpack.lifecycle.init` — `powerPackInit` runs at package init
-  on a fresh load; the bug is entry-path-dependent because in-app
-  navigation does not re-run init while direct-link entry does.
-- `powerpack.welcome.view` — `welcomeView`
-  (`public/packages/PowerPack/src/package.ts#L134`,
-  `meta.autostartImmediate: true`) replaces the platform home view on
-  direct-link entry; the loading window surfaces inside the welcome
-  view host.
-- `powerpack.dashboards` — the home-dashboard widgets
-  (`public/packages/PowerPack/src/package.ts#L138`) host the loading
-  affordance during direct-link page load; the cropping bug
-  manifests against this surface.
+Regression test for GROK-18721: when a Datagrok app or dashboard is
+opened via a direct link (URL paste in a fresh browser, bookmark, or
+external deeplink), PowerPack's loading window must render fully and
+properly — the same visual quality as when navigating to the same app
+or dashboard from inside the platform. Before the fix, the direct-link
+entry path produced a cropped or incomplete loading-window layout,
+because PowerPack's initialization ran before the page's layout
+dimensions were established.
 
 ## Setup
 
@@ -188,68 +169,9 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale.** `playwright`. The bug is a visual
-  rendering glitch in the PowerPack loading window during a specific
-  entry path (direct-link). A headless JS-API exercise (apitest)
-  cannot verify the loading window's rendering state — viewport
-  dimensions, painting completeness, and visual cropping are
-  browser-level observations. Pixel-precision drag and native file
-  picker are not involved, so `manual-only` is not required.
-- **coverage_type rationale.** `regression`. Bug-focused
-  (`pyramid_layer: bug-focused` per Rule 3 — canonical GROK-18721
-  reproduction surface), guards against re-regression on the
-  direct-link entry path. Not `smoke` (this is not the section's
-  golden path — the section's smoke is the top-level
-  `add-new-column.md` per chain `ui_coverage_plan`). Not `edge` (the
-  bug surfaces on a primary entry path — direct-link navigation is a
-  common user action via URL paste, bookmark, deeplink — not on a
-  boundary value or unusual input). Not `perf`.
-- **Pyramid layer.** `bug-focused` per Rule 3 — discriminator test:
-  GROK-18721 fails Scenario 1 before fix (PowerPack loading window
-  renders cropped / incomplete during direct-link page load). After
-  the fix, both scenarios pass and direct-link entry matches in-app
-  navigation visual quality.
-- **Atlas sub_features traceability.**
-  - `powerpack.lifecycle.init` — `powerPackInit`
-    (`public/packages/PowerPack/src/package.ts#L315`); the bug is
-    entry-path-dependent on lifecycle init timing. Direct-link
-    bypasses the warm-session shortcut and re-runs init against an
-    unestablished viewport.
-  - `powerpack.welcome.view` — `welcomeView`
-    (`public/packages/PowerPack/src/package.ts#L134`,
-    `meta.autostartImmediate: true`); the welcome view hosts the
-    loading affordance on fresh entry.
-  - `powerpack.dashboards` — the home-dashboard widgets
-    (`public/packages/PowerPack/src/package.ts#L138`); cropping
-    manifests against the dashboard host area during the welcome /
-    loading transition.
-- **Related bug.** `GROK-18721` (p2, status fixed).
-  Reproduction: copy a direct link to an app or dashboard (e.g.
-  `https://dev.datagrok.ai/p/Opavlenko.Demog_95`) → paste in a
-  fresh browser → PowerPack loading window renders cropped /
-  incomplete during page load. Expected: direct-link navigation
-  must render PowerPack's loading window fully and properly with
-  the same visual quality as in-app navigation.
-- **Edge-case-for-atlas note (from bug-library).**
-  entry-path-dependent rendering: lifecycle init timing on
-  direct-link bypasses normal view-change handler; loading window
-  renders before layout dimensions are established. The two
-  scenarios above pair the broken direct-link path with the
-  preserved in-app path to catch any future regression on either
-  side.
-- **Chain context.** This scenario is the section's bug-focused
-  witness for GROK-18721 — Critic F's `bug_focused_candidates[]`
-  entry for the bug (added in
-  `cycle-2026-05-20-powerpack-coverage`) had empty `spans[]`
-  pending this scenario's authoring. The chain's
-  `order_from_files[]` is updated to include this scenario.
-- **Deferrals.** None. The two scenarios cover the bug's
-  reproduction surface (direct-link entry → cropped loading
-  window) plus the regression-guard control (in-app navigation
-  with the same target). No deferral required.
-- **Coverage map.** Coverage map for PowerPack
-  (`references/coverage-map/powerpack.yaml`) is not present at
-  authoring time — gap-vs-coverage cross-check skipped per
-  STEP B fallback. The Critic F coverage-gap dispatch
-  (`gap: bug-uncovered :: GROK-18721`) drove this scenario's
-  authoring directly.
+- **Related bug.** GROK-18721 (fixed): copying a direct link to an
+  app or dashboard (e.g. `https://dev.datagrok.ai/p/Opavlenko.Demog_95`)
+  and opening it in a fresh browser caused PowerPack's loading window
+  to render cropped or incomplete during page load. Direct-link
+  navigation must render the loading window with the same visual
+  quality as in-app navigation.

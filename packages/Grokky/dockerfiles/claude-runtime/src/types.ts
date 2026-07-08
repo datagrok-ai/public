@@ -36,10 +36,16 @@ export const ClaudeModel = {
 } as const;
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
+export interface ImageAttachment {
+  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+  data: string;
+}
+
 export interface UserMessage {
   type: 'user_message';
   sessionId: string;
   message: string;
+  images?: ImageAttachment[];
   apiKey?: string;
   mcpServerUrl?: string;
   outputSchema?: object;
@@ -77,7 +83,7 @@ export type OutgoingMessage =
   | {type: 'tool_activity'; sessionId: string; summary: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean}
   | {type: 'error'; sessionId: string; message: string}
-  | {type: 'busy'; sessionId: string}
+  | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
   | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}

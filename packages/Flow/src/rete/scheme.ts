@@ -5,6 +5,16 @@ import {TypedSocket} from './sockets';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 
+/** The narrow callback surface a `FlowEditor` exposes to the React node
+ *  components it renders. Stamped onto every node that enters an editor's data
+ *  layer (`FlowNode.editorBridge`), so a component always talks to the editor
+ *  that owns it — several editors can coexist on a page (file previews, the
+ *  creation-script dialog, detached compile editors). */
+export interface FlowEditorBridge {
+  toggleCollapsed(id: string): void;
+  isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+}
+
 /** Base class for every node we put on the canvas.
  *
  * Extends `ClassicPreset.Node` with FuncFlow-specific metadata (Datagrok
@@ -68,6 +78,12 @@ export class FlowNode extends ClassicPreset.Node<
    *  Populated by `FuncNode`/output nodes; drives the "Needs input" hint. */
   requiredInputs: string[] = [];
 
+  /** Property keys that must carry a non-empty value for the node to run — the
+   *  node's non-socket requirements (Select Column's column name, Select Table's
+   *  table name). The panel-property analogue of {@link requiredInputs}; also
+   *  drives the "Needs input" hint and the run gate. */
+  requiredProps: string[] = [];
+
   /** Per-slot descriptions (from the DG.Func param `description`/`caption`),
    *  keyed by input/output slot key — shown as hover tooltips on the node's
    *  sockets and in the context panel. Empty entries are omitted. */
@@ -81,6 +97,11 @@ export class FlowNode extends ClassicPreset.Node<
   /** Visual position — kept in sync with AreaPlugin's NodeView for
    *  serialization. Updated by `FlowEditor` on `nodetranslated`. */
   pos: {x: number; y: number} = {x: 0, y: 0};
+
+  /** Back-reference to the owning editor's callback surface, stamped by
+   *  `FlowEditor` when the node enters its data layer. Runtime-only — the
+   *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
+  editorBridge?: FlowEditorBridge;
 
   /** Human-friendly title — `label` from the Rete superclass is what we
    *  render, so this is just an alias for symmetry with the LiteGraph world. */
@@ -126,6 +147,14 @@ export function isExecKey(key: string): boolean {
   return key === EXEC_IN_KEY || key === EXEC_OUT_KEY;
 }
 
+/** Whether a func node is the platform `SetVar`. Flow treats SetVar and Value
+ *  Output as the same concept: both register their value in the run context
+ *  under their name AND declare a script output of that name — they compile to
+ *  the same thing (see script-emitter / creation-script-emitter). */
+export function isSetVarNode(node: FlowNode): boolean {
+  return (node.dgFunc?.name?.toLowerCase() ?? '') === 'setvar';
+}
+
 /** The labels of a node's required inputs that are neither connected nor filled
  *  with a value — i.e. what the user still has to provide. Pure (no editor
  *  dependency): `isConnected(key)` is supplied by the caller. Drives the
@@ -140,4 +169,25 @@ export function missingRequiredInputs(node: FlowNode, isConnected: (key: string)
     missing.push(input?.label ?? key);
   }
   return missing;
+}
+
+/** The labels of a node's {@link FlowNode.requiredProps} left empty (undefined /
+ *  null / blank) — the panel-property requirements the user still has to fill
+ *  (a Select Column's column name, a Select Table's table name). */
+export function missingRequiredProps(node: FlowNode): string[] {
+  const missing: string[] = [];
+  for (const key of node.requiredProps) {
+    const v = node.properties[key];
+    if (v === undefined || v === null || String(v).trim() === '') missing.push(key);
+  }
+  return missing;
+}
+
+/** Everything the user still has to provide before the node can run: required
+ *  inputs (sockets) not wired/filled AND required properties left empty. Drives
+ *  the node's "Needs input" hint and the run gate — a node with any missing
+ *  requirement (a plot with no table, a Select Column with no column) is not
+ *  run, and neither is anything downstream of it. */
+export function nodeMissingRequirements(node: FlowNode, isConnected: (key: string) => boolean): string[] {
+  return [...missingRequiredInputs(node, isConnected), ...missingRequiredProps(node)];
 }

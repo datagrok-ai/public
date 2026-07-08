@@ -1,0 +1,154 @@
+//name: Sequence demo
+//description: Sequence conversion and calculations
+//language: flow
+//tags: flow
+//output: dataframe result
+{
+  "version": "2.0",
+  "name": "Sequence demo",
+  "description": "Sequence conversion and calculations",
+  "author": "admin",
+  "created": "2026-06-29T14:50:15.434Z",
+  "modified": "2026-06-29T14:50:15.434Z",
+  "nodes": [
+    {
+      "id": "fa224887fb408ff0",
+      "typeName": "DG Functions/Uncategorized/OpenFile",
+      "label": "Open HELM File",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 40,
+        "y": 40
+      },
+      "properties": {},
+      "inputValues": {
+        "fullPath": "System:AppData/Bio/samples/HELM_cyclic.tsv",
+        "sheetName": ""
+      }
+    },
+    {
+      "id": "7d7d09d2f3dc51c9",
+      "typeName": "Outputs/Table Output",
+      "label": "Table Output",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 927.5,
+        "y": 40
+      },
+      "properties": {
+        "paramName": "result"
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "099f750057524583",
+      "typeName": "DG Functions/Uncategorized/toAtomicLevel",
+      "label": "To Atomic Level",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 260,
+        "y": 40
+      },
+      "properties": {
+        "columnTables": {
+          "seqCol": "table"
+        }
+      },
+      "inputValues": {
+        "seqCol": "sequence",
+        "nonlinear": false,
+        "highlight": false
+      }
+    },
+    {
+      "id": "9295cfe4416e15c1",
+      "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
+      "label": "Chemical Properties",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 480,
+        "y": 40
+      },
+      "properties": {
+        "columnTables": {
+          "molecules": "table"
+        }
+      },
+      "inputValues": {
+        "molecules": "molfile(sequence)",
+        "MW": true,
+        "HBA": true,
+        "HBD": true,
+        "logP": true,
+        "logS": true,
+        "PSA": true,
+        "rotatableBonds": false,
+        "stereoCenters": false,
+        "moleculeCharge": false
+      }
+    },
+    {
+      "id": "2e0088155713cee1",
+      "typeName": "DG Functions/Uncategorized/AddNewColumn",
+      "label": "Add New Column",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 707.5,
+        "y": 40
+      },
+      "properties": {},
+      "inputValues": {
+        "expression": "${logs} / ${logp}",
+        "name": "logs / logp",
+        "type": "auto",
+        "treatAsString": false,
+        "subscribeOnChanges": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "7bf7ba83276e734c",
+      "source": "fa224887fb408ff0",
+      "sourceOutput": "result",
+      "target": "099f750057524583",
+      "targetInput": "table"
+    },
+    {
+      "id": "9872669d5adf6113",
+      "source": "099f750057524583",
+      "sourceOutput": "table__pt",
+      "target": "9295cfe4416e15c1",
+      "targetInput": "table"
+    },
+    {
+      "id": "11c9bea3755b0b6e",
+      "source": "9295cfe4416e15c1",
+      "sourceOutput": "table__pt",
+      "target": "2e0088155713cee1",
+      "targetInput": "table"
+    },
+    {
+      "id": "5a8d7b8d3dbd7bf9",
+      "source": "2e0088155713cee1",
+      "sourceOutput": "table__pt",
+      "target": "7d7d09d2f3dc51c9",
+      "targetInput": "table"
+    }
+  ],
+  "annotations": [],
+  "metadata": {
+    "settings": {
+      "scriptName": "Sequence demo",
+      "scriptDescription": "Sequence conversion and calculations",
+      "tags": [
+        "flow"
+      ]
+    }
+  }
+}

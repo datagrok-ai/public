@@ -1,12 +1,12 @@
 # Helm — Bio menu cross-feature integration on a HELM column
 
-> Cross-feature smoke: walk the **Bio** top menu on a Macromolecule `units=helm`
-> column and execute every leaf that is applicable to a standalone HELM column,
-> asserting that Bio's consumption of the column does NOT break the Helm
-> renderer / service / editor (the 2026-06 SVG-editor rewrite). The Bio-menu
-> leaves are owned by sibling packages (Bio, Dendrogram, SequenceTranslator,
-> BiostructureViewer) — see grok-browser `references/bio.md` § "Menu ownership
-> map"; this scenario only validates that they coexist cleanly with Helm.
+> Cross-feature smoke test: walks the **Bio** top menu on a Macromolecule
+> column that uses HELM notation and runs every menu entry that applies to a
+> standalone HELM column, checking that Bio's use of the column does not
+> break the Helm renderer, service, or editor (the 2026-06 SVG-editor
+> rewrite). The individual Bio-menu entries are owned and tested by sibling
+> packages (Bio, Dendrogram, SequenceTranslator, BiostructureViewer); this
+> scenario only checks that they continue to coexist cleanly with Helm.
 
 ## Setup
 

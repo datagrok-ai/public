@@ -1,14 +1,9 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.clustering.menu.bio
-  - dendrogram.clustering.dialog
-  - dendrogram.api.tree-helper.calc-distance-matrix
-  - dendrogram.clustering.inject-tree-for-grid
-  - dendrogram.clustering.assign-clusters-dialog
-  - dendrogram.api.tree-helper.cut-tree-to-grid
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [dendrogram.cp.hier-clustering-bio-sequence-path]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-bio.md
 migration_date: 2026-06-02
@@ -78,36 +73,32 @@ gate_verdicts:
 
 # Hierarchical Clustering (Bio) — sequence-default dialog + bio-specific build path
 
-Bio-path integration scenario for atlas critical_path
-`dendrogram.cp.hier-clustering-bio-sequence-path` (`priority: p1`):
-verify the Bio top-menu surface auto-selects a MACROMOLECULE
-(sequence) column as the default Features input on the Hierarchical
-Clustering dialog, then build a dendrogram from the sequence column
-through the Levenshtein-on-encoded-sequences distance path. Block C
-is an explicit ride-along smoke on the post-build Assign Clusters
-surface; per the chain's `ui_coverage_plan`, the dialog gateway
-(Distance/Linkage dropdown enumeration, OK button, menu entry) is
-delegated to `hierarchical-clustering-chem.md` (section ui-smoke)
-and the full Assign Clusters + Ctrl+wheel zoom surface is delegated
-to `assign-clusters.md` (integration). This scenario therefore
-re-exercises the gateway only as a precondition to building the
-bio-path tree; its specialty coverage is everything bio-path-specific
-(menu.bio entry, MACROMOLECULE auto-select, Levenshtein distance,
-sequence-column leaf binding).
+Bio-path integration scenario: verify the Bio top-menu surface
+auto-selects a MACROMOLECULE (sequence) column as the default
+Features input on the Hierarchical Clustering dialog, then build a
+dendrogram from the sequence column through the
+Levenshtein-on-encoded-sequences distance path. Scenario 4 is an
+explicit ride-along smoke on the post-build Assign Clusters surface;
+the dialog gateway (Distance/Linkage dropdown enumeration, OK button,
+menu entry) is owned by `hierarchical-clustering-chem.md`, and the
+full Assign Clusters + Ctrl+wheel zoom surface is owned by
+`assign-clusters.md`. This scenario re-exercises the gateway only as
+a precondition to building the bio-path tree; its specialty coverage
+is everything bio-path-specific (the Bio menu entry, MACROMOLECULE
+auto-select, Levenshtein distance, sequence-column leaf binding).
 
 This scenario complements:
 
-- `hierarchical-clustering-chem.md` (section ui-smoke) — owns the
-  shared hierarchical-clustering dialog gateway (Distance/Linkage
-  dropdowns, Features column input, OK button, menu entry surface
-  for the Chem-default path).
-- `assign-clusters.md` (integration) — owns the Assign Clusters
-  dialog full surface (two-way Threshold/Clusters binding,
-  column creation, replace-on-rerun, Ctrl+wheel zoom deferral).
-- `hierarchical-clustering-bio-api.md` (apitest, source-matrix) —
-  owns the 14-combo `{euclidean, manhattan} × {7 linkages}`
-  parameter matrix on the sequence path and the MACROMOLECULE
-  semType precondition assertion.
+- `hierarchical-clustering-chem.md` — owns the shared
+  hierarchical-clustering dialog gateway (Distance/Linkage dropdowns,
+  Features column input, OK button, menu entry surface for the
+  Chem-default path).
+- `assign-clusters.md` — owns the Assign Clusters dialog full surface
+  (two-way Threshold/Clusters binding, column creation,
+  replace-on-rerun, Ctrl+wheel zoom deferral).
+- `hierarchical-clustering-bio-api.md` — owns the 14-combo
+  `{euclidean, manhattan} × {7 linkages}` parameter matrix on the
+  sequence path and the MACROMOLECULE semType precondition assertion.
 
 ## Setup
 
@@ -178,17 +169,11 @@ Preconditions: Scenarios 1-2 have run; the dialog is open.
    **Linkage** = `ward`, click **OK**.
    - Verification: a transient progress indicator
      (`Creating dendrogram ...`) is shown while the sequence
-     distance matrix is computed via the encode + Levenshtein path
-     (atlas sub_feature
-     `dendrogram.api.tree-helper.calc-distance-matrix` declares
-     "MACROMOLECULE (Levenshtein on encoded sequences)"), then a
-     dendrogram neighbor is injected to the left of the grid with
-     one leaf per DataFrame row. Grid ↔ tree current /
-     mouseOver / selection / filter states are synchronized
-     (atlas sub_feature
-     `dendrogram.clustering.inject-tree-for-grid` declares the
-     bidirectional sync). No console errors and no
-     `Unsupported column type` error.
+     distance matrix is computed via the encode + Levenshtein path,
+     then a dendrogram neighbor is injected to the left of the grid
+     with one leaf per DataFrame row. Grid ↔ tree current /
+     mouseOver / selection / filter states are synchronized. No
+     console errors and no `Unsupported column type` error.
 
 6. Close the dendrogram. Re-open the dialog, set
    **Distance** = `manhattan`, **Linkage** = `complete`,
@@ -213,114 +198,53 @@ distance path (not only the chem Tanimoto-on-fingerprints path).
    **Assign Clusters** from the context menu.
    - Verification: the **Assign Clusters** dialog opens with a
      **Threshold** input (slider) and a **Clusters** input
-     (integer, minimum 1). The two inputs are interconnected
-     per atlas sub_feature
-     `dendrogram.clustering.assign-clusters-dialog`. No console
-     errors.
+     (integer, minimum 1). The two inputs are interconnected. No
+     console errors.
 
 8. Set **Clusters** to `5` and click **Assign**.
    - Verification: the dialog closes and a new categorical column
      `Cluster (<threshold>)` is added to the host DataFrame (one
      row per original sequence row; the column labels each row
-     with its cluster id). Atlas sub_feature
-     `dendrogram.api.tree-helper.cut-tree-to-grid` declares the
-     column-creation surface. No console errors.
+     with its cluster id). No console errors.
 
 ## Notes
 
-- **Bio menu path provenance.** The Bio top-menu entry
-  `Bio | Analyze | Hierarchical Clustering...` is registered by
-  the Dendrogram package via `package.g.ts#L98` (function
-  `hierarchicalClusteringSequences`), not by the Bio package
-  itself — per atlas sub_feature
-  `dendrogram.clustering.menu.bio` and its `derived_from:
-  [SRC Dendrogram:hierarchicalClusteringSequences
-  public/packages/Dendrogram/src/package.g.ts#L99]`. The
-  registering function seeds the dialog's Features input via
-  `bySemType(MACROMOLECULE)`, which is what produces the
-  sequence-default behaviour exercised in Scenario 1. The dialog
+- **Bio menu path provenance.** The `Bio | Analyze | Hierarchical
+  Clustering...` top-menu entry is registered by the Dendrogram
+  package (function `hierarchicalClusteringSequences`), not by the
+  Bio package itself. The registering function seeds the dialog's
+  Features input via `bySemType(MACROMOLECULE)`, which produces the
+  sequence-default behavior exercised in Scenario 1. The dialog
   itself is identical across all three top-menu entries
-  (`Bio | Analyze`, `Chem | Analyze`, `ML | Cluster`) — they
-  differ only in the default-selected feature column. The shared
-  dialog gateway is owned by `hierarchical-clustering-chem.md`
-  (section ui-smoke per the chain's `ui_coverage_plan`).
+  (`Bio | Analyze`, `Chem | Analyze`, `ML | Cluster`) — they differ
+  only in the default-selected feature column. The shared dialog
+  gateway is owned by `hierarchical-clustering-chem.md`.
 - **Levenshtein distance path.** For MACROMOLECULE columns,
   `TreeHelper.calcDistanceMatrix` encodes the sequence values and
-  computes pairwise distances via Levenshtein
-  (`tree-helper.ts#L526`-`L545`). Numeric columns use the
-  per-column difference metric; MOLECULE columns use Tanimoto on
+  computes pairwise distances via Levenshtein. Numeric columns use
+  the per-column difference metric; MOLECULE columns use Tanimoto on
   Morgan fingerprints (Chem path). The sequence path is exercised
-  here in Scenarios 3 and 4; the corresponding parameter matrix
-  (14 distance × linkage combinations on the sequence path) is
-  asserted by `hierarchical-clustering-bio-api.md`
-  (apitest, source-matrix layer).
-- **Step 6 centroid/median parenthetical (moved from inline).**
-  The original source step 6 ("Re-open the dialog, set
-  Distance = manhattan, Linkage = complete, Features = sequence,
-  click OK.") carried an inline parenthetical "(centroid/median
-  may render non-monotonic trees — expected, not a defect.)".
-  Step 6 specifies the `complete` linkage, not `centroid` or
-  `median`, so the parenthetical is misplaced (chain
-  `unresolved_ambiguities` flagged this as priority: low). The
-  parenthetical is moved here for accuracy: centroid and median
+  here in Scenarios 3 and 4; the corresponding parameter matrix (14
+  distance × linkage combinations on the sequence path) is asserted
+  by `hierarchical-clustering-bio-api.md`.
+- **Centroid/median note.** Step 6 uses `complete` linkage, not
+  `centroid` or `median`. For reference: centroid and median
   linkages may produce a non-monotonic tree (branches with
-  inversions or apparent cross-overs), which is mathematically
-  expected for these linkage methods and is not a defect. The
-  non-monotonic property is a structural property of the
-  merge-height sequence and is asserted in the apitest matrix
-  (`hierarchical-clustering-bio-api.md`, Scenario 1 covers all
-  14 distance × linkage combinations on the sequence path with
-  leaf-count + no-throw checks; chem-api Scenario 3 asserts the
-  positional linkage-code contract). The UI smoke here does not
-  exercise centroid/median linkages on the sequence path — see
-  `unresolved_ambiguities:
-  step-6-centroid-median-mirror-chem-dialog-step-7-pattern-not-decided`
-  for the open question of whether to add a centroid/median step
-  to mirror the chem-dialog Step 7 pattern.
-- **Block C deferred surface (Ctrl+wheel zoom).** The original
-  source Step 9 ("Hold Ctrl or Cmd and scroll the mouse wheel
-  over the dendrogram. Expected: tree zooms horizontally along
-  the X-axis, clamped 1×–100×; plain wheel scrolls vertically.")
-  is deferred to manual visual review per atlas `manual_only[]`
-  entry `dendrogram.mo.ctrl-wheel-zoom-tactile` — see frontmatter
-  `scope_reductions: [SR-01]` and the rationale field there. The
-  canonical owner of this surface is `assign-clusters.md`, whose
-  SR-01 records the same atlas dependency. The 1×–100× clamp
-  range cited by the original step is consistent with the
-  sibling-scenario citation in `assign-clusters.md` Step 12
-  notes (`unresolved_ambiguities:
-  step-12-max-horizontal-zoom-factor-not-specified` in that
-  file).
-- **Section chain context.** This scenario's chain entry declares
-  `pyramid_layer: integration` (multi-subsystem within the
-  feature: bio-dialog + sequence build path + delegated
-  post-build smoke ride-along) with `representative source
-  FASTA_PT_activity.csv` per Variant C. The chain's
-  `ui_coverage_responsibility` for this scenario lists
-  `bio-analyze-hierarchical-clustering-menu-entry`,
-  `hierarchical-clustering-dialog-macromolecule-default`, and
-  `hierarchical-clustering-dialog-sequence-path` — those flows
-  are owned here. Standard dialog flows (Distance/Linkage
-  dropdowns, OK button, dialog open) and post-build flows
-  (Assign Clusters dialog, threshold slider, clusters input,
-  assign button, Ctrl+wheel zoom) are delegated to
-  `hierarchical-clustering-chem.md` and `assign-clusters.md`
-  respectively (chain `ui_coverage_plan.delegated_scenarios`).
-- **Sub_features cited per scenario.** Scenarios 1-2 →
-  `dendrogram.clustering.menu.bio`,
-  `dendrogram.clustering.dialog`; Scenario 3 →
-  `dendrogram.api.tree-helper.calc-distance-matrix`,
-  `dendrogram.clustering.inject-tree-for-grid`; Scenario 4 →
-  `dendrogram.clustering.assign-clusters-dialog`,
-  `dendrogram.api.tree-helper.cut-tree-to-grid`.
-- **Bug library.** `bug-library/dendrogram.yaml` lists one entry,
-  GROK-13041 ("Dendrogram needs reset after filtering"), which
-  affects `dendrogram.clustering.inject-tree-for-grid` /
-  `dendrogram.event.selection-changed`. That bug's repro is
-  owned by a separate filter-vs-sort regression scenario (atlas
-  `edge_cases[dendrogram.ec.filter-does-not-trigger-remove-revert-prompt]`
-  scope), not by this scenario; `related_bugs: []` in the
-  frontmatter is therefore intentional.
+  inversions or apparent cross-overs) — this is mathematically
+  expected for these linkage methods, not a defect, and is asserted
+  separately by the apitest matrix in
+  `hierarchical-clustering-bio-api.md`. Open question: whether to
+  add a dedicated centroid/median step here to mirror the
+  chem-dialog pattern in `hierarchical-clustering-chem.md` Step 7.
+- **Ctrl+wheel zoom deferred.** Holding Ctrl/Cmd and scrolling over
+  the dendrogram to zoom horizontally (clamped 1×–100×; plain wheel
+  scrolls vertically) is deferred to manual visual review —
+  wheel/zoom behavior depends on browser-level event delivery.
+  `assign-clusters.md` is the canonical owner of this surface.
+- **Bug library.** GROK-13041 ("Dendrogram needs reset after
+  filtering") affects the same dendrogram/grid sync surface, but its
+  repro lives in a separate filter-vs-sort regression scenario
+  (`grok-13041-filter-no-prompt.md`), not here.
 
 ---
 {

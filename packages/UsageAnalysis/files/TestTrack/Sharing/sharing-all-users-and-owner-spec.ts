@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [sharing.advanced-editor, sharing.browse-shared-with-me, sharing.permission-types, sharing.server.privileges-router, sharing.share-dialog]
---- */
 import {test, expect, Page} from '@playwright/test';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin,

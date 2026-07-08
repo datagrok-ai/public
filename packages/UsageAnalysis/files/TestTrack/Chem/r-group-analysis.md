@@ -1,8 +1,9 @@
 ---
 feature: chem
-sub_features_covered: [chem.analyze.r-groups, chem.analyze.r-groups.top-menu, chem.analyze.r-groups.decomposition, chem.sketcher]
 target_layer: playwright
 coverage_type: edge
+priority: p0
+realizes: [chem.cp.r-groups-analysis]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis.md
 migration_date: 2026-05-11
@@ -28,13 +29,8 @@ Bug-focused R-Group Analysis scenario locking in two invariants:
   must surface the `No core was provided` balloon (negative-path invariant guarding
   the empty-core branch in `rGroupDecomp`).
 
-Per chain YAML (`scenario-chains/chem.yaml` rev 2): independent scenario
-(`depends_on: []`), `classification: medium`, `pyramid_layer: bug-focused`,
-`target_layer: playwright`, strategy `simple`. UI coverage owned
-(`ui_coverage_delegated_to: null`) over the R-Groups editor surface: MCS button,
-Visual analysis checkbox, Replace latest checkbox, No-core balloon, No-rgroups
-balloon, trellis plot rendering. Overlaps atlas critical path
-`chem.cp.r-groups-analysis` (p1; "MCS-strategy empty case is the sharp edge").
+The R-Groups editor's empty-result path (MCS finds no usable core) is considered the
+sharpest edge case in this feature, which is why Block A specifically targets it.
 
 ## Setup
 
@@ -115,9 +111,5 @@ balloon.
   when `latestAnalysisCols[col.dataFrame.name]?.length` is truthy
   (`r-group-analysis.ts:162`). Block B Step 5 implicitly relies on this: the
   re-invocation after Step 4 is what surfaces the checkbox.
-- Existing sibling spec at
-  `public/packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis-spec.ts`
-  (per `existing-test-index.yaml`) — Automator should regenerate or extend the
-  spec from this migrated scenario.
-- No helpers from `helpers-registry.yaml` apply to this scenario (R-Groups dialog
-  driving has no registered helper).
+- **Sibling spec.** A Playwright spec already exists at `r-group-analysis-spec.ts`;
+  it is regenerated or extended from this scenario.

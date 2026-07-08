@@ -1,10 +1,5 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.show-main-item-icons
-  - legend.column
-  - legend.item.marker-picker
-  - legend.refresh.on-data-change
 target_layer: playwright
 coverage_type: regression
 priority: p1
@@ -20,6 +15,10 @@ scope_reductions: []
 related_bugs:
   - GROK-19083
 ---
+
+# Legend — molecule structure rendering
+
+Verifies that when a legend is bound to a column of chemical structures (`Molecule` type), it renders actual molecule thumbnails — not raw SMILES text or category indices — across seven viewer types, and that Scatter plot markers can also render as molecule glyphs. Also checks that structure rendering survives layout and project reloads.
 
 ## Setup
 
@@ -60,11 +59,10 @@ related_bugs:
 
 ## Notes
 
-- Specialty: molecule thumbnail + marker glyph rendering across 7 viewers. Cross-cutting on `Molecule` semantic-type detection in `Core` / `Structure` columns of SPGI.
-- Delegates standard legend UI flows (visibility / position / color picker / save-layout dialog widgets) to `visibility-and-positioning.md`. This scenario does NOT exercise those flows directly.
-- `pyramid_layer: integration` — multi-subsystem (7 viewer types × molecule semantic type rendering). Not a smoke; not source-matrix; not bug-focused.
-- `legend.show-main-item-icons` is the primary atlas sub-feature; `legend.column` is touched as a setup step (not actively tested for column-switch behavior — that lives in the smoke).
-- Bug GROK-19083 (markers deselect ↔ legend sync) is cross-cutting; the bug-focused spec `legend-grok-19083-spec.ts` (proposed by chain) reproduces the deselect-markers invariant; this scenario verifies the positive baseline (markers selected → legend renders glyphs).
+- Relies on SPGI's `Core` and `Structure` columns being auto-detected as `Molecule` type.
+- Standard legend UI flows (visibility, position, color picker, save-layout dialog behavior) are covered once in `visibility-and-positioning.md` and not exercised directly here.
+- Setting the legend column is only a setup step here, not a test of column-switch behavior itself — that's covered in `visibility-and-positioning.md`.
+- Bug GROK-19083 (deselecting markers desyncs the legend) has a dedicated repro (`legend-grok-19083-spec.ts`); this scenario verifies the positive baseline — with markers selected, the legend renders molecule glyphs correctly.
 
 ---
 {

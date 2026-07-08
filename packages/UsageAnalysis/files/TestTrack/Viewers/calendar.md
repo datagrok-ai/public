@@ -1,3 +1,14 @@
+---
+feature: calendar
+target_layer: playwright
+coverage_type: smoke
+priority: p2
+realizes: []
+realized_as:
+  - calendar-spec.ts
+related_bugs: []
+---
+
 ### Calendar viewer
 
 1. Open the **demog** dataset.

@@ -1,5 +1,6 @@
 # Developer keys
 upload.keys.json
+files/TestTrack/auth-dev.json
 
 # Dependency directories
 node_modules/

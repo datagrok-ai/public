@@ -1,16 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.tooltips.show-tooltip
-  - peptides.tooltips.show-tooltip-at
-  - peptides.tooltips
-  - peptides.util.highlight-monomer-position
-  - peptides.rendering.mutation-cliffs-cell
-  - peptides.rendering.invariant-map-cell
-  - peptides.rendering.draw-logo-in-bounds
-  - peptides.viewers.monomer-position
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [GROK-15934]
 produced_from: atlas-driven
 related_bugs:
   - GROK-15934
@@ -82,6 +75,10 @@ gate_verdicts:
         failure_keys: []
 ---
 
+# Peptides — Hovering SAR cells and WebLogo letters shows a stats tooltip without crashing
+
+Hovering a cell on the Sequence Variability Map, a WebLogo column header, or a Logo Summary Table cell should show a rich tooltip (histogram + stats table) for that monomer/position, and highlight the corresponding cell on the grid. This scenario exercises that hover path across various states (after a mode switch, after a selection change, after a settings change) to guard against GROK-15934, where hovering during a model-state transition could throw a null-reference error instead of just skipping the tooltip render. It also checks that the WebLogo-drawing primitive used by both column headers and Logo Summary Table cells renders consistently in both places.
+
 ## Setup
 
 1. Start from a clean Datagrok shell — no Peptides analysis or `PeptidesModel` on any open DataFrame, no pre-existing `PeptidesView` TableView. Close any pre-existing peptide-related TableViews from prior test runs and confirm `grok.shell.tableViews` is clear of any view whose active DataFrame carries the `peptidesModel` singleton in `DataFrame.temp` (per the atlas description of `peptides.model` at `src/model.ts#L78`: "Singleton stored in `DataFrame.temp[\"peptidesModel\"]`"). Tooltip wiring and grid cell renderer registration are both invoked at `model.init` time (per atlas sub_feature `peptides.model.init` at `src/model.ts#L1105` — "applies the supplied PeptidesSettings, prepares position columns, scales the activity column, computes initial stats, and registers grid renderers + tooltips on the TableView") — the hover-tooltip + cell-glyph assertions in both scenarios depend on a fresh `model.init` against a fresh DataFrame.
@@ -92,9 +89,9 @@ gate_verdicts:
 
 ## Scenarios
 
-### Scenario 1 — Hover on a MonomerPosition cell fires `showTooltip` / `showTooltipAt` with histogram + stats payload, with no null-receiver console errors across various model-state transitions
+### Scenario 1 — Hovering a Sequence Variability Map cell shows the stats tooltip, and never crashes across model-state transitions
 
-Atlas anchors: `edge_cases[GROK-15934]` (`coverage_type: regression`, atlas description: "Tooltip null-column race — MPR tooltip on hover calls `.getTag()` on a null column reference, surfacing as a production auto-report. Column lookup may fail when the model is in a transitional state (column renamed, removed, or reference stale after settings change). Bug class: race between hover event and model state mutation. Tests must cover: MPR viewer → various states (post-settings-change, post-column-rename, post-selection-sync) → hover triggers tooltip → must not crash; tooltip either renders correctly OR skips silently on stale references."); atlas sub_features `peptides.tooltips.show-tooltip` (`src/utils/tooltips.ts#L28`, "renders the tooltip at the mouse position for the current monomer-position cell"), `peptides.tooltips.show-tooltip-at` (`src/utils/tooltips.ts#L49`, "variant that renders the tooltip at an explicit (x, y) anchor"), and `peptides.util.highlight-monomer-position` (`src/utils/misc.ts#L365`, "draws/updates the highlight overlay on the grid for a (monomer, position) hover"). Although GROK-15934 cites the Most Potent Residues viewer specifically, the same `tooltips.ts` surface is shared by both `MonomerPosition` and `MostPotentResidues` viewers (both extend `SARViewer`, which wires up the tooltip handlers at `model.init` time per `peptides.model.init`'s atlas description "registers grid renderers + tooltips on the TableView"). This scenario exercises the happy-path tooltip render against `MonomerPosition` (which is the more interaction-rich viewer of the two — its cells use the larger glyph renderers `rendering.mutation-cliffs-cell` + `rendering.invariant-map-cell`, which is also tested here for the same hover event).
+GROK-15934 is a tooltip null-column race: hovering during a transitional model state (mid settings-change, renamed/removed column, stale reference) could call `.getTag()` on a null column and surface as a crash report. The fix contract is tolerant — on hover, the tooltip must either render correctly or silently skip, but it must never throw. Although the original bug report names the Most Potent Residues viewer, both it and the Sequence Variability Map viewer share the same tooltip code, so this scenario exercises the richer Sequence Variability Map viewer end-to-end: Invariant Map mode, Mutation Cliffs mode, after a selection change, and after a settings change.
 
 1. With the SAR layout from Setup step 5 attached, locate the docked `Sequence Variability Map` (MonomerPosition) viewer in the analysis view. Confirm via `PeptidesModel.getInstance(table).findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP)` (per `model.ts#L1187` and the `VIEWER_TYPE` enum at `model.ts#L62`) that the viewer is non-null. The viewer is a `DG.JsViewer` whose root contains a grid showing monomers × positions; the cell area renders either Invariant-Map glyphs (rectangles keyed to aggregated stats per atlas sub_feature `peptides.rendering.invariant-map-cell` at `src/utils/cell-renderer.ts#L161`'s `renderInvariantMapCell(...)`) or Mutation-Cliffs glyphs (colored circles sized by count and colored by mean diff per atlas sub_feature `peptides.rendering.mutation-cliffs-cell` at `src/utils/cell-renderer.ts#L52`'s `renderMutationCliffCell(...)`) depending on the current `SARViewer` mode (Invariant Map by default per `src/viewers/sar-viewer.ts#L104`'s atlas description).
 2. Confirm the viewer is in Invariant Map mode by default (toggle via the SAR viewer's context-menu `Mode → Invariant Map` if not already active — Invariant Map vs Mutation Cliffs is the mode switch documented at atlas sub_feature `peptides.viewers.sar-base` at `src/viewers/sar-viewer.ts#L104`). Visually confirm at least one populated (non-empty) cell exists in the heatmap — the cell renderer's emit at `cell-renderer.ts#L161` draws a colored rectangle whose color is keyed to the cell's aggregated stat value. Capture the cell's bounding-box coordinates (grid `(monomer, position)` → screen `(x, y)`) for the hover step below.
@@ -114,9 +111,9 @@ Expected (assertion summary). The hard contract throughout is the GROK-15934 no-
 - Settings-change-driven state mutation (Viewers-pane `Active-peptide-selection` round-trip → apply, per SR-01) does NOT throw on subsequent hover. GROK-15934-class null-receiver regression assertion.
 - Cursor leaving the viewer body dismisses the tooltip and clears the highlight overlay.
 
-### Scenario 2 — Logo Summary Table cell renders `drawLogoInBounds` glyph; hover on column-header WebLogo and on LST cells fires the tooltip via `showTooltipAt`'s explicit-anchor path
+### Scenario 2 — WebLogo glyphs render consistently in column headers and Logo Summary Table cells; hovering either shows the tooltip
 
-Atlas anchors: atlas sub_features `peptides.rendering.draw-logo-in-bounds` (`src/utils/cell-renderer.ts#L224`, "primitive that draws a WebLogo into an arbitrary canvas rect (used by both header WebLogos and Logo Summary Table cells)"), `peptides.rendering.weblogo-header` (`src/utils/cell-renderer.ts#L312`, "installs WebLogo column-header rendering on per-position columns and wires up mouse handlers (click monomer-position to dock or extend selection)"), `peptides.tooltips.show-tooltip-at` (`src/utils/tooltips.ts#L49`, "variant that renders the tooltip at an explicit (x, y) anchor"). The `drawLogoInBounds` primitive's dual call-site shape (column-header WebLogos AND Logo Summary Table cells) is the atlas-anchored interaction this scenario exercises end-to-end; the column-header surface and the LST cell surface both rely on the same primitive — a regression in the primitive surfaces as a corrupted glyph on both rendering paths.
+Both the per-position column-header WebLogos and the Logo Summary Table's per-cluster WebLogo cells are drawn by the same underlying primitive, so a regression in it would corrupt both rendering paths. This scenario confirms the glyphs render (and are visually consistent) in both places, and that hovering a letter in either location shows the stats tooltip anchored at the letter's position.
 
 1. Add the Logo Summary Table viewer to the analysis view via `Add viewer | Logo Summary Table` (per atlas sub_feature `peptides.viewers.logo-summary-table` at `src/package.ts#L216`, atlas interaction "Add viewer | Logo Summary Table"). Confirm via `PeptidesModel.getInstance(table).findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE)` that the viewer is non-null and the per-cluster summary grid appears (atlas description: "per-cluster summary grid: WebLogo, activity-distribution histogram, members count, mean difference, p-value"). Each row of the LST grid corresponds to a cluster; the leftmost cell of each row shows a WebLogo drawn via `peptides.rendering.logo-summary-cell` (per `src/utils/cell-renderer.ts#L197`'s `renderLogoSummaryCell(...)` — "draws Logo Summary Table cells (WebLogo + summary stats inline)"), which internally calls `drawLogoInBounds(ctx, bounds, stats, position, ...)` to emit the WebLogo glyph at the cell's pixel bounds.
 2. Visually confirm at least one populated LST row exists with a non-trivial WebLogo glyph in its leftmost cell — the stacked-letter logo shape (a WebLogo column of variable-height letters, taller letters denoting higher frequency). This confirms `drawLogoInBounds` is rendering correctly in the LST cell call-site. Capture the bounding-box coordinates of the WebLogo cell for the hover step below.
@@ -138,18 +135,7 @@ Expected (assertion summary):
 
 ## Notes
 
-- target_layer rationale: both scenarios require hover-driven mouse events on canvas-rendered grid cells (`peptides.rendering.invariant-map-cell`, `peptides.rendering.mutation-cliffs-cell`, `peptides.rendering.draw-logo-in-bounds`), the SAR viewer's context-menu mode-switch, the Settings dialog round-trip, and tooltip + highlight-overlay assertions on transient DOM/canvas state — these are not exercisable through the apitest layer (`grok.dapi.*` doesn't drive mouse events or assert on canvas-rendered glyphs), so `playwright` is the only viable layer.
-- coverage_type rationale: atlas `edge_cases[GROK-15934].coverage_type: regression` — per the spec-mode canonical rule, the scenario's `coverage_type:` must match the atlas edge_case it maps onto verbatim. GROK-15934 is the anchor for the tooltip null-column race bug class, and this scenario directly exercises the post-mode-switch, post-selection, post-settings-change tooltip hover surface that the bug class describes.
-- atlas entry derived from `.claude/skills/grok-orchestrate-test-cycle/references/bug-library/peptides.yaml#GROK-15934` (via the atlas `edge_cases[GROK-15934]` entry's `derived_from:` field).
-- Atlas anchors per `sub_features_covered`:
-  - `peptides.tooltips.show-tooltip` — `src/utils/tooltips.ts#L28`
-  - `peptides.tooltips.show-tooltip-at` — `src/utils/tooltips.ts#L49`
-  - `peptides.tooltips` (group) — `src/utils/tooltips.ts#L1`
-  - `peptides.util.highlight-monomer-position` — `src/utils/misc.ts#L365`
-  - `peptides.rendering.mutation-cliffs-cell` — `src/utils/cell-renderer.ts#L52`
-  - `peptides.rendering.invariant-map-cell` — `src/utils/cell-renderer.ts#L161`
-  - `peptides.rendering.draw-logo-in-bounds` — `src/utils/cell-renderer.ts#L224`
-  - `peptides.viewers.monomer-position` — `src/package.ts#L182`
-- See: `public/help/visualize/viewers/sequence-variability-map.md` (atlas `help_docs[]` FOUND entry covers `peptides.viewers.monomer-position` directly).
-- Coverage uplift narrative (for the chain's Gate F re-evaluation, informational): this scenario adds 7 previously-uncovered sub_features to the section's union (`tooltips.show-tooltip`, `tooltips.show-tooltip-at`, `tooltips`, `util.highlight-monomer-position`, `rendering.mutation-cliffs-cell`, `rendering.invariant-map-cell`, `rendering.draw-logo-in-bounds`); one re-coverage entry (`viewers.monomer-position`, already covered via sar.md / peptide-space.md / sar-viewer-lifecycle.md). The 7 new entries directly address the gap[1].uncovered_sub_feature_families enumeration entries `tooltips.{show-tooltip, show-tooltip-at}`, `util.{highlight-monomer-position, ...}` (partial), and `rendering.{mutation-cliffs-cell, invariant-map-cell, draw-logo-in-bounds, ...}` (partial) per the proposal's recommendation to author a tooltips scenario and a per-row-renderer scenario; this single scenario covers both proposals' overlap.
-- No deferrals.
+- **Related bug — GROK-15934.** The hard contract throughout both scenarios is "hover after a model-state transition must never throw a null-reference error"; tooltip content rendering is treated as a tolerant secondary check (render correctly, or skip silently — either is acceptable, a crash is not).
+- **Scope reduction — settings round-trip (Scenario 1 step 8).** The bug report's original repro used a Columns-pane aggregation change, but that pane's control names aren't documented for automation. This scenario instead round-trips the documented Viewers-pane "Active peptide selection" toggle, which drives the same class of model-state mutation (and is the same round-trip used by sibling `sar-viewer-lifecycle.md`); the no-crash-on-hover check after this toggle is still the real GROK-15934 regression assertion.
+- **Scope reduction — Logo Summary Table hover (Scenario 2).** The Logo Summary Table only attaches once MCL clustering finishes, which can take much longer than this spec's settle window, especially via the context-panel entry path — live recon on dev confirmed it does eventually attach, just unpredictably late (up to ~100s). Rather than depend on that timing, the WebLogo-drawing primitive is instead verified deterministically at the always-present column-header call site; the Logo Summary Table cell is checked opportunistically alongside it.
+- **See:** `public/help/visualize/viewers/sequence-variability-map.md`.

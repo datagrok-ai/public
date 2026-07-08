@@ -1,13 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.manage.libraries-app
-  - bio.manage.libraries-app.tree-browser
-  - bio.manage.monomers-view
-  - bio.manage.match-with-library
-  - bio.manage.standardize-library
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [bio.cp.manage-monomer-libraries]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -45,57 +41,23 @@ gate_verdicts:
     failure_keys: []
 ---
 
-# Bio — Manage Monomer Libraries CRUD (app + tree browser + Monomers view + Match dispatch)
+# Bio — Manage Monomer Libraries: app, tree browser, Monomers view & Match dialog
 
-Gate F SR-extension scenario (cycle `2026-06-01-bio-migrate-02`)
-that realizes two atlas critical_paths still unrealized on the
-live covered union (chain rev 20 → 21, 62/99 → ~66/99):
-
-(a) `bio.cp.monomer-library-crud` (`priority: p1`,
-    `derived_from: public/packages/Bio/src/utils/monomer-lib/lib-manager.ts#L415-L444`)
-    — upload / edit / delete monomer-library JSON entries via the
-    `Manage Monomer Libraries` app surface, verifying the
-    `System:AppData/Bio/monomer-libraries` AppData reflects each
-    operation on re-init / read-back.
-(b) `bio.cp.manage-monomer-libraries` (`priority: p1`,
-    `derived_from: public/packages/Bio/src/package.ts#L1351`) —
-    the broader management surface that the `Manage Monomer
-    Libraries` view + app + tree-browser collectively expose.
-
-This scenario is the second-highest-value remaining first-pass
-proposal per Critic F's `scope_reduction_proposal` (closure path,
-priority order: critical-path adjacency first). It lands four net-
-new sub_features on the section's covered union and exercises the
-three sibling `Bio | Manage | *` top-menu entries that the prior
-`manage.md` (single-action ui-smoke against
-`Bio | Manage | Monomer Libraries`) and the lifecycle scenarios
+Covers three sibling **Bio | Manage** surfaces that the shorter
+`manage.md` smoke test and the lifecycle scenarios
 (`bio-lifecycle-monomer-library.md` /
-`bio-lifecycle-monomer-collection.md`) touch only via umbrella
-ids.
+`bio-lifecycle-monomer-collection.md`) only touch indirectly:
 
-Atlas surfaces realized:
-
-- `bio.manage.libraries-app` (`package.ts#L1377`, role `app`,
-  `browsePath: Peptides`) — the standalone `Manage Monomer
-  Libraries` app entry point (distinct from the top-menu view
-  exercised by `manage.md`).
-- `bio.manage.libraries-app.tree-browser` (`package.ts#L1396`,
-  `appTreeBrowser` for `Manage Monomer Libraries`) — the
-  tree-view sidebar that lists each library node; clicking a node
-  opens its monomer manager.
-- `bio.manage.monomers-view` (`package.ts#L1367`,
-  `Bio | Manage | Monomers` top-menu) — full CRUD UI for
-  individual monomers with SMILES↔molfile standardization.
-- `bio.manage.match-with-library` (`package.ts#L166`,
-  `Bio | Manage | Match with Monomer Library...` top-menu) —
-  matches molecules in a column against monomers in the selected
-  library; builds a match DataFrame. Polymer types: PEPTIDE / RNA
-  / CHEM.
-- `bio.manage.standardize-library` (`package.ts#L161`,
-  `standardiseMonomerLibrary(library)` API) — normalizes a
-  monomer-library JSON; reachable via the per-row Edit / Add path
-  on the libraries view (Add button populates the form via the
-  standardization pipeline).
+- the standalone **Manage Monomer Libraries** app and its
+  tree-browser sidebar (listing each library, click to open its
+  per-library manager),
+- the **Bio | Manage | Monomers** view (full CRUD for individual
+  monomers, with SMILES↔molfile standardization),
+- the **Bio | Manage | Match with Monomer Library...** dialog
+  (matches molecules in a column against monomers in a chosen
+  library, for PEPTIDE / RNA / CHEM polymer types), and
+- the underlying `standardiseMonomerLibrary` normalization API
+  that library edits run through.
 
 ## Setup
 
@@ -138,18 +100,14 @@ Server-state dependencies:
 Steps:
 
 1. Invoke the standalone `Manage Monomer Libraries` app entry
-   point: `await grok.functions.call('Bio:libsApp')` (atlas
-   `bio.manage.libraries-app`, `package.ts#L1377` —
-   `name: libsApp`, role `app`).
+   point: `await grok.functions.call('Bio:libsApp')`.
 2. Confirm an app-shell view opens with `grok.shell.v.name`
    resolving to the `Manage Monomer Libraries` title (or the
    equivalent app-root view).
 3. Drive the `Manage Monomer Libraries` tree browser
    programmatically: `await grok.functions.call(
    'Bio:appTreeBrowser', {treeNode: <root-node-of-Peptides>,
-   browseView: <browseView>})` (atlas
-   `bio.manage.libraries-app.tree-browser`,
-   `package.ts#L1396`).
+   browseView: <browseView>})`.
 4. Verify the tree-browser side panel renders one node per
    library available to the current user (≥1 library node;
    exact set varies per `FileShare` per the recon note above).
@@ -183,10 +141,8 @@ Steps:
    `[name="div-Bio---Manage---Monomers"]` per
    `.claude/skills/grok-browser/references/bio.md#L488` — the
    leaf opens a VIEW (not a `.d4-dialog`), mirroring the shape
-   documented for `Bio | Manage | Monomer Libraries` (atlas
-   `bio.manage.monomers-view`, `package.ts#L1367` —
-   `manageMonomersView` function, role unspecified but
-   browseable from the top menu).
+   documented for `Bio | Manage | Monomer Libraries` (the
+   `manageMonomersView` function, browseable from the top menu).
 2. Wait for the view to mount: `grok.shell.v.name` resolves to
    the `Manage Monomers` title (or the runtime-specific
    equivalent; bio.md L488 flags this view as
@@ -218,13 +174,10 @@ Steps:
 1. Open `System.AppData/Bio/tests/filter_HELM.csv` so a HELM
    sequence column is available as the `Molecules` input for the
    Match dialog. The Macromolecule detector classifies the
-   sequence column (atlas `bio.detector` touched in setup;
-   already in the section's covered union).
+   sequence column.
 2. Dispatch the top menu: click
    `[name="div-Bio---Manage---Match-with-Monomer-Library..."]`
-   per `.claude/skills/grok-browser/references/bio.md#L490-L498`
-   (atlas `bio.manage.match-with-library`,
-   `package.ts#L166` — `matchWithMonomerLibrary` function).
+   per `.claude/skills/grok-browser/references/bio.md#L490-L498`.
 3. Wait for the dialog to mount:
    `[name="dialog-matchWithMonomerLibrary"]` (title
    `matchWithMonomerLibrary` — note the raw function-name title
@@ -241,12 +194,11 @@ Steps:
 6. Library normalization side: programmatically invoke the
    `standardiseMonomerLibrary` API exposed as
    `grok.functions.call('Bio:standardiseMonomerLibrary',
-   {library: <library-JSON-object>})` (atlas
-   `bio.manage.standardize-library`, `package.ts#L161`). Pass a
-   minimal HELM JSON-shape monomer-library object (e.g. the
-   normalized form of a single PEPTIDE monomer with `symbol`,
-   `name`, `molfile`, `polymerType: PEPTIDE`); capture the
-   returned normalized object.
+   {library: <library-JSON-object>})`. Pass a minimal HELM
+   JSON-shape monomer-library object (e.g. the normalized form
+   of a single PEPTIDE monomer with `symbol`, `name`, `molfile`,
+   `polymerType: PEPTIDE`); capture the returned normalized
+   object.
 
 Expected:
 
@@ -267,140 +219,17 @@ Expected:
 
 ## Notes
 
-- atlas critical_paths realized:
-  - `bio.cp.monomer-library-crud` (`priority: p1`,
-    `derived_from: public/packages/Bio/src/utils/monomer-lib/lib-manager.ts#L415-L444`)
-    — Scenarios 1 and 3 between them exercise the app + tree
-    browser surface (library list / per-library manager) plus
-    the library-JSON standardization API the CRUD pipeline runs
-    on save.
-  - `bio.cp.manage-monomer-libraries` (`priority: p1`,
-    `derived_from: public/packages/Bio/src/package.ts#L1351`) —
-    the broader management surface; this scenario complements
-    `manage.md` (top-menu ui-smoke against `Bio | Manage |
-    Monomer Libraries` view) by covering the three sibling
-    `Manage` entries not exercised there (`Monomers`,
-    `Match with Monomer Library...`) plus the standalone app
-    + tree browser surface.
-- target_layer rationale: `playwright` — Scenarios 1 and 2 drive
-  view-mounting + tree-browser UI surfaces with DOM assertions;
-  Scenario 3 drives a dialog with three named inputs plus a
-  bounded JS-API standardization call. The view+dialog surface
-  cardinality dominates over the single API call, so the
-  scenario is a UI-driven (playwright) scenario per STEP D —
-  `apitest` is not the right layer because the
-  `appTreeBrowser` / dialog opening / Polymer-Type select
-  surface is not directly addressable via `grok.functions.call`
-  (the app and the dialog are runtime-mounted; the
-  standardization function is the only sub-feature with an
-  apitest-grade surface, and it does not justify splitting the
-  scenario).
-- coverage_type rationale: `regression` — both realized
-  critical_paths are `priority: p1`, mapping to scenario
-  `coverage_type: regression` per the STEP E heuristic
-  (`p0 → smoke`, `p1 → regression`).
-- Sub-features covered:
-  - `bio.manage.libraries-app` (`package.ts#L1377`) — Scenario
-    1 step 1 (`Bio:libsApp` invocation opens the app shell).
-  - `bio.manage.libraries-app.tree-browser`
-    (`package.ts#L1396`) — Scenario 1 step 3
-    (`Bio:appTreeBrowser` populates the side tree).
-  - `bio.manage.monomers-view` (`package.ts#L1367`) — Scenario
-    2 step 1 (top-menu dispatch
-    `[name="div-Bio---Manage---Monomers"]` opens the
-    `Manage Monomers` view).
-  - `bio.manage.match-with-library` (`package.ts#L166`) —
-    Scenario 3 step 2 (top-menu dispatch
-    `[name="div-Bio---Manage---Match-with-Monomer-Library..."]`
-    opens the `matchWithMonomerLibrary` dialog).
-  - `bio.manage.standardize-library` (`package.ts#L161`) —
-    Scenario 3 step 6 (`Bio:standardiseMonomerLibrary`
-    invocation returns a normalized library object).
-- Bounded-assertion posture (Scenarios 1 and 2): the per-library
-  monomer-manager (Scenario 1 step 4) and the `Manage Monomers`
-  per-row controls (Scenario 2) are flagged out-of-scope-for-
-  selector-recon on Bio 2.26.5 per
-  `bio.md#L484-L488`. This scenario asserts surface OPEN
-  contracts (panel mounts, ≥1 child element, no error balloon)
-  rather than per-row selector chains — a deferral with a
-  cited dependency (recon coverage gap) per Lattice Rule 13 /
-  A-MERIT-02.
-- Net-new ids vs `live_covered_union` (this cycle's
-  authoritative 64-id covered set, after
-  `bio-service-surface-init.md` realized):
-  - `bio.manage.libraries-app.tree-browser` — net-new.
-  - `bio.manage.monomers-view` — net-new.
-  - `bio.manage.match-with-library` — net-new.
-  - `bio.manage.standardize-library` — net-new.
-  - `bio.manage.libraries-app` — already in union (anchor for
-    Scenario 1's app-shell open contract; not net-new).
-  - net_new = 4 ids; satisfies the SR-loop progress-sensitive
-    bound (delta > 0) and the STEP C net-new refusal.
-    Projected coverage after this iteration's merge:
-    66/99 (~66.7%), advancing toward the 70% threshold; the
-    remaining first-pass scenarios (e.g.
-    `bio-compare-sequences.md` and one further breadth-
-    extension scenario) are author candidates on subsequent
-    iterations.
-- F-REDUNDANCY-01 redundancy check (strict-subset against
-  every section scenario whose `sub_features_covered`
-  intersects this one):
-  - vs `manage.md` (`{bio.manage.libraries-view, bio.detector}`):
-    zero overlap — no risk.
-  - vs `bio-lifecycle-monomer-library.md`
-    (`{bio.manage.libraries-view, bio.manage.libraries-dialog,
-    bio.manage.libraries-app, bio.api.get-monomer-lib-helper,
-    bio.lifecycle.init}`): overlap = 1
-    (`bio.manage.libraries-app`); this scenario carries 4
-    unique ids (`tree-browser`, `monomers-view`,
-    `match-with-library`, `standardize-library`), siblings
-    carry 4 unique ids. Neither direction is a strict subset.
-  - vs `bio-lifecycle-monomer-collection.md`
-    (`{bio.manage.monomer-collections-app, bio.manage.libraries-app,
-    bio.api.get-monomer-lib-helper, bio.lifecycle.init}`):
-    overlap = 1 (`bio.manage.libraries-app`); same non-subset
-    reasoning.
-  - No other section scenario shares any
-    `bio.manage.*` id with this one (the remaining sub_features
-    on the section are analyze / search / transform / rendering
-    / lifecycle / api families).
-- Manual-only subset: none of the five covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas
-  revision 3 `manual_only[]` list — none of the
-  `bio.manage.*` ids is flagged manual_only). Authoring
-  proceeds per the STEP C net-new refusal rule.
-- Deferrals: per-library monomer-manager content rendering
-  (Scenario 1 step 4) and `Manage Monomers` per-row selectors
-  (Scenario 2 step 3) — both deferred to bounded surface-open
-  assertions because the underlying view shapes are flagged
-  out-of-scope-for-selector-recon on Bio 2.26.5 per
-  `bio.md#L484-L488`. Cited technical dependency: forward MCP
-  recon coverage gap. Per Lattice Rule 13 / A-MERIT-02, this
-  is a cited deferral (not "TODO: add later").
-- Bug-context (`related_bugs`): none. None of the atlas
-  `known_issues[]` / `edge_cases[]` entries (8 curated bugs
-  + 8 edge_cases) maps to any `bio.manage.*` sub_feature
-  (verified against atlas revision 3 `known_issues[]` /
-  `edge_cases[]` blocks — every entry's `affects_sub_features`
-  /  `sub_features` lists target analyze / search / rendering /
-  transform). `related_bugs: []` per atlas.
-- See: `.claude/skills/grok-browser/references/bio.md#L459-L498`
-  (`## Bio | Manage | Monomer Libraries` H2 +
-  `## Bio | Manage | Monomers` H2 +
-  `## Bio | Manage | Match with Monomer Library...` H2 — covers
-  all five `bio.manage.*` sub_features per the per-flow
-  selector tables documented there).
-- This scenario covers 5 sub_features (`F-STRUCT-DENSITY-01`
-  floor: 2; `F-STRUCT-INTERACTION-01` floor: 3 in a
-  multi-sub_feature scenario — both satisfied).
-- atlas content sourcing: this scenario's surface contracts
-  (top-menu paths, dialog selectors, view-mount expectations)
-  are sourced from
-  `.claude/skills/grok-browser/references/bio.md` (code-
-  adjacent reference under the skills tree) and from atlas
-  `bio.yaml` `sub_features[].source` anchors (per-id
-  `package.ts#L<line>` citations above). No content sourced
-  from `public/help/**` per the binding sourcing rule.
+- Complements `manage.md` (a quick smoke check of the
+  **Bio | Manage | Monomer Libraries** view) by covering the three
+  sibling **Manage** entries it doesn't exercise (**Monomers**,
+  **Match with Monomer Library...**) plus the standalone app and
+  tree-browser surface.
+- Deferrals: the per-library monomer-manager's content (Scenario 1,
+  step 4) and the **Manage Monomers** view's per-row controls
+  (Scenario 2) are only checked at the "panel opens, no error"
+  level, not down to individual row selectors — the underlying view
+  shapes weren't available for detailed selector recon at the time
+  this scenario was written.
 
 ---
 {

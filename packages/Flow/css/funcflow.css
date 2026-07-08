@@ -491,6 +491,31 @@
   background: #fff;
 }
 
+/* "Add to workspace" overlay on a preview block — same corner treatment as the
+   gear (top-right, no vertical footprint). `right` is set inline so it can sit
+   to the gear's left on viewer previews. */
+.ff-preview-workspace-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #607d8b;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ff-preview-workspace-btn:hover {
+  color: #1976d2;
+  background: #fff;
+}
+
 .ff-port-preview {
   position: fixed;
   z-index: 10001;
@@ -1759,4 +1784,97 @@
 .d4-flow-function-funccall-editor .ui-input-table {
   pointer-events: none !important;
   user-select: none !important;
+}
+/* ---------- bottom output panel (in-view splitter pane) ---------- */
+
+.ff-output-panel {
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* The canvas must clip the transformed Rete content. As a direct `.ui-box`
+   child (the splitter pane), core css forces `overflow: auto !important` on
+   every child: `ui-div`-classed ones via `div.ui-box > div.ui-div` (0,2,2),
+   everything else via a giant `div.ui-box:not(…) > *:not(.ui-div):not(…)`
+   rule whose :not() chain gives it enormous specificity. The canvas therefore
+   keeps `ui-div` (the beatable branch) and this (0,3,2) rule out-ranks it —
+   with both `!important`, specificity decides, independent of load order. */
+div.ui-box > div.ui-div.funcflow-canvas-container {
+  overflow: hidden !important;
+}
+
+.ff-output-panel-header {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 0 12px;
+  user-select: none;
+  font-size: 12px;
+  background: var(--grey-1, #f7f8fa);
+  border-top: 1px solid var(--grey-2, #ddd);
+  border-bottom: 1px solid var(--grey-2, #ddd);
+  flex-grow: 0 !important;
+}
+
+.ff-output-panel-title {
+  font-weight: 600;
+  color: var(--grey-6, #40484f);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 11px;
+}
+
+.ff-output-panel-node {
+  color: var(--grey-5, #666);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ff-output-panel-caret {
+  margin-left: auto;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  cursor: pointer;
+  color: var(--grey-5, #666);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.ff-output-panel-caret:hover {
+  background: var(--grey-2, #eef0f4);
+}
+
+.ff-output-panel-content {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.funcflow-value-previews {
+  height: 100%;
+}
+
+.funcflow-preview-block {
+  height: 100%;
+}
+/* ---------- autorun ribbon toggle ---------- */
+
+/* The bolt reads as "live" only when clearly distinct from the other ribbon
+   icons: the OFF state is slightly faded (and keeps the default font-weight —
+   a thin outline glyph); the ON state is colored AND font-weight 600, which
+   renders the Font Awesome bolt as its filled variant. */
+.ff-autorun-toggle {
+  opacity: 0.8;
+}
+
+.ff-autorun-toggle.ff-autorun-on {
+  color: var(--blue-1, #2083d5) !important;
+  font-weight: 600;
+  opacity: 1;
 }

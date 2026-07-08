@@ -1,12 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.api.save
-  - projects.api.namespaces
-  - projects.move.move-entity
-  - projects.move.commit
 target_layer: playwright
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -18,23 +15,19 @@ related_bugs: []
 
 # Complex — Move project lifecycle
 
-Source-agnostic op (Wave 2B). Decomposition of `complex.md` Step 10:
-Move project → file share → Space. Single representative source
-(Files + `demog.csv`).
+Verifies that a saved project can be moved between namespaces — from
+its default location to a file-share namespace, then to a Space — and
+that it still opens correctly with all its tables and relations
+intact after each move. Uses a single file-share source
+(`demog.csv`).
 
-**Important — JS API path is the primary mechanism.** Per decision-log
-`b2-2026-05-03-drag-drop-ui-only-reclassification` (2026-05-03), the
-two documented UI paths are blocked:
-1. **Drag-drop in Browse tree** — drag-handler registration not
-   accessible from Playwright (3 mechanisms tried: synthetic
-   DragEvent, raw mouse events, CDP Input.dispatchMouseEvent).
-2. **Right-click `Move to` menu option** — does NOT exist in current
-   UI (verified 2026-05-03 against dev.datagrok.ai).
-
-This scenario therefore uses **`grok.dapi.projects` namespace setters**
-as primary path per Plan line 168. JS API is more reliable and
-cleaner than drag-drop. UI coverage for any move-related context
-menu surface (if/when it lands) is owned by `projects-ui-smoke.md`.
+Neither UI path for moving a project currently works: drag-and-drop
+in the Browse tree can't be driven through Playwright, and the
+right-click "Move to" menu option does not exist in the current UI
+(verified against dev.datagrok.ai). So this scenario drives the move
+through the `grok.dapi.projects` JS API instead. UI coverage for any
+move-related context-menu surface, if and when one is added, is owned
+by `projects-ui-smoke.md`.
 
 ## Setup
 
@@ -87,30 +80,14 @@ menu surface (if/when it lands) is owned by `projects-ui-smoke.md`.
 
 ## Notes
 
-- **Origin: `complex.md` Step 10 split (Wave 2B per Plan line
-  168).** Step 10 is source-agnostic per Plan; one
-  representative source (Files) covers the path for all sources.
-- **JS API primary path.** Per Plan line 168 + decision-log
-  `b2-2026-05-03-drag-drop-ui-only-reclassification`. The atlas
-  `manual_only` block lists `projects.move.move-entity`,
-  `projects.move.commit`, `projects.move.move-relations` as
-  manual-only (UI-only) — those refer to the UI surface that
-  doesn't exist. The JS API path
-  (`grok.dapi.projects.move(...)`) IS testable and is what this
-  scenario covers.
-- **UI surface deferred / atlas-side.** If/when a right-click
-  `Move to` UI is added, atlas `manual_only` flagging would be
-  re-evaluated and a UI step could be added to
-  `projects-ui-smoke.md`. Until then: JS API only.
-- **No `related_bugs`.** Move ops have no GROK ticket. Pure
+- **JS API path is primary; UI move is not currently available.**
+  The move-related sub-features are marked UI-only in the feature
+  atlas, but that classification refers to the missing UI surface
+  (no working drag-drop, no "Move to" menu item) — the JS API move
+  contract (`grok.dapi.projects.move(...)`) itself is fully testable
+  and is what this scenario covers. If a right-click "Move to" UI is
+  added in the future, a corresponding step could be added to
+  `projects-ui-smoke.md`.
+- **No related bug.** Move operations have no GROK ticket; this is
   proactive coverage of the move-namespace path.
-- **`projects.move.*` sub_features.** Atlas v11 lists these
-  under `manual_only`; this scenario tests the JS API equivalent
-  contract (`grok.dapi.projects.move`). Surfacing for atlas:
-  the `manual_only` rationale should be refined to "UI-only
-  paths are manual; JS API path is testable" for these sub-
-  features.
 - **Self-cleaning.** Step 5 deletes everything created.
-- **Sequencing within Wave 2B.** Second after save-copy per
-  Plan execution order — no helper / env blockers beyond
-  namespace + Space access.

@@ -1,5 +1,21 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-script-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — Script
+
+Verifies the Share dialog and the Advanced editor permissions matrix for a script:
+opening the Sharing pane from the Context Panel, sharing at "View and use", and
+confirming that a recipient with that grant can open and run the script — but cannot
+edit, delete, or re-share it — until the owner revokes access.
 
 ## Setup
 

@@ -1,0 +1,25 @@
+{
+  "//": "Compiles the Playwright-driver helpers to CommonJS .js + .d.ts so consumers can require() them from node_modules (Playwright does not transpile .ts inside node_modules). Kept out of the lib's main tsc build (main tsconfig excludes src/playwright). Type-checking is relaxed: the helpers run browser-side code in page.evaluate callbacks that are intentionally untyped, and are already validated at runtime — this step is transpile-oriented.",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "lib": ["es2022", "dom"],
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "noImplicitThis": false,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": false,
+    "inlineSourceMap": false,
+    "inlineSources": false,
+    "sourceMap": false,
+    "outDir": ".",
+    "rootDir": ".",
+    "types": ["node", "@playwright/test"]
+  },
+  "include": ["./**/*.ts"],
+  "exclude": []
+}

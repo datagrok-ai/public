@@ -1,11 +1,6 @@
-/* ---
-sub_features_covered: [legend.column, legend.extra-column, legend.refresh.on-data-change, legend.color-scale.numerical, legend.use-custom-color-coding, legend.show-nulls, legend.allow-item-coloring, legend.refresh.on-reset-filter]
---- */
 // Frontmatter extraction (Edit X7):
 //   target_layer: apitest
 //   pyramid_layer: integration
-//   sub_features_covered: 8 atlas ids
-//   ui_coverage_responsibility: [] (no DOM driving — apitest layer)
 //   related_bugs: []
 //   produced_from: atlas-driven
 // SR rationale (Section 4.5 scenario authority): apitest layer; FORBIDDEN

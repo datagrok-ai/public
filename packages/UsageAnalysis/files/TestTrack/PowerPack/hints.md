@@ -1,10 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column
-  - powerpack.dialogs.add-new-column-func
 target_layer: playwright
 coverage_type: smoke
+priority: p1
+realizes: []
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-function-hint-tooltip
@@ -55,28 +54,12 @@ Focused UI scenario verifying that hovering over an inserted function
 name in the Add New Column dialog's formula editor surfaces a tooltip
 containing the function's signature.
 
-`pyramid_layer: ui-smoke` per `scenario-chains/powerpack.yaml` rev 1
-(Rule 1 fallback — single ultra-short UI flow over one source, `simple`
-classification, no related bugs). NOT the chain's elected smoke witness;
-`coverage_type: regression` is used here (the chain reserves
-`coverage_type: smoke` for the elected smoke scenario at top-level
-`add-new-column.md`, which exercises the dialog UI holistically).
-
-`ui_coverage_delegated_to: add-new-column.md` — this scenario owns the
-specialty function-hint-tooltip flow on its responsibility list and
-delegates the basic dialog-open-and-add flow to the smoke witness.
-
-`related_bugs: []` — no curated bug in
-`bug-library/powerpack.yaml` intersects this scenario's
-`sub_features_covered`. (GROK-17109 and GROK-17004 touch the same
-sub-features but their reproduction surfaces — formula-recalc-on-rename
-and complex-paste-handler crash — are not exercised by the hover/tooltip
-flow.)
+The dialog's basic open-and-add flow is covered by `add-new-column.md`.
 
 ## Setup
 
 A clean Datagrok session is the only shared setup. The scenario opens
-its own dataset; no fixture chaining (`depends_on: []` per chain rev 1).
+its own dataset; no fixture chaining is required.
 
 ## Scenarios
 
@@ -100,56 +83,6 @@ its own dataset; no fixture chaining (`depends_on: []` per chain rev 1).
    over `Abs` in `Abs(num)`). **Verify:** a tooltip appears
    containing the function's signature (function name plus its input
    parameter list, e.g. `Abs(num)`).
-
-## Notes
-
-- **target_layer: playwright** — chosen because a sibling
-  `hints-spec.ts` already exists at the playwright layer (per
-  `existing-test-index.yaml` line 33484, layer `playwright`). All
-  other Add-New-Column siblings (`autocomplete-spec.ts`,
-  `highlight-spec.ts`, `functions-sorting-spec.ts`,
-  `input-functions-spec.ts`, `formula-refreshing-spec.ts`,
-  `add-new-column-spec.ts`) are also Playwright specs, so the
-  house style is consistent.
-- **coverage_type: regression** — per the chain's smoke-scenario
-  election (`ui_coverage_plan.smoke_scenario: add-new-column.md`),
-  the top-level `add-new-column.md` owns the `smoke` slot. This
-  narrower per-flow scenario lands in `regression`. (Per the
-  migration prompt's `coverage_type` heuristic: `smoke` for one
-  fast happy-path test per feature; `regression` is the default
-  for the rest.)
-- **Source-text fix applied:** the original scenario contains
-  the typo `fucntion` twice in Step 4 ("Hover over fucntion name -
-  a tooltip with fucntion signature should appear"). The migrated
-  body uses the correct spelling `function`. Tracked in
-  `source_text_fixes: [fucntion-typo-corrected-to-function]`.
-- **Helpers (already in registry, available for downstream
-  Automator):** `softStep`, `loginToDatagrok`, `specTestOptions`,
-  `stepErrors` from
-  `public/packages/UsageAnalysis/files/TestTrack/spec-login.ts` —
-  used by the existing `hints-spec.ts`.
-- **Bug-library status:** consulted —
-  `bug-library/powerpack.yaml` exists and was scanned; no curated
-  bug intersects this scenario's `sub_features_covered` (cross-
-  cutting candidates GROK-17109 and GROK-17004 surface in
-  sibling scenarios `AddNewColumn/add-new-column.md` /
-  `AddNewColumn/formula-refreshing.md` and `AddNewColumn/highlight.md`
-  respectively, per chain rev 1 `bug_focused_candidates[]`).
-- **Decision log status:** queried — no
-  `failed_attempts WHERE feature == powerpack` entries that touch
-  the `AddNewColumn/hints.md` migration. No retry-skip approaches
-  apply.
-- **Atlas linkage (`derived_from:` provenance):**
-  - `powerpack.dialogs.add-new-column` interaction "type expression
-    with caret on a function name → hint div shows function
-    signature" is derived from
-    `public/packages/PowerPack/src/tests/add-new-column.ts#L68`
-    (atlas `interactions[]` entry, test-mined).
-  - `powerpack.dialogs.add-new-column-func` interactions "click
-    Add New Column toolbar icon → opens AddNewColumnDialog" and
-    "Edit | Add New Column top-menu → opens AddNewColumnDialog"
-    are code-derived from
-    `public/packages/PowerPack/src/package.ts#L405`.
 
 ---
 {

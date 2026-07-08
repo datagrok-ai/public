@@ -600,12 +600,18 @@ M  END
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
+    const col = gridCell.cell.column;
+    const highlightScaffold = getSyncTag(col, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL) === 'true';
     const filter = this._initScaffoldArray(colTemp, FILTER_SCAFFOLD_TAG, true); //expected molBlock
-    const align = (this._initScaffoldString(gridCell.cell.column, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
+    const align = (this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
       // temporary concatination to support both tags
-      .concat(this._initScaffoldString(gridCell.cell.column, ALIGN_BY_SCAFFOLD_TAG) ?? []);
-    const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
-    const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
+      .concat(this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_TAG) ?? []);
+    if (!highlightScaffold) {
+      for (const s of align)
+        s.color = NO_SCAFFOLD_COLOR;
+    }
+    const highlight = this._initScaffoldArray(col, HIGHLIGHT_BY_SCAFFOLD_TAG);
+    const scaffoldTreeHighlight = this._initScaffoldArray(col, SCAFFOLD_TREE_HIGHLIGHT);
     const alignByStructure = !!(filter.length && filter[0].align || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alignByFirstSubstructure: alignByStructure};

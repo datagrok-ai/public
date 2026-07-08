@@ -76,16 +76,23 @@ export class ExecutionVisualizer {
     this.flow.resetConnectionStatuses();
   }
 
-  markAllStale(): void {
-    for (const id of this.trackedNodes) {
+  /** Flip only the given nodes to "Out of date" (and their incoming edges to
+   *  stale). Nodes outside the set keep their completed/errored visuals — a
+   *  graph edit invalidates its downstream cone, not the whole canvas. */
+  markStale(ids: Iterable<string>): void {
+    for (const id of ids) {
+      if (!this.trackedNodes.has(id)) continue;
       const node = this.flow.getNodeById(id) as FlowNodeWithStatus | undefined;
-      if (node) {
-        node.dgStatus = NodeExecStatus.stale;
-        node.statusText = statusLabel(NodeExecStatus.stale);
-        void this.flow.updateNode(id);
-      }
+      if (!node || node.dgStatus === NodeExecStatus.idle || node.dgStatus === undefined) continue;
+      node.dgStatus = NodeExecStatus.stale;
+      node.statusText = statusLabel(NodeExecStatus.stale);
+      void this.flow.updateNode(id);
+      this.propagateToConnections(id, NodeExecStatus.stale);
     }
-    for (const c of this.flow.getConnections())
-      this.flow.setConnectionStatus(c.id, 'stale');
+  }
+
+  /** Stop tracking a removed node (its element is gone; nothing to repaint). */
+  forgetNode(id: string): void {
+    this.trackedNodes.delete(id);
   }
 }

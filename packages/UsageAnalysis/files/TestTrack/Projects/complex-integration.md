@@ -1,14 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.api.namespaces
-  - projects.add-relation
-  - projects.add-link
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [upload-save-reopen-golden]
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -20,14 +15,15 @@ related_bugs: []
 
 # Complex — Multi-source integration
 
-Source-agnostic op (Wave 2B). The only intentionally-long Wave 2B
-spec — value is multi-source co-existence verification. Decomposition
-of `complex.md` Step 1 in full + Step 2 (Save with Sync ON + reopen)
-per Plan line 170.
-
-**8 sources** opened in one workspace + Pivot + Aggregate + Join + Clone
-+ Save Sync ON + reopen. Tests that the platform correctly handles
-projects with heterogeneous source coexistence.
+Opens tables from eight different sources in a single workspace —
+file share, Space, database table, saved query, script, pivot table,
+aggregate rows, a join, and a clone — and verifies they can all
+coexist, be saved together as one project with Data Sync on, and
+reload correctly after a close and reopen. This is the section's main
+check that heterogeneous data sources don't interfere with each other
+inside a project; it deliberately runs longer than the other
+scenarios in this file because that broad source coverage is the
+point.
 
 UI coverage delegated to `projects-ui-smoke.md`.
 
@@ -121,29 +117,18 @@ UI coverage delegated to `projects-ui-smoke.md`.
   prerequisites are created and deleted within the spec; the DB
   table is on the built-in `System:Datagrok` connection. No
   Samples package dependency.
-- **Origin: `complex.md` Step 1 in full + Step 2 (Wave 2B
-  re-framing per Plan line 170).** Plan explicitly notes:
-  "The only intentionally-long spec — value is multi-source
-  co-existence."
-- **Why this is NOT bug-focused.** None of the GROK bugs
-  target multi-source co-existence specifically. Each bug
-  is source-specific or op-specific. This scenario covers
-  the gap: regressions in multi-source coordination would
-  be caught here proactively.
-- **`projects.add-link` in sub_features.** Cloning
-  exercises `addLink` (vs `addRelation` for fresh sources).
-- **Long runtime acknowledged.** Plan explicitly accepts
-  this is the longest Wave 2B spec (~10-15 min in CI).
-  Value is in multi-source coverage; signal/noise improves
-  vs running 8 separate single-source specs.
-- **UI coverage delegated.** No UI surface beyond Save
-  Project. Pivot/Aggregate/Join/Clone UI surfaces are owned
-  by `uploading.md` source-matrix Cases 8/9.
-- **Spaces blocker.** Cases involving Spaces (Step 1
-  sub-bullet 2) defensively env-skip via the same pattern as
-  `projects-lifecycle-spaces-spec.ts` until the platform-level
-  Spaces bug is fixed.
-- **No `related_bugs`.** Pure proactive multi-source
-  coverage.
-- **Self-cleaning.** Step 5 deletes project + Space + provisioned
-  query + provisioned script.
+- **Why this is not tied to a specific bug.** None of the known
+  GROK bugs target multi-source co-existence specifically — each is
+  source-specific or operation-specific. This scenario covers that
+  gap proactively: regressions in multi-source coordination would be
+  caught here.
+- **UI coverage delegated.** No UI surface beyond Save Project is
+  exercised here. The Pivot / Aggregate / Join / Clone UI surfaces
+  are owned by `uploading.md`'s source-matrix Cases 8 and 9.
+- **Spaces blocker.** The case involving Spaces (Step 1's second
+  sub-bullet) defensively skips in environments affected by the
+  platform-level Spaces bug tracked for `projects-lifecycle-spaces-spec.ts`,
+  until that bug is fixed.
+- **No related bug.** Pure proactive multi-source coverage.
+- **Self-cleaning.** Step 5 deletes the project, the Space, and the
+  provisioned query and script.

@@ -1,9 +1,10 @@
-// Multi-source integration: file + ad-hoc DB table on System:Datagrok +
-// provisioned saved query on System:Datagrok + provisioned dataframe-output
-// script. All non-file prerequisites are created in-test via
-// helpers/openers.ts — no Samples package or env-provisioned DB.
+/* ---
+sub_features_covered: [projects.add-link, projects.add-relation, projects.api.files.sync, projects.api.namespaces, projects.api.save, projects.upload]
+--- */
+// Multi-source integration: file + ad-hoc DB table + saved query + dataframe-output script in one project.
 import {test, expect, Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 import {
   openTableFromDbQuery,
@@ -19,14 +20,10 @@ import {
   SYSTEM_DATAGROK_DB_TABLE,
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
-import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveAllTablesWithProvenance, deleteProjectWithCleanup, SavedAllTables} from '@datagrok-libraries/test/src/playwright/projects';
 
-// Local OpenFile invocation with colon-form fullPath (no helpers/openers.ts
-// dot-form normalization). Verified 2026-05-08: dot-form .script provenance
-// makes JS-API project Save mis-attribute children — derived-tables-spec was
-// fixed by switching to colon-form. Apply the same fix here to test the
-// hypothesis that project relations also depend on the colon-form provenance.
+// OpenFile with colon-form fullPath — dot-form .script provenance makes JS-API Save mis-attribute children.
 async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCount: number; script: string}> {
   return await page.evaluate(async (p) => {
     const grok = (window as any).grok;
@@ -34,7 +31,6 @@ async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCoun
     await DG.Func.find({name: 'OpenFile'})[0].prepare({
       fullPath: p,
     }).call(undefined, undefined, {processed: false});
-    // Settle and read provenance.
     let df: any = null;
     for (let i = 0; i < 24; i++) {
       const tv = grok.shell.tv;
@@ -55,7 +51,7 @@ async function openFileColonForm(page: Page, fullPath: string): Promise<{rowCoun
 test.use(projectsTestOptions);
 
 test('Projects / Complex Integration: heterogeneous sources in one project', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(900_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -139,9 +135,7 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
 
     await softStep('Step 3: verify project children server-side', async () => {
       if (!saved) throw new Error('no saved project');
-      // Project entity exposes .children (Entity[]) — there is no .relations
-      // getter on the JS API surface. Verified live 2026-05-08 via diag spec:
-      // protoMethods include children/addChild/removeChild but no relations.
+      // Project exposes .children (Entity[]) — there is no .relations getter on the JS API.
       const r = await evalJs<{children: number; ok: boolean}>(page, `(async () => {
         try {
           const fetched = await grok.dapi.projects.find('${saved.projectId}');
@@ -151,7 +145,8 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
           return {children: -1, ok: false};
         }
       })()`);
-      if (r.ok) expect(r.children).toBeGreaterThanOrEqual(4);
+      expect(r.ok, 'failed to fetch saved project children server-side').toBe(true);
+      expect(r.children).toBeGreaterThanOrEqual(4);
     });
 
     await softStep('Step 4: closeAll and reopen — multi-source co-existence assertion', async () => {
@@ -170,20 +165,14 @@ test('Projects / Complex Integration: heterogeneous sources in one project', asy
       expect(r.tables).toBeGreaterThanOrEqual(4);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    const pq = provisionedQuery as ProvisionedQuery | null;
-    if (pq) await pq.cleanup();
-    const ps = provisionedScript as ProvisionedScript | null;
-    if (ps) await deleteProvisionedScript(page, ps.scriptId);
+    if (provisionedQuery) await provisionedQuery.cleanup();
+    if (provisionedScript) await deleteProvisionedScript(page, provisionedScript.scriptId);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [chem.search.substructure, chem.search.substructure.editor, chem.search.substructure.filter, chem.search.use-as-filter, chem.sketcher, chem.sketcher.ocl]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

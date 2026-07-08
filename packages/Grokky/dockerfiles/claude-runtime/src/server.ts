@@ -9,7 +9,7 @@ import {createNodeWebSocket} from '@hono/node-ws';
 import {query, createSdkMcpServer, tool as sdkTool} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage, HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import {z} from 'zod/v4';
-import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName} from './types';
+import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ToolInputs, McpInputs, ToolName, McpName, ImageAttachment} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles} from './sync/orchestrator';
@@ -166,11 +166,20 @@ function getSession(clientId: string): SessionRecord | undefined {
   return rec;
 }
 
-async function* promptStream(message: string) {
+async function* promptStream(message: string, images?: ImageAttachment[]) {
+  const content = images?.length ?
+    [
+      ...images.map((img) => ({
+        type: 'image' as const,
+        source: {type: 'base64' as const, media_type: img.mediaType, data: img.data},
+      })),
+      ...(message ? [{type: 'text' as const, text: message}] : []),
+    ] :
+    message;
   yield {
     type: 'user' as const,
     session_id: '',
-    message: {role: 'user' as const, content: message},
+    message: {role: 'user' as const, content},
     parent_tool_use_id: null,
   };
 }
@@ -198,6 +207,7 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
 const EXEC_TIMEOUT_MS = 300_000;
 const VERIFY_TIMEOUT_MS = 60_000;
 const SHOW_ENTITIES_TIMEOUT_MS = 30_000;
+const QUEUED_HEARTBEAT_MS = 60_000;
 
 // In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
 // awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
@@ -511,6 +521,7 @@ function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolN
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
+const sessionChains = new Map<string, Promise<void>>();
 
 function registerActiveQuery(sid: string, q: ActiveQuery): void {
   activeQueries.set(sid, q);
@@ -540,10 +551,34 @@ function handleInputResponse(ws: WsSender, data: InputResponseMessage): void {
 async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const sid = data.sessionId ?? '';
   let message = data.message ?? '';
-  if (!message)
+  const images = data.images;
+  if (!message && !images?.length)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
-  if (activeQueries.has(sid))
-    return emit(ws, {type: 'busy', sessionId: sid});
+  const prev = sessionChains.get(sid);
+  let release!: () => void;
+  const turn = new Promise<void>((resolve) => { release = resolve; });
+  const tail = prev ? prev.then(() => turn) : turn;
+  sessionChains.set(sid, tail);
+  try {
+    if (prev) {
+      emit(ws, {type: 'queued', sessionId: sid});
+      const heartbeat = setInterval(() => emit(ws, {type: 'queued', sessionId: sid}), QUEUED_HEARTBEAT_MS);
+      try {
+        await prev;
+      } finally {
+        clearInterval(heartbeat);
+      }
+    }
+    await runTurn(ws, data, sid, message);
+  } finally {
+    release();
+    if (sessionChains.get(sid) === tail)
+      sessionChains.delete(sid);
+  }
+}
+
+async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
+  const images = data.images;
 
   // Don't block this turn on workspace git pull — it runs every 30 min in the background and
   // a stale read for one turn is fine.
@@ -586,7 +621,7 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
       return {behavior: 'allow' as const, updatedInput: input};
     };
     const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
-    const q = query({prompt: promptStream(message), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
+    const q = query({prompt: promptStream(message, images), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
     active.queryHandle = q;
     for await (const event of q) {
       if (abortController.signal.aborted)

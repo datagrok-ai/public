@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [biostructure.file-open, biostructure.project-persistence, biostructure.viewer]
---- */
 // NOTE: This spec was REMOVED from the playwright-public CI suite (BiostructureViewer folder) and is
 // kept here in TestTrack/General for reference only. Reason for removal: it depends on the cross-user
 // `shareWithSecondUserAndVerify` helper (a second-user / token2 sharing flow) which is not available

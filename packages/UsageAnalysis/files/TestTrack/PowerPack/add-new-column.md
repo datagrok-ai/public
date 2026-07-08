@@ -1,10 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column-func
-  - powerpack.dialogs.add-new-column
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [powerpack.cp.add-new-column-persists]
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-dialog
@@ -57,18 +56,15 @@ gate_verdicts:
 
 # Add New Column — Demog smoke (toolbar + UI sanity + Recent Activities autofill)
 
-Single-source UI smoke for the Add New Column dialog on the Demog
-dataset. Exercises the toolbar entry path (`addNewColumnDialog`
-editor-for `AddNewColumn`), the dialog's built-in UI sanity (no
-overlapping content, resizable, tooltips), the autocomplete hint
+Smoke test for the Add New Column dialog on the Demog dataset.
+Exercises the toolbar entry path, the dialog's built-in UI sanity
+(no overlapping content, resizable, tooltips), the autocomplete hint
 mechanic, the column drag-n-drop into the formula field, and the
 Recent Activities autofill after the dialog is reopened.
 
-Chain witness role: this scenario is the PowerPack chain's smoke
-witness (`smoke_scenario: add-new-column.md`) for the dialog UI
-surface; the sibling AddNewColumn/ scenarios delegate their basic
-dialog-open-and-add flows here per chain
-`ui_coverage_plan.delegated_scenarios`.
+This is the main coverage test for the Add New Column dialog's UI;
+other scenarios in this section build on it and focus on their own
+specialty flows rather than repeating the basic open-and-add steps.
 
 ## Setup
 
@@ -117,34 +113,10 @@ dialog-open-and-add flows here per chain
 
 ## Notes
 
-- **Chain context.** This is the PowerPack chain's
-  `smoke_scenario` per
-  `scenario-chains/powerpack.yaml :: ui_coverage_plan`. Owns all
-  five flows in `ui_coverage_responsibility:` directly; no
-  delegation.
-- **Related bugs.** `GROK-17109` (calculated columns persist
-  across save+datasync+reopen) and `GROK-17004` (paste handler
-  crash on complex formulas) both touch
-  `powerpack.dialogs.add-new-column-func` +
-  `powerpack.dialogs.add-new-column`. This smoke exercises the
-  dialog's headline path but does NOT walk the full
-  save+datasync+reopen invariant (covered by
-  `AddNewColumn/add-new-column.md` + `AddNewColumn/formula-refreshing.md`)
-  nor the complex-paste invariant (covered by
-  `AddNewColumn/highlight.md`). Cross-cutting candidates are
-  emitted at the chain level (`bug_focused_candidates`).
-- **Sibling spec.** A Playwright spec already exists at
-  `public/packages/PowerPack/src/tests/add-new-column.ts` (see
-  `existing-test-index.yaml`); house-style anchor for Automator
-  when authoring the migrated scenario's `-spec.ts`.
-- **Source-text fix.** The original referenced opening the Demog
-  dataset via the TestTrack "star" / "Open test data" icon
-  (TestTrack-runner-specific UI). The migrated scenario references
-  the dataset explicitly as `System:DemoFiles/demog.csv` per the
-  original's trailing JSON metadata block. Same dataset, explicit
-  source.
-- **Original trailing JSON metadata.** The original scenario ended
-  with `{"order": 2, "datasets": ["System:DemoFiles/demog.csv"]}`.
-  The `order` field is captured in chain
-  `order_from_files`; the `datasets` field is captured by the
-  explicit `System:DemoFiles/demog.csv` reference in Setup.
+- **Related bugs.** GROK-17109 (calculated columns must persist
+  across save, data sync, and reopen) and GROK-17004 (paste handler
+  crash on complex formulas) both affect this dialog. This smoke test
+  exercises the dialog's core add-column flow only — the full
+  save/reopen persistence path is covered by `add-new-column-advanced.md`
+  and `formula-refreshing.md`, and the complex-formula paste crash is
+  covered by `highlight.md`.

@@ -1,4 +1,20 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - st-edge-validation-combine-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — Validation and Combine Edge Cases
+
+Checks how SequenceTranslator handles invalid or unrecognized sequence input,
+both via the JS API and in the Oligo Translator UI, and how combining a HELM
+sense strand with a non-HELM antisense strand degrades gracefully (a
+sense-only result, no error) instead of failing.
 
 ## Setup
 
@@ -57,7 +73,6 @@ Steps:
 
 Expected:
 - `validateSequence` returns `false`.
-- # atlas entry derived from source: public/packages/SequenceTranslator/src/package.ts#L166
 
 ### Scenario 4: combineSenseAntisenseToOligoNucleotide with mismatched units
 

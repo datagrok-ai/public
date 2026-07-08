@@ -1,13 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.actions.copy-as
-  - bio.editors.get-region
-  - bio.editors.split-to-monomers
-  - bio.panels.composition-analysis
-  - bio.panels.monomer-info
 target_layer: playwright
 coverage_type: regression
+priority: p2
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -47,25 +43,18 @@ gate_verdicts:
 
 # Bio | Macromolecule cell context actions and per-cell info panels
 
-Regression scenario for the per-cell interaction surface of a
-Macromolecule column — the right-click "Copy as ..." action set
-(`addCopyMenu`, atlas `bio.actions.copy-as`), the two custom
-editors that drive the Bio | Calculate | Get Region... and Bio |
-Transform | Split to Monomers... top-menus (atlas
-`bio.editors.get-region`, `bio.editors.split-to-monomers`), and
-the two info-panel widgets that appear on the Datagrok Context
-Pane when a Macromolecule cell is the current selection
-(`compositionAnalysisWidget`, atlas
-`bio.panels.composition-analysis`; `monomerInfoPanel`, atlas
-`bio.panels.monomer-info`).
+Covers the per-cell interaction surface of a Macromolecule column:
+the right-click "Copy as ..." menu (FASTA / SEPARATOR / HELM / BILN),
+the custom editor dialogs behind **Bio | Calculate | Get Region...**
+and **Bio | Transform | Split to Monomers...**, and the two
+info-panel widgets — Composition analysis and Monomer info — that
+appear on the Context Panel when a Macromolecule cell is selected.
 
-This is a breadth-coverage scenario authored by Gate F
-coverage-extension. It complements the existing top-menu /
-viewer-docking scenarios in the section (`analyze.md`,
-`search.md`, `convert.md`, `bio-similarity-search.md`,
-`bio-diversity-search.md`) by covering the cell-level and
-context-panel surfaces that the umbrella scenarios do not
-exercise.
+This complements the top-menu and viewer-docking scenarios elsewhere
+in the section (`analyze.md`, `search.md`, `convert.md`,
+`bio-similarity-search.md`, `bio-diversity-search.md`) by covering
+the cell-level and context-panel surfaces those umbrella scenarios
+don't exercise.
 
 ## Setup
 
@@ -82,10 +71,7 @@ exercise.
 
 Steps:
 1. Right-click any non-empty cell in the Macromolecule column.
-   The cell-level context menu opens (atlas
-   `bio.actions.copy-as`, registered in
-   `public/packages/Bio/src/package.ts#L1527` via
-   `addCopyMenu(cell, menu)`).
+   The cell-level context menu opens.
 2. Verify the menu contains four "Copy as ..." entries:
    `Copy as FASTA`, `Copy as SEPARATOR`, `Copy as HELM`,
    `Copy as BILN`.
@@ -110,14 +96,9 @@ Steps:
    so it becomes the current cell.
 2. Open the Datagrok Context Pane (the right-side panel; helper
    `waitForElement` against the context-pane container).
-3. Locate the `Composition analysis` panel section (atlas
-   `bio.panels.composition-analysis`, registered in
-   `public/packages/Bio/src/package.ts#L403` via
-   `compositionAnalysisWidget`). Expand if collapsed.
-4. Locate the `Monomer` panel section (atlas
-   `bio.panels.monomer-info`, registered in
-   `public/packages/Bio/src/package.ts#L412` via
-   `monomerInfoPanel`). Expand if collapsed.
+3. Locate the `Composition analysis` panel section. Expand if
+   collapsed.
+4. Locate the `Monomer` panel section. Expand if collapsed.
 
 Expected:
 - The Composition analysis panel renders a monomer-composition
@@ -133,12 +114,9 @@ Expected:
 
 Steps:
 1. On the menu ribbon, open **Bio** > **Calculate** > **Get
-   Region** (atlas `bio.calculate.get-region.top-menu` —
-   covered by `bio-calculate-scoring.md` for the dispatch path;
-   this step opens the editor surface).
-2. The `GetRegionEditor` custom editor dialog opens (atlas
-   `bio.editors.get-region`, registered in
-   `public/packages/Bio/src/package.ts#L213`).
+   Region** (covered by `bio-calculate-scoring.md` for the
+   dispatch path; this step opens the editor surface).
+2. The `GetRegionEditor` custom editor dialog opens.
 3. Inspect the editor for the sequence-column selector input
    bound to the active Macromolecule column.
 
@@ -156,9 +134,7 @@ Expected:
 Steps:
 1. On the menu ribbon, open **Bio** > **Transform** > **Split
    to Monomers...**. The `SplitToMonomersEditor` custom editor
-   dialog opens (atlas `bio.editors.split-to-monomers`,
-   registered in
-   `public/packages/Bio/src/package.ts#L226`).
+   dialog opens.
 2. Inspect the editor for the sequence-column selector input.
 
 Expected:
@@ -170,65 +146,15 @@ Expected:
 
 ## Notes
 
-- Scenario produced by Test Designer Gate F coverage-extension
-  (cycle 2026-06-01-bio-migrate-02). Net-new sub_features against
-  the executor-derived live covered union (68 ids): 5
-  (`bio.actions.copy-as`, `bio.editors.get-region`,
-  `bio.editors.split-to-monomers`,
-  `bio.panels.composition-analysis`,
-  `bio.panels.monomer-info`). Projected effect on
-  F-STRUCT-COVERAGE-01: union grows 68 → 73; non-manual_only
-  covered 66 → 71; ratio 66.7% → ~71.7% — crosses the 70%
-  threshold per the gap_description projection.
-- target_layer rationale: `playwright` — the verification surface
-  is cell-context-menu DOM dispatch (Pattern 5 context-menu
-  shape), Context Pane info-panel widget rendering, and custom
-  editor dialog DOM. apitest cannot exercise the right-click cell
-  menu nor the Context Pane widget paint; the bound editor
-  surfaces are dialog-only. Consistent with sibling
-  `bio-renderer-dispatch.md`, `bio-manage-libraries-crud.md`,
-  `analyze.md`, all `target_layer: playwright`.
-- coverage_type rationale: `regression` — none of the five
-  covered ids appear in any atlas `critical_paths[]` entry as a
-  smoke-eligible golden path; none map to an atlas `edge_cases[]`
-  boundary entry; none are stress / large-data shaped. General
-  feature-shape coverage of the cell-level + info-panel surfaces
-  → `regression` per STEP E heuristic.
-- Manual-only subset: none of the five covered ids appear in
-  atlas `manual_only[]` (verified against atlas rev 3 list —
-  `bio.viewers.web-logo`, `bio.viewers.vd-regions`,
-  `bio.rendering.column-header`,
-  `bio.rendering.macromolecule-difference`, the demo entries,
-  `bio.panels.{structure-3d, atomic-level, tooltip}`;
-  `bio.panels.composition-analysis` and `bio.panels.monomer-info`
-  are NOT on that list).
-- This scenario carries 5 sub_features and contains 4 scenarios
-  with `sub_features_used` spread across all four; cardinality
-  satisfies `F-STRUCT-DENSITY-01` floor: 2 and
-  `F-STRUCT-INTERACTION-01` floor: 3.
-- Sibling sub_feature pairs: the related top-menu paths
-  (`bio.calculate.get-region.top-menu`,
-  `bio.transform.split-to-monomers`) are already covered by
-  `bio-calculate-scoring.md` and the Transform top-menu surface
-  in `convert.md` / `bio-transform-atomic-level.md`. This
-  scenario adds the editor-dialog and per-cell-action surfaces
-  that those top-menu scenarios do not exercise.
-- The section has no Bio/grok-browser ref-doc verb-form H2
-  matching the F-UI-COVERAGE-01 citation regex, so `## Notes`
-  citations reference atlas source-line anchors only; no
-  `See: <path>#<heading>` citation form applies.
-- Related-bug context: no curated `bug-library/bio.yaml` entry
-  has any of the five covered ids in its `affects[]` set
-  (GROK-12164 covers `bio.rendering.separator` etc.; GROK-16596
-  covers `bio.rendering.macromolecule-difference`; the cell-level
-  Copy actions and the per-cell info panels are not currently
-  bug-tracked); `related_bugs: []`.
-- Deferrals: none. Cell context-menu DOM, info-panel widget DOM
-  on the Context Pane, and custom editor dialog DOM are all
-  observable via Playwright; no pixel-precision or
-  non-deterministic surface is involved. The Composition
-  analysis panel uses color-coded counts but the assertion is on
-  non-empty table content, not pixel color.
+- Sibling coverage: the underlying top-menu paths for Get Region and
+  Split to Monomers are already covered by `bio-calculate-scoring.md`
+  and by the Transform top-menu surface in `convert.md` /
+  `bio-transform-atomic-level.md`. This scenario adds the
+  editor-dialog and per-cell-action surfaces (right-click Copy as,
+  per-cell info panels) that those top-menu scenarios don't exercise.
+- The Composition analysis panel renders color-coded monomer counts,
+  but this scenario only asserts the table has non-empty content —
+  it does not check pixel-level color correctness.
 
 ---
 {

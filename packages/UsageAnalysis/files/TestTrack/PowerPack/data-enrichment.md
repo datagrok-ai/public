@@ -1,14 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.db-explorer
-  - powerpack.db-explorer.run-enrichment
-  - powerpack.db-explorer.run-enrichment-from-config
-  - powerpack.db-explorer.setup-global
-  - powerpack.db-explorer.setup-query-cell-handler
-  - powerpack.db-explorer.config-wrapper
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [powerpack.cp.db-explorer-enrichment]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/PowerPack/data-enrichment.md
 migration_date: 2026-05-25
@@ -93,6 +88,27 @@ gate_verdicts:
         failure_keys: []
 ---
 
+# DB Explorer — Column Enrichment (create, edit, remove, and persistence)
+
+> ⚠️ **Temporarily guards open bug GROK-20175.** Applying an enrichment
+> currently fails: the generated join compares the `uuid` column
+> `users_sessions.id` to the character-varying `session_id` column
+> without an explicit cast, so Postgres rejects it with `operator does
+> not exist: uuid = character varying`, and PowerPack shows a "Failed
+> to enrich" balloon — no columns are ever added or removed. The test
+> asserts this broken behavior (column count stays unchanged) instead
+> of the expected positive outcome, so it stays green while the bug is
+> open and will flip red once the fix lands. **Remove this note when
+> GROK-20175 is fixed.**
+
+Tests PowerPack's DB Explorer column-enrichment feature against the
+platform's own Postgres metadata database: creating an enrichment that
+joins columns from a related table onto a selected column, applying it
+so the joined columns appear in the grid, editing and removing
+enrichments, running multiple enrichments at once, and having
+enrichments persist across projects, layouts, and other tables that
+share the same column.
+
 ## Setup
 
 1. Provision (or reuse) the `System:Datagrok` data connection (the platform's own Postgres metadata DB — present by default on every Datagrok server).
@@ -129,7 +145,7 @@ Cover combinations: multiple enrichments stacked on the same column, and enrichm
 
 ### 3. Persistence across projects, layouts, and reuse in other tables
 
-Cover the cross-context reuse contract: enrichments persist with the saved project and the saved layout, and reappear when the same source column is encountered in a different table or query result.
+Verify that enrichments persist across saved projects and layouts, and reappear when the same source column is encountered in a different table or query result.
 
 1. From the query results created in Sub-scenario 1, verify that the previously-created enrichments are listed in the `Enrich...` Context Panel for the `session_id` column.
 2. Create one or more additional enrichments for any columns of the query result.
@@ -140,14 +156,18 @@ Cover the cross-context reuse contract: enrichments persist with the saved proje
 
 ## Notes
 
-- Cross-user visibility of created enrichments (originally drafted as Sub-scenario 4) has been removed from this scenario per `scope_reductions :: SR-01` (verdict_status `SCOPE_REDUCTION`, adjudicated by Critic A under cycle 2026-05-22-powerpack-migrate-05). The deferral is pending formal registration of `helpers.playwright.session.logoutAndLoginAs` as a dotted helper id AND provisioning of a second-user fixture account in TestTrack. The grok-browser reference at `.claude/skills/grok-browser/references/projects.md:228` documents the re-auth pattern (logout → login-as-different-user → verify → login-back), and decision-log entry `c1-2026-05-04-helpers-c1b-authoring` records the helper authoring intent. The Projects pilot recipient-side share-verification spec (`complex-share-second-user-spec.ts`) is the canonical precedent for how this should land in a separate future scenario once the helper is registered. See also `unresolved_ambiguities :: second-user-fixture-placeholder` and `unresolved_ambiguities :: recipient-side-assertion-deferred`.
-- The original TestTrack body used the abbreviation `Enrich..` (double period) for the Context Panel section and `+ Add Enrichment..` for the button; both have since been verified live on dev (PowerPack 2026-05-25 build) as `Enrich` (no ellipsis at all) and `+ Add enrichment` (lowercase `e`, no ellipsis) — these are the canonical live labels and the spec selectors use them verbatim. See `source_text_fixes :: enrich-double-period-to-ellipsis` and `add-enrichment-double-period-to-ellipsis`.
-- The original document mixed numeric prefixes (`1.`, `2.`, `1.`, `1.`, ...) across sub-scenarios — markdown auto-renumbers but the source numbering was ambiguous. Steps are renumbered consistently per sub-scenario here. See `source_text_fixes :: mixed-step-numbering-normalized`.
-- Fixture topology runs on `System:Datagrok` — the platform's own Postgres metadata DB, present by default everywhere PowerPack runs. Sub-1 uses `events.session_id` → `users_sessions.id`; Sub-2 adds `events.event_type_id` → `event_types.id`; Sub-3 Step 6 cross-table reuse uses `func_calls.session_id` (also FK to `users_sessions.id`).
-- Step 8 of Sub-scenario 1 ("Verify the editor shows joins correctly") is intentionally specific in this migrated form (FK source/target + selected `users_sessions` columns visible). The original wording was vague; surfaced under `unresolved_ambiguities :: enrichment-editor-join-correctness-assertion` for downstream Test Designer to lock the exact assertion against the editor DOM once a selector reference is curated.
-- This scenario inherits `target_layer: playwright` from the chain's `output_plan` (chain `data-enrichment.md` block, `pyramid_layer: integration`, `classification: complex-standalone`). It owns its UI coverage end-to-end (`context-panel-enrich`, `add-enrichment-dialog`, `enrichment-editor-join-config`, `enrichment-edit-action`, `enrichment-apply-action`, `enrichment-remove-action`) and does NOT delegate to the section's ui-smoke (`add-new-column.md`), which covers a disjoint UI surface (Add New Column dialog).
-- Bug-library consultation: `bug-library/powerpack.yaml` catalogues `GROK-20175` (PowerPack DB-Explorer enrichment join fails with a SQL type mismatch, `uuid = character varying`), which affects `powerpack.db-explorer.run-enrichment` / `run-enrichment-from-config` — the root cause behind SR-05..SR-08. `related_bugs: [GROK-20175]` therefore.
-- Decision-log consultation: read `migration_decisions` (Projects precedent for fixture placeholder + Helper 3 authoring) and `failed_attempts WHERE feature == powerpack` (none). The Projects-pilot precedent governs the deferred cross-user visibility coverage.
+- Cross-user visibility of created enrichments was originally planned
+  as a fourth sub-scenario but has been removed: it requires logging
+  out and back in as a second user account, and no such test account
+  is available in this environment. This should be covered in a
+  separate scenario once a second-user fixture exists.
+- Fixture data lives in `System:Datagrok`, the platform's own Postgres
+  metadata database, present by default on every Datagrok server.
+  Sub-scenario 1 uses `events.session_id` → `users_sessions.id`;
+  Sub-scenario 2 adds `events.event_type_id` → `event_types.id`;
+  Sub-scenario 3's cross-table reuse check (step 6) uses
+  `func_calls.session_id`, which is also a foreign key to
+  `users_sessions.id`.
 
 ---
 {

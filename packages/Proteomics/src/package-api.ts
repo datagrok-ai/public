@@ -63,6 +63,10 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:AnnotateExperiment', {});
   }
 
+  export async function setLog2Scale(): Promise<void> {
+    return await grok.functions.call('Proteomics:SetLog2Scale', {});
+  }
+
   export async function normalizeProteomics(): Promise<void> {
     return await grok.functions.call('Proteomics:NormalizeProteomics', {});
   }
@@ -109,6 +113,10 @@ export namespace funcs {
 
   export async function enrichmentAnalysis(): Promise<void> {
     return await grok.functions.call('Proteomics:EnrichmentAnalysis', {});
+  }
+
+  export async function exportEnrichmentInputs(): Promise<void> {
+    return await grok.functions.call('Proteomics:ExportEnrichmentInputs', {});
   }
 
   export async function enrichmentCharts(): Promise<void> {

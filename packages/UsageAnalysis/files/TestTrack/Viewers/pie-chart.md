@@ -1,3 +1,14 @@
+---
+feature: piechart
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - pie-chart-spec.ts
+related_bugs: []
+---
+
 # Pie chart tests (Playwright)
 
 All scenarios should start with the following sequence of events:

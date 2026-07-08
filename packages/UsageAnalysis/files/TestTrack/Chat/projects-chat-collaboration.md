@@ -1,4 +1,17 @@
-### Comments / Chat collaboration on Projects
+---
+feature: chat
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - projects-chat-collaboration-spec.ts
+related_bugs: []
+---
+
+# Comments / Chat collaboration on Projects
+
+Verifies that two collaborators can use the Chat (Comments) panel on a shared project to post and reply to comments, and that the other user sees new comments, notifications, and mentions correctly. Also checks that comment history persists across logins and that users can only edit or delete their own comments.
 
 **Preconditions:**
 - Two users available: **User A** (author) and **User B** (collaborator), each logged in to a separate browser session.

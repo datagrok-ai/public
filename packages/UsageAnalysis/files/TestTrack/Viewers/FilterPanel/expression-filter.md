@@ -1,3 +1,14 @@
+---
+feature: filters
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - expression-filter-spec.ts
+related_bugs: []
+---
+
 1. Open demog
 2. Open the **Filter Panel**
 3. **Hamburger menu > Add filter > Expression filter**

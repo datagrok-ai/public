@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.api.save, projects.shell.open]
---- */
 // GROK-19212: rename a referenced table inside a project, reopen, verify it loads without resolution error.
 // Test 1 = table rename (GROK-19212); Test 2 = query rename (github-3550); Test 3 = script rename (sister).
 import {test, expect, Page} from '@playwright/test';

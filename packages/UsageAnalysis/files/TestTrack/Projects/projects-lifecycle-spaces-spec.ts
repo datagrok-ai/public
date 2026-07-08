@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.api.files.sync, projects.api.get-by-id, projects.api.namespaces, projects.api.save, projects.upload]
---- */
 // Spaces-source lifecycle: provision a transient root Space with demog.csv, save with Sync ON, reopen.
 // GROK-18345: share to the second user's GROUP at View-and-Use + Full and verify recipient can open it.
 import {test, expect} from '@playwright/test';

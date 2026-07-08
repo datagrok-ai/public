@@ -1,13 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column
-  - powerpack.dialogs.add-new-column-func
-  - powerpack.dialogs.prepare-add-column-call
-  - powerpack.formula.is-formula-column
-  - powerpack.dialogs
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [powerpack.cp.add-new-column-persists]
 pyramid_layer: bug-focused
 ui_coverage_responsibility:
   - add-new-column-dialog
@@ -31,7 +27,15 @@ candidate_helpers:
   - helpers.powerpack.addCalculatedColumn
   - helpers.powerpack.renameColumnViaContextAction
 unresolved_ambiguities: []
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Save-with-datasync provenance is not wired in the test environment, so
+      save-with-datasync degrades to snapshot-only and GROK-17109 cannot be
+      exercised here. The add-new-column advanced flow is asserted; the
+      datasync-provenance branch is deferred.
+    verdict_status: SCOPE_REDUCTION
 related_bugs:
   - GROK-17109
 realized_as:
@@ -67,21 +71,14 @@ gate_verdicts:
 
 # Add New Column — multi-source datasync persistence + formula recalc on column rename
 
-Multi-source matrix-like sequence walking the canonical GROK-17109
-reproduction surface: open data from five distinct sources, add two
-chained calculated columns, mutate the source column (rename + edit
-values), save the project with datasync where the source supports it,
-close all, reopen, and verify the calculated columns persist with
-formulas intact AND recompute correctly when the source column is
-renamed.
+Multi-source regression test for GROK-17109: open data from five
+different table sources, add two calculated columns that reference
+each other, rename and edit the source column, save the project with
+data sync, close and reopen, and verify the calculated columns persist
+with their formulas intact and recompute correctly after the rename.
 
-Chain witness role: this scenario is bug-focused per chain
-`pyramid_layer: bug-focused` and owns the specialty persistence flows
-(`save-project-with-datasync`, `project-reopen-with-formula-recalc`,
-`column-rename-context-action`) for the PowerPack chain. Basic
-dialog-open-and-add flow is delegated to the chain's smoke
-witness at `add-new-column.md` (top-level PowerPack scenario,
-`ui_coverage_delegated_to: add-new-column.md`).
+This scenario focuses on the persistence and rename-recalc behavior;
+the basic dialog open-and-add flow is covered by `add-new-column.md`.
 
 ## Setup
 
@@ -189,67 +186,13 @@ the fix in 1.23.0, columns disappeared on reopen.
 
 ## Notes
 
-- **Bug focus and chain role.** This scenario is bug-focused per
-  chain `pyramid_layer: bug-focused`; it walks the canonical
-  GROK-17109 reproduction (Step 6 save-with-datasync + Step 8
-  reopen-and-verify) plus the formula-recalc-on-rename invariant
-  (Step 9). Cross-cutting bug candidate `GROK-17109` is emitted at
-  the chain level (`bug_focused_candidates` in
-  `scenario-chains/powerpack.yaml`); proposed spec
-  `powerpack-grok-17109-spec.ts` spans this scenario plus
-  `add-new-column.md` (top-level smoke) and
-  `AddNewColumn/formula-refreshing.md` (dependency-chain recalc).
-- **UI delegation.** Basic dialog-open-and-add flow (toolbar icon,
-  formula editor, OK button) is owned by the chain's smoke witness
-  at `add-new-column.md`. This scenario owns the specialty
-  persistence flows: `save-project-with-datasync`,
-  `project-reopen-with-formula-recalc`, `column-rename-context-action`.
-  See chain `ui_coverage_plan.delegated_scenarios` entry.
-- **Sibling spec.** A Playwright spec already exists at
-  `public/packages/PowerPack/src/tests/add-new-column.ts` (see
-  `existing-test-index.yaml`); house-style anchor for Automator
-  when authoring the migrated scenario's `-spec.ts`.
-- **Sibling scenario alignment.** The `Weight2 = ${WEIGHT} + 100`,
-  `Weight3 = ${Weight2} + 100` chain mirrors the formula pattern
-  used by `AddNewColumn/formula-refreshing.md` (Weight2 → Weight3 →
-  Weight4) for cross-scenario consistency; that sibling extends the
-  chain with `Weight4 = Log10(${Weight3}) - 0.2` and adds Context
-  Panel formula-edit coverage which this scenario does not duplicate.
-- **Source-text fixes.** The original scenario contained the TODO
-  marker `(TODO: specify which formula to use)` on Step 3; the
-  migration resolves it to `${WEIGHT} + 100` for Step 3 and
-  `${Weight2} + 100` for Step 4 per the chain-level recommendation
-  (a) in `unresolved_ambiguities :: formula-not-specified` — the
-  resolution mirrors the Weight2/Weight3 chain in the sibling
-  `formula-refreshing.md` scenario. The original "Close All"
-  shorthand is spelled out as closing all open views via the shell
-  (Step 7) so the action is unambiguous when this scenario is
-  automated.
-- **Candidate helpers.** Several patterns recur and warrant
-  registry candidates: opening tables from local storage / Home dir
-  / query results (`openTableFromLocalStorage`, `openTableFromHomeDir`,
-  `openQueryResult`), saving a project with datasync
-  (`saveProjectWithDatasync`), reopening a saved project
-  (`reopenProject`), adding a calculated column via the dialog
-  (`addCalculatedColumn`), and renaming a column via the grid
-  context action (`renameColumnViaContextAction`). None of these
-  exist in `helpers-registry.yaml` yet; surfaced here as candidates
-  for the registry per the Migrator candidate-helper convention.
-- **Datasync availability matrix.** Sources 1 (local storage) and
-  2 (Home dir) typically do not support datasync since there is no
+- **Formula naming.** The `Weight2 = ${WEIGHT} + 100`, `Weight3 =
+  ${Weight2} + 100` chain mirrors the formula pattern used by
+  `formula-refreshing.md`, which extends the chain with a third
+  column (`Weight4`) and additional Context Panel formula-edit
+  coverage.
+- **Datasync availability.** Sources 1 (local storage) and 2 (Home
+  dir) typically do not support data sync, since there is no
   upstream source to sync against; Sources 3-5 (Northwind query
-  results) do support datasync. The scenario body's Step 6
-  "(where available)" qualifier preserves the original's allowance
-  for variable datasync support across sources; the persistence-
-  on-reopen invariant (Step 8) applies to all five sources.
-- **Original trailing JSON metadata.** The original scenario ended
-  with `{"order": 1}`. The `order` field is captured in chain
-  `order_from_files` under the path-relative key
-  `AddNewColumn/add-new-column.md`.
-- **Name-collision awareness.** There is a sibling top-level
-  scenario at `PowerPack/add-new-column.md` (the chain's smoke
-  witness for the Demog flow). The two scenarios share the same
-  basename but are DISTINCT and not interchangeable; the chain
-  encodes them with path-relative keys. See chain
-  `unresolved_ambiguities :: naming-collision-add-new-column` for
-  future rename suggestions.
+  results) do support it. The persistence-on-reopen check (Step 8)
+  applies to all five sources regardless of data-sync availability.

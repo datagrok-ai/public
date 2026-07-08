@@ -188,6 +188,8 @@ grok test --host localhost # run the package tests
 
 ## See also
 
+- [Personas & capabilities](docs/personas-and-capabilities.md) — who (analyst vs biology
+  scientist) can do what, and how the boundary is enforced.
 - **TODO:** Datagrok Proteomics documentation — the help page at
   `https://datagrok.ai/help/domains/bio/proteomics` does not exist yet and still needs to
   be written.

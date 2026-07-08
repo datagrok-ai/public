@@ -1,5 +1,10 @@
 # bio changelog
 
+## 6.0.2 (2026-07-06)
+
+* To atomic level (linear path): support multi-chain HELM (e.g. `RNA1{...}|RNA2{...}`) — each disjoint chain is assembled independently and stacked vertically into a single molfile instead of being fused into one continuous chain.
+* Monomer hover (linear path): fix the HELM monomer→atom map — infer polymer type from the parsed HELM graph (not the alphabet, which mis-detects modified RNA as UN) and build the map with per-position RNA roles and multi-chain stacking so it matches the rendered molfile.
+
 ## 5.61.2 (2025-11-03)
 
 * Split User settings for duplicate monomer preferences into separate entries to avoid length limits.

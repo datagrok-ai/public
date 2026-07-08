@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.detector, bio.rendering, bio.search.diversity, bio.search.diversity.top-menu, bio.viewers.diversity-search]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

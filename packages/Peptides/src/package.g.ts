@@ -88,6 +88,16 @@ export function clusterMaxActivity() : any {
   return PackageFunctions.clusterMaxActivity();
 }
 
+//name: Peptide Generation
+//description: Generates new candidate peptides from monomer-position statistics, ranked by predicted activity
+//tags: viewer
+//output: viewer result
+//meta.role: viewer
+//meta.icon: files/icons/peptide-sar-vertical-viewer.svg
+export function peptideGeneration() : any {
+  return PackageFunctions.peptideGeneration();
+}
+
 //name: Manual Alignment
 //tags: widgets, panel
 //input: string _monomer { semType: Monomer }

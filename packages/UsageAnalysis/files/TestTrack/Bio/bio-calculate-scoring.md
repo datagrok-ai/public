@@ -1,14 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.calculate.identity
-  - bio.calculate.similarity
-  - bio.calculate.seq-identity
-  - bio.calculate.get-region.api
-  - bio.analyze.alignment-pairwise
-  - bio.calculate.get-region
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [bio.cp.identity-scoring]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -48,44 +43,14 @@ gate_verdicts:
 
 # Bio | Calculate — Identity / Similarity scoring + region API + pairwise alignment
 
-Gate F SR extension scenario (cycle 2026-06-01-bio-migrate-02) that
-realizes atlas critical path `bio.cp.identity-scoring` (`priority: p1`)
-and extends coverage of the Bio Calculate family beyond the
-top-menu-only entries already realized in earlier section scenarios
-(`bio.calculate.get-region` and `bio.calculate.get-region.top-menu`
-are covered upstream via `bio.flow.get-region`-helper usage). Targets
-five net-new bio sub-features on the live covered union and one
-already-covered umbrella id (`bio.calculate.get-region`) carried as
-the API anchor and for the F-STRUCT-INTERACTION-01 density floor.
-
-The scenario exercises four entry points into the Bio score / region
-/ pairwise-alignment surface:
-
-(a) `Bio | Calculate | Identity...` top-menu (atlas
-    `bio.calculate.identity`, `package.ts#L1321`) — adds a column of
-    fraction-of-matching-monomers vs a reference sequence.
-(b) `Bio | Calculate | Similarity...` top-menu (atlas
-    `bio.calculate.similarity`, `package.ts#L1336`) — adds a column
-    of summed monomer-fingerprint similarities vs a reference.
-(c) The public API wrappers `seqIdentity(seq, ref)` (atlas
-    `bio.calculate.seq-identity`, `package.ts#L1640`),
-    `getRegion(sequence, start, end, name)` (atlas
-    `bio.calculate.get-region.api`, `package.ts#L473`), and
-    `sequenceAlignment(alignType, alignTable, gap, seq1, seq2)`
-    (atlas `bio.analyze.alignment-pairwise`, `package.ts#L435`)
-    invoked via `grok.functions.call('Bio:<name>', ...)`.
-(d) The umbrella parent `bio.calculate.get-region` anchor —
-    exercised at API level (the .api child is one entry point;
-    the .top-menu sibling is covered by `composition-analysis.md` /
-    `convert.md` upstream).
-
-Per atlas (`bio.cp.identity-scoring`, `derived_from:
-package.ts#L1321`, `priority: p1`), the canonical
-identity/similarity-scoring path is a `coverage_type: regression`
-surface — the score-column outputs feed Sequence Space /
-Activity Cliffs analyze surfaces and any change to the
-`calculateScoresWithEmptyValues` empty-value handling can regress
-multiple downstream consumers without a direct UI symptom.
+Covers the Bio scoring and alignment surface: the **Identity...** and
+**Similarity...** top-menu actions (each adds a score column comparing
+every sequence in a column against a reference sequence), plus the
+underlying public API functions — `seqIdentity`, `getRegion`, and
+`sequenceAlignment` (pairwise Needleman-Wunsch / Smith-Waterman
+alignment). These scoring outputs feed the Sequence Space and Activity
+Cliffs analyses, so a regression here can silently break those
+downstream features without an obvious UI symptom.
 
 ## Setup
 
@@ -128,8 +93,7 @@ Steps:
    Files browser. The Macromolecule detector classifies the
    sequence column and sets `units=helm`.
 2. From the ribbon, run
-   **Bio > Calculate > Identity...** (atlas
-   `bio.calculate.identity`, `package.ts#L1321`). The dialog
+   **Bio > Calculate > Identity...**. The dialog
    opens prefilled with the active table and Macromolecule
    column.
 3. In the dialog `Reference` field, paste the first row's
@@ -157,8 +121,7 @@ Steps:
 
 1. On the same `filter_HELM.csv` table view from Scenario 1
    (or re-open it if Scenario 1 was run independently), run
-   **Bio > Calculate > Similarity...** (atlas
-   `bio.calculate.similarity`, `package.ts#L1336`). The dialog
+   **Bio > Calculate > Similarity...**. The dialog
    opens prefilled.
 2. In the dialog `Reference` field, paste the first row's
    sequence. Click **OK**.
@@ -190,8 +153,7 @@ Steps:
    <col>, start: 0, end: 4, name: 'region_0_4'})`. The function
    is the public API surfaced from `@grok.decorators.func({name:
    'getRegion', ...})` at `package.ts#L473`; it delegates to
-   `ISeqHandler.getRegion()` (atlas
-   `bio.calculate.get-region`, parent anchor) and returns the
+   `ISeqHandler.getRegion()` and returns the
    positional sub-region as a new Macromolecule column.
 3. Append the returned column to the active dataframe.
 
@@ -203,10 +165,8 @@ Expected:
   `Macromolecule`).
 - The returned column name is `region_0_4` (the `name`
   parameter).
-- The umbrella `bio.calculate.get-region` parent surface is
-  exercised through `ISeqHandler.getRegion()` (atlas anchor
-  `package.ts#L473`); the `.api` child registration is the entry
-  point under test here.
+- The underlying `ISeqHandler.getRegion()` region-extraction
+  surface is exercised through this API call.
 - No error balloon appears.
 
 ### Scenario 4 — `seqIdentity` single-pair API call (empty-input contract)
@@ -217,12 +177,10 @@ Steps:
    is a single-pair function, not a column transform), call
    `await grok.functions.call('Bio:seqIdentity', {seq: <first
    row's HELM sequence>, ref: <same first row's HELM
-   sequence>})`. Atlas `bio.calculate.seq-identity`,
-   `package.ts#L1640`.
+   sequence>})`.
 2. Call `await grok.functions.call('Bio:seqIdentity', {seq:
    '', ref: <first row's HELM sequence>})` to exercise the
-   empty-input branch documented on the atlas
-   (`returns null when seq is empty`).
+   empty-input branch (`returns null when seq is empty`).
 3. Call `await grok.functions.call('Bio:seqIdentity', {seq:
    <row 1 sequence>, ref: <row 0 sequence>})` for a cross-row
    pair to confirm the function returns a non-trivial float.
@@ -230,7 +188,7 @@ Steps:
 Expected:
 
 - Step 1 returns `1.0` (self-identity).
-- Step 2 returns `null` per the atlas contract — empty `seq`
+- Step 2 returns `null` — empty `seq`
   short-circuits to null rather than throwing, and downstream
   code paths must tolerate the null cell value (this is the
   empty-value branch handled in
@@ -248,10 +206,9 @@ Steps:
 2. Invoke
    `await grok.functions.call('Bio:sequenceAlignment',
    {alignType: 'global', alignTable: 'BLOSUM62', gap: -10,
-   seq1: <row 0 sequence>, seq2: <row 1 sequence>})` (atlas
-   `bio.analyze.alignment-pairwise`, `package.ts#L435`,
-   wrapping the `SequenceAlignment` Needleman-Wunsch /
-   Smith-Waterman engine from `src/seq_align.ts`).
+   seq1: <row 0 sequence>, seq2: <row 1 sequence>})` (wrapping
+   the `SequenceAlignment` Needleman-Wunsch / Smith-Waterman
+   engine from `src/seq_align.ts`).
 3. Repeat with `alignType: 'local'` (Smith-Waterman) and any
    other BLOSUM matrix — e.g. `BLOSUM45` — to exercise the
    matrix-selection branch on the `SequenceAlignment`
@@ -269,91 +226,6 @@ Expected:
   matrix-name branch on the alignment-engine constructor is
   exercised across the two invocations.
 - No error balloon appears.
-
-## Notes
-
-- atlas entry derived from sub_features `bio.calculate.{identity,
-  similarity, seq-identity, get-region.api}` and
-  `bio.analyze.alignment-pairwise`; the top-menu steps in
-  Scenarios 1–2 derive from atlas critical_path
-  `bio.cp.identity-scoring` (`priority: p1`,
-  `derived_from: public/packages/Bio/src/package.ts#L1321`).
-- target_layer rationale: `playwright` — Scenarios 1 and 2 are
-  ribbon-driven top-menu UI dialogs (`Bio > Calculate > Identity`
-  and `Bio > Calculate > Similarity`); the score-column output
-  must be observable on the painted grid for the dialog-close
-  contract. Scenarios 3–5 are API-call shape inside the same
-  Playwright session via `evaluate` against
-  `grok.functions.call(...)` — combining them into one scenario
-  file preserves the section-wide F-STRUCT-DENSITY-01 average
-  (6 sub-features over the scenario file) and the
-  F-STRUCT-INTERACTION-01 floor (six sub-features in
-  interaction). A pure-apitest factoring is possible for the
-  API-only branches but would split the Calculate family across
-  two scenario files for no additional value.
-- coverage_type rationale: `regression` — score-column outputs
-  feed downstream analyze surfaces (Sequence Space distance
-  inputs, Activity Cliffs activity-pair detection, MSA
-  per-cluster scoring) and the
-  `calculateScoresWithEmptyValues` empty-value path was
-  observed to regress on prior cycles (no specific bug filed
-  but covered by the regression-class contract). Atlas
-  critical_path `bio.cp.identity-scoring` carries `priority:
-  p1` which maps to `coverage_type: regression` per the
-  skill's STEP E heuristic.
-- Sub-features covered:
-  - `bio.calculate.identity` (`package.ts#L1321`) — Identity
-    top-menu transform; covered by Scenario 1.
-  - `bio.calculate.similarity` (`package.ts#L1336`) —
-    Similarity top-menu transform; covered by Scenario 2.
-  - `bio.calculate.seq-identity` (`package.ts#L1640`) —
-    single-pair `seqIdentity` API; covered by Scenario 4
-    (including the empty-input null-return contract).
-  - `bio.calculate.get-region.api` (`package.ts#L473`) —
-    public `getRegion` API; covered by Scenario 3.
-  - `bio.analyze.alignment-pairwise` (`package.ts#L435`) —
-    `sequenceAlignment` pairwise engine; covered by
-    Scenario 5.
-  - `bio.calculate.get-region` (`package.ts#L473`) — parent
-    anchor for the region surface; exercised through the
-    `getRegion` API call in Scenario 3 (the `.api` child is
-    one entry point into the umbrella).
-- Net-new ids vs `live_covered_union` (this cycle's
-  authoritative covered set of 56 ids):
-  - `bio.calculate.identity` — net-new.
-  - `bio.calculate.similarity` — net-new.
-  - `bio.calculate.seq-identity` — net-new.
-  - `bio.calculate.get-region.api` — net-new.
-  - `bio.analyze.alignment-pairwise` — net-new.
-  - `bio.calculate.get-region` — already in
-    `live_covered_union` (anchor, not net-new).
-  - net_new = 5 ids; satisfies the SR-loop progress-sensitive
-    bound (delta > 0) and the STEP C net-new refusal.
-    Projected coverage after this iteration's merge: 59/99
-    (~59.6%), advancing toward the 70% threshold while the
-    remaining first-pass scenarios are authored on subsequent
-    iterations.
-- Manual-only subset: none of the six covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas rev
-  3 `manual_only[]` list — none of `bio.calculate.*` or
-  `bio.analyze.alignment-pairwise` is flagged manual_only).
-- Deferrals: none. All five scenarios are observable inside a
-  single Playwright session (UI ribbon for Scenarios 1–2;
-  `grok.functions.call` via `evaluate` for Scenarios 3–5).
-- Bug-context (`related_bugs`): none. No atlas
-  `known_issues[]` / `edge_cases[]` entry maps to the
-  Calculate scoring family directly; the GROK-12164 dispatch
-  regression is renderer-scope, not score-scope. `related_bugs:
-  []` per atlas.
-- The Bio section has no grok-browser ref-doc verb-form H2
-  matching the citation regex (see
-  `references/bio.md` headings audit by F-UI-COVERAGE-01 for
-  this cycle), so `## Notes` citation pointers reference atlas
-  entries only — no `See: <path>#<heading>` citation form
-  applies here.
-- This scenario covers 6 sub_features (`F-STRUCT-DENSITY-01`
-  floor: 2; `F-STRUCT-INTERACTION-01` floor: 3 in a
-  multi-sub_feature scenario — satisfied).
 
 ---
 {

@@ -55,7 +55,7 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
   const groupItems = Array.from(groupByName.keys());
 
   const targetInput = ui.input.string('Target', {value: ''});
-  targetInput.setTooltip('Free text — your team\'s name for this target (e.g., MYH7-DMD, Cytokinetics atrophy panel)');
+  targetInput.setTooltip('Free text — your team\'s name for this target (e.g., MYH7-DMD, muscle-atrophy panel)');
 
   const groupInput = ui.input.choice('Share with team', {
     value: groupItems[0],

@@ -1,5 +1,22 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-files-and-spaces-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — File shares & Spaces
+
+Verifies sharing behavior for the two container-like entity types: a user file share
+(sharing the underlying connection grants list/read access to its files) and a Space
+(sharing it cascades "View and use" to everything it contains). Confirms recipients get
+read-only access in both cases, cannot edit/delete/re-share, and lose access once the
+owner revokes the share.
 
 ## Setup
 

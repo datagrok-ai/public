@@ -1,3 +1,14 @@
+---
+feature: correlationplot
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - correlation-plot-spec.ts
+related_bugs: []
+---
+
 # Correlation plot tests (Playwright)
 
 All scenarios should start with the following sequence of events:

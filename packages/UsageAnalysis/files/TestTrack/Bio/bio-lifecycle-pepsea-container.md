@@ -1,14 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.engines.msa-pepsea
-  - bio.analyze.msa
-  - bio.analyze.msa.dialog
-  - bio.analyze.msa.align-sequences
-  - bio.api.get-seq-helper
-  - bio.lifecycle.init
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [align_sequences]
 produced_from: atlas-driven
 related_bugs: []
 realized_as:
@@ -46,42 +41,30 @@ gate_verdicts:
         failure_keys: []
 ---
 
-# Bio — `pepsea_container` source-class lifecycle
+# Bio — PepSeA Docker container: alignment lifecycle, save & reopen
 
-Proactive lifecycle scenario for the `pepsea_container` source
-class per
-`scenario-chains/bio.yaml#proactive_lifecycle_specs[4]`. Walks
-the PepSeA Docker container through every non-agnostic
-`dep_lifecycle_op` declared in atlas
-`dep_lifecycle_ops[].affected_source_classes` that touches the
-shape: HELM column → non-canonical MSA dispatch
-(`bio.engines.msa-pepsea`) → Docker container status transition
-+ PepSeA invocation → save project with the alignment output →
-reopen + container-eviction recovery (per atlas
-`bio.x.docker-container-eviction-msa-fallback`).
+Walks the PepSeA Docker-based alignment engine through its lifecycle:
+running MSA on a HELM column (which routes to PepSeA since HELM is
+non-canonical), saving a project with the alignment output, and
+reopening it — including recovering if the PepSeA container was
+evicted between sessions.
 
-`external_deps: [DockerContainer]` per chain `proactive_lifecycle_specs[4]`
-— the lifecycle requires the PepSeA Docker container to be
-available on the Datagrok host. `env_requirements: ["Docker
-host available for PepSeA container"]`.
+Pairs with `msa.md` (the canonical kalign WASM path) and `pepsea.md`
+(a single PepSeA run on a freshly opened HELM table); this scenario
+adds the save/reopen and container-eviction-recovery layer that
+those two don't cover.
 
-Pairs with `msa.md` (canonical kalign WASM path) and
-`pepsea.md` (non-canonical PepSeA on a fresh-open HELM table)
-which exercise the runtime branch in `pyramid_layer: integration`
-form; this proactive lifecycle cell adds the save/reopen +
-container-eviction recovery layer that those two integration
-scenarios do not cover.
+Requires the PepSeA Docker container to be available on the Datagrok
+host.
 
-## Scope clarification (container-eviction)
+## Scope clarification (container eviction)
 
-The `bio.x.docker-container-eviction-msa-fallback` invariant
-covers the case where the PepSeA container is evicted between
-analysis sessions and the reopen path must either restart the
-container automatically or surface a deterministic error. UI
-driving for container restart is delegated to JS API
-(`grok.dapi.docker.dockerContainers`) — the assertable surface
-is the eventual MSA success after restart, not the eviction
-event itself.
+If the PepSeA container is evicted between analysis sessions,
+reopening a project must either restart the container automatically
+or surface a clear error — not crash or hang silently. Driving the
+container restart itself goes through the JS API
+(`grok.dapi.docker.dockerContainers`); what's actually asserted is
+that MSA succeeds after the restart, not the eviction event itself.
 
 ## Setup
 
@@ -99,7 +82,7 @@ event itself.
   registered (env not configured).
 - Service-surface dependency:
   `await grok.functions.call('Bio:getSeqHelper')` is used in
-  Step 1 (atlas `bio.api.get-seq-helper`).
+  Step 1.
 - Cleanup: Step 5 closes the project, removes the saved
   project, and leaves the container in its discovered state.
 
@@ -108,18 +91,14 @@ event itself.
 ### Scenario 1: Initial PepSeA run on HELM column
 
 Steps:
-1. Trigger `Bio:initBio` if not yet initialized (atlas
-   `bio.lifecycle.init`). Verify `getSeqHelper()` resolves
-   (atlas `bio.api.get-seq-helper`).
+1. Trigger `Bio:initBio` if not yet initialized. Verify
+   `getSeqHelper()` resolves.
 2. Open `System.AppData/Bio/tests/filter_HELM.csv`. The
    detector classifies the Macromolecule column with
-   `units=helm` (matches atlas `bio.detector` and
-   `bio.cp.detect-open-helm`).
-3. Trigger ribbon `Bio | Analyze | MSA...` (atlas
-   `bio.analyze.msa`, `bio.analyze.msa.dialog`). In the MSA
-   dialog, the engine selector should expose the PepSeA
-   option (per atlas `bio.engines.msa-pepsea`). Select PepSeA
-   and run with default `method`.
+   `units=helm`.
+3. Trigger ribbon `Bio | Analyze | MSA...`. In the MSA dialog,
+   the engine selector should expose the PepSeA option. Select
+   PepSeA and run with default `method`.
 4. Verify the alignment outcome:
    - The PepSeA Docker container transitions to a running
      state during compute
@@ -127,10 +106,8 @@ Steps:
      observable mid-flight).
    - A new aligned Macromolecule column is added to the
      table when the call returns.
-   - `dep_lifecycle_ops[align_sequences]` exercised via the
-     PepSeA branch (atlas
-     `dep_lifecycle_ops[align_sequences].affected_source_classes`
-     includes `pepsea_container`).
+   - The alignment operation runs through the PepSeA branch
+     (not the canonical kalign engine).
 
 Expected:
 - The MSA dialog dispatches to the PepSeA engine for HELM
@@ -173,8 +150,7 @@ Steps:
 4. (Optional) Trigger MSA again on the reopened table. The
    PepSeA container path should either resume cleanly (if
    the container survived) or restart deterministically (if
-   evicted between sessions). The path covers atlas
-   `bio.x.docker-container-eviction-msa-fallback`.
+   evicted between sessions).
 
 Expected:
 - The project reopen restores the alignment column without
@@ -216,78 +192,22 @@ Expected:
 
 ## Notes
 
-- Origin: chain rev 8
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[4]`
-  (`source_class: pepsea_container`, `spec_target:
-  bio-lifecycle-pepsea-container-spec.ts`). Lands the
-  intent-layer `.md` realization that
-  `F-PROACTIVE-COVERAGE-01` (SCOPE_REDUCTION, cycle
-  2026-06-01-bio-migrate-01) cited as the gap. `.ts`
-  realization (`spec_target`) is downstream Automator /
-  Phase C, not gated by F.
-- atlas entry derived from
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[4]`
-  (chain author, cycle 2026-05-30-bio-chain-bootstrap-01).
-- `dep_lifecycle_ops` exercised (per
-  `proactive_lifecycle_specs[4].bundled_ops`):
-  `align_sequences` (Scenario 1.3-1.4, 3.4),
-  `save_project_with_analysis` (Scenario 2.1).
-- target_layer rationale: `playwright` — the lifecycle spans
-  the MSA dialog engine-selector UI and the Save Project
-  ribbon path; both surfaces require DOM driving. `apitest`
-  covers `alignSequences` at the API layer but does not
-  exercise the engine-selector dropdown. Container lifecycle
-  observations go through `grok.dapi.docker.dockerContainers`
-  (JS API) since Docker admin UI is out-of-scope.
-- Sibling tests considered:
-  - `public/packages/Bio/src/tests/msa-tests.ts` covers
-    `alignSequences` for canonical kalign at the API layer;
-    this scenario adds the PepSeA-specific Docker container
-    lifecycle layer the apitest does not exercise.
-  - Section integration scenarios `msa.md` and `pepsea.md`
-    cover the dialog dispatch and engine selection for a
-    single-run flow; this scenario adds the
-    save/reopen + container-eviction recovery lifecycle
-    layer those scenarios do not cover.
-- This scenario covers 6 sub_features
-  (`F-STRUCT-DENSITY-01` floor: 2 — well above;
-  `F-STRUCT-INTERACTION-01` floor: 3 — satisfied per
-  scenario). Scenario cardinality (per `## Scenarios`
-  section): 5 (one cleanup + four substantive lifecycle
-  scenarios) — meets the >= 2 scenarios floor.
-- Manual-only subset: none of the six covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas
-  rev 3 `manual_only[]` list — note
-  `bio.rendering.column-header` is manual_only and would
-  cover the MSA column-header WebLogo paint; this scenario
-  does NOT claim coverage of that sub_feature).
-- `coverage_type: regression` per STEP E heuristic: this is
-  general coverage of the pepsea_container lifecycle shape
-  (not a single critical_path golden path → not smoke; not
-  a boundary value → not edge; not stress/latency-sensitive
-  → not perf, though Docker container startup is a
-  latency-sensitive surface — kept as `regression` per the
-  lifecycle framing). Atlas `bio.cp.msa-pepsea` (priority
-  p1) informs the runtime branch; the lifecycle save/reopen
-  + eviction is the surface that motivates this scenario.
-- Deferrals: explicit container-eviction triggering
-  (Scenario 3.1) is env-conditional and may not be
-  reachable from every test environment. The assertion-
-  grade contract is the reopen + subsequent MSA path
-  (Scenario 3.3-3.4), which is reachable regardless of
-  whether the test can drive eviction directly. Container
-  admin UI is out-of-scope.
-- env_requirements: `Docker host available for PepSeA
-  container` per chain `proactive_lifecycle_specs[4]`. If
-  no PepSeA container is registered, the entire scenario
-  skips (Setup's container-handle resolution returns null →
-  scenario emits SKIP status per `core/docs/platform/TESTING.md`
-  skip-conventions).
-- Related-bug context: `related_bugs: []` per chain
-  `proactive_lifecycle_specs[4].bugs_reinforcing` (empty —
-  no GROK bug specifically tagged the PepSeA container
-  lifecycle; the integration-layer container behavior is
-  exercised by `pepsea.md` at the smoke layer).
+- Sibling coverage: `msa-tests.ts` covers `alignSequences` for the
+  canonical kalign engine at the API layer; this scenario adds the
+  PepSeA-specific Docker container lifecycle layer the apitest
+  doesn't exercise. The integration scenarios `msa.md` and `pepsea.md`
+  cover dialog dispatch and engine selection for a single run; this
+  scenario adds the save/reopen and container-eviction-recovery
+  layer those don't cover.
+- This scenario doesn't assert on the MSA column-header WebLogo
+  paint — that's a manual/visual check.
+- Deferrals: explicitly triggering container eviction (Scenario 3,
+  step 1) is environment-conditional and may not be reachable from
+  every test environment. What's actually asserted is the reopen +
+  subsequent MSA path (Scenario 3, steps 3-4), which is reachable
+  regardless of whether the test can force eviction directly.
+- If no PepSeA container is registered on the host, the whole
+  scenario is skipped rather than failed.
 
 ---
 {

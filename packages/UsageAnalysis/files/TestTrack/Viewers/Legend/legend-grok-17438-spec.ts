@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [legend.item.color-picker, legend.splitter-resize, legend.visibility]
---- */
 // GROK-17438: color change on one viewer keeps the legend visible on shared-legend viewers.
 
 import {test, expect} from '@playwright/test';

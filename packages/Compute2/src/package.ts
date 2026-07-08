@@ -76,6 +76,7 @@ const modelCatalogOptions = {
   funcName: 'modelCatalog',
   setStartUriLoaded: () => startUriLoaded = true,
   getStartUriLoaded: () => startUriLoaded,
+  roleOnlyFilter: false,
 };
 
 export class PackageFunctions {
@@ -85,6 +86,8 @@ export class PackageFunctions {
     if (initRunned)
       return;
     initRunned = true;
+
+    modelCatalogOptions.roleOnlyFilter = _package.settings?.['roleOnlyModelFilter'] === true;
 
     setModelCatalogHandler();
     setModelCatalogEventHandlers(modelCatalogOptions);
@@ -132,7 +135,7 @@ export class PackageFunctions {
     meta: { role: ' ', app: ' '}
   })
   static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
-    makeModelTreeBrowser(treeNode as any);
+    makeModelTreeBrowser(treeNode as any, modelCatalogOptions.roleOnlyFilter);
   }
 
 
