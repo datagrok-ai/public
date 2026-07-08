@@ -14,6 +14,12 @@ const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
+// A freshly-(re)mounted Filters viewer can asynchronously reapply a stale per-column categorical
+// selection over a DataFrame's .filter BitSet shortly after construction (a Datagrok platform
+// behavior, not something this app triggers) — this is how long every reset-after-remount in this
+// file waits before re-asserting the intended filter state, past that clobber window.
+const FILTER_REMOUNT_SETTLE_MS = 200;
+
 // Sniff string columns and set semType so the grid renders reactions and molecules: presence of
 // `>>` in sampled values wins as ChemicalReaction, else auto-detection handles Molecule etc.
 function detectChemSemTypes(df: DG.DataFrame): void {
@@ -656,7 +662,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     filtersViewer.root.style.height = '100%';
     filtersViewer.root.style.overflow = 'auto';
     const gridBox = ui.div([grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
-    const filtersBox = ui.div([filtersViewer.root], {style: {flex: '0 0 auto', width: '220px', height: '100%',
+    // width must track the wrapper sizeSplitOnceLaidOut resizes below (split.children[0]), not a fixed
+    // px value — a fixed width here left a dead gap between this box and the divider whenever the
+    // wrapper's computed width (total * 0.25, capped 260) exceeded it (live-verified).
+    const filtersBox = ui.div([filtersViewer.root], {style: {flex: '0 0 auto', width: '100%', height: '100%',
       overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
     const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
     host.appendChild(split);
@@ -745,7 +754,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // process. Live-verified via staged timing diagnostics: the clobber lands within ~100ms of mount
     // and never recurs after that, so a single reset at 200ms (past that window) sticks permanently —
     // an immediate or same-tick reset does not survive it.
-    setTimeout(() => subset.filter.setAll(true, true), 200);
+    setTimeout(() => subset.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev.name !== subset.name && prev.name !== df.name)
@@ -774,6 +783,19 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     state.prev = null;
     assignTableInput(input, orig);
     mountFn();
+    // `orig` can carry a stale filter from before it was swapped out (e.g. the user filtered it,
+    // then clicked "Subset by selection" without ever clearing that filter) — "Use all" should mean
+    // every row is visible, not "whatever was filtered last time this table was active". Same
+    // deferred reset as subsetBySelection: mountFn() just remounted a fresh Filters viewer, whose
+    // async histogram-widget setup can clobber an immediate reset (live-verified elsewhere this
+    // session), so defer past that window.
+    // NOTE: a categorical filter's own checkboxes can still show the pre-reset selection after this
+    // (they read a per-column filter memory, not the live bitset) — live-verified that re-mounting
+    // to force them to redraw actually re-applies that same remembered selection and re-clobbers the
+    // bitset right back, which is worse. Leaving the checkbox display stale is the lesser bug: the
+    // grid and row counts are correct, only the filter panel's own checkmarks lag until the user
+    // next touches that widget.
+    setTimeout(() => orig.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
     refreshValidation();
     if (prev && prev.name !== orig.name)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
@@ -790,11 +812,33 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     maxComponentsInput, maxRoutesInput,
   ].forEach((inp) => wireValidation(inp));
 
+  // `syncConfigToQuickInputs()` sets values on the quick inputs (rounds, depth-first, etc.), whose
+  // own onChanged listeners cascade into a full remount of the Reactions/BBs/Reagents grids — and
+  // each freshly-mounted Filters viewer can silently reapply a stale, much-earlier categorical
+  // selection instead of the table's actual current filter (live-verified via mount-order tracing:
+  // two full remounts fire per call, each seeing the correct filter at mount time, so the reapply
+  // happens in the filter widget's own async post-construction step, same root cause fixed elsewhere
+  // in this file for subsetBySelection/restoreFullTable). Snapshot each table's filter before the
+  // cascade and restore it after, once that async reapply has had time to fire.
+  function withPreservedFilters(fn: () => void): void {
+    const saved = [templatesInput.value, bbsInput.value, reagentsInput.value]
+      .filter((d): d is DG.DataFrame => d != null)
+      .map((d) => ({df: d, mask: d.filter.clone()}));
+    fn();
+    setTimeout(() => {
+      for (const {df, mask} of saved) df.filter.copyFrom(mask, true);
+    }, FILTER_REMOUNT_SETTLE_MS);
+  }
+
   // ---- Buttons ----
   const editConfigBtn = ui.button('Advanced limits & product filters', async () => {
     syncQuickInputsToConfig();
     const updated = await openConfigDialog(config);
-    if (updated) {config = updated; syncConfigToQuickInputs(); refreshValidation();}
+    if (updated) {
+      config = updated;
+      withPreservedFilters(() => syncConfigToQuickInputs());
+      refreshValidation();
+    }
   });
   ui.tooltip.bind(editConfigBtn,
     'Caps (components, combinations, routes per compound) and product filters — every config field.');
@@ -805,7 +849,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       const text = await f.text();
       config = configFromYaml(text);
-      syncConfigToQuickInputs();
+      withPreservedFilters(() => syncConfigToQuickInputs());
       refreshValidation();
       grok.shell.info(`Loaded config from ${f.name}.`);
     } catch (e) {
@@ -1243,7 +1287,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       stepState[k - 1].committed = true;
       renderGrid(); renderBar(); updateDots();
       // See subsetBySelection's identical fix and comment on the 200ms delay.
-      setTimeout(() => subset.filter.setAll(true, true), 200);
+      setTimeout(() => subset.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
     };
 
     // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
