@@ -207,6 +207,7 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
 const EXEC_TIMEOUT_MS = 300_000;
 const VERIFY_TIMEOUT_MS = 60_000;
 const SHOW_ENTITIES_TIMEOUT_MS = 30_000;
+const QUEUED_HEARTBEAT_MS = 60_000;
 
 // In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
 // awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
@@ -520,6 +521,7 @@ function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolN
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
+const sessionChains = new Map<string, Promise<void>>();
 
 function registerActiveQuery(sid: string, q: ActiveQuery): void {
   activeQueries.set(sid, q);
@@ -552,8 +554,31 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const images = data.images;
   if (!message && !images?.length)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
-  if (activeQueries.has(sid))
-    return emit(ws, {type: 'busy', sessionId: sid});
+  const prev = sessionChains.get(sid);
+  let release!: () => void;
+  const turn = new Promise<void>((resolve) => { release = resolve; });
+  const tail = prev ? prev.then(() => turn) : turn;
+  sessionChains.set(sid, tail);
+  try {
+    if (prev) {
+      emit(ws, {type: 'queued', sessionId: sid});
+      const heartbeat = setInterval(() => emit(ws, {type: 'queued', sessionId: sid}), QUEUED_HEARTBEAT_MS);
+      try {
+        await prev;
+      } finally {
+        clearInterval(heartbeat);
+      }
+    }
+    await runTurn(ws, data, sid, message);
+  } finally {
+    release();
+    if (sessionChains.get(sid) === tail)
+      sessionChains.delete(sid);
+  }
+}
+
+async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
+  const images = data.images;
 
   // Don't block this turn on workspace git pull — it runs every 30 min in the background and
   // a stale read for one turn is fine.

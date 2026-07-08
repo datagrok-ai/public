@@ -83,7 +83,7 @@ export type OutgoingMessage =
   | {type: 'tool_activity'; sessionId: string; summary: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean}
   | {type: 'error'; sessionId: string; message: string}
-  | {type: 'busy'; sessionId: string}
+  | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
   | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}
