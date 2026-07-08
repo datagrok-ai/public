@@ -67,5 +67,10 @@
     /* Advanced Options */
     "skipLibCheck": true,                          /* Skip type checking of declaration files. */
     "forceConsistentCasingInFileNames": true        /* Disallow inconsistently-cased references to the same file. */
-  }
+  },
+  /* src/playwright holds Playwright-driver E2E helpers consumed as source by the
+     Playwright runner (via a tsconfig path alias), not built by this lib's tsc.
+     They target the packages' Playwright tsconfig (DOM + @playwright/test), so keep
+     them out of the lib build. */
+  "exclude": ["node_modules", "src/playwright"]
 }

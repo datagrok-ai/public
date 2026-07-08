@@ -93,6 +93,12 @@ export class ViewBase extends Widget {
     this._helpUrl = url;
   }
 
+  /**
+   * Gets called automatically when this view gets pinned
+   */
+  protected afterPersist() {
+  }
+
   // /** View name */
   // get name(): string { return api.grok_View_Get_Name(this.dart); }
   // set name(s: string) { api.grok_View_Set_Name(this.dart, s); }

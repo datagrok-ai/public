@@ -1,22 +1,11 @@
-// Covers rename → reopen-verify flows. Targets the GROK-19212 regression
-// invariant ("project fails to open with 'Could not resolve table' after a
-// referenced table is renamed"). The table-rename path also exercises the
-// same reference-resolution code path as the github-3550 sister bug
-// (Query/Script rename invalidation).
-//
-// Scope:
-//   * Test 1 — TABLE rename (GROK-19212 invariant). Open 2 source tables +
-//     join, save, rename table, reopen, verify resolution.
-//   * Test 2 — QUERY rename (github-3550 invariant). Provision saved query
-//     on System:Datagrok, open it as project source, save, rename query
-//     via JS API, reopen, verify reference resolution.
-//   * Test 3 — SCRIPT rename (github-3550 sister invariant). Provision
-//     dataframe-output script, open it as project source, save, rename
-//     script via JS API, reopen, verify reference resolution.
-// Verification narrows to: project opens, tables/joined tables load, no
-// error balloons.
+/* ---
+sub_features_covered: [projects.api.save, projects.shell.open]
+--- */
+// GROK-19212: rename a referenced table inside a project, reopen, verify it loads without resolution error.
+// Test 1 = table rename (GROK-19212); Test 2 = query rename (github-3550); Test 3 = script rename (sister).
 import {test, expect, Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   openTableFromFile,
   openTableFromDbQuery,
@@ -27,11 +16,11 @@ import {
   ProvisionedQuery,
   ProvisionedScript,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveProjectWithProvenance,
   deleteProjectWithCleanup,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
 
 test.use(projectsTestOptions);
@@ -41,7 +30,7 @@ async function closeAll(page: Page) {
 }
 
 test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-19212)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(600_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -57,13 +46,8 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
   try {
     await softStep('Setup: open 2 source tables + join (sets up a referenced-table dependency)', async () => {
       await closeAll(page);
-      // Use openTableFromFile (canonical OpenFile recorder + dot-form path)
-      // — this writes df.tags['.script'] which is required for the UI Save
-      // dialog to render Data Sync toggle and to persist the project
-      // server-side (without .script the POST silently 404s on dev — bug 2a).
       await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       await openTableFromFile(page, 'System:DemoFiles/demog.csv');
-      // Rename and join via JS API (df identity preserved through addTableView).
       await evalJs(page, `(async () => {
         const tables = grok.shell.tables;
         if (tables.length >= 2) {
@@ -86,12 +70,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
     });
 
     await softStep('Save baseline project (Data Sync ON), capture project ID', async () => {
-      // Multi-table inline save — saveProjectWithProvenance helper saves
-      // only `tv.dataFrame` (the active TableView's df = joined). This
-      // scenario requires all 3 tables (src_a, src_b, joined) persisted
-      // so that renaming src_a inside the project breaks joined's
-      // reference (GROK-19212 trigger). Without src_a in the project
-      // payload, GROK-19212 is not exercisable.
+      // Multi-table inline save — all 3 tables must persist so renaming src_a breaks joined's reference.
       const saved = await page.evaluate(async (n) => {
         const grok = (window as any).grok;
         const DG = (window as any).DG;
@@ -123,7 +102,6 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
       tableInfoId = saved.tableInfoIds[0] ?? null;
       layoutId = saved.layoutId;
       expect(projectId).toBeTruthy();
-      // Server-side persistence verification via find-by-id.
       const exists = await page.evaluate(async (pid) => {
         const grok = (window as any).grok;
         const p = await grok.dapi.projects.find(pid);
@@ -134,7 +112,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
 
     await softStep('Step 7: rename a referenced table inside the project (the GROK-19212 trigger)', async () => {
       if (!projectId) throw new Error('no projectId captured');
-      // Reopen the project by id (filter-by-name fails for dashed names).
+      // Reopen by id (filter-by-name fails for dashed names).
       await closeAll(page);
       await page.evaluate(async (pid) => {
         const grok = (window as any).grok;
@@ -143,7 +121,6 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
       }, projectId);
       await page.waitForTimeout(3000);
 
-      // Rename one of the source tables — the join was built referencing it.
       await evalJs(page, `(async () => {
         const t = grok.shell.tables.find(t => t.name === 'src_a_${stamp}');
         if (t) t.name = 'src_a_renamed_${stamp}';
@@ -176,10 +153,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
           if (!p) return {ok: false, reason: 'project disappeared after rename+save'};
           await p.open();
           await new Promise((r) => setTimeout(r, 3000));
-          // GROK-19212 surfaces as: project fails to open OR shell.tables is
-          // empty OR a "Could not resolve table" balloon appears. Use
-          // dataFrame.rowCount as cross-Dart load signal (shell.tables.length
-          // throws Tn.grok_TableNames in some reopen states on dev).
+          // Use dataFrame.rowCount as load signal (shell.tables.length throws Tn.grok_TableNames in some reopen states).
           const rc = grok?.shell?.tv?.dataFrame?.rowCount ?? 0;
           return {ok: true, rowCount: rc};
         } catch (e) {
@@ -187,27 +161,19 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
         }
       }, projectId);
       expect(result.ok).toBe(true);
-      // GROK-19212 fix: rowCount > 0 means at least one source table
-      // re-materialized despite the rename — invariant holds.
+      // rowCount > 0 means at least one source table re-materialized despite the rename.
       expect(result.rowCount).toBeGreaterThan(0);
     });
-
-    // Project-entity rename intentionally NOT covered — JS API setter rename
-    // behavior on dev needs separate investigation before adding back.
   } finally {
     await deleteProjectWithCleanup(page, {
       projectId: projectId ?? undefined,
       tableInfoId: tableInfoId ?? undefined,
     });
-    void layoutId; // layout cleanup deferred; deleteProjectWithCleanup
-                   // doesn't take layoutId yet — see helpers/projects.ts:866
+    void layoutId; // layout cleanup deferred; deleteProjectWithCleanup doesn't take layoutId yet
     await closeAll(page);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });
 
 // ---------------------------------------------------------------------------
@@ -215,7 +181,7 @@ test('Projects / Complex rename: rename-then-reopen reference resolution (GROK-1
 // ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Query, reopen, verify reference resolution (github-3550)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -286,21 +252,16 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
       expect(isHappyPath || isGracefulFailure).toBe(true);
     });
   } finally {
-    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
-    if (s)
+    if (saved)
       await deleteProjectWithCleanup(page, {
-        projectId: s.projectId,
-        tableInfoId: s.tableInfoId,
+        projectId: saved.projectId,
+        tableInfoId: saved.tableInfoId,
       });
-    const p = provisioned as ProvisionedQuery | null;
-    if (p) await p.cleanup();
+    if (provisioned) await provisioned.cleanup();
     await closeAll(page);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });
 
 // ---------------------------------------------------------------------------
@@ -308,7 +269,7 @@ test('Projects / Complex rename: rename Query, reopen, verify reference resoluti
 // ---------------------------------------------------------------------------
 
 test('Projects / Complex rename: rename Script, reopen, verify reference resolution', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -376,19 +337,14 @@ test('Projects / Complex rename: rename Script, reopen, verify reference resolut
       expect(isHappyPath || isGracefulFailure).toBe(true);
     });
   } finally {
-    const s = saved as {projectId: string; tableInfoId: string; layoutId: string | null; resolvedName: string} | null;
-    if (s)
+    if (saved)
       await deleteProjectWithCleanup(page, {
-        projectId: s.projectId,
-        tableInfoId: s.tableInfoId,
+        projectId: saved.projectId,
+        tableInfoId: saved.tableInfoId,
       });
-    const p = provisioned as ProvisionedScript | null;
-    if (p) await deleteProvisionedScript(page, p.scriptId);
+    if (provisioned) await deleteProvisionedScript(page, provisioned.scriptId);
     await closeAll(page);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

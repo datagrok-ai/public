@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [powerpack.io, powerpack.io.exceljs-service, powerpack.io.xlsx-file-handler]
---- */
 // GROK-19329 regression: XLSX opens across all 5 entry paths + optional sheetName.
 
 import {test, expect, Page} from '@playwright/test';

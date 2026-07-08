@@ -2,6 +2,8 @@
 
 ## v.next
 
+
+* Moved the Bio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * GROK-19794: MSA dialog: Fixed misaligned Alignment Parameters gap inputs (now share the dialog form's label alignment and width)
 
 ## 2.28.2 (2026-06-22)

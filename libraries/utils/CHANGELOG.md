@@ -1,5 +1,9 @@
 # utils changelog
 
+## v.next
+
+* GROK-20367: Forms viewer: Number formatting does not match grid in some cases
+
 ## 4.7.2 (2026-04-08)
 
 Added method to ensure the table view for the given dataframe is active

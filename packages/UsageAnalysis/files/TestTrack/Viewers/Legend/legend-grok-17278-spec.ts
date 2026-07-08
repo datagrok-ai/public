@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [legend.column, legend.item.color-picker]
---- */
 // GROK-17278: legend color customizations serialize into both layout and project state.
 
 import {test, expect} from '@playwright/test';

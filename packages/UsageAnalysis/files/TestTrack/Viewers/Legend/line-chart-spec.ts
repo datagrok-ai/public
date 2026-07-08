@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [legend.column, legend.refresh.on-data-change]
---- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';

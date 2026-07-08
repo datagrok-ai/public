@@ -16,7 +16,7 @@ import * as DG from 'datagrok-api/dg';
 import '../css/funcflow.css';
 
 import {FlowEditor} from './rete/flow-editor';
-import {FlowNode} from './rete/scheme';
+import {FlowNode, isSetVarNode} from './rete/scheme';
 import {FunctionBrowser, FF_DRAG_MIME} from './panel/function-browser';
 import {PropertyPanel} from './panel/property-panel';
 import {ColumnPicker} from './panel/column-picker';
@@ -36,6 +36,8 @@ import {SpacePicker} from './ui/space-picker';
 import {buildFlowFromCreationScript} from './import/creation-script-importer';
 import {FlowSettings, FuncFlowDocument} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
+import {AutorunScheduler} from './execution/autorun';
+import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
 import {_package} from './package';
@@ -58,6 +60,17 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
+  /** Bottom output panel — a pane of the view's vertical splitter (see
+   *  `initUI`). Public so hosts (the creation-script dialog) and tests can
+   *  reach it; created disabled when `options.outputPanel` is false. */
+  outputPreview!: OutputPreviewPanel;
+  /** Whether this view gets the bottom output panel (false for embedded
+   *  hosts — the creation-script dialog). */
+  private readonly outputPanelEnabled: boolean;
+  /** Debounced rerun-on-change; toggled by the ribbon bolt icon, off by
+   *  default. Created with the execution controller in `initEditor`. */
+  private autorunScheduler: AutorunScheduler | null = null;
+  private autorunIcon: HTMLElement | null = null;
   private canvasContainer!: HTMLElement;
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
@@ -86,6 +99,15 @@ export class FuncFlowView extends DG.ViewBase {
     tags: ['funcflow'],
   };
 
+  protected override afterPersist(): void {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showBrowse = false;
+    grok.shell.windows.showContextPanel = true;
+    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showBrowse = true;
+    grok.shell.windows.showToolbox = true;
+  }
+
   /** The platform Script entity (language 'flow') this view edits, when opened
    *  from / saved to the server. Null for scratch flows — Save asks for a name. */
   private boundScript: DG.Script | null = null;
@@ -98,12 +120,21 @@ export class FuncFlowView extends DG.ViewBase {
     this.editorReadyResolve = resolve;
   });
 
+  /** Watches the canvas for its first real layout when a fit-to-screen was
+   *  requested before the view was attached (see `fitToScreen`). */
+  private pendingFitObserver: ResizeObserver | null = null;
+
   /** @param tableInfos tables whose creation scripts this view edits — passing a
-   *  non-empty array enables the **Save Creation Scripts** ribbon action. */
-  constructor(tableInfos: DG.TableInfo[] = []) {
+   *  non-empty array enables the **Save Creation Scripts** ribbon action.
+   *  @param options `outputPanel: false` creates the view without the bottom
+   *  output panel — for embedded hosts (the creation-script dialog), where a
+   *  run-results pane makes no sense. `enableOutputPanel()` turns it on later
+   *  (e.g. when that view is promoted into the real editor). */
+  constructor(tableInfos: DG.TableInfo[] = [], options: {outputPanel?: boolean} = {}) {
     super();
     this.name = 'FuncFlow';
     this.tableInfos = tableInfos;
+    this.outputPanelEnabled = options.outputPanel !== false;
 
     registerBuiltinNodes();
 
@@ -154,7 +185,7 @@ export class FuncFlowView extends DG.ViewBase {
     if (!id) return;
     try {
       this.path = `/script/${id}`;
-    } catch { /* view not yet attached to the platform shell */ }
+    } catch {/* view not yet attached to the platform shell */}
   }
 
   private initUI(): void {
@@ -164,6 +195,14 @@ export class FuncFlowView extends DG.ViewBase {
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
     });
 
+    // The canvas is a direct `.ui-box` child (the splitter pane), where core
+    // css forces `overflow: auto !important` on EVERY child — `ui-div`-classed
+    // ones via `div.ui-box > div.ui-div`, all others via a huge
+    // `div.ui-box:not(…) > *:not(.ui-div):not(…)` rule that outranks anything
+    // reasonable. Keep `ui.div` (the exempt, low-specificity branch) and win
+    // it back with `div.ui-box > div.ui-div.funcflow-canvas-container
+    // { overflow: hidden !important }` in funcflow.css — otherwise the
+    // transformed Rete canvas grows giant scrollbars.
     this.canvasContainer = ui.div([], 'funcflow-canvas-container');
     setTid(this.canvasContainer, 'canvas');
     this.startPanel = this.buildStartPanel();
@@ -187,7 +226,27 @@ export class FuncFlowView extends DG.ViewBase {
     );
     setTid(this.statusBar, 'statusbar');
 
-    const mainLayout = setTid(ui.div([this.canvasContainer], 'funcflow-root'), 'root');
+    // Bottom output panel — a real pane of the view, not a dock-manager dock:
+    // canvas and panel share a vertical splitter (`ui.splitV`), so the panel is
+    // resizable via the divider, minimizes to its header strip, and can never
+    // linger over other views. Created disabled for embedded hosts.
+    this.outputPreview = new OutputPreviewPanel({enabled: this.outputPanelEnabled});
+    const canvasBox = ui.box(this.canvasContainer);
+    // The canvas absorbs all space the panel doesn't take — the panel's
+    // explicit height (its pane is `flex: 0 0 auto`) is the single source of
+    // truth, in every panel state and under `splitV`'s own resize handling.
+    canvasBox.style.flex = '1 1 0';
+    canvasBox.style.minHeight = '0';
+    const split = ui.splitV([canvasBox, this.outputPreview.root], {style: {flex: '1 1 0', width: '100%', height: '100%'}}, true);
+    // The divider only makes sense when there is something to resize.
+    const divider = split.querySelector('.ui-split-v-divider') as HTMLElement | null;
+    const syncDivider = (state: OutputPanelState): void => {
+      if (divider) divider.style.display = state === 'expanded' ? '' : 'none';
+    };
+    this.outputPreview.onStateChanged = syncDivider;
+    syncDivider(this.outputPreview.panelState);
+
+    const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
     setTid(this.root, 'view');
     this.root.appendChild(mainLayout);
@@ -339,7 +398,7 @@ export class FuncFlowView extends DG.ViewBase {
 
     const rect = anchorEl.getBoundingClientRect();
     const popupRect = popup.getBoundingClientRect();
-    const vw = window.innerWidth, vh = window.innerHeight;
+    const vw = window.innerWidth; const vh = window.innerHeight;
     let left = rect.right + 12;
     if (left + popupRect.width > vw - 8) left = rect.left - popupRect.width - 12;
     if (left < 8) left = 8;
@@ -384,7 +443,12 @@ export class FuncFlowView extends DG.ViewBase {
         this.updateStartPanelVisibility();
         this.refreshNodeHints();
         this.flow?.refreshMinimap();
-        this.executionController?.onGraphChanged();
+      },
+      // Classified edits: invalidate exactly the affected downstream cone, and
+      // feed the same set to the autorun scheduler (a rerun of just that slice).
+      onGraphEdited: (edit) => {
+        const affected = this.executionController?.applyGraphEdit(edit) ?? new Set<string>();
+        this.autorunScheduler?.onEdit(edit, affected);
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
@@ -392,8 +456,13 @@ export class FuncFlowView extends DG.ViewBase {
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);
-    this.executionController = new ExecutionController(this.flow);
-    this.executionController.outputPreview.setViewRoot(this.root);
+    this.executionController = new ExecutionController(this.flow, this.outputPreview);
+    this.autorunScheduler = new AutorunScheduler((dirty) =>
+      this.executionController?.runAutorun(dirty, {
+        name: this.flowSettings.scriptName,
+        description: this.flowSettings.scriptDescription,
+        tags: this.flowSettings.tags,
+      }) ?? 'skipped');
 
     // Column inputs (column / column_list) get a picker dialog seeded by the
     // upstream table — running the flow up to that point on demand if needed.
@@ -413,10 +482,23 @@ export class FuncFlowView extends DG.ViewBase {
       description: this.flowSettings.scriptDescription,
       tags: this.flowSettings.tags,
     }));
-    this.propertyPanel.onEditFuncParams = (node) => void funcEditorLauncher.open(node).then((applied) => {
-      if (applied)
-        this.propertyPanel.showNode(node, this.executionController?.state.getNodeState(node.id));
-    }).catch((e) => grok.shell.error(`Function editor failed: ${e instanceof Error ? e.message : e}`));
+    this.propertyPanel.onEditFuncParams = (node) => {
+      // No autorun while the editor dialog is open: the dialog intercepts the
+      // global `d4-before-run-action` event, and a mid-dialog rerun of the same
+      // function would be mistaken for the dialog's own run action — canceling
+      // the rerun's call and resolving the round-trip with stale values. The
+      // writeback below reports the edit, so the rerun happens right after.
+      this.autorunScheduler?.hold();
+      void funcEditorLauncher.open(node).then((applied) => {
+        if (applied) {
+          // The editor dialog wrote new values into `inputValues` — the same
+          // invalidation as any parameter edit in the panel.
+          this.flow.notifyNodeParamsChanged(node.id);
+          this.propertyPanel.showNode(node, this.executionController?.state.getNodeState(node.id));
+        }
+      }).catch((e) => grok.shell.error(`Function editor failed: ${e instanceof Error ? e.message : e}`))
+        .finally(() => this.autorunScheduler?.release());
+    };
     this.executionController.onBreakpointHit = () => {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };
@@ -428,21 +510,10 @@ export class FuncFlowView extends DG.ViewBase {
       this.autoSelectFirstOutputNode();
     };
 
-    // The bottom-docked output panel belongs to this view — when the user
-    // navigates to another view it would otherwise linger. Close it whenever
-    // the active view is no longer us. (Clicking a node reopens it later.)
-    this.subs.push(grok.events.onCurrentViewChanged.subscribe(() => {
-      if (grok.shell.v !== this)
-        this.executionController?.outputPreview.close();
-    }));
-
     // "Edit settings" on a viewer preview → show the live viewer in the context
     // panel (Datagrok renders its full settings editor) and capture every change
     // back into the node's stored options, so a re-run reproduces the look.
-    this.executionController.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
-    // The bottom preview dock and the minimap share the same corner — minimize
-    // the minimap when the preview panel first opens so they never overlap.
-    this.executionController.outputPreview.onDocked = () => this.setMinimapCollapsed(true);
+    this.outputPreview.onEditViewer = (nodeRef, viewer) => this.editViewer(nodeRef.id, viewer);
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
@@ -461,6 +532,13 @@ export class FuncFlowView extends DG.ViewBase {
     });
   }
 
+  /** Turn the bottom output panel on for a view created without it (the
+   *  creation-script dialog) — e.g. when that view is promoted into the real
+   *  editor via "Open In Editor". */
+  enableOutputPanel(): void {
+    this.outputPreview.setEnabled(true);
+  }
+
   /** Set the overview minimap's collapsed state. Remembered and (re)applied when
    *  the editor finishes initializing, so it can be called before that. */
   setMinimapCollapsed(collapsed: boolean): void {
@@ -469,10 +547,13 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Find the first output node in the graph (preferring one that has
-   *  captured runtime values) and programmatically select it. */
+   *  captured runtime values) and programmatically select it. SetVar nodes
+   *  count as outputs too (they compile to the same thing) — a flow whose
+   *  terminals are SetVars (e.g. an imported creation script) lands on its
+   *  first stored value just like one with Output nodes. */
   private autoSelectFirstOutputNode(): void {
     if (!this.flow) return;
-    const outputs = this.flow.getNodes().filter((n) => n.dgNodeType === 'output');
+    const outputs = this.flow.getNodes().filter((n) => n.dgNodeType === 'output' || isSetVarNode(n));
     if (outputs.length === 0) return;
     const withValue = outputs.find((n) => {
       const s = this.executionController?.state.getNodeState(n.id);
@@ -757,7 +838,6 @@ export class FuncFlowView extends DG.ViewBase {
       const json = await _package.files.readAsText(file);
       await this.loadFromJson(json);
       this.hideStartPanel();
-      await this.flow?.zoomToFit();
       grok.shell.info(`Opened template: ${file.replace(/\.ffjson$/i, '')}`);
     } catch (e: any) {
       grok.shell.error(`Could not open template "${file}": ${e?.message ?? e}`);
@@ -826,11 +906,21 @@ export class FuncFlowView extends DG.ViewBase {
     const ribbonIcon = (icon: string, action: () => void, tooltip: string, id: string): HTMLElement =>
       setTid(ui.iconFA(icon, action, tooltip), 'ribbon', id);
 
+    // Autorun toggle: faded outline bolt when off (default), colored + filled
+    // (font-weight 600) when on — see `.ff-autorun-toggle` in funcflow.css.
+    // The tooltip is dynamic so it always names the current state.
+    const autorunIcon = setTid(ui.iconFA('bolt', () => this.toggleAutorun()), 'ribbon', 'autorun');
+    autorunIcon.classList.add('ff-autorun-toggle');
+    ui.tooltip.bind(autorunIcon, () => this.autorunScheduler?.enabled ?
+      'Autorun is on — the flow reruns the affected nodes after every change. Click to turn off.' :
+      'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change.');
+    this.autorunIcon = autorunIcon;
+
     // Saving leads the ribbon; saveFlow routes to the right target (entity
     // update / Save As for never-saved flows / creation scripts).
-    const saveButton = creationMode
-      ? ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table')
-      : ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
+    const saveButton = creationMode ?
+      ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
+      ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
     const savePanel: HTMLElement[] = [setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save')];
     if (!creationMode)
       savePanel.push(ribbonIcon('folder-open', () => void this.openFromPlatform(), 'Open a flow', 'open'));
@@ -842,6 +932,7 @@ export class FuncFlowView extends DG.ViewBase {
         ribbonIcon('bug', () => this.debugInstrumented(), 'Debug (stop at breakpoints)', 'debug'),
         ribbonIcon('forward', () => this.executionController?.continueBreakpoint(), 'Continue', 'continue'),
         ribbonIcon('stop', () => this.executionController?.stopRun(), 'Stop', 'stop'),
+        autorunIcon,
       ],
       [
         ribbonIcon('eye', () => this.generateAndPreview(), 'See the steps (generated script)', 'view-script'),
@@ -871,6 +962,26 @@ export class FuncFlowView extends DG.ViewBase {
 
   private toggleToolbox(): void {
     grok.shell.windows.showToolbox = !grok.shell.windows.showToolbox;
+  }
+
+  /** Flip autorun mode and reflect it on the ribbon icon (grey ↔ colored).
+   *  Turning it ON immediately schedules everything that has no fresh result
+   *  (a new flow runs entirely; a half-run one completes itself) — enabling
+   *  autorun should not sit idle until the first edit. */
+  private toggleAutorun(): void {
+    if (!this.autorunScheduler) return;
+    const on = this.autorunScheduler.toggle();
+    this.autorunIcon?.classList.toggle('ff-autorun-on', on);
+    if (on) {
+      const pending = this.executionController?.pendingNodes() ?? new Set<string>();
+      if (pending.size > 0) this.autorunScheduler.kick(pending);
+    }
+  }
+
+  /** View closed — a pending debounced autorun must not fire into it. */
+  detach(): void {
+    this.autorunScheduler?.reset();
+    super.detach();
   }
 
   /** Re-arrange the existing graph with the importer's layered/banded layout. */
@@ -908,10 +1019,8 @@ export class FuncFlowView extends DG.ViewBase {
       if (!file) return;
       try {
         const doc = await loadFlowFromFile(file);
-        await deserializeFlow(doc, this.flow);
-        if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+        await this.loadFromDoc(doc);
         this.boundScript = null; // an imported file is a new, unsaved flow
-        this.updateStatusBar();
         grok.shell.info(`Loaded flow: ${doc.name}`);
       } catch (e: any) {
         grok.shell.error(`Failed to load flow: ${e.message}`);
@@ -986,11 +1095,12 @@ export class FuncFlowView extends DG.ViewBase {
         const clashes = (await grok.dapi.scripts
           .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
           .filter((s) => s.id !== this.boundScript?.id);
-        if (clashes.length > 0)
-          warningDiv.textContent = targetSpace
-            ? `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name`
-            : `A flow named "${name}" already exists`;
-      } catch { /* advisory only */ }
+        if (clashes.length > 0) {
+          warningDiv.textContent = targetSpace ?
+            `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name` :
+            `A flow named "${name}" already exists`;
+        }
+      } catch {/* advisory only */}
     };
     const updateSpace = (space: DG.Project | null) => {
       targetSpace = space;
@@ -1332,6 +1442,33 @@ export class FuncFlowView extends DG.ViewBase {
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
     this.name = doc.name || 'FuncFlow';
     this.updateStatusBar();
+    this.fitToScreen();
+  }
+
+  /** Fit the whole graph into the viewport, so an opened flow is always shown
+   *  fitted. Load paths usually run before the view is attached to the shell
+   *  (file viewers, `forScript`, the creation-script dialog), when the canvas
+   *  is still 0×0 and zooming would target a degenerate viewport — in that
+   *  case the fit is deferred to the canvas's first real layout. Never blocks
+   *  the load itself: a view that is never shown just never fits. */
+  public fitToScreen(): void {
+    this.pendingFitObserver?.disconnect();
+    this.pendingFitObserver = null;
+    if (!this.flow || this.flow.getNodeCount() === 0) return;
+    const el = this.canvasContainer;
+    if (el.clientWidth > 0 && el.clientHeight > 0) {
+      void this.flow.zoomToFit();
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === 0 || el.clientHeight === 0) return;
+      observer.disconnect();
+      if (this.pendingFitObserver === observer) this.pendingFitObserver = null;
+      // The graph may have been cleared while the fit was pending.
+      if (this.flow && this.flow.getNodeCount() > 0) void this.flow.zoomToFit();
+    });
+    this.pendingFitObserver = observer;
+    observer.observe(el);
   }
 
   /** Rebuild the canvas from a table-creation script — the cascade of
@@ -1343,7 +1480,7 @@ export class FuncFlowView extends DG.ViewBase {
       await this.flow.clear();
       const result = await buildFlowFromCreationScript(this.flow, script);
       this.updateStatusBar();
-      await this.flow.zoomToFit();
+      this.fitToScreen();
       for (const warning of result.warnings) grok.shell.warning(warning);
       grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
     } catch (e: any) {

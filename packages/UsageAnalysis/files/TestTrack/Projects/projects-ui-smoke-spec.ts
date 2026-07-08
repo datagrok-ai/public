@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [projects.api.delete, projects.api.save, projects.api.search, projects.shell.open, projects.shell.share-via-context-menu, projects.upload]
---- */
 // UI-only lifecycle smoke (no JS API substitution for Steps 2-11). Step 1 opens via Browse-tree right-click
 // → Open — the flow that sets df.tags['.script'] AND keeps the toolbar SAVE button clickable.
 import {test, expect} from '@playwright/test';

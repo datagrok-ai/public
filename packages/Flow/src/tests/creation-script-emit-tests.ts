@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType} from '../rete/node-factory';
+import {isExecKey} from '../rete/scheme';
 import {buildCreationScriptGraph, applyGraphToEditor} from '../import/creation-script-importer';
 import {
   emitCreationScript, emitCreationScriptsForTables,
@@ -113,6 +114,30 @@ category('Flow: creation script emit', () => {
     const first = (await roundTrip(script)).script;
     const second = (await roundTrip(first)).script;
     expect(second, first, 'a second round-trip reproduces the first');
+  });
+
+  test('an Output node anchors the producer exactly like a SetVar', async () => {
+    const openFunc = DG.Func.find({name: 'OpenFile'})[0];
+    if (!openFunc) {
+      expect(true, true); // no live backend — nothing to check
+      return;
+    }
+    const e = makeEditor();
+    try {
+      const open = await addNode(e.flow, ensureFuncNodeType(openFunc));
+      open.inputValues['fullPath'] = 'p.csv';
+      const out = await addNode(e.flow, 'Outputs/Table Output', 240, 0);
+      out.properties['paramName'] = 'T';
+      const outKey = Object.keys(open.outputs).find((k) => !isExecKey(k) && !k.endsWith('__pt'))!;
+      await e.flow.addConnectionByKeys(open.id, outKey, out.id, 'table');
+
+      const r = emitCreationScript(e.flow);
+      expect(r.warnings.length, 0, r.warnings.join(' ; '));
+      expect(r.script, 'T = OpenFile("p.csv")',
+        'one anchored assignment — no intermediate variable, no redundant T = T line');
+    } finally {
+      destroyEditor(e);
+    }
   });
 
   test('unsupported JS-only node warns and is skipped, rest still emits', async () => {

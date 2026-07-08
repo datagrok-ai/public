@@ -73,7 +73,13 @@ export function isModel(jsEnt: any) {
   return hasModelRole || hasModelTag;
 }
 
+// Legacy filter: matches both the #model tag and the model role.
 export const MODEL_FILTER = '(#model or options.role like "%model%")';
+// Faster filter: matches the model role only (drops the legacy #model tag branch).
+export const ROLE_ONLY_MODEL_FILTER = 'options.role like "%model%"';
+// isModel() stays permissive (role or tag) on purpose - it is a predicate, not a filter string,
+// and role-only setups have no tag-only models, so the divergence is harmless.
+export const getModelFilter = (roleOnly = false): string => roleOnly ? ROLE_ONLY_MODEL_FILTER : MODEL_FILTER;
 
 export class ModelHandler extends DG.ObjectHandler {
   override get type() {

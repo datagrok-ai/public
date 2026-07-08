@@ -1,4 +1,21 @@
-﻿# Models — Validator-pane edge coverage (class-imbalance, string-features, too-many-unique-categories, highly-correlated)
+---
+feature: models
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - models-validators-edge-spec.ts
+related_bugs: []
+---
+
+# Models — Validator-pane edge coverage (class-imbalance, string-features, too-many-unique-categories, highly-correlated)
+
+Verifies that the training view's validator pane surfaces
+non-blocking warnings for four common data-quality edge cases —
+class imbalance, plain-string categorical features, high-cardinality
+identifier-like categoricals, and highly correlated numerical
+features — and confirms none of them prevent clicking **TRAIN**.
 
 ## Setup
 
@@ -25,9 +42,8 @@ Builds an in-memory dataframe whose target is a categorical column with skewed
 category proportions (e.g. one category at ~90%, another at ~10%) so the
 `classImbalance(data)` per-category ratio falls outside `1±0.2`. Opens the train
 UI on that frame and verifies the validators pane surfaces a warning that flags
-the imbalanced category. The atlas `edge_cases[]` entry tied to source line
-`predictive_modeling_validators.dart#L68` requires the validator to list at most
-4 imbalanced columns with their out-of-range categories and to NOT block training.
+the imbalanced category. The validator must list at most 4 imbalanced columns
+with their out-of-range categories, and must not block training.
 
 Steps:
 
@@ -56,7 +72,7 @@ Expected:
   their out-of-range ratios. At most 4 imbalanced columns appear per the
   `classImbalance` cap.
 - The warning does NOT block training — the **TRAIN** button remains
-  enabled. (Atlas edge invariant: validators surface warnings, not blockers.)
+  enabled (validators surface warnings only; they never block training).
 - No console error and no exception balloon: the validator runs through.
 
 ### Scenario 2: String features (categorical) — verify `stringFeatures` validator surfaces the "convert to numerical" hint
@@ -89,8 +105,7 @@ Expected:
   that "Most models require converting them to numerical" (per the validator
   source at `predictive_modeling_validators.dart#L134`).
 - The **One-hot encoding** preprocessing action is presented as the suggested
-  remediation (atlas: `string-features` is "paired with the `one-hot` action"
-  — the validator pairing is the actionable suggestion).
+  remediation.
 - The warning does NOT block training; **TRAIN** stays enabled.
 
 ### Scenario 3: Too-many-unique categorical (> 80% unique) — verify `tooManyUniqueCategories` validator surfaces a warning
@@ -98,7 +113,7 @@ Expected:
 Builds an in-memory dataframe with a categorical feature whose unique-categories
 ratio exceeds 0.8 (each row is almost a unique value — identifier-like). The
 `tooManyUniqueCategories(data)` validator should flag it with a poor-predictive-
-value warning per atlas source line `predictive_modeling_validators.dart#L31`.
+value warning.
 
 Steps:
 
@@ -130,9 +145,8 @@ Expected:
 
 Builds an in-memory dataframe with two near-duplicate numerical features (one
 is a small noisy perturbation of the other) so pairwise Pearson correlation
-exceeds 0.9. The `highlyCorrelated(data)` validator should flag the pair per
-atlas source line `predictive_modeling_validators.dart#L44`, but must NOT
-block training.
+exceeds 0.9. The `highlyCorrelated(data)` validator should flag the pair, but
+must NOT block training.
 
 Steps:
 
@@ -155,9 +169,7 @@ Expected:
 
 - A validator warning is surfaced citing the `feat_a` / `feat_b` pair (or
   listing them as a high-correlation pair). The warning identifies the
-  correlation pair per the atlas invariant.
-- The warning does NOT block training — **TRAIN** stays enabled (per the
-  atlas `edge_cases[]` entry text: "surfaces the warning pair (but does not
-  block training)").
+  correlation pair.
+- The warning does NOT block training — **TRAIN** stays enabled.
 - No console exception; the validator computes pairwise Pearson over the
   numerical features and surfaces the offending pair end-to-end.

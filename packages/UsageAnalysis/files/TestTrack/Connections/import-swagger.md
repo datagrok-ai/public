@@ -2,9 +2,9 @@
 2. Press 'Download raw file' to download file to local machine
 3. Drag-and-drop openweathermap.yaml file from your local storage to the browser tab with opened **Datagrok**
 4. Go to **Browse > Platform > Functions > OpenAPI > OpenWeatherMap** you added
-4. Right-click the connection and select **Edit**
-4. Enter the **ApiKey** (ask QA)
-5. Run all queries
+5. Right-click the connection and select **Edit**
+6. Enter the **ApiKey** (ask QA)
+7. Run all queries
 
 ---
 {

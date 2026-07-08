@@ -1,13 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.shell.share-via-context-menu
-  - projects.api.get-by-id
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [share_with_recipient_open, rename_project]
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -19,18 +15,18 @@ related_bugs: []
 
 # Projects — File-source lifecycle
 
-Chained lifecycle for a project sourced from a **File share**
-(`System:DemoFiles/demog.csv`). Exercises the proactive coverage cell
-`source_class=files × dep_lifecycle_op=share_with_recipient_open` per
-chain rev 3 `proactive_lifecycle_specs[0]`. Adds source-agnostic
-`rename_project` op interleaved per Variant C. No external dependency
-to rename (Files have no separate entity to rename — the file lives in
-the share).
+Covers the lifecycle of a project sourced from a file share
+(`System:DemoFiles/demog.csv`): save, share with a second user at two
+access levels, and project rename — verifying the project stays
+accessible to both the owner and the recipient throughout. Files have
+no separate entity to rename (the file just lives at a fixed path in
+the share), so this scenario's rename coverage is limited to renaming
+the project itself.
 
 UI coverage for share / delete / right-click flows lives in
-`projects-ui-smoke.md`. This scenario uses `grok.dapi.*` for share +
-permission grants by design — UI driving for those flows is fragile
-and unrelated to this scenario's regression invariant.
+`projects-ui-smoke.md`; this scenario drives sharing and permission
+grants through the JS API instead, since repeatedly UI-driving those
+flows here would be fragile and isn't this scenario's focus.
 
 ## Setup
 
@@ -120,39 +116,18 @@ and unrelated to this scenario's regression invariant.
 
 ## Notes
 
-- **Origin: chain rev 3 proactive_lifecycle_specs[0].** This
-  scenario realizes the `source_class=files` × `dep_lifecycle_op=
-  share_with_recipient_open` proactive cell per Edit 7. Authored
-  in Phase A of `projects migrate --force` cycle per Olena's
-  Option γ.
-- **Pyramid layer: integration (per chain rev 3 schema).** Strict
-  pyramid_layer enum only allows ui-smoke / source-matrix /
-  bug-focused / integration / manual. Per the Plan, this is
-  conceptually a "proactive-lifecycle" scenario; the closest
-  enum value is `integration`. Surfacing for retro: chain
-  analyzer schema may want a dedicated `proactive-lifecycle`
-  enum value.
-- **bugs_reinforcing: [] (per chain rev 3
-  proactive_lifecycle_specs[0]).** Files-source has no
-  associated GROK bug — this is pure proactive coverage.
-- **No external dependency rename.** Files have no separate
-  entity to rename. `dep_lifecycle_ops_covered` is
-  `[share_with_recipient_open]` only; `rename_external_dep` is
-  NOT in scope for this entry.
-- **UI coverage delegated.** All UI surfaces touched in this
-  scenario (Save dialog, auto-share dialog dismiss, Sharing tab
-  listing, Browse > Dashboards opens) are owned by
-  `projects-ui-smoke.md`. The flow here is JS API where
-  possible; UI is incidental at most.
-- **Helper 3 deferral.** Recipient-side assertions (logout +
-  login as second user + verify open) require
-  `helpers.playwright.session.logoutAndLoginAs`. NOT YET
-  REGISTERED. Same deferral as `complex-share-second-user-spec.ts`
-  Step 13. Scenario degrades gracefully — share-side assertions
-  run unconditionally; recipient-side runs only when Helper 3
-  lands.
-- **Self-cleaning.** Step 6 deletes the project. NOT in
-  `deleting.md.depends_on`.
-- **Sequencing within Wave 2C.** First lifecycle scenario
-  per PROJECTS-SPLIT-COMPLETION-PLAN line 216-217: only blocker
-  is Helper 3. No env provisioning required.
+- **No related bug.** Files-source has no associated GROK bug — this
+  is pure proactive coverage.
+- **UI coverage delegated.** All UI surfaces touched in this scenario
+  (Save dialog, auto-share dialog dismiss, Sharing tab listing,
+  Browse > Dashboards opens) are owned by `projects-ui-smoke.md`.
+  The flow here uses the JS API where possible; UI is incidental at
+  most.
+- **Deferred.** Recipient-side assertions (logout, log in as the
+  second user, verify the project opens) require a
+  login-as-another-user test helper that isn't registered yet — same
+  deferral as `complex-share-second-user-spec.ts` Step 13. The
+  scenario degrades gracefully: the share-side assertions run
+  unconditionally, and the recipient-side check only runs once the
+  helper lands.
+- **Self-cleaning.** Step 6 deletes the project.

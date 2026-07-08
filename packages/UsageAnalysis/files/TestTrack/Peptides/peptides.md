@@ -1,12 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.panels.peptides
-  - peptides.rendering.weblogo-header
-  - peptides.widgets.distribution
-  - peptides.util.modify-selection
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [sar-parameters-and-weblogo-rendering]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/peptides/peptides.md
 migration_date: 2026-05-28
@@ -59,100 +56,6 @@ gate_verdicts:
     cycle_id: 2026-05-29-peptides-migrate-02
     timestamp: 2026-05-29T14:10:00Z
     failure_keys: []
-    evidence_needed: >
-      Independent Gate D re-derivation, node critic_d_dispatch, cycle
-
-      2026-05-29-peptides-migrate-02. Fresh isolated invocation: the
-      EVIDENCE_GAP
-
-      block already present in this slot is the artifact I overwrite, not an
-
-      input. Every filesystem, dispatch, and decision-log fact below was
-
-      re-verified directly by this invocation.
-
-      All mechanical / fail-fast checks PASS on the on-disk artifact, so I did
-
-      NOT fail-fast and proceeded to the content checks:
-
-      - D-STRUCT-MECH-03: all 8 required migration fields present (feature,
-        sub_features_covered=4, target_layer=playwright,
-        coverage_type=regression, produced_from=migrated, original_path,
-        migration_date=2026-05-28, related_bugs=3); deprecated migrated_from
-        absent.
-      - D-STRUCT-MECH-05: original_path target resolves to a real on-disk file,
-        so the mechanical exists predicate holds (the self-reference problem
-        below is a content-check concern, not a mechanical one).
-      - D-FRONTMATTER-PHASE1-01: all four Phase 1 fields present as parseable
-        YAML lists (scope_reductions=[] acceptable).
-      - D-FRONTMATTER-PHASE1-02: source_text_fixes (3) and
-        unresolved_ambiguities (4) are kebab-case slugs <= 80 chars, no
-        duplicates; candidate_helpers (5) are bare dotted function names with no
-        (args) suffix and no duplicates; scope_reductions=[] vacuously valid.
-      The content checks (D-STEP-01, D-STEP-02, D-EDGE-01, D-STRUCT-01,
-
-      D-STRUCT-02, D-SAN-02, D-MERIT-01, D-MERIT-02) each require an independent
-
-      diff against a DISTINCT raw TestTrack original, which is not reachable
-
-      this invocation:
-
-      - A glob over TestTrack/[Pp]eptides/ returns exactly ONE peptides.md on
-        disk (the capitalized .../TestTrack/Peptides/peptides.md). Windows is
-        case-insensitive, so the lowercase original_path
-        (.../TestTrack/peptides/peptides.md) and the on-disk capitalized path
-        collapse to a single inode. I read the file at the lowercase original_path
-        and it is byte-for-byte the migrated artifact (same migrated frontmatter
-        including this gate_verdicts.d slot, same body). original_path therefore
-        self-references the migrated file rather than naming a distinct
-        pre-migration original.
-      - The migrator dispatch (peptides.md.migrator.dispatch.yaml) records
-        verdict PASS with no_op=true and "no destructive body Write performed --
-        already fully migrated," so no separate pre-migration source text exists
-        as a readable artifact to diff against.
-      - The feature=peptides decision-log slice independently corroborates the
-        unreachability: peptides.md has now logged repeated recon-d EVIDENCE_GAP
-        iterations across cycles 2026-05-28-peptides-migrate-02 and
-        2026-05-29-peptides-migrate-02, each terminated by recon-chain-analyzer
-        LOOP_CAP_EXCEEDED (cap 3, last_verdict EVIDENCE_GAP). No failed_attempts
-        entry preserves a peptides original excerpt that could substitute for the
-        diff.
-      Under Gate D independence, the migrated body's self-described provenance
-
-      (the Source-provenance Note, the preserved trailing JSON datasets block,
-
-      the determinism gaps surfaced as unresolved_ambiguities) is the producer's
-
-      own account and cannot stand in for an independent diff. No silent content
-
-      drop is confirmed, so this is EVIDENCE_GAP, not FAIL.
-
-      Recon to resolve (orchestrator-side, per EVIDENCE_GAP semantics):
-
-      1. Retrieve the pre-migration baseline blob of
-         TestTrack/peptides/peptides.md, or an operator-supplied raw original,
-         and repoint original_path at that distinct raw original (handoff
-         invariant: original_path must reference the raw original, never the
-         migrated artifact).
-      2. With a distinct original in hand, re-run the content checklist: confirm
-         every original numbered step and Expected-result assertion is mapped in
-         the migrated body or acknowledged in the four Phase 1 fields, and that
-         no source text was silently dropped.
-      Because the prior cycles already hit the Gate D recon loop cap on this
-
-      identical single-inode root cause, re-invoking Gate D against a
-
-      self-referential original will not converge. The orchestrator should
-      either
-
-      supply a distinct raw original or route this scenario through the
-
-      already-migrated / atlas-driven Critic D bypass (per Batch 6.54
-
-      per_scenario_migrate). This is a tool-reachability gap on the original,
-      NOT
-
-      a confirmed content drop.
   a:
     verdict: PASS
     cycle_id: 2026-05-28-peptides-migrate-01
@@ -165,6 +68,10 @@ gate_verdicts:
     timestamp: 2026-05-29T00:00:00Z
     failure_keys: []
 ---
+
+# Peptides — Context panel parameter widgets and WebLogo click-to-select
+
+Focusing the Macromolecule peptides column reveals a **Peptides** accordion in the Context Panel with Activity/Scaling/Clusters parameter widgets and a WebLogo preview. This scenario checks that changing those parameters re-renders the preview, and that clicking an amino acid on the WebLogo chart selects the matching rows in the underlying table.
 
 ## Setup
 
@@ -233,16 +140,12 @@ gate_verdicts:
 
 ## Notes
 
-- **Layer choice (playwright).** Step 7 requires DOM interaction with the custom WebLogo column-header renderer (`setWebLogoRenderer` installs a per-column custom renderer with mouse handlers — atlas L280). The collaborative-selection assertion (step 9) is UI-driven; playwright is the right layer. Realisation: existing `peptides-spec.ts` sibling.
-- **Coverage-type choice (regression).** Per chain YAML `pyramid_layer: integration` + A-LAYER-ALIGN-01 advisory mapping (`integration -> usually regression may be smoke for API-smoke`). This scenario is UI-driven multi-subsystem coverage (Context Panel + parameter widgets + WebLogo renderer + DataFrame `BitSet` sync) — `regression` is the appropriate test-kind.
-- **Bug context.**
-  - `GROK-19145` — high similarity threshold leads to a `setTrue` on null BitSet, surfaced via empty WebLogo. Step 4 (parameter changes) is the trigger surface and step 9 (selection-count assertion) is the downstream observation. If the parameter values chosen for step 4 land in the bug's regression-risk envelope, this scenario co-exercises the regression target.
-  - `GROK-17557` — Peptides context-panel entry path init-prerequisite race (`SeqHelper is not initialized`). Step 3 (expand Peptides panel) is the trigger; bug status is `fixed in 1.24.0`, so this scenario co-exercises a regression target for the fix.
-  - `GROK-14298` — filter broadcast crash + perf combo via `fireBitsetChanged` collaborative-selection backbone (`peptides.model.fire-bitset-changed`). Step 9 verification edges into this surface; full coverage is the dedicated cross-cutting spec (`bug_focused_candidates[GROK-14298]` is skipped per chain `bug_match_attempts_skipped` — no filter step in this scenario body).
-- **Delegation.** Per chain `ui_coverage_plan.delegated_scenarios`, `peptides.md` delegates the shared `peptides-context-panel-peptides-tab` flow (entry-point context-panel-rendering smoke) to `info-panels.md`. The Macromolecule-column-title click (step 2) and Peptides-panel-expand (step 3) re-traverse the delegated flow only to reach the parameter-widget and WebLogo surfaces this scenario owns directly.
-- **Helpers — registry status.** No existing helper in `helpers-registry.yaml` covers WebLogo monomer click, peptides-panel parameter read/write, or the linked-dataset open shortcut used here. Candidates surfaced in frontmatter `candidate_helpers[]` for Automator-side helper-promotion review; no helper is invented in this scenario body — concrete locators land in `peptides-spec.ts`.
-- **Source provenance for "arbitrarily" / "arbitrary".** The original scenario uses non-deterministic phrasing in steps 4, 5, and 6. Migrated form preserves the original intent (any valid parameter combination; any valid monomer; any non-empty selection) and explicitly surfaces the determinism gap as unresolved ambiguities — the existing `peptides-spec.ts` realisation encodes the deterministic choices; reverse-validation against that spec is the right place to close the gap.
-- **Chain dependency.** The chain YAML records `depends_on: []` for this scenario — it opens the dataset directly via step 1 (no cross-scenario fixture handoff). No `Setup` precondition imported from another migrated scenario.
+- **Related bugs.**
+  - GROK-19145 — a high Similarity threshold can lead to a null-BitSet crash, surfacing as an empty WebLogo. Step 4's parameter change is the trigger surface and step 9's selection-count assertion is the downstream observation.
+  - GROK-17557 — an init-prerequisite race on the context-panel entry path (`SeqHelper is not initialized`), triggered by expanding the Peptides panel in step 3; fixed in 1.24.0, so this scenario also serves as a regression check for that fix.
+  - GROK-14298 — filter-broadcast crash class on the selection backbone; step 9 touches this surface at the edge, but full coverage (including a filter step) lives in a dedicated spec, since this scenario doesn't apply a filter.
+- **Delegation.** This scenario relies on the shared "click column title → Peptides panel expands" flow (steps 2-3) but delegates verifying that flow itself to `info-panels.md`; here it's only a stepping stone to reach the parameter-widget and WebLogo surfaces this scenario actually owns.
+- **Deferral — non-deterministic source wording.** The original steps 4-6 said "change parameters arbitrarily" / "click an arbitrary monomer" without specifying values. This scenario preserves that intent (any valid combination / any valid monomer / any non-empty selection); the paired spec (`peptides-spec.ts`) encodes the concrete deterministic choices used in automation.
 
 {
   "order": 2,

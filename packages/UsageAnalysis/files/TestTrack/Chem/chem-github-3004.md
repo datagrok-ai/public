@@ -1,9 +1,10 @@
 ---
 feature: chem
-sub_features_covered: [chem.analyze.scaffold-tree, chem.analyze.scaffold-tree.viewer, chem.analyze.scaffold-tree.add]
 target_layer: playwright
 pyramid_layer: bug-focused
 coverage_type: edge
+priority: p1
+realizes: [github-3004]
 produced_from: atlas-driven
 produced_for: chem-github-3004-spec.ts
 authored_date: 2026-05-11
@@ -21,19 +22,13 @@ the same default-binding behavior as other Chem viewers. Binding the new
 viewer to a non-active table (the literal github-3004 surface) is the
 regression this scenario catches.
 
-Per chain YAML (`scenario-chains/chem.yaml` rev 2
-`bug_focused_candidates[chem-github-3004-spec.ts]`): independent scenario
-(`depends_on: []`), `pyramid_layer: bug-focused`, `target_layer: playwright`,
-strategy `simple`. Parallel-coverage on `chem.analyze.scaffold-tree.*` with
-`Advanced/scaffold-tree.md` (single-table Scaffold Tree walk,
-`coverage_type: regression`) and `Advanced/scaffold-tree-functions.md`
-(JS API function walk). This spec owns the multi-table state-tracking
-invariant.
+This is a parallel, narrower scenario alongside the single-table Scaffold Tree walk
+(`Advanced/scaffold-tree.md`) and the create+configure smoke walk
+(`Advanced/scaffold-tree-functions.md`) — this one is scoped specifically to the
+multi-table binding behavior.
 
-Bug-library reference: `references/bug-library/chem.yaml :: github-3004` —
-title *Two tables with molecules: scaffold tree is based on wrong table by
-default in some cases*, priority p2, status `fixed`, `fixed_in: '1.21.0'`,
-`test_coverage: needed`. NIBR customer signal (NX label).
+Bug reference: github-3004 — *Two tables with molecules: scaffold tree is based on
+wrong table by default in some cases* (priority p2, fixed in 1.21.0).
 
 ## Setup
 
@@ -89,54 +84,7 @@ TableView A's.
 
 ## Notes
 
-- **`coverage_type: edge`** — multi-table state-tracking edge case; this
-  scenario asserts the active-table binding invariant for
-  `chem.analyze.scaffold-tree.add`. Happy-path single-table Scaffold Tree
-  flows are owned by parallel `Advanced/scaffold-tree.md`
-  (`coverage_type: regression`, `pyramid_layer: integration`).
-- **Top-menu vector choice.** Top menu `Chem | Analyze | Scaffold Tree` is
-  the canonical bug-report path. JS API alternative
-  (`grok.functions.call('Chem:addScaffoldTree', {})`) also adds the viewer
-  to the active table view — but the bug surface is specifically the
-  top-menu-driven default-binding decision in the package's `addScaffoldTree`
-  implementation. Test exercises the UI vector to confirm the user-facing
-  fix; the JS API path is implicitly covered (both call the same package
-  function under the hood) but not separately asserted here.
-- **Dataset construction — two reads of same file.** Both tables use
-  `smiles-50.csv` (50 rows, `canonical_smiles` Molecule column). Distinct
-  table names (`tableA` / `tableB`) ensure the bug's "which DataFrame is
-  current" invariant is exercised — the multi-table state error is about
-  DataFrame identity, not data content. Same source file simplifies setup
-  while still surfacing the binding error.
-- **Active table view assumption.** Test relies on Datagrok's default
-  behavior where the newly-added table view becomes the active view (per
-  step 2 above). If the platform later changes this default, Step 3's
-  pre-condition assert catches the setup regression cleanly before the
-  Scaffold Tree invocation.
-- **MCP-validated current behavior (2026-05-11 dev.datagrok.ai recon, test
-  account, Chem package v1.17.6).** Two table views open, smiles-50-copy as
-  active. Top-menu Chem | Analyze | Scaffold Tree → viewer added → bound
-  to smiles-50-copy (active table). github-3004 fix verified on current
-  build. Spec exercises the post-fix invariant as a regression-lock.
-- **Helpers usage.** Standard `loginToDatagrok` + `softStep` from
-  `helpers-registry.yaml` + `warmChemPackage` (env-bootstrap helper,
-  precedent batch-1 + batch-2). Inline patterns for dataset open +
-  top-menu dispatch — no new helper authored under reuse threshold
-  (single-use pattern).
-- **No JS API substitution.** Step 4 exercises the top-menu UI vector
-  that the bug lives in. JS API invocation
-  (`Chem:addScaffoldTree`) would bypass the top-menu-driven default-table
-  resolution that the bug surfaces — UI driving is required to exercise
-  the bug's exact code path.
-- **Cold-Playwright readiness (resolved 2026-05-12 cycle).** Original
-  authoring proactively applied `test.fixme()` under the env-pending
-  Chem-package-cold-start hypothesis. Post-breakthrough cycle
-  (chem-new-2026-05-12) confirmed that the breakthrough pattern
-  (split-evaluate setup + 30s outside-evaluate post-addTableView settle)
-  resolves the cold-start blocker. test.fixme REMOVED; Validator Gate B
-  PASS verified across multiple 3-run sequences. One Round-1 test-bug
-  surfaced (`grok.shell.tableViews` Iterable vs Array); fixed by
-  wrapping in `Array.from(...)`.
-- **Order in chain.** Bug-focused candidate; placed parallel to
-  `Advanced/scaffold-tree.md` and `Advanced/scaffold-tree-functions.md`.
-  No `depends_on:` ordering — independent scenario.
+- **Why the top-menu vector.** The bug lives in the top-menu-driven default-table-binding
+  logic, so the scenario drives Scaffold Tree via the top menu rather than the equivalent
+  JS API call (`Chem:addScaffoldTree`) — the JS API path shares the same underlying
+  function but isn't separately asserted here.

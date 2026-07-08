@@ -1,3 +1,14 @@
+---
+feature: word-cloud
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - word-cloud-spec.ts
+related_bugs: []
+---
+
 # Word Cloud tests
 
 Word Cloud is part of the Charts package (`public/packages/Charts`).
@@ -11,7 +22,7 @@ All scenarios should start with the following sequence of events:
 
 1. Open Properties, set Column to RACE — words appear for each race value, sized by frequency
 2. Change Column to DIS_POP — word cloud updates to show disease population values
-3. Change Column to SITE — word cloud updates to site values
+3. Change Column to RACE — word cloud updates to race values
 4. Change Column to SEX — only two words appear (M/F)
 
 ## Shape

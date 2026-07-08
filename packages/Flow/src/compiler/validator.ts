@@ -2,7 +2,7 @@
 /** Pre-compilation validation. Runs against the FlowEditor data layer. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode} from '../rete/scheme';
+import {FlowNode, isSetVarNode} from '../rete/scheme';
 import {topologicalSort} from './topological-sort';
 
 export type ValidationSeverity = 'error' | 'warning';
@@ -66,16 +66,23 @@ export function validateGraph(flow: FlowEditor): ValidationResult[] {
     }
   }
 
-  // Duplicate input/output param names.
+  // Duplicate input/output param names — SetVar variable names participate too:
+  // a SetVar doubles as an output (same script namespace and the same run-context
+  // registration), so two SetVars, two outputs, or a SetVar + an output sharing a
+  // name silently overwrite each other.
   const seen = new Map<string, string>();
   for (const node of nodes) {
-    if (node.dgNodeType !== 'input' && node.dgNodeType !== 'output') continue;
-    const name = String(node.properties['paramName'] ?? '');
+    let name: string;
+    if (node.dgNodeType === 'input' || node.dgNodeType === 'output')
+      name = String(node.properties['paramName'] ?? '').trim();
+    else if (isSetVarNode(node))
+      name = String(node.inputValues['variableName'] ?? '').trim();
+    else continue;
     if (!name) continue;
     if (seen.has(name))
       results.push({
         severity: 'error',
-        message: `Duplicate parameter name '${name}' used by '${node.label}' and '${seen.get(name)}'`,
+        message: `Duplicate variable name '${name}' used by '${node.label}' and '${seen.get(name)}'`,
         nodeId: node.id,
       });
     else seen.set(name, node.label);

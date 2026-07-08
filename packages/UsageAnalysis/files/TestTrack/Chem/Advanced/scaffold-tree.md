@@ -1,3 +1,21 @@
+---
+feature: chem
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - scaffold-tree-spec.ts
+related_bugs: []
+---
+
+# Chem | Analyze | Scaffold Tree — filter behavior, coloring & editing edge cases
+
+Collection of Scaffold Tree scenarios covering filter-highlight persistence across panel close/reopen,
+scaffold color propagation to the grid and to a Scatter Plot viewer, recovery after sketching an invalid
+structure, in-place editing of an existing scaffold node, and boundary behavior on non-molecular data and
+very large structure-category counts.
+
 Open linked dataset
 
 #### Scaffold tree highlighting issue
@@ -12,16 +30,16 @@ Open linked dataset
 1. Add a scaffold tree filter (by hand, load it, from the layout).
 2. Set color to scaffolds.
 3. Disable scaffold tree filter.
-3. Close/open the entire panel.
-3. Check the highlight in the grid.
+4. Close/open the entire panel.
+5. Check the highlight in the grid.
 
 ***
 1. Open the filter panel.
 2. View > layout > clone.
-2. On the original view, add a scaffold tree filter (enable color, do not check the checkbox!).
-3. Disable the scaffold tree filter.
-3. Close the filter panel.
-3. Open the filter panel - the scaffold should not disappear from the panel.
+3. On the original view, add a scaffold tree filter (enable color, do not check the checkbox!).
+4. Disable the scaffold tree filter.
+5. Close the filter panel.
+6. Open the filter panel - the scaffold should not disappear from the panel.
 
 ***
 1. Add a scaffold tree filter and SF.

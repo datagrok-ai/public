@@ -1,12 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.grid-context-menu.copy-raw
-  - biostructure.grid-context-menu.download-raw
-  - biostructure.grid-context-menu.show-biostructure-viewer
-  - biostructure.cell-renderer.molecule3d
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [GROK-14552]
 produced_from: atlas-driven
 related_bugs:
   - GROK-14552
@@ -74,59 +71,19 @@ gate_verdicts:
 
 # BiostructureViewer — Grid null-cell right-click safety (GROK-14552 regression guard)
 
-## Overview
-
 Regression guard for [GROK-14552](https://reddata.atlassian.net/browse/GROK-14552)
-("Grid: right-clicking the white space of the row triggers an error"). The bug
-surfaced as a `TypeError: Cannot read properties of null (reading 'semType')`
-raised from the BiostructureViewer package's grid-cell context-menu hook
-(`addContextMenuForCell` in
-`public/packages/BiostructureViewer/src/utils/context-menu.ts`) when the user
-right-clicks past the populated cells of a grid row (the empty whitespace
-beyond the last column). The platform delivers a `null` cell argument to the
-hook for that whitespace zone, and the unguarded `cell.semType` access threw.
-The fix (shipped in BiostructureViewer 1.19.0) added a null-cell guard to
-the hook so the right-click silently no-ops on whitespace rather than
-crashing.
-
-This scenario is the dedicated regression guard authored to close the
-F-BUG-COVERAGE-01 gap for this bug (no prior scenario's `related_bugs[]`
-listed `GROK-14552`, and the affected sub_features are outside atlas
-`manual_only[]`).
-
-The bug surfaces across four sub_features tracked in the atlas:
-
-- `biostructure.cell-renderer.molecule3d` — the registered cell renderer
-  for `Molecule3D` semType
-  (`public/packages/BiostructureViewer/src/package.g.ts#L14`). Its mere
-  presence on a grid column activates the package's grid-cell hooks for
-  that grid view; this is the activation surface for the bug.
-- `biostructure.grid-context-menu.copy-raw` — "Copy Biostructure raw
-  value" item registered for Molecule3D cells
-  (`utils/context-menu.ts#L18`). Its `addContextMenuForCell` predicate
-  reads `cell.semType` — the exact null-deref site.
-- `biostructure.grid-context-menu.download-raw` — "Download Biostructure
-  raw value" item (`utils/context-menu.ts#L29`). Same registration code
-  path; same null-cell exposure.
-- `biostructure.grid-context-menu.show-biostructure-viewer` — "Show
-  Biostructure Viewer" item (`utils/context-menu.ts#L41`). Same code
-  path; same null-cell exposure.
-
-Atlas cross-references:
-
-- `feature-atlas/biostructureviewer.yaml#edge_cases[0]`
-  (null-cell right-click; `source_bug: GROK-14552`;
-  `derived_from: bug-library:biostructureviewer.yaml#GROK-14552`).
-- `feature-atlas/biostructureviewer.yaml#known_issues[GROK-14552]`
-  (`affects_sub_features: [copy-raw, download-raw,
-  show-biostructure-viewer]`; `test_coverage.exists: false` — the
-  hole this scenario fills).
-- Chain YAML
-  `scenario-chains/biostructureviewer.yaml#bug_focused_candidates[GROK-14552]`
-  proposed_spec verbatim:
-  "Open dataframe with Molecule3D column, right-click in grid
-  whitespace past populated cells → assert no console error from
-  addContextMenuForCell (null-cell safety)."
+("Grid: right-clicking the white space of the row triggers an error"). The
+bug surfaced as a `TypeError: Cannot read properties of null (reading
+'semType')` when the user right-clicked past the populated cells of a grid
+row — the empty whitespace beyond the last column — on any grid holding a
+`Molecule3D` column. The platform delivers a `null` cell argument to the
+package's grid-cell context-menu hook for that whitespace zone, and the
+hook's unguarded access to the cell's semantic type threw. The fix (shipped
+in BiostructureViewer 1.19.0) added a null-cell guard so the right-click
+silently no-ops on whitespace instead of crashing. The same hook also
+registers three context-menu items on populated `Molecule3D` cells — "Copy
+Biostructure raw value", "Download Biostructure raw value", and "Show
+Biostructure Viewer" — which this scenario also confirms still appear.
 
 ## Setup
 
@@ -144,13 +101,10 @@ Atlas cross-references:
   - `1bdq.pdb` opened via the Files browser
     (`System:AppData/BiostructureViewer/samples/1bdq.pdb`); the
     package's `importPdb` handler routes it into a Molecule3D column.
-    Atlas reference: `biostructure.file-open.importPdb`
-    (`package.ts#L142`).
   - A table whose Molecule3D column is staged programmatically via
     `grok.functions.call('BiostructureViewer:viewBiostructure', {...})`
     or via a `.sdf` whose Molecule3D column is detected by the
-    semantic-type detector. Atlas reference:
-    `biostructure.api.viewBiostructure` (`package.ts#L130`).
+    semantic-type detector.
 - For the regression assertion ("no error from the hook"), the
   load-bearing question is "did `addContextMenuForCell` raise
   `Cannot read properties of null (reading 'semType')` during the
@@ -184,9 +138,9 @@ Steps:
    the table view holds at least one `Molecule3D` column.
 
    * Expected result: the Biostructure viewer renders the structure
-     (atlas edge_cases[6] async-render await applies —
-     `viewer.awaitRendered(timeoutMs)`); the table view shows a grid
-     with a `Molecule3D` column. No error balloon, no console error.
+     (await `viewer.awaitRendered(timeoutMs)`); the table view shows
+     a grid with a `Molecule3D` column. No error balloon, no console
+     error.
 
 2. Locate the grid for the open table view. Identify a row whose
    populated cells stop before the grid's right edge — i.e. there is
@@ -243,9 +197,8 @@ Steps:
 
 1. With the table view from Scenario 1 still open (or re-open via
    `1bdq.pdb` per Setup), locate a populated `Molecule3D` cell in
-   the grid (a cell rendered by the BiostructureViewer cell renderer
-   — atlas reference: `biostructure.cell-renderer.molecule3d` at
-   `package.g.ts#L14`).
+   the grid (a cell rendered by the BiostructureViewer cell
+   renderer).
 
    * Expected result: at least one populated Molecule3D cell is
      identifiable (it renders an inline 3D preview per the cell
@@ -259,15 +212,9 @@ Steps:
 
    * Expected result: a context menu appears containing the three
      items registered by `addContextMenuForCell`:
-     - "Copy Biostructure raw value" — atlas reference
-       `biostructure.grid-context-menu.copy-raw`
-       (`utils/context-menu.ts#L18`).
-     - "Download Biostructure raw value" — atlas reference
-       `biostructure.grid-context-menu.download-raw`
-       (`utils/context-menu.ts#L29`).
-     - "Show Biostructure Viewer" — atlas reference
-       `biostructure.grid-context-menu.show-biostructure-viewer`
-       (`utils/context-menu.ts#L41`).
+     - "Copy Biostructure raw value"
+     - "Download Biostructure raw value"
+     - "Show Biostructure Viewer"
      NO `TypeError.*semType` is raised. Capture buffer remains
      clean. **Inverse-regression signature**: if the three menu
      items do NOT appear (the null-cell guard accidentally
@@ -297,65 +244,18 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: **playwright**. The bug manifests at the
-  intersection of the Datagrok grid's right-click event-dispatch and
-  the BiostructureViewer package's `addContextMenuForCell` hook. The
-  canonical reproduction action is "right-click on grid whitespace"
-  — a pointer event delivered to the grid container, with the cell
-  argument the platform computes from the click coordinates. The
-  assertion is "no `semType`-null TypeError fires AND the populated
-  cell still gets the three menu items". A pure-apitest variant
-  could invoke `addContextMenuForCell` directly with a `null` cell
-  argument and assert no throw, but that BYPASSES the grid
-  right-click event-dispatch (the layer through which the bug
-  actually manifests) — the platform's coordinate-to-cell mapping
-  for whitespace clicks is the load-bearing piece, and it is
-  playwright-only.
-
-- coverage_type rationale: **regression** per the dispatch
-  `inputs.bug_brief.coverage_type`. The bug is fixed (shipped in
-  BiostructureViewer 1.19.0 per the bug-library) and this scenario
-  is a regression guard against re-emergence of the null-cell crash.
-  Note that the chain-YAML SR proposal for this bug recommended
-  `coverage_type: edge` so each authoring would double up against
-  F-STRUCT-NEGATIVE-01 (atlas `edge_cases[0]` carries
-  `coverage_type: edge`). The dispatch explicitly resolved to
-  `regression` — the operator may re-classify this scenario to
-  `edge` post-author to satisfy F-STRUCT-NEGATIVE-01 in addition to
-  F-BUG-COVERAGE-01.
-
 - Deferrals: a fallback no-toast / no-balloon assertion path is
   documented in Setup for environments where `page.on('pageerror')`
-  console-error capture is not feasible. This is NOT a deferral
-  against a missing helper — the playwright primitives (UI
-  selectors, DOM queries, error-listener wiring) are first-party —
-  but a documented fallback for environments without direct console
-  instrumentation. No sub_features are deferred to another layer.
+  console-error capture is not feasible — a documented fallback, not
+  a coverage gap.
 
-- Cross-reference with the existing migrated smoke
-  `biostructure-viewer.md`: its `bug_match_attempts_skipped[]` audit
-  record for GROK-14552 reads "bug.affects intersects no scenario
-  sub_features_covered — the scenario does not exercise grid-cell
-  right-click flows (Molecule3D / PDB_ID grid cells are present in
-  Block D and Block G but the scenario does not right-click in empty
-  grid whitespace)". This is the dedicated regression guard authored
-  to close that gap (F-BUG-COVERAGE-01 branch (ii) anchor via
-  `related_bugs: [GROK-14552]`).
+- The existing smoke scenario (`biostructure-viewer.md`) does not
+  exercise grid-cell right-click flows at all (it never right-clicks
+  in empty grid whitespace), so it doesn't cover this bug. This
+  scenario is the dedicated regression guard for that gap.
 
-- Cross-reference with atlas `edge_cases[0]`
-  (`feature-atlas/biostructureviewer.yaml`): that edge case is
-  exactly this bug's null-cell scenario, derived from
-  `bug-library:biostructureviewer.yaml#GROK-14552`. This scenario is
-  its concrete realization — the regression-guard test for the
-  documented edge case.
-
-- Cross-reference with the SR breadth proposal in chain YAML
-  `gate_f_verdict.scope_reduction_proposal` (Grid context-menu
-  scenario proposal): that proposal would cover seven grid
-  context-menu / cell-renderer sub_features in a breadth scenario.
-  This bug-focused scenario partially overlaps it
-  (`biostructure.cell-renderer.molecule3d` plus three of the four
-  grid-context-menu items it would propose) and is value-bearing
-  under the bug-repro justification independently of the broader
-  breadth scenario — the net-new refusal explicitly exempts
-  bug-repro scenarios from the breadth-loop overlap check.
+- A separate, broader breadth scenario proposal exists for covering
+  all seven grid context-menu / cell-renderer sub-features together;
+  this bug-focused scenario overlaps three of those four
+  grid-context-menu items but is justified independently as the
+  regression guard for GROK-14552.

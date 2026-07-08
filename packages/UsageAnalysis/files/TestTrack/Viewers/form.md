@@ -1,3 +1,14 @@
+---
+feature: form
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - form-spec.ts
+related_bugs: []
+---
+
 # Form tests (Playwright)
 
 All scenarios should start with the following sequence of events:

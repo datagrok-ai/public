@@ -1,4 +1,7 @@
-File-share folder/file CRUD lifecycle on a connection:
+# Files — folder & file lifecycle on a connection
+
+Create, edit, rename, and delete a folder and a file on a file-share
+connection, and confirm each change takes effect.
 
 1. Create a new folder "Folder cache test" in a connection's directory.
 2. Create file test.txt in the folder and write "Hello world!" into it.

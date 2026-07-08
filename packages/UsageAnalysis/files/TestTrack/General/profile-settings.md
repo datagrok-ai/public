@@ -1,4 +1,4 @@
-### Profile Settings
+# Profile Settings
 
 Users can change the information in their profiles. Such as profile photo, password, first and last names.
 

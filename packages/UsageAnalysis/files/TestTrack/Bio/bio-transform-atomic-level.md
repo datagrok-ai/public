@@ -1,14 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.transform.to-atomic-level
-  - bio.transform.to-atomic-level.action
-  - bio.transform.to-atomic-level.single
-  - bio.transform.to-atomic-level.api
-  - bio.transform.helm-to-mol
-  - bio.transform.molecules-to-helm
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [bio.cp.to-atomic-level]
 produced_from: atlas-driven
 related_bugs:
   - GROK-15176
@@ -49,30 +44,16 @@ gate_verdicts:
 
 # Bio | Transform — To Atomic Level + HELM/molfile round-trip
 
-Gate F SR extension scenario (cycle 2026-06-01-bio-migrate-02) that
-realizes atlas critical path `bio.cp.to-atomic-level` (p1) and
-cross-feature interaction `bio.x.bio-to-chem-via-atomic-level`
-(`coverage_type: regression`, `related_bugs: [GROK-15176]`). Targets
-five net-new bio sub-features over the live covered union and one
-already-covered umbrella id (`bio.transform.to-atomic-level`) carried
-for density and as the dispatch anchor for the cell-action /
-top-menu paths.
+Covers the Bio→molfile→HELM conversion surface via its four entry
+points: the **Bio | Transform | To Atomic Level...** top-menu on a
+Macromolecule column, the **to atomic level** cell action on the
+column-header context menu, the public API wrappers `seq2atomic` and
+`toAtomicLevelSingleSeq`, and the round-trip path **Bio | Transform |
+Molecules to HELM...** that converts a molfile column back into HELM.
 
-The scenario exercises the four entry points into the bio→molfile→helm
-conversion surface: (a) `Bio | Transform | To Atomic Level...` top-menu
-on a Macromolecule column, (b) the cell action `to atomic level`
-surfaced from the column-header context-menu (atlas
-`bio.transform.to-atomic-level.action`), (c) the public API wrappers
-`seq2atomic(seq, nonlinear)` (atlas `bio.transform.to-atomic-level.api`)
-and `toAtomicLevelSingleSeq(sequence)` (atlas
-`bio.transform.to-atomic-level.single`), and (d) the round-trip path
-`Bio | Transform | Molecules to HELM...` consuming the molfile output
-back into HELM (atlas `bio.transform.molecules-to-helm`). The
-`getMolFromHelm` helper-converter pipeline (atlas
-`bio.transform.helm-to-mol`, `package.ts#L1684`) is the underlying
-service exercised by the To-Atomic-Level path on HELM input — verified
-via the V3K molfile column shape that the cell renderer dispatch
-consumes downstream.
+Scenario 5 also guards against GROK-15176: a produced molfile must
+never carry an illegal isotope flag on a heavy atom, or downstream
+PubChem standardization silently rejects it.
 
 ## Setup
 
@@ -82,24 +63,20 @@ Datasets (canonical Bio test fixtures, two notation classes):
   for the `helm-to-mol` pipeline (atomic conversion routes through the
   HELM-to-molfile converter under `src/utils/helm-to-molfile/converter/`).
 - `System.AppData/Bio/tests/filter_FASTA.csv` — FASTA notation. Routes
-  through the linear `_toAtomicLevel` branch (atlas
-  `bio.transform.to-atomic-level` description, `package.ts#L863`).
+  through the linear `_toAtomicLevel` branch.
 
-Entry points (atlas labels):
+Entry points:
 
 - **Bio | Transform | To Atomic Level...** — top-menu action,
   `toAtomicLevel` function (`package.ts#L863`).
 - **Bio | Transform | Molecules to HELM...** — top-menu action,
   `moleculesToHelmTopMenu` (`package.ts#L824`).
 - **right-click sequence column → to atomic level** — cell action
-  `toAtomicLevelAction` (`package.ts#L886`); atlas
-  `bio.transform.to-atomic-level.action`.
+  `toAtomicLevelAction` (`package.ts#L886`).
 - `await grok.functions.call('Bio:seq2atomic', { seq, nonlinear })` —
-  public API wrapper (`package.ts#L1605`); atlas
-  `bio.transform.to-atomic-level.api`.
+  public API wrapper (`package.ts#L1605`).
 - `await grok.functions.call('Bio:toAtomicLevelSingleSeq', { sequence })` —
-  single-sequence variant (`package.ts#L911`); atlas
-  `bio.transform.to-atomic-level.single`.
+  single-sequence variant (`package.ts#L911`).
 
 ## Scenarios
 
@@ -107,14 +84,13 @@ Entry points (atlas labels):
 
 1. Open `System.AppData/Bio/tests/filter_HELM.csv` from the Files
    browser. The Macromolecule detector classifies the sequence column
-   synchronously (atlas `bio.detector`); the column is tagged with
+   synchronously; the column is tagged with
    `quality=Macromolecule, units=helm`.
 2. On the menu ribbon open **Bio | Transform | To Atomic Level...**
    The To-Atomic-Level dialog appears with `name=dialog-To-Atomic-Level`
    and the HELM column prefilled in the column input.
 3. Accept the prefilled column and click **OK**. The pipeline routes
-   through `HelmToMolfileConverter` (atlas `bio.transform.helm-to-mol`,
-   `package.ts#L1684`).
+   through `HelmToMolfileConverter`.
 
 Expected:
 - A new column appears whose `semType` is `Molecule` and whose units
@@ -131,9 +107,7 @@ Expected:
 
 1. With `filter_HELM.csv` open, right-click the sequence column header
    to surface the column context menu.
-2. Click **to atomic level** in the menu (atlas
-   `bio.transform.to-atomic-level.action`, registered as a cell action;
-   `package.ts#L886`).
+2. Click **to atomic level** in the menu.
 
 Expected:
 - The same molfile column shape from Scenario 1 appears; the cell
@@ -141,9 +115,7 @@ Expected:
   Macromolecule column (no separate dialog when the column is already
   bound by the action target).
 - No console error; the new column is appended to the active
-  dataframe and renders via the Chem cell renderer (downstream
-  cross-package contract from interaction
-  `bio.x.bio-to-chem-via-atomic-level`).
+  dataframe and renders via the Chem cell renderer.
 
 ### Scenario 3 — Top-menu To Atomic Level on FASTA input (linear branch)
 
@@ -151,8 +123,7 @@ Expected:
    sequences; detector tags `units=fasta`).
 2. On the menu ribbon open **Bio | Transform | To Atomic Level...**
    The dialog appears with the FASTA Macromolecule column prefilled.
-3. Click **OK** to run the linear `_toAtomicLevel` branch (atlas
-   `bio.transform.to-atomic-level` description, `package.ts#L863`).
+3. Click **OK** to run the linear `_toAtomicLevel` branch.
 
 Expected:
 - A new `molfile(Sequence)` column appears with `semType=Molecule`,
@@ -165,9 +136,8 @@ Expected:
 ### Scenario 4 — Molecules to HELM round-trip
 
 1. With the molfile column from Scenario 1 (or Scenario 3) present on
-   the active dataframe, open **Bio | Transform | Molecules to HELM...**
-   (atlas `bio.transform.molecules-to-helm`, `package.ts#L824`). The
-   dialog appears with the molfile column prefilled.
+   the active dataframe, open **Bio | Transform | Molecules to HELM...**.
+   The dialog appears with the molfile column prefilled.
 2. Click **OK** to run the Python-script + monomer-library-matching
    converter that produces a HELM column from molecule input.
 
@@ -177,9 +147,7 @@ Expected:
 - The round-trip yields a HELM column structurally consumable by the
   Bio detector when the column is re-detected — verifying the molfile
   output of To-Atomic-Level is a valid input to the
-  `moleculesToHelm` reverse pipeline (the
-  `bio.x.bio-to-chem-via-atomic-level` cross-feature contract is
-  exercised end-to-end).
+  `moleculesToHelm` reverse pipeline.
 
 ### Scenario 5 — Public API wrappers: seq2atomic + toAtomicLevelSingleSeq + GROK-15176 isotope-flag regression guard
 
@@ -239,56 +207,9 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: the top-menu and cell-action surfaces
-  (`bio.transform.to-atomic-level`, `.action`) are UI-only triggers
-  whose dispatch into `toAtomicLevel` runs only via a real menu /
-  context-menu pointer event; an `apitest`-only scenario cannot
-  exercise the action-registration path that GROK-15176's repro
-  context describes (cell-action route from MSA-column header).
-  Playwright is the dominant layer; Scenario 5 carries the API
-  wrappers and the regression guard inside the Playwright runner
-  as `grok.functions.call(...)` calls (no separate apitest needed).
-- Atlas citations:
-  - `bio.cp.to-atomic-level` (p1, `bio.yaml#L1349`) — open HELM
-    dataset → Bio | Transform | To Atomic Level... → V3K molfile
-    column produced → Chem renderer renders cells. Scenarios 1+2
-    realize this critical path on HELM; Scenario 3 covers the linear
-    FASTA branch.
-  - `bio.x.bio-to-chem-via-atomic-level` (`bio.yaml#L1476`,
-    `coverage_type: regression`, `related_bugs: [GROK-15176]`).
-    Scenario 4's molecules-to-HELM round-trip and Scenario 5's
-    isotope-flag regression guard cover the cross-package
-    output-validity contract this interaction names.
-  - `edge_cases[].source_bug: GROK-15176` (`bio.yaml#L1699`) —
-    `sub_features: {bio.analyze.msa, bio.analyze.msa.dialog,
-    bio.transform.to-atomic-level, .api, .action}`. Scenario 5's
-    explicit `MASS=1` heavy-atom assertion against both wrapper
-    outputs is the targeted regression guard for this edge case.
-- Net-new ids vs live_covered_union (51 ids on incoming chain
-  rev 14 + bio-renderer-dispatch.md = 51): five of the six ids on
-  this scenario are net-new — `.action`, `.single`, `.api`,
-  `helm-to-mol`, `molecules-to-helm`. The umbrella id
-  `bio.transform.to-atomic-level` is already in the union via
-  `convert.md`'s sub_features; carried here for density and to
-  identify the dispatch surface the .action and top-menu paths
-  bind to. Projected non-manual_only union after this scenario:
-  49 + 5 = 54 of 99 (~54.5%); still below the 70% threshold —
-  remaining first-pass and second-pass proposals in the chain
-  `gaps[].proposed_action` block continue the breadth lift.
-- Bug-aware tie-break (STEP C): selected over equivalently-sized
-  first-pass candidates because GROK-15176 is one of the chain's
-  five `bug_focused_candidates[]` entries (the
-  `bio-grok-15176-spec.ts` proposal that does not yet exist on
-  disk). Per the tightened F-BUG-COVERAGE-01 branch (i), this
-  scenario's `related_bugs: [GROK-15176]` is the same closure
-  evidence `convert.md`, `msa.md`, and `pepsea.md` already
-  provide; the chain's downstream `bug-grok-15176-spec.ts`
-  proposal remains a valid Automator seed for the cross-cutting
-  Chem-renderer / PubChem integration test, orthogonal to this
-  scenario.
-- Deferrals (none): every sub_feature on this scenario is reached
-  by at least one of the five scenarios above; no
-  technical-dependency blocker requires deferral.
+- No dedicated cross-cutting Chem-renderer / PubChem regression spec
+  for GROK-15176 exists yet; `convert.md`, `msa.md`, and `pepsea.md`
+  also touch this bug at a lighter level.
 
 ---
 {

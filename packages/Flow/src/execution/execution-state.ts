@@ -40,7 +40,6 @@ export class ExecutionState {
   runId: string = '';
   nodeStates: Map<string, NodeExecState> = new Map();
   isRunning: boolean = false;
-  graphVersionAtRun: number = 0;
 
   reset(): void {
     this.runId = '';
@@ -48,11 +47,10 @@ export class ExecutionState {
     this.isRunning = false;
   }
 
-  startRun(runId: string, graphVersion: number): void {
+  startRun(runId: string): void {
     this.reset();
     this.runId = runId;
     this.isRunning = true;
-    this.graphVersionAtRun = graphVersion;
   }
 
   endRun(): void {
@@ -68,15 +66,18 @@ export class ExecutionState {
     return this.nodeStates.get(nodeId);
   }
 
-  /** Mark all completed/errored nodes as stale (graph changed since last run). */
-  markAllStale(): void {
-    for (const [id, state] of this.nodeStates) {
-      if (state.status === NodeExecStatus.completed || state.status === NodeExecStatus.errored)
+  /** Mark the given completed/errored nodes stale (a graph edit invalidated
+   *  them); nodes outside the set — and idle/running ones — are untouched. */
+  markStale(ids: Iterable<string>): void {
+    for (const id of ids) {
+      const state = this.nodeStates.get(id);
+      if (state && (state.status === NodeExecStatus.completed || state.status === NodeExecStatus.errored))
         this.nodeStates.set(id, {...state, status: NodeExecStatus.stale});
     }
   }
 
-  isStale(currentGraphVersion: number): boolean {
-    return this.graphVersionAtRun !== currentGraphVersion;
+  /** Drop a removed node's state entirely (the node no longer exists). */
+  forgetNode(id: string): void {
+    this.nodeStates.delete(id);
   }
 }

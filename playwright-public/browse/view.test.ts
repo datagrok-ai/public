@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import {
   BROWSE_HEADER_HOME,
   treeGroupByName,
@@ -19,8 +19,33 @@ import {
   watchErrors,
   expectNoErrors,
   expandTreeGroup,
-  openTreeItem,
+  resolveNestedApp,
+  selectedViewName,
+  clickTreePath,
 } from './helpers';
+
+/**
+ * Nested app under `Apps > Chem`, in preference order. `Chemspace` ships in its own
+ * (optional) package; `MPO profiles` ships with Chem itself, so it is the reliable
+ * fallback when the Chemspace package isn't deployed. Resolved per-test against the
+ * live tree so the suite adapts to whatever is installed instead of hard-failing.
+ */
+const NESTED_CHEM_APP_CANDIDATES = ['Chemspace', 'MPO profiles'];
+
+/**
+ * Open a tree node and return the resulting selected view's tab-handle name, waiting
+ * deterministically for the selection to change from whatever was selected before.
+ */
+async function openAndCapture(page: Page, segments: string[], dblclick = false): Promise<string> {
+  const before = await selectedViewName(page);
+  await clickTreePath(page, segments, { dblclick });
+  await expect
+    .poll(async () => selectedViewName(page), { timeout: 15_000, intervals: [200, 400, 800] })
+    .not.toBe(before);
+  const name = await selectedViewName(page);
+  expect(name, `a view must be selected after opening ${segments.join(' / ')}`).toBeTruthy();
+  return name!;
+}
 
 /**
  * Browsing mode (unpinned) vs persistent view (pinned by double-click) — section 3.
@@ -37,46 +62,34 @@ test.describe('Browse view modes (Browse-View-*)', () => {
   test('Browse-View-01 — single click is unpinned (replaces), double click is persistent', async ({ page }) => {
     const sink = watchErrors(page);
 
-    // X = top-level item; Y = nested item under Chem. Both produce predictable view-handles.
-    const X = { path: ['Apps', 'Tutorials'], view: 'Tutorials' };
-    const Y = { path: ['Apps', 'Chem', 'Chemspace'], view: 'Chemspace' };
+    // X = top-level item; Y = nested item under Chem. Y is resolved against the live tree
+    // (Chemspace's package is optional) so the test adapts to whatever nested app is deployed.
+    const xPath = ['Apps', 'Tutorials'];
+    const yPath = await resolveNestedApp(page, 'Chem', NESTED_CHEM_APP_CANDIDATES);
+    test.skip(yPath === null, `no nested Chem app installed (${NESTED_CHEM_APP_CANDIDATES.join(', ')})`);
 
-    async function clickByPath(segments: string[], dblclick = false): Promise<void> {
-      await ensureBrowsePanelOpen(page);
-      // Expand every intermediate group of the path.
-      for (let i = 0; i < segments.length - 1; i++) {
-        await expandTreeGroup(page, segments[i]);
-      }
-      const locator = treeNodeByPath(page, segments);
-      await locator.waitFor({ state: 'visible', timeout: 10_000 });
-      await locator.scrollIntoViewIfNeeded();
-      if (dblclick) await locator.dblclick();
-      else await locator.click();
-      await page.waitForTimeout(1500);
-    }
-
-    // 1. Single click X -> unpinned view becomes current.
-    await clickByPath(X.path);
-    await expect(viewTabHandle(page, X.view), `${X.view} should become the current view`)
+    // 1. Single click X -> unpinned view becomes current. Capture the real view names.
+    const xView = await openAndCapture(page, xPath);
+    await expect(viewTabHandle(page, xView), `${xView} should become the current view`)
       .toHaveClass(/tab-handle-selected/, { timeout: 15_000 });
 
     // 2. Single click Y -> Y current; unpinned X must be removed.
-    await clickByPath(Y.path);
-    await expect(viewTabHandle(page, Y.view), `${Y.view} should become the current view`)
+    const yView = await openAndCapture(page, yPath!);
+    await expect(viewTabHandle(page, yView), `${yView} should become the current view`)
       .toHaveClass(/tab-handle-selected/, { timeout: 15_000 });
-    await expect(viewTabHandle(page, X.view), `Unpinned ${X.view} should be replaced by ${Y.view}`)
+    await expect(viewTabHandle(page, xView), `Unpinned ${xView} should be replaced by ${yView}`)
       .toHaveCount(0, { timeout: 10_000 });
 
     // 3. Double click X -> X opens as a persistent view.
-    await clickByPath(X.path, true);
-    await expect(viewTabHandle(page, X.view), `${X.view} should be attached as a persistent view`)
+    await openAndCapture(page, xPath, true);
+    await expect(viewTabHandle(page, xView), `${xView} should be attached as a persistent view`)
       .toHaveCount(1, { timeout: 15_000 });
 
     // 4. Single click Y again -> Y current; persistent X must remain attached.
-    await clickByPath(Y.path);
-    await expect(viewTabHandle(page, Y.view), `${Y.view} should become the current view again`)
+    await openAndCapture(page, yPath!);
+    await expect(viewTabHandle(page, yView), `${yView} should become the current view again`)
       .toHaveClass(/tab-handle-selected/, { timeout: 15_000 });
-    await expect(viewTabHandle(page, X.view), `Persistent ${X.view} must remain attached after single-click on ${Y.view}`)
+    await expect(viewTabHandle(page, xView), `Persistent ${xView} must remain attached after single-click on ${yView}`)
       .toHaveCount(1);
 
     await expectNoErrors(page, sink);
@@ -84,6 +97,10 @@ test.describe('Browse view modes (Browse-View-*)', () => {
 
   test('Browse-View-02 — editing an unpinned view makes it persistent', async ({ page }) => {
     const sink = watchErrors(page);
+
+    // Nested app to single-click at the end — resolved against the live tree.
+    const yPath = await resolveNestedApp(page, 'Chem', NESTED_CHEM_APP_CANDIDATES);
+    test.skip(yPath === null, `no nested Chem app installed (${NESTED_CHEM_APP_CANDIDATES.join(', ')})`);
 
     // 1) Open Tutorials as unpinned (single click).
     await ensureBrowsePanelOpen(page);
@@ -107,10 +124,7 @@ test.describe('Browse view modes (Browse-View-*)', () => {
     expect(previewAfter, 'After pin, Tutorials should no longer be a preview').toBe(0);
 
     // 3) Single-click another item — pinned Tutorials must remain attached.
-    await ensureBrowsePanelOpen(page);
-    await expandTreeGroup(page, 'Apps');
-    await expandTreeGroup(page, 'Chem');
-    await treeNodeByPath(page, ['Apps', 'Chem', 'Chemspace']).click();
+    await clickTreePath(page, yPath!);
     await page.waitForTimeout(2000);
 
     await expect(viewTabHandle(page, 'Tutorials'), 'Pinned Tutorials must remain attached')
@@ -143,26 +157,17 @@ test.describe('Browse view modes (Browse-View-*)', () => {
   test('Browse-View-04 — clicking Browse after a persistent view starts a fresh browsing session', async ({ page }) => {
     const sink = watchErrors(page);
 
-    async function clickByPath(segments: string[], dblclick = false): Promise<void> {
-      await ensureBrowsePanelOpen(page);
-      for (let i = 0; i < segments.length - 1; i++) {
-        await expandTreeGroup(page, segments[i]);
-      }
-      const locator = treeNodeByPath(page, segments);
-      await locator.waitFor({ state: 'visible', timeout: 10_000 });
-      if (dblclick) await locator.dblclick();
-      else await locator.click();
-      await page.waitForTimeout(1500);
-    }
+    const yPath = await resolveNestedApp(page, 'Chem', NESTED_CHEM_APP_CANDIDATES);
+    test.skip(yPath === null, `no nested Chem app installed (${NESTED_CHEM_APP_CANDIDATES.join(', ')})`);
 
     // Open a persistent view via double click.
-    await clickByPath(['Apps', 'Tutorials'], true);
+    await openAndCapture(page, ['Apps', 'Tutorials'], true);
     await expect(viewTabHandle(page, 'Tutorials'), 'Tutorials must be attached as persistent')
       .toHaveCount(1, { timeout: 15_000 });
 
     // Return to Browse and single-click another item.
-    await clickByPath(['Apps', 'Chem', 'Chemspace']);
-    await expect(viewTabHandle(page, 'Chemspace'), 'Chemspace must become the current view')
+    const yView = await openAndCapture(page, yPath!);
+    await expect(viewTabHandle(page, yView), `${yView} must become the current view`)
       .toHaveClass(/tab-handle-selected/, { timeout: 15_000 });
 
     // The persistent Tutorials must still be there.

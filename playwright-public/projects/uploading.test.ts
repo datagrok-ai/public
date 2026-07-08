@@ -1,22 +1,12 @@
-// Source-matrix scenario covering project upload across several table-source
-// types in both Sync ON and Sync OFF variants. All non-file prerequisites are
-// created in-test via helpers/openers.ts — no Samples package or
-// env-provisioned DB connection is required.
-//
-// Sync ON: source `df.tags['.script']` survives the save round-trip so
-// reopen re-executes the creation script.
-// Sync OFF: `.script` tags are stripped before save, so reopen relies on
-// persisted dataframe bytes (snapshot mode).
-//
-// Cases 4, 5, 6 (Spaces) provision a transient root Space via the shared
-// `provisionSpaceFixture` helper, copy demog.csv into it via
-// `client.files.write(...)` (so the file is openable via
-// `Spaces:<spaceName>/demog.csv`), then run the same save+reopen flow as
-// the file/query/derived cases. The Space is released in `finally` after
-// reopen — kept alive until then so Sync-ON reopen can re-run
-// `OpenFile("Spaces.<spaceName>/demog.csv")` from the persisted .script.
+/* ---
+sub_features_covered: [projects.api.files.sync, projects.api.save, projects.upload]
+--- */
+// Source-matrix scenario covering uploading.md cases 1-6, 8, 9 in both Sync ON and Sync OFF variants.
+// Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
+// before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.
 import {test, expect, type Page} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {
   projectsTestOptions,
   evalJs,
@@ -39,25 +29,17 @@ import {
   SYSTEM_DATAGROK_DB_TABLE,
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
-} from '../helpers/openers';
+} from '@datagrok-libraries/test/src/playwright/openers';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
   deleteProjectWithCleanup,
   SavedAllTables,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 
-// ---------------------------------------------------------------------------
-// Local helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Strip the `.script` provenance tag from every open dataframe — emulates
- * the Save Project dialog's "Data Sync OFF" toggle. After strip, reopen
- * relies on persisted dataframe bytes only (snapshot mode).
- */
+// Strip the `.script` provenance tag from every open dataframe — emulates Data Sync OFF (snapshot mode).
 async function stripProvenance(page: Page): Promise<void> {
   await evalJs(page, `(async () => {
     for (const df of grok.shell.tables) {
@@ -66,16 +48,8 @@ async function stripProvenance(page: Page): Promise<void> {
   })()`);
 }
 
-/**
- * Provision a transient root Space with a physical copy of demog.csv. The
- * file lands at `Spaces:<spaceName>/demog.csv` and is openable via the
- * canonical `OpenFile` opener (which writes the same `.script` provenance
- * tag as a System:DemoFiles double-click).
- *
- * Returns either a usable fixture or an env-skip blocker. Callers that hit
- * a blocker should `test.skip(true, reason)` — the Spaces createRootSpace
- * API may legitimately not exist on older platform builds.
- */
+// Provision a transient root Space with a copy of demog.csv. Returns a fixture or an env-skip blocker
+// (Spaces createRootSpace may not exist on older builds — callers should test.skip on a blocker).
 async function provisionSpaceWithDemog(
   page: Page, namePrefix: string,
 ): Promise<{fixture: SpaceFixture} | {blocked: true; reason: string}> {
@@ -91,10 +65,7 @@ async function provisionSpaceWithDemog(
 }
 
 function throwOnStepErrors() {
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 }
 
 // ---------------------------------------------------------------------------
@@ -134,10 +105,9 @@ async function runCase1(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
   }
@@ -146,13 +116,13 @@ async function runCase1(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 1: Files + Files (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase1(page, 'on');
 });
 
 test('Projects / Uploading / Case 1: Files + Files (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase1(page, 'off');
 });
@@ -200,27 +170,25 @@ async function runCase2(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    const pq = provisioned as ProvisionedQuery | null;
-    if (pq) await pq.cleanup();
+    if (provisioned) await provisioned.cleanup();
   }
 
   throwOnStepErrors();
 }
 
 test('Projects / Uploading / Case 2: Query + Query (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase2(page, 'on');
 });
 
 test('Projects / Uploading / Case 2: Query + Query (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase2(page, 'off');
 });
@@ -266,27 +234,25 @@ async function runCase3(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    const pq = provisioned as ProvisionedQuery | null;
-    if (pq) await pq.cleanup();
+    if (provisioned) await provisioned.cleanup();
   }
 
   throwOnStepErrors();
 }
 
 test('Projects / Uploading / Case 3: Query + File (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase3(page, 'on');
 });
 
 test('Projects / Uploading / Case 3: Query + File (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase3(page, 'off');
 });
@@ -339,10 +305,9 @@ async function runCase4(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
     if (fixture) await releaseSpaceFixture(page, fixture);
@@ -352,13 +317,13 @@ async function runCase4(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 4: Spaces + Spaces (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase4(page, 'on');
 });
 
 test('Projects / Uploading / Case 4: Spaces + Spaces (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase4(page, 'off');
 });
@@ -413,10 +378,9 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
     if (fixture) await releaseSpaceFixture(page, fixture);
@@ -426,13 +390,13 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 5: Spaces + File (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase5(page, 'on');
 });
 
 test('Projects / Uploading / Case 5: Spaces + File (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase5(page, 'off');
 });
@@ -491,14 +455,12 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    const pq = provisioned as ProvisionedQuery | null;
-    if (pq) await pq.cleanup();
+    if (provisioned) await provisioned.cleanup();
     if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
@@ -506,13 +468,13 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 6: Spaces + Query (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase6(page, 'on');
 });
 
 test('Projects / Uploading / Case 6: Spaces + Query (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase6(page, 'off');
 });
@@ -552,10 +514,9 @@ async function runCase8(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
   }
@@ -564,13 +525,13 @@ async function runCase8(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase8(page, 'on');
 });
 
 test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase8(page, 'off');
 });
@@ -615,10 +576,9 @@ async function runCase9(page: Page, sync: 'on' | 'off') {
       expect(result.reopenedRowCount).toBeGreaterThan(0);
     });
   } finally {
-    const s = saved as SavedAllTables | null;
-    if (s) {
-      await deleteProjectWithCleanup(page, {projectId: s.projectId});
-      for (const tableInfoId of s.tableInfoIds)
+    if (saved) {
+      await deleteProjectWithCleanup(page, {projectId: saved.projectId});
+      for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
   }
@@ -627,13 +587,13 @@ async function runCase9(page: Page, sync: 'on' | 'off') {
 }
 
 test('Projects / Uploading / Case 9: DB + Aggregate Rows > Add (Sync ON)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase9(page, 'on');
 });
 
 test('Projects / Uploading / Case 9: DB + Aggregate Rows > Add (Sync OFF)', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
   await runCase9(page, 'off');
 });

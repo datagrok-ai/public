@@ -186,8 +186,10 @@ Yes, we adhere to secure development and industry best practices across infrastr
   (OAuth, SSO, Active Directory), and role-based access control.  
   [Learn more](../../deploy/GCP/deploy-gcp-gke-terraform.md) | [Authentication & authorization](../../develop/how-to/apps/build-an-app.md#authentication) | [Role-based access](../../compute/compute.md#privileges-and-visibility)
 
-* Quality assurance – automated check for vulnerabilities (Snyk, Grype) and
-  multi-layered testing including unit, integration, UI, and performance tests.  
+* Quality assurance – automated vulnerability scanning (Google Cloud Artifact Analysis
+  for images, CodeQL and Grype for code, published openly as
+  [VEX](https://data.datagrok.ai/vex/index.html)) and multi-layered testing including
+  unit, integration, UI, and performance tests.  
   [Learn more](../../develop/qa/quality-assurance.md#continuous-integration-and-deployment-system) | [Testing](../../develop/qa/quality-assurance.md#automated-testing)
 
 * Secure development lifecycle – CI/CD pipelines enforce automated build, test,
@@ -208,13 +210,9 @@ providers such as LDAP, SSO, and OAuth.
 
 Yes. Data is accessible only to users with appropriate permissions, supporting cross-project access and differentiation between internal and external (CRO) users. See [User permissions](../solutions/teams/it/security.md#user-permissions) and [Authorization](../../govern/access-control/access-control.md#authorization).
 
-##### <b>Q: Who has access to Bitbucket, and what are the authentication requirements?</b>
+##### <b>Q: Does Datagrok support multi-factor authentication (MFA)?</b>
 
-Only datagrok core developers have access. MFA is being enabled to strengthen authentication. Bitbucket also provides built-in security scanning features.  
-
-##### <b>Q: How is MFA enforced for GitHub accounts?</b>
-
-GitHub requires all code contributors to enable two-factor authentication (2FA) as of March 2023. Developers comply by using device-tied passcodes.  
+Yes. MFA is supported and enforced at the identity-provider layer — in the managed SaaS platform via Datagrok's managed Keycloak, and in customer-hosted deployments via the customer's own identity provider (OpenID Connect/SAML). In customer-hosted deployments, MFA enforcement is configured by the customer.
 
 #### Data privacy & usage 
 
@@ -254,11 +252,14 @@ Yes, all client-server communications use [HTTPS](https://en.wikipedia.org/wiki/
 
 ##### <b>Q: How do you manage vulnerabilities in the application and cloud infrastructure?</b>
 
-We monitor CISA alerts and run daily [Snyk](https://snyk.io/) scans on container
-builds. Vulnerabilities are triaged, remediated via infrastructure-as-code
-pipelines, and verified through CI/CD testing. Customers are notified and
-supported in version upgrades as needed. Learn more about
-[Infrastructure](../../develop/under-the-hood/infrastructure.md)
+We monitor CISA alerts and scan every shipped container image for known CVEs with
+[Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview),
+weekly and at build time. Results are published openly as
+[VEX](https://data.datagrok.ai/vex/index.html). Vulnerabilities are triaged, remediated via
+infrastructure-as-code pipelines, and verified through CI/CD testing. Customers are notified
+and supported in version upgrades as needed. See
+[vulnerability remediation](../solutions/teams/it/security.md#vulnerability-remediation)
+and [Infrastructure](../../develop/under-the-hood/infrastructure.md)
 
 ##### <b>Q: How are OS and server patching handled?</b>
 

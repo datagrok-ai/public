@@ -1,5 +1,19 @@
 # Proteomics changelog
 
+## 1.2.0
+
+- **Shared enrichment charts now survive reopen** — a published/shared analysis's enrichment
+  dot and bar charts no longer lose their value column (the "Column negLog10FDR does not
+  exist" error) when the project is reopened, and the Up/Down term tables no longer leak
+  into the project as extra tables. The charts are now self-contained on the enrichment
+  frame and split by direction via a per-viewer filter.
+- **Volcano opens automatically on Candidates import** — importing a Spectronaut Candidates
+  file now lands you on the volcano immediately, matching the Report → Differential
+  Expression path (Candidates arrive with the result already computed, so the pipeline's DE
+  step is skipped).
+- **Personas & capabilities documentation** — a reference describing what the proteomics
+  analyst vs. the biology scientist can do and how that boundary is enforced.
+
 ## 0.2.0
 
 - **Organism-aware subcellular-location coloring** — the volcano's "color by subcellular

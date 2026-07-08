@@ -1,5 +1,21 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-table-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — Table (stored TableInfo / dataframe)
+
+Verifies the Share dialog and the Advanced editor permissions matrix for a saved table:
+opening the Sharing pane from the Context Panel, sharing at "View and use", and
+confirming that a recipient with that grant can open the table and load its data — but
+cannot delete or re-share it — until the owner revokes access.
 
 ## Setup
 
@@ -8,7 +24,7 @@
 - `Custom group` — a dedicated group containing the recipient, for the group-sharing block
 - **Entity under test** — a **stored TableInfo owned by the owner** (e.g. a `demog` table saved as a dashboard)
 
-> **Why manual-only:** Blocks D, E, and F require two independent browser sessions (owner + non-admin recipient). The atlas `manual_only[]` entry for `sharing.entity-types.table` confirms this constraint — two-actor authentication cannot be reduced to deterministic single-session UI automation.
+> **Why manual-only:** Blocks D, E, and F require two independent browser sessions (owner + non-admin recipient) — two-actor authentication cannot be reduced to deterministic single-session UI automation.
 >
 > **Entity-specific notes:** TableInfo has no shareable dependencies, so Block B shows **no** cascade notice. The Advanced editor (Block C) includes a `ReadData` entity-specific column in addition to the common View/Edit/Delete/Share columns.
 

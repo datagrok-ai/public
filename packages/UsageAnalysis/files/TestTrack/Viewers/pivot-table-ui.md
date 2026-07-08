@@ -1,7 +1,5 @@
 # Pivot table — manual checklist
 
-Ручной чеклист. Не входит в автоматизацию PW.
-
 All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog
@@ -11,8 +9,8 @@ All scenarios should start with the following sequence of events:
 
 ## Drag and drop columns
 
-1. Drag the SITE column header from the main grid onto the Group by area of the pivot viewer
-2. Verify SITE is added as a Group by tag
+1. Drag the RACE column header from the main grid onto the Group by area of the pivot viewer
+2. Verify RACE is added as a Group by tag
 3. Drag the SEX column header from the main grid onto the Pivot area
 4. Verify SEX is added as a pivot tag
 5. Drag the HEIGHT column header from the main grid onto the Aggregate area

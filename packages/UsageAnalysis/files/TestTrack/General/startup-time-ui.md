@@ -15,9 +15,11 @@ manual_only_reason: |
   dedicated startup-time metric, not the functional regression suite.
 ---
 
-### Platform startup time
+# Platform startup time
 
-#### Verify that the platform starts within an acceptable time frame (2–4 seconds).
+Verifies that the platform starts and becomes ready for user interaction
+within an acceptable time frame (2-4 seconds) after a fresh, cold-cache
+launch.
 
 - Close all running platform instances. 
 - Start the platform from a fresh launch (cleared cache, new browser tab).

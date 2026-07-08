@@ -1,9 +1,5 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.use-custom-color-coding
-  - legend.item.color-picker
-  - legend.allow-item-coloring
 target_layer: playwright
 coverage_type: edge
 priority: p0
@@ -21,6 +17,10 @@ related_bugs:
   - github-3132
   - GROK-17278
 ---
+
+# Legend — color consistency across viewers
+
+Verifies that customizing colors for a categorical column — whether done through the grid's color coding or by picking a color directly on a viewer's legend — stays in sync everywhere that column is used for legend coloring, and that the customization survives layout and project reloads.
 
 ## Setup
 
@@ -61,15 +61,12 @@ related_bugs:
 
 ## Notes
 
-- Specialty: 6-viewer color propagation; grid as single source of truth for legend coloring. Scatter plot deliberately omitted (covered by `scatterplot.md` Section 5).
-- Delegates standard legend UI flows (visibility / position / save-dialog widgets) to `visibility-and-positioning.md`.
-- `pyramid_layer: integration` per chain Rule 4 — multi-viewer co-existence verifying bidirectional sync grid↔viewers↔legend.
-- `priority: p0` — golden-path color sync. The "single source of truth" invariant is foundational; if it breaks, every per-viewer color customization workflow degrades.
-- Three related bugs:
-  - GROK-17438 (legend disappears after color change on shared-legend viewers) — strong cross-cutting match.
-  - github-3132 (sequential color changes reset previous) — directly tested by Scenario 2 (one color change is the positive case; bug-focused spec covers sequential).
-  - GROK-17278 (linechart colors not saved to layout/project) — Scenarios 3 and 4 verify the positive baseline.
-- Helpers: `loginToDatagrok`, `softStep`, `specTestOptions`, `stepErrors` from `spec-login`. No new helpers proposed.
+- Covers six viewers (Histogram, Line chart, Bar chart, Pie chart, Trellis plot, Box plot) that all share one legend-color source of truth: the column's color coding. Scatter plot is deliberately omitted here — it's covered by `scatterplot.md` (Scenario 5).
+- Standard legend UI flows (visibility, position, save-dialog behavior) are covered once in `visibility-and-positioning.md` and not repeated here.
+- Related bugs:
+  - GROK-17438 — legend disappearing after a color change on viewers that share a legend.
+  - github-3132 — sequential color changes resetting the previous one (Scenario 2 covers the single-change positive case).
+  - GROK-17278 — Line chart colors not saved to layout/project (Scenarios 3 and 4 verify the positive baseline).
 
 ---
 {

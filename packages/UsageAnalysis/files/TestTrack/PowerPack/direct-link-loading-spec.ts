@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [powerpack.dashboards, powerpack.lifecycle.init, powerpack.welcome.view]
---- */
 import {test, expect, BrowserContext, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors, baseUrl} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';

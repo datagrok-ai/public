@@ -1,22 +1,27 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.io.fasta-handler
-  - bio.io.save-as-fasta
-  - bio.detector
-  - bio.rendering
-  - bio.rendering.fasta
-  - bio.api.get-seq-helper
-  - bio.lifecycle.init
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [import_fasta_file, export_as_fasta]
 produced_from: atlas-driven
 related_bugs:
   - GROK-18616
 source_text_fixes: []
 candidate_helpers: []
 unresolved_ambiguities: []
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Scenario 2's synthetic File-drop (drag-and-drop FASTA entry path) does
+      not reliably dispatch the file handler in the apitest harness; the spec
+      falls back to the `Bio:importFasta` atlas-equivalent call, which runs
+      the same `FastaFileHandler.importFasta` code path (atlas
+      bio.cp.fasta-import-via-multiple-entry-paths). The multiple-entry-path
+      invariant is preserved; the literal drag-and-drop DOM event is not
+      asserted.
+    verdict_status: SCOPE_REDUCTION
 realized_as:
   - bio-lifecycle-fasta-file-spec.ts
 gate_verdicts:
@@ -48,41 +53,33 @@ gate_verdicts:
         failure_keys: []
 ---
 
-# Bio — `fasta_file` source-class lifecycle
+# Bio — FASTA files: import via multiple paths, export, save & reopen
 
-Proactive lifecycle scenario for the `fasta_file` source class
-per `scenario-chains/bio.yaml#proactive_lifecycle_specs[3]`.
-Walks a FASTA file through every non-agnostic
-`dep_lifecycle_op` declared in atlas
-`dep_lifecycle_ops[].affected_source_classes` that touches the
-shape: drop / open the file via multiple entry paths → the
-FASTA handler converts to Macromolecule column → detector
-classifies synchronously → export As FASTA round trip → save a
-project that includes the imported table → reopen and verify
-the FASTA-imported shape survives the round trip.
+Walks a FASTA file through its full lifecycle: opening it via
+multiple entry paths (programmatic load, drag-and-drop, and —
+optionally — the Files browser), converting it to a Macromolecule
+column with automatic detection, exporting it back to FASTA and
+re-importing it (round trip), and saving/reopening a project that
+contains it.
 
-`external_deps: [FileShare]` per chain `proactive_lifecycle_specs[3]`
-— the lifecycle reads/writes under `System:AppData/Bio/samples`
-and a temp path for the export. `env_requirements: ["FileShare
-connection with per-user permissions"]`.
+This guards against GROK-18616, where opening a FASTA file through
+some entry paths left the Macromolecule detector out of sync, so
+downstream dialogs (like Sequence Space) saw an empty column list.
+Unlike `bio-lifecycle-macromolecule-column.md` (which exercises a
+single import path), this scenario explicitly opens the same file
+through multiple different paths and checks that detection stays
+consistent across all of them.
 
-Mitigates `GROK-18616` (entry-path-class detection-sync gap) by
-exercising the multiple-entry-path lifecycle shape from atlas
-critical_path `bio.cp.fasta-import-via-multiple-entry-paths`.
-Distinct from `bio-lifecycle-macromolecule-column.md` (which
-covers a single import path inside its Scenario 2 round trip)
-in that this scenario explicitly exercises **multiple** entry
-paths within the same run, asserting detector-sync invariants
-hold across all of them.
+Requires a FileShare connection with permission to read/write under
+`System:AppData/Bio/samples`.
 
 ## Setup
 
 - Authenticate to Datagrok as the test user (Playwright session)
   with read/write access to `System:AppData/Bio/samples` and a
   temp directory for exports.
-- Source FASTA file: any of `human_genes.fasta` (per atlas
-  `source_classes[fasta_file].examples[0]`, the
-  `GROK-18474`-tagged sample). If absent, fall back to any
+- Source FASTA file: any of `human_genes.fasta` (the
+  GROK-18474-tagged sample). If absent, fall back to any
   `*.fasta` file under `System:AppData/Bio/samples`.
 - Export target path:
   `System:AppData/UsageAnalysis/temp/lifecycle-fasta-${Date.now()}.fasta`.
@@ -90,7 +87,7 @@ hold across all of them.
   `bio-lifecycle-fasta-file-${Date.now()}`.
 - Service-surface dependency:
   `await grok.functions.call('Bio:getSeqHelper')` is used in
-  Steps 1 and 2 (atlas `bio.api.get-seq-helper`).
+  Steps 1 and 2.
 - Cleanup: Step 5 deletes the exported file, the saved project,
   and closes any docked viewers.
 
@@ -99,44 +96,37 @@ hold across all of them.
 ### Scenario 1: Programmatic load entry path
 
 Steps:
-1. Trigger `Bio:initBio` if not yet initialized (atlas
-   `bio.lifecycle.init`). Verify `getSeqHelper()` returns the
-   `ISeqHelper` singleton (atlas `bio.api.get-seq-helper`).
+1. Trigger `Bio:initBio` if not yet initialized. Verify
+   `getSeqHelper()` returns the `ISeqHelper` singleton.
 2. Load the FASTA file programmatically:
    `await grok.data.loadTable('System:AppData/Bio/samples/<file>.fasta')`.
-   The Bio FASTA file handler (atlas `bio.io.fasta-handler`)
-   ingests the file; the detector (atlas `bio.detector`) runs
-   synchronously on the resulting Macromolecule column.
+   The Bio FASTA file handler ingests the file; the detector
+   runs synchronously on the resulting Macromolecule column.
 3. Verify detection outcome on the imported table:
    - `column.semType === 'Macromolecule'`.
    - `column.getTag('units') === 'fasta'`.
-   - The FASTA cell renderer (atlas `bio.rendering.fasta`)
-     paints sequence cells (no `[object Object]` fallback).
+   - The FASTA cell renderer paints sequence cells (no
+     `[object Object]` fallback).
 
 Expected:
 - Programmatic load path triggers detector synchronously
-  (entry-path-detector-sync invariant per atlas
-  `bio.x.entry-path-detector-sync`, GROK-18616).
+  (entry-path-detector-sync invariant, GROK-18616).
 - Renderer dispatches based on the units tag immediately.
 
 ### Scenario 2: Drag-and-drop entry path
 
 Steps:
 1. Use Playwright's file-drop affordance to drop the same
-   FASTA file onto the Datagrok window. The
-   FASTA handler ingests via the drop path (atlas
-   `bio.io.fasta-handler`, interaction
-   `"drop .fasta file onto Datagrok"`).
+   FASTA file onto the Datagrok window. The FASTA handler
+   ingests via the drop path.
 2. Verify the detector classifies the Macromolecule column
    synchronously (same units / semType / renderer assertions
    as Scenario 1).
 3. (Operator note) The Files-browser double-click entry path
-   (a third option per atlas
-   `bio.cp.fasta-import-via-multiple-entry-paths`) is
-   addressable via Playwright clicking the file row in the
-   Browse panel; included here as an optional verification
-   when the Browse | Files surface is reachable from the test
-   harness.
+   (a third option) is addressable via Playwright clicking the
+   file row in the Browse panel; included here as an optional
+   verification when the Browse | Files surface is reachable
+   from the test harness.
 
 Expected:
 - Drop entry path triggers the same synchronous detection
@@ -150,30 +140,24 @@ Expected:
 Steps:
 1. With the imported table from Scenario 1 (or 2) active,
    trigger File | Export | As FASTA... or right-click the
-   Macromolecule column header → Save As FASTA... (atlas
-   `bio.io.save-as-fasta`).
-2. Save to the temp export path from Setup. Atlas
-   `dep_lifecycle_ops[export_as_fasta]` covers this code path.
+   Macromolecule column header → Save As FASTA...
+2. Save to the temp export path from Setup.
 3. Re-import the exported file via
    `await grok.data.loadTable('${EXPORT_PATH}')`. The FASTA
-   handler runs again on a file this scenario produced —
-   round-trippable contract per atlas
-   `bio.cp.import-fasta-export-fasta` and
-   `bio.cp.fasta-import-via-multiple-entry-paths`.
+   handler runs again on a file this scenario produced — a
+   round-trippable contract.
 4. Verify the re-imported table:
    - Row count matches the original FASTA's sequence count.
    - First re-imported sequence equals the first original
      sequence (string equality after `getSeqHelper`-aware
      comparison).
-   - Renderer dispatches the FASTA cell renderer (atlas
-     `bio.rendering.fasta`).
+   - Renderer dispatches the FASTA cell renderer.
 
 Expected:
 - The exported FASTA is round-trippable — re-import
   reproduces the original sequences (no monomer-name drift,
   no truncation).
-- atlas `dep_lifecycle_ops[import_fasta_file]` and
-  `[export_as_fasta]` round-trip cleanly.
+- Import and export round-trip cleanly.
 
 ### Scenario 4: Save project with FASTA-imported table
 
@@ -183,8 +167,6 @@ Steps:
    name from Setup; **Data Sync** toggle ON. Cancel the
    auto-share dialog if it appears. Verify
    `grok.dapi.projects.find(<id>)` returns the saved project.
-   Atlas `dep_lifecycle_ops[save_project_with_analysis]`
-   (`affected_source_classes: [all]`).
 2. Close and reopen via
    `grok.dapi.projects.find(<id>)` → `project.open()`. Verify:
    - The Macromolecule column is back with the same
@@ -215,75 +197,20 @@ Expected:
 
 ## Notes
 
-- Origin: chain rev 8
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[3]`
-  (`source_class: fasta_file`, `spec_target:
-  bio-lifecycle-fasta-file-spec.ts`). Lands the
-  intent-layer `.md` realization that
-  `F-PROACTIVE-COVERAGE-01` (SCOPE_REDUCTION, cycle
-  2026-06-01-bio-migrate-01) cited as the gap. `.ts`
-  realization (`spec_target`) is downstream Automator /
-  Phase C, not gated by F.
-- atlas entry derived from
-  `scenario-chains/bio.yaml#proactive_lifecycle_specs[3]`
-  (chain author, cycle 2026-05-30-bio-chain-bootstrap-01).
-- `dep_lifecycle_ops` exercised (per
-  `proactive_lifecycle_specs[3].bundled_ops`):
-  `detect_macromolecule_on_open` (Scenario 1.3, 2.2),
-  `import_fasta_file` (Scenario 1.2, 2.1, 3.3),
-  `export_as_fasta` (Scenario 3.1-3.2),
-  `save_project_with_analysis` (Scenario 4.1).
-- target_layer rationale: `playwright` — the lifecycle spans
-  drag-and-drop UI events, the Files browse path, the
-  File | Export ribbon, and the Save Project dialog.
-  `apitest` covers `saveAsFastaDo` round-trip
-  (`fasta-export-tests.ts`) but cannot exercise the drop /
-  ribbon / Browse-panel entry-path UI that GROK-18616
-  surfaces.
-- Sibling tests considered:
-  - `public/packages/Bio/src/tests/fasta-export-tests.ts`
-    (`saveAsFastaTest1`) covers `saveAsFastaDo` round-trip
-    at the API layer; this scenario adds the UI entry-path
-    + project-persistence layers the apitest does not
-    exercise.
-  - `public/packages/Bio/src/tests/detectors-tests.ts`
-    covers the detector at the unit layer; this scenario
-    adds the multi-entry-path detector-sync lifecycle layer.
-- This scenario covers 7 sub_features
-  (`F-STRUCT-DENSITY-01` floor: 2 — well above;
-  `F-STRUCT-INTERACTION-01` floor: 3 — satisfied per
-  scenario). Scenario cardinality (per `## Scenarios`
-  section): 5 (one cleanup + four substantive lifecycle
-  scenarios) — meets the >= 2 scenarios floor.
-- Manual-only subset: none of the seven covered sub_features
-  appear in atlas `manual_only[]` (verified against atlas
-  rev 3 `manual_only[]` list).
-- `coverage_type: regression` per STEP E heuristic: this is
-  general coverage of the fasta_file lifecycle shape (not a
-  single critical_path golden path → not smoke; not a
-  boundary value → not edge; not stress/latency-sensitive →
-  not perf). Atlas critical_paths
-  `bio.cp.import-fasta-export-fasta` (p1) and
-  `bio.cp.fasta-import-via-multiple-entry-paths` (p1) inform
-  the lifecycle steps; both have priority p1, mapping to
-  `coverage_type: regression`.
-- Deferrals: Files-browser double-click entry path is
-  optional within Scenario 2.3 — the assertion-grade
-  detector-sync verification is on the two deterministic
-  entry paths (drop + programmatic). The Browse-panel
-  entry path is environment-dependent for Playwright
-  driving; gated on the test harness reaching that surface.
-- env_requirements: `FileShare connection with per-user
-  permissions` per chain `proactive_lifecycle_specs[3]`.
-- Related-bug context: `related_bugs: [GROK-18616]` per
-  chain `proactive_lifecycle_specs[3].bugs_reinforcing` —
-  the multi-entry-path lifecycle reinforces the
-  entry-path-class detection-sync gap that GROK-18616
-  surfaces. Mitigated at the lifecycle layer here; the
-  cross-scenario bug-focused spec
-  `bio-grok-18616-spec.ts` (chain
-  `bug_focused_candidates[GROK-18616]`) is the dedicated
-  contract test.
+- Sibling coverage: `fasta-export-tests.ts` covers the FASTA
+  export/round-trip logic at the API layer, and
+  `detectors-tests.ts` covers the detector at the unit layer.
+  This scenario adds the UI entry-path and project-persistence
+  layers those tests don't exercise.
+- Deferrals: exercising the Files-browser double-click entry
+  path (Scenario 2, step 3) is optional — included when
+  reachable from the test harness, but only the drag-and-drop
+  and programmatic-load entry paths are asserted as a hard
+  requirement, since the Browse-panel path is
+  environment-dependent.
+- No separate bug-focused regression spec for GROK-18616 exists yet;
+  this scenario reinforces the same invariant at the lifecycle
+  (multiple-entry-path) layer.
 
 ---
 {

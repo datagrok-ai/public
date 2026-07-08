@@ -45,17 +45,6 @@ export class PackageFunctions {
     tags: ['app'],
   })
   static funcflowApp(@grok.decorators.param({options: {metaUrl: true, optional: true}}) path?: string): DG.ViewBase {
-    const url = new URL(window.location.href);
-    const params = url.searchParams;
-    console.log(params);
-    setTimeout(() => {
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = false;
-      grok.shell.windows.showContextPanel = true;
-      grok.shell.windows.showHelp = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.windows.showToolbox = true;
-    }, 200);
     return new FuncFlowView();
   }
 
@@ -63,14 +52,6 @@ export class PackageFunctions {
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
     file.readAsString().then((json) => view.loadFromJson(json));
-    setTimeout(() => {
-      grok.shell.windows.showToolbox = false;
-      grok.shell.windows.showBrowse = false;
-      grok.shell.windows.showContextPanel = true;
-      grok.shell.windows.showHelp = false;
-      grok.shell.windows.showBrowse = true;
-      grok.shell.windows.showToolbox = true;
-    }, 200);
     return view;
   }
 
@@ -97,7 +78,9 @@ export class PackageFunctions {
     // creation script per table and save each via TableInfo.saveCreationScript.
     const loaded = await Promise.all((tableIds ?? []).map((id) => grok.dapi.tables.find(id)));
     const tableInfos = loaded.filter((t): t is DG.TableInfo => t != null);
-    const view = new FuncFlowView(tableInfos);
+    // No output panel inside the dialog — run results belong to the real
+    // editor view only; it is re-enabled below when promoted via Open In Editor.
+    const view = new FuncFlowView(tableInfos, {outputPanel: false});
     view.name = `Creation Script`;
     // Inside the cramped dialog the overview adds clutter — start it minimized;
     // expand it once the flow is opened in the full editor.
@@ -112,7 +95,9 @@ export class PackageFunctions {
       .add(view.root)
       .addButton('Open In Editor', () => {
         view.setMinimapCollapsed(false);
+        view.enableOutputPanel();
         grok.shell.addView(view);
+        setTimeout(() => view.fitToScreen(), 100);
         d.close();
       });
     if (show)

@@ -1,4 +1,22 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [st-cp-convert-helm-to-oligo-pipeline]
+realized_as:
+  - oligo-nucleotide-grid-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — OligoNucleotide duplex renderer, panels & cell actions
+
+Checks the OligoNucleotide duplex column that SequenceTranslator builds from a
+HELM sense/antisense pair: the two-row duplex cell renderer, the
+Oligo-Nucleotide and Oligo Structures context-pane panels, the right-click
+cell actions (Edit HELM, Copy as HELM, Copy as Image, full-screen view), and
+the Bio | PolyTool menu (Convert, Enumerate HELM, Combine Sequences) used to
+build and manipulate these columns.
 
 ## Setup
 
@@ -75,7 +93,7 @@
    * Expected result: a full-screen canvas duplex view opens showing the duplex at
      large scale. No console errors.
 2. Close the full-screen view (use the dialog's close affordance — title-bar X or
-   Cancel button; the exact affordance is unresolved, see unresolved_ambiguities).
+   Cancel button; the exact affordance is unresolved).
    * Expected result: focus returns to the table; the cell value is unchanged.
 
 ### Block G — Bio | PolyTool top menu

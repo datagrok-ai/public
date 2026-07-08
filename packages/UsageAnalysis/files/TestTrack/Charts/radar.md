@@ -1,13 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.radar
-  - charts.radar.show-current-row
-  - charts.radar.color-column
-  - charts.radar.color-palette
-  - charts.echart-base.table
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel]
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-viewer-radar
@@ -27,26 +23,17 @@ related_bugs:
 # Radar viewer (Charts package)
 
 Smoke scenario for the Charts package Radar viewer. Verifies the
-"Add Viewer → Radar" entry point on two distinct datasets and the
-property panel surface (Gear icon → Context Panel) for the four
-representative properties the manual scenario calls out: switching
-the bound table, selection check-boxes, the chosen Values count, and
-style/color changes.
+"Add Viewer → Radar" entry point on two distinct datasets, and the
+property panel (Gear icon → Context Panel) for four representative
+properties: switching the bound table, selection check-boxes, the
+chosen Values count, and style/color changes. This is the primary
+Add-Viewer + property-panel smoke test for the Charts section;
+sibling scenarios `sunburst.md` and `tree.md` cover their own
+specialty UI surfaces.
 
-`pyramid_layer: ui-smoke` per `scenario-chains/charts.yaml` rev 1
-(Rule 1 — single viewer create + configure smoke; shortest qualifying
-scenario by step count). This scenario owns the canonical
-Add-Viewer + Property-Panel-Gear smoke surface for the Charts
-section; sister scenarios `sunburst.md` and `tree.md` own their
-specialty UI surfaces directly.
-
-`related_bugs: [GROK-18085]` — Radar table-rebind on project
-save/reopen. The original scenario does NOT exercise project
-save/reopen, so the cross-cutting bug invariant is NOT verified by
-this scenario; the citation surfaces awareness only. Coverage gap
-flagged in chain rev 1 `bug_match_attempts_skipped` (skip_category:
-reproduction_unparseable) and surfaced again in this migration's
-report for Critic F downstream review.
+Note: GROK-18085 (Radar table-rebind breaking on project save/reopen)
+is related to this viewer but is not exercised by this scenario — see
+`radar-save-reopen-bug.md` for that reproduction.
 
 ## Setup
 
@@ -77,8 +64,7 @@ chain rev 1).
     bound table (Ctrl+Click in the grid, or
     `df.selection.set(...)` equivalent UI gesture).
     **Verify:** the selected-row lines are reflected on the Radar
-    viewer (per `charts.radar.show-current-row` family — current /
-    mouseover row lines).
+    viewer (current / mouseover row lines).
 11. **Increasing and decreasing the amount of chosen Values:** in
     the Context Panel, change the columns chosen as Values (the
     color column / values bag).
@@ -100,62 +86,13 @@ chain rev 1).
 
 ## Notes
 
-- **target_layer: playwright** — chosen because a sibling
-  `radar-spec.ts` already exists at the playwright layer (per
-  `existing-test-index.yaml` line 32099). Chain rev 1 deferred this
-  decision to Step 2; selecting `playwright` aligns with the
-  established sibling spec (rather than the chain's tentative
-  `uitests-package` reading).
-- **Remediation cycle scope decisions (charts-remediate-2026-05-09):**
-  Critic E canonical subagent surfaced 4 uncovered scenario steps in
-  the predecessor cycle (charts-automator-only-2026-05-08, FAIL with
-  E-TRACE-02 + E-TRACE-03). Migrator decisions for steps 9/10/11/13:
-  - **Step 9 (table switch):** KEEP — primary verification of
-    table-rebind, distinct from radar-save-reopen-bug (which tests
-    save/reopen, not in-session rebind). Automator implements via
-    `radar.setOptions({tableName: 'demog'})` round-trip + assert
-    `radar.dataFrame.name` rebinds.
-  - **Step 10 (selected-row lines):** KEEP — exercises
-    `charts.radar.show-current-row` sub_feature already in
-    `sub_features_covered`. Automator implements via
-    `df.selection.set` + `dispatchSelected` + assert
-    `radar.props.get('showCurrentRow') === true` + visual stability.
-  - **Step 11 (Values columns count):** KEEP — exercises radar
-    property surface (charts.radar.color-column /
-    `radar.props.get('valuesColumnNames')`). Automator implements
-    via setOptions + read-back.
-  - **Step 13 (broad sweep): SCOPE_REDUCE per A-MERIT-02 (Lattice
-    Rule 13)** — relax to "categories enumeration sweep (already
-    asserted in Step 3 categories check) is the broad-sweep
-    representative; specific per-property toggles deferred to
-    property-grid widget specs". Cite A1 boundary: property-grid
-    mechanics are not Charts atlas surface.
-- **"Check all properties" (Step 13)** preserves the original
-  scenario's broad instruction. The 9 atlas-listed `charts.radar.*`
-  properties (title, min/max percentile, show-current-row,
-  show-tooltip, color-column, color-palette, show-min-max,
-  legend-visibility) are not enumerated as separate steps —
-  representative coverage via Step 3 categories check + steps 9-12
-  specific verifications satisfies the broad-sweep intent per
-  A-MERIT-02 lattice rule.
-- **GROK-18085 (related_bug, not exercised here):** the bug
-  reproduction requires "save the project, then reopen it" with a
-  Radar viewer's bound table changed mid-session. The original
-  radar.md has no project save / reopen step (3 numbered steps
-  cover Add Viewer × 2 + property panel only). This scenario
-  surfaces the cross-cutting bug citation but does NOT verify the
-  invariant; chain rev 1 records this as a coverage gap
-  (bug_match_attempts_skipped: reproduction_unparseable) for
-  Critic F surfacing.
-- **Helpers (existing in registry, available for downstream
-  Automator):** `softStep`, `loginToDatagrok`,
-  `specTestOptions` from
-  `public/packages/UsageAnalysis/files/TestTrack/spec-login.ts` —
-  used by sibling `radar-spec.ts`.
-- **Dataset metadata** (carried over from the original .md trailing
-  block): order 28; primary dataset `System:DemoFiles/demog.csv`.
-  Step 1 also uses `System:DemoFiles/geo/earthquakes.csv` (declared
-  in original Step 1 body but not in the dataset metadata).
+- Step 13 ("check all properties") is a representative sweep, not an
+  exhaustive one — it doesn't enumerate every `radar.*` property
+  (title, min/max percentile, show-current-row, show-tooltip,
+  color-column, color-palette, show-min-max, legend-visibility)
+  individually. Steps 3 and 9-12 already verify the specific
+  properties the manual scenario calls out; the sweep covers the
+  rest at a shallower level.
 
 ---
 {

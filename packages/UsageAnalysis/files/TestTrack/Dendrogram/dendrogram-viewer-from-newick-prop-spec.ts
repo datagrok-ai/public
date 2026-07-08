@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [dendrogram.lifecycle.on-property-changed, dendrogram.lifecycle.on-table-attached, dendrogram.prop.color-aggr-type, dendrogram.prop.color-column-name, dendrogram.prop.current-color, dendrogram.prop.font, dendrogram.prop.light-color, dendrogram.prop.line-width, dendrogram.prop.main-color, dendrogram.prop.mouse-over-color, dendrogram.prop.newick, dendrogram.prop.newick-tag, dendrogram.prop.node-column-name, dendrogram.prop.node-size, dendrogram.prop.selections-color, dendrogram.prop.show-grid, dendrogram.prop.show-labels, dendrogram.prop.show-tooltip, dendrogram.prop.step, dendrogram.prop.step-zoom, dendrogram.viewer]
---- */
 // Newick resolution priority: literal `newick` prop > newickTag > .newick tag > empty.
 // Property-panel row selectors are name-mangled (e.g. nodeColumnName -> [name="prop-node"]).
 import {test, expect, Page} from '@playwright/test';

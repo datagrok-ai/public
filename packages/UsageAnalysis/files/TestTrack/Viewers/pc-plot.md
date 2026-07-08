@@ -1,3 +1,14 @@
+---
+feature: pcplot
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - pc-plot-spec.ts
+related_bugs: []
+---
+
 # PC plot tests (Playwright)
 
 All scenarios should start with the following sequence of events:
@@ -151,8 +162,8 @@ Precondition: range sliders on two axes are narrowed (from scenario 4 flow).
 2. Add a PC plot
 3. Go to Context Panel > Data and set **Table** to spgi-100
 4. In the Data section click the Transformation input field and enter [{"#type":"GroupAggregation","aggType":"key","colName":"Chemist 521"},{"#type":"GroupAggregation","aggType":"pivot","colName":"Series"},{"#type":"GroupAggregation","aggType":"count","colName":"Id"}]
-6. Verify the PC plot updates to show the pivoted aggregated data
-7. Close All
+5. Verify the PC plot updates to show the pivoted aggregated data
+6. Close All
 
 ---
 {

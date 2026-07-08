@@ -1,3 +1,14 @@
+---
+feature: filters
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes: []
+realized_as:
+  - collaborative-filtering-for-linked-tables-spec.ts
+related_bugs: []
+---
+
 1. Run the JS script
 ```JS
 //name: Link Test

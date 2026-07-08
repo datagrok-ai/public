@@ -1,9 +1,5 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.sunburst.on-click
-  - charts.sunburst.include-nulls
-  - charts.tree.on-click
 target_layer: manual
 coverage_type: manual
 pyramid_layer: ui-only
@@ -24,22 +20,17 @@ related_bugs: []
 
 # Charts — UI-only manual scenarios (canvas-gesture)
 
-Manual-only scenarios for ECharts canvas-rendered gestures that have NO
-automatable equivalent that exercises the same UI invariant. The
-JS-API fallbacks (`df.selection.set`, `df.filter.set`) drive the
-underlying bitsets but do NOT replicate the actual canvas-click
-semantics (segment hit-testing, drill-down state, multi-select
-modifier-key handling, etc).
+Manual-only scenarios for ECharts canvas-rendered gestures that have no
+automatable equivalent exercising the same UI invariant. The JS-API
+fallbacks (`df.selection.set`, `df.filter.set`) drive the underlying
+bitsets but do not replicate the actual canvas-click semantics (segment
+hit-testing, drill-down state, multi-select modifier-key handling, etc).
 
-`pyramid_layer: ui-only` — these scenarios require a human operator
-to drive the actual canvas click events. Documented here as
-authoritative manual test catalog; companion playwright specs
-(`sunburst-spec.ts`, `tree-spec.ts`) cover other Sunburst/Tree
-flows but explicitly DO NOT cover the canvas gestures listed below.
-
-`target_layer: manual` per orchestrator Edit X1 layer taxonomy —
-`.md` file with no paired `-spec.ts` companion. scan-coverage.js
-classifies as `layer: manual`.
+These scenarios require a human operator to drive the actual canvas
+click events, and are documented here as the authoritative manual test
+catalog. The companion playwright specs (`sunburst-spec.ts`,
+`tree-spec.ts`) cover other Sunburst/Tree flows but explicitly do not
+cover the canvas gestures listed below.
 
 ## Setup
 
@@ -159,8 +150,8 @@ exercise the actual canvas + Filter Panel UI coordination chain.
 ## Notes
 
 - **Why ui-only?** Canvas-rendered ECharts viewers (Sunburst, Tree,
-  Timelines) use a single `<canvas>` element inside the `_echarts_
-  instance_` container. There are no per-segment / per-branch DOM
+  Timelines) use a single `<canvas>` element inside the ECharts
+  instance container. There are no per-segment / per-branch DOM
   elements to query, hover, or click. Any "click" needs canvas
   pixel coordinates, which depend on viewport size, ECharts layout
   algorithm, and theme — making programmatic synthesis brittle and
@@ -170,16 +161,11 @@ exercise the actual canvas + Filter Panel UI coordination chain.
   cardinalities, `setOptions`/`props.get` round-trips), but the UI-
   gesture invariant itself is documented here for manual
   verification.
-- **Ambiguous-canonical-by-design class** per `references/viewers/charts.md`
-  authority: `sunburst-multi-selection`, `tree-shift-click-multi-
-  select`, `Select-Columns inner per-column toggle` are explicitly
-  canonical-by-design AMBIGUOUS — not a deferral, not a coverage
-  gap. This file documents the manual-only catalog for human QA.
-- **Authority + scope:** extracted from `sunburst.md` and `tree.md`
-  scenarios in cycle `charts-remediate-2026-05-09` per user
-  directive. Closes the playwright-spec ambiguity by routing the
-  canvas-gesture concerns to a dedicated manual scenario file
-  rather than fake-passing them via JS-API bitset proxies.
+- **Canonical manual-only, by design.** `sunburst-multi-selection`,
+  `tree-shift-click-multi-select`, and the Select Columns
+  per-column toggle are deliberately manual-only tests — not a
+  deferral and not a coverage gap. There is no plan to automate
+  them; this file is the authoritative catalog for human QA.
 
 ## Dataset metadata
 

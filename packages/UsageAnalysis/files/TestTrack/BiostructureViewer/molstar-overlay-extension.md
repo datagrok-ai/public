@@ -1,12 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.overlay.screenshot
-  - biostructure.overlay.toggle-controls
-  - biostructure.overlay.selection-mode
-  - biostructure.overlay.settings-info
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -73,40 +70,24 @@ realized_as:
 
 # BiostructureViewer — Mol* viewport overlay buttons extension (Screenshot / Toggle Controls / Selection Mode / Settings)
 
-Coverage-extension scenario authored under cycle
-`2026-06-04-biostructureviewer-migrate-01` Gate F SR routing. Extends the
-section beyond the Mol*-centric smoke, the five bug-focused regression guards,
-the NGL-viewer breadth extension, the Property-surface + edge extension, and
-the Context-panel widgets extension to the **Mol* viewport overlay button
-family** that floats over the 3D viewport at the bottom right of every
-Biostructure viewer instance. The overlay button row carries five buttons
-addressed by their `title` attribute (per the universal-refdoc table at
-`.claude/skills/grok-browser/references/viewers/biostructureviewer.md#L75-L82`):
+Covers the Mol\* viewport overlay button row that floats over the 3D
+viewport at the bottom right of every Biostructure viewer instance. The
+row carries five buttons:
 
-- `Reset Camera` — restores default camera orientation/zoom (ALREADY COVERED
-  by the smoke scenario via `biostructure.overlay.reset-camera`; not part of
-  this extension's scope)
-- `Screenshot / State Snapshot` — opens the screenshot / state-snapshot panel
-  for image export and state persistence
-- `Toggle Controls Panel` — shows/hides the Mol* left controls panel
-  (structure tree, etc.); mirrors the `layoutShowControls` Datagrok property
-- `Settings / Controls Info` — opens the Mol* settings / controls info panel
+- `Reset Camera` — restores default camera orientation/zoom (already
+  covered by the main smoke test; not part of this scenario).
+- `Screenshot / State Snapshot` — opens the screenshot / state-snapshot
+  panel for image export and state persistence.
+- `Toggle Controls Panel` — shows/hides the Mol\* left controls panel
+  (structure tree, etc.); mirrors the `layoutShowControls` Datagrok
+  property.
+- `Settings / Controls Info` — opens the Mol\* settings / controls info
+  panel.
 - `Toggle Selection Mode` — enters/exits atom/residue selection mode for
-  in-viewport picking
+  in-viewport picking.
 
-The four overlay buttons exercised here all share the Mol* DOM idiom
-(`.msp-viewport-controls-buttons button[title='<NAME>']`, classes
-`msp-btn msp-btn-icon msp-btn-link-toggle-on|off`) but each opens a
-distinct overlay panel / mode that no prior scenario asserts.
-
-All 4 sub_features below are net-new to the live covered-union of 45 (none
-of `overlay.screenshot`, `overlay.toggle-controls`, `overlay.selection-mode`,
-`overlay.settings-info` appears in any of the section's nine prior
-scenarios' `sub_features_covered:` lists; the only `overlay.*` id already
-covered is `overlay.reset-camera`, which lives in the smoke and is
-intentionally excluded from this scenario's list). `round_net_new = +4`;
-the section's projected covered-union climbs from 45 → 49 after this
-scenario lands.
+This scenario covers the four buttons not already exercised by the smoke
+test; each opens a distinct overlay panel or mode.
 
 ## Setup
 
@@ -128,8 +109,7 @@ scenario lands.
 5. Wait for the structure to render before exercising overlay buttons —
    await `viewer.awaitRendered(timeoutMs)` (or poll for `.msp-viewport
    canvas` plus a settle delay). A blank dark viewport with only the
-   axis gizmo means "not rendered yet" or "parse failed" per the
-   documented common pitfall (see atlas `edge_cases[6]`); the overlay
+   axis gizmo means "not rendered yet" or "parse failed"; the overlay
    buttons themselves render before the structure, so they ARE clickable
    when blank — but Screenshot would capture an empty canvas, which is
    not the intended assertion.
@@ -142,8 +122,6 @@ any toggled mode (this keeps assertions independent).
 ## Scenarios
 
 ### Scenario 1: `Screenshot / State Snapshot` overlay button — opens the screenshot panel
-
-Exercises `biostructure.overlay.screenshot`.
 
 Steps:
 1. With the Biostructure viewer rendered (Setup 1–5), locate the Mol*
@@ -181,8 +159,6 @@ Expected:
 
 ### Scenario 2: `Toggle Controls Panel` overlay button — toggles the Mol* left controls panel
 
-Exercises `biostructure.overlay.toggle-controls`.
-
 Steps:
 1. With the Biostructure viewer rendered (Setup 1–5), and the Mol* left
    controls panel in its default state (collapsed by default for new
@@ -214,14 +190,10 @@ Expected:
 - Clicking the button again collapses the panel back to the default
   3D-viewport-only layout.
 - The Datagrok `Layout` category property `layoutShowControls` mirrors the
-  overlay button state (atlas declares this mirroring under
-  `biostructure.prop.layout`'s interactions: "click Mol* overlay 'Toggle
-  Controls Panel' to flip layoutShowControls").
+  overlay button state.
 - No JS console errors during open / close.
 
 ### Scenario 3: `Toggle Selection Mode` overlay button — enters/exits atom/residue selection mode
-
-Exercises `biostructure.overlay.selection-mode`.
 
 Steps:
 1. With the Biostructure viewer rendered (Setup 1–5), and no Mol* mode
@@ -260,8 +232,6 @@ Expected:
 
 ### Scenario 4: `Settings / Controls Info` overlay button — opens the Mol* settings panel
 
-Exercises `biostructure.overlay.settings-info`.
-
 Steps:
 1. With the Biostructure viewer rendered (Setup 1–5), locate the overlay
    button with `title="Settings / Controls Info"`.
@@ -295,79 +265,13 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale**: All four scenarios are UI-driven — they
-  click overlay DOM buttons inside `.msp-viewport-controls-buttons`,
-  assert overlay panel mounts (Mol*-native DOM-attached widgets),
-  assert WebGL canvas content (camera vs selection mode), and
-  cross-check Datagrok property mirroring (Scenario 2's `layoutShowControls`
-  cross-check). None of these surfaces is reachable from `apitest`-only
-  JS-API calls: the overlay buttons are not exposed as a Datagrok
-  function, and the picking / mode toggle behaviours live entirely in
-  the Mol* engine's DOM-and-WebGL surface. Hence `target_layer: playwright`.
-- **coverage_type rationale**: `regression`. The four scenarios are
-  general coverage of the Mol* viewport overlay button family; they do
-  not map onto any of the atlas's 7 `edge_cases[]` entries (which are
-  bug-anchored to file-handler / project-persistence / multi-ligand /
-  whitespace-right-click / view-removal surfaces, or to the two
-  documentation pitfalls). They are not a critical_path / golden path
-  (no `priority: p0`/`p1` mapping in atlas `critical_paths[]`; the
-  section's existing smoke at `biostructure-viewer.md` already covers
-  the camera-navigation surface and the `Reset Camera` overlay button),
-  so `smoke` is inappropriate. They are not boundary-value or
-  atlas-edge_case, so `edge` is inappropriate. They are not stress /
-  latency-sensitive, so `perf` is inappropriate. `regression` is the
-  STEP E heuristic default for general coverage of a thematic feature
-  surface.
-- **Bug coverage**: `related_bugs: []`. Gate F's F-BUG-COVERAGE-01 has
-  already closed in this cycle (all 5 known bugs are realized as
-  bug-focused scenarios under the section). This is a pure
-  breadth-extension scenario; no bug-library entry overlaps the four
-  overlay-button sub_features above.
-- **net_new**: Against `live_covered_union` (45 ids) and atlas
-  `manual_only[]` (empty), all 4 listed sub_features are net-new — none
-  appears in any of the section's nine prior scenarios'
-  `sub_features_covered:` lists. `round_net_new = +4`. The STEP C
-  net-new refusal is satisfied (the breadth-loop progress bound holds:
-  covered_union 45 → 49 strictly rises by 4). Note that
-  `biostructure.overlay.reset-camera` is INTENTIONALLY excluded from
-  this scenario's `sub_features_covered:` — it is already covered by
-  the smoke; including it here would not contribute net-new value and
-  would also create an unnecessary scope overlap with the smoke
-  scenario's overlay coverage.
-- **breadth-loop residual**: After this scenario, the section's
-  covered-union projects to 49/72 = 68.1%, still just under the 70%
-  threshold. Remaining high-yield candidates per the chain
-  `gate_f_verdict.gaps[sub-feature-coverage-gap]` (post-this-scenario):
-  Biotrack +2 (`biostructure.biotrack-viewer` + `.props`), Grid
-  context-menu extension +1 (`biostructure.grid-context-menu.open-pdb-residues`),
-  File-preview Mol* +4 (`file-preview` + `file-preview.molstar-structure` +
-  `file-preview.molstar-topology` + `file-preview.molstar-density`),
-  File-open extension +1 (`file-open.importXYZ`), Data-provider
-  extension +2 (`data-provider.rcsb-pdb` + `data-provider.rcsb-bcif`),
-  JS API extension +2 (`api.viewPdbById` + `api.viewPdbByData`),
-  `cell-renderer.pdb-id` +1. Cumulative residual net-new after this
-  scenario lands: +13. Coverage projects to (49+13)/72 = 86.1% — well
-  above the 70% threshold. Next breadth round can keep sequencing
-  these.
-- **Atlas citations**:
+- Note that `biostructure.overlay.reset-camera` (the fifth overlay
+  button) is intentionally excluded from this scenario — it is already
+  covered by the main smoke test.
+- Source citations:
   - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L75
-    (universal-refdoc Mol* viewport overlay buttons section with the
-    five-row `title`-attribute table; the four buttons this scenario
-    addresses are rows L78–L81. Resolved via atlas `ui_reference_doc:`
-    since the path lives off the default convention under `viewers/`).
-  - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L78 —
-    `Screenshot / State Snapshot` overlay button row (atlas anchor for
-    `biostructure.overlay.screenshot`).
-  - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L79 —
-    `Toggle Controls Panel` overlay button row (atlas anchor for
-    `biostructure.overlay.toggle-controls`).
-  - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L80 —
-    `Settings / Controls Info` overlay button row (atlas anchor for
-    `biostructure.overlay.settings-info`).
-  - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L81 —
-    `Toggle Selection Mode` overlay button row (atlas anchor for
-    `biostructure.overlay.selection-mode`).
+    (Mol* viewport overlay buttons reference, with the `title`-attribute
+    table for all five buttons).
   - See: public/packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer.ts#L258 —
     `layoutShowControls` Datagrok property (cross-referenced by
-    Scenario 2 to assert overlay-button-to-Datagrok-property
-    mirroring; declared on atlas under `biostructure.prop.layout`).
+    Scenario 2 to assert overlay-button-to-Datagrok-property mirroring).

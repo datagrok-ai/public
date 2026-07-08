@@ -1,5 +1,22 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - sharing-edge-cases-spec.ts
+related_bugs: []
+---
+
 
 # Sharing — Edge Cases (Permission Policy Enforcement)
+
+Covers three edge cases in the sharing/permissions model: that a user without the
+"share with everyone" permission cannot grant access to the built-in All users group,
+that the owner cannot be locked out of their own entity even after removing every
+permission cell in the Advanced editor, and that sharing an entity which is embedded in
+a Project surfaces a notice about the co-affected Project.
 
 ## Setup
 
@@ -35,8 +52,6 @@ Expected:
 - Under no circumstances should the entity appear as viewable by anonymous or
   all-user sessions without the owner holding `ShareWithEveryone`.
 
-# atlas entry derived from source: core/shared/grok_shared/lib/src/privileges.dart#L33
-
 ### Scenario 2: Owner always retains full access (server-side enforcement)
 
 Steps:
@@ -65,8 +80,6 @@ Expected:
 - The server does NOT respond with 200 OK for a delete on the owner's primary grant
   and leave the entity ownerless.
 
-# atlas entry derived from source: core/server/datlas/lib/src/routers/privileges.dart#L4
-
 ### Scenario 3: Co-shared dependent entity notice in PermissionsEditor
 
 Steps:
@@ -83,5 +96,3 @@ Expected:
 - The notice text references at least the name of the parent Project that embeds the
   Script.
 - The dialog still allows the share to proceed after acknowledging the notice.
-
-# atlas entry derived from source: core/client/xamgle/lib/src/features/users/permissions_browser.dart#L5

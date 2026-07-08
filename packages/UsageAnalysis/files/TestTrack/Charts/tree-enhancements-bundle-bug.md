@@ -1,15 +1,9 @@
 ---
 feature: charts
-sub_features_covered:
-  - charts.tree
-  - charts.tree.show-counts
-  - charts.tree.on-click
-  - charts.tree.font-size
-  - charts.tree.layout
-  - charts.tree.orient
-  - charts.tree.include-nulls
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [tree-hierarchical-capability-bundle]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null
@@ -23,19 +17,14 @@ related_bugs:
 
 # Tree viewer — 8-enhancement bundle regression (github-3221)
 
-Bug-focused regression scenario for github-3221: 8 capabilities bundled
-into Tree viewer for NIBR's hierarchical-data workflow (showCounts,
-onClick, fontSize, layout/orient, includeNulls, moleculeSize, tooltips,
-label-overflow). Fix landed in Charts 1.4.3 — this scenario locks each
-capability's regression bound.
-
-`pyramid_layer: bug-focused`. The canonical `tree.md` only exercises
-collaborative filtering — none of the 8 enhanced capabilities. This
-scenario covers all 8 via property round-trip.
-
-`related_bugs: [github-3221]` — bug-library reproduction class:
-exercise each of the 8 capabilities and verify they continue to work
-(no regression) on the current Tree viewer.
+Bug-focused regression scenario for github-3221: eight Tree-viewer
+capabilities that were bundled together for a customer's
+hierarchical-data workflow (show counts, on-click behavior, font size,
+layout/orientation, include-nulls, molecule size, tooltips, label
+overflow). The fix landed in Charts 1.4.3; this scenario locks in each
+capability so it doesn't regress. The canonical `tree.md` only
+exercises Filter Panel coordination — none of these 8 capabilities —
+so this scenario exercises all 8 via a property round-trip.
 
 ## Setup
 
@@ -95,43 +84,21 @@ Steps:
 
 ## Notes
 
-- **github-3221 invariant carrier:** for each of the 8 capabilities,
-  setOptions does NOT throw, viewer renders without console error,
-  and the property is enumerated in `getProperties()`. Strict
+- The github-3221 invariant: for each of the 8 capabilities,
+  `setOptions` doesn't throw, the viewer renders without a console
+  error, and the property shows up in `getProperties()`. Strict
   read-back equality is best-effort (race-tolerant).
-- **Capability 8 (label-overflow / showOverlappingLabels)** is currently
-  inferred via `showMouseOverLine` — atlas listing may evolve. If
-  `getProperties()` exposes a more specific label-overflow property,
-  exercise that.
-- **Authority:** atlas-driven; closes the bug coverage gap for
-  github-3221 surfaced in chain rev 2.
-- **Remediation cycle scope decision (charts-remediate-2026-05-09):**
-  Critic E canonical subagent surfaced `charts.tree.layout` as
-  declared in `sub_features_covered` but uncovered in code
-  (predecessor cycle charts-automator-only-2026-05-08, verdict
-  EVIDENCE_GAP: E-TRACE-02). Migrator decision: **Option A
-  (TIGHTEN)** — keep `charts.tree.layout` in `sub_features_covered`,
-  Automator implements guarded probe per scenario step 7's
-  conditional ("if `tree.props.getProperties()` includes 'layout'"):
-  - Read `tree.props.getProperties().map(p => p.name)` early.
-  - If 'layout' is included, `exerciseProperty('layout',
-    'orthogonal', 'layout=orthogonal')`.
-  - Else log `console.warn('[SKIP] charts.tree.layout not exposed
-    on current Tree build; capability 4 deferred per scenario step
-    7 conditional')` (env-pending acceptable SR class per
-    orchestrator Edit 10).
-  Same guarded-probe pattern for moleculeSize per scenario step 8
-  best-effort phrasing (enumeration-only check delegated to Setup
-  propNames log; technical comment marker added).
-- **Why Option A over Option B (REDUCE):** keeping
-  `charts.tree.layout` in `sub_features_covered` preserves atlas
-  mapping integrity (atlas line 607 confirms `charts.tree.layout`
-  is present). Guarded probe is 8-line addition. If Tree build on
-  dev does not expose `layout` property, env-pending defensive skip
-  is the documented acceptable outcome (per orchestrator SR
-  dispatch table). When the Charts package exposes `layout` on
-  newer dev builds, the probe automatically picks it up without
-  scenario amendment.
+- Capability 8 (label overflow) is currently exercised via
+  `showMouseOverLine` as a stand-in — if a future Tree build exposes
+  a more specific label-overflow property, the spec should switch to
+  that.
+- Steps 7 (layout) and 8 (moleculeSize) use a guarded probe: they
+  check whether the property is exposed on the current build before
+  exercising it, logging a skip instead of failing if not. This is
+  deliberate — different Tree builds may not yet expose `layout`, and
+  `demog.csv` has no molecule column to exercise `moleculeSize`
+  against, so those two capabilities are verified by enumeration
+  rather than a full round-trip.
 
 ## Dataset metadata
 

@@ -1,5 +1,4 @@
 /* ---
-sub_features_covered: [projects.api.save, projects.api.get-by-id, projects.api.list, projects.api.delete, projects.api.count]
 generated_from: lifecycle-api.md (no MCP) — references: projects.md
 --- */
 import {test, expect} from '@playwright/test';

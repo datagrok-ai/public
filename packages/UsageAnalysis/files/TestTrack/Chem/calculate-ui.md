@@ -1,6 +1,5 @@
 ---
 feature: chem
-sub_features_covered: [chem.calculate.descriptors, chem.calculate.descriptors.top-menu, chem.calculate.descriptors.transform, chem.calculate.descriptors.tree, chem.calculate.properties, chem.calculate.properties.top-menu, chem.calculate.toxicity-risks, chem.calculate.toxicity-risks.top-menu, chem.mpo, chem.mpo.top-menu, chem.calculate.bitbirch, chem.calculate.bitbirch.top-menu, chem.calculate.cluster-mcs, chem.calculate.cluster-mcs.top-menu, chem.calculate.map-identifiers, chem.calculate.map-identifiers.top-menu, chem.notation.inchi, chem.notation.inchi-keys, chem.calculate.biochemical-properties]
 target_layer: manual-only
 coverage_type: regression
 produced_from: migrated
@@ -26,16 +25,8 @@ manual_only_reason: |
 Multi-format / multi-Calculate-menu-item happy-path walk. For each dataset in the linked-datasets
 matrix (smiles, molV2000, molV3000, 2-column SMILES variants), iterate through the full
 **Chem > Calculate** top-menu and verify each calculator appends its expected column(s) to the
-active table view. Realizes atlas critical path `chem.cp.calculate-descriptors-docker` (p1) for
-the Descriptors anchor.
-
-Per chain YAML (`scenario-chains/chem.yaml` rev 2): independent scenario (`depends_on: []`),
-`classification: medium`, `pyramid_layer: integration`, `target_layer: playwright`, strategy
-`simple`. Multi-format × multi-menu-item — Variant C representative source: smiles.csv;
-Descriptors (Docker-backed) is the anchored test case, the remainder of the Calculate menu is the
-implicit walk now enumerated below. UI coverage owned (`ui_coverage_delegated_to: null`) over
-Descriptors / Properties / Toxicity Risks / MPO Score / BitBIRCH Clustering / Cluster MCS / Map
-Identifiers / To InchI / To InchI Keys / Biochemical Properties.
+active table view. The Descriptors calculator is the primary case, since it is backed by the Chem
+Docker container; `smiles.csv` is the representative dataset.
 
 ## Setup
 
@@ -49,10 +40,9 @@ Identifiers / To InchI / To InchI Keys / Biochemical Properties.
    - `System:AppData/Chem/tests/smiles_2_columns.csv` — 2-column SMILES dataset (Variant D —
      two molecule columns; exercises column-selection branches in calculator dialogs).
 2. **Confirm Chem package is loaded** so that the full **Chem > Calculate** top-menu tree is
-   registered (per atlas `chem.calculate.*` ids; package source `Chem/src/package.ts`). For
-   Descriptors specifically, the `chem-chem` Docker container must be available — failure mode
-   bug-library `GROK-17621` (Docker timeout) is outside scope; the happy path assumes container
-   is up.
+   registered (package source `Chem/src/package.ts`). For Descriptors specifically, the `chem-chem`
+   Docker container must be available — failure mode bug-library `GROK-17621` (Docker timeout) is
+   outside scope; the happy path assumes container is up.
 3. **No fixture consumed.** Per chain YAML `depends_on: []`. Each dataset is opened fresh inside
    the scenario.
 
@@ -117,64 +107,25 @@ Implicit cross-cell invariants:
 
 ## Notes
 
-- **`coverage_type: regression`** — multi-format × multi-menu-item happy-path walk. Not `smoke`
-  (the section's smoke is `Advanced/scaffold-tree-functions.md` per chain
-  `ui_coverage_plan.smoke_scenario`); not `edge` / `perf` (no specific failure-mode invariant or
-  threshold being asserted). The Docker-unavailable / timeout failure-mode invariant for
-  `chem.calculate.descriptors` is owned by the cross-cutting bug-focused spec
-  `chem-grok-17621-spec.ts` (chain `bug_focused_candidates[]`); this scenario assumes container
-  is up.
-- **No JS API substitution.** Every entry in chain `ui_coverage_responsibility`
-  (`chem-calculate-descriptors`, `chem-calculate-properties`, `chem-calculate-toxicity-risks`,
-  `chem-calculate-mpo-score`, `chem-calculate-bitbirch-clustering`,
-  `chem-calculate-cluster-mcs`, `chem-calculate-map-identifiers`, `chem-calculate-to-inchi`,
-  `chem-calculate-to-inchi-keys`) is exercised via UI driving — top-menu walk + dialog interaction
-  + OK click. The Biochemical Properties row (M10) extends the menu walk beyond the chain
-  `ui_coverage_responsibility` list because atlas `chem.calculate.biochemical-properties` is a
-  registered Calculate menu item (`Chem | Calculate | Biochemical Properties`) and the original
-  scenario directive ("Do the same for each section in the Calculate menu") enumerates every
-  Calculate-menu entry — see migration report Decisions.
-- **Cross-cutting bug awareness — GROK-17621 (Descriptors Docker timeout).** Per chain
-  `bug_focused_candidates[]`, the Docker container unavailability / timeout invariant for
-  `chem.calculate.descriptors` is owned by the dedicated `chem-grok-17621-spec.ts` candidate spec
-  (spans `calculate.md:Step 1` per chain). This scenario walks the happy path only — container
-  assumed available; the failure-mode invariant is parallel-coverage, not in scope here.
-  `related_bugs: []` because the bug-focused candidate owns the invariant.
-- **Cross-cutting bug awareness — github-2942 (CSV export with filtering).** Per chain
-  `bug_focused_candidates[]`, the filter-active + `Export As CSV` + `Molecules As Smiles`
-  row-count-mismatch invariant intersects `calculate.md` via the `convert-column` /
-  `convertMoleculeNotation` dependency invoked by Calculate menu walks (spans
-  `calculate.md:Step 1` + `filter-panel.md:Step 1` per chain). The dedicated
-  `chem-github-2942-spec.ts` candidate spec owns the filter+export combination; this scenario
-  does not filter or export. Awareness only.
-- **MPO Score profile dependency (M4).** The MPO Score dialog requires at least one MPO profile
-  to be available (atlas `chem.mpo.profile-app` / `chem.mpo.profile-tree-browser`). On a fresh
-  test instance the default profiles shipped with the Chem package should suffice; if no profile
-  is available the dialog will surface a clear user-visible message rather than silent failure
-  (per the cross-cell invariant above).
-- **Map Identifiers dependency (M7).** Map Identifiers (`getMapIdentifiers`) requires the Chembl
-  package's `textToSmiles` / identifier-mapping query surface; on environments without Chembl
-  connectivity the dialog will surface a clear user-visible error.
-- **Biochemical Properties dependency (M10).** The Biochemical Properties dialog
-  (`biochemPropsWidget`, atlas `chem.calculate.biochemical-properties`) discovers functions
-  tagged `function_family: biochem-calculator`. On environments without registered biochem
-  calculators (other packages may register them), the dialog may surface an empty / informational
-  state — assert per-cell that either columns are appended OR a clear user-visible message is
-  shown, never silent.
-- **Existing sibling spec.** A test file already exists at
-  `public/packages/UsageAnalysis/files/TestTrack/Chem/calculate-spec.ts` (per
-  `existing-test-index.yaml` line 32409: `test_name: "Chem: Calculate Descriptors"`,
-  `category: Chem`, `layer: playwright`, helpers `spec-login`, `features_covered:
-  [chem.calculate]`). The existing spec covers Descriptors only; the Automator will extend it to
-  cover the full enumerated Calculate menu walk per this migrated scenario.
-- **Helpers usage.** Standard `loginToDatagrok` + `softStep` + `closeAllViews` from
-  `helpers-registry.yaml` cover the section harness. No registered helper currently abstracts the
-  Calculate menu walk pattern; candidate helpers surfaced in migration report Decisions.
-- **Order in chain.** `order: 3` per source JSON; tie-broken lexicographically with
-  `r-group-analysis.md` (also order 3) — `calculate.md` runs after.
-- **Source-text fixes silently applied during migration.** The original body contained two typos
-  / defects ("asme" → "same"; "Calculate menu ()" → "Calculate menu" — drop empty parens) and a
-  TODO note for `smiles_2_columns.csv` that has been resolved (the file exists at
-  `System:AppData/Chem/tests/smiles_2_columns.csv` and is provisioned in Setup as Variant D).
-  Step numbering renumbered cleanly (original collided on "1." between the dataset-open block and
-  the Descriptors-walk block). See migration report Decisions § Source-text fixes.
+- **M10 scope.** Biochemical Properties (M10) is included in the walk even though it's a later
+  addition to the Calculate menu, because it's a registered menu item and the original directive
+  was to test every Calculate submenu entry.
+- **Cross-cutting bug awareness — GROK-17621 (Descriptors Docker timeout).** This scenario walks
+  the happy path only and assumes the Docker container is available; the container-unavailable /
+  timeout failure mode has no dedicated spec yet — it is an open coverage gap, not exercised here.
+- **Cross-cutting bug awareness — github-2942 (CSV export with filtering).** A row-count-mismatch
+  bug when exporting a filtered table as CSV / Molecules-As-SMILES intersects this scenario via
+  the notation-conversion dependency used by the Calculate menu walks, but has no dedicated
+  bug-focused spec yet — this scenario neither filters nor exports.
+- **MPO Score profile dependency (M4).** The MPO Score dialog requires at least one MPO profile to
+  be available. The default profiles shipped with the Chem package should suffice on a fresh test
+  instance; if none is available, the dialog shows a clear user-visible message rather than
+  failing silently.
+- **Map Identifiers dependency (M7).** Map Identifiers requires the Chembl package's
+  identifier-mapping query surface; on environments without Chembl connectivity, the dialog shows
+  a clear user-visible error.
+- **Biochemical Properties dependency (M10).** The Biochemical Properties dialog discovers
+  functions tagged `function_family: biochem-calculator`, which other packages may register. On
+  environments with none registered, the dialog may show an empty / informational state — assert
+  per-cell that either columns are appended or a clear message is shown, never silent.
+- **No sibling spec.** There is no automated spec covering this Calculate menu walk yet.

@@ -1,4 +1,21 @@
-﻿# Models — One-hot suffix collision (edge: `<name>=<category>` namespacing)
+---
+feature: models
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - models-one-hot-suffix-collision-spec.ts
+related_bugs: [GROK-846]
+---
+
+# Models — One-hot suffix collision (edge: `<name>=<category>` namespacing)
+
+Verifies that when two categorical features share a category value
+(e.g. both have a `Yes` option), one-hot encoding namespaces the
+expanded columns as `<feature>=<category>` instead of colliding on
+a single `Yes` column, and that applying the saved model correctly
+reconstructs the same namespaced columns on a fresh table.
 
 ## Setup
 
@@ -58,9 +75,7 @@ Steps:
      accepts one-hot expansion through the standard preprocessing
      pipeline).
    - Tick the **One-hot encoding** action checkbox on the
-     parameters form (atlas
-     `models.preprocessing.one-hot` interaction
-     `"tick 'One-hot encoding' checkbox in train UI"`).
+     parameters form.
 4. Click **TRAIN**. Training runs to completion (Linear Regression
    on 40 rows converges quickly; no Caret / R / Docker dependency).
 5. Save the trained model as `OneHotSuffixCollision_test` via the
@@ -111,7 +126,7 @@ Expected:
 ### Scenario 2: Teardown — delete the bootstrap model
 
 Standalone cleanup so the scenario does not pollute server state
-for subsequent runs. Mirrors the `pcmdDelete` flow already covered
+for subsequent runs. Mirrors the model-delete flow already covered
 by `predictive-models.md` Block 4 (no ownership claim — this is
 teardown only).
 

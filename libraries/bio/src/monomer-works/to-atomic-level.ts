@@ -75,9 +75,14 @@ export async function _toAtomicLevel(
   }
 
   const monomerSequencesArray: ISeqMonomer[][] = getMonomerSequencesArray(srcCol, seqHelper);
+  // Per-row disjoint-chain start positions. For HELM with several chains
+  // (e.g. RNA1{...}|RNA2{...}) each row carries multiple starts; every other
+  // notation (and single-chain HELM) carries [0]. Computed from srcCol — the
+  // exact column that seqToMolFileWorker splits — so the indices line up.
+  const chainStartsArray: number[][] = getChainStartsArray(srcCol, seqHelper);
   // Per-row roles: only set in HELM RNA/DNA mode where the splitter emits triples.
   const rolesArray: (NucleotideRole[] | undefined)[] = keepHelmTriples ?
-    buildRolesForHelmRna(monomerSequencesArray, monomerLib, polymerType) :
+    buildRolesForHelmRna(monomerSequencesArray, monomerLib, polymerType, chainStartsArray) :
     new Array(monomerSequencesArray.length).fill(undefined);
   // In triples mode, override the per-row biotype so it carries NUCLEOTIDE
   // (rather than whatever the seq-handler defaults to for an UN-alphabet column).
@@ -90,7 +95,7 @@ export async function _toAtomicLevel(
   const srcColLength = srcCol.length;
 
   const res = await seqToMolFileWorker(
-    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule, rolesArray);
+    srcCol, monomersDict, alphabet, polymerType, monomerLib, seqHelper, rdKitModule, rolesArray, chainStartsArray);
   if (res.warnings.length > 0.05 * srcColLength)
     grok.shell.warning(`Molfile conversion resulted in ${res.warnings.length} errors`);
 
@@ -210,39 +215,81 @@ function classifyRnaRole(
 // A row falls back to bases-only mode (undefined) only when it cannot be
 // laid out as a linear chain: an unknown monomer, or a single-R-group
 // terminal modifier appearing mid-chain (it has nothing to extend to).
-function buildRolesForHelmRna(
+export function buildRolesForHelmRna(
   monomerSequencesArray: ISeqMonomer[][],
   monomerLib: IMonomerLibBase,
   polymerType: PolymerType,
+  chainStartsArray?: number[][],
 ): (NucleotideRole[] | undefined)[] {
   const out: (NucleotideRole[] | undefined)[] = new Array(monomerSequencesArray.length);
   for (let rowI = 0; rowI < monomerSequencesArray.length; ++rowI) {
     const row = monomerSequencesArray[rowI];
     if (row.length === 0) { out[rowI] = undefined; continue; }
 
-    const classes: RnaRoleClass[] = new Array(row.length);
-    let classifiable = true;
-    for (let i = 0; i < row.length; ++i) {
-      classes[i] = classifyRnaRole(monomerLib, polymerType, row[i].symbol);
-      if (classes[i] === null) { classifiable = false; break; }
-    }
-    if (!classifiable) { out[rowI] = undefined; continue; }
-
+    // Build roles one chain at a time. Terminal 5'/3' detection is scoped to
+    // each chain's own boundaries — otherwise a chain end that sits in the
+    // middle of the flat multi-chain row would be misread as a mid-chain
+    // modifier and drop the whole row to bases-only mode.
+    const starts = chainStartsArray?.[rowI];
+    const chainBounds: number[] = (starts && starts.length > 0) ? starts : [0];
     const roles: NucleotideRole[] = new Array(row.length);
     let fellBack = false;
-    for (let i = 0; i < row.length; ++i) {
-      if (classes[i] === 'terminal') {
-        // A single-R-group modifier can only cap a chain end. HELM authors
-        // sometimes put the "wrong" one at either boundary (e.g. GalNAc with
-        // only R1 at the 5' end); getMolGraph swaps the rNodes so the real
-        // R lands where the role expects it.
-        if (i === 0) roles[i] = NucleotideRole.TERMINAL_5P;
-        else if (i === row.length - 1) roles[i] = NucleotideRole.TERMINAL_3P;
-        else { fellBack = true; break; }
-      } else
-        roles[i] = classes[i] as NucleotideRole;
+    for (let c = 0; c < chainBounds.length && !fellBack; ++c) {
+      const s = chainBounds[c];
+      const e = c + 1 < chainBounds.length ? chainBounds[c + 1] : row.length;
+      const sliceRoles = buildRolesForChainSlice(row, s, e, monomerLib, polymerType);
+      if (!sliceRoles) { fellBack = true; break; }
+      for (let i = s; i < e; ++i) roles[i] = sliceRoles[i - s];
     }
     out[rowI] = fellBack ? undefined : roles;
+  }
+  return out;
+}
+
+// Classify the monomers of a single chain slice [start, end) into
+// NucleotideRoles, resolving single-R-group terminal modifiers to
+// TERMINAL_5P / TERMINAL_3P against this chain's own ends. Returns null when
+// the slice cannot be laid out as a linear chain (unknown monomer, or a
+// terminal modifier sitting mid-chain).
+function buildRolesForChainSlice(
+  row: ISeqMonomer[], start: number, end: number,
+  monomerLib: IMonomerLibBase, polymerType: PolymerType,
+): NucleotideRole[] | null {
+  const len = end - start;
+  if (len <= 0) return [];
+
+  const classes: RnaRoleClass[] = new Array(len);
+  for (let i = 0; i < len; ++i) {
+    classes[i] = classifyRnaRole(monomerLib, polymerType, row[start + i].symbol);
+    if (classes[i] === null) return null;
+  }
+
+  const roles: NucleotideRole[] = new Array(len);
+  for (let i = 0; i < len; ++i) {
+    if (classes[i] === 'terminal') {
+      // A single-R-group modifier can only cap a chain end. HELM authors
+      // sometimes put the "wrong" one at either boundary (e.g. GalNAc with
+      // only R1 at the 5' end); getMolGraph swaps the rNodes so the real
+      // R lands where the role expects it.
+      if (i === 0) roles[i] = NucleotideRole.TERMINAL_5P;
+      else if (i === len - 1) roles[i] = NucleotideRole.TERMINAL_3P;
+      else return null;
+    } else
+      roles[i] = classes[i] as NucleotideRole;
+  }
+  return roles;
+}
+
+// Per-row disjoint-chain start positions (0-based indices into the flat
+// monomer list). Reads the splitter's graphInfo; falls back to [0] for
+// notations or rows without chain info.
+function getChainStartsArray(seqCol: DG.Column<string>, seqHelper: ISeqHelper): number[][] {
+  const sh = seqHelper.getSeqHandler(seqCol);
+  const out: number[][] = new Array(seqCol.length);
+  for (let rowI = 0; rowI < seqCol.length; ++rowI) {
+    const seqSS = sh.getSplitted(rowI);
+    const starts = seqSS.graphInfo?.disjointSeqStarts;
+    out[rowI] = (starts && starts.length > 0) ? starts.slice() : [0];
   }
   return out;
 }

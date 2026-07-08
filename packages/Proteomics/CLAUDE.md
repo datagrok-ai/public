@@ -58,6 +58,9 @@ out.
 - **`src/analysis/`** — pure computation that mutates the DataFrame and sets a completion
   tag. One file per step: `experiment-setup.ts` (groups + `getGroups`/`setGroups`),
   `normalization.ts`, `imputation.ts`, `differential-expression.ts`, `pca.ts`, `enrichment.ts`.
+  `log2-scale.ts` is the exception — a post-import corrective (Analyze | Set Log2 Scale...) that
+  rebuilds the `log2(...)` columns from the pristine originals and *clears* the downstream completion
+  tags (base data changed → pipeline must re-run).
 - **`src/parsers/`** — vendor file -> filtered, log2-transformed, semantic-typed DataFrame.
   `maxquant-parser.ts`, `spectronaut-parser.ts` (PG report — per-sample quant),
   `spectronaut-candidates-parser.ts` (Candidates report — pre-computed DE; emits the
@@ -132,7 +135,7 @@ how the pipeline coordinates between steps — there is no other state store.
 |---|---|---|
 | `proteomics.source` | `'maxquant'` / `'spectronaut'` / `'spectronaut-candidates'` / `'fragpipe'` / `'generic'` | parsers |
 | `proteomics.groups` | JSON `GroupAssignment` | `setGroups()` after Annotate Experiment |
-| `proteomics.organism` | g:Profiler code (e.g. `rnorvegicus`) | `setOrganism()` on Enrichment dialog OK; read by enrichment + subcellular-location gene fallback |
+| `proteomics.organism` | g:Profiler code (e.g. `rnorvegicus`) | `setOrganism()` — auto-detected at import from the data's organism column (`detectOrganismCode`), confirmable in Annotate Experiment, and persisted on Enrichment OK; read by enrichment + subcellular-location gene fallback |
 | `proteomics.normalized` | `'true'` | any normalization method |
 | `proteomics.preNormalized` | `'true'` | Spectronaut parser (input was already normalized) |
 | `proteomics.imputed` | `'true'` | any imputation method |

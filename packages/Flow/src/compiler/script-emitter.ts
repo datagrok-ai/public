@@ -6,7 +6,7 @@
  *     events for live execution visualization. */
 
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode, isExecKey} from '../rete/scheme';
+import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 
 export interface ScriptSettings {
@@ -40,10 +40,13 @@ export function emitScript(
   flow: FlowEditor, settings: ScriptSettings, options?: EmitOptions,
 ): string {
   const liveBoundary = options?.liveExternalInputs && options.onlyNodeIds ? options.onlyNodeIds : undefined;
-  let steps = compileGraph(flow, liveBoundary);
+  const inst = options?.instrumented === true;
+  // Instrumented runs clone every dataframe crossing into a func step — see
+  // CompileOptions.cloneDataframeInputs (in-place functions must not mutate an
+  // upstream node's captured value).
+  let steps = compileGraph(flow, liveBoundary, {cloneDataframeInputs: inst});
   if (options?.onlyNodeIds) steps = steps.filter((s) => options.onlyNodeIds!.has(s.nodeId));
   const lines: string[] = [];
-  const inst = options?.instrumented === true;
 
   lines.push(...buildHeaderLines(steps, flow, settings, 'javascript'));
   lines.push('');
@@ -77,6 +80,13 @@ export function emitScript(
         lines.push(...wrapInstrumented(line, step, options!, {outputExpr: step.variableName, declaredType}));
       else
         lines.push(line);
+      // An Output node doubles as a SetVar: register the value in the run
+      // context under the param name (and, for a dataframe, its runtime name)
+      // so name-based consumers (Select Table, downstream scripts) resolve it —
+      // Output and SetVar compile to the same thing.
+      lines.push(`await grok.functions.call('SetVar', ` +
+        `{variableName: ${JSON.stringify(step.variableName)}, value: ${inputExpr}});`);
+      lines.push(emitSetVarByDataframeName(inputExpr));
       continue;
     }
 
@@ -93,9 +103,15 @@ export function emitScript(
       }
       const code = emitUtilityStep(step);
       if (!code) continue;
-      if (inst)
-        lines.push(...wrapInstrumented(code, step, options!, {outputExpr: step.variableName}));
-      else
+      if (inst) {
+        // Side-effect-only utilities (Log / Info / Warning) declare no variable
+        // — summarizing `step.variableName` there would reference an undeclared
+        // identifier and fail the node with a ReferenceError at run time. Only
+        // steps that actually declare their variable get an output summary.
+        const declaresVar = code.startsWith(`let ${step.variableName} =`);
+        lines.push(...wrapInstrumented(code, step, options!,
+          declaresVar ? {outputExpr: step.variableName} : undefined));
+      } else
         lines.push(code);
       stash(step);
       continue;
@@ -111,7 +127,14 @@ export function emitScript(
     // The dataframe check is emitted into the script (runtime instanceof), since
     // the value slot is often `dynamic` even when it carries a dataframe.
     const setVarValue = setVarValueExpr(step, flow);
-    if (setVarValue) lines.push(emitSetVarByDataframeName(setVarValue));
+    if (setVarValue) {
+      lines.push(emitSetVarByDataframeName(setVarValue));
+      // …and a SetVar doubles as a script output: assign the stored value to
+      // the output variable declared in the header (see setVarAsOutput) —
+      // SetVar and Value Output compile to the same thing.
+      const out = setVarAsOutput(step, flow);
+      if (out) lines.push(`${out.name} = ${setVarValue};`);
+    }
 
     // Auto-detect semantic types on dataframe outputs.
     lines.push(...emitDetectSemanticTypes(step, flow));
@@ -149,10 +172,21 @@ function buildHeaderLines(
     if (line) lines.push(line);
   }
 
+  const emittedOutputs = new Set<string>();
   for (const step of steps.filter((s) => s.nodeType === 'output')) {
     const node = flow.getNodeById(step.nodeId);
     if (!node) continue;
     lines.push(buildOutputLine(step, node));
+    emittedOutputs.add(String(step.properties['paramName']));
+  }
+  // SetVar nodes double as outputs — same `//output:` contract as a Value
+  // Output wired to the same source, type inferred from the connection.
+  for (const step of steps) {
+    if (step.nodeType !== 'func') continue;
+    const out = setVarAsOutput(step, flow);
+    if (!out || emittedOutputs.has(out.name)) continue;
+    emittedOutputs.add(out.name);
+    lines.push(`//output: ${out.type} ${out.name}`);
   }
   return lines;
 }
@@ -256,7 +290,11 @@ function emitUtilityStep(step: CompiledStep): string | null {
       const q = JSON.stringify(n);
       return `grok.shell.tableByName(${q}) ?? grok.shell.getVar(${q})`;
     }).join(' ?? ');
-    return `let ${step.variableName} = ${expr};`;
+    // Fail fast with the table name — a null table would otherwise surface as
+    // a cryptic downstream error far from the node that caused it.
+    const message = JSON.stringify(`Select Table: no open table or variable named "${raw}"`);
+    return `let ${step.variableName} = ${expr};\n` +
+      `if (${step.variableName} == null) throw new Error(${message});`;
   }
   case 'Add Table View': {
     const t = step.inputs.get('table') ?? 'undefined';
@@ -443,8 +481,42 @@ function emitPreamble(runId: string): string[] {
     '  if (typeof v === \'object\') return {type:\'object\', str:String(v).slice(0,200)};',
     '  return {type:\'primitive\', value:v};',
     '}',
+    // Column-output summary with in-place detection: if the produced column is
+    // (by instance) one of `inputTable`'s columns — the in-place idiom, e.g. Add
+    // New Column mutates its input and returns the added column — capture a clone
+    // of the whole table plus the column name, so the preview can show the column
+    // IN the table it belongs to (scrolled into view) rather than alone.
+    // Otherwise the base column summary (one-column grid / sample) is returned.
+    'function __ff_col_summary(col, inputTable, declaredType) {',
+    '  var base = __ff_summarize(col, declaredType);',
+    '  if (base != null && base.type === \'column\' && inputTable != null &&',
+    '      inputTable.columns !== undefined && inputTable.rowCount !== undefined) {',
+    '    var owned = false;',
+    '    try {',
+    '      var __ff_cols = inputTable.columns.toList();',
+    '      for (var __ff_i = 0; __ff_i < __ff_cols.length; __ff_i++) {',
+    // Identity by the underlying Dart handle: each `.toList()`/`.col()` call
+    // wraps the same column in a fresh JS object, so `===` on the wrappers can be
+    // false even for the same column — compare `.dart`.
+    '        var __ff_c = __ff_cols[__ff_i];',
+    '        if (__ff_c === col || (__ff_c.dart != null && __ff_c.dart === col.dart)) { owned = true; break; }',
+    '      }',
+    '    } catch (e) {}',
+    '    if (owned) {',
+    '      try { base.tableClone = inputTable.clone(); base.scrollToColumn = col.name; } catch (e) {}',
+    '    }',
+    '  }',
+    '  return base;',
+    '}',
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
+    '}',
+    // Snapshot a dataframe crossing into a step (anything else passes through).
+    // Same duck-type check as __ff_summarize; a func step works on its own copy
+    // so in-place transformations never mutate the upstream captured value.
+    'function __ff_clone(v) {',
+    '  return (v != null && v.rowCount !== undefined && v.columns !== undefined &&',
+    '    typeof v.clone === \'function\') ? v.clone() : v;',
     '}',
     // Live-value registry (on the tab global): each node stashes its outputs so a
     // later single-node re-run can read them without re-running upstream.
@@ -493,6 +565,21 @@ function wrapInstrumented(
   return lines;
 }
 
+/** The expression for the step's single connected dataframe input, or null when
+ *  it has zero or more than one. Under `cloneDataframeInputs` this is the
+ *  snapshot variable the call actually mutates — so a column output that lands
+ *  in it is detectable by instance (see `__ff_col_summary`). */
+function singleDataframeInputExpr(step: CompiledStep, node: FlowNode | undefined): string | null {
+  if (!node) return null;
+  const exprs: string[] = [];
+  for (const [key, input] of Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>) {
+    if (input?.socket.dgType !== 'dataframe') continue;
+    const expr = step.inputs.get(key);
+    if (expr && expr !== 'undefined') exprs.push(expr);
+  }
+  return exprs.length === 1 ? exprs[0] : null;
+}
+
 function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow: FlowEditor): string[] {
   const params: string[] = [];
   for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
@@ -501,16 +588,30 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   const lines: string[] = [];
   lines.push(`__ff_emit('node-start', '${step.nodeId}');`);
   lines.push(`let ${step.variableName};`);
+  // Dataframe input snapshots: declared in body scope (downstream steps read
+  // the pass-through through them), assigned inside try (a `_ffLive` source
+  // can throw — that must surface as THIS node's error).
+  const snapshots = Array.from(step.cloneInputs ?? []);
+  for (const [snapVar] of snapshots) lines.push(`let ${snapVar};`);
   lines.push('try {');
+  for (const [snapVar, srcExpr] of snapshots) lines.push(`  ${snapVar} = __ff_clone(${srcExpr});`);
   lines.push(`  ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`);
 
   // Build outputs summary.
   const node = flow.getNodeById(step.nodeId);
+  // The step's single connected dataframe input expression (the snapshot var
+  // under cloneDataframeInputs) — the in-place table a column output may belong
+  // to. Only when exactly one dataframe input is connected is the association
+  // unambiguous; with zero or several we fall back to the plain column summary.
+  const singleDfInput = singleDataframeInputExpr(step, node);
   const outputEntries: string[] = [];
   for (const [key, varName] of step.outputs) {
     const slotType = (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
     const typeArg = slotType ? `, '${slotType}'` : '';
-    outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
+    if (slotType === 'column' && singleDfInput)
+      outputEntries.push(`${varName}: __ff_col_summary(${varName}, ${singleDfInput}${typeArg})`);
+    else
+      outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
   }
 
   // Capture the (possibly in-place-modified) table threaded through a dataframe
@@ -566,10 +667,31 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
  *  runtime (see emitSetVarByDataframeName). */
 function setVarValueExpr(step: CompiledStep, flow: FlowEditor): string | null {
   const node = flow.getNodeById(step.nodeId);
-  if (!node || node.dgFunc?.name?.toLowerCase() !== 'setvar') return null;
+  if (!node || !isSetVarNode(node)) return null;
   const valueExpr = step.inputs.get('value');
   if (!valueExpr || valueExpr === 'undefined') return null;
   return valueExpr;
+}
+
+const IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
+/** The `//output:` contract a SetVar node contributes — SetVar and Value Output
+ *  compile to the same thing, so a SetVar's variable becomes a script output of
+ *  that name. Null when it can't be one: not a SetVar, the name is dynamic
+ *  (wired in) or not a valid JS identifier (the run-context registration via
+ *  the SetVar call still happens), or no value is connected. The type is
+ *  inferred from the connected source socket — mirroring Value Output's
+ *  on-connect auto-typing. */
+function setVarAsOutput(step: CompiledStep, flow: FlowEditor): {name: string; type: string} | null {
+  const node = flow.getNodeById(step.nodeId);
+  if (!node || !isSetVarNode(node)) return null;
+  const name = String(step.inputValues['variableName'] ?? '').trim();
+  if (!IDENTIFIER_RE.test(name)) return null;
+  const src = flow.getInputSource(step.nodeId, 'value');
+  if (!src) return null;
+  const dgType = (src.node.outputs as Record<string, {socket: {dgType: string}} | undefined>)[src.outputKey]
+    ?.socket.dgType;
+  return {name, type: dgType && dgType !== 'dynamic' && dgType !== 'object' ? dgType : 'dynamic'};
 }
 
 /** Runtime-guarded second `SetVar` registration: when the value is a dataframe,

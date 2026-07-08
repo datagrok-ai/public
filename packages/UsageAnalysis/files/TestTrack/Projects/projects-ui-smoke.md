@@ -1,14 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.upload
-  - projects.api.save
-  - projects.shell.open
-  - projects.shell.share-via-context-menu
-  - projects.api.search
-  - projects.api.delete
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [upload-save-reopen-golden, share_with_recipient_open, rename_project]
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - save-project-dialog
@@ -40,17 +35,17 @@ related_bugs: []
 
 # Projects — UI smoke
 
-Single short UI-driven flow that exercises the right-click context menu,
-Share / Delete / Rename dialogs, and Browse > Dashboards gallery. This is
-the **only** scenario in the Projects chain that drives those UI surfaces;
-every other scenario delegates UI coverage here per chain rev 4
-`ui_coverage_plan.smoke_scenario` and substitutes JS API for the same
-flows.
+Single short UI-driven flow that exercises the right-click context
+menu, the Share / Delete / Rename dialogs, and the Browse >
+Dashboards gallery. This is the only scenario in the Projects section
+that drives those UI surfaces directly — every other scenario
+substitutes the JS API for the same operations and relies on this
+scenario for their UI coverage.
 
-Target runtime: ~5 minutes. One project, one source (`demog.csv` from
-`System:DemoFiles`). Recipient placeholder
-`<RECIPIENT_GROUP_USERNAME_TBD>` for the Share step (resolved at
-Automator stage to a per-environment group account).
+Target runtime: about 5 minutes. Uses one project with one source
+(`demog.csv` from `System:DemoFiles`). The recipient for the Share
+step is a placeholder, `<RECIPIENT_GROUP_USERNAME_TBD>`, resolved to
+a real per-environment group account at automation time.
 
 ## Setup
 
@@ -63,8 +58,7 @@ Automator stage to a per-environment group account).
    at Automator stage). Do NOT bind to a literal user/group in this
    `.md`.
 4. Cleanup contract: this scenario deletes its own project at
-   Step 9-11 (terminal Delete via UI). NO handoff to `deleting.md` —
-   self-cleaning by design.
+   Step 9-11 (terminal Delete via UI) — self-cleaning by design.
 
 ## Scenarios
 
@@ -163,52 +157,19 @@ After completing the secondary coverage (Steps 12-15):
 
 ## Notes
 
-- **Origin: chain rev 3 ui-smoke consolidation (Olena's Option ε).**
-  This scenario was authored per Phase A of the
-  `projects migrate --force` cycle to address the F-UI-COVERAGE-01
-  SCOPE_REDUCTION. Chain rev 3 emitted only DELEGATION (single
-  smoke_scenario = upload-project.md, smoke_covers = 5 flows); F's
-  audit found 12 of 16 extracted UI flows uncovered. Olena's
-  decision: author a dedicated consolidated ui-smoke scenario,
-  redirect 4 existing scenarios' `ui_coverage_delegated_to` here.
-  Chain re-emit (rev 4) will register this scenario as the new
-  `smoke_scenario` and update `delegated_scenarios` accordingly
-  (Phase B).
-- **Pyramid layer: ui-smoke (Rule 1).** Single short UI flow over
-  one source; not matrix; not bug-focused; not manual. Rule 1
-  applies. Per chain rev 4 plan, this scenario is THE smoke owner
-  for the Projects section.
-- **target_layer: playwright.** UI driving is the entire point of
-  this scenario. JS API substitution is explicitly forbidden — if
-  any step is replaced by `grok.dapi.*` or
-  `grok.shell.project = ...`, the scenario loses its purpose.
-- **UI coverage owned (chain rev 4 ui_coverage_responsibility, 20
-  flows).** This scenario witnesses the entire right-click context
-  menu (11 items per `references/projects.md` ## Context Menu
-  Items table) plus the 4 verb-form dialog surfaces (Save, Share,
-  Delete, Rename) plus auxiliary surfaces (auto-share dialog
-  dismiss, Browse Dashboards tile visibility / search). 4 sibling
-  scenarios delegate to this one:
-  `upload-project.md`, `share-project.md`, `opening.md`,
-  `deleting.md` — each updates `ui_coverage_delegated_to:
-  projects-ui-smoke.md` per Phase A revisions.
-- **Recipient placeholder convention.** Per Phase A authoring
-  conventions, real recipient identities (`Olena Ahadzhanian`,
-  `Test permission group`) are NOT in this `.md`. Placeholders
-  (`<RECIPIENT_USERNAME_TBD>`, `<RECIPIENT_GROUP_USERNAME_TBD>`)
-  are resolved at Automator stage from per-environment helper
-  config.
+- **UI driving is the entire point.** JS API substitution is
+  explicitly out of scope here — if any step were replaced by
+  `grok.dapi.*` or `grok.shell.project = ...`, the scenario would
+  lose its purpose.
+- **UI coverage owned here.** This scenario witnesses the entire
+  right-click context menu (11 items) plus the four dialog surfaces
+  (Save, Share, Delete, Rename) plus auxiliary surfaces (auto-share
+  dialog dismiss, Browse > Dashboards tile visibility / search). It is
+  the canonical UI-coverage owner that the section's other (JS-API)
+  scenarios delegate to.
+- **Recipient placeholder convention.** Real recipient identities are
+  intentionally not hard-coded in this `.md`. The placeholders
+  (`<RECIPIENT_USERNAME_TBD>`, `<RECIPIENT_GROUP_USERNAME_TBD>`) are
+  resolved to real per-environment accounts at automation time.
 - **Self-cleaning.** Steps 9-11 delete the project. This scenario
-  is NOT in `deleting.md.depends_on` — its cleanup is internal.
-  Does not produce fixtures consumed by other scenarios.
-- **Reference selectors.** Selectors required by this scenario
-  (`pcmdShareProject`, `pcmdDeleteProject`, `pcmdRename`, Share
-  dialog widget, Delete confirmation dialog, Rename dialog,
-  Browse > Dashboards per-tile selector) — per
-  PROJECTS-SPLIT-COMPLETION-PLAN Wave 2D Step 1, these MUST be
-  registered in `.claude/skills/grok-browser/references/projects.md`
-  before Automator stage. Currently the Plan flags those as B14
-  reference-additions awaiting approval. Phase A authoring of THIS
-  `.md` does NOT depend on the selectors being registered yet —
-  the `.md` describes UI flows by intent. Spec generation
-  (Automator, Phase C) is the consumer of those selectors.
+  doesn't produce fixtures consumed by other scenarios.

@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [notebooks.browser, notebooks.browser.render-card, notebooks.browser.commands, notebooks.browser.sortable-by, notebooks.menu.browse-notebooks, notebooks.menu.new-notebook, notebooks.menu.apply-notebook, notebooks.meta.render-accordion, notebooks.entity.get-applicable-cases]
---- */
 // Integration regression across the Notebooks browser surface — navigate, filter, context-panel
 // accordion (incl. the GROK-11693 Sharing-tab guard), Apply-to applicability, back-nav, and New
 // Notebook from the ribbon. The editor/JupyterLab surface (manual_only per atlas) is not driven here.

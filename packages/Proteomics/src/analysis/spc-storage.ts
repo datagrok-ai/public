@@ -18,8 +18,8 @@
  * ## Concurrency
  *
  * Single-writer assumption per CONTEXT.md D-02. No file lock. A second
- * concurrent appendRun would silently overwrite — Cytokinetics's usage
- * pattern (one Datagrok user per machine) makes this acceptable for v1.4.
+ * concurrent appendRun would silently overwrite — the expected single-user
+ * usage pattern (one Datagrok user per machine) makes this acceptable for v1.4.
  *
  * ## Test root override
  *

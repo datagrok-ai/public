@@ -1,7 +1,5 @@
 # Grid — Manual Test Checklist
 
-Ручной чеклист. Не входит в автоматизацию PW.
-
 All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog (or SPGI where specified)
@@ -118,8 +116,6 @@ All scenarios should start with the following sequence of events:
 3. With the added Grid viewer selected, open the Context Panel
 4. Go to Data > Table and switch to SPGI-linked1 — viewer re-binds to the new table
 5. Modify row height and frozen columns — changes are reflected in the viewer
-
-
 
 ---
 {

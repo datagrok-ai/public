@@ -25,6 +25,8 @@ import './tests/string-list-tests';
 import './tests/rerun-node-tests';
 import './tests/func-editor-tests';
 import './tests/entity-tests';
+import './tests/editor-bridge-tests';
+import './tests/invalidation-tests';
 
 export let _package = new DG.Package();
 export { tests };

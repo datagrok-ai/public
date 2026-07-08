@@ -11,7 +11,9 @@ import {
   SIDEBAR_BROWSE_ICON,
   TREE_EXPAND_ARROW,
   TREE_EXPAND_ARROW_EXPANDED,
+  VIEW_TAB_SELECTED,
   treeGroupByName,
+  treeNodeByPath,
 } from './selectors';
 
 export const BASE: string = process.env.DATAGROK_URL!;
@@ -182,6 +184,57 @@ export async function expandTreeGroup(page: Page, name: string): Promise<Locator
     })).catch(() => page.waitForTimeout(400));
   }
   return label;
+}
+
+/**
+ * Expand `Apps` + the given group, then return the first candidate leaf whose tree
+ * node is actually present (its owning package is installed) as path segments, or
+ * null if none are. `Chemspace` lives in its own OPTIONAL package while `MPO profiles`
+ * ships with Chem — so the view-mode tests prefer whatever nested app is deployed
+ * rather than hard-failing when Chemspace is absent (the previous hard-coded target).
+ */
+export async function resolveNestedApp(
+  page: Page, group: string, candidates: string[],
+): Promise<string[] | null> {
+  await ensureBrowsePanelOpen(page);
+  await expandTreeGroup(page, 'Apps');
+  await expandTreeGroup(page, group);
+  for (const name of candidates) {
+    const segments = ['Apps', group, name];
+    if (await treeNodeByPath(page, segments).count() > 0) return segments;
+  }
+  return null;
+}
+
+/**
+ * Name of the currently-selected view tab (the `view-handle: <name>` attribute with
+ * the prefix stripped), or null when no view is selected. Captured from the DOM so the
+ * view-mode assertions don't depend on an app's registered name matching its runtime
+ * `view.name` (e.g. the `MPO profiles` app opens a view named `MPO Profiles`).
+ */
+export async function selectedViewName(page: Page): Promise<string | null> {
+  const handle = page.locator(`${VIEW_TAB_SELECTED}[name^="view-handle: "]`).first();
+  if (await handle.count() === 0) return null;
+  const attr = await handle.getAttribute('name');
+  return attr ? attr.replace(/^view-handle:\s*/, '') : null;
+}
+
+/**
+ * Open a tree node by path: re-open Browse, expand every intermediate group, then
+ * single- or double-click the leaf. Waits for the leaf to be visible; the caller waits
+ * on the resulting view deterministically (no fixed sleep).
+ */
+export async function clickTreePath(
+  page: Page, segments: string[], opts?: { dblclick?: boolean },
+): Promise<void> {
+  await ensureBrowsePanelOpen(page);
+  for (let i = 0; i < segments.length - 1; i++)
+    await expandTreeGroup(page, segments[i]);
+  const locator = treeNodeByPath(page, segments);
+  await locator.waitFor({ state: 'visible', timeout: 10_000 });
+  await locator.scrollIntoViewIfNeeded();
+  if (opts?.dblclick) await locator.dblclick();
+  else await locator.click();
 }
 
 /** Returns how many tree-view nodes are currently in the "expanded" state. */

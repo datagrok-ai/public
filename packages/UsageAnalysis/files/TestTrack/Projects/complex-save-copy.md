@@ -1,11 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.api.save
-  - projects.api.files.sync
-  - projects.add-relation
 target_layer: playwright
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -17,10 +15,12 @@ related_bugs: []
 
 # Complex — Save Copy mode lifecycle
 
-Source-agnostic op (Wave 2B). Decomposition of `complex.md` Steps 5-6:
-Save Copy without Data Sync → reopen → re-save with Data Sync ON.
-Single representative source (Files + `demog.csv`); does not depend on
-source variation by construction.
+Verifies the Save Copy round trip: save a project, make an
+independent copy of it with Data Sync off (a static snapshot), reopen
+the copy, then re-save it with Data Sync on to turn it into a live
+link to the source data. Uses a single file-share source
+(`demog.csv`), since Save Copy mechanics don't depend on the
+underlying data source.
 
 UI coverage delegated to `projects-ui-smoke.md`.
 
@@ -79,27 +79,13 @@ UI coverage delegated to `projects-ui-smoke.md`.
 
 ## Notes
 
-- **Origin: `complex.md` Steps 5-6 split (Wave 2B per Plan
-  lines 167).** The ops are source-agnostic per Plan line
-  166 — Save Copy mechanics work the same regardless of
-  underlying source class. Files + `demog.csv` chosen as
-  representative source.
-- **`produced_from: decomposed`, `original_path: complex.md`.**
-  This scenario is a sub-component of complex.md decomposed
-  for focused testing per Wave 2B (Phase A authoring 2026-05-04;
-  produced_from enum widened to include `decomposed` per Q3.1/D3
-  resolution).
-- **No `related_bugs`.** Save Copy modes are not directly
-  targeted by any GROK ticket. GROK-19750 (Save Copy with
-  Link mode → original viewers preserved) is covered by
-  `projects-copy-clone.md` separately (per Plan reduction
-  strategy — that scenario reduces to the GROK-19750
-  invariant only).
-- **UI coverage delegated.** Save dialog + Data Sync toggle
-  + Browse Dashboards opens are all owned by
-  `projects-ui-smoke.md`. The flow here is mostly UI for
-  the Save dialog (no JS API substitute for the Data Sync
-  toggle) — but assertions are JS API.
+- **No related bug.** Save Copy modes are not directly targeted by
+  any GROK ticket. GROK-19750 (Save Copy with Link mode must not
+  affect the original project's viewers) is covered separately by
+  `projects-copy-clone.md`.
+- **UI coverage delegated.** The Save dialog, Data Sync toggle, and
+  Browse > Dashboards opens are all owned by `projects-ui-smoke.md`.
+  The flow here is mostly UI-driven for the Save dialog (there's no
+  JS API substitute for the Data Sync toggle), but assertions are
+  made via JS API.
 - **Self-cleaning.** Step 7 deletes all projects.
-- **Sequencing within Wave 2B.** First in Wave 2B per Plan
-  execution order — no helper / env blockers.

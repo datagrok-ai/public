@@ -4,6 +4,7 @@
 #meta.function_family: biochem-calculator
 #input: dataframe table
 #input: column molecules {semType: Molecule}
+#meta.timeout: 900000
 #meta.role: transform
 #meta.method_info.author: RDKit Team
 #meta.method_info.year: 2024
@@ -31,4 +32,4 @@ def calculate_logp(mol_str: str, index: int):
 
 molecule_data = table[molecules]
 logp_values = [calculate_logp(m, i) for i, m in enumerate(molecule_data)]
-result = pd.DataFrame({'logP': logp_values}, index=table.index)
+result = pd.DataFrame({'clogP': logp_values}, index=table.index)

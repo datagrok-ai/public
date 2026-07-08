@@ -1,19 +1,15 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.clustering.api
-  - dendrogram.api.get-tree-helper
-  - dendrogram.api.tree-helper.calc-distance-matrix
-  - dendrogram.api.tree-helper.parse-cluster-matrix
-  - dendrogram.clustering.inject-tree-for-grid
 target_layer: apitest
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-chem-api.md
 related_bugs: []
 realized_as:
-  - hierarchical-clustering-chem-api.ts
+  - hierarchical-clustering-chem-api-spec.ts
 scope_reductions:
   - id: SR-FRONTMATTER-ATLAS-RESOLUTION
     rationale: |
@@ -50,7 +46,7 @@ gate_verdicts:
     cycle_id: 2026-06-03-dendrogram-automate-02
     timestamp: 2026-06-03T14:35:00Z
     spec_runs:
-      - spec: hierarchical-clustering-chem-api.ts
+      - spec: hierarchical-clustering-chem-api-spec.ts
         result: failed
         attempts: 3
         duration_seconds: 0
@@ -58,6 +54,10 @@ gate_verdicts:
 ---
 
 # Hierarchical Clustering (chem) — Distance × Linkage matrix (JS API)
+
+Verifies that hierarchical clustering builds a valid tree for every
+supported Distance × Linkage combination on the Chem (molecule) and
+numeric paths, using the JS API directly (no UI).
 
 Dataset: **mol1K** (`System:AppData/Chem/mol1K.csv`). For runtime cost, load the table and
 clone a small slice (e.g. first 60 non-null rows) so the 14 molecule combos + numeric combos

@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [notebooks.menu.open-in-notebook, notebooks.meta.open-tables-in-notebook, notebooks.entity.template, notebooks.api.save, notebooks.editor.html-mode, notebooks.editor.ribbon.html-mode, notebooks.entity.create, notebooks.editor.handle-path, notebooks.menu.delete, notebooks.meta.delete, notebooks.api.delete]
---- */
 // Notebooks / Create — UI smoke covering Open in Notebook (Scenario 1), View as HTML
 // (Scenario 2), and Delete via the Context Panel Actions (Scenario 3). Scenarios 4-5
 // (Download formats, .ipynb drag-drop import) live in the create-ui.md manual companion.

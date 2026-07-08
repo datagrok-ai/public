@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {take} from 'rxjs/operators';
 import {ModelCatalogView} from './model-catalog-view';
-import {ModelHandler, MODEL_FILTER, isModel} from './model-handler';
+import {ModelHandler, getModelFilter, isModel} from './model-handler';
 
 export interface ModelCatalogConfig {
   segment: string,
@@ -14,6 +14,7 @@ export interface ModelCatalogConfig {
   ViewClass: typeof ModelCatalogView,
   setStartUriLoaded: () => void,
   getStartUriLoaded: () => boolean,
+  roleOnlyFilter?: boolean,
 }
 
 function fixParentCall(view:DG.View, options: ModelCatalogConfig) {
@@ -119,20 +120,20 @@ function getCookie(name: string): string | undefined {
 
 export function startModelCatalog(options: ModelCatalogConfig) {
   const {
-    segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded,
+    segment, viewName, ViewClass, setStartUriLoaded, getStartUriLoaded, roleOnlyFilter,
   } = options;
-  const view = ViewClass.findOrCreateCatalogView(viewName);
+  const view = ViewClass.findOrCreateCatalogView(viewName, roleOnlyFilter);
   fixParentCall(view, options);
 
   if (!getStartUriLoaded()) {
     setStartUriLoaded();
-    setTimeout(async () => await handleInitialUri(segment));
+    setTimeout(async () => await handleInitialUri(segment, roleOnlyFilter));
   }
 
   return view;
 }
 
-async function handleInitialUri(segment: string) {
+async function handleInitialUri(segment: string, roleOnlyFilter = false) {
   const url = new URL(grok.shell.startUri);
   const startPathSegments = url.pathname.split('/');
   const catlogUriSegmentIdx = startPathSegments.findIndex((x) => x.toLocaleLowerCase() === segment.toLocaleLowerCase());
@@ -140,7 +141,7 @@ async function handleInitialUri(segment: string) {
   if (catlogUriSegmentIdx > 0) {
     if (catlogUriSegmentIdx + 1 < startPathSegments.length) {
       const shortName = startPathSegments[catlogUriSegmentIdx + 1];
-      const lst = await grok.dapi.functions.filter(`shortName = "${shortName}" and ${MODEL_FILTER}`).list();
+      const lst = await grok.dapi.functions.filter(`shortName = "${shortName}" and ${getModelFilter(roleOnlyFilter)}`).list();
       if (lst.length == 1) {
         const func = lst[0];
         const userGroups = await ModelHandler.getUserGroups();
@@ -154,10 +155,10 @@ async function handleInitialUri(segment: string) {
   }
 }
 
-export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup) {
+export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup, roleOnlyFilter = false) {
   const NO_CATEGORY = 'Uncategorized' as const;
 
-  const modelList = await grok.dapi.functions.filter(MODEL_FILTER).list();
+  const modelList = await grok.dapi.functions.filter(getModelFilter(roleOnlyFilter)).list();
   const departments = modelList.reduce((acc, model) => {
     if (model.options.department)
       acc.add(model.options.department);
@@ -213,7 +214,7 @@ export async function makeModelTreeBrowser(treeNode: DG.TreeViewGroup) {
 
         const processNode = process !== NO_CATEGORY ? hlNode.getOrCreateGroup(process, null, false): hlNode;
         processNode.onNodeExpanding.pipe(take(1)).subscribe(() => {
-          const modelRule = MODEL_FILTER;
+          const modelRule = getModelFilter(roleOnlyFilter);
           const depRules = department === NO_CATEGORY ? `(options.department = null)`: `(options.department in ("${department}"))`;
           const hlProcessRules = hlProcess === NO_CATEGORY ? `(options.HL_process = null)`: `(options.HL_process in ("${hlProcess}"))`;
           const processRules = process === NO_CATEGORY ? `(options.process = null)`: `(options.process in ("${process}"))`;

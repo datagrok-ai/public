@@ -1,6 +1,7 @@
+import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType} from '../rete/node-factory';
 import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
@@ -166,6 +167,91 @@ category('Flow: script emitter', () => {
       destroyEditor(e);
     }
   });
+
+  test('side-effect-only utilities (Log) emit no output summary when instrumented', async () => {
+    // Log/Info/Warning declare no variable — the instrumented wrapper used to
+    // emit `__ff_summarize(log)` anyway, so any flow with a Log node failed
+    // at run time with "log is not defined" (ReferenceError).
+    const e = makeEditor();
+    try {
+      const c = await addNode(e.flow, 'Constants/String');
+      c.properties['value'] = 'hello';
+      const log = await addNode(e.flow, 'Utilities/Log');
+      await e.flow.addConnectionByKeys(c.id, 'value', log.id, 'value');
+      const toStr = await addNode(e.flow, 'Utilities/ToString');
+      await e.flow.addConnectionByKeys(c.id, 'value', toStr.id, 'value');
+
+      const script = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-log'});
+      expect(script.includes('console.log('), true, 'the Log body is emitted');
+      expect(script.includes('__ff_summarize(log'), false, 'no summary of an undeclared variable');
+      expect(script.includes(`__ff_stash(${JSON.stringify(log.id)}`), false,
+        'no stash of an undeclared variable (the compiler gives Log no phantom output)');
+      expect(script.includes(`__ff_emit('node-complete', '${log.id}');`), true,
+        'the Log node completes with no outputs payload');
+      // A value-producing utility on the same canvas still summarizes normally.
+      // In instrumented mode the `let` is hoisted out of the try block, so the
+      // body line is a bare assignment.
+      const toStringVar = script.match(/(\w+) = \(.*\)\.toString\(\);/)?.[1];
+      expect(!!toStringVar, true, 'the ToString step declares its variable');
+      expect(script.includes(`__ff_summarize(${toStringVar})`), true, 'ToString keeps its output summary');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('Select Table fails fast when no table resolves', async () => {
+    const e = makeEditor();
+    try {
+      const sel = await addNode(e.flow, 'Utilities/Select Table');
+      sel.properties['tableName'] = 'My Table';
+      const out = await addNode(e.flow, 'Outputs/Table Output', 240, 0);
+      out.properties['paramName'] = 'res';
+      await e.flow.addConnectionByKeys(sel.id, 'table', out.id, 'table');
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(script.includes('grok.shell.tableByName("My Table")'), true, 'name lookup emitted');
+      expect(script.includes('throw new Error("Select Table: no open table or variable named'), true,
+        'a null table throws with the table name instead of failing downstream');
+      // Instrumented mode keeps the guard inside the node's try/catch → node-error.
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-sel'});
+      expect(inst.includes('throw new Error("Select Table: no open table or variable named'), true,
+        'the guard survives instrumentation');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('Output and SetVar compile to the same contract', async () => {
+    const setVarFunc = DG.Func.find({name: 'SetVar'})[0];
+    if (!setVarFunc) {
+      expect(true, true); // no live backend — nothing to check
+      return;
+    }
+    const e = makeEditor();
+    try {
+      const input = await addNode(e.flow, 'Inputs/Table Input');
+      input.properties['paramName'] = 'myTable';
+      const output = await addNode(e.flow, 'Outputs/Table Output', 240, 0);
+      output.properties['paramName'] = 'res';
+      await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
+      const setVar = await addNode(e.flow, ensureFuncNodeType(setVarFunc), 240, 200);
+      setVar.inputValues['variableName'] = 'MyResult';
+      await e.flow.addConnectionByKeys(input.id, 'table', setVar.id, 'value');
+
+      const script = emitScript(e.flow, SETTINGS);
+      // The Output node also registers its value in the run context (SetVar)…
+      expect(script.includes(
+        `await grok.functions.call('SetVar', {variableName: "res", value: myTable});`), true,
+      'an Output node doubles as a SetVar registration');
+      // …and the SetVar node also declares a script output, typed from its connection.
+      expect(script.includes('//output: dataframe MyResult'), true,
+        'a SetVar node declares an output header with the connection-inferred type');
+      expect(script.includes('MyResult = myTable;'), true,
+        'a SetVar node assigns its output variable');
+    } finally {
+      destroyEditor(e);
+    }
+  });
 });
 
 category('Flow: validator', () => {
@@ -204,6 +290,42 @@ category('Flow: validator', () => {
       await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
       const results = validateGraph(e.flow);
       expect(results.some((r) => r.severity === 'error'), false);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('duplicate variable names across outputs and SetVars are errors', async () => {
+    const e = makeEditor();
+    try {
+      const input = await addNode(e.flow, 'Inputs/Table Input');
+      input.properties['paramName'] = 'myTable';
+      const out1 = await addNode(e.flow, 'Outputs/Table Output', 240, 0);
+      out1.properties['paramName'] = 'res';
+      const out2 = await addNode(e.flow, 'Outputs/Value Output', 240, 120);
+      out2.properties['paramName'] = 'res';
+      await e.flow.addConnectionByKeys(input.id, 'table', out1.id, 'table');
+      await e.flow.addConnectionByKeys(input.id, 'table', out2.id, 'value');
+
+      const isDup = (r: {severity: string; message: string}): boolean =>
+        r.severity === 'error' && r.message.includes(`Duplicate variable name 'res'`);
+      expect(validateGraph(e.flow).some(isDup), true, 'two outputs sharing a name is an error');
+
+      // Rename one output; a SetVar registering the SAME name still collides —
+      // SetVar and Output share one namespace (they compile to the same thing).
+      out2.properties['paramName'] = 'other';
+      expect(validateGraph(e.flow).some(isDup), false, 'distinct output names pass');
+
+      const setVarFunc = DG.Func.find({name: 'SetVar'})[0];
+      if (!setVarFunc) return; // no live backend — the output/output half is checked
+      const sv = await addNode(e.flow, ensureFuncNodeType(setVarFunc), 240, 240);
+      sv.inputValues['variableName'] = 'res';
+      await e.flow.addConnectionByKeys(input.id, 'table', sv.id, 'value');
+      expect(validateGraph(e.flow).some(isDup), true, 'a SetVar colliding with an output is an error');
+
+      sv.inputValues['variableName'] = 'stored';
+      expect(validateGraph(e.flow).some((r) => r.message.startsWith('Duplicate')), false,
+        'distinct names across outputs and SetVars pass');
     } finally {
       destroyEditor(e);
     }

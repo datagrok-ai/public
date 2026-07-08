@@ -1,14 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.model.fire-bitset-changed
-  - peptides.rendering.weblogo-header
-  - peptides.util.modify-selection
-  - peptides.util.get-selection-bitset
-  - peptides.widgets.distribution
-  - peptides.widgets.selection
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [collaborative-selection-sync]
 produced_from: atlas-driven
 realized_as:
   - collaborative-selection-spec.ts
@@ -41,6 +36,10 @@ gate_verdicts:
         failure_keys: []
 ---
 
+# Peptides — Collaborative selection: WebLogo clicks stay in sync across viewers and panels
+
+Clicking a monomer in a WebLogo column header selects the matching rows, and that selection must propagate everywhere: the peptides grid, the Sequence Variability Map viewer, and the Distribution and Selection side-panel widgets. This guards against GROK-14298, where a broadcast selection update could crash a listener or leave some panels stale. Scenario 1 checks a single click; Scenario 2 checks Shift/Ctrl-modified multi-selection and toggle-off.
+
 ## Setup
 
 1. Open the linked Peptides demo dataset (`System:DemoFiles/bio/peptides.csv`) — a TableView with the peptides grid and a `Macromolecule`-semtype `AlignedSequence` column should be the active view.
@@ -49,9 +48,9 @@ gate_verdicts:
 
 ## Scenarios
 
-### Scenario 1 — WebLogo column-header click propagates selection through PeptidesModel.fireBitsetChanged to all configured viewers and property-panel widgets
+### Scenario 1 — Clicking a WebLogo monomer selects rows and updates every connected viewer
 
-Atlas anchor: `interactions[collaborative-selection-across-viewers]` (`coverage_type: regression`, `related_bugs: [GROK-14298]`) + `critical_paths[collaborative-selection-sync]` (p1, `derived_from: public/packages/Peptides/src/utils/cell-renderer.ts#L312`). Exercises the WebLogo-header click entry point of the collaborative-selection backbone: `setWebLogoRenderer` mouse handler → `modifySelection` → `getSelectionBitset` → `PeptidesModel.fireBitsetChanged(source)` → cross-viewer + cross-widget propagation against the `DataFrame.selection` BitSet.
+Clicking a monomer glyph in a WebLogo column header should select the matching rows and broadcast that selection to every viewer and widget wired to the table.
 
 1. On any per-position column on the peptides grid, locate a populated monomer stack in the WebLogo column-header (the stack must visibly carry at least one monomer glyph — sparse but non-empty WebLogo).
 2. Click a single monomer glyph in that WebLogo column-header. The handler invokes `modifySelection` with the (monomer, position) item; `getSelectionBitset` constructs the row mask; `PeptidesModel.fireBitsetChanged('WebLogo')` broadcasts to all subscribed viewers.
@@ -68,9 +67,9 @@ Expected (assertion summary):
 - No null-receiver runtime errors in the console or error-balloon during the broadcast (GROK-14298 crash class).
 - The selection is consistent across surfaces — surfaces do not display contradicting selected-row sets.
 
-### Scenario 2 — Shift / Ctrl click on a second WebLogo monomer applies `modifySelection` set-semantics; selection mutation re-broadcasts to all subscribers
+### Scenario 2 — Shift-click and Ctrl-click extend or toggle the selection, and every re-broadcast stays consistent
 
-Atlas anchor: same `interactions[collaborative-selection-across-viewers]` entry + `peptides.util.modify-selection` (atlas description: "applies Shift / Ctrl semantics to update the unified Selection map"). Exercises the modifier-aware path of `modifySelection` and asserts that subsequent re-broadcasts via `fireBitsetChanged` keep the cross-surface mirror consistent on a multi-pick selection — the regression risk for GROK-14298 (filter-broadcast crash + perf combo) is that a re-broadcast can crash one listener while leaving others stale.
+Shift-clicking a second WebLogo monomer should add to the selection; Ctrl-clicking should toggle a pick off. Each change re-broadcasts to all viewers and widgets — the regression risk (GROK-14298) is that a re-broadcast crashes one listener while leaving others showing stale data.
 
 1. Starting from the single-monomer selection established by Scenario 1, identify a second populated monomer glyph in a different WebLogo column-header (a different position column).
 2. Shift-click the second monomer glyph in that WebLogo column-header. `modifySelection` applies the Shift modifier semantics (additive selection — both the original and the new (monomer, position) picks are present in the unified Selection map).
@@ -88,15 +87,10 @@ Expected:
 
 ## Notes
 
-- **Atlas provenance.** Scenario 1 derives from `interactions[collaborative-selection-across-viewers]` (atlas `peptides.yaml`, `coverage_type: regression`) and from `critical_paths[collaborative-selection-sync]` (p1). The critical_path entry's `derived_from:` cites `public/packages/Peptides/src/utils/cell-renderer.ts#L312` (the `setWebLogoRenderer` installation site that wires the click handler). Scenario 2 derives from the same `interactions[]` entry, extended to cover the Shift / Ctrl modifier semantics that `peptides.util.modify-selection` (atlas description: "applies Shift / Ctrl semantics to update the unified Selection map") implements at `public/packages/Peptides/src/utils/misc.ts#L332`.
-- **target_layer rationale.** Multi-step UI flow — DOM-event-driven clicks on canvas-rendered WebLogo column-headers, modifier-key combinations on subsequent clicks, observation of selection state across the peptides grid + a custom Datagrok viewer + two property-panel widgets, console / error-balloon absence assertion for the GROK-14298 crash class. `apitest` is not viable because (a) the entry point is a canvas mouse handler bound to `setWebLogoRenderer`, not a JS-API method, and (b) the cross-surface broadcast assertion fans out to UI-rendered widgets (`Distribution`, `Selection`) and a UI-rendered viewer (`Sequence Variability Map`), all of which require DOM-level observation. Same layer choice as sibling `peptides.md` (which exercises the WebLogo-header click → selection path on a narrower surface).
-- **coverage_type rationale.** Atlas `interactions[collaborative-selection-across-viewers].coverage_type: regression` is canonical per the rule "When picking an `interactions[]` entry as seed... `coverage_type:` = the entry's `coverage_type:` (canonical)." The companion `critical_paths[collaborative-selection-sync].priority: p1` (severity axis) maps to `regression` per the p1 → regression mapping in the layer-selection heuristic, consistent with the canonical declaration.
-- **Coverage contribution.** Per the Gate F coverage audit at `scenario-chains/peptides.yaml :: gate_f_verdict.gaps[1].proposal` (cycle 03 revision 9), this scenario realizes proposal sub-clause **(c)** (`collaborative-selection-across-viewers` atlas interaction — "the highest atlas-traceability after retired (b)"). New sub_features added to the section's union: `peptides.model.fire-bitset-changed`, `peptides.util.modify-selection`, `peptides.widgets.selection` (all previously uncovered, on the `model.*`, `util.*`, and `widgets.*` uncovered families enumerated in `gaps[1].uncovered_sub_feature_families[]`). `peptides.util.get-selection-bitset` was already added to the section's union by `sar-similarity-threshold-matrix.md`; re-coverage here is intentional (it is the projection step that connects `modifySelection` to the broadcast path the scenario asserts). `peptides.rendering.weblogo-header` was already in the union via `peptides.md` and `sar-similarity-threshold-matrix.md`; re-coverage here is the entry-point click handler being exercised. `peptides.widgets.distribution` was already in the union via `peptides.md` and `sar.md`; re-coverage here is the cross-surface mirror assertion.
-- **Related bugs.** `GROK-14298` ("Peptide SAR Analysis: Filtering causes panel to crash and causes lags") is the single curated bug whose `affects_sub_features[]` intersects this scenario's `sub_features_covered[]` (`peptides.model.fire-bitset-changed` + `peptides.widgets.distribution`) per `bug-library/peptides.yaml#GROK-14298` and atlas `known_issues[GROK-14298]`. The bug's class (null safety in listeners + lack of debounce/incrementality in stats recompute on broadcast) is asserted by Scenario 1 step 6 (cross-viewer broadcast must not throw a null-receiver error) and Scenario 2 step 5 (re-broadcast on selection mutation must not throw on the second / third broadcast). This scenario does NOT exercise the filter-application path — the chain analyzer's `bug_match_attempts_skipped[GROK-14298]` notes that the existing migrated scenarios in this section do not declare a filter step; the dedicated filter-broadcast cross-cutting repro remains a backlog item per the chain.
-- **Setup composition.** Setup step 2 launches SAR via the top-menu entry path to keep the scenario's selection-backbone assertions cleanly separated from the alternative context-panel `Launch SAR` entry path (covered by sibling `sar.md`). The selection-backbone surface is identical between the two entry paths; choosing the top-menu path here mirrors the sister atlas-driven scenarios (`export-mutation-cliffs.md`, `export-invariant-map.md`, `sar-similarity-threshold-matrix.md`) and avoids duplicating `sar.md`'s entry-flow coverage.
-- **Cross-scenario coverage shape.** Scenario 1 exercises the single-click → first-broadcast path (the basic backbone assertion). Scenario 2 exercises the modifier-key path → re-broadcast on selection mutation (the regression-class assertion for GROK-14298's listener-mutation crash mode). Together they cover the documented `peptides.util.modify-selection` semantics (Shift additive, Ctrl toggle-off) without requiring a separate dedicated scenario per modifier.
-- **Deferrals.** None. Scenario steps map to existing Playwright-driveable surfaces (canvas-rendered WebLogo header clicks with modifier-key sequences, `DataFrame.selection.trueCount` readback via the JS API, viewer / widget DOM-element rendering assertions, console / error-balloon absence assertion).
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Interactive Features` (the atlas help_docs entry for `peptides-sar.md` carries the `Interactive Features` heading with `covers_sub_features: []` — feature-level navigation pointer); `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map` (maps to `peptides.viewers.monomer-position`, the viewer whose selection-mirror is asserted in step 5 of Scenario 1 and step 4 of Scenario 2).
+- **Related bug.** GROK-14298 ("Peptide SAR Analysis: Filtering causes panel to crash and causes lags") is the null-safety-in-listeners bug this scenario guards against: Scenario 1 step 6 and Scenario 2 step 5 both assert that a selection broadcast never throws a null-receiver error. The filter-application path itself (as opposed to the WebLogo-click selection path) is not exercised here; a dedicated filter-broadcast repro remains a separate backlog item.
+- **Setup composition.** SAR is launched via the top-menu entry path rather than the Peptides context-panel Launch SAR button, mirroring sibling scenarios (`export-mutation-cliffs.md`, `export-invariant-map.md`, `sar-similarity-threshold-matrix.md`) and keeping this scenario independent of `sar.md`, which owns the context-panel entry-path coverage.
+- **Scenario split.** Scenario 1 covers the basic single-click selection broadcast. Scenario 2 covers the Shift (additive) and Ctrl (toggle-off) modifier semantics and the re-broadcast that follows a selection mutation.
+- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Interactive Features`; `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map`.
 
 ## Original trailing metadata
 

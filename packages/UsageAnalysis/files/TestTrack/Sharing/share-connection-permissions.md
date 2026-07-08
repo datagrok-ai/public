@@ -1,5 +1,22 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: []
+realized_as:
+  - share-connection-permissions-spec.ts
+related_bugs: []
+---
+
 
 # Sharing & Permissions — Connection
+
+Verifies the Share dialog and the Advanced editor permissions matrix for a database
+connection: opening the Sharing pane from the Context Panel, sharing at "View and use",
+and confirming that a recipient with that grant can query the connection, browse its
+schema, and open its tables — but cannot edit, delete, or re-share it — until the owner
+revokes access.
 
 ## Setup
 
@@ -9,9 +26,8 @@
 - **Entity under test** — a new connection created under the `owner` user
 
 > **Manual-only:** Blocks D, E, and F require two independent authenticated browser sessions
-> (owner + non-admin recipient). Atlas `manual_only[]` entry `sharing.entity-types.connection`
-> confirms this constraint — two-actor setup cannot be reduced to deterministic single-session
-> UI automation. `target_layer: manual-only` per chain output plan.
+> (owner + non-admin recipient) — two-actor setup cannot be reduced to deterministic
+> single-session UI automation.
 
 ## Scenarios
 

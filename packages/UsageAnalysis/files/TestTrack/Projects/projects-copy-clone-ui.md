@@ -11,13 +11,14 @@ generated_by: D3 bucket-b classification (see decision-log + coverage-gaps/proje
 # Projects Copy Clone — UI-only manual companion
 
 This file captures the UI-only render-quality and visual-preservation
-verifications from `projects-copy-clone.md` that cannot be cleanly
-automated. Step labels preserved from canonical for cross-reference.
+checks from `projects-copy-clone.md` that can't be cleanly automated —
+step labels are preserved from the canonical scenario for
+cross-reference.
 
-These manual checks are NOT exercised by `projects-copy-clone-spec.ts`
-(which currently covers Setup + 4a re-save + Wave 1a 4b GROK-19750
-invariant via JS API approximation). Human QA must run the 2 manual
-verifications below.
+These checks are NOT exercised by `projects-copy-clone-spec.ts` (which
+covers Setup, the 4a re-save, and the GROK-19750 invariant via a JS
+API approximation). Human QA must run the 2 manual verifications
+below.
 
 ## Pre-requisite
 
