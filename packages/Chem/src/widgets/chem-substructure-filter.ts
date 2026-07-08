@@ -272,7 +272,7 @@ export class SubstructureFilter extends DG.Filter {
         this.updateFilterUiOnSketcherChanged(this.currentMolecule);
     });
     super.attach(dataFrame);
-    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.resolveColumn();
     this.columnName ??= this.column?.name ?? '';
     this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
@@ -578,6 +578,9 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
+    // See resolveColumn()'s comment — this is the entry point for every user-driven sketch edit, and
+    // the rest of this method (both branches below) dereferences `this.column!` repeatedly.
+    this.resolveColumn();
     const newMolecule = this.getSketcherMolecule();
     _package.logger.debug(`newMolfile ${newMolecule} , ${this.filterId}`);
     const newSmarts = this.moleculeToSmarts(newMolecule);
@@ -679,12 +682,23 @@ export class SubstructureFilter extends DG.Filter {
 
   async getFilterBitset(): Promise<BitArray> {
     const smarts = this.moleculeToSmarts(this.currentMolecule);
-    return await chemSubstructureSearchLibrary(this.column!, this.currentMolecule, smarts!, FILTER_TYPES.substructure,
+    return await chemSubstructureSearchLibrary(this.resolveColumn()!, this.currentMolecule, smarts!, FILTER_TYPES.substructure,
       false, false, this.searchType, this.similarityCutOff, this.fp);
   }
 
+  // `this.column` can end up null here even after attach() ran, if applyState() fired with
+  // `this.dataFrame` not yet set (a mount-timing race — live-observed: sketching a query silently
+  // no-oped instead of filtering, with `this.column!.temp` throwing under the hood). Re-resolve by
+  // name (or by semtype as a last resort) instead of trusting the cached, possibly-stale reference.
+  private resolveColumn(): DG.Column | null {
+    this.column ??= this.dataFrame && this.columnName ? this.dataFrame.col(this.columnName) : null;
+    this.column ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
+    return this.column;
+  }
+
   isFilteringBySameStructure(molecule: string): boolean {
-    return this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].summary === this.getFilterSummary(molecule);
+    const col = this.resolveColumn();
+    return !!col && !!col.temp[CHEM_APPLY_FILTER_SYNC] && col.temp[CHEM_APPLY_FILTER_SYNC].summary === this.getFilterSummary(molecule);
   }
 
   updateExternalSketcher() {
@@ -763,8 +777,9 @@ export class SubstructureFilter extends DG.Filter {
     const finish = () => {
       _package.logger.debug(`in finish function ${queryMolAndType}, ${this.filterId}`);
       if (this.currentSearches.size === 0) {
-        if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] &&
-          this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
+        const col = this.resolveColumn();
+        if (col && col.temp[CHEM_APPLY_FILTER_SYNC] &&
+          col.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
           //synchronize the results with other substructure filters on the same column
           grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {
             bitset: this.bitset,
