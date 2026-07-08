@@ -113,6 +113,11 @@ export async function exportEnrichmentInputs() : Promise<void> {
   await PackageFunctions.exportEnrichmentInputs();
 }
 
+//name: rankAbundance
+export async function rankAbundance() : Promise<void> {
+  await PackageFunctions.rankAbundance();
+}
+
 //name: enrichmentCharts
 export async function enrichmentCharts() : Promise<void> {
   await PackageFunctions.enrichmentCharts();

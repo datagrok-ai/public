@@ -87,6 +87,11 @@ export function trimForPublish(source: DG.DataFrame, meta: PublishedMetadata): D
   }) ?? null;
   const significant = findColumn(source, '', ['significant', 'sig']);
   const direction = findColumn(source, '', ['direction', 'regulation', 'up_down']);
+  // Per-condition mean abundance (Candidates). Kept so the shared snapshot can
+  // still render the Rank–Abundance / dynamic-range plot; soft (omitted when
+  // absent, e.g. a Report snapshot or an older Candidates export).
+  const qtyNum = findColumn(source, '', ['avg group quantity numerator']);
+  const qtyDen = findColumn(source, '', ['avg group quantity denominator']);
 
   const required: Array<[string, DG.Column | null]> = [
     ['Protein ID', proteinId],
@@ -108,6 +113,8 @@ export function trimForPublish(source: DG.DataFrame, meta: PublishedMetadata): D
     adjPValue!.name,
     significant!.name,
     direction?.name,
+    qtyNum?.name,
+    qtyDen?.name,
   ].filter((n): n is string => typeof n === 'string' && n.length > 0)));
 
   const frozen = source.clone(null, allowlist);

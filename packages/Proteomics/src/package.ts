@@ -39,6 +39,7 @@ import {recoverPublishedProject} from './publishing/post-open-recovery';
 import {isPublished} from './publishing/publish-state';
 import {showEnrichmentDialog} from './analysis/enrichment';
 import {openEnrichmentVisualization} from './viewers/enrichment-viewers';
+import {openRankAbundance} from './viewers/rank-abundance';
 import {findColumn} from './utils/column-detection';
 import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from './utils/proteomics-types';
 import {buildProteomicsRibbonMenu} from './menu';
@@ -345,6 +346,7 @@ export class PackageFunctions {
       showQcDashboard: () => PackageFunctions.showQcDashboard(),
       showSpcDashboard: () => PackageFunctions.showSpcDashboard(),
       enrichmentCharts: () => PackageFunctions.enrichmentCharts(),
+      rankAbundance: () => PackageFunctions.rankAbundance(),
       showAllVisualizations: () => PackageFunctions.showAllVisualizations(),
       shareAnalysisForReview: () => PackageFunctions.shareAnalysisForReview(),
     };
@@ -896,6 +898,15 @@ export class PackageFunctions {
     if (!requireDifferentialExpression(df,
       'Run Differential Expression first (Proteomics | Analyze | Differential Expression)')) return;
     showEnrichmentInputExportDialog(df);
+  }
+
+  @grok.decorators.func()
+  static async rankAbundance(): Promise<void> {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) { grok.shell.warning('No table open'); return; }
+    // Works on any analyzed protein table (Candidates or annotated Report) —
+    // openRankAbundance itself warns when no per-condition abundance is present.
+    openRankAbundance(df);
   }
 
   @grok.decorators.func()

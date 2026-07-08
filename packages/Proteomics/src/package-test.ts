@@ -11,6 +11,7 @@ import './tests/enrichment-visualization';
 import './tests/spectronaut-parser';
 import './tests/spectronaut-candidates-parser';
 import './tests/spectronaut-candidates-e2e';
+import './tests/rank-abundance';
 import './tests/fragpipe-parser';
 import './tests/fragpipe-e2e';
 import './tests/subcellular-location';

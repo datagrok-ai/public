@@ -119,6 +119,10 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:ExportEnrichmentInputs', {});
   }
 
+  export async function rankAbundance(): Promise<void> {
+    return await grok.functions.call('Proteomics:RankAbundance', {});
+  }
+
   export async function enrichmentCharts(): Promise<void> {
     return await grok.functions.call('Proteomics:EnrichmentCharts', {});
   }
