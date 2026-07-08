@@ -458,7 +458,8 @@ async function openImportWizard(
       } else {
         vv.setData(items.length, (i) => buildCard({smiles: items[i].smi, subtitle: items[i].subtitle, error: items[i].err}));
       }
-      if (okButton) okButton.disabled = values.length === 0;
+      // Don't allow importing invalid data — OK stays disabled until every entry parses cleanly.
+      if (okButton) okButton.disabled = values.length === 0 || errs.length > 0;
     };
 
     tableInput.onChanged.subscribe(async () => {
@@ -716,7 +717,21 @@ function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => v
       if (errs.length === 0) { root.style.display = 'none'; return; }
       root.style.display = 'inline-flex';
       root.innerText = `⚠ ${errs.length} issue${errs.length === 1 ? '' : 's'}`;
-      ui.tooltip.bind(root, errs.join('\n'));
+      // Collapse near-identical messages (a bad import can produce hundreds of copies) and cap the
+      // list, so the tooltip stays a small readable box instead of a full-screen wall of text.
+      const byBody = new Map<string, number>();
+      for (const e of errs) {
+        const body = e.replace(/^[^:]+:\s*/, ''); // drop the positional prefix ("R-group 393: ")
+        byBody.set(body, (byBody.get(body) ?? 0) + 1);
+      }
+      const lines = [...byBody.entries()].map(([body, n]) => n > 1 ? `${body} (×${n})` : body);
+      const MAX_LINES = 12;
+      const shown = lines.slice(0, MAX_LINES);
+      if (lines.length > MAX_LINES) shown.push(`…and ${lines.length - MAX_LINES} more`);
+      ui.tooltip.bind(root, () => ui.divText(shown.join('\n'), {style: {
+        maxWidth: '360px', maxHeight: '240px', overflow: 'hidden',
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      }}));
     },
   };
 }
@@ -991,10 +1006,11 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     aboutAcc.addPane('About', () => ui.divV([
       ui.divText(MARKUSH_DESCRIPTION),
       ui.info([
-        ui.divText('1. Draw or import cores — molecules with [*:N] R-labels.'),
-        ui.divText('2. Add an R-group substituent list for each R#.'),
-        ui.divText('3. Pick Zip (same-length lists, paired) or Cartesian (all combinations).'),
+        ui.divText('1. Draw or import cores — molecules with R-labels.'),
+        ui.divText('2. Add R-group substituents for each R.'),
+        ui.divText('3. Pick Enumerator Type (Zip — same-length list, Cartesian — all combinations).'),
         ui.divText('4. Enumerate to build the molecule table.'),
+        ui.divText('Tip: use the Templates button to add ready-made R-group sets.'),
       ], 'How it works'),
     ], {style: {padding: '8px', gap: '8px'}}), true);
     view.toolbox = aboutAcc.root;
