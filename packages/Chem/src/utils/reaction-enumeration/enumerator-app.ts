@@ -20,6 +20,12 @@ const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 // file waits before re-asserting the intended filter state, past that clobber window.
 const FILTER_REMOUNT_SETTLE_MS = 200;
 
+// Shared by every "this table should show every row" reset after a mount: subsetBySelection,
+// restoreFullTable, subsetStepBySelection, useAllForStep.
+function deferredFilterReset(df: DG.DataFrame): void {
+  setTimeout(() => df.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
+}
+
 // Sniff string columns and set semType so the grid renders reactions and molecules: presence of
 // `>>` in sampled values wins as ChemicalReaction, else auto-detection handles Molecule etc.
 function detectChemSemTypes(df: DG.DataFrame): void {
@@ -553,11 +559,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // ---- Side grids with explicit selection-driven subsetting ----
   // "Subset by selection" clones by the selection mask and registers the clone with the workspace,
   // since the table input's choice widget silently rejects unregistered values. `original` restores
-  // the user's own table for "Use all".
-  type SubsetState = {prev: DG.DataFrame | null; original: DG.DataFrame | null};
-  const templatesState: SubsetState = {prev: null, original: null};
-  const bbsState: SubsetState = {prev: null, original: null};
-  const reagentsState: SubsetState = {prev: null, original: null};
+  // the user's own table for "Use all"; `freshClone` is the last "Use all" copy (see restoreFullTable).
+  type SubsetState = {prev: DG.DataFrame | null; original: DG.DataFrame | null; freshClone: DG.DataFrame | null};
+  const templatesState: SubsetState = {prev: null, original: null, freshClone: null};
+  const bbsState: SubsetState = {prev: null, original: null, freshClone: null};
+  const reagentsState: SubsetState = {prev: null, original: null, freshClone: null};
 
   // ---- Per-step (per-round) subsetting state ----
   // Each component (reactions/BBs/reagents) can be narrowed per round via a display-only clone
@@ -745,20 +751,20 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // instead (live-verified via diagnostic logging: same `.name`, but `!==` by reference).
     if (df.name !== state.prev?.name) state.original = df; // remember the user's own table for "Use all"
     const prev = state.prev;
+    const prevFresh = state.freshClone;
     state.prev = subset;
+    state.freshClone = null; // no longer showing a "Use all"-produced copy
     assignTableInput(input, subset);
     mountFn();
-    // The just-mounted Filters viewer clobbers subset.filter back to all-false when a filtered
-    // column has zero variance in the subset (e.g. the very HBD value it was filtered to) — its
-    // histogram widgets recompute their range shortly after construction and reset the bitset in the
-    // process. Live-verified via staged timing diagnostics: the clobber lands within ~100ms of mount
-    // and never recurs after that, so a single reset at 200ms (past that window) sticks permanently —
-    // an immediate or same-tick reset does not survive it.
-    setTimeout(() => subset.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
+    // The just-mounted Filters viewer can clobber subset.filter to all-false (e.g. zero-variance
+    // column after subsetting) — reset it once that settles.
+    deferredFilterReset(subset);
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && prev.name !== subset.name && prev.name !== df.name)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
+    if (prevFresh && prevFresh.name !== subset.name && prevFresh.name !== df.name)
+      try {grok.shell.closeTable(prevFresh);} catch (e) {console.warn(`Could not close prev fresh clone: ${e}`);}
   }
 
   // Undo "Subset by selection": put the remembered full table back into the input and close the
@@ -766,39 +772,40 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function restoreFullTable(
     input: DG.InputBase<DG.DataFrame | null>, state: SubsetState, mountFn: () => void, noun: string,
   ): void {
+    // Shared "no swap needed" case: just clear an active filter directly, or say so if there isn't one.
+    const clearOrInform = (current: DG.DataFrame | null): void => {
+      if (current && current.filter.trueCount < current.rowCount) current.filter.setAll(true, true);
+      else grok.shell.info(`The full ${noun} library is already in use.`);
+    };
     const orig = state.original;
-    if (!orig || input.value?.name === orig.name) {
-      // No pending subset swap to undo, but the user may still have an active filter (via the
-      // filters panel, with no "Subset by selection" click in between) — "Use all" reads as "show
-      // every row", not just "undo the last subset", so clear it too instead of no-op'ing.
-      const current = input.value;
-      if (current && current.filter.trueCount < current.rowCount) {
-        current.filter.setAll(true, true);
-        return;
-      }
-      grok.shell.info(`The full ${noun} library is already in use.`);
-      return;
-    }
+    if (!orig) return clearOrInform(input.value); // no subset was ever taken from this table
+    if (state.freshClone && input.value?.name === state.freshClone.name)
+      return clearOrInform(state.freshClone); // already showing a "Use all" copy — no need to re-clone
     const prev = state.prev;
+    const prevFresh = state.freshClone;
     state.prev = null;
-    assignTableInput(input, orig);
+    // "Use all" swaps in a fresh, distinctly-named clone of `orig` rather than reusing it directly.
+    // Reusing `orig` carries forward per-column tags (e.g. chem's CHEM_APPLY_FILTER_SYNC) that can hang
+    // a re-run substructure search — and even a tag-free clone NAMED the same as `orig` still gets the
+    // platform's own remembered filter/sketch state (keyed by table+column name) reapplied to it
+    // (live-verified: both the sketch and the hang persisted with a same-named clone). clone(null) plus
+    // a distinct name sidesteps both. `orig` stays untouched so repeated clicks keep deriving from the
+    // same known-good source.
+    const fresh = orig.clone(null);
+    // Strip a prior "(full)" suffix instead of appending blindly — `orig` can itself be an earlier
+    // "Use all" clone (subsetting from it re-points state.original at it), and re-suffixing every cycle
+    // would otherwise grow "X (full) (full) (full)...".
+    fresh.name = `${orig.name.replace(/ \(full\)$/, '')} (full)`;
+    state.freshClone = fresh;
+    assignTableInput(input, fresh);
     mountFn();
-    // `orig` can carry a stale filter from before it was swapped out (e.g. the user filtered it,
-    // then clicked "Subset by selection" without ever clearing that filter) — "Use all" should mean
-    // every row is visible, not "whatever was filtered last time this table was active". Same
-    // deferred reset as subsetBySelection: mountFn() just remounted a fresh Filters viewer, whose
-    // async histogram-widget setup can clobber an immediate reset (live-verified elsewhere this
-    // session), so defer past that window.
-    // NOTE: a categorical filter's own checkboxes can still show the pre-reset selection after this
-    // (they read a per-column filter memory, not the live bitset) — live-verified that re-mounting
-    // to force them to redraw actually re-applies that same remembered selection and re-clobbers the
-    // bitset right back, which is worse. Leaving the checkbox display stale is the lesser bug: the
-    // grid and row counts are correct, only the filter panel's own checkmarks lag until the user
-    // next touches that widget.
-    setTimeout(() => orig.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
+    // `fresh` can still inherit a stale filter bitset from `orig` — reset it once the mount settles.
+    deferredFilterReset(fresh);
     refreshValidation();
     if (prev && prev.name !== orig.name)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
+    if (prevFresh && prevFresh.name !== fresh.name)
+      try {grok.shell.closeTable(prevFresh);} catch (e) {console.warn(`Could not close prev fresh clone: ${e}`);}
   }
 
   // Re-validate on every input change so the Run button stays accurate.
@@ -1168,7 +1175,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const tabPanel = (header: HTMLElement, gridHost: HTMLElement): HTMLElement => {
     // display:flex on the host turns the grid's inline-flex outer display into a block-level
     // flex item, eliminating the 12px baseline-alignment gap that block+inline-flex produces.
-    gridHost.style.cssText += ';position:relative;display:flex;flex-direction:column;flex:1 1 0;min-height:0;overflow:hidden';
+    gridHost.style.position = 'relative';
+    gridHost.style.display = 'flex';
+    gridHost.style.flexDirection = 'column';
+    gridHost.style.flex = '1 1 0';
+    gridHost.style.minHeight = '0';
+    gridHost.style.overflow = 'hidden';
     const fade = ui.div([], {style: {
       position: 'absolute', bottom: '0', left: '0', right: '0', height: '48px',
       background: 'linear-gradient(to bottom,transparent,var(--white))', pointerEvents: 'none', zIndex: '1',
@@ -1286,8 +1298,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       setStepWork(k, subset);
       stepState[k - 1].committed = true;
       renderGrid(); renderBar(); updateDots();
-      // See subsetBySelection's identical fix and comment on the 200ms delay.
-      setTimeout(() => subset.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
+      deferredFilterReset(subset);
     };
 
     // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
@@ -1295,6 +1306,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       setStepWork(k, null);
       stepState[k - 1].committed = false;
       renderGrid(); renderBar(); updateDots();
+      // stepClone(k) can inherit the global table's active filter — reset it.
+      const w = stepState[k - 1]?.df;
+      if (w) deferredFilterReset(w);
     };
 
     // (Re)build the step tab strip, landing on `initialStep` (clamped). TabControl has no
@@ -1666,7 +1680,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // addPane's factory is called once when the tab is first activated; we then keep the panel DOM
   // alive across switches.
   const tabs = ui.tabControl(null, false);
-  tabs.root.style.cssText += ';width:100%;flex:1 1 0;min-height:0;overflow:hidden';
+  tabs.root.style.width = '100%';
+  tabs.root.style.flex = '1 1 0';
+  tabs.root.style.minHeight = '0';
+  tabs.root.style.overflow = 'hidden';
   templatesPane = tabs.addPane('Reaction templates', () => templatesPanel);
   bbsPane = tabs.addPane('Building blocks', () => bbsPanel);
   reagentsPane = tabs.addPane('Reagents', () => reagentsPanel);
