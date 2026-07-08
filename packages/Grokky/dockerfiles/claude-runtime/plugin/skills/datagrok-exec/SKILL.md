@@ -114,7 +114,7 @@ For task-specific API surface, open the matching skill before writing code:
 | Filter rows (range, categorical, contains, substructure, predicate) | `datagrok-filtering`     |
 | Select rows; current row; selection ↔ filter   | `datagrok-selection`           |
 | Add / configure / find / close viewers         | `datagrok-viewers`             |
-| Grid sort, visibility, widths, pins, color coding, freeze | `datagrok-grid-customization` |
+| Grid sort, visibility, widths, pins, freeze; grid-only cell tint | `datagrok-grid-customization` |
 | Cheminformatics: SMILES/MolBlock/InChI/canonicalize | `datagrok-chem-data` / `datagrok-chem-toolkit` |
 
 ## Multiple tool calls in one response
