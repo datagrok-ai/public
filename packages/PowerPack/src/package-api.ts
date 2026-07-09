@@ -8,10 +8,16 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  /**
+  Entities the user interacted with most recently (last 30 days)
+  */
   export async function mostRecentEntities(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:MostRecentEntities', { user });
   }
 
+  /**
+  Entities recently shared with the user or their groups (last 30 days)
+  */
   export async function recentlySharedWithMe(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:RecentlySharedWithMe', { user });
   }
