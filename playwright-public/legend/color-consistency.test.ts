@@ -121,6 +121,7 @@ test('Legend color consistency', async ({page}) => {
   await softStep('Project round-trip — save + close + reopen + verify palette', async () => {
     const res = await page.evaluate(async () => {
       let projectId: string | null = null;
+      let __layoutId: string | null = null;
       try {
         const DG = (window as any).DG;
         const proj = DG.Project.create();
@@ -132,6 +133,13 @@ test('Legend color consistency', async ({page}) => {
         // references a not-yet-persisted entity id -> FK violation on the CI stack.
         await (window as any).grok.dapi.tables.uploadDataFrame(__df);
         await (window as any).grok.dapi.tables.save(__ti);
+        // Attach the current viewer layout to the project so reopen restores the
+        // viewers (not just the table); otherwise shell.tv.viewers is empty after
+        // reopen and the legend/colour assertions find no viewer.
+        const __layout = (window as any).grok.shell.tv.saveLayout();
+        proj.addChild(__layout);
+        await (window as any).grok.dapi.layouts.save(__layout);
+        __layoutId = __layout.id;
         const saved = await (window as any).grok.dapi.projects.save(proj);
         projectId = saved.id;
       } catch (e: any) {
@@ -142,6 +150,10 @@ test('Legend color consistency', async ({page}) => {
       try {
         const reopened = await (window as any).grok.dapi.projects.find(projectId);
         await reopened.open();
+        // project.open() restores the table but NOT custom viewers — re-apply the saved
+        // layout so the viewer(s) are present for the palette checks below.
+        await new Promise((r) => setTimeout(r, 1500));
+        try { if (__layoutId) (window as any).grok.shell.tv.loadLayout(await (window as any).grok.dapi.layouts.find(__layoutId)); } catch (_) {}
       } catch (e: any) {
         return {phase: 'reopen', ok: false, error: String(e).slice(0, 200), projectId};
       }
