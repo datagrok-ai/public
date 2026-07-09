@@ -252,6 +252,38 @@ category('Flow: script emitter', () => {
       destroyEditor(e);
     }
   });
+
+  test('a no-output mutator with two table inputs captures both modified tables', async () => {
+    // A node that transforms tables in place and declares no output: the
+    // instrumented run captures every connected dataframe input as a
+    // "<input> (modified)" summary, so the preview can show both.
+    const script = DG.Script.create([
+      '//name: TwoTableMutator',
+      '//language: javascript',
+      '//input: dataframe t1',
+      '//input: dataframe t2',
+      'grok.shell.info("noop");',
+    ].join('\n'));
+    expect(script.outputs.length, 0, 'the synthetic mutator declares no outputs');
+
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const in1 = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const in2 = await addNode(e.flow, 'Inputs/Table Input', 0, 140);
+      in1.properties['paramName'] = 'a';
+      in2.properties['paramName'] = 'b';
+      const mut = await addNode(e.flow, typeName, 320, 60);
+      await e.flow.addConnectionByKeys(in1.id, 'table', mut.id, 't1');
+      await e.flow.addConnectionByKeys(in2.id, 'table', mut.id, 't2');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes(`'t1 (modified)': __ff_summarize(`), true, 'first input table captured');
+      expect(inst.includes(`'t2 (modified)': __ff_summarize(`), true, 'second input table captured');
+    } finally {
+      destroyEditor(e);
+    }
+  });
 });
 
 category('Flow: multi-output funcs', () => {

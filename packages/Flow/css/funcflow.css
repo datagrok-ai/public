@@ -1785,6 +1785,7 @@
   pointer-events: none !important;
   user-select: none !important;
 }
+
 /* ---------- bottom output panel (in-view splitter pane) ---------- */
 
 .ff-output-panel {
@@ -1799,7 +1800,7 @@
    rule whose :not() chain gives it enormous specificity. The canvas therefore
    keeps `ui-div` (the beatable branch) and this (0,3,2) rule out-ranks it —
    with both `!important`, specificity decides, independent of load order. */
-div.ui-box > div.ui-div.funcflow-canvas-container {
+div.ui-box>div.ui-div.funcflow-canvas-container {
   overflow: hidden !important;
 }
 
@@ -1863,6 +1864,7 @@ div.ui-box > div.ui-div.funcflow-canvas-container {
 .funcflow-preview-block {
   height: 100%;
 }
+
 /* ---------- autorun ribbon toggle ---------- */
 
 /* The bolt reads as "live" only when clearly distinct from the other ribbon
@@ -1870,11 +1872,16 @@ div.ui-box > div.ui-div.funcflow-canvas-container {
    a thin outline glyph); the ON state is colored AND font-weight 600, which
    renders the Font Awesome bolt as its filled variant. */
 .ff-autorun-toggle {
-  opacity: 0.8;
+  /* opacity: 0.8; */
+  padding-right: 1px;
 }
 
 .ff-autorun-toggle.ff-autorun-on {
-  color: var(--blue-1, #2083d5) !important;
-  font-weight: 600;
-  opacity: 1;
+  background: #2083D550;
+  border-radius: 25%;
+}
+
+.ff-autorun-toggle.ff-autorun-on:hover {
+  background: #2083D570;
+  border-radius: 25%;
 }

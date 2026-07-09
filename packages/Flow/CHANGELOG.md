@@ -2,6 +2,16 @@
 
 ## v.next
 
+### Preview shows every renderable output, side by side
+
+* A node that surfaces **more than one renderable value** now previews them all, laid out side by side
+  with draggable vertical dividers (`ui.splitH`) instead of showing only the first. Covers a
+  **multi-output func** (e.g. two dataframes) and an in-place **mutator with no output but several
+  modified input tables**. A lone value fills the panel exactly as before.
+* The instrumented run now captures **every** connected dataframe input as a `"<input> (modified)"`
+  summary when the node has no dataframe output (previously only the first) — so a two-table mutator
+  previews both tables it transformed.
+
 ### Creation-script import fixed for the new SetVar signature
 
 * Importing a creation script (and everything downstream: per-table split, order-edge inference,

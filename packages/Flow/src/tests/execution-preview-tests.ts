@@ -330,4 +330,28 @@ category('Flow: execution preview', () => {
     expect(!!wsBtn(withGear), true, 'the workspace button coexists with the gear');
     expect(!!withGear!.querySelector('[data-testid="ff-viewer-edit"]'), true, 'the edit gear is present');
   });
+
+  test('a single output fills the panel; multiple outputs split side by side', async () => {
+    const df = (name: string): DG.DataFrame =>
+      DG.DataFrame.fromColumns([DG.Column.fromStrings(name, ['a', 'b'])]);
+
+    // One output → the block is mounted directly (no splitter).
+    const one = buildValuePreviews({
+      status: NodeExecStatus.completed,
+      outputs: {result: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')}},
+    });
+    expect(one.querySelectorAll('.funcflow-preview-block').length, 1, 'one preview block');
+    expect(one.querySelector('.ui-split-h'), null, 'a lone output is not wrapped in a splitter');
+
+    // Two renderable outputs (e.g. a multi-output func) → side-by-side splitH.
+    const two = buildValuePreviews({
+      status: NodeExecStatus.completed,
+      outputs: {
+        result1: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')},
+        result2: {type: 'dataframe', rows: 2, cols: 1, clone: df('y')},
+      },
+    });
+    expect(two.querySelectorAll('.funcflow-preview-block').length, 2, 'both previews built');
+    expect(!!two.querySelector('.ui-split-h'), true, 'multiple outputs share a horizontal splitter');
+  });
 });

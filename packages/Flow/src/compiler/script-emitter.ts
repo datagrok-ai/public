@@ -617,23 +617,23 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
       outputEntries.push(`${JSON.stringify(key)}: __ff_summarize(${outExpr}${typeArg})`);
   }
 
-  // Capture the (possibly in-place-modified) table threaded through a dataframe
-  // input, keyed `<input> (modified)`. Covers two cases the real-output summaries
-  // miss: a pure in-place mutator (no outputs at all), AND a node whose real
-  // output isn't a table but still threads one through its passthrough — e.g.
-  // AddNewColumn returns a *column*, yet a viewer wired to its "table →"
+  // Capture the (possibly in-place-modified) table(s) threaded through a
+  // dataframe input, keyed `<input> (modified)`. Covers two cases the real-output
+  // summaries miss: a pure in-place mutator (no outputs at all), AND a node whose
+  // real output isn't a table but still threads one through its passthrough —
+  // e.g. AddNewColumn returns a *column*, yet a viewer wired to its "table →"
   // passthrough needs that post-execution table (for inspect + the column
-  // picker). Skipped when a real dataframe output already carries it.
+  // picker). Every connected dataframe input is captured (a two-table mutator
+  // with no output previews both), so the preview shows all it transformed.
+  // Skipped when a real dataframe output already carries it.
   const hasDataframeOutput = Array.from(step.outputs.keys()).some((key) =>
     (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType === 'dataframe');
   if (node && !hasDataframeOutput) {
     for (const [inKey, input] of Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>) {
       if (input?.socket.dgType !== 'dataframe') continue;
       const inputExpr = step.inputs.get(inKey);
-      if (inputExpr && inputExpr !== 'undefined') {
+      if (inputExpr && inputExpr !== 'undefined')
         outputEntries.push(`'${inKey} (modified)': __ff_summarize(${inputExpr}, 'dataframe')`);
-        break;
-      }
     }
   }
 
