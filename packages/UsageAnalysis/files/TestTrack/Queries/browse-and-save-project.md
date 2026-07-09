@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - chembl-parameterized-and-project.test.ts
+related_bugs: []
+---
+
 1. Go to **Databases > Postgres**
 2. Preview and run all queries from `CHEMBL` and `Northwind`
 3. Check the **Context Panel** tabs on preview and run

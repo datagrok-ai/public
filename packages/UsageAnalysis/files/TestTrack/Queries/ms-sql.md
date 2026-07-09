@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - mssql-query-lifecycle.test.ts
+related_bugs: []
+---
+
 ### 1. Adding
 1. Go to **Browse** > **Databases** > **MS SQL**
 3. Right-click the `NorthwindTest` connection and select **New query** from the context menu

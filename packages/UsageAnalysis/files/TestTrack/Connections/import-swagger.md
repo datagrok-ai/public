@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 06-import-swagger.test.ts
+related_bugs: []
+---
+
 1. Find the [openweathermap.yaml](https://github.com/datagrok-ai/public/blob/master/packages/Samples/swaggers/openweathermap.yaml) file in the Samples package
 2. Press 'Download raw file' to download file to local machine
 3. Drag-and-drop openweathermap.yaml file from your local storage to the browser tab with opened **Datagrok**

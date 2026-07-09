@@ -1,3 +1,14 @@
+---
+feature: scripts
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - scripts-browser.test.ts
+related_bugs: []
+---
+
 # Tests: Script Browser
 
 The script browser allows you to view previously created scripts, view their properties and manage them.

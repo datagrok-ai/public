@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes: []
+realized_as:
+  - postgres-query-transformations.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases** > **Postgres** > **NorthwindTest**
 2. Right-click the **Products** query and select **Edit…** — the **Query View** opens
 3. Open the **Transformation** tab
