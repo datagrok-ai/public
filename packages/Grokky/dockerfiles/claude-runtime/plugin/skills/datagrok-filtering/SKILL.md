@@ -14,17 +14,25 @@ Row-shape filtering on `DG.DataFrame` via `df.filter` (a `DG.BitSet`),
 Globals inside every `datagrok-exec` block: `grok`, `ui`, `DG`, `view`,
 `t` (the current `DG.DataFrame`, when the view is a `TableView`).
 
+## Choosing the path: Filters panel first
+
+Default to the UI FilterGroup (`view.getFiltersGroup(...).updateOrAdd(...)`)
+for any condition expressible as per-column widgets — range, categorical /
+equals / in-set, multi-value, boolean, substructure. The filter
+appears in the Filters panel where the user can see, adjust, and remove it.
+
+Programmatic `t.filter` is for conditions widgets can't express — OR across
+columns, computed predicates, regex on high-cardinality columns. It doesn't
+show in the Filters panel.
+
 ## Quick reference
 
 | Intent                                                | Code                                                                                |
 |-------------------------------------------------------|-------------------------------------------------------------------------------------|
-| Predicate filter (any condition, any column count)    | `t.filter.init((i) => pred(i))`                                                     |
+| Several filters at once (Filters panel)               | `view.filters({filters: [{type: DG.FILTER_TYPE.HISTOGRAM, columnName, min, max}, ...]})` |
+| Single widget — add or update (Filters panel)         | `view.getFiltersGroup({createDefaultFilters:false}).updateOrAdd(state)` — state shapes below |
+| Condition widgets can't express (OR across columns, computed) | `t.filter.init((i) => pred(i))` — not shown in the Filters panel |
 | Persistent predicate filter (survives UI filter pass) | Subscribe to `t.onRowsFiltering`, AND a fresh `DG.BitSet` inside; push sub to `view.subs` |
-| Single-column range (UI widget)                       | `view.getFiltersGroup({createDefaultFilters:false}).updateOrAdd({type:DG.FILTER_TYPE.HISTOGRAM, column, min, max})` |
-| Single-column categorical / equals / in-set (UI)      | `... .updateOrAdd({type:DG.FILTER_TYPE.CATEGORICAL, column, selected:[...]})`        |
-| Free-text "contains"                                  | `... .updateOrAdd({type:DG.FILTER_TYPE.FREE_TEXT, column, value:'acid'})`            |
-| Regex on a string column                              | Predicate filter — `FREE_TEXT` doesn't expose a regex shape                         |
-| Substructure                                          | `... .updateOrAdd({type:DG.FILTER_TYPE.SUBSTRUCTURE, column, columnName, molBlock})` |
 | Clear all filters                                     | `t.filter.setAll(true)` (and `view.getFiltersGroup(...).setActive(false)` if a UI filter group is present) |
 | Invert                                                | `t.filter.invert()`                                                                 |
 | New table of the currently-visible rows               | `t.clone(t.filter)`                                                                 |
@@ -65,107 +73,69 @@ All bitwise mutators (`and`, `or`, `xor`, `andNot`, `invert`, `setAll`,
 return {visible: t.filter.trueCount, hidden: t.filter.falseCount, total: t.rowCount};
 ```
 
-## Filtering by predicate
+## Filtering by column value (UI FilterGroup)
 
-`t.filter.init(pred)` is the canonical fast path: buffer-direct, single
-notification, ~10× faster than `t.rows.filter(row => ...)`.
-
-**Polarity (memorize):** `pred(i)` returns `true` to **keep** row `i`.
-Opposite of `removeWhereIdx` ("returns `true` to remove").
+Add several filters at once with `view.filters(...)`:
 
 ```datagrok-exec
-// Multi-column predicate in a single pass — strictly preferred over building
-// two separate BitSets and AND-ing them.
-const mw = t.getCol('MW');
-const logP = t.getCol('cLogP');
-t.filter.init((i) => mw.get(i) < 500 && logP.get(i) < 5);
+view.filters({filters: [
+  {type: DG.FILTER_TYPE.HISTOGRAM, columnName: 'height', min: 120, max: 150},
+  {type: DG.FILTER_TYPE.FREE_TEXT},
+  {type: DG.FILTER_TYPE.MULTI_VALUE, columnName: 'sex', mode: 'OR', include: ['F'], exclude: []},
+  {type: DG.FILTER_TYPE.CATEGORICAL, columnName: 'disease'},
+]});
 ```
 
-`t.filter.init` **replaces** the current filter; it does not intersect. To
-narrow on top of the existing filter, build a fresh mask and AND:
+For a single filter,
+`view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd(state)`
+adds or updates one widget. Always pass `createDefaultFilters: false` unless
+you actually want a histogram per column. State shapes:
+
+| State                                                                                                        | Behavior                             |
+|---------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `{type: DG.FILTER_TYPE.HISTOGRAM, columnName: 'height', min: 120, max: 150}`                                | numeric range                        |
+| `{type: DG.FILTER_TYPE.CATEGORICAL, columnName: 'race', selected: ['Asian', 'Black']}`                      | in-set; single element = equals; omit `selected` → widget with no constraint |
+| `{type: DG.FILTER_TYPE.MULTI_VALUE, columnName: 'sex', mode: 'AND'\|'OR', include: ['F'], exclude: []}`     | cells holding several values (column's separator tag, default newline); `include`/`exclude` BOTH required (empty array ok, null not); a value in neither list is unconstrained; a `selected` key (seen in older samples) is ignored |
+| `{type: DG.FILTER_TYPE.BOOL_COLUMNS, 'columnless-filter-identifier': 'control', mode: 'AND', true: [true], false: [false]}` | one widget over N bool columns (order = comma-joined name list); `true[i]` keeps rows where the column is true, `false[i]` where false, both true → no constraint |
+| `{type: DG.FILTER_TYPE.FREE_TEXT, gridNames: ['age > 30', '* smith']}`                                      | each entry is a row-matcher expression (`sex = "M"`, `height > 180`) or a `* text` wildcard over all columns; `value` only prefills the box, `column` is ignored |
+| `{type: DG.FILTER_TYPE.SUBSTRUCTURE, columnName, molBlock}`                                                  | substructure (see below)             |
+
+For multi-column AND conditions ("age > 60 AND height < 170"), stack one
+widget per column — they collaborate via `onRowsFiltering`, and the user can
+adjust each condition in the panel.
+
+## Filtering by predicate (when widgets can't express it)
+
+`t.filter.init(pred)` writes the mask directly — it doesn't show in the
+Filters panel. Prefer it over `t.rows.filter(row => ...)`. For value access
+inside the predicate (null checks, raw typed-array views), see
+`datagrok-df-and-columns`.
 
 ```datagrok-exec
-const col = t.getCol('activity');
-const mask = DG.BitSet.create(t.rowCount, (i) => col.get(i) > 7);
-t.filter.and(mask);
+// Cross-column computed condition (BMI > 30) — not expressible as
+// per-column widgets.
+const weight = t.getCol('weight');
+const height = t.getCol('height');
+t.filter.init((i) => weight.get(i) / Math.pow(height.get(i) / 100, 2) > 30);
 ```
 
-### Predicate filter that survives UI filter cycles
-
-A bare `t.filter.init(...)` is overwritten the next time the UI filter
-group re-runs (any widget add/remove, slider drag, etc.). To make a
-predicate filter **collaborate** with the UI filters, subscribe to
-`t.onRowsFiltering` and AND your contribution in there. Push the
-subscription onto `view.subs` so it's auto-disposed on view detach.
+A bare `t.filter.init(...)` is overwritten the next time the UI filter group
+re-runs (any widget add/remove, slider drag, etc.). To make a predicate
+filter collaborate with the UI filters — or live longer than the current
+exec block — subscribe to `t.onRowsFiltering` and AND your contribution in
+there; push the subscription onto `view.subs` so it's auto-disposed on view
+detach:
 
 ```datagrok-exec
 // Persistent predicate filter — re-applied every UI filter pass.
 const sub = t.onRowsFiltering.subscribe((_) => {
-  const mw = t.getCol('MW');
-  const mask = DG.BitSet.create(t.rowCount, (i) => mw.get(i) < 500);
+  const age = t.getCol('age');
+  const mask = DG.BitSet.create(t.rowCount, (i) => age.get(i) < 30);
   t.filter.and(mask);
 });
 view.subs.push(sub);
 t.rows.requestFilter();  // kick the first pass
 ```
-
-Use this whenever the predicate needs to live longer than the current exec block.
-
-## Filtering by column value (UI FilterGroup)
-
-`view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd(state)`
-attaches a single-column filter widget in the side panel. Always pass
-`createDefaultFilters: false` unless you actually want a histogram per column.
-
-| Filter shape                                                                                                | Filter type                          |
-|-------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `{type: DG.FILTER_TYPE.HISTOGRAM, column: 'MW', min, max}` (numeric)                                        | range / numeric histogram            |
-| `{type: DG.FILTER_TYPE.CATEGORICAL, column: 'category', selected: [...]}` (string / categorical)            | categorical / equals / in-set        |
-| `{type: DG.FILTER_TYPE.FREE_TEXT, column: 'name', value: 'acid'}` (string substring)                       | contains / free-text                 |
-| `{type: DG.FILTER_TYPE.SUBSTRUCTURE, column, columnName, molBlock}` (molecule)                              | substructure (see below)             |
-
-```datagrok-exec
-// Range filter on a numeric column — appears as a histogram in the filter panel.
-view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
-  type: DG.FILTER_TYPE.HISTOGRAM, column: 'MW', min: 200, max: 500,
-});
-```
-
-```datagrok-exec
-// In-set: keep rows where category is one of these. Single-element `selected`
-// is the equals form.
-view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
-  type: DG.FILTER_TYPE.CATEGORICAL, column: 'category', selected: ['A', 'B', 'C'],
-});
-```
-
-```datagrok-exec
-// Free-text contains. Case-insensitive substring on a string column.
-view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
-  type: DG.FILTER_TYPE.FREE_TEXT, column: 'name', value: 'acid',
-});
-```
-
-For **regex** on a string column there is no first-class `FREE_TEXT` shape —
-use a predicate filter:
-
-```datagrok-exec
-const col = t.getCol('name');
-const re = /acid$/i;
-t.filter.init((i) => {
-  const v = col.get(i);
-  return v != null && re.test(String(v));
-});
-```
-
-For multi-column conditions (Lipinski-style "MW < 500 AND cLogP < 5"), use a
-predicate filter rather than stacking single-column UI widgets — predicate
-runs in one pass.
-
-If you write to `t.filter` outside `onRowsFiltering` while UI filters exist,
-your write is overwritten on the next filter cycle. Either subscribe to
-`onRowsFiltering`, or disable the UI filter group first:
-`view.getFiltersGroup({createDefaultFilters: false}).setActive(false)`.
 
 ## Substructure filter
 
@@ -186,31 +156,19 @@ const molBlock = DG.chem.isMolBlock(query)
   : DG.chem.convert(query, DG.chem.isSmarts(query) ? DG.chem.Notation.Smarts : DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
 view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
   type: DG.FILTER_TYPE.SUBSTRUCTURE,
-  column: 'smiles',
   columnName: 'smiles',
   molBlock,
-  molBlockFailover: query,
 });
 ```
 
-## Combining filter conditions
+## Combining masks
 
 | Intent                                                   | Code                                                                  |
 |----------------------------------------------------------|-----------------------------------------------------------------------|
-| Lipinski-style AND in one pass (fastest)                 | `t.filter.init((i) => mw.get(i) < 500 && logP.get(i) < 5)`            |
 | AND another pre-built BitSet onto current filter         | `t.filter.and(otherBitSet)`                                           |
 | OR with a pre-built BitSet                               | `t.filter.or(otherBitSet)`                                            |
 | Subtract (filter out rows that match `other`)            | `t.filter.andNot(otherBitSet)`                                        |
-| Stack two single-column UI filters                       | two `updateOrAdd` calls — they collaborate via `onRowsFiltering`      |
 | Make a fresh mask without attaching                      | `DG.BitSet.create(t.rowCount, (i) => ...)`                            |
-
-`BitSet` mutators return `this`, so chaining works:
-
-```datagrok-exec
-const catA = DG.BitSet.create(t.rowCount, (i) => i % 2 === 0);
-const catB = DG.BitSet.create(t.rowCount, (i) => i % 3 === 0);
-t.filter.setAll(true).and(catA).and(catB);
-```
 
 ## Clearing & inverting
 
@@ -244,10 +202,10 @@ matches "filter to rows where X is true"; `removeWhereIdx` matches "drop rows
 where X is true". Confusing them either hides every row or deletes the wrong ones.
 
 ```datagrok-exec
-// Destructive: rows where category === 'X' are gone from t.
+// Destructive: rows where race === 'Other' are gone from t.
 // Opposite polarity from filter.init.
 const before = t.rowCount;
-t.rows.removeWhereIdx((i) => t.getCol('category').get(i) === 'X');
+t.rows.removeWhereIdx((i) => t.getCol('race').get(i) === 'Other');
 return {removed: before - t.rowCount};
 ```
 

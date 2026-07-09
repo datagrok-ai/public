@@ -1,5 +1,9 @@
 # Grok Connect changelog
 
+# 2.7.1
+
+* GROK-18695: Security — added a `<dependencyManagement>` block forcing patched, Java-8-compatible versions of vulnerable transitive dependencies: netty-bom 4.1.135.Final (transitive `netty-codec-http2`/`resolver-dns`/`redis`/…), jackson-bom 2.18.8, protobuf-java 3.25.5, commons-compress 1.26.2, commons-io 2.16.1, commons-beanutils 1.11.0, json-smart 2.5.1, plexus-utils 3.6.1, hadoop-yarn-server-common 3.3.2.
+
 # 2.7.0 (2026-07-07)
 
 * Athena: Fixed "No suitable driver found" when connecting with temporary/STS session credentials (register JDBC driver before the direct DriverManager path)

@@ -14,9 +14,9 @@ import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
-import {createPackageKnowledgeServer} from './package-knowledge-tool';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd, startWorkspaceSync} from './sync/workspace';
 import {Verifier} from './verify';
+import {GroundingGate} from './grounding';
 
 const PORT = 5355;
 const MAX_SESSIONS = 200;
@@ -73,6 +73,26 @@ directory. Use Glob or \`ls agents/\` to discover them when relevant.
 NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
 
 For a Datagrok function in a package not covered by an inlined skill, call \`list_functions(keyword)\` (MCP) to discover it; use \`get_function(name)\` only when you need full parameter details.
+
+## Ground answers in sources, not memory
+
+Treat your own knowledge of Datagrok as unreliable. Its UI, menus, behavior, and
+capabilities are platform-specific and do not follow the conventions of other tools. Answer only
+from a source you open this turn — never from memory. Which source is authoritative depends on what
+you are doing:
+
+- **Explaining how the product works** (menus, dialogs, features, "how do I…", "what is…"): the
+  documentation under \`workspace/help/\` is the source of truth. Search it for the terms in the
+  question, read the page, and take the facts from it. Skills are convenience
+  summaries — incomplete, and a relevant-looking one may describe the wrong feature — so a skill is
+  not a substitute for the docs here; when they disagree, the docs win.
+- **Writing code or taking an action**: the matching per-area skill is the source of truth for the
+  API and the conventions to follow (which call to prefer, which footgun to avoid). Open it and
+  follow it. The help docs are user-facing, so they do not override the skill.
+
+Either way, answer only what a source supports, quoting it where the exact wording matters. Give one
+verified answer, not a list of unverified possibilities. If no source covers it, say so rather than
+guess.
 
 ## Knowledge graph — query it before you grep
 
@@ -207,6 +227,7 @@ function apiUrlFromMcpUrl(mcpUrl: string): string | undefined {
 const EXEC_TIMEOUT_MS = 300_000;
 const VERIFY_TIMEOUT_MS = 60_000;
 const SHOW_ENTITIES_TIMEOUT_MS = 30_000;
+const QUEUED_HEARTBEAT_MS = 60_000;
 
 // In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
 // awaitBrowserInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
@@ -280,10 +301,9 @@ function createBrowserExecServer(ws: WsSender, sid: string, active: ActiveQuery)
   });
 }
 
-function buildMcpServers(browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string, userId?: string): Record<string, any> | undefined {
+function buildMcpServers(browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
 
-  servers['datagrok-knowledge'] = createPackageKnowledgeServer(userId);
   servers['datagrok-browser'] = browserExecServer;
 
   const mcpUrl = mcpServerUrl || '';
@@ -303,15 +323,25 @@ function buildOptions(
   browserExecServer: ReturnType<typeof createBrowserExecServer>,
   resume?: string, apiKey?: string, mcpServerUrl?: string,
   systemPromptMode?: string, userDir?: string,
-  userId?: string,
   model?: ClaudeModel,
   forkSession?: boolean, resumeAt?: string,
   verifier?: Verifier,
+  groundingGate?: GroundingGate,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
-  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, userId);
-  // Bash and 'none' modes are minimal — don't pull in output-format skills.
-  const loadPlugin = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
+  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl);
+  // Bash and 'none' modes are minimal — no output-format skills, no reasoning. Full-prompt turns
+  // get thinking + higher effort so the "ground answers in sources, don't answer from memory" rule
+  // has a deliberation step to fire in (see DATAGROK_PROMPT) before the model commits an answer.
+  const fullMode = !systemPromptMode || (systemPromptMode !== 'bash' && systemPromptMode !== 'none');
+  const postToolHooks = [
+    ...(verifier ? [verifier.postToolUse] : []),
+    ...(groundingGate ? [groundingGate.postToolUse] : []),
+  ];
+  const stopHooks = [
+    ...(verifier ? [verifier.stop] : []),
+    ...(groundingGate ? [groundingGate.stop] : []),
+  ];
   return {
     systemPrompt,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
@@ -322,21 +352,19 @@ function buildOptions(
       'mcp__datagrok__db_list_tables', 'mcp__datagrok__db_describe_tables',
       'mcp__datagrok__db_list_joins', 'mcp__datagrok__db_try_sql',
     ],
-    ...(loadPlugin ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
+    ...(fullMode ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
     strictMcpConfig: true,
     permissionMode: 'acceptEdits' as const,
     model: model ?? ClaudeModel.Sonnet,
-    effort: 'low' as const,
-    thinking: {type: 'disabled' as const},
+    effort: fullMode ? 'high' as const : 'low' as const,
+    thinking: fullMode ? {type: 'enabled' as const, budgetTokens: 1500} : {type: 'disabled' as const},
     includePartialMessages: true,
     cwd: userDir || WORKSPACE,
     hooks: {
       PreToolUse: [{hooks: [blockWorkspaceAccess]}],
-      ...(verifier ? {
-        PostToolUse: [{hooks: [verifier.postToolUse]}],
-        Stop: [{hooks: [verifier.stop]}],
-      } : {}),
+      ...(postToolHooks.length ? {PostToolUse: [{hooks: postToolHooks}]} : {}),
+      ...(stopHooks.length ? {Stop: [{hooks: stopHooks}]} : {}),
     },
     // Only the turn after an abort forks (off resumeAt); normal turns resume in place.
     ...(resume ? {resume, ...(forkSession ? {forkSession: true} : {}), ...(resumeAt ? {resumeSessionAt: resumeAt} : {})} : {}),
@@ -520,6 +548,7 @@ function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolN
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
+const sessionChains = new Map<string, Promise<void>>();
 
 function registerActiveQuery(sid: string, q: ActiveQuery): void {
   activeQueries.set(sid, q);
@@ -552,8 +581,31 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   const images = data.images;
   if (!message && !images?.length)
     return emit(ws, {type: 'error', sessionId: sid, message: 'Empty message'});
-  if (activeQueries.has(sid))
-    return emit(ws, {type: 'busy', sessionId: sid});
+  const prev = sessionChains.get(sid);
+  let release!: () => void;
+  const turn = new Promise<void>((resolve) => { release = resolve; });
+  const tail = prev ? prev.then(() => turn) : turn;
+  sessionChains.set(sid, tail);
+  try {
+    if (prev) {
+      emit(ws, {type: 'queued', sessionId: sid});
+      const heartbeat = setInterval(() => emit(ws, {type: 'queued', sessionId: sid}), QUEUED_HEARTBEAT_MS);
+      try {
+        await prev;
+      } finally {
+        clearInterval(heartbeat);
+      }
+    }
+    await runTurn(ws, data, sid, message);
+  } finally {
+    release();
+    if (sessionChains.get(sid) === tail)
+      sessionChains.delete(sid);
+  }
+}
+
+async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: string): Promise<void> {
+  const images = data.images;
 
   // Don't block this turn on workspace git pull — it runs every 30 min in the background and
   // a stale read for one turn is fine.
@@ -581,13 +633,15 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   ]);
 
   const browserExecServer = createBrowserExecServer(ws, sid, active);
-  const verifier = !data.systemPromptMode || data.systemPromptMode === 'datagrok' ? new Verifier() : undefined;
+  const fullPromptTurn = !data.systemPromptMode || data.systemPromptMode === 'datagrok';
+  const verifier = fullPromptTurn ? new Verifier() : undefined;
+  const groundingGate = fullPromptTurn && !data.outputSchema ? new GroundingGate() : undefined;
 
   let gotResult = false;
   try {
     const rec = getSession(sid);
-    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, userId, data.model,
-      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier);
+    const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,
+      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion' || DB_CLIENT_TOOLS.has(toolName)) {
         const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
@@ -611,6 +665,8 @@ async function handleMessage(ws: WsSender, data: UserMessage): Promise<void> {
   } finally {
     if (verifier?.hadActions)
       console.log(`verify[${sid}]: ${verifier.statsLine()}`);
+    if (groundingGate)
+      console.log(`grounding[${sid}]: ${groundingGate.summary()}`);
     if (activeQueries.get(sid) === active)
       fenceStates.delete(sid);
     unregisterActiveQuery(sid, active);

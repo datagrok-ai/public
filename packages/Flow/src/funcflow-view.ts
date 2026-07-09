@@ -243,7 +243,18 @@ export class FuncFlowView extends DG.ViewBase {
     const syncDivider = (state: OutputPanelState): void => {
       if (divider) divider.style.display = state === 'expanded' ? '' : 'none';
     };
-    this.outputPreview.onStateChanged = syncDivider;
+    // Opening the output preview minimizes the overview minimap so the two
+    // don't crowd the same corner — fired only on the hidden → visible edge
+    // (re-expanding the preview later, or the user reopening the minimap, is
+    // left alone). This lives here rather than in OutputPreviewPanel because
+    // the minimap belongs to the editor, not the preview.
+    let lastPanelState: OutputPanelState = this.outputPreview.panelState;
+    this.outputPreview.onStateChanged = (state) => {
+      syncDivider(state);
+      if (lastPanelState === 'hidden' && state !== 'hidden')
+        this.flow?.setMinimapCollapsed(true);
+      lastPanelState = state;
+    };
     syncDivider(this.outputPreview.panelState);
 
     const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');
@@ -1031,7 +1042,9 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Save: in creation-script mode writes creation scripts back to the tables;
    *  otherwise updates the bound entity, or opens Save As for a flow that was
-   *  never saved — including templates bound to a script without an id, which
+   *  never saved. A bound id is *not* proof the entity is on the server — a
+   *  template (or a flow whose entity was deleted) carries an id that `find`
+   *  can't resolve — so we verify it exists before a silent update; templates
    *  previously slipped through and saved silently under the template name. */
   private async saveFlow(): Promise<void> {
     if (!this.flow) return;
@@ -1039,8 +1052,21 @@ export class FuncFlowView extends DG.ViewBase {
       this.saveCreationScriptsDialog();
       return;
     }
-    if (this.boundScript?.id) await this.saveToServer();
+    const id = this.boundScript?.id;
+    if (id && await this.scriptExistsOnServer(id)) await this.saveToServer();
     else await this.saveAsDialog();
+  }
+
+  /** Whether a script id resolves to a real, accessible server entity.
+   *  `grok.dapi.scripts.find` throws (or resolves nullish) for a missing or
+   *  inaccessible id — either way the flow isn't saved yet, so Save must ask
+   *  for a name rather than silently update a non-existent entity. */
+  private async scriptExistsOnServer(id: string): Promise<boolean> {
+    try {
+      return (await grok.dapi.scripts.find(id)) != null;
+    } catch {
+      return false;
+    }
   }
 
   /** The `.flow` entity body for the current graph — the single writer, so the

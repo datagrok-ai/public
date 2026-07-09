@@ -391,6 +391,28 @@ jobs:
       - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
+      - name: Build unpublished dependencies
+        # `grok link` above symlinks EVERY in-repo dependency to its local source, including
+        # the PUBLISHED @datagrok-libraries version deps. Those libraries ship no compiled
+        # .js/.d.ts, and js-api is not built either, so the package build fails: `datagrok-api/dg`
+        # resolves to the raw js-api/dg.ts and crashes tsc ("Debug Failure" on TS 5.9.x),
+        # library src/*.ts hit "Module parse failed", and a nested datagrok-api causes
+        # duplicate-type (TS2345) errors. Only the unpublished PATH deps (js-api) need to be
+        # local — restore the published (compiled) libraries, then build the path deps so their
+        # declarations exist before the package's webpack/ts-loader build.
+        if: ${{ matrix.unpublished_deps != '' }}
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          rm -rf node_modules/@datagrok-libraries
+          npm install --no-audit --no-fund
+          for dep in ${{ matrix.unpublished_deps }}; do
+            dir="$(cd "${dep#*=}" 2>/dev/null && pwd)" || continue
+            [ -d "$dir" ] || continue
+            echo "::group::Build unpublished dependency $dir"
+            ( cd "$dir" && npm install --no-audit --no-fund && npx tsc ) \
+              || echo "::warning::Failed to build unpublished dependency $dir"
+            echo "::endgroup::"
+          done
       - name: webpack cache
         uses: actions/cache@v4
         with:

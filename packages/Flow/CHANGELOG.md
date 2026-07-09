@@ -2,6 +2,38 @@
 
 ## v.next
 
+### Save verifies the bound entity actually exists
+
+* **Save** no longer silently writes to a bound script id that isn't really on the server. A flow can
+  carry a `boundScript` with an id yet have no server entity — a template opened as a new flow, or a
+  flow whose entity was deleted elsewhere — and Save used to update that phantom id under whatever
+  name the template carried. It now confirms the entity resolves (`grok.dapi.scripts.find(id)`, via
+  `scriptExistsOnServer` — a throw *or* a nullish result counts as "not saved") before a silent
+  update; otherwise it opens the **Save As** dialog to ask for a name.
+
+### Minimap minimizes when the output preview opens (restored)
+
+* Opening the bottom **output preview** again auto-minimizes the overview **minimap** to its header
+  strip, so the two don't crowd the same corner. This one-shot behavior (fired only on the panel's
+  hidden → visible edge; reopening the minimap by hand while the preview stays open sticks) was
+  dropped in the dock → splitter rework and is now wired back in `FuncFlowView` via
+  `OutputPreviewPanel.onStateChanged` → `flow.setMinimapCollapsed(true)` (the live minimap only — the
+  remembered initial state is untouched).
+
+### Column picker: menu instead of a second dialog
+
+* The column / column-list picker (the list icon next to a `column` / `column_list` input) now
+  drops a **`DG.Menu` column selector right under the icon** instead of opening a modal dialog.
+  When the upstream table hasn't run yet, the run-confirmation dialog still appears; on **OK** the
+  selector menu pops immediately — one interaction, no back-to-back dialogs. Single inputs use
+  `singleColumnSelector` (click a column → set → close); lists use `multiColumnSelector`, writing the
+  checked set back live on each toggle.
+* **Type / semantic filtering.** When the input is a DG func param carrying a `semType` and/or
+  `columnTypeFilter` (`numerical` | `categorical` | `int` | `double` | `string`), the menu only
+  offers matching columns (`buildColumnMatchFilter` → `Column.matches` / `semType`). Both attributes
+  together require both; an unrecognized `columnTypeFilter` is ignored. Non-func nodes (Select
+  Column utilities) are unfiltered.
+
 ### Precise run-state invalidation
 
 * Graph edits are now **classified** (`GraphEdit`: node added/removed, connection added/removed,

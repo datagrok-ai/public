@@ -10,7 +10,8 @@ Regular markdown code blocks do NOT execute.
 
 Call `datagrok_exec` to *perform* an action the user asked for (add a viewer, filter,
 open a file, run a function). For informational questions — "how do I…", "what
-is…", "explain…", "can you…" — answer in plain text; do not call the tool.
+is…", "explain…", "can you…" — do not call `datagrok_exec`; look the answer up in the
+documentation under `workspace/help/` first, then answer in plain text.
 
 ## Globals available inside the code
 
@@ -114,7 +115,7 @@ For task-specific API surface, open the matching skill before writing code:
 | Filter rows (range, categorical, contains, substructure, predicate) | `datagrok-filtering`     |
 | Select rows; current row; selection ↔ filter   | `datagrok-selection`           |
 | Add / configure / find / close viewers         | `datagrok-viewers`             |
-| Grid sort, visibility, widths, pins, color coding, freeze | `datagrok-grid-customization` |
+| Grid sort, visibility, widths, pins, freeze; grid-only cell tint | `datagrok-grid-customization` |
 | Cheminformatics: SMILES/MolBlock/InChI/canonicalize | `datagrok-chem-data` / `datagrok-chem-toolkit` |
 
 ## Multiple tool calls in one response
