@@ -365,3 +365,91 @@ category('Flow: space binding', () => {
     }
   }, {timeout: 120000});
 });
+
+category('Flow: save button + auto-pin', () => {
+  before(async () => {
+    ensureFunctionsRegistered();
+  });
+
+  test('Save is available only for a non-empty canvas with unsaved changes', async () => {
+    const view = new FuncFlowView();
+    const probe = view as unknown as {
+      flow: Parameters<typeof addNode>[0] & {destroy?(): void; notifyNodeParamsChanged(id: string): void};
+      saveButton: HTMLElement;
+      editorReady: Promise<void>;
+      saveAvailability(): {enabled: boolean; tooltip: string};
+      currentSnapshot(): string;
+      markSaved(): void;
+    };
+    try {
+      await probe.editorReady;
+
+      // Fresh empty flow → nothing to save; the ribbon button is greyed.
+      expect(probe.saveAvailability().enabled, false, 'empty canvas → disabled');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('empty'), true,
+        'tooltip explains the empty canvas');
+      expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), true,
+        'button greyed on an empty canvas');
+
+      // An edit → unsaved changes → enabled.
+      const node = await addNode(probe.flow, 'Constants/String');
+      expect(probe.saveAvailability().enabled, true, 'an edit enables Save');
+      expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), false,
+        'button un-greyed after an edit');
+
+      // Recording the save baseline → no changes since → disabled again.
+      probe.markSaved();
+      expect(probe.saveAvailability().enabled, false, 'no changes since save → disabled');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
+        'tooltip explains no changes');
+
+      // The snapshot must be DETERMINISTIC — `serializeFlow` stamps fresh
+      // created/modified timestamps each call; if those leak into the snapshot,
+      // "no changes" never holds (the back-to-back-save bug). A delay makes the
+      // timestamps differ if they were included.
+      const snap = probe.currentSnapshot();
+      await new Promise((r) => setTimeout(r, 5));
+      expect(probe.currentSnapshot(), snap, 'snapshot is stable across calls (no volatile timestamps)');
+      expect(probe.saveAvailability().enabled, false, 'still disabled after a delay — no false "changed"');
+
+      // A PARAMETER edit fires `onGraphEdited` (not `onGraphChanged`) — Save must
+      // react to it too, else editing a value would leave the button greyed.
+      node.properties['value'] = 'changed';
+      probe.flow.notifyNodeParamsChanged(node.id);
+      expect(probe.saveAvailability().enabled, true, 'a parameter edit enables Save');
+      expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), false,
+        'the button un-greys on a parameter edit (onGraphEdited path)');
+    } finally {
+      await new Promise((r) => setTimeout(r, 120));
+      probe.flow?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('auto-pin arms on construction and waits until this view is current', async () => {
+    const view = new FuncFlowView();
+    const probe = view as unknown as {
+      flow: {destroy?(): void};
+      editorReady: Promise<void>;
+      autoPinHandler: (() => void) | null;
+      teardownAutoPin(): void;
+    };
+    try {
+      await probe.editorReady;
+      expect(typeof probe.autoPinHandler, 'function', 'auto-pin is armed');
+
+      // A test view is not the shell's current view (and has no dart), so firing
+      // the handler must NOT pin or disarm — it keeps waiting for its own view.
+      probe.autoPinHandler!();
+      expect(probe.autoPinHandler != null, true, 'stays armed while not the current view');
+
+      // Teardown disarms it (also runs on detach).
+      probe.teardownAutoPin();
+      expect(probe.autoPinHandler, null, 'teardown disarms the handler');
+    } finally {
+      await new Promise((r) => setTimeout(r, 120));
+      probe.flow?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 30000});
+});

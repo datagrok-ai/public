@@ -1770,17 +1770,6 @@
   word-break: break-word;
 }
 
-/* Primary tour CTA on the start panel. */
-.funcflow-start-tour {
-  background: #1976d2 !important;
-  color: #ffffff !important;
-  font-weight: 600;
-}
-
-.funcflow-start-tour:hover {
-  background: #1565c0 !important;
-}
-
 .d4-flow-function-funccall-editor .ui-input-table {
   pointer-events: none !important;
   user-select: none !important;
@@ -1863,6 +1852,21 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 
 .funcflow-preview-block {
   height: 100%;
+}
+
+/* Save button greyed AND non-clickable when there's nothing to save (empty
+   canvas / no changes since last save). `pointer-events: none` blocks mouse
+   clicks; hover passes through to the `.ff-save-btn-wrap` wrapper, which owns
+   the "why" tooltip (a disabled button fires no hover events itself). */
+.ff-ribbon-btn-disabled {
+  background-color: var(--steel-2) !important;
+  color: var(--steel-3) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ff-save-btn-wrap {
+  background-color: white !important;
 }
 
 /* ---------- autorun ribbon toggle ---------- */

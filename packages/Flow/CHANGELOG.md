@@ -2,6 +2,29 @@
 
 ## v.next
 
+### Save button reflects whether there's anything to save
+
+* The ribbon **Save** button greys out **and becomes non-clickable** (`pointer-events: none`, steel
+  colors) when there is nothing to save — an **empty canvas** ("Nothing to save yet — the canvas is
+  empty") or **no change since the last save** ("No changes to save since the last save"). Its
+  wrapper carries the "why" tooltip so it still shows while the button is disabled. It re-enables the
+  moment the graph differs from the saved baseline.
+* Change detection compares a serialization of the graph + settings with the volatile
+  `created` / `modified` / `author` fields stripped — `serializeFlow` stamps fresh timestamps on
+  every call, so leaving them in made every comparison report "changed" (Save never greyed, and the
+  same flow could be saved back-to-back). Undoing back to the saved state now disables Save again.
+* The state refreshes on **both** structural changes (`onGraphChanged`) **and parameter edits**
+  (`onGraphEdited` — `notifyNodeParamsChanged` reports only there, so editing an input value now
+  updates Save). Baselines are recorded on save, on opening a server-backed flow, and for a fresh
+  empty flow.
+
+### Auto-pin the preview view so the toolbox appears
+
+* A flow app / flow script opens as an unpinned **preview** view, and the platform hides the toolbox
+  until a view is pinned. Flow now **pins itself on the first interaction** (a click on the canvas,
+  an edit, a keypress) when it is the current view — so the toolbox shows up without the user having
+  to pin manually. One-shot: the listener removes itself once it fires (and on `detach`).
+
 ### Preview shows every renderable output, side by side
 
 * A node that surfaces **more than one renderable value** now previews them all, laid out side by side
