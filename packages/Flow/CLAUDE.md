@@ -95,7 +95,10 @@ AddNewColumn(Mol1K, "${HBA}+${HBD}+${LogP}", "sumOfSome", subscribeOnChanges = t
 
 - Each line parses via `grok.functions.parse(line, false)` into a `DG.FuncCall` (falls back to
   stripping the trailing `//{…}` metadata comment, quote-aware so URLs survive).
-- **Assignments** are `SetVar`-shaped calls (two inputs: string `variableName` + non-null `value`);
+- **Assignments** are `SetVar`-shaped calls carrying a string `variableName` + non-null `value`
+  (`asAssignment` validates *those two inputs*, **not** the input count — the platform's `SetVarFunc`
+  also has optional `outputName` / `outputIndex` for multi-output binding, so an assignment surfaces
+  up to four inputs; gating on `=== 2` silently dropped every assignment);
   the value call's primary output is recorded in a variable table. The *first* variable is the
   script's result and gets wired to a Table/Value Output node at the end. Assignments do **not**
   advance their inputs (they produce a new variable, they don't mutate inputs).

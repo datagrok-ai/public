@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Creation-script import fixed for the new SetVar signature
+
+* Importing a creation script (and everything downstream: per-table split, order-edge inference,
+  auto-layout) worked again. The platform's `SetVarFunc` grew optional `outputName` / `outputIndex`
+  parameters (multi-output binding), so a parsed assignment (`X = f(...)`) now surfaces up to four
+  inputs. The importer's `asAssignment` gated on **exactly two** inputs, so it silently rejected
+  every assignment — no variables were registered and the whole import collapsed to nothing. It now
+  validates the `variableName` / `value` inputs directly and ignores the extra optional params.
+
 ### Multi-output funcs compile correctly
 
 * A func node with **more than one output** now compiles to valid, runnable code. `grok.functions.call`
