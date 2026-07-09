@@ -88,7 +88,18 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
   return arrow.tableToIPC(tableArrow, asStream ? 'stream' : 'file');
 }
 
-export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
+// TODO(review with lead): `narrowFloatsToFloat32` exists only so the ADBC connector can
+// reproduce a Java bug. `serialization/FloatColumn.java` is the only floating-point column
+// class grok_connect has — it stores a `float[]` and writes it with `writeFloat32List` — and
+// both `double` and `decimal` are mapped onto it. So every float the Java connector emits has
+// already lost ~29 bits of mantissa by the time it reaches a stored `.d42` baseline.
+// Datagrok's `double` column type is precision-agnostic (`FloatColumn.doublePrecision` in ddt),
+// so the two variants are indistinguishable by type — only by value.
+//
+// Opting in keeps the ADBC results comparable with those baselines without touching the
+// parquet/feather file viewers, which keep full float64. The clean fix is to stop narrowing
+// in Java and re-capture the baselines; that touches the d42 wire format and every provider.
+export function fromFeather(bytes: Uint8Array, narrowFloatsToFloat32: boolean = false): DG.DataFrame | null {
   if (!bytes) return null;
   const table = arrow.tableFromIPC(bytes);
   const columns = [];
@@ -117,24 +128,33 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         if (type.bitWidth < 64)
           columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
         else
-          columns.push(convertInt64Column(values as BigInt64Array, name));
+          columns.push(convertInt64Column(values as BigInt64Array, name, true));
       } else
         columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
       break;
     case arrow.Type.Uint32:
-    case arrow.Type.Int64:
-    case arrow.Type.Uint64:
       columns.push(convertInt64Column(values, name));
       break;
+    // 64-bit ints map to `bigint` regardless of the actual values — schema-oriented, to
+    // mirror the Java (grok_connect) type map (int64/uint64 → bigint) so ADBC results
+    // match the stored d42 baselines. Downcasting to int32 when values happen to fit
+    // would produce a `int` column that fails strict type comparison against Java's.
+    case arrow.Type.Int64:
+    case arrow.Type.Uint64:
+      columns.push(convertInt64Column(values, name, true));
+      break;
     case arrow.Type.Float:
-    case arrow.Type.Decimal:
-      if (ArrayBuffer.isView(values)) {
-        if (type.bitWidth < 64)
-          columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
-        else
-          columns.push(DG.Column.fromFloat64Array(name, values as Float64Array));
-      } else
+      if (!ArrayBuffer.isView(values))
         columns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT as DG.ColumnType, name, values));
+      else if (type.bitWidth < 64)
+        columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
+      else
+        columns.push(floatColumn(name, values as Float64Array, narrowFloatsToFloat32));
+      break;
+    // A 128/256-bit decimal arrives as 4/8 raw `Uint32` words per value, so it cannot share
+    // the `Float` path — that would read the words themselves as the column's values.
+    case arrow.Type.Decimal:
+      columns.push(floatColumn(name, decimalColumnToDoubles(vector), narrowFloatsToFloat32));
       break;
     case arrow.Type.Utf8:
     case arrow.Type.Interval:
@@ -156,6 +176,14 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         columns.push(DG.Column.fromInt32Array(name, new Int32Array(values.buffer)));
       else
         columns.push(convertInt64Column(values, name));
+      break;
+    // Nested types have no DataFrame equivalent, so they collapse into a string column,
+    // rendered exactly the way the Java connector's `toString()` does — see `javaText`.
+    case arrow.Type.List:
+    case arrow.Type.FixedSizeList:
+    case arrow.Type.Struct:
+    case arrow.Type.Map:
+      columns.push(DG.Column.fromStrings(name, nestedColumnToStrings(vector)));
       break;
     default:
       columns.push(DG.Column.fromStrings(name, values));
@@ -200,15 +228,109 @@ function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Colu
   return DG.Column.fromIndexes(name, data, indexes);
 }
 
-function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string): DG.Column {
-  for (const i of array) {
-    if (i > BigInt(2 ** 31 - 1))
-      return DG.Column.fromBigInt64Array(name, array);
+// Values that overflow a float32 become ±Infinity, exactly as they do in Java.
+function floatColumn(name: string, values: Float64Array, narrowToFloat32: boolean): DG.Column {
+  return narrowToFloat32
+    ? DG.Column.fromFloat32Array(name, Float32Array.from(values))
+    : DG.Column.fromFloat64Array(name, values);
+}
+
+function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string, forceBigInt: boolean = false): DG.Column {
+  if (!forceBigInt) {
+    let fitsInt32 = true;
+    for (const i of array)
+      if (i > BigInt(2 ** 31 - 1)) {
+        fitsInt32 = false;
+        break;
+      }
+    if (fitsInt32) {
+      const result: Int32Array = new Int32Array(new ArrayBuffer(array.length * 4));
+      for (let i = 0; i < array.length; i++)
+        result[i] = Number(array[i]);
+      return DG.Column.fromInt32Array(name, result);
+    }
   }
-  const result: Int32Array = new Int32Array(new ArrayBuffer(array.length * 4));
-  for (let i = 0; i < array.length; i++)
-    result[i] = Number(array[i]);
-  return DG.Column.fromInt32Array(name, result);
+  return DG.Column.fromBigInt64Array(name, array);
+}
+
+// Decimals are decoded from their raw words rather than through `vector.get()`, which
+// apache-arrow renders incorrectly for 256-bit values. Like the Java connector, which maps
+// every `decimal` to `double`, precision beyond a float64 mantissa is deliberately dropped.
+function decimalColumnToDoubles(vector: arrow.Vector): Float64Array {
+  const type = vector.type as any;
+  const wordsPerValue = type.bitWidth / 32;
+  const words = vector.toArray() as Uint32Array;
+  const doubles = new Float64Array(vector.length);
+  for (let i = 0; i < vector.length; i++) {
+    doubles[i] = vector.isValid(i)
+      ? decimalToDouble(words, i * wordsPerValue, wordsPerValue, type.scale)
+      : DG.FLOAT_NULL;
+  }
+  return doubles;
+}
+
+function decimalToDouble(words: Uint32Array, offset: number, wordsPerValue: number, scale: number): number {
+  let unscaled = BigInt(0);
+  for (let word = wordsPerValue - 1; word >= 0; word--)
+    unscaled = (unscaled << BigInt(32)) | BigInt(words[offset + word]);
+
+  const bits = BigInt(wordsPerValue * 32);
+  if (unscaled >> (bits - BigInt(1)))
+    unscaled -= BigInt(1) << bits;
+
+  // Building the literal and letting the JS parser round it keeps the result correctly
+  // rounded, matching Java's `BigDecimal.doubleValue()`.
+  return scale === 0 ? Number(unscaled) : parseFloat(scaledLiteral(unscaled, scale));
+}
+
+function scaledLiteral(unscaled: bigint, scale: number): string {
+  const negative = unscaled < BigInt(0);
+  const digits = (negative ? -unscaled : unscaled).toString().padStart(scale + 1, '0');
+  const point = digits.length - scale;
+  return `${negative ? '-' : ''}${digits.slice(0, point)}.${digits.slice(point)}`;
+}
+
+function nestedColumnToStrings(vector: arrow.Vector): string[] {
+  const strings = new Array<string>(vector.length);
+  for (let i = 0; i < vector.length; i++)
+    strings[i] = javaText(vector.type, vector.get(i));
+  return strings;
+}
+
+// The `.d42` baselines these results are compared against were captured from the Java
+// connector, which stores nested values as their Java `toString()`: lists and tuples as
+// `[a, b]`, maps as `{k=v}`. Rendering is driven by the Arrow type rather than by the
+// JavaScript value, because a `Float64` of `10` must still print as Java's `10.0`.
+function javaText(type: any, value: any): string {
+  if (value === null || value === undefined)
+    return 'null';
+
+  switch (type.typeId) {
+  case arrow.Type.List:
+  case arrow.Type.FixedSizeList: {
+    const elementType = type.children[0].type;
+    const items: string[] = [];
+    for (const item of value as arrow.Vector)
+      items.push(javaText(elementType, item));
+    return `[${items.join(', ')}]`;
+  }
+  case arrow.Type.Struct:
+    return `[${type.children.map((field: arrow.Field) => javaText(field.type, value[field.name])).join(', ')}]`;
+  case arrow.Type.Map: {
+    const [keyField, valueField] = type.children[0].type.children;
+    const entries: string[] = [];
+    for (const [key, item] of value as Iterable<[any, any]>)
+      entries.push(`${javaText(keyField.type, key)}=${javaText(valueField.type, item)}`);
+    return `{${entries.join(', ')}}`;
+  }
+  case arrow.Type.Float:
+    // Java's `Double.toString` always renders a decimal point: `10` -> `10.0`.
+    return Number.isInteger(value) ? (value as number).toFixed(1) : String(value);
+  case arrow.Type.Bool:
+    return value ? 'true' : 'false';
+  default:
+    return String(value);
+  }
 }
 
 function inferNumberType(values: number[]): arrow.DataType {

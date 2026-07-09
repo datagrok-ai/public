@@ -34,8 +34,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({description: 'Converts arrow ipc stream to DG.DataFrame'})
-  static fromFeather(bytes: Uint8Array): DG.DataFrame | null {
-    return _fromFeather(bytes);
+  static fromFeather(bytes: Uint8Array,
+    @grok.decorators.param({options: {initialValue: 'false'}}) narrowFloatsToFloat32: boolean = false): DG.DataFrame | null {
+    return _fromFeather(bytes, narrowFloatsToFloat32);
   }
 
   @grok.decorators.func({description: 'Converts DG.DataFrame to parquet'})
