@@ -279,6 +279,42 @@ category('Flow: entity server round-trip', () => {
         await grok.dapi.scripts.delete(saved).catch(() => {});
     }
   }, {timeout: 120000});
+
+  test('scriptExistsOnServer gates silent save vs Save As', async () => {
+    // Save silently updates the bound entity only when it truly exists; a bound
+    // id that find() can't resolve (never-saved template, deleted flow) must
+    // route to Save As. This checks the gate against the real server.
+    const e = makeEditor();
+    const view = new FuncFlowView();
+    const exists = (id: string): Promise<boolean> =>
+      (view as unknown as {scriptExistsOnServer(id: string): Promise<boolean>}).scriptExistsOnServer(id);
+    let saved: DG.Script | null = null;
+    try {
+      await buildPassThroughFlow(e);
+
+      // A well-formed but never-saved id doesn't resolve → Save As.
+      const bogus = `00000000-0000-0000-0000-${String(Math.floor(Math.random() * 1e12)).padStart(12, '0')}`;
+      expect(await exists(bogus), false, 'a never-saved id is not on the server');
+
+      // A real saved entity resolves → silent update.
+      const name = `FFExists${Math.floor(Math.random() * 1e6)}`;
+      saved = await grok.dapi.scripts.save(DG.Script.create(flowScriptText(e.flow, {...SETTINGS, scriptName: name})));
+      expect(await exists(saved!.id), true, 'a saved id resolves on the server');
+
+      // After delete it no longer resolves → Save As again.
+      const deletedId = saved!.id;
+      await grok.dapi.scripts.delete(saved);
+      saved = null;
+      expect(await exists(deletedId), false, 'a deleted id is no longer on the server');
+    } finally {
+      destroyEditor(e);
+      if (saved != null)
+        await grok.dapi.scripts.delete(saved).catch(() => {});
+      await new Promise((r) => setTimeout(r, 120)); // let the deferred initEditor run before teardown
+      ((view as any).flow)?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 120000});
 });
 
 // The exact server contract the SpacePicker and Save As dialog rely on:

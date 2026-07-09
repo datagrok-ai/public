@@ -1042,7 +1042,9 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Save: in creation-script mode writes creation scripts back to the tables;
    *  otherwise updates the bound entity, or opens Save As for a flow that was
-   *  never saved — including templates bound to a script without an id, which
+   *  never saved. A bound id is *not* proof the entity is on the server — a
+   *  template (or a flow whose entity was deleted) carries an id that `find`
+   *  can't resolve — so we verify it exists before a silent update; templates
    *  previously slipped through and saved silently under the template name. */
   private async saveFlow(): Promise<void> {
     if (!this.flow) return;
@@ -1050,8 +1052,21 @@ export class FuncFlowView extends DG.ViewBase {
       this.saveCreationScriptsDialog();
       return;
     }
-    if (this.boundScript?.id) await this.saveToServer();
+    const id = this.boundScript?.id;
+    if (id && await this.scriptExistsOnServer(id)) await this.saveToServer();
     else await this.saveAsDialog();
+  }
+
+  /** Whether a script id resolves to a real, accessible server entity.
+   *  `grok.dapi.scripts.find` throws (or resolves nullish) for a missing or
+   *  inaccessible id — either way the flow isn't saved yet, so Save must ask
+   *  for a name rather than silently update a non-existent entity. */
+  private async scriptExistsOnServer(id: string): Promise<boolean> {
+    try {
+      return (await grok.dapi.scripts.find(id)) != null;
+    } catch {
+      return false;
+    }
   }
 
   /** The `.flow` entity body for the current graph — the single writer, so the

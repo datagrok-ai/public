@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Save verifies the bound entity actually exists
+
+* **Save** no longer silently writes to a bound script id that isn't really on the server. A flow can
+  carry a `boundScript` with an id yet have no server entity — a template opened as a new flow, or a
+  flow whose entity was deleted elsewhere — and Save used to update that phantom id under whatever
+  name the template carried. It now confirms the entity resolves (`grok.dapi.scripts.find(id)`, via
+  `scriptExistsOnServer` — a throw *or* a nullish result counts as "not saved") before a silent
+  update; otherwise it opens the **Save As** dialog to ask for a name.
+
 ### Minimap minimizes when the output preview opens (restored)
 
 * Opening the bottom **output preview** again auto-minimizes the overview **minimap** to its header
