@@ -703,9 +703,19 @@ test('Trellis plot tests', async ({page}) => {
     // doesn't reliably expand *visibly*, but its item is clickable once the menu is open).
     const canvas = page.locator('[name="viewer-Trellis-plot"] canvas').first();
     const box = (await canvas.boundingBox())!;
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, {button: 'right'});
-    await page.locator('.d4-menu-item-label').filter({hasText: /^To Script$/}).first()
-      .waitFor({state: 'visible', timeout: 10_000});
+    const toScriptItem = page.locator('.d4-menu-item-label').filter({hasText: /^To Script$/}).first();
+    // On the CI headless stack the first right-click occasionally fails to open the viewer
+    // context menu (canvas pointer timing), so retry the right-click until "To Script" shows.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await page.keyboard.press('Escape').catch(() => {});
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, {button: 'right'});
+      try {
+        await toScriptItem.waitFor({state: 'visible', timeout: 8_000});
+        break;
+      } catch (e) {
+        if (attempt === 3) throw e;
+      }
+    }
     const result = await page.evaluate(async () => {
       const vis = (el: Element) => (el as HTMLElement).offsetParent !== null;
       const labels = () => Array.from(document.querySelectorAll('.d4-menu-item-label'));
