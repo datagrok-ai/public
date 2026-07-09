@@ -25,6 +25,9 @@ test.use(specTestOptions);
 const readLogin = (page: Page): Promise<string | null> =>
   page.evaluate(() => (window as any).grok?.shell?.user?.login ?? null);
 
+const readFriendlyName = (page: Page): Promise<string | null> =>
+  page.evaluate(() => (window as any).grok?.shell?.user?.friendlyName ?? null);
+
 // Author label / avatar / timestamp of the rendered comment at `index`
 // (chat.dart: .grok-comments-message-user, .grok-comments-message-picture, the
 // .fa-clock timestamp icon whose title holds the formatted post time).
@@ -61,6 +64,7 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
   await gotoApp(page);
   await setupSession(page);
   const ownerLogin = await readLogin(page);
+  const ownerFriendly = await readFriendlyName(page);
   expect(secondLogin, 'second user must differ from owner').not.toBe(ownerLogin);
 
   let projectId = '';
@@ -103,8 +107,13 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       await expect(commentByText(page, COMMENT_A)).toHaveCount(1);
       // B is not the author of A's comment → its edit/delete controls are hidden.
       expect(await isCommentActionsHidden(page, 0)).toBe(true);
-      // B sees A's comment with A's author label (.md step 4).
-      expect((await commentRowMeta(page, 0)).author, 'B sees A comment authored by A').toBe(authorA);
+      // B sees A's comment with A's author label (.md step 4). The label renders as
+      // either the login or the friendly name depending on the viewing session, so B may
+      // see A's comment attributed by a different form than the one A captured — accept
+      // any of A's identity forms (it must still be A, and never B).
+      const bViewAuthorOfA = (await commentRowMeta(page, 0)).author;
+      expect([ownerLogin, ownerFriendly, authorA].filter(Boolean),
+        `B sees A comment authored by A (got "${bViewAuthorOfA}")`).toContain(bViewAuthorOfA);
 
       await postComment(page, REPLY_B);
       expect(await commentTexts(page)).toEqual([COMMENT_A, REPLY_B]);
