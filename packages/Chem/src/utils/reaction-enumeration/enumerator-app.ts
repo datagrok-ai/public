@@ -618,9 +618,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (!prev) return;
     mountedViewers.delete(host);
     for (const v of prev) {
-      // A viewer mid-Dart-side-construction throws TypeError on close — expected on initial
-      // load, not actionable.
-      try {v.close();} catch (e) {
+      // close() no-ops for standalone viewers (see /ui skill) — detach() + root.remove() instead.
+      try {v.detach(); v.root.remove();} catch (e) {
         if (!(e instanceof TypeError)) console.warn('Could not close previous viewer:', e);
       }
     }
@@ -1731,7 +1730,16 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   if (splitLeft && splitRight)
     sizeSplitOnceLaidOut(splitLeft, splitRight, (total) => Math.round(total * 0.38));
 
+  // Small page header — per reviewer feedback, gives the view its own identity instead of relying
+  // solely on the (also fixed) ribbon restyling to not look odd.
+  const pageHeader = ui.divV([
+    ui.h2('Reaction Enumeration', {style: {margin: '0'}}),
+    ui.divText('Combine reaction templates, building blocks, and reagents into an enumerated product library.',
+      {style: {color: 'var(--grey-6)', fontSize: '12px', marginTop: '2px'}}),
+  ], {style: {flex: '0 0 auto', marginBottom: '4px'}});
+
   const root = ui.divV([
+    pageHeader,
     mainRow,
     validationDiv,
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
@@ -1754,8 +1762,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // every tick rather than stopping at first find; click-listener attach lives in bindRunTooltip.
   function applyRibbonFixup(attempt = 0): void {
     const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
-    if (el) {
-      document.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item').forEach((g) => {
+    // Scope to this view's own container, not the whole document — Datagrok keeps other open views'
+    // ribbon DOM alive (hidden) for fast tab switching, so an unscoped query here was permanently
+    // stripping their ribbon styling too whenever the user switched views mid-loop (reviewer-reported:
+    // "switch to any other view, it will permanently restyle the ribbon panel of the other views").
+    // `.grok-view-container` (not `.d4-view-ribbon`, which isn't consistently present) is the
+    // narrowest ancestor that's reliably scoped to exactly one view.
+    const ribbon = el?.closest<HTMLElement>('.grok-view-container');
+    if (ribbon) {
+      ribbon.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item').forEach((g) => {
         g.style.background = 'transparent';
         g.style.boxShadow = 'none';
         g.style.border = 'none';
