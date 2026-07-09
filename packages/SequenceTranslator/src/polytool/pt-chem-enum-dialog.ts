@@ -1004,13 +1004,20 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     const aboutAcc = ui.accordion('markushEnumeratorAbout');
     aboutAcc.addPane('About', () => ui.divV([
       ui.divText(MARKUSH_DESCRIPTION),
-      ui.info([
+      ui.divV([
+        ui.divText('Usage', {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', margin: '0 0 2px'}}),
         ui.divText('1. Draw or import cores — molecules with R-labels.'),
         ui.divText('2. Add R-group substituents for each R.'),
         ui.divText('3. Pick Enumerator Type (Zip — same-length list, Cartesian — all combinations).'),
         ui.divText('4. Enumerate to build the molecule table.'),
-        ui.divText('Tip: use the Templates button to add ready-made R-group sets.'),
-      ], 'How it works'),
+      ], {style: {gap: '2px'}}),
+      ui.info([
+        ui.divText('An R-group can be a single atom (N, O, Cl, …) drawn without an R-label.'),
+        ui.divText('Import cores or R-groups from any open table with the folder button.'),
+        ui.divText('Save the whole setup (cores + R-groups) as a CSV with the download button.'),
+        ui.divText('Use the Templates button to add ready-made R-group sets.'),
+        ui.divText('Reopen a recent setup from the History (clock) button.'),
+      ], 'Tips'),
     ], {style: {padding: '8px', gap: '8px'}}), true);
     view.toolbox = aboutAcc.root;
 
@@ -1049,13 +1056,12 @@ function readRowScrollLeft(vvRoot: HTMLElement): number {
 
 function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
   if (scrollLeft <= 0) return;
-  const apply = () => {
+  // Restore after the virtualView lays out (setData resets scroll synchronously).
+  setTimeout(() => {
     const viewport = vvRoot.firstElementChild as HTMLElement | null;
     vvRoot.scrollLeft = scrollLeft;
     if (viewport) viewport.scrollLeft = scrollLeft;
-  };
-  apply();
-  setTimeout(apply, 0); // deferred too: virtualView lays out async
+  }, 0);
 }
 
 export function buildChemEnumPanel(
