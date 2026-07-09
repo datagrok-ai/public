@@ -2,6 +2,20 @@
 
 ## v.next
 
+### Multi-output funcs compile correctly
+
+* A func node with **more than one output** now compiles to valid, runnable code. `grok.functions.call`
+  returns the value directly for a single-output func but an **object keyed by the declared output
+  names** for a multi-output one — so each output is now read as `<callVar>.<outputName>`. Previously
+  the emitter referenced per-output variables (`<var>_result1`, `<var>_result2`) that were never
+  declared, so any downstream node wired to the 2nd+ output got `undefined` (or a ReferenceError).
+* **Variable names are always valid identifiers.** `toCamelCase` keeps digits, so a func/node named
+  e.g. "2 Inputs Flow" produced `let 2InputsFlow… = …` — an immediate syntax error. `uniqueVarName`
+  now prefixes a leading digit with `_`.
+* The instrumented per-node output summary is now keyed by the **output slot key** (a valid object
+  key, and what `labelOutgoingConnections` / the live-stash look up) instead of the value expression
+  — which for a multi-output func is `<var>.<name>` and can't be an object-literal key.
+
 ### Save verifies the bound entity actually exists
 
 * **Save** no longer silently writes to a bound script id that isn't really on the server. A flow can

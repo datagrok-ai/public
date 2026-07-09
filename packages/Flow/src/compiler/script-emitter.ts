@@ -605,13 +605,16 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   // unambiguous; with zero or several we fall back to the plain column summary.
   const singleDfInput = singleDataframeInputExpr(step, node);
   const outputEntries: string[] = [];
-  for (const [key, varName] of step.outputs) {
+  // Key each entry by the output *slot key* (what `labelOutgoingConnections`
+  // and the live-stash look up), not by the value expression — a multi-output
+  // func's expression is `<var>.<name>`, which is not a valid object-literal key.
+  for (const [key, outExpr] of step.outputs) {
     const slotType = (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
     const typeArg = slotType ? `, '${slotType}'` : '';
     if (slotType === 'column' && singleDfInput)
-      outputEntries.push(`${varName}: __ff_col_summary(${varName}, ${singleDfInput}${typeArg})`);
+      outputEntries.push(`${JSON.stringify(key)}: __ff_col_summary(${outExpr}, ${singleDfInput}${typeArg})`);
     else
-      outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
+      outputEntries.push(`${JSON.stringify(key)}: __ff_summarize(${outExpr}${typeArg})`);
   }
 
   // Capture the (possibly in-place-modified) table threaded through a dataframe

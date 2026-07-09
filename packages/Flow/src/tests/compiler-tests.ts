@@ -254,6 +254,71 @@ category('Flow: script emitter', () => {
   });
 });
 
+category('Flow: multi-output funcs', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('reads outputs off the call object; variable names are valid identifiers', async () => {
+    // A func whose NAME starts with a digit and declares TWO outputs — both bugs
+    // at once: an illegal variable name (`let 2InputsFlow… ` is a syntax error),
+    // and downstream references to per-output variables that `grok.functions.call`
+    // never declares. It returns the value directly for a single output but an
+    // object keyed by the output names when there are several — so the outputs
+    // must be read as `<call>.result1` / `<call>.result2`.
+    const script = DG.Script.create([
+      '//name: 2InputsFlow',
+      '//language: javascript',
+      '//input: int firstNum',
+      '//input: int secondNum',
+      '//output: dataframe result1',
+      '//output: dataframe result2',
+      'result1 = grok.data.demo.demog();',
+      'result2 = grok.data.demo.demog();',
+    ].join('\n'));
+    expect(script.outputs.length, 2, 'the synthetic func has two outputs');
+
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const fn = await addNode(e.flow, typeName);
+      const out1 = await addNode(e.flow, 'Outputs/Value Output', 340, 20);
+      const out2 = await addNode(e.flow, 'Outputs/Value Output', 340, 140);
+      out1.properties['paramName'] = 'Result';
+      out2.properties['paramName'] = 'Result2';
+      await e.flow.addConnectionByKeys(fn.id, 'result1', out1.id, 'value');
+      await e.flow.addConnectionByKeys(fn.id, 'result2', out2.id, 'value');
+
+      const clean = emitScript(e.flow, SETTINGS);
+
+      // 1. No emitted variable declaration starts with a digit.
+      expect(/\blet\s+[0-9]/.test(clean), false, 'no variable name starts with a digit');
+      const m = clean.match(/let\s+(\w+)\s*=\s*await grok\.functions\.call\(/);
+      expect(m != null, true, 'the func call is assigned to a variable');
+      const callVar = m![1];
+      expect(/^[0-9]/.test(callVar), false, `call var "${callVar}" must not start with a digit`);
+
+      // 2. Downstream reads a PROPERTY off the call object, not a phantom variable.
+      expect(clean.includes(`Result = ${callVar}.result1;`), true, 'Result assigned from the result1 property');
+      expect(clean.includes(`Result2 = ${callVar}.result2;`), true, 'Result2 assigned from the result2 property');
+      expect(clean.includes(`${callVar}_result1`), false, 'no reference to an undeclared per-output variable');
+      // detectSemanticTypes on each dataframe output uses the property expression.
+      expect(clean.includes(`if (${callVar}.result1 != null) await ${callVar}.result1.meta.detectSemanticTypes();`),
+        true, 'semantic detection runs on the property expression');
+
+      // 3. Instrumented summary is keyed by the slot key (a valid object key), and
+      // its value is the property expression.
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes(`"result1": __ff_summarize(${callVar}.result1`), true,
+        'summary keyed by slot key, value reads the property');
+      expect(inst.includes(`"result2": __ff_summarize(${callVar}.result2`), true);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
 category('Flow: validator', () => {
   before(async () => {
     registerBuiltinNodes();
