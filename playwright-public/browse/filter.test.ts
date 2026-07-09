@@ -152,10 +152,25 @@ test.describe('Browse filters — Apps gallery (Browse-Filter-03)', () => {
   test('Browse-Filter-03 — "Used by me" filter for Apps works and resets', async ({ page }) => {
     const sink = watchErrors(page);
 
+    // The "Used by me" quick-filter is `usedBy = @current`, so it is only offered once the
+    // current user has actually used an app. A fresh CI stack has no usage, so generate some
+    // by running an app as the current user, then reload the gallery to pick up the tag.
+    await page.evaluate(async () => {
+      const DG = (window as any).DG;
+      const apps = DG.Func.find({tags: ['app']});
+      if (apps.length) { try { await apps[0].apply(); } catch (_) { /* usage is logged on invoke */ } }
+    });
+    await page.waitForTimeout(2500);
+    await page.goto(`${BASE}/apps`);
+    await page.waitForSelector(FILTER_PANEL, {timeout: 10_000}).catch(() => undefined);
+    if (!(await page.locator(FILTER_PANEL).isVisible().catch(() => false)))
+      await page.locator(FILTER_TOGGLE).first().click().catch(() => undefined);
+    await page.waitForSelector(FILTER_PANEL, {timeout: 10_000});
+
     const all = page.locator(FILTER_QUICK_TAGS, { hasText: /^All$/ }).first();
     const usedByMe = page.locator(FILTER_QUICK_TAGS, { hasText: /^Used by me$/ }).first();
     await expect(usedByMe, '"Used by me" tag should exist on Apps gallery (ref: GROK-19688)')
-      .toBeVisible({ timeout: 5_000 });
+      .toBeVisible({ timeout: 10_000 });
 
     await usedByMe.click();
     await page.waitForTimeout(1000);
