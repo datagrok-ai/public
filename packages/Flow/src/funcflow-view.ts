@@ -931,7 +931,9 @@ export class FuncFlowView extends DG.ViewBase {
     // update / Save As for never-saved flows / creation scripts).
     const saveButton = creationMode ?
       ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
-      ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
+      ui.bigButton('Save', () => void this.saveFlow(), 'Save this flow to the platform');
+    if (!creationMode)
+      saveButton.style.marginRight = '8px';
     const savePanel: HTMLElement[] = [setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save')];
     if (!creationMode)
       savePanel.push(ribbonIcon('folder-open', () => void this.openFromPlatform(), 'Open a flow', 'open'));
