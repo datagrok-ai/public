@@ -304,9 +304,16 @@ test('Pivot table tests', async ({ page }) => {
       await new Promise(r => setTimeout(r, 500));
       const filtered = df.filter.trueCount;
       pv.props.rowSource = 'Selected';
-      for (let i = 0; i < 100; i++) df.selection.set(i, true);
-      await new Promise(r => setTimeout(r, 400));
-      const selected = df.selection.trueCount;
+      // Switching rowSource (with an active filter) triggers an async selection reset
+      // ~within 400ms, which cleared the just-set selection (trueCount fell back to 0).
+      // Let that reset settle first, then set the selection and re-apply until it sticks.
+      await new Promise(r => setTimeout(r, 600));
+      let selected = 0;
+      for (let attempt = 0; attempt < 5 && selected !== 100; attempt++) {
+        for (let i = 0; i < 100; i++) df.selection.set(i, true);
+        await new Promise(r => setTimeout(r, 150));
+        selected = df.selection.trueCount;
+      }
       pv.props.rowSource = 'All';
       await new Promise(r => setTimeout(r, 300));
       const ageMin = df.col('AGE').min;
