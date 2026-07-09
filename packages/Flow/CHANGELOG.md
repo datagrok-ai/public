@@ -2,6 +2,20 @@
 
 ## v.next
 
+### Column picker: menu instead of a second dialog
+
+* The column / column-list picker (the list icon next to a `column` / `column_list` input) now
+  drops a **`DG.Menu` column selector right under the icon** instead of opening a modal dialog.
+  When the upstream table hasn't run yet, the run-confirmation dialog still appears; on **OK** the
+  selector menu pops immediately — one interaction, no back-to-back dialogs. Single inputs use
+  `singleColumnSelector` (click a column → set → close); lists use `multiColumnSelector`, writing the
+  checked set back live on each toggle.
+* **Type / semantic filtering.** When the input is a DG func param carrying a `semType` and/or
+  `columnTypeFilter` (`numerical` | `categorical` | `int` | `double` | `string`), the menu only
+  offers matching columns (`buildColumnMatchFilter` → `Column.matches` / `semType`). Both attributes
+  together require both; an unrecognized `columnTypeFilter` is ignored. Non-func nodes (Select
+  Column utilities) are unfiltered.
+
 ### Precise run-state invalidation
 
 * Graph edits are now **classified** (`GraphEdit`: node added/removed, connection added/removed,

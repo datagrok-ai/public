@@ -714,6 +714,7 @@ export class PropertyPanel {
           nodeId: opts.nodeId, paramName: opts.label, isList: opts.isList,
           tableParam: getTableParam(),
           current: opts.getValue(),
+          anchor: pickBtn,
           apply: (value: string) => {
             nameInput.value = value; // fires onValueChanged → opts.setValue
             opts.setValue(value);
