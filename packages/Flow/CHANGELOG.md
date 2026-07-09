@@ -2,6 +2,15 @@
 
 ## v.next
 
+### Minimap minimizes when the output preview opens (restored)
+
+* Opening the bottom **output preview** again auto-minimizes the overview **minimap** to its header
+  strip, so the two don't crowd the same corner. This one-shot behavior (fired only on the panel's
+  hidden → visible edge; reopening the minimap by hand while the preview stays open sticks) was
+  dropped in the dock → splitter rework and is now wired back in `FuncFlowView` via
+  `OutputPreviewPanel.onStateChanged` → `flow.setMinimapCollapsed(true)` (the live minimap only — the
+  remembered initial state is untouched).
+
 ### Column picker: menu instead of a second dialog
 
 * The column / column-list picker (the list icon next to a `column` / `column_list` input) now

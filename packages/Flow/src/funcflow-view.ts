@@ -243,7 +243,18 @@ export class FuncFlowView extends DG.ViewBase {
     const syncDivider = (state: OutputPanelState): void => {
       if (divider) divider.style.display = state === 'expanded' ? '' : 'none';
     };
-    this.outputPreview.onStateChanged = syncDivider;
+    // Opening the output preview minimizes the overview minimap so the two
+    // don't crowd the same corner — fired only on the hidden → visible edge
+    // (re-expanding the preview later, or the user reopening the minimap, is
+    // left alone). This lives here rather than in OutputPreviewPanel because
+    // the minimap belongs to the editor, not the preview.
+    let lastPanelState: OutputPanelState = this.outputPreview.panelState;
+    this.outputPreview.onStateChanged = (state) => {
+      syncDivider(state);
+      if (lastPanelState === 'hidden' && state !== 'hidden')
+        this.flow?.setMinimapCollapsed(true);
+      lastPanelState = state;
+    };
     syncDivider(this.outputPreview.panelState);
 
     const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');

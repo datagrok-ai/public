@@ -15,6 +15,7 @@ import {
 } from '../execution/value-inspector';
 import {OutputPreviewPanel, OutputPanelState} from '../execution/output-preview';
 import {FuncFlowView} from '../funcflow-view';
+import {until} from './test-utils';
 
 function renderableState(): NodeExecState {
   const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b'])]);
@@ -211,6 +212,38 @@ category('Flow: execution preview', () => {
       await new Promise((r) => setTimeout(r, 120));
       ((embedded as any).flow)?.destroy?.();
       embedded.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('opening the output preview minimizes the overview minimap', async () => {
+    // Regression: the minimap and the bottom output panel crowd the same corner,
+    // so the minimap auto-minimizes to its header the first time the preview
+    // opens. This wiring was dropped in the dock → splitter rework.
+    const view = new FuncFlowView();
+    const host = ui.div([view.root], {style: {
+      width: '900px', height: '600px', position: 'absolute', left: '-10000px',
+    }});
+    document.body.appendChild(host);
+    try {
+      // Wait for the deferred editor build to mount the minimap.
+      await until(() => view.root.querySelector('.ff-minimap') != null);
+      const mm = view.root.querySelector('.ff-minimap') as HTMLElement;
+      expect(!!mm, true, 'minimap mounted');
+      expect(mm.dataset.collapsed, 'false', 'minimap starts expanded');
+      expect(view.outputPreview.panelState, 'hidden', 'preview starts hidden');
+
+      // Opening the preview (hidden → expanded) minimizes the minimap.
+      view.outputPreview.showForNode({id: 'n1', label: 'a'}, renderableState());
+      expect(view.outputPreview.panelState, 'expanded', 'preview opened');
+      expect(mm.dataset.collapsed, 'true', 'minimap minimized when the preview opened');
+
+      // One-shot: manually reopening the minimap while the preview stays open sticks.
+      view.setMinimapCollapsed(false);
+      view.outputPreview.showForNode({id: 'n2', label: 'b'}, renderableState());
+      expect(mm.dataset.collapsed, 'false', 'no re-collapse while the preview was already open');
+    } finally {
+      ((view as any).flow)?.destroy?.();
+      host.remove();
     }
   }, {timeout: 30000});
 
