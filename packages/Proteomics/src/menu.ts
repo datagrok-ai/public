@@ -40,11 +40,11 @@ export interface ProteomicsMenuHandlers {
   showVolcanoPlot: () => void;
   showHeatmap: () => void;
   showPcaPlot: () => void;
-  showGroupMeanCorrelation: () => void;
   showQcDashboard: () => void;
   showSpcDashboard: () => void;
   enrichmentCharts: () => void;
   rankAbundance: () => void;
+  abundanceCorrelation: () => void;
   showAllVisualizations: () => void;
   shareAnalysisForReview: () => void;
 }
@@ -122,12 +122,12 @@ export function buildProteomicsRibbonMenu(view: DG.TableView, h: ProteomicsMenuH
   viz.item('Volcano Plot...', h.showVolcanoPlot);
   viz.item('Heatmap...', h.showHeatmap, null, sampleOnly);
   viz.item('PCA...', h.showPcaPlot, null, sampleOnly);
-  viz.item('Group-Mean Correlation...', h.showGroupMeanCorrelation, null, sampleOnly);
   viz.item('QC Dashboard...', h.showQcDashboard, null, sampleOnly);
   viz.item('SPC Dashboard...', h.showSpcDashboard);
   viz.item('Enrichment Charts...', h.enrichmentCharts);
-  // Not sampleOnly: works on Candidates (AVG Group Quantity) and annotated Reports.
+  // Not sampleOnly: both work on Candidates (AVG Group Quantity) and annotated Reports.
   viz.item('Rank–Abundance', h.rankAbundance);
+  viz.item('Abundance Correlation', h.abundanceCorrelation);
   viz.item('Show All Visualizations...', h.showAllVisualizations, null, sampleOnly);
 
   const share = root.group('Share');

@@ -95,8 +95,8 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:ShowPcaPlot', {});
   }
 
-  export async function showGroupMeanCorrelation(): Promise<void> {
-    return await grok.functions.call('Proteomics:ShowGroupMeanCorrelation', {});
+  export async function abundanceCorrelation(): Promise<void> {
+    return await grok.functions.call('Proteomics:AbundanceCorrelation', {});
   }
 
   export async function showQcDashboard(): Promise<void> {

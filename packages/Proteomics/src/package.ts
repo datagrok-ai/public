@@ -30,7 +30,7 @@ import {createExpressionHeatmap} from './viewers/heatmap';
 import {createPcaPlot} from './viewers/pca-plot';
 import {openQcDashboard} from './viewers/qc-dashboard';
 import {openSpcDashboard} from './viewers/spc-dashboard';
-import {createGroupMeanCorrelation} from './viewers/group-mean-correlation';
+import {openAbundanceCorrelation} from './viewers/abundance-correlation';
 import {uniprotPanel} from './panels/uniprot-panel';
 import {focusProtein} from './panels/protein-focus';
 import {publishedAnalysisPanel} from './panels/published-analysis-panel';
@@ -342,7 +342,7 @@ export class PackageFunctions {
       showVolcanoPlot: () => PackageFunctions.showVolcanoPlot(),
       showHeatmap: () => PackageFunctions.showHeatmap(),
       showPcaPlot: () => PackageFunctions.showPcaPlot(),
-      showGroupMeanCorrelation: () => PackageFunctions.showGroupMeanCorrelation(),
+      abundanceCorrelation: () => PackageFunctions.abundanceCorrelation(),
       showQcDashboard: () => PackageFunctions.showQcDashboard(),
       showSpcDashboard: () => PackageFunctions.showSpcDashboard(),
       enrichmentCharts: () => PackageFunctions.enrichmentCharts(),
@@ -826,19 +826,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func()
-  static async showGroupMeanCorrelation(): Promise<void> {
-    const tv = grok.shell.tv;
-    const df = tv?.dataFrame;
-    if (!tv || !df) { grok.shell.warning('No table open'); return; }
-    if (!requireDifferentialExpression(df,
-      'Run Differential Expression first (Proteomics | Analyze | Differential Expression)')) return;
-    const groups = getGroups(df);
-    if (!groups) {
-      grok.shell.warning('Annotate experimental groups first (Proteomics | Annotate Experiment)');
-      return;
-    }
-    const sp = createGroupMeanCorrelation(df);
-    tv.addViewer(sp);
+  static async abundanceCorrelation(): Promise<void> {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) { grok.shell.warning('No table open'); return; }
+    // Works on any analyzed protein table (Candidates or annotated Report) —
+    // openAbundanceCorrelation itself warns when no per-condition abundance is present.
+    openAbundanceCorrelation(df);
   }
 
   @grok.decorators.func()

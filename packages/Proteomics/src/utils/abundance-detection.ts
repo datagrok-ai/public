@@ -40,11 +40,22 @@ function columnToLog10(col: DG.Column): (number | null)[] {
   return out;
 }
 
-/** Per-row log10 of the linear mean across a group's intensity columns. When the
- * columns are log2-scale (Report analysis columns are log2-transformed), each
- * value is delinearized (2^v) before averaging so the mean is a true intensity
- * mean, then log10'd for a consistent axis with the Candidates path. */
-function groupMeanToLog10(df: DG.DataFrame, colNames: string[]): (number | null)[] {
+/** How a group's per-sample intensity columns are collapsed to one per-protein
+ * abundance on the Report path:
+ * - `arithmetic` — delinearize (2^v) log2 columns, average in linear space, then
+ *   log10. A true intensity mean; outlier-sensitive. Default (rank-abundance).
+ * - `geometric` — average in log space (mean of log10 values). log10 of the
+ *   geometric mean; the conventional summary for log-normal MS intensities and
+ *   the one the abundance-correlation viewer uses. */
+export type ReportMean = 'arithmetic' | 'geometric';
+
+/** Per-row abundance (log10 space) across a group's intensity columns, collapsed
+ * per `mode`. When the columns are log2-scale (Report analysis columns are
+ * log2-transformed) each value is treated accordingly so the axis is consistent
+ * with the Candidates path regardless of the source scale. */
+function groupMeanToLog10(
+  df: DG.DataFrame, colNames: string[], mode: ReportMean,
+): (number | null)[] {
   const cols = colNames.map((n) => df.col(n)).filter((c): c is DG.Column => c != null);
   const n = df.rowCount;
   const out: (number | null)[] = new Array(n).fill(null);
@@ -61,6 +72,7 @@ function groupMeanToLog10(df: DG.DataFrame, colNames: string[]): (number | null)
     }
   }
   const isLog2 = Number.isFinite(maxVal) && maxVal < LOG2_MAX_THRESHOLD;
+  const LOG10_2 = Math.log10(2);
 
   for (let i = 0; i < n; i++) {
     let sum = 0; let count = 0;
@@ -68,10 +80,20 @@ function groupMeanToLog10(df: DG.DataFrame, colNames: string[]): (number | null)
       if (c.isNone(i)) continue;
       const v = c.get(i) as number;
       if (!Number.isFinite(v)) continue;
-      sum += isLog2 ? Math.pow(2, v) : v;
+      if (mode === 'geometric') {
+        // Mean of log10 values = log10(geometric mean). A log2 column is already
+        // a log, so rebase (v * log10 2); a linear column is log10'd (skip <=0).
+        const lv = isLog2 ? v * LOG10_2 : log10OrNull(v);
+        if (lv == null) continue;
+        sum += lv;
+      } else {
+        // Arithmetic mean of linear intensities, log10'd after the loop.
+        sum += isLog2 ? Math.pow(2, v) : v;
+      }
       count++;
     }
-    out[i] = count > 0 ? log10OrNull(sum / count) : null;
+    if (count === 0) { out[i] = null; continue; }
+    out[i] = mode === 'geometric' ? sum / count : log10OrNull(sum / count);
   }
   return out;
 }
@@ -89,9 +111,17 @@ function groupMeanToLog10(df: DG.DataFrame, colNames: string[]): (number | null)
  * Returns null when neither shape yields abundance (e.g. a Report with no group
  * assignment yet, or an older Candidates export lacking group quantities) — the
  * caller warns and no-ops.
+ *
+ * `opts.reportMean` selects how the Report path collapses each group's per-sample
+ * columns (default `arithmetic`, so rank-abundance is unchanged; the
+ * abundance-correlation viewer passes `geometric`). It does not affect the
+ * Candidates path, which reads the vendor's pre-computed per-group quantity.
  */
-export function findAbundanceByCondition(df: DG.DataFrame): AbundanceByCondition | null {
+export function findAbundanceByCondition(
+  df: DG.DataFrame, opts?: {reportMean?: ReportMean},
+): AbundanceByCondition | null {
   const groups = getGroups(df);
+  const mode: ReportMean = opts?.reportMean ?? 'arithmetic';
 
   // Candidates path — precomputed per-group means.
   const numCol = findColumn(df, '', QTY_NUM_HINTS);
@@ -103,11 +133,11 @@ export function findAbundanceByCondition(df: DG.DataFrame): AbundanceByCondition
     };
   }
 
-  // Report path — mean of each group's intensity columns.
+  // Report path — per-group summary of each group's intensity columns.
   if (groups && groups.group1.columns.length > 0 && groups.group2.columns.length > 0) {
     return {
-      group1: {name: groups.group1.name || 'Group 1', log10Intensity: groupMeanToLog10(df, groups.group1.columns)},
-      group2: {name: groups.group2.name || 'Group 2', log10Intensity: groupMeanToLog10(df, groups.group2.columns)},
+      group1: {name: groups.group1.name || 'Group 1', log10Intensity: groupMeanToLog10(df, groups.group1.columns, mode)},
+      group2: {name: groups.group2.name || 'Group 2', log10Intensity: groupMeanToLog10(df, groups.group2.columns, mode)},
     };
   }
 

@@ -83,9 +83,9 @@ export async function showPcaPlot() : Promise<void> {
   await PackageFunctions.showPcaPlot();
 }
 
-//name: showGroupMeanCorrelation
-export async function showGroupMeanCorrelation() : Promise<void> {
-  await PackageFunctions.showGroupMeanCorrelation();
+//name: abundanceCorrelation
+export async function abundanceCorrelation() : Promise<void> {
+  await PackageFunctions.abundanceCorrelation();
 }
 
 //name: showQcDashboard
