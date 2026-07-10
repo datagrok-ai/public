@@ -17,7 +17,7 @@ test.describe.serial('EDA / ANOVA', () => {
 
     await openDemoCsv(page, 'demog.csv');
 
-    await clickTopMenuLeaf(page, 'div-ML---Analyze---ANOVA...');
+    await clickTopMenuLeaf(page, 'div-ML---Analyze---Group-Comparison---ANOVA...');
     await waitForDialog(page, 'ANOVA');
 
     // Defaults on demog.csv are sufficient: Category=RACE, Feature=AGE, Alpha=0.05.
