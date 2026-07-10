@@ -283,10 +283,13 @@ category('Flow: function browser', () => {
       const queriesPane = browser.root.querySelector('[data-testid="ff-browser-queries"]') as HTMLElement | null;
       expect(!!queriesPane, true, 'Queries pane present');
 
-      // At least one per-connection sub-section, each tagged with its connection.
+      // Accordion content is lazy — expand the Queries pane, then every
+      // per-connection sub-pane, so the items materialize in the DOM.
+      browser.accordion!.getPane('Queries').expanded = true;
       const connSections = browser.root.querySelectorAll('[data-testid^="ff-browser-query-conn"]');
       expect(connSections.length > 0, true, 'queries split into per-connection sub-sections');
       expect((connSections[0] as HTMLElement).dataset.queryConn != null, true, 'sub-section carries data-query-conn');
+      for (const p of browser.queriesAccordion!.panes) p.expanded = true;
 
       // A known query lives INSIDE the Queries pane and NOT in any category section.
       const sample = queries[0];
@@ -296,6 +299,42 @@ category('Flow: function browser', () => {
         expect(queriesPane!.contains(it), true, `query item ${sample.func.name} is under the Queries pane`);
     } finally {
       browser.root.remove();
+    }
+  });
+
+  test('toolbox sections are platform accordion panes with self-persisted state', async () => {
+    const browser = new FunctionBrowser({
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+    });
+    document.body.appendChild(browser.root);
+    const lsKey = 'Accordion:funcflow.toolbox';
+    const saved = localStorage.getItem(lsKey);
+    try {
+      browser.render();
+      // The sections ARE a DG.Accordion — no custom collapsible divs left.
+      expect(!!browser.root.querySelector('.d4-accordion'), true, 'platform accordion present');
+      expect(browser.root.querySelector('.funcflow-section-header') == null, true, 'no custom section headers');
+      // Guide/test hooks survive on the pane headers.
+      const inputsHeader = browser.root.querySelector(
+        '[data-testid="ff-browser-section-inputs"]') as HTMLElement | null;
+      expect(!!inputsHeader, true, 'Inputs pane header carries its test id');
+      expect(inputsHeader!.dataset.section, 'Inputs', 'header keeps data-section for the guide');
+
+      // Clicking a header persists the pane state under the accordion key
+      // (the platform writes localStorage["Accordion:<key>"] itself)...
+      expect(browser.accordion!.getPane('Inputs').expanded, false, 'Inputs starts collapsed');
+      inputsHeader!.click();
+      expect(browser.accordion!.getPane('Inputs').expanded, true, 'click expands the pane');
+      const stored = JSON.parse(localStorage.getItem(lsKey) ?? '{}') as Record<string, boolean>;
+      expect(stored['Inputs'], true, 'expanded state persisted by the platform');
+
+      // ...and a fresh render restores it.
+      browser.render();
+      expect(browser.accordion!.getPane('Inputs').expanded, true, 'state restored on re-render');
+    } finally {
+      browser.root.remove();
+      if (saved == null) localStorage.removeItem(lsKey);
+      else localStorage.setItem(lsKey, saved);
     }
   });
 

@@ -2,6 +2,20 @@
 
 ## v.next
 
+### Toolbox sections are now platform accordions
+
+* The function browser's collapsible sections (Files, Queries, Viewers, Widgets, the built-ins, and
+  the function categories) are now a standard **`ui.accordion`** instead of hand-rolled collapsible
+  divs — platform look & feel, lazy pane content (a collapsed section never builds its items), and
+  **self-persisted expand/collapse state** (`localStorage['Accordion:funcflow.toolbox']`, keyed by
+  pane name; the per-connection query groups are a nested accordion under
+  `Accordion:funcflow.toolbox.queries`). Category counts render as the pane's count badge instead of
+  being baked into the title.
+* While a search is active every matching section is still forced open — on an **unkeyed** accordion,
+  so the forced states never overwrite the user's saved ones.
+* Pane headers keep `data-section` and the `ff-browser-section-<title>` test ids; the guide now
+  detects expansion via the accordion's `expanded` header class.
+
 ### Save button reflects whether there's anything to save
 
 * The ribbon **Save** button greys out **and becomes non-clickable** (`pointer-events: none`, steel

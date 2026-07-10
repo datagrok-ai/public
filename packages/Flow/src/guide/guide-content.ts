@@ -50,8 +50,8 @@ const openFiles = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(80);
   const header = document.querySelector(
-    '[data-testid="ff-browser-files"] .funcflow-section-header') as HTMLElement | null;
-  if (header?.classList.contains('collapsed')) header.click();
+    '[data-testid="ff-browser-files"] .d4-accordion-pane-header') as HTMLElement | null;
+  if (header && !header.classList.contains('expanded')) header.click();
 };
 
 /** True once demog.csv exists in the Files tree AND is scrolled into view. */

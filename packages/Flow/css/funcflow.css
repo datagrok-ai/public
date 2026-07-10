@@ -79,34 +79,6 @@
   padding: 0 4px;
 }
 
-.funcflow-section-header {
-  padding: 6px 8px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--grey-6, #333);
-  background: var(--grey-1, #f0f0f0);
-  border-bottom: 1px solid var(--grey-2, #e0e0e0);
-  cursor: pointer;
-  user-select: none;
-}
-
-.funcflow-section-header:hover {
-  background: var(--grey-2, #e8e8e8);
-}
-
-.funcflow-section-header::before {
-  content: '\25BC ';
-  font-size: 10px;
-  padding-right: 4px;
-  opacity: 0.6;
-}
-
-.funcflow-section-header.collapsed::before {
-  content: '\25B6 ';
-  padding-right: 4px;
-  opacity: 0.6;
-}
-
 .funcflow-func-item {
   padding: 4px 12px;
   font-size: 12px;
@@ -122,38 +94,30 @@
   color: var(--blue-2, #1565c0);
 }
 
-/* Nested sub-accordions (e.g. per-connection query groups under "Queries"):
-   indent + a left accent rail + lighter, smaller headers so the hierarchy
-   reads clearly as a level below the top sections. */
+/* The nested per-connection accordion under "Queries" (a platform
+   DG.Accordion inside the pane content) — indent it one level so the
+   hierarchy reads as a level below the top sections. */
 .funcflow-subsections {
-  padding: 4px 0 6px 0;
-  background: var(--grey-0, #fafafa);
+  padding: 4px 0 6px 8px;
+  background: #fcfcfc;
+  border-radius: 8px;
 }
 
-.funcflow-subsection {
-  margin: 4px 6px 4px 14px;
-  border-left: 2px solid var(--blue-1, #90caf9);
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  background: #fff;
+.funcflow-subsections .d4-accordion-pane-content {
+  box-shadow: -20px 10px 10px 6px #f8f8f8;
+  border-radius: 8px;
 }
 
-.funcflow-subsection>.funcflow-section-header {
-  padding: 5px 8px 5px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  background: var(--grey-1, #f4f4f6);
-  border-bottom: none;
+.funcflow-subsections .funcflow-func-item {
+  padding-left: 10px;
 }
 
-.funcflow-subsection>.funcflow-section-header::before {
-  font-size: 9px;
-  opacity: 0.6;
+.funcflow-tree-container .funcflow-section-content {
+  width: 100%;
 }
 
-.funcflow-subsection .funcflow-func-item {
-  padding-left: 22px;
+.funcflow-section-content .d4-tree-view-group-host {
+  width: calc(100% - 15px) !important;
 }
 
 /* Center panel — Rete area mounts inside this container.
