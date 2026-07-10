@@ -624,11 +624,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       }
     }
   }
-  // Neither of the above runs on VIEW close — only on remount/no-table. Close every still-mounted
-  // viewer when the view itself tears down, or their Dart-side resources leak for the session.
-  view.subs.push(new Subscription(() => {
-    for (const host of mountedViewers.keys()) closeMountedViewers(host);
-  }));
 
   // ChemicalReaction has no meaningful substructure-filter semantics for a whole reaction template,
   // so it's simply left out of the filters below (not a workaround for anything — DG.Viewer.filters
@@ -703,13 +698,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // when both are present, since it's the more deliberate action.
   function cloneSubsetByRows(df: DG.DataFrame, emptyMsg: string): DG.DataFrame | null {
     const sel = df.selection;
-    const mask = sel.trueCount === 0 ? df.filter : sel;
-    if (mask.trueCount === 0) {
+    const mask = sel.anyTrue ? sel : df.filter;
+    if (!mask.anyTrue) {
       grok.shell.info(emptyMsg);
       return null;
     }
     // Also covers the trivial "filter matches every row" case — nothing left to narrow either way.
-    if (mask.trueCount === df.rowCount) {
+    if (!mask.anyFalse) {
       grok.shell.info('All rows are selected — nothing to subset.');
       return null;
     }
