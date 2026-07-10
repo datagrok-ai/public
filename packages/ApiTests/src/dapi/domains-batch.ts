@@ -3,18 +3,12 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {items, purge, uniqueKey} from './domains-fixture';
 
 // Phase-2 surface of grok.dapi.domains (batch/upsert, transactions, aggregate,
 // queryDf) against the 'apitests' schema from databases/apitests/schema.json.
 category('Dapi: domains batch', () => {
-  const items = () => grok.dapi.domains.table('apitests.item');
-  const prefix = () => `BT-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-
-  async function purge(p: string): Promise<void> {
-    const rows = await items().query({filter: `sku starts "${p}"`, limit: 1000});
-    for (const r of rows)
-      await items().delete(r.id);
-  }
+  const prefix = () => uniqueKey('BT');
 
   test('batch CSV string', async () => {
     const p = prefix();

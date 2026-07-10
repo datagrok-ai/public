@@ -9,29 +9,9 @@ const ISSUE_TYPE = 'grit.issue';
 /** A Grit issue handle: `<PROJECTKEY>-<number>`, e.g. `GRITEST-1` (per-project numbering). */
 const ISSUE_HANDLE_RE = /^([A-Za-z][A-Za-z0-9_]*)-(\d+)$/;
 
-const statusColors: {[key: string]: string} = {
-  'open': '#1f8fff', 'in progress': '#e8912d', 'resolved': '#2a9d3a', 'closed': '#8b95a1',
-};
-const priorityColors: {[key: string]: string} = {
-  'low': '#8b95a1', 'medium': '#1f8fff', 'high': '#e8912d', 'critical': '#d9463f',
-};
-
-/** Injects the static badge presentation once; the per-badge color stays inline. */
-function ensureBadgeStyles(): void {
-  if (document.getElementById('grit-badge-styles') != null)
-    return;
-  const style = document.createElement('style');
-  style.id = 'grit-badge-styles';
-  style.textContent =
-    '.grit-badge{color:#fff;border-radius:4px;padding:1px 6px;margin-left:4px;font-size:11px;}';
-  document.head.appendChild(style);
-}
-
-function badge(text: string, color: string): HTMLElement {
-  ensureBadgeStyles();
-  const b = ui.span([text], 'grit-badge');
-  b.style.backgroundColor = color;
-  return b;
+/** Badge presentation lives in css/grit.css (`.grit-badge`, `.grit-status-*`, `.grit-priority-*`). */
+function badge(text: string, kind: 'status' | 'priority'): HTMLElement {
+  return ui.span([text], `grit-badge grit-${kind}-${text.toLowerCase().replace(/\s+/g, '-')}`);
 }
 
 /** Renders a `grit.issue` domain row throughout the platform — Domain View cards,
@@ -117,9 +97,9 @@ export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
   private badgeEls(status?: string, priority?: string): HTMLElement[] {
     const res: HTMLElement[] = [];
     if (status != null)
-      res.push(badge(status, statusColors[status] ?? '#8b95a1'));
+      res.push(badge(status, 'status'));
     if (priority != null)
-      res.push(badge(priority, priorityColors[priority] ?? '#8b95a1'));
+      res.push(badge(priority, 'priority'));
     return res;
   }
 

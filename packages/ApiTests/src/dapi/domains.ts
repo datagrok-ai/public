@@ -3,12 +3,12 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {items, uniqueKey} from './domains-fixture';
 
 // Tests for grok.dapi.domains against the 'apitests' domain schema that this
 // package declares in databases/apitests/schema.json (deployed on publish).
 category('Dapi: domains', () => {
-  const items = () => grok.dapi.domains.table('apitests.item');
-  const sku = () => `SKU-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const sku = () => uniqueKey('SKU');
 
   test('schemas listing', async () => {
     const schemas = await grok.dapi.domains.schemas.list();

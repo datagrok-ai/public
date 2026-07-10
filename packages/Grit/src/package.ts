@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {GritApp} from './grit-app';
 import {GritIssueHandler} from './grit-issue-handler';
 import {gritDb} from './generated/db';
+import '../css/grit.css';
 export * from './package.g';
 
 export const _package = new DG.Package();

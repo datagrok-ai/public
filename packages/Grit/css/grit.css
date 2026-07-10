@@ -1,0 +1,16 @@
+/* Status/priority badges rendered by GritIssueHandler.
+   Unknown values fall back to the .grit-badge grey. */
+.grit-badge {
+  color: #fff;
+  background-color: #8b95a1;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 4px;
+  font-size: 11px;
+}
+
+.grit-status-open, .grit-priority-medium {background-color: #1f8fff;}
+.grit-status-in-progress, .grit-priority-high {background-color: #e8912d;}
+.grit-status-resolved {background-color: #2a9d3a;}
+.grit-status-closed, .grit-priority-low {background-color: #8b95a1;}
+.grit-priority-critical {background-color: #d9463f;}

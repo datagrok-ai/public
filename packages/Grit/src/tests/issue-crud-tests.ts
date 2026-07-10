@@ -1,19 +1,10 @@
 import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {gritDb, CommentRow, IssueRow} from '../generated/db';
 
 // End-to-end issue CRUD over the typed clients generated from databases/grit/schema.json.
 category('Grit: issue CRUD', () => {
   const unique = (prefix: string) => `${prefix}${Date.now() % 1e10}${Math.floor(Math.random() * 1e3)}`;
-
-  const throws = async (action: () => Promise<any>): Promise<boolean> => {
-    try {
-      await action();
-    } catch (e) {
-      return true;
-    }
-    return false;
-  };
 
   test('project and issue lifecycle', async () => {
     const me = await grok.dapi.users.current();
@@ -42,8 +33,8 @@ category('Grit: issue CRUD', () => {
       expect(audit.map((a) => a.op).join(','), 'insert,update');
       expect(audit[1].after.status, 'in progress');
 
-      expect(await throws(() => gritDb.project.delete(project.id)), true,
-        'deleting a project with live issues must be restricted');
+      // deleting a project with live issues must be restricted
+      await expectExceptionAsync(() => gritDb.project.delete(project.id));
     } finally {
       await gritDb.issue.delete(issue.id);
       await gritDb.project.delete(project.id);
