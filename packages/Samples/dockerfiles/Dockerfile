@@ -4,7 +4,7 @@ USER root
 
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
     g++ \
@@ -16,6 +16,7 @@ WORKDIR /app
 COPY environment.yaml .
 
 RUN micromamba create -n myenv -f environment.yaml && \
+    micromamba run -n myenv pip install --no-cache-dir --upgrade pip setuptools wheel && \
     micromamba clean --all --yes
 
 SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]

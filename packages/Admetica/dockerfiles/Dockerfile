@@ -3,7 +3,7 @@ FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 SHELL ["/bin/bash","-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt update && \
+RUN apt update && apt upgrade -y && \
     apt install -y --no-install-recommends \
         curl bzip2 ca-certificates ; \
      apt clean
@@ -43,6 +43,7 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
 
 RUN set -ex ; \
     micromamba env create -f environment.yml -y ; \
+    micromamba run -n myenv pip install --no-cache-dir --upgrade pip setuptools wheel ; \
     micromamba clean -afy
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app

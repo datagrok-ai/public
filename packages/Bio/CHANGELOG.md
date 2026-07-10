@@ -2,7 +2,7 @@
 
 ## v.next
 
-
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages (also inherits the patched `datagrok/python` base)
 * Moved the Bio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * GROK-19794: MSA dialog: Fixed misaligned Alignment Parameters gap inputs (now share the dialog form's label alignment and width)
 

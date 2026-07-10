@@ -18,6 +18,7 @@ RUN groupadd --gid 2001 grok ; \
 ARG DEBIAN_FRONTEND=noninteractive
 RUN savedAptMark="$(apt-mark showmanual)" ; \
     apt-get update ; \
+    apt-get upgrade -y ; \
     apt-get install -y --no-install-recommends \
       unzip \
       wget \

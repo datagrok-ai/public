@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the conda env
 * GROK-14287: Dashboards: Fixed errors when opening the "Chemical Space Using tSNE" project
 * GROK-14286: Demo Notebooks: Open both the wells table and the notebook view by default
 

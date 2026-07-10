@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages, upgraded pip/setuptools/wheel in the conda env, and pinned urllib3/idna to fixed releases
 * Admetica: App view function returns the view directly instead of calling `grok.shell.addPreview`, letting the platform host place it
 * Admetica: Demo no longer persists the last sketched molecule
 * GROK-17468: Admetica: Fixed crashes when switching/relaunching the app faster than predictions complete

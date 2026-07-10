@@ -1,5 +1,9 @@
 # Retrosynthesis changelog
 
+## v.next
+
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the build stage
+
 ## 1.1.0 (2026-05-18)
 
 * Demo fix
