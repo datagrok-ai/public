@@ -2,7 +2,7 @@
 
 ## v.next
 
-
+* Docker (chem/chemprop): Cleared reported CVEs — pinned Flask/Werkzeug/gunicorn to fixed releases, upgraded pip/setuptools/wheel (build + runtime tooling), pinned urllib3/idna in chemprop, and added `apt upgrade` to patch base-image OS packages
 * Moved the Chem Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * GROK-20239: Chem: OCL renderer: Structures do not appear in labels in some visualisations
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title

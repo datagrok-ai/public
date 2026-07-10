@@ -1,5 +1,9 @@
 # NLP changelog
 
+## v.next
+
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages, upgraded pip/setuptools/wheel, and added security floors for pillow/urllib3/requests/werkzeug/filelock/idna
+
 ## 1.2.4 (2025-07-04)
 
 Updated default params for text clustering
