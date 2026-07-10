@@ -307,21 +307,24 @@ export class FunctionBrowser {
       }, {count: items.length});
     };
 
-    // KNIME-style Files browser (open by default), then the Queries pane, then —
-    // right on top — the Cheminformatics / Bioinformatics domain sections (the
-    // science a chemist/biologist reaches for first). Viewers / Widgets panes,
-    // the building-block built-ins, and the remaining task categories follow.
+    // Section order: Files, Queries, the Cheminformatics / Bioinformatics
+    // domain sections (the science a chemist/biologist reaches for first),
+    // the task categories (Data Sources → … → Compute Values), Viewers,
+    // Widgets, the building-block built-ins (Inputs / Outputs / Constants /
+    // Utilities), then the Other catch-all, and Debug last.
     this.renderFilesSection(acc);
     this.renderQueriesSection(acc);
     for (const domain of FunctionBrowser.DOMAIN_CATEGORIES) renderCategory(domain);
 
-    this.renderViewersSection(acc);
-    this.renderWidgetsSection(acc);
-    this.renderBuiltinNodes(acc);
-
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped))
       .filter((k) => !FunctionBrowser.DOMAIN_CATEGORIES.includes(k));
-    for (const category of sortedKeys) renderCategory(category);
+    for (const category of sortedKeys.filter((k) => k !== 'Other')) renderCategory(category);
+
+    this.renderViewersSection(acc);
+    this.renderWidgetsSection(acc);
+    this.renderBuiltinNodes(acc, ['Inputs', 'Outputs', 'Constants', 'Utilities']);
+    if (sortedKeys.includes('Other')) renderCategory('Other');
+    this.renderBuiltinNodes(acc, ['Debug']);
 
     acc.end();
     this.treeContainer.appendChild(acc.root);
@@ -399,6 +402,7 @@ export class FunctionBrowser {
     }
 
     this.addSection(acc, 'Queries', () => this.buildQueriesContent(byConn), {
+      count: matching.length,
       tooltip: 'Database queries, grouped by data connection. Double-click or drag to add.',
       tidParts: ['browser-queries'],
     });
@@ -450,6 +454,7 @@ export class FunctionBrowser {
       }
       return content;
     }, {
+      count: types.length,
       tooltip: 'Charts and viewers. Wire a table into one and run to see it in the preview panel.',
       tidParts: ['browser-viewers'],
     });
@@ -470,12 +475,15 @@ export class FunctionBrowser {
         content.appendChild(this.createFuncItem(info));
       return content;
     }, {
+      count: matching.length,
       tooltip: 'Functions that produce a widget. Double-click or drag to add.',
       tidParts: ['browser-widgets'],
     });
   }
 
-  private renderBuiltinNodes(acc: DG.Accordion): void {
+  /** Renders the built-in node sections named in `titles` (lets the caller
+   *  interleave them with other panes — Debug goes last in the toolbox). */
+  private renderBuiltinNodes(acc: DG.Accordion, titles: string[]): void {
     const query = this.searchInput.value.toLowerCase();
 
     // Input nodes
@@ -532,7 +540,7 @@ export class FunctionBrowser {
       {title: 'Debug', nodes: debugNodes, tip: 'Debugging and execution control nodes'},
     ];
 
-    for (const section of sections) {
+    for (const section of sections.filter((s) => titles.includes(s.title))) {
       const filtered = query ?
         section.nodes.filter((n) => nameMatchesQuery(n.name, query)) :
         section.nodes;
@@ -556,7 +564,7 @@ export class FunctionBrowser {
           content.appendChild(item);
         }
         return content;
-      }, {tooltip: section.tip});
+      }, {tooltip: section.tip, count: filtered.length});
     }
   }
 

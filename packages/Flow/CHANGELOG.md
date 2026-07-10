@@ -15,6 +15,11 @@
   so the forced states never overwrite the user's saved ones.
 * Pane headers keep `data-section` and the `ff-browser-section-<title>` test ids; the guide now
   detects expansion via the accordion's `expanded` header class.
+* **Every section (except Files) now shows its item count** — Queries, Viewers, Widgets, and the
+  built-ins got count badges too, matching the categories.
+* **Section order reorganized**: Files, Queries, Cheminformatics, Bioinformatics, the task
+  categories (Data Sources, Workflows, Combine Tables, Transform Tables, Column Operations,
+  Compute Values), Viewers, Widgets, Inputs, Outputs, Constants, Utilities, Other — and Debug last.
 
 ### Save button reflects whether there's anything to save
 

@@ -220,18 +220,24 @@ category('Flow: function browser', () => {
       browser.render();
       const chem = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
       expect(!!chem, true, 'Cheminformatics section header present');
-      // It sits AFTER the Queries pane but BEFORE the Viewers pane and the
-      // built-in sections (Inputs) and the general categories (Data Sources).
+      // Order: Queries → domain sections → task categories (Data Sources…) →
+      // Viewers → built-ins (Inputs…) → Other → Debug last.
       const queries = browser.root.querySelector('[data-testid="ff-browser-queries"]');
       const viewers = browser.root.querySelector('[data-testid="ff-browser-viewers"]');
-      const inputs = browser.root.querySelector('[data-testid="ff-browser-section-Inputs"]');
-      const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-Data Sources"]');
+      const inputs = browser.root.querySelector('[data-testid="ff-browser-section-inputs"]');
+      const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-data-sources"]');
+      const other = browser.root.querySelector('[data-testid="ff-browser-section-other"]');
+      const debug = browser.root.querySelector('[data-testid="ff-browser-section-debug"]');
       const before = (a: Element | null, b: Element | null): boolean =>
         !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
       if (queries) expect(before(queries, chem), true, 'Cheminformatics comes after Queries');
-      if (viewers) expect(before(chem, viewers), true, 'Cheminformatics comes before Viewers');
-      if (inputs) expect(before(chem, inputs), true, 'Cheminformatics comes before the Inputs built-ins');
       if (dataSources) expect(before(chem, dataSources), true, 'Cheminformatics comes before Data Sources');
+      if (viewers && dataSources) expect(before(dataSources, viewers), true, 'task categories come before Viewers');
+      if (viewers && inputs) expect(before(viewers, inputs), true, 'Viewers comes before the Inputs built-ins');
+      // Debug is a static built-in (Breakpoint) — it exists on every stand.
+      expect(!!debug, true, 'Debug section present');
+      if (other) expect(before(inputs, other), true, 'Other comes after the built-ins');
+      if (other) expect(before(other, debug), true, 'Debug comes last, after Other');
     } finally {
       browser.root.remove();
     }
