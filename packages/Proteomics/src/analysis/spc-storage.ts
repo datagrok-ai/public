@@ -111,7 +111,7 @@ function baselinePath(instrumentId: string, opts?: StorageOpts): string {
 }
 
 // =====================================================================================
-// Slugify — T-16-01 mitigation. Mirrors publishing/publish-state.ts:slugifyTarget but
+// Slugify — T-16-01 mitigation. Mirrors publishing/publish-state.ts:slugifyProject but
 // PRESERVES case so instrument names like 'QExactive-01' round-trip exactly.
 // =====================================================================================
 

@@ -61,14 +61,14 @@
   "properties": [
     {
       "name": "reviewSpaceName",
-      "description": "Umbrella Space that shared review snapshots are published under. Each target gets a child Space inside it.",
+      "description": "Umbrella Space that shared review snapshots are published under. Each project gets a child Space inside it.",
       "propertyType": "string",
       "defaultValue": "Proteomics-Reviews",
       "nullable": false
     },
     {
       "name": "reviewNamePrefix",
-      "description": "Prefix for shared review project names. The structural '-<target>-v<version>-<date>' suffix stays fixed so re-share version detection keeps working.",
+      "description": "Prefix for shared review project names. The structural '-<project>-v<version>-<date>' suffix stays fixed so re-share version detection keeps working.",
       "propertyType": "string",
       "defaultValue": "Proteomics-Review",
       "nullable": false
@@ -79,6 +79,13 @@
       "propertyType": "bool",
       "defaultValue": true,
       "nullable": false
+    },
+    {
+      "name": "projectVocabulary",
+      "description": "Comma-separated controlled list of project names an analyst can share under. Package administrators add, edit, or remove names here; the Share for Review dialog offers exactly these as a dropdown (no free text).",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true
     }
   ],
   "overrides": {

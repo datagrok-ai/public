@@ -24,6 +24,7 @@ import './tests/smart-pathway-filter';
 import './tests/uniprot-panel';
 import './tests/publish-spike';
 import './tests/publish-roundtrip';
+import './tests/project-vocabulary';
 import './tests/spc-formula-lines-spike';
 import './tests/spc';
 

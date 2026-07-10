@@ -160,7 +160,7 @@ export function trimForPublish(source: DG.DataFrame, meta: PublishedMetadata): D
     {name: META_COLUMNS.PUBLISHED_AT, value: meta.publishedAt, type: 'datetime'},
     {name: META_COLUMNS.PUBLISHED_BY, value: meta.publishedBy, type: 'string'},
     {name: META_COLUMNS.PUBLISHED_BY_EMAIL, value: meta.publishedByEmail ?? '', type: 'string', emptyForNull: true},
-    {name: META_COLUMNS.PUBLISHED_TARGET, value: meta.target, type: 'string'},
+    {name: META_COLUMNS.PUBLISHED_PROJECT, value: meta.project, type: 'string'},
     {name: META_COLUMNS.PUBLISHED_DE_METHOD, value: meta.deMethod, type: 'string'},
     {name: META_COLUMNS.PUBLISHED_FC_THRESHOLD, value: String(meta.fcThreshold), type: 'string'},
     {name: META_COLUMNS.PUBLISHED_P_THRESHOLD, value: String(meta.pThreshold), type: 'string'},
