@@ -41,6 +41,9 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
 
   await softStep('Wait for Molecule semType (Chem autostart cascade)', async () => {
     await waitForMolecule(page);
+    // Load the Chem package bundle so `Chem:substructureFilter` resolves for the synchronous
+    // filter operations below (fg.updateOrAdd) — the semType detector alone does not load it.
+    await page.evaluate(async () => { await grok.functions.call('Chem:getRdKitModule', {}); });
   });
 
   await softStep('Verify Molecule semType detected + Grid renders', async () => {

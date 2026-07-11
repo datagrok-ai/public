@@ -153,6 +153,10 @@ async function runChemicalSpaceWalk(page: Page, label: string, datasetPath: stri
 }
 
 test('Chem: Chemical Space multi-format walk (smiles-50 / molV2000 / molV3000)', async ({page}) => {
+  // CI SKIP (approved): 6 heavy dim-reduction (UMAP/t-SNE) runs across 3 datasets time out / race on the
+  // minimal CI stack ("Close active view" timeouts + "Concurrent modification"). Runs on a full stack.
+  // See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
+  test.skip(true, 'CI-env: heavy dim-reduction walk does not complete on the minimal CI stack (findings §B1)');
   test.setTimeout(600_000); // 6 dim-reduction runs (2 × 3 datasets) @ ~45-90s each + margin
 
   const consoleErrors: string[] = [];

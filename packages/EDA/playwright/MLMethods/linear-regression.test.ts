@@ -29,7 +29,9 @@ test.describe.serial('EDA / MLMethods / Linear Regression', () => {
     await openTrainModelView(page);
     await setPredictColumn(page, 'price');
 
-    const trained = await trainEdaModelViaApi(page, 'eda:trainLinearRegression', 'price');
+    // Linear regression needs numeric features — cars.csv has string columns (make/model) that
+    // must be dropped, otherwise the kernel throws "unsupported column type: string".
+    const trained = await trainEdaModelViaApi(page, 'eda:trainLinearRegression', 'price', {numericOnly: true});
     expect(trained.ok, trained.error ?? 'training returned null').toBe(true);
   });
 });
