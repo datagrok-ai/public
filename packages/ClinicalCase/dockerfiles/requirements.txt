@@ -2,3 +2,5 @@ datagrok-celery-task
 celery
 datagrok-api>=0.0.9
 filelock
+# pandas optional-dep check requires pytz.__version__, dropped in pytz 2026.x
+pytz<2026
