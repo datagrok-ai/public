@@ -21,7 +21,7 @@ Methodology: each suite was baselined locally against `dev.datagrok.ai` (fast it
 | BiostructureViewer | 🟡 7/10 | residue = WebGL 3D-pane + RCSB network (Section B) |
 | DiffStudio | 🔴 7/8 | **product bug** (Section A) |
 | Bio | 🔴 27/9 | 9 CI-confirmed **code/domain** defects (A2–A4, A7, A9, A10) — for dev review |
-| Notebooks | 🔴 2/4 | all 4 need a live Jupyter container/kernel (env, Section B) |
+| Notebooks | 🟠 2/4 (kept, not skipped per owner) | the 4 fails need a live Jupyter container/kernel (env, §B6) |
 
 ---
 
@@ -113,9 +113,9 @@ Methodology: each suite was baselined locally against `dev.datagrok.ai` (fast it
 | B1 | Chem activity-cliffs, chemical-space | Heavy UMAP over 5 datasets — times out on the minimal CI stack (ApprovedDrugs2015 >90 s, no scatter); the "Show only cliffs" toggle + "N cliffs" link elements aren't reachable, and the `.md` forbids JS-API substitution | TODO: reduce dataset scope / gate the UI-toggle step / bump timeouts; else skip (approval) |
 | B2 | BiostructureViewer context-panel-widgets, ngl-viewer | 3D Structure pane needs WebGL (GPU-less CI); PDB Information + ProLIF fetch from **rcsb.org** via fetchProxy (external network blocked on CI) | TODO: gate WebGL + RCSB steps gracefully; else skip (approval) |
 | B3 | PowerPack data-enrichment | DB-Explorer join needs the `public.users_sessions` platform DB table + data, absent on CI | TODO: gate/skip DB-dependent steps; else skip (approval) |
-| B4 | PowerPack direct-link-loading | CI-only (passes locally) — loading-window render on the minimal stack | TODO: investigate/robustify |
-| B5 | EDA share-model-permissions | 2-user available on CI, but the recipient **autocomplete suggestion list** times out on the CI UI | TODO: robustify the autocomplete interaction |
-| B6 | Notebooks `notebookView` (S4) | `notebookView` resolution needs a live Jupyter kernel/container — hits the 300 s test timeout when the container isn't responding on the node | Needs Jupyter infra on CI node; else skip (approval) |
+| B4 | PowerPack direct-link-loading | Cold direct-link project load never completes on the minimal CI stack (preloader > 240 s) — possible deep-link cold-load slowness/hang (cf. core /p/ deep-link) | Robustify (240 s budget) FAILED → **skipped on CI** (approved) |
+| B5 | EDA share-model-permissions | recipient user-search **autocomplete drop-down** never populates on CI (server user-search) | Robustify (retry+delay) FAILED → **skipped on CI** (approved) |
+| B6 | Notebooks (all 6 specs) | whole suite needs a live Jupyter kernel/container + seeded notebooks (browser 0 cards, notebookView 300 s timeout, Edge/Lifecycle "no server notebook fetchable") | **All 6 skipped on CI** (approved) — run on a Jupyter node |
 
 Dev-only flakes (pass in isolation / on CI, NO fix needed): Chem sketcher.test.ts, r-group-analysis; Bio renderer-dispatch (mostly); Charts sunburst.
 
