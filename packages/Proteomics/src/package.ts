@@ -1000,9 +1000,9 @@ export class PackageFunctions {
     meta: {role: 'packageSettingsEditor'},
     tags: ['packageSettingsEditor'],
   })
-  static proteomicsSettingsEditor(
+  static async proteomicsSettingsEditor(
     @grok.decorators.param({name: 'propList', type: 'object'}) propList: DG.Property[],
-  ): DG.Widget {
+  ): Promise<DG.Widget> {
     return proteomicsSettingsEditorWidget(propList);
   }
 

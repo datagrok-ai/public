@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {parseProjectVocabulary} from './publish-settings';
+import {loadReviewerGroups, reviewerGroupName} from './reviewer-groups';
 
 /**
  * Custom editor for the Proteomics package settings (Plugins → Proteomics →
@@ -18,7 +19,7 @@ import {parseProjectVocabulary} from './publish-settings';
  * setting is rendered here, not just the vocabulary — otherwise the others would
  * vanish from the pane.
  */
-export function proteomicsSettingsEditorWidget(propList: DG.Property[]): DG.Widget {
+export async function proteomicsSettingsEditorWidget(propList: DG.Property[]): Promise<DG.Widget> {
   const findProp = (name: string): DG.Property | undefined => propList.find((p) => p.name === name);
 
   const inputs: DG.InputBase[] = [];
@@ -45,8 +46,42 @@ export function proteomicsSettingsEditorWidget(propList: DG.Property[]): DG.Widg
     inputs.push(input);
   };
 
+  // Default reviewer team: a dropdown of the same teams the Share dialog offers,
+  // so admins pick from a controlled list rather than free-typing a name. Falls
+  // back to a free-text input if the group list can't be loaded (e.g. no ACL).
+  const addDefaultGroupInput = async (): Promise<void> => {
+    const prop = findProp('defaultReviewerGroup');
+    if (!prop) return;
+    const cur = (prop.get(null) as string | null) ?? '';
+    let groupNames: string[] = [];
+    try {
+      groupNames = [...new Set((await loadReviewerGroups()).map(reviewerGroupName).filter(Boolean))];
+    } catch (e) { console.error(e); }
+
+    if (groupNames.length > 0) {
+      const input = ui.input.choice('Default Reviewer Team', {
+        value: groupNames.includes(cur) ? cur : null,
+        items: groupNames,
+        nullable: true,
+      });
+      input.setTooltip('Team pre-selected in the Share for Review dialog. Leave blank to default to the first team.');
+      input.onChanged.subscribe(() => {
+        try { prop.set(null, input.value ?? ''); } catch (e) { console.error(e); }
+      });
+      inputs.push(input);
+    } else {
+      const input = ui.input.string('Default Reviewer Team', {value: cur});
+      input.setTooltip('Team name pre-selected in the Share for Review dialog. Leave blank to default to the first team.');
+      input.onChanged.subscribe(() => {
+        try { prop.set(null, input.value ?? ''); } catch (e) { console.error(e); }
+      });
+      inputs.push(input);
+    }
+  };
+
   addStringInput('reviewSpaceName', 'Review Space Name');
   addStringInput('reviewNamePrefix', 'Review Name Prefix');
+  await addDefaultGroupInput();
   addBoolInput('verifyPublishedDashboard', 'Verify Published Dashboard');
 
   const root = ui.divV([ui.form(inputs)]);

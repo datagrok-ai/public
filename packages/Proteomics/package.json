@@ -74,6 +74,13 @@
       "nullable": false
     },
     {
+      "name": "defaultReviewerGroup",
+      "description": "Team pre-selected in the Share for Review dialog's 'Share with team' picker. Leave blank to default to the first available team.",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true
+    },
+    {
       "name": "verifyPublishedDashboard",
       "description": "After publishing, re-open the shared dashboard to verify it survives a reload. Safer for client deliverables; turn off for faster demo shares.",
       "propertyType": "bool",

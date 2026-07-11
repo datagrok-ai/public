@@ -6,7 +6,8 @@ import {
   DE_COMPLETE_TAG, PublishOptions, findPriorShare, slugifyProject,
 } from './publish-state';
 import {publishAnalysis} from './publish-project';
-import {getProjectVocabulary, reviewNamePrefix, verifyPublishedDashboard} from './publish-settings';
+import {defaultReviewerGroup, getProjectVocabulary, reviewNamePrefix, verifyPublishedDashboard} from './publish-settings';
+import {loadReviewerGroups, reviewerGroupName} from './reviewer-groups';
 
 /**
  * Analyst-facing share dialog. Single entry point into the publish flow —
@@ -32,15 +33,7 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
     return;
   }
 
-  const allGroups = await grok.dapi.groups.list();
-  const allUsersId = (DG.Group as any).defaultGroupsIds?.['All users'];
-  const filteredGroups = (allGroups ?? []).filter((g: any) => {
-    if (g == null) return false;
-    if (g.hidden) return false;
-    if (g.personal) return false;
-    if (allUsersId && g.id === allUsersId) return false;
-    return true;
-  });
+  const filteredGroups = await loadReviewerGroups();
 
   if (filteredGroups.length === 0) {
     grok.shell.warning('No teams available to share with. Ask an admin to create a reviewer team.');
@@ -49,10 +42,17 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
 
   const groupByName = new Map<string, DG.Group>();
   for (const g of filteredGroups) {
-    const name = (g as any).friendlyName ?? (g as any).name ?? '';
+    const name = reviewerGroupName(g);
     if (name && !groupByName.has(name)) groupByName.set(name, g);
   }
   const groupItems = Array.from(groupByName.keys());
+
+  // Pre-select the admin-configured default team when it's still available;
+  // otherwise fall back to the first team in the list.
+  const configuredDefault = defaultReviewerGroup();
+  const defaultGroupName = configuredDefault && groupItems.includes(configuredDefault)
+    ? configuredDefault
+    : groupItems[0];
 
   // Project is a controlled vocabulary — admins maintain the list in the
   // `projectVocabulary` package setting; the analyst picks, never free-types.
@@ -73,7 +73,7 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
     'Maintained by package administrators in the Proteomics package settings.');
 
   const groupInput = ui.input.choice('Share with team', {
-    value: groupItems[0],
+    value: defaultGroupName,
     items: groupItems,
     nullable: false,
   });

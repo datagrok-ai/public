@@ -44,6 +44,16 @@ export function reviewNamePrefix(): string {
 }
 
 /**
+ * Name of the team pre-selected in the Share for Review dialog's "Share with
+ * team" picker. Setting: `defaultReviewerGroup`. Empty (the default) means "no
+ * preference" — the dialog falls back to the first available team. A stale value
+ * (team renamed/removed) is ignored the same way.
+ */
+export function defaultReviewerGroup(): string {
+  return readSetting('defaultReviewerGroup', '');
+}
+
+/**
  * Whether to re-open each published dashboard and assert it survives a reload
  * (the heavy round-trip check). Default ON — keep it for client deliverables;
  * turn it off via the `verifyPublishedDashboard` package setting for faster demo

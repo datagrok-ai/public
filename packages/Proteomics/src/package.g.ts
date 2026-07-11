@@ -165,8 +165,8 @@ export function publishedAnalysisPanelWidget(proteinId: string) : any {
 //input: object propList 
 //output: widget result
 //meta.role: packageSettingsEditor
-export function proteomicsSettingsEditor(propList: any) : any {
-  return PackageFunctions.proteomicsSettingsEditor(propList);
+export async function proteomicsSettingsEditor(propList: any) : Promise<any> {
+  return await PackageFunctions.proteomicsSettingsEditor(propList);
 }
 
 //tags: autostart
