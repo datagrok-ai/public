@@ -757,6 +757,31 @@ jobs:
           done
           rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
 
+      # Refresh the browsable VEX summary (index.html/json + composites) so it
+      # reflects this just-published image immediately, instead of waiting for
+      # the weekly Track A pass. Fires the ops Jenkins Vulnerability-Scan job in
+      # REINDEX_ONLY mode — reusing the single index-builder (vex-report.sh) so
+      # there is no duplicated aggregation logic here. Skips cleanly when the
+      # trigger secret is not configured. See core/docs/VULNERABILITY_MANAGEMENT.md.
+      - name: Refresh VEX summary index
+        if: steps.scan-docker.outcome == 'success'
+        continue-on-error: true
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_VEX_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_VEX_USER }}
+          JENKINS_VEX_TOKEN: ${{ secrets.JENKINS_VEX_TOKEN }}
+        run: |
+          if [ -z "${JENKINS_VEX_TOKEN}" ]; then
+            echo "JENKINS_VEX_TOKEN not set — skipping index refresh (weekly pass will catch up)."
+            exit 0
+          fi
+          code=$(curl -sg -o /dev/null -w '%{http_code}' -X POST \
+            --user "${JENKINS_USER}:${JENKINS_VEX_TOKEN}" \
+            "${JENKINS_URL%/}/job/Vulnerability-Scan/buildWithParameters" \
+            --data-urlencode "REINDEX_ONLY=true")
+          echo "REINDEX_ONLY trigger -> HTTP ${code}"
+          [ "$code" = "201" ] || echo "::warning::VEX index refresh not queued (HTTP ${code})"
+
       - name: Commit package-lock.json
         id: git
         continue-on-error: true
