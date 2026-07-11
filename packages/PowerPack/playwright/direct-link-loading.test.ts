@@ -120,8 +120,10 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
     });
     await softStep('Scenario 1 Step 4: wait for the load to complete (preloader gone + grid mounted)', async () => {
       const freshPage: Page = (secondaryContext as any)._freshPage;
-      await waitForPreloaderGone(freshPage);
-      await freshPage.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
+      // Cold direct-link project load (Data Sync + materialization) is much slower on the minimal CI
+      // stack than on dev — give the preloader/grid a generous budget (test.setTimeout is 420 s).
+      await waitForPreloaderGone(freshPage, 240_000);
+      await freshPage.locator('[name="viewer-Grid"]').waitFor({timeout: 90_000});
       await freshPage.waitForTimeout(1500);
     });
     await softStep('Scenario 1 Step 5: verify post-load rendering (grid has non-zero dimensions, no zombie welcome fragments)', async () => {

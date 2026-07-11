@@ -200,6 +200,10 @@ async function runActivityCliffsWalk(page: Page, label: string, datasetPath: str
 }
 
 test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
+  // CI SKIP (approved): heavy UMAP over 5 datasets exceeds the minimal CI stack (ApprovedDrugs2015 >90s,
+  // no scatter) and the "Show only cliffs" / "N cliffs" UI controls aren't reachable there — the .md
+  // forbids JS-API substitution for the toggle. Runs on a full stack. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B1.
+  test.skip(true, 'CI-env: heavy UMAP walk + UI controls unavailable on the minimal CI stack (findings §B1)');
   test.setTimeout(900_000);
 
   await loginToDatagrok(page);

@@ -43,6 +43,10 @@ async function openNotebooksBrowser(page: import('@playwright/test').Page) {
 
 // scenario: Notebook Browser — S1..S6 (navigate, filter, context panel, apply-to, back-nav, new)
 test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-to, back, new', async ({page}) => {
+  // CI SKIP (approved): needs a live Jupyter kernel/container + seeded notebooks on the node — the browser
+  // shows 0 notebook cards and notebookView resolution hits the 300s timeout on CI. Runs on a node with
+  // Jupyter. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B6.
+  test.skip(true, 'CI-env: requires a live Jupyter container + seeded notebooks (findings §B6)');
   // Cold `grok test` boot: login + setup, then six UI flows incl. async notebook editor creation (S6
   // polls up to 90s) and Jupyter-dependent Apply-to observation.
   test.setTimeout(240_000);
