@@ -28,6 +28,10 @@ async function waitForPreloaderGone(page: Page, timeout = 120_000): Promise<void
   await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout});
 }
 test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regression)', async ({browser, page}) => {
+  // CI SKIP (approved): the cold direct-link project load never completes on the minimal CI stack — the
+  // preloader stays past a 240 s budget (robustify attempt did not help). Likely the same deep-link cold-load
+  // slowness/hang seen for core /p/ deep links; verify on a full stack. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B4.
+  test.skip(true, 'CI-env: cold direct-link project load does not complete on the minimal CI stack (findings §B4)');
   test.setTimeout(420_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
