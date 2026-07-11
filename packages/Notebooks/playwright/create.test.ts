@@ -15,10 +15,6 @@ test.use(specTestOptions);
 
 // scenario: Create Notebook — Scenarios 1 (Open demog table in Notebook) + 2 (View notebook as HTML)
 test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', async ({page}) => {
-  // CI SKIP (approved): "Open in Notebook" needs a live Jupyter kernel to render the notebook view; the
-  // view never resolves on the CI stack (no Jupyter). Runs on a node with Jupyter.
-  // See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B6.
-  test.skip(true, 'CI-env: requires a live Jupyter kernel/container (findings §B6)');
   // 240s: cold `grok test` boots the Notebooks editor ribbon asynchronously (~10-13s post-click)
   // and the spec drives three sequential server round-trips (save, HTML-mode, delete).
   test.setTimeout(240_000);
