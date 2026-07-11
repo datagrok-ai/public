@@ -14,11 +14,11 @@ Methodology: each suite was baselined locally against `dev.datagrok.ai` (fast it
 | Helm | ✅ 4/4 | — |
 | SequenceTranslator | ✅ 6/1skip | Markush = in-dev, `test.skip` |
 | Peptides | ✅ 14/14 | — |
-| Chem | 🟢 17/19 | 4 test fixes; 2 residue = heavy UMAP walks (Section B) |
-| EDA | 🟢 12–13/14 | linreg + anova test fixes; residue = share-model UI, anova tabs (see A/B) |
-| PowerPack | 🟡 11/13 | input-functions fixed; residue = DB-enrichment, direct-link (Section B) |
-| Dendrogram | 🟡 9/10 | residue = previewNewick (see A?) |
-| BiostructureViewer | 🟡 7/10 | residue = WebGL 3D-pane + RCSB network (Section B) |
+| Chem | ✅ 17/2skip | 4 test fixes; 2 skipped (heavy UMAP, §B1) |
+| EDA | ✅ 13/1skip | linreg + anova test fixes; share-model skipped (§B5); anova tabs = A5 |
+| PowerPack | ✅ 11/2skip | input-functions fixed; data-enrichment + direct-link skipped (§B3/§B4) |
+| Dendrogram | 🔴 9/10 | previewNewick — code/CI (A6) |
+| BiostructureViewer | ✅ 7/3skip | WebGL 3D-pane + RCSB skipped (§B2) |
 | DiffStudio | 🔴 7/8 | **product bug** (Section A) |
 | Bio | 🔴 27/9 | 9 CI-confirmed **code/domain** defects (A2–A4, A7, A9, A10) — for dev review |
 | Notebooks | 🟠 2/4 (kept, not skipped per owner) | the 4 fails need a live Jupyter container/kernel (env, §B6) |
