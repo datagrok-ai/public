@@ -157,6 +157,10 @@ export namespace funcs {
     return await grok.functions.call('Proteomics:PublishedAnalysisPanelWidget', { proteinId });
   }
 
+  export async function proteomicsSettingsEditor(propList: any ): Promise<any> {
+    return await grok.functions.call('Proteomics:ProteomicsSettingsEditor', { propList });
+  }
+
   export async function recoverPublishedProjectsOnStartup(): Promise<void> {
     return await grok.functions.call('Proteomics:RecoverPublishedProjectsOnStartup', {});
   }

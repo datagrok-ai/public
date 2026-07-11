@@ -160,6 +160,15 @@ export function publishedAnalysisPanelWidget(proteinId: string) : any {
   return PackageFunctions.publishedAnalysisPanelWidget(proteinId);
 }
 
+//name: Proteomics package settings editor
+//tags: packageSettingsEditor
+//input: object propList 
+//output: widget result
+//meta.role: packageSettingsEditor
+export function proteomicsSettingsEditor(propList: any) : any {
+  return PackageFunctions.proteomicsSettingsEditor(propList);
+}
+
 //tags: autostart
 //meta.autostartImmediate: true
 export async function recoverPublishedProjectsOnStartup() : Promise<void> {

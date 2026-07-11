@@ -35,6 +35,7 @@ import {uniprotPanel} from './panels/uniprot-panel';
 import {focusProtein} from './panels/protein-focus';
 import {publishedAnalysisPanel} from './panels/published-analysis-panel';
 import {showShareForReviewDialog} from './publishing/share-dialog';
+import {proteomicsSettingsEditorWidget} from './publishing/package-settings-editor';
 import {recoverPublishedProject} from './publishing/post-open-recovery';
 import {isPublished} from './publishing/publish-state';
 import {showEnrichmentDialog} from './analysis/enrichment';
@@ -992,6 +993,17 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Proteomics-ProteinId'}}) proteinId: string,
   ): DG.Widget {
     return publishedAnalysisPanel(proteinId);
+  }
+
+  @grok.decorators.func({
+    name: 'Proteomics package settings editor',
+    meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
+  })
+  static proteomicsSettingsEditor(
+    @grok.decorators.param({name: 'propList', type: 'object'}) propList: DG.Property[],
+  ): DG.Widget {
+    return proteomicsSettingsEditorWidget(propList);
   }
 
   @grok.decorators.func({tags: ['autostart'], meta: {autostartImmediate: 'true'}})
