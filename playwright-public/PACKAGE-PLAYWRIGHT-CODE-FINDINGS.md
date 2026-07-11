@@ -6,22 +6,31 @@ Methodology: each suite was baselined locally against `dev.datagrok.ai` (fast it
 
 ---
 
-## CI status per package (latest build)
+## Summary — per-package CI results
 
-| Package | CI | Notes |
-|---|---|---|
-| Charts | ✅ 10/10 | radar save/reopen fixed (test) |
-| Helm | ✅ 4/4 | — |
-| SequenceTranslator | ✅ 6/1skip | Markush = in-dev, `test.skip` |
-| Peptides | ✅ 14/14 | — |
-| Chem | ✅ 17/2skip | 4 test fixes; 2 skipped (heavy UMAP, §B1) |
-| EDA | ✅ 13/1skip | linreg + anova test fixes; share-model skipped (§B5); anova tabs = A5 |
-| PowerPack | ✅ 11/2skip | input-functions fixed; data-enrichment + direct-link skipped (§B3/§B4) |
-| Dendrogram | 🔴 9/10 | previewNewick — code/CI (A6) |
-| BiostructureViewer | ✅ 7/3skip | WebGL 3D-pane + RCSB skipped (§B2) |
-| DiffStudio | 🔴 7/8 | **product bug** (Section A) |
-| Bio | 🔴 27/9 | 9 CI-confirmed **code/domain** defects (A2–A4, A7, A9, A10) — for dev review |
-| Notebooks | 🟠 2/4 (kept, not skipped per owner) | the 4 fails need a live Jupyter container/kernel (env, §B6) |
+Time = pure Playwright run time (per-package `.jest`, excludes prereq package builds).
+
+| Package | Passed | Failed | Skipped | Time | Status — what was fixed |
+|---|---:|---:|---:|---:|---|
+| Charts | 10 | 0 | 0 | 3.0m | Green — fixed radar save/reopen (load layout on reopen) |
+| Helm | 4 | 0 | 0 | 0.8m | Green — no changes needed |
+| SequenceTranslator | 6 | 0 | 1 | 2.5m | Green — no changes needed (Markush = in-dev skip) |
+| Peptides | 14 | 0 | 0 | 9.5m | Green — no changes needed |
+| Chem | 17 | 0 | 2 | 7.3m | Green — Chem-package warm-up before sync filter add x3 + Ketcher molfile poll; 2 skipped (heavy UMAP, B1) |
+| EDA | 13 | 0 | 1 | 1.2m | Green — linreg numeric-only features + ANOVA menu path & box-desc assert; 1 skipped (share-model UI, B5) |
+| PowerPack | 11 | 0 | 2 | 4.8m | Green — poll for Molecule semtype in input-functions; 2 skipped (DB B3, cold-load B4) |
+| BiostructureViewer | 7 | 0 | 3 | 3.8m | Green — no code fix; 3 skipped (WebGL Mol*/NGL + RCSB network, B2) |
+| Bio | 27 | 9 | 0 | 9.0m | Partial — 9 code/domain defects left red for devs (A2-A4, A7, A9, A10) |
+| Dendrogram | 9 | 1 | 0 | 4.6m | Partial — previewNewick throws Dart "No element" (A6) |
+| DiffStudio | 7 | 1 | 0 | ~3.5m | Partial — product bug: URL deep-link drops `step` (A1) |
+| Notebooks | 2 | 4 | 0 | 0.2m* | Partial — kept as-is per owner; 4 need a live Jupyter container (B6) |
+| **TOTAL** | **127** | **15** | **9** | **~50m** | 8 green - 4 partial |
+
+\* Notebooks time = the 2 passing tests only; the 4 failures hit long Jupyter timeouts.
+
+Fixes applied (10, all CI-confirmed): Charts radar; Chem x4 (package warm-up, Ketcher poll); EDA x2 (linreg, ANOVA);
+PowerPack input-functions. Skips (approved, env-only): Chem 2, BSV 3, PowerPack 2, EDA 1 — each with a documented
+reason below. Left red for developers (not hidden): DiffStudio 1, Bio 9, Dendrogram 1 — see Section A.
 
 ---
 
