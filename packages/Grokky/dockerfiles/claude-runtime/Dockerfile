@@ -30,6 +30,8 @@ RUN groupadd -g 2001 grok && \
 # (the agent shells out to it in the workspace), so it cannot be removed like elsewhere.
 RUN npm install -g npm@latest && \
     npm install -g @anthropic-ai/claude-code && \
+    node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs" && \
+    claude --version && \
     npm cache clean --force
 
 COPY --chown=grok:grok package.json package-lock.json* tsconfig.json ./
@@ -37,6 +39,14 @@ COPY --chown=grok:grok src ./src
 RUN npm ci && npx tsc && rm -rf src tsconfig.json && npm prune --omit=dev
 
 COPY --chown=grok:grok plugin /app/plugin
+
+# Seed an empty subscription-credentials file so the path exists and the server's
+# existence check has a target. Real subscription creds are provided at runtime (a
+# read-only bind mount over this file, or the in-app `claude auth login` flow, which
+# rewrites it); the API-key / Bedrock / Foundry env path does not use this file.
+RUN mkdir -p /home/grok/.claude && \
+    printf '{}' > /home/grok/.claude/.credentials.json && \
+    chown -R grok:grok /home/grok/.claude
 
 ENV CLAUDE_WORKSPACE=/workspace
 
