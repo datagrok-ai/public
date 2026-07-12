@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.7.7",
+  "version": "1.7.8",
   "description": "Helpers for creating tutorials",
   "dependencies": {
     "@datagrok-libraries/compute-utils": "^1.44.9",
@@ -37,5 +37,8 @@
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

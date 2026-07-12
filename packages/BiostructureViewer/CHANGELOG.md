@@ -5,6 +5,7 @@
 * Moved the BiostructureViewer Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * Added Protein-Ligand Interactions feature: ProLIF-based interactive LigNetwork diagrams + per-residue breakdown in the context panel for Molecule3D, PDB_ID, and AutoDock-pose cells, with a "Compute for whole dataset" batch that produces a `PL Diagram` (rawPng) column and per-interaction-type count columns
 * GROK-20115: Demo | Docking: Transform 'sequence-visual' is already present in the tree
+* GROK-18695: Cleared all production-dependency npm audit advisories (54 -> 0): bumped uuid ^9->^11.1.1, d3 ^5->^7.9.0, @rcsb/rcsb-saguaro 2.0.0->^2.5.13, and pinned patched transitive versions via overrides (@ranfdev/deepobj, node-gyp, @babel/traverse, lodash, jsonwebtoken, got, tmp, node-fetch, cross-fetch, @tootallnate/once, ws, minimatch, form-data)
 
 ## 1.4.4 (2025-11-11)
 

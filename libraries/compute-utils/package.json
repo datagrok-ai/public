@@ -1,7 +1,7 @@
 {
   "name": "@datagrok-libraries/compute-utils",
   "friendlyName": "ComputeUtils",
-  "version": "1.46.6",
+  "version": "1.46.7",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -27,7 +27,7 @@
     "lodash.isequal": "^4.5.0",
     "lru-cache": "^10.4.3",
     "rxjs": "^6.6.7",
-    "uuid": "^10.0.0",
+    "uuid": "^11.1.1",
     "wu": "^2.1.0"
   },
   "devDependencies": {
@@ -64,5 +64,8 @@
     "*.css",
     "./old-views/**/*.ts",
     "./old-components/**/*.ts"
-  ]
+  ],
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
 }
