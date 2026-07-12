@@ -2,8 +2,8 @@ import type {HookCallback} from '@anthropic-ai/claude-agent-sdk';
 
 const MAX_VERIFY_BLOCKS = 3;
 
-const READONLY_NAME_RE = /^(whoami$|list_|get_|search_|read_|download_|db_list_|db_describe_)/;
-const READONLY_EXTRAS = new Set(['index_codebase', 'clear_index', 'datagrok_show_entities']);
+const READONLY_NAME_RE = /^(whoami$|list_|get_|search_|read_|download_)/;
+const READONLY_EXTRAS = new Set(['datagrok_show_entities']);
 
 export function isReadonlyTool(bare: string): boolean {
   return READONLY_NAME_RE.test(bare) || READONLY_EXTRAS.has(bare);

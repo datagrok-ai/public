@@ -54,8 +54,8 @@ code `return` a plain confirmation object so the user sees accurate details:
 Proof does not come from your own action code — it comes from **re-reading live state in a separate
 call**. After any action (`datagrok_exec` that changed something, or any MCP call that changed
 platform state), call the **`datagrok_verify`** tool before reporting success. It runs your assertion in a
-fresh scope (globals `grok`, `ui`, `DG`, `view`, `t`) that **cannot see your action's variables**, so
-it can only pass by re-deriving from the real platform state.
+fresh scope (globals `grok`, `ui`, `DG`, `view`, `t`) that **cannot see your action's
+variables**, so it can only pass by re-deriving from the real platform state.
 
 The assertion is yours to design for whatever you changed: re-read that thing and `return` the
 observed result (truthy = verified).
