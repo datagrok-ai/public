@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Exploratory Data Analysis Tools",
   "license": "MIT",
   "dependencies": {
@@ -28,6 +28,7 @@
     "email": "vmakarichev@datagrok.ai"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
@@ -39,8 +40,7 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "@playwright/test": "^1.48.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
@@ -102,7 +102,8 @@
     }
   },
   "overrides": {
-    "datagrok-api": "$datagrok-api"
+    "datagrok-api": "$datagrok-api",
+    "uuid": "^11.1.1"
   },
   "playwrightTests": "playwright"
 }
