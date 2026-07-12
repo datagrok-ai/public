@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: Raised security floors for cryptography (>=48.0.1) and redis (>=4.5.4) (VEX)
 * GROK-19985: Validation: Throw a clear error when the clinical-case container is unavailable instead of the platform-level NoSuchMethodError
 
 ## 1.4.0 (2026-03-16)

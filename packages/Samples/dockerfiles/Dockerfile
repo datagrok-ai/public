@@ -16,8 +16,10 @@ WORKDIR /app
 COPY environment.yaml .
 
 RUN micromamba create -n myenv -f environment.yaml && \
-    micromamba run -n myenv pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    micromamba clean --all --yes
+    micromamba run -n myenv pip install --no-cache-dir --upgrade pip 'setuptools>=78.1.1' 'wheel>=0.46.2' && \
+    micromamba clean --all --yes && \
+    rm -rf /opt/conda/pkgs/* && \
+    rm -f /opt/conda/envs/myenv/lib/python*/ensurepip/_bundled/*.whl
 
 SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
 
