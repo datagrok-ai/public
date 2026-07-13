@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Context panel: Title, metadata chips, and Description now share one aligned header block; the node and function descriptions are combined into the single editable Description input (function text is the fallback)
+* Context panel: Replaced the Function pane with compact chips (full name, package, roles, tags); the parameters pane is titled with the function name and expanded by default
+* Context panel: Connections pane shows only wired slots — each row naming the node and slot at the far end (`table ← Open File · result`), order edges as "runs after/before" facts — flags missing required inputs/values in amber, and auto-expands when something is missing
+
 ### Toolbox sections are now platform accordions
 
 * The function browser's collapsible sections (Files, Queries, Viewers, Widgets, the built-ins, and

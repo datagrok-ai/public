@@ -8,19 +8,20 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FlowEditor} from '../rete/flow-editor';
-import {FlowNode} from '../rete/scheme';
+import {FlowNode, missingRequiredInputs, missingRequiredProps, isExecKey, EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
 import {constLabel} from '../rete/nodes/utility-nodes';
 import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
-import {getParamDescription, getParamDisplayName} from '../utils/dart-proxy-utils';
+import {getParamDescription, getParamDisplayName, getFuncDisplayName, getTags} from '../utils/dart-proxy-utils';
 import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
 import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
   'Param Name': 'Variable name used in the generated script',
-  'Description': 'Annotation rendered under the node title; for input/output nodes, also embedded in the //input:/output: line',
+  'Description': 'What this node does — starts as the function\'s own description; edit to override. ' +
+    'Rendered under the node title; for input/output nodes, also embedded in the //input:/output: line',
   'Default': 'Default value when no input is provided',
   'Nullable': 'Allow null/empty values for this input',
   'SemType': 'Semantic type annotation (e.g. Molecule)',
@@ -141,15 +142,27 @@ export class PropertyPanel {
     const typeBadge = setTid(ui.div([], 'funcflow-type-badge'), 'property-type-badge');
     typeBadge.textContent = node.dgNodeType || 'function';
     const titleRow = setTid(ui.div([titleInput, typeBadge], 'funcflow-title-row'), 'property-title-row');
-    this.contentDiv.appendChild(titleRow);
+
+    // One header block (shared padding) so Title, chips, and Description line up.
+    const header = setTid(ui.div([titleRow], 'funcflow-panel-header'), 'property-header');
+
+    if (node.dgFunc) header.appendChild(this.buildFuncChips(node));
 
     // Per-node description: rendered under the title in the canvas, and
     // embedded as the [description] suffix in //input:/output: lines.
     // Cosmetic like the title — annotations don't change computed values.
-    this.contentDiv.appendChild(this.createTextarea('Description', node.description, (v) => {
+    // For func nodes it starts as the function's own description; an edit
+    // stores the override on the node (the function text stays the fallback).
+    let funcDesc = '';
+    try {
+      funcDesc = node.dgFunc?.description ?? '';
+    } catch {/* Dart proxy access can throw */}
+    const descSeed = node.description?.trim() ? node.description : funcDesc;
+    header.appendChild(this.createTextarea('Description', descSeed, (v) => {
       node.description = v;
       void this.flow.updateNode(node.id);
     }, undefined, true));
+    this.contentDiv.appendChild(header);
 
     const acc = ui.accordion('funcflow-context-panel');
 
@@ -225,27 +238,44 @@ export class PropertyPanel {
 
   // ---------- panes ----------
 
+  /** Compact chips replacing the old Function pane: full name, package, roles,
+   *  tags — one wrapping row instead of a label+value row each. The function
+   *  description lives in the header Description input now. */
+  private buildFuncChips(node: FlowNode): HTMLElement {
+    const chips = setTid(ui.div([], 'funcflow-chips'), 'prop-func-chips');
+    const add = (text: string, tip: string, cls?: string, tid?: string): void => {
+      const chip = ui.div([], 'funcflow-chip' + (cls ? ` ${cls}` : ''));
+      chip.textContent = text;
+      ui.tooltip.bind(chip, tip);
+      if (tid) setTid(chip, tid);
+      chips.appendChild(chip);
+    };
+    const fullName = node.dgFuncName ?? node.dgFunc?.name ?? '';
+    if (fullName) add(fullName, 'Full function name', 'funcflow-chip-muted', 'prop-func-fullname');
+    // Package disambiguates a vague function name (e.g. which "Descriptors").
+    if (node.dgPackageName) add(node.dgPackageName, 'Package', undefined, 'prop-func-package');
+    const roles = (node.dgRole ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    for (const r of roles) add(r, 'Role');
+    const tags = node.dgFunc ? getTags(node.dgFunc) : [];
+    for (const t of tags.filter((t) => !roles.some((r) => r.toLowerCase() === t.toLowerCase())))
+      add(`#${t}`, 'Tag');
+    return chips;
+  }
+
   private addFuncNodePanes(acc: DG.Accordion, node: FlowNode): void {
     const func = node.dgFunc;
     if (!func) return;
 
-    acc.addPane('Function', () => {
-      const content = ui.div([], 'funcflow-accordion-content');
-      if (func.description)
-        content.appendChild(ui.div([ui.label('Description'), ui.divText(func.description)], 'funcflow-prop-row'));
-      // Package disambiguates a vague function name (e.g. which "Descriptors").
-      const pkg = node.dgPackageName || '';
-      if (pkg)
-        content.appendChild(setTid(ui.div([ui.label('Package'), ui.divText(pkg)], 'funcflow-prop-row'), 'prop-func-package'));
-      content.appendChild(ui.div([ui.label('Full Name'), ui.divText(node.dgFuncName ?? func.name)], 'funcflow-prop-row'));
-      if (node.dgRole)
-        content.appendChild(ui.div([ui.label('Role'), ui.divText(node.dgRole)], 'funcflow-prop-row'));
-      return content;
-    }, true);
-
     if (func.inputs.length > 0) {
+      // The pane is titled with the function itself — it IS the function's
+      // parameter form (chips above carry package/role/tags).
+      let paneTitle = '';
+      try {
+        paneTitle = getFuncDisplayName(func);
+      } catch {/* Dart proxy access can throw */}
+      if (!paneTitle) paneTitle = 'Parameters';
       const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
-      const pane = acc.addPane('Input Parameters', () => {
+      const pane = acc.addPane(paneTitle, () => {
         const content = ui.div([], 'funcflow-accordion-content ui-form');
         for (const inp of func.inputs) {
           const tip = buildFuncInputTooltip(inp);
@@ -291,8 +321,9 @@ export class PropertyPanel {
 
   /** Functions with their own custom editor (an `editor:` meta, or the explicit
    *  allowlist — e.g. AddNewColumn) get a small "Open editor" button in the
-   *  Input Parameters pane header that opens that editor seeded with the node's
-   *  real upstream tables. Rendered only when the view wired `onEditFuncParams`. */
+   *  parameters pane header (the pane titled with the function name) that opens
+   *  that editor seeded with the node's real upstream tables. Rendered only
+   *  when the view wired `onEditFuncParams`. */
   private decorateEditorHeader(pane: DG.AccordionPane, node: FlowNode, func: DG.Func): void {
     if (!this.onEditFuncParams) return;
     let hasEditor = false;
@@ -487,7 +518,16 @@ export class PropertyPanel {
     }, true);
   }
 
+  /** What's actually wired (disconnected slots are noise — the sockets on the
+   *  canvas already show them), plus what's still MISSING: required inputs
+   *  neither connected nor filled and required properties left empty. The pane
+   *  opens expanded when something is missing. */
   private addConnectionsPane(acc: DG.Accordion, node: FlowNode): void {
+    const isConnected = (key: string): boolean => this.flow.isInputConnected(node.id, key);
+    const missingInputs = missingRequiredInputs(node, isConnected);
+    const missingProps = missingRequiredProps(node);
+    const hasMissing = missingInputs.length + missingProps.length > 0;
+
     acc.addPane('Connections', () => {
       const content = ui.div([], 'funcflow-accordion-content');
       const ptCount = node.passthroughCount;
@@ -495,42 +535,74 @@ export class PropertyPanel {
       const inputEntries = Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}; label?: string} | undefined]>;
       const outputEntries = Object.entries(node.outputs) as Array<[string, {socket: {dgType: string}; label?: string} | undefined]>;
 
-      if (inputEntries.length > 0) {
-        content.appendChild(this.connGroupLabel('Inputs'));
-        for (const [key, input] of inputEntries) {
-          if (!input) continue;
-          const connected = this.flow.isInputConnected(node.id, key);
-          content.appendChild(this.buildConnRow('IN', key, input.socket.dgType, connected ? 'connected' : 'disconnected', connected));
-        }
+      if (hasMissing) {
+        content.appendChild(this.connGroupLabel('Missing'));
+        for (const label of missingInputs)
+          content.appendChild(this.buildMissingRow(label, 'required — connect or set a value'));
+        for (const label of missingProps)
+          content.appendChild(this.buildMissingRow(label, 'required value not set'));
       }
 
-      if (ptCount > 0) {
-        content.appendChild(this.connSeparator());
-        content.appendChild(this.connGroupLabel('Pass-through'));
-        for (let i = 0; i < ptCount && i < outputEntries.length; i++) {
-          const [key, out] = outputEntries[i];
-          if (!out) continue;
-          const baseName = key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key;
-          const connected = this.flow.getConnections().some((c) => c.source === node.id && c.sourceOutput === key);
-          content.appendChild(this.buildConnRow('PT', baseName, out.socket.dgType, connected ? 'connected' : 'disconnected', connected));
-        }
-      }
+      const conns = this.flow.getConnections();
+      let anyConnected = false;
+      const addGroup = (label: string, rows: HTMLElement[]): void => {
+        if (rows.length === 0) return;
+        if (anyConnected || hasMissing) content.appendChild(this.connSeparator());
+        content.appendChild(this.connGroupLabel(label));
+        rows.forEach((r) => content.appendChild(r));
+        anyConnected = true;
+      };
+      const targetsOf = (key: string): string[] => conns
+        .filter((c) => c.source === node.id && c.sourceOutput === key)
+        .map((c) => this.endpointText(String(c.target), 'input', String(c.targetInput)));
 
-      if (outputEntries.length > ptCount) {
-        content.appendChild(this.connSeparator());
-        content.appendChild(this.connGroupLabel('Outputs'));
-        for (let i = ptCount; i < outputEntries.length; i++) {
-          const [key, out] = outputEntries[i];
-          if (!out) continue;
-          const connected = this.flow.getConnections().some((c) => c.source === node.id && c.sourceOutput === key);
-          content.appendChild(this.buildConnRow('OUT', key, out.socket.dgType, connected ? 'connected' : 'disconnected', connected));
-        }
-      }
+      addGroup('Inputs', inputEntries
+        .filter(([key, input]) => input && !isExecKey(key) && isConnected(key))
+        .map(([key, input]) => {
+          const src = this.flow.getInputSource(node.id, key);
+          return this.buildConnRow('IN', input!.label ?? key, input!.socket.dgType,
+            '←', src ? [this.endpointText(src.node.id, 'output', src.outputKey)] : [], key);
+        }));
+
+      addGroup('Pass-through', outputEntries.slice(0, ptCount)
+        .filter(([key, out]) => out && targetsOf(key).length > 0)
+        .map(([key, out]) => this.buildConnRow('PT',
+          key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key, out!.socket.dgType, '→', targetsOf(key), key)));
+
+      addGroup('Outputs', outputEntries.slice(ptCount)
+        .filter(([key, out]) => out && !isExecKey(key) && targetsOf(key).length > 0)
+        .map(([key, out]) => this.buildConnRow('OUT', out!.label ?? key, out!.socket.dgType, '→', targetsOf(key), key)));
+
+      // Order edges (exec ports) carry no data — show them as plain run-order
+      // facts instead of IN/OUT rows with a raw `__exec_*` key.
+      const nodeLabel = (id: string): string => String(this.flow.getNodeById(id)?.label ?? '?');
+      addGroup('Run order', [
+        ...conns.filter((c) => c.target === node.id && String(c.targetInput) === EXEC_IN_KEY)
+          .map((c) => this.buildOrderRow('after', nodeLabel(String(c.source)))),
+        ...conns.filter((c) => c.source === node.id && String(c.sourceOutput) === EXEC_OUT_KEY)
+          .map((c) => this.buildOrderRow('before', nodeLabel(String(c.target)))),
+      ]);
+
+      if (!anyConnected && !hasMissing)
+        content.appendChild(ui.divText('Nothing connected yet', 'funcflow-conn-empty'));
       return content;
-    }, false);
+    }, hasMissing);
   }
 
-  private buildConnRow(dir: string, name: string, type: string, status: string, connected: boolean): HTMLElement {
+  /** "Node title · slot label" for the far end of a connection. A pass-through
+   *  source renders as its base input name (its literal label is just `→`). */
+  private endpointText(nodeId: string, side: 'input' | 'output', key: string): string {
+    const n = this.flow.getNodeById(nodeId);
+    const name = String(n?.label ?? '?');
+    let slot = key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key;
+    const ports = (side === 'input' ? n?.inputs : n?.outputs) as
+      Record<string, {label?: string} | undefined> | undefined;
+    const lbl = ports?.[key]?.label;
+    if (lbl && lbl !== '→') slot = lbl;
+    return `${name} · ${slot}`;
+  }
+
+  private buildConnRow(dir: string, name: string, type: string, arrow: string, ends: string[], key: string): HTMLElement {
     const dirSpan = ui.element('span');
     dirSpan.textContent = dir;
     dirSpan.className = 'funcflow-conn-dir';
@@ -539,10 +611,44 @@ export class PropertyPanel {
     const typeSpan = ui.element('span');
     typeSpan.textContent = `(${type})`;
     typeSpan.className = 'funcflow-conn-type';
-    const statusSpan = ui.element('span');
-    statusSpan.textContent = ` — ${status}`;
-    statusSpan.className = connected ? 'funcflow-conn-ok' : 'funcflow-conn-off';
-    return ui.div([dirSpan, detail, typeSpan, statusSpan], 'funcflow-prop-row funcflow-conn-row');
+    const children = [dirSpan, detail, typeSpan];
+    if (ends.length > 0) {
+      const arrowSpan = ui.element('span');
+      arrowSpan.textContent = ` ${arrow} `;
+      arrowSpan.className = 'funcflow-conn-arrow';
+      const endSpan = ui.element('span');
+      endSpan.textContent = ends.join(', ');
+      endSpan.className = 'funcflow-conn-endpoint';
+      children.push(arrowSpan, endSpan);
+    }
+    const row = ui.div(children, 'funcflow-prop-row funcflow-conn-row');
+    row.dataset.conn = key;
+    return row;
+  }
+
+  private buildOrderRow(kind: 'after' | 'before', otherLabel: string): HTMLElement {
+    const detail = ui.element('span');
+    detail.textContent = `runs ${kind} `;
+    detail.className = 'funcflow-conn-type';
+    const endSpan = ui.element('span');
+    endSpan.textContent = otherLabel;
+    endSpan.className = 'funcflow-conn-endpoint';
+    const row = ui.div([detail, endSpan], 'funcflow-prop-row funcflow-conn-row');
+    row.dataset.conn = kind === 'after' ? EXEC_IN_KEY : EXEC_OUT_KEY;
+    return row;
+  }
+
+  private buildMissingRow(label: string, why: string): HTMLElement {
+    const warn = ui.element('span');
+    warn.textContent = '⚠ ';
+    const detail = ui.element('span');
+    detail.textContent = `${label} `;
+    const whySpan = ui.element('span');
+    whySpan.textContent = `— ${why}`;
+    whySpan.className = 'funcflow-conn-type';
+    const row = ui.div([warn, detail, whySpan], 'funcflow-prop-row funcflow-conn-row funcflow-conn-missing');
+    row.dataset.missing = label;
+    return row;
   }
 
   private connSeparator(): HTMLElement {return ui.div([], 'funcflow-conn-separator');}

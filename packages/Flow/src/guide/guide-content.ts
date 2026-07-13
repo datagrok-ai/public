@@ -818,7 +818,7 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Open the function\'s editor',
-      text: 'In the Input Parameters pane header, click “Open editor” (highlighted). Flow opens the ' +
+      text: 'In the parameters pane header (titled with the function name), click “Open editor” (highlighted). Flow opens the ' +
         'function\'s own dialog seeded with the real upstream table — running the flow up to that ' +
         'point first if it hasn\'t run yet.',
       target: byTid('prop-func-editor'),

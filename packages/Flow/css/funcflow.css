@@ -699,12 +699,29 @@
   font-style: italic;
 }
 
-.funcflow-conn-ok {
-  color: #43a047;
+.funcflow-conn-arrow {
+  color: var(--grey-4, #999);
 }
 
-.funcflow-conn-off {
+.funcflow-conn-endpoint {
+  color: var(--blue-1, #2185d0);
+}
+
+/* A required input/property that is neither connected nor filled */
+.funcflow-conn-missing {
+  color: #b26a00;
+}
+
+.funcflow-conn-missing .funcflow-conn-type {
+  color: #b26a00;
+  opacity: 0.8;
+}
+
+.funcflow-conn-empty {
+  font-size: 12px;
   color: var(--grey-4, #999);
+  font-style: italic;
+  padding: 2px 0;
 }
 
 /* Status bar */
@@ -788,11 +805,44 @@
   color: #aaa;
 }
 
-/* Title row in property panel */
-.funcflow-title-row {
-  padding: 6px 8px;
+/* Header block in property panel: Title, chips, and Description share one
+   padded container so their editors line up exactly. */
+.funcflow-panel-header {
+  padding: 6px 8px 4px;
   border-bottom: 1px solid var(--grey-2, #e0e0e0);
   margin-bottom: 4px;
+}
+
+.funcflow-title-row {
+  padding: 0;
+}
+
+/* Compact metadata chips (full name, package, roles, tags) — replace the old
+   label+value rows of the Function pane. */
+.funcflow-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 0 2px;
+}
+
+.funcflow-chip {
+  font-size: 10px;
+  color: var(--grey-5, #666);
+  background: var(--grey-1, #f2f2f5);
+  border: 1px solid var(--grey-2, #e0e0e0);
+  border-radius: 10px;
+  padding: 1px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funcflow-chip-muted {
+  background: transparent;
+  border-style: dashed;
+  color: var(--grey-4, #888);
 }
 
 .funcflow-type-badge {

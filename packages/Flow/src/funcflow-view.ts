@@ -503,7 +503,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
 
     // Functions with their own custom editor (an `editor:` meta or the explicit
-    // allowlist) get an icon in the Input Parameters pane header that opens that
+    // allowlist) get an icon in the parameters pane header that opens that
     // editor seeded with the node's real upstream tables; the edited values are
     // written back into the panel, so re-render it on completion.
     const funcEditorLauncher = new FuncEditorLauncher(this.flow, this.executionController, () => ({
