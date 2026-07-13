@@ -70,6 +70,11 @@ this.mcpServerUrl = `${grok.dapi.root}/docker/containers/proxy/${mcpContainerId}
 The WebSocket and MCP HTTP traffic both flow through Datagrok's reverse proxy, so the browser never
 talks to the containers directly.
 
+Container code compiles **inside** the image, so `grok publish` / `npm run build` (browser bundle
+only) do not update it — rebuild the image and redeploy after any change under `dockerfiles/`. The
+subscription re-auth flow (`auth_*` messages below) is walked through in the package
+[`CLAUDE.md`](../CLAUDE.md).
+
 ---
 
 ## Message Protocol
@@ -81,9 +86,12 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 
 | `type` | Purpose | Key fields |
 |--------|---------|------------|
-| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `apiKey`, `mcpServerUrl`, `outputSchema?` |
+| `user_message` | Send a prompt, start or resume a session | `sessionId`, `message`, `apiKey`, `mcpServerUrl`, `outputSchema?`, `systemPromptMode?`, `model?` |
 | `abort` | Cancel an in-progress query | `sessionId` |
-| `input_response` | Reply to an `input_request` (tool call result or user answer) | `sessionId`, `value` |
+| `input_response` | Reply to an `input_request` (tool call result or user answer) | `sessionId`, `requestId`, `value` |
+| `sync_user_files` | Trigger a skills/knowledge sync | `apiKey`, `mcpServerUrl`, `scope?`, `packageName?` |
+| `auth_start` | Begin subscription re-auth (spawns `claude auth login`) | — |
+| `auth_code` | Send the pasted OAuth code to the CLI's stdin | `code` |
 
 ### Outgoing messages (runtime → browser)
 
@@ -91,11 +99,15 @@ Message types are defined in [`dockerfiles/claude-runtime/src/types.ts`](../dock
 |--------|---------|------------|
 | `chunk` | Incremental text delta from Claude | `sessionId`, `content` |
 | `tool_activity` | Human-readable summary of a tool call in progress | `sessionId`, `summary` |
-| `tool_result` | Result text returned by a tool | `sessionId`, `content` |
-| `final` | Completed response (full text + optional structured output) | `sessionId`, `content`, `structured_output?` |
+| `final` | Completed response (full text + optional structured output) | `sessionId`, `content`, `structured_output?`, `unverified?` |
 | `error` | Session error | `sessionId`, `message` |
 | `aborted` | Confirmed abort | `sessionId` |
-| `input_request` | Runtime needs the browser to execute a tool or answer a question | `sessionId`, `toolName`, `input` |
+| `queued` | Turn is waiting behind the session's active query (re-sent every 60s while waiting) | `sessionId` |
+| `input_request` | Runtime needs the browser to execute a tool or answer a question | `sessionId`, `requestId`, `toolName`, `input` |
+| `sync_status` | Result of a `sync_user_files` request | `status`, `files?`, `message?` |
+| `auth_url` | OAuth URL for the browser to open during re-auth | `url` |
+| `auth_done` | Subscription re-auth succeeded | — |
+| `auth_error` | Re-auth failed or none in progress | `message` |
 
 ---
 
@@ -106,7 +118,7 @@ single WebSocket endpoint at `/ws`.
 
 ### Session lifecycle
 
-[`handleMessage()`](../dockerfiles/claude-runtime/src/server.ts#L286) handles each `user_message`:
+[`handleMessage()`](../dockerfiles/claude-runtime/src/session.ts) handles each `user_message`:
 
 1. Looks up an existing Claude session ID (stored in the in-memory `sessions` LRU map, max 200 entries)
    for continuation. If found, passes it as `resume` to the SDK so conversation history is preserved.
@@ -118,25 +130,40 @@ single WebSocket endpoint at `/ws`.
    - `permissionMode: 'acceptEdits'` — no confirmation prompts for file edits.
    - `model: 'opus'`.
 3. Iterates the async event stream from the SDK, forwarding each event to the browser via
-   [`forwardEvent()`](../dockerfiles/claude-runtime/src/server.ts#L231).
+   [`forwardEvent()`](../dockerfiles/claude-runtime/src/session.ts).
 
 ### Tool interception: `canUseTool`
 
-[`canUseTool`](../dockerfiles/claude-runtime/src/server.ts#L307) is the hook that intercepts two
-categories of tool calls before the SDK executes them:
-
-- **`AskUserQuestion`** — sends an `input_request` to the browser, suspends the Claude query, and waits
-  for an `input_response` with the user's answers.
-- **`mcp__datagrok__db_*`** tools (`db_list_catalogs`, `db_list_schemas`, `db_list_tables`,
-  `db_describe_tables`, `db_list_joins`, `db_try_sql`) — forwarded to the browser for client-side
-  execution against the live database connection (see [SQL generation](#sql-generation)).
+[`canUseTool`](../dockerfiles/claude-runtime/src/session.ts) intercepts `AskUserQuestion` before the
+SDK executes it — sending an `input_request` to the browser, suspending the Claude query, and waiting
+for an `input_response` with the user's answers. Everything else runs unmodified.
 
 Both cases use the same async handshake: `input_request` out, `input_response` in, resolved by
-[`handleInputResponse()`](../dockerfiles/claude-runtime/src/server.ts#L277).
+[`handleInputResponse()`](../dockerfiles/claude-runtime/src/session.ts). Browser-executed tools
+carry a timeout (`datagrok_exec` 300s, `datagrok_verify` 60s, `datagrok_show_entities` 30s) so a dead
+or hung tab fails the tool call instead of hanging the turn; `AskUserQuestion` has none — the user may
+take minutes to answer.
+
+### Action verification gate
+
+[`verify.ts`](../dockerfiles/claude-runtime/src/verify.ts) enforces act → verify per turn for
+full-prompt sessions (`bash`/`none` are not gated), via a `PostToolUse`/`Stop` hook pair keyed on the
+tool-call sequence:
+
+- **`PostToolUse`** marks the turn as needing proof after any `datagrok_exec` (including failed ones)
+  or any non-read MCP call — reads are recognized fail-closed by name (`whoami`, `list_*`, `get_*`,
+  `search_*`, `read_*`, `download_*`). A `datagrok_verify` returning `{passed: true}` clears it.
+- **`Stop`** blocks the turn from ending while proof is pending, up to `MAX_VERIFY_BLOCKS` (3) times;
+  when exhausted the `final` message carries `unverified: true` and the panel shows a "Not verified"
+  warning.
+
+The assertion runs via `runVerification()` in [`exec-blocks.ts`](../../src/claude/exec-blocks.ts) — a
+fresh scope (it cannot see the action's variables) against the current view (`grok.shell.v`), 30s
+timeout. The gate covers `datagrok_exec` and mutating MCP tools only.
 
 ### SDK event → WebSocket message mapping
 
-[`forwardEvent()`](../dockerfiles/claude-runtime/src/server.ts#L231) maps SDK events:
+[`forwardEvent()`](../dockerfiles/claude-runtime/src/session.ts) maps SDK events:
 
 | SDK event type               | → WS message      |
 |------------------------------|-------------------|
@@ -149,12 +176,12 @@ Both cases use the same async handshake: `input_request` out, `input_response` i
 | `result` (success)           | `final`           |
 | `result` (error)             | `error`           |
 
-[`toolSummary()`](../dockerfiles/claude-runtime/src/server.ts#L200) generates human-readable labels for
+[`toolSummary()`](../dockerfiles/claude-runtime/src/query-options.ts) generates human-readable labels for
 tool activities using the formatters in `toolFormatters` and `mcpFormatters`.
 
 ### System prompt
 
-[`DATAGROK_PROMPT`](../dockerfiles/claude-runtime/src/server.ts#L12) (lines 12–85) instructs Claude to:
+[`DATAGROK_PROMPT`](../dockerfiles/claude-runtime/src/prompts.ts) instructs Claude to:
 
 - Always search the codebase at `$CLAUDE_WORKSPACE` before writing any API calls.
 - Execute code exclusively via `` ```datagrok-exec `` fenced blocks (never plain `` ```javascript ``).
@@ -205,13 +232,14 @@ client.onToolResult  → panel.updateStreaming(accumulated + result)  (collapsib
 client.onFinal       → panel.finalizeStreaming(content, view)       (execute blocks, render cards)
 client.onError       → grok.shell.error(msg) + cleanup
 client.onAborted     → panel.clearStreaming() + cleanup
-client.onInputRequest → clientToolHandler(toolName, input)          (DB tools)
+client.onInputRequest → executeSingleBlock / runVerification        (datagrok_exec / verify / show_entities)
                       → panel.showInputRequest(input)               (AskUserQuestion)
 ```
 
-The `clientToolHandler` parameter is supplied by callers that need client-side tool execution (e.g.
-[`setupAIQueryEditorUI()`](../src/ai/ui.ts#L141) passes `sqlContext.handleToolCall`). For all other
-panels the default path handles `AskUserQuestion` by showing an inline form.
+`onInputRequest` runs the browser-executed tools (`datagrok_exec`, `datagrok_verify`,
+`datagrok_show_entities`) via [`exec-blocks.ts`](../src/claude/exec-blocks.ts) and responds with the
+real outcome, so Claude continues only after knowing what happened; `AskUserQuestion` is shown as an
+inline form.
 
 ### Panel entry points
 
@@ -276,33 +304,6 @@ every prompt, giving Claude accurate context:
 
 ---
 
-## SQL Generation
-
-For natural-language database queries ([`DBAIPanel`](../src/ai/panel.ts)), DB schema tools are defined in
-the MCP server but executed client-side in the browser, where the active database connection lives.
-
-The runtime's `canUseTool` intercepts any `mcp__datagrok__db_*` call and sends an `input_request` to
-the browser instead of letting the MCP server handle it. The browser's
-[`runClaudeStreaming()`](../src/ai/ui.ts#L259) strips the `mcp__datagrok__` prefix and dispatches to
-[`SQLGenerationContext.handleToolCall()`](../src/db/sql-tools.ts):
-
-| Tool | Browser action |
-|------|---------------|
-| `db_list_catalogs` | Returns catalog names from connection parameters |
-| `db_list_schemas` | Queries schema list from the active connection |
-| `db_list_tables` | Queries table list for a schema |
-| `db_describe_tables` | Returns detailed column/type metadata |
-| `db_list_joins` | Returns foreign-key relationships |
-| `db_try_sql` | Runs the SQL (with a `LIMIT 10`), returning column names and sample rows |
-
-`db_try_sql` includes a safety check against destructive patterns (`DROP`, `DELETE`, `UPDATE`, `INSERT`,
-`ALTER`, etc.) and shows a user confirmation dialog if any are detected.
-
-[`SQLGenerationContext.create()`](../src/db/sql-tools.ts#L30) is called lazily on the first prompt in
-a session — it fetches the connection and pre-loads all catalog metadata via `BuiltinDBInfoMeta`.
-
----
-
 ## MCP Server Tools
 
 [`dockerfiles/mcp-server/src/index.ts`](../dockerfiles/mcp-server/src/index.ts) registers tools using
@@ -318,7 +319,6 @@ Tool categories:
 | Files | `list_files`, `download_file`, `upload_file` |
 | Projects | `list_projects`, `get_project`, `create_project`, `delete_project`, … |
 | Spaces | `list_spaces`, `get_space`, `create_space`, `create_subspace`, `list_space_children`, `read_space_file`, `write_space_file`, … |
-| DB (client-side) | `db_list_catalogs`, `db_list_schemas`, `db_list_tables`, `db_describe_tables`, `db_list_joins`, `db_try_sql` |
 | User | `get_current_user` |
 
 ---
@@ -365,8 +365,11 @@ Below is the full path for "Add a scatter plot of Height vs Weight":
 
 | File                                                                                      | Purpose                                                                        |
 |-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`dockerfiles/claude-runtime/Dockerfile`](../dockerfiles/claude-runtime/Dockerfile)       | Container build: Node 20, clones public repo to /workspace                     |
-| [`dockerfiles/claude-runtime/src/server.ts`](../dockerfiles/claude-runtime/src/server.ts) | Hono WebSocket server, system prompt, session management, event forwarding     |
+| [`dockerfiles/claude-runtime/Dockerfile`](../dockerfiles/claude-runtime/Dockerfile)       | Container build: clones public repo to /workspace, compiles `src/` with tsc    |
+| [`dockerfiles/claude-runtime/src/server.ts`](../dockerfiles/claude-runtime/src/server.ts) | Hono WebSocket server: `/ws` dispatch, auth subprocess, provider config, startup |
+| [`dockerfiles/claude-runtime/src/session.ts`](../dockerfiles/claude-runtime/src/session.ts) | Session registry, streaming/fence filter, event forwarding, turn queue, abort |
+| [`dockerfiles/claude-runtime/src/query-options.ts`](../dockerfiles/claude-runtime/src/query-options.ts) | `buildOptions`, browser MCP tools, tool-activity summaries         |
+| [`dockerfiles/claude-runtime/src/prompts.ts`](../dockerfiles/claude-runtime/src/prompts.ts) | System prompts + `buildSystemPrompt`                                          |
 | [`dockerfiles/claude-runtime/src/types.ts`](../dockerfiles/claude-runtime/src/types.ts)   | WebSocket message type definitions                                             |
 | [`dockerfiles/mcp-server/src/index.ts`](../dockerfiles/mcp-server/src/index.ts)           | MCP tool registry                                                              |
 | [`dockerfiles/mcp-server/src/api-client.ts`](../dockerfiles/mcp-server/src/api-client.ts) | HTTP client to Datagrok API                                                    |
@@ -374,4 +377,3 @@ Below is the full path for "Add a scatter plot of Height vs Weight":
 | [`src/claude/exec-blocks.ts`](../src/claude/exec-blocks.ts)                               | `executeDatagrokBlocks()`, `renderEntityBlocks()`, `buildViewContext()`        |
 | [`src/ai/ui.ts`](../src/ai/ui.ts)                                                         | `runClaudeStreaming()`, panel setup functions, `askWiki()`, `smartExecution()` |
 | [`src/ai/panel.ts`](../src/ai/panel.ts)                                                   | `TVAIPanel`, `DBAIPanel`, `ScriptingAIPanel`, `StreamingPanel`                 |
-| [`src/db/sql-tools.ts`](../src/db/sql-tools.ts)                                           | `SQLGenerationContext` — client-side DB tool execution                         |

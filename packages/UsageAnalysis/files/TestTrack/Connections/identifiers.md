@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 02-identifiers.test.ts
+related_bugs: []
+---
+
 1. Go to Data > Databases > Postgres 
 1. Right-click the `test_postgres` connection
 1. Select **Configure Identifiers...** from the context menu

@@ -15,7 +15,7 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, nodeMissingRequirements} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements} from './scheme';
 import {TypedSocket} from './sockets';
 import {getSlotColor} from '../types/type-map';
 import {tid} from '../utils/test-ids';
@@ -98,9 +98,19 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       {/* Execution-ordering ports — top corners (KNIME flow-variable style).
           exec-in (left) accepts "run after" predecessors; exec-out (right)
           drives successors. Always rendered so edges stay attached even when
-          the node is collapsed. */}
-      <div className="ff-node-exec-row">
-        <span className="ff-exec-port ff-exec-in" data-testid={tid('exec-in')} title="Run after (order in)">
+          the node is collapsed — but only *visible* when one of them is wired,
+          the node is hovered, or an order drag is in progress (CSS keys off
+          data-wired / .ff-node:hover / .ff-connecting-order). */}
+      <div
+        className="ff-node-exec-row"
+        data-wired={(isConnected(node, 'input', EXEC_IN_KEY) || isConnected(node, 'output', EXEC_OUT_KEY)) ?
+          'true' : 'false'}
+      >
+        <span
+          className="ff-exec-port ff-exec-in" data-testid={tid('exec-in')}
+          title={'Run order: this node waits for its predecessors. Drag a wire from another node\'s ' +
+            'order square to here to make this node run after it — sequencing only, no data flows.'}
+        >
           {execIn && (
             <RefSocket
               name="exec-in-socket"
@@ -112,7 +122,11 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
             />
           )}
         </span>
-        <span className="ff-exec-port ff-exec-out" data-testid={tid('exec-out')} title="Run before (order out)">
+        <span
+          className="ff-exec-port ff-exec-out" data-testid={tid('exec-out')}
+          title={'Run order: drag a wire from here to another node\'s order square to make that node ' +
+            'run after this one — sequencing only, no data flows.'}
+        >
           {execOut && (
             <RefSocket
               name="exec-out-socket"
@@ -265,7 +279,10 @@ interface SocketProps {
 /** Colored socket dot. We expose the type color twice:
  *  - `background` paints the regular (non-pass-through) dot
  *  - `--socket-color` CSS var is read by `.ff-socket-row-passthrough .ff-socket`
- *    to color the dashed ring (where `background` is forced white). */
+ *    to color the dashed ring (where `background` is forced white).
+ *  An `order` socket gets NO title of its own — a nested title would shadow
+ *  the exec-port wrapper's plain-language "Run order: drag…" explanation with
+ *  a bare "order". */
 export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   const color = getSlotColor(props.data.dgType);
   return (
@@ -273,7 +290,7 @@ export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
       className="ff-socket"
       data-testid={tid('socket', props.data.dgType)}
       style={{background: color, ['--socket-color' as never]: color}}
-      title={props.data.dgType}
+      title={props.data.dgType === ORDER_SOCKET_TYPE ? undefined : props.data.dgType}
       data-type={props.data.dgType}
     />
   );

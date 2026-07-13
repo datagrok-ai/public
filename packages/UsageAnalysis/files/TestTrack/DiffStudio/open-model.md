@@ -1,3 +1,14 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - open-model.test.ts
+related_bugs: []
+---
+
 ### Diff Studio
 Test Steps:
 

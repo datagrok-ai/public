@@ -25,7 +25,11 @@ export interface CompiledStep {
   variableName: string;
   /** input slot key → source expression to feed in. */
   inputs: Map<string, string>;
-  /** real output slot key → variable name we declared. */
+  /** real output slot key → expression that yields its value. For a func step
+   *  this is the call variable (single-output funcs return the value directly)
+   *  or a property read off it (`<var>.<outputName>` for a multi-output func —
+   *  `grok.functions.call` resolves to an object keyed by the declared output
+   *  names). Utilities/inputs map to their declared variable. */
   outputs: Map<string, string>;
   /** With `cloneDataframeInputs` (instrumented runs): snapshot variable →
    *  original source expression, one per connected dataframe input. The call,
@@ -265,10 +269,14 @@ export function compileGraph(
         const inExpr = inputMap.get(ptInput) ?? 'undefined';
         outputVarMap.set(`${nodeId}:${key}`, inExpr);
       } else {
-        const realCount = realOutputKeys.length;
-        const outVarName = realCount === 1 ? varName : `${varName}_${key}`;
-        outputMap.set(key, outVarName);
-        outputVarMap.set(`${nodeId}:${key}`, outVarName);
+        // `grok.functions.call` returns the value directly for a single-output
+        // func, but an object keyed by the declared output names for a
+        // multi-output one — so a lone output reads straight off the call
+        // variable, while several read a property (`<var>.<outputName>`). The
+        // previous `<var>_<key>` scheme referenced variables never declared.
+        const outExpr = realOutputKeys.length === 1 ? varName : `${varName}${propertyAccessor(key)}`;
+        outputMap.set(key, outExpr);
+        outputVarMap.set(`${nodeId}:${key}`, outExpr);
       }
     }
 
@@ -397,8 +405,20 @@ function toCamelCase(s: string): string {
     .join('');
 }
 
+const JS_IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
+/** `.name` for a valid identifier, else `['name']` — reads a named output off a
+ *  multi-output call result (`grok.functions.call` returns an object keyed by
+ *  the declared output names). */
+function propertyAccessor(key: string): string {
+  return JS_IDENTIFIER_RE.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`;
+}
+
 function uniqueVarName(base: string, used: Set<string>): string {
   if (!base) base = 'v';
+  // `toCamelCase` keeps digits, so a func/node named "2 Inputs Flow" yields
+  // "2InputsFlow" — illegal as a variable name (can't start with a digit).
+  if (/^[0-9]/.test(base)) base = `_${base}`;
   if (!used.has(base)) return base;
   let i = 2;
   while (used.has(`${base}${i}`)) i++;

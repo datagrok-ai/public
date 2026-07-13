@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute2",
   "friendlyName": "Compute2",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -103,6 +103,7 @@
     "dartium": false
   },
   "overrides": {
-    "datagrok-api": "$datagrok-api"
+    "datagrok-api": "$datagrok-api",
+    "uuid": "^11.1.1"
   }
 }

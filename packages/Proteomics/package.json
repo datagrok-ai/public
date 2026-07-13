@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/proteomics",
   "friendlyName": "Proteomics",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Ed Jaeger",
     "email": "ejaeger@datagrok.ai"
@@ -17,8 +17,8 @@
     "@datagrok-libraries/math": "^1.2.6",
     "@datagrok-libraries/ml": "^6.10.7",
     "@datagrok-libraries/statistics": "^1.2.12",
-    "@datagrok-libraries/utils": "^4.6.9",
     "@datagrok-libraries/test": "^1.1.0",
+    "@datagrok-libraries/utils": "^4.6.9",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
     "rxjs": "^6.5.5",
@@ -96,6 +96,7 @@
     }
   ],
   "overrides": {
-    "datagrok-api": "$datagrok-api"
+    "datagrok-api": "$datagrok-api",
+    "uuid": "^11.1.1"
   }
 }

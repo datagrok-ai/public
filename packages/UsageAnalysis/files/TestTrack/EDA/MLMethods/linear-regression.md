@@ -1,3 +1,14 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - linear-regression-spec.ts
+related_bugs: []
+---
+
 ### Linear Regression
 
 1. Open the DataFrame:

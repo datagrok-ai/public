@@ -234,12 +234,15 @@ class CreationScriptBuilder {
 
   // ---------- call classification ----------
 
-  /** A variable assignment parses into a SetVar-shaped call: exactly two
-   *  inputs, a non-empty string `variableName` and a non-null `value`. */
+  /** A variable assignment parses into a SetVar-shaped call carrying a non-empty
+   *  string `variableName` and a non-null `value`. Don't gate on the input
+   *  *count*: the platform's `SetVarFunc` grew optional `outputName` /
+   *  `outputIndex` params (multi-output binding), so an assignment now surfaces
+   *  up to four inputs — a strict `=== 2` check silently dropped every
+   *  assignment, collapsing the whole import to nothing. */
   private asAssignment(fc: DG.FuncCall): {name: string; value: unknown} | null {
     try {
       if ((fc.func?.name?.toLowerCase() ?? '') !== 'setvar') return null;
-      if (Object.entries(fc.inputs).length !== 2) return null;
       const name: unknown = fc.inputs['variableName'];
       const value: unknown = fc.inputs['value'];
       if (typeof name !== 'string' || name === '' || value === null || value === undefined) return null;

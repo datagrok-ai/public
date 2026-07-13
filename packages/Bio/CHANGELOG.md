@@ -2,7 +2,8 @@
 
 ## v.next
 
-
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages (also inherits the patched `datagrok/python` base)
+* GROK-18695: PepSeA Docker: raised security floors for the web stack (fastapi/starlette/h11/uvicorn/gunicorn/ujson/certifi/urllib3/requests/idna/pydantic/numpy) over the pinned PepSeA requirements (VEX)
 * Moved the Bio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * GROK-19794: MSA dialog: Fixed misaligned Alignment Parameters gap inputs (now share the dialog form's label alignment and width)
 

@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 05-delete.test.ts
+related_bugs: []
+---
+
 1. Find connection `new_test_postgres` in the **Browse** -> **Platform** -> **Connections**
 2. Delete connection:
     1. Right-click the connection and select **Delete** from the context menu.

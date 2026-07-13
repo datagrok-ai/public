@@ -4,7 +4,6 @@ import {runWithContext, request} from '../shared-api-client';
 import {resolveHomeConnection, syncHomeFiles} from './home-files';
 import {syncPackages} from './packages';
 import {syncSharedConnections} from './shared-connections';
-import {loadPackageKnowledge} from '../package-knowledge-tool';
 import {getInstalledPackages} from '../user/installed-packages';
 import {ensureUserDir, getUserDir} from '../user/user-dir';
 import {buildStagedWorkspace} from '../user/staged-workspace';
@@ -214,28 +213,4 @@ async function doSync(
   const files = await listAgentFiles(dir);
   console.log(`user-files: sync complete — ${files.length} total agent file(s)`);
   return {dir, files};
-}
-
-// ── Package index generation ──────────────────────────────────────────
-
-export async function generatePackageIndex(userId?: string): Promise<string | null> {
-  const map = await loadPackageKnowledge();
-  if (map.size === 0)
-    return null;
-
-  const installed = userId ? getInstalledPackages(userId) : undefined;
-  const visible = installed
-    ? [...map.values()].filter((p) => installed.has(p.packageName))
-    : [...map.values()];
-  if (!visible.length)
-    return null;
-
-  visible.sort((a, b) => a.packageName.localeCompare(b.packageName));
-
-  let md = '| Package | Description | Keywords |\n';
-  md += '|---------|-------------|----------|\n';
-  for (const pkg of visible)
-    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.join(', ')} |\n`;
-
-  return md;
 }

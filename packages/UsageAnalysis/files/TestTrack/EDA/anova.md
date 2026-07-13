@@ -1,3 +1,14 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - anova-spec.ts
+related_bugs: []
+---
+
 ### ANOVA
 
 1. Open the Dataset:

@@ -1,3 +1,13 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - new-sql-query.test.ts
+related_bugs: []
+---
 
 1. Go to **Browse** > **Databases** > **Postgres** > **NorthwindTest** > **Schemas** > **public**. A list of tables opens
 3. Right-click the **products** table and select **New SQL Query** from the context menu

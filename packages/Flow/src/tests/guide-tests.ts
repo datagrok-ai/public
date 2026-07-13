@@ -190,18 +190,19 @@ category('Flow: guide', () => {
     }
   });
 
-  test('untilSectionExpanded reacts to the header collapsed class', async () => {
+  test('untilSectionExpanded reacts to the accordion expanded class', async () => {
     const ac = new AbortController();
     const ctx: GuideContext = {host: fakeHost(), signal: ac.signal};
+    // Sections are DG.Accordion panes; an expanded pane's header gets 'expanded'.
     const header = document.createElement('div');
-    header.className = 'funcflow-section-header collapsed';
+    header.className = 'd4-accordion-pane-header';
     header.dataset.section = 'Inputs';
     document.body.appendChild(header);
     try {
       const p = untilSectionExpanded('Inputs')(ctx);
-      setTimeout(() => header.classList.remove('collapsed'), 30);
+      setTimeout(() => header.classList.add('expanded'), 30);
       await p;
-      expect(header.classList.contains('collapsed'), false);
+      expect(header.classList.contains('expanded'), true);
     } finally {
       header.remove();
     }

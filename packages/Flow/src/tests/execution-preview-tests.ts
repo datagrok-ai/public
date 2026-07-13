@@ -15,6 +15,7 @@ import {
 } from '../execution/value-inspector';
 import {OutputPreviewPanel, OutputPanelState} from '../execution/output-preview';
 import {FuncFlowView} from '../funcflow-view';
+import {until} from './test-utils';
 
 function renderableState(): NodeExecState {
   const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b'])]);
@@ -214,6 +215,38 @@ category('Flow: execution preview', () => {
     }
   }, {timeout: 30000});
 
+  test('opening the output preview minimizes the overview minimap', async () => {
+    // Regression: the minimap and the bottom output panel crowd the same corner,
+    // so the minimap auto-minimizes to its header the first time the preview
+    // opens. This wiring was dropped in the dock → splitter rework.
+    const view = new FuncFlowView();
+    const host = ui.div([view.root], {style: {
+      width: '900px', height: '600px', position: 'absolute', left: '-10000px',
+    }});
+    document.body.appendChild(host);
+    try {
+      // Wait for the deferred editor build to mount the minimap.
+      await until(() => view.root.querySelector('.ff-minimap') != null);
+      const mm = view.root.querySelector('.ff-minimap') as HTMLElement;
+      expect(!!mm, true, 'minimap mounted');
+      expect(mm.dataset.collapsed, 'false', 'minimap starts expanded');
+      expect(view.outputPreview.panelState, 'hidden', 'preview starts hidden');
+
+      // Opening the preview (hidden → expanded) minimizes the minimap.
+      view.outputPreview.showForNode({id: 'n1', label: 'a'}, renderableState());
+      expect(view.outputPreview.panelState, 'expanded', 'preview opened');
+      expect(mm.dataset.collapsed, 'true', 'minimap minimized when the preview opened');
+
+      // One-shot: manually reopening the minimap while the preview stays open sticks.
+      view.setMinimapCollapsed(false);
+      view.outputPreview.showForNode({id: 'n2', label: 'b'}, renderableState());
+      expect(mm.dataset.collapsed, 'false', 'no re-collapse while the preview was already open');
+    } finally {
+      ((view as any).flow)?.destroy?.();
+      host.remove();
+    }
+  }, {timeout: 30000});
+
   test('the canvas container clips — no scrollbars around the transformed canvas', async () => {
     // Regression: as a `div.ui-div` directly inside the splitter's `.ui-box`
     // pane, the canvas matched the core rule `div.ui-box > div.ui-div
@@ -296,5 +329,29 @@ category('Flow: execution preview', () => {
     const withGear = buildPreview('result', summary, () => {});
     expect(!!wsBtn(withGear), true, 'the workspace button coexists with the gear');
     expect(!!withGear!.querySelector('[data-testid="ff-viewer-edit"]'), true, 'the edit gear is present');
+  });
+
+  test('a single output fills the panel; multiple outputs split side by side', async () => {
+    const df = (name: string): DG.DataFrame =>
+      DG.DataFrame.fromColumns([DG.Column.fromStrings(name, ['a', 'b'])]);
+
+    // One output → the block is mounted directly (no splitter).
+    const one = buildValuePreviews({
+      status: NodeExecStatus.completed,
+      outputs: {result: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')}},
+    });
+    expect(one.querySelectorAll('.funcflow-preview-block').length, 1, 'one preview block');
+    expect(one.querySelector('.ui-split-h'), null, 'a lone output is not wrapped in a splitter');
+
+    // Two renderable outputs (e.g. a multi-output func) → side-by-side splitH.
+    const two = buildValuePreviews({
+      status: NodeExecStatus.completed,
+      outputs: {
+        result1: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')},
+        result2: {type: 'dataframe', rows: 2, cols: 1, clone: df('y')},
+      },
+    });
+    expect(two.querySelectorAll('.funcflow-preview-block').length, 2, 'both previews built');
+    expect(!!two.querySelector('.ui-split-h'), true, 'multiple outputs share a horizontal splitter');
   });
 });

@@ -1,6 +1,6 @@
 ---
 name: datagrok-grid-customization
-description: Sort, hide, show, reorder, resize, pin, format, and color-code columns in a Datagrok TableView grid from a datagrok-exec block. Use whenever the user asks to sort by a column (any direction), multi-sort, hide / show / reorder / pin / resize columns, freeze the first N columns, change number-format display, color-code cells (linear / categorical / conditional), set row height, or reset the grid back to defaults. Distinct from datagrok-df-and-columns (which owns column-level data metadata like semType, units, friendlyName, and is also where canonical color-coding lives) and from datagrok-viewers (which owns scatter plot / histogram / etc.). Does NOT cover filtering (`datagrok-filtering`), selection (`datagrok-selection`), custom cell renderer authoring (`create-cell-renderer`), saving / restoring layouts, or grid event handlers.
+description: Sort, hide, show, reorder, resize, pin, format, and color-code columns in a Datagrok TableView grid from a datagrok-exec block. Use whenever the user asks to sort by a column (any direction), multi-sort, hide / show / reorder / pin / resize columns, freeze the first N columns, change number-format display, color-code cells (defaults and grid-only tint here; full per-type reference in datagrok-df-and-columns), set row height, or reset the grid back to defaults. Distinct from datagrok-df-and-columns (which owns column-level data metadata like semType, units, friendlyName, and is also where canonical color-coding lives) and from datagrok-viewers (which owns scatter plot / histogram / etc.). Does NOT cover filtering (`datagrok-filtering`), selection (`datagrok-selection`), custom cell renderer authoring (`create-cell-renderer`), saving / restoring layouts, or grid event handlers.
 ---
 
 # datagrok-grid-customization
@@ -31,9 +31,7 @@ owns the broader column-metadata picture.
 | Unpin                         | `view.grid.col('smiles').unpin()`                                  |
 | Freeze first N visible        | `view.grid.setOptions({frozenColumns: 2})`                         |
 | Row height                    | `view.grid.setOptions({rowHeight: 28})`                            |
-| Linear color (numeric)        | `col.meta.colors.setLinear([...], {min, max})`                     |
-| Categorical color (string)    | `col.meta.colors.setCategorical({A: '#f00'}, {fallbackColor: ...})`|
-| Conditional color             | `col.meta.colors.setConditional({'>50': '#f00'})`                  |
+| Color coding (all types)      | `col.meta.colors.set*` — no args = platform default; full reference in `datagrok-df-and-columns` |
 | Turn off color coding         | `col.meta.colors.setDisabled()`                                    |
 | Number format                 | `col.meta.format = '0.00'`                                         |
 
@@ -58,7 +56,7 @@ owns the broader column-metadata picture.
 
 | Need                                                         | Side  | API                                                         |
 |--------------------------------------------------------------|-------|-------------------------------------------------------------|
-| Color cells so every viewer respects it                      | data  | `col.meta.colors.setLinear/setCategorical/setConditional`   |
+| Color cells so every viewer respects it                      | data  | `col.meta.colors.setLinear/setCategorical/setConditional` (df-and-columns) |
 | Color the grid column only (uniform tint)                    | grid  | `gridCol.backColor = 0xFFFFEEEE` (rare)                     |
 | Format numbers everywhere                                    | data  | `col.meta.format = '0.00'`                                  |
 | Format only in this grid                                     | grid  | `gridCol.format = '0.00'`                                   |
@@ -198,54 +196,16 @@ consumers.
 
 ## Color coding
 
-All four entrypoints live on `col.meta.colors`. They write tags on the
-column, so every viewer reading it picks up the same coloring.
+The canonical reference — all four shapes (linear / categorical /
+conditional / off), options, and traps — lives in the
+**`datagrok-df-and-columns`** skill; load it for anything beyond the
+rules below.
 
-### Linear (numeric)
-
-```datagrok-exec
-// Green → yellow → red.
-t.col('activity').meta.colors.setLinear(['#00FF00', '#FFFF00', '#FF0000']);
-```
-
-```datagrok-exec
-// Pin the gradient endpoints to specific values, with overflow colors.
-t.col('IC50').meta.colors.setLinear(
-  ['#FF0000', '#FFFF00', '#00FF00'],
-  {min: 0, max: 100, belowMinColor: '#000080', aboveMaxColor: '#000000'},
-);
-```
-
-Linear on a non-numeric column is a logic error — guard with `col.isNumerical`
-if uncertain.
-
-### Categorical (string)
-
-```datagrok-exec
-t.col('class').meta.colors.setCategorical(
-  {A: '#FF0000', B: '#00FF00', C: '#0000FF'},
-  {fallbackColor: '#CCCCCC'},
-);
-```
-
-### Conditional (numeric or string ranges)
-
-Keys are range expressions where `X` is the threshold the user specified: `'<X'` (below X),
-`'>X'` (above X), `'X-Y'` (from X to Y).
-
-```datagrok-exec
-t.col('height').meta.colors.setConditional({
-  '<170': '#00FF00',
-  '170-190': '#FFFF00',
-  '>190': '#FF0000',
-});
-```
-
-### Off
-
-```datagrok-exec
-t.col('activity').meta.colors.setDisabled();
-```
+- No specific colors or rules requested → call the setter with **no
+  arguments** (`setLinear()` / `setCategorical()` / `setConditional()`) —
+  the platform's default scheme applies. Never invent a palette the user
+  didn't ask for.
+- Turn off: `col.meta.colors.setDisabled()`.
 
 Grid-only color (advanced): `view.grid.col('foo').backColor = 0xFFFFEEEE`
 paints a uniform background in this grid only. Other viewers ignore it.

@@ -71,6 +71,15 @@ export class FuncFlowView extends DG.ViewBase {
    *  default. Created with the execution controller in `initEditor`. */
   private autorunScheduler: AutorunScheduler | null = null;
   private autorunIcon: HTMLElement | null = null;
+  /** The ribbon Save button (non-creation mode only), greyed when there is
+   *  nothing to save — an empty canvas or no change since the last save. */
+  private saveButton: HTMLButtonElement | null = null;
+  /** Serialized graph+settings at the last save / load, for detecting unsaved
+   *  changes; null before the first baseline is recorded. */
+  private savedSnapshot: string | null = null;
+  /** One-shot handler that pins this (preview) view on the first interaction so
+   *  the toolbox appears; cleared once it fires (see `setupAutoPin`). */
+  private autoPinHandler: (() => void) | null = null;
   private canvasContainer!: HTMLElement;
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
@@ -171,7 +180,9 @@ export class FuncFlowView extends DG.ViewBase {
     this.updatePath();
     try {
       const {doc} = parseFlowBody(script.script);
-      void this.loadFromDoc(doc);
+      // The entity is already on the server → its loaded state is the saved
+      // baseline, so Save stays disabled until the user edits.
+      void this.loadFromDoc(doc).then(() => this.markSaved());
     } catch (e) {
       grok.shell.error(`Cannot read flow "${this.name}": ${e instanceof Error ? e.message : e}`);
     }
@@ -243,7 +254,18 @@ export class FuncFlowView extends DG.ViewBase {
     const syncDivider = (state: OutputPanelState): void => {
       if (divider) divider.style.display = state === 'expanded' ? '' : 'none';
     };
-    this.outputPreview.onStateChanged = syncDivider;
+    // Opening the output preview minimizes the overview minimap so the two
+    // don't crowd the same corner — fired only on the hidden → visible edge
+    // (re-expanding the preview later, or the user reopening the minimap, is
+    // left alone). This lives here rather than in OutputPreviewPanel because
+    // the minimap belongs to the editor, not the preview.
+    let lastPanelState: OutputPanelState = this.outputPreview.panelState;
+    this.outputPreview.onStateChanged = (state) => {
+      syncDivider(state);
+      if (lastPanelState === 'hidden' && state !== 'hidden')
+        this.flow?.setMinimapCollapsed(true);
+      lastPanelState = state;
+    };
     syncDivider(this.outputPreview.panelState);
 
     const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');
@@ -256,6 +278,7 @@ export class FuncFlowView extends DG.ViewBase {
 
     this.setupFileDropTarget();
     this.installPortContextMenu();
+    this.setupAutoPin();
 
     setTimeout(() => this.initEditor(), 50);
   }
@@ -443,12 +466,18 @@ export class FuncFlowView extends DG.ViewBase {
         this.updateStartPanelVisibility();
         this.refreshNodeHints();
         this.flow?.refreshMinimap();
+        this.updateSaveButtonState();
       },
       // Classified edits: invalidate exactly the affected downstream cone, and
       // feed the same set to the autorun scheduler (a rerun of just that slice).
       onGraphEdited: (edit) => {
         const affected = this.executionController?.applyGraphEdit(edit) ?? new Set<string>();
         this.autorunScheduler?.onEdit(edit, affected);
+        // `onGraphChanged` does NOT fire on parameter edits (only structural
+        // add/remove/clear + annotations) — `notifyNodeParamsChanged` reports
+        // via `onGraphEdited` only. So refresh Save state here too, else editing
+        // a value on a saved flow would leave Save greyed.
+        this.updateSaveButtonState();
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
@@ -474,7 +503,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
 
     // Functions with their own custom editor (an `editor:` meta or the explicit
-    // allowlist) get an icon in the Input Parameters pane header that opens that
+    // allowlist) get an icon in the parameters pane header that opens that
     // editor seeded with the node's real upstream tables; the edited values are
     // written back into the panel, so re-render it on completion.
     const funcEditorLauncher = new FuncEditorLauncher(this.flow, this.executionController, () => ({
@@ -517,6 +546,9 @@ export class FuncFlowView extends DG.ViewBase {
 
     this.flow.setMinimapCollapsed(this.minimapCollapsed);
     this.updateStartPanelVisibility();
+    // Baseline for the Save button: an empty scratch flow starts "unchanged"
+    // (a load path records its own baseline once it finishes deserializing).
+    this.markSaved();
     this.editorReadyResolve();
   }
 
@@ -920,11 +952,24 @@ export class FuncFlowView extends DG.ViewBase {
     // update / Save As for never-saved flows / creation scripts).
     const saveButton = creationMode ?
       ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
-      ui.button('Save', () => void this.saveFlow(), 'Save this flow to the platform');
-    const savePanel: HTMLElement[] = [setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save')];
+      ui.bigButton('Save', () => {if (this.saveAvailability().enabled) void this.saveFlow();}, '');
+    saveButton.prepend(ui.iconFA('cloud-upload'));
+    const saveEl = setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save');
+
+    // The flow Save button is state-tracked: greyed and non-clickable
+    // (`pointer-events:none` via `.ff-ribbon-btn-disabled`) when there's nothing
+    // to save. A disabled button doesn't fire hover, so the dynamic "why"
+    // tooltip lives on a wrapper that stays hoverable in both states.
+    let saveHost: HTMLElement = saveEl;
+    if (!creationMode) {
+      this.saveButton = saveButton;
+      saveHost = ui.div([saveEl], 'ff-save-btn-wrap');
+      saveHost.style.marginRight = '8px';
+      ui.tooltip.bind(saveHost, () => this.saveAvailability().tooltip);
+    }
+    const savePanel: HTMLElement[] = [saveHost];
     if (!creationMode)
       savePanel.push(ribbonIcon('folder-open', () => void this.openFromPlatform(), 'Open a flow', 'open'));
-
     const panels: HTMLElement[][] = [
       savePanel,
       [
@@ -954,6 +999,7 @@ export class FuncFlowView extends DG.ViewBase {
     ];
 
     this.setRibbonPanels(panels);
+    this.updateSaveButtonState();
   }
 
   private setupStatusBar(): void {
@@ -978,9 +1024,90 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
+  // ---------- Save button state ----------
+
+  /** A stable serialization of the graph + settings, for detecting unsaved
+   *  changes. Side-effect-free (unlike `entityBodyText`, which stamps a tag).
+   *  `created` / `modified` / `author` are dropped — `serializeFlow` stamps
+   *  fresh timestamps on every call, so keeping them would make two snapshots of
+   *  the *same* graph always differ, and Save could never grey out. */
+  private currentSnapshot(): string {
+    if (!this.flow) return '';
+    try {
+      const doc = serializeFlow(this.flow, this.flowSettings) as unknown as Record<string, unknown>;
+      delete doc.created;
+      delete doc.modified;
+      delete doc.author;
+      return JSON.stringify(doc);
+    } catch {
+      return '';
+    }
+  }
+
+  /** Record the current graph as the saved baseline (after a save, or after
+   *  loading a flow that already lives on the server / a fresh empty flow). */
+  private markSaved(): void {
+    this.savedSnapshot = this.currentSnapshot();
+    this.updateSaveButtonState();
+  }
+
+  /** Whether Save is available, and the tooltip explaining why not. Save makes
+   *  sense only for a non-empty canvas that differs from the last saved state. */
+  private saveAvailability(): {enabled: boolean; tooltip: string} {
+    if ((this.flow?.getNodeCount() ?? 0) === 0)
+      return {enabled: false, tooltip: 'Nothing to save yet — the canvas is empty'};
+    if (this.savedSnapshot !== null && this.currentSnapshot() === this.savedSnapshot)
+      return {enabled: false, tooltip: 'No changes to save since the last save'};
+    return {enabled: true, tooltip: 'Save this flow to the platform'};
+  }
+
+  /** Reflect save availability on the ribbon button — greyed + non-clickable
+   *  when disabled (the wrapper carries the reason tooltip). A no-op in
+   *  creation-script mode (no state-tracked button). */
+  private updateSaveButtonState(): void {
+    const btn = this.saveButton;
+    if (!btn) return;
+    btn.classList.toggle('ff-ribbon-btn-disabled', !this.saveAvailability().enabled);
+  }
+
+  // ---------- auto-pin the preview view ----------
+
+  /** A flow app / flow script opens as an unpinned **preview** view (a Dart
+   *  ViewBase concept): the toolbox stays hidden until the view is pinned. Pin
+   *  it the moment the user does anything in it — a click on the canvas, an
+   *  edit — so the toolbox appears. One-shot: the handler removes itself once it
+   *  fires. Skipped for embedded hosts (the creation-script dialog), which are
+   *  never the shell's current view. */
+  private setupAutoPin(): void {
+    if (!this.outputPanelEnabled) return;
+    const opts: AddEventListenerOptions = {capture: true};
+    const handler = (): void => {
+      // Only when THIS view is the current one — never pin someone else's view.
+      const cur = grok.shell.v;
+      if (!this.dart || !cur || cur.dart !== this.dart) return;
+      try {
+        (grok.shell.v as DG.View).pin?.();
+      } catch {/* not pinnable in this host — ignore */}
+      this.teardownAutoPin();
+    };
+    this.autoPinHandler = handler;
+    this.root.addEventListener('pointerdown', handler, opts);
+    this.root.addEventListener('keydown', handler, opts);
+  }
+
+  private teardownAutoPin(): void {
+    const h = this.autoPinHandler;
+    if (!h) return;
+    this.autoPinHandler = null;
+    const opts: AddEventListenerOptions = {capture: true};
+    this.root.removeEventListener('pointerdown', h, opts);
+    this.root.removeEventListener('keydown', h, opts);
+  }
+
   /** View closed — a pending debounced autorun must not fire into it. */
   detach(): void {
     this.autorunScheduler?.reset();
+    this.teardownAutoPin();
     super.detach();
   }
 
@@ -1007,6 +1134,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.propertyPanel.clear();
     this.updateStatusBar();
     this.updateStartPanelVisibility();
+    this.markSaved(); // empty canvas → nothing to save
     grok.shell.info('New flow created');
   }
 
@@ -1031,7 +1159,9 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Save: in creation-script mode writes creation scripts back to the tables;
    *  otherwise updates the bound entity, or opens Save As for a flow that was
-   *  never saved — including templates bound to a script without an id, which
+   *  never saved. A bound id is *not* proof the entity is on the server — a
+   *  template (or a flow whose entity was deleted) carries an id that `find`
+   *  can't resolve — so we verify it exists before a silent update; templates
    *  previously slipped through and saved silently under the template name. */
   private async saveFlow(): Promise<void> {
     if (!this.flow) return;
@@ -1039,8 +1169,21 @@ export class FuncFlowView extends DG.ViewBase {
       this.saveCreationScriptsDialog();
       return;
     }
-    if (this.boundScript?.id) await this.saveToServer();
+    const id = this.boundScript?.id;
+    if (id && await this.scriptExistsOnServer(id)) await this.saveToServer();
     else await this.saveAsDialog();
+  }
+
+  /** Whether a script id resolves to a real, accessible server entity.
+   *  `grok.dapi.scripts.find` throws (or resolves nullish) for a missing or
+   *  inaccessible id — either way the flow isn't saved yet, so Save must ask
+   *  for a name rather than silently update a non-existent entity. */
+  private async scriptExistsOnServer(id: string): Promise<boolean> {
+    try {
+      return (await grok.dapi.scripts.find(id)) != null;
+    } catch {
+      return false;
+    }
   }
 
   /** The `.flow` entity body for the current graph — the single writer, so the
@@ -1059,6 +1202,7 @@ export class FuncFlowView extends DG.ViewBase {
       this.boundScript = await grok.dapi.scripts.save(script);
       this.name = this.flowSettings.scriptName;
       this.updatePath();
+      this.markSaved(); // this graph is now the saved baseline → Save greys out
       grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
     } catch (e: any) {
       grok.shell.error(`Failed to save flow: ${e?.message ?? e}`);

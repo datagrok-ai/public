@@ -2,15 +2,20 @@ import type {HookCallback} from '@anthropic-ai/claude-agent-sdk';
 
 const MAX_VERIFY_BLOCKS = 3;
 
-const READONLY_NAME_RE = /^(whoami$|list_|get_|search_|read_|download_|db_list_|db_describe_)/;
-const READONLY_EXTRAS = new Set(['index_codebase', 'clear_index', 'datagrok_show_entities']);
+const READONLY_NAME_RE = /^(whoami$|list_|get_|search_|read_|download_)/;
+const READONLY_EXTRAS = new Set(['datagrok_show_entities']);
 
-function isReadonlyTool(bare: string): boolean {
+export function isReadonlyTool(bare: string): boolean {
   return READONLY_NAME_RE.test(bare) || READONLY_EXTRAS.has(bare);
 }
 
-function bareToolName(name: string): string {
+export function bareToolName(name: string): string {
   return name.replace(/^mcp__.+?__/, '');
+}
+
+export function isActionTool(toolName: string): boolean {
+  const bare = bareToolName(toolName);
+  return bare === 'datagrok_exec' || (toolName.startsWith('mcp__') && !isReadonlyTool(bare));
 }
 
 function parseMcpToolResponse(resp: unknown): any {
@@ -63,8 +68,7 @@ export class Verifier {
         this.verifyFailures = 0;
       } else
         this.verifyFailures++;
-    } else if (bare === 'datagrok_exec' ||
-        (input.tool_name.startsWith('mcp__') && !isReadonlyTool(bare))) {
+    } else if (isActionTool(input.tool_name)) {
       this.pendingActions++;
       this.stats.actions++;
     }

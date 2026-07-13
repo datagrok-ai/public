@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 03-edit.test.ts
+related_bugs: []
+---
+
 1. Reload the tree in Browser
 2. Right-click the connection from the previous step (Adding).
 3. Select **Edit** from context menu.

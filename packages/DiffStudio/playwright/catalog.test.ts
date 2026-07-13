@@ -77,13 +77,15 @@ test('DiffStudio Catalog — PK-PD: load → Save to Model Hub → refresh → r
       // The reopened model is a Diff Studio TableView whose input hosts are named by CAPTION
       // (`input-host-Dose`, `input-host-Count`), not the lowercase variable safeNames of the
       // native library view. Wait for the form to mount, then resolve the real host names.
+      // Opening + re-solving the model from the Model Hub catalog is much slower on the minimal CI
+      // stack than on dev — give the input form a generous budget (test.setTimeout is 300 s).
       await page.waitForFunction(() => document.querySelectorAll('[name^="input-host-"]').length > 3,
-        null, { timeout: 30_000 });
+        null, { timeout: 120_000 });
       const doseHost = await resolveInputHostName(page, 'dose');
       const countHost = await resolveInputHostName(page, 'count');
       expect(doseHost.length).toBeGreaterThan(0);
       expect(countHost.length).toBeGreaterThan(0);
-      await expect(page.locator(inputHost(doseHost))).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator(inputHost(doseHost))).toBeVisible({ timeout: 30_000 });
     });
 
     await softStep('Step 6: Modify dose input; value updates live', async () => {
