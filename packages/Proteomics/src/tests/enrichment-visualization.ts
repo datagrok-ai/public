@@ -164,7 +164,7 @@ category('Enrichment Visualization', () => {
     expect(sub === rxjs.Subscription.EMPTY, true);
   });
 
-  test('wireEnrichmentToVolcano selects matching genes on protein DataFrame', async () => {
+  test('wireEnrichmentToVolcano selects a term\'s member genes on the volcano', async () => {
     const enrichDf = makeMockEnrichmentDf(3);
     // Set intersection to specific genes for first row
     enrichDf.col('Intersection')!.set(0, 'TP53, BRCA1');
@@ -173,8 +173,9 @@ category('Enrichment Visualization', () => {
     const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
     expect(sub !== rxjs.Subscription.EMPTY, true);
 
-    // Trigger row change
-    enrichDf.currentRowIdx = 0;
+    // Select the first enrichment term (selection channel, not current row).
+    enrichDf.selection.set(0, true, false);
+    enrichDf.selection.fireChanged();
 
     // Check that TP53 (row 0) and BRCA1 (row 1) are selected
     expect(proteinDf.selection.get(0), true);  // TP53
@@ -186,7 +187,29 @@ category('Enrichment Visualization', () => {
     sub.unsubscribe();
   });
 
-  test('wireEnrichmentToVolcano clears selection before new selection', async () => {
+  test('wireEnrichmentToVolcano unions member genes across multiple selected terms', async () => {
+    const enrichDf = makeMockEnrichmentDf(3);
+    enrichDf.col('Intersection')!.set(0, 'TP53');
+    enrichDf.col('Intersection')!.set(1, 'EGFR');
+    const proteinDf = makeMockProteinDf();
+
+    const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
+
+    // Select two terms at once (the multi-select gesture the volcano must reflect).
+    enrichDf.selection.set(0, true, false);
+    enrichDf.selection.set(1, true, false);
+    enrichDf.selection.fireChanged();
+
+    // Union: TP53 (row 0) from term 0, EGFR (row 2) from term 1; nothing else.
+    expect(proteinDf.selection.get(0), true);  // TP53
+    expect(proteinDf.selection.get(2), true);  // EGFR
+    expect(proteinDf.selection.get(1), false); // BRCA1 — in neither term
+    expect(proteinDf.selection.trueCount, 2);
+
+    sub.unsubscribe();
+  });
+
+  test('wireEnrichmentToVolcano clears prior volcano selection on a new term selection', async () => {
     const enrichDf = makeMockEnrichmentDf(3);
     enrichDf.col('Intersection')!.set(0, 'TP53');
     enrichDf.col('Intersection')!.set(1, 'EGFR');
@@ -198,13 +221,75 @@ category('Enrichment Visualization', () => {
 
     const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
 
-    // Select first enrichment row (TP53 only)
-    enrichDf.currentRowIdx = 0;
+    // Select first enrichment term (TP53 only)
+    enrichDf.selection.set(0, true, false);
+    enrichDf.selection.fireChanged();
 
     // AKT1 (row 4) should no longer be selected since selection was cleared
     expect(proteinDf.selection.get(4), false);
     // TP53 (row 0) should be selected
     expect(proteinDf.selection.get(0), true);
+
+    sub.unsubscribe();
+  });
+
+  test('wireEnrichmentToVolcano clears the volcano selection when no terms are selected', async () => {
+    const enrichDf = makeMockEnrichmentDf(3);
+    enrichDf.col('Intersection')!.set(0, 'TP53');
+    const proteinDf = makeMockProteinDf();
+
+    const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
+
+    enrichDf.selection.set(0, true, false);
+    enrichDf.selection.fireChanged();
+    expect(proteinDf.selection.trueCount, 1);
+
+    // Deselecting every term clears the volcano selection.
+    enrichDf.selection.setAll(false, false);
+    enrichDf.selection.fireChanged();
+    expect(proteinDf.selection.trueCount, 0);
+
+    sub.unsubscribe();
+  });
+
+  test('wireEnrichmentToVolcano current term selects its proteins when no terms are selected', async () => {
+    const enrichDf = makeMockEnrichmentDf(3);
+    enrichDf.col('Intersection')!.set(0, 'TP53, BRCA1');
+    const proteinDf = makeMockProteinDf();
+
+    const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
+
+    // No terms selected → making a term the current row selects its proteins
+    // (the visible single-click behavior).
+    enrichDf.currentRowIdx = 0;
+
+    expect(proteinDf.selection.get(0), true);  // TP53
+    expect(proteinDf.selection.get(1), true);  // BRCA1
+    expect(proteinDf.selection.trueCount, 2);
+
+    sub.unsubscribe();
+  });
+
+  test('wireEnrichmentToVolcano current term is ignored while a term selection is active', async () => {
+    const enrichDf = makeMockEnrichmentDf(3);
+    enrichDf.col('Intersection')!.set(0, 'TP53');       // term 0 → TP53 (row 0)
+    enrichDf.col('Intersection')!.set(1, 'EGFR, MYC');  // term 1 → EGFR (row 2), MYC (row 3)
+    const proteinDf = makeMockProteinDf();
+
+    const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
+
+    // Active selection on term 1 → EGFR + MYC selected.
+    enrichDf.selection.set(1, true, false);
+    enrichDf.selection.fireChanged();
+    expect(proteinDf.selection.trueCount, 2);
+    expect(proteinDf.selection.get(2), true); // EGFR
+    expect(proteinDf.selection.get(3), true); // MYC
+
+    // Changing the current row to term 0 must NOT clobber the active selection.
+    enrichDf.currentRowIdx = 0;
+    expect(proteinDf.selection.get(0), false); // TP53 not added
+    expect(proteinDf.selection.get(2), true);  // EGFR still selected
+    expect(proteinDf.selection.trueCount, 2);  // unchanged
 
     sub.unsubscribe();
   });
@@ -237,10 +322,11 @@ category('Enrichment Visualization', () => {
       expect(countViewersBoundTo(enrichTv, proteinDf), 0,
         'enrichment view must not carry a proteinDf-bound volcano');
 
-      // Data-layer cross-link still fires through the unchanged subscriptions.
-      enrichDf.currentRowIdx = 0;
+      // Data-layer cross-link still fires: selecting a term marks its proteins.
+      enrichDf.selection.set(0, true, false);
+      enrichDf.selection.fireChanged();
       expect(proteinDf.selection.trueCount >= 1, true,
-        'selecting an enrichment row should still highlight matching protein rows');
+        'selecting an enrichment term should mark matching protein rows');
     } finally {
       enrichTv.close();
       proteinTv.close();

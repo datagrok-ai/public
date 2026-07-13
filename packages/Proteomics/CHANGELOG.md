@@ -1,5 +1,21 @@
 # Proteomics changelog
 
+## 1.3.0 (2026-07-13)
+
+- **Rank–Abundance (dynamic-range) viewer** — visualize the abundance dynamic range across the
+  experiment.
+- **Abundance Correlation viewer** — the separate sample-correlation views are consolidated into
+  one viewer.
+- **Share analyses by project** — publish a read-only analysis snapshot to a reviewer team under a
+  controlled, admin-maintained project vocabulary. The Share dialog pre-selects a default reviewer
+  team, and administrators add/edit/remove project names from package settings.
+- **Enrichment ↔ volcano linked selection** — selecting one or more enrichment terms highlights the
+  union of their member proteins on the volcano.
+- **Numerical robustness** — imputation and quantile normalization now guard against NaN/Infinity on
+  edge-case inputs (single-value columns, degenerate random draws).
+- **Package icon** plus expanded documentation (publishing design rationale, the administrator role,
+  and projects/teams/package settings).
+
 ## 1.2.0
 
 - **Shared enrichment charts now survive reopen** — a published/shared analysis's enrichment

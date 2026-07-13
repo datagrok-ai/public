@@ -116,9 +116,25 @@ export function createEnrichmentBarChart(enrichDf: DG.DataFrame, direction?: 'Up
 }
 
 /**
- * Wires enrichment row changes to protein DataFrame selection.
- * When a row is selected in the enrichment table, matching protein rows
- * (by gene symbol from the Intersection column) are highlighted.
+ * Wires enrichment term interactions to the protein DataFrame, keyed on each
+ * term's comma-separated `Intersection` member genes → protein rows. All three
+ * enrichment charts (grid, dot plot, bar chart) share `enrichDf`, so this single
+ * full-frame wiring covers interactions in any of them.
+ *
+ * Everything drives the volcano's `selection` — the only channel the scatterplot
+ * paints visibly for a *set* of proteins (verified live: programmatic
+ * `rows.highlight` / `mouseOverRowFunc` do not render). Two channels feed that
+ * one selection, with the multi-term selection winning:
+ *  - (1)+(3) enrichment **selection** (dot-plot rubber-band, shift/ctrl-click
+ *    bars, ctrl-click grid rows) → the UNION of member proteins across every
+ *    selected term. An empty enrichment selection clears the volcano selection.
+ *  - (2) enrichment **current row** (a single clicked term) → that term's member
+ *    proteins, but ONLY when no terms are selected. While a multi-term selection
+ *    is active it governs, and current-row changes are ignored — so a trailing
+ *    current-row event (fired alongside a select gesture) can't clobber the union.
+ *
+ * The enrichment **filter** is intentionally NOT reflected (4) — filtering terms
+ * declutters the enrichment view; it must not repaint the volcano.
  */
 export function wireEnrichmentToVolcano(
   enrichDf: DG.DataFrame,
@@ -127,7 +143,7 @@ export function wireEnrichmentToVolcano(
   const geneCol = findColumn(proteinDf, SEMTYPE.GENE_SYMBOL, ['gene name', 'gene symbol']);
   if (!geneCol) return rxjs.Subscription.EMPTY;
 
-  // Build gene-to-row index
+  // Build gene -> protein-row index once.
   const geneToRows = new Map<string, number[]>();
   for (let i = 0; i < proteinDf.rowCount; i++) {
     if (!geneCol.isNone(i)) {
@@ -137,31 +153,49 @@ export function wireEnrichmentToVolcano(
     }
   }
 
-  return enrichDf.onCurrentRowChanged.subscribe(() => {
-    const rowIdx = enrichDf.currentRowIdx;
-    if (rowIdx < 0) return;
-
+  // Union of protein rows whose gene is a member of ANY of the given enrichment
+  // term rows (via each term's comma-separated Intersection string).
+  const proteinRowsForTerms = (termRows: Int32Array | number[]): Set<number> => {
+    const out = new Set<number>();
     const intersectionCol = enrichDf.col('Intersection');
-    if (!intersectionCol) return;
-
-    const memberGenesStr = intersectionCol.get(rowIdx) as string;
-    if (!memberGenesStr) return;
-
-    const memberGenes = memberGenesStr.split(',').map((g) => g.trim()).filter(Boolean);
-
-    // Clear previous selection
-    proteinDf.selection.setAll(false, false);
-
-    // Set selection for matching genes
-    for (const gene of memberGenes) {
-      const rows = geneToRows.get(gene);
-      if (rows) {
-        for (const row of rows)
-          proteinDf.selection.set(row, true, false);
+    if (!intersectionCol) return out;
+    for (const r of termRows) {
+      if (r < 0 || intersectionCol.isNone(r)) continue;
+      const memberGenesStr = intersectionCol.get(r) as string;
+      if (!memberGenesStr) continue;
+      for (const gene of memberGenesStr.split(',').map((g) => g.trim()).filter(Boolean)) {
+        const rows = geneToRows.get(gene);
+        if (rows) for (const row of rows) out.add(row);
       }
     }
+    return out;
+  };
+
+  // Replace the volcano selection with exactly `rows` (empty set → cleared).
+  const selectProteins = (rows: Set<number>): void => {
+    proteinDf.selection.setAll(false, false);
+    for (const row of rows) proteinDf.selection.set(row, true, false);
     proteinDf.selection.fireChanged();
-  });
+  };
+
+  // (1)+(3) Selected terms → union of member proteins; no selection → cleared.
+  const applySelection = (): void => {
+    const termRows = enrichDf.selection.getSelectedIndexes();
+    selectProteins(termRows.length > 0 ? proteinRowsForTerms(termRows) : new Set());
+  };
+
+  // (2) Single current term → that term's member proteins, but only while no
+  // terms are selected; an active multi-term selection governs and wins.
+  const applyCurrentRow = (): void => {
+    if (enrichDf.selection.trueCount > 0) return;
+    const idx = enrichDf.currentRowIdx;
+    selectProteins(idx >= 0 ? proteinRowsForTerms([idx]) : new Set());
+  };
+
+  const sub = new rxjs.Subscription();
+  sub.add(enrichDf.onSelectionChanged.subscribe(() => applySelection()));
+  sub.add(enrichDf.onCurrentRowChanged.subscribe(() => applyCurrentRow()));
+  return sub;
 }
 
 /** True when `enrichDf` carries a Direction column with at least one row in

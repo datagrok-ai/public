@@ -87,6 +87,11 @@ export function trimForPublish(source: DG.DataFrame, meta: PublishedMetadata): D
   }) ?? null;
   const significant = findColumn(source, '', ['significant', 'sig']);
   const direction = findColumn(source, '', ['direction', 'regulation', 'up_down']);
+  // Per-condition mean abundance (Candidates). Kept so the shared snapshot can
+  // still render the Rank–Abundance / dynamic-range plot; soft (omitted when
+  // absent, e.g. a Report snapshot or an older Candidates export).
+  const qtyNum = findColumn(source, '', ['avg group quantity numerator']);
+  const qtyDen = findColumn(source, '', ['avg group quantity denominator']);
 
   const required: Array<[string, DG.Column | null]> = [
     ['Protein ID', proteinId],
@@ -108,6 +113,8 @@ export function trimForPublish(source: DG.DataFrame, meta: PublishedMetadata): D
     adjPValue!.name,
     significant!.name,
     direction?.name,
+    qtyNum?.name,
+    qtyDen?.name,
   ].filter((n): n is string => typeof n === 'string' && n.length > 0)));
 
   const frozen = source.clone(null, allowlist);
@@ -153,7 +160,7 @@ export function trimForPublish(source: DG.DataFrame, meta: PublishedMetadata): D
     {name: META_COLUMNS.PUBLISHED_AT, value: meta.publishedAt, type: 'datetime'},
     {name: META_COLUMNS.PUBLISHED_BY, value: meta.publishedBy, type: 'string'},
     {name: META_COLUMNS.PUBLISHED_BY_EMAIL, value: meta.publishedByEmail ?? '', type: 'string', emptyForNull: true},
-    {name: META_COLUMNS.PUBLISHED_TARGET, value: meta.target, type: 'string'},
+    {name: META_COLUMNS.PUBLISHED_PROJECT, value: meta.project, type: 'string'},
     {name: META_COLUMNS.PUBLISHED_DE_METHOD, value: meta.deMethod, type: 'string'},
     {name: META_COLUMNS.PUBLISHED_FC_THRESHOLD, value: String(meta.fcThreshold), type: 'string'},
     {name: META_COLUMNS.PUBLISHED_P_THRESHOLD, value: String(meta.pThreshold), type: 'string'},

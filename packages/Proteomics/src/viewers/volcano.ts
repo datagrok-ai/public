@@ -626,6 +626,9 @@ export function createVolcanoPlot(
 
   applyThresholdLines(df, yColName, fcThreshold, pThreshold);
   sp.props.showViewerFormulaLines = true;
+  // Keep filtered-out proteins visible (light gray) so a filter narrows focus
+  // without dropping the surrounding context.
+  sp.props.showFilteredOutPoints = true;
 
   // Hide the platform's interactive axis column-selector chips. They render the
   // raw column name ('log2FC' / 'negLog10P') next to each axis and collided with
