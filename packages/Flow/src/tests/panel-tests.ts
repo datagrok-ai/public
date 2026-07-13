@@ -4,6 +4,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
 import {propertyChoices, stringChoiceOptions, PropertyPanel} from '../panel/property-panel';
 import {getParamDisplayName, getParamDefault, unquoteDefault, getFuncDisplayName} from '../utils/dart-proxy-utils';
+import {propertyNameToFriendly} from '../utils/naming';
 import {missingRequiredInputs, EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
@@ -44,13 +45,28 @@ category('Flow: property panel', () => {
     expect(stringChoiceOptions(['inner'], false, '')!.join(','), 'inner');
   });
 
-  test('getParamDisplayName falls back to the property name when no caption', async () => {
-    // No / empty caption → the identity name (the caption-present case is
-    // validated end-to-end against live registered funcs in node-factory-tests).
-    expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', type: 'int'})), 'minPts',
-      'no caption → the property name');
-    expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', caption: '', type: 'int'})), 'minPts',
-      'empty caption → the property name');
+  test('getParamDisplayName falls back to the humanized property name when no caption', async () => {
+    // No / empty caption → core's propertyNameToFriendly form (the
+    // caption-present case is validated end-to-end against live registered
+    // funcs in node-factory-tests).
+    expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', type: 'int'})), 'Min Pts',
+      'no caption → the humanized name');
+    expect(getParamDisplayName(DG.Property.fromOptions({name: 'minPts', caption: '', type: 'int'})), 'Min Pts',
+      'empty caption → the humanized name');
+  });
+
+  test('propertyNameToFriendly mirrors core (capitalizeWords ∘ camelCaseToWords ∘ dot→space)', async () => {
+    expect(propertyNameToFriendly('maxNumOfSomething'), 'Max Num Of Something');
+    expect(propertyNameToFriendly('molBlock'), 'Mol Block');
+    expect(propertyNameToFriendly('table'), 'Table');
+    expect(propertyNameToFriendly('ratio.split'), 'Ratio Split');
+    expect(propertyNameToFriendly('table1'), 'Table1', 'digits do not split (core behavior)');
+    expect(propertyNameToFriendly('Log P'), 'Log P', 'already-friendly text passes through');
+    expect(propertyNameToFriendly('MW'), 'MW', 'all-caps acronyms preserved (deviation from core)');
+    expect(propertyNameToFriendly('HBA'), 'HBA', 'all-caps acronyms preserved');
+    expect(propertyNameToFriendly('maxMW'), 'Max MW', 'acronym preserved inside a camelCase name');
+    expect(propertyNameToFriendly('RDKitMol'), 'RD Kit Mol', 'acronym-run split keeps the caps');
+    expect(propertyNameToFriendly('__exec_in'), '__exec_in', 'non-letter identifiers untouched');
   });
 
   test('unquoteDefault strips one pair of wrapping quotes', async () => {
@@ -198,8 +214,8 @@ category('Flow: property panel', () => {
 
       const inRow = panel.root.querySelector('[data-conn="table1"]') as HTMLElement | null;
       expect(!!inRow, true, 'wired input listed');
-      expect(inRow!.textContent!.includes(`← ${tableIn.label} · table`), true,
-        `input row names its source end (got: "${inRow!.textContent}")`);
+      expect(inRow!.textContent!.includes(`← ${tableIn.label} · Table`), true,
+        `input row names its source end, humanized (got: "${inRow!.textContent}")`);
       expect(!!panel.root.querySelector('[data-conn="table2"]'), false, 'unwired input not listed');
 
       // The Missing group mirrors the shared helper (labels of required inputs

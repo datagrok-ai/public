@@ -14,6 +14,7 @@ import {NodeExecState} from '../execution/execution-state';
 import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
 import {getParamDescription, getParamDisplayName, getFuncDisplayName, getTags} from '../utils/dart-proxy-utils';
+import {propertyNameToFriendly} from '../utils/naming';
 import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
 import {ColumnPickRequest} from './column-picker';
 
@@ -481,12 +482,15 @@ export class PropertyPanel {
       const nodeTips = UTILITY_PROP_TOOLTIPS[kind] ?? {};
       for (const [key, val] of props) {
         const tip = nodeTips[key];
+        // Display caption mirrors core's fallback humanization; `key` stays
+        // the row identity (data-param / storage).
+        const caption = propertyNameToFriendly(key);
         const isConstValue = isConstant && key === 'value';
         // Column-valued props (Select Column → columnName, Select Columns →
         // columnNames) get the picker dialog when there's a table to pick from.
         if (tableParam && (key === 'columnName' || key === 'columnNames')) {
           content.appendChild(this.createColumnFieldRow({
-            nodeId: node.id, label: key, isList: key === 'columnNames',
+            nodeId: node.id, label: key, caption, isList: key === 'columnNames',
             tip: tip ?? (key === 'columnNames' ? 'Comma-separated column names' : 'Column name'),
             getValue: () => String(node.properties[key] ?? ''),
             setValue: (v) => {node.properties[key] = v;},
@@ -498,7 +502,7 @@ export class PropertyPanel {
           content.appendChild(this.createToggle(key, val, (v) => {
             node.properties[key] = v;
             if (isConstValue) retitle(v);
-          }, tip));
+          }, tip, caption));
         } else if (typeof val === 'number') {
           const isInt = Number.isInteger(val);
           content.appendChild(this.createNumberInput(key, val,
@@ -506,12 +510,12 @@ export class PropertyPanel {
               node.properties[key] = isInt ? Math.round(v) : v;
               if (isConstValue) retitle(node.properties[key]);
             },
-            isInt ? 0 : 3, isInt ? 1 : 0.1, tip));
+            isInt ? 0 : 3, isInt ? 1 : 0.1, tip, caption));
         } else {
           content.appendChild(this.createTextarea(key, String(val ?? ''), (v) => {
             node.properties[key] = v;
             if (isConstValue) retitle(v);
-          }, tip));
+          }, tip, false, caption));
         }
       }
       return content;
@@ -539,8 +543,8 @@ export class PropertyPanel {
         content.appendChild(this.connGroupLabel('Missing'));
         for (const label of missingInputs)
           content.appendChild(this.buildMissingRow(label, 'required — connect or set a value'));
-        for (const label of missingProps)
-          content.appendChild(this.buildMissingRow(label, 'required value not set'));
+        for (const key of missingProps)
+          content.appendChild(this.buildMissingRow(propertyNameToFriendly(key), 'required value not set', key));
       }
 
       const conns = this.flow.getConnections();
@@ -567,7 +571,8 @@ export class PropertyPanel {
       addGroup('Pass-through', outputEntries.slice(0, ptCount)
         .filter(([key, out]) => out && targetsOf(key).length > 0)
         .map(([key, out]) => this.buildConnRow('PT',
-          key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key, out!.socket.dgType, '→', targetsOf(key), key)));
+          propertyNameToFriendly(key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key),
+          out!.socket.dgType, '→', targetsOf(key), key)));
 
       addGroup('Outputs', outputEntries.slice(ptCount)
         .filter(([key, out]) => out && !isExecKey(key) && targetsOf(key).length > 0)
@@ -590,11 +595,12 @@ export class PropertyPanel {
   }
 
   /** "Node title · slot label" for the far end of a connection. A pass-through
-   *  source renders as its base input name (its literal label is just `→`). */
+   *  source renders as its humanized base input name (its literal label is
+   *  just `→`). */
   private endpointText(nodeId: string, side: 'input' | 'output', key: string): string {
     const n = this.flow.getNodeById(nodeId);
     const name = String(n?.label ?? '?');
-    let slot = key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key;
+    let slot = propertyNameToFriendly(key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : key);
     const ports = (side === 'input' ? n?.inputs : n?.outputs) as
       Record<string, {label?: string} | undefined> | undefined;
     const lbl = ports?.[key]?.label;
@@ -638,7 +644,7 @@ export class PropertyPanel {
     return row;
   }
 
-  private buildMissingRow(label: string, why: string): HTMLElement {
+  private buildMissingRow(label: string, why: string, key = label): HTMLElement {
     const warn = ui.element('span');
     warn.textContent = '⚠ ';
     const detail = ui.element('span');
@@ -647,7 +653,7 @@ export class PropertyPanel {
     whySpan.textContent = `— ${why}`;
     whySpan.className = 'funcflow-conn-type';
     const row = ui.div([warn, detail, whySpan], 'funcflow-prop-row funcflow-conn-row funcflow-conn-missing');
-    row.dataset.missing = label;
+    row.dataset.missing = key;
     return row;
   }
 
@@ -693,15 +699,17 @@ export class PropertyPanel {
     return el;
   }
 
+  /** `caption` is display-only; `label` stays the row identity (data-param). */
   private createTextarea(
     label: string, value: string, onChange: (v: string) => void, inputTooltip?: string, cosmetic = false,
+    caption?: string,
   ): HTMLElement {
     const report = this.changeReporter(value);
     const apply = cosmetic ? onChange : (v: string): void => {
       onChange(v);
       report(v);
     };
-    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip),
+    return this.propRow(ui.div([this.labelWithTooltip(caption ?? label, inputTooltip),
       this.buildTextareaEl(value, apply, inputTooltip)], 'funcflow-prop-row'), label);
   }
 
@@ -865,7 +873,7 @@ export class PropertyPanel {
     });
   }
 
-  private createNumberInput(label: string, value: number, onChange: (v: number) => void, decimals: number, step: number, inputTooltip?: string): HTMLElement {
+  private createNumberInput(label: string, value: number, onChange: (v: number) => void, decimals: number, step: number, inputTooltip?: string, caption?: string): HTMLElement {
     const input = document.createElement('input');
     input.type = 'number';
     input.value = decimals === 0 ? String(Math.round(value)) : value.toFixed(decimals);
@@ -880,10 +888,10 @@ export class PropertyPanel {
       }
     });
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
-    return this.propRow(ui.div([this.labelWithTooltip(label, inputTooltip), input], 'funcflow-prop-row'), label);
+    return this.propRow(ui.div([this.labelWithTooltip(caption ?? label, inputTooltip), input], 'funcflow-prop-row'), label);
   }
 
-  private createToggle(label: string, value: boolean, onChange: (v: boolean) => void, inputTooltip?: string): HTMLElement {
+  private createToggle(label: string, value: boolean, onChange: (v: boolean) => void, inputTooltip?: string, caption?: string): HTMLElement {
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.checked = value;
@@ -894,7 +902,7 @@ export class PropertyPanel {
       report(input.checked);
     });
     if (inputTooltip) ui.tooltip.bind(input, inputTooltip);
-    const lbl = this.labelWithTooltip(label, inputTooltip);
+    const lbl = this.labelWithTooltip(caption ?? label, inputTooltip);
     return this.propRow(ui.div([input, lbl], 'funcflow-prop-row funcflow-prop-toggle-row'), label);
   }
 
