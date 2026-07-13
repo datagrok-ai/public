@@ -1311,12 +1311,26 @@
   height: 0;
   pointer-events: none;
   z-index: 2;
+  /* Hidden until wired / node hover / an order drag — opacity (never
+     display:none) so socket geometry stays valid and existing order edges
+     keep their endpoints. */
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ff-node-exec-row[data-wired="true"],
+.ff-node:hover .ff-node-exec-row,
+.ff-connecting-order .ff-node-exec-row {
+  opacity: 1;
 }
 
 .ff-exec-port {
   position: absolute;
   top: -5px;
-  pointer-events: auto;
+  /* No pointer events while invisible — a click near the title corners must
+     not silently start an order drag. Hovering the node reveals the squares
+     and re-enables them. */
+  pointer-events: none;
   /* Flex (like .ff-socket-row) so the rete socket <span> — which the connection
      plugin registers and hit-tests via elementsFromPoint — blockifies into a
      real box. An inline span here collapses to 0 height, so the plugin never
@@ -1324,6 +1338,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.ff-node-exec-row[data-wired="true"] .ff-exec-port,
+.ff-node:hover .ff-exec-port,
+.ff-connecting-order .ff-exec-port {
+  pointer-events: auto;
 }
 
 .ff-exec-in {

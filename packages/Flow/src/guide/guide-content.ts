@@ -585,8 +585,9 @@ const interfaceTour: Guide = {
     {
       title: 'Sockets',
       text: 'The colored dots are sockets — inputs on the left, outputs on the right. Drag between two ' +
-        'compatible (same-colored) dots to connect nodes. The small gray squares at the corners are ' +
-        'execution-order ports.',
+        'compatible (same-colored) dots to connect nodes. Hovering a node also reveals two small gray ' +
+        'squares at its top corners — execution-order ports: drag square to square to make one node ' +
+        'run after another (order only, no data).',
       target: bySel('.ff-node .ff-socket'),
       position: 'right',
     },

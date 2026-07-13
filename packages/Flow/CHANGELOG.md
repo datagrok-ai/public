@@ -4,6 +4,8 @@
 
 * Context panel: Title, metadata chips, and Description now share one aligned header block; the node and function descriptions are combined into the single editable Description input (function text is the fallback)
 * Context panel: Replaced the Function pane with compact chips (full name, package, roles, tags); the parameters pane is titled with the function name and expanded by default
+* Order ports: now hidden unless wired, hovered, or mid-order-drag (with pointer-events disabled while invisible), and carry plain-language tooltips explaining run-order wiring
+* Order drags: dimming + green highlight of every other node's opposite order square while dragging, and dropping on a node body auto-connects its order port (no aiming at the small square)
 * Humanized caption-less parameter names everywhere (node slot labels, context-panel rows, connection endpoints) mirroring core's propertyNameToFriendly — maxNumOfSomething reads "Max Num Of Something", matching ui.input.forProperty; declared captions still win; all-caps acronyms (MW, HBA) are preserved instead of core's Mw/Hba folding
 * Context panel: Connections pane shows only wired slots — each row naming the node and slot at the far end (`table ← Open File · result`), order edges as "runs after/before" facts — flags missing required inputs/values in amber, and auto-expands when something is missing
 

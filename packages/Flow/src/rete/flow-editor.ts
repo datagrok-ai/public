@@ -21,7 +21,7 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey} from './scheme';
+import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, EXEC_IN_KEY, EXEC_OUT_KEY} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor} from '../types/type-map';
@@ -736,10 +736,11 @@ export class FlowEditor {
             this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
         } else {
           // Input-side pick (a fresh drag out of an input, or the tail of an
-          // existing connection) — arms the reverse drop-on-node shortcut.
+          // existing connection) — arms the reverse drop-on-node shortcut
+          // (exec-in included: its body drop connects the node's exec-out).
           this.dragOutSource = null;
           const slot = node?.inputs[sock.key] as {socket: TypedSocket} | undefined;
-          this.dragInSource = (node && slot && !isExecKey(sock.key)) ?
+          this.dragInSource = (node && slot) ?
             {nodeId: sock.nodeId, inputKey: sock.key, dgType: slot.socket.dgType} : null;
         }
       }
@@ -786,13 +787,27 @@ export class FlowEditor {
     }
     const targetNodeId = nodeEl?.dataset.nodeId;
     if (targetNodeId && targetNodeId !== src.nodeId) {
-      const key = this.soleCompatibleInput(src.nodeId, src.outputKey, targetNodeId);
+      // An order drag connects straight to the target's exec-in — every node
+      // has one and it accepts many predecessors, so a body drop is
+      // unambiguous (no aiming at the small square); duplicates are skipped.
+      const key = isExecKey(src.outputKey) ?
+        (this.hasConnection(src.nodeId, src.outputKey, targetNodeId, EXEC_IN_KEY) ? null : EXEC_IN_KEY) :
+        this.soleCompatibleInput(src.nodeId, src.outputKey, targetNodeId);
       // Dropped on a node: connect to its one obvious input, or do nothing when
       // it has zero / several candidates (don't guess, don't pop the menu).
       if (key) await this.addConnectionByKeys(src.nodeId, src.outputKey, targetNodeId, key);
       return;
     }
+    // No suggestion menu for order drags — nothing "produces" or "consumes"
+    // an order signal; an empty-canvas drop is simply a no-op.
+    if (isExecKey(src.outputKey)) return;
     await this.openSuggestionMenu(x, y, src);
+  }
+
+  /** Whether this exact connection already exists. */
+  private hasConnection(source: string, sourceOutput: string, target: string, targetInput: string): boolean {
+    return this.editor.getConnections().some((c) => c.source === source &&
+      String(c.sourceOutput) === sourceOutput && c.target === target && String(c.targetInput) === targetInput);
   }
 
   /** Drop of an input-drag that missed every socket: if it landed on another
@@ -813,11 +828,15 @@ export class FlowEditor {
     }
     const sourceNodeId = nodeEl?.dataset.nodeId;
     if (sourceNodeId && sourceNodeId !== src.nodeId) {
-      const key = this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
+      // Order drag out of an exec-in: the dropped-on node becomes the
+      // predecessor via its exec-out (mirror of the output-drop shortcut).
+      const key = isExecKey(src.inputKey) ?
+        (this.hasConnection(sourceNodeId, EXEC_OUT_KEY, src.nodeId, src.inputKey) ? null : EXEC_OUT_KEY) :
+        this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
       if (key) await this.addConnectionByKeys(sourceNodeId, key, src.nodeId, src.inputKey);
       return;
     }
-    if (!sourceNodeId) await this.openReverseSuggestionMenu(x, y, src);
+    if (!sourceNodeId && !isExecKey(src.inputKey)) await this.openReverseSuggestionMenu(x, y, src);
   }
 
   /** The reverse suggestion menu: an input drag dropped on empty canvas offers
@@ -923,8 +942,27 @@ export class FlowEditor {
     const srcSocket = srcSlot?.socket;
     if (!srcSocket) return;
     this.container.classList.add('ff-connecting');
+    // An order-port drag keeps every node's (normally hover-only) exec squares
+    // visible for the whole gesture — the drag has visible targets and the
+    // source square can't vanish mid-drag.
+    if (isExecKey(srcKey))
+      this.container.classList.add('ff-connecting-order');
     this.nodeEl(srcNodeId)?.classList.add('ff-node-source');
     const targetSide: 'input' | 'output' = srcSide === 'output' ? 'input' : 'output';
+    if (isExecKey(srcKey)) {
+      // An order drag: every other node is a legal run-order neighbor — light
+      // its opposite exec square (the wrapper carries the same compat class the
+      // data-socket rows use, so the green glow rule applies as-is).
+      const targetTid = targetSide === 'input' ? tid('exec-in') : tid('exec-out');
+      for (const node of this.editor.getNodes()) {
+        if (node.id === srcNodeId) continue;
+        const nodeEl = this.nodeEl(node.id);
+        if (!nodeEl) continue;
+        nodeEl.querySelector(`[data-testid="${targetTid}"]`)?.classList.add('ff-socket-compat');
+        nodeEl.classList.add('ff-node-compat');
+      }
+      return;
+    }
     for (const node of this.editor.getNodes()) {
       if (node.id === srcNodeId) continue;
       const nodeEl = this.nodeEl(node.id);
@@ -949,7 +987,7 @@ export class FlowEditor {
   /** Remove every connect-mode hint class. Idempotent. */
   private endConnectHints(): void {
     if (!this.container.classList.contains('ff-connecting')) return;
-    this.container.classList.remove('ff-connecting');
+    this.container.classList.remove('ff-connecting', 'ff-connecting-order');
     this.container.querySelectorAll('.ff-node-source, .ff-node-compat, .ff-socket-compat')
       .forEach((el) => el.classList.remove('ff-node-source', 'ff-node-compat', 'ff-socket-compat'));
   }
