@@ -121,6 +121,11 @@
           "default": false,
           "description": "Unique among live (not soft-deleted) rows."
         },
+        "isName": {
+          "type": "boolean",
+          "default": false,
+          "description": "Marks this column as the primary display name for rows of this table (max one per table; string columns only). Fallback: a string column named 'name'."
+        },
         "ref": {
           "$ref": "#/definitions/identifier",
           "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."

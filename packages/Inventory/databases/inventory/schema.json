@@ -10,7 +10,7 @@
       "description": "Warehouse items: relational core plus per-department jsonb property schemas.",
       "columns": {
         "sku": {"type": "string", "required": true, "unique": true, "description": "Stock keeping unit; the business key batch upserts merge by"},
-        "name": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true, "isName": true},
         "quantity": {"type": "int", "min": 0, "default": 0, "description": "Stock on hand"},
         "location": {"type": "string"}
       },

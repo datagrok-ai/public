@@ -74,6 +74,10 @@ export class DomainRow {
   /** Display/addressing identity: business-key values joined by `'-'`, or the row id. */
   get semValue(): string { return api.grok_DomainRow_Get_SemValue(this.dart); }
 
+  /** Display name: the value of the table's name column (`isName: true`, or a string
+   * column named `name`), falling back to {@link semValue}, then id. */
+  get displayName(): string { return api.grok_DomainRow_Get_DisplayName(this.dart); }
+
   /** Raw row values keyed by wire column name (declared columns, jsonb keys, system fields). */
   get values(): {[key: string]: any} { return toJs(api.grok_DomainRow_Get_Values(this.dart)); }
 

@@ -1212,6 +1212,7 @@ export interface IDartApi {
   grok_DomainRow_Get_TableName(r: any): any;
   grok_DomainRow_Get_TypeName(r: any): any;
   grok_DomainRow_Get_SemValue(r: any): any;
+  grok_DomainRow_Get_DisplayName(r: any): any;
   grok_DomainRow_Get_Values(r: any): any;
   grok_DomainRow_Get_Id(r: any): any;
   grok_DomainRow_Get_Version(r: any): any;

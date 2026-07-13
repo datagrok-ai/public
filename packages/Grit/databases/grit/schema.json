@@ -21,7 +21,7 @@
       "columns": {
         "project_id": {"type": "ref", "ref": "project", "onDelete": "restrict", "required": true},
         "number": {"type": "int", "required": true, "min": 1, "description": "Per-project issue number; assigned by the app"},
-        "title": {"type": "string", "required": true},
+        "title": {"type": "string", "required": true, "isName": true},
         "description": {"type": "string"},
         "status": {"type": "string", "choices": ["open", "in progress", "resolved", "closed"], "default": "open"},
         "priority": {"type": "string", "choices": ["low", "medium", "high", "critical"], "default": "medium"},
