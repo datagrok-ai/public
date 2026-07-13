@@ -59,7 +59,10 @@ export function quantileNormalize(df: DG.DataFrame, colNames: string[]): void {
 
   // Find the maximum number of non-null values across columns
   const maxValid = Math.max(...colData.map((d) => d.indices.length));
-  if (maxValid === 0) return;
+  // Need at least 2 values in the most-populated column: the rank interpolation
+  // below divides by (maxValid - 1), and quantile normalization is undefined for
+  // a single quantile point.
+  if (maxValid < 2) return;
 
   // Compute rank means using scaled rank alignment
   // For each rank position r (0..maxValid-1), compute the mean of values
@@ -69,7 +72,7 @@ export function quantileNormalize(df: DG.DataFrame, colNames: string[]): void {
     let sum = 0;
     let count = 0;
     for (const d of colData) {
-      if (d.indices.length === 0) continue;
+      if (d.indices.length < 2) continue;
       // Map rank r in [0..maxValid-1] to position in this column's sorted values
       const pos = (r / (maxValid - 1)) * (d.indices.length - 1);
       // Interpolate between floor and ceil positions
@@ -86,10 +89,12 @@ export function quantileNormalize(df: DG.DataFrame, colNames: string[]): void {
   // Replace each column's sorted values with the corresponding rank mean
   for (const d of colData) {
     const n = d.indices.length;
-    if (n === 0) continue; // VM: n < 2 to prevent  r=0, n=1 → 0/0 = NaN in the globalPos calculation (line 92)
+    // n < 2: a single-value column has no rank spread; (r / (n - 1)) would be
+    // 0/0 = NaN. Leave its lone value unchanged rather than corrupting it.
+    if (n < 2) continue;
     for (let r = 0; r < n; r++) {
       // Map this column's rank to the global rank mean position
-      const globalPos = maxValid === 1 ? 0 : (r / (n - 1)) * (maxValid - 1);
+      const globalPos = (r / (n - 1)) * (maxValid - 1);
       const lo = Math.floor(globalPos);
       const hi = Math.min(Math.ceil(globalPos), maxValid - 1);
       const frac = globalPos - lo;
