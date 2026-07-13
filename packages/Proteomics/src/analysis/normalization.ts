@@ -21,8 +21,8 @@ export function medianNormalize(df: DG.DataFrame, colNames: string[]): void {
     if (isNaN(median)) continue;
 
     const raw = col.getRawData() as Float32Array | Float64Array;
-    for (let i = 0; i < raw.length; i++) { // VM: let's use col.length instead of raw.length or df.rowCount, since raw.length may be larger than col.length due to internal buffer allocation
-      if (!col.isNone(i)) // VM: let's use raw[i] === DG.FLOAT_NULL instead of col.isNone(i), since col.isNone(i) may be slower due to internal checks
+    for (let i = 0; i < raw.length; i++) {
+      if (!col.isNone(i))
         raw[i] -= median;
     }
   }
@@ -44,10 +44,10 @@ export function quantileNormalize(df: DG.DataFrame, colNames: string[]): void {
   const nRows = df.rowCount;
 
   // For each column, collect indices of non-missing values and sort by value
-  const colData: {indices: number[]; raw: Float32Array | Float64Array}[] = []; // VM: We could use a typed array for indices
+  const colData: {indices: number[]; raw: Float32Array | Float64Array}[] = [];
   for (const col of cols) {
     const raw = col.getRawData() as Float32Array | Float64Array;
-    const indices: number[] = []; // VM: We could use a typed array for indices
+    const indices: number[] = [];
     for (let i = 0; i < nRows; i++) {
       if (!col.isNone(i))
         indices.push(i);
