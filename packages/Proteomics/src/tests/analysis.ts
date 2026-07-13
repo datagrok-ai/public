@@ -292,6 +292,46 @@ category('Normalization', () => {
     expect(Math.abs(df.col('s1')!.get(0) - 1) < 0.01, true);
   });
 
+  test('quantile normalization is NaN/Infinity-safe when the fullest column has < 2 values', async () => {
+    // maxValid < 2 → the rank interpolation would divide by (maxValid - 1) = 0.
+    // The guard must bail out, leaving the few observed values untouched (no NaN).
+    const c1 = DG.Column.fromFloat32Array('s1', new Float32Array([5, DG.FLOAT_NULL, DG.FLOAT_NULL]));
+    const c2 = DG.Column.fromFloat32Array('s2', new Float32Array([DG.FLOAT_NULL, 8, DG.FLOAT_NULL]));
+    c1.semType = SEMTYPE.INTENSITY;
+    c2.semType = SEMTYPE.INTENSITY;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('id', ['P0', 'P1', 'P2']),
+      c1, c2,
+    ]);
+    quantileNormalize(df, ['s1', 's2']);
+    // No NaN/Infinity; nulls preserved; the lone observed values survive.
+    expect(Number.isFinite(df.col('s1')!.get(0)), true);
+    expect(Number.isFinite(df.col('s2')!.get(1)), true);
+    expect(df.col('s1')!.isNone(1), true);
+    expect(df.col('s2')!.isNone(0), true);
+  });
+
+  test('quantile normalization tolerates a single-value column next to a full one', async () => {
+    // s2 has exactly one observed value: without the length < 2 guards, its
+    // per-column rank division (n - 1) = 0 would write NaN into that cell.
+    const c1 = DG.Column.fromFloat32Array('s1', new Float32Array([5, 3, 6, 2]));
+    const c2 = DG.Column.fromFloat32Array('s2',
+      new Float32Array([8, DG.FLOAT_NULL, DG.FLOAT_NULL, DG.FLOAT_NULL]));
+    c1.semType = SEMTYPE.INTENSITY;
+    c2.semType = SEMTYPE.INTENSITY;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('id', ['P0', 'P1', 'P2', 'P3']),
+      c1, c2,
+    ]);
+    quantileNormalize(df, ['s1', 's2']);
+    // s1 fully normalized without NaN; s2's single value preserved, nulls intact.
+    for (let i = 0; i < 4; i++)
+      expect(Number.isFinite(df.col('s1')!.get(i)), true);
+    expect(Number.isFinite(df.col('s2')!.get(0)), true);
+    expect(Math.abs(df.col('s2')!.get(0) - 8) < 0.01, true);
+    expect(df.col('s2')!.isNone(1), true);
+  });
+
   test('vsnNormalize falls back to quantile on R failure', async () => {
     const c1 = DG.Column.fromFloat32Array('log2(s1)', new Float32Array([5, 2, 3, 6]));
     const c2 = DG.Column.fromFloat32Array('log2(s2)', new Float32Array([4, 14, 8, 2]));
@@ -457,6 +497,29 @@ category('Imputation', () => {
     expect(Math.abs(df.col('s1')!.get(1) - 6) < 0.01, true);
     expect(Math.abs(df.col('s1')!.get(4) - 6) < 0.01, true);
     expect(df.getTag('proteomics.imputed'), 'true');
+  });
+
+  test('MinProb imputation never yields NaN or Infinity', async () => {
+    // Box-Muller draws u1 in (0, 1]; were it ever 0, log(0) = -Infinity would
+    // poison an imputed cell. Impute a large column so randomNormal runs many
+    // hundreds of times, and assert every filled value is finite.
+    const n = 2000;
+    const values = new Float32Array(n);
+    for (let i = 0; i < n; i++)
+      values[i] = (i % 2 === 0) ? DG.FLOAT_NULL : (10 + (i % 7));
+    const col = DG.Column.fromFloat32Array('intensity', values);
+    col.semType = SEMTYPE.INTENSITY;
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('id', Array.from({length: n}, (_, i) => `P${i}`)),
+      col,
+    ]);
+    const imputed = imputeMinProb(df, ['intensity']);
+    expect(imputed > 0, true);
+    const c = df.col('intensity')!;
+    for (let i = 0; i < n; i++) {
+      expect(c.isNone(i), false);
+      expect(Number.isFinite(c.get(i)), true);
+    }
   });
 });
 
