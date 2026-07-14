@@ -54,7 +54,7 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - Regression (numeric targets), `binary:logistic` (bool / 2-category string targets, threshold 0.5) and `multi:softmax` (3+ categories)
 - Glue: `wasm/xgbooster.ts` (DG-free: typed-array views + dims). Training runs in a long-lived worker (`wasm/workers/xgboostWorker.ts`, transferable buffers, job queue, auto-recreated on crash); prediction is synchronous on the main thread over a cached model handle (`dispose()` frees it)
 - The wasm build has C++ exceptions disabled: validate ALL hyperparameters/labels in TypeScript before any wasm call; a bad call aborts the whole instance
-- Packed model container v2 (objective in the header); v1 models load via a legacy rounding path
+- Packed model container v2 (objective in the header); pre-upgrade v1 models (no Version field in the header) are rejected with a clear error — they must be retrained
 - Requires initialization via `initXgboost()` in package init
 
 #### Other Supervised Machine Techniques

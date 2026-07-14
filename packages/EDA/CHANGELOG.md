@@ -9,6 +9,8 @@ Upgrade XGBoost
 * Training 1.3 - 2.2× faster
 * Prediction 1.4 - 3.4× faster
 * Input validation in TypeScript
+* Breaking: models saved by earlier EDA versions (v1 container) are no longer
+  loadable — retrain and re-save them
 * Moved the EDA Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 
 ## 1.6.2 (2026-06-23)
