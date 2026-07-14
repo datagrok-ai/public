@@ -68,7 +68,8 @@ category('AI: GROK-16994: Scatter plot whiskers columns', () => {
     const ax = yIsX ? 'x' : 'y';
     expect(v.props[(ax + 'WhiskerMinColumnName') as keyof typeof v.props], 'y min');
     expect(v.props[(ax + 'WhiskerMaxColumnName') as keyof typeof v.props], 'y max');
-    expectCleared(v.props[(ax + 'WhiskerRangeColumnName') as keyof typeof v.props]);
+    // The range column is auto-detected too; min/max take precedence at render time.
+    expect(v.props[(ax + 'WhiskerRangeColumnName') as keyof typeof v.props], 'y range');
   });
 
   test('tag-based detection: whisker.min / whisker.max tags on axis column', async () => {
