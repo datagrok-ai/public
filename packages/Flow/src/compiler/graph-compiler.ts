@@ -41,6 +41,10 @@ export interface CompiledStep {
   properties: Record<string, unknown>;
   /** Snapshot of node.inputValues (hardcoded primitive defaults). */
   inputValues: Record<string, unknown>;
+  /** The real `grok.functions.call` arguments when a FUNC_WRAPPER reshaped the
+   *  node's inputs — `inputs` stays keyed by the exposed slots (pass-throughs
+   *  and the live-stash read those); the emitters pass this map instead. */
+  callInputs?: Map<string, string>;
 }
 
 const PASSTHROUGH_SUFFIX = '__pt';
@@ -280,6 +284,13 @@ export function compileGraph(
       }
     }
 
+    // A wrapped func (FUNC_WRAPPERS): fold the exposed inputs' resolved
+    // expressions into the function's real arguments (AppendTables: table1 +
+    // table2 → tables: [table1, table2]). Runs after the clone rewrite, so the
+    // wrapper sees the snapshot variables the call must receive.
+    const callInputs = node.funcWrapper ?
+      new Map(Object.entries(node.funcWrapper.mapInputs(Object.fromEntries(inputMap)))) : undefined;
+
     steps.push({
       nodeId, nodeType: 'func', funcName,
       variableName: varName,
@@ -287,6 +298,7 @@ export function compileGraph(
       cloneInputs: cloneMap.size > 0 ? cloneMap : undefined,
       properties: {...node.properties, _passthroughCount: ptCount},
       inputValues: {...node.inputValues},
+      callInputs,
     });
   }
 

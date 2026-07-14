@@ -256,11 +256,16 @@ function buildOutputLine(step: CompiledStep, node: FlowNode): string {
   return `//output: ${outputType} ${paramName}`;
 }
 
-function emitFuncStep(step: CompiledStep): string {
+/** The named-argument literal for the `grok.functions.call` — a wrapper's
+ *  reshaped arguments (`callInputs`) when present, else the node's inputs. */
+function funcCallParamsStr(step: CompiledStep): string {
   const params: string[] = [];
-  for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
-  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
-  return `let ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`;
+  for (const [name, expr] of step.callInputs ?? step.inputs) params.push(`${name}: ${expr}`);
+  return params.length > 0 ? `{${params.join(', ')}}` : '{}';
+}
+
+function emitFuncStep(step: CompiledStep): string {
+  return `let ${step.variableName} = await grok.functions.call('${step.funcName}', ${funcCallParamsStr(step)});`;
 }
 
 // eslint-disable-next-line complexity
@@ -581,9 +586,7 @@ function singleDataframeInputExpr(step: CompiledStep, node: FlowNode | undefined
 }
 
 function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow: FlowEditor): string[] {
-  const params: string[] = [];
-  for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
-  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
+  const paramsStr = funcCallParamsStr(step);
 
   const lines: string[] = [];
   lines.push(`__ff_emit('node-start', '${step.nodeId}');`);

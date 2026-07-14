@@ -21,7 +21,7 @@ import {
   getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
   getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
-import {hiddenInputsOf} from '../../utils/func-input-overrides';
+import {hiddenInputsOf, funcWrapperOf, wrapperProperties} from '../../utils/func-input-overrides';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -47,7 +47,12 @@ export function defaultTableParam(columnParam: string, dataframeParams: string[]
 export class FuncNode extends FlowNode {
   constructor(func: DG.Func) {
     const role = getRole(func);
-    const inputTypes = func.inputs.map((p) => String(p.propertyType));
+    // A wrapped function (FUNC_WRAPPERS) builds the node from the wrapper's
+    // exposed inputs — real DG.Property objects, so sockets, seeds, required
+    // checks, and the panel all go through the same code path as real params.
+    const wrapper = funcWrapperOf(func);
+    const effectiveInputs = wrapper ? wrapperProperties(wrapper) : func.inputs;
+    const inputTypes = effectiveInputs.map((p) => String(p.propertyType));
     // Domain (chem/bio) wins over the signature-based task category — but only
     // for operations on data (not pure sources/queries), matching the toolbox
     // grouping — so a cheminformatics/bioinformatics node reads its domain from
@@ -73,7 +78,8 @@ export class FuncNode extends FlowNode {
     // seeded value, pass-through, compile, script import/emit — but the node
     // component and the property panel don't render them.
     this.hiddenInputs = hiddenInputsOf(func);
-    const funcInputs = func.inputs;
+    this.funcWrapper = wrapper ?? undefined;
+    const funcInputs = effectiveInputs;
     const funcOutputs = func.outputs;
 
     // Dataframe input param names — column/column-list inputs resolve their

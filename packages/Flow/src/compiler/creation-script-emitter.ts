@@ -346,6 +346,15 @@ class CreationScriptEmitter {
       return NONE;
     }
 
+    // A wrapped func's node inputs don't match the real signature (FUNC_WRAPPERS
+    // reshapes them at compile time) — there is no faithful creation-script call.
+    if (node.funcWrapper) {
+      this.warnings.push(`Node "${node.label}" wraps ${func.name} with reshaped inputs — ` +
+        'no creation-script equivalent, skipped');
+      for (const key of dataOutputKeys(node)) this.outExpr.set(`${node.id}:${key}`, {kind: 'skip'});
+      return NONE;
+    }
+
     const params = this.buildParams(node);
     let call: DG.FuncCall;
     try {

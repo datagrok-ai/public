@@ -102,6 +102,18 @@ category('Flow: suggestions', () => {
     expect(s!.wire[1].fromNodeId, 'b');
     expect(s!.wire[0].toInput !== s!.wire[1].toInput, true, 'distinct dataframe inputs');
 
+    // A wrapped func (FUNC_WRAPPERS) counts as a combiner by what its node
+    // exposes: AppendTables takes one dataframe_list, but its node exposes
+    // table1/table2 — so it joins the two-table suggestions, auto-wired.
+    const append = byName('AppendTables');
+    if (append) {
+      const ap = items.find((x) => x.typeName === append.nodeTypeName);
+      expect(ap != null, true, 'wrapped AppendTables suggested for two tables');
+      expect(ap!.wire.length, 2, 'both tables wired to the exposed inputs');
+      expect(ap!.wire.map((w) => w.toInput).sort().join(','), 'table1,table2',
+        'wired to the wrapper-exposed sockets');
+    }
+
     // Selecting two tables is the intent — combiners outrank every per-table
     // match, even a Molecule semType hit with all its bonuses.
     const withMol = computeSuggestions(ctxOf({

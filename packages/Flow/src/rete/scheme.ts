@@ -2,6 +2,7 @@
 import {ClassicPreset, GetSchemes} from 'rete';
 import * as DG from 'datagrok-api/dg';
 import {TypedSocket} from './sockets';
+import type {FuncWrapper} from '../utils/func-input-overrides';
 
 export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 
@@ -80,6 +81,11 @@ export class FlowNode extends ClassicPreset.Node<
    *  `HIDDEN_FUNC_INPUTS`. A connected hidden socket still renders (old flows
    *  keep their wire endpoints). */
   hiddenInputs: ReadonlySet<string> = new Set();
+
+  /** When set (`FUNC_WRAPPERS`), the node's input slots are the wrapper's
+   *  exposed inputs, not the function's own; the compiler folds their resolved
+   *  expressions into the real call arguments via `mapInputs`. */
+  funcWrapper?: FuncWrapper;
 
   /** Input keys that must be satisfied (connected, or filled in the panel) for
    *  the node to do anything — the structural inputs (a table, a column).

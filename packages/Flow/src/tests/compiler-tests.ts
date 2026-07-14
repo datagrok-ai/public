@@ -1,9 +1,11 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType, getRegisteredFuncs} from '../rete/node-factory';
 import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
+import {emitCreationScript} from '../compiler/creation-script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
@@ -423,6 +425,85 @@ category('Flow: validator', () => {
       sv.inputValues['variableName'] = 'stored';
       expect(validateGraph(e.flow).some((r) => r.message.startsWith('Duplicate')), false,
         'distinct names across outputs and SetVars pass');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: func wrappers', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  const appendType = (): string | null =>
+    getRegisteredFuncs().find((f) => f.func.name === 'AppendTables')?.nodeTypeName ?? null;
+
+  test('a wrapped func node exposes the wrapper inputs, not the raw signature', async () => {
+    const typeName = appendType();
+    if (!typeName) return; // AppendTables not on this stand — skip
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      expect(!!node.funcWrapper, true, 'wrapper read onto the node');
+      expect('table1' in node.inputs, true, 'exposed table socket');
+      expect('table2' in node.inputs, true, 'exposed table socket');
+      expect('tables' in node.inputs, false, 'raw dataframe_list slot not exposed');
+      expect('table1__pt' in node.outputs, true, 'pass-throughs mirror the exposed inputs');
+      expect(node.passthroughCount, 2, 'pass-through count follows the wrapper');
+      expect(node.requiredInputs.join(','), 'table1,table2', 'exposed tables gate the run');
+      expect('result' in node.outputs, true, 'real output untouched');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('compile folds the exposed inputs into the real call arguments', async () => {
+    const typeName = appendType();
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      a.properties['paramName'] = 'tA';
+      const b = await addNode(e.flow, 'Inputs/Table Input', 0, 200);
+      b.properties['paramName'] = 'tB';
+      const ap = await addNode(e.flow, typeName, 300, 100);
+      await e.flow.addConnectionByKeys(a.id, 'table', ap.id, 'table1');
+      await e.flow.addConnectionByKeys(b.id, 'table', ap.id, 'table2');
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(/grok\.functions\.call\('AppendTables', \{tables: \[\w+, \w+\]\}\)/.test(script), true,
+        `real list argument emitted (script: ${script})`);
+      expect(script.includes('table1:'), false, 'exposed names never leak into the call');
+
+      const instrumented = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'w1'});
+      expect(instrumented.includes('{tables: ['), true, 'instrumented call reshaped too');
+      expect(instrumented.includes('"table1__pt":'), true,
+        'pass-through stash still keyed by the exposed input');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('the reshaped call shape is what the platform accepts', async () => {
+    if (!appendType()) return;
+    const dfA = DG.DataFrame.fromCsv('x\n1\n2');
+    const dfB = DG.DataFrame.fromCsv('x\n3');
+    const res = await grok.functions.call('AppendTables', {tables: [dfA, dfB]}) as DG.DataFrame;
+    expect(res.rowCount, 3, 'a JS array of DataFrames marshals to the dataframe_list param');
+  });
+
+  test('a wrapped node has no creation-script equivalent — warns instead of emitting garbage', async () => {
+    const typeName = appendType();
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, typeName);
+      const r = emitCreationScript(e.flow);
+      expect(r.warnings.some((w) => w.includes('AppendTables')), true,
+        `warning names the wrapped func (got: ${r.warnings.join(' ; ')})`);
+      expect(r.script.includes('AppendTables'), false, 'no bogus call emitted');
     } finally {
       destroyEditor(e);
     }

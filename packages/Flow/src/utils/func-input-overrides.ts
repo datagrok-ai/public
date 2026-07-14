@@ -10,7 +10,12 @@
  *    declared default.
  *  - {@link CUSTOM_FUNC_INPUT_EDITORS} — a bespoke editor replacing the default
  *    one for a specific parameter (storage stays `inputValues[name]`, so
- *    compilation, required-input checks, and serialization are unaffected). */
+ *    compilation, required-input checks, and serialization are unaffected).
+ *  - {@link FUNC_WRAPPERS} — the node exposes a reshaped, Flow-friendly input
+ *    list instead of the function's own awkward signature; at compile time the
+ *    wrapper folds the resolved inputs back into the real arguments (e.g.
+ *    AppendTables' unwirable `tables: dataframe_list` → two plain table
+ *    sockets → `tables: [table1, table2]`). */
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -64,6 +69,70 @@ export function customEditorFor(func: DG.Func, inputName: string): CustomInputEd
   } catch {
     return null;
   }
+}
+
+// ---------- function wrappers ----------
+
+/** One input exposed by a {@link FuncWrapper} in place of the function's own. */
+export interface WrappedFuncInput {
+  name: string;
+  /** DG property type of the exposed socket ('dataframe', 'string', …). */
+  type: string;
+  caption?: string;
+  description?: string;
+  /** Optional inputs don't gate the run (no "Needs input"). */
+  optional?: boolean;
+  defaultValue?: unknown;
+}
+
+/** Reshapes a function's signature into Flow-friendly node inputs. The node
+ *  (sockets, pass-throughs, seeds, required checks, panel) is built from
+ *  {@link inputs} exactly as if the function declared them; the compiler then
+ *  runs the resolved input expressions through {@link mapInputs} to build the
+ *  real `grok.functions.call` arguments. */
+export interface FuncWrapper {
+  inputs: WrappedFuncInput[];
+  /** Resolved JS expressions of the exposed inputs (a key is absent when the
+   *  input is unconnected and blank) → the function's real named arguments,
+   *  also JS expressions. */
+  mapInputs: (exposed: Record<string, string>) => Record<string, string>;
+}
+
+/** `{[func.nqName]: wrapper}` — functions kept in the catalog but exposed
+ *  through reshaped inputs. Edit freely: add an entry to make an awkward
+ *  signature wirable. */
+export const FUNC_WRAPPERS: Record<string, FuncWrapper> = {
+  // `tables: dataframe_list` is unwirable — nothing on a canvas outputs a
+  // dataframe list. Expose two plain tables and fold them into the list.
+  'core:AppendTables': {
+    inputs: [
+      {name: 'table1', type: 'dataframe', description: 'Defines the result columns'},
+      {name: 'table2', type: 'dataframe', description: 'Appended below the first table'},
+    ],
+    mapInputs: (v) => v.table1 && v.table2 ? {tables: `[${v.table1}, ${v.table2}]`} : {} as Record<string, string>,
+  },
+};
+
+/** The registered wrapper for a function, or null. */
+export function funcWrapperOf(func: DG.Func): FuncWrapper | null {
+  try {
+    return FUNC_WRAPPERS[func.nqName] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** The exposed inputs as real `DG.Property` objects, so `FuncNode` builds
+ *  sockets, seeds, and required checks through the same code path as real
+ *  params. `nullable: false` unless declared optional — the base Property
+ *  defaults to nullable (= optional) for non-strings, which would kill the
+ *  "Needs input" gate on the exposed tables. */
+export function wrapperProperties(wrapper: FuncWrapper): DG.Property[] {
+  return wrapper.inputs.map((s) => DG.Property.fromOptions({
+    name: s.name, type: s.type, caption: s.caption, description: s.description,
+    nullable: s.optional === true,
+    ...(s.defaultValue !== undefined ? {defaultValue: s.defaultValue as string} : {}),
+  }));
 }
 
 /** A file picker (`ui.input.file`) for string path parameters like OpenFile's

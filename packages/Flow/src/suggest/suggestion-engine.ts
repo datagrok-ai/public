@@ -28,6 +28,7 @@ import {FuncInfo, getRegisteredFuncs, isCommonNextFunc} from '../rete/node-facto
 import {TypedSocket} from '../rete/sockets';
 import {domainSection} from '../types/type-map';
 import {getPackageName} from '../utils/dart-proxy-utils';
+import {funcWrapperOf} from '../utils/func-input-overrides';
 
 // ---------- context model ----------
 
@@ -123,19 +124,27 @@ function slotsFor(info: FuncInfo): FuncSlots {
   if (cached) return cached;
   const slots: FuncSlots = {info, dfInputs: [], colInputs: [], semScalarInputs: [], inputCount: 0};
   try {
-    for (const p of info.func.inputs) {
+    // A wrapped func (FUNC_WRAPPERS) is matched and auto-wired by what its
+    // NODE exposes, not its raw signature — AppendTables reads as a two-table
+    // combiner even though the function itself takes one dataframe_list.
+    const wrapper = funcWrapperOf(info.func);
+    const params: Array<{name: string; type: string; semType: string | null}> = wrapper ?
+      wrapper.inputs.map((s) => ({name: s.name, type: String(s.type), semType: null})) :
+      info.func.inputs.map((p) => {
+        let sem: string | null = null;
+        try {
+          sem = p.semType ? String(p.semType) : null;
+        } catch {/* Dart proxy */}
+        return {name: p.name, type: String(p.propertyType), semType: sem};
+      });
+    for (const p of params) {
       slots.inputCount++;
-      const t = String(p.propertyType);
-      let sem: string | null = null;
-      try {
-        sem = p.semType ? String(p.semType) : null;
-      } catch {/* Dart proxy */}
-      if (t === 'dataframe')
+      if (p.type === 'dataframe')
         slots.dfInputs.push(p.name);
-      else if (t === 'column' || t === 'column_list')
-        slots.colInputs.push({name: p.name, semType: sem, isList: t === 'column_list'});
-      else if (sem)
-        slots.semScalarInputs.push({name: p.name, type: t, semType: sem});
+      else if (p.type === 'column' || p.type === 'column_list')
+        slots.colInputs.push({name: p.name, semType: p.semType, isList: p.type === 'column_list'});
+      else if (p.semType)
+        slots.semScalarInputs.push({name: p.name, type: p.type, semType: p.semType});
     }
   } catch {/* introspection failure — empty slots */}
   cached = slots;
