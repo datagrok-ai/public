@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: fixed `Column list` script tests — JS `column_list` input is a name array (`string[]`), so use `cols[0]` not `cols.toList()[0]`; Grok script referenced an undefined `columns` var instead of the `cols` input.
 * Security: rebuilt `cvmtests-docker-test1` (`python:3.12-alpine`) and `cvmtests-docker-test2` (`python:3.11-alpine`) on current bases (+ `apk upgrade`, refreshed pip/setuptools/wheel) to clear base-OS CVEs (expat/krb5/openssl/musl) and stale Python tooling.
 * Docker: cvmtests-docker-test2 — raised Quart (>=0.20) and Werkzeug (>=3.1.6) floors to clear their CVEs (VEX)
 * Added datagrok-celery-task integration tests via the python/ celery worker
