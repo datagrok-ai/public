@@ -7,7 +7,7 @@ import {
   domainSection, domainCategory, isDomainOperation,
   CHEMINFORMATICS_PACKAGES, BIOINFORMATICS_PACKAGES,
   ROLE_COLORS, CATEGORY_COLORS, FUNC_NAME_COLORS, DEFAULT_NODE_COLOR,
-  pastelize, categoricalColor,
+  pastelize, categoricalColor, getSlotLetter, CAT,
 } from '../types/type-map';
 
 category('Flow: type-map', () => {
@@ -93,6 +93,36 @@ category('Flow: type-map', () => {
     // Non-#rrggbb inputs pass through untouched.
     expect(pastelize('red'), 'red');
     expect(pastelize(''), '');
+  });
+
+  test('slot letters mirror the Column Manager (first char; t for table, ? for wildcards)', async () => {
+    expect(getSlotLetter('dataframe'), 't');
+    expect(getSlotLetter('string'), 's');
+    expect(getSlotLetter('int'), 'i');
+    expect(getSlotLetter('double'), 'd');
+    expect(getSlotLetter('bool'), 'b');
+    expect(getSlotLetter('datetime'), 'd'); // same letter as double — color disambiguates, like core
+    expect(getSlotLetter('column'), 'c');
+    expect(getSlotLetter('column_list'), 'c');
+    expect(getSlotLetter('list<string>'), 's'); // folds to string_list first
+    expect(getSlotLetter('dynamic'), '?');
+    expect(getSlotLetter('object'), '?');
+    expect(getSlotLetter('Molecule'), 'm', 'unknown type → its first letter, lowercased');
+    expect(getSlotLetter(''), '?');
+    for (const t of Object.keys(DG_TYPE_MAP))
+      expect(getSlotLetter(t).length, 1, `single letter for ${t}`);
+  });
+
+  test('column-data socket colors mirror core Color.typeColors (palette 0-6)', async () => {
+    // color.dart:336 — categorical palette indexed by
+    // [bool, string, int, bigint, qnum, datetime, float].
+    expect(DG_TYPE_MAP['bool'].color, categoricalColor(CAT.blue));
+    expect(DG_TYPE_MAP['string'].color, categoricalColor(CAT.orange));
+    expect(DG_TYPE_MAP['int'].color, categoricalColor(CAT.green));
+    expect(DG_TYPE_MAP['bigint'].color, categoricalColor(CAT.red));
+    expect(DG_TYPE_MAP['qnum'].color, categoricalColor(CAT.purple));
+    expect(DG_TYPE_MAP['datetime'].color, categoricalColor(CAT.brown));
+    expect(DG_TYPE_MAP['double'].color, categoricalColor(CAT.pink));
   });
 
   test('node identity colors come from the platform categorical palette', async () => {

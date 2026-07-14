@@ -440,7 +440,8 @@ A second, **data-free** connection type that expresses pure run-order — "node1
 
 ## Type System (`types/type-map.ts`)
 
-- `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
+- `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color paints the socket chip's letter + ring. The seven column-data types (bool/string/int/bigint/qnum/datetime/double) mirror core's `Color.typeColors` (categorical palette indices 0–6, color.dart:336) so socket letter+color pairs match the Column Manager.
+- `getSlotLetter(dgType)`: the single letter inside a socket chip — Column Manager style (`col.type.substring(0, 1)`, column_grid.dart:892), with overrides `dataframe → t` and `dynamic`/`object → ?`; unknown types get their first letter and the gray fallback color.
 - `categoricalColor(i)` + `CAT` (hue-name → index): node identity colors are picked **from the platform's categorical palette** (`DG.Color.categoricalPalette` — the colors users see on every categorical coloring across Datagrok), cached on first use with core's Standard `category20` list as the fallback. All the tables below and the builtin `COLOR_*` constants in `rete/nodes/*` resolve through it — never hardcode a node hue.
 - `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName, category?)` checks this **first** (e.g. `SetVar` → palette red, `GetVar` → palette light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
@@ -758,7 +759,7 @@ Spotfire-inspired light theme:
 - Soft drop shadow (`box-shadow: 0 3px 10px rgba(0,0,0,0.1)`), rounded `border-radius: 8px`.
 - Selection: blue 1.5px border + outer halo.
 - Background: `#ebedf2` with subtle dot grid (programmatically generated PNG data URL, applied inline by `FlowEditor`).
-- Sockets: 12px dot, type-colored fill, white border, 1px gray ring; hover scales 1.18×.
+- Sockets: 14px white chip with a Column Manager-style single type letter (`t` table, `s` string, `i` int, `d` double, …) and ring, both in the type color (`--socket-color` var set inline by `FlowSocketComponent`; letter from `getSlotLetter`); hover scales 1.25×; compat highlight turns the chip green with a white letter. Order/exec squares stay bare gray squares.
 - Pass-through sockets: dashed white border, faded label.
 - Connections: cubic Bézier SVG path, 2.5px wide. **Stroke color is set per-connection from the source slot's DG type** — `FlowEditor.styleConnectionElement` runs on every `rendered` signal and writes the color into the `<path>` attribute. This way every connection visually carries its data type.
 - Connection states (`data-status="active"`/`"completed"`/`"errored"`/`"stale"`): `active` adds the marching-dashes `@keyframes ff-flow-march` animation to show data flowing through the edge; `errored` overrides the stroke to red; `stale` dims and dashes the path.

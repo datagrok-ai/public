@@ -17,7 +17,7 @@ import {classicConnectionPath} from 'rete-render-utils';
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements} from './scheme';
 import {TypedSocket} from './sockets';
-import {getSlotColor, pastelize} from '../types/type-map';
+import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
 import {tid} from '../utils/test-ids';
 import {summarizeNode} from '../summary/summary-generator';
 
@@ -278,23 +278,25 @@ interface SocketProps {
   data: TypedSocket;
 }
 
-/** Colored socket dot. We expose the type color twice:
- *  - `background` paints the regular (non-pass-through) dot
- *  - `--socket-color` CSS var is read by `.ff-socket-row-passthrough .ff-socket`
- *    to color the dashed ring (where `background` is forced white).
- *  An `order` socket gets NO title of its own — a nested title would shadow
- *  the exec-port wrapper's plain-language "Run order: drag…" explanation with
- *  a bare "order". */
+/** Socket chip: a single type letter colored like the Column Manager's type
+ *  column (`t` table, `s` string, `i` int, `d` double, …; see `getSlotLetter`).
+ *  The type color travels as the `--socket-color` CSS var — `.ff-socket` paints
+ *  the letter and ring with it, and `.ff-socket-row-passthrough .ff-socket`
+ *  reads it for the dashed ring. An `order` socket stays a bare gray square
+ *  (no letter) and gets NO title of its own — a nested title would shadow the
+ *  exec-port wrapper's plain-language "Run order: drag…" explanation with a
+ *  bare "order". */
 export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   const color = getSlotColor(props.data.dgType);
+  const isOrder = props.data.dgType === ORDER_SOCKET_TYPE;
   return (
     <div
       className="ff-socket"
       data-testid={tid('socket', props.data.dgType)}
-      style={{background: color, ['--socket-color' as never]: color}}
-      title={props.data.dgType === ORDER_SOCKET_TYPE ? undefined : props.data.dgType}
+      style={{['--socket-color' as never]: color}}
+      title={isOrder ? undefined : props.data.dgType}
       data-type={props.data.dgType}
-    />
+    >{isOrder ? null : getSlotLetter(props.data.dgType)}</div>
   );
 }
 

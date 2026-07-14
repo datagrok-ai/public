@@ -3,35 +3,7 @@
 
 import * as DG from 'datagrok-api/dg';
 
-export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
-  'dataframe': {slotType: 'dataframe', color: '#E67E22'},
-  'column': {slotType: 'column', color: '#3498DB'},
-  'column_list': {slotType: 'column_list', color: '#5DADE2'},
-  'string': {slotType: 'string', color: '#2ECC71'},
-  'int': {slotType: 'int', color: '#1ABC9C'},
-  'double': {slotType: 'double', color: '#00BCD4'},
-  'bool': {slotType: 'bool', color: '#E74C3C'},
-  'datetime': {slotType: 'datetime', color: '#9B59B6'},
-  'string_list': {slotType: 'string_list', color: '#8BC34A'},
-  'object': {slotType: 'object', color: '#95A5A6'},
-  'dynamic': {slotType: 'dynamic', color: '#7E8C8D'},
-  'map': {slotType: 'map', color: '#FFC107'},
-  'funccall': {slotType: 'funccall', color: '#E91E63'},
-  'list': {slotType: 'list', color: '#AB47BC'},
-  'file': {slotType: 'file', color: '#78909C'},
-  'byte_array': {slotType: 'byte_array', color: '#607D8B'},
-  'bitset': {slotType: 'bitset', color: '#FF7043'},
-  'num': {slotType: 'num', color: '#26C6DA'},
-  'viewer': {slotType: 'viewer', color: '#42A5F5'},
-  'graphics': {slotType: 'graphics', color: '#66BB6A'},
-  'blob': {slotType: 'byte_array', color: '#607D8B'},
-  'view': {slotType: 'view', color: '#5C6BC0'},
-  // Execution-ordering ports (control flow, not data). Gray, and deliberately
-  // isolated from every other type (see areTypesCompatible).
-  'order': {slotType: 'order', color: '#9E9E9E'},
-};
-
-// ---- node identity colors come from the platform's categorical palette ----
+// ---- node & socket identity colors come from the platform's categorical palette ----
 
 /** Core's Standard palette (`Color.category20` in d4's color.dart) — the
  *  compile-time fallback when `DG.Color.categoricalPalette` is unreachable.
@@ -69,6 +41,40 @@ export function categoricalColor(i: number): string {
 }
 
 const white = (color: string): {color: string; bgcolor: string} => ({color, bgcolor: '#ffffff'});
+
+/** Column-data socket types wear core's `Color.typeColors` — the categorical
+ *  palette indexed by `[bool, string, int, bigint, qnum, datetime, float]`
+ *  (color.dart:336) — so a socket's letter+color pair matches what users see
+ *  in the Column Manager and grid column headers. */
+export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
+  'dataframe': {slotType: 'dataframe', color: '#E67E22'},
+  'column': {slotType: 'column', color: '#3498DB'},
+  'column_list': {slotType: 'column_list', color: '#5DADE2'},
+  'string': {slotType: 'string', color: categoricalColor(CAT.orange)},
+  'int': {slotType: 'int', color: categoricalColor(CAT.green)},
+  'double': {slotType: 'double', color: categoricalColor(CAT.pink)},
+  'bool': {slotType: 'bool', color: categoricalColor(CAT.blue)},
+  'datetime': {slotType: 'datetime', color: categoricalColor(CAT.brown)},
+  'bigint': {slotType: 'bigint', color: categoricalColor(CAT.red)},
+  'qnum': {slotType: 'qnum', color: categoricalColor(CAT.purple)},
+  'string_list': {slotType: 'string_list', color: '#8BC34A'},
+  'object': {slotType: 'object', color: '#95A5A6'},
+  'dynamic': {slotType: 'dynamic', color: '#7E8C8D'},
+  'map': {slotType: 'map', color: '#FFC107'},
+  'funccall': {slotType: 'funccall', color: '#E91E63'},
+  'list': {slotType: 'list', color: '#AB47BC'},
+  'file': {slotType: 'file', color: '#78909C'},
+  'byte_array': {slotType: 'byte_array', color: '#607D8B'},
+  'bitset': {slotType: 'bitset', color: '#FF7043'},
+  'num': {slotType: 'num', color: '#26C6DA'},
+  'viewer': {slotType: 'viewer', color: '#42A5F5'},
+  'graphics': {slotType: 'graphics', color: '#66BB6A'},
+  'blob': {slotType: 'byte_array', color: '#607D8B'},
+  'view': {slotType: 'view', color: '#5C6BC0'},
+  // Execution-ordering ports (control flow, not data). Gray, and deliberately
+  // isolated from every other type (see areTypesCompatible).
+  'order': {slotType: 'order', color: '#9E9E9E'},
+};
 
 /** Role → title-bar color (white body). Looked up by `FuncNode` from
  *  `func.options.role`. */
@@ -261,6 +267,23 @@ export function stringListToArrayLiteral(value: unknown): string {
 export function getSlotColor(slotType: string): string {
   const mapped = DG_TYPE_MAP[slotType];
   return mapped ? mapped.color : '#95A5A6';
+}
+
+/** Overrides for slot letters that shouldn't be the plain first character. */
+const SLOT_LETTERS: Record<string, string> = {
+  'dataframe': 't', // "table" — how users say it
+  'dynamic': '?',   // wildcard — a letter would suggest a concrete type
+  'object': '?',    // wildcard
+};
+
+/** Single-letter type abbreviation shown inside a socket chip — mirroring the
+ *  Column Manager, which renders `col.type.substring(0, 1)` colored by
+ *  `Color.typeColors` (column_grid.dart:892). Unknown types get their first
+ *  letter too (and a gray chip via `getSlotColor`'s fallback). */
+export function getSlotLetter(dgType: string): string {
+  const slot = dgTypeToSlotType(dgType);
+  const letter = SLOT_LETTERS[slot] ?? slot.trim().charAt(0).toLowerCase();
+  return letter === '' ? '?' : letter;
 }
 
 export function getNodeColors(

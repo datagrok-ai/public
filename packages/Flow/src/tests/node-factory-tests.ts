@@ -158,6 +158,22 @@ category('Flow: node-factory', () => {
     }
   });
 
+  test('sockets render Column Manager-style type letters; order squares stay bare', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const sel = `.ff-node[data-node-id="${a.id}"]`;
+      await until(() => e.container.querySelector(`${sel} [data-testid="ff-socket-dataframe"]`) != null);
+      const chip = e.container.querySelector<HTMLElement>(`${sel} [data-testid="ff-socket-dataframe"]`)!;
+      expect(chip.textContent, 't', 'a dataframe socket shows the "t" (table) letter');
+      expect(chip.style.getPropertyValue('--socket-color') !== '', true, 'chip carries its type color');
+      const order = e.container.querySelector<HTMLElement>(`${sel} .ff-exec-out .ff-socket`)!;
+      expect(order.textContent, '', 'order squares carry no letter');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('suggestion menu shows friendly names with "what it does" categories', async () => {
     // Dragging a table output to empty canvas lists compatible nodes. DG funcs
     // must read like the toolbox — friendly name + task category — not the raw

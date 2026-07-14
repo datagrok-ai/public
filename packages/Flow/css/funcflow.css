@@ -1158,16 +1158,27 @@
   justify-content: flex-end;
 }
 
+/* Socket chip: a Column Manager-style single type letter (colored by type via
+   the --socket-color var set inline by FlowSocketComponent) on a white chip
+   with a matching ring. Order/exec squares override this below. */
 .ff-socket {
   flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid #ffffff;
-  box-shadow: 0 0 0 1px #b0bec5;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid var(--socket-color, #b0bec5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--socket-color, #90a4ae);
   cursor: crosshair;
   transition: transform 0.1s;
   box-sizing: border-box;
+  user-select: none;
 }
 
 .ff-socket:hover {
@@ -1196,6 +1207,7 @@
    on exactly where the connection can go. */
 .ff-connecting .ff-socket-compat .ff-socket {
   background: #2e9e44 !important;
+  color: #ffffff !important;
   border-color: #ffffff;
   box-shadow: 0 0 0 2px #2e9e44, 0 0 7px 2px rgba(46, 158, 68, 0.7);
   opacity: 1;
@@ -1435,8 +1447,9 @@
 
 .ff-node-collapsed-sockets .ff-socket {
   margin: 0;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
+  font-size: 7px;
 }
 
 
