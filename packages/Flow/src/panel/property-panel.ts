@@ -18,6 +18,7 @@ import {propertyNameToFriendly} from '../utils/naming';
 import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
 import {hiddenInputsOf, customEditorFor, CustomInputEditorFactory} from '../utils/func-input-overrides';
 import {ColumnPickRequest} from './column-picker';
+import { processChoiceInput } from './choice-input-processor';
 
 const PROP_TOOLTIPS: Record<string, string> = {
   'Title': 'Display name shown on the node',
@@ -725,9 +726,9 @@ export class PropertyPanel {
    *  setter — `ui.input.forProperty` (and the `value` init option) does not
    *  reliably load the editor itself. Guarded: a value the editor can't parse
    *  just leaves it at its own blank/default state. */
-  private static initInputValue(input: DG.InputBase, v: unknown): void {
+  private static initInputValue(input: DG.InputBase, v: unknown, setStringValue = true): void {
     try {
-      if (v !== undefined && v !== null && String(v) !== '') input.stringValue = String(v);
+      if (v !== undefined && v !== null && String(v) !== '') setStringValue ? (input.stringValue = String(v)) : (input.value = v);
     } catch {/* leave the editor as-is */}
   }
 
@@ -746,7 +747,12 @@ export class PropertyPanel {
         report(v);
       },
     });
-    PropertyPanel.initInputValue(input, node.inputValues[param.name]);
+    if (param.choices && input instanceof DG.ChoiceInput && node.dgFunc) {
+      PropertyPanel.initInputValue(input, node.inputValues[param.name], false);
+      processChoiceInput(input, node.dgFunc, param);
+    } else {
+       PropertyPanel.initInputValue(input, node.inputValues[param.name]);
+    }
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
   }
 
