@@ -1,6 +1,6 @@
 # EDA changelog
 
-## 1.7.0 (2026-07-07)
+## 1.6.3 (2026-07-17)
 
 Upgrade XGBoost
 

@@ -1,6 +1,6 @@
 // JS/TS glue for the XGBoost wasm module (wasm/XGBoostAPI.js + .wasm).
 //
-// Design (see xgboost-update-plan.md, phases 2-3):
+// Design:
 //  - DG-free layer: callers pass typed-array views + dimensions; all
 //    DG.Column access happens in src/xgbooster.ts. Column views MUST already
 //    be sliced to the column length (col.getRawData() may be longer than

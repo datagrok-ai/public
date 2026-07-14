@@ -1,6 +1,6 @@
 // Thin wasm wrapper over the XGBoost C API for the EDA package.
 //
-// Design constraints (see xgboost-update-plan.md, phase 2):
+// Design constraints:
 //  - Input is columnar float32, exactly as Datagrok stores columns: one
 //    contiguous buffer where column j occupies [j*nRows, (j+1)*nRows).
 //    Columns are passed to XGBoost via the array-interface JSON, so no

@@ -19,7 +19,7 @@ if(NOT XGBOOST_SOURCE_DIR)
   message(FATAL_ERROR "Pass -DXGBOOST_SOURCE_DIR=<path to xgboost clone>")
 endif()
 
-# Speed-first flags decided by benchmark (xgboost-update-plan.md, phase 5):
+# Speed-first flags decided by benchmark (see README.md here):
 # -O3 + wasm SIMD + LTO is the fastest fit AND predict variant; SIMD without
 # LTO regresses fit on wide data, -Os makes predict ~5x slower.
 # C++ exceptions stay disabled (Emscripten default) - all validation happens

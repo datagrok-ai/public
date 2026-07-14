@@ -8,6 +8,10 @@
 #
 # Usage (from wasm/xgboost/):
 #   powershell -File build.ps1 [-XgboostDir <path>] [-EmsdkDir <path>] [-EdaWasmDir <path>]
+#     [-Tag <vX.Y.Z>] [-KeepWorktree]
+# -Tag overrides the pinned XGBoost tag (see README "Updating the XGBoost
+# version"); -KeepWorktree leaves the patched worktree in TEMP - use it to get
+# the patched tree for the native smoke build (smoke/CMakeLists.txt).
 param(
   # Defaults assume the layout Datagrok/{public-copy/public/packages/EDA,
   # ml-cpp/{xgboost,emsdk}}

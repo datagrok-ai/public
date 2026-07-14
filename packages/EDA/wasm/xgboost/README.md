@@ -24,15 +24,17 @@ Clone the two public dependencies anywhere you like:
 #    git worktree - your clone is never modified)
 git clone --recursive https://github.com/dmlc/xgboost <xgboost-dir>
 
-# 2. Emscripten SDK 6.x
+# 2. Emscripten SDK — install the tested version, not "latest": the flags
+#    below (notably -sGROWABLE_ARRAYBUFFERS=0) are tied to Emscripten 6.x
+#    behavior, and a silent toolchain drift invalidates the benchmarks.
 git clone https://github.com/emscripten-core/emsdk <emsdk-dir>
 cd <emsdk-dir>
-./emsdk install latest
-./emsdk activate latest
+./emsdk install 6.0.2
+./emsdk activate 6.0.2
 ```
 
 `node` must be in PATH (it runs the api-test gate). No other tools are needed:
-cmake and ninja come with emsdk.
+cmake and ninja come with emsdk 6.0.2.
 
 ## Build
 
@@ -44,6 +46,11 @@ powershell -File build.ps1 -XgboostDir <xgboost-dir> -EmsdkDir <emsdk-dir>
 
 (The script also has defaults matching the standard Datagrok developer layout,
 so the parameters may be omitted if they resolve for you.)
+
+Other switches: `-Tag vX.Y.Z` overrides the pinned tag (see "Updating the
+XGBoost version"); `-KeepWorktree` leaves the patched worktree in
+`%TEMP%\xgb-wasm-<tag>` after the build — the easiest way to get the patched
+tree required by the native smoke build (`smoke/CMakeLists.txt`).
 
 The script: creates a temporary worktree at the pinned tag, applies
 `patches/*.patch`, builds with emcmake in TEMP, runs `smoke/api-test.mjs`
@@ -63,7 +70,7 @@ grok test --host local --no-retry --category XGBoost
 | `CMakeLists.txt` | Wrapper project for emcmake (`-DXGBOOST_SOURCE_DIR=<clone>`); production flags `-O3 -msimd128 -flto` (chosen by benchmark; use SIMD and LTO only together), `-sGROWABLE_ARRAYBUFFERS=0` is mandatory (Emscripten 6.x otherwise breaks TextDecoder in new Chrome). Two link targets: production `web,worker` and test-only `XGBoostAPI-node` (`web,worker,node`). |
 | `build.ps1` | Full build cycle with the api-test gate, as described above. |
 | `patches/xgboost-wasm-minimal-v3.3.0.patch` | Library trimming: the CMake flag `XGBOOST_WASM_MINIMAL` excludes ranking/survival/quantile/hinge objectives, AUC/rank/survival metrics, `exact`/`approx` tree methods and `gblinear`; plus a `bst_idx_t` to `size_t` narrowing fix for wasm32 (`quantile.cc`). What remains: `gbtree` + `hist`, reg/binary/multi objectives, rmse/logloss/mlogloss metrics. |
-| `smoke/smoke.cpp` | Smoke test via the C API: 3 objectives + 6 negative trimming checks. The negative checks need C++ exceptions - compile the wasm variant with `-DSMOKE_SKIP_NEGATIVE`; the full 9/9 run is done on a native build (see `smoke/CMakeLists.txt`). |
+| `smoke/smoke.cpp` | Smoke test via the C API: 3 objectives + 6 negative trimming checks. The full 9/9 run is done on a native build (see `smoke/CMakeLists.txt`). A wasm run is optional (the wasm path is covered by `api-test.mjs`): there is no ready-made target — compile with emcc and `-DSMOKE_SKIP_NEGATIVE` (the negative checks need C++ exceptions), linking against the wasm static lib from the TEMP build dir. |
 | `smoke/api-test.mjs` | Node test of the wasm wrapper exports (23 checks, including a byte-exact model roundtrip). Built into `build.ps1`: if it fails, artifacts are NOT copied. |
 | `smoke/bench.mjs` | Wasm-level benchmark matrix: shapes, objectives, depth/iterations, small batches, model load, missing values; `--legacy` mode for the pre-1.7.0 module. |
 
