@@ -135,13 +135,17 @@ export function queryConnectionName(f: FuncInfo): string {
   }
 }
 
-/** Persisted UI state for the browser (group mode + which sections the user
- *  has expanded), so it reopens exactly as the user left it. */
+/** Persisted UI state for the browser (the group-by mode). Section
+ *  expand/collapse state is NOT kept here — the platform accordion
+ *  (`ui.accordion(key)`) persists it itself in `localStorage['Accordion:<key>']`,
+ *  keyed by pane name. */
 interface BrowserState {
   groupBy: GroupByMode;
-  expanded: Record<string, boolean>;
 }
 const LS_KEY = 'funcflow.browser.v1';
+/** Persistence key of the toolbox accordion; the nested per-connection
+ *  accordion inside the Queries pane uses `<key>.queries`. */
+export const TOOLBOX_ACCORDION_KEY = 'funcflow.toolbox';
 const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
 
 /** Case- AND whitespace-insensitive substring match — so "openfile" matches
@@ -176,8 +180,13 @@ export class FunctionBrowser {
   private groupBySelect!: HTMLSelectElement;
   private treeContainer!: HTMLElement;
   private groupBy: GroupByMode = 'category';
-  /** Expanded-section memory, keyed `b:<title>` (built-ins) / `<mode>:<group>`. */
-  private expanded: Record<string, boolean> = {};
+  /** The toolbox accordion, rebuilt on every render. A keyed `ui.accordion`
+   *  restores pane states from localStorage at construction and persists them
+   *  on header clicks — no manual bookkeeping. Exposed for tests. */
+  accordion: DG.Accordion | null = null;
+  /** The nested per-connection accordion inside the Queries pane (built lazily
+   *  when that pane first expands). Exposed for tests. */
+  queriesAccordion: DG.Accordion | null = null;
   private callbacks: FunctionBrowserCallbacks;
   /** The Files tree (KNIME-style file browser). Built lazily once and reused
    *  across renders so its expanded state and scroll position survive a search. */
@@ -197,27 +206,14 @@ export class FunctionBrowser {
       if (!raw) return;
       const s = JSON.parse(raw) as Partial<BrowserState>;
       if (s.groupBy && VALID_MODES.includes(s.groupBy)) this.groupBy = s.groupBy;
-      if (s.expanded && typeof s.expanded === 'object') this.expanded = s.expanded;
     } catch {/* corrupt/blocked storage — fall back to defaults */}
   }
 
   private saveState(): void {
     try {
-      const state: BrowserState = {groupBy: this.groupBy, expanded: this.expanded};
+      const state: BrowserState = {groupBy: this.groupBy};
       localStorage.setItem(LS_KEY, JSON.stringify(state));
     } catch {/* storage blocked/full — non-fatal */}
-  }
-
-  /** Whether a section should render expanded: forced open while searching,
-   *  otherwise remembered (default collapsed). */
-  private isExpanded(key: string, hasSearch: boolean): boolean {
-    if (hasSearch) return true;
-    return this.expanded[key] === true;
-  }
-
-  private setExpanded(key: string, value: boolean): void {
-    this.expanded[key] = value;
-    this.saveState();
   }
 
   private buildUI(): HTMLElement {
@@ -287,6 +283,12 @@ export class FunctionBrowser {
 
   render(): void {
     this.treeContainer.innerHTML = '';
+    // The platform accordion: a keyed one restores/persists pane states itself.
+    // While a search is active every matching section is forced open — build an
+    // UNKEYED accordion then, so the forced states don't overwrite the user's.
+    const acc = ui.accordion(this.searchInput.value ? null : TOOLBOX_ACCORDION_KEY);
+    this.accordion = acc;
+    this.queriesAccordion = null;
 
     // DG function nodes — queries, widget-producers, and (already-excluded)
     // viewer functions don't appear here; they live in their dedicated panes.
@@ -294,28 +296,61 @@ export class FunctionBrowser {
       .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f)));
     const grouped = this.groupFunctions(funcs);
     const renderCategory = (category: string): void => {
-      let items = grouped[category];
-      if (!items || items.length === 0) return;
-      if (FunctionBrowser.DOMAIN_CATEGORIES.includes(category))
-        items = orderDomainSection(items, category);
-      this.treeContainer.appendChild(this.createCollapsibleSection(category, items));
+      const raw = grouped[category];
+      if (!raw || raw.length === 0) return;
+      const items = FunctionBrowser.DOMAIN_CATEGORIES.includes(category) ?
+        orderDomainSection(raw, category) : raw;
+      this.addSection(acc, category, () => {
+        const content = ui.div([], 'funcflow-section-content');
+        for (const info of items) content.appendChild(this.createFuncItem(info));
+        return content;
+      }, {count: items.length});
     };
 
-    // KNIME-style Files browser (open by default), then the Queries pane, then —
-    // right on top — the Cheminformatics / Bioinformatics domain sections (the
-    // science a chemist/biologist reaches for first). Viewers / Widgets panes,
-    // the building-block built-ins, and the remaining task categories follow.
-    this.renderFilesSection();
-    this.renderQueriesSection();
+    // Section order: Files, Queries, the Cheminformatics / Bioinformatics
+    // domain sections (the science a chemist/biologist reaches for first),
+    // the task categories (Data Sources → … → Compute Values), Viewers,
+    // Widgets, the building-block built-ins (Inputs / Outputs / Constants /
+    // Utilities), then the Other catch-all, and Debug last.
+    this.renderFilesSection(acc);
+    this.renderQueriesSection(acc);
     for (const domain of FunctionBrowser.DOMAIN_CATEGORIES) renderCategory(domain);
-
-    this.renderViewersSection();
-    this.renderWidgetsSection();
-    this.renderBuiltinNodes();
 
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped))
       .filter((k) => !FunctionBrowser.DOMAIN_CATEGORIES.includes(k));
-    for (const category of sortedKeys) renderCategory(category);
+    for (const category of sortedKeys.filter((k) => k !== 'Other')) renderCategory(category);
+
+    this.renderViewersSection(acc);
+    this.renderWidgetsSection(acc);
+    this.renderBuiltinNodes(acc, ['Inputs', 'Outputs', 'Constants', 'Utilities']);
+    if (sortedKeys.includes('Other')) renderCategory('Other');
+    this.renderBuiltinNodes(acc, ['Debug']);
+
+    acc.end();
+    this.treeContainer.appendChild(acc.root);
+  }
+
+  /** Adds one toolbox section as an accordion pane. Content builds lazily on
+   *  first expand; on a keyed accordion the remembered state wins over the
+   *  `expanded` default. While a search is active the pane is forced open (the
+   *  accordion is unkeyed then, so nothing persists). Pane headers keep the
+   *  `data-section` attribute and `ff-browser-section-<title>` test id the
+   *  guide and tests address sections by. */
+  private addSection(acc: DG.Accordion, title: string, getContent: () => HTMLElement, opts: {
+    expanded?: boolean; count?: number; tooltip?: string; tidParts?: Array<string | number>;
+  } = {}): DG.AccordionPane {
+    const pane = opts.count !== undefined ?
+      acc.addCountPane(title, getContent, () => opts.count!, opts.expanded ?? false, null, false) :
+      acc.addPane(title, getContent, opts.expanded ?? false, null, false);
+    if (this.searchInput.value) pane.expanded = true;
+    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    if (header) {
+      header.dataset.section = title;
+      setTid(header, 'browser-section', title);
+      if (opts.tooltip) ui.tooltip.bind(header, opts.tooltip);
+    }
+    if (opts.tidParts) setTid(pane.root, ...opts.tidParts);
+    return pane;
   }
 
   /** In "what it does" mode, order groups by the curated task sequence
@@ -327,35 +362,6 @@ export class FunctionBrowser {
       return i === -1 ? FUNC_CATEGORIES.length : i;
     };
     return keys.sort((a, b) => idx(a) - idx(b) || a.localeCompare(b));
-  }
-
-  /** A persisted, collapsible section wrapping arbitrary content (used by the
-   *  Files and Queries panes). `key` is the localStorage expand key; while a
-   *  search is active the section is forced open. */
-  private createSection(
-    title: string, content: HTMLElement, key: string, defaultExpanded: boolean, tip?: string,
-  ): HTMLElement {
-    const header = ui.div([], 'funcflow-section-header');
-    header.textContent = title;
-    header.style.cursor = 'pointer';
-    header.dataset.section = title;
-    setTid(header, 'browser-section', title);
-    if (tip) ui.tooltip.bind(header, tip);
-
-    const hasSearch = !!this.searchInput.value;
-    // Default state differs per pane (Files open, Queries closed) until the
-    // user toggles it; thereafter the remembered value wins.
-    const remembered = this.expanded[key];
-    let collapsed = hasSearch ? false : (remembered === undefined ? !defaultExpanded : !remembered);
-    content.style.display = collapsed ? 'none' : 'block';
-    header.classList.toggle('collapsed', collapsed);
-    header.addEventListener('click', () => {
-      collapsed = !collapsed;
-      content.style.display = collapsed ? 'none' : 'block';
-      header.classList.toggle('collapsed', collapsed);
-      if (!hasSearch) this.setExpanded(key, !collapsed);
-    });
-    return ui.divV([header, content]);
   }
 
   /** The KNIME-style Files browser — built once, reused across renders so its
@@ -371,16 +377,16 @@ export class FunctionBrowser {
     return this.filesTreeRoot;
   }
 
-  private renderFilesSection(): void {
-    const content = ui.div([this.getFilesTreeRoot()], 'funcflow-section-content');
-    const section = this.createSection(
-      'Files', content, 'b:Files', true,
-      'Browse data files. Double-click or drag a file onto the canvas to load it.');
-    setTid(section, 'browser-files');
-    this.treeContainer.appendChild(section);
+  private renderFilesSection(acc: DG.Accordion): void {
+    this.addSection(acc, 'Files',
+      () => ui.div([this.getFilesTreeRoot()], 'funcflow-section-content'), {
+        expanded: true,
+        tooltip: 'Browse data files. Double-click or drag a file onto the canvas to load it.',
+        tidParts: ['browser-files'],
+      });
   }
 
-  private renderQueriesSection(): void {
+  private renderQueriesSection(acc: DG.Accordion): void {
     // Group every registered query by its connection (friendlyName ?? name).
     const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
     const query = this.searchInput.value.toLowerCase();
@@ -395,74 +401,89 @@ export class FunctionBrowser {
       arr.push(f);
     }
 
-    const content = ui.div([], 'funcflow-section-content funcflow-subsections');
+    this.addSection(acc, 'Queries', () => this.buildQueriesContent(byConn), {
+      count: matching.length,
+      tooltip: 'Database queries, grouped by data connection. Double-click or drag to add.',
+      tidParts: ['browser-queries'],
+    });
+  }
+
+  /** The Queries pane content: a nested accordion with one pane per connection
+   *  (its own persistence key — pane names are the connection names). */
+  private buildQueriesContent(byConn: Map<string, FuncInfo[]>): HTMLElement {
+    const hasSearch = !!this.searchInput.value;
+    const inner = ui.accordion(hasSearch ? null : `${TOOLBOX_ACCORDION_KEY}.queries`);
+    this.queriesAccordion = inner;
     for (const conn of [...byConn.keys()].sort((a, b) => a.localeCompare(b))) {
       const items = byConn.get(conn)!;
       items.sort((a, b) => a.name.localeCompare(b.name));
-      const subContent = ui.div([], 'funcflow-section-content');
-      for (const info of items)
-        subContent.appendChild(this.createFuncItem(info));
-      const sub = this.createSection(
-        `${conn} (${items.length})`, subContent, `q:${conn}`, false,
-        `Queries from the “${conn}” connection`);
-      sub.classList.add('funcflow-subsection');
-      sub.dataset.queryConn = conn;
-      setTid(sub, 'browser-query-conn', conn);
-      content.appendChild(sub);
+      const pane = inner.addCountPane(conn, () => {
+        const subContent = ui.div([], 'funcflow-section-content');
+        for (const info of items)
+          subContent.appendChild(this.createFuncItem(info));
+        return subContent;
+      }, () => items.length, false, null, false);
+      if (hasSearch) pane.expanded = true;
+      pane.root.dataset.queryConn = conn;
+      setTid(pane.root, 'browser-query-conn', conn);
+      const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+      if (header) ui.tooltip.bind(header, `Queries from the “${conn}” connection`);
     }
-
-    const section = this.createSection(
-      'Queries', content, 'b:Queries', false,
-      'Database queries, grouped by data connection. Double-click or drag to add.');
-    setTid(section, 'browser-queries');
-    this.treeContainer.appendChild(section);
+    inner.end();
+    return ui.div([inner.root], 'funcflow-section-content funcflow-subsections');
   }
 
   /** The Viewers pane — manually-built viewer nodes (core charts first, then
    *  discovered package viewers). Each adds a `Viewers/<label>` node. */
-  private renderViewersSection(): void {
+  private renderViewersSection(acc: DG.Accordion): void {
     const query = this.searchInput.value.toLowerCase();
     const types = query ? VIEWER_NODE_TYPES.filter((v) => nameMatchesQuery(v.label, query)) : VIEWER_NODE_TYPES;
     if (types.length === 0) return;
 
-    const content = ui.div([], 'funcflow-section-content');
-    for (const vt of types) {
-      const item = ui.div([], 'funcflow-func-item');
-      item.textContent = vt.label;
-      item.dataset.testid = tid('browser-item', vt.nodeTypeName);
-      item.dataset.nodeTypeName = vt.nodeTypeName;
-      ui.tooltip.bind(item, `Add a ${vt.label} viewer. Wire a table in, then run. Double-click or drag.`);
-      item.addEventListener('dblclick', () => this.callbacks.onBuiltinNodeDoubleClick(vt.nodeTypeName));
-      this.makeItemDraggable(item, vt.nodeTypeName);
-      content.appendChild(item);
-    }
-    const section = this.createSection(
-      'Viewers', content, 'b:Viewers', false,
-      'Charts and viewers. Wire a table into one and run to see it in the preview panel.');
-    setTid(section, 'browser-viewers');
-    this.treeContainer.appendChild(section);
+    this.addSection(acc, 'Viewers', () => {
+      const content = ui.div([], 'funcflow-section-content');
+      for (const vt of types) {
+        const item = ui.div([], 'funcflow-func-item');
+        item.textContent = vt.label;
+        item.dataset.testid = tid('browser-item', vt.nodeTypeName);
+        item.dataset.nodeTypeName = vt.nodeTypeName;
+        ui.tooltip.bind(item, `Add a ${vt.label} viewer. Wire a table in, then run. Double-click or drag.`);
+        item.addEventListener('dblclick', () => this.callbacks.onBuiltinNodeDoubleClick(vt.nodeTypeName));
+        this.makeItemDraggable(item, vt.nodeTypeName);
+        content.appendChild(item);
+      }
+      return content;
+    }, {
+      count: types.length,
+      tooltip: 'Charts and viewers. Wire a table into one and run to see it in the preview panel.',
+      tidParts: ['browser-viewers'],
+    });
   }
 
   /** The Widgets pane — functions that produce a widget (info panels, search
    *  widgets, …), kept out of the categories. */
-  private renderWidgetsSection(): void {
+  private renderWidgetsSection(acc: DG.Accordion): void {
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
     const query = this.searchInput.value.toLowerCase();
     const matching = query ? widgets.filter((f) => funcMatchesSearch(f, query)) : widgets;
     if (matching.length === 0) return;
     matching.sort((a, b) => a.name.localeCompare(b.name));
 
-    const content = ui.div([], 'funcflow-section-content');
-    for (const info of matching)
-      content.appendChild(this.createFuncItem(info));
-    const section = this.createSection(
-      'Widgets', content, 'b:Widgets', false,
-      'Functions that produce a widget. Double-click or drag to add.');
-    setTid(section, 'browser-widgets');
-    this.treeContainer.appendChild(section);
+    this.addSection(acc, 'Widgets', () => {
+      const content = ui.div([], 'funcflow-section-content');
+      for (const info of matching)
+        content.appendChild(this.createFuncItem(info));
+      return content;
+    }, {
+      count: matching.length,
+      tooltip: 'Functions that produce a widget. Double-click or drag to add.',
+      tidParts: ['browser-widgets'],
+    });
   }
 
-  private renderBuiltinNodes(): void {
+  /** Renders the built-in node sections named in `titles` (lets the caller
+   *  interleave them with other panes — Debug goes last in the toolbox). */
+  private renderBuiltinNodes(acc: DG.Accordion, titles: string[]): void {
     const query = this.searchInput.value.toLowerCase();
 
     // Input nodes
@@ -511,66 +532,40 @@ export class FunctionBrowser {
     // All built-in sections start collapsed: they are building-blocks a scientist
     // reaches for deliberately, not the first thing to scan. The data-function
     // categories below (Data Sources first) are what's expanded-ready instead.
-    const sections: {title: string; nodes: {name: string; type: string; desc?: string}[]; collapsed?: boolean; tip?: string}[] = [
-      {title: 'Inputs', nodes: inputNodes, collapsed: true, tip: 'Script input parameters (become //input: lines)'},
-      {title: 'Outputs', nodes: outputNodes, collapsed: true, tip: 'Script output parameters (become //output: lines)'},
-      {title: 'Constants', nodes: constantNodes, collapsed: true, tip: 'Constant literal values'},
-      {title: 'Utilities', nodes: utilityNodes, collapsed: true, tip: 'Helper operations (logging, type conversion, etc.)'},
-      {title: 'Debug', nodes: debugNodes, collapsed: true, tip: 'Debugging and execution control nodes'},
+    const sections: {title: string; nodes: {name: string; type: string; desc?: string}[]; tip?: string}[] = [
+      {title: 'Inputs', nodes: inputNodes, tip: 'Script input parameters (become //input: lines)'},
+      {title: 'Outputs', nodes: outputNodes, tip: 'Script output parameters (become //output: lines)'},
+      {title: 'Constants', nodes: constantNodes, tip: 'Constant literal values'},
+      {title: 'Utilities', nodes: utilityNodes, tip: 'Helper operations (logging, type conversion, etc.)'},
+      {title: 'Debug', nodes: debugNodes, tip: 'Debugging and execution control nodes'},
     ];
 
-    for (const section of sections) {
+    for (const section of sections.filter((s) => titles.includes(s.title))) {
       const filtered = query ?
         section.nodes.filter((n) => nameMatchesQuery(n.name, query)) :
         section.nodes;
       if (filtered.length === 0) continue;
 
-      const sectionEl = this.createBuiltinSection(section.title, filtered, section.tip);
-      this.treeContainer.appendChild(sectionEl);
+      this.addSection(acc, section.title, () => {
+        const content = ui.div([], 'funcflow-section-content');
+        for (const node of filtered) {
+          const item = ui.div([], 'funcflow-func-item');
+          item.textContent = node.name;
+          item.dataset.testid = tid('browser-item', node.type);
+          item.dataset.nodeTypeName = node.type; // e.g. "Inputs/Table Input"
+          const tip = node.desc ?
+            `${node.desc}. Double-click or drag to add` :
+            `Double-click or drag to add ${node.name}`;
+          ui.tooltip.bind(item, tip);
+          item.addEventListener('dblclick', () => {
+            this.callbacks.onBuiltinNodeDoubleClick(node.type);
+          });
+          this.makeItemDraggable(item, node.type);
+          content.appendChild(item);
+        }
+        return content;
+      }, {tooltip: section.tip, count: filtered.length});
     }
-  }
-
-  private createBuiltinSection(title: string, nodes: {name: string; type: string; desc?: string}[], tooltip?: string): HTMLElement {
-    const header = ui.div([], 'funcflow-section-header');
-    header.textContent = title;
-    header.style.cursor = 'pointer';
-    header.dataset.section = title;
-    setTid(header, 'browser-section', title);
-    if (tooltip)
-      ui.tooltip.bind(header, tooltip);
-
-    const content = ui.div([], 'funcflow-section-content');
-    for (const node of nodes) {
-      const item = ui.div([], 'funcflow-func-item');
-      item.textContent = node.name;
-      item.dataset.testid = tid('browser-item', node.type);
-      item.dataset.nodeTypeName = node.type;   // e.g. "Inputs/Table Input"
-      const tip = node.desc ?
-        `${node.desc}. Double-click or drag to add` :
-        `Double-click or drag to add ${node.name}`;
-      ui.tooltip.bind(item, tip);
-      item.addEventListener('dblclick', () => {
-        this.callbacks.onBuiltinNodeDoubleClick(node.type);
-      });
-      this.makeItemDraggable(item, node.type);
-      content.appendChild(item);
-    }
-
-    const key = `b:${title}`;
-    const hasSearch = !!this.searchInput.value;
-    let collapsed = !this.isExpanded(key, hasSearch);
-    if (collapsed) {
-      content.style.display = 'none';
-      header.classList.add('collapsed');
-    }
-    header.addEventListener('click', () => {
-      collapsed = !collapsed;
-      content.style.display = collapsed ? 'none' : 'block';
-      header.classList.toggle('collapsed', collapsed);
-      if (!hasSearch) this.setExpanded(key, !collapsed); // remember explicit user toggles
-    });
-
-    return ui.divV([header, content]);
   }
 
   /** One draggable, double-clickable catalog row for a DG function. Shared by
@@ -591,33 +586,6 @@ export class FunctionBrowser {
     });
     this.makeItemDraggable(item, info.nodeTypeName);
     return item;
-  }
-
-  private createCollapsibleSection(category: string, items: FuncInfo[]): HTMLElement {
-    const header = ui.div([], 'funcflow-section-header');
-    header.textContent = `${category} (${items.length})`;
-    header.style.cursor = 'pointer';
-    header.dataset.section = category;
-    setTid(header, 'browser-section', category);
-
-    const content = ui.div([], 'funcflow-section-content');
-
-    for (const info of items)
-      content.appendChild(this.createFuncItem(info));
-
-    const key = `${this.groupBy}:${category}`;
-    const hasSearch = !!this.searchInput.value;
-    let collapsed = !this.isExpanded(key, hasSearch);
-    content.style.display = collapsed ? 'none' : 'block';
-    header.classList.toggle('collapsed', collapsed);
-    header.addEventListener('click', () => {
-      collapsed = !collapsed;
-      content.style.display = collapsed ? 'none' : 'block';
-      header.classList.toggle('collapsed', collapsed);
-      if (!hasSearch) this.setExpanded(key, !collapsed);
-    });
-
-    return ui.divV([header, content]);
   }
 
   /** Wire HTML5 drag on a browser item so dropping it on the canvas creates

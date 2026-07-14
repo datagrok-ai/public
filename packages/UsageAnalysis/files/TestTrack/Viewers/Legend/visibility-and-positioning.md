@@ -1,19 +1,6 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.visibility
-  - legend.position
-  - legend.column
-  - legend.item.click
-  - legend.item.cross-click
-  - legend.item.color-picker
-  - legend.allow-item-coloring
-  - legend.splitter-resize
-  - legend.mini-icon
-  - legend.auto-show
-  - legend.auto-position
-  - legend.show-nulls
-  - legend.corner.collapse
+realizes: []
 target_layer: playwright
 coverage_type: smoke
 priority: p0
@@ -36,6 +23,10 @@ related_bugs:
   - GROK-19083
   - GROK-19041
 ---
+
+# Legend — visibility, position, and core interactions
+
+Smoke-tests the standard legend UI that every viewer shares: showing/hiding, positioning (including Auto and the four corner positions), resizing via the splitter, filtering by clicking a legend item (including exclude-via-cross-icon), the per-category color picker, the "(no value)" swatch for empty values, mini-legend mode, and persistence of all of this across layout and project reloads. Other Legend scenarios in this section delegate these standard flows here instead of repeating them.
 
 ## Setup
 
@@ -72,7 +63,7 @@ related_bugs:
 
 ### 4. Filter rows via legend item click and cross-icon exclusion
 
-1. Ctrl+click the `R_ONE` category in the Scatter plot legend (or call `sp.legend.toggle('R_ONE')` if the JS API exposes it — see Unresolved ambiguities)
+1. Ctrl+click the `R_ONE` category in the Scatter plot legend (or call `sp.legend.toggle('R_ONE')` if the JS API exposes it)
 2. Verify only `R_ONE` rows remain visible in the dataframe
 3. Click the **X** icon on the `R_ONE` swatch to exclude it from the filter instead
 4. Verify `R_ONE` is now excluded and the remaining categories are visible
@@ -124,7 +115,7 @@ related_bugs:
 2. Verify the legend renders in the left-top corner
 3. Repeat for `LeftBottom`, `RightTop`, `RightBottom`
 4. Verify each corner position renders correctly
-5. Enable mini-legend mode (`viewer.props.miniLegend = true`) on a deterministic subset of viewers (see Unresolved ambiguities for subset selection)
+5. Enable mini-legend mode (`viewer.props.miniLegend = true`) on a deterministic subset of viewers
 6. Verify the mini variant is more compact than the full legend
 7. Save the layout, re-apply it
 8. Verify corner position and mini-legend mode both persist
@@ -138,10 +129,9 @@ related_bugs:
 
 ## Notes
 
-- Section's UI smoke per chain `pyramid_layer: ui-smoke` (revision 1, 2026-05-07). All other Legend scenarios delegate standard UI flows to this one.
-- Cross-cutting bug specs proposed in chain `bug_focused_candidates[]` (5 entries) cover bug invariants spanning multiple scenarios. This smoke does NOT replace those bug-focused specs — see `legend-grok-17438-spec.ts`, `legend-grok-17222-spec.ts`, `legend-github-3132-spec.ts`, `legend-grok-17278-spec.ts`, `legend-grok-19083-spec.ts` (downstream Automator output).
-- Helpers used: `loginToDatagrok`, `specTestOptions`, `softStep`, `stepErrors` from `spec-login` (registered in `helpers-registry.yaml`). No new helpers proposed for this scenario.
-- Legend resize handle (Scenario 3) and color picker dialog (Scenario 5) require Playwright UI driving — not substitutable with JS API per `pyramid_layer: ui-smoke` constraint.
+- This is the section's UI smoke test — all other Legend scenarios delegate the standard visibility/position/color-picker/splitter flows here instead of repeating them.
+- Several bugs found in this area have their own dedicated repro specs and are not re-verified here: `legend-grok-17438-spec.ts`, `legend-grok-17222-spec.ts`, `legend-github-3132-spec.ts`, `legend-grok-17278-spec.ts`, `legend-grok-19083-spec.ts`.
+- The legend resize handle (Scenario 3) and the color picker dialog (Scenario 5) need real UI interaction and can't be substituted with JS API calls.
 
 ---
 {

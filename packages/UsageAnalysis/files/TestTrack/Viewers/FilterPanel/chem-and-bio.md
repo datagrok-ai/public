@@ -1,4 +1,15 @@
-#### Сhem filter
+---
+feature: filters
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - chem-and-bio-spec.ts
+related_bugs: []
+---
+
+#### Chem filter
 
 1. Open **spgi-100** 
 2. Open the Filter Panel

@@ -1,11 +1,9 @@
 ---
 feature: dendrogram
-sub_features_covered:
-  - dendrogram.api.get-tree-helper
-  - dendrogram.api.get-dendrogram-service
-  - dendrogram.api.dendrogram-service.inject-tree-for-grid
 target_layer: apitest
 coverage_type: smoke
+priority: p1
+realizes: [dendrogram.cross.tree-helper-cross-package]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
@@ -13,7 +11,7 @@ candidate_helpers: []
 unresolved_ambiguities: []
 scope_reductions: []
 realized_as:
-  - dendrogram-tree-helper-cross-package-api.ts
+  - dendrogram-tree-helper-cross-package-api-spec.ts
 gate_verdicts:
   e:
     verdict: PASS
@@ -25,7 +23,7 @@ gate_verdicts:
     cycle_id: 2026-06-03-dendrogram-automate-02
     timestamp: 2026-06-03T20:30:00Z
     spec_runs:
-      - spec: dendrogram-tree-helper-cross-package-api.ts
+      - spec: dendrogram-tree-helper-cross-package-api-spec.ts
         result: passed
         attempts: 3
         duration_seconds: 16
@@ -34,32 +32,22 @@ gate_verdicts:
 
 # Dendrogram — Cross-package TreeHelper / DendrogramService consumption
 
-Realizes atlas top-level interaction `dendrogram.cross.tree-helper-cross-package`
-(`coverage_type: smoke`,
-`sub_features: [dendrogram.api.get-tree-helper, dendrogram.api.get-dendrogram-service,
-dendrogram.api.dendrogram-service.inject-tree-for-grid]`).
-
 Three public package functions are exercised end-to-end as the
 cross-package consumption contract that Bio, BiostructureViewer,
 HitTriage, and Peptides rely on:
 
 - `getTreeHelper` — returns an `ITreeHelper` instance (the package's
   `TreeHelper`), invoked through
-  `grok.functions.call('Dendrogram:getTreeHelper')`
-  (`public/packages/Dendrogram/src/package.ts#L69`).
+  `grok.functions.call('Dendrogram:getTreeHelper')`.
 - `getDendrogramService` — returns an `IDendrogramService`, invoked
-  through `grok.functions.call('Dendrogram:getDendrogramService')`
-  (`public/packages/Dendrogram/src/package.ts#L83`); the implementation
-  caches the instance under `window.$dendrogramService` so the same
-  singleton is reused across consumer plugins
-  (`public/packages/Dendrogram/src/package.ts#L84`).
-- `DendrogramService.injectTreeForGrid` — the thin facade over
-  `injectTreeForGridUI2` that consumer plugins call to attach a
-  dendrogram tree as a grid neighbor
-  (`public/packages/Dendrogram/src/utils/dendrogram-service.ts#L10`);
-  the attached neighbor surfaces the `.dendrogram-assign-clusters-bttn`
-  magic-wand icon
-  (`public/packages/Dendrogram/src/viewers/inject-tree-for-grid2.ts#L74`).
+  through `grok.functions.call('Dendrogram:getDendrogramService')`;
+  the implementation caches the instance under
+  `window.$dendrogramService` so the same singleton is reused across
+  consumer plugins.
+- `DendrogramService.injectTreeForGrid` — the facade that consumer
+  plugins call to attach a dendrogram tree as a grid neighbor; the
+  attached neighbor surfaces the `.dendrogram-assign-clusters-bttn`
+  magic-wand icon.
 
 Scenario 1 is the smoke happy-path through all three functions on a
 small synthetic DataFrame + 4-leaf tree, ending in a grid-neighbor
@@ -152,26 +140,14 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: `apitest`. The three sub_features are all
-  exposed as `grok.functions.call('Dendrogram:<fn>')` entry points
-  (Pattern 7 — js-api-method) with no UI surface of their own; the
-  one DOM observable used in Scenario 1 (the magic-wand icon) is
+- The one DOM observable used in Scenario 1 (the magic-wand icon) is
   asserted as a single-anchor check, not a UI flow. The UI flow that
   follows from `injectTreeForGrid` — the Assign Clusters dialog,
   Ctrl+wheel zoom, double-click reset — is already owned by
-  `assign-clusters.md` and is intentionally NOT re-asserted here.
-- coverage_type rationale: `smoke`. Atlas top-level interaction
-  `dendrogram.cross.tree-helper-cross-package` declares
-  `coverage_type: smoke`; per the canonical rule for top-level
-  `interactions[]` entries, the scenario inherits that value
-  verbatim. (The Gate F coverage-extension dispatch suggested
-  `regression`; the atlas interaction entry is canonical and wins.)
-- Deferrals: none. The three sub_features map cleanly to apitest
-  assertions; no UI-layer or manual-only path is split off.
+  `assign-clusters.md` and isn't re-asserted here.
 - See: `public/packages/Dendrogram/src/package.ts#L69` (getTreeHelper).
 - See: `public/packages/Dendrogram/src/package.ts#L83` (getDendrogramService).
 - See: `public/packages/Dendrogram/src/utils/dendrogram-service.ts#L10`
   (DendrogramService.injectTreeForGrid).
 - See: `.claude/skills/grok-browser/references/dendrogram.md`
-  `## tree-helper-cross-package` (apitest-layer reference; no DOM
-  observable beyond what assign-clusters-dialog already covers).
+  `## tree-helper-cross-package`.

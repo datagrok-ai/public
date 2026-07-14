@@ -1,19 +1,57 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.panel.structure-3d
-  - biostructure.panel.pdb-file-info
-  - biostructure.panel.pdb-info
-  - biostructure.panel.prolif
-  - biostructure.panel.link-molecule-column
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [biostructure-prolif-cross-cell-type]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
 candidate_helpers: []
 unresolved_ambiguities: []
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Scenario 1's `non-blank canvas` pixel-content Expected bullet is NOT
+      pixel-asserted because the recon environment fails to create a WebGL
+      rendering context (Mol* logs "Could not create a WebGL rendering
+      context" — same pattern as sibling biostructure-viewer /
+      property-surface / ngl-viewer specs). Structural mount IS asserted:
+      `.bsv-container-info-panel` present + data-source `Biostructure
+      Viewer:3D Structure` exact + accordion aria-expanded flips on header
+      click.
+    verdict_status: SCOPE_REDUCTION
+  - id: SR-02
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Scenario 4 Path B (Molecule3D + isAutoDockPose -> dockingInteractions
+      Widget) is deferred per the scenario Deferral note: the fixture corpus
+      has no AutoDock pose Molecule3D row, and synthesizing one requires a
+      co-installed Docking package + receptor AppData under
+      System:AppData/Docking/targets/. The spec asserts the registration's
+      existence at the DG.Func.find surface (the isAutoDockPose condition
+      predicate), capturing the three-condition-gated registration invariant.
+    verdict_status: SCOPE_REDUCTION
+  - id: SR-03
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Scenario 1's re-mount sub-step is asserted at the JS-API panel-function
+      re-invocation level (a fresh structure3D widget for a different cell
+      value yields a fresh widget root) rather than at the live-DOM accordion
+      re-render level — re-mount is WebGL-uncertain in the recon environment,
+      same root cause as SR-01.
+    verdict_status: SCOPE_REDUCTION
+  - id: SR-04
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Scenario 5's "selecting a SMILES column in the picker updates the
+      widget's internal state" Expected bullet is asserted at the
+      picker-structure level (input-host-SMILES-column present + select
+      options filtered to the Molecule semType column `ligand`) rather than
+      via a UI selection event, per the scenario's Scenario 5 note scoping the
+      test to the direct JS-API call surface (the contract).
+    verdict_status: SCOPE_REDUCTION
 realized_as:
   - context-panel-widgets-extension-spec.ts
 gate_verdicts:
@@ -60,8 +98,6 @@ gate_verdicts:
     cycle_id: 2026-06-04-biostructureviewer-migrate-02
     timestamp: 2026-06-04T16:30:00Z
     failure_keys: []
-    scope_reduction_proposal: |-
-      Accept four documented scope reductions, each grounded in a real technical limitation cited in the scenario .md or by established sibling-spec precedent. (SR-01) Scenario 1's `non-blank canvas` pixel-content Expected bullet is NOT pixel-asserted because the dev recon environment fails to create a WebGL rendering context (Mol* engine logs `Could not create a WebGL rendering context` — same pattern as sibling biostructure-viewer-spec.ts / property-surface-extension-spec.ts SR-01 / ngl-viewer-extension-spec.ts SR-04). Structural mount IS deterministically asserted: `.bsv-container-info-panel` container class present + data-source=`Biostructure Viewer:3D Structure` exact + accordion-pane aria-expanded flips false to true on header click. (SR-02) Scenario 4 Path B (Molecule3D + isAutoDockPose -> dockingInteractionsWidget) is deferred per the scenario .md explicit Deferral note: the fixture corpus has no AutoDock pose Molecule3D row, and synthesizing one requires a co-installed Docking package + receptor AppData files under System:AppData/Docking/targets/ — a real cross-package technical dependency. The spec asserts the registration's existence at the DG.Func.find function-registry surface (panel decorator processed at package load), capturing the bug-invariant of `three condition-gated registrations under the same panel name` via the isAutoDockPose condition predicate string match. (SR-03) Scenario 1's re-mount sub-step is asserted at the JS-API panel-function re-invocation level (a fresh structure3D widget produced for a different cell value yields a fresh widget root) rather than at the live-DOM accordion re-render level — re-mount is WebGL-uncertain in the recon environment, same root cause as SR-01. (SR-04) Scenario 5's `Selecting a SMILES column in the picker updates the widget's internal state` Expected bullet is asserted at the picker-structure level (input-host-SMILES-column present + select options filtered to Molecule semType column `ligand`) rather than via a UI selection event, per the scenario .md Scenario 5 IMPORTANT note that explicitly scopes the test to `the direct JS-API call surface (the contract)`. All four SRs preserve the structural bug-invariant of the respective sub_features. Structural mechanics: E-STRUCT-MECH-01..06 all PASS (file exists; valid TS; one test() block; test name + softStep names traceable to scenario headings; imports from @playwright/test and the sibling `../spec-login` helper module; leading /* --- sub_features_covered: [...] --- */ block lists 5 ids all resolving to atlas sub_features[].id). Content checks: traceability is clean (each of 5 scenarios maps to >=1 softStep with deterministic expect() verifications); selector discipline (every locator [name="div-section--3D-Structure"], [name="div-section--PDB-Information"], [name="div-section--Protein-Ligand-Interactions"], [name="pane-3D-Structure"], [name="pane-PDB-Information"], [name="pane-PDB-id-viewer"], [name="pane-Protein-Ligand-Interactions"], [name="input-host-SMILES-column"], [name="Browse"]) is documented in the leading class-2 recon-notes block with live-MCP-observed-date 2026-06-04 on dev.datagrok.ai including the surface they belong to and how they were reached; helpers loginToDatagrok and softStep are registered, specTestOptions and stepErrors are sibling-module exports from `../spec-login` (co-located with the registered helpers, not reinventions); E-LAYER-COMPLIANCE-01 is satisfied (target_layer: playwright with >=1 DOM-driving call: [name="Browse"] waitFor + three accordion-pane header clicks for Scenarios 1/2/3/4); E-BOUND-01/02 clean (only writes under public/packages/UsageAnalysis/files/TestTrack/BiostructureViewer/). Gate B awareness: scenario carries gate_verdicts.b.verdict: FAIL same-cycle with failure_keys [B-RUN-PASS, B-STAB-01], placing this in retry context per the spec-mode §`Gate B awareness on retry context` rule. The block carries no `flake_evidence[]` payload, so Critic E cannot identify a specific code path Validator FAILed on that the new spec retains; the new spec body shows substantive work addressing assertable structural invariants over WebGL-uncertain pixel assertions (the four documented SRs), defensible JS-API fallbacks for re-mount uncertainty (SR-03), a function-registry probe with the precise condition predicate match for Path B (SR-02), and a bounded fetchProxy wait window for Path C — these are good-faith engineering changes to the test surface, not cosmetic edits. E-RETRY-IGNORES-GATE-B does NOT fire (per mode: `Critic E should NOT enforce convergence — that is Validator's job at Gate B on the next run`).
   b:
     verdict: PASS
     cycle_id: 2026-06-04-biostructureviewer-migrate-02
@@ -76,30 +112,21 @@ gate_verdicts:
 
 # BiostructureViewer — Context-panel widgets extension (3D Structure / PDB Information / PDB id viewer / ProLIF / Link With Molecule Column)
 
-Coverage-extension scenario authored under cycle
-`2026-06-04-biostructureviewer-migrate-01` Gate F SR routing. Extends the
-section beyond the Mol*-centric smoke, the five bug-focused regression guards,
-the NGL-viewer breadth extension, and the Property-surface + edge extension to
-the **context-panel widget family** that surfaces under the right-hand context
-panel when the current cell has `semType=Molecule3D` or `semType=PDB_ID`. Five
-panel widgets register against these semTypes:
+Covers the right-hand context panel widgets that appear when the current
+grid cell has semantic type `Molecule3D` or `PDB_ID`, extending beyond the
+main smoke test and the bug-focused regression guards. Five panel widgets
+are exercised:
 
-- `3D Structure` (Molecule3D) — inline Mol* render via `PdbGridCellRendererBack`
-- `PDB Information` (Molecule3D) — header / file info derived from the PDB string
-- `PDB Information` (PDB_ID) — async metadata assembled via `pdbInfoWidget(pdbId)`
-- `Protein-Ligand Interactions` (ProLIF) — three registrations gated by condition:
-  Molecule3D + hasNonWaterHetatm, Molecule3D + isAutoDockPose (Docking-flavour
-  with receptor pre-fetch), PDB_ID (fetches PDB via `dapi.fetchProxy` from RCSB)
-- `Link With Molecule Column` — cross-package function-widget exposed for
-  Docking's AutoDock info panel to inject a "Link SMILES column" checkbox
-
-All 5 sub_features below have a non-empty net-new contribution against the
-live covered-union of 40 (none of `panel.structure-3d`, `panel.pdb-file-info`,
-`panel.pdb-info`, `panel.prolif`, `panel.link-molecule-column` appears in any
-of the section's eight prior scenarios' `sub_features_covered:` lists —
-verified against the chain `gate_f_verdict.gaps[sub-feature-coverage-gap]`
-listing). `round_net_new = +5`; the section's projected covered-union climbs
-from 40 → 45 after this scenario lands.
+- `3D Structure` (Molecule3D) — inline Mol\* render of the structure.
+- `PDB Information` (Molecule3D) — header / file info derived from the PDB
+  string.
+- `PDB Information` (PDB_ID) — async metadata fetched for the PDB ID.
+- `Protein-Ligand Interactions` (ProLIF) — renders differently depending on
+  the cell: a ligand-bound Molecule3D structure, an AutoDock pose, or a
+  PDB_ID (fetched from RCSB).
+- `Link With Molecule Column` — a cross-package widget that lets the
+  Docking package's AutoDock info panel inject a "Link SMILES column"
+  checkbox.
 
 ## Setup
 
@@ -125,8 +152,6 @@ from 40 → 45 after this scenario lands.
 ## Scenarios
 
 ### Scenario 1: `3D Structure` panel — inline Mol* render for a Molecule3D cell
-
-Exercises `biostructure.panel.structure-3d`.
 
 Steps:
 1. Open the prepared DataFrame from Setup step 3.
@@ -157,8 +182,6 @@ Expected:
 
 ### Scenario 2: `PDB Information` panel on a Molecule3D cell — header from PDB string
 
-Exercises `biostructure.panel.pdb-file-info`.
-
 Steps:
 1. From the prepared DataFrame, click any Molecule3D cell.
 2. In the right context panel, locate the `PDB Information` section.
@@ -182,8 +205,6 @@ Expected:
   position relative to the current cell semType, not by name match.
 
 ### Scenario 3: `PDB Information` panel on a PDB_ID cell — async `pdbInfoWidget`
-
-Exercises `biostructure.panel.pdb-info`.
 
 Steps:
 1. From the prepared DataFrame, click a cell in the PDB_ID column (e.g. the
@@ -211,10 +232,9 @@ Expected:
 
 ### Scenario 4: `Protein-Ligand Interactions` (ProLIF) — three condition-gated registrations resolve per cell type
 
-Exercises `biostructure.panel.prolif`. This widget has three registrations
-under the same panel name, each gated by a `condition:` expression on the
-input param. The scenario exercises all three resolution paths from the
-single panel name.
+This widget has three registrations under the same panel name, each gated
+by a condition on the current cell. The scenario exercises all three
+resolution paths from the single panel name.
 
 Steps:
 1. From the prepared DataFrame, click a Molecule3D cell whose PDB string
@@ -268,12 +288,10 @@ synthesize an AutoDock pose ad-hoc inside the BiostructureViewer corpus.
 
 ### Scenario 5: `Link With Molecule Column` — cross-package widget injection
 
-Exercises `biostructure.panel.link-molecule-column`. This is a function-widget
-exposed via `@grok.decorators.func({name: 'Link With Molecule Column'})` at
-the BiostructureViewer package level so that the Docking package's AutoDock
-info panel can inject a "Link SMILES column" checkbox at the bottom of its
-own widget (instead of creating a second top-level panel section with the
-same name).
+This is a function-widget exposed at the BiostructureViewer package level
+so that the Docking package's AutoDock info panel can inject a "Link SMILES
+column" checkbox at the bottom of its own widget (instead of creating a
+second top-level panel section with the same name).
 
 Steps:
 1. Open the prepared DataFrame (Setup step 3) which carries both a
@@ -308,62 +326,13 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale**: All five scenarios are UI-driven — they
-  exercise the right-hand context panel (Scenarios 1–4) and DOM-attached
-  widget shapes (Scenario 5). Scenario 1 needs the browser's WebGL surface
-  for the inline Mol* canvas. Scenario 4's three registration paths are
-  condition-gated by `BiostructureViewer:hasNonWaterHetatm` /
-  `BiostructureViewer:isAutoDockPose` at panel-resolution time — that
-  resolution lives on the panel host, not in JS-API space. Scenario 5 is
-  the only one with a pure-JS-API callable shape, but its assertion is
-  "the returned widget renders a SMILES picker" — a DOM assertion. Hence
-  `target_layer: playwright`.
-- **coverage_type rationale**: `regression`. The scenarios are general
-  coverage of the context-panel widget surface; they do not map onto any
-  of the atlas's 7 `edge_cases[]` entries (which are bug-anchored to the
-  Mol* / file-handler / project-persistence surfaces or to the two
-  documentation pitfalls — raw `pdb` prop without name, async-render
-  await). They are not a critical_path / golden path (no `priority: p0`
-  mapping; the section's existing smoke at `biostructure-viewer.md`
-  already covers the canonical Mol* + Bio top-menu surfaces), so `smoke`
-  is inappropriate. They are not boundary-value or atlas-edge_case, so
-  `edge` is inappropriate. They are not stress / latency-sensitive, so
-  `perf` is inappropriate. `regression` is the STEP E heuristic default
-  for general coverage of a thematic feature surface.
-- **Bug coverage**: `related_bugs: []`. Gate F's F-BUG-COVERAGE-01 has
-  already closed in this cycle (all 5 known bugs are realized as
-  bug-focused scenarios under the section). This is a pure
-  breadth-extension scenario; no bug-library entry overlaps the five
-  panel sub_features above.
-- **net_new**: Against `live_covered_union` (40 ids) and atlas
-  `manual_only[]` (empty), all 5 listed sub_features are net-new — none
-  appears in any of the section's eight prior scenarios'
-  `sub_features_covered:` lists. `round_net_new = +5`. The STEP C
-  net-new refusal is satisfied (the breadth-loop progress bound holds:
-  covered_union 40 → 45 strictly rises by 5).
-- **breadth-loop residual**: After this scenario, the section's
-  covered-union projects to 45/67 = 67.2%, still under the 70% threshold.
-  Remaining high-yield candidates per the chain
-  `gate_f_verdict.gaps[sub-feature-coverage-gap]`: Biotrack +2
-  (`biostructure.biotrack-viewer` + `.props`), Grid context-menu
-  extension +1 (`biostructure.grid-context-menu.open-pdb-residues`),
-  File-preview Mol* +4 (`file-preview` +
-  `file-preview.molstar-structure` + `file-preview.molstar-topology` +
-  `file-preview.molstar-density`), File-open extension +1
-  (`file-open.importXYZ`), Mol* overlay extension +4
-  (`overlay.screenshot` + `overlay.toggle-controls` +
-  `overlay.selection-mode` + `overlay.settings-info`), Data-provider
-  extension +2 (`data-provider.rcsb-pdb` + `data-provider.rcsb-bcif`),
-  JS API extension +2 (`api.viewPdbById` + `api.viewPdbByData`),
-  `cell-renderer.pdb-id` +1. Cumulative residual net-new after this
-  scenario lands: +17. Coverage projects to (45+17)/67 = 92.5% — well
-  above the 70% threshold. Next breadth round can keep sequencing
-  these.
-- **Atlas citations**:
+- Scenario 4's three ProLIF registrations resolve to different widgets
+  depending on the current cell (a ligand-bound structure, an AutoDock
+  pose, or a PDB_ID) — the condition gating on the cell is the load-bearing
+  behavior under test.
+- Source citations:
   - See: .claude/skills/grok-browser/references/viewers/biostructureviewer.md#L160
-    (universal-refdoc Context-Panel Info Panels section; resolved via
-    atlas `ui_reference_doc:` since the path lives off the default
-    convention under `viewers/`).
+    (Context-Panel Info Panels reference).
   - See: public/packages/BiostructureViewer/src/package.ts#L854 —
     `structure3D` (`3D Structure` panel registration for Molecule3D).
   - See: public/packages/BiostructureViewer/src/package.ts#L878 —

@@ -1,10 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.manage.libraries-view
-  - bio.detector
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [bio.cp.manage-monomer-libraries]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/manage.md
 migration_date: 2026-05-31
@@ -18,7 +17,15 @@ realized_as:
   - manage-spec.ts
 unresolved_ambiguities:
   - ui-smoke-rule-1-trigger-fit-poor
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      Full library CRUD (upload library JSON -> edit metadata -> delete ->
+      AppData reflects) is out of scope for this scenario; it is delegated to
+      the sibling scenario `bio-manage-libraries-crud.md`. This scenario
+      covers the management/smoke surface only.
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 gate_verdicts:
   d:
@@ -54,23 +61,20 @@ gate_verdicts:
         failure_keys: []
 ---
 
-# Bio | Manage | Monomer Libraries — ui-smoke
+# Bio | Manage | Monomer Libraries — open view & toggle library checkboxes
 
-Single-action ui-smoke for the `Bio | Manage | Monomer Libraries`
-top-menu (atlas `bio.manage.libraries-view`,
-`manageLibrariesView` — `package.ts#L1359`). Opens a HELM dataset so
-the Macromolecule detector wires the sequence column, then dispatches
-the top-menu to surface the `Manage Monomer Libraries` View; verifies
-the per-library checkbox listing and that each library checkbox
-toggles independently.
+A quick smoke check of the **Bio | Manage | Monomer Libraries**
+top-menu. Opens a HELM dataset so the Macromolecule detector wires
+the sequence column, then dispatches the top-menu to open the
+**Manage Monomer Libraries** view; verifies the per-library checkbox
+listing and that each library checkbox toggles independently.
 
 ## Setup
 
 Dataset: `System.AppData/Bio/tests/filter_HELM.csv` (canonical HELM
-fixture per chain analyzer for this section). The dataset is opened so
-the Macromolecule detector (atlas `bio.detector`) classifies the
-sequence column synchronously — required to exercise the Bio context
-on the active table view.
+fixture for this section). The dataset is opened so the Macromolecule
+detector classifies the sequence column synchronously — required to
+exercise the Bio context on the active table view.
 
 The library set is **server-state dependent**: assert structure
 (per-library checkbox host present, Search box present, checkbox is
@@ -89,10 +93,10 @@ this count is not load-bearing on the assertion.
 
 2. On the menu ribbon, go to **Bio** > **Manage** > **Monomer
    Libraries**. A **View** named `Manage Monomer Libraries`
-   opens (`grok.shell.v.type === 'view'`, root `.ui-panel.grok-view`;
-   atlas `bio.manage.libraries-view`). Verify the View opens with the
-   `Manage Monomer Libraries` section header and the `Manage Duplicate
-   Monomer Symbols` section header present.
+   opens (`grok.shell.v.type === 'view'`, root `.ui-panel.grok-view`).
+   Verify the View opens with the `Manage Monomer Libraries` section
+   header and the `Manage Duplicate Monomer Symbols` section header
+   present.
 
 ### Scenario 2 — Verify per-library checkbox listing and toggle
 
@@ -112,50 +116,9 @@ this count is not load-bearing on the assertion.
 
 ## Notes
 
-- **Source-text fixes silently applied** during migration:
-  - The original step 2 said "A dialog opens" — corrected to "A
-    **View** ... opens". Per recon (`bio.md:223`,
-    MCP-validated against Bio 2.27.9), the live build opens a full
-    View (`grok.shell.v.type === 'view'`, root
-    `.ui-panel.grok-view`), not a `.d4-dialog`. The dialog form
-    `manageMonomerLibraries` (atlas `bio.manage.libraries-dialog`,
-    `package.ts#L1351`) is a separate, non-top-menu function and is
-    NOT what `Bio | Manage | Monomer Libraries` dispatches.
-  - Original step 3 contained the typo "it's checkboxes" — corrected
-    to "its checkboxes" (possessive, not contraction). Step also
-    expanded from "check dialog output and it's checkboxes
-    functionality" into the structured Scenario 2 above so the
-    assertion surface is decidable.
-- **Sub-features covered:**
-  - `bio.manage.libraries-view` (atlas L680) — primary surface
-    (`Bio | Manage | Monomer Libraries` top-menu →
-    `manageLibrariesView`).
-  - `bio.detector` (atlas L122) — touched in setup (Macromolecule
-    classification of the HELM sequence column on dataset open).
-- **No `related_bugs`:** `bug-library/bio.yaml` curated bugs all
-  affect analyze / search / rendering / transform surfaces; none
-  intersect `bio.manage.*`. Confirmed by chain-analyzer skip
-  decisions (`bio.yaml`, chain `bug_match_attempts_skipped` block).
-- **Helper coverage:** `bio.flow.monomer-libraries` already
-  registered in `helpers-registry.yaml:243` →
-  `.claude/skills/grok-browser/references/bio.md:223`. No new
-  candidate helpers proposed.
-- **See atlas** `bio.cp.manage-monomer-libraries` (p1) and
-  `bio.cp.monomer-library-crud` (p1) for the broader critical-path
-  framing; this scenario is the entry-point ui-smoke. Full CRUD
-  (upload library JSON → edit metadata → delete → AppData reflects)
-  is out of scope for this 3-step ui-smoke.
-- **Unresolved ambiguity** (carried in frontmatter
-  `unresolved_ambiguities`): chain analyzer noted that this section
-  ui-smoke selection is a poor fit for Rule 1's canonical trigger
-  ("create + share + delete a single feature-entity"); manage.md is
-  the shortest non-bug/non-matrix/non-integration scenario in the
-  Bio section but its surface is dialog/view affordance rather than
-  entity lifecycle. Operator may want to author a dedicated
-  `bio-ui-smoke.md` seeded by the smoke-eligible p0 critical paths
-  (`bio.cp.detect-open-fasta`, `bio.cp.detect-open-helm`,
-  `bio.cp.bio-service-surface-init`, etc.). Flagged here so Critic F
-  coverage-mode picks up the gap.
+- Full CRUD (upload library JSON → edit metadata → delete → AppData
+  reflects) is out of scope here — covered by
+  `bio-manage-libraries-crud.md`.
 
 ---
 {

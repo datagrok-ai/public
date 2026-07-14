@@ -1,5 +1,21 @@
+---
+feature: sharing
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: [cp-share-via-context-menu]
+realized_as:
+  - sharing-smoke-spec.ts
+related_bugs: []
+---
+
 
 # Sharing — UI Smoke (Single-Actor)
+
+Basic smoke check of the sharing UI entry points, using only a single logged-in
+session (no second recipient account needed): opening the Share dialog from the
+context menu and from the Context Panel's Sharing pane, canceling out of it without
+side effects, and navigating to the Advanced editor's permission matrix.
 
 ## Setup
 
@@ -11,13 +27,12 @@
 
 ## Scenarios
 
-### Scenario 1: Open Share dialog via context menu (pcmdShare)
+### Scenario 1: Open Share dialog via context menu
 
 Steps:
 1. In the Browse gallery, right-click an entity card owned by the tester (e.g. a project
    or TableInfo in Browse > Platform > Tables).
-2. In the context menu, click the **Share...** item (DOM: `[name="div-Share..."]`,
-   flow-id: `pcmdShare`).
+2. In the context menu, click the **Share...** item.
 3. Observe the Share dialog opens.
 
 Expected:
@@ -29,9 +44,7 @@ Expected:
   - A notification message textarea and "Send notifications" checkbox.
   - OK and CANCEL buttons.
 
-# atlas entry derived from source: core/client/xamgle/lib/src/commands/file/share_dataset.dart#L7
-
-### Scenario 2: Share dialog — add and cancel (flow-open-share-dialog)
+### Scenario 2: Share dialog — add and cancel
 
 Steps:
 1. Open the Share dialog from the context menu as in Scenario 1.
@@ -47,7 +60,7 @@ Expected:
 - The entity's permission state remains unchanged (verifiable via
   `grok.dapi.permissions.get(entity)`).
 
-### Scenario 3: Context panel Sharing pane (flow-sharing-context-panel)
+### Scenario 3: Context panel Sharing pane
 
 Steps:
 1. Open an entity in the main view so it becomes the current object (e.g. open the
@@ -63,9 +76,7 @@ Expected:
 - Clicking SHARE... opens the Share dialog for the current entity (same modal as
   Scenario 1).
 
-# atlas entry derived from source: core/shared/grok_shared/lib/src/http_client/privileges_client.dart#L51
-
-### Scenario 4: Navigate to Advanced editor (flow-advanced-editor)
+### Scenario 4: Navigate to Advanced editor
 
 Steps:
 1. Open the Share dialog for any owned entity as in Scenario 1.
@@ -80,5 +91,3 @@ Expected:
 - The permission matrix renders rows for each current grantee and the standard
   Common permission columns (View, Edit, Delete, Share).
 - Navigating away without clicking SAVE does not alter permissions.
-
-# atlas entry derived from source: core/client/xamgle/lib/src/features/users/permissions_browser.dart#L403

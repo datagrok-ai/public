@@ -7,7 +7,9 @@ import {getGroups} from './experiment-setup';
 
 /** Generates a random number from a normal distribution using Box-Muller transform. */
 function randomNormal(mean: number, stdev: number): number {
-  const u1 = Math.random();
+  // Draw u1 in (0, 1] rather than [0, 1): Math.random() can return exactly 0,
+  // which would give log(0) = -Infinity and an Infinity/NaN draw.
+  const u1 = 1 - Math.random();
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   return mean + stdev * z;

@@ -1,12 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.widgets
-  - powerpack.lifecycle.init
-  - powerpack.dashboards
-  - powerpack.welcome.view
 target_layer: apitest
 coverage_type: regression
+priority: p1
+realizes: [package-cleanup-keeps-widgets]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Powerpack/widgets-after-debug-delete.md
 migration_date: 2026-05-23
@@ -17,7 +14,7 @@ scope_reductions: []
 related_bugs:
   - GROK-16915
 realized_as:
-  - widgets-after-debug-delete-api.ts
+  - widgets-after-debug-delete-api-spec.ts
 gate_verdicts:
   d:
     verdict: PASS
@@ -40,7 +37,7 @@ gate_verdicts:
     cycle_id: 2026-05-28-powerpack-automate-02
     timestamp: 2026-05-28T12:48:42Z
     spec_runs:
-      - spec: widgets-after-debug-delete-api.ts
+      - spec: widgets-after-debug-delete-api-spec.ts
         result: passed
         attempts: 3
         duration_seconds: 19
@@ -58,18 +55,6 @@ registered by the remaining bleeding-edge version of the package
 must continue to surface — without the manual version-switching
 workaround the bug reporter discovered. Widget registration state
 must synchronize with package state changes.
-
-Atlas surface exercised:
-`powerpack.widgets` (the `@dashboard` / `@func` widget registry
-infrastructure under `public/packages/PowerPack/src/widgets/`),
-`powerpack.lifecycle.init` (`powerPackInit` at
-`public/packages/PowerPack/src/package.ts#L315` — wires the
-widget registrations and the `HelpObjectHandler` at platform load),
-`powerpack.dashboards` (the home-dashboard widget host —
-`public/packages/PowerPack/src/package.ts#L138`), and
-`powerpack.welcome.view` (`welcomeView` at
-`public/packages/PowerPack/src/package.ts#L134`, the
-autostart-immediate home view that surfaces the widget grid).
 
 ## Setup
 
@@ -97,9 +82,9 @@ autostart-immediate home view that surfaces the widget grid).
 
 ### Scenario 1: Delete debug-version PowerPack — bleeding-edge widgets remain registered
 
-This is the canonical GROK-16915 reproduction surface. The
-deletion is performed via the JS API so the assertion path is
-deterministic and does not depend on UI dispatch.
+This is the main reproduction path for GROK-16915. The deletion is
+performed via the JS API so the check is deterministic and doesn't
+depend on UI interactions.
 
 1. **Snapshot pre-deletion widget registry.** Call
    `grok.dapi.packages.list()` and identify the debug-version
@@ -197,86 +182,14 @@ Expected:
 
 ## Notes
 
-- **target_layer rationale (per orchestrator directive).**
-  `apitest`. The bug's reproduction path involves destructive
-  package management (`grok.dapi.packages.delete()` on a
-  debug-version package record). Running this as `playwright` on a
-  shared / prod-shared environment would carry real risk of removing
-  packages that other developers depend on; the UI "Delete package"
-  control routes through the same `grok.dapi.packages.delete()`
-  call regardless. The invariant under test ("widget registration
-  state remains consistent with package state after a delete") is
-  expressible entirely via the JS API: snapshot the function /
-  widget registry before and after the deletion, then assert the
-  bleeding-edge package's widgets remain present. This avoids the
-  UI hazard of "click Delete on the wrong package" on a shared
-  server while still exercising the canonical regression surface.
-  An alternate `manual-only` framing (a `-ui.md` sibling, run by
-  a human on a clean sandbox) is documented under Deferrals below
-  but is not the primary scenario.
-- **coverage_type rationale.** `regression`. Bug-focused
-  (`pyramid_layer: bug-focused` per Rule 3 — canonical GROK-16915
-  regression surface). Guards against re-regression on the
-  cross-package widget-registration synchronization path. Not
-  `smoke` (the canonical home-view smoke is the orchestrator's
-  responsibility, not a widget-deletion edge). Not `edge` (the
-  bug surfaces on a routine maintenance flow — debug-version
-  cleanup is common in dev, not a boundary value). Not `perf`.
-- **Pyramid layer.** `bug-focused` per Rule 3 — discriminator
-  test: GROK-16915 fails Scenario 1 before the fix (widget
-  registry post-deletion reports the bleeding-edge widgets as
-  absent until the user manually switches version + switches back,
-  i.e. forces re-init). After the fix, Scenarios 1-3 all pass on
-  the post-deletion registry query.
-- **Atlas sub_features traceability.**
-  - `powerpack.widgets` — widget registry infrastructure
-    (`public/packages/PowerPack/src/widgets/`). The bug surfaces
-    because the registry synchronisation with package state lives
-    here.
-  - `powerpack.lifecycle.init` — `powerPackInit` at
-    `public/packages/PowerPack/src/package.ts#L315`. The init path
-    wires widget registrations; the bug's workaround (switch
-    version → switch back) re-runs `powerPackInit`, suggesting the
-    bug is a missed re-init signal after package-state change.
-  - `powerpack.dashboards` — home-dashboard widget host
-    (`public/packages/PowerPack/src/package.ts#L138`). The
-    user-visible failure manifests on the dashboard surface.
-  - `powerpack.welcome.view` — `welcomeView` at
-    `public/packages/PowerPack/src/package.ts#L134`. The
-    autostart-immediate home view is where the missing widgets are
-    observed; Scenario 1 Step 5 directly probes its registration.
-- **Related bug.** `GROK-16915` (p1, fixed). Reproduction
-  per bug-library: (1) delete debug-version PowerPack +
-  UsageAnalysis, (2) refresh home view, (3) widgets missing
-  despite Platform/Plugins showing bleeding-edge versions, (4)
-  cache clear + refresh persists the issue, (5) workaround:
-  switch to another version of the package and back to
-  bleeding-edge, then refresh — widgets restored. Expected: widget
-  registration state must synchronize with package state changes
-  without the manual workaround.
-- **Chain context.** This scenario is the section's bug-focused
-  witness for GROK-16915 — Critic F's
-  `bug_focused_candidates[]` entry for the bug (added in
-  `cycle-2026-05-20-powerpack-coverage`) had empty `spans[]`
-  pending this scenario's authoring. The chain's
-  `order_from_files[]` is updated to include this scenario.
-- **Deferrals.**
-  - UI-driven manual variant deferred — a parallel
-    `widgets-after-debug-delete-ui.md` scenario could exercise
-    the same reproduction via the platform's
-    `Platform | Plugins | Delete` UI control, but only as a
-    `target_layer: manual-only` scenario run by a human on a
-    sandbox environment. Reason for deferral: destructive package
-    management UI actions on shared servers cannot be safely
-    automated under Playwright (risk of deleting packages other
-    developers depend on; no helper for "delete-package on
-    isolated-test-server-only"). Cited dependency per Lattice
-    Rule 13 / A-MERIT-02: helpers-registry has no
-    `installDebugPackageVersion` / `deleteDebugPackageVersion`
-    pair that gates on a sandbox-only environment guard.
-- **Coverage map.** Coverage map for PowerPack
-  (`references/coverage-map/powerpack.yaml`) is not present at
-  authoring time — gap-vs-coverage cross-check skipped per
-  STEP B fallback. The Critic F coverage-gap dispatch
-  (`gap: bug-uncovered :: GROK-16915`) drove this scenario's
-  authoring directly.
+- **Related bug.** GROK-16915 (fixed): deleting the debug versions of
+  PowerPack and UsageAnalysis caused their bleeding-edge widgets to
+  disappear from the home view, even after a cache clear and refresh.
+  The only workaround was switching the package to another version and
+  back. Widget registration must now stay in sync with package state
+  without that workaround.
+- **Deferrals.** A UI-driven manual variant (deleting the package via
+  **Platform | Plugins | Delete** instead of the JS API) was
+  considered but deferred — destructive package-management actions
+  can't safely be automated against a shared server, since it risks
+  deleting packages other developers depend on.

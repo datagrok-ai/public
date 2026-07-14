@@ -4,7 +4,7 @@ import {awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 
 import {
   META_COLUMNS, PUBLISHED_TAGS, PublishOptions, PublishedMetadata,
-  slugifyTarget,
+  slugifyProject,
 } from './publish-state';
 import {trimEnrichmentForPublish, trimForPublish} from './trim-dataframe';
 import {
@@ -135,7 +135,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
         pThreshold = optsAny.pThreshold;
     } catch { /* defaults */ }
 
-    const slug = slugifyTarget(opts.target);
+    const slug = slugifyProject(opts.project);
     const priorVersionN = parsePriorVersion((opts.priorVersion as any)?.name);
     const version = priorVersionN > 0 ? priorVersionN + 1 : 1;
     const publishId = generateUuid();
@@ -149,7 +149,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     })();
 
     const meta: PublishedMetadata = {
-      target: opts.target,
+      project: opts.project,
       publishedAt,
       publishedBy,
       publishedByEmail,
@@ -203,8 +203,8 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     }
     const umbrellaClient = dapiAny.spaces.id(umbrella.id);
 
-    // ─── Step 5 — ensure per-target child Space ─────────────────────────────────
-    pi.description = 'Ensuring per-target Space...';
+    // ─── Step 5 — ensure per-project child Space ────────────────────────────────
+    pi.description = 'Ensuring per-project Space...';
     const childName = `${reviewNamePrefix()}-${slug}`;
     let childSpace: any = null;
 
@@ -231,7 +231,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
         childSpace = await findChildByName();
         if (!childSpace) {
           throw new Error(
-            `Per-target child Space '${childName}' exists but could not be resolved via ` +
+            `Per-project child Space '${childName}' exists but could not be resolved via ` +
             `umbrella children.list() (msg: ${msg}).`);
         }
       }
@@ -244,10 +244,10 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     const projectName = `${reviewNamePrefix()}-${slug}-v${version}-${dateStr}`;
     (project as any).name = projectName;
     // Set friendlyName explicitly so the platform doesn't "humanize" the slug
-    // (e.g. DMD → "DM D"). Use the original target verbatim for a clean label,
+    // (e.g. DMD → "DM D"). Use the original project name verbatim for a clean label,
     // and derive the label's leading words from the (configurable) name prefix.
     (project as any).friendlyName =
-      `${reviewNamePrefix().replace(/-/g, ' ')} ${opts.target} v${version} ${dateStr}`;
+      `${reviewNamePrefix().replace(/-/g, ' ')} ${opts.project} v${version} ${dateStr}`;
 
     try { (project as any).options[PUBLISHED_TAGS.PUBLISHED_ID] = publishId; } catch { /* swallow */ }
     // Step 9 writes the supersede pointer on the prior project; the NEW
@@ -275,15 +275,17 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     project.addChild(viewInfo);
 
     // ─── Step 6.6 — re-create the enrichment Up/Down 2×2 on the published
-    // enrichment view, and bundle the chart-backing top-N subset tables so the
-    // charts have data on reopen (they bind to clones, not frozenEnrich). ─────
+    // enrichment view. The charts bind to frozenEnrich itself (dockEnrichmentCharts
+    // adds the derived negLog10FDR / ~enrichChartTop columns onto it and splits
+    // Up/Down via per-viewer formula filters), so there are no chart-backing
+    // subset tables to bundle — the enrichment frame is fully self-contained and
+    // the charts survive the project round-trip. ─────────────────────────────
     let enrichViewInfo: any = null;
-    const enrichSubsets: DG.DataFrame[] = [];
     if (frozenEnrich) {
       pi.description = 'Re-rendering enrichment charts...';
       const enrichTv = grok.shell.addTableView(frozenEnrich);
       await delay(100);
-      enrichSubsets.push(...dockEnrichmentCharts(enrichTv, frozenEnrich));
+      dockEnrichmentCharts(enrichTv, frozenEnrich);
       await delay(100);
       enrichViewInfo = enrichTv.getInfo();
       project.addChild(enrichViewInfo);
@@ -295,13 +297,9 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     await grok.dapi.tables.uploadDataFrame(frozen);
     await grok.dapi.tables.save(frozen.getTableInfo());
     if (frozenEnrich) {
+      // Upload AFTER dockEnrichmentCharts so the derived chart columns persist.
       await grok.dapi.tables.uploadDataFrame(frozenEnrich);
       await grok.dapi.tables.save(frozenEnrich.getTableInfo());
-    }
-    for (const sub of enrichSubsets) {
-      project.addChild(sub.getTableInfo());
-      await grok.dapi.tables.uploadDataFrame(sub);
-      await grok.dapi.tables.save(sub.getTableInfo());
     }
     await grok.dapi.views.save(viewInfo);
     if (enrichViewInfo) await grok.dapi.views.save(enrichViewInfo);

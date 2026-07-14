@@ -79,34 +79,6 @@
   padding: 0 4px;
 }
 
-.funcflow-section-header {
-  padding: 6px 8px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--grey-6, #333);
-  background: var(--grey-1, #f0f0f0);
-  border-bottom: 1px solid var(--grey-2, #e0e0e0);
-  cursor: pointer;
-  user-select: none;
-}
-
-.funcflow-section-header:hover {
-  background: var(--grey-2, #e8e8e8);
-}
-
-.funcflow-section-header::before {
-  content: '\25BC ';
-  font-size: 10px;
-  padding-right: 4px;
-  opacity: 0.6;
-}
-
-.funcflow-section-header.collapsed::before {
-  content: '\25B6 ';
-  padding-right: 4px;
-  opacity: 0.6;
-}
-
 .funcflow-func-item {
   padding: 4px 12px;
   font-size: 12px;
@@ -122,38 +94,30 @@
   color: var(--blue-2, #1565c0);
 }
 
-/* Nested sub-accordions (e.g. per-connection query groups under "Queries"):
-   indent + a left accent rail + lighter, smaller headers so the hierarchy
-   reads clearly as a level below the top sections. */
+/* The nested per-connection accordion under "Queries" (a platform
+   DG.Accordion inside the pane content) — indent it one level so the
+   hierarchy reads as a level below the top sections. */
 .funcflow-subsections {
-  padding: 4px 0 6px 0;
-  background: var(--grey-0, #fafafa);
+  padding: 4px 0 6px 8px;
+  background: #fcfcfc;
+  border-radius: 8px;
 }
 
-.funcflow-subsection {
-  margin: 4px 6px 4px 14px;
-  border-left: 2px solid var(--blue-1, #90caf9);
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  background: #fff;
+.funcflow-subsections .d4-accordion-pane-content {
+  box-shadow: -20px 10px 10px 6px #f8f8f8;
+  border-radius: 8px;
 }
 
-.funcflow-subsection>.funcflow-section-header {
-  padding: 5px 8px 5px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  background: var(--grey-1, #f4f4f6);
-  border-bottom: none;
+.funcflow-subsections .funcflow-func-item {
+  padding-left: 10px;
 }
 
-.funcflow-subsection>.funcflow-section-header::before {
-  font-size: 9px;
-  opacity: 0.6;
+.funcflow-tree-container .funcflow-section-content {
+  width: 100%;
 }
 
-.funcflow-subsection .funcflow-func-item {
-  padding-left: 22px;
+.funcflow-section-content .d4-tree-view-group-host {
+  width: calc(100% - 15px) !important;
 }
 
 /* Center panel — Rete area mounts inside this container.
@@ -198,14 +162,15 @@
   display: none;
 }
 
-/* Ctrl+drag rectangle multi-select marquee. Sits inside the same overlay
+/* Shift+drag rectangle multi-select marquee. Sits inside the same overlay
    layer as the alignment guides; pointer-events:none lets clicks fall
    through to the canvas. */
+/* Same look as the platform areaSelector: black 1px stroke, lightBlue fill at 50%. */
 .ff-rect-select {
   position: absolute;
   pointer-events: none;
-  border: 1px dashed #2185d0;
-  background-color: rgba(33, 150, 243, 0.10);
+  border: 1px solid #2185d0;
+  background-color: rgba(173, 216, 230, 0.5);
   z-index: 999;
 }
 
@@ -491,6 +456,31 @@
   background: #fff;
 }
 
+/* "Add to workspace" overlay on a preview block — same corner treatment as the
+   gear (top-right, no vertical footprint). `right` is set inline so it can sit
+   to the gear's left on viewer previews. */
+.ff-preview-workspace-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #607d8b;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ff-preview-workspace-btn:hover {
+  color: #1976d2;
+  background: #fff;
+}
+
 .ff-port-preview {
   position: fixed;
   z-index: 10001;
@@ -710,12 +700,29 @@
   font-style: italic;
 }
 
-.funcflow-conn-ok {
-  color: #43a047;
+.funcflow-conn-arrow {
+  color: var(--grey-4, #999);
 }
 
-.funcflow-conn-off {
+.funcflow-conn-endpoint {
+  color: var(--blue-1, #2185d0);
+}
+
+/* A required input/property that is neither connected nor filled */
+.funcflow-conn-missing {
+  color: #b26a00;
+}
+
+.funcflow-conn-missing .funcflow-conn-type {
+  color: #b26a00;
+  opacity: 0.8;
+}
+
+.funcflow-conn-empty {
+  font-size: 12px;
   color: var(--grey-4, #999);
+  font-style: italic;
+  padding: 2px 0;
 }
 
 /* Status bar */
@@ -799,11 +806,44 @@
   color: #aaa;
 }
 
-/* Title row in property panel */
-.funcflow-title-row {
-  padding: 6px 8px;
+/* Header block in property panel: Title, chips, and Description share one
+   padded container so their editors line up exactly. */
+.funcflow-panel-header {
+  padding: 6px 8px 4px;
   border-bottom: 1px solid var(--grey-2, #e0e0e0);
   margin-bottom: 4px;
+}
+
+.funcflow-title-row {
+  padding: 0;
+}
+
+/* Compact metadata chips (full name, package, roles, tags) — replace the old
+   label+value rows of the Function pane. */
+.funcflow-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 0 2px;
+}
+
+.funcflow-chip {
+  font-size: 10px;
+  color: var(--grey-5, #666);
+  background: var(--grey-1, #f2f2f5);
+  border: 1px solid var(--grey-2, #e0e0e0);
+  border-radius: 10px;
+  padding: 1px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funcflow-chip-muted {
+  background: transparent;
+  border-style: dashed;
+  color: var(--grey-4, #888);
 }
 
 .funcflow-type-badge {
@@ -844,21 +884,24 @@
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15), 0 4px 14px rgba(0, 0, 0, 0.13);
 }
 
-/* Node-type colored stripes (overridden inline by role color when present) */
+/* Node-type colored stripes (overridden inline by role color when present).
+   Pastels of the Standard categorical-palette hues (DG.Color.categoricalPalette:
+   green #2ca02c, red #d62728, gray #7f7f7f, light gray #c7c7c7) — keep in sync
+   with pastelize() in src/types/type-map.ts (60% white mix). */
 .ff-node-input .ff-node-title {
-  background: #66BB6A;
+  background: #abd9ab;
 }
 
 .ff-node-output .ff-node-title {
-  background: #EF5350;
+  background: #efa9a9;
 }
 
 .ff-node-utility .ff-node-title {
-  background: #78909C;
+  background: #cccccc;
 }
 
 .ff-node-func .ff-node-title {
-  background: #BDBDBD;
+  background: #e9e9e9;
 }
 
 .ff-node-title {
@@ -1023,6 +1066,7 @@
   font-weight: 600;
   line-height: 1.3;
   color: #c77700;
+  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1116,16 +1160,27 @@
   justify-content: flex-end;
 }
 
+/* Socket chip: a Column Manager-style single type letter (colored by type via
+   the --socket-color var set inline by FlowSocketComponent) on a white chip
+   with a matching ring. Order/exec squares override this below. */
 .ff-socket {
   flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 1px solid #ffffff;
-  box-shadow: 0 0 0 1px #b0bec5;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid var(--socket-color, #b0bec5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--socket-color, #90a4ae);
   cursor: crosshair;
   transition: transform 0.1s;
   box-sizing: border-box;
+  user-select: none;
 }
 
 .ff-socket:hover {
@@ -1154,6 +1209,7 @@
    on exactly where the connection can go. */
 .ff-connecting .ff-socket-compat .ff-socket {
   background: #2e9e44 !important;
+  color: #ffffff !important;
   border-color: #ffffff;
   box-shadow: 0 0 0 2px #2e9e44, 0 0 7px 2px rgba(46, 158, 68, 0.7);
   opacity: 1;
@@ -1272,12 +1328,26 @@
   height: 0;
   pointer-events: none;
   z-index: 2;
+  /* Hidden until wired / node hover / an order drag — opacity (never
+     display:none) so socket geometry stays valid and existing order edges
+     keep their endpoints. */
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.ff-node-exec-row[data-wired="true"],
+.ff-node:hover .ff-node-exec-row,
+.ff-connecting-order .ff-node-exec-row {
+  opacity: 1;
 }
 
 .ff-exec-port {
   position: absolute;
   top: -5px;
-  pointer-events: auto;
+  /* No pointer events while invisible — a click near the title corners must
+     not silently start an order drag. Hovering the node reveals the squares
+     and re-enables them. */
+  pointer-events: none;
   /* Flex (like .ff-socket-row) so the rete socket <span> — which the connection
      plugin registers and hit-tests via elementsFromPoint — blockifies into a
      real box. An inline span here collapses to 0 height, so the plugin never
@@ -1285,6 +1355,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.ff-node-exec-row[data-wired="true"] .ff-exec-port,
+.ff-node:hover .ff-exec-port,
+.ff-connecting-order .ff-exec-port {
+  pointer-events: auto;
 }
 
 .ff-exec-in {
@@ -1373,8 +1449,9 @@
 
 .ff-node-collapsed-sockets .ff-socket {
   margin: 0;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
+  font-size: 7px;
 }
 
 
@@ -1745,21 +1822,11 @@
   word-break: break-word;
 }
 
-/* Primary tour CTA on the start panel. */
-.funcflow-start-tour {
-  background: #1976d2 !important;
-  color: #ffffff !important;
-  font-weight: 600;
-}
-
-.funcflow-start-tour:hover {
-  background: #1565c0 !important;
-}
-
 .d4-flow-function-funccall-editor .ui-input-table {
   pointer-events: none !important;
   user-select: none !important;
 }
+
 /* ---------- bottom output panel (in-view splitter pane) ---------- */
 
 .ff-output-panel {
@@ -1774,7 +1841,7 @@
    rule whose :not() chain gives it enormous specificity. The canvas therefore
    keeps `ui-div` (the beatable branch) and this (0,3,2) rule out-ranks it —
    with both `!important`, specificity decides, independent of load order. */
-div.ui-box > div.ui-div.funcflow-canvas-container {
+div.ui-box>div.ui-div.funcflow-canvas-container {
   overflow: hidden !important;
 }
 
@@ -1838,6 +1905,22 @@ div.ui-box > div.ui-div.funcflow-canvas-container {
 .funcflow-preview-block {
   height: 100%;
 }
+
+/* Save button greyed AND non-clickable when there's nothing to save (empty
+   canvas / no changes since last save). `pointer-events: none` blocks mouse
+   clicks; hover passes through to the `.ff-save-btn-wrap` wrapper, which owns
+   the "why" tooltip (a disabled button fires no hover events itself). */
+.ff-ribbon-btn-disabled {
+  background-color: var(--steel-2) !important;
+  color: var(--steel-3) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ff-save-btn-wrap {
+  background-color: white !important;
+}
+
 /* ---------- autorun ribbon toggle ---------- */
 
 /* The bolt reads as "live" only when clearly distinct from the other ribbon
@@ -1845,11 +1928,16 @@ div.ui-box > div.ui-div.funcflow-canvas-container {
    a thin outline glyph); the ON state is colored AND font-weight 600, which
    renders the Font Awesome bolt as its filled variant. */
 .ff-autorun-toggle {
-  opacity: 0.8;
+  /* opacity: 0.8; */
+  padding-right: 1px;
 }
 
 .ff-autorun-toggle.ff-autorun-on {
-  color: var(--blue-1, #2083d5) !important;
-  font-weight: 600;
-  opacity: 1;
+  background: #2083D550;
+  border-radius: 25%;
+}
+
+.ff-autorun-toggle.ff-autorun-on:hover {
+  background: #2083D570;
+  border-radius: 25%;
 }

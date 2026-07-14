@@ -8,87 +8,133 @@ import {SEMTYPE} from '../utils/proteomics-types';
 /** Module-level subscriptions for cleanup on re-open. */
 let activeSubscriptions: rxjs.Subscription[] = [];
 
+/** Default number of terms each dot/bar chart shows (per direction). */
+export const CHART_TOP_N = 15;
+
+/** Value/color column the dot + bar charts read. Kept as a plain (non-`~`)
+ * name because it is a viewer VALUE binding — a missing value column hard-fails
+ * a bar chart on reopen (the original "Column negLog10FDR does not exist" bug). */
+export const NEG_LOG10_FDR_COL = 'negLog10FDR';
+/** Hidden marker column (auto-hidden via `~` prefix, ignored by the publish
+ * shape contract) flagging the top-N terms per direction. Used only inside the
+ * per-viewer formula filter, where a parse failure degrades to "show all"
+ * rather than crashing — so the `~` name is safe here but not for the value. */
+export const CHART_TOP_MARKER_COL = '~enrichChartTop';
+
 /**
- * Creates a top-N enrichment DataFrame sorted by FDR ascending.
- * Adds a -log10(FDR) column for visualization, truncates long term names.
+ * Adds the two derived columns the enrichment dot/bar charts bind to, directly
+ * onto `enrichDf` (idempotent — ensureFreshFloat pattern):
+ *   - `negLog10FDR` — -log10(FDR); dot color + bar value. FDR=0 (underflow /
+ *     extreme enrichment) maps to the float-underflow ceiling so it stays
+ *     visible without colliding with real values like FDR=1e-10.
+ *   - `~enrichChartTop` — true for the top-N terms by FDR (ascending) within
+ *     each Direction, or overall when there is no Direction column.
+ *
+ * Both charts bind to `enrichDf` itself rather than to cloned subsets: docked
+ * viewers rebind to their host view's primary frame on project reopen, so the
+ * columns they read must live on that frame (else the bar chart fatal-errors).
+ * Keeping everything on one frame also stops the subset tables from leaking
+ * into a published project's table tree.
  */
-export function createTopNEnrichmentDf(enrichDf: DG.DataFrame, topN: number = 15): DG.DataFrame {
-  const fdrCol = enrichDf.col('FDR')!;
-  const indexed: {idx: number; fdr: number}[] = [];
-  for (let i = 0; i < enrichDf.rowCount; i++) {
-    if (!fdrCol.isNone(i))
-      indexed.push({idx: i, fdr: fdrCol.get(i) as number});
-  }
-  indexed.sort((a, b) => a.fdr - b.fdr);
+export function prepareEnrichmentChartColumns(enrichDf: DG.DataFrame, topN: number = CHART_TOP_N): void {
+  const fdrCol = enrichDf.col('FDR');
+  if (!fdrCol) return;
 
-  const count = Math.min(topN, indexed.length);
-  const mask = DG.BitSet.create(enrichDf.rowCount);
-  for (let i = 0; i < count; i++)
-    mask.set(indexed[i].idx, true);
-
-  const topDf = enrichDf.clone(mask);
-  topDf.name = `Top ${count} Enriched Terms`;
-
-  // Truncate long term names in place via init (re-reads via getRawData wouldn't
-  // help for string columns; reading get(i) here is the simplest correct form).
-  const termCol = topDf.col('Term Name');
-  if (termCol) {
-    const orig: (string | null)[] = [];
-    for (let i = 0; i < topDf.rowCount; i++) orig.push(termCol.get(i) as string | null);
-    termCol.init((i) => {
-      const val = orig[i];
-      return val && val.length > 50 ? val.substring(0, 50) + '...' : val;
-    });
-  }
-
-  // Add -log10(FDR) column for color mapping. FDR=0 (underflow / extreme
-  // enrichment) plots at the float-underflow ceiling so it stays visible but
-  // doesn't collide with real values like FDR=1e-10.
   const UNDERFLOW_NEGLOG10 = -Math.log10(Number.MIN_VALUE);
-  const topFdrRaw = topDf.col('FDR')!.getRawData() as Float32Array | Float64Array;
-  const negLogCol = topDf.columns.addNewFloat('negLog10FDR');
-  negLogCol.init((i) => topFdrRaw[i] > 0 ? -Math.log10(topFdrRaw[i]) : UNDERFLOW_NEGLOG10);
+  const fdrRaw = fdrCol.getRawData() as Float32Array | Float64Array;
+  if (enrichDf.columns.contains(NEG_LOG10_FDR_COL)) enrichDf.columns.remove(NEG_LOG10_FDR_COL);
+  const negLogCol = enrichDf.columns.addNewFloat(NEG_LOG10_FDR_COL);
+  negLogCol.init((i) => fdrRaw[i] > 0 ? -Math.log10(fdrRaw[i]) : UNDERFLOW_NEGLOG10);
+  // Keep it out of the reviewer's grid (best-effort; `~` isn't usable on a
+  // viewer value binding). If the tag is stripped on round-trip the only cost
+  // is one extra, meaningful numeric column in the grid.
+  negLogCol.setTag('.hidden', 'true');
 
-  return topDf;
+  // Rank terms by FDR (ascending) within each direction and mark the top N.
+  const dirCol = enrichDf.col('Direction');
+  const groups = new Map<string, {idx: number; fdr: number}[]>();
+  for (let i = 0; i < enrichDf.rowCount; i++) {
+    if (fdrCol.isNone(i)) continue;
+    const key = dirCol ? String(dirCol.get(i)) : '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push({idx: i, fdr: fdrCol.get(i) as number});
+  }
+  const topMask = new Array<boolean>(enrichDf.rowCount).fill(false);
+  for (const arr of groups.values()) {
+    arr.sort((a, b) => a.fdr - b.fdr);
+    for (let k = 0; k < Math.min(topN, arr.length); k++)
+      topMask[arr[k].idx] = true;
+  }
+  if (enrichDf.columns.contains(CHART_TOP_MARKER_COL)) enrichDf.columns.remove(CHART_TOP_MARKER_COL);
+  enrichDf.columns.addNewBool(CHART_TOP_MARKER_COL).init((i) => topMask[i]);
+}
+
+/** Per-viewer formula filter: the top-N marked terms, optionally narrowed to one
+ * regulation direction. Degrades to "show all rows" if the platform drops the
+ * formula on reopen — never a missing-column crash. */
+function chartFilter(direction?: 'Up' | 'Down'): string {
+  const clauses = [`\${${CHART_TOP_MARKER_COL}}`];
+  if (direction) clauses.push(`\${Direction} == "${direction}"`);
+  return clauses.join(' and ');
 }
 
 /**
- * Creates an enrichment dot plot using a scatter plot viewer.
+ * Creates an enrichment dot plot bound to the shared enrichment frame.
  * X = Gene Ratio, Y = Term Name, size = Gene Count, color = -log10(FDR).
+ * Pass `direction` to split into Up/Down via a per-viewer formula filter.
  */
-export function createEnrichmentDotPlot(topDf: DG.DataFrame): DG.ScatterPlotViewer {
-  const sp = DG.Viewer.scatterPlot(topDf, {
+export function createEnrichmentDotPlot(enrichDf: DG.DataFrame, direction?: 'Up' | 'Down'): DG.ScatterPlotViewer {
+  const sp = DG.Viewer.scatterPlot(enrichDf, {
     x: 'Gene Ratio',
     y: 'Term Name',
     sizeColumnName: 'Gene Count',
-    colorColumnName: 'negLog10FDR',
+    colorColumnName: NEG_LOG10_FDR_COL,
     markerMinSize: 5,
     markerMaxSize: 25,
-    title: 'Enrichment Dot Plot',
-  });
+    filter: chartFilter(direction),
+    title: direction ? `Enrichment — ${direction}` : 'Enrichment Dot Plot',
+  } as any);
   return sp;
 }
 
 /**
- * Creates an enrichment bar chart showing top terms ranked by -log10(FDR).
+ * Creates an enrichment bar chart (top terms ranked by -log10(FDR)) bound to the
+ * shared enrichment frame. Pass `direction` to split into Up/Down.
  */
-export function createEnrichmentBarChart(topDf: DG.DataFrame): DG.Viewer {
-  const bar = DG.Viewer.barChart(topDf, {
+export function createEnrichmentBarChart(enrichDf: DG.DataFrame, direction?: 'Up' | 'Down'): DG.Viewer {
+  const bar = DG.Viewer.barChart(enrichDf, {
     splitColumnName: 'Term Name',
-    valueColumnName: 'negLog10FDR',
+    valueColumnName: NEG_LOG10_FDR_COL,
     valueAggrType: 'avg',
     barSortType: 'by value',
     barSortOrder: 'desc',
     orientation: 'Horizontal',
-    title: 'Top Enriched Terms',
+    filter: chartFilter(direction),
+    title: direction ? `Top Enriched — ${direction}` : 'Top Enriched Terms',
   } as any);
   return bar;
 }
 
 /**
- * Wires enrichment row changes to protein DataFrame selection.
- * When a row is selected in the enrichment table, matching protein rows
- * (by gene symbol from the Intersection column) are highlighted.
+ * Wires enrichment term interactions to the protein DataFrame, keyed on each
+ * term's comma-separated `Intersection` member genes → protein rows. All three
+ * enrichment charts (grid, dot plot, bar chart) share `enrichDf`, so this single
+ * full-frame wiring covers interactions in any of them.
+ *
+ * Everything drives the volcano's `selection` — the only channel the scatterplot
+ * paints visibly for a *set* of proteins (verified live: programmatic
+ * `rows.highlight` / `mouseOverRowFunc` do not render). Two channels feed that
+ * one selection, with the multi-term selection winning:
+ *  - (1)+(3) enrichment **selection** (dot-plot rubber-band, shift/ctrl-click
+ *    bars, ctrl-click grid rows) → the UNION of member proteins across every
+ *    selected term. An empty enrichment selection clears the volcano selection.
+ *  - (2) enrichment **current row** (a single clicked term) → that term's member
+ *    proteins, but ONLY when no terms are selected. While a multi-term selection
+ *    is active it governs, and current-row changes are ignored — so a trailing
+ *    current-row event (fired alongside a select gesture) can't clobber the union.
+ *
+ * The enrichment **filter** is intentionally NOT reflected (4) — filtering terms
+ * declutters the enrichment view; it must not repaint the volcano.
  */
 export function wireEnrichmentToVolcano(
   enrichDf: DG.DataFrame,
@@ -97,7 +143,7 @@ export function wireEnrichmentToVolcano(
   const geneCol = findColumn(proteinDf, SEMTYPE.GENE_SYMBOL, ['gene name', 'gene symbol']);
   if (!geneCol) return rxjs.Subscription.EMPTY;
 
-  // Build gene-to-row index
+  // Build gene -> protein-row index once.
   const geneToRows = new Map<string, number[]>();
   for (let i = 0; i < proteinDf.rowCount; i++) {
     if (!geneCol.isNone(i)) {
@@ -107,50 +153,60 @@ export function wireEnrichmentToVolcano(
     }
   }
 
-  return enrichDf.onCurrentRowChanged.subscribe(() => {
-    const rowIdx = enrichDf.currentRowIdx;
-    if (rowIdx < 0) return;
-
+  // Union of protein rows whose gene is a member of ANY of the given enrichment
+  // term rows (via each term's comma-separated Intersection string).
+  const proteinRowsForTerms = (termRows: Int32Array | number[]): Set<number> => {
+    const out = new Set<number>();
     const intersectionCol = enrichDf.col('Intersection');
-    if (!intersectionCol) return;
-
-    const memberGenesStr = intersectionCol.get(rowIdx) as string;
-    if (!memberGenesStr) return;
-
-    const memberGenes = memberGenesStr.split(',').map((g) => g.trim()).filter(Boolean);
-
-    // Clear previous selection
-    proteinDf.selection.setAll(false, false);
-
-    // Set selection for matching genes
-    for (const gene of memberGenes) {
-      const rows = geneToRows.get(gene);
-      if (rows) {
-        for (const row of rows)
-          proteinDf.selection.set(row, true, false);
+    if (!intersectionCol) return out;
+    for (const r of termRows) {
+      if (r < 0 || intersectionCol.isNone(r)) continue;
+      const memberGenesStr = intersectionCol.get(r) as string;
+      if (!memberGenesStr) continue;
+      for (const gene of memberGenesStr.split(',').map((g) => g.trim()).filter(Boolean)) {
+        const rows = geneToRows.get(gene);
+        if (rows) for (const row of rows) out.add(row);
       }
     }
+    return out;
+  };
+
+  // Replace the volcano selection with exactly `rows` (empty set → cleared).
+  const selectProteins = (rows: Set<number>): void => {
+    proteinDf.selection.setAll(false, false);
+    for (const row of rows) proteinDf.selection.set(row, true, false);
     proteinDf.selection.fireChanged();
-  });
+  };
+
+  // (1)+(3) Selected terms → union of member proteins; no selection → cleared.
+  const applySelection = (): void => {
+    const termRows = enrichDf.selection.getSelectedIndexes();
+    selectProteins(termRows.length > 0 ? proteinRowsForTerms(termRows) : new Set());
+  };
+
+  // (2) Single current term → that term's member proteins, but only while no
+  // terms are selected; an active multi-term selection governs and wins.
+  const applyCurrentRow = (): void => {
+    if (enrichDf.selection.trueCount > 0) return;
+    const idx = enrichDf.currentRowIdx;
+    selectProteins(idx >= 0 ? proteinRowsForTerms([idx]) : new Set());
+  };
+
+  const sub = new rxjs.Subscription();
+  sub.add(enrichDf.onSelectionChanged.subscribe(() => applySelection()));
+  sub.add(enrichDf.onCurrentRowChanged.subscribe(() => applyCurrentRow()));
+  return sub;
 }
 
-/**
- * Clones the enrichment DataFrame down to one direction via the same
- * clone-by-mask idiom as createTopNEnrichmentDf. Returns null when the
- * Direction column is absent or the direction has no rows.
- */
-function filterByDirection(enrichDf: DG.DataFrame, direction: 'Up' | 'Down'): DG.DataFrame | null {
+/** True when `enrichDf` carries a Direction column with at least one row in
+ * `direction`. Drives the Up/Down 2×2 vs single-chart layout choice. */
+function hasDirection(enrichDf: DG.DataFrame, direction: 'Up' | 'Down'): boolean {
   const dirCol = enrichDf.col('Direction');
-  if (!dirCol) return null;
-  const mask = DG.BitSet.create(enrichDf.rowCount);
-  let any = false;
+  if (!dirCol) return false;
   for (let i = 0; i < enrichDf.rowCount; i++) {
-    if (dirCol.get(i) === direction) { mask.set(i, true); any = true; }
+    if (dirCol.get(i) === direction) return true;
   }
-  if (!any) return null;
-  const sub = enrichDf.clone(mask);
-  sub.name = `${direction} Enrichment`;
-  return sub;
+  return false;
 }
 
 /**
@@ -206,12 +262,11 @@ export function openEnrichmentVisualization(
   }
 
   // Dock the dot/bar charts (extracted so the publish path reuses the exact
-  // 2×2) and cross-link the full frame plus each chart-backing subset. All keep
-  // the Intersection column the Phase-9 wiring keys on.
-  const subsetDfs = dockEnrichmentCharts(chartHost, enrichDf);
+  // 2×2) and cross-link the frame. Every chart binds to `enrichDf` itself, so
+  // the single full-frame wiring covers all of them (and keeps the Intersection
+  // column the Phase-9 wiring keys on).
+  dockEnrichmentCharts(chartHost, enrichDf);
   activeSubscriptions.push(wireEnrichmentToVolcano(enrichDf, proteinDf));
-  for (const sub of subsetDfs)
-    activeSubscriptions.push(wireEnrichmentToVolcano(sub, proteinDf));
 
   // The dot/bar charts, the merged enrichment grid, and the smart-filter banner
   // all share this enrichment tab; the volcano stays on its own (protein) tab.
@@ -220,41 +275,34 @@ export function openEnrichmentVisualization(
 }
 
 /** Docks the directional (Up|Down 2×2) or single Dot+Bar enrichment charts onto
- * `host` and returns the top-N subset DataFrames they bind to. Pure layout — no
- * subscriptions, no focus changes — so both the live viewer and the publish path
- * (which bundles the returned subsets as project children) reuse one code path. */
-export function dockEnrichmentCharts(host: DG.TableView, enrichDf: DG.DataFrame): DG.DataFrame[] {
-  const upSub = filterByDirection(enrichDf, 'Up');
-  const downSub = filterByDirection(enrichDf, 'Down');
+ * `host`. Every chart binds to `enrichDf` itself — the derived `negLog10FDR` /
+ * `~enrichChartTop` columns are added to that frame and the Up/Down split is a
+ * per-viewer formula filter. No cloned subsets, so nothing leaks into a
+ * published project's table tree and the charts survive a project round-trip
+ * (docked viewers rebind to their host frame on reopen). Pure layout — no
+ * subscriptions, no focus changes — shared by the live and publish paths. */
+export function dockEnrichmentCharts(host: DG.TableView, enrichDf: DG.DataFrame): void {
+  prepareEnrichmentChartColumns(enrichDf);
 
-  if (upSub && downSub) {
-    const upTop = createTopNEnrichmentDf(upSub, 15);
-    const downTop = createTopNEnrichmentDf(downSub, 15);
-    // Clear names for the publish tree (the live path doesn't surface these).
-    upTop.name = 'Enrichment — Up (top terms)';
-    downTop.name = 'Enrichment — Down (top terms)';
-
+  if (hasDirection(enrichDf, 'Up') && hasDirection(enrichDf, 'Down')) {
     // Balanced 2×2: [Up Dot | Down Dot] over [Up Bar | Down Bar]. Split the
     // chart region into the two columns FIRST, THEN drop each bar under its dot
     // — docking the bars before the split carved up only the top-left cell and
     // produced a lopsided layout.
     const upDotNode = host.dockManager.dock(
-      createEnrichmentDotPlot(upTop), DG.DOCK_TYPE.RIGHT, null, 'Up — Dot Plot', 0.6);
+      createEnrichmentDotPlot(enrichDf, 'Up'), DG.DOCK_TYPE.RIGHT, null, 'Up — Dot Plot', 0.6);
     const downDotNode = host.dockManager.dock(
-      createEnrichmentDotPlot(downTop), DG.DOCK_TYPE.RIGHT, upDotNode, 'Down — Dot Plot', 0.5);
+      createEnrichmentDotPlot(enrichDf, 'Down'), DG.DOCK_TYPE.RIGHT, upDotNode, 'Down — Dot Plot', 0.5);
     host.dockManager.dock(
-      createEnrichmentBarChart(upTop), DG.DOCK_TYPE.DOWN, upDotNode, 'Up — Bar Chart', 0.5);
+      createEnrichmentBarChart(enrichDf, 'Up'), DG.DOCK_TYPE.DOWN, upDotNode, 'Up — Bar Chart', 0.5);
     host.dockManager.dock(
-      createEnrichmentBarChart(downTop), DG.DOCK_TYPE.DOWN, downDotNode, 'Down — Bar Chart', 0.5);
-    return [upTop, downTop];
+      createEnrichmentBarChart(enrichDf, 'Down'), DG.DOCK_TYPE.DOWN, downDotNode, 'Down — Bar Chart', 0.5);
+    return;
   }
 
   // Single-direction or no Direction column → one Dot + Bar.
-  const topDf = createTopNEnrichmentDf(enrichDf, 15);
-  topDf.name = 'Enrichment — Top terms';
   const dotNode = host.dockManager.dock(
-    createEnrichmentDotPlot(topDf), DG.DOCK_TYPE.RIGHT, null, 'Dot Plot', 0.5);
+    createEnrichmentDotPlot(enrichDf), DG.DOCK_TYPE.RIGHT, null, 'Dot Plot', 0.5);
   host.dockManager.dock(
-    createEnrichmentBarChart(topDf), DG.DOCK_TYPE.DOWN, dotNode, 'Bar Chart', 0.5);
-  return [topDf];
+    createEnrichmentBarChart(enrichDf), DG.DOCK_TYPE.DOWN, dotNode, 'Bar Chart', 0.5);
 }

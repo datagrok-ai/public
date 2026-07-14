@@ -30,15 +30,17 @@ import {createExpressionHeatmap} from './viewers/heatmap';
 import {createPcaPlot} from './viewers/pca-plot';
 import {openQcDashboard} from './viewers/qc-dashboard';
 import {openSpcDashboard} from './viewers/spc-dashboard';
-import {createGroupMeanCorrelation} from './viewers/group-mean-correlation';
+import {openAbundanceCorrelation} from './viewers/abundance-correlation';
 import {uniprotPanel} from './panels/uniprot-panel';
 import {focusProtein} from './panels/protein-focus';
 import {publishedAnalysisPanel} from './panels/published-analysis-panel';
 import {showShareForReviewDialog} from './publishing/share-dialog';
+import {proteomicsSettingsEditorWidget} from './publishing/package-settings-editor';
 import {recoverPublishedProject} from './publishing/post-open-recovery';
 import {isPublished} from './publishing/publish-state';
 import {showEnrichmentDialog} from './analysis/enrichment';
 import {openEnrichmentVisualization} from './viewers/enrichment-viewers';
+import {openRankAbundance} from './viewers/rank-abundance';
 import {findColumn} from './utils/column-detection';
 import {SEMTYPE, DEFAULT_FC_THRESHOLD, DEFAULT_P_THRESHOLD} from './utils/proteomics-types';
 import {buildProteomicsRibbonMenu} from './menu';
@@ -276,6 +278,34 @@ export function dockComparisonFilterIfMultiContrast(
   return true;
 }
 
+/**
+ * Opens the standard Candidates analysis view: table view, auto-volcano,
+ * multi-contrast comparison filter, and protein focus. Extracted from the
+ * import handler so the auto-volcano behavior is testable without the file
+ * dialog. Returns the created TableView.
+ *
+ * The volcano is opened HERE because Candidates arrive with the DE result
+ * already computed (the parser sets `proteomics.de_complete`), so the pipeline's
+ * DE step — where the Report path auto-opens the volcano — never runs. Opening
+ * it here lands both entry points on the same primary deliverable. Best-effort:
+ * skip silently if the volcano's columns are somehow absent, exactly as the
+ * DE-completion path tolerates.
+ */
+export function openCandidatesAnalysisView(df: DG.DataFrame): DG.TableView {
+  const tv = grok.shell.addTableView(df);
+  grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
+  try {
+    tv.addViewer(createVolcanoPlot(df));
+  } catch (volcanoErr: any) {
+    grok.shell.warning(
+      `Imported, but could not auto-open the volcano: ${volcanoErr?.message ?? volcanoErr}. ` +
+      `Open it via Proteomics | Visualize | Volcano Plot.`);
+  }
+  dockComparisonFilterIfMultiContrast(tv, df);
+  focusProtein(df);
+  return tv;
+}
+
 export class PackageFunctions {
   @grok.decorators.init({tags: ['init']})
   static async initProteomics(): Promise<void> {
@@ -313,10 +343,11 @@ export class PackageFunctions {
       showVolcanoPlot: () => PackageFunctions.showVolcanoPlot(),
       showHeatmap: () => PackageFunctions.showHeatmap(),
       showPcaPlot: () => PackageFunctions.showPcaPlot(),
-      showGroupMeanCorrelation: () => PackageFunctions.showGroupMeanCorrelation(),
+      abundanceCorrelation: () => PackageFunctions.abundanceCorrelation(),
       showQcDashboard: () => PackageFunctions.showQcDashboard(),
       showSpcDashboard: () => PackageFunctions.showSpcDashboard(),
       enrichmentCharts: () => PackageFunctions.enrichmentCharts(),
+      rankAbundance: () => PackageFunctions.rankAbundance(),
       showAllVisualizations: () => PackageFunctions.showAllVisualizations(),
       shareAnalysisForReview: () => PackageFunctions.shareAnalysisForReview(),
     };
@@ -353,10 +384,7 @@ export class PackageFunctions {
           const df = await parseSpectronautCandidatesText(text);
           df.name = file.name.replace(/\.[^.]+$/, '');
           autoDetectOrganism(df);
-          const tv = grok.shell.addTableView(df);
-          grok.shell.info(`Imported ${df.rowCount} candidates from Spectronaut`);
-          dockComparisonFilterIfMultiContrast(tv, df);
-          focusProtein(df);
+          openCandidatesAnalysisView(df);
         } catch (e: any) {
           grok.shell.error(`Failed to import Spectronaut Candidates file: ${e?.message ?? e}`);
         }
@@ -799,19 +827,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func()
-  static async showGroupMeanCorrelation(): Promise<void> {
-    const tv = grok.shell.tv;
-    const df = tv?.dataFrame;
-    if (!tv || !df) { grok.shell.warning('No table open'); return; }
-    if (!requireDifferentialExpression(df,
-      'Run Differential Expression first (Proteomics | Analyze | Differential Expression)')) return;
-    const groups = getGroups(df);
-    if (!groups) {
-      grok.shell.warning('Annotate experimental groups first (Proteomics | Annotate Experiment)');
-      return;
-    }
-    const sp = createGroupMeanCorrelation(df);
-    tv.addViewer(sp);
+  static async abundanceCorrelation(): Promise<void> {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) { grok.shell.warning('No table open'); return; }
+    // Works on any analyzed protein table (Candidates or annotated Report) —
+    // openAbundanceCorrelation itself warns when no per-condition abundance is present.
+    openAbundanceCorrelation(df);
   }
 
   @grok.decorators.func()
@@ -871,6 +892,15 @@ export class PackageFunctions {
     if (!requireDifferentialExpression(df,
       'Run Differential Expression first (Proteomics | Analyze | Differential Expression)')) return;
     showEnrichmentInputExportDialog(df);
+  }
+
+  @grok.decorators.func()
+  static async rankAbundance(): Promise<void> {
+    const df = grok.shell.tv?.dataFrame;
+    if (!df) { grok.shell.warning('No table open'); return; }
+    // Works on any analyzed protein table (Candidates or annotated Report) —
+    // openRankAbundance itself warns when no per-condition abundance is present.
+    openRankAbundance(df);
   }
 
   @grok.decorators.func()
@@ -963,6 +993,17 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Proteomics-ProteinId'}}) proteinId: string,
   ): DG.Widget {
     return publishedAnalysisPanel(proteinId);
+  }
+
+  @grok.decorators.func({
+    name: 'Proteomics package settings editor',
+    meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
+  })
+  static async proteomicsSettingsEditor(
+    @grok.decorators.param({name: 'propList', type: 'object'}) propList: DG.Property[],
+  ): Promise<DG.Widget> {
+    return proteomicsSettingsEditorWidget(propList);
   }
 
   @grok.decorators.func({tags: ['autostart'], meta: {autostartImmediate: 'true'}})

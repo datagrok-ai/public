@@ -4,7 +4,7 @@
 // Chat-widget selectors are transcribed from the client source
 // core/client/xamgle/lib/src/features/chat/chat.dart (grok-comments-* widget).
 import {Page, expect} from '@playwright/test';
-import {loginToDatagrok} from '../spec-login';
+import {loginToDatagrok} from '@datagrok-libraries/test/src/playwright/spec-login';
 
 export async function evalJs<T = any>(page: Page, script: string): Promise<T> {
   return page.evaluate(script) as Promise<T>;

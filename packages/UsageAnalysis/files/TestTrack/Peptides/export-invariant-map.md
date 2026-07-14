@@ -1,12 +1,9 @@
 ---
 feature: peptides
-sub_features_covered:
-  - peptides.viewers.sar-base.export-invariant-map
-  - peptides.viewers.sar-base
-  - peptides.viewers.monomer-position
-  - peptides.workflow.start-analysis
 target_layer: playwright
 coverage_type: smoke
+priority: p2
+realizes: [export-invariant-map-from-sar-viewer]
 produced_from: atlas-driven
 realized_as:
   - export-invariant-map-spec.ts
@@ -38,6 +35,10 @@ gate_verdicts:
         failure_keys: []
 ---
 
+# Peptides — Export Invariant Map from the SAR viewer
+
+After running SAR analysis, the Sequence Variability Map and Most Potent Residues viewers both offer an **Export Invariant Map** context-menu action that opens a new table of monomer-by-position counts. This scenario checks that the exported table has the right shape (a `Monomer` column plus one column per sequence position, with integer counts) and that the action works identically from either viewer, since both share the same underlying export code.
+
 ## Setup
 
 1. Open the linked Peptides demo dataset (`System:DemoFiles/bio/peptides.csv`) — a TableView with the peptides grid and a `Macromolecule`-semtype `AlignedSequence` column should be the active view.
@@ -45,9 +46,9 @@ gate_verdicts:
 
 ## Scenarios
 
-### Scenario 1 — Export Invariant Map opens a new TableView with the documented monomer-by-position count shape
+### Scenario 1 — Export Invariant Map opens a new table with the documented monomer-by-position count shape
 
-Atlas anchor: `critical_paths[export-invariant-map-from-sar-viewer]` (p2) + `interactions[sar-export-invariant-map-to-table]` (smoke). Exercises the context-menu Export surface on `SARViewer` and confirms the exported TableView has the columns produced by `SARViewer.exportInvariantMap()` (one `Monomer` column + one column per sequence position; cell value = count of sequences carrying that monomer at that position).
+Checks the context-menu Export action on the Sequence Variability Map viewer and confirms the exported table has one `Monomer` column plus one column per sequence position, where each cell counts how many sequences carry that monomer at that position.
 
 1. Right-click on the `Sequence Variability Map` viewer body to open the viewer's context menu.
 2. Hover the **Export** submenu and click **Export Invariant Map**.
@@ -57,9 +58,9 @@ Atlas anchor: `critical_paths[export-invariant-map-from-sar-viewer]` (p2) + `int
 6. Confirm at least one row is present (the demo dataset's monomer set is non-empty) and that position-column cell values are integers (sequence counts, including zero where no sequence carries the given monomer at that position).
 7. Confirm the leading `Monomer` column carries a value visibly recognizable as a monomer identifier (single-letter amino acid or a HELM-shape monomer label, consistent with how monomers render in the original Peptides grid's WebLogo headers).
 
-### Scenario 2 — Export Invariant Map from Most Potent Residues viewer produces the same shape (SARViewer-base contract)
+### Scenario 2 — Export Invariant Map from Most Potent Residues produces the same shape
 
-Atlas anchor: `peptides.viewers.sar-base` is the abstract base for both `peptides.viewers.monomer-position` and `peptides.viewers.most-potent-residues`; the Export Invariant Map command is registered on the base class and so must be available from both viewer subclasses with the same exported-table shape. This scenario exercises the contract from the `Most Potent Residues` entry point so the SARViewer-base inheritance of the Export action is empirically covered, not just inferred.
+The Export Invariant Map command is shared by both SAR viewers (Sequence Variability Map and Most Potent Residues), so it must behave identically from either entry point. This scenario repeats the export from Most Potent Residues to confirm that shared behavior empirically, not just by code inspection.
 
 1. Return to the original peptides TableView (close or switch away from any previously exported TableView). The `Most Potent Residues` viewer is present in the TableView (added by the default SAR launch in Setup).
 2. Right-click on the `Most Potent Residues` viewer body to open the viewer's context menu.
@@ -70,15 +71,9 @@ Atlas anchor: `peptides.viewers.sar-base` is the abstract base for both `peptide
 
 ## Notes
 
-- **Atlas provenance.** Scenario 1 derives from `critical_paths[export-invariant-map-from-sar-viewer]` (atlas `peptides.yaml`); the atlas entry's `derived_from:` cites `public/packages/Peptides/src/viewers/sar-viewer.ts#L674`. Scenario 2 derives from the same `critical_paths[]` entry + `interactions[sar-export-invariant-map-to-table]` (atlas `peptides.yaml`); the SARViewer-base inheritance contract is rooted at `public/packages/Peptides/src/viewers/sar-viewer.ts#L104` (`peptides.viewers.sar-base` atlas source line).
-- **target_layer rationale.** Multi-step UI flow — viewer context menu, Export submenu navigation, new-TableView assertion against grid shape (column count, column names, cell types) — requires DOM/UI driving. `apitest` is not viable because the entry point is a context-menu command bound to a Viewer instance and the exported artifact is a new `TableView` (UI surface, not a JS-API return value). Same layer choice as the realized sister scenario `export-mutation-cliffs.md`.
-- **coverage_type rationale.** Atlas `interactions[sar-export-invariant-map-to-table].coverage_type: smoke` is canonical per the rule "When the scenario being authored maps onto an atlas `interactions[]` entry, the frontmatter `coverage_type:` MUST match that entry's `coverage_type:` verbatim. Do NOT re-derive." Scenario carries `coverage_type: smoke` to match the atlas entry. The atlas `critical_paths[export-invariant-map-from-sar-viewer].priority: p2` (severity axis) is consistent with the smoke test-kind via the p2→author's-discretion mapping; the dominant atlas declaration here is the `interactions[]` entry's `smoke`.
-- **Coverage contribution.** This scenario retires `peptides.viewers.sar-base.export-invariant-map` (previously uncovered, on the `viewers.sar-base.export-invariant-map` arm of the Gate F gaps[type: sub-feature-coverage-gap] uncovered-family enumeration; see `scenario-chains/peptides.yaml :: gate_f_verdict.gaps[1].uncovered_sub_feature_families[viewers.{position-statistics, sar-base.export-invariant-map}]`). Sister-of-realized scenario for the SAR Export family (the mutation-cliffs export arm was realized as `export-mutation-cliffs.md`). The other three `sub_features_covered[]` entries — `peptides.viewers.sar-base`, `peptides.viewers.monomer-position`, `peptides.workflow.start-analysis` — are intentional re-coverage to satisfy `F-STRUCT-INTERACTION-01` (≥3 sub_features per scenario) on the same SAR-Export shape.
-- **Related bugs.** Atlas `known_issues[]` carries no curated bug intersecting `peptides.viewers.sar-base.export-invariant-map` or `peptides.viewers.sar-base` as of atlas revision 3 (parallel to the realized `export-mutation-cliffs.md`'s empty `related_bugs:`); `related_bugs:` is empty by intent.
-- **Setup composition.** Step 2 of Setup launches SAR via the top-menu entry path (`peptides.workflow.sar-dialog` → `peptides.workflow.analyze-ui` → `peptides.workflow.start-analysis`). The context-panel `Launch SAR` button entry path is owned by `sar.md`; this scenario picks the top-menu path to mirror the sister `export-mutation-cliffs.md` and avoid duplicating `sar.md`'s entry-flow coverage.
-- **Cross-scenario shape coverage.** Scenario 1 exercises the Export action from `Sequence Variability Map` (the `MonomerPosition` subclass — the more commonly used entry point); Scenario 2 exercises it from `Most Potent Residues` (the `MostPotentResidues` subclass). Together they cover the SARViewer-base Export contract from both subclass entry points without requiring a separate dedicated scenario per subclass.
-- **Deferrals.** None. Scenario steps map to existing Playwright-driveable surfaces (top-menu invocation, viewer context-menu navigation, exported TableView grid-shape assertion).
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View` (atlas help_docs rich-object form maps the `Table View` heading to `peptides.workflow.start-analysis`); `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map` (maps to `peptides.viewers.monomer-position`).
+- **Setup composition.** SAR is launched via the top-menu entry path, mirroring sibling `export-mutation-cliffs.md`. The context-panel `Launch SAR` button entry path is owned by `sar.md`, so this scenario avoids duplicating that coverage.
+- **No related bugs.** No curated bug currently anchors the Export Invariant Map surface.
+- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`; `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map`.
 
 ## Original trailing metadata
 

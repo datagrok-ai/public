@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - postgres-query-lifecycle.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases** > **Postgres** 
 3. Right-click the `**NorthwindTest**` connection and select **New query**... from the context menu
 4. Enter `test_query` to the Name field

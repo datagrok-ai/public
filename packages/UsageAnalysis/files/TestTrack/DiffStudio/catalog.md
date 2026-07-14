@@ -1,3 +1,14 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - catalog.test.ts
+related_bugs: []
+---
+
 #### Catalog (go back to Diff Studio)
 
 1. Open a model from the library:

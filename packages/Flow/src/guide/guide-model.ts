@@ -299,12 +299,14 @@ export function untilFewerNodes() {
   };
 }
 
-/** Wait until a browser section (by its `data-section`) is expanded. */
+/** Wait until a browser section (by its `data-section`) is expanded. Sections
+ *  are platform accordion panes — an expanded pane's header carries the
+ *  `expanded` class (set by DG.AccordionPane). */
 export function untilSectionExpanded(title: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => {
-      const header = el(`.funcflow-section-header[data-section="${cssEscape(title)}"]`);
-      return !!header && !header.classList.contains('collapsed');
+      const header = el(`.d4-accordion-pane-header[data-section="${cssEscape(title)}"]`);
+      return !!header && header.classList.contains('expanded');
     }, ctx.signal);
 }
 

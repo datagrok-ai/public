@@ -1,13 +1,28 @@
+---
+feature: helm
+target_layer: apitest
+coverage_type: regression
+priority: p2
+realizes: []
+realized_as:
+  - helm-monomer-funcs-override-api-spec.ts
+related_bugs: []
+---
+
 # Helm — monomer-funcs swap path (overrideMonomersFuncs + buildMonomersFuncsFromLib)
 
-> **2026-06 editor rewrite.** Pistoia removed. The override path no longer
-> operates on a `window.org.helm.webeditor.Monomers` global — it delegates to an
-> internal `editorAdapter`. Verify via the helper's own observable state
-> (`hh.originalMonomersFuncs`), NOT a global. The old double-apply / pre-revert
-> guards were removed (no longer throw), and `buildMonomersFuncsFromLib` no longer
-> strips outer `[...]` brackets. The old `rewriteLibraries` /
-> `Monomers.addOneMonomer` / `Monomers.clear` mechanism is gone. See grok-browser
-> `references/helm.md` § "Monomer-override contract (CHANGED)".
+Exercises the API that lets a plugin temporarily swap out how the HELM editor
+looks up monomers: `overrideMonomersFuncs` installs a substitute
+monomer-lookup implementation and `revertOriginalMonomersFuncs` restores the
+original, while `buildMonomersFuncsFromLib` builds a monomer-lookup
+implementation backed by the Datagrok monomer library. Confirms the
+override/revert state machine (tracked via `hh.originalMonomersFuncs`) behaves
+correctly, including that double-applying an override or reverting with
+nothing to revert no longer throw. Reflects the 2026 HELM editor rewrite: the
+override no longer touches a global `Monomers` dictionary (that mechanism,
+along with `rewriteLibraries`, is gone), and bracketed monomer symbols like
+`[meI]` are no longer unwrapped by this layer; see grok-browser
+`references/helm.md` § "Monomer-override contract (CHANGED)".
 
 ## Setup
 

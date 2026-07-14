@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 08-sparql.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases** . Press three dots in the end of Databases list to list data sources without
    connections.
 2. Right-click the **Sparql** provider and select **Add new connection** from the context menu.

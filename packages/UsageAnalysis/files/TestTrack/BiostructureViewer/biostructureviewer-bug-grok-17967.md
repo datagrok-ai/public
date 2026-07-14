@@ -1,11 +1,9 @@
 ---
 feature: biostructureviewer
-sub_features_covered:
-  - biostructure.viewer
-  - biostructure.ngl-viewer
-  - biostructure.prop.ligand-column
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [GROK-17967]
 produced_from: atlas-driven
 related_bugs:
   - GROK-17967
@@ -103,39 +101,16 @@ gate_verdicts:
 
 # BiostructureViewer — Multi-ligand parity across NGL and Biostructure (Mol*) viewers (GROK-17967 regression guard)
 
-## Overview
-
 Regression guard for [GROK-17967](https://reddata.atlassian.net/browse/GROK-17967)
-("BSViewer: NGL and BS viewers are not working correctly"). The bug surfaced
-as a parity failure between the two 3D structure-viewer implementations the
-package registers — when a multi-ligand structure was loaded, ligand atoms
-rendered correctly separated in one engine but collapsed / merged into one
-graphical primitive in the other. Because docking and structural-biology
-workflows rely on visually distinct per-ligand renderings (one row per
-ligand, current-row highlight, multi-select overlay), a regression that
-merges ligands silently invalidates the row ↔ ligand contract.
-
-The bug surfaces across three sub_features tracked in the atlas:
-
-- `biostructure.viewer` — the Mol* (Biostructure) engine; one of the two
-  parity sides.
-- `biostructure.ngl-viewer` — the NGL engine; the other parity side. The
-  package registers NGL alongside Biostructure precisely to cover formats
-  Mol* cannot open AND to provide an alternative renderer for surfaces
-  where Mol* historically struggled (see `package.ts#L441`).
-- `biostructure.prop.ligand-column` — the property that wires the
-  per-row ligand overlay into either viewer. Both engines consume the
-  same `ligandColumnName` value; multi-ligand input must render with
-  ligand separation in both.
-
-Atlas cross-references:
-
-- `feature-atlas/biostructureviewer.yaml#edge_cases[3]`
-  (multi-ligand NGL/BS parity, `source_bug: GROK-17967`,
-  `derived_from: bug-library:biostructureviewer.yaml#GROK-17967`).
-- `feature-atlas/biostructureviewer.yaml#interactions[biostructure-multi-ligand-rendering]`
-  (cross-feature interaction entry with the same
-  `related_bugs: [GROK-17967]` anchor).
+("BSViewer: NGL and BS viewers are not working correctly"). The package
+registers two alternative 3D structure-viewer engines — Biostructure (Mol\*)
+and NGL — and the bug surfaced as a parity failure between them: when a
+multi-ligand structure was loaded, ligand atoms rendered correctly separated
+in one engine but collapsed into a single merged shape in the other.
+Because docking and structural-biology workflows rely on visually distinct
+per-ligand renderings (one row per ligand, current-row highlight,
+multi-select overlay), a regression that merges ligands silently breaks the
+row-to-ligand relationship in whichever engine is affected.
 
 ## Setup
 
@@ -192,9 +167,7 @@ Steps:
      structure rendered as a **cartoon** (default `representation`).
      `[name="viewer-Biostructure"]` exists; `.msp-viewport canvas`
      is non-empty after `awaitRendered`; no error balloon, no fatal
-     console error. Atlas reference:
-     `biostructure.file-open.importPdb` →
-     `viewBiostructure(content, 'pdb')` (`package.ts#L142`).
+     console error.
 
 2. In the property panel **Data** category, set
    **`ligandColumnName`** to the column carrying the multi-ligand
@@ -204,9 +177,7 @@ Steps:
    fallback or an in-package fixture) and re-attach the viewer.
 
    * Expected result: the property panel reflects the new value;
-     no console error. Atlas reference:
-     `biostructure.prop.ligand-column` →
-     `molstar-viewer.ts#L249`.
+     no console error.
 
 3. Enable the relevant row-driven ligand-overlay properties so that
    multiple ligands surface at once — in particular toggle
@@ -215,11 +186,7 @@ Steps:
    `showCurrentRowLigand` (default already true).
 
    * Expected result: the property panel reflects the new state; no
-     console error. Atlas references:
-     `biostructure.prop.show-selected-rows-ligands`
-     (`molstar-viewer.ts#L300`),
-     `biostructure.prop.show-current-row-ligand`
-     (`molstar-viewer.ts#L302`).
+     console error.
 
 4. Await render settle (`viewer.awaitRendered(timeoutMs)`), then
    assert ligand separation in the Mol* viewport. The assertion:
@@ -251,8 +218,7 @@ Steps:
 
 1. From the same table-view used in Scenario 1 (or re-open it), add
    the **NGL** viewer to the table via the Add-viewer dropdown
-   (search "NGL") or `tv.addViewer('NGL')`. Atlas reference:
-   `biostructure.ngl-viewer` (`package.ts#L441`).
+   (search "NGL") or `tv.addViewer('NGL')`.
 
    * Expected result: `[name="viewer-NGL"]` exists alongside the
      Biostructure viewer; NGL canvas renders the structure; no
@@ -263,8 +229,7 @@ Steps:
 2. In the NGL viewer's property panel (or via
    `nglViewer.setOptions({ligandColumnName: '<col>'})`), set
    **`ligandColumnName`** to the SAME column used in Scenario 1
-   step 2. Atlas reference:
-   `biostructure.ngl-viewer.props` (`ngl-viewer.ts#L63`).
+   step 2.
 
    * Expected result: the property panel reflects the new value;
      no console error.
@@ -272,8 +237,7 @@ Steps:
 3. Enable the same row-driven overlay flags on the NGL viewer —
    `showSelectedRowsLigands: true`, optionally
    `showCurrentRowLigand: true` — and keep the same selected
-   ligand-rows from Scenario 1 step 3. Atlas reference: NGL
-   exposes the same Behaviour property set (`ngl-viewer.ts#L63`).
+   ligand-rows from Scenario 1 step 3.
 
 4. Await NGL render settle (poll `[name="viewer-NGL"] canvas`
    non-empty + short delay; NGL has no first-party
@@ -307,53 +271,12 @@ Steps:
 
 ## Notes
 
-- target_layer rationale: **playwright**. The bug surfaces only as a
-  WebGL-rendered visual / canvas state — the assertion is "the
-  rendered viewport shows N distinct ligand primitives, not one
-  merged". Neither the JS API nor `viewer.getOptions()` expose the
-  per-engine ligand-rendering geometry that the bug touched; the
-  Mol* / NGL canvases are the only authoritative ground truth, and
-  both require a real browser. An apitest variant could assert only
-  that the `ligandColumnName` property round-trips on both engines
-  (which is necessary but NOT sufficient to catch GROK-17967, since
-  the bug was the engine-internal merging, not the property
-  contract). The cross-engine parity check additionally requires
-  both viewers mounted in the same view — a playwright-only setup.
-
-- coverage_type rationale: **regression** per the dispatch
-  `inputs.bug_brief.coverage_type`. The bug is fixed and this
-  scenario is a regression guard against re-emergence of the
-  multi-ligand merge behavior. Note that the chain-YAML SR proposal
-  recommended `coverage_type: edge` for the residual four bug-focused
-  scenarios so each authoring would double up against
-  F-STRUCT-NEGATIVE-01 (atlas edge_cases[3] carries `coverage_type:
-  edge`). The dispatch explicitly resolved to `regression` — operator
-  may re-classify to `edge` post-author to satisfy F-STRUCT-NEGATIVE-01
-  in addition to F-BUG-COVERAGE-01.
-
 - Deferrals: a fallback pixel / screenshot-diff assertion path is
   documented in Setup for environments without direct ligand-state
-  introspection on either engine. This is NOT a deferral against a
-  missing helper — the playwright primitives (screenshot, pixel-read)
-  are first-party — but a documented fallback for fixture-related
-  variability across engines. No sub_features deferred to another
-  layer.
+  introspection on either engine — a documented fallback for
+  fixture-related variability across engines, not a coverage gap.
 
-- Cross-reference with the atlas top-level `interactions[]` entry
-  `biostructure-multi-ligand-rendering`
-  (`feature-atlas/biostructureviewer.yaml#L898-L909`): this scenario
-  is the concrete realization of that interaction, scoped to the
-  GROK-17967 regression guard. The interaction entry's
-  `sub_features` (biostructure.viewer, biostructure.ngl-viewer,
-  biostructure.file-open.importPdb) overlap this scenario's
-  `sub_features_covered`; here `biostructure.prop.ligand-column` is
-  added because the multi-ligand assertion specifically exercises the
-  per-row ligand overlay wiring, not just the file-open path.
-
-- The existing smoke `biostructure-viewer.md` does NOT exercise this
-  path — its `bug_match_attempts_skipped[]` audit record for
-  GROK-17967 reads "the scenario does not add an NGL viewer and does
-  not exercise the NGL/Biostructure multi-ligand parity invariant, so
-  semantic_match returns []". This is the dedicated regression guard
-  authored to close that gap (F-BUG-COVERAGE-01 branch (ii) anchor
-  via `related_bugs: [GROK-17967]`).
+- The existing smoke scenario (`biostructure-viewer.md`) does not
+  add an NGL viewer and doesn't exercise the NGL/Biostructure
+  multi-ligand parity invariant, so it doesn't cover this bug. This
+  scenario is the dedicated regression guard for that gap.

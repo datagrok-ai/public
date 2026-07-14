@@ -1,5 +1,4 @@
 /* ---
-sub_features_covered:
   - bio.api.get-bio-lib
   - bio.api.get-seq-handler
   - bio.api.get-helm-monomers

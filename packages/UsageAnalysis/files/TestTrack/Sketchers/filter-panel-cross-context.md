@@ -1,18 +1,9 @@
 ---
 feature: chem
-sub_features_covered:
-  [
-    chem.sketcher,
-    chem.sketcher.ocl,
-    chem.sketcher.substructure-filter,
-    chem.sketcher.backend-switch,
-    chem.sketcher.hamburger-menu,
-    chem.sketcher.molecular-input,
-    chem.sketcher.ketcher,
-    chem.sketcher.chemdraw
-  ]
 target_layer: playwright
 coverage_type: regression
+priority: p1
+realizes: [chem.cp.substructure-filter, chem.x.sketcher-backend-switch-propagation, chem.x.filter-panel-sketcher-reopen]
 produced_from: atlas-driven
 pyramid_layer: bug-focused
 migration_date: 2026-06-02
@@ -49,7 +40,13 @@ gate_verdicts:
     failure_keys: []
 ---
 
-# Chem | Sketcher — Filter Panel cross-context
+# Chem | Sketcher — Filter Panel: substructure filter & backend-switch sync
+
+Tests the substructure filter card on the Filter Panel: sketching a structure to filter the grid,
+then using Reset to restore all rows and clear the sketch. Also checks that switching the sketcher
+backend (OpenChemLib, Ketcher, ChemDraw) from the Filter Panel's dialog keeps the rest of the UI —
+the column's hamburger menu and the Context Pane — in sync, and that the filter's sketcher dialog
+still reopens correctly after switching backends back and forth.
 
 ## Setup
 
@@ -70,7 +67,7 @@ gate_verdicts:
    - **Expected:** the grid is filtered — visible row count drops below the total (benzene is a
      substructure of most, not all, rows).
 3. On the Filter Panel click Reset.
-   - **Expected (GROK-14028):** the input line in Sektcher is cleared **and** all rows are restored, on the Filter Panel .
+   - **Expected (GROK-14028):** the input line in Sketcher is cleared **and** all rows are restored, on the Filter Panel .
 
 ### Block B — backend switch on the Filter Panel propagates (GROK-12581 / GROK-12903)
 

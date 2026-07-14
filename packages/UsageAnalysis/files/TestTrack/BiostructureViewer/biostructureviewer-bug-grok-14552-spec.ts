@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [biostructure.cell-renderer.molecule3d, biostructure.grid-context-menu.copy-raw, biostructure.grid-context-menu.download-raw, biostructure.grid-context-menu.show-biostructure-viewer]
---- */
 // GROK-14552: detectors.js context-menu hook must null-guard the cell (no "reading 'semType'" on
 // whitespace right-click) while still injecting Copy/Download/Show items on populated Molecule3D cells.
 // In-package sentinel: window.$biostructureViewer.contextMenuError. Grid overlay = canvas[2] of tv.grid.root.

@@ -1,3 +1,14 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - softmax-spec.ts
+related_bugs: []
+---
+
 ### Softmax
 
 1. Open the DataFrame:

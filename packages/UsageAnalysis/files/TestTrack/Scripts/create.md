@@ -1,3 +1,14 @@
+---
+feature: scripts
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - scripts-create-debugged.test.ts
+related_bugs: []
+---
+
 ### Scripting 
 Scripting is an integration mechanism with R, a language for statistical computing. The system allows to create your own scripts, open scripts saved locally, and also use ready-made samples.
 

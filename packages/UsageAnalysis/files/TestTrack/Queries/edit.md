@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - postgres-query-lifecycle.test.ts
+related_bugs: []
+---
+
 1. Right-click `test_query` and select `Edit...` from the context menu
 2. Change name to `new_test_query`, and click `SAVE`.
 3. Change the query test to: 

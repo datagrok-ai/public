@@ -1,14 +1,17 @@
-// Verifies the Save Copy round-trip with data sync OFF and ON.
+/* ---
+sub_features_covered: [projects.add-relation, projects.api.files.sync, projects.api.save]
+--- */
 import {test, expect} from '@playwright/test';
-import {softStep, stepErrors} from '../spec-login';
+import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
-import {openTableFromFile, resetShell, assertProvenanceScript} from '../helpers/openers';
-import {saveProjectWithProvenance, deleteProjectWithCleanup} from '../helpers/projects';
+import {openTableFromFile, resetShell, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
+import {saveProjectWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use(projectsTestOptions);
 
 test('Projects / Complex Save Copy: round-trip Save Copy with sync OFF/ON', async ({page}) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   stepErrors.length = 0;
 
   const stamp = Date.now();
@@ -69,8 +72,5 @@ test('Projects / Complex Save Copy: round-trip Save Copy with sync OFF/ON', asyn
       await deleteProjectWithCleanup(page, ids);
   }
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

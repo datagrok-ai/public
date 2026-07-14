@@ -1,15 +1,9 @@
 ---
 feature: bio
-sub_features_covered:
-  - bio.calculate.get-region
-  - bio.calculate.get-region.top-menu
-  - bio.transform.convert-notation
-  - bio.transform.convert-notation.top-menu
-  - bio.transform.to-atomic-level
-  - bio.transform.split-to-monomers
-  - bio.detector
 target_layer: playwright
 coverage_type: regression
+priority: p0
+realizes: [bio.cp.convert-notation-roundtrip]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/convert.md
 migration_date: 2026-05-31
@@ -64,11 +58,10 @@ gate_verdicts:
 
 # Bio | Transform / Calculate — convert-notation matrix
 
-Source-matrix scenario for the four `Bio` transform / calculate
-top-menu actions that produce a new column from a Macromolecule
-column, exercised across three canonical Macromolecule notations.
-Verifies that each action dispatches its dialog and produces a new
-column whose semantics match the atlas registration.
+Covers the four `Bio` transform / calculate top-menu actions that
+produce a new column from a Macromolecule column, exercised across
+three canonical Macromolecule notations. Verifies that each action
+dispatches its dialog and produces a new column with the right shape.
 
 Matrix shape: **4 actions x 3 notations = 12 cells**.
 
@@ -86,22 +79,16 @@ Datasets (canonical Bio test fixtures, one per source notation):
 
 Actions (each invoked from the `Bio` top-menu):
 
-- **Calculate > Extract Region...** (atlas
-  `bio.calculate.get-region.top-menu`, `package.ts#L483`; menu label
-  is "Extract Region..." per atlas — the source scenario spelling
-  "Get region" is reconciled here to the atlas label).
-- **PolyTool > Convert** (source-scenario spelling). Atlas registers
-  the convert-notation surface under
-  `Bio | Transform | Convert Sequence Notation...`
-  (`bio.transform.convert-notation.top-menu`, `package.ts#L1131`); the
+- **Calculate > Extract Region...** (menu label is "Extract
+  Region..."; the source scenario spelling "Get region" is
+  reconciled here to this label).
+- **PolyTool > Convert** (source-scenario spelling). The platform
+  registers the convert-notation surface under
+  `Bio | Transform | Convert Sequence Notation...`; the
   "PolyTool > Convert" entry in the source scenario is preserved as
-  the current PolyTool-namespaced placement (see
-  `unresolved_ambiguities: polytool-vs-transform-convert-submenu-path`
-  for the menu-path reconciliation TODO).
-- **Transform > To Atomic Level...** (atlas
-  `bio.transform.to-atomic-level`, `package.ts#L863`).
-- **Transform > Split to Monomers...** (atlas
-  `bio.transform.split-to-monomers`, `package.ts#L1225`).
+  the current PolyTool-namespaced placement.
+- **Transform > To Atomic Level...**
+- **Transform > Split to Monomers...**
 
 Per-cell expected output column (guidance from the 2026-04-23
 reference run in `convert-run.md`):
@@ -125,10 +112,9 @@ For each dataset in
 `{filter_FASTA.csv, filter_HELM.csv, filter_MSA.csv}`:
 
 1. Open the dataset from `System.AppData/Bio/tests/`. The
-   Macromolecule detector classifies the sequence column synchronously
-   (atlas `bio.detector`, `detectors.js#L1`); the table view opens
-   with the sequence column tagged
-   `quality=Macromolecule, units=<fasta|helm|separator>`.
+   Macromolecule detector classifies the sequence column
+   synchronously; the table view opens with the sequence column
+   tagged `quality=Macromolecule, units=<fasta|helm|separator>`.
 
 ### Scenario 2 — Dispatch each transform action and verify a new column appears
 
@@ -181,71 +167,19 @@ For each of the four actions x each of the three datasets (12 cells):
 
 ## Notes
 
-- **Source-text fixes silently applied** during migration:
-  - The source scenario's step numbering ran `1, 2, 3, 5` (step 4
-    absent). Renumbered to `1, 2, 3, 4` in this migration. See
-    frontmatter `source_text_fixes`.
-  - The implicit 4-action x 3-notation matrix (Step 1 lists three
-    datasets; Step 2 lists four sub-menu actions) was not explicit in
-    the source; surfaced under Setup as a 12-cell matrix.
-  - The source "Check a new column" assertion was expanded into the
-    per-cell expected-output table in Setup so the verification
-    surface is decidable across the 12 cells (which column, which
-    semType / units / shape).
-  - Source-scenario menu label "Get region" reconciled to the atlas
-    label "Extract Region..." (`bio.calculate.get-region.top-menu`,
-    atlas L496).
-  - Source-scenario step "Set options" clarified into two cases:
-    accept defaults on a prefilled dialog, or select the Macromolecule
-    column manually when not auto-bound.
-- **Sub-features covered:**
-  - `bio.calculate.get-region` + `.top-menu` — Extract Region action
-    plus its top-menu entry-point.
-  - `bio.transform.convert-notation` + `.top-menu` — Convert Sequence
-    Notation surface (current PolyTool > Convert dispatch).
-  - `bio.transform.to-atomic-level` — To Atomic Level transform.
-  - `bio.transform.split-to-monomers` — Split to Monomers transform.
-  - `bio.detector` — Macromolecule classification on dataset open
-    (gate condition for the transforms to bind to the correct
-    column).
-- **Bug-context (`related_bugs`)** surfaced for downstream awareness;
-  per-bug coverage is delegated to chain-level
-  `bug_focused_candidates`:
-  - **GROK-15176** (MSA -> To Atomic Level molfile carries illegal
-    isotope=1 on heavy-atom oxygens; downstream PubChem
-    standardization rejects). Cross-cutting with `msa.md` /
-    `pepsea.md`; chain proposes `bio-grok-15176-spec.ts`. This
-    scenario exercises To Atomic Level on canonical sources but does
-    NOT chain into Chem renderer / PubChem standardization — the
-    molfile-validity contract is covered cross-scenario.
-  - **GROK-12164** (cell renderer dispatch failure after HELM ->
-    SEPARATOR convert with "-" separator — renderer stays on
-    `bilnSequenceCellRenderer` instead of dispatching to
-    `separatorSequenceCellRenderer`). This scenario verifies the
-    convert action produces a new column but does NOT assert
-    post-convert renderer dispatch on the same column. Chain marks
-    this bug below the cross-scenario trigger threshold
-    (`bug_match_attempts_skipped: GROK-12164`); no dedicated spec
-    proposed at chain level. Surfaced here for awareness; renderer-
-    dispatch regression is the responsibility of
-    `bio.cp.convert-notation-roundtrip` follow-up.
-- **Unresolved ambiguity** (carried in frontmatter
-  `unresolved_ambiguities`): the source scenario lists Convert under
-  "PolyTool > Convert" submenu, but atlas registers
-  `bio.transform.convert-notation.top-menu` under
-  "Bio | Transform | Convert Sequence Notation..."
-  (`package.ts#L1131`). Either the menu hierarchy migrated (current
-  PolyTool nesting) or the scenario predates the Transform-submenu
-  placement. The reference run `convert-run.md` 2026-04-23 ran
-  successfully via the PolyTool path on the live dev server.
-  Operator confirmation of current menu path needed before Migrator
-  rewrites the action description; this scenario preserves the source
-  spelling "PolyTool > Convert" so the assertion can be re-evaluated
-  against the live server.
-- **See atlas** `bio.cp.convert-notation-roundtrip` (p0),
-  `bio.cp.to-atomic-level` (p1), `bio.cp.split-to-monomers` (p1) for
-  the canonical critical-path framing; this scenario realizes their
-  matrix runner.
+- This scenario checks that the convert action produces a new column,
+  but not that the cell renderer switches correctly afterward —
+  that's the dedicated regression guard in `bio-renderer-dispatch.md`
+  (GROK-12164). Similarly, the To Atomic Level molfile-validity
+  contract for GROK-15176 is exercised more thoroughly in
+  `bio-transform-atomic-level.md`.
+- Open question: the source scenario lists Convert under "PolyTool >
+  Convert", but the Transform menu also registers a "Convert Sequence
+  Notation..." entry under a different submenu path. Either the menu
+  hierarchy changed over time, or this scenario predates the current
+  Transform-submenu placement — the PolyTool path is confirmed
+  working on the live dev server as of 2026-04-23, so this scenario
+  keeps that spelling until the menu path is confirmed.
 
 ---
 {

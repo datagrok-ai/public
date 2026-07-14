@@ -1,5 +1,21 @@
+---
+feature: sharing
+target_layer: apitest
+coverage_type: regression
+priority: p0
+realizes: [cp-api-grant-check-revoke, cp-api-check-permission]
+realized_as:
+  - sharing-api-permissions-api-spec.ts
+related_bugs: []
+---
+
 
 # Sharing — API Permissions (JS API Grant / Check / Revoke Lifecycle)
+
+Verifies the JS API's `grok.dapi.permissions` methods — `grant()`, `get()`, `check()`, and
+`revoke()` — directly, without going through the Share dialog UI: granting view or edit
+access to a group, confirming the grant is visible and enforced, and confirming it is
+gone again after revoke.
 
 ## Setup
 
@@ -20,7 +36,7 @@
 
 ## Scenarios
 
-### Scenario 1: Full grant-get-revoke lifecycle (cp-api-grant-check-revoke)
+### Scenario 1: Full grant-get-revoke lifecycle
 
 Steps:
 1. Call `grok.dapi.permissions.grant(script, group, false)` to grant view permission
@@ -42,8 +58,6 @@ Expected:
 - After step 6-7: `grok.dapi.permissions.get()` returns a Map where the test group
   is absent from both `view` and `edit` arrays.
 
-# atlas entry derived from source: public/packages/UITests/src/ui/sharing.ts#testEntityAPI
-
 ### Scenario 2: Grant full access and verify via get()
 
 Steps:
@@ -58,7 +72,7 @@ Expected:
 - After step 2-3: `get()` returns a Map with `edit` array containing the test group.
 - After step 4: revoke completes without error; group is absent from `get()` results.
 
-### Scenario 3: Permission check — view vs edit boundary (cp-api-check-permission)
+### Scenario 3: Permission check — view vs edit boundary
 
 Steps:
 1. Call `grok.dapi.permissions.grant(script, group, false)` to grant view-only access.
@@ -77,8 +91,6 @@ Expected:
 - All check() calls are backed by GET
   `/privileges/permissions/check/<entityId>/<permission>` and return boolean.
 
-# atlas entry derived from source: public/js-api/src/dapi.ts#L701
-
 ### Scenario 4: Server router — batch permissions list endpoint
 
 Steps:
@@ -96,5 +108,3 @@ Expected:
   consistent view reflecting both grants, then zero grants after revocation.
 - DELETE `/privileges/permissions/<id>` (invoked by revoke) removes each grant row
   independently.
-
-# atlas entry derived from source: core/server/datlas/lib/src/routers/privileges.dart#L4

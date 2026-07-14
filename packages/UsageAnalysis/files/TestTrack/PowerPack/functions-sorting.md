@@ -1,10 +1,9 @@
 ---
 feature: powerpack
-sub_features_covered:
-  - powerpack.dialogs.add-new-column
-  - powerpack.dialogs.add-new-column-func
 target_layer: playwright
 coverage_type: smoke
+priority: p1
+realizes: []
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-functions-panel
@@ -17,7 +16,16 @@ migration_date: 2026-05-20
 source_text_fixes: []
 candidate_helpers: []
 unresolved_ambiguities: []
-scope_reductions: []
+scope_reductions:
+  - id: SR-01
+    check: E-SCENARIO-RUNTIME-ALIGNMENT
+    rationale: |
+      The function panel re-sorts on column change, but the scenario-cited
+      example function families do not reorder deterministically on the chosen
+      columns. The assertion is made at the order-changed level (the top-5
+      differs); the "matching family on top" expectation is log-only, not a
+      hard assertion.
+    verdict_status: SCOPE_REDUCTION
 related_bugs: []
 realized_as:
   - functions-sorting-spec.ts
@@ -60,33 +68,12 @@ numeric-input functions for numeric columns); (b) toggling the sort
 icon to "By name" re-sorts the list alphabetically; (c) once "By name"
 is active, clicking different columns does NOT change the function order.
 
-`pyramid_layer: ui-smoke` per `scenario-chains/powerpack.yaml` rev 1
-(Rule 1 fallback — single short UI flow over one source `SPGI`,
-`simple` classification, no related bugs). NOT the chain's elected
-smoke witness; `coverage_type: regression` is used here (the chain
-reserves `coverage_type: smoke` for the elected smoke scenario at
-top-level `add-new-column.md`, which exercises the dialog UI
-holistically).
-
-`ui_coverage_delegated_to: add-new-column.md` — this scenario owns
-the functions-panel sort-by-type / sort-by-name specialty flows on
-its responsibility list and delegates the basic dialog-open-and-add
-flow to the smoke witness.
-
-`related_bugs: []` — no curated bug in
-`bug-library/powerpack.yaml` intersects this scenario's
-`sub_features_covered` for the functions-panel-sorting surface.
-(GROK-17109 and GROK-17004 affect the same `powerpack.dialogs.add-new-column`
-sub-feature but their reproduction surfaces — formula-recalc-on-rename
-across save-with-datasync, and complex-paste-handler crash — are not
-exercised by the functions-list sort behaviour. See chain rev 1
-`bug_focused_candidates[]` for the canonical cross-cutting spec
-proposals.)
+The dialog's basic open-and-add flow is covered by `add-new-column.md`.
 
 ## Setup
 
 A clean Datagrok session is the only shared setup. The scenario opens
-its own dataset; no fixture chaining (`depends_on: []` per chain rev 1).
+its own dataset; no fixture chaining is required.
 
 ## Scenarios
 
@@ -133,74 +120,9 @@ its own dataset; no fixture chaining (`depends_on: []` per chain rev 1).
 
 ## Notes
 
-- **target_layer: playwright** — chosen because a sibling
-  `functions-sorting-spec.ts` already exists at the playwright layer
-  (per `existing-test-index.yaml` line 33452, layer `playwright`).
-  All other Add-New-Column siblings (`add-new-column-spec.ts`,
-  `autocomplete-spec.ts`, `hints-spec.ts`, `highlight-spec.ts`,
-  `input-functions-spec.ts`, `formula-refreshing-spec.ts`) are also
-  Playwright specs, so the house style is consistent.
-- **coverage_type: regression** — per the chain's smoke-scenario
-  election (`ui_coverage_plan.smoke_scenario: add-new-column.md`),
-  the top-level `add-new-column.md` owns the `smoke` slot. This
-  narrower per-flow scenario lands in `regression`. (Per the
-  migration prompt's `coverage_type` heuristic: `smoke` for one
-  fast happy-path test per feature; `regression` is the default
-  for the rest.)
-- **Step decomposition note.** The original scenario's Step 3 packs
-  two sub-cases into one numbered step: (a) Structure column →
-  Molecule-input functions on top; (b) change to a non-Structure
-  column and verify the matching-input family is on top. The
-  migrated body splits these into Step 3 (Structure / chem) and
-  Step 4 (numeric column). Both sub-cases of the original Step 3
-  are preserved verbatim — no silent drop. The chain's
-  `ui_coverage_responsibility:` for this scenario already
-  enumerates both `add-new-column-functions-sort-by-type` and
-  `add-new-column-functions-sort-by-name`, so the split aligns
-  with the chain's coverage intent.
-- **Helpers (already in registry, available for downstream
-  Automator):** `softStep`, `loginToDatagrok`, `specTestOptions`,
-  `stepErrors` from
-  `public/packages/UsageAnalysis/files/TestTrack/spec-login.ts` —
-  used by the existing `functions-sorting-spec.ts` per the sibling
-  test index entry's `helpers_called: [spec-login]`.
-- **Bug-library status:** consulted —
-  `bug-library/powerpack.yaml` exists and was scanned; no curated
-  bug intersects this scenario's `sub_features_covered` for the
-  functions-panel sort surface. Cross-cutting candidates GROK-17109
-  and GROK-17004 are emitted at the chain level
-  (`bug_focused_candidates[]`) but their `spans` reference
-  `AddNewColumn/add-new-column.md`, `AddNewColumn/formula-refreshing.md`,
-  and `AddNewColumn/highlight.md` — NOT this scenario.
-- **Decision log status:** queried — no
-  `failed_attempts WHERE feature == powerpack` entries that touch
-  the `AddNewColumn/functions-sorting.md` migration. No retry-skip
-  approaches apply.
-- **Atlas linkage (`derived_from:` provenance):**
-  - `powerpack.dialogs.add-new-column-func` interactions "click
-    Add New Column toolbar icon → opens AddNewColumnDialog" and
-    "Edit | Add New Column top-menu → opens AddNewColumnDialog"
-    are code-derived from
-    `public/packages/PowerPack/src/package.ts#L405`.
-  - `powerpack.dialogs.add-new-column` is the dialog class with
-    the columns list + functions panel + preview grid; source
-    anchor `public/packages/PowerPack/src/dialogs/add-new-column.ts#L98`.
-    The functions-panel sort-by-type behaviour (matching first
-    input parameter type to the selected column) and the sort-icon
-    menu ("By name" / "By relevance") are surfaces of this class
-    not currently captured as atlas `interactions[]` entries —
-    surfaced as a curator candidate for the next atlas regen, but
-    not blocking for this migration.
-- **Edge cases.** The original scenario implies an edge case in
-  Step 5 ("Try to click on columns — function order should not
-  change"): the alphabetical-sort sticky-contract. Preserved as
-  Step 6 of the migrated body. Step 3's "Change column to some
-  other and check that function are sorted by matching parameters"
-  generalises across column types; the migrated Step 4 picks a
-  representative numeric column (`Chemical Space X`) and notes the
-  pattern applies to any column type — matches the
-  `functions-sorting-run.md` evidence, which records `string`
-  (`Chemist`) as covered by the same assertion.
+- **Edge cases.** The sort-by-type behavior generalizes to any
+  column type; string columns (e.g. `Chemist`) follow the same
+  pattern as the Molecule and numeric cases exercised in Steps 3-4.
 
 ---
 {

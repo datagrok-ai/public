@@ -8,6 +8,8 @@ import {
 import {FUNC_CATEGORIES} from '../panel/function-browser';
 import {FuncNode} from '../rete/nodes/func-node';
 import {getParamDescription, getParamDisplayName} from '../utils/dart-proxy-utils';
+import {pastelize, FUNC_NAME_COLORS} from '../types/type-map';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 category('Flow: node-factory', () => {
   before(async () => {
@@ -121,15 +123,55 @@ category('Flow: node-factory', () => {
   });
 
   test('per-function color override pins SetVar to red', async () => {
+    const setVarRed = FUNC_NAME_COLORS['setvar'].color;
     const setVar = DG.Func.find({name: 'SetVar'})[0];
     if (!setVar) return;
     const node = new FuncNode(setVar);
-    expect((node as unknown as {color?: string}).color, '#EF5350', 'SetVar title is red');
+    expect((node as unknown as {color?: string}).color, setVarRed, 'SetVar title is red');
 
     // A function without an override falls back to role/default coloring.
     const other = DG.Func.find({name: 'AddNewColumn'})[0];
     if (other)
-      expect((new FuncNode(other) as unknown as {color?: string}).color !== '#EF5350', true);
+      expect((new FuncNode(other) as unknown as {color?: string}).color !== setVarRed, true);
+  });
+
+  test('title bar renders the pastel of the identity color, not the vivid hue', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Utilities/Info', 0, 0);
+      const query = (): HTMLElement | null => e.container.querySelector<HTMLElement>(
+        `.ff-node[data-node-id="${a.id}"] .ff-node-title`);
+      await until(() => query() != null);
+      const title = query()!;
+      // Normalize both sides through the browser's own color parsing.
+      const norm = (c: string): string => {
+        const d = document.createElement('div');
+        d.style.background = c;
+        return d.style.background;
+      };
+      const identity = (a as unknown as {color: string}).color;
+      expect(norm(identity) !== '', true, 'node keeps a vivid identity color');
+      expect(title.style.background, norm(pastelize(identity)), 'title bar is the pastel');
+      expect(title.style.background !== norm(identity), true, 'vivid hue is not painted directly');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('sockets render Column Manager-style type letters; order squares stay bare', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const sel = `.ff-node[data-node-id="${a.id}"]`;
+      await until(() => e.container.querySelector(`${sel} [data-testid="ff-socket-dataframe"]`) != null);
+      const chip = e.container.querySelector<HTMLElement>(`${sel} [data-testid="ff-socket-dataframe"]`)!;
+      expect(chip.textContent, 't', 'a dataframe socket shows the "t" (table) letter');
+      expect(chip.style.getPropertyValue('--socket-color') !== '', true, 'chip carries its type color');
+      const order = e.container.querySelector<HTMLElement>(`${sel} .ff-exec-out .ff-socket`)!;
+      expect(order.textContent, '', 'order squares carry no letter');
+    } finally {
+      destroyEditor(e);
+    }
   });
 
   test('suggestion menu shows friendly names with "what it does" categories', async () => {

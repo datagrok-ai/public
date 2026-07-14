@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [bio.analyze.msa, bio.analyze.msa.align-sequences, bio.analyze.msa.dialog, bio.api.get-seq-helper, bio.engines.msa-pepsea, bio.lifecycle.init]
---- */
 // NOTE: This spec was REMOVED from the playwright-public CI suite (Bio folder) and is kept here in
 // TestTrack/General for reference only. Reason for removal: it exercises the on-demand `bio` PepSeA
 // Docker container (dockerfiles/, on_demand:true). On the minimal ui_tests CI stack that container is

@@ -1,6 +1,5 @@
 ---
 feature: chem
-sub_features_covered: [chem.sketcher, chem.sketcher.cell-editor]
 target_layer: manual
 coverage_type: smoke
 produced_from: decomposed
@@ -17,14 +16,10 @@ structures. The depicted molecules in the dataframe grid (with stereo bond marki
 render identically whether or not a Highlights structure is active — the highlight overlay
 must not flatten / strip / re-canonicalize the molecule's stereo display.
 
-Per chain YAML (`scenario-chains/chem.yaml` rev 2 footer note (d)): split out from the
-original `sketcher.md` Check-block as `target_layer: manual`, `pyramid_layer: ui-smoke` —
-this is a visual-fidelity invariant that requires human visual comparison of stereo
-rendering before/after a Highlights structure is applied. The Migrator carries the
-invariant verbatim; the Automator does **not** turn this into a playwright spec (any
-attempt to verify "stereochemistry kept" via DOM assertions would require a structural
-render-comparison library outside the test harness's standard helper surface — flagged
-as a future-work atlas-curator candidate, not in scope here).
+This scenario is split out from `sketcher.md`'s original Check-block and kept as a manual-only
+visual-fidelity check, because verifying "stereochemistry kept" would require a structural
+render-comparison library the test harness doesn't currently have — this stays a human visual
+comparison for now.
 
 ## Setup
 
@@ -82,36 +77,7 @@ invariant.
 
 ## Notes
 
-- **`coverage_type: smoke`** — single visual-fidelity invariant that asserts the
-  Highlights overlay does not corrupt stereochemistry depiction in a SMILES dataset.
-  Manual-layer ui-smoke; no DOM assertion library can reasonably automate "wedge bond
-  remains visible" or "E/Z marking remains visible" without a pixel-diff harness or a
-  vector-render comparison library that the section does not currently use. Per chain
-  rev 2 footer note (d): `target_layer: manual`, `pyramid_layer: ui-smoke`. The chain-
-  level A-STRUCT-02 (`coverage_type: edge` or `perf` at chain level) is satisfied by
-  the `bug_focused_candidates[]` + r-group-analysis.md edge scenario elsewhere in the
-  chain; no SR carryforward needed on this manual-layer scenario.
-- **No playwright automation expected.** This scenario lives at `target_layer: manual`.
-  The Migrator surfaces the invariant verbatim; QA runs it as a manual visual check
-  per release.
-- **#2448 origin.** Originally a "Check:" sub-block at the trailing end of the
-  pre-rev-2 `sketcher.md` body; lifted out as a separate ui-only scenario per chain
-  rev 2 footer note (d) (Olena 2026-05-11) for `target_layer: manual`,
-  `pyramid_layer: ui-smoke` placement.
-- **Disjoint from `sketcher.md`.** The main `sketcher.md` (now `coverage_type:
-  regression`, `target_layer: playwright`) covers the canonical sketcher cell-editor
-  walk (Favorites / Recent / Copy / Paste / backend enumeration). This scenario carries
-  only the stereo-preservation visual invariant on the Highlights surface — no
-  sketcher modal interaction.
-- **Dataset provisioning note.** The `SMILES_highlighted.csv` dataset's exact path
-  inside the platform's file shares is unverified at migration time (the original
-  body had a TODO: "Add to linked datasets"). Preferred path
-  `System:AppData/Chem/tests/SMILES_highlighted.csv` is the section convention for
-  Chem test datasets; if absent the QA owner provisions the file as a Setup-time
-  prerequisite. Flagged in migration report Unresolved ambiguities.
-- **WideSmokeTest sibling.** The section's WideSmokeTest folder
-  (`public/packages/UsageAnalysis/files/TestTrack/WideSmokeTest/Chem/`) contains
-  ui-only smoke notes for Activity Cliffs / Info Panels / R-Groups Analysis. This
-  scenario sits at `public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher-ui.md`
-  (alongside its parent `sketcher.md` per the decomposition idiom) rather than under
-  WideSmokeTest, mirroring the chain rev 2 output_plan target placement.
+- **Disjoint from `sketcher.md`.** The main `sketcher.md` (playwright-automated) covers the
+  canonical sketcher cell-editor walk (Favorites / Recent / Copy / Paste / backend
+  enumeration). This scenario carries only the stereo-preservation visual invariant on the
+  Highlights surface — no sketcher modal interaction.

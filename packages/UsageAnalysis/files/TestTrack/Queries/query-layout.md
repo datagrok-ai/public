@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes: []
+realized_as:
+  - query-layout.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases** > **Postgres** > **NorthwindTest** 
 2. Right-click the **PostgresAll** query and select **Edit..**
 3. Go to the Layout tab

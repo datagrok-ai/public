@@ -13,7 +13,7 @@
  */
 
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {
   saveProject,
   waitForSaved,
@@ -25,7 +25,7 @@ import {
   deleteProjectViaContextMenu,
   shareProjectViaContextMenu,
   saveCopy,
-} from '../helpers/projects';
+} from '@datagrok-libraries/test/src/playwright/projects';
 
 test.use({...specTestOptions, navigationTimeout: 180_000});
 

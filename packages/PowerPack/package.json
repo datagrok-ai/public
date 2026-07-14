@@ -4,7 +4,7 @@
   "sources": [
     "css/power-pack.css"
   ],
-  "version": "1.8.0",
+  "version": "1.8.2",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -23,20 +23,24 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.26.3",
     "@datagrok-libraries/db-explorer": "^1.7.2",
+    "@datagrok-libraries/test": "^1.3.1",
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "codemirror": "^6.0.1",
     "core-js": "^3.37.0",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.27.7",
     "dayjs": "^1.11.7",
     "exceljs": "^4.3.0",
     "fuse.js": "^6.6.2",
-    "rxjs": "^6.5.5",
-    "@datagrok-libraries/test": "^1.1.0"
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "@playwright/test": "^1.48.0",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
+    "babel-loader": "^10.0.0",
     "datagrok-tools": "^5.1.2",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
@@ -45,10 +49,7 @@
     "typescript": "^4.4.4",
     "webpack": "^5.59.1",
     "webpack-cli": "^4.9.1",
-    "yaml": "^2.3.4",
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
-    "babel-loader": "^10.0.0"
+    "yaml": "^2.3.4"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -105,6 +106,8 @@
     ]
   },
   "overrides": {
-    "datagrok-api": "$datagrok-api"
-  }
+    "datagrok-api": "$datagrok-api",
+    "uuid": "^11.1.1"
+  },
+  "playwrightTests": "playwright"
 }

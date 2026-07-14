@@ -13,7 +13,7 @@
 import {test, expect, Page} from '@playwright/test';
 import {
   loginToDatagrok, loginAsSecondUser, getSecondUserLogin, specTestOptions,
-} from '../spec-login';
+} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {
   gotoApp, setupSession, createProject, shareProjectWithUser, deleteProjectById,
   selectProjectAsCurrentObject, openChatsPane, postComment, commentByText, commentTexts,
@@ -24,6 +24,9 @@ test.use(specTestOptions);
 
 const readLogin = (page: Page): Promise<string | null> =>
   page.evaluate(() => (window as any).grok?.shell?.user?.login ?? null);
+
+const readFriendlyName = (page: Page): Promise<string | null> =>
+  page.evaluate(() => (window as any).grok?.shell?.user?.friendlyName ?? null);
 
 // Author label / avatar / timestamp of the rendered comment at `index`
 // (chat.dart: .grok-comments-message-user, .grok-comments-message-picture, the
@@ -49,6 +52,7 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
   const projectName = `ChatCollab${Date.now()}`;
   let authorA = '';
   let authorB = '';
+  let secondFriendly = '';
 
   let secondLogin: string;
   try {
@@ -61,6 +65,7 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
   await gotoApp(page);
   await setupSession(page);
   const ownerLogin = await readLogin(page);
+  const ownerFriendly = await readFriendlyName(page);
   expect(secondLogin, 'second user must differ from owner').not.toBe(ownerLogin);
 
   let projectId = '';
@@ -96,6 +101,7 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       await loginAsSecondUser(page);
       await setupSession(page);
       expect(await readLogin(page)).toBe(secondLogin);
+      secondFriendly = await readFriendlyName(page) ?? '';
 
       expect(await selectProjectAsCurrentObject(page, projectId),
         'B should have access to the shared project').toBe(true);
@@ -103,8 +109,13 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       await expect(commentByText(page, COMMENT_A)).toHaveCount(1);
       // B is not the author of A's comment → its edit/delete controls are hidden.
       expect(await isCommentActionsHidden(page, 0)).toBe(true);
-      // B sees A's comment with A's author label (.md step 4).
-      expect((await commentRowMeta(page, 0)).author, 'B sees A comment authored by A').toBe(authorA);
+      // B sees A's comment with A's author label (.md step 4). The label renders as
+      // either the login or the friendly name depending on the viewing session, so B may
+      // see A's comment attributed by a different form than the one A captured — accept
+      // any of A's identity forms (it must still be A, and never B).
+      const bViewAuthorOfA = (await commentRowMeta(page, 0)).author;
+      expect([ownerLogin, ownerFriendly, authorA].filter(Boolean),
+        `B sees A comment authored by A (got "${bViewAuthorOfA}")`).toContain(bViewAuthorOfA);
 
       await postComment(page, REPLY_B);
       expect(await commentTexts(page)).toEqual([COMMENT_A, REPLY_B]);
@@ -113,7 +124,10 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       const metaB = await commentRowMeta(page, 1);
       expect(metaB.hasAvatar, 'B reply shows an avatar').toBe(true);
       expect(metaB.timestamp, 'B reply shows a timestamp').not.toBe('');
-      expect(metaB.author, 'B reply authored by B, distinct from A').not.toBe(authorA);
+      // Author label renders as either the login or the friendly name depending on session,
+      // so compare against A's identity set rather than the single form A happened to capture.
+      expect([ownerLogin, ownerFriendly, authorA].filter(Boolean),
+        `B reply authored by B, distinct from A (got "${metaB.author}")`).not.toContain(metaB.author);
       expect(metaB.author, 'B reply shows an author label').not.toBe('');
       authorB = metaB.author;
       // .md step 5 (notification/inbox for the shared project / new comment) is
@@ -133,9 +147,16 @@ test('Chat / Projects chat collaboration: post, share, second-user reply, persis
       expect(await commentTexts(page)).toEqual([COMMENT_A, REPLY_B]);
       expect(await isCommentActionsHidden(page, 0)).toBe(false); // A's own comment
       expect(await isCommentActionsHidden(page, 1)).toBe(true);  // B's comment
-      // Authors stay correct after the round-trip (.md step 7).
-      expect((await commentRowMeta(page, 0)).author, 'comment 0 authored by A').toBe(authorA);
-      expect((await commentRowMeta(page, 1)).author, 'comment 1 authored by B').toBe(authorB);
+      // Authors stay correct after the round-trip (.md step 7). The author label renders as
+      // either the login or the friendly name depending on the (re-authed) session, so assert
+      // each comment is attributed to any of that user's identity forms rather than the exact
+      // string captured earlier.
+      const author0 = (await commentRowMeta(page, 0)).author;
+      const author1 = (await commentRowMeta(page, 1)).author;
+      expect([ownerLogin, ownerFriendly, authorA].filter(Boolean),
+        `comment 0 authored by A (got "${author0}")`).toContain(author0);
+      expect([secondLogin, secondFriendly, authorB].filter(Boolean),
+        `comment 1 authored by B (got "${author1}")`).toContain(author1);
 
       // Persistence (server truth) — both comments stored; raw endpoint is unsorted.
       const persisted = await getChatCommentTexts(page, chatId);

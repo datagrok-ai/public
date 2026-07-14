@@ -481,6 +481,33 @@ function emitPreamble(runId: string): string[] {
     '  if (typeof v === \'object\') return {type:\'object\', str:String(v).slice(0,200)};',
     '  return {type:\'primitive\', value:v};',
     '}',
+    // Column-output summary with in-place detection: if the produced column is
+    // (by instance) one of `inputTable`'s columns — the in-place idiom, e.g. Add
+    // New Column mutates its input and returns the added column — capture a clone
+    // of the whole table plus the column name, so the preview can show the column
+    // IN the table it belongs to (scrolled into view) rather than alone.
+    // Otherwise the base column summary (one-column grid / sample) is returned.
+    'function __ff_col_summary(col, inputTable, declaredType) {',
+    '  var base = __ff_summarize(col, declaredType);',
+    '  if (base != null && base.type === \'column\' && inputTable != null &&',
+    '      inputTable.columns !== undefined && inputTable.rowCount !== undefined) {',
+    '    var owned = false;',
+    '    try {',
+    '      var __ff_cols = inputTable.columns.toList();',
+    '      for (var __ff_i = 0; __ff_i < __ff_cols.length; __ff_i++) {',
+    // Identity by the underlying Dart handle: each `.toList()`/`.col()` call
+    // wraps the same column in a fresh JS object, so `===` on the wrappers can be
+    // false even for the same column — compare `.dart`.
+    '        var __ff_c = __ff_cols[__ff_i];',
+    '        if (__ff_c === col || (__ff_c.dart != null && __ff_c.dart === col.dart)) { owned = true; break; }',
+    '      }',
+    '    } catch (e) {}',
+    '    if (owned) {',
+    '      try { base.tableClone = inputTable.clone(); base.scrollToColumn = col.name; } catch (e) {}',
+    '    }',
+    '  }',
+    '  return base;',
+    '}',
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
@@ -538,6 +565,21 @@ function wrapInstrumented(
   return lines;
 }
 
+/** The expression for the step's single connected dataframe input, or null when
+ *  it has zero or more than one. Under `cloneDataframeInputs` this is the
+ *  snapshot variable the call actually mutates — so a column output that lands
+ *  in it is detectable by instance (see `__ff_col_summary`). */
+function singleDataframeInputExpr(step: CompiledStep, node: FlowNode | undefined): string | null {
+  if (!node) return null;
+  const exprs: string[] = [];
+  for (const [key, input] of Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>) {
+    if (input?.socket.dgType !== 'dataframe') continue;
+    const expr = step.inputs.get(key);
+    if (expr && expr !== 'undefined') exprs.push(expr);
+  }
+  return exprs.length === 1 ? exprs[0] : null;
+}
+
 function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow: FlowEditor): string[] {
   const params: string[] = [];
   for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
@@ -557,30 +599,41 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
 
   // Build outputs summary.
   const node = flow.getNodeById(step.nodeId);
+  // The step's single connected dataframe input expression (the snapshot var
+  // under cloneDataframeInputs) — the in-place table a column output may belong
+  // to. Only when exactly one dataframe input is connected is the association
+  // unambiguous; with zero or several we fall back to the plain column summary.
+  const singleDfInput = singleDataframeInputExpr(step, node);
   const outputEntries: string[] = [];
-  for (const [key, varName] of step.outputs) {
+  // Key each entry by the output *slot key* (what `labelOutgoingConnections`
+  // and the live-stash look up), not by the value expression — a multi-output
+  // func's expression is `<var>.<name>`, which is not a valid object-literal key.
+  for (const [key, outExpr] of step.outputs) {
     const slotType = (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
     const typeArg = slotType ? `, '${slotType}'` : '';
-    outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
+    if (slotType === 'column' && singleDfInput)
+      outputEntries.push(`${JSON.stringify(key)}: __ff_col_summary(${outExpr}, ${singleDfInput}${typeArg})`);
+    else
+      outputEntries.push(`${JSON.stringify(key)}: __ff_summarize(${outExpr}${typeArg})`);
   }
 
-  // Capture the (possibly in-place-modified) table threaded through a dataframe
-  // input, keyed `<input> (modified)`. Covers two cases the real-output summaries
-  // miss: a pure in-place mutator (no outputs at all), AND a node whose real
-  // output isn't a table but still threads one through its passthrough — e.g.
-  // AddNewColumn returns a *column*, yet a viewer wired to its "table →"
+  // Capture the (possibly in-place-modified) table(s) threaded through a
+  // dataframe input, keyed `<input> (modified)`. Covers two cases the real-output
+  // summaries miss: a pure in-place mutator (no outputs at all), AND a node whose
+  // real output isn't a table but still threads one through its passthrough —
+  // e.g. AddNewColumn returns a *column*, yet a viewer wired to its "table →"
   // passthrough needs that post-execution table (for inspect + the column
-  // picker). Skipped when a real dataframe output already carries it.
+  // picker). Every connected dataframe input is captured (a two-table mutator
+  // with no output previews both), so the preview shows all it transformed.
+  // Skipped when a real dataframe output already carries it.
   const hasDataframeOutput = Array.from(step.outputs.keys()).some((key) =>
     (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType === 'dataframe');
   if (node && !hasDataframeOutput) {
     for (const [inKey, input] of Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>) {
       if (input?.socket.dgType !== 'dataframe') continue;
       const inputExpr = step.inputs.get(inKey);
-      if (inputExpr && inputExpr !== 'undefined') {
+      if (inputExpr && inputExpr !== 'undefined')
         outputEntries.push(`'${inKey} (modified)': __ff_summarize(${inputExpr}, 'dataframe')`);
-        break;
-      }
     }
   }
 

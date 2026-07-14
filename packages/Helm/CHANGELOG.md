@@ -1,5 +1,9 @@
 # Helm changelog
 
+## v.next
+
+* Moved the Helm Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
 ## 3.0.1 (2026-06-20)
 
 ### Features

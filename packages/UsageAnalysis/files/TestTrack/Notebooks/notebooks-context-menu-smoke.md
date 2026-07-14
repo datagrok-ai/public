@@ -1,25 +1,9 @@
 ---
 feature: notebooks
-sub_features_covered:
-  - notebooks.menu.open
-  - notebooks.meta.open
-  - notebooks.menu.edit
-  - notebooks.meta.edit
-  - notebooks.menu.rename
-  - notebooks.menu.save-as-json
-  - notebooks.meta.save-as-json
-  - notebooks.menu.share
-  - notebooks.menu.delete
-  - notebooks.meta.delete
-  - notebooks.api.delete
-  - notebooks.meta.render-icon
-  - notebooks.meta.render-tooltip
-  - notebooks.meta.render-details
-  - notebooks.meta.bind
-  - notebooks.meta.get-applicable-cases
-  - notebooks.entity.get-applicable-cases
 target_layer: playwright
 coverage_type: smoke
+priority: p0
+realizes: [delete-notebook, rename-notebook, share-notebook, apply-notebook-to-table]
 produced_from: atlas-driven
 realized_as:
   - notebooks-context-menu-smoke-spec.ts
@@ -92,10 +76,9 @@ gate_verdicts:
 
 # Notebooks — Context Menu Smoke
 
-Exercises all seven context-menu actions available on a server-persisted
-notebook entity (Open, Edit, Delete, Save As JSON, Share, Rename, Apply to)
-against a notebook created in Setup. This is the ui-smoke owner for the
-pcmd* UI flows extracted from the Notebooks UI reference doc.
+Exercises all seven context-menu actions available on a server-persisted notebook
+card in the Notebooks browser: Open, Edit, Delete, Save As JSON, Share, Rename, and
+Apply to. This is the primary smoke test for that right-click menu.
 
 ## Setup
 
@@ -110,7 +93,7 @@ pcmd* UI flows extracted from the Notebooks UI reference doc.
 
 ## Scenarios
 
-### Scenario 1: Open notebook in HTML mode via context menu (pcmdOpen)
+### Scenario 1: Open notebook in HTML mode via context menu
 
 Steps:
 1. In the Notebooks browser, right-click the test notebook card.
@@ -124,7 +107,7 @@ Expected:
 - The ribbon contains a **Download** combo (As HTML / As PDF) and an **EDIT** button.
 - `[name="div-Open"]` selector is present in the context menu before clicking.
 
-### Scenario 2: Launch edit mode via context menu (pcmdEdit)
+### Scenario 2: Launch edit mode via context menu
 
 Steps:
 1. In the Notebooks browser, right-click the test notebook card.
@@ -139,7 +122,7 @@ Expected:
   outside the JupyterLab iframe; the iframe interior is manual-only).
 - No JavaScript error is thrown before the iframe loads.
 
-### Scenario 3: Rename notebook via context menu (pcmdRename)
+### Scenario 3: Rename notebook via context menu
 
 Steps:
 1. In the Notebooks browser, right-click the test notebook card.
@@ -156,7 +139,7 @@ Expected:
   — validates `Validators.notEmpty` gate from
   `jupyter_notebook_plugin.dart#L26`.
 
-### Scenario 4: Save As JSON via context menu (pcmdSaveAsJSON)
+### Scenario 4: Save As JSON via context menu
 
 Steps:
 1. In the Notebooks browser, right-click the test notebook card (now named
@@ -170,7 +153,7 @@ Expected:
   in its filename.
 - The download contains the full entity-encoded notebook (not just the .ipynb).
 
-### Scenario 5: Share notebook via context menu (pcmdShare)
+### Scenario 5: Share notebook via context menu
 
 Steps:
 1. In the Notebooks browser, right-click the test notebook card.
@@ -183,7 +166,7 @@ Expected:
 - The `shareEntity` permissions dialog opens.
 - Closing the dialog does not alter the notebook entity.
 
-### Scenario 6: Apply-to context menu shows applicable tables (pcmdApplyTo)
+### Scenario 6: Apply-to context menu shows applicable tables
 
 Steps:
 1. Ensure `demog.csv` DataFrame is still open (opened in Setup step 2).
@@ -202,7 +185,7 @@ Expected:
 - Clicking the demog entry triggers `NotebookMeta.bind` → `ApplyNotebook`
   execution (`jupyter_notebook_plugin.dart#L46`).
 
-### Scenario 7: Delete notebook via context menu (pcmdDelete)
+### Scenario 7: Delete notebook via context menu
 
 Steps:
 1. In the Notebooks browser, right-click the `TestNotebook-Renamed` notebook.
@@ -221,20 +204,9 @@ Expected:
 
 ## Notes
 
-- target_layer rationale: all seven context-menu flows are triggered via
-  right-click on Datagrok-rendered notebook cards in the Notebooks browser;
-  the card DOM, ribbon, and confirm dialogs are all in platform selector
-  reach (`[name="div-<Action>"]` pattern documented in the UI reference).
-  The iframe interior of Edit mode is manual-only per atlas, but the
-  context-menu click itself and the edit-mode ribbon are Playwright-assertable.
-- Atlas manual_only[] excluded from coverage pool: notebooks.editor.edit-mode
-  (iframe interior); notebooks.entity.apply; notebooks.plugin.convert-notebook.
-  The Edit scenario (Scenario 2) only asserts the ribbon transition visible
-  outside the iframe, not JupyterLab cell content.
-- ui_coverage_responsibility covers all 7 pcmd flows extracted by Gate F
-  F-UI-COVERAGE-01: pcmdOpen, pcmdEdit, pcmdDelete, pcmdSaveAsJSON,
-  pcmdShare, pcmdRename, pcmdApplyTo.
+- Editing inside the JupyterLab iframe (cell content, applying a notebook, converting
+  a notebook) is not covered here — it runs in a sandboxed iframe not reachable by
+  browser automation. Scenario 2 (Edit) only checks that the ribbon switches to edit
+  mode, not what happens inside the editor.
 - See: public/help/compute/jupyter-notebook.md#Notebooks browser
 - See: public/help/compute/jupyter-notebook.md#Apply existing notebooks into tables
-- # atlas entry derived from source: core/client/xamgle/lib/src/meta/notebook_meta.dart#L12
-- # atlas entry derived from source: core/client/xamgle/lib/src/meta/notebook_meta.dart#L51

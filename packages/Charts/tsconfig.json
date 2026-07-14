@@ -67,5 +67,8 @@
     /* Advanced Options */
     "skipLibCheck": true,                          /* Skip type checking of declaration files. */
     "forceConsistentCasingInFileNames": true        /* Disallow inconsistently-cased references to the same file. */
-  }
+  },
+  /* The package-owned Playwright E2E suite is compiled/run by Playwright, not by the
+     package's webpack/ts-loader build — keep it out of the package's TS program. */
+  "exclude": ["node_modules", "playwright"]
 }

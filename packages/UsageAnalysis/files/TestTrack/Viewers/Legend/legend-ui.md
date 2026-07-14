@@ -1,7 +1,5 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.color-scale.numerical
 target_layer: manual-only
 coverage_type: regression
 priority: p2
@@ -24,9 +22,6 @@ the DOM on `dev.datagrok.ai` (2026-05-08).
 
 Each section is self-contained and includes the preceding setup steps so a
 manual QA can reproduce end-to-end.
-
-`target_layer: manual-only` — no `.ts` spec is generated for this file
-(per E-LAYER-COMPLIANCE-01: manual-only scenarios must not have a `.ts` body).
 
 ## Setup (shared)
 
@@ -106,15 +101,13 @@ gradient swatch appearance.
 
 ## Notes
 
-- `target_layer: manual-only` — no `.ts` spec is generated for this file.
-- `pyramid_layer: manual` — visual verification by human QA.
-- These scenarios are NOT redundant with their source `.md` files: the
-  source files retain JS-API / Playwright proxy assertions (legend item
-  count, prop round-trip, etc.); this file holds the visual-only
-  assertions that cannot be automated.
-- When the platform exposes legend rendering details via DOM (e.g.
-  per-subplot `[name="legend"]` elements, per-bin gradient swatch divs),
-  the corresponding scenario can move back to its source `.md`.
+- These scenarios are not redundant with their source files (`line-chart.md`,
+  `scatterplot.md`): those files retain the JS-API / UI assertions that can
+  be checked automatically (legend item count, property round-trip, etc.);
+  this file holds only the visual checks that need a human eye.
+- When the platform starts exposing these rendering details in the DOM (e.g.
+  per-subplot legend elements, per-bin gradient swatch divs), the
+  corresponding scenario can move back to its source file and be automated.
 
 ---
 {

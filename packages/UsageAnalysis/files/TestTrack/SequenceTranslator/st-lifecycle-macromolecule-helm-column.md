@@ -1,4 +1,21 @@
+---
+feature: sequencetranslator
+target_layer: playwright
+coverage_type: regression
+priority: p0
+realizes: [macromolecule_helm_column]
+realized_as:
+  - st-lifecycle-macromolecule-helm-column-spec.ts
+related_bugs: []
+---
+
 # SequenceTranslator — Macromolecule HELM Column Lifecycle
+
+Checks the lifecycle of a HELM-notation Macromolecule column in
+SequenceTranslator: converting it to an OligoNucleotide duplex, combining
+separate sense and antisense HELM columns into one, running the Bio |
+PolyTool menu (Convert, Enumerate HELM, Combine Sequences) on it, and
+validating/translating HELM sequences via the JS API.
 
 ## Setup
 

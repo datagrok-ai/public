@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [models.command.apply, models.command.delete, models.command.share, models.command.train, models.engines.api.apply, models.engines.package, models.meta.context-menu, models.view.browser, models.view.training, models.workflow.apply-dialog, models.workflow.remove, models.workflow.select-best-engine]
---- */
 ﻿import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {setPredict, selectFeaturesByName} from '../helpers/models-helpers';

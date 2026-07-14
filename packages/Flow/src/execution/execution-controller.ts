@@ -13,7 +13,7 @@ import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitte
 import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
-import {isExecKey, missingRequiredInputs} from '../rete/scheme';
+import {FlowNode, isExecKey, nodeMissingRequirements} from '../rete/scheme';
 
 /** Grow a dirty node set upstream until every connection crossing into it
  *  comes from a node whose output value is already captured (`hasLive`) — the
@@ -97,11 +97,60 @@ export class ExecutionController {
   }
 
   runInstrumented(settings: ScriptSettings): void {
-    this.executeInstrumented(settings, false);
+    this.executeFull(settings, false);
   }
 
   debugInstrumented(settings: ScriptSettings): void {
-    this.executeInstrumented(settings, true);
+    this.executeFull(settings, true);
+  }
+
+  /** Full run of the graph, minus any **unready** node (a required input or
+   *  property unset — e.g. a plot with no table) and everything downstream of it
+   *  (which would fail without its output). Blocks on real validation errors;
+   *  otherwise runs the ready subgraph and warns which nodes it skipped. */
+  private executeFull(settings: ScriptSettings, debug: boolean): void {
+    const errors = validateGraph(this.flow);
+    if (errors.some((e) => e.severity === 'error')) {
+      const msgs = errors.filter((e) => e.severity === 'error').map((e) => e.message).join('\n');
+      grok.shell.error('Validation errors:\n' + msgs);
+      return;
+    }
+    const {roots, cone} = this.invalidNodes();
+    const runSet = this.flow.getNodes().map((n) => n.id).filter((id) => !cone.has(id));
+    if (runSet.length === 0) {
+      grok.shell.error('Nothing to run — every node is missing a required input (for a plot, connect a table).');
+      return;
+    }
+    if (roots.length > 0)
+      grok.shell.warning(`Skipped ${cone.size} node(s) that aren't ready: ${roots.map((n) => n.label).join(', ')}`);
+    this.executeInstrumented(settings, debug, {
+      onlyNodeIds: cone.size > 0 ? new Set(runSet) : undefined,
+      skipValidation: true,
+    });
+  }
+
+  /** Nodes that can't run because a required input or property is unset, plus
+   *  everything downstream of them. `roots` are the unready nodes themselves
+   *  (for messaging); `cone` is roots + all their transitive successors — the
+   *  full set the run must exclude so no emitted step references a dropped one. */
+  private invalidNodes(): {roots: FlowNode[]; cone: Set<string>} {
+    const roots: FlowNode[] = [];
+    const cone = new Set<string>();
+    for (const n of this.flow.getNodes()) {
+      if (nodeMissingRequirements(n, (k) => this.flow.isInputConnected(n.id, k)).length === 0) continue;
+      roots.push(n);
+      for (const id of sliceDownFrom(this.flow, n.id)) cone.add(id);
+    }
+    return {roots, cone};
+  }
+
+  /** The nodes a full run would execute — every node except the unready ones and
+   *  their downstream cone. Pure; used by the run gate and tests. */
+  runnableNodes(): Set<string> {
+    const {cone} = this.invalidNodes();
+    const set = new Set<string>();
+    for (const n of this.flow.getNodes()) if (!cone.has(n.id)) set.add(n.id);
+    return set;
   }
 
   /** Run only the slice needed to produce `targetNodeId`'s output (the node and
@@ -177,16 +226,25 @@ export class ExecutionController {
     if (!node) return false;
     // Inputs/outputs have nothing to recompute on their own.
     if (node.dgNodeType !== 'func' && node.dgNodeType !== 'utility') return false;
-    if (missingRequiredInputs(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
-    let anyConnected = false;
+    const anyConnected = Object.keys(node.inputs)
+      .some((k) => !isExecKey(k) && !!this.flow.getInputSource(nodeId, k));
+    return anyConnected && this.readyForLiveRun(nodeId);
+  }
+
+  /** Inputs satisfied for a run that must not touch upstream: no missing
+   *  requirements, and every connected input is fed by a captured live value.
+   *  Unlike {@link canRerunNode}, a node with no connected inputs qualifies —
+   *  an Open File runs from its parameters alone. */
+  private readyForLiveRun(nodeId: string): boolean {
+    const node = this.flow.getNodeById(nodeId);
+    if (!node) return false;
+    if (nodeMissingRequirements(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
     for (const key of Object.keys(node.inputs)) {
       if (isExecKey(key)) continue;
       const src = this.flow.getInputSource(nodeId, key);
-      if (!src) continue;
-      anyConnected = true;
-      if (!this.hasLiveValue(src.node.id, src.outputKey)) return false;
+      if (src && !this.hasLiveValue(src.node.id, src.outputKey)) return false;
     }
-    return anyConnected;
+    return true;
   }
 
   /** Re-run just this node using upstream values captured from a prior run — its
@@ -220,6 +278,44 @@ export class ExecutionController {
    *  silent — no validation toasts, no run dialog, no selection stealing —
    *  because it fires after every edit. The outcome tells the scheduler
    *  whether to retry ('busy') or wait for the next edit ('skipped'). */
+  /** Debounced live-node entry — the global autorun toggle is OFF and an edit
+   *  touched live-by-default nodes (Open File, viewers, …). Runs ONLY the given
+   *  nodes, and only those whose inputs are satisfied (see
+   *  {@link readyForLiveRun}); everything else on the canvas — including the
+   *  live nodes' own downstream — is left alone. Unready live nodes are
+   *  silently dropped; if none remain, nothing runs. */
+  runLiveNodes(liveIds: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
+    if (this.state.isRunning) return 'busy';
+    // A mid-edit graph is often momentarily invalid; just wait for more edits.
+    if (validateGraph(this.flow).some((e) => e.severity === 'error')) return 'skipped';
+
+    const runSet = new Set<string>();
+    for (const id of liveIds) {
+      const node = this.flow.getNodeById(id);
+      // An input node would emit `//input:` headers → a dialog; never live-run.
+      if (!node || node.dgNodeType === 'input') continue;
+      if (this.readyForLiveRun(id)) runSet.add(id);
+    }
+    if (runSet.size === 0) return 'skipped';
+
+    const restorePreviewId = this.autorunPreviewNodeId;
+    this.autorunPreviewNodeId = null;
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: runSet,
+      liveExternalInputs: true,
+      preserveState: true,
+      skipValidation: true,
+      onComplete: () => {
+        if (!restorePreviewId) return;
+        const node = this.flow.getNodeById(restorePreviewId);
+        const state = this.state.getNodeState(restorePreviewId);
+        if (node && state?.status === NodeExecStatus.completed)
+          this.outputPreview.showForNode(node, state);
+      },
+    });
+    return 'started';
+  }
+
   runAutorun(dirty: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
     if (this.state.isRunning) return 'busy';
     // A mid-edit graph is often momentarily invalid; just wait for more edits.
@@ -232,16 +328,30 @@ export class ExecutionController {
       if (expanded.size < this.flow.getNodeCount()) slice = expanded;
     }
 
+    // Never autorun an unready node (a plot with no table, a Select Column with
+    // no column, …) or anything downstream of it — drop them from whatever we'd
+    // run. If that leaves nothing, wait for the next edit.
+    const {cone: excluded} = this.invalidNodes();
+    const base = slice ?? new Set(this.flow.getNodes().map((n) => n.id));
+    const runSet = new Set([...base].filter((id) => !excluded.has(id)));
+    if (runSet.size === 0) return 'skipped';
+    // An explicit run set is needed when we sliced OR when we pruned unready
+    // nodes from a would-be full run; otherwise a plain full run (no filter).
+    const useSlice = slice !== null || excluded.size > 0 ? runSet : null;
+
     // A run touching an input node would emit `//input:` headers → a dialog on
     // every keystroke. Skip; the user runs parameterized flows explicitly.
     // (A slice whose boundary covers the input nodes still autoruns fine.)
-    const runsNode = (id: string): boolean => slice === null || slice.has(id);
+    const runsNode = (id: string): boolean => useSlice === null || useSlice.has(id);
     if (this.flow.getNodes().some((n) => n.dgNodeType === 'input' && runsNode(n.id))) return 'skipped';
 
     const restorePreviewId = this.autorunPreviewNodeId;
     this.autorunPreviewNodeId = null;
     this.executeInstrumented(settings, false, {
-      onlyNodeIds: slice ?? undefined,
+      onlyNodeIds: useSlice ?? undefined,
+      // A pruned full run (slice === null) is still a fresh from-scratch run of
+      // the ready subgraph — only an incremental slice reads live boundary
+      // values / preserves prior state.
       liveExternalInputs: slice !== null,
       preserveState: slice !== null,
       skipValidation: true,

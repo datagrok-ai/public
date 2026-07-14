@@ -56,19 +56,55 @@ See
 
 ## Vulnerability remediation
 
-Datagrok server core is written in Dart, which is a language developed and supported by Google. We
-follow [Dart Security Best Practices](https://dart.dev/security#best-practices) to minimize the risk of introducing a
-vulnerability.
+Datagrok server core is written in Dart, a language developed and supported by Google. We
+follow [Dart Security Best Practices](https://dart.dev/security#best-practices) to minimize the
+risk of introducing a vulnerability. Every release ships the most recent dependency packages,
+which reduces remediation effort and gives you the best-quality experience.
 
-Every release is tested according to our [quality-assurance procedures](../../../../develop/qa/quality-assurance.md) which includes
-vulnerability check by [Snyk](https://snyk.io/) and [Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview). All critical
-vulnerabilities are remediated in 2 weeks, high vulnerabilities in 1 month and lower-level vulnerabilities in 3 months.
+We continuously scan everything we ship for known vulnerabilities (CVEs), as part of our
+[quality-assurance procedures](../../../../develop/qa/quality-assurance.md):
 
-Every release contains the most recent dependency packages which saves us time with vulnerability remediation and
-provides the best quality experience to the user.
+* **Docker images** — every shipped image (core services, package plugins, and base/tools
+  images) is scanned with
+  [Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview),
+  both weekly and when the image is built or published. Results are published openly as VEX (see below).
+* **NPM packages** — the production dependency tree of every published Datagrok npm package
+  (plugins, libraries, `datagrok-api`, `datagrok-tools`) is audited with
+  [npm audit](https://docs.npmjs.com/cli/commands/npm-audit), both weekly and at publish time.
+  Results are published openly as VEX (see below).
+* **Source code** is scanned with [CodeQL](https://codeql.github.com/).
+* **Dependencies and packages** are scanned with [Grype](https://github.com/anchore/grype/)
+  ([results](https://github.com/datagrok-ai/public/actions/workflows/security_scan_anchore.yaml)).
+* **Deployment templates** — the
+  [CloudFormation template](../../../../deploy/aws/deploy-amazon-eks.mdx) is checked by
+  [Snyk](https://snyk.io/) ([results](https://github.com/datagrok-ai/public/actions/workflows/iaac.yaml)).
 
-Datagrok packages are also tested using [CodeQL](https://codeql.github.com/)
-and [Grype](https://github.com/anchore/grype/) ([results are available publicly](https://github.com/datagrok-ai/public/actions/workflows/security_scan_anchore.yaml)).
+We remediate critical vulnerabilities within two weeks, high within one month, and
+lower-severity ones within three months.
+
+### Vulnerability disclosures (VEX)
+
+We publish the scan results openly — Docker images and npm packages alike — so you can assess
+Datagrok against your own policies. Findings are provided as machine-readable
+[VEX](https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex)
+([OpenVEX](https://openvex.dev/)) documents, with CSV and human-readable HTML reports alongside.
+Browse them from the index:
+
+* **Index** — [data.datagrok.ai/vex/index.html](https://data.datagrok.ai/vex/index.html)
+  (machine-readable: [index.json](https://data.datagrok.ai/vex/index.json)). Lists every image
+  and npm package with its current version, vulnerability counts by severity, and links to its
+  reports.
+* **Composite VEX** — one document per group:
+  [core services](https://data.datagrok.ai/vex/core.json),
+  [package images](https://data.datagrok.ai/vex/packages.json),
+  [tools and base images](https://data.datagrok.ai/vex/tools.json), and
+  [npm packages](https://data.datagrok.ai/vex/npm.json).
+* **Per image** — `https://data.datagrok.ai/vex/<image>/latest.json` (OpenVEX), with
+  `latest.csv` and `latest.html` alongside each.
+* **Per npm package** — `https://data.datagrok.ai/vex/npm/<name>/latest.json`, where `<name>`
+  is the package name without the `@`, with `/` replaced by `-`
+  (for example, `@datagrok/chem` → `npm/datagrok-chem`). The audit covers production
+  dependencies only: `devDependencies` never reach a consumer install.
 
 ## Client-server interactions
 

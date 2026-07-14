@@ -1,15 +1,6 @@
 ---
 feature: legend
-sub_features_covered:
-  - legend.column
-  - legend.extra-column
-  - legend.show-main-item-icons
-  - legend.item.color-picker
-  - legend.allow-item-coloring
-  - legend.refresh.on-data-change
-  - legend.item.click
-  - legend.color-scale.numerical
-  - legend.use-custom-color-coding
+realizes: []
 target_layer: playwright
 coverage_type: regression
 priority: p1
@@ -31,6 +22,10 @@ related_bugs:
   - GROK-17278
   - GROK-19083
 ---
+
+# Scatter plot — legend behavior (color, marker, filtering, color coding)
+
+Verifies Scatter plot-specific legend behavior: a combined Color+Marker legend, legend updates when the X axis or filters change (including derived nullable columns), click-to-filter from the legend, and legend behavior when color coding is driven by the grid (both linear and categorical, including persistence across layout and project reloads).
 
 ## Setup
 
@@ -113,18 +108,15 @@ Each Scenario is independent (starts with "Open SPGI" and ends with "Close All" 
 
 ## Notes
 
-- 5 independent sub-sections. Strategy `chained_tests` per chain — single spec file with 5 `test()` blocks (one per Scenario), each with its own `Open SPGI` setup and `Close All` cleanup. No state shared between Scenarios.
-- Specialty: scatterplot-specific legend behaviors (Color/Marker combined, derived nullable color columns, in-viewer filter, click-to-filter, grid color coding linear-vs-categorical, persistence).
-- Delegates standard legend UI flows (visibility / position / save-dialog widgets) to `visibility-and-positioning.md`.
-- `pyramid_layer: integration` per chain Rule 4 — multi-subsystem (scatterplot × multiple legend behavior dimensions).
-- 5 cross-cutting bugs intersect this scenario:
-  - GROK-17438 (color picker → legend hides on shared-legend viewers) — Scenario 1 step 5.
+- 5 independent scenarios, each opening its own SPGI table and cleaning up afterward — no state is shared between them.
+- Standard legend UI flows (visibility, position, save-dialog behavior) are covered once in `visibility-and-positioning.md` and not repeated here.
+- Related bugs intersecting this scenario:
+  - GROK-17438 (color picker makes the legend disappear on viewers that share a legend) — Scenario 1 step 5.
   - GROK-17222 (legend not consistent with filtering) — Scenario 4 step 5.
-  - github-3132 (sequential color changes reset previous) — Scenario 1 step 5.
-  - GROK-17278 (linechart colors not saved to layout/project) — Scenario 1 steps 6–9 (positive baseline; linechart-specific in line-chart.md).
-  - GROK-19083 (markers deselect ↔ legend sync) — Scenario 1 step 11 (Color=ID, Marker=Core); Scenario 3 step 3 (Marker=Stereo Category).
-- Helpers: `loginToDatagrok`, `softStep`, `specTestOptions`, `stepErrors` from `spec-login`. No new helpers proposed.
-- Visual / pixel-level check split into companion `legend-ui.md` (`target_layer: manual-only`, manual QA) on 2026-05-08: §4 «numerical color gradient swatch in scatter legend» (Sc 1 step 10 first sub-bullet). Spec body retains JS-API state assertions (`colorCodingType: 'Linear'`, `colorColumnName` round-trip) for the related flows.
+  - github-3132 (sequential color changes reset the previous one) — Scenario 1 step 5.
+  - GROK-17278 (Line chart colors not saved to layout/project) — Scenario 1 steps 6-9 cover the positive baseline; the Line chart-specific case is in `line-chart.md`.
+  - GROK-19083 (deselecting markers desyncs the legend) — Scenario 1 step 11 (Color=ID, Marker=Core) and Scenario 3 step 3 (Marker=Stereo Category).
+- The numerical color gradient swatch check (Scenario 1, step 10's first sub-bullet) was moved to the companion manual-QA file `legend-ui.md` (section 4) — it can't be verified through the DOM. This file keeps the checks that can be verified through the JS API / UI (`colorCodingType: 'Linear'`, `colorColumnName` round-trip, etc.).
 
 ---
 {

@@ -1,3 +1,14 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - multivariate-analysis-spec.ts
+related_bugs: []
+---
+
 ### Multivariate Analysis
 
 1. Open the DataFrame:

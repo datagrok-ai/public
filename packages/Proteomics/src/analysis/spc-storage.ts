@@ -18,8 +18,8 @@
  * ## Concurrency
  *
  * Single-writer assumption per CONTEXT.md D-02. No file lock. A second
- * concurrent appendRun would silently overwrite — Cytokinetics's usage
- * pattern (one Datagrok user per machine) makes this acceptable for v1.4.
+ * concurrent appendRun would silently overwrite — the expected single-user
+ * usage pattern (one Datagrok user per machine) makes this acceptable for v1.4.
  *
  * ## Test root override
  *
@@ -111,7 +111,7 @@ function baselinePath(instrumentId: string, opts?: StorageOpts): string {
 }
 
 // =====================================================================================
-// Slugify — T-16-01 mitigation. Mirrors publishing/publish-state.ts:slugifyTarget but
+// Slugify — T-16-01 mitigation. Mirrors publishing/publish-state.ts:slugifyProject but
 // PRESERVES case so instrument names like 'QExactive-01' round-trip exactly.
 // =====================================================================================
 

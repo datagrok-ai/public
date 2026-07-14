@@ -11,13 +11,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNode} from '../rete/node-factory';
 import {FlowEditor, GraphEdit} from '../rete/flow-editor';
+import {missingRequiredProps, nodeMissingRequirements} from '../rete/scheme';
 import {sliceDownFrom} from '../compiler/graph-compiler';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
-import {AutorunScheduler} from '../execution/autorun';
+import {AutorunScheduler, isAutorunByDefault} from '../execution/autorun';
 import {PropertyPanel} from '../panel/property-panel';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
 
@@ -412,10 +413,43 @@ category('Flow: in-place isolation', () => {
         'rerun is idempotent — the column is NOT added a second time');
       expect(extraCols(previewColNames(ctrl, sel.id)), 0,
         'the upstream captured value stayed pristine through the rerun');
+
+      // The column output now previews the whole in-place table, scrolled to the
+      // produced column — captured by __ff_col_summary (by-instance detection).
+      const outputs = ctrl.state.getNodeState(anc.id)?.outputs ?? {};
+      const colS = Object.values(outputs).find((s) => s.type === 'column');
+      expect(colS != null, true, 'the calc has a column output summary');
+      expect(colS!.scrollToColumn, 'extra', 'the preview scrolls to the produced column');
+      expect(colS!.tableClone instanceof DG.DataFrame, true, 'the whole input table is captured');
+      expect((colS!.tableClone as DG.DataFrame).columns.names().includes('extra'), true,
+        'the captured table contains the produced column (it belongs to that table)');
     } finally {
       try {
         grok.shell.closeTable(shellTable);
       } catch {/* best effort */}
+      destroyEditor(e);
+    }
+  });
+
+  test('a single-input column output is emitted with in-place table detection', async () => {
+    const addCol = funcTypeName('AddNewColumn');
+    if (!addCol) {
+      expect(true, true);
+      return;
+    }
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input');
+      const anc = await addNode(e.flow, addCol);
+      await e.flow.addConnectionByKeys(src.id, 'table', anc.id, 'table');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'colsum-1'});
+      expect(inst.includes('function __ff_col_summary'), true, 'the helper is defined');
+      // The column output is summarized against the same snapshot the call
+      // mutates (`<var>_table_in`), so an added column is detectable by instance.
+      expect(/__ff_col_summary\(\w+, \w+_table_in, 'column'\)/.test(inst), true,
+        'the column output is summarized against its snapshot input table');
+    } finally {
       destroyEditor(e);
     }
   });
@@ -451,6 +485,98 @@ category('Flow: autorun', () => {
     s.onEdit({kind: 'node-added', nodeId: 'x'}, new Set()); // non-invalidating
     await sleep(60);
     expect(runs, 0);
+  });
+
+  test('live-by-default nodes schedule runs even while the toggle is off', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20, (id) => id === 'viewer');
+    // The toggle stays OFF. A non-live edit schedules nothing…
+    s.onEdit(edit('a'), new Set(['a']));
+    await sleep(60);
+    expect(runs.length, 0, 'non-live edit ignored while off');
+    // …an edit whose affected cone touches a live node runs ONLY that node —
+    // the rest of the cone must never run uninvited.
+    s.onEdit(edit('a'), new Set(['a', 'viewer']));
+    await sleep(60);
+    expect(runs.length, 1, 'a live node admitted the run');
+    expect(runs[0].dirty.join(), 'viewer', 'only the live node is handed over');
+    expect(runs[0].liveOnly, true, 'flagged as a live-only run');
+    // With the toggle ON the whole affected slice goes through as before.
+    s.toggle();
+    s.onEdit(edit('a'), new Set(['a', 'b']));
+    await sleep(60);
+    expect(runs[1].dirty.join(), 'a,b', 'toggle on → full affected slice');
+    expect(runs[1].liveOnly, false, 'flagged as a normal autorun');
+  });
+
+  test('a dropped live node and a loaded flow schedule live runs (node-added + kickLive)', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20, (id) => id.startsWith('live'));
+    // Toggle OFF. A plain node drop never schedules…
+    s.onEdit({kind: 'node-added', nodeId: 'plain'}, new Set());
+    await sleep(60);
+    expect(runs.length, 0, 'plain node-added ignored');
+    // …a LIVE node drop does (a file dragged onto the canvas creates a ready
+    // Open File — readiness is re-checked at fire time anyway).
+    s.onEdit({kind: 'node-added', nodeId: 'live1'}, new Set());
+    await sleep(60);
+    expect(runs.length, 1, 'live node-added schedules');
+    expect(runs[0].dirty.join(), 'live1');
+    expect(runs[0].liveOnly, true);
+    // Loading a flow kicks its live nodes only.
+    s.kickLive(['a', 'live2', 'b']);
+    await sleep(60);
+    expect(runs.length, 2, 'kickLive schedules');
+    expect(runs[1].dirty.join(), 'live2', 'only live nodes enter the set');
+    // With the toggle ON, node-added keeps its old no-op semantics.
+    s.toggle();
+    s.onEdit({kind: 'node-added', nodeId: 'live3'}, new Set());
+    await sleep(60);
+    expect(runs.length, 2, 'toggle on → node-added still never schedules');
+  });
+
+  test('runLiveNodes executes only the ready live nodes, never the rest of the canvas', async () => {
+    registerBuiltinNodes();
+    const e = makeEditor();
+    try {
+      const {a, b, c} = await makeChain(e);
+      const ctrl = new ExecutionController(e.flow);
+      // c's input is connected but no upstream value was ever captured →
+      // inputs not satisfied → nothing runs (the old behavior ran EVERYTHING).
+      expect(ctrl.runLiveNodes(new Set([c]), SETTINGS), 'skipped',
+        'unsatisfied inputs never trigger a run');
+      expect(ctrl.state.nodeStates.size, 0, 'no node was touched');
+
+      // The const source runs from its parameters alone — and ONLY it runs.
+      e.flow.getNodeById(a)!.properties['value'] = 'hello';
+      expect(ctrl.runLiveNodes(new Set([a]), SETTINGS), 'started');
+      const done = await until(() => status(ctrl, a) === NodeExecStatus.completed, 8000);
+      expect(done, true, 'the live node ran');
+      expect(status(ctrl, b) === undefined, true, 'downstream b stays untouched');
+      expect(status(ctrl, c) === undefined, true, 'downstream c stays untouched');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('isAutorunByDefault: Open File, Add New Column, and viewers are live', async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+    const viewer = createNode('Viewers/Scatter Plot');
+    if (viewer) expect(isAutorunByDefault(viewer), true, 'viewers are live');
+    for (const name of ['OpenFile', 'AddNewColumn']) {
+      const typeName = funcTypeName(name);
+      if (!typeName) continue; // function not present on this stand
+      expect(isAutorunByDefault(createNode(typeName)!), true, `${name} is live`);
+    }
+    expect(isAutorunByDefault(createNode('Utilities/Info')!), false, 'ordinary utilities are not live');
+    expect(isAutorunByDefault(createNode('Inputs/Table Input')!), false, 'inputs are not live');
   });
 
   test('busy postpones and keeps the dirty set; skipped waits for the next edit', async () => {
@@ -581,5 +707,123 @@ category('Flow: autorun', () => {
     s.toggle(); // off before the debounce fires
     await sleep(60);
     expect(runs, 0);
+  });
+});
+
+category('Flow: run readiness', () => {
+  const SET = {name: 'ReadinessFlow', description: '', tags: ['funcflow']};
+
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('custom nodes declare their required inputs and properties', async () => {
+    const selCol = createNode('Utilities/Select Column')!;
+    expect(selCol.requiredInputs.includes('table'), true, 'Select Column needs a table');
+    expect(selCol.requiredProps.includes('columnName'), true, 'Select Column needs a column name');
+
+    const selCols = createNode('Utilities/Select Columns')!;
+    expect(selCols.requiredInputs.includes('table'), true, 'Select Columns needs a table');
+    expect(selCols.requiredProps.includes('columnNames'), true, 'Select Columns needs column names');
+
+    const selTable = createNode('Utilities/Select Table')!;
+    expect(selTable.requiredProps.includes('tableName'), true, 'Select Table needs a table name');
+
+    const atv = createNode('Utilities/Add Table View')!;
+    expect(atv.requiredInputs.includes('table'), true, 'Add Table View needs a table');
+
+    const scatter = createNode('Viewers/Scatter Plot')!;
+    expect(scatter.requiredInputs.includes('table'), true, 'a plot needs a table');
+  });
+
+  test('missing requirements combine unset inputs and unset properties', async () => {
+    const selTable = createNode('Utilities/Select Table')!;
+    expect(missingRequiredProps(selTable).includes('tableName'), true, 'empty table name is missing');
+    expect(nodeMissingRequirements(selTable, () => false).length > 0, true, 'the node is not ready');
+    selTable.properties['tableName'] = 'demog';
+    expect(missingRequiredProps(selTable).length, 0, 'a set table name satisfies the requirement');
+    expect(nodeMissingRequirements(selTable, () => false).length, 0, 'the node is ready');
+  });
+
+  test('runnableNodes excludes an unready node and everything downstream of it', async () => {
+    const e = makeEditor();
+    try {
+      // Unready Select Table (no name) → Add Table View (its own table requirement
+      // is met by the connection, yet it is downstream of an unready node).
+      const sel = await addNode(e.flow, 'Utilities/Select Table');
+      const atv = await addNode(e.flow, 'Utilities/Add Table View', 300, 0);
+      await e.flow.addConnectionByKeys(sel.id, 'table', atv.id, 'table');
+      const konst = await addNode(e.flow, 'Constants/String', 0, 300);
+
+      const ctrl = new ExecutionController(e.flow);
+      let runnable = ctrl.runnableNodes();
+      expect(runnable.has(sel.id), false, 'the unready Select Table is excluded');
+      expect(runnable.has(atv.id), false, 'the node downstream of it is excluded too');
+      expect(runnable.has(konst.id), true, 'an unrelated ready node still runs');
+
+      // Filling the required property makes the whole chain runnable.
+      sel.properties['tableName'] = 'demog';
+      runnable = ctrl.runnableNodes();
+      expect(runnable.has(sel.id) && runnable.has(atv.id) && runnable.has(konst.id), true,
+        'once the requirement is set, the chain is runnable');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a plot without a table is excluded from the run set', async () => {
+    const e = makeEditor();
+    try {
+      const scatter = await addNode(e.flow, 'Viewers/Scatter Plot');
+      const konst = await addNode(e.flow, 'Constants/String', 0, 300);
+      const ctrl = new ExecutionController(e.flow);
+      const runnable = ctrl.runnableNodes();
+      expect(runnable.has(scatter.id), false, 'the table-less plot is not run');
+      expect(runnable.has(konst.id), true, 'the ready node is');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('autorun skips entirely when nothing is ready', async () => {
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, 'Viewers/Scatter Plot'); // no table → unready
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runAutorun(new Set(), SET), 'skipped', 'no runnable node → nothing autoruns');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('autorun runs the ready part and never runs an unready node', async () => {
+    const e = makeEditor();
+    const df = DG.DataFrame.fromCsv('x\n1\n2\n');
+    df.name = 'ffReadiness';
+    const shellTable = grok.shell.addTable(df);
+    try {
+      const sel = await addNode(e.flow, 'Utilities/Select Table');
+      sel.properties['tableName'] = 'ffReadiness';
+      // Add Table View with NO table: without the readiness gate this would emit
+      // `addTableView(undefined)` and fault at run time — the gate must keep it
+      // out of the run entirely (it stays idle, never errors).
+      const atv = await addNode(e.flow, 'Utilities/Add Table View', 300, 0);
+
+      const ctrl = new ExecutionController(e.flow);
+      expect(ctrl.runnableNodes().has(atv.id), false, 'the table-less Add Table View is not runnable');
+      expect(ctrl.runAutorun(new Set(), SET), 'started', 'the ready Select Table triggers a run');
+      expect(await until(() =>
+        ctrl.state.getNodeState(sel.id)?.status === NodeExecStatus.completed, 10000), true,
+      'the ready node ran to completion');
+      const atvStatus = ctrl.state.getNodeState(atv.id)?.status;
+      expect(atvStatus === NodeExecStatus.completed || atvStatus === NodeExecStatus.errored, false,
+        'the unready node was never run — no error, no completion');
+    } finally {
+      try {
+        grok.shell.closeTable(shellTable);
+      } catch {/* best effort */}
+      destroyEditor(e);
+    }
   });
 });

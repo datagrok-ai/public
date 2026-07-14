@@ -1,5 +1,35 @@
 # Proteomics changelog
 
+## 1.3.0 (2026-07-13)
+
+- **Rank–Abundance (dynamic-range) viewer** — visualize the abundance dynamic range across the
+  experiment.
+- **Abundance Correlation viewer** — the separate sample-correlation views are consolidated into
+  one viewer.
+- **Share analyses by project** — publish a read-only analysis snapshot to a reviewer team under a
+  controlled, admin-maintained project vocabulary. The Share dialog pre-selects a default reviewer
+  team, and administrators add/edit/remove project names from package settings.
+- **Enrichment ↔ volcano linked selection** — selecting one or more enrichment terms highlights the
+  union of their member proteins on the volcano.
+- **Numerical robustness** — imputation and quantile normalization now guard against NaN/Infinity on
+  edge-case inputs (single-value columns, degenerate random draws).
+- **Package icon** plus expanded documentation (publishing design rationale, the administrator role,
+  and projects/teams/package settings).
+
+## 1.2.0
+
+- **Shared enrichment charts now survive reopen** — a published/shared analysis's enrichment
+  dot and bar charts no longer lose their value column (the "Column negLog10FDR does not
+  exist" error) when the project is reopened, and the Up/Down term tables no longer leak
+  into the project as extra tables. The charts are now self-contained on the enrichment
+  frame and split by direction via a per-viewer filter.
+- **Volcano opens automatically on Candidates import** — importing a Spectronaut Candidates
+  file now lands you on the volcano immediately, matching the Report → Differential
+  Expression path (Candidates arrive with the result already computed, so the pipeline's DE
+  step is skipped).
+- **Personas & capabilities documentation** — a reference describing what the proteomics
+  analyst vs. the biology scientist can do and how that boundary is enforced.
+
 ## 0.2.0
 
 - **Organism-aware subcellular-location coloring** — the volcano's "color by subcellular

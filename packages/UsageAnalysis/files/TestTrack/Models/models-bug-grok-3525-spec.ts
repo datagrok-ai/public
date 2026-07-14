@@ -1,6 +1,3 @@
-/* ---
-sub_features_covered: [models.preprocessing.ignore-missing, models.validators.contains-missing]
---- */
 ﻿import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 

@@ -1,16 +1,29 @@
-﻿# TestDemog predictive model lifecycle (smoke)
+---
+feature: models
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: [train-classification-end-to-end]
+realized_as:
+  - models-testdemog-lifecycle-smoke-spec.ts
+related_bugs: [GROK-2381, GROK-19177, GROK-19550, GROK-846]
+---
+
+# TestDemog predictive model lifecycle (smoke)
+
+A smoke run of the full predictive-model lifecycle — train, apply,
+browse/search/compare, and delete — on a single model (**TestDemog**)
+trained on the public `demog.csv` demo dataset.
 
 ## Setup
 
 A clean Datagrok session. All blocks operate on `demog.csv` from
 `System:DemoFiles`. Block 1 trains and saves **TestDemog**; Blocks 3–5 consume
-it. Each downstream spec (`apply-spec.ts`, `browser-spec.ts`, `delete-spec.ts`)
-provisions the TestDemog fixture in `beforeAll` via `js-api-replay` (chain
-`fixtures_extracted.testdemog-model`) rather than serializing UI dependence on
-Block 1.
+it. Downstream specs are expected to provision the TestDemog fixture in
+`beforeAll` via `js-api-replay` rather than serializing UI dependence on Block 1.
 
 For Block 4, ≥1 additional model must be present in the catalog alongside
-TestDemog. The spec MUST provision a second model in `beforeAll`; see Notes.
+TestDemog. The spec MUST provision a second model in `beforeAll`.
 
 ## Scenarios
 
@@ -29,7 +42,7 @@ TestDemog. The spec MUST provision a second model in `beforeAll`; see Notes.
    > disabled until either **Ignore missing** or **Impute missing** is ticked.
    > Ticking **Ignore missing** hides **Impute missing** and triggers automatic
    > training; ticking **Impute missing** first opens the KNN config dialog
-   > instead (see unresolved ambiguity `repeat-pass-numerical-target-action-checkbox-applicability`).
+   > instead.
 
 4. **Verify:** `Impute missing` is no longer visible (hidden once `Ignore missing`
    is checked). `Predict probability` is visible for the 2-class categorical
@@ -40,8 +53,8 @@ TestDemog. The spec MUST provision a second model in `beforeAll`; see Notes.
    **Browse > Platform > Predictive models**.
 
 > **Bug anchor — GROK-2381:** Step 6 is the post-train notification surface
-> (success path). The bug-focused spec `models-grok-18-2381-spec.ts` asserts the
-> failure notification path.
+> (success path). No bug-focused spec asserts the failure notification path
+> yet.
 
 ### Block 2: Train regression model (numerical target)
 
@@ -49,12 +62,12 @@ TestDemog. The spec MUST provision a second model in `beforeAll`; see Notes.
 2. Go to **ML > Models > Train Model...** again.
 3. Configure: **Predict** `WEIGHT` (numerical), **Features** `HEIGHT`. **Tick
    Ignore missing.** **Verify:** engine loads and SAVE button becomes enabled.
-4. **Verify:** `Predict probability` is NOT visible (gated on categorical targets
-   only, per atlas `models.postprocessing.binary-classification`).
+4. **Verify:** `Predict probability` is NOT visible (gated on categorical
+   targets only).
 5. Save under a distinct name (suggested: `TestDemog_Regression`).
 
-> **Predict probability** is gated on 2-category categorical targets per atlas
-> `models.postprocessing.binary-classification`; do not toggle it on this block.
+> **Predict probability** is gated on 2-category categorical targets;
+> do not toggle it on this block.
 
 ### Block 3: Apply TestDemog model
 
@@ -90,8 +103,8 @@ TestDemog. The spec MUST provision a second model in `beforeAll`; see Notes.
    post-fix per GROK-19550 refdoc gotcha (no `.selected` class applied).
 8. On the **Context Pane**, open the **Commands** tab and click **Compare**.
    **Verify:** a new view opens with a "Compare models" DataFrame (Name /
-   Description / Method / Source + per-metric columns + image cells at width 200
-   per atlas `models.workflow.compare-models`).
+   Description / Method / Source + per-metric columns + image cells at
+   width 200).
 
 > **Bug anchor — GROK-19550:** Step 7 is the multi-select regression target.
 > Assert via JS selection model or the downstream Compare result table.
@@ -113,5 +126,5 @@ MUST run last among the four realized specs.*
    browser.
 
 > **Bug anchor — GROK-846:** Step 4 is the server-side delete trigger
-> (UI-visible arc only). The FK-constraint state-cleanup invariant is covered
-> by `models-grok-846-spec.ts` per chain `bug_focused_candidates`.
+> (UI-visible arc only). The FK-constraint state-cleanup invariant has no
+> dedicated spec yet.

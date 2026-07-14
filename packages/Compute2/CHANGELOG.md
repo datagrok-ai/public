@@ -1,5 +1,10 @@
 # Compute2 changelog
 
+## 1.5.8 (2026-07-07)
+
+- Model Hub: add the `roleOnlyModelFilter` package setting to use the faster role-only model filter (off by default; the legacy tag-or-role filter is unchanged)
+- Pick up compute-utils 1.46.6
+
 ## 1.5.7 (2026-07-02)
 
 - TreeWizard: fix ribbon flicker on step runs and link updates by keeping the Actions, Run-ready, Save and Confirm controls visible and guarding their clicks instead of hiding them on transient locks

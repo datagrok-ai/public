@@ -129,11 +129,11 @@ statistics view, so the two never drift apart:
 
 ### Share
 - **Share Analysis for Review** — publish a trimmed, read-only snapshot (table + volcano +
-  enrichment charts) to a reviewer group. The source table is never mutated; reviewer
-  access is verified (and rolled back on an over-permissive grant); the snapshot is
-  optionally re-opened and shape-checked to confirm it survives a reload; re-publishing
-  supersedes the prior version. A **Shared Analysis** context panel surfaces the
-  publication's audit trail.
+  enrichment charts) under a **project** (chosen from an admin-curated list) to a reviewer
+  **team**. The source table is never mutated; reviewer access is verified (and rolled back
+  on an over-permissive grant); the snapshot is optionally re-opened and shape-checked to
+  confirm it survives a reload; re-publishing supersedes the prior version. A **Shared
+  Analysis** context panel surfaces the publication's audit trail.
 
 ## Protein annotation
 
@@ -165,6 +165,19 @@ it hasn't seen — detectors match on column-name hints and validate sample valu
   require a configured Datagrok R compute environment; every R path has a client-side
   TypeScript fallback, so the package is fully functional without R.
 
+## Configuration
+
+Package administrators set these in **Plugins → Proteomics → Settings** (a custom editor
+replaces the default form). They gate and shape the Share flow:
+
+| Setting | What it does |
+|---------|--------------|
+| **Project vocabulary** | Controlled list of project names an analyst can share under. **Required before anyone can share** — with none configured, the Share dialog blocks and asks for an admin. Add / rename / remove entries as editable rows. |
+| **Default reviewer team** | Team pre-selected in the Share dialog's team picker; blank falls back to the first available team. |
+| **Review space name** | Umbrella Space shared snapshots publish under; each project gets a child Space inside it. |
+| **Review name prefix** | Prefix for published project names (`<prefix>-<project>-v<n>-<date>`); the suffix is fixed so re-share versioning keeps working. |
+| **Verify published dashboard** | Re-open each snapshot after publishing to confirm it survives a reload (safer; off = faster demo shares). |
+
 ## Demo data
 
 Example datasets ship in `files/demo/` (see its `README.md`):
@@ -188,6 +201,8 @@ grok test --host localhost # run the package tests
 
 ## See also
 
+- [Personas & capabilities](docs/personas-and-capabilities.md) — who (analyst vs biology
+  scientist) can do what, and how the boundary is enforced.
 - **TODO:** Datagrok Proteomics documentation — the help page at
   `https://datagrok.ai/help/domains/bio/proteomics` does not exist yet and still needs to
   be written.

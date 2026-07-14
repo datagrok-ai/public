@@ -1,11 +1,9 @@
 ---
 feature: projects
-sub_features_covered:
-  - projects.api.save
-  - projects.add-relation
-  - projects.tree.add-entity-node
 target_layer: playwright
 coverage_type: regression
+priority: p2
+realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md
@@ -17,17 +15,12 @@ related_bugs: []
 
 # Complex — Augment project (drag-drop add tables)
 
-Source-agnostic op (Wave 2B). Decomposition of `complex.md` Step 4:
-drag-drop 4 tables onto Dashboards (Link mode) to augment an existing
-project. Single representative source (Files + multiple `.csv` files
-from `System:DemoFiles`).
-
-**Important — JS API fallback is primary.** Per Plan line 169 +
-decision-log `b2-2026-05-03-drag-drop-ui-only-reclassification`, the
-drag-drop UI surface in Browse tree is NOT automatable from Playwright
-(3 mechanisms tried). This scenario uses
-`grok.dapi.projects.addRelation` as primary path. UI drag-drop is
-documented as a known gap.
+Verifies that tables can be added to an already-saved project
+(augmenting it) using files from `System:DemoFiles` as the source.
+Because the drag-and-drop UI for this can't be driven through
+Playwright, this scenario exercises the same augmentation through the
+JS API (`grok.dapi.projects.addRelation`) instead, and documents the
+UI path as a known manual-only gap.
 
 ## Setup
 
@@ -79,26 +72,15 @@ documented as a known gap.
 
 ## Notes
 
-- **Origin: `complex.md` Step 4 split (Wave 2B per Plan line
-  169).** Step 4 is source-agnostic — augment via drag-drop
-  works the same regardless of source class.
-- **JS API primary path; UI drag-drop deferred.** Per Plan
-  line 169 — Plan explicitly says "Plan JS-API fallback
-  `grok.dapi.projects.addRelation` from the start" precisely
-  because drag-drop is flagged unreliable in atlas
-  `tree-drag-drop-actions` AND not automatable per
-  `b2-2026-05-03-drag-drop-ui-only-reclassification`.
-- **`projects.tree.add-entity-node` sub_feature in atlas
-  `manual_only`.** This scenario tests the JS API contract
-  equivalent (`addRelation`). Surfacing for atlas: same as
-  `complex-move.md` — `manual_only` rationale should be
-  refined to "UI drag-drop is manual; JS API addRelation is
-  testable".
-- **No `related_bugs`.** Drag-drop augment has no GROK
-  ticket. Proactive coverage of project augmentation path.
-- **UI coverage delegated.** No UI surface exercised in this
-  scenario beyond Save Project (owned by
-  `projects-ui-smoke.md`).
+- **JS API path is primary; UI drag-drop is a known gap.** The
+  drag-drop UI surface in the Browse tree could not be made to work
+  with Playwright after trying three different simulated-event
+  mechanisms, so this scenario exercises the equivalent
+  `addRelation` JS API call instead. If the drag-drop mechanism
+  becomes automatable in the future, a UI verification step should
+  be added.
+- **No related bug.** This is proactive coverage of project
+  augmentation; no GROK ticket targets it directly.
+- **UI coverage delegated.** No UI surface is exercised here beyond
+  Save Project, which is owned by `projects-ui-smoke.md`.
 - **Self-cleaning.** Step 5 deletes the project.
-- **Sequencing within Wave 2B.** Third after save-copy + move
-  per Plan execution order.

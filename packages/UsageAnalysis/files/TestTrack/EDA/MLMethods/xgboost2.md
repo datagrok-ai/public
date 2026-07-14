@@ -1,3 +1,14 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - xgboost2-spec.ts
+related_bugs: []
+---
+
 ### XGBoost 12
 
 1. Open the DataFrame:

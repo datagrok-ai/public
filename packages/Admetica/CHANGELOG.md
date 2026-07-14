@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages, upgraded pip/setuptools/wheel in the conda env, and pinned urllib3/idna to fixed releases
+* Docker: Raised security floors (VEX) — torch/torchvision/torchaudio to 2.6.0+cu118 via PyPI wheels (CVE-2025-32434), pinned pillow/pyarrow/jaraco.context/brotli/setuptools/wheel, and removed padelpy's bundled PaDEL-Descriptor jars (log4j 1.2.15, guava 17.0)
 * Admetica: App view function returns the view directly instead of calling `grok.shell.addPreview`, letting the platform host place it
 * Admetica: Demo no longer persists the last sketched molecule
 * GROK-17468: Admetica: Fixed crashes when switching/relaunching the app faster than predictions complete

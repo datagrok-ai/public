@@ -1,6 +1,6 @@
 ﻿import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import {setPredict, selectFeaturesByName} from '../helpers/models-helpers';
+import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {setPredict, selectFeaturesByName} from '@datagrok-libraries/test/src/playwright/models-helpers';
 
 test.use(specTestOptions);
 
