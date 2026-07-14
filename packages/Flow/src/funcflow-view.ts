@@ -36,7 +36,7 @@ import {SpacePicker} from './ui/space-picker';
 import {buildFlowFromCreationScript} from './import/creation-script-importer';
 import {FlowSettings, FuncFlowDocument} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
-import {AutorunScheduler} from './execution/autorun';
+import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execution/autorun';
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary} from './execution/execution-state';
 import {buildPreview} from './execution/value-inspector';
@@ -486,12 +486,25 @@ export class FuncFlowView extends DG.ViewBase {
 
     this.propertyPanel = new PropertyPanel(this.flow);
     this.executionController = new ExecutionController(this.flow, this.outputPreview);
-    this.autorunScheduler = new AutorunScheduler((dirty) =>
-      this.executionController?.runAutorun(dirty, {
+    this.autorunScheduler = new AutorunScheduler((dirty, liveOnly) => {
+      const settings = {
         name: this.flowSettings.scriptName,
         description: this.flowSettings.scriptDescription,
         tags: this.flowSettings.tags,
-      }) ?? 'skipped');
+      };
+      // Toggle off → the set holds only live-by-default nodes; run exactly
+      // those (input-satisfied ones), never the rest of the canvas.
+      return (liveOnly ?
+        this.executionController?.runLiveNodes(dirty, settings) :
+        this.executionController?.runAutorun(dirty, settings)) ?? 'skipped';
+    },
+    AUTORUN_DEBOUNCE_MS,
+    // Live-by-default nodes (Open File, Add New Column, viewers, …) rerun on
+    // change even with the ribbon toggle off.
+    (id) => {
+      const n = this.flow?.getNodeById(id);
+      return n != null && isAutorunByDefault(n);
+    });
 
     // Column inputs (column / column_list) get a picker dialog seeded by the
     // upstream table — running the flow up to that point on demand if needed.
@@ -673,6 +686,9 @@ export class FuncFlowView extends DG.ViewBase {
     if (node) {
       node.inputValues['fullPath'] = filePath;
       await this.flow.updateNode(node.id);
+      // Report the programmatic param write like any panel edit — it drives
+      // invalidation AND lets the live-by-default autorun load the file.
+      this.flow.notifyNodeParamsChanged(node.id);
       grok.shell.info(`Added OpenFile node for: ${filePath}`);
     }
   }
@@ -945,7 +961,8 @@ export class FuncFlowView extends DG.ViewBase {
     autorunIcon.classList.add('ff-autorun-toggle');
     ui.tooltip.bind(autorunIcon, () => this.autorunScheduler?.enabled ?
       'Autorun is on — the flow reruns the affected nodes after every change. Click to turn off.' :
-      'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change.');
+      'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change. ' +
+      'Live nodes (Open File, Add New Column, viewers) still rerun on change.');
     this.autorunIcon = autorunIcon;
 
     // Saving leads the ribbon; saveFlow routes to the right target (entity
@@ -1587,6 +1604,9 @@ export class FuncFlowView extends DG.ViewBase {
     this.name = doc.name || 'FuncFlow';
     this.updateStatusBar();
     this.fitToScreen();
+    // Live-by-default nodes of a freshly loaded flow (Open File, …) run at
+    // once; anything with unsatisfied inputs is dropped at fire time.
+    this.autorunScheduler?.kickLive(this.flow.getNodes().map((n) => n.id));
   }
 
   /** Fit the whole graph into the viewport, so an opened flow is always shown
