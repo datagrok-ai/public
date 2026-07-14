@@ -67,7 +67,10 @@ category('UI: Tags', () => {
   });
 
   test('tag.add', async () => {
-    await testTags(DG.Project.create(), grok.dapi.projects, 'project');
+    // Projects now require a non-empty name on save (datlas projects_service guard).
+    const project = DG.Project.create();
+    project.name = 'apitests';
+    await testTags(project, grok.dapi.projects, 'project');
     await testTags(DG.DataConnection.create('apitests', {
       dataSource: 'Files',
       server: '',

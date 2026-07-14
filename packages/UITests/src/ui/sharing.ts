@@ -55,7 +55,10 @@ category('UI: Sharing', () => {
   });
 
   test('projects.api', async () => {
-    await testEntityAPI(DG.Project.create(), grok.dapi.projects);
+    // Projects now require a non-empty name on save (datlas projects_service guard).
+    const project = DG.Project.create();
+    project.name = 'apitests';
+    await testEntityAPI(project, grok.dapi.projects);
   });
 
   test('connections.api', async () => {
