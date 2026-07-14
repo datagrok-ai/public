@@ -16,6 +16,7 @@
 * Suggestions: with two tables selected, the combiners (Join Tables & co) now rank above per-table suggestions like cheminformatics matches
 * Required inputs now cover every non-optional parameter without a declared default (not just tables/columns): the node shows "Needs input" until the value is connected or filled, and no run — live-by-default, autorun, full run, or rerun — executes it before that; fixes a bare Open File live-running with no `fullPath`
 * Context panel: Connections pane shows only wired slots — each row naming the node and slot at the far end (`table ← Open File · result`), order edges as "runs after/before" facts — flags missing required inputs/values in amber, and auto-expands when something is missing
+* Introduced per-function input overrides (`HIDDEN_FUNC_INPUTS` / `CUSTOM_FUNC_INPUT_EDITORS` in utils/func-input-overrides.ts): Add New Column's `subscribeOnChanges`/`errorBehavior` no longer clutter the node or the context panel (still compiled and round-tripped in creation scripts), and Open File's `fullPath` is now edited with a proper file input instead of a plain text field
 
 ### Toolbox sections are now platform accordions
 

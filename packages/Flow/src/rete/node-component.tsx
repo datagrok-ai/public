@@ -42,11 +42,17 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const node = props.data;
   const collapsed = node.collapsed === true;
   // Exec (execution-ordering) ports render separately at the top corners — keep
-  // them out of the regular data-socket rows.
+  // them out of the regular data-socket rows. Hidden inputs (and their
+  // pass-throughs) render only when connected — their slots stay data-carrying,
+  // the user just never sees an unwired one.
+  const hiddenRow = (key: string, side: 'input' | 'output'): boolean => {
+    const base = side === 'input' ? key : (key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : '');
+    return node.hiddenInputs.has(base) && !isConnected(node, side, key);
+  };
   const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
-    .filter(([key]) => !isExecKey(key));
+    .filter(([key]) => !isExecKey(key) && !hiddenRow(key, 'input'));
   const outputs = (Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>)
-    .filter(([key]) => !isExecKey(key));
+    .filter(([key]) => !isExecKey(key) && !hiddenRow(key, 'output'));
   const execIn = node.inputs[EXEC_IN_KEY] as ClassicPreset.Input<TypedSocket> | undefined;
   const execOut = node.outputs[EXEC_OUT_KEY] as ClassicPreset.Output<TypedSocket> | undefined;
   const controls = Object.entries(node.controls) as Array<[string, ClassicPreset.Control | undefined]>;
@@ -201,12 +207,12 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
             </div>
 
             <div className="ff-node-outputs">
-              {outputs.map(([key, output], idx) => output && (
+              {outputs.map(([key, output]) => output && (
                 <div
                   key={key}
                   className={
                     'ff-socket-row ff-socket-row-output' +
-                    (idx < ptCount ? ' ff-socket-row-passthrough' : '')
+                    (ptCount > 0 && key.endsWith('__pt') ? ' ff-socket-row-passthrough' : '')
                   }
                   data-testid={tid('socket-output', key)}
                   title={node.outputDescriptions?.[key] || undefined}

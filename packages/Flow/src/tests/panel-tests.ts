@@ -6,7 +6,9 @@ import {propertyChoices, stringChoiceOptions, PropertyPanel} from '../panel/prop
 import {getParamDisplayName, getParamDefault, unquoteDefault, getFuncDisplayName} from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
 import {missingRequiredInputs, EXEC_IN_KEY, EXEC_OUT_KEY} from '../rete/scheme';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {CUSTOM_FUNC_INPUT_EDITORS, CustomInputEditor, customEditorFor} from '../utils/func-input-overrides';
+import {tid} from '../utils/test-ids';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 /** Registered factory name for a function by name, or null if absent. */
 function funcTypeName(name: string): string | null {
@@ -246,6 +248,118 @@ category('Flow: property panel', () => {
       expect(!!outRow, true, 'source output listed as wired');
       expect(outRow!.textContent!.includes(`→ ${join.label} · `), true,
         `output row names its target end (got: "${outRow!.textContent}")`);
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('hidden inputs (HIDDEN_FUNC_INPUTS) stay data-carrying but render nowhere', async () => {
+    const typeName = funcTypeName('AddNewColumn');
+    if (!typeName) return; // not registered on this server — skip
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+      // Data layer untouched — slots, seeds, and pass-throughs still exist, so
+      // compile and creation-script import/emit round-trip these params.
+      expect(node.hiddenInputs.has('subscribeOnChanges'), true, 'registry read onto the node');
+      expect(node.hiddenInputs.has('errorBehavior'), true, 'registry read onto the node');
+      expect('subscribeOnChanges' in node.inputs, true, 'slot still exists');
+      expect('subscribeOnChanges__pt' in node.outputs, true, 'pass-through still exists');
+      expect(node.inputValues['subscribeOnChanges'], false, 'default still seeded');
+      expect(node.passthroughCount, node.dgFunc!.inputs.length, 'pass-through count unchanged');
+
+      // Rendered node: rows for hidden inputs (and their pass-throughs) are gone.
+      await until(() => !!e.container.querySelector(`[data-testid="${tid('socket-input', 'expression')}"]`));
+      expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', 'subscribeOnChanges')}"]`), false,
+        'no node row for a hidden input');
+      expect(!!e.container.querySelector(`[data-testid="${tid('socket-input', 'errorBehavior')}"]`), false,
+        'no node row for a hidden input');
+      expect(!!e.container.querySelector(`[data-testid="${tid('socket-output', 'subscribeOnChanges__pt')}"]`), false,
+        'no pass-through row either');
+
+      panel.showNode(node);
+      expect(!!panel.root.querySelector('[data-param="subscribeOnChanges"]'), false, 'no panel row');
+      expect(!!panel.root.querySelector('[data-param="errorBehavior"]'), false, 'no panel row');
+      expect(!!panel.root.querySelector('[data-param="expression"]'), true, 'visible param rows still render');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('a registered custom editor replaces the default input and routes storage/validity', async () => {
+    const typeName = funcTypeName('AddNewColumn');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    const node = await addNode(e.flow, typeName);
+    const nq = node.dgFunc!.nqName;
+    const hadEntry = CUSTOM_FUNC_INPUT_EDITORS[nq];
+    let valid = true;
+    let ed: CustomInputEditor | null = null;
+    CUSTOM_FUNC_INPUT_EDITORS[nq] = {
+      ...hadEntry,
+      name: (): CustomInputEditor => {
+        const el = document.createElement('input');
+        return ed = {
+          element: el,
+          getValue: () => el.value,
+          setValue: (v) => {el.value = String(v ?? '');},
+          isValid: () => valid,
+        };
+      },
+    };
+    try {
+      node.inputValues['name'] = 'seeded';
+      panel.showNode(node);
+      const row = panel.root.querySelector('[data-param="name"]') as HTMLElement | null;
+      expect(!!row, true, 'row rendered for the overridden input');
+      expect(row!.contains(ed!.element), true, 'the row hosts the custom element, not a DG input');
+      expect(String(ed!.getValue()), 'seeded', 'editor initialized from inputValues via setValue');
+
+      ed!.onChanged!('x2');
+      expect(String(node.inputValues['name']), 'x2', 'a change is stored in inputValues');
+      valid = false;
+      ed!.onChanged!('bad');
+      expect(String(node.inputValues['name']), 'x2', 'isValid() === false blocks the store');
+    } finally {
+      if (hadEntry) CUSTOM_FUNC_INPUT_EDITORS[nq] = hadEntry;
+      else delete CUSTOM_FUNC_INPUT_EDITORS[nq];
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('OpenFile fullPath renders the file picker; a path round-trips through it', async () => {
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+      panel.showNode(node);
+      const row = panel.root.querySelector('[data-param="fullPath"]') as HTMLElement | null;
+      expect(!!row, true, 'fullPath row rendered');
+      expect(!!row!.querySelector('input'), true, 'file editor input inside the row');
+
+      // The registered editor against the live server: setValue resolves the
+      // path (existence-checked), onChanged reports the plain full-path string.
+      const factory = customEditorFor(node.dgFunc!, 'fullPath');
+      expect(!!factory, true, 'custom editor registered for core:OpenFile fullPath');
+      const param = node.dgFunc!.inputs.find((p) => p.name === 'fullPath')!;
+      const ed = factory!(param);
+      let reported: unknown = null;
+      ed.onChanged = (v): void => {reported = v;};
+      const path = 'System:AppData/Chem/mol1K.csv';
+      ed.setValue(path);
+      await until(() => reported !== null, 15000);
+      expect(String(reported), path, 'onChanged reports the full-path string');
+      expect(String(ed.getValue()), path, 'getValue returns the resolved full path');
     } finally {
       panel.root.remove();
       destroyEditor(e);

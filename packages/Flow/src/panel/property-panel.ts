@@ -16,6 +16,7 @@ import {setTid} from '../utils/test-ids';
 import {getParamDescription, getParamDisplayName, getFuncDisplayName, getTags} from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
 import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
+import {hiddenInputsOf, customEditorFor, CustomInputEditorFactory} from '../utils/func-input-overrides';
 import {ColumnPickRequest} from './column-picker';
 
 const PROP_TOOLTIPS: Record<string, string> = {
@@ -276,14 +277,17 @@ export class PropertyPanel {
       } catch {/* Dart proxy access can throw */}
       if (!paneTitle) paneTitle = 'Parameters';
       const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
+      const hidden = hiddenInputsOf(func);
       const pane = acc.addPane(paneTitle, () => {
         const content = ui.div([], 'funcflow-accordion-content ui-form');
         for (const inp of func.inputs) {
+          if (hidden.has(inp.name)) continue;
           const tip = buildFuncInputTooltip(inp);
           // Display label — the property's caption when declared, else its name.
           // Purely cosmetic: the slot key / `inputValues` stay keyed by name.
           const label = getParamDisplayName(inp);
-          const isEditable = inp.name in node.inputValues;
+          const custom = customEditorFor(func, inp.name);
+          const isEditable = custom !== null || inp.name in node.inputValues;
           if (!isEditable) {
             const row = ui.div([ui.divText(`${label}: ${inp.propertyType} (connected only)`)], 'funcflow-prop-row');
             ui.tooltip.bind(row, tip);
@@ -294,6 +298,10 @@ export class PropertyPanel {
             const row = ui.div([ui.divText(`${label}: connected`)], 'funcflow-prop-row');
             ui.tooltip.bind(row, tip);
             content.appendChild(row);
+            continue;
+          }
+          if (custom) {
+            content.appendChild(this.createCustomInputRow(custom, inp, node, tip));
             continue;
           }
           const pt = String(inp.propertyType);
@@ -740,6 +748,25 @@ export class PropertyPanel {
     });
     PropertyPanel.initInputValue(input, node.inputValues[param.name]);
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
+  }
+
+  /** A registered custom editor (`CUSTOM_FUNC_INPUT_EDITORS`) replacing the
+   *  default input for one func parameter. Storage stays `inputValues[name]`
+   *  and edits are reported like any other editor, so invalidation/autorun,
+   *  the compiler, and required-input checks see no difference. */
+  private createCustomInputRow(
+    factory: CustomInputEditorFactory, param: DG.Property, node: FlowNode, tip: string,
+  ): HTMLElement {
+    const report = this.changeReporter(node.inputValues[param.name]);
+    const ed = factory(param);
+    ed.onChanged = (v): void => {
+      if (ed.isValid && !ed.isValid()) return;
+      node.inputValues[param.name] = v;
+      report(v);
+    };
+    ed.setValue(node.inputValues[param.name]);
+    ui.tooltip.bind(ed.element, tip);
+    return this.propRow(ui.div([ed.element], 'funcflow-prop-row funcflow-dg-row'), param.name);
   }
 
   /** A native Datagrok single-line string input (used where there's no
