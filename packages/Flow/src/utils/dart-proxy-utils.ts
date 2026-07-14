@@ -68,9 +68,19 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
-/** Whether a function input parameter is optional (declared `{optional: true}`).
- *  Read defensively from the Dart-proxy `options` map. */
+/** Whether a function input parameter is optional. Reads, in order: the Dart
+ *  `FuncParam.isOptional` field (what core's own call machinery consults — set
+ *  for every declared-default param, e.g. OpenFile's `sheetName`) via the
+ *  reflective `grok_Property_Get`; `nullable`; and the `options` map's
+ *  `optional` flag (JS-declared `{optional: true}`). */
 export function isInputOptional(prop: DG.Property): boolean {
+  try {
+    const get = (window as unknown as {grok_Property_Get?: (dart: unknown, name: string) => unknown})
+      .grok_Property_Get;
+    if (get && get((prop as unknown as {dart: unknown}).dart, 'isOptional') === true) return true;
+  } catch {/* not a FuncParam — fall through */}
+  if (prop.nullable)
+    return true;
   try {
     const opt = safeGet((prop as unknown as {options?: unknown}).options, 'optional');
     return opt === true || opt === 'true';

@@ -101,6 +101,22 @@ category('Flow: suggestions', () => {
     expect(s!.wire[0].fromNodeId, 'a');
     expect(s!.wire[1].fromNodeId, 'b');
     expect(s!.wire[0].toInput !== s!.wire[1].toInput, true, 'distinct dataframe inputs');
+
+    // Selecting two tables is the intent — combiners outrank every per-table
+    // match, even a Molecule semType hit with all its bonuses.
+    const withMol = computeSuggestions(ctxOf({
+      nodeCount: 2, selectedCount: 2,
+      tables: [
+        tableSignal({nodeId: 'a', nodeLabel: 'A', outputKey: 'table',
+          columns: [{name: 'smiles', type: 'string', semType: 'Molecule'}]}),
+        tableSignal({nodeId: 'b', nodeLabel: 'B', outputKey: 'table'}),
+      ],
+    }));
+    const joinIdx = withMol.findIndex((x) => x.typeName === join.nodeTypeName);
+    expect(joinIdx > -1, true, 'JoinTables still suggested next to chem matches');
+    const firstSingle = withMol.findIndex((x) => x.wire.length === 1);
+    expect(firstSingle === -1 || joinIdx < firstSingle, true,
+      'two-table suggestions rank above single-table (chem) ones');
   });
 
   test('a single table suggests common next steps and matching viewers', async () => {

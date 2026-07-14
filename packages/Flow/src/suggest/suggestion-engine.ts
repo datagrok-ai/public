@@ -163,8 +163,13 @@ function simpleName(info: FuncInfo): string {
 
 export const SCORE = {
   semTypeColumn: 100,
-  cellValue: 95,
-  twoTables: 88,
+  /** A clicked preview cell is a more direct signal than the column it sits
+   *  in — but still below {@link SCORE.twoTables} even fully boosted (105 + 6 + 2). */
+  cellValue: 105,
+  /** Selecting two tables is the most explicit intent signal there is — the
+   *  combiners (Join, Append, Compare, …) must outrank every per-table match,
+   *  including a semType hit with all its bonuses (100 + 6 + 2 + 3 = 111). */
+  twoTables: 115,
   commonNext: 60,
   viewer: 55,
   tableOutput: 42,

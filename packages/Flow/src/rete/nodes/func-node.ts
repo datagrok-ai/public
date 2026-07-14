@@ -90,13 +90,20 @@ export class FuncNode extends FlowNode {
         // Seed the declared default (`defaultValue ?? initialValue`, unquoted),
         // else the type's zero value. String-encoded defaults are coerced to
         // the declared type so the compiler emits correct literals ('false'
-        // must not compile to `true`).
-        let def = getParamDefault(inp) ?? PRIMITIVE_DEFAULTS[inp.propertyType];
+        // must not compile to `true`). A REQUIRED numeric with no declared
+        // default seeds null, not 0 — a zero would read as "set" and hide the
+        // missing requirement (a blank string stays detectable as-is; the key
+        // must exist either way or the panel renders no editor for it).
+        const declared = getParamDefault(inp);
+        let def = declared ?? PRIMITIVE_DEFAULTS[inp.propertyType];
         if (inp.propertyType === 'bool' && typeof def === 'string')
           def = def.toLowerCase() === 'true';
         else if (typeof def === 'string' && def !== '' &&
                  ['int', 'double', 'num'].includes(String(inp.propertyType)) && !isNaN(Number(def)))
           def = Number(def);
+        if (declared === undefined && !isInputOptional(inp) &&
+            ['int', 'double', 'num'].includes(String(inp.propertyType)))
+          def = null;
         this.inputValues[inp.name] = def;
       } else if ((inp.propertyType === 'column' || inp.propertyType === 'column_list') &&
                  dataframeParams.length > 0) {
@@ -140,12 +147,19 @@ export class FuncNode extends FlowNode {
       if (outDesc) this.outputDescriptions[out.name] = outDesc;
     }
 
-    // Structural inputs (a table / a column) that aren't optional must be
-    // satisfied for the node to do anything — drives the "Needs input" hint.
-    // Primitives are excluded: they always carry a default in `inputValues`.
-    const STRUCTURAL = ['dataframe', 'column', 'column_list'];
+    // Every input that isn't optional (Dart `isOptional` / nullable /
+    // `{optional: true}`) and has no declared default must be satisfied —
+    // connected, or filled in the panel — before the node can run; drives the
+    // "Needs input" hint and every run gate (runnable set, live runs, rerun).
+    // Exempt: bool (a checkbox always holds a value) and list-likes (an empty
+    // list is a value).
     this.requiredInputs = funcInputs
-      .filter((p) => STRUCTURAL.includes(String(p.propertyType)) && !isInputOptional(p))
+      .filter((p) => {
+        if (isInputOptional(p)) return false;
+        const t = String(p.propertyType);
+        if (t === 'bool' || t === 'list' || isStringListType(p.propertyType)) return false;
+        return getParamDefault(p) === undefined;
+      })
       .map((p) => p.name);
   }
 

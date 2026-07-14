@@ -565,6 +565,49 @@ category('Flow: autorun', () => {
     }
   });
 
+  test('a live func with a blank required string param never live-runs', async () => {
+    // An Open File added bare (toolbox double-click, suggestion) has no
+    // fullPath yet — the scheduled live run must quietly no-op instead of
+    // executing OpenFile('').
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      const ctrl = new ExecutionController(e.flow);
+      const missing = nodeMissingRequirements(node, () => false);
+      expect(missing.length > 0, true, 'the node itself reports the unset path ("Needs input")');
+      expect(ctrl.runLiveNodes(new Set([node.id]), SETTINGS), 'skipped', 'blank fullPath → not ready');
+      expect(ctrl.state.nodeStates.size, 0, 'nothing ran');
+
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      const outcome = ctrl.runLiveNodes(new Set([node.id]), SETTINGS);
+      if (outcome !== 'started') {
+        const {validateGraph} = await import('../compiler/validator');
+        const {isInputOptional} = await import('../utils/dart-proxy-utils');
+        console.log('FF-DIAG outcome=' + outcome +
+          ' isRunning=' + ctrl.state.isRunning +
+          ' dgNodeType=' + node.dgNodeType +
+          ' missing=' + JSON.stringify(nodeMissingRequirements(node, (k) => e.flow.isInputConnected(node.id, k))) +
+          ' validation=' + JSON.stringify(validateGraph(e.flow)) +
+          ' inputs=' + JSON.stringify((node.dgFunc?.inputs ?? []).map((p) => ({
+            name: p.name, type: String(p.propertyType), value: node.inputValues[p.name],
+            optional: isInputOptional(p),
+            nullable: (() => { try {return (p as {nullable?: boolean}).nullable;} catch {return 'threw';} })(),
+            connected: e.flow.isInputConnected(node.id, p.name),
+          }))) +
+          ' typeName=' + typeName);
+      }
+      expect(outcome, 'started', 'path set → live run starts');
+      await until(() => {
+        const st = status(ctrl, node.id);
+        return st !== undefined && st !== NodeExecStatus.running;
+      }, 15000);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('isAutorunByDefault: Open File, Add New Column, and viewers are live', async () => {
     registerBuiltinNodes();
     registerAllFunctions();
