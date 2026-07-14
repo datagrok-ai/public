@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: grouped connectivity tests by provider (`Providers: <dataSource>`) via `initPackageTests`; removed the dead `tests/categories.ts` whose provider categories held a `before` but no tests.
+* Tests: skip ClickHouse connectivity tests (test connection unavailable in CI).
 * Security: pinned the DB test image to `postgres:17-bookworm` and added `apt-get upgrade` to clear stale Debian base CVEs (gnutls28/perl/glibc).
 
 ## 1.3.0 (2025-07-28)
