@@ -1,10 +1,13 @@
+import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {
   areTypesCompatible, dgTypeToSlotType, getSlotColor, DG_TYPE_MAP,
   isStringListType, stringListToArrayLiteral,
   domainSection, domainCategory, isDomainOperation,
-  CHEMINFORMATICS_PACKAGES, BIOINFORMATICS_PACKAGES, CATEGORY_COLORS,
+  CHEMINFORMATICS_PACKAGES, BIOINFORMATICS_PACKAGES,
+  ROLE_COLORS, CATEGORY_COLORS, FUNC_NAME_COLORS, DEFAULT_NODE_COLOR,
+  pastelize, categoricalColor,
 } from '../types/type-map';
 
 category('Flow: type-map', () => {
@@ -72,6 +75,41 @@ category('Flow: type-map', () => {
       expect(typeof def.color === 'string' && def.color.length > 0, true, `color for ${dgType}`);
       expect(getSlotColor(dgType).length > 0, true, `getSlotColor for ${dgType}`);
     }
+  });
+
+  test('pastelize lightens every channel toward white, same hue family', async () => {
+    // 60% white mix of the palette hues used on title bars.
+    expect(pastelize('#2ca02c'), '#abd9ab', 'input green');
+    expect(pastelize('#d62728'), '#efa9a9', 'output red');
+    expect(pastelize('#000000'), '#999999', 'black → 60% gray');
+    expect(pastelize('#ffffff'), '#ffffff', 'white is a fixed point');
+    // Every channel moves up (never down) — the pastel is strictly lighter.
+    for (const c of ['#EC407A', '#7E57C2', '#4DB6AC', '#FF8A65']) {
+      const orig = parseInt(c.slice(1), 16);
+      const pale = parseInt(pastelize(c).slice(1), 16);
+      for (const shift of [16, 8, 0])
+        expect(((pale >> shift) & 0xff) >= ((orig >> shift) & 0xff), true, `${c} channel ${shift}`);
+    }
+    // Non-#rrggbb inputs pass through untouched.
+    expect(pastelize('red'), 'red');
+    expect(pastelize(''), '');
+  });
+
+  test('node identity colors come from the platform categorical palette', async () => {
+    // Users must see the palette they know from every categorical coloring
+    // across Datagrok (DG.Color.categoricalPalette) — no bespoke hues.
+    const palette = new Set(DG.Color.categoricalPalette.map((c) => DG.Color.toHtml(c).toLowerCase()));
+    expect(palette.size > 0, true, 'platform palette is available');
+    const all: Array<[string, string]> = [
+      ...Object.entries(ROLE_COLORS).map(([k, v]): [string, string] => [`role ${k}`, v.color]),
+      ...Object.entries(CATEGORY_COLORS).map(([k, v]): [string, string] => [`category ${k}`, v.color]),
+      ...Object.entries(FUNC_NAME_COLORS).map(([k, v]): [string, string] => [`func ${k}`, v.color]),
+      ['default', DEFAULT_NODE_COLOR],
+    ];
+    for (const [what, color] of all)
+      expect(palette.has(color.toLowerCase()), true, `${what} color ${color} is a palette color`);
+    // categoricalColor loops over the palette like DG.Color.getCategoricalColor.
+    expect(categoricalColor(0), categoricalColor(DG.Color.categoricalPalette.length));
   });
 
   test('domainSection routes chem/bio packages to their sections', async () => {

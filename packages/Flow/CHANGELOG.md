@@ -7,6 +7,8 @@
 * Order ports: now hidden unless wired, hovered, or mid-order-drag (with pointer-events disabled while invisible), and carry plain-language tooltips explaining run-order wiring
 * Order drags: dimming + green highlight of every other node's opposite order square while dragging, and dropping on a node body auto-connects its order port (no aiming at the small square)
 * Humanized caption-less parameter names everywhere (node slot labels, context-panel rows, connection endpoints) mirroring core's propertyNameToFriendly — maxNumOfSomething reads "Max Num Of Something", matching ui.input.forProperty; declared captions still win; all-caps acronyms (MW, HBA) are preserved instead of core's Mw/Hba folding
+* Node title bars are now pastel (identity hue mixed 60% with white via `pastelize`) so nodes blend with the canvas; vivid hues stay on small surfaces (minimap, sockets, connections)
+* Node identity colors now come from the platform's categorical palette (`DG.Color.categoricalPalette`) instead of bespoke Material hues, so nodes wear the colors users know from categorical coloring across Datagrok
 * Context panel: Connections pane shows only wired slots — each row naming the node and slot at the far end (`table ← Open File · result`), order edges as "runs after/before" facts — flags missing required inputs/values in amber, and auto-expands when something is missing
 
 ### Toolbox sections are now platform accordions

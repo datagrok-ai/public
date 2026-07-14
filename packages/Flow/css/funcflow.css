@@ -883,21 +883,24 @@
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.15), 0 4px 14px rgba(0, 0, 0, 0.13);
 }
 
-/* Node-type colored stripes (overridden inline by role color when present) */
+/* Node-type colored stripes (overridden inline by role color when present).
+   Pastels of the Standard categorical-palette hues (DG.Color.categoricalPalette:
+   green #2ca02c, red #d62728, gray #7f7f7f, light gray #c7c7c7) — keep in sync
+   with pastelize() in src/types/type-map.ts (60% white mix). */
 .ff-node-input .ff-node-title {
-  background: #66BB6A;
+  background: #abd9ab;
 }
 
 .ff-node-output .ff-node-title {
-  background: #EF5350;
+  background: #efa9a9;
 }
 
 .ff-node-utility .ff-node-title {
-  background: #78909C;
+  background: #cccccc;
 }
 
 .ff-node-func .ff-node-title {
-  background: #BDBDBD;
+  background: #e9e9e9;
 }
 
 .ff-node-title {

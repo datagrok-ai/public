@@ -1,6 +1,8 @@
 /** DG type ↔ socket type & color mappings, plus type-compatibility rules
  *  used by `TypedSocket.isCompatibleWith`. */
 
+import * as DG from 'datagrok-api/dg';
+
 export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'dataframe': {slotType: 'dataframe', color: '#E67E22'},
   'column': {slotType: 'column', color: '#3498DB'},
@@ -29,28 +31,84 @@ export const DG_TYPE_MAP: Record<string, {slotType: string; color: string}> = {
   'order': {slotType: 'order', color: '#9E9E9E'},
 };
 
+// ---- node identity colors come from the platform's categorical palette ----
+
+/** Core's Standard palette (`Color.category20` in d4's color.dart) — the
+ *  compile-time fallback when `DG.Color.categoricalPalette` is unreachable.
+ *  Order matters: `CAT` below names entries by index. */
+const STANDARD_PALETTE = [
+  '#1f77b4', '#ffbb78', '#2ca02c', '#d62728', '#9467bd', '#8c564b',
+  '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#98df8a', '#ff9896',
+  '#c5b0d5', '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5',
+];
+
+/** Hue names → index in the Standard palette. Identity colors are picked by
+ *  index at runtime, so a user-customized platform palette carries into Flow. */
+export const CAT = {
+  blue: 0, orange: 1, green: 2, red: 3, purple: 4, brown: 5, pink: 6, gray: 7,
+  olive: 8, cyan: 9, lightGreen: 10, lightRed: 11, lightPurple: 12,
+  lightBrown: 13, lightPink: 14, lightGray: 15, lightOlive: 16, lightCyan: 17,
+};
+
+let _palette: string[] | null = null;
+
+/** The i-th color of the platform's categorical palette
+ *  (`DG.Color.categoricalPalette` — what users see on every categorical
+ *  coloring across Datagrok), looping like `getCategoricalColor`. */
+export function categoricalColor(i: number): string {
+  if (_palette == null) {
+    try {
+      const raw = DG.Color.categoricalPalette;
+      _palette = raw?.length ? raw.map((c) => DG.Color.toHtml(c)) : STANDARD_PALETTE;
+    }
+    catch (_) {
+      _palette = STANDARD_PALETTE;
+    }
+  }
+  return _palette[i % _palette.length];
+}
+
+const white = (color: string): {color: string; bgcolor: string} => ({color, bgcolor: '#ffffff'});
+
 /** Role → title-bar color (white body). Looked up by `FuncNode` from
  *  `func.options.role`. */
 export const ROLE_COLORS: Record<string, {color: string; bgcolor: string}> = {
-  'app': {color: '#7986CB', bgcolor: '#ffffff'},
-  'panel': {color: '#9575CD', bgcolor: '#ffffff'},
-  'viewer': {color: '#64B5F6', bgcolor: '#ffffff'},
-  'transform': {color: '#4DB6AC', bgcolor: '#ffffff'},
-  'Transform': {color: '#4DB6AC', bgcolor: '#ffffff'},
-  'filter': {color: '#FFD54F', bgcolor: '#ffffff'},
-  'converter': {color: '#FFB74D', bgcolor: '#ffffff'},
-  'widget': {color: '#F06292', bgcolor: '#ffffff'},
-  'cellRenderer': {color: '#A1887F', bgcolor: '#ffffff'},
-  'semTypeDetector': {color: '#DCE775', bgcolor: '#ffffff'},
-  'fileViewer': {color: '#4DD0E1', bgcolor: '#ffffff'},
-  'fileExporter': {color: '#4DD0E1', bgcolor: '#ffffff'},
-  'editor': {color: '#4FC3F7', bgcolor: '#ffffff'},
-  'searchProvider': {color: '#AED581', bgcolor: '#ffffff'},
-  'tooltip': {color: '#FF8A65', bgcolor: '#ffffff'},
+  'app': white(categoricalColor(CAT.blue)),
+  'panel': white(categoricalColor(CAT.purple)),
+  'viewer': white(categoricalColor(CAT.lightCyan)),
+  'transform': white(categoricalColor(CAT.cyan)),
+  'Transform': white(categoricalColor(CAT.cyan)),
+  'filter': white(categoricalColor(CAT.olive)),
+  'converter': white(categoricalColor(CAT.orange)),
+  'widget': white(categoricalColor(CAT.pink)),
+  'cellRenderer': white(categoricalColor(CAT.brown)),
+  'semTypeDetector': white(categoricalColor(CAT.lightOlive)),
+  'fileViewer': white(categoricalColor(CAT.lightCyan)),
+  'fileExporter': white(categoricalColor(CAT.lightCyan)),
+  'editor': white(categoricalColor(CAT.lightCyan)),
+  'searchProvider': white(categoricalColor(CAT.lightGreen)),
+  'tooltip': white(categoricalColor(CAT.lightRed)),
 };
 
-export const DEFAULT_NODE_COLOR = '#BDBDBD';
+export const DEFAULT_NODE_COLOR = categoricalColor(CAT.lightGray);
 export const DEFAULT_NODE_BGCOLOR = '#ffffff';
+
+/** How much white is mixed into a node's identity color for the on-canvas
+ *  title bar (see `pastelize`). One knob for the whole palette. */
+export const TITLE_WHITE_RATIO = 0.6;
+
+/** Soften an identity color by mixing it with white — same hue, much lighter,
+ *  so title bars blend with the canvas. The vivid original stays canonical
+ *  (`node.color`: minimap, tests, future legends); only the rendered title bar
+ *  uses the pastel. Non-`#rrggbb` inputs are returned unchanged. */
+export function pastelize(hex: string, whiteRatio: number = TITLE_WHITE_RATIO): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const mix = (c: number): number => Math.round(c + (255 - c) * whiteRatio);
+  const [r, g, b] = [mix((n >> 16) & 0xff), mix((n >> 8) & 0xff), mix(n & 0xff)];
+  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+}
 
 // ---- domain sections (cheminformatics / bioinformatics) ----
 
@@ -130,15 +188,15 @@ export function categorizeBySignature(ins: string[], outs: string[], role: strin
  *  JoinTables, AddNewColumn, chem properties, …) still reads its job from color
  *  instead of all being gray. */
 export const CATEGORY_COLORS: Record<string, {color: string; bgcolor: string}> = {
-  'Data Sources': {color: '#FF8A65', bgcolor: '#ffffff'},      // orange — bring data in
-  'Combine Tables': {color: '#BA68C8', bgcolor: '#ffffff'},    // purple — join/union
-  'Transform Tables': {color: '#4DB6AC', bgcolor: '#ffffff'},  // teal — reshape
-  'Column Operations': {color: '#5C9DED', bgcolor: '#ffffff'}, // blue — derive columns
-  'Compute Values': {color: '#9CCC65', bgcolor: '#ffffff'},    // green — scalars
-  'Visualize': {color: '#4DD0E1', bgcolor: '#ffffff'},         // cyan — viewers
-  'Cheminformatics': {color: '#EC407A', bgcolor: '#ffffff'},   // pink — small molecules
-  'Bioinformatics': {color: '#7E57C2', bgcolor: '#ffffff'},    // deep purple — sequences
-  'Other': {color: '#90A4AE', bgcolor: '#ffffff'},             // blue-gray — the rest
+  'Data Sources': white(categoricalColor(CAT.orange)),         // orange — bring data in
+  'Combine Tables': white(categoricalColor(CAT.purple)),       // purple — join/union
+  'Transform Tables': white(categoricalColor(CAT.cyan)),       // cyan — reshape
+  'Column Operations': white(categoricalColor(CAT.blue)),      // blue — derive columns
+  'Compute Values': white(categoricalColor(CAT.lightGreen)),   // green — scalars
+  'Visualize': white(categoricalColor(CAT.lightCyan)),         // cyan — viewers
+  'Cheminformatics': white(categoricalColor(CAT.pink)),        // pink — small molecules
+  'Bioinformatics': white(categoricalColor(CAT.lightPurple)),  // purple — sequences
+  'Other': white(categoricalColor(CAT.lightGray)),             // gray — the rest
 };
 
 /** Per-function title-bar colors, keyed by simple function name
@@ -146,8 +204,8 @@ export const CATEGORY_COLORS: Record<string, {color: string; bgcolor: string}> =
  *  functions can be visually pinned regardless of their role. Add an entry to
  *  give any function a fixed color. */
 export const FUNC_NAME_COLORS: Record<string, {color: string; bgcolor: string}> = {
-  'setvar': {color: '#EF5350', bgcolor: '#ffffff'}, // red — variable assignment
-  'getvar': {color: '#EF9A9A', bgcolor: '#ffffff'}, // light red — variable read
+  'setvar': white(categoricalColor(CAT.red)),      // red — variable assignment
+  'getvar': white(categoricalColor(CAT.lightRed)), // light red — variable read
 };
 
 /** Symmetric compat map: an output of type K can connect to an input of any

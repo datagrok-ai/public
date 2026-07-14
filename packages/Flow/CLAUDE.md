@@ -441,10 +441,12 @@ A second, **data-free** connection type that expresses pure run-order — "node1
 ## Type System (`types/type-map.ts`)
 
 - `DG_TYPE_MAP`: DG type string → `{slotType, color}`. The slot color is what the React Socket component fills the dot with.
-- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName, category?)` checks this **first** (e.g. `SetVar` → red `#EF5350`, `GetVar` → light red). Add an entry to pin any function.
+- `categoricalColor(i)` + `CAT` (hue-name → index): node identity colors are picked **from the platform's categorical palette** (`DG.Color.categoricalPalette` — the colors users see on every categorical coloring across Datagrok), cached on first use with core's Standard `category20` list as the fallback. All the tables below and the builtin `COLOR_*` constants in `rete/nodes/*` resolve through it — never hardcode a node hue.
+- `FUNC_NAME_COLORS`: per-function title-bar color, keyed by simple function name (case-insensitive). `getNodeColors(role, funcName, category?)` checks this **first** (e.g. `SetVar` → palette red, `GetVar` → palette light red). Add an entry to pin any function.
 - `ROLE_COLORS`: DG role → title-bar color (white body always).
 - `CATEGORY_COLORS`: task-category → title-bar color (incl. **Cheminformatics** pink / **Bioinformatics** deep-purple), the **fallback after role** so the role-less majority (JoinTables, AddNewColumn, chem properties, …) is colored by what it does instead of all gray. `FuncNode` computes the category as `domainCategory(pkg, inputTypes) ?? categorizeBySignature(...)` (same routing as the browser's `categorizeFunc`) and passes it to `getNodeColors`. Precedence: func-name → role → category → default gray.
 - `CHEMINFORMATICS_PACKAGES` / `BIOINFORMATICS_PACKAGES` + `domainSection(pkg)` / `domainCategory(pkg, inputTypes)` / `isDomainOperation(inputTypes)`: the by-package domain routing (gated to operations that consume data), shared by node coloring and the toolbox grouping.
+- `pastelize(hex, ratio = TITLE_WHITE_RATIO)`: mixes an identity color 60% toward white. **All color tables keep the vivid hue** (`node.color` stays vivid — minimap, tests); only the rendered title bar (`node-component.tsx`) paints the pastel. The four CSS fallback stripes in `funcflow.css` are pre-computed pastels of the same hues — keep them in sync if the ratio changes.
 - `areTypesCompatible(out, in)`: source-of-truth for connection validity. Used by `TypedSocket.isCompatibleWith`. Permissive for `dynamic` and `object`; explicit pairs for `int↔double↔num` and `list↔string_list`.
 
 `TypedSocket` ([rete/sockets.ts](src/rete/sockets.ts)) is one-instance-per-DG-type (cached), so reference equality holds. Its `isCompatibleWith` method is consulted at connection-pick time by `ClassicFlow.canMakeConnection`, which rejects incompatible drops before they enter the editor's data layer.
@@ -752,7 +754,7 @@ The bottom **Output panel** is a pane of the view's vertical splitter (not a doc
 ### Theme (CSS)
 
 Spotfire-inspired light theme:
-- White nodes with colored title bars (per `dgNodeType` or per-role).
+- White nodes with pastel title bars (per `dgNodeType` or per-role identity hue, softened by `pastelize` — vivid originals survive on the minimap and sockets).
 - Soft drop shadow (`box-shadow: 0 3px 10px rgba(0,0,0,0.1)`), rounded `border-radius: 8px`.
 - Selection: blue 1.5px border + outer halo.
 - Background: `#ebedf2` with subtle dot grid (programmatically generated PNG data URL, applied inline by `FlowEditor`).

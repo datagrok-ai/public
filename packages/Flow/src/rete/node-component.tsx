@@ -17,7 +17,7 @@ import {classicConnectionPath} from 'rete-render-utils';
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements} from './scheme';
 import {TypedSocket} from './sockets';
-import {getSlotColor} from '../types/type-map';
+import {getSlotColor, pastelize} from '../types/type-map';
 import {tid} from '../utils/test-ids';
 import {summarizeNode} from '../summary/summary-generator';
 
@@ -52,8 +52,10 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const controls = Object.entries(node.controls) as Array<[string, ClassicPreset.Control | undefined]>;
   const ptCount = node.passthroughCount ?? 0;
 
+  // Title bars get the pastel of the node's identity color — vivid hues are
+  // kept for small surfaces (minimap, sockets) where saturation aids legibility.
   const titleColor = (node as unknown as {color?: string}).color;
-  const titleStyle: React.CSSProperties = titleColor ? {background: titleColor} : {};
+  const titleStyle: React.CSSProperties = titleColor ? {background: pastelize(titleColor)} : {};
 
   const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
   const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
