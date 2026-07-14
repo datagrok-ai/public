@@ -77,6 +77,101 @@
   flex: 1;
   overflow-y: auto;
   padding: 0 4px;
+  min-height: 0;
+}
+
+/* ---------- Suggestions pane (bottom of the toolbox) ---------- */
+/* Expanded: a fixed 30% of the browser height under the function tree.
+   Collapsed: just the header strip. */
+.ff-suggest-pane {
+  flex: 0 0 30%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--grey-2, #ddd);
+  background: #fcfcfd;
+  box-shadow: var(--grey-1) 0px -3px 22px 9px;
+}
+
+.ff-suggest-pane[data-collapsed="true"] {
+  flex: 0 0 auto;
+}
+
+.ff-suggest-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #607d8b;
+  background: #eceff1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ff-suggest-pane-count {
+  color: #90a4ae;
+  font-weight: 500;
+}
+
+.ff-suggest-pane-caret {
+  margin-left: auto;
+  cursor: pointer;
+  color: #90a4ae;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.ff-suggest-pane-caret:hover {
+  color: #455a64;
+}
+
+.ff-suggest-pane[data-collapsed="true"] .ff-suggest-pane-list {
+  display: none;
+}
+
+.ff-suggest-pane-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+
+.ff-suggest-pane-item {
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.ff-suggest-pane-item:hover {
+  background: var(--blue-0, #e3f2fd);
+}
+
+.ff-suggest-pane-item-label {
+  font-size: 12px;
+  color: var(--grey-6, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ff-suggest-pane-item:hover .ff-suggest-pane-item-label {
+  color: var(--blue-2, #1565c0);
+}
+
+.ff-suggest-pane-item-reason {
+  font-size: 10px;
+  color: var(--grey-4, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ff-suggest-pane-empty {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--grey-4, #999);
 }
 
 .funcflow-func-item {

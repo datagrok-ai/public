@@ -19,6 +19,44 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
 import {setTid} from '../utils/test-ids';
+import * as rxjs from 'rxjs';
+
+// ---------- preview-cell focus hook (suggestion-engine signal) ----------
+
+/** Host callback fired when the user clicks a cell in a preview grid — the
+ *  suggestion engine treats the clicked value (semType + value) as a context
+ *  signal ("clicked a Molecule → offer similarity/substructure searches"). */
+let _previewCellFocusHandler:
+  ((cell: {semType: string | null; column: string; value: unknown}) => void) | null = null;
+
+export function setPreviewCellFocusHandler(
+  h: ((cell: {semType: string | null; column: string; value: unknown}) => void) | null,
+): void {
+  _previewCellFocusHandler = h;
+}
+
+let previewHookSub: rxjs.Subscription | null = null;
+/** Report current-cell changes of a preview grid's dataframe to the host.
+ *  The df is a preview clone that dies with the panel content, so the
+ *  subscription's lifetime is bounded by it. */
+function hookPreviewCellFocus(df: DG.DataFrame): void {
+  previewHookSub?.unsubscribe();
+  try {
+    previewHookSub = df.onCurrentCellChanged.subscribe(() => {
+      if (!_previewCellFocusHandler) return;
+      try {
+        const cell = df.currentCell;
+        const col = cell?.column;
+        if (!col) return;
+        _previewCellFocusHandler({
+          semType: col.semType ? String(col.semType) : null,
+          column: col.name,
+          value: cell.value,
+        });
+      } catch {/* cell read failed mid-update — skip this signal */}
+    });
+  } catch {/* observable unavailable on odd proxies — no signal, no harm */}
+}
 
 // ---------- property-panel side: status, duration, metadata ----------
 
@@ -248,6 +286,7 @@ export function buildPreview(
     wrap.style.position = 'relative';
     try {
       df.meta.detectSemanticTypes();
+      hookPreviewCellFocus(df);
       const grid = DG.Viewer.grid(df);
       grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
       wrap.appendChild(grid.root);
@@ -267,6 +306,7 @@ export function buildPreview(
       wrap.style.position = 'relative';
       try {
         df.meta.detectSemanticTypes();
+        hookPreviewCellFocus(df);
         const grid = DG.Viewer.grid(df);
         grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
         wrap.appendChild(grid.root);
@@ -291,6 +331,7 @@ export function buildPreview(
       wrap.style.position = 'relative';
       try {
         df.meta.detectSemanticTypes();
+        hookPreviewCellFocus(df);
         const grid = DG.Viewer.grid(df);
         grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
         wrap.appendChild(grid.root);

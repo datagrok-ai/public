@@ -39,7 +39,11 @@ import {ExecutionController} from './execution/execution-controller';
 import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execution/autorun';
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary} from './execution/execution-state';
-import {buildPreview} from './execution/value-inspector';
+import {buildPreview, setPreviewCellFocusHandler} from './execution/value-inspector';
+import {SuggestionPane, FF_SUGGEST_MIME} from './panel/suggestion-pane';
+import {
+  collectSuggestContext, computeSuggestions, Suggestion, CellSignal,
+} from './suggest/suggestion-engine';
 import {_package} from './package';
 import {setTid} from './utils/test-ids';
 import {GuideHost} from './guide/guide-model';
@@ -60,6 +64,13 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
+  /** Toolbox Suggestions pane (bottom ~30% of the browser). Public for tests. */
+  suggestionPane!: SuggestionPane;
+  /** The node the user last clicked — a suggestion-context signal that
+   *  outlives a deselect ("the currently clicked node"). */
+  private focusNodeId: string | null = null;
+  /** The cell last clicked in the output preview (semType + value). */
+  private previewCell: CellSignal | null = null;
   /** Bottom output panel — a pane of the view's vertical splitter (see
    *  `initUI`). Public so hosts (the creation-script dialog) and tests can
    *  reach it; created disabled when `options.outputPanel` is false. */
@@ -204,6 +215,23 @@ export class FuncFlowView extends DG.ViewBase {
       onFunctionDoubleClick: (info: FuncInfo) => void this.addNodeByType(info.nodeTypeName),
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
+    });
+
+    // Suggestions pane — the bottom ~30% of the toolbox. Recomputes from the
+    // full canvas context (selection, focus node, captured data, preview cell).
+    this.suggestionPane = new SuggestionPane(
+      async () => this.flow ?
+        computeSuggestions(await collectSuggestContext(
+          this.flow, this.executionController ?? null, this.focusNodeId, this.previewCell)) :
+        [],
+      (s) => void this.applySuggestion(s),
+    );
+    this.functionBrowser.root.appendChild(this.suggestionPane.root);
+    // A cell clicked in the output preview is a context signal ("clicked a
+    // Molecule value") — remember it and recompute.
+    setPreviewCellFocusHandler((cell) => {
+      this.previewCell = cell;
+      this.suggestionPane.refresh();
     });
 
     // The canvas is a direct `.ui-box` child (the splitter pane), where core
@@ -456,17 +484,28 @@ export class FuncFlowView extends DG.ViewBase {
         // Lazy: opens (or updates) the bottom-docked output panel only if
         // this node has captured runtime values from a prior run.
         this.executionController?.showOutputsForNode(node);
+        // Clicking a node re-anchors the suggestion context; a stale preview
+        // cell from another node's data no longer applies.
+        this.focusNodeId = node.id;
+        this.previewCell = null;
+        this.suggestionPane?.refresh();
       },
       onNodeDeselected: () => {
         this.propertyPanel.clear();
         grok.shell.o = this.propertyPanel.root;
+        this.suggestionPane?.refresh();
       },
+      // Selection changes that bypass `nodepicked` — the marquee (its release
+      // is swallowed before it can bubble to any container listener), Ctrl+A,
+      // modifier-click removals, programmatic selects.
+      onSelectionChanged: () => this.suggestionPane?.refresh(),
       onGraphChanged: () => {
         this.updateStatusBar();
         this.updateStartPanelVisibility();
         this.refreshNodeHints();
         this.flow?.refreshMinimap();
         this.updateSaveButtonState();
+        this.suggestionPane?.refresh();
       },
       // Classified edits: invalidate exactly the affected downstream cone, and
       // feed the same set to the autorun scheduler (a rerun of just that slice).
@@ -478,6 +517,7 @@ export class FuncFlowView extends DG.ViewBase {
         // via `onGraphEdited` only. So refresh Save state here too, else editing
         // a value on a saved flow would leave Save greyed.
         this.updateSaveButtonState();
+        this.suggestionPane?.refresh();
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
@@ -486,6 +526,14 @@ export class FuncFlowView extends DG.ViewBase {
 
     this.propertyPanel = new PropertyPanel(this.flow);
     this.executionController = new ExecutionController(this.flow, this.outputPreview);
+    // Fresh captured values (node completed / invalidated) change what fits
+    // next — recompute. Debounced in the pane, so per-node bursts are cheap.
+    this.executionController.onNodeStateChanged = () => this.suggestionPane?.refresh();
+    // Empty-canvas-click deselects happen inside rete with no callback — any
+    // release on the canvas re-reads the selection. (Marquee releases never
+    // get here — they are swallowed in `installRectSelect`; those report via
+    // `onSelectionChanged` instead.)
+    this.canvasContainer.addEventListener('pointerup', () => this.suggestionPane?.refresh());
     this.autorunScheduler = new AutorunScheduler((dirty, liveOnly) => {
       const settings = {
         name: this.flowSettings.scriptName,
@@ -625,15 +673,26 @@ export class FuncFlowView extends DG.ViewBase {
       },
     });
 
-    // Native HTML5 drag/drop from the function browser.
+    // Native HTML5 drag/drop from the function browser and the Suggestions pane.
     this.canvasContainer.addEventListener('dragover', (ev) => {
       if (!ev.dataTransfer) return;
-      if (Array.from(ev.dataTransfer.types).includes(FF_DRAG_MIME)) {
+      const types = Array.from(ev.dataTransfer.types);
+      if (types.includes(FF_DRAG_MIME) || types.includes(FF_SUGGEST_MIME)) {
         ev.preventDefault();
         ev.dataTransfer.dropEffect = 'copy';
       }
     });
     this.canvasContainer.addEventListener('drop', (ev) => {
+      // A dragged suggestion carries its full JSON payload — apply it (wiring,
+      // prefill and all) at the drop point.
+      const sug = ev.dataTransfer?.getData(FF_SUGGEST_MIME);
+      if (sug) {
+        ev.preventDefault();
+        try {
+          void this.applySuggestion(JSON.parse(sug) as Suggestion, {clientX: ev.clientX, clientY: ev.clientY});
+        } catch {/* malformed payload — not ours, ignore */}
+        return;
+      }
       const typeName = ev.dataTransfer?.getData(FF_DRAG_MIME);
       if (!typeName) return;
       ev.preventDefault();
@@ -666,6 +725,43 @@ export class FuncFlowView extends DG.ViewBase {
     await this.flow.addNodeAtCenter(node);
     this.updateStatusBar();
     return node;
+  }
+
+  /** Accept a toolbox suggestion: create the node — at the drop point when the
+   *  suggestion was dragged onto the canvas (`at`), else next to its (first)
+   *  source — prefill the suggested input values (column names, a clicked
+   *  molecule), and wire every suggested connection — accepting "Join Tables"
+   *  for two selected tables lands it connected to both. */
+  private async applySuggestion(s: Suggestion, at?: {clientX: number; clientY: number}): Promise<void> {
+    if (!this.flow) return;
+    const node = createNode(s.typeName);
+    if (!node) {
+      grok.shell.warning(`Unknown node type: ${s.typeName}`);
+      return;
+    }
+    const src = s.wire.length > 0 ? this.flow.getNodeById(s.wire[0].fromNodeId) : null;
+    if (at) {
+      const {x, y} = this.flow.screenToCanvas(at.clientX, at.clientY);
+      await this.flow.addNodeAt(node, x, y);
+    }
+    else if (src)
+      await this.flow.addNodeAt(node, src.pos.x + 340, src.pos.y + (s.wire.length > 1 ? 60 : 0));
+    else
+      await this.flow.addNodeAtCenter(node);
+
+    for (const w of s.wire) {
+      if (w.toInput && node.inputs[w.toInput])
+        await this.flow.addConnectionByKeys(w.fromNodeId, w.fromOutputKey, node.id, w.toInput);
+    }
+    if (s.prefill && Object.keys(s.prefill).length > 0) {
+      for (const [k, v] of Object.entries(s.prefill)) node.inputValues[k] = v;
+      await this.flow.updateNode(node.id);
+      // Report the programmatic writes like a panel edit — drives invalidation
+      // and lets live-by-default nodes autorun with the prefilled value.
+      this.flow.notifyNodeParamsChanged(node.id);
+    }
+    this.updateStatusBar();
+    this.suggestionPane?.refresh();
   }
 
   /** Place a node of the given type at the drop pointer when one is provided
@@ -1125,6 +1221,7 @@ export class FuncFlowView extends DG.ViewBase {
   detach(): void {
     this.autorunScheduler?.reset();
     this.teardownAutoPin();
+    this.flow?.destroy();
     super.detach();
   }
 

@@ -5,7 +5,10 @@
  *  Ctrl+A / Ctrl+Shift+A select / deselect everything. Exercised through
  *  real PointerEvent / KeyboardEvent dispatch on the live editor DOM. */
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
+import * as ui from 'datagrok-api/ui';
+
 import {registerBuiltinNodes} from '../rete/node-factory';
+import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode} from '../rete/scheme';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
 
@@ -156,6 +159,34 @@ category('Flow: selection', () => {
       await clickNode(e, a);
       expect(await until(() => !isSelected(e, b) && !isSelected(e, c)), true, 'others deselected');
       expect(isSelected(e, a), true, 'clicked node stays selected');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('marquee, Ctrl+A, and modifier clicks report onSelectionChanged', async () => {
+    // The marquee's release is swallowed (stopImmediatePropagation) before any
+    // container/window listener sees it — hosts that track the selection (the
+    // suggestion pane) rely on this callback instead.
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    let changes = 0;
+    const e: TestEditor = {flow: new FlowEditor(container, {onSelectionChanged: () => changes++}), container};
+    try {
+      const [a, b] = await threeNodes(e);
+      const {from, to} = marqueeOver(e, [a, b]);
+      const before = changes;
+      await dragMarquee(e, from, to);
+      expect(await until(() => changes > before), true, 'marquee reports a selection change');
+      expect(isSelected(e, a) && isSelected(e, b), true, 'marquee selected the nodes');
+
+      const beforeKeys = changes;
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'a', ctrlKey: true, bubbles: true, cancelable: true}));
+      expect(await until(() => changes > beforeKeys), true, 'Ctrl+A reports a selection change');
+
+      const beforeToggle = changes;
+      await clickNode(e, a, {ctrlKey: true});
+      expect(await until(() => changes > beforeToggle), true, 'ctrl+click toggle-off reports');
     } finally {
       destroyEditor(e);
     }

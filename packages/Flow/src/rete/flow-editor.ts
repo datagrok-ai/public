@@ -45,6 +45,13 @@ export type GraphEdit =
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
+  /** Fired after selection changes that never go through `nodepicked` — the
+   *  marquee (whose release is swallowed before it can bubble, see
+   *  `installRectSelect`), Ctrl+A / Ctrl+Shift+A, the pointerup modifier
+   *  semantics (toggle-off / remove / collapse), and programmatic
+   *  select/unselect. Hosts that track "what is selected now" (the suggestion
+   *  pane) listen here; per-node callbacks above stay click-driven. */
+  onSelectionChanged?: () => void;
   onGraphChanged?: () => void;
   /** Fired with the classified edit for every change that can affect run
    *  results — drives precise invalidation and autorun. Fires alongside (not
@@ -1462,14 +1469,17 @@ export class FlowEditor {
     const rx2 = Math.max(a.x, b.x), ry2 = Math.max(a.y, b.y);
     if (rx2 - rx1 < 3 || ry2 - ry1 < 3) return; // ignore fat-finger clicks
 
+    let touched = false;
     for (const node of this.editor.getNodes()) {
       const sz = this.measureNode(node.id);
       const nx1 = node.pos.x, ny1 = node.pos.y;
       const nx2 = nx1 + sz.w, ny2 = ny1 + sz.h;
       if (!(rx1 < nx2 && nx1 < rx2 && ry1 < ny2 && ny1 < ry2)) continue;
+      touched = true;
       if (remove) await this.selectableApi.unselect(node.id);
       else await this.selectableApi.select(node.id, true);
     }
+    if (touched) this.callbacks.onSelectionChanged?.();
   }
 
   /** Build a transient floating popup with a search input and a scrollable
@@ -1755,10 +1765,13 @@ export class FlowEditor {
         // Ctrl+Shift+click removes; Ctrl+click on a selected node toggles it off.
         void this.selectableApi.unselect(id);
         this.callbacks.onNodeDeselected?.(node);
+        this.callbacks.onSelectionChanged?.();
       }
       else if (!ctrl && !ev.shiftKey && this.lastPointerDownWasSelected &&
-               this.getSelectedNodeIds().length > 1)
+               this.getSelectedNodeIds().length > 1) {
         void this.selectableApi.select(id, false); // plain click → exclusive
+        this.callbacks.onSelectionChanged?.();
+      }
     };
     window.addEventListener('pointerup', this.pointerUpTracker, true);
 
@@ -1801,12 +1814,13 @@ export class FlowEditor {
           void this.unselectAllNodes();
         else
           for (const n of this.editor.getNodes()) void this.selectableApi.select(n.id, true);
+        this.callbacks.onSelectionChanged?.();
       }
     };
     window.addEventListener('keydown', this.keydownHandler);
   }
 
-  private getSelectedNodeIds(): string[] {
+  getSelectedNodeIds(): string[] {
     return this.editor.getNodes().filter((n) => (n as {selected?: boolean}).selected === true).map((n) => n.id);
   }
 
@@ -1838,10 +1852,12 @@ export class FlowEditor {
     if (!node) return;
     await this.selectableApi.select(nodeId, accumulate);
     this.callbacks.onNodeSelected?.(node);
+    this.callbacks.onSelectionChanged?.();
   }
 
   async unselectAllNodes(): Promise<void> {
     await this.selector.unselectAll();
+    this.callbacks.onSelectionChanged?.();
   }
 
   /** Toggle a node's collapsed flag and re-render. */

@@ -542,6 +542,13 @@ function simpleFuncName(typeName: string): string {
   return (last.split(':').pop() ?? last).toLowerCase();
 }
 
+/** Whether a node type is one of the common next pipeline steps (Join,
+ *  AddNewColumn, Aggregate, …) — shared by the drag-out menu ranking and the
+ *  toolbox suggestion engine. */
+export function isCommonNextFunc(typeName: string): boolean {
+  return COMMON_NEXT_FUNCS.has(simpleFuncName(typeName));
+}
+
 /** Canvas context the drag-out suggestion menu ranks against — what the drag
  *  came from and what the user is already building with. All optional; without
  *  it the ranking degrades to the context-free order. */
