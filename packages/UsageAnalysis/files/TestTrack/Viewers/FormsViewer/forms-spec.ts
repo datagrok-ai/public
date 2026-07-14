@@ -33,11 +33,11 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
   await page.locator('[name="viewer-Forms"]').waitFor({timeout: 10000});
 
-  // ---- Fields selection ----
+  
 
   await softStep('Fields: open settings gear', async () => {
     await page.evaluate(() => {
-      // Gear icon lives in an ancestor of [name="viewer-Forms"] — search up to 5 levels
+      
       const viewer = document.querySelector('[name="viewer-Forms"]');
       let el: Element | null = viewer ?? null;
       for (let i = 0; i < 5; i++) {
@@ -52,12 +52,12 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
 
   await softStep('Fields: click [...] button opens Select columns dialog', async () => {
-    await page.waitForTimeout(500); // let settings panel settle
+    await page.waitForTimeout(500); 
     await page.evaluate(() => {
       const btn = document.querySelector('[name="prop-view-fields"] button');
       if (btn) (btn as HTMLElement).click();
     });
-    // Wait for label-None which only exists inside the column selection dialog
+    
     await page.waitForFunction(() =>
       document.querySelector('label[name="label-None"]') !== null, {timeout: 15000});
   });
@@ -67,13 +67,13 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
       const noneLabel = document.querySelector('label[name="label-None"]');
       if (noneLabel) (noneLabel as HTMLElement).click();
     });
-    // Confirm 0 checked visible in dialog or context panel
+    
     await page.waitForTimeout(300);
   });
 
   await softStep('Fields: close dialog and set AGE/SEX/RACE via JS API (dialog uses canvas grid)', async () => {
-    // Dialog column list is canvas-based — not DOM-accessible for per-row interaction
-    // Close dialog then apply via JS API
+    
+    
     await page.evaluate(() => {
       const dialog = document.querySelector('.d4-dialog');
       const okBtn = Array.from(dialog?.querySelectorAll('span, button') ?? [])
@@ -99,7 +99,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
 
   await softStep('Fields: remove RACE via X icon in column header (UI)', async () => {
-    // The Forms viewer renders a .fa-times icon per column header — UI-accessible
+    
     await page.evaluate(() => {
       const viewer = document.querySelector('[name="viewer-Forms"]');
       const xIcons = Array.from(viewer?.querySelectorAll('.grok-icon.fal.fa-times') ?? []);
@@ -113,7 +113,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(fields).not.toContain('RACE');
   });
 
-  // Restore all columns
+  
   await page.evaluate(() => {
     const df = grok.shell.tv.dataFrame;
     const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
@@ -121,7 +121,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     forms.props.fieldsColumnNames = allCols;
   });
 
-  // ---- Current row tracking ----
+  
 
   await softStep('Show Current Row: default is true', async () => {
     const val = await page.evaluate(() => {
@@ -132,7 +132,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
 
   await softStep('Show Current Row: set to false', async () => {
-    // Try context panel checkbox first; fall back to JS API
+    
     const val = await page.evaluate(() => {
       const cb = document.querySelector('[name="prop-view-show-current-row"]') as HTMLInputElement;
       if (cb && cb.checked) cb.click();
@@ -154,7 +154,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBe(true);
   });
 
-  // ---- Mouse-over row tracking ----
+  
 
   await softStep('Show Mouse Over Row: default is true', async () => {
     const val = await page.evaluate(() => {
@@ -186,7 +186,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBe(true);
   });
 
-  // ---- Selected rows display ----
+  
 
   await softStep('Selected rows: select 3 rows, showSelectedRows default true', async () => {
     const result = await page.evaluate(() => {
@@ -222,7 +222,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBe(true);
   });
 
-  // ---- Form card click interactions ----
+  
 
   await softStep('Form card click: currentRowIdx updates via JS API', async () => {
     const idx = await page.evaluate(() => {
@@ -245,7 +245,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(result.off).toBe(false);
   });
 
-  // ---- Color coding ----
+  
 
   await softStep('Color Code: default is true', async () => {
     const val = await page.evaluate(() => {
@@ -277,7 +277,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBe(true);
   });
 
-  // ---- Grid sort synchronization ----
+  
 
   await softStep('Use Grid Sort: default is true', async () => {
     const val = await page.evaluate(() => {
@@ -309,7 +309,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBe(true);
   });
 
-  // ---- Sort By property ----
+  
 
   await softStep('Sort By: set to WEIGHT', async () => {
     const val = await page.evaluate(() => {
@@ -330,7 +330,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
 
   await softStep('Sort By: clear returns null', async () => {
-    // sortByColumnName clears to null (not empty string)
+    
     const val = await page.evaluate(() => {
       const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
       forms.props.sortByColumnName = null;
@@ -339,10 +339,10 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBeNull();
   });
 
-  // ---- Renderer size ----
+  
 
   await softStep('Renderer Size: default is a known value', async () => {
-    // Default is build-dependent ('small' or 'normal'); assert it's one of the documented options.
+    
     const val = await page.evaluate(() => {
       const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;
       return forms.props.rendererSize;
@@ -377,7 +377,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(val).toBe('small');
   });
 
-  // ---- Filtering interaction ----
+  
 
   await softStep('Filter SEX=M: form viewer reflects filtered rows', async () => {
     const result = await page.evaluate(async () => {
@@ -398,7 +398,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(result.filteredCount).toBeGreaterThan(0);
   });
 
-  // ---- Column removal reaction ----
+  
 
   await softStep('Column removal: viewer survives HEIGHT deletion', async () => {
     const result = await page.evaluate(() => {
@@ -413,7 +413,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(result.viewerExists).toBe(true);
   });
 
-  // ---- Layout persistence ----
+  
 
   await softStep('Layout persistence: fields/sortBy/rendererSize restored after reload', async () => {
     const layoutId = await page.evaluate(async () => {
@@ -428,7 +428,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     });
 
     await page.evaluate(async (id: string) => {
-      // Open a fresh demog WITHOUT closeAll() — closeAll inside evaluate causes page reload in Playwright
+      
       const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
       const tv = grok.shell.addTableView(df);
       grok.shell.v = tv;
@@ -459,11 +459,11 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     }, layoutId);
   });
 
-  // ---- Molecule rendering (spgi-100) ----
+  
 
   await softStep('Molecule rendering: Structure column renders as drawing in Forms viewer', async () => {
     await page.evaluate(async (path: string) => {
-      // Open spgi without closeAll() to avoid Playwright page reload
+      
       const df = await grok.dapi.files.readCsv(path);
       grok.shell.addTableView(df);
       await new Promise(resolve => {
@@ -507,7 +507,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(result.small).toBe('small');
   });
 
-  // ---- Multiple molecule columns (spgi-100) ----
+  
 
   await softStep('Multiple molecule columns: Structure and Core both in fieldsColumnNames', async () => {
     const result = await page.evaluate(() => {
@@ -523,11 +523,11 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
     expect(result.fields.length).toBeGreaterThanOrEqual(2);
   });
 
-  // ---- Curves rendering (curves.csv) ----
+  
 
   await softStep('Curves: open dataset and add Forms viewer', async () => {
     await page.evaluate(async () => {
-      // Open curves without closeAll() to avoid Playwright page reload
+      
       const df = await grok.dapi.files.readCsv('System:DemoFiles/curves.csv');
       grok.shell.addTableView(df);
       await new Promise(resolve => {
@@ -544,7 +544,7 @@ test('Forms viewer tests', async ({page}: {page: Page}) => {
   });
 
   await softStep('Curves: default rendererSize is one of small|normal|large', async () => {
-    // Default is build-dependent; only assert it lands in the documented set.
+    
     const val = await page.evaluate(async () => {
       await new Promise(r => setTimeout(r, 500));
       const forms = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'FormsViewer') as any;

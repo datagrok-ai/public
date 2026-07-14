@@ -1,5 +1,6 @@
 ---
 feature: legend
+realizes: []
 target_layer: playwright
 coverage_type: regression
 priority: p1

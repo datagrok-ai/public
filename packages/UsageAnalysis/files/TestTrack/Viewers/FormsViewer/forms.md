@@ -1,5 +1,5 @@
 ---
-feature: form
+feature: formsviewer
 target_layer: playwright
 coverage_type: regression
 priority: p2
