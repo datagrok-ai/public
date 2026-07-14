@@ -11,8 +11,11 @@ import {
 } from '@datagrok-libraries/test/src/test';
 
 category('Docker', () => {
-  const containerOnDemandName: string = 'Cvmtests-cvmtests-docker-test1';
-  const containerSimple: string = 'Cvmtests-cvmtests-docker-test2';
+  // Platform registers a package container as `kebab(package.name)-<dockerfileFolder>`
+  // (see datlas deploy_docker.dart). Package `CvmTests` kebabs to `cvm-tests`, so the
+  // dockerfiles/cvmtests-docker-test1|2 folders become these entity names.
+  const containerOnDemandName: string = 'cvm-tests-cvmtests-docker-test1';
+  const containerSimple: string = 'cvm-tests-cvmtests-docker-test2';
   const incorrectId: string = '00000000-0000-0000-0000-000000000000';
 
   before(async () => {
@@ -29,7 +32,7 @@ category('Docker', () => {
     let container = await stopContainer(containerOnDemandName);
     await grok.dapi.docker.dockerContainers.run(container.id, true);
     await delay(90000);
-    container = await grok.dapi.docker.dockerContainers.filter(`name = "cvmtests-${containerOnDemandName}"`).first();
+    container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerOnDemandName}"`).first();
     expect(container.status.startsWith('stop'), true);
   }, {timeout: 240000, skipReason: 'Tool long'});
 
@@ -96,8 +99,17 @@ category('Docker', () => {
   });
 });
 
+async function findContainer(containerName: string): Promise<DG.DockerContainer> {
+  const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();
+  if (!container)
+    throw new Error(`Docker container "${containerName}" is not registered — the package's ` +
+      `dockerfiles were not deployed to this server, or the name drifted from ` +
+      `kebab(package.name)-<dockerfileFolder>.`);
+  return container;
+}
+
 async function stopContainer(containerName: string): Promise<DG.DockerContainer> {
-  const container = await grok.dapi.docker.dockerContainers.filter(`name = "cvmtests-${containerName}"`).first();
+  const container = await findContainer(containerName);
   //@ts-ignore
   if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping'))
     await grok.dapi.docker.dockerContainers.stop(container.id, true);
@@ -105,7 +117,7 @@ async function stopContainer(containerName: string): Promise<DG.DockerContainer>
 }
 
 async function startContainer(containerName: string): Promise<DG.DockerContainer> {
-  const container = await grok.dapi.docker.dockerContainers.filter(`name = "cvmtests-${containerName}"`).first();
+  const container = await findContainer(containerName);
   await grok.dapi.docker.dockerContainers.run(container.id, true);
   return container;
 }
