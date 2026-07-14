@@ -83,12 +83,20 @@ export class FlowEditor {
    *  drag that ends with `created:false`, accidentally triggering the
    *  suggestion menu. Handlers that should be left-click-only consult this. */
   private lastPointerButton = 0;
-  /** Underlying ctrl-held accumulator from rete; we wrap it to also accumulate
-   *  when the click landed on an already-selected node. */
-  private ctrlAccumulating = AreaExtensions.accumulateOnCtrl();
+  /** Snapshot of the last pointerdown (modifiers, position, whether the node
+   *  under the cursor was already selected), taken by
+   *  `installPointerDownTracker` in the capture phase — before rete's
+   *  `nodepicked` fires. Node clicks follow the platform's `selectRows`
+   *  modifier convention (d4 `viewer_utils.dart`): plain click selects
+   *  exclusively, Shift adds, Ctrl toggles, Ctrl+Shift removes. Rete's
+   *  `nodepicked` can only ever ADD, so `accumulating` admits any modifier
+   *  and the removal half runs on a clean release in the pointerup tracker. */
+  private lastPointerDownWasSelected = false;
+  private lastPointerDownModifier = false;
+  private lastPointerDownPos = {x: 0, y: 0};
   private accumulating = {
     active: (): boolean => {
-      if (this.ctrlAccumulating.active()) return true;
+      if (this.lastPointerDownModifier) return true;
       const id = this.lastPointerDownNodeId;
       if (!id) return false;
       const node = this.editor.getNode(id) as {selected?: boolean} | undefined;
@@ -106,6 +114,7 @@ export class FlowEditor {
   private callbacks: FlowEditorCallbacks;
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private pointerDownTracker: ((e: PointerEvent) => void) | null = null;
+  private pointerUpTracker: ((e: PointerEvent) => void) | null = null;
   /** Per-connection status (for execution coloring). */
   private connectionStatuses = new Map<string, ConnectionStatus>();
 
@@ -1379,11 +1388,14 @@ export class FlowEditor {
     }, true);
   }
 
-  // ---------- ctrl+drag rectangle multi-select ----------
+  // ---------- shift+drag rectangle multi-select ----------
 
-  /** Ctrl+drag (or Cmd+drag on macOS) on empty canvas → draw a marquee and
-   *  select every node whose bounding box intersects it. Hold Shift to add
-   *  to the existing selection instead of replacing it. */
+  /** Shift+drag on empty canvas → draw a marquee over the nodes. Mirrors the
+   *  platform's area select (d4 `areaSelector` + `selectRows`): Shift+drag
+   *  ADDS every node whose bounding box intersects the rectangle to the
+   *  selection, Ctrl+Shift+drag REMOVES them (Ctrl read at mouse-up). The
+   *  existing selection is never replaced — a plain empty-canvas click still
+   *  clears it. */
   private installRectSelect(): void {
     let startClient: {x: number; y: number} | null = null;
     let rectEl: HTMLElement | null = null;
@@ -1401,20 +1413,25 @@ export class FlowEditor {
 
     const onMove = (e: PointerEvent): void => updateRect(e.clientX, e.clientY);
     const onUp = (e: PointerEvent): void => {
+      // The AreaPlugin keeps an always-on window pointerup listener and treats
+      // a release with few prior moves as an empty-canvas click → unselectAll.
+      // This release ends OUR marquee (its pointerdown never reached the
+      // area) — don't let it clear what the marquee just selected.
+      e.stopImmediatePropagation();
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('pointerup', onUp, true);
       const sc = startClient;
       startClient = null;
       if (rectEl) {rectEl.remove(); rectEl = null;}
       if (!sc) return;
-      void this.completeRectSelect(sc, {x: e.clientX, y: e.clientY}, e.shiftKey);
+      void this.completeRectSelect(sc, {x: e.clientX, y: e.clientY}, e.ctrlKey || e.metaKey);
     };
 
     // Capture phase so we beat the AreaPlugin's pan handler — the user's
-    // Ctrl+drag must produce a rectangle, not a canvas pan.
+    // Shift+drag must produce a rectangle, not a canvas pan.
     this.container.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
-      if (!ev.ctrlKey && !ev.metaKey) return;
+      if (!ev.shiftKey) return;
       const target = ev.target as HTMLElement | null;
       if (target?.closest('.ff-node, .ff-socket, .ff-minimap')) return;
       ev.preventDefault();
@@ -1432,11 +1449,12 @@ export class FlowEditor {
   }
 
   /** Hit-test every node's canvas-space bounding box against the marquee
-   *  (also in canvas space). Replaces the existing selection unless `additive`. */
+   *  (also in canvas space). Adds the hits to the selection, or removes them
+   *  when `remove` (Ctrl held at mouse-up). */
   private async completeRectSelect(
     startClient: {x: number; y: number},
     endClient: {x: number; y: number},
-    additive: boolean,
+    remove: boolean,
   ): Promise<void> {
     const a = this.screenToCanvas(startClient.x, startClient.y);
     const b = this.screenToCanvas(endClient.x, endClient.y);
@@ -1444,14 +1462,13 @@ export class FlowEditor {
     const rx2 = Math.max(a.x, b.x), ry2 = Math.max(a.y, b.y);
     if (rx2 - rx1 < 3 || ry2 - ry1 < 3) return; // ignore fat-finger clicks
 
-    if (!additive) await this.selector.unselectAll();
-
     for (const node of this.editor.getNodes()) {
       const sz = this.measureNode(node.id);
       const nx1 = node.pos.x, ny1 = node.pos.y;
       const nx2 = nx1 + sz.w, ny2 = ny1 + sz.h;
-      const intersects = rx1 < nx2 && nx1 < rx2 && ry1 < ny2 && ny1 < ry2;
-      if (intersects) await this.selectableApi.select(node.id, true);
+      if (!(rx1 < nx2 && nx1 < rx2 && ry1 < ny2 && ny1 < ry2)) continue;
+      if (remove) await this.selectableApi.unselect(node.id);
+      else await this.selectableApi.select(node.id, true);
     }
   }
 
@@ -1701,19 +1718,49 @@ export class FlowEditor {
       .show({causedBy: event});
   }
 
-  /** Capture-phase listener that records which canvas node was under the
-   *  cursor at pointerdown. Read by `accumulating.active()` to preserve a
-   *  multi-selection when the click lands on an already-selected node — the
-   *  selectable extension calls `accumulating.active()` synchronously inside
-   *  its `nodepicked` handler, so the value must be set before that fires. */
+  /** Capture-phase listeners implementing the selectRows click semantics.
+   *  pointerdown snapshots the node under the cursor, its selection state,
+   *  and the modifiers — `accumulating.active()` is called synchronously
+   *  inside the selectable extension's `nodepicked` handler, so the snapshot
+   *  must exist before that fires. pointerup applies the removals (Ctrl
+   *  toggle-off, Ctrl+Shift remove, plain-click collapse) that rete's
+   *  add-only `nodepicked` can't express. */
   private installPointerDownTracker(): void {
     this.pointerDownTracker = (ev: PointerEvent): void => {
       this.lastPointerButton = ev.button;
       const target = ev.target as HTMLElement | null;
       const nodeEl = target?.closest('.ff-node') as HTMLElement | null;
-      this.lastPointerDownNodeId = nodeEl?.dataset.nodeId ?? null;
+      const id = nodeEl?.dataset.nodeId ?? null;
+      this.lastPointerDownNodeId = target?.closest('.ff-socket') ? null : id;
+      const node = id ? this.editor.getNode(id) as {selected?: boolean} | undefined : undefined;
+      this.lastPointerDownWasSelected = node?.selected === true;
+      this.lastPointerDownModifier = ev.ctrlKey || ev.metaKey || ev.shiftKey;
+      this.lastPointerDownPos = {x: ev.clientX, y: ev.clientY};
     };
     window.addEventListener('pointerdown', this.pointerDownTracker, true);
+
+    // The removal half of the selectRows semantics. Rete's `nodepicked` only
+    // ever ADDS, so Ctrl-toggle-off, Ctrl+Shift-remove, and the collapse of a
+    // multi-selection on a plain click all run here, on a clean release (a
+    // click, not a drag — a drag of a selected node must keep the group).
+    this.pointerUpTracker = (ev: PointerEvent): void => {
+      const id = this.lastPointerDownNodeId;
+      if (ev.button !== 0 || id == null) return;
+      if (Math.abs(ev.clientX - this.lastPointerDownPos.x) > 4 ||
+          Math.abs(ev.clientY - this.lastPointerDownPos.y) > 4) return;
+      const node = this.editor.getNode(id);
+      if (!node) return;
+      const ctrl = ev.ctrlKey || ev.metaKey;
+      if (ctrl && (ev.shiftKey || this.lastPointerDownWasSelected)) {
+        // Ctrl+Shift+click removes; Ctrl+click on a selected node toggles it off.
+        void this.selectableApi.unselect(id);
+        this.callbacks.onNodeDeselected?.(node);
+      }
+      else if (!ctrl && !ev.shiftKey && this.lastPointerDownWasSelected &&
+               this.getSelectedNodeIds().length > 1)
+        void this.selectableApi.select(id, false); // plain click → exclusive
+    };
+    window.addEventListener('pointerup', this.pointerUpTracker, true);
 
     // Block right- or middle-click pointerdown from reaching the connection
     // plugin's socket handler. The plugin doesn't filter by button; without
@@ -1743,6 +1790,17 @@ export class FlowEditor {
           e.preventDefault();
           void this.removeNodes(selectedIds);
         }
+      }
+
+      // Platform selection keys (scatterplot navigation.dart): Ctrl+A selects
+      // every node, Ctrl+Shift+A deselects all.
+      if ((e.key === 'a' || e.key === 'A') && (e.ctrlKey || e.metaKey) &&
+          this.container.isConnected) {
+        e.preventDefault();
+        if (e.shiftKey)
+          void this.unselectAllNodes();
+        else
+          for (const n of this.editor.getNodes()) void this.selectableApi.select(n.id, true);
       }
     };
     window.addEventListener('keydown', this.keydownHandler);
@@ -2003,6 +2061,8 @@ export class FlowEditor {
     if (this.keydownHandler) window.removeEventListener('keydown', this.keydownHandler);
     if (this.pointerDownTracker)
       window.removeEventListener('pointerdown', this.pointerDownTracker, true);
+    if (this.pointerUpTracker)
+      window.removeEventListener('pointerup', this.pointerUpTracker, true);
     if (this.hoverDocsEl) this.hoverDocsEl.remove();
     if (this.minimapEl) this.minimapEl.remove();
     // Null these so a still-pending rAF redraw after teardown is a no-op.

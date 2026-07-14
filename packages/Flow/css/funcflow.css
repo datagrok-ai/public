@@ -162,14 +162,15 @@
   display: none;
 }
 
-/* Ctrl+drag rectangle multi-select marquee. Sits inside the same overlay
+/* Shift+drag rectangle multi-select marquee. Sits inside the same overlay
    layer as the alignment guides; pointer-events:none lets clicks fall
    through to the canvas. */
+/* Same look as the platform areaSelector: black 1px stroke, lightBlue fill at 50%. */
 .ff-rect-select {
   position: absolute;
   pointer-events: none;
-  border: 1px dashed #2185d0;
-  background-color: rgba(33, 150, 243, 0.10);
+  border: 1px solid #2185d0;
+  background-color: rgba(173, 216, 230, 0.5);
   z-index: 999;
 }
 
