@@ -7,7 +7,11 @@ import * as DG from 'datagrok-api/dg';
 category('UI: Sharing', () => {
   let v: DG.ViewBase;
   let testUser: DG.User;
-  const entityName = 'apitestsentityshare';
+  // Unique per run: a fixed name collides with leftovers from a prior run whose
+  // finally-delete failed or was aborted, making the gallery search return >1
+  // result ("more than one testing entity present"). Lowercased for the
+  // `share ${entityName}` dialog-title check below.
+  const entityName = 'apitestsentityshare' + DG.Utils.randomString(6).toLowerCase();
 
   before(async () => {
     testUser = await grok.dapi.users.filter('login = "admin"').first();
