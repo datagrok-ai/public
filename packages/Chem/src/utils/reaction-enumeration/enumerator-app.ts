@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package, PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
-import {buildAdvancedFields} from './config-form';
+import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput, tryGetRxn} from './enumerate';
 
@@ -16,6 +16,38 @@ const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
 // Shared "custom subset" indicator color — round tabs' dot and the Strategy summary's dot.
 const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
+// Core look for every small "changed/custom" dot in this file; call sites add their own display
+// mode (toggle labels hide by default, the inline caveat dot flows with text) and spacing.
+const CHANGED_DOT_STYLE = {width: '6px', height: '6px', borderRadius: '50%', background: OVERRIDE_DOT_COLOR};
+
+// Shared "differs from platform defaults" checks — drive both the Combination limits/Product
+// filters toggle dots and the Strategy summary's "changed from defaults" caveat.
+function combinationLimitsChanged(cfg: EnumeratorConfig): boolean {
+  return cfg.max_num_combinations_per_template !== DEFAULT_CONFIG.max_num_combinations_per_template ||
+    cfg.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output;
+}
+
+function productFiltersChangedCount(cfg: EnumeratorConfig): number {
+  const ps = cfg.products_specs;
+  const dps = DEFAULT_CONFIG.products_specs;
+  return [
+    ps.max_num_heavy_atoms !== dps.max_num_heavy_atoms,
+    ps.min_num_carbon_atoms !== dps.min_num_carbon_atoms,
+    ps.max_num_carbon_atoms !== dps.max_num_carbon_atoms,
+    ps.max_num_hetero_atoms !== dps.max_num_hetero_atoms,
+    ps.max_num_nitrogen !== dps.max_num_nitrogen,
+    ps.max_num_sulfur !== dps.max_num_sulfur,
+    ps.max_num_oxygen !== dps.max_num_oxygen,
+    ps.max_num_metals !== dps.max_num_metals,
+    ps.max_num_halogens !== dps.max_num_halogens,
+    ps.max_num_aromatic_atoms !== dps.max_num_aromatic_atoms,
+    ps.max_num_unsaturated_nonaromatic_bonds !== dps.max_num_unsaturated_nonaromatic_bonds,
+    ps.only_these_atoms_allowed.join(',') !== dps.only_these_atoms_allowed.join(','),
+    ps.remove_radicals !== dps.remove_radicals,
+    ps.remove_isotope_information !== dps.remove_isotope_information,
+    ps.remove_charged_species !== dps.remove_charged_species,
+  ].filter(Boolean).length;
+}
 
 // A freshly-(re)mounted Filters viewer can asynchronously reapply a stale per-column categorical
 // selection over a DataFrame's .filter BitSet shortly after construction (a Datagrok platform
@@ -236,11 +268,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   let config: EnumeratorConfig = cloneConfig(DEFAULT_CONFIG);
 
-  // Advanced limits & product filters live inline behind a chevron toggle (see advancedToggle
-  // below), edited live on `config`. Declared early since syncQuickInputsToConfig() reads
-  // advancedFieldsHost during setup, before the accordion/toggle are built.
-  let advancedFields = buildAdvancedFields(config);
-  const advancedFieldsHost = ui.div([advancedFields.root]);
+  // Combination limits and product filters both live inline in the Strategy pane behind chevron
+  // toggles, edited live on `config`. Declared early since syncQuickInputsToConfig() reads these
+  // hosts during setup, before the accordion/toggles are built.
+  let combinationLimitFields = buildCombinationLimitFields(config);
+  const combinationLimitFieldsHost = ui.div([combinationLimitFields.root]);
+  let productFilterFields = buildProductFilterFields(config);
+  const productFilterFieldsHost = ui.div([productFilterFields.root]);
 
   const templatesDf = await loadBundledCsv(BUNDLED_TEMPLATES);
   const bbsDf = await loadBundledCsv(BUNDLED_BBS);
@@ -337,6 +371,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     nullable: true, showPlusMinus: true,
   });
   maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
+  fixNullableIntStepper(maxRoutesInput);
 
   // True while pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires onChanged,
   // which triggers a read-back (syncQuickInputsToConfig) mid-loop — before all inputs are updated —
@@ -473,7 +508,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       reagentsColInput.value?.name ?? config.enumeration.reagent_smiles_column;
     config.products_specs.exclusion_smarts_products_file_smarts_col =
       exclusionColInput.value?.name ?? config.products_specs.exclusion_smarts_products_file_smarts_col;
-    advancedFields.syncToConfig(config);
+    combinationLimitFields.syncToConfig(config);
+    productFilterFields.syncToConfig(config);
   };
 
   // `input.value = X` updates the model but the Dart widget doesn't always re-render the visible
@@ -523,11 +559,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
         if (c) setAndFire(exclusionColInput, c);
       }
-      // Advanced fields have no "set value" hook — rebuild them from the loaded config and swap
-      // the wrapper's contents (keep the host node itself so the toggle stays wired to it).
-      advancedFields = buildAdvancedFields(config);
-      advancedFieldsHost.innerHTML = '';
-      advancedFieldsHost.appendChild(advancedFields.root);
+      // Neither field group has a "set value" hook — rebuild from the loaded config and swap each
+      // wrapper's contents (keep the host nodes themselves so the toggles stay wired to them).
+      // The rebuilt inputs are brand new objects, so they need their own revalidation wiring too.
+      combinationLimitFields = buildCombinationLimitFields(config);
+      ui.empty(combinationLimitFieldsHost);
+      combinationLimitFieldsHost.appendChild(combinationLimitFields.root);
+      combinationLimitFields.inputs.forEach((inp) => wireValidation(inp));
+      productFilterFields = buildProductFilterFields(config);
+      ui.empty(productFilterFieldsHost);
+      productFilterFieldsHost.appendChild(productFilterFields.root);
+      productFilterFields.inputs.forEach((inp) => wireValidation(inp));
     } finally {
       pushingConfigToInputs = false;
     }
@@ -577,6 +619,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   function refreshValidation(): void {
+    // Sync `config` from the live inputs before reading it for the ribbon/dots below — validate()
+    // does its own sync too, but that runs after refreshCfgRibbon(), which would otherwise see
+    // config as of the PREVIOUS refresh (one field-change behind whatever just triggered this call).
+    syncQuickInputsToConfig();
     refreshCfgRibbon();
     refreshStrategyCards();
     const err = validate();
@@ -843,6 +889,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   [smartsColInput, blockingColInput, rxnNameColInput, bbColInput, reagentsColInput,
     exclusionInput, exclusionColInput, numRoundsInput, depthFirstInput,
     maxComponentsInput, maxRoutesInput,
+    ...combinationLimitFields.inputs, ...productFilterFields.inputs,
   ].forEach((inp) => wireValidation(inp));
 
   // `syncConfigToQuickInputs()` sets values on the quick inputs (rounds, depth-first, etc.), whose
@@ -891,7 +938,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
   // Mirrors the ribbon's Enumerate button — Preview is the end of the Next-button chain, so it
   // gets its own run action too.
-  const previewEnumerateBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
+  const previewEnumerateBtn = ui.button('Enumerate', () => runWithUi(runEnumeration));
+  previewEnumerateBtn.classList.add('ui-btn-ok');
+  previewEnumerateBtn.style.alignSelf = 'flex-end';
   // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind the
   // tooltip to the ribbon-item ancestor instead (must stay its direct, unwrapped child).
   let runBtnRibbonItem: HTMLElement | null = null;
@@ -1036,12 +1085,18 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     setAndFire(depthFirstInput, false);
   };
 
-  // Shared reveal-on-demand affordance for optional/advanced content (Map columns, Extras, Advanced limits).
-  function makeChevronToggle(label: string, body: HTMLElement, onToggle?: (open: boolean) => void): HTMLElement {
+  // Shared reveal-on-demand affordance for optional/advanced content (Map columns, Combination
+  // limits, Product filters). `dot` (if passed) is shown next to the label — the caller owns and
+  // toggles its visibility, e.g. to flag "differs from defaults" without expanding the toggle.
+  function makeChevronToggle(
+    label: string, body: HTMLElement, onToggle?: (open: boolean) => void, dot?: HTMLElement,
+  ): HTMLElement {
     body.style.display = 'none';
     const chevron = ui.iconFA('chevron-right');
     chevron.style.transition = 'transform 0.15s';
-    const link = ui.divH([chevron, ui.span([` ${label}`])],
+    const labelChildren = [chevron, ui.span([` ${label}`])];
+    if (dot) labelChildren.push(dot);
+    const link = ui.divH(labelChildren,
       {style: {fontSize: '12px', color: 'var(--blue-2)', cursor: 'pointer', marginTop: '2px',
         gap: '2px', alignItems: 'center'}});
     let open = false;
@@ -1078,13 +1133,25 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ui.divV([ui.form([templatesInput, smartsColInput]), mapColsToggle,
       mkNextBtn(() => accBbsPane, 'Building blocks')]), true);
   const accBbsPane = accordion.addPane('Building blocks', () =>
-    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accPreviewPane, 'Preview')]), false);
-  // Extras is now an inline chevron toggle rather than its own pane; opening it still switches
-  // the right-side tab to Reagents when one is set.
-  const extrasToggle = makeChevronToggle('Extras (optional)',
-    ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]),
-    (open) => { if (open && reagentsPane && reagentsInput.value != null) tabs.currentPane = reagentsPane; });
-  const advancedToggle = makeChevronToggle('Advanced limits & product filters (optional)', advancedFieldsHost);
+    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accExtrasPane, 'Extras')]), false);
+  const accExtrasPane = accordion.addPane('Extras', () =>
+    ui.divV([ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]),
+      mkNextBtn(() => accPreviewPane, 'Preview')]), false);
+  // Small dot on a toggle label flags "differs from platform defaults" without expanding it —
+  // same orange used for the per-round custom-subset dots.
+  const mkChangedDot = (tooltip: string): HTMLElement => {
+    const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, display: 'none'}});
+    ui.tooltip.bind(dot, tooltip);
+    return dot;
+  };
+  const combinationLimitsDot = mkChangedDot('Changed from platform defaults.');
+  const combinationLimitToggle = makeChevronToggle('Combination limits (optional)', combinationLimitFieldsHost,
+    undefined, combinationLimitsDot);
+  const productFiltersDot = mkChangedDot('Changed from platform defaults.');
+  const productFilterToggle = makeChevronToggle('Product filters (optional)', productFilterFieldsHost,
+    undefined, productFiltersDot);
+  // Combination limits and product filters both live here, next to num_rounds/maxComponents/
+  // maxRoutes — every quantitative constraint on the run's output stays in one place.
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
@@ -1092,8 +1159,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ], {style: {alignItems: 'center', gap: '4px'}}),
     ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
     ui.form([numRoundsInput, maxComponentsInput, maxRoutesInput]),
-    advancedToggle,
-    extrasToggle,
+    combinationLimitToggle,
+    productFilterToggle,
     // Strategy opens first now, so it needs its own way into the Reactions chain.
     mkNextBtn(() => accReactionsPane, 'Reactions'),
   ], {style: {gap: '8px'}}), false);
@@ -1141,7 +1208,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // End of the Next-button chain, so the run action lives here too, not just up in the ribbon.
     previewEnumerateBtn,
   ], {style: {gap: '10px'}}), false);
-  const accPanes = [accReactionsPane, accBbsPane, accCombinePane, accPreviewPane];
+  const accPanes = [accReactionsPane, accBbsPane, accExtrasPane, accCombinePane, accPreviewPane];
 
   // Subtitle spans injected into each pane header — updated by refreshCfgRibbon().
   const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
@@ -1153,6 +1220,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
   const subReactions = injectPaneSub(accReactionsPane);
   const subBbs = injectPaneSub(accBbsPane);
+  const subExtras = injectPaneSub(accExtrasPane);
   const subCombine = injectPaneSub(accCombinePane);
 
   // Left pane scrolls vertically if it overflows so the action bar stays visible.
@@ -1167,6 +1235,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
   const chipReactions = cfgChipEl('');
   const chipBbs = cfgChipEl('');
+  const chipExtras = cfgChipEl('');
   const chipCombine = cfgChipEl('');
   const cfgEstEl = ui.divText('');
   cfgEstEl.className = 'chem-enum-chip';
@@ -1181,7 +1250,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // runBtn/cancelBtn/progressLabel.
 
   function refreshCfgRibbon(): void {
-    const tDf = templatesInput.value; const bDf = bbsInput.value;
+    const tDf = templatesInput.value; const bDf = bbsInput.value; const rDf = reagentsInput.value;
     const combineText = `${MODE_LABEL[currentMode()]} · ${roundsLabel(currentRounds())}`;
     const setChip = (chip: HTMLElement, text: string, err: boolean): void => {
       chip.textContent = text;
@@ -1189,15 +1258,23 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     };
     setChip(chipReactions, tDf ? `${tDf.rowCount} reactions` : 'No reaction table', !tDf || !smartsColInput.value);
     setChip(chipBbs, bDf ? `${bDf.rowCount} Building Blocks` : 'No Building Blocks table', !bDf || !bbColInput.value);
+    // Extras is fully optional — never flagged as an error state.
+    chipExtras.textContent = rDf ? `${rDf.rowCount} reagents` : 'No reagents (optional)';
     // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
     chipCombine.textContent = `Strategy: ${combineText}`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
     cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString()} products` : '';
+    const combChanged = combinationLimitsChanged(config);
+    const prodChangedCount = productFiltersChangedCount(config);
+    combinationLimitsDot.style.display = combChanged ? '' : 'none';
+    productFiltersDot.style.display = prodChangedCount > 0 ? '' : 'none';
     // Re-render Strategy/Preview even when already the visible tab, so in-tab edits stay current.
-    if (tabs.currentPane === strategyPane) renderStrategySummary();
+    // Pass the values just computed above instead of having renderStrategySummary re-derive them.
+    if (tabs.currentPane === strategyPane) renderStrategySummary(combChanged, prodChangedCount);
     if (tabs.currentPane === previewPane) renderPreviewRecap();
     subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
     subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
+    subExtras.textContent = rDf ? `${rDf.rowCount} reagents` : 'Optional';
     subCombine.textContent = combineText;
   }
   // === Exclusive accordion — only the selected section is shown, on either side ===
@@ -1207,6 +1284,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       tabs.currentPane = templatesPane;
     } else if (pane === accBbsPane && bbsPane) {
       tabs.currentPane = bbsPane;
+    } else if (pane === accExtrasPane && reagentsPane) {
+      tabs.currentPane = reagentsPane;
     } else if (pane === accCombinePane) {
       tabs.currentPane = strategyPane;
       renderStrategySummary();
@@ -1222,6 +1301,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const chipForPane = (pane: DG.AccordionPane): HTMLElement | undefined => {
     if (pane === accReactionsPane) return chipReactions;
     if (pane === accBbsPane) return chipBbs;
+    if (pane === accExtrasPane) return chipExtras;
     if (pane === accCombinePane) return chipCombine;
     if (pane === accPreviewPane) return cfgEstEl;
     return undefined;
@@ -1236,13 +1316,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (header) header.style.display = (p === pane) ? '' : 'none';
     });
     const activeChip = chipForPane(pane);
-    [chipReactions, chipBbs, chipCombine, cfgEstEl].forEach((c) =>
+    [chipReactions, chipBbs, chipExtras, chipCombine, cfgEstEl].forEach((c) =>
       c.classList.toggle('chem-enum-chip--active', c === activeChip));
     switchTabForAccPane(pane);
   }
 
   chipReactions.onclick = () => openAccPaneAndSyncTab(accReactionsPane);
   chipBbs.onclick = () => openAccPaneAndSyncTab(accBbsPane);
+  chipExtras.onclick = () => openAccPaneAndSyncTab(accExtrasPane);
   chipCombine.onclick = () => openAccPaneAndSyncTab(accCombinePane);
   // Initial pane selection must happen near the end of this function, after `tabs`/`strategyPane`
   // exist (switchTabForAccPane reads them) — calling it earlier crashes with a TDZ error.
@@ -1681,7 +1762,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     panelHeader('How the current strategy and round count combine the reaction templates and building blocks.'),
     strategyHost);
 
-  function renderStrategySummary(): void {
+  // combChanged/prodChangedCount let refreshCfgRibbon() pass in values it already computed this
+  // tick for the toggle dots — falls back to computing fresh when called on its own (e.g. on
+  // first opening the Strategy pane).
+  function renderStrategySummary(
+    combChanged: boolean = combinationLimitsChanged(config),
+    prodChangedCount: number = productFiltersChangedCount(config),
+  ): void {
     strategyHost.innerHTML = '';
     const tDf = templatesInput.value;
     const bDf = bbsInput.value;
@@ -1764,35 +1851,23 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
       // The estimate above is a naive multiplication — flag when active filters/limits (vs.
       // platform defaults) would actually shrink the real output.
-      const ps = config.products_specs;
-      const dps = DEFAULT_CONFIG.products_specs;
-      const changedFilters = [
-        config.max_num_combinations_per_template !== DEFAULT_CONFIG.max_num_combinations_per_template,
-        config.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output,
-        ps.max_num_heavy_atoms !== dps.max_num_heavy_atoms,
-        ps.min_num_carbon_atoms !== dps.min_num_carbon_atoms,
-        ps.max_num_carbon_atoms !== dps.max_num_carbon_atoms,
-        ps.max_num_hetero_atoms !== dps.max_num_hetero_atoms,
-        ps.max_num_nitrogen !== dps.max_num_nitrogen,
-        ps.max_num_sulfur !== dps.max_num_sulfur,
-        ps.max_num_oxygen !== dps.max_num_oxygen,
-        ps.max_num_metals !== dps.max_num_metals,
-        ps.max_num_halogens !== dps.max_num_halogens,
-        ps.max_num_aromatic_atoms !== dps.max_num_aromatic_atoms,
-        ps.max_num_unsaturated_nonaromatic_bonds !== dps.max_num_unsaturated_nonaromatic_bonds,
-        ps.only_these_atoms_allowed.join(',') !== dps.only_these_atoms_allowed.join(','),
-        ps.remove_radicals !== dps.remove_radicals,
-        ps.remove_isotope_information !== dps.remove_isotope_information,
-        ps.remove_charged_species !== dps.remove_charged_species,
-      ].filter(Boolean).length;
+      const changedFilters = (combChanged ? 1 : 0) + prodChangedCount;
       const xDf = exclusionInput.value;
       const hasExclusion = !!xDf && xDf.rowCount > 0;
       if (changedFilters > 0 || hasExclusion) {
         const bits: string[] = [];
         if (changedFilters > 0) bits.push(`${changedFilters} limit${changedFilters > 1 ? 's' : ''} changed from defaults`);
         if (hasExclusion) bits.push('exclusion substructures active');
-        card.appendChild(ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
-          {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}}));
+        const caveatEl = ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
+          {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}});
+        if (changedFilters > 0) {
+          // inline-block (not a flex sibling) so the dot flows with the text itself — it stays on
+          // the text's first line even when the sentence wraps, instead of centering against the
+          // whole wrapped block and looking like it's floating on its own line.
+          const dot = ui.span([], {style: {...CHANGED_DOT_STYLE, display: 'inline-block', marginRight: '6px'}});
+          caveatEl.prepend(dot);
+        }
+        card.appendChild(caveatEl);
       }
     }
 
@@ -1990,8 +2065,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   view.setRibbonPanels([
     [appInfoIcon],
     [runBtn, cancelBtn, progressLabel],
-    // Strategy first (the "how"), then reactions/BBs (the "what"), then the resulting estimate.
-    [chipCombine, mkRibbonArrow(), chipReactions, mkRibbonArrow(), chipBbs, mkRibbonArrow(), cfgEstEl],
+    // Strategy first (the "how"), then reactions/BBs/extras (the "what"), then the resulting estimate.
+    [chipCombine, mkRibbonArrow(), chipReactions, mkRibbonArrow(), chipBbs, mkRibbonArrow(), chipExtras,
+      mkRibbonArrow(), cfgEstEl],
     [loadYamlBtn, saveYamlBtn],
   ]);
   view.append(root);

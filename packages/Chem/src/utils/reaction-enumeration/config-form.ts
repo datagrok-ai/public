@@ -1,14 +1,43 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {_package} from '../../package';
 import {EnumeratorConfig} from './config';
 
-const DISABLED_HINT = 'Use -1 to disable this filter.';
+const DISABLED_HINT = 'Leave blank to disable this filter.';
 
+// The platform's own +/- steppers can't increment a blank/null value (clicking + is a no-op) and
+// decrement straight through 0 into literal negative numbers — both wrong for a field where blank
+// IS the "disabled" state. Override both buttons: blank "+" -> 1; "0 -" -> blank; otherwise a
+// normal ±1. Exported so enumerator-app.ts can apply the same fix to Max routes per compound.
+export function fixNullableIntStepper(input: DG.InputBase<number | null>): void {
+  const apply = (next: number | null): void => {
+    input.value = next;
+    const el = input.input as HTMLInputElement | undefined;
+    if (el) el.value = next == null ? '' : String(next);
+    try {input.fireChanged();} catch (e) {_package.logger.debug(`fireChanged unavailable: ${e}`);}
+  };
+  const override = (selector: string, step: 1 | -1): void => {
+    input.root.querySelector(selector)?.addEventListener('click', (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      const cur = input.value;
+      if (step > 0) apply(cur == null ? 1 : cur + 1);
+      else apply(cur != null && cur > 0 ? cur - 1 : null);
+    }, true);
+  };
+  override('.ui-input-plus', 1);
+  override('.ui-input-minus', -1);
+}
+
+// -1 is each field's own "disabled/no cap" sentinel — shown as blank rather than a literal -1,
+// since that's not something a user would type; blank means the same thing and reads that way
+// (same treatment as Max routes per compound).
 function intInput(
   label: string, value: number, tooltip?: string,
 ): {input: DG.InputBase<number | null>; get: () => number} {
-  const input = ui.input.int(label, {value, nullable: false, showPlusMinus: true});
+  const input = ui.input.int(label, {value: value < 0 ? undefined : value, nullable: true, showPlusMinus: true});
   if (tooltip) input.setTooltip(tooltip);
+  fixNullableIntStepper(input);
   return {input, get: () => (input.value == null ? -1 : input.value)};
 }
 
@@ -27,32 +56,41 @@ function csvInput(label: string, items: string[], tooltip?: string) {
   };
 }
 
-function sectionHeader(text: string): HTMLElement {
-  const h = ui.h2(text);
-  h.style.marginTop = '16px';
-  h.style.marginBottom = '6px';
-  h.style.borderBottom = '1px solid var(--grey-2)';
-  h.style.paddingBottom = '4px';
-  return h;
-}
+// `syncToConfig` writes the current field values into whatever config object is passed to it;
+// fields not covered by either builder below (file paths, column names, delimiter, output path,
+// depth_first, num_rounds, max components, max routes per compound, etc.) are left untouched.
 
-// Builds the advanced limits & product filters fields inline (no dialog chrome) — mounted directly
-// into the main app behind a chevron toggle, the same reveal pattern as every other optional
-// section. `syncToConfig` writes the current field values into whatever config object is passed to
-// it; fields NOT covered here (file paths, column names, delimiter, output path, depth_first,
-// num_rounds, max components, max routes per compound, etc.) are left untouched by the caller.
-export function buildAdvancedFields(initial: EnumeratorConfig): {
+// Rounds-related: how many reactant combinations run per template, and whether round-0 building
+// blocks are kept in the final output. Mounted inline in the Strategy pane, next to num_rounds.
+export function buildCombinationLimitFields(initial: EnumeratorConfig): {
   root: HTMLElement;
+  inputs: DG.InputBase<unknown>[];
   syncToConfig: (target: EnumeratorConfig) => void;
 } {
-  const general = {
-    keepBBs: boolInput('Keep building blocks in output', initial.keep_building_blocks_in_final_output,
-      'Include the original building blocks (round 0) in the final product list.'),
-    maxCombos: intInput('Max combinations per template', initial.max_num_combinations_per_template,
-      'Per template per round: cap on the number of reactant combinations actually run. If the ' +
-      'cartesian product exceeds this, the enumerator runs the first N and stops.'),
+  const keepBBs = boolInput('Keep building blocks in output', initial.keep_building_blocks_in_final_output,
+    'Include the original building blocks (round 0) in the final product list.');
+  const maxCombos = intInput('Max combinations per template', initial.max_num_combinations_per_template,
+    'Per template per round: cap on the number of reactant combinations actually run. If the ' +
+    'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.');
+
+  const root = ui.form([keepBBs.input, maxCombos.input]);
+
+  const syncToConfig = (target: EnumeratorConfig): void => {
+    target.keep_building_blocks_in_final_output = keepBBs.get();
+    target.max_num_combinations_per_template = maxCombos.get();
   };
 
+  return {root, inputs: [keepBBs.input, maxCombos.input], syncToConfig};
+}
+
+// Product-level filters (atom counts, charge/radical/isotope rejection) — applied during
+// generation itself, so mounted inline in the Strategy pane alongside the other quantitative
+// constraints on the run's output (num_rounds, max_components, max_routes_per_compound).
+export function buildProductFilterFields(initial: EnumeratorConfig): {
+  root: HTMLElement;
+  inputs: DG.InputBase<unknown>[];
+  syncToConfig: (target: EnumeratorConfig) => void;
+} {
   const ps = initial.products_specs;
   const products = {
     maxHeavy: intInput('Max heavy atoms', ps.max_num_heavy_atoms, DISABLED_HINT),
@@ -76,23 +114,10 @@ export function buildAdvancedFields(initial: EnumeratorConfig): {
       'Reject products with non-zero formal charges.'),
   };
 
-  const buildSection = (title: string, inputs: {input: DG.InputBase<any>}[]) =>
-    ui.div([sectionHeader(title), ui.form(inputs.map((i) => i.input))]);
-
-  const root = ui.div([
-    buildSection('General Settings', [general.keepBBs, general.maxCombos]),
-    buildSection('Product Filters', [
-      products.maxHeavy, products.minC, products.maxC, products.maxHetero,
-      products.maxN, products.maxS, products.maxO, products.maxMetals, products.maxHal,
-      products.maxArom, products.maxUnsat,
-      products.allowedAtoms,
-      products.rmRadicals, products.rmIsotopes, products.rmCharged,
-    ]),
-  ]);
+  const inputs = Object.values(products).map((p) => p.input);
+  const root = ui.form(inputs);
 
   const syncToConfig = (target: EnumeratorConfig): void => {
-    target.keep_building_blocks_in_final_output = general.keepBBs.get();
-    target.max_num_combinations_per_template = general.maxCombos.get();
     Object.assign(target.products_specs, {
       max_num_heavy_atoms: products.maxHeavy.get(),
       min_num_carbon_atoms: products.minC.get(),
@@ -112,5 +137,5 @@ export function buildAdvancedFields(initial: EnumeratorConfig): {
     });
   };
 
-  return {root, syncToConfig};
+  return {root, inputs, syncToConfig};
 }
