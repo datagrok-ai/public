@@ -2,8 +2,19 @@ name: Report job failure
 on:
   workflow_dispatch: { }
   workflow_run:
+    # Scoped to the CI/build workflows whose failures warrant a Slack ping, instead of
+    # '*' which fired once per completed run of EVERY workflow (mostly skipped no-ops).
     workflows:
-      - '*'
+      - Packages
+      - Libraries
+      - JS API
+      - Grok Connect
+      - Tools Package
+      - Docusaurus
+      - Python API
+      - misc
+      - Lint
+      - IaC
     types:
       - completed
 

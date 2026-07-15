@@ -2,11 +2,18 @@ name: Tools Package
 on:
   workflow_dispatch: { }
   push:
+    branches:
+      - master
+      - 'release/**'
     paths:
       - 'tools/**'
   pull_request:
     paths:
       - 'tools/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
 
 jobs:
   common-check:
