@@ -46,10 +46,15 @@ export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: D
   await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
+//output: dataframe result
+export async function vexImages() : Promise<any> {
+  return await PackageFunctions.vexImages();
+}
+
 //name: Metrics
 //output: view result
 //meta.role: adminApp,app
-//meta.url: /
+//meta.url: /metrics
 //meta.icon: images/icons/metrics.svg
 export function metricsApp() : any {
   return PackageFunctions.metricsApp();

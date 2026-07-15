@@ -3,6 +3,10 @@
 ## v.next
 
 * Vulnerabilities: Added a tab showing the published VEX scan results (data.datagrok.ai/vex) — per-image severity summary with drill-down to the per-CVE report
+* Stress: Added a tab with per-build stress metrics (median duration by build split by threads, full metrics grid) and a last-build scatter plot (threads vs duration, colored by pass/fail)
+* Metrics: Fixed app registration url ('/' → '/metrics') that shadowed all Usage Analysis deep links — any /apps/usage/<tab> URL used to land on Metrics
+* Stress: Added passthrough JS post-processing to StressTestsRaw/StressTestsSummary — project datasync of plain (post-process-free) queries loses the result dataframe client-side, which broke the CicdTests dashboard's stress views on open
+* Added the vexImages function (VEX scan results as a dataframe) — feeds the CicdTests dashboard's data-synced VEX view
 
 * Stress tests: Replaced the old stress dashboards/queries with `StressTestsSummary` (all builds — median/avg/min/max/p95 of ms by threads, pass rate as the mean per-test pass fraction), `StressTestsRaw` (per-build raw runs incl. error text, latest default, boxplot of ms), and `StressTestsFailures` (failing test×thread combos with a sample error); rewired the CI/CD tests project. Backed by the new server `stress_tests` table populated from the Jenkins stress job.
 * GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)

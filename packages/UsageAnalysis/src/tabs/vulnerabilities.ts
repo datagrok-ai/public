@@ -5,9 +5,9 @@ import * as ui from 'datagrok-api/ui';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 
-const VEX_INDEX_URL = 'https://data.datagrok.ai/vex/index.json';
+export const VEX_INDEX_URL = 'https://data.datagrok.ai/vex/index.json';
 
-interface VexImage {
+export interface VexImage {
   repo: string;
   category: string;
   tag: string;
@@ -24,6 +24,32 @@ interface VexImage {
 const COLOR_CRITICAL = 0xFF7B2D24;
 const COLOR_HIGH = 0xFFFF5A00;
 const COLOR_MEDIUM = 0xFFFFA500;
+
+export function vexImagesToDataFrame(rows: VexImage[]): DG.DataFrame {
+  const int32 = (name: string, get: (r: VexImage) => number) =>
+    DG.Column.fromInt32Array(name, Int32Array.from(rows.map((r) => get(r) ?? 0)));
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('channel', rows.map((r) => r.tag === 'bleeding-edge' ? 'bleeding-edge' : 'release')),
+    DG.Column.fromStrings('category', rows.map((r) => r.category ?? '')),
+    DG.Column.fromStrings('service', rows.map((r) => r.repo)),
+    DG.Column.fromStrings('version', rows.map((r) => r.tag)),
+    int32('critical', (r) => r.critical),
+    int32('high', (r) => r.high),
+    int32('medium', (r) => r.medium),
+    int32('low', (r) => r.low),
+    int32('total', (r) => r.total),
+    DG.Column.fromStrings('report', rows.map((r) => r.vex?.html ?? '')),
+    DG.Column.fromStrings('description', rows.map((r) => r.description ?? '')),
+  ]);
+  df.name = 'Vulnerabilities';
+  return df;
+}
+
+export async function fetchVexImages(): Promise<VexImage[]> {
+  const resp = await grok.dapi.fetchProxy(VEX_INDEX_URL);
+  const index = await resp.json();
+  return [...(index.services ?? []), ...(index.bleeding_edge ?? [])];
+}
 
 export class VulnerabilitiesView extends UaView {
   private images: VexImage[] = [];
@@ -114,21 +140,7 @@ export class VulnerabilitiesView extends UaView {
 
   private buildSummaryGrid(): HTMLElement {
     const rows = this.images;
-    const int32 = (name: string, get: (r: VexImage) => number) =>
-      DG.Column.fromInt32Array(name, Int32Array.from(rows.map((r) => get(r) ?? 0)));
-    const df = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('channel', rows.map((r) => r.tag === 'bleeding-edge' ? 'bleeding-edge' : 'release')),
-      DG.Column.fromStrings('category', rows.map((r) => r.category ?? '')),
-      DG.Column.fromStrings('service', rows.map((r) => r.repo)),
-      DG.Column.fromStrings('version', rows.map((r) => r.tag)),
-      int32('critical', (r) => r.critical),
-      int32('high', (r) => r.high),
-      int32('medium', (r) => r.medium),
-      int32('low', (r) => r.low),
-      int32('total', (r) => r.total),
-      DG.Column.fromStrings('description', rows.map((r) => r.description ?? '')),
-    ]);
-    df.name = 'Vulnerabilities';
+    const df = vexImagesToDataFrame(rows);
     df.onCurrentRowChanged.subscribe(() => {
       if (df.currentRowIdx >= 0)
         this.loadDetails(rows[df.currentRowIdx]);

@@ -18,6 +18,7 @@ import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
 import {ClickEventsWidget} from './widgets/click-events-widget';
+import {fetchVexImages, vexImagesToDataFrame} from './tabs/vulnerabilities';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -293,8 +294,15 @@ export class PackageFunctions {
     return highestPriority;
   }
 
+  /** Published VEX scan results (one row per scanned image) — feeds the
+   * CicdTests dashboard's data-synced VEX table. */
+  @grok.decorators.func()
+  static async vexImages(): Promise<DG.DataFrame> {
+    return vexImagesToDataFrame(await fetchVexImages());
+  }
+
   @grok.decorators.app({
-    'url': '/',
+    'url': '/metrics',
     'name': 'Metrics',
     'icon': 'images/icons/metrics.svg',
     'meta': {'role': 'adminApp'},
