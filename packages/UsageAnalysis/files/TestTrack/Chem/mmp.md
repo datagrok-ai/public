@@ -3,7 +3,8 @@ feature: chem
 target_layer: playwright
 coverage_type: edge
 priority: p0
-realizes: [chem.cp.mmp-analysis]
+realizes_atlas: [chem.cp.mmp-analysis]
+realizes: [chem.analyze.matched-molecular-pairs]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/mmp.md
 migration_date: 2026-05-11

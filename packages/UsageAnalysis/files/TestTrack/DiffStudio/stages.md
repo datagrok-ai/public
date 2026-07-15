@@ -3,6 +3,7 @@ feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - stages.test.ts

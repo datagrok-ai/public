@@ -3,7 +3,8 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [sunburst-unsupported-column-defense]
+realizes_atlas: [sunburst-unsupported-column-defense]
+realizes: [charts.sunburst]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

@@ -3,6 +3,7 @@ feature: browse
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - demo_apps.test.ts

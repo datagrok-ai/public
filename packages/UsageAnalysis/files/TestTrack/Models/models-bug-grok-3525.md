@@ -3,6 +3,7 @@ feature: models
 target_layer: playwright
 coverage_type: regression
 priority: p1
+realizes_atlas: []
 realizes: []
 realized_as:
   - models-bug-grok-3525-spec.ts

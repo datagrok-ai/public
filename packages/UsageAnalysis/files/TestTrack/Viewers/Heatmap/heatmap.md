@@ -3,6 +3,7 @@ feature: heatmap
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - heatmap-spec.ts

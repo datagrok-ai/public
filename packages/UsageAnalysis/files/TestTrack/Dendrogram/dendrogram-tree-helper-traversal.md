@@ -3,6 +3,7 @@ feature: dendrogram
 target_layer: apitest
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 produced_from: atlas-driven
 related_bugs: []

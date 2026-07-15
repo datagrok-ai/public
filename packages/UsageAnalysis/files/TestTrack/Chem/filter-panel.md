@@ -3,7 +3,8 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [chem.cp.substructure-search-with-filter]
+realizes_atlas: [chem.cp.substructure-search-with-filter]
+realizes: [chem.substructure-filter]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel.md
 migration_date: 2026-05-11

@@ -3,7 +3,8 @@ feature: dendrogram
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [dendrogram.cp.hier-clustering-bio-sequence-path]
+realizes_atlas: [dendrogram.cp.hier-clustering-bio-sequence-path]
+realizes: [bio.analyze.hierarchical-clustering, dendrogram]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-bio.md
 migration_date: 2026-06-02

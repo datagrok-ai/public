@@ -3,6 +3,7 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - st-edge-validation-combine-spec.ts

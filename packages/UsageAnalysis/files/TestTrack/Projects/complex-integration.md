@@ -3,7 +3,8 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [upload-save-reopen-golden]
+realizes_atlas: [upload-save-reopen-golden]
+realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md

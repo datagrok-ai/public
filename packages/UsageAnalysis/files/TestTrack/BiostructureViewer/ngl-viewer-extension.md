@@ -3,6 +3,7 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: regression
 priority: p1
+realizes_atlas: []
 realizes: []
 produced_from: atlas-driven
 related_bugs: []

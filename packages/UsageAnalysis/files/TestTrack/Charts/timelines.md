@@ -3,7 +3,8 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [timelines-legend-click-to-filter-stability]
+realizes_atlas: [timelines-legend-click-to-filter-stability]
+realizes: []
 produced_from: atlas-driven
 pyramid_layer: bug-focused
 related_bugs:

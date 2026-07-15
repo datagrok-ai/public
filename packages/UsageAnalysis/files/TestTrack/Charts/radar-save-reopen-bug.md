@@ -3,7 +3,8 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [radar-table-rebind-project-roundtrip]
+realizes_atlas: [radar-table-rebind-project-roundtrip]
+realizes: [charts.radar]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

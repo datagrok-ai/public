@@ -3,6 +3,7 @@ feature: filters
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - combined-boolean-filter-spec.ts

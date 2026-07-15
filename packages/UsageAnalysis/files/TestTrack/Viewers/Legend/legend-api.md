@@ -3,6 +3,7 @@ feature: legend
 target_layer: apitest
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 pyramid_layer: integration
 ui_coverage_responsibility: []

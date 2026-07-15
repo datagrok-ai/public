@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [monomer_library_file]
+realizes_atlas: [monomer_library_file]
+realizes: []
 realized_as:
   - st-lifecycle-monomer-library-file-spec.ts
 related_bugs: []

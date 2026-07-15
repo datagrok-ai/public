@@ -3,7 +3,8 @@ feature: chem
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [chem.cp.scaffold-tree-add-filter]
+realizes_atlas: [chem.cp.scaffold-tree-add-filter]
+realizes: [chem.analyze.scaffold-tree, chem.scaffold-tree]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/Advanced/scaffold-tree-functions.md
 migration_date: 2026-05-11

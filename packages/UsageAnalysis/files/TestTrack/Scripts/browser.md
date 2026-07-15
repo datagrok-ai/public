@@ -3,6 +3,7 @@ feature: scripts
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - scripts-browser.test.ts

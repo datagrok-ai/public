@@ -3,6 +3,7 @@ feature: filters
 target_layer: playwright
 coverage_type: regression
 priority: p1
+realizes_atlas: []
 realizes: []
 realized_as:
   - cloned-views-spec.ts

@@ -3,7 +3,8 @@ feature: sharing
 target_layer: apitest
 coverage_type: regression
 priority: p0
-realizes: [cp-api-grant-check-revoke, cp-api-check-permission]
+realizes_atlas: [cp-api-grant-check-revoke, cp-api-check-permission]
+realizes: []
 realized_as:
   - sharing-api-permissions-api-spec.ts
 related_bugs: []

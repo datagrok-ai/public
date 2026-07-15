@@ -3,7 +3,8 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [rename-dependent-entity-reopen, rename_external_dep, share_with_recipient_open, rename_project]
+realizes_atlas: [rename-dependent-entity-reopen, rename_external_dep, share_with_recipient_open, rename_project]
+realizes: []
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md

@@ -3,6 +3,7 @@ feature: groups
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - groups.test.ts
