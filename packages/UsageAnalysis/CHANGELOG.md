@@ -6,7 +6,9 @@
 * Stress: Added a tab with per-build stress metrics (median duration by build split by threads, full metrics grid) and a last-build scatter plot (threads vs duration, colored by pass/fail)
 * Metrics: Fixed app registration url ('/' → '/metrics') that shadowed all Usage Analysis deep links — any /apps/usage/<tab> URL used to land on Metrics
 * Stress: Added passthrough JS post-processing to StressTestsRaw/StressTestsSummary — project datasync of plain (post-process-free) queries loses the result dataframe client-side, which broke the CicdTests dashboard's stress views on open
-* Added the vexImages function (VEX scan results as a dataframe) — feeds the CicdTests dashboard's data-synced VEX view
+* Added the vexImages function (VEX scan results as a dataframe) — feeds the CicdTests dashboard's data-synced VEX view; core images use their bleeding-edge scan, packages/tools the latest released scan
+* Added stressSummaryDashboard/stressRawDashboard wrapper functions for the CicdTests dashboard's stress tables (project datasync of DataQuery calls is unreliable — GROK-20391)
+* Tests dashboard: Added an Unignore button next to "Mark as triaged" in the test properties panel — clears the ignored flag and its reason
 
 * Stress tests: Replaced the old stress dashboards/queries with `StressTestsSummary` (all builds — median/avg/min/max/p95 of ms by threads, pass rate as the mean per-test pass fraction), `StressTestsRaw` (per-build raw runs incl. error text, latest default, boxplot of ms), and `StressTestsFailures` (failing test×thread combos with a sample error); rewired the CI/CD tests project. Backed by the new server `stress_tests` table populated from the Jenkins stress job.
 * GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)

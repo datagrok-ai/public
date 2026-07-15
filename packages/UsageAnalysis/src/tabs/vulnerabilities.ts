@@ -51,6 +51,17 @@ export async function fetchVexImages(): Promise<VexImage[]> {
   return [...(index.services ?? []), ...(index.bleeding_edge ?? [])];
 }
 
+/** Dashboard flavor: core images are represented by their bleeding-edge scan
+ * (the next-release state); packages/tools keep the latest released scan. */
+export async function fetchVexDashboardImages(): Promise<VexImage[]> {
+  const resp = await grok.dapi.fetchProxy(VEX_INDEX_URL);
+  const index = await resp.json();
+  const services: VexImage[] = index.services ?? [];
+  const bleedingEdge: VexImage[] = index.bleeding_edge ?? [];
+  const beRepos = new Set(bleedingEdge.map((r) => r.repo));
+  return [...bleedingEdge, ...services.filter((r) => !(r.category === 'core' && beRepos.has(r.repo)))];
+}
+
 export class VulnerabilitiesView extends UaView {
   private images: VexImage[] = [];
   private summaryHost!: HTMLElement;

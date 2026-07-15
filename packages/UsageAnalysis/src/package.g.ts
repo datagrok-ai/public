@@ -51,6 +51,16 @@ export async function vexImages() : Promise<any> {
   return await PackageFunctions.vexImages();
 }
 
+//output: dataframe result
+export async function stressSummaryDashboard() : Promise<any> {
+  return await PackageFunctions.stressSummaryDashboard();
+}
+
+//output: dataframe result
+export async function stressRawDashboard() : Promise<any> {
+  return await PackageFunctions.stressRawDashboard();
+}
+
 //name: Metrics
 //output: view result
 //meta.role: adminApp,app
