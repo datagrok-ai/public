@@ -2,11 +2,18 @@ name: Grok Connect
 on:
   workflow_dispatch: { }
   push:
+    branches:
+      - master
+      - 'release/**'
     paths:
       - 'connectors/**'
   pull_request:
     paths:
       - 'connectors/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
 
 jobs:
   common-check:
@@ -18,7 +25,11 @@ jobs:
   build:
     name: Build maven
     needs: common-check
-    runs-on: ubuntu-latest-m
+    # Standard public runners are 4-core/16GB — enough for the maven build+tests, and
+    # free (larger runners are billed even on public repos). Revert to ubuntu-latest-m
+    # if the connector test suite starts OOMing.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
     if: needs.common-check.outputs.continue == 'true'
     permissions:
       checks: write
