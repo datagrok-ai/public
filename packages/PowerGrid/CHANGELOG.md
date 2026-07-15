@@ -1,6 +1,11 @@
 # Power Grid changelog
 
-## v.next
+## 1.8.3 (2026-07-09)
+
+* [#3781](https://github.com/datagrok-ai/public/issues/3781): Forms viewer: Added font size control
+* GROK-20367: Forms viewer: Number formatting does not match grid in some cases
+
+## 1.8.2 (2026-05-07)
 
 * Introduced SVG cell renderer with content-based LRU caching for canvas rendering
 * Added SVG semantic type auto-detector

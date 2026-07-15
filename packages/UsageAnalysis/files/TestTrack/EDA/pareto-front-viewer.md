@@ -1,3 +1,14 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: edge
+priority: p2
+realizes: []
+realized_as:
+  - pareto-front-viewer-spec.ts
+related_bugs: []
+---
+
 ### Pareto front viewer test case
 
 #### Empty & Non-Numeric columns handling

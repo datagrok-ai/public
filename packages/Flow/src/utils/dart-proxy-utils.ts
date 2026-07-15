@@ -1,5 +1,6 @@
 /** Utilities for safely accessing Dart proxy objects (tags, options) from JS side */
 import * as DG from 'datagrok-api/dg';
+import {propertyNameToFriendly} from './naming';
 
 export function safeGetEntries(obj: any): [string, any][] {
   try {
@@ -67,9 +68,19 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
-/** Whether a function input parameter is optional (declared `{optional: true}`).
- *  Read defensively from the Dart-proxy `options` map. */
+/** Whether a function input parameter is optional. Reads, in order: the Dart
+ *  `FuncParam.isOptional` field (what core's own call machinery consults — set
+ *  for every declared-default param, e.g. OpenFile's `sheetName`) via the
+ *  reflective `grok_Property_Get`; `nullable`; and the `options` map's
+ *  `optional` flag (JS-declared `{optional: true}`). */
 export function isInputOptional(prop: DG.Property): boolean {
+  try {
+    const get = (window as unknown as {grok_Property_Get?: (dart: unknown, name: string) => unknown})
+      .grok_Property_Get;
+    if (get && get((prop as unknown as {dart: unknown}).dart, 'isOptional') === true) return true;
+  } catch {/* not a FuncParam — fall through */}
+  if (prop.nullable)
+    return true;
   try {
     const opt = safeGet((prop as unknown as {options?: unknown}).options, 'optional');
     return opt === true || opt === 'true';
@@ -114,20 +125,22 @@ export function getParamDefault(prop: DG.Property): unknown {
 }
 
 /** Display label for a function parameter: its `caption` when one is declared
- *  (via `{caption: ...}` / `@grok.decorators.param`), else the property name.
- *  Purely for UI — the internal identity (`prop.name`, used for slot keys,
- *  `inputValues`, connections, compilation) is unchanged. The caption may be
- *  null or empty; both fall back to the name. Reads the raw `options.caption`
- *  first, then `friendlyName` (the Dart caption getter, which itself falls back
- *  to the name). */
+ *  (via `{caption: ...}` / `@grok.decorators.param`), else the **humanized**
+ *  property name (`propertyNameToFriendly`, mirroring what
+ *  `ui.input.forProperty` shows — 'maxNumOfSomething' → 'Max Num Of
+ *  Something'). Purely for UI — the internal identity (`prop.name`, used for
+ *  slot keys, `inputValues`, connections, compilation) is unchanged. Reads the
+ *  raw `options.caption` first, then `friendlyName` (the Dart caption getter)
+ *  when it differs from the raw name — a friendlyName equal to the name is
+ *  just the Dart fallback, which we humanize instead. */
 export function getParamDisplayName(prop: DG.Property): string {
   try {
     const cap = safeGet((prop as unknown as {options?: unknown}).options, 'caption');
     if (typeof cap === 'string' && cap.trim() !== '') return cap.trim();
     const fn = (prop as unknown as {friendlyName?: unknown}).friendlyName;
-    if (typeof fn === 'string' && fn.trim() !== '') return fn.trim();
+    if (typeof fn === 'string' && fn.trim() !== '' && fn.trim() !== prop.name) return fn.trim();
   } catch {/* fall through to name */}
-  return prop.name;
+  return propertyNameToFriendly(prop.name);
 }
 
 /** Returns the display name for a function node header.

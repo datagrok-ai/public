@@ -146,6 +146,16 @@ For JS API method questions, check these files first:
 | Shell (views, tables, windows)  | `src/shell.ts`                     |
 | Constants and enums             | `src/const.ts`                     |
 
+## Calling functions (`grok.functions.call`)
+
+`await grok.functions.call(name, params)` resolves to a value whose **shape depends on the number of declared outputs** (decided Dart-side in `grok_CallFunc`):
+
+- **exactly one output** → the awaited output value itself (e.g. a `DataFrame`).
+- **more than one output** → an **object keyed by the declared output names** — `{result1, result2}` for a func annotated `//output: dataframe result1` / `//output: dataframe result2`. Read them as `res.result1`, `res.result2`; there are **no** separate per-output variables.
+- **no outputs** → `undefined`/null.
+
+So a code generator emitting `let r = await grok.functions.call('F', …)` must read a multi-output func's results as `r.<outputName>`.
+
 ## Filter Panel (`FilterGroup`)
 
 Access via `tv.getFiltersGroup()` on a `TableView`. Use `{ createDefaultFilters: false }` in plugins to avoid adding unwanted default filters.

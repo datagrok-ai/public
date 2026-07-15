@@ -202,7 +202,8 @@ category('Enrichment', () => {
     const proteinDf = DG.DataFrame.fromColumns([geneCol]);
 
     const sub = wireEnrichmentToVolcano(enrichDf, proteinDf);
-    enrichDf.currentRowIdx = 0;
+    enrichDf.selection.set(0, true, false);
+    enrichDf.selection.fireChanged();
     // TP53 + EGFR selected (from Intersection); MYC not.
     expect(proteinDf.selection.trueCount, 2);
     expect(proteinDf.selection.get(2), false);

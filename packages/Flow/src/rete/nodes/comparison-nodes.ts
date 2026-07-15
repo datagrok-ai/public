@@ -3,8 +3,9 @@
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
 
-const COLOR_COMPARE = '#AB47BC';
+const COLOR_COMPARE = categoricalColor(CAT.purple);
 
 abstract class CompareBase extends FlowNode {
   constructor(label: string, lType: string, rType: string, lLabel: string, rLabel: string) {

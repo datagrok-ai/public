@@ -68,6 +68,10 @@ We continuously scan everything we ship for known vulnerabilities (CVEs), as par
   images) is scanned with
   [Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview),
   both weekly and when the image is built or published. Results are published openly as VEX (see below).
+* **NPM packages** — the production dependency tree of every published Datagrok npm package
+  (plugins, libraries, `datagrok-api`, `datagrok-tools`) is audited with
+  [npm audit](https://docs.npmjs.com/cli/commands/npm-audit), both weekly and at publish time.
+  Results are published openly as VEX (see below).
 * **Source code** is scanned with [CodeQL](https://codeql.github.com/).
 * **Dependencies and packages** are scanned with [Grype](https://github.com/anchore/grype/)
   ([results](https://github.com/datagrok-ai/public/actions/workflows/security_scan_anchore.yaml)).
@@ -80,21 +84,27 @@ lower-severity ones within three months.
 
 ### Vulnerability disclosures (VEX)
 
-We publish the image-scan results openly, so you can assess Datagrok against your own policies.
-Findings are provided as machine-readable
+We publish the scan results openly — Docker images and npm packages alike — so you can assess
+Datagrok against your own policies. Findings are provided as machine-readable
 [VEX](https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex)
 ([OpenVEX](https://openvex.dev/)) documents, with CSV and human-readable HTML reports alongside.
 Browse them from the index:
 
 * **Index** — [data.datagrok.ai/vex/index.html](https://data.datagrok.ai/vex/index.html)
   (machine-readable: [index.json](https://data.datagrok.ai/vex/index.json)). Lists every image
-  with its current version, CVE counts by severity, and links to its reports.
-* **Composite VEX** — one document per image group:
+  and npm package with its current version, vulnerability counts by severity, and links to its
+  reports.
+* **Composite VEX** — one document per group:
   [core services](https://data.datagrok.ai/vex/core.json),
-  [package images](https://data.datagrok.ai/vex/packages.json), and
-  [tools and base images](https://data.datagrok.ai/vex/tools.json).
+  [package images](https://data.datagrok.ai/vex/packages.json),
+  [tools and base images](https://data.datagrok.ai/vex/tools.json), and
+  [npm packages](https://data.datagrok.ai/vex/npm.json).
 * **Per image** — `https://data.datagrok.ai/vex/<image>/latest.json` (OpenVEX), with
   `latest.csv` and `latest.html` alongside each.
+* **Per npm package** — `https://data.datagrok.ai/vex/npm/<name>/latest.json`, where `<name>`
+  is the package name without the `@`, with `/` replaced by `-`
+  (for example, `@datagrok/chem` → `npm/datagrok-chem`). The audit covers production
+  dependencies only: `devDependencies` never reach a consumer install.
 
 ## Client-server interactions
 

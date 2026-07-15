@@ -50,8 +50,8 @@ const openFiles = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(80);
   const header = document.querySelector(
-    '[data-testid="ff-browser-files"] .funcflow-section-header') as HTMLElement | null;
-  if (header?.classList.contains('collapsed')) header.click();
+    '[data-testid="ff-browser-files"] .d4-accordion-pane-header') as HTMLElement | null;
+  if (header && !header.classList.contains('expanded')) header.click();
 };
 
 /** True once demog.csv exists in the Files tree AND is scrolled into view. */
@@ -585,8 +585,9 @@ const interfaceTour: Guide = {
     {
       title: 'Sockets',
       text: 'The colored dots are sockets — inputs on the left, outputs on the right. Drag between two ' +
-        'compatible (same-colored) dots to connect nodes. The small gray squares at the corners are ' +
-        'execution-order ports.',
+        'compatible (same-colored) dots to connect nodes. Hovering a node also reveals two small gray ' +
+        'squares at its top corners — execution-order ports: drag square to square to make one node ' +
+        'run after another (order only, no data).',
       target: bySel('.ff-node .ff-socket'),
       position: 'right',
     },
@@ -818,7 +819,7 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Open the function\'s editor',
-      text: 'In the Input Parameters pane header, click “Open editor” (highlighted). Flow opens the ' +
+      text: 'In the parameters pane header (titled with the function name), click “Open editor” (highlighted). Flow opens the ' +
         'function\'s own dialog seeded with the real upstream table — running the flow up to that ' +
         'point first if it hasn\'t run yet.',
       target: byTid('prop-func-editor'),

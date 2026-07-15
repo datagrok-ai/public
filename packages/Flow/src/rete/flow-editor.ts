@@ -21,10 +21,10 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey} from './scheme';
+import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, EXEC_IN_KEY, EXEC_OUT_KEY} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
-import {getSlotColor} from '../types/type-map';
+import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
 import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
@@ -45,6 +45,13 @@ export type GraphEdit =
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
+  /** Fired after selection changes that never go through `nodepicked` — the
+   *  marquee (whose release is swallowed before it can bubble, see
+   *  `installRectSelect`), Ctrl+A / Ctrl+Shift+A, the pointerup modifier
+   *  semantics (toggle-off / remove / collapse), and programmatic
+   *  select/unselect. Hosts that track "what is selected now" (the suggestion
+   *  pane) listen here; per-node callbacks above stay click-driven. */
+  onSelectionChanged?: () => void;
   onGraphChanged?: () => void;
   /** Fired with the classified edit for every change that can affect run
    *  results — drives precise invalidation and autorun. Fires alongside (not
@@ -70,6 +77,11 @@ export class FlowEditor {
   readonly render: ReactPlugin<FlowScheme, ReactArea2D<FlowScheme>>;
   readonly history = new HistoryPlugin<FlowScheme, HistoryActions<FlowScheme>>();
   readonly container: HTMLElement;
+  /** Absolutely-positioned wrapper filling the host: a flex row of
+   *  [canvasEl | Outputs strip]. */
+  private readonly canvasWrap!: HTMLElement;
+  /** Inner element the AreaPlugin mounts on — the actual canvas viewport. */
+  readonly canvasEl!: HTMLElement;
 
   private selector = AreaExtensions.selector();
   /** Tracks which node is under the cursor at the moment of pointerdown.
@@ -83,12 +95,20 @@ export class FlowEditor {
    *  drag that ends with `created:false`, accidentally triggering the
    *  suggestion menu. Handlers that should be left-click-only consult this. */
   private lastPointerButton = 0;
-  /** Underlying ctrl-held accumulator from rete; we wrap it to also accumulate
-   *  when the click landed on an already-selected node. */
-  private ctrlAccumulating = AreaExtensions.accumulateOnCtrl();
+  /** Snapshot of the last pointerdown (modifiers, position, whether the node
+   *  under the cursor was already selected), taken by
+   *  `installPointerDownTracker` in the capture phase — before rete's
+   *  `nodepicked` fires. Node clicks follow the platform's `selectRows`
+   *  modifier convention (d4 `viewer_utils.dart`): plain click selects
+   *  exclusively, Shift adds, Ctrl toggles, Ctrl+Shift removes. Rete's
+   *  `nodepicked` can only ever ADD, so `accumulating` admits any modifier
+   *  and the removal half runs on a clean release in the pointerup tracker. */
+  private lastPointerDownWasSelected = false;
+  private lastPointerDownModifier = false;
+  private lastPointerDownPos = {x: 0, y: 0};
   private accumulating = {
     active: (): boolean => {
-      if (this.ctrlAccumulating.active()) return true;
+      if (this.lastPointerDownModifier) return true;
       const id = this.lastPointerDownNodeId;
       if (!id) return false;
       const node = this.editor.getNode(id) as {selected?: boolean} | undefined;
@@ -106,6 +126,7 @@ export class FlowEditor {
   private callbacks: FlowEditorCallbacks;
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private pointerDownTracker: ((e: PointerEvent) => void) | null = null;
+  private pointerUpTracker: ((e: PointerEvent) => void) | null = null;
   /** Per-connection status (for execution coloring). */
   private connectionStatuses = new Map<string, ConnectionStatus>();
 
@@ -130,6 +151,23 @@ export class FlowEditor {
   private readonly minimapW = 200;
   private readonly minimapH = 130;
 
+  /** The Outputs strip — a thin column OUTSIDE the canvas viewport that hosts
+   *  every output node as a screen-space chip (our own DOM, not a rete node
+   *  view — the canvas view is hidden). The nodes stay real graph citizens
+   *  (data model, serialization, compiler untouched); only their visual form
+   *  is the chip. `null` until `installOutputStrip`. */
+  private outputStripEl: HTMLElement | null = null;
+  /** Container inside the strip holding the chips. */
+  private stripChipsEl: HTMLElement | null = null;
+  private stripResizeObserver: ResizeObserver | null = null;
+  private stripSyncScheduled = false;
+  /** Whether the pending strip sync must rebuild the chip DOM (graph or
+   *  selection changed) or only refresh wire endpoints (pan/zoom). */
+  private stripRenderPending = false;
+  /** Wire-endpoint subscriptions for sockets on output nodes, keyed by node id
+   *  (see the chip-aware socketPositionWatcher in the constructor). */
+  private chipSocketSubs = new Map<string, Set<(pos: {x: number; y: number}) => void>>();
+
   /** Suggestion-menu drag state. Set on `connectionpick` for an output
    *  socket; cleared on `connectiondrop`. If the drop didn't create a
    *  connection AND wasn't on a target socket, the suggestion popup opens. */
@@ -145,20 +183,51 @@ export class FlowEditor {
   constructor(container: HTMLElement, callbacks: FlowEditorCallbacks = {}) {
     this.callbacks = callbacks;
     this.container = container;
-    this.area = new AreaPlugin<FlowScheme>(container);
+    // The editor splits into [canvas | Outputs strip]: the area plugin mounts
+    // on an inner element, so the strip column is OUTSIDE the canvas viewport —
+    // pan, zoom-to-fit, and drops can never put graph content behind it. The
+    // pair lives in an absolutely-positioned wrapper (not host-level flex): the
+    // host keeps its own normal-flow children (the view's start panel).
+    this.canvasWrap = document.createElement('div');
+    this.canvasWrap.className = 'ff-canvas-wrap';
+    container.appendChild(this.canvasWrap);
+    this.canvasEl = document.createElement('div');
+    this.canvasEl.className = 'ff-canvas';
+    setTid(this.canvasEl, 'canvas-viewport');
+    this.canvasWrap.appendChild(this.canvasEl);
+    this.area = new AreaPlugin<FlowScheme>(this.canvasEl);
     this.render = new ReactPlugin<FlowScheme, ReactArea2D<FlowScheme>>({createRoot});
 
-    this.render.addPreset(ReactPresets.classic.setup({
+    // Output nodes have NO canvas view — their visible form is a screen-space
+    // chip inside the Outputs strip. A wire into one must still end somewhere,
+    // so the DOM-measuring watcher is wrapped: sockets on output nodes resolve
+    // analytically to the canvas' right edge at the chip's row (the wire runs
+    // to the edge and visually plugs into the adjacent strip chip), refreshed
+    // on pan/zoom/reorder via `notifyChipSockets`.
+    const domWatcher = getDOMSocketPosition({
       // No arrow markers anymore — direction comes from the dash-flow CSS
       // animation. The line just needs to land on the dot edge, so a small
       // symmetric offset that puts both endpoints just inside the socket dot
       // (radius 4.5 px) keeps everything visually attached.
-      socketPositionWatcher: getDOMSocketPosition({
-        offset: (pos, _id, side) => ({
-          x: pos.x + (side === 'output' ? 2 : -2),
-          y: pos.y,
-        }),
-      }) as never,
+      offset: (pos, _id, side) => ({
+        x: pos.x + (side === 'output' ? 2 : -2),
+        y: pos.y,
+      }),
+    });
+    const chipAwareWatcher = {
+      attach: (scope: never) => (domWatcher as {attach(s: never): void}).attach(scope),
+      listen: (nodeId: string, side: 'input' | 'output', key: string,
+        onChange: (pos: {x: number; y: number}) => void): (() => void) => {
+        if (this.editor.getNode(nodeId)?.dgNodeType === 'output')
+          return this.listenChipSocket(nodeId, onChange);
+        return (domWatcher as unknown as {
+          listen(n: string, s: string, k: string, cb: (p: {x: number; y: number}) => void): () => void;
+        }).listen(nodeId, side, key, onChange);
+      },
+    };
+
+    this.render.addPreset(ReactPresets.classic.setup({
+      socketPositionWatcher: chipAwareWatcher as never,
       customize: {
         node: () => FlowNodeComponent as never,
         socket: () => FlowSocketComponent as never,
@@ -198,6 +267,7 @@ export class FlowEditor {
     this.installHoverDocs();
     this.installWaypointInteractions();
     this.installMinimap();
+    this.installOutputStrip();
   }
 
   /** Narrow callback surface for the React node components, stamped onto every
@@ -291,6 +361,8 @@ export class FlowEditor {
       // on its very first render.
       if (context.type === 'connectioncreate')
         this.decorateConnection(context.data);
+      if (context.type === 'noderemoved')
+        this.chipSocketSubs.delete(context.data.id);
       if (context.type === 'connectioncreated')
         this.maybeAutoTypeValueOutput(context.data);
       if (context.type === 'connectionremoved')
@@ -305,6 +377,7 @@ export class FlowEditor {
         this.callbacks.onGraphChanged?.();
         this.callbacks.onGraphEdited?.(this.classifyEdit(context));
         this.scheduleMinimapRedraw();
+        this.scheduleStripSync(true);
       }
       return context;
     });
@@ -320,6 +393,7 @@ export class FlowEditor {
           }
           lastPickedId = node.id;
           this.callbacks.onNodeSelected?.(node);
+          this.refreshChipSelection(); // chip selected-state may have changed
         }
       }
       // Intercept the during-drag translate intent: snap position and show guides.
@@ -350,6 +424,7 @@ export class FlowEditor {
           context.type === 'render') {
         this.updateGridTransform();
         this.scheduleMinimapRedraw();
+        this.scheduleStripSync(false); // wire endpoints track the transform
       }
       // Tag each rendered connection wrapper with its id + status for the
       // CSS-driven execution-state animations (`[data-status="active"]` etc).
@@ -442,7 +517,9 @@ export class FlowEditor {
     let bestY: {delta: number; guide: number} | null = null;
 
     for (const other of this.editor.getNodes()) {
-      if (other.id === draggedId) continue;
+      // Strip-pinned rows sit at viewport-dependent positions — never a
+      // meaningful alignment target for canvas nodes.
+      if (other.id === draggedId || other.dgNodeType === 'output') continue;
       const sz = this.measureNode(other.id);
       const ox = [other.pos.x, other.pos.x + sz.w / 2, other.pos.x + sz.w];
       const oy = [other.pos.y, other.pos.y + sz.h / 2, other.pos.y + sz.h];
@@ -519,7 +596,9 @@ export class FlowEditor {
 
     el.appendChild(header);
     el.appendChild(body);
-    this.container.appendChild(el);
+    // Inside the canvas viewport (not the host) — the host's right column is
+    // the Outputs strip, which the minimap must not cover.
+    this.canvasEl.appendChild(el);
     this.minimapEl = el;
     this.minimapSvg = svg;
 
@@ -643,6 +722,9 @@ export class FlowEditor {
     let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
     const boxes: Array<{x: number; y: number; w: number; h: number; color: string}> = [];
     for (const node of nodes) {
+      // Strip-pinned rows track the viewport, not the graph — including them
+      // would smear the overview bounds on every pan.
+      if (node.dgNodeType === 'output') continue;
       const sz = this.measureNode(node.id);
       const color = (node as unknown as {color?: string}).color ?? '#90a4ae';
       boxes.push({x: node.pos.x, y: node.pos.y, w: sz.w, h: sz.h, color});
@@ -692,6 +774,245 @@ export class FlowEditor {
     svg.appendChild(vp);
   }
 
+  // ---------- output strip ----------
+
+  /** Chip layout constants (screen px — chips are plain DOM inside the strip
+   *  column, so zoom never touches them; keep in sync with the
+   *  `.ff-output-strip-chips` / `.ff-output-row` CSS). `GAP`/`H` also drive
+   *  the analytic wire-endpoint math in {@link chipSocketPos}. */
+  private static readonly STRIP_CHIP_GAP = 6;
+  private static readonly STRIP_CHIP_H = 24;
+
+  /** Build the strip column: a thin flex sibling to the RIGHT of the canvas
+   *  viewport — graph content can never pan or fit behind it. Hosts the chips
+   *  (one per output node) above a vertical "Outputs" label. Chip interaction
+   *  is delegated here: click selects the node (property panel, Delete key),
+   *  right-click opens the node context menu; drops are hit-tested by rect in
+   *  `handleOutputDrop` (chips carry `.ff-node`, so the drop-on-node branch
+   *  binds a chip's free input first). */
+  private installOutputStrip(): void {
+    const strip = document.createElement('div');
+    strip.className = 'ff-output-strip';
+    setTid(strip, 'output-strip');
+    strip.title = 'Flow outputs — drag any output socket here to publish its value';
+
+    const chips = document.createElement('div');
+    chips.className = 'ff-output-strip-chips';
+    strip.appendChild(chips);
+    this.stripChipsEl = chips;
+
+    const header = document.createElement('div');
+    header.className = 'ff-output-strip-header';
+    header.textContent = 'Outputs';
+    strip.appendChild(header);
+
+    strip.addEventListener('click', (ev) => {
+      const chip = (ev.target as HTMLElement | null)?.closest('[data-node-id]') as HTMLElement | null;
+      if (chip?.dataset.nodeId) void this.selectNode(chip.dataset.nodeId, ev.ctrlKey || ev.metaKey);
+    });
+    strip.addEventListener('contextmenu', (ev) => {
+      const chip = (ev.target as HTMLElement | null)?.closest('[data-node-id]') as HTMLElement | null;
+      const node = chip?.dataset.nodeId ? this.editor.getNode(chip.dataset.nodeId) : undefined;
+      if (!node) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.showNodeContextMenu(ev, node);
+    });
+
+    this.canvasWrap.appendChild(strip); // after canvasEl → right column
+    this.outputStripEl = strip;
+
+    this.stripResizeObserver = new ResizeObserver(() => this.scheduleStripSync(false));
+    this.stripResizeObserver.observe(this.canvasEl);
+    this.scheduleStripSync(true);
+  }
+
+  /** Coalesce strip work to one pass per event-loop tick (a pan emits many
+   *  transform events per pointermove). `render: true` also rebuilds the chip
+   *  DOM (graph / selection / params changed); `false` only refreshes the wire
+   *  endpoints (pan/zoom/resize). Microtask — not rAF — so endpoints update
+   *  within the same frame and wires never visibly lag. */
+  private scheduleStripSync(render: boolean): void {
+    if (render) this.stripRenderPending = true;
+    if (!this.outputStripEl || this.stripSyncScheduled) return;
+    this.stripSyncScheduled = true;
+    queueMicrotask(() => {
+      this.stripSyncScheduled = false;
+      const doRender = this.stripRenderPending;
+      this.stripRenderPending = false;
+      this.syncOutputStrip(doRender);
+    });
+  }
+
+  private syncOutputStrip(render: boolean): void {
+    const strip = this.outputStripEl;
+    const chips = this.stripChipsEl;
+    if (!strip || !chips) return;
+    const rows = this.outputNodes();
+    strip.dataset.empty = rows.length === 0 ? 'true' : 'false';
+    if (render) {
+      chips.textContent = '';
+      for (const n of rows) chips.appendChild(this.buildChip(n));
+    }
+    this.notifyChipSockets();
+  }
+
+  private outputNodes(): FlowNode[] {
+    return this.editor.getNodes().filter((n) => n.dgNodeType === 'output');
+  }
+
+  /** Update every chip's `data-selected` IN PLACE. Deliberately not a rebuild:
+   *  selection changes fire mid-click-gesture (pointerup), and replacing the
+   *  pressed chip element there would keep the browser from dispatching its
+   *  `click` — the very event that selects the node. Deferred a microtask so
+   *  the (async) selectable-extension calls have landed on `node.selected`. */
+  private refreshChipSelection(): void {
+    queueMicrotask(() => {
+      const chips = this.stripChipsEl;
+      if (!chips) return;
+      for (const el of Array.from(chips.children) as HTMLElement[]) {
+        const node = el.dataset.nodeId ? this.editor.getNode(el.dataset.nodeId) : undefined;
+        el.dataset.selected = (node as {selected?: boolean} | undefined)?.selected ? 'true' : 'false';
+      }
+    });
+  }
+
+  /** One chip: [socket dot | type letter], fixed 40×24, screen-space. Carries
+   *  the same identity attributes as a canvas node card (`.ff-node`,
+   *  `data-node-id`, `data-node-type-name`, `data-selected`, the
+   *  `socket-input` test-id), so guides, connect hints, the drop-on-node
+   *  branch, and the tests address chips exactly like nodes. */
+  private buildChip(node: FlowNode): HTMLElement {
+    const inputKeys = Object.keys(node.inputs).filter((k) => !isExecKey(k));
+    const boundKey = inputKeys.find((k) => this.isSocketConnected(node.id, 'input', k));
+    const paramName = String(node.properties['paramName'] ?? '') || node.label;
+    const typeText = String(node.properties['outputType'] ?? node.dgOutputType ?? 'dynamic');
+    const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
+    const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
+
+    const el = document.createElement('div');
+    el.className = 'ff-node ff-output-row';
+    setTid(el, 'node');
+    el.dataset.nodeId = node.id;
+    el.dataset.nodeType = 'output';
+    el.dataset.nodeTypeName = node.dgTypeName ?? '';
+    el.dataset.nodeLabel = node.label;
+    el.dataset.selected = (node as {selected?: boolean}).selected ? 'true' : 'false';
+    el.dataset.status = dgStatus;
+    el.dataset.bound = boundKey ? 'true' : 'false';
+
+    let source: string | null = null;
+    if (boundKey) {
+      const src = this.getInputSource(node.id, boundKey);
+      if (src) {
+        const slot = src.node.outputs[src.outputKey] as {label?: string} | undefined;
+        // A pass-through's label is just '→' — name it after its input instead.
+        source = `${src.node.label} › ${src.outputKey.endsWith('__pt') ?
+          `${src.outputKey.slice(0, -'__pt'.length)} (pass-through)` :
+          (slot?.label ?? src.outputKey)}`;
+      }
+    }
+    el.title = `Flow output "${paramName}" (${typeText})\n` +
+      (source ? `← ${source}` : 'Not connected yet — wire any output socket into it') +
+      (statusText ? `\n${statusText}` : '');
+
+    for (const key of inputKeys) {
+      const wrap = document.createElement('span');
+      wrap.className = 'ff-output-row-socket';
+      wrap.dataset.testid = tid('socket-input', key);
+      const dot = document.createElement('span');
+      dot.className = 'ff-socket ff-output-chip-socket';
+      const slot = node.inputs[key] as {socket: TypedSocket} | undefined;
+      dot.style.setProperty('--socket-color', getSlotColor(slot?.socket.dgType ?? 'dynamic'));
+      wrap.appendChild(dot);
+      el.appendChild(wrap);
+    }
+
+    const letter = document.createElement('span');
+    letter.className = 'ff-output-row-letter';
+    letter.dataset.testid = tid('output-row-letter');
+    letter.style.color = getSlotColor(typeText);
+    letter.textContent = getSlotLetter(typeText);
+    el.appendChild(letter);
+    return el;
+  }
+
+  /** Canvas-coord wire endpoint for any socket on an output node: the canvas'
+   *  right edge, at the vertical center of that node's chip. Chips are
+   *  vertically centered as a group (flex `justify-content: center`), so chip
+   *  i's center sits at the strip's middle, offset by its index's distance
+   *  from the group middle. The wire runs to the edge and visually plugs into
+   *  the adjacent strip chip. */
+  private chipSocketPos(nodeId: string): {x: number; y: number} {
+    const rows = this.outputNodes();
+    const i = Math.max(0, rows.findIndex((n) => n.id === nodeId));
+    const t = this.area.area.transform;
+    const yPx = this.canvasEl.clientHeight / 2 +
+      (i - (rows.length - 1) / 2) * (FlowEditor.STRIP_CHIP_H + FlowEditor.STRIP_CHIP_GAP);
+    return {x: (this.canvasEl.clientWidth - t.x) / t.k, y: (yPx - t.y) / t.k};
+  }
+
+  /** `socketPositionWatcher.listen` for sockets on output nodes (see the
+   *  constructor): emit the analytic chip endpoint now and on every
+   *  {@link notifyChipSockets}. */
+  private listenChipSocket(nodeId: string, onChange: (pos: {x: number; y: number}) => void): () => void {
+    let subs = this.chipSocketSubs.get(nodeId);
+    if (!subs) {
+      subs = new Set();
+      this.chipSocketSubs.set(nodeId, subs);
+    }
+    subs.add(onChange);
+    onChange(this.chipSocketPos(nodeId));
+    return () => void this.chipSocketSubs.get(nodeId)?.delete(onChange);
+  }
+
+  /** Push fresh endpoints to every subscribed wire — called from the strip
+   *  sync (transform changes, chip reorders, canvas resize). */
+  private notifyChipSockets(): void {
+    for (const [nodeId, subs] of this.chipSocketSubs) {
+      if (subs.size === 0) continue;
+      const pos = this.chipSocketPos(nodeId);
+      for (const cb of subs) cb(pos);
+    }
+  }
+
+  /** Whether a client-space point lies inside the strip column. Used by the
+   *  drop handler. */
+  private stripContains(clientX: number, clientY: number): boolean {
+    const strip = this.outputStripEl;
+    if (!strip) return false;
+    const r = strip.getBoundingClientRect();
+    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+  }
+
+  /** An output-socket drag dropped on the strip: publish that value as a flow
+   *  output. Creates the matching output node (Table Output for a dataframe,
+   *  Value Output otherwise — its declared type auto-set by
+   *  `maybeAutoTypeValueOutput` on connect), names it after the source slot,
+   *  and wires it up; the `nodecreated` strip sync renders the chip. */
+  private async bindOutputToStrip(src: {nodeId: string; outputKey: string; dgType: string}): Promise<void> {
+    const {createNode} = await import('./node-factory');
+    const isTable = src.dgType === 'dataframe';
+    const node = createNode(isTable ? 'Outputs/Table Output' : 'Outputs/Value Output');
+    if (!node) return;
+    node.properties['paramName'] = this.uniqueOutputParamName(src.outputKey);
+    await this.editor.addNode(node);
+    await this.addConnectionByKeys(src.nodeId, src.outputKey, node.id, isTable ? 'table' : 'value');
+  }
+
+  /** A script-identifier param name derived from the source slot key (`__pt`
+   *  suffix stripped), made unique among the existing output nodes' names. */
+  private uniqueOutputParamName(outputKey: string): string {
+    let base = outputKey.replace(/__pt$/, '').replace(/[^a-zA-Z0-9_]/g, '');
+    if (!/^[a-zA-Z_]/.test(base)) base = 'result';
+    const taken = new Set(this.editor.getNodes()
+      .filter((n) => n.dgNodeType === 'output')
+      .map((n) => String(n.properties['paramName'] ?? '')));
+    if (!taken.has(base)) return base;
+    for (let i = 2; ; i++)
+      if (!taken.has(`${base}${i}`)) return `${base}${i}`;
+  }
+
   // ---------- drag-output-to-empty suggestion menu ----------
 
   /** Hook into the connection plugin's own `connectionpick` / `connectiondrop`
@@ -736,10 +1057,11 @@ export class FlowEditor {
             this.dragOutSource = {nodeId: sock.nodeId, outputKey: sock.key, dgType: slot.socket.dgType};
         } else {
           // Input-side pick (a fresh drag out of an input, or the tail of an
-          // existing connection) — arms the reverse drop-on-node shortcut.
+          // existing connection) — arms the reverse drop-on-node shortcut
+          // (exec-in included: its body drop connects the node's exec-out).
           this.dragOutSource = null;
           const slot = node?.inputs[sock.key] as {socket: TypedSocket} | undefined;
-          this.dragInSource = (node && slot && !isExecKey(sock.key)) ?
+          this.dragInSource = (node && slot) ?
             {nodeId: sock.nodeId, inputKey: sock.key, dgType: slot.socket.dgType} : null;
         }
       }
@@ -786,13 +1108,34 @@ export class FlowEditor {
     }
     const targetNodeId = nodeEl?.dataset.nodeId;
     if (targetNodeId && targetNodeId !== src.nodeId) {
-      const key = this.soleCompatibleInput(src.nodeId, src.outputKey, targetNodeId);
+      // An order drag connects straight to the target's exec-in — every node
+      // has one and it accepts many predecessors, so a body drop is
+      // unambiguous (no aiming at the small square); duplicates are skipped.
+      const key = isExecKey(src.outputKey) ?
+        (this.hasConnection(src.nodeId, src.outputKey, targetNodeId, EXEC_IN_KEY) ? null : EXEC_IN_KEY) :
+        this.soleCompatibleInput(src.nodeId, src.outputKey, targetNodeId);
       // Dropped on a node: connect to its one obvious input, or do nothing when
       // it has zero / several candidates (don't guess, don't pop the menu).
       if (key) await this.addConnectionByKeys(src.nodeId, src.outputKey, targetNodeId, key);
       return;
     }
+    // No suggestion menu for order drags — nothing "produces" or "consumes"
+    // an order signal; an empty-canvas drop is simply a no-op.
+    if (isExecKey(src.outputKey)) return;
+    // Dropped on the Outputs strip backdrop (between rows): publish the value
+    // as a new flow output. Drops ON an existing row were handled by the
+    // node-body branch above (they bind that row's free input).
+    if (this.stripContains(x, y)) {
+      await this.bindOutputToStrip(src);
+      return;
+    }
     await this.openSuggestionMenu(x, y, src);
+  }
+
+  /** Whether this exact connection already exists. */
+  private hasConnection(source: string, sourceOutput: string, target: string, targetInput: string): boolean {
+    return this.editor.getConnections().some((c) => c.source === source &&
+      String(c.sourceOutput) === sourceOutput && c.target === target && String(c.targetInput) === targetInput);
   }
 
   /** Drop of an input-drag that missed every socket: if it landed on another
@@ -813,11 +1156,15 @@ export class FlowEditor {
     }
     const sourceNodeId = nodeEl?.dataset.nodeId;
     if (sourceNodeId && sourceNodeId !== src.nodeId) {
-      const key = this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
+      // Order drag out of an exec-in: the dropped-on node becomes the
+      // predecessor via its exec-out (mirror of the output-drop shortcut).
+      const key = isExecKey(src.inputKey) ?
+        (this.hasConnection(sourceNodeId, EXEC_OUT_KEY, src.nodeId, src.inputKey) ? null : EXEC_OUT_KEY) :
+        this.soleCompatibleOutput(src.nodeId, src.inputKey, sourceNodeId);
       if (key) await this.addConnectionByKeys(sourceNodeId, key, src.nodeId, src.inputKey);
       return;
     }
-    if (!sourceNodeId) await this.openReverseSuggestionMenu(x, y, src);
+    if (!sourceNodeId && !isExecKey(src.inputKey)) await this.openReverseSuggestionMenu(x, y, src);
   }
 
   /** The reverse suggestion menu: an input drag dropped on empty canvas offers
@@ -923,8 +1270,30 @@ export class FlowEditor {
     const srcSocket = srcSlot?.socket;
     if (!srcSocket) return;
     this.container.classList.add('ff-connecting');
+    // An order-port drag keeps every node's (normally hover-only) exec squares
+    // visible for the whole gesture — the drag has visible targets and the
+    // source square can't vanish mid-drag.
+    if (isExecKey(srcKey))
+      this.container.classList.add('ff-connecting-order');
+    // A data-output drag can always land on the Outputs strip — light it up.
+    if (srcSide === 'output' && !isExecKey(srcKey))
+      this.outputStripEl?.classList.add('ff-strip-droptarget');
     this.nodeEl(srcNodeId)?.classList.add('ff-node-source');
     const targetSide: 'input' | 'output' = srcSide === 'output' ? 'input' : 'output';
+    if (isExecKey(srcKey)) {
+      // An order drag: every other node is a legal run-order neighbor — light
+      // its opposite exec square (the wrapper carries the same compat class the
+      // data-socket rows use, so the green glow rule applies as-is).
+      const targetTid = targetSide === 'input' ? tid('exec-in') : tid('exec-out');
+      for (const node of this.editor.getNodes()) {
+        if (node.id === srcNodeId) continue;
+        const nodeEl = this.nodeEl(node.id);
+        if (!nodeEl) continue;
+        nodeEl.querySelector(`[data-testid="${targetTid}"]`)?.classList.add('ff-socket-compat');
+        nodeEl.classList.add('ff-node-compat');
+      }
+      return;
+    }
     for (const node of this.editor.getNodes()) {
       if (node.id === srcNodeId) continue;
       const nodeEl = this.nodeEl(node.id);
@@ -948,8 +1317,9 @@ export class FlowEditor {
 
   /** Remove every connect-mode hint class. Idempotent. */
   private endConnectHints(): void {
+    this.outputStripEl?.classList.remove('ff-strip-droptarget');
     if (!this.container.classList.contains('ff-connecting')) return;
-    this.container.classList.remove('ff-connecting');
+    this.container.classList.remove('ff-connecting', 'ff-connecting-order');
     this.container.querySelectorAll('.ff-node-source, .ff-node-compat, .ff-socket-compat')
       .forEach((el) => el.classList.remove('ff-node-source', 'ff-node-compat', 'ff-socket-compat'));
   }
@@ -1341,11 +1711,14 @@ export class FlowEditor {
     }, true);
   }
 
-  // ---------- ctrl+drag rectangle multi-select ----------
+  // ---------- shift+drag rectangle multi-select ----------
 
-  /** Ctrl+drag (or Cmd+drag on macOS) on empty canvas → draw a marquee and
-   *  select every node whose bounding box intersects it. Hold Shift to add
-   *  to the existing selection instead of replacing it. */
+  /** Shift+drag on empty canvas → draw a marquee over the nodes. Mirrors the
+   *  platform's area select (d4 `areaSelector` + `selectRows`): Shift+drag
+   *  ADDS every node whose bounding box intersects the rectangle to the
+   *  selection, Ctrl+Shift+drag REMOVES them (Ctrl read at mouse-up). The
+   *  existing selection is never replaced — a plain empty-canvas click still
+   *  clears it. */
   private installRectSelect(): void {
     let startClient: {x: number; y: number} | null = null;
     let rectEl: HTMLElement | null = null;
@@ -1363,20 +1736,25 @@ export class FlowEditor {
 
     const onMove = (e: PointerEvent): void => updateRect(e.clientX, e.clientY);
     const onUp = (e: PointerEvent): void => {
+      // The AreaPlugin keeps an always-on window pointerup listener and treats
+      // a release with few prior moves as an empty-canvas click → unselectAll.
+      // This release ends OUR marquee (its pointerdown never reached the
+      // area) — don't let it clear what the marquee just selected.
+      e.stopImmediatePropagation();
       window.removeEventListener('pointermove', onMove, true);
       window.removeEventListener('pointerup', onUp, true);
       const sc = startClient;
       startClient = null;
       if (rectEl) {rectEl.remove(); rectEl = null;}
       if (!sc) return;
-      void this.completeRectSelect(sc, {x: e.clientX, y: e.clientY}, e.shiftKey);
+      void this.completeRectSelect(sc, {x: e.clientX, y: e.clientY}, e.ctrlKey || e.metaKey);
     };
 
     // Capture phase so we beat the AreaPlugin's pan handler — the user's
-    // Ctrl+drag must produce a rectangle, not a canvas pan.
+    // Shift+drag must produce a rectangle, not a canvas pan.
     this.container.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
-      if (!ev.ctrlKey && !ev.metaKey) return;
+      if (!ev.shiftKey) return;
       const target = ev.target as HTMLElement | null;
       if (target?.closest('.ff-node, .ff-socket, .ff-minimap')) return;
       ev.preventDefault();
@@ -1394,11 +1772,12 @@ export class FlowEditor {
   }
 
   /** Hit-test every node's canvas-space bounding box against the marquee
-   *  (also in canvas space). Replaces the existing selection unless `additive`. */
+   *  (also in canvas space). Adds the hits to the selection, or removes them
+   *  when `remove` (Ctrl held at mouse-up). */
   private async completeRectSelect(
     startClient: {x: number; y: number},
     endClient: {x: number; y: number},
-    additive: boolean,
+    remove: boolean,
   ): Promise<void> {
     const a = this.screenToCanvas(startClient.x, startClient.y);
     const b = this.screenToCanvas(endClient.x, endClient.y);
@@ -1406,14 +1785,19 @@ export class FlowEditor {
     const rx2 = Math.max(a.x, b.x), ry2 = Math.max(a.y, b.y);
     if (rx2 - rx1 < 3 || ry2 - ry1 < 3) return; // ignore fat-finger clicks
 
-    if (!additive) await this.selector.unselectAll();
-
+    let touched = false;
     for (const node of this.editor.getNodes()) {
       const sz = this.measureNode(node.id);
       const nx1 = node.pos.x, ny1 = node.pos.y;
       const nx2 = nx1 + sz.w, ny2 = ny1 + sz.h;
-      const intersects = rx1 < nx2 && nx1 < rx2 && ry1 < ny2 && ny1 < ry2;
-      if (intersects) await this.selectableApi.select(node.id, true);
+      if (!(rx1 < nx2 && nx1 < rx2 && ry1 < ny2 && ny1 < ry2)) continue;
+      touched = true;
+      if (remove) await this.selectableApi.unselect(node.id);
+      else await this.selectableApi.select(node.id, true);
+    }
+    if (touched) {
+      this.callbacks.onSelectionChanged?.();
+      this.refreshChipSelection();
     }
   }
 
@@ -1663,19 +2047,59 @@ export class FlowEditor {
       .show({causedBy: event});
   }
 
-  /** Capture-phase listener that records which canvas node was under the
-   *  cursor at pointerdown. Read by `accumulating.active()` to preserve a
-   *  multi-selection when the click lands on an already-selected node — the
-   *  selectable extension calls `accumulating.active()` synchronously inside
-   *  its `nodepicked` handler, so the value must be set before that fires. */
+  /** Capture-phase listeners implementing the selectRows click semantics.
+   *  pointerdown snapshots the node under the cursor, its selection state,
+   *  and the modifiers — `accumulating.active()` is called synchronously
+   *  inside the selectable extension's `nodepicked` handler, so the snapshot
+   *  must exist before that fires. pointerup applies the removals (Ctrl
+   *  toggle-off, Ctrl+Shift remove, plain-click collapse) that rete's
+   *  add-only `nodepicked` can't express. */
   private installPointerDownTracker(): void {
     this.pointerDownTracker = (ev: PointerEvent): void => {
       this.lastPointerButton = ev.button;
       const target = ev.target as HTMLElement | null;
       const nodeEl = target?.closest('.ff-node') as HTMLElement | null;
-      this.lastPointerDownNodeId = nodeEl?.dataset.nodeId ?? null;
+      const id = nodeEl?.dataset.nodeId ?? null;
+      this.lastPointerDownNodeId = target?.closest('.ff-socket') ? null : id;
+      const node = id ? this.editor.getNode(id) as {selected?: boolean} | undefined : undefined;
+      this.lastPointerDownWasSelected = node?.selected === true;
+      this.lastPointerDownModifier = ev.ctrlKey || ev.metaKey || ev.shiftKey;
+      this.lastPointerDownPos = {x: ev.clientX, y: ev.clientY};
     };
     window.addEventListener('pointerdown', this.pointerDownTracker, true);
+
+    // The removal half of the selectRows semantics. Rete's `nodepicked` only
+    // ever ADDS, so Ctrl-toggle-off, Ctrl+Shift-remove, and the collapse of a
+    // multi-selection on a plain click all run here, on a clean release (a
+    // click, not a drag — a drag of a selected node must keep the group).
+    this.pointerUpTracker = (ev: PointerEvent): void => {
+      // Any release can end in a selection change (incl. the area extension's
+      // own empty-canvas unselect-all, which bypasses our callbacks) — refresh
+      // the chips' selected state after the handlers have run. In-place
+      // attribute update, NEVER a chip rebuild: replacing the pressed element
+      // mid-gesture would keep the browser from ever dispatching its `click`,
+      // killing chip selection.
+      if (this.container.contains(ev.target as Node)) this.refreshChipSelection();
+      const id = this.lastPointerDownNodeId;
+      if (ev.button !== 0 || id == null) return;
+      if (Math.abs(ev.clientX - this.lastPointerDownPos.x) > 4 ||
+          Math.abs(ev.clientY - this.lastPointerDownPos.y) > 4) return;
+      const node = this.editor.getNode(id);
+      if (!node) return;
+      const ctrl = ev.ctrlKey || ev.metaKey;
+      if (ctrl && (ev.shiftKey || this.lastPointerDownWasSelected)) {
+        // Ctrl+Shift+click removes; Ctrl+click on a selected node toggles it off.
+        void this.selectableApi.unselect(id);
+        this.callbacks.onNodeDeselected?.(node);
+        this.callbacks.onSelectionChanged?.();
+      }
+      else if (!ctrl && !ev.shiftKey && this.lastPointerDownWasSelected &&
+               this.getSelectedNodeIds().length > 1) {
+        void this.selectableApi.select(id, false); // plain click → exclusive
+        this.callbacks.onSelectionChanged?.();
+      }
+    };
+    window.addEventListener('pointerup', this.pointerUpTracker, true);
 
     // Block right- or middle-click pointerdown from reaching the connection
     // plugin's socket handler. The plugin doesn't filter by button; without
@@ -1706,11 +2130,24 @@ export class FlowEditor {
           void this.removeNodes(selectedIds);
         }
       }
+
+      // Platform selection keys (scatterplot navigation.dart): Ctrl+A selects
+      // every node, Ctrl+Shift+A deselects all.
+      if ((e.key === 'a' || e.key === 'A') && (e.ctrlKey || e.metaKey) &&
+          this.container.isConnected) {
+        e.preventDefault();
+        if (e.shiftKey)
+          void this.unselectAllNodes();
+        else
+          for (const n of this.editor.getNodes()) void this.selectableApi.select(n.id, true);
+        this.callbacks.onSelectionChanged?.();
+        this.refreshChipSelection();
+      }
     };
     window.addEventListener('keydown', this.keydownHandler);
   }
 
-  private getSelectedNodeIds(): string[] {
+  getSelectedNodeIds(): string[] {
     return this.editor.getNodes().filter((n) => (n as {selected?: boolean}).selected === true).map((n) => n.id);
   }
 
@@ -1742,10 +2179,14 @@ export class FlowEditor {
     if (!node) return;
     await this.selectableApi.select(nodeId, accumulate);
     this.callbacks.onNodeSelected?.(node);
+    this.callbacks.onSelectionChanged?.();
+    this.refreshChipSelection();
   }
 
   async unselectAllNodes(): Promise<void> {
     await this.selector.unselectAll();
+    this.callbacks.onSelectionChanged?.();
+    this.refreshChipSelection();
   }
 
   /** Toggle a node's collapsed flag and re-render. */
@@ -1896,6 +2337,9 @@ export class FlowEditor {
 
   async updateNode(nodeId: string): Promise<void> {
     await this.area.update('node', nodeId);
+    // An output node's visible form is its strip chip — re-render it too
+    // (param renames, declared-type changes, run status).
+    if (this.editor.getNode(nodeId)?.dgNodeType === 'output') this.scheduleStripSync(true);
   }
 
   // ---------- viewport ----------
@@ -1925,7 +2369,12 @@ export class FlowEditor {
   zoomOut(): void {void this.area.area.zoom(this.area.area.transform.k * 0.8);}
 
   async zoomToFit(): Promise<void> {
-    await AreaExtensions.zoomAt(this.area, this.editor.getNodes(), {scale: 0.9});
+    // Fit the graph proper — strip-pinned output rows follow the viewport, so
+    // including them would chase a moving target (and they're always visible
+    // anyway). Fall back to everything when only output rows exist.
+    const nodes = this.editor.getNodes();
+    const inner = nodes.filter((n) => n.dgNodeType !== 'output');
+    await AreaExtensions.zoomAt(this.area, inner.length > 0 ? inner : nodes, {scale: 0.9});
   }
 
   /** Re-arrange the whole graph with the layered/banded layout used by the
@@ -1934,7 +2383,9 @@ export class FlowEditor {
    *  path, producer paths above the paths that consume them. Repositions every
    *  node and zooms to fit. */
   async autoLayout(): Promise<void> {
-    const nodes = this.editor.getNodes();
+    // Output rows are strip-pinned — lay out the graph proper without them
+    // (their translates would be canceled by the pin guard anyway).
+    const nodes = this.editor.getNodes().filter((n) => n.dgNodeType !== 'output');
     if (nodes.length === 0) return;
     const byId = new Map(nodes.map((n) => [n.id, n]));
     const edges: LayoutEdge[] = [];
@@ -1965,11 +2416,20 @@ export class FlowEditor {
     if (this.keydownHandler) window.removeEventListener('keydown', this.keydownHandler);
     if (this.pointerDownTracker)
       window.removeEventListener('pointerdown', this.pointerDownTracker, true);
+    if (this.pointerUpTracker)
+      window.removeEventListener('pointerup', this.pointerUpTracker, true);
     if (this.hoverDocsEl) this.hoverDocsEl.remove();
     if (this.minimapEl) this.minimapEl.remove();
     // Null these so a still-pending rAF redraw after teardown is a no-op.
     this.minimapEl = null;
     this.minimapSvg = null;
+    this.stripResizeObserver?.disconnect();
+    this.stripResizeObserver = null;
+    if (this.outputStripEl) this.outputStripEl.remove();
+    this.outputStripEl = null;
+    this.stripChipsEl = null;
+    this.chipSocketSubs.clear();
     this.area.destroy();
+    this.canvasWrap.remove();
   }
 }

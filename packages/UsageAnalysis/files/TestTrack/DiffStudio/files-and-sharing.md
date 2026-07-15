@@ -1,3 +1,14 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - files-and-sharing.test.ts
+related_bugs: []
+---
+
 ### Files & Sharing
 
 1. File Preview:

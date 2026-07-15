@@ -4,7 +4,7 @@ import {awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 
 import {
   META_COLUMNS, PUBLISHED_TAGS, PublishOptions, PublishedMetadata,
-  slugifyTarget,
+  slugifyProject,
 } from './publish-state';
 import {trimEnrichmentForPublish, trimForPublish} from './trim-dataframe';
 import {
@@ -135,7 +135,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
         pThreshold = optsAny.pThreshold;
     } catch { /* defaults */ }
 
-    const slug = slugifyTarget(opts.target);
+    const slug = slugifyProject(opts.project);
     const priorVersionN = parsePriorVersion((opts.priorVersion as any)?.name);
     const version = priorVersionN > 0 ? priorVersionN + 1 : 1;
     const publishId = generateUuid();
@@ -149,7 +149,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     })();
 
     const meta: PublishedMetadata = {
-      target: opts.target,
+      project: opts.project,
       publishedAt,
       publishedBy,
       publishedByEmail,
@@ -203,8 +203,8 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     }
     const umbrellaClient = dapiAny.spaces.id(umbrella.id);
 
-    // ─── Step 5 — ensure per-target child Space ─────────────────────────────────
-    pi.description = 'Ensuring per-target Space...';
+    // ─── Step 5 — ensure per-project child Space ────────────────────────────────
+    pi.description = 'Ensuring per-project Space...';
     const childName = `${reviewNamePrefix()}-${slug}`;
     let childSpace: any = null;
 
@@ -231,7 +231,7 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
         childSpace = await findChildByName();
         if (!childSpace) {
           throw new Error(
-            `Per-target child Space '${childName}' exists but could not be resolved via ` +
+            `Per-project child Space '${childName}' exists but could not be resolved via ` +
             `umbrella children.list() (msg: ${msg}).`);
         }
       }
@@ -244,10 +244,10 @@ export async function publishAnalysis(df: DG.DataFrame, opts: PublishOptions): P
     const projectName = `${reviewNamePrefix()}-${slug}-v${version}-${dateStr}`;
     (project as any).name = projectName;
     // Set friendlyName explicitly so the platform doesn't "humanize" the slug
-    // (e.g. DMD → "DM D"). Use the original target verbatim for a clean label,
+    // (e.g. DMD → "DM D"). Use the original project name verbatim for a clean label,
     // and derive the label's leading words from the (configurable) name prefix.
     (project as any).friendlyName =
-      `${reviewNamePrefix().replace(/-/g, ' ')} ${opts.target} v${version} ${dateStr}`;
+      `${reviewNamePrefix().replace(/-/g, ' ')} ${opts.project} v${version} ${dateStr}`;
 
     try { (project as any).options[PUBLISHED_TAGS.PUBLISHED_ID] = publishId; } catch { /* swallow */ }
     // Step 9 writes the supersede pointer on the prior project; the NEW

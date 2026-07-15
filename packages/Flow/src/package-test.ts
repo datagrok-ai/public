@@ -27,6 +27,9 @@ import './tests/func-editor-tests';
 import './tests/entity-tests';
 import './tests/editor-bridge-tests';
 import './tests/invalidation-tests';
+import './tests/selection-tests';
+import './tests/suggestion-tests';
+import './tests/output-strip-tests';
 
 export let _package = new DG.Package();
 export { tests };

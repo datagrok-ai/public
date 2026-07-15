@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.46.8 (2026-07-13)
+
+* Viewers: Re-set the options on them when remounted. Fixes the bug with incorrectly configured viewers.
+
 ## 1.46.6 (2026-07-07)
 
 * Model catalog: add a `roleOnlyFilter` config option and a `getModelFilter` helper to filter models by the model role only (faster); the legacy tag-or-role filter stays the default

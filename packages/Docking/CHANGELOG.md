@@ -1,5 +1,9 @@
 # Docking changelog
 
+## v.next
+
+* Docker: autodock — raised build-only base env floors (urllib3>=2.7, msgpack>=1.2.1) and removed stale py2.7 ensurepip bootstrap wheels (VEX)
+
 ## 1.3.2 (2025-04-24)
 
 * Docking: Demo improvements

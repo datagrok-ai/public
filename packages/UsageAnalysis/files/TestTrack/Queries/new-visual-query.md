@@ -1,3 +1,14 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - visual-query-and-params.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases** > **Postgres** > **NorthwindTest** > **Schemas** > **public**. A list of tables opens
 3. Right-click the **customers** table and select **New Visual Query...** from the context menu
 5. Set **Group by** to `companyname`

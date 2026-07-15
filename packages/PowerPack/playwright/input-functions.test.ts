@@ -208,10 +208,14 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     try { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
     catch (_) { df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv'); }
     grok.shell.addTableView(df);
-    await new Promise<void>((resolve) => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
+    // Molecule semtype detection needs the Chem package (RDKit) loaded and runs asynchronously —
+    // warm up the bundle and poll until the Structure column is classified, rather than resolving on
+    // the first (possibly non-Molecule) semtype event, which left semType='' on a cold session.
+    try { await grok.functions.call('Chem:getRdKitModule', {}); } catch (_) { /* detector may still run */ }
+    for (let i = 0; i < 60; i++) {
+      if (df.col('Structure')?.semType === 'Molecule') break;
+      await new Promise((r) => setTimeout(r, 500));
+    }
     const hasMolecule = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i))
       .some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
     if (hasMolecule) {

@@ -108,14 +108,14 @@ Only affects rendering — the Datagrok system prompt is still active unless `no
 
 **`!cmd`**: executes the shell command via bash without `DATAGROK_PROMPT`. The `!` prefix is stripped and
 the message is sent with `systemPromptMode: 'bash'` (a minimal "output only stdout" system prompt defined in
-`claude-runtime/src/server.ts`). Works in any mode, independent of `rawRender`.
+`claude-runtime/src/prompts.ts`). Works in any mode, independent of `rawRender`.
 `!!cmd` escapes to a literal `!cmd` prompt through the normal AI pipeline.
 
 **`/noprompt`**: client-side slash command intercepted in `setupShellAIPanelUI()` before reaching Claude.
 Calls `panel.enableNoPrompt()`: resets the session, clears output, enables `rawRender`, sets `_noPrompt = true`.
 All subsequent messages in that session use `systemPromptMode: 'none'` (empty system prompt — pure Claude Code).
 
-**System prompt is per-message, not per-session.** `buildOptions()` in `claude-runtime/src/server.ts` is called
+**System prompt is per-message, not per-session.** `buildOptions()` in `claude-runtime/src/query-options.ts` is called
 fresh for every WebSocket message. The `resume` field carries conversation history only, so `systemPromptMode`
 can vary per turn without restarting the session.
 
@@ -164,8 +164,8 @@ Also provides `buildViewContext()` — serializes the current view (table column
 
 ### SQL Tools (`src/db/sql-tools.ts`)
 
-`SQLGenerationContext` — manages tool execution for natural-language-to-SQL generation. Supports multiple
-catalogs. Tool calls (`db_list_schemas`, `db_get_table_info`, etc.) are defined in the MCP server and forwarded from the Claude runtime to the browser for execution.
+`SQLGenerationContext` — client-side natural-language-to-SQL generation against a connection's schema,
+supporting multiple catalogs. Backs the `DBAIPanel` query-editor assistant.
 
 ### DB Index Tools (`src/db/db-index-tools.ts`)
 
@@ -174,7 +174,7 @@ Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
+- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `final`, `error`, `aborted`, `queued`, `input_request`, `sync_status`, `auth_url` / `auth_done` / `auth_error`. The `src/` is split into `server.ts` (transport + `/ws` dispatch, auth subprocess, provider config, startup), `prompts.ts` (system prompts), `query-options.ts` (SDK query config + browser MCP tools + tool-activity summaries), and `session.ts` (session registry, streaming, turn queue, abort). Includes the skills & knowledge sync system (`src/sync/`, `src/user/`) — see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ### Deprecated Code (`src/depr/`)
@@ -188,6 +188,26 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 - `ClaudeRuntimeClient.getInstance()` — WebSocket connection to Claude runtime
 - `CombinedAISearchAssistant.instance` — AI search routing
 - `UsageLimiter.getInstance()` — daily request limit enforcement
+
+## Subscription authorization (UI)
+
+On a Claude **subscription** (mounted `~/.claude/.credentials.json`, not an API key) the token
+expires periodically. The panel renews it inline via a browser-relayed `claude auth login`: the user
+opens the OAuth page, pastes the returned code, and clicks **Submit**; on success the strip turns
+green and the message can be re-sent. Handlers `handleAuthStart` / `handleAuthCode` in
+[`server.ts`](dockerfiles/claude-runtime/src/server.ts) drive the CLI; UI in
+[`src/ai/ui.ts`](src/ai/ui.ts); `auth_*` messages in [CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md).
+
+| Session expired | Code pasted | Session renewed |
+|---|---|---|
+| ![](docs/images/auth-session-expired.png) | ![](docs/images/auth-code-entered.png) | ![](docs/images/auth-session-renewed.png) |
+
+## Rebuilding the container images
+
+`claude-runtime` and `mcp-server` code — `dockerfiles/*/src/`, the runtime `plugin/` skills and
+`prompts.ts`, the Dockerfiles — compiles **inside** the image. `grok publish` / `npm run build`
+rebuild only the browser bundle, not the images: rebuild the image (`docker build` in the container
+dir) and redeploy after any change under `dockerfiles/`, or the container keeps serving old code.
 
 ## Configuration
 

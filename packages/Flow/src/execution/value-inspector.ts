@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /** Two views over a node's runtime state, used by different surfaces:
  *
  *  - {@link buildExecutionMeta} — status badge, duration, error/stack trace,
@@ -18,6 +19,44 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
 import {setTid} from '../utils/test-ids';
+import * as rxjs from 'rxjs';
+
+// ---------- preview-cell focus hook (suggestion-engine signal) ----------
+
+/** Host callback fired when the user clicks a cell in a preview grid — the
+ *  suggestion engine treats the clicked value (semType + value) as a context
+ *  signal ("clicked a Molecule → offer similarity/substructure searches"). */
+let _previewCellFocusHandler:
+  ((cell: {semType: string | null; column: string; value: unknown}) => void) | null = null;
+
+export function setPreviewCellFocusHandler(
+  h: ((cell: {semType: string | null; column: string; value: unknown}) => void) | null,
+): void {
+  _previewCellFocusHandler = h;
+}
+
+let previewHookSub: rxjs.Subscription | null = null;
+/** Report current-cell changes of a preview grid's dataframe to the host.
+ *  The df is a preview clone that dies with the panel content, so the
+ *  subscription's lifetime is bounded by it. */
+function hookPreviewCellFocus(df: DG.DataFrame): void {
+  previewHookSub?.unsubscribe();
+  try {
+    previewHookSub = df.onCurrentCellChanged.subscribe(() => {
+      if (!_previewCellFocusHandler) return;
+      try {
+        const cell = df.currentCell;
+        const col = cell?.column;
+        if (!col) return;
+        _previewCellFocusHandler({
+          semType: col.semType ? String(col.semType) : null,
+          column: col.name,
+          value: cell.value,
+        });
+      } catch {/* cell read failed mid-update — skip this signal */}
+    });
+  } catch {/* observable unavailable on odd proxies — no signal, no harm */}
+}
 
 // ---------- property-panel side: status, duration, metadata ----------
 
@@ -212,10 +251,23 @@ export function buildValuePreviews(
   // passthrough table (it's kept in the state for the column picker / inspect,
   // but here it's redundant with, and noisier than, the column itself).
   const hasColumnOutput = entries.some(([, s]) => s.type === 'column');
+  const blocks: HTMLElement[] = [];
   for (const [name, summary] of entries) {
     if (hasColumnOutput && summary.type === 'dataframe' && name.endsWith('(modified)')) continue;
     const preview = buildPreview(name, summary, onEditViewer);
-    if (preview) container.appendChild(preview);
+    if (preview) blocks.push(preview);
+  }
+  // A node can surface several renderable values at once — a multi-output func
+  // (two dataframes), or a mutator with no output but two modified input tables.
+  // Lay them side by side with draggable vertical dividers; a lone value fills
+  // the panel as before.
+  if (blocks.length === 1)
+    container.appendChild(blocks[0]);
+  else if (blocks.length > 1) {
+    const split = ui.splitH(blocks, null, true);
+    split.style.width = '100%';
+    split.style.height = '100%';
+    container.appendChild(split);
   }
   return container;
 }
@@ -234,12 +286,13 @@ export function buildPreview(
     wrap.style.position = 'relative';
     try {
       df.meta.detectSemanticTypes();
+      hookPreviewCellFocus(df);
       const grid = DG.Viewer.grid(df);
-      grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+      grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
       wrap.appendChild(grid.root);
       wrap.appendChild(addWorkspaceButton('Add table to workspace',
         () => grok.shell.addTableView(df.clone())));
-    } catch { /* grid render failed — show nothing rather than a placeholder */ }
+    } catch {/* grid render failed — show nothing rather than a placeholder */}
     return wrap;
   }
   case 'column': {
@@ -253,8 +306,9 @@ export function buildPreview(
       wrap.style.position = 'relative';
       try {
         df.meta.detectSemanticTypes();
+        hookPreviewCellFocus(df);
         const grid = DG.Viewer.grid(df);
-        grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
         wrap.appendChild(grid.root);
         // Scroll to the produced column once the grid has laid out (it isn't
         // attached yet here — defer so the horizontal scroll actually applies).
@@ -277,13 +331,14 @@ export function buildPreview(
       wrap.style.position = 'relative';
       try {
         df.meta.detectSemanticTypes();
+        hookPreviewCellFocus(df);
         const grid = DG.Viewer.grid(df);
-        grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
         wrap.appendChild(grid.root);
         wrap.appendChild(addWorkspaceButton('Add column to workspace',
           () => grok.shell.addTableView(df.clone())));
         return wrap;
-      } catch { /* grid failed — fall back to the text sample below */ }
+      } catch {/* grid failed — fall back to the text sample below */}
     }
     if (!summary.sample || summary.sample.length === 0) return null;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
@@ -336,7 +391,7 @@ export function buildPreview(
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     wrap.style.position = 'relative';
     obj.root.style.width = '100%';
-    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 10px)';
+    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 16px)';
     wrap.appendChild(obj.root);
     // A viewer's full settings are editable live: a small gear in the top-right
     // corner (overlaid — no vertical space) hands the viewer to the host

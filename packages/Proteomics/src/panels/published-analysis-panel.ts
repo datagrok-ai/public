@@ -12,7 +12,7 @@ import {getGroups} from '../analysis/experiment-setup';
 /**
  * Reviewer-side audit context panel. Opens when a reviewer clicks a protein
  * row in a published Project. Surfaces the metadata the analyst stamped at
- * publish time (DE method, thresholds, group names, target, share date, sharer
+ * publish time (DE method, thresholds, group names, project, share date, sharer
  * name) plus PUB-13 mailto button. First-line `isPublished(df)` guard ensures
  * it does NOT render on the analyst's live working DataFrame.
  *
@@ -123,7 +123,7 @@ export function publishedAnalysisPanel(proteinId: string): DG.Widget {
     ? `${meta.pThreshold} (FDR-adjusted)`
     : '(unknown)';
 
-  body.appendChild(fieldRow('Target', meta.target || '(unknown)'));
+  body.appendChild(fieldRow('Project', meta.project || '(unknown)'));
   body.appendChild(fieldRow('Shared', dateSlice(meta.publishedAt)));
   body.appendChild(fieldRow('Shared by', meta.publishedBy || '(unknown)'));
   body.appendChild(fieldRow('Method', methodLabel(meta.deMethod)));

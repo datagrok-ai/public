@@ -15,9 +15,9 @@ import type {RenderEmit} from 'rete-react-plugin';
 import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
-import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, isExecKey, nodeMissingRequirements} from './scheme';
+import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements} from './scheme';
 import {TypedSocket} from './sockets';
-import {getSlotColor} from '../types/type-map';
+import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
 import {tid} from '../utils/test-ids';
 import {summarizeNode} from '../summary/summary-generator';
 
@@ -40,20 +40,31 @@ function isConnected(node: FlowNode, side: 'input' | 'output', key: string): boo
 
 export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const node = props.data;
+  // Output nodes live docked in the Outputs strip (FlowEditor pins their
+  // position) and render as compact rows, not full node cards.
+  if (node.dgNodeType === 'output') return OutputRowComponent(props);
   const collapsed = node.collapsed === true;
   // Exec (execution-ordering) ports render separately at the top corners — keep
-  // them out of the regular data-socket rows.
+  // them out of the regular data-socket rows. Hidden inputs (and their
+  // pass-throughs) render only when connected — their slots stay data-carrying,
+  // the user just never sees an unwired one.
+  const hiddenRow = (key: string, side: 'input' | 'output'): boolean => {
+    const base = side === 'input' ? key : (key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : '');
+    return node.hiddenInputs.has(base) && !isConnected(node, side, key);
+  };
   const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
-    .filter(([key]) => !isExecKey(key));
+    .filter(([key]) => !isExecKey(key) && !hiddenRow(key, 'input'));
   const outputs = (Object.entries(node.outputs) as Array<[string, ClassicPreset.Output<TypedSocket> | undefined]>)
-    .filter(([key]) => !isExecKey(key));
+    .filter(([key]) => !isExecKey(key) && !hiddenRow(key, 'output'));
   const execIn = node.inputs[EXEC_IN_KEY] as ClassicPreset.Input<TypedSocket> | undefined;
   const execOut = node.outputs[EXEC_OUT_KEY] as ClassicPreset.Output<TypedSocket> | undefined;
   const controls = Object.entries(node.controls) as Array<[string, ClassicPreset.Control | undefined]>;
   const ptCount = node.passthroughCount ?? 0;
 
+  // Title bars get the pastel of the node's identity color — vivid hues are
+  // kept for small surfaces (minimap, sockets) where saturation aids legibility.
   const titleColor = (node as unknown as {color?: string}).color;
-  const titleStyle: React.CSSProperties = titleColor ? {background: titleColor} : {};
+  const titleStyle: React.CSSProperties = titleColor ? {background: pastelize(titleColor)} : {};
 
   const dgStatus = (node as unknown as {dgStatus?: string}).dgStatus ?? 'idle';
   const statusText = (node as unknown as {statusText?: string}).statusText ?? '';
@@ -98,9 +109,19 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       {/* Execution-ordering ports — top corners (KNIME flow-variable style).
           exec-in (left) accepts "run after" predecessors; exec-out (right)
           drives successors. Always rendered so edges stay attached even when
-          the node is collapsed. */}
-      <div className="ff-node-exec-row">
-        <span className="ff-exec-port ff-exec-in" data-testid={tid('exec-in')} title="Run after (order in)">
+          the node is collapsed — but only *visible* when one of them is wired,
+          the node is hovered, or an order drag is in progress (CSS keys off
+          data-wired / .ff-node:hover / .ff-connecting-order). */}
+      <div
+        className="ff-node-exec-row"
+        data-wired={(isConnected(node, 'input', EXEC_IN_KEY) || isConnected(node, 'output', EXEC_OUT_KEY)) ?
+          'true' : 'false'}
+      >
+        <span
+          className="ff-exec-port ff-exec-in" data-testid={tid('exec-in')}
+          title={'Run order: this node waits for its predecessors. Drag a wire from another node\'s ' +
+            'order square to here to make this node run after it — sequencing only, no data flows.'}
+        >
           {execIn && (
             <RefSocket
               name="exec-in-socket"
@@ -112,7 +133,11 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
             />
           )}
         </span>
-        <span className="ff-exec-port ff-exec-out" data-testid={tid('exec-out')} title="Run before (order out)">
+        <span
+          className="ff-exec-port ff-exec-out" data-testid={tid('exec-out')}
+          title={'Run order: drag a wire from here to another node\'s order square to make that node ' +
+            'run after this one — sequencing only, no data flows.'}
+        >
           {execOut && (
             <RefSocket
               name="exec-out-socket"
@@ -185,12 +210,12 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
             </div>
 
             <div className="ff-node-outputs">
-              {outputs.map(([key, output], idx) => output && (
+              {outputs.map(([key, output]) => output && (
                 <div
                   key={key}
                   className={
                     'ff-socket-row ff-socket-row-output' +
-                    (idx < ptCount ? ' ff-socket-row-passthrough' : '')
+                    (ptCount > 0 && key.endsWith('__pt') ? ' ff-socket-row-passthrough' : '')
                   }
                   data-testid={tid('socket-output', key)}
                   title={node.outputDescriptions?.[key] || undefined}
@@ -258,24 +283,38 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   );
 }
 
+/** Output nodes have no canvas presence at all — their visible form is a
+ *  screen-space chip inside the Outputs strip (built by `FlowEditor`), and
+ *  their wire endpoints come from the analytic chip-aware socket-position
+ *  watcher, not from DOM. Render an empty hidden placeholder so the rete node
+ *  view exists but never paints, scales, or intercepts pointer events. */
+function OutputRowComponent(props: NodeProps): React.JSX.Element {
+  return <div style={{display: 'none'}} data-node-id={props.data.id} />;
+}
+
 interface SocketProps {
   data: TypedSocket;
 }
 
-/** Colored socket dot. We expose the type color twice:
- *  - `background` paints the regular (non-pass-through) dot
- *  - `--socket-color` CSS var is read by `.ff-socket-row-passthrough .ff-socket`
- *    to color the dashed ring (where `background` is forced white). */
+/** Socket chip: a single type letter colored like the Column Manager's type
+ *  column (`t` table, `s` string, `i` int, `d` double, …; see `getSlotLetter`).
+ *  The type color travels as the `--socket-color` CSS var — `.ff-socket` paints
+ *  the letter and ring with it, and `.ff-socket-row-passthrough .ff-socket`
+ *  reads it for the dashed ring. An `order` socket stays a bare gray square
+ *  (no letter) and gets NO title of its own — a nested title would shadow the
+ *  exec-port wrapper's plain-language "Run order: drag…" explanation with a
+ *  bare "order". */
 export function FlowSocketComponent(props: SocketProps): React.JSX.Element {
   const color = getSlotColor(props.data.dgType);
+  const isOrder = props.data.dgType === ORDER_SOCKET_TYPE;
   return (
     <div
       className="ff-socket"
       data-testid={tid('socket', props.data.dgType)}
-      style={{background: color, ['--socket-color' as never]: color}}
-      title={props.data.dgType}
+      style={{['--socket-color' as never]: color}}
+      title={isOrder ? undefined : props.data.dgType}
       data-type={props.data.dgType}
-    />
+    >{isOrder ? null : getSlotLetter(props.data.dgType)}</div>
   );
 }
 

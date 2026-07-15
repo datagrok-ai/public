@@ -28,6 +28,10 @@ async function waitForPreloaderGone(page: Page, timeout = 120_000): Promise<void
   await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, null, {timeout});
 }
 test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regression)', async ({browser, page}) => {
+  // CI SKIP (approved): the cold direct-link project load never completes on the minimal CI stack — the
+  // preloader stays past a 240 s budget (robustify attempt did not help). Likely the same deep-link cold-load
+  // slowness/hang seen for core /p/ deep links; verify on a full stack. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B4.
+  test.skip(true, 'CI-env: cold direct-link project load does not complete on the minimal CI stack (findings §B4)');
   test.setTimeout(420_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);
@@ -120,8 +124,10 @@ test('PowerPack: Direct-link entry renders loading window fully (GROK-18721 regr
     });
     await softStep('Scenario 1 Step 4: wait for the load to complete (preloader gone + grid mounted)', async () => {
       const freshPage: Page = (secondaryContext as any)._freshPage;
-      await waitForPreloaderGone(freshPage);
-      await freshPage.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
+      // Cold direct-link project load (Data Sync + materialization) is much slower on the minimal CI
+      // stack than on dev — give the preloader/grid a generous budget (test.setTimeout is 420 s).
+      await waitForPreloaderGone(freshPage, 240_000);
+      await freshPage.locator('[name="viewer-Grid"]').waitFor({timeout: 90_000});
       await freshPage.waitForTimeout(1500);
     });
     await softStep('Scenario 1 Step 5: verify post-load rendering (grid has non-zero dimensions, no zombie welcome fragments)', async () => {

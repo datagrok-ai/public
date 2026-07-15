@@ -226,16 +226,25 @@ export class ExecutionController {
     if (!node) return false;
     // Inputs/outputs have nothing to recompute on their own.
     if (node.dgNodeType !== 'func' && node.dgNodeType !== 'utility') return false;
+    const anyConnected = Object.keys(node.inputs)
+      .some((k) => !isExecKey(k) && !!this.flow.getInputSource(nodeId, k));
+    return anyConnected && this.readyForLiveRun(nodeId);
+  }
+
+  /** Inputs satisfied for a run that must not touch upstream: no missing
+   *  requirements, and every connected input is fed by a captured live value.
+   *  Unlike {@link canRerunNode}, a node with no connected inputs qualifies —
+   *  an Open File runs from its parameters alone. */
+  private readyForLiveRun(nodeId: string): boolean {
+    const node = this.flow.getNodeById(nodeId);
+    if (!node) return false;
     if (nodeMissingRequirements(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
-    let anyConnected = false;
     for (const key of Object.keys(node.inputs)) {
       if (isExecKey(key)) continue;
       const src = this.flow.getInputSource(nodeId, key);
-      if (!src) continue;
-      anyConnected = true;
-      if (!this.hasLiveValue(src.node.id, src.outputKey)) return false;
+      if (src && !this.hasLiveValue(src.node.id, src.outputKey)) return false;
     }
-    return anyConnected;
+    return true;
   }
 
   /** Re-run just this node using upstream values captured from a prior run — its
@@ -269,6 +278,44 @@ export class ExecutionController {
    *  silent — no validation toasts, no run dialog, no selection stealing —
    *  because it fires after every edit. The outcome tells the scheduler
    *  whether to retry ('busy') or wait for the next edit ('skipped'). */
+  /** Debounced live-node entry — the global autorun toggle is OFF and an edit
+   *  touched live-by-default nodes (Open File, viewers, …). Runs ONLY the given
+   *  nodes, and only those whose inputs are satisfied (see
+   *  {@link readyForLiveRun}); everything else on the canvas — including the
+   *  live nodes' own downstream — is left alone. Unready live nodes are
+   *  silently dropped; if none remain, nothing runs. */
+  runLiveNodes(liveIds: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
+    if (this.state.isRunning) return 'busy';
+    // A mid-edit graph is often momentarily invalid; just wait for more edits.
+    if (validateGraph(this.flow).some((e) => e.severity === 'error')) return 'skipped';
+
+    const runSet = new Set<string>();
+    for (const id of liveIds) {
+      const node = this.flow.getNodeById(id);
+      // An input node would emit `//input:` headers → a dialog; never live-run.
+      if (!node || node.dgNodeType === 'input') continue;
+      if (this.readyForLiveRun(id)) runSet.add(id);
+    }
+    if (runSet.size === 0) return 'skipped';
+
+    const restorePreviewId = this.autorunPreviewNodeId;
+    this.autorunPreviewNodeId = null;
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: runSet,
+      liveExternalInputs: true,
+      preserveState: true,
+      skipValidation: true,
+      onComplete: () => {
+        if (!restorePreviewId) return;
+        const node = this.flow.getNodeById(restorePreviewId);
+        const state = this.state.getNodeState(restorePreviewId);
+        if (node && state?.status === NodeExecStatus.completed)
+          this.outputPreview.showForNode(node, state);
+      },
+    });
+    return 'started';
+  }
+
   runAutorun(dirty: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
     if (this.state.isRunning) return 'busy';
     // A mid-edit graph is often momentarily invalid; just wait for more edits.

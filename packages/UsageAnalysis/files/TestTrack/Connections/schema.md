@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 07-schema.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse > Databases**.
 2. Expand the **Postgres**.
 3. Right-click the `Northwind` connection and select **Browse** from the context menu.

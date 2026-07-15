@@ -17,10 +17,6 @@ export interface McpInputs {
   list_files: {path?: string};
   download_file: {path?: string};
   upload_file: {path?: string};
-  index_codebase: {path?: string};
-  search_code: {query?: string};
-  get_indexing_status: {path?: string};
-  clear_index: {path?: string};
   datagrok_exec: {code?: string};
   datagrok_verify: {assertion?: string; description?: string};
   datagrok_show_entities: {entities?: any[]};

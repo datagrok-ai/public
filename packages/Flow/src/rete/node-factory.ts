@@ -32,6 +32,7 @@ import {ViewerNode, CORE_VIEWER_SPECS, genericViewerSpec, VIEWER_TYPE_PREFIX, Vi
 import {
   getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName, safeGet,
 } from '../utils/dart-proxy-utils';
+import {propertyNameToFriendly} from '../utils/naming';
 import {EXCLUDED_FUNC_NQNAMES} from './excluded-funcs';
 
 /** Scalar property types — a function whose inputs AND outputs are *only* these
@@ -412,8 +413,27 @@ export function createNode(typeName: string): FlowNode | null {
   if (!factory) return null;
   const node = factory();
   node.dgTypeName = typeName;
+  humanizeSlotLabels(node);
   addExecPorts(node);
   return node;
+}
+
+/** A slot label that still equals its raw key is a fallback, not a caption —
+ *  humanize it (core's `propertyNameToFriendly`) so 'table' reads 'Table' and
+ *  a caption-less func output 'maxNumOfSomething' reads 'Max Num Of Something',
+ *  mirroring `ui.input.forProperty`. Runs before the exec ports are added
+ *  (their labels are 'before'/'after' anyway); declared captions and the `→`
+ *  pass-through markers differ from their key and stay untouched. Keys —
+ *  connections, `inputValues`, compilation — are never affected. */
+function humanizeSlotLabels(node: FlowNode): void {
+  const ports = [
+    ...Object.entries(node.inputs as Record<string, {label?: string} | undefined>),
+    ...Object.entries(node.outputs as Record<string, {label?: string} | undefined>),
+  ];
+  for (const [key, port] of ports) {
+    if (port && port.label === key)
+      port.label = propertyNameToFriendly(key);
+  }
 }
 
 /** Add the execution-ordering port pair to a node: an exec-in (accepts many
@@ -520,6 +540,13 @@ const COMMON_NEXT_FUNCS = new Set([
 function simpleFuncName(typeName: string): string {
   const last = typeName.split('/').pop() ?? typeName;
   return (last.split(':').pop() ?? last).toLowerCase();
+}
+
+/** Whether a node type is one of the common next pipeline steps (Join,
+ *  AddNewColumn, Aggregate, …) — shared by the drag-out menu ranking and the
+ *  toolbox suggestion engine. */
+export function isCommonNextFunc(typeName: string): boolean {
+  return COMMON_NEXT_FUNCS.has(simpleFuncName(typeName));
 }
 
 /** Canvas context the drag-out suggestion menu ranks against — what the drag

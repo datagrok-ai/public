@@ -18,7 +18,7 @@ import {sliceDownFrom} from '../compiler/graph-compiler';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
-import {AutorunScheduler} from '../execution/autorun';
+import {AutorunScheduler, isAutorunByDefault} from '../execution/autorun';
 import {PropertyPanel} from '../panel/property-panel';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
 
@@ -485,6 +485,141 @@ category('Flow: autorun', () => {
     s.onEdit({kind: 'node-added', nodeId: 'x'}, new Set()); // non-invalidating
     await sleep(60);
     expect(runs, 0);
+  });
+
+  test('live-by-default nodes schedule runs even while the toggle is off', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20, (id) => id === 'viewer');
+    // The toggle stays OFF. A non-live edit schedules nothing…
+    s.onEdit(edit('a'), new Set(['a']));
+    await sleep(60);
+    expect(runs.length, 0, 'non-live edit ignored while off');
+    // …an edit whose affected cone touches a live node runs ONLY that node —
+    // the rest of the cone must never run uninvited.
+    s.onEdit(edit('a'), new Set(['a', 'viewer']));
+    await sleep(60);
+    expect(runs.length, 1, 'a live node admitted the run');
+    expect(runs[0].dirty.join(), 'viewer', 'only the live node is handed over');
+    expect(runs[0].liveOnly, true, 'flagged as a live-only run');
+    // With the toggle ON the whole affected slice goes through as before.
+    s.toggle();
+    s.onEdit(edit('a'), new Set(['a', 'b']));
+    await sleep(60);
+    expect(runs[1].dirty.join(), 'a,b', 'toggle on → full affected slice');
+    expect(runs[1].liveOnly, false, 'flagged as a normal autorun');
+  });
+
+  test('a dropped live node and a loaded flow schedule live runs (node-added + kickLive)', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20, (id) => id.startsWith('live'));
+    // Toggle OFF. A plain node drop never schedules…
+    s.onEdit({kind: 'node-added', nodeId: 'plain'}, new Set());
+    await sleep(60);
+    expect(runs.length, 0, 'plain node-added ignored');
+    // …a LIVE node drop does (a file dragged onto the canvas creates a ready
+    // Open File — readiness is re-checked at fire time anyway).
+    s.onEdit({kind: 'node-added', nodeId: 'live1'}, new Set());
+    await sleep(60);
+    expect(runs.length, 1, 'live node-added schedules');
+    expect(runs[0].dirty.join(), 'live1');
+    expect(runs[0].liveOnly, true);
+    // Loading a flow kicks its live nodes only.
+    s.kickLive(['a', 'live2', 'b']);
+    await sleep(60);
+    expect(runs.length, 2, 'kickLive schedules');
+    expect(runs[1].dirty.join(), 'live2', 'only live nodes enter the set');
+    // With the toggle ON, node-added keeps its old no-op semantics.
+    s.toggle();
+    s.onEdit({kind: 'node-added', nodeId: 'live3'}, new Set());
+    await sleep(60);
+    expect(runs.length, 2, 'toggle on → node-added still never schedules');
+  });
+
+  test('runLiveNodes executes only the ready live nodes, never the rest of the canvas', async () => {
+    registerBuiltinNodes();
+    const e = makeEditor();
+    try {
+      const {a, b, c} = await makeChain(e);
+      const ctrl = new ExecutionController(e.flow);
+      // c's input is connected but no upstream value was ever captured →
+      // inputs not satisfied → nothing runs (the old behavior ran EVERYTHING).
+      expect(ctrl.runLiveNodes(new Set([c]), SETTINGS), 'skipped',
+        'unsatisfied inputs never trigger a run');
+      expect(ctrl.state.nodeStates.size, 0, 'no node was touched');
+
+      // The const source runs from its parameters alone — and ONLY it runs.
+      e.flow.getNodeById(a)!.properties['value'] = 'hello';
+      expect(ctrl.runLiveNodes(new Set([a]), SETTINGS), 'started');
+      const done = await until(() => status(ctrl, a) === NodeExecStatus.completed, 8000);
+      expect(done, true, 'the live node ran');
+      expect(status(ctrl, b) === undefined, true, 'downstream b stays untouched');
+      expect(status(ctrl, c) === undefined, true, 'downstream c stays untouched');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a live func with a blank required string param never live-runs', async () => {
+    // An Open File added bare (toolbox double-click, suggestion) has no
+    // fullPath yet — the scheduled live run must quietly no-op instead of
+    // executing OpenFile('').
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      const ctrl = new ExecutionController(e.flow);
+      const missing = nodeMissingRequirements(node, () => false);
+      expect(missing.length > 0, true, 'the node itself reports the unset path ("Needs input")');
+      expect(ctrl.runLiveNodes(new Set([node.id]), SETTINGS), 'skipped', 'blank fullPath → not ready');
+      expect(ctrl.state.nodeStates.size, 0, 'nothing ran');
+
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      const outcome = ctrl.runLiveNodes(new Set([node.id]), SETTINGS);
+      if (outcome !== 'started') {
+        const {validateGraph} = await import('../compiler/validator');
+        const {isInputOptional} = await import('../utils/dart-proxy-utils');
+        console.log('FF-DIAG outcome=' + outcome +
+          ' isRunning=' + ctrl.state.isRunning +
+          ' dgNodeType=' + node.dgNodeType +
+          ' missing=' + JSON.stringify(nodeMissingRequirements(node, (k) => e.flow.isInputConnected(node.id, k))) +
+          ' validation=' + JSON.stringify(validateGraph(e.flow)) +
+          ' inputs=' + JSON.stringify((node.dgFunc?.inputs ?? []).map((p) => ({
+            name: p.name, type: String(p.propertyType), value: node.inputValues[p.name],
+            optional: isInputOptional(p),
+            nullable: (() => { try {return (p as {nullable?: boolean}).nullable;} catch {return 'threw';} })(),
+            connected: e.flow.isInputConnected(node.id, p.name),
+          }))) +
+          ' typeName=' + typeName);
+      }
+      expect(outcome, 'started', 'path set → live run starts');
+      await until(() => {
+        const st = status(ctrl, node.id);
+        return st !== undefined && st !== NodeExecStatus.running;
+      }, 15000);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('isAutorunByDefault: Open File, Add New Column, and viewers are live', async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+    const viewer = createNode('Viewers/Scatter Plot');
+    if (viewer) expect(isAutorunByDefault(viewer), true, 'viewers are live');
+    for (const name of ['OpenFile', 'AddNewColumn']) {
+      const typeName = funcTypeName(name);
+      if (!typeName) continue; // function not present on this stand
+      expect(isAutorunByDefault(createNode(typeName)!), true, `${name} is live`);
+    }
+    expect(isAutorunByDefault(createNode('Utilities/Info')!), false, 'ordinary utilities are not live');
+    expect(isAutorunByDefault(createNode('Inputs/Table Input')!), false, 'inputs are not live');
   });
 
   test('busy postpones and keeps the dirty set; skipped waits for the next edit', async () => {

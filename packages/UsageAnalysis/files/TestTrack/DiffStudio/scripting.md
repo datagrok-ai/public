@@ -1,3 +1,14 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - scripting.test.ts
+related_bugs: []
+---
+
 ### Verify Scripting and Model Interaction in Diff Studio
 
 1. Open **Diff Studio**. Open JavaScript Script:

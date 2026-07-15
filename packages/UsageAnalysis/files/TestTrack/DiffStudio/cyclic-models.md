@@ -1,3 +1,14 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - cyclic-models.test.ts
+related_bugs: []
+---
+
 ### Cyclic Models in Diff Studio
 
 1. Open **Diff Studio** and Load **PK-PD Model**:

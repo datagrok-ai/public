@@ -5,5 +5,5 @@
 #input: column_list cols
 #output: dataframe result
 
-DeleteColumns(df, [columns[0]])
+DeleteColumns(df, [cols.first])
 result = df

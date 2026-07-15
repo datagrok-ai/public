@@ -2,6 +2,131 @@
 
 ## v.next
 
+* Introduced the Outputs strip: a thin vertical "Outputs" column outside the canvas viewport (graph content can never pan or fit behind it) that owns every flow output — Table/Value Output nodes render as small fixed-size chips inside the strip (one-letter type; the tooltip names the output, its type, and what feeds it) instead of free-floating cards; chips are screen-space, so zoom and pan never move or resize them, with wires plugging into the canvas edge at the chip's row; any output socket dragged onto the strip publishes that value as a flow output (auto-named, auto-typed), and the strip lights up as a drop target during output drags; the data model, serialization, and compilation are unchanged, so existing flows load as-is with their outputs docked
+* Context panel: Title, metadata chips, and Description now share one aligned header block; the node and function descriptions are combined into the single editable Description input (function text is the fallback)
+* Context panel: Replaced the Function pane with compact chips (full name, package, roles, tags); the parameters pane is titled with the function name and expanded by default
+* Order ports: now hidden unless wired, hovered, or mid-order-drag (with pointer-events disabled while invisible), and carry plain-language tooltips explaining run-order wiring
+* Order drags: dimming + green highlight of every other node's opposite order square while dragging, and dropping on a node body auto-connects its order port (no aiming at the small square)
+* Humanized caption-less parameter names everywhere (node slot labels, context-panel rows, connection endpoints) mirroring core's propertyNameToFriendly — maxNumOfSomething reads "Max Num Of Something", matching ui.input.forProperty; declared captions still win; all-caps acronyms (MW, HBA) are preserved instead of core's Mw/Hba folding
+* Node title bars are now pastel (identity hue mixed 60% with white via `pastelize`) so nodes blend with the canvas; vivid hues stay on small surfaces (minimap, sockets, connections)
+* Node identity colors now come from the platform's categorical palette (`DG.Color.categoricalPalette`) instead of bespoke Material hues, so nodes wear the colors users know from categorical coloring across Datagrok
+* Live-by-default nodes: Open File, Add New Column, and all viewers now run automatically — on change, on a ready drop (file dragged onto the canvas), and on flow load — even with the autorun toggle off; only the listed nodes run, each gated on satisfied inputs, never the rest of the canvas (editable lists `AUTORUN_FUNC_NAMES` / `AUTORUN_NODE_TYPES` in execution/autorun.ts)
+* Socket dots replaced with Column Manager-style type-letter chips (`t` table, `s` string, `i` int, `d` double, …) — column-data types use core's exact `Color.typeColors` letter+color pairs, unknown types get a gray first-letter chip; hover/connect animations and pass-through dashing preserved
+* Suggestions pane: the bottom of the toolbox (minimizable via caret) now ranks the ~10 most likely next steps from the full canvas context — detected semantic types in a node's data suggest domain operations (Molecule columns → Chem descriptors/properties, Macromolecule → Bio To Atomic Level/MSA), a molecule clicked in the output preview suggests similarity/substructure searches prefilled with that value, selecting two tables suggests Join Tables wired to both, and a single table offers the common next steps, matching viewers, and outputs; suggestions add like toolbox nodes — double-click, or drag onto the canvas (wiring and prefills apply either way)
+* Selection now matches the platform's selectRows conventions: Shift+drag draws the area-select marquee (was Ctrl+drag) that adds the covered nodes — Ctrl at mouse-up removes them; Shift+click adds, Ctrl+click toggles, Ctrl+Shift+click removes a node; Ctrl+A / Ctrl+Shift+A select / deselect all; the marquee wears the platform look (black stroke, light-blue fill)
+* Suggestions: with two tables selected, the combiners (Join Tables & co) now rank above per-table suggestions like cheminformatics matches
+* Required inputs now cover every non-optional parameter without a declared default (not just tables/columns): the node shows "Needs input" until the value is connected or filled, and no run — live-by-default, autorun, full run, or rerun — executes it before that; fixes a bare Open File live-running with no `fullPath`
+* Context panel: Connections pane shows only wired slots — each row naming the node and slot at the far end (`table ← Open File · result`), order edges as "runs after/before" facts — flags missing required inputs/values in amber, and auto-expands when something is missing
+* Introduced per-function input overrides (`HIDDEN_FUNC_INPUTS` / `CUSTOM_FUNC_INPUT_EDITORS` in utils/func-input-overrides.ts): Add New Column's `subscribeOnChanges`/`errorBehavior` no longer clutter the node or the context panel (still compiled and round-tripped in creation scripts), and Open File's `fullPath` is now edited with a proper file input instead of a plain text field
+* Introduced function wrappers (`FUNC_WRAPPERS`): a function with an awkward signature can expose reshaped, Flow-friendly node inputs that fold back into the real arguments at compile time — Append Tables (previously unwirable: it takes a `dataframe_list`) now exposes two plain table inputs, joins the two-table suggestions, and auto-wires
+
+### Toolbox sections are now platform accordions
+
+* The function browser's collapsible sections (Files, Queries, Viewers, Widgets, the built-ins, and
+  the function categories) are now a standard **`ui.accordion`** instead of hand-rolled collapsible
+  divs — platform look & feel, lazy pane content (a collapsed section never builds its items), and
+  **self-persisted expand/collapse state** (`localStorage['Accordion:funcflow.toolbox']`, keyed by
+  pane name; the per-connection query groups are a nested accordion under
+  `Accordion:funcflow.toolbox.queries`). Category counts render as the pane's count badge instead of
+  being baked into the title.
+* While a search is active every matching section is still forced open — on an **unkeyed** accordion,
+  so the forced states never overwrite the user's saved ones.
+* Pane headers keep `data-section` and the `ff-browser-section-<title>` test ids; the guide now
+  detects expansion via the accordion's `expanded` header class.
+* **Every section (except Files) now shows its item count** — Queries, Viewers, Widgets, and the
+  built-ins got count badges too, matching the categories.
+* **Section order reorganized**: Files, Queries, Cheminformatics, Bioinformatics, the task
+  categories (Data Sources, Workflows, Combine Tables, Transform Tables, Column Operations,
+  Compute Values), Viewers, Widgets, Inputs, Outputs, Constants, Utilities, Other — and Debug last.
+
+### Save button reflects whether there's anything to save
+
+* The ribbon **Save** button greys out **and becomes non-clickable** (`pointer-events: none`, steel
+  colors) when there is nothing to save — an **empty canvas** ("Nothing to save yet — the canvas is
+  empty") or **no change since the last save** ("No changes to save since the last save"). Its
+  wrapper carries the "why" tooltip so it still shows while the button is disabled. It re-enables the
+  moment the graph differs from the saved baseline.
+* Change detection compares a serialization of the graph + settings with the volatile
+  `created` / `modified` / `author` fields stripped — `serializeFlow` stamps fresh timestamps on
+  every call, so leaving them in made every comparison report "changed" (Save never greyed, and the
+  same flow could be saved back-to-back). Undoing back to the saved state now disables Save again.
+* The state refreshes on **both** structural changes (`onGraphChanged`) **and parameter edits**
+  (`onGraphEdited` — `notifyNodeParamsChanged` reports only there, so editing an input value now
+  updates Save). Baselines are recorded on save, on opening a server-backed flow, and for a fresh
+  empty flow.
+
+### Auto-pin the preview view so the toolbox appears
+
+* A flow app / flow script opens as an unpinned **preview** view, and the platform hides the toolbox
+  until a view is pinned. Flow now **pins itself on the first interaction** (a click on the canvas,
+  an edit, a keypress) when it is the current view — so the toolbox shows up without the user having
+  to pin manually. One-shot: the listener removes itself once it fires (and on `detach`).
+
+### Preview shows every renderable output, side by side
+
+* A node that surfaces **more than one renderable value** now previews them all, laid out side by side
+  with draggable vertical dividers (`ui.splitH`) instead of showing only the first. Covers a
+  **multi-output func** (e.g. two dataframes) and an in-place **mutator with no output but several
+  modified input tables**. A lone value fills the panel exactly as before.
+* The instrumented run now captures **every** connected dataframe input as a `"<input> (modified)"`
+  summary when the node has no dataframe output (previously only the first) — so a two-table mutator
+  previews both tables it transformed.
+
+### Creation-script import fixed for the new SetVar signature
+
+* Importing a creation script (and everything downstream: per-table split, order-edge inference,
+  auto-layout) worked again. The platform's `SetVarFunc` grew optional `outputName` / `outputIndex`
+  parameters (multi-output binding), so a parsed assignment (`X = f(...)`) now surfaces up to four
+  inputs. The importer's `asAssignment` gated on **exactly two** inputs, so it silently rejected
+  every assignment — no variables were registered and the whole import collapsed to nothing. It now
+  validates the `variableName` / `value` inputs directly and ignores the extra optional params.
+
+### Multi-output funcs compile correctly
+
+* A func node with **more than one output** now compiles to valid, runnable code. `grok.functions.call`
+  returns the value directly for a single-output func but an **object keyed by the declared output
+  names** for a multi-output one — so each output is now read as `<callVar>.<outputName>`. Previously
+  the emitter referenced per-output variables (`<var>_result1`, `<var>_result2`) that were never
+  declared, so any downstream node wired to the 2nd+ output got `undefined` (or a ReferenceError).
+* **Variable names are always valid identifiers.** `toCamelCase` keeps digits, so a func/node named
+  e.g. "2 Inputs Flow" produced `let 2InputsFlow… = …` — an immediate syntax error. `uniqueVarName`
+  now prefixes a leading digit with `_`.
+* The instrumented per-node output summary is now keyed by the **output slot key** (a valid object
+  key, and what `labelOutgoingConnections` / the live-stash look up) instead of the value expression
+  — which for a multi-output func is `<var>.<name>` and can't be an object-literal key.
+
+### Save verifies the bound entity actually exists
+
+* **Save** no longer silently writes to a bound script id that isn't really on the server. A flow can
+  carry a `boundScript` with an id yet have no server entity — a template opened as a new flow, or a
+  flow whose entity was deleted elsewhere — and Save used to update that phantom id under whatever
+  name the template carried. It now confirms the entity resolves (`grok.dapi.scripts.find(id)`, via
+  `scriptExistsOnServer` — a throw *or* a nullish result counts as "not saved") before a silent
+  update; otherwise it opens the **Save As** dialog to ask for a name.
+
+### Minimap minimizes when the output preview opens (restored)
+
+* Opening the bottom **output preview** again auto-minimizes the overview **minimap** to its header
+  strip, so the two don't crowd the same corner. This one-shot behavior (fired only on the panel's
+  hidden → visible edge; reopening the minimap by hand while the preview stays open sticks) was
+  dropped in the dock → splitter rework and is now wired back in `FuncFlowView` via
+  `OutputPreviewPanel.onStateChanged` → `flow.setMinimapCollapsed(true)` (the live minimap only — the
+  remembered initial state is untouched).
+
+### Column picker: menu instead of a second dialog
+
+* The column / column-list picker (the list icon next to a `column` / `column_list` input) now
+  drops a **`DG.Menu` column selector right under the icon** instead of opening a modal dialog.
+  When the upstream table hasn't run yet, the run-confirmation dialog still appears; on **OK** the
+  selector menu pops immediately — one interaction, no back-to-back dialogs. Single inputs use
+  `singleColumnSelector` (click a column → set → close); lists use `multiColumnSelector`, writing the
+  checked set back live on each toggle.
+* **Type / semantic filtering.** When the input is a DG func param carrying a `semType` and/or
+  `columnTypeFilter` (`numerical` | `categorical` | `int` | `double` | `string`), the menu only
+  offers matching columns (`buildColumnMatchFilter` → `Column.matches` / `semType`). Both attributes
+  together require both; an unrecognized `columnTypeFilter` is ignored. Non-func nodes (Select
+  Column utilities) are unfiltered.
+
 ### Precise run-state invalidation
 
 * Graph edits are now **classified** (`GraphEdit`: node added/removed, connection added/removed,

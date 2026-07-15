@@ -1,3 +1,14 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes: []
+realized_as:
+  - 09-external-provider.test.ts
+related_bugs: []
+---
+
 ### External Provider
 
 #### Navigate to PostgreSQL Connection:

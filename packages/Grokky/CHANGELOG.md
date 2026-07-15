@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-18695: Dependency security updates — refreshed lockfile so dev-only puppeteer no longer pins the runtime ws at a vulnerable 8.17.0 (DoS/memory-disclosure advisories)
+* GROK-18695: Docker: raised security floors (VEX) — claude-runtime: deb12 upgrade, npm@latest refresh, pip/setuptools bump, hono/@hono/node-server/ws floors, dropped unused workspace JDBC jars; mcp-server: express-rate-limit/fast-uri/path-to-regexp/qs/ip-address overrides
 * GROK-20054: Report: Error: Claude runtime container is not running
 * AI: Fixed query/script view going blank (tab unselected) on first click when switching back to it with the AI panel open — defer the panel dock/undock until after the view switch settles
 * AI: Replaced the 15-min skill/agent sync poll with an on-demand, TTL-gated refresh of packages + shared connections — idle sessions no longer sync

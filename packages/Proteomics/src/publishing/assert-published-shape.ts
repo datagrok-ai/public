@@ -127,8 +127,8 @@ export async function assertPublishedShape(
   }
   const expectedMeta = contract.expectedMeta;
   const eqFloat = (a: number, b: number) => !(Math.abs(a - b) > 1e-9);
-  if (meta.target !== expectedMeta.target)
-    throw new Error(`assertPublishedShape: meta.target: got "${meta.target}", expected "${expectedMeta.target}"`);
+  if (meta.project !== expectedMeta.project)
+    throw new Error(`assertPublishedShape: meta.project: got "${meta.project}", expected "${expectedMeta.project}"`);
   if (meta.deMethod !== expectedMeta.deMethod)
     throw new Error(`assertPublishedShape: meta.deMethod: got "${meta.deMethod}", expected "${expectedMeta.deMethod}"`);
   if (!eqFloat(meta.fcThreshold, expectedMeta.fcThreshold))
