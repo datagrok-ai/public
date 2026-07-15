@@ -6,13 +6,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package, PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
-import {openConfigDialog} from './config-form';
+import {buildAdvancedFields} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput, tryGetRxn} from './enumerate';
 
 const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
+
+// Shared "custom subset" indicator color — round tabs' dot and the Strategy summary's dot.
+const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
 
 // A freshly-(re)mounted Filters viewer can asynchronously reapply a stale per-column categorical
 // selection over a DataFrame's .filter BitSet shortly after construction (a Datagrok platform
@@ -228,10 +231,16 @@ function buildInputs(
 
 export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const view = DG.View.create();
-  view.name = 'Chemical Enumerator';
+  view.name = 'Reaction Enumerator';
   view.box = true;
 
   let config: EnumeratorConfig = cloneConfig(DEFAULT_CONFIG);
+
+  // Advanced limits & product filters live inline behind a chevron toggle (see advancedToggle
+  // below), edited live on `config`. Declared early since syncQuickInputsToConfig() reads
+  // advancedFieldsHost during setup, before the accordion/toggle are built.
+  let advancedFields = buildAdvancedFields(config);
+  const advancedFieldsHost = ui.div([advancedFields.root]);
 
   const templatesDf = await loadBundledCsv(BUNDLED_TEMPLATES);
   const bbsDf = await loadBundledCsv(BUNDLED_BBS);
@@ -247,8 +256,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const blockingColInput = makeColInput('Blocking SMARTS column (Optional)', templatesDf,
     config.enumeration.reactant_blocking_groups_per_template_column, isStringCol,
-    'Optional column whose values are SMARTS patterns (separated by ";" or "|"). A building block ' +
-    'matching any blocking SMARTS for a given template is excluded from that template only.', true);
+    'Optional column whose values are SMARTS patterns (separated by ";" or "|"). Excludes building ' +
+    'blocks with functional groups incompatible with this template — a building block matching any ' +
+    'of them is skipped for this template only and stays available to all others.', true);
 
   const rxnNameColInput = makeColInput('Reaction name column (Optional)', templatesDf,
     config.enumeration.reaction_name_col, isStringCol,
@@ -265,7 +275,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const reagentsInput = ui.input.table('Reagents file (Optional)', {
     value: undefined, nullable: true,
     tooltipText: 'Optional table of reagent SMILES. When set, switches to reagents mode: every ' +
-      'step uses exactly one building block (or product of an earlier round) and fills every ' +
+      'round uses exactly one building block (or product of an earlier round) and fills every ' +
       'remaining slot with reagents from this file — produces derivatives of each BB across rounds.',
   });
   const reagentsColInput = makeColInput('Reagent SMILES column', null,
@@ -295,31 +305,38 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // ---- CONFIG inputs ----
   const MAX_ROUNDS = 10;
-  const numRoundsInput = ui.input.int('Number of rounds', {value: config.enumeration.num_rounds, min: 1, max: MAX_ROUNDS});
+  const numRoundsInput = ui.input.int('Number of rounds',
+    {value: config.enumeration.num_rounds, min: 1, max: MAX_ROUNDS, showPlusMinus: true});
   numRoundsInput.setTooltip(
     'Number of consecutive enumeration rounds. Round 1 reacts BBs only; round 2 takes round-1 ' +
     `products and (in depth-first mode) reacts each one with original BBs. Increase for deeper ` +
-    `libraries (capped at ${MAX_ROUNDS} — a step tab is built for every round, and product counts ` +
+    `libraries (capped at ${MAX_ROUNDS} — a round tab is built for every round, and product counts ` +
     `grow combinatorially with each one).`);
   // `min`/`max` above only affect the tooltip/spinner, not validation — add that separately.
   numRoundsInput.addValidator((v) => {
     const n = Number(v);
     if (!Number.isFinite(n) || n < 1) return 'Must be at least 1.';
-    if (n > MAX_ROUNDS) return `Must be at most ${MAX_ROUNDS} — the step strip shows the first ${MAX_ROUNDS} rounds only.`;
+    if (n > MAX_ROUNDS) return `Must be at most ${MAX_ROUNDS} — the round strip shows the first ${MAX_ROUNDS} rounds only.`;
     return null;
   });
 
   const depthFirstInput = ui.input.bool('Depth first', {value: config.enumeration.depth_first});
   depthFirstInput.setTooltip(
-    'When checked, each round-r > 1 step must combine EXACTLY ONE round-(r-1) product with original ' +
+    'When checked, each round r > 1 must combine EXACTLY ONE round-(r-1) product with original ' +
     'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
     'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
 
   // Promoted out of "Advanced limits & product filters" — used often enough to live at top level.
-  const maxComponentsInput = ui.input.int('Max # components', {value: config.max_num_components, min: 1});
+  const maxComponentsInput = ui.input.int('Max # components',
+    {value: config.max_num_components, min: 1, showPlusMinus: true});
   maxComponentsInput.setTooltip('Max number of reactant components a template may have.');
-  const maxRoutesInput = ui.input.int('Max routes per compound', {value: config.max_num_routes_per_compound});
-  maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Default -1 disables the cap.');
+  // -1 is the config's own "no cap" sentinel — showing it as a literal number reads as a developer
+  // detail, not a value a user would type. Blank means the same thing and is shown/read as such.
+  const maxRoutesInput = ui.input.int('Max routes per compound', {
+    value: config.max_num_routes_per_compound < 0 ? undefined : config.max_num_routes_per_compound,
+    nullable: true, showPlusMinus: true,
+  });
+  maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
 
   // True while pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires onChanged,
   // which triggers a read-back (syncQuickInputsToConfig) mid-loop — before all inputs are updated —
@@ -348,7 +365,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       <ul style="margin: 0 0 6px 16px; padding: 0;">
         <li><b>Reaction templates file</b> — reaction SMARTS (LHS&gt;&gt;RHS). Optional blocking SMARTS exclude unwanted matches per template; optional reaction names surface in the output.</li>
         <li><b>Building blocks file</b> — SMILES of starting materials.</li>
-        <li><b>Reagents file</b> (optional) — switches to <i>reagents mode</i>: every step uses exactly one BB or earlier-round product, with reagents in the remaining slots. Yields derivatives of each BB across rounds.</li>
+        <li><b>Reagents file</b> (optional) — switches to <i>reagents mode</i>: every round uses exactly one BB or earlier-round product, with reagents in the remaining slots. Yields derivatives of each BB across rounds.</li>
         <li><b>Exclusion substructures</b> (optional) — SMARTS patterns; any product matching one is rejected.</li>
       </ul>
       <div style="font-weight: bold; margin-top: 8px; margin-bottom: 2px;">Enumeration modes</div>
@@ -370,6 +387,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return reagentsInput.value != null ? 'reagents' : (depthFirstInput.value ? 'depth' : 'breadth');
   }
   const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
+  // The raw round count as currently displayed/edited (not the defensively-clamped one makeDataPanel's
+  // roundCount() uses for building round tabs) — shared by the ribbon chip, the Strategy summary, and
+  // the Preview recap so they can't drift out of sync (e.g. one saying "2 rounds", another "1 rounds").
+  function currentRounds(): number {
+    return numRoundsInput.value ?? config.enumeration.num_rounds;
+  }
+  const roundsLabel = (n: number): string => `${n} round${n === 1 ? '' : 's'}`;
 
   function buildConfigCard(): HTMLElement {
     const en = config.enumeration;
@@ -437,7 +461,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     config.enumeration.num_rounds = numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!depthFirstInput.value;
     config.max_num_components = maxComponentsInput.value ?? config.max_num_components;
-    config.max_num_routes_per_compound = maxRoutesInput.value ?? config.max_num_routes_per_compound;
+    config.max_num_routes_per_compound = maxRoutesInput.value ?? -1; // blank == no cap
     // Column inputs hold a Column object; persist its name. Keep the previous value if unselected.
     config.enumeration.smarts_col = smartsColInput.value?.name ?? config.enumeration.smarts_col;
     config.enumeration.reactant_blocking_groups_per_template_column =
@@ -449,6 +473,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       reagentsColInput.value?.name ?? config.enumeration.reagent_smiles_column;
     config.products_specs.exclusion_smarts_products_file_smarts_col =
       exclusionColInput.value?.name ?? config.products_specs.exclusion_smarts_products_file_smarts_col;
+    advancedFields.syncToConfig(config);
   };
 
   // `input.value = X` updates the model but the Dart widget doesn't always re-render the visible
@@ -473,7 +498,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       setAndFire(numRoundsInput, config.enumeration.num_rounds);
       setAndFire(depthFirstInput, config.enumeration.depth_first);
       setAndFire(maxComponentsInput, config.max_num_components);
-      setAndFire(maxRoutesInput, config.max_num_routes_per_compound);
+      setAndFire(maxRoutesInput, config.max_num_routes_per_compound < 0 ? null : config.max_num_routes_per_compound);
       const tDf = templatesInput.value;
       if (tDf) {
         const sc = tDf.col(config.enumeration.smarts_col);
@@ -498,6 +523,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
         if (c) setAndFire(exclusionColInput, c);
       }
+      // Advanced fields have no "set value" hook — rebuild them from the loaded config and swap
+      // the wrapper's contents (keep the host node itself so the toggle stays wired to it).
+      advancedFields = buildAdvancedFields(config);
+      advancedFieldsHost.innerHTML = '';
+      advancedFieldsHost.appendChild(advancedFields.root);
     } finally {
       pushingConfigToInputs = false;
     }
@@ -553,6 +583,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     validationDiv.textContent = err ?? '';
     runBtn.disabled = err != null;
     bindRunTooltip(err);
+    previewEnumerateBtn.disabled = err != null;
+    ui.tooltip.bind(previewEnumerateBtn, err ?? RUN_TOOLTIP_DEFAULT);
   }
   if (!pushingConfigToInputs) syncQuickInputsToConfig();
 
@@ -832,19 +864,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   // ---- Buttons ----
-  const editConfigBtn = ui.button('Advanced limits & product filters', async () => {
-    syncQuickInputsToConfig();
-    const updated = await openConfigDialog(config);
-    if (updated) {
-      config = updated;
-      withPreservedFilters(() => syncConfigToQuickInputs());
-      refreshValidation();
-    }
-  });
-  ui.tooltip.bind(editConfigBtn,
-    'Caps (components, combinations, routes per compound) and product filters — every config field.');
-
-  const loadYamlBtn = ui.button('Load YAML…', async () => {
+  // Icon buttons in the ribbon: 'folder-open' for import, 'arrow-to-bottom' for export.
+  const loadYamlBtn = ui.iconFA('folder-open', async () => {
     const f = await pickFile('.yaml,.yml');
     if (!f) return;
     try {
@@ -856,19 +877,21 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     } catch (e) {
       grok.shell.error(`Could not load YAML: ${e instanceof Error ? e.message : String(e)}`);
     }
-  });
-  ui.tooltip.bind(loadYamlBtn, 'Load a YAML config file from disk and apply it to the form.');
+  }, 'Load a YAML config file from disk and apply it to the form.');
 
-  const saveYamlBtn = ui.button('Save YAML', () => {
+  const saveYamlBtn = ui.iconFA('arrow-to-bottom', () => {
     syncQuickInputsToConfig();
     DG.Utils.download('enumerator-config.yaml', configToYaml(config), 'text/yaml');
-  });
-  ui.tooltip.bind(saveYamlBtn, 'Download the current config as a YAML file.');
+  }, 'Download the current config as a YAML file.');
 
   // ---- Run / Cancel ----
   const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
   let cancelled = false;
+  const RUN_TOOLTIP_DEFAULT = 'Run enumeration with the current config and add the result to the workspace.';
   const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
+  // Mirrors the ribbon's Enumerate button — Preview is the end of the Next-button chain, so it
+  // gets its own run action too.
+  const previewEnumerateBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
   // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind the
   // tooltip to the ribbon-item ancestor instead (must stay its direct, unwrapped child).
   let runBtnRibbonItem: HTMLElement | null = null;
@@ -889,8 +912,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         });
       }
     }
-    ui.tooltip.bind(runBtnRibbonItem ?? runBtn,
-      msg ?? 'Run enumeration with the current config and add the result to the workspace.');
+    ui.tooltip.bind(runBtnRibbonItem ?? runBtn, msg ?? RUN_TOOLTIP_DEFAULT);
   };
 
   const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
@@ -937,7 +959,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
     const perRoundOverrides = buildPerRoundOverrides(config);
     if (perRoundOverrides)
-      progressLabel.textContent += ' · per-step subsets active';
+      progressLabel.textContent += ' · per-round subsets active';
 
     const start = performance.now();
     const {rows, warnings} = await enumerate({
@@ -993,7 +1015,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const stratBreadthCard = buildStratCard('sitemap', 'Breadth-first',
     'Combine any earlier products — convergent routes.');
   const stratReagentsCard = buildStratCard('flask', 'Reagents mode',
-    'One block per step + reagents in remaining slots. Needs a reagents file.');
+    'One block per round + reagents in remaining slots. Needs a reagents file.');
+  // Explains the disabled state on hover — no balloon needed on click.
+  ui.tooltip.bind(stratReagentsCard.root,
+    () => reagentsInput.value == null ? 'Add a reagents file in "Extras" to switch to reagents mode.' : null);
 
   function refreshStrategyCards(): void {
     const cur = currentMode();
@@ -1010,41 +1035,39 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (reagentsInput.value != null) return;
     setAndFire(depthFirstInput, false);
   };
-  stratReagentsCard.root.onclick = (): void => {
-    if (reagentsInput.value == null) {
-      grok.shell.warning('Add a reagents file in “Extras” to switch to reagents mode.');
-    }
-  };
+
+  // Shared reveal-on-demand affordance for optional/advanced content (Map columns, Extras, Advanced limits).
+  function makeChevronToggle(label: string, body: HTMLElement, onToggle?: (open: boolean) => void): HTMLElement {
+    body.style.display = 'none';
+    const chevron = ui.iconFA('chevron-right');
+    chevron.style.transition = 'transform 0.15s';
+    const link = ui.divH([chevron, ui.span([` ${label}`])],
+      {style: {fontSize: '12px', color: 'var(--blue-2)', cursor: 'pointer', marginTop: '2px',
+        gap: '2px', alignItems: 'center'}});
+    let open = false;
+    link.onclick = (): void => {
+      open = !open;
+      body.style.display = open ? '' : 'none';
+      chevron.style.transform = open ? 'rotate(90deg)' : '';
+      onToggle?.(open);
+    };
+    return ui.divV([link, body]);
+  }
 
   // "Map columns" hides the optional template columns (blocking + reaction name) until needed.
   const mapColsBody = ui.form([blockingColInput, rxnNameColInput]);
-  mapColsBody.style.display = 'none';
-  const mapColsChevron = ui.iconFA('chevron-right');
-  mapColsChevron.style.transition = 'transform 0.15s';
-  const mapColsLink = ui.divH([mapColsChevron, ui.span([' Map columns (optional)'])],
-    {style: {fontSize: '12px', color: 'var(--blue-2)', cursor: 'pointer', marginTop: '2px',
-      gap: '2px', alignItems: 'center'}});
-  let mapColsOpen = false;
-  mapColsLink.onclick = (): void => {
-    mapColsOpen = !mapColsOpen;
-    mapColsBody.style.display = mapColsOpen ? '' : 'none';
-    mapColsChevron.style.transform = mapColsOpen ? 'rotate(90deg)' : '';
-  };
-
-  editConfigBtn.style.width = '100%';
-  const yamlRow = ui.divH([loadYamlBtn, saveYamlBtn],
-    {style: {gap: '8px', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap'}});
+  const mapColsToggle = makeChevronToggle('Map columns (optional)', mapColsBody);
 
   // Right-pane tab references — assigned when tabs are built; used by section-open handlers for
-  // context-sensitive tab switching. Declared here so openAccPaneExclusive can close over them.
+  // context-sensitive tab switching. Declared here so openAccPaneAndSyncTab can close over them.
   let templatesPane: DG.TabPane | undefined;
   let bbsPane: DG.TabPane | undefined;
   let reagentsPane: DG.TabPane | undefined;
 
   // Target pane resolved lazily via a thunk: Reactions pane is added expanded, so its factory runs
   // synchronously inside addPane, before later panes exist — capturing directly would hit the TDZ.
-  const mkNextBtn = (getTarget: () => DG.AccordionPane): HTMLElement => {
-    const btn = ui.button('Next →', () => openAccPaneExclusive(getTarget()));
+  const mkNextBtn = (getTarget: () => DG.AccordionPane, label: string): HTMLElement => {
+    const btn = ui.button(`Next: ${label}`, () => openAccPaneAndSyncTab(getTarget()));
     btn.classList.add('chem-enum-next-btn');
     return btn;
   };
@@ -1052,9 +1075,16 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const accordion = ui.accordion();
   accordion.root.classList.add('chem-enum-accordion');
   const accReactionsPane = accordion.addPane('Reactions', () =>
-    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsLink, mapColsBody, mkNextBtn(() => accBbsPane)]), true);
+    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsToggle,
+      mkNextBtn(() => accBbsPane, 'Building blocks')]), true);
   const accBbsPane = accordion.addPane('Building blocks', () =>
-    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accCombinePane)]), false);
+    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accPreviewPane, 'Preview')]), false);
+  // Extras is now an inline chevron toggle rather than its own pane; opening it still switches
+  // the right-side tab to Reagents when one is set.
+  const extrasToggle = makeChevronToggle('Extras (optional)',
+    ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]),
+    (open) => { if (open && reagentsPane && reagentsInput.value != null) tabs.currentPane = reagentsPane; });
+  const advancedToggle = makeChevronToggle('Advanced limits & product filters (optional)', advancedFieldsHost);
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
@@ -1062,13 +1092,56 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ], {style: {alignItems: 'center', gap: '4px'}}),
     ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
     ui.form([numRoundsInput, maxComponentsInput, maxRoutesInput]),
-    editConfigBtn,
-    yamlRow,
-    mkNextBtn(() => accExtrasPane),
+    advancedToggle,
+    extrasToggle,
+    // Strategy opens first now, so it needs its own way into the Reactions chain.
+    mkNextBtn(() => accReactionsPane, 'Reactions'),
   ], {style: {gap: '8px'}}), false);
-  const accExtrasPane = accordion.addPane('Extras (optional)',
-    () => ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]), false);
-  const accPanes = [accReactionsPane, accBbsPane, accCombinePane, accExtrasPane];
+  // Left panel for Preview.
+  const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
+  function renderPreviewRecap(): void {
+    previewRecapHost.innerHTML = '';
+    const tDf = templatesInput.value;
+    const bDf = bbsInput.value;
+    const mode = currentMode();
+    const rounds = currentRounds();
+
+    const addRow = (label: string, value: string, indent = false): void => {
+      previewRecapHost.appendChild(ui.divH([
+        ui.divText(label, {style: {color: 'var(--grey-5)', width: indent ? '80px' : '96px',
+          flex: '0 0 auto', marginLeft: indent ? '16px' : '0'}}),
+        ui.divText(value, {style: {fontWeight: indent ? '400' : '600'}}),
+      ], {style: {gap: '8px', padding: '2px 0'}}));
+    };
+
+    addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`);
+
+    // Per-round amounts, not just totals — same override data (and the same breadth-first BB
+    // exclusion) the Strategy summary and the round tabs' own orange dot already reflect.
+    const overrides = tDf && bDf ? buildPerRoundOverrides(config) : undefined;
+    const addComponentRows = (
+      label: string, df: DG.DataFrame | null, key: 'templates' | 'buildingBlocks',
+    ): void => {
+      if (!df) {addRow(label, 'Not selected'); return;}
+      addRow(label, `${df.rowCount}`);
+      for (let r = 1; r <= rounds; r++) {
+        const oc = overrideCountFor(overrides, mode, r, key);
+        addRow(`Round ${r}`, oc != null ? `${oc} of ${df.rowCount} (custom subset)` : `all ${df.rowCount}`, true);
+      }
+    };
+    addComponentRows('Reactions', tDf, 'templates');
+    addComponentRows('Building blocks', bDf, 'buildingBlocks');
+  }
+
+  const accPreviewPane = accordion.addPane('Preview', () => ui.divV([
+    ui.divText('Runs a reduced-budget sample (≤ 2 rounds, ≤ 3 combinations / template) using the ' +
+    'global reactions, building blocks, and reagents — per-round subsets are not applied here.',
+    {style: {fontSize: '12px', color: 'var(--grey-6)', lineHeight: '1.4'}}),
+    previewRecapHost,
+    // End of the Next-button chain, so the run action lives here too, not just up in the ribbon.
+    previewEnumerateBtn,
+  ], {style: {gap: '10px'}}), false);
+  const accPanes = [accReactionsPane, accBbsPane, accCombinePane, accPreviewPane];
 
   // Subtitle spans injected into each pane header — updated by refreshCfgRibbon().
   const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
@@ -1081,7 +1154,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const subReactions = injectPaneSub(accReactionsPane);
   const subBbs = injectPaneSub(accBbsPane);
   const subCombine = injectPaneSub(accCombinePane);
-  const subExtras = injectPaneSub(accExtrasPane);
 
   // Left pane scrolls vertically if it overflows so the action bar stays visible.
   const leftPane = ui.divV([accordion.root],
@@ -1097,59 +1169,83 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const chipBbs = cfgChipEl('');
   const chipCombine = cfgChipEl('');
   const cfgEstEl = ui.divText('');
-  cfgEstEl.className = 'chem-enum-cfg-est';
-  const ribbonArrow = ui.iconFA('arrow-right');
-  ribbonArrow.classList.add('chem-enum-ribbon-arrow');
+  cfgEstEl.className = 'chem-enum-chip';
+  // A separate arrow node per gap — one DOM node can't be reused in three places at once.
+  const mkRibbonArrow = (): HTMLElement => {
+    const a = ui.iconFA('arrow-right');
+    a.classList.add('chem-enum-ribbon-arrow');
+    return a;
+  };
   // No custom wrapping div and no manual gap/margin — passed straight into their own ribbon group
-  // (see setRibbonPanels below), same as the Markush Enumerator; the native ribbon group's own flex
-  // layout handles spacing between runBtn/cancelBtn/progressLabel.
+  // (see setRibbonPanels below); the native ribbon group's own flex layout handles spacing between
+  // runBtn/cancelBtn/progressLabel.
 
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value;
-    const combineText = `${MODE_LABEL[currentMode()]} · ${numRoundsInput.value ?? 0} rounds`;
+    const combineText = `${MODE_LABEL[currentMode()]} · ${roundsLabel(currentRounds())}`;
     const setChip = (chip: HTMLElement, text: string, err: boolean): void => {
       chip.textContent = text;
       chip.classList.toggle('chem-enum-chip--err', err);
     };
     setChip(chipReactions, tDf ? `${tDf.rowCount} reactions` : 'No reaction table', !tDf || !smartsColInput.value);
     setChip(chipBbs, bDf ? `${bDf.rowCount} Building Blocks` : 'No Building Blocks table', !bDf || !bbColInput.value);
-    chipCombine.textContent = combineText;
+    // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
+    chipCombine.textContent = `Strategy: ${combineText}`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
     cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString()} products` : '';
+    // Re-render Strategy/Preview even when already the visible tab, so in-tab edits stay current.
+    if (tabs.currentPane === strategyPane) renderStrategySummary();
+    if (tabs.currentPane === previewPane) renderPreviewRecap();
     subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
     subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
     subCombine.textContent = combineText;
-    subExtras.textContent = reagentsInput.value != null ? 'Reagents added' : '';
   }
-  // === Exclusive accordion ===
+  // === Exclusive accordion — only the selected section is shown, on either side ===
 
   function switchTabForAccPane(pane: DG.AccordionPane): void {
     if (pane === accReactionsPane && templatesPane) {
       tabs.currentPane = templatesPane;
     } else if (pane === accBbsPane && bbsPane) {
       tabs.currentPane = bbsPane;
-    } else if (pane === accExtrasPane && reagentsPane && reagentsInput.value != null) {
-      tabs.currentPane = reagentsPane;
+    } else if (pane === accCombinePane) {
+      tabs.currentPane = strategyPane;
+      renderStrategySummary();
+    } else if (pane === accPreviewPane) {
+      tabs.currentPane = previewPane;
+      renderPreviewRecap();
+      refreshPreview();
     }
   }
 
-  function openAccPaneExclusive(pane: DG.AccordionPane): void {
-    accPanes.forEach((p) => { p.expanded = p === pane; });
+  // Maps a left-accordion pane to its ribbon chip, so the chip for the currently open section can
+  // be marked active — same `--<state>` modifier convention as chem-enum-chip--err.
+  const chipForPane = (pane: DG.AccordionPane): HTMLElement | undefined => {
+    if (pane === accReactionsPane) return chipReactions;
+    if (pane === accBbsPane) return chipBbs;
+    if (pane === accCombinePane) return chipCombine;
+    if (pane === accPreviewPane) return cfgEstEl;
+    return undefined;
+  };
+
+  // Expands `pane` and hides every other section's header entirely (not just collapsed), syncing
+  // the right-side tab to match — the ribbon chips are the only navigator now.
+  function openAccPaneAndSyncTab(pane: DG.AccordionPane): void {
+    accPanes.forEach((p) => {
+      p.expanded = (p === pane);
+      const header = p.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+      if (header) header.style.display = (p === pane) ? '' : 'none';
+    });
+    const activeChip = chipForPane(pane);
+    [chipReactions, chipBbs, chipCombine, cfgEstEl].forEach((c) =>
+      c.classList.toggle('chem-enum-chip--active', c === activeChip));
     switchTabForAccPane(pane);
   }
 
-  // Wire native pane-header clicks for exclusive-open (Dart toggles pane.expanded first,
-  // then our listener fires and collapses the others).
-  accPanes.forEach((pane) => {
-    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
-    header?.addEventListener('click', () => { if (pane.expanded) openAccPaneExclusive(pane); });
-  });
-
-  chipReactions.onclick = () => openAccPaneExclusive(accReactionsPane);
-  chipBbs.onclick = () => openAccPaneExclusive(accBbsPane);
-  chipCombine.onclick = () => openAccPaneExclusive(accCombinePane);
-
-  openAccPaneExclusive(accReactionsPane);
+  chipReactions.onclick = () => openAccPaneAndSyncTab(accReactionsPane);
+  chipBbs.onclick = () => openAccPaneAndSyncTab(accBbsPane);
+  chipCombine.onclick = () => openAccPaneAndSyncTab(accCombinePane);
+  // Initial pane selection must happen near the end of this function, after `tabs`/`strategyPane`
+  // exist (switchTabForAccPane reads them) — calling it earlier crashes with a TDZ error.
 
   const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
     const hintEl = ui.divText(hint, {style: {
@@ -1241,10 +1337,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // own comment above for why row-count inference was wrong.
     const hasOverride = (k: number): boolean => {
       if (!stepState[k - 1]?.committed) return false;
-      // Breadth-first ignores per-round BB overrides entirely (a round draws from all earlier
-      // products, see `eligibleSmiles`) — don't show the dot as if it did something. Reactions/
-      // reagents overrides are unaffected.
-      if (o.idx === 1 && currentMode() === 'breadth') return false;
+      // BB overrides don't apply in breadth-first (see bbOverrideSuppressedInBreadth) — don't show the dot.
+      if (bbOverrideSuppressedInBreadth(o.idx === 1, currentMode())) return false;
       return true;
     };
     // Capped defensively regardless of validation state — an invalid (too-high) input value still
@@ -1283,7 +1377,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (!global) return null;
       // Display-only clone, never registered in the workspace; its selection carries the subset.
       const work = global.clone(null);
-      work.name = `${global.name} · step ${k}`;
+      work.name = `${global.name} · round ${k}`;
       detectChemSemTypes(work);
       setStepWork(k, work);
       return work;
@@ -1295,7 +1389,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       const w = stepState[k - 1]?.df;
       if (!w) return; // grid must be mounted (via stepClone) before this button is reachable
       const subset = cloneSubsetByRows(w,
-        `${SELECT_ROWS_OR_FILTER} to use only those ${o.noun} in step ${k}.`);
+        `${SELECT_ROWS_OR_FILTER} to use only those ${o.noun} in round ${k}.`);
       if (!subset) return;
       setStepWork(k, subset);
       stepState[k - 1].committed = true;
@@ -1346,22 +1440,22 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         return ui.div([barHost, gridHost], {style: {
           height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden'}});
       };
-      const allPane = tc.addPane('All steps', makePaneContent(0));
-      ui.tooltip.bind(allPane.header, 'Narrow this component for one round only. "All steps" is the full ' +
-        'library used by every round; pick a step to restrict just that round. Per-step building-block ' +
+      const allPane = tc.addPane('All rounds', makePaneContent(0));
+      ui.tooltip.bind(allPane.header, 'Narrow this component for one round only. "All rounds" is the full ' +
+        'library used by every round; pick a round to restrict just that round. Per-round building-block ' +
         'subsets apply in depth-first / reagents mode; in breadth-first mode a round draws from all earlier ' +
         'products, so a BB subset has no effect. Resets when you swap the input file (in-range overrides ' +
         'survive a round-count change).');
       stepDots.push(null);
       for (let k = 1; k <= roundCount(); k++) {
-        const pane = tc.addPane(`Step ${k}`, makePaneContent(k));
+        const pane = tc.addPane(`Round ${k}`, makePaneContent(k));
         // Position dot absolutely (header stacks children vertically, so marginLeft lands below the
         // label). Positive left offset only — a negative one bleeds into the adjacent tab (tabs sit
         // flush, live-verified). Fixed top offset, not top:50% — the header's box shrinks ~7px when
         // selected (underline indicator), so a percentage-based center drifts on selection.
         const dot = ui.div([], {style: {position: 'absolute', left: '5px', top: '12px',
           width: '6px', height: '6px', borderRadius: '50%',
-          background: 'var(--orange-2, #c98a1b)', display: 'none'}});
+          background: OVERRIDE_DOT_COLOR, display: 'none'}});
         pane.header.style.position = 'relative';
         pane.header.appendChild(dot);
         stepDots.push(dot);
@@ -1408,34 +1502,34 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
           const prevValue = o.input.value;
           action();
           if (hadOverride && o.input.value !== prevValue)
-            grok.shell.info(`Per-step ${o.noun} overrides were cleared — every step now uses the ${clearedSuffix}.`);
+            grok.shell.info(`Per-round ${o.noun} overrides were cleared — every round now uses the ${clearedSuffix}.`);
         };
-        const btn = ui.button('Subset by selection', () => doGlobalAction(
+        const btn = ui.link('Subset by selection', () => doGlobalAction(
           () => subsetBySelection(o.input, o.state, renderGrid, `${o.noun} grid`, o.noTableMsg),
           `new ${o.noun} subset`));
         ui.tooltip.bind(btn, `Replace the ${o.noun} library with only the selected rows, or — if nothing is ` +
-          `selected — the currently filtered rows (applies to every step). Click "Use all" to restore the ` +
+          `selected — the currently filtered rows (applies to every round). Click "Use all" to restore the ` +
           `full set.`);
-        const useAll = ui.button('Use all', () => doGlobalAction(
+        const useAll = ui.link('Use all', () => doGlobalAction(
           () => restoreFullTable(o.input, o.state, renderGrid, o.noun),
           `full ${o.noun} library again`));
         ui.tooltip.bind(useAll, `Restore the full ${o.noun} library (undo "Subset by selection").`);
-        barHost.append(hintEl(`Full ${o.noun} library — used by every step unless a step overrides it.`),
+        barHost.append(hintEl(`Full ${o.noun} library — used by every round unless a round overrides it.`),
           filterIcon, btn, useAll);
       } else {
         const w = stepState[selStep - 1]?.df;
         const status = ui.divText(
           w ? (hasOverride(selStep) ? `using ${w.rowCount} / ${o.input.value?.rowCount ?? w.rowCount}` : `all ${w.rowCount}`) : '',
           {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
-        const btn = ui.button('Subset by selection', () => subsetStepBySelection(selStep));
-        ui.tooltip.bind(btn, `Narrow step ${selStep} to only the selected rows (Ctrl/Shift+click), or — if ` +
+        const btn = ui.link('Subset by selection', () => subsetStepBySelection(selStep));
+        ui.tooltip.bind(btn, `Narrow round ${selStep} to only the selected rows (Ctrl/Shift+click), or — if ` +
           `nothing is selected — the currently filtered rows. Click "Use all" to go back to the full ` +
           `${o.noun} library.`);
-        const useAll = ui.button('Use all', () => useAllForStep(selStep));
-        ui.tooltip.bind(useAll, `Undo "Subset by selection" so step ${selStep} uses the full ${o.noun} library ` +
-          `(same as "All steps").`);
+        const useAll = ui.link('Use all', () => useAllForStep(selStep));
+        ui.tooltip.bind(useAll, `Undo "Subset by selection" so round ${selStep} uses the full ${o.noun} library ` +
+          `(same as "All rounds").`);
         barHost.append(
-          hintEl(`${SELECT_ROWS_OR_FILTER}, then "Subset by selection" to use only those ${o.noun} in step ` +
+          hintEl(`${SELECT_ROWS_OR_FILTER}, then "Subset by selection" to use only those ${o.noun} in round ` +
             `${selStep}.`),
           status, filterIcon, btn, useAll);
       }
@@ -1518,7 +1612,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     input: reagentsInput, state: reagentsState, badge: reagentsBadge,
     apply: (o, work, cfg) => { o.reagents = extractReagents(cfg, work); },
     noTableMsg: 'No reagents file selected.', emptyMsg: 'No reagents file selected. Add one in the Extras ' +
-      'section to subset reagents per step.'});
+      'section to subset reagents per round.'});
   const templatesPanel = templatesCtl.panel;
   const bbsPanel = bbsCtl.panel;
   const reagentsPanel = reagentsCtl.panel;
@@ -1561,6 +1655,150 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return any ? overrides : undefined;
   }
 
+  // Breadth-first ignores per-round BB overrides entirely (see `eligibleSmiles` in enumerate.ts) —
+  // one shared rule instead of every caller re-encoding the same check.
+  function bbOverrideSuppressedInBreadth(isBuildingBlocks: boolean, mode: 'depth' | 'breadth' | 'reagents'): boolean {
+    return isBuildingBlocks && mode === 'breadth';
+  }
+
+  // Shared by the Strategy summary and the Preview recap, so the "does round r have a custom
+  // subset" logic lives in exactly one place.
+  function overrideCountFor(
+    overrides: PerRoundOverride[] | undefined, mode: 'depth' | 'breadth' | 'reagents',
+    r: number, key: 'templates' | 'buildingBlocks' | 'reagents',
+  ): number | null {
+    if (bbOverrideSuppressedInBreadth(key === 'buildingBlocks', mode)) return null;
+    const list = overrides?.[r - 1]?.[key];
+    return list ? list.length : null;
+  }
+
+  // ---- Strategy summary (right-pane view when "How to combine" is the active left section) ----
+  // Gives Strategy its own relevant right-side content — mode, round-by-round chain, product
+  // estimate — instead of leaving whatever data grid was last shown. Refreshed from refreshCfgRibbon(),
+  // same trigger as the ribbon chips and accordion subtitles.
+  const strategyHost = ui.div([], {style: {padding: '16px', overflow: 'auto'}});
+  const strategyPanel = tabPanel(
+    panelHeader('How the current strategy and round count combine the reaction templates and building blocks.'),
+    strategyHost);
+
+  function renderStrategySummary(): void {
+    strategyHost.innerHTML = '';
+    const tDf = templatesInput.value;
+    const bDf = bbsInput.value;
+    const mode = currentMode();
+    const rounds = currentRounds();
+    const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
+
+    // Per-round subset overrides, computed once for both the round diagram and the per-component
+    // sections below.
+    const overrides = buildPerRoundOverrides(config);
+    const overrideCount = (r: number, key: 'templates' | 'buildingBlocks' | 'reagents'): number | null =>
+      overrideCountFor(overrides, mode, r, key);
+
+    const card = ui.div([], {style: {maxWidth: '480px'}});
+    card.appendChild(ui.divText(MODE_LABEL[mode],
+      {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '8px'}}));
+
+    const diagram = ui.divH([], {style: {alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '12px'}});
+    for (let r = 1; r <= rounds; r++) {
+      const rc = tDf ? (overrideCount(r, 'templates') ?? tDf.rowCount) : null;
+      const bc = bDf ? (overrideCount(r, 'buildingBlocks') ?? bDf.rowCount) : null;
+      const chipChildren: HTMLElement[] = [
+        ui.divText(`Round ${r}`, {style: {fontSize: '11.5px', fontWeight: 'bold', color: 'var(--blue-2)'}}),
+      ];
+      if (rc != null && bc != null) {
+        chipChildren.push(ui.divText(`${rc} × ${bc}`,
+          {style: {fontSize: '10px', color: 'var(--grey-6)', marginTop: '1px'}}));
+      }
+      diagram.appendChild(ui.divV(chipChildren, {style: {
+        padding: '4px 10px', border: '1px solid var(--blue-1)', background: 'var(--blue-6, #eaf4fc)',
+        borderRadius: '4px', alignItems: 'center', gap: '0',
+      }}));
+      if (r < rounds) {
+        const arrow = ui.iconFA('arrow-right');
+        arrow.style.color = 'var(--grey-4)';
+        diagram.appendChild(arrow);
+      }
+    }
+    card.appendChild(diagram);
+
+    if (tDf && bDf) {
+      // One section per component, each listing what every round uses.
+      const componentSection = (
+        title: string, total: number, key: 'templates' | 'buildingBlocks' | 'reagents',
+      ): HTMLElement => {
+        const section = ui.div([], {style: {marginTop: '10px'}});
+        section.appendChild(ui.divText(title,
+          {style: {fontWeight: 'bold', fontSize: '12px', marginBottom: '4px'}}));
+        for (let r = 1; r <= rounds; r++) {
+          const oc = overrideCount(r, key);
+          const rowChildren: HTMLElement[] = [
+            ui.divText(`Round ${r}`, {style: {color: 'var(--grey-6)', width: '64px', flex: '0 0 auto'}}),
+            ui.divText(oc != null ? `${oc} of ${total} (custom subset)` : `all ${total}`,
+              oc != null ? {style: {fontWeight: '600'}} : undefined),
+          ];
+          if (oc != null) {
+            rowChildren.push(ui.div([], {style: {width: '6px', height: '6px', borderRadius: '50%',
+              background: OVERRIDE_DOT_COLOR, flex: '0 0 auto'}}));
+          }
+          section.appendChild(ui.divH(rowChildren, {style: {gap: '8px', alignItems: 'center', padding: '2px 0'}}));
+        }
+        return section;
+      };
+
+      card.appendChild(componentSection('Reactions', tDf.rowCount, 'templates'));
+      card.appendChild(componentSection('Building blocks', bDf.rowCount, 'buildingBlocks'));
+
+      // Reagents mode has a third data source just as central to the round math — show it too.
+      const rDf = reagentsInput.value;
+      if (mode === 'reagents' && rDf)
+        card.appendChild(componentSection('Reagents', rDf.rowCount, 'reagents'));
+    } else {
+      card.appendChild(ui.divText('Pick reaction templates and building blocks to see round-by-round details.',
+        {style: {color: 'var(--grey-5)', fontSize: '12px', marginTop: '4px'}}));
+    }
+
+    if (n > 0) {
+      card.appendChild(ui.divText(`≈ ${n.toLocaleString()} estimated products`,
+        {style: {marginTop: '12px', fontWeight: 'bold', fontSize: '13px', color: 'var(--blue-2)'}}));
+
+      // The estimate above is a naive multiplication — flag when active filters/limits (vs.
+      // platform defaults) would actually shrink the real output.
+      const ps = config.products_specs;
+      const dps = DEFAULT_CONFIG.products_specs;
+      const changedFilters = [
+        config.max_num_combinations_per_template !== DEFAULT_CONFIG.max_num_combinations_per_template,
+        config.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output,
+        ps.max_num_heavy_atoms !== dps.max_num_heavy_atoms,
+        ps.min_num_carbon_atoms !== dps.min_num_carbon_atoms,
+        ps.max_num_carbon_atoms !== dps.max_num_carbon_atoms,
+        ps.max_num_hetero_atoms !== dps.max_num_hetero_atoms,
+        ps.max_num_nitrogen !== dps.max_num_nitrogen,
+        ps.max_num_sulfur !== dps.max_num_sulfur,
+        ps.max_num_oxygen !== dps.max_num_oxygen,
+        ps.max_num_metals !== dps.max_num_metals,
+        ps.max_num_halogens !== dps.max_num_halogens,
+        ps.max_num_aromatic_atoms !== dps.max_num_aromatic_atoms,
+        ps.max_num_unsaturated_nonaromatic_bonds !== dps.max_num_unsaturated_nonaromatic_bonds,
+        ps.only_these_atoms_allowed.join(',') !== dps.only_these_atoms_allowed.join(','),
+        ps.remove_radicals !== dps.remove_radicals,
+        ps.remove_isotope_information !== dps.remove_isotope_information,
+        ps.remove_charged_species !== dps.remove_charged_species,
+      ].filter(Boolean).length;
+      const xDf = exclusionInput.value;
+      const hasExclusion = !!xDf && xDf.rowCount > 0;
+      if (changedFilters > 0 || hasExclusion) {
+        const bits: string[] = [];
+        if (changedFilters > 0) bits.push(`${changedFilters} limit${changedFilters > 1 ? 's' : ''} changed from defaults`);
+        if (hasExclusion) bits.push('exclusion substructures active');
+        card.appendChild(ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
+          {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}}));
+      }
+    }
+
+    strategyHost.appendChild(card);
+  }
+
   // ---- Preview tab (lazy) ----
   // Same idea as the old persistent preview: build inputs, run a budgeted enumerate, show the
   // result in a grid. Re-renders whenever the user switches to this tab. Subsequent activations
@@ -1573,7 +1811,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
   const previewHeader = panelHeader(
     'Quick preview — runs a small subset (≤ 2 rounds, ≤ 3 combos / template) to give a flavour of ' +
-    'products. Uses the global reactions / building blocks / reagents; per-step subsets are not applied here.',
+    'products. Uses the global reactions / building blocks / reagents; per-round subsets are not applied here.',
     undefined,
     previewStatus);
   const previewPanel = tabPanel(
@@ -1700,7 +1938,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   templatesPane = tabs.addPane('Reaction templates', () => templatesPanel);
   bbsPane = tabs.addPane('Building blocks', () => bbsPanel);
   reagentsPane = tabs.addPane('Reagents', () => reagentsPanel);
-  tabs.addPane('Preview', () => previewPanel);
+  const strategyPane = tabs.addPane('Strategy', () => strategyPanel);
+  const previewPane = tabs.addPane('Preview', () => previewPanel);
   view.subs.push(tabs.onTabChanged.subscribe(() => {
     if (tabs.currentPane?.name === 'Preview') refreshPreview();
     // Bump previewRunId on tab-away too, or an in-flight preview keeps running unattended
@@ -1710,6 +1949,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Reagents row-count badge — the only data tab without a count shown elsewhere (reactions/BBs
   // already have it in the ribbon chips and accordion pane subtitles).
   reagentsPane.header.appendChild(reagentsBadge.el);
+  // Right-pane tabs mirror the left accordion's sections — hide every tab header so the accordion
+  // is the only way to navigate; `tabs.currentPane` is driven entirely by code.
+  [templatesPane, bbsPane, reagentsPane, strategyPane, previewPane].forEach((p) => {p.header.style.display = 'none';});
+  // "≈ N products" doubles as a shortcut into Preview, through the same navigation path as the chips.
+  cfgEstEl.style.cursor = 'pointer';
+  cfgEstEl.onclick = () => {if (cfgEstEl.textContent) openAccPaneAndSyncTab(accPreviewPane);};
+  ui.tooltip.bind(cfgEstEl, 'Open Preview to sample products before running the full enumeration.');
 
   // Right pane: a single component-tab control (each tab has its own step strip + one grid).
   const rightPane = ui.divV([tabs.root], {style: {height: '100%', overflow: 'hidden'}});
@@ -1717,20 +1963,18 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Resizable horizontal split — drag the divider to rebalance inputs vs side grids.
   const mainRow = ui.splitH([leftPane, rightPane],
     {style: {flex: '1 1 0', minHeight: '0', width: '100%'}}, true);
-  // Initial split ~38/62: right pane gets more space for the grids.
-  // Must target the wrapper boxes (mainRow.children[0/2]) — direct flex children of the split
-  // container — because spliterResize() reads their flexGrow during drag to compute sumFlexGrow.
+  // Initial split ~35/65 (right pane gets more room for the grids) — set via the split's wrapper
+  // boxes, which is what its own drag-resize logic reads.
   const splitLeft = mainRow.children[0] as HTMLElement;
   const splitRight = mainRow.children[2] as HTMLElement;
   if (splitLeft && splitRight)
-    sizeSplitOnceLaidOut(splitLeft, splitRight, (total) => Math.round(total * 0.38));
+    sizeSplitOnceLaidOut(splitLeft, splitRight, (total) => Math.round(total * 0.35));
 
-  // Small page header — per reviewer feedback, gives the view its own identity instead of relying
-  // solely on the (also fixed) ribbon restyling to not look odd.
+  // Small page header — the view title (ribbon) already says "Reaction Enumerator", so this is
+  // just the one-line description, not a duplicate title.
   const pageHeader = ui.divV([
-    ui.h2('Reaction Enumeration', {style: {margin: '0'}}),
     ui.divText('Combine reaction templates, building blocks, and reagents into an enumerated product library.',
-      {style: {color: 'var(--grey-6)', fontSize: '12px', marginTop: '2px'}}),
+      {style: {color: 'var(--grey-6)', fontSize: '12px'}}),
   ], {style: {flex: '0 0 auto', marginBottom: '4px'}});
 
   const root = ui.divV([
@@ -1740,27 +1984,27 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
     classes: 'chem-enumerator'});
 
-  // Enumerate gets its own ribbon group, matching the Markush Enumerator (pt-chem-enum-dialog.ts) —
-  // its `appActionHost` (the run button) is also its own group, never bundled with other items into
-  // one custom flex div. A run button sharing a group with unrelated items is what picks up the
-  // platform's own group-level background/shadow oddly.
+  // Enumerate gets its own ribbon group, never bundled with unrelated items into one custom flex
+  // div — a run button sharing a group with unrelated items is what picks up the platform's own
+  // group-level background/shadow oddly.
   view.setRibbonPanels([
     [appInfoIcon],
     [runBtn, cancelBtn, progressLabel],
-    [chipReactions, ribbonArrow, chipBbs, chipCombine, cfgEstEl],
+    // Strategy first (the "how"), then reactions/BBs (the "what"), then the resulting estimate.
+    [chipCombine, mkRibbonArrow(), chipReactions, mkRibbonArrow(), chipBbs, mkRibbonArrow(), cfgEstEl],
+    [loadYamlBtn, saveYamlBtn],
   ]);
   view.append(root);
 
-  // Strips the platform's default ribbon-group shadow/background (Markush Enumerator does the
-  // same). Walk up from `runBtn`, not down from `.d4-root` — that's the grid viewer's own
-  // wrapper class, not a ribbon ancestor. Style gets wiped by platform startup, so reassert on
-  // every tick rather than stopping at first find; click-listener attach lives in bindRunTooltip.
+  // Strips the platform's default ribbon-group shadow/background. Walk up from `runBtn`, not down
+  // from `.d4-root` — that's the grid viewer's own wrapper class, not a ribbon ancestor. Style gets
+  // wiped by platform startup, so reassert on every tick rather than stopping at first find;
+  // click-listener attach lives in bindRunTooltip.
   function applyRibbonFixup(attempt = 0): void {
     const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
     // Scope to this view's own container, not the whole document — Datagrok keeps other open views'
-    // ribbon DOM alive (hidden) for fast tab switching, so an unscoped query here was permanently
-    // stripping their ribbon styling too whenever the user switched views mid-loop (reviewer-reported:
-    // "switch to any other view, it will permanently restyle the ribbon panel of the other views").
+    // ribbon DOM alive (hidden) for fast tab switching, so an unscoped query here would permanently
+    // restyle every other open view's ribbon too whenever the user switched views mid-loop.
     // `.grok-view-container` (not `.d4-view-ribbon`, which isn't consistently present) is the
     // narrowest ancestor that's reliably scoped to exactly one view.
     const ribbon = el?.closest<HTMLElement>('.grok-view-container');
@@ -1782,5 +2026,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   bbsCtl.render();
   reagentsCtl.render();
   refreshValidation();
+  // Strategy opens first. Must run here, after `tabs`/`strategyPane` exist (see the TDZ note above).
+  openAccPaneAndSyncTab(accCombinePane);
   return view;
 }
