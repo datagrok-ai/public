@@ -25,8 +25,12 @@ Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
 const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView,
-                     ClicksView, LogView, ProjectsView, MetricsView];
+                     ClicksView, LogView, ProjectsView, MetricsView, VulnerabilitiesView];
 ```
+
+`VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
+(`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the
+selected image's per-CVE CSV; the packages/groups filter inputs are hidden on it (like Metrics).
 
 Each is added with `this.view.addView(name, factory, false)`. The factory is **lazy** — a tab's
 `tryToInitViewers()` (→ `initViewers()`) runs only when the tab is first shown, so its queries

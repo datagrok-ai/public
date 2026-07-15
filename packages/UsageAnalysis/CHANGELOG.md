@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Vulnerabilities: Added a tab showing the published VEX scan results (data.datagrok.ai/vex) — per-image severity summary with drill-down to the per-CVE report
+
 * Stress tests: Replaced the old stress dashboards/queries with `StressTestsSummary` (all builds — median/avg/min/max/p95 of ms by threads, pass rate as the mean per-test pass fraction), `StressTestsRaw` (per-build raw runs incl. error text, latest default, boxplot of ms), and `StressTestsFailures` (failing test×thread combos with a sample error); rewired the CI/CD tests project. Backed by the new server `stress_tests` table populated from the Jenkins stress job.
 * GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)
 * GROK-12108: Usage Analysis: Errors tab
