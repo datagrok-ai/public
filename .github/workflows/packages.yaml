@@ -317,6 +317,7 @@ jobs:
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 15
         run: |
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
@@ -433,6 +434,7 @@ jobs:
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
+        timeout-minutes: 25
         run: |
           if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
             npm run build -- --mode=production
@@ -474,6 +476,7 @@ jobs:
           grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 20
         run: |
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
           if [ -n "$grok_deps" ]; then
@@ -501,6 +504,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 20
         run: |
           count=0
           retries=5
