@@ -40,6 +40,9 @@ function isConnected(node: FlowNode, side: 'input' | 'output', key: string): boo
 
 export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const node = props.data;
+  // Output nodes live docked in the Outputs strip (FlowEditor pins their
+  // position) and render as compact rows, not full node cards.
+  if (node.dgNodeType === 'output') return OutputRowComponent(props);
   const collapsed = node.collapsed === true;
   // Exec (execution-ordering) ports render separately at the top corners — keep
   // them out of the regular data-socket rows. Hidden inputs (and their
@@ -278,6 +281,15 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
       )}
     </div>
   );
+}
+
+/** Output nodes have no canvas presence at all — their visible form is a
+ *  screen-space chip inside the Outputs strip (built by `FlowEditor`), and
+ *  their wire endpoints come from the analytic chip-aware socket-position
+ *  watcher, not from DOM. Render an empty hidden placeholder so the rete node
+ *  view exists but never paints, scales, or intercepts pointer events. */
+function OutputRowComponent(props: NodeProps): React.JSX.Element {
+  return <div style={{display: 'none'}} data-node-id={props.data.id} />;
 }
 
 interface SocketProps {

@@ -250,10 +250,13 @@ category('Flow: suggestions', () => {
       }));
       expect(await until(() => flow.getNodeCount() === 4), true, 'drop created the node');
       expect(await until(() => flow.getConnectionCount() === 3), true, 'drop applied the suggested wiring');
+      // An output node never lands at the drop point — the Outputs strip owns
+      // it and renders it as a docked compact row (geometry is asserted in
+      // output-strip-tests; this view is detached, so rects are all zero here).
       const dropped = flow.getNodes().find((n) => n.dgTypeName === 'Outputs/Table Output')!;
-      const want = flow.screenToCanvas(r.left + 400, r.top + 300);
-      expect(Math.abs(dropped.pos.x - want.x) < 1 && Math.abs(dropped.pos.y - want.y) < 1, true,
-        'dropped node lands at the drop point');
+      const asRow = await until(() =>
+        canvas.querySelector(`.ff-output-row[data-node-id="${dropped.id}"]`) != null);
+      expect(asRow, true, 'dropped output node renders as an Outputs-strip row');
 
       // Collapse via caret: list hidden, state persisted.
       const caret = view.suggestionPane.root.querySelector<HTMLElement>('[data-testid="ff-suggest-pane-caret"]')!;

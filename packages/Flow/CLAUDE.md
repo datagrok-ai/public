@@ -276,6 +276,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
 | `invalidation-tests.ts` | Flow: invalidation, Flow: autorun, Flow: in-place isolation | **In-place isolation**: instrumented emission snapshot-clones dataframe inputs (`__ff_clone`; the snapshot feeds the call, pass-through, and stash) while clean emission doesn't; a real Select Table → AddNewColumn run leaves the shell table + upstream capture pristine, previews show at-node state, and an autorun slice re-run is idempotent (validated by disabling `cloneDataframeInputs` → the shell table gets mutated). `sliceDownFrom` (forward closure), `applyGraphEdit` per-kind semantics (node-added → nothing; connection change → target+downstream stale, source + its live value kept; params-changed → node+downstream; node-removed → state forgotten), the editor's classified `onGraphEdited` stream (incl. `notifyNodeParamsChanged`, delete = connection-removed then node-removed, clear), **the user-side click guard** (opening the panel 3× per value-bearing node — Constants, Select Table/Column, Output, Int Input, OpenFile — emits zero `params-changed`; a real textarea edit reports once, same value again nothing; validated by disabling the guard → 3 spurious edits), `pendingNodes` (never-run/stale + downstream; fresh flow → empty), `expandToLiveBoundary` (captured boundary vs full ancestry), `AutorunScheduler` (debounce coalescing + dirty union, disabled/non-invalidating edits never run, `kick` on enable, busy → retry with kept set, skipped → wait for next edit, toggle-off cancels, re-entrant `hold`/`release` suspends firing and fires the backlog) |
 | `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, an Output node anchors the producer like a SetVar, warn-and-skip for JS-only nodes (needs a live backend) |
+| `output-strip-tests.ts` | Flow: output strip | strip column mounts OUTSIDE the canvas viewport (vertical label, ≤50px); an output node renders as a 40×24 chip INSIDE the strip (one-letter type, tooltip names output + source, no canvas card); chips are screen-space (pan/zoom change neither size nor position); analytic wire endpoints stay at the canvas edge across pan/zoom (`listenChipSocket`); chip click selects the node; `bindOutputToStrip` (dataframe → wired Table Output named after the slot + unique suffixing, scalar → Value Output auto-typed, chip letter follows); `.ff-strip-droptarget` during an output drag; minimap/zoomToFit exclusion; destroy removes strip + wrapper |
 
 ## Rete Pipeline
 
@@ -345,6 +346,41 @@ Become `//output:` annotation lines.
 |------|-------|
 | Table Output | Fixed `dataframe` type |
 | Value Output | Configurable `outputType`. On connect, `FlowEditor.maybeAutoTypeValueOutput` copies the source slot's `dgType` into `properties.outputType` (skipping `dynamic` / `object`). |
+
+**Outputs strip**: output nodes never sit on the canvas. The `FlowEditor` splits its host into
+`[.ff-canvas | .ff-output-strip]` inside an absolute `.ff-canvas-wrap` (the host's own normal-flow
+children — the view's start panel — are untouched): the AreaPlugin mounts on the inner
+`canvasEl`, and the strip is a thin (48px) column **outside the canvas viewport** with a vertical
+"Outputs" label — pan/fit can never put graph content behind it. Each output node renders as a
+**screen-space 40×24 chip inside the strip** (plain DOM built by `FlowEditor.buildChip`, NOT a
+rete node view — zoom/pan never touch chips): socket dot + one-letter type badge; param name,
+declared type, what feeds it, and run status live in the chip tooltip. The rete node view is an
+empty hidden placeholder (`OutputRowComponent` in
+[node-component.tsx](src/rete/node-component.tsx) renders `display:none`), so node *positions* are
+irrelevant and the whole pin/translate machinery is gone. The **data model is unchanged** — real
+nodes, real connections (serialization, compiler, creation-script round-trips all untouched):
+
+- **Wire endpoints are analytic**: the constructor wraps `getDOMSocketPosition` — sockets on
+  output nodes resolve via `chipSocketPos` to the canvas' right edge at the chip's row (the wire
+  runs to the edge and visually plugs into the adjacent chip), pushed to subscribed wires by
+  `notifyChipSockets` on every pan/zoom/resize/reorder (`scheduleStripSync(false)`, microtask-
+  coalesced so endpoints never lag a pan). Chips are **vertically centered as a group** (flex
+  `justify-content: center` — the group's center of mass sits at the strip middle, each added
+  chip re-balances the rest; the "Outputs" label sits at the top); the chip geometry constants
+  (`STRIP_CHIP_GAP/H`) must match the `.ff-output-strip-chips` / `.ff-output-row` CSS.
+- **Chips carry node identity** (`.ff-node`, `data-node-id`, `data-node-type-name`,
+  `data-selected`, the `socket-input` test-id): guides, connect hints, and the drop-on-node branch
+  address chips exactly like nodes. Click selects the node (property panel, Delete key);
+  right-click opens the node context menu; chips rebuild on graph edits, selection changes,
+  and `updateNode` of an output node (`scheduleStripSync(true)`).
+- Dropping a data-output drag on the strip (`stripContains` rect test) calls `bindOutputToStrip`:
+  dataframe → Table Output, else Value Output, `paramName` derived from the source slot key
+  (unique-suffixed); dropping **on an existing chip** binds that chip's free input via the normal
+  `soleCompatibleInput` node-body branch. During an output drag the column lights up
+  (`.ff-strip-droptarget`, set in `beginConnectHints`).
+- Output nodes are excluded from: minimap boxes (the minimap itself lives in `canvasEl`),
+  `zoomToFit` bounds, `autoLayout`, and snap targets (`computeSnap`) — their `node.pos` is
+  meaningless (wherever they were dropped).
 
 **Output ⇄ SetVar unification**: an Output node and a `SetVar` func node compile to the same
 thing (`isSetVarNode` in [scheme.ts](src/rete/scheme.ts)). The emitted JS gives an Output node a

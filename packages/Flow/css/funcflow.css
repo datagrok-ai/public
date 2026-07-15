@@ -2036,3 +2036,133 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   background: #2083D570;
   border-radius: 25%;
 }
+
+/* ---------- Outputs strip ----------
+   The FlowEditor splits into [canvas | strip] inside an absolute wrapper
+   (`.ff-canvas-wrap`, so the host's own normal-flow children — the view's
+   start panel — keep their flow): `.ff-canvas` is the area viewport,
+   `.ff-output-strip` a thin column OUTSIDE it, so graph content can never pan
+   or fit behind it. The output nodes render as screen-space chips INSIDE the
+   strip (plain DOM built by FlowEditor — zoom never touches them); their wires
+   end analytically at the canvas' right edge, level with the chip. */
+.ff-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.ff-canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.ff-output-strip {
+  flex: 0 0 48px;
+  position: relative;
+  background: #eceff1;
+  border-left: 1.5px dashed #b0bec5;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Chip stack — vertically centered as a group (its center of mass sits at
+   the strip middle; each added chip re-balances the rest). Geometry mirrors
+   STRIP_CHIP_H / GAP in flow-editor.ts — the analytic wire-endpoint math
+   depends on it. */
+.ff-output-strip-chips {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ff-output-strip-header {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+  writing-mode: vertical-rl;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #78909c;
+  pointer-events: none;
+}
+
+/* Lit while a data-output drag is in progress — "you can drop this here". */
+.ff-output-strip.ff-strip-droptarget {
+  background: #c8e6c9;
+  border-left-color: #66bb6a;
+}
+
+.ff-output-strip.ff-strip-droptarget .ff-output-strip-header {
+  color: #2e7d32;
+}
+
+/* Screen-space output chip: [socket dot | type letter]. Fixed 40x24 — the
+   wire-endpoint math in flow-editor.ts relies on the exact height. */
+.ff-output-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: 40px;
+  min-width: 0; /* chips carry .ff-node, whose base rule sets min-width: 160px */
+  height: 24px;
+  flex: 0 0 auto;
+  padding: 0 5px;
+  background: #ffffff;
+  border: 1px solid #b0bec5;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+  cursor: pointer;
+}
+
+.ff-output-row[data-bound="false"] {
+  border-style: dashed;
+  background: #fafafa;
+}
+
+.ff-output-row[data-selected="true"] {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.20);
+}
+
+.ff-output-row[data-status="errored"] {
+  background: #ffebee;
+}
+
+.ff-output-row[data-status="running"] {
+  background: #e3f2fd;
+}
+
+.ff-output-row .ff-output-row-socket {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+/* Inside a chip the socket is a plain dot — the chip's letter carries the
+   type; the dot only marks where the wire plugs in. */
+.ff-output-chip-socket {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  font-size: 0;
+  cursor: inherit;
+}
+
+.ff-output-row-letter {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}

@@ -409,12 +409,17 @@ export class PropertyPanel {
   private addOutputNodePane(acc: DG.Accordion, node: FlowNode): void {
     acc.addPane('Output Configuration', () => {
       const content = ui.div([], 'funcflow-accordion-content');
+      // The strip row displays paramName / outputType — re-render it on edit.
       content.appendChild(this.createTextarea('Param Name', String(node.properties['paramName'] ?? ''), (v) => {
         node.properties['paramName'] = v;
+        void this.flow.updateNode(node.id);
       }));
       if (node.properties['outputType'] !== undefined) {
         content.appendChild(this.createCombo('Output Type', String(node.properties['outputType'] ?? 'dynamic'),
-          OUTPUT_TYPE_VALUES, (v) => {node.properties['outputType'] = v;}));
+          OUTPUT_TYPE_VALUES, (v) => {
+            node.properties['outputType'] = v;
+            void this.flow.updateNode(node.id);
+          }));
       }
       return content;
     }, true);
