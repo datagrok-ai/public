@@ -35,7 +35,15 @@ latest_runs AS (
     AND r.build_name IN (SELECT build_name FROM recent)
 ),
 active_tests AS (
-  SELECT DISTINCT test_name FROM latest_runs WHERE rn = 1 AND passed IS NOT NULL
+  -- Tests that ran on this instance in the last 14 days, with their most recent CI run date.
+  -- Broadened beyond the build window so tests that recently STOPPED running are still surfaced
+  -- (for the "not run for >= N days" staleness alert); last_run drives that check client-side.
+  SELECT r.test_name, MAX(r.date_time) AS last_run
+  FROM test_runs r
+  WHERE NOT r.stress_test AND NOT r.benchmark AND r.ci_cd AND r.passed IS NOT NULL
+    AND r.instance LIKE 'https://' || @instanceFilter || '.datagrok.ai'
+    AND r.date_time >= now() - interval '14 days'
+  GROUP BY r.test_name
 )
 SELECT
   COALESCE(p.name, t.package) AS package,
@@ -46,6 +54,7 @@ SELECT
   b.commit AS build_commit,
   b.build_date,
   r.instance,
+  act.last_run,
   CASE WHEN r.passed IS NULL THEN 'did not run'
        WHEN r.skipped THEN 'skipped'
        WHEN r.passed THEN 'passed'
@@ -58,6 +67,7 @@ FROM tests t
 CROSS JOIN indexed_builds b
 LEFT JOIN latest_runs r
   ON r.test_name = t.name AND r.build_name = b.build_name AND r.rn = 1
+LEFT JOIN active_tests act ON act.test_name = t.name
 LEFT JOIN published_packages p ON p.name = t.package AND p.is_current
 WHERE t.type <> 'manual'
   AND t.name IN (SELECT test_name FROM active_tests)

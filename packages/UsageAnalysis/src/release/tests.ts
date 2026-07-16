@@ -6,7 +6,8 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {fetchReleaseTests, computeTestAlerts, ReleasePivot, ReleaseContext, JENKINS_TEST_JOB, colorStatusCell,
   COLOR_FAIL_TEXT, DIM_STATUS_BACK, COLOR_DIM_TEXT, NOT_RUN_BACK, waitForWidth, openInWorkspaceIcon,
-  getReleaseMutesSchema, MUTED_VERSIONS, MUTE_ON, MUTE_OFF, parseMutedVersions, isMutedForVersion} from './data';
+  getReleaseMutesSchema, MUTED_VERSIONS, STALE_MUTED_VERSIONS, MUTE_ON, MUTE_OFF,
+  parseMutedVersions, isMutedForVersion} from './data';
 
 export class TestsView extends UaView {
   private lastBuildsInput!: DG.InputBase;
@@ -152,8 +153,12 @@ export class TestsView extends UaView {
       // The 'mute' column value already holds the 🔔/🔕 glyph (kept aligned per row); click toggles it.
     });
     grid.onCellClick.subscribe((gc) => {
-      if (gc.isTableCell && gc.gridColumn.name === 'mute')
+      if (!gc.isTableCell)
+        return;
+      if (gc.gridColumn.name === 'mute')
         this.toggleMute(df, gc.cell.rowIndex, p);
+      else if (gc.gridColumn.name === 'staleMute' && df.get('stale', gc.cell.rowIndex) === true)
+        this.toggleStaleMute(df, gc.cell.rowIndex, p);
     });
     df.onCurrentRowChanged.subscribe(() => {
       if (df.currentRowIdx >= 0)
@@ -175,12 +180,14 @@ export class TestsView extends UaView {
       // Show only these, in this order: test → package → passing history (sparkline + per-build status
       // cells) → duration sparkline → flags. `setVisible` whitelists + orders in one deterministic call.
       const visible = ['mute', 'test', 'package', 'passing', ...p.statusCols, 'duration',
-        'needs_attention', 'flaky', 'slower', 'owner', 'ignore?', 'ignoreReason'].filter((n) => grid.col(n) != null);
+        'needs_attention', 'stale_days', 'staleMute', 'flaky', 'slower', 'owner', 'ignore?', 'ignoreReason']
+        .filter((n) => grid.col(n) != null);
       grid.columns.setVisible(visible);
       grid.columns.setOrder(visible);
 
       const widths: Record<string, number> = {mute: 40, test: 340, package: 130, passing: 100, duration: 100,
-        needs_attention: 92, flaky: 54, slower: 54, owner: 110, 'ignore?': 54, ignoreReason: 150};
+        needs_attention: 92, stale_days: 64, staleMute: 46, flaky: 54, slower: 54, owner: 110, 'ignore?': 54,
+        ignoreReason: 150};
       for (const name of Object.keys(widths)) {
         const c = grid.col(name);
         if (c)
@@ -270,10 +277,31 @@ export class TestsView extends UaView {
     await this.persistReleaseMutes(df);
   }
 
-  /** Persists the mutedVersions column back to the ReleaseMutes sticky-meta schema (coalesced). */
+  /** Toggles the current release version in the clicked test's STALE-mute list (independent of the failing mute). */
+  private async toggleStaleMute(df: DG.DataFrame, row: number, p: ReleasePivot): Promise<void> {
+    if (!p.version)
+      return;
+    const smvCol = df.columns.byName(STALE_MUTED_VERSIONS) ?? df.columns.addNewString(STALE_MUTED_VERSIONS);
+    const versions = parseMutedVersions(smvCol.get(row));
+    const at = versions.indexOf(p.version);
+    if (at >= 0)
+      versions.splice(at, 1);
+    else
+      versions.push(p.version);
+    smvCol.set(row, versions.join(';'));
+    const staleMuted = isMutedForVersion(smvCol.get(row), p.version);
+    df.getCol('staleMutedForVersion').set(row, staleMuted);
+    df.getCol('stale_alert').set(row, df.get('stale', row) === true && !staleMuted);
+    df.getCol('staleMute').set(row, df.get('stale', row) !== true ? '' : (staleMuted ? MUTE_ON : MUTE_OFF));
+    this.grid?.invalidate();
+    await this.persistReleaseMutes(df);
+  }
+
+  /** Persists mutedVersions + staleMutedVersions back to the ReleaseMutes sticky-meta schema (coalesced). */
   private async persistReleaseMutes(df: DG.DataFrame): Promise<void> {
     const mvCol = df.columns.byName(MUTED_VERSIONS);
-    if (!mvCol)
+    const smvCol = df.columns.byName(STALE_MUTED_VERSIONS);
+    if (!mvCol && !smvCol)
       return;
     if (this.persistingMutes) {
       this.pendingMutes = true;
@@ -285,10 +313,12 @@ export class TestsView extends UaView {
       const n = df.rowCount;
       do {
         this.pendingMutes = false;
-        const values = DG.DataFrame.fromColumns([
-          DG.Column.fromStrings(MUTED_VERSIONS, Array.from({length: n}, (_, i) => mvCol.get(i) ?? '')),
-        ]);
-        await grok.dapi.stickyMeta.setAllValues(schema, df.getCol('test'), values);
+        const cols: DG.Column[] = [];
+        if (mvCol)
+          cols.push(DG.Column.fromStrings(MUTED_VERSIONS, Array.from({length: n}, (_, i) => mvCol.get(i) ?? '')));
+        if (smvCol)
+          cols.push(DG.Column.fromStrings(STALE_MUTED_VERSIONS, Array.from({length: n}, (_, i) => smvCol.get(i) ?? '')));
+        await grok.dapi.stickyMeta.setAllValues(schema, df.getCol('test'), DG.DataFrame.fromColumns(cols));
       } while (this.pendingMutes);
     } finally {
       this.persistingMutes = false;

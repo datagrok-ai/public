@@ -5,7 +5,7 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {queries} from '../package-api';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
-import {fetchReleaseTests, computeTestAlerts, stressRegression, defaultNextVersion, ReleaseContext} from './data';
+import {fetchReleaseTests, computeTestAlerts, stressRegression, defaultNextVersion, ReleaseContext, STALE_DAYS} from './data';
 import {fetchReleaseTickets} from './tickets';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
@@ -95,6 +95,8 @@ export class ReleaseOverviewView extends UaView {
           tab: 'Tests', groups: a.slowerByPkg});
       if (a.flaky > 0)
         alerts.push({label: `${a.flaky} unstable/flaky tests`, band: 'orange', tab: 'Tests', groups: a.flakyByPkg});
+      if (a.stale > 0)
+        alerts.push({label: `${a.stale} tests not run for ${STALE_DAYS}+ days`, band: 'orange', tab: 'Tests', groups: a.staleByPkg});
     } else {
       this.setCard('Tests', 'n/a', 'info');
     }
