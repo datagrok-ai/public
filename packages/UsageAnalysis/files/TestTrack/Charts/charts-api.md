@@ -5,6 +5,8 @@ coverage_type: regression
 priority: p0
 realizes_atlas: [charts.cp.open-viewer-with-required-columns]
 realizes: [charts.chord, charts.globe, charts.group-analysis, charts.multiplot, charts.radar, charts.sankey, charts.sunburst, charts.surface-plot, charts.tree, charts.word-cloud]
+realized_as:
+  - charts-api-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

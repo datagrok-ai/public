@@ -5,6 +5,8 @@ coverage_type: edge
 priority: p1
 realizes_atlas: [sunburst-unsupported-column-defense]
 realizes: [charts.sunburst]
+realized_as:
+  - sunburst-date-column-bug-spec.ts
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

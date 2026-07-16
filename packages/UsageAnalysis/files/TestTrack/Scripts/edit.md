@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: []
-realizes: []
+realizes: [views.scripts]
 realized_as:
   - scripts-edit-debugged.test.ts
 related_bugs: []

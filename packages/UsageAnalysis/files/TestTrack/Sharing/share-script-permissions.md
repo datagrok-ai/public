@@ -3,7 +3,7 @@ feature: sharing
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: []
+realizes_atlas: [cp-share-via-context-menu, cp-context-panel-share-button, cp-advanced-editor-matrix, cp-shared-with-me-browse-node]
 realizes: []
 realized_as:
   - share-script-permissions-spec.ts

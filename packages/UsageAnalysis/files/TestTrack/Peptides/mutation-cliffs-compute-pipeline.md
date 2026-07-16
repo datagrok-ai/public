@@ -2,9 +2,9 @@
 feature: peptides
 target_layer: playwright
 coverage_type: regression
-priority: p2
-realizes_atlas: []
-realizes: []
+priority: p1
+realizes_atlas: [export-mutation-cliffs-from-sar-viewer, peptide-space-sar-with-mcl]
+realizes: [bio.analyze.sar, peptides.sequence-mutation-cliffs]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

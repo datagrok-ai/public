@@ -155,11 +155,11 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await lcSetProps(page, {whiskersType: 'Med | Q1, Q3'});
     expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Med | Q1, Q3');
 
-    await lcSetProps(page, {whiskersType: 'Avg | +/-StDev'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | +/-StDev');
+    await lcSetProps(page, {whiskersType: 'Avg | ±StDev'});
+    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | ±StDev');
 
-    await lcSetProps(page, {whiskersType: 'Avg | +/-StError'});
-    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | +/-StError');
+    await lcSetProps(page, {whiskersType: 'Avg | ±StError'});
+    expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('Avg | ±StError');
 
     await lcSetProps(page, {whiskersType: 'None'});
     expect((await lcProps(page, 'whiskersType')).whiskersType).toBe('None');
@@ -175,8 +175,8 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await lcSetProps(page, {markerType: 'square'});
     expect((await lcProps(page, 'markerType')).markerType).toBe('square');
 
-    await lcSetProps(page, {markerType: 'triangle up'});
-    expect((await lcProps(page, 'markerType')).markerType).toBe('triangle up');
+    await lcSetProps(page, {markerType: 'triangle top'});
+    expect((await lcProps(page, 'markerType')).markerType).toBe('triangle top');
 
     await lcSetProps(page, {markerSize: 10});
     expect((await lcProps(page, 'markerSize')).markerSize).toBe(10);
@@ -383,17 +383,17 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await lcSetProps(page, {xColumnName: 'STARTED'});
     expect((await lcProps(page, 'xColumnName')).xColumnName).toBe('STARTED');
 
-    await lcSetProps(page, {xMap: 'Year'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('Year');
+    await lcSetProps(page, {xMap: 'year'});
+    expect((await lcProps(page, 'xMap')).xMap).toBe('year');
 
-    await lcSetProps(page, {xMap: 'Month'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('Month');
+    await lcSetProps(page, {xMap: 'month'});
+    expect((await lcProps(page, 'xMap')).xMap).toBe('month');
 
-    await lcSetProps(page, {xMap: 'Day of week'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('Day of week');
+    await lcSetProps(page, {xMap: 'day'});
+    expect((await lcProps(page, 'xMap')).xMap).toBe('day');
 
-    await lcSetProps(page, {xMap: 'None'});
-    expect((await lcProps(page, 'xMap')).xMap).toBe('None');
+    await lcSetProps(page, {xMap: ''});
+    expect((await lcProps(page, 'xMap')).xMap).toBe('');
   });
 
   // ── Line styling ───────────────────────────────────────────────────────

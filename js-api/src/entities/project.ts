@@ -34,6 +34,29 @@ export class Project extends Entity {
 
   static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
 
+  /** Opens the platform "Save project" dialog for an externally assembled set of
+   * tables — the standard dashboard-publishing UI (per-table data-sync toggles,
+   * creation-script dependencies, share link, upload) without scanning the
+   * workspace: only the passed tables are offered. `views[i]`, when given, is
+   * the (possibly detached) TableView showing `tables[i]`; its layout is saved
+   * with the project and reopens with the table. When `views[i]` is absent,
+   * `layouts[i]` (a `ViewLayout.viewState` string) ships the layout without a
+   * live view. Data sync defaults on for tables whose `df` carries a creation
+   * script (`.script` tag). Pass `project` (a previously saved project or its
+   * id) to re-publish into the SAME project — its table/view children are
+   * replaced by the fresh ones instead of creating a new project per save.
+   * @returns the saved project, or null when the dialog is cancelled. */
+  static showSaveDialog(options: {tables: DataFrame[], views?: (TableView | null)[],
+      layouts?: (string | null)[], name?: string, description?: string,
+      project?: Project | string}): Promise<Project | null> {
+    return (api as any).grok_Project_OpenSaveDialog(
+      options.tables.map((t) => t.dart),
+      (options.views ?? []).map((v) => v == null ? null : v.dart),
+      options.layouts ?? [],
+      options.name ?? '', options.description ?? '',
+      typeof options.project === 'string' ? options.project : options.project?.id ?? '');
+  }
+
   get pictureUrl(): string {
     return api.grok_PictureMixin_Get_PictureUrl(this.dart);
   }

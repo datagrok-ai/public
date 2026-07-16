@@ -286,6 +286,41 @@ category('Flow: script emitter', () => {
       destroyEditor(e);
     }
   });
+
+  test('dataframe pass-throughs get dims-only summaries; utility summaries are slot-keyed', async () => {
+    // A func that threads a table through (real output is an int): its
+    // `t__pt` pass-through must appear in the node-complete outputs as a cheap
+    // __ff_dims entry, so the outgoing pass-through wire gets its "N × K" label.
+    const script = DG.Script.create([
+      '//name: TableThreader',
+      '//language: javascript',
+      '//input: dataframe t',
+      '//output: int result',
+      'result = t.rowCount;',
+    ].join('\n'));
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const fn = await addNode(e.flow, typeName, 320, 0);
+      await e.flow.addConnectionByKeys(src.id, 'table', fn.id, 't');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes('function __ff_dims'), true, 'dims helper in the preamble');
+      expect(inst.includes('"t__pt": __ff_dims('), true, 'pass-through summarized (dims-only)');
+
+      // A utility step's summary is keyed by its output SLOT key (what the
+      // edge-count and port-preview lookups use), not by its variable name.
+      const sel = await addNode(e.flow, 'Utilities/Select Table', 0, 200);
+      sel.properties['tableName'] = 'demog';
+      const inst2 = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r2'});
+      const selOutKey = Object.keys(sel.outputs).find((k) => !k.startsWith('__'))!;
+      expect(inst2.includes(`{outputs:{${JSON.stringify(selOutKey)}: __ff_summarize(`), true,
+        `utility summary keyed by slot key "${selOutKey}"`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
 });
 
 category('Flow: multi-output funcs', () => {

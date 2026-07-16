@@ -5,6 +5,8 @@ coverage_type: regression
 priority: p0
 realizes_atlas: [chem.cp.substructure-search-with-filter]
 realizes: [chem.substructure-filter]
+realized_as:
+  - filter-panel-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/filter-panel.md
 migration_date: 2026-05-11

@@ -2,9 +2,11 @@
 feature: projects
 target_layer: playwright
 coverage_type: regression
-priority: p2
-realizes_atlas: []
-realizes: []
+priority: p1
+realizes_atlas: [save-copy-with-link-mode]
+realizes: [views.projects]
+realized_as:
+  - complex-save-copy-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md

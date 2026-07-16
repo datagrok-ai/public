@@ -2,6 +2,8 @@
 feature: legend
 realizes_atlas: []
 realizes: []
+realized_as:
+  - color-consistency-spec.ts
 target_layer: playwright
 coverage_type: edge
 priority: p0

@@ -371,7 +371,7 @@ category('Flow: save button + auto-pin', () => {
     ensureFunctionsRegistered();
   });
 
-  test('Save is available only for a non-empty canvas with unsaved changes', async () => {
+  test('Save is available for any non-empty canvas; the tooltip tracks the dirty state', async () => {
     const view = new FuncFlowView();
     const probe = view as unknown as {
       flow: Parameters<typeof addNode>[0] & {destroy?(): void; notifyNodeParamsChanged(id: string): void};
@@ -391,15 +391,16 @@ category('Flow: save button + auto-pin', () => {
       expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), true,
         'button greyed on an empty canvas');
 
-      // An edit → unsaved changes → enabled.
+      // An edit → unsaved changes → enabled with the "save" tooltip.
       const node = await addNode(probe.flow, 'Constants/String');
       expect(probe.saveAvailability().enabled, true, 'an edit enables Save');
       expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), false,
         'button un-greyed after an edit');
 
-      // Recording the save baseline → no changes since → disabled again.
+      // Recording the save baseline → still ENABLED (the Save dialog is also
+      // the dashboard-publishing gateway), tooltip reflects the clean state.
       probe.markSaved();
-      expect(probe.saveAvailability().enabled, false, 'no changes since save → disabled');
+      expect(probe.saveAvailability().enabled, true, 'Save stays available after a save (dashboard gateway)');
       expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
         'tooltip explains no changes');
 
@@ -410,15 +411,15 @@ category('Flow: save button + auto-pin', () => {
       const snap = probe.currentSnapshot();
       await new Promise((r) => setTimeout(r, 5));
       expect(probe.currentSnapshot(), snap, 'snapshot is stable across calls (no volatile timestamps)');
-      expect(probe.saveAvailability().enabled, false, 'still disabled after a delay — no false "changed"');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
+        'still clean after a delay — no false "changed"');
 
-      // A PARAMETER edit fires `onGraphEdited` (not `onGraphChanged`) — Save must
-      // react to it too, else editing a value would leave the button greyed.
+      // A PARAMETER edit fires `onGraphEdited` (not `onGraphChanged`) — the
+      // dirty state must react to it too.
       node.properties['value'] = 'changed';
       probe.flow.notifyNodeParamsChanged(node.id);
-      expect(probe.saveAvailability().enabled, true, 'a parameter edit enables Save');
-      expect(probe.saveButton.classList.contains('ff-ribbon-btn-disabled'), false,
-        'the button un-greys on a parameter edit (onGraphEdited path)');
+      expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), false,
+        'a parameter edit marks the flow dirty (onGraphEdited path)');
     } finally {
       await new Promise((r) => setTimeout(r, 120));
       probe.flow?.destroy?.();

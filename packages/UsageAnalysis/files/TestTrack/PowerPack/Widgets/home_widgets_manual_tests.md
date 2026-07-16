@@ -3,7 +3,7 @@ feature: widgets
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: []
+realizes_atlas: [powerpack.cp.welcome-view-renders, powerpack.cp.spotlight-widget-renders, welcome-view-power-search]
 realizes: []
 realized_as:
   - home-widgets.test.ts

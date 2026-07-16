@@ -5,6 +5,8 @@ coverage_type: regression
 priority: p0
 realizes_atlas: [charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
 realizes: [charts.sankey, charts.chord, charts.surface-plot, charts.radar, charts.tree, charts.globe, charts.word-cloud, charts.sunburst]
+realized_as:
+  - sunburst-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility:
   - add-viewer-sunburst

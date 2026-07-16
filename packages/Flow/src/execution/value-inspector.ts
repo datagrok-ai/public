@@ -64,12 +64,16 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
   const container = setTid(ui.div([], 'funcflow-value-inspector'), 'value-inspector');
   container.appendChild(buildStatusBadge(state));
 
-  if (state.outputs && Object.keys(state.outputs).length > 0) {
+  // `__pt` entries are dims-only bookkeeping for the on-edge count labels
+  // (possibly null when nothing flowed) — never a row in the panel.
+  const shown = Object.entries(state.outputs ?? {})
+    .filter(([name, summary]) => summary != null && !name.endsWith('__pt'));
+  if (shown.length > 0) {
     const header = ui.divText('Outputs');
     header.style.fontWeight = 'bold';
     header.style.marginBottom = '4px';
     container.appendChild(header);
-    for (const [name, summary] of Object.entries(state.outputs))
+    for (const [name, summary] of shown)
       container.appendChild(buildMetaRow(name, summary));
   }
 
@@ -232,6 +236,7 @@ async function addViewerToWorkspace(viewer: DG.Viewer): Promise<void> {
 export function hasRenderablePreview(state: NodeExecState): boolean {
   if (!state.outputs) return false;
   for (const summary of Object.values(state.outputs)) {
+    if (summary == null) continue; // `__pt` dims entries can be null
     if (summary.type === 'dataframe' && summary.clone) return true;
     if (summary.type === 'column' && (summary.clone || (Array.isArray(summary.sample) && summary.sample.length > 0))) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
@@ -245,7 +250,10 @@ export function buildValuePreviews(
 ): HTMLElement {
   const container = setTid(ui.div([], 'funcflow-value-previews'), 'value-previews');
   if (!state.outputs) return container;
-  const entries = Object.entries(state.outputs);
+  // `__pt` entries are dims-only bookkeeping for the on-edge count labels —
+  // never previewable, skip them (they may also be null).
+  const entries = Object.entries(state.outputs)
+    .filter(([name, summary]) => summary != null && !name.endsWith('__pt'));
   // When the node's real output is a column, its preview is that column rendered
   // as a one-column DataFrame — so suppress the threaded "<input> (modified)"
   // passthrough table (it's kept in the state for the column picker / inspect,

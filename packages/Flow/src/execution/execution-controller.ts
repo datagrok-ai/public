@@ -38,12 +38,16 @@ export function expandToLiveBoundary(
   return slice;
 }
 
-/** Short count label for a wire from a source output's summary — "1,204 rows"
- *  for a table, "1,204" for a column. Null when there's nothing countable. */
-function connectionCountLabel(summary?: ValueSummary): string | null {
+/** Short count label for a wire from a source output's summary — "1,204 × 8"
+ *  (rows × columns) for a table, "1,204" for a column. Null when there's
+ *  nothing countable. Exported for tests. */
+export function connectionCountLabel(summary?: ValueSummary | null): string | null {
   if (!summary) return null;
   const n = (v: number): string => v.toLocaleString('en-US');
-  if (summary.type === 'dataframe' && typeof summary.rows === 'number') return `${n(summary.rows)} rows`;
+  if (summary.type === 'dataframe' && typeof summary.rows === 'number') {
+    return typeof summary.cols === 'number' ?
+      `${n(summary.rows)} × ${n(summary.cols)}` : `${n(summary.rows)} rows`;
+  }
   if (summary.type === 'column' && typeof summary.length === 'number') return n(summary.length);
   return null;
 }

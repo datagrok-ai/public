@@ -3,7 +3,7 @@ feature: helm
 target_layer: apitest
 coverage_type: regression
 priority: p2
-realizes_atlas: []
+realizes_atlas: [helm-input-widget-value-edit-flow]
 realizes: []
 realized_as:
   - helm-helper-api-spec.ts

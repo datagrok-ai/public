@@ -22,10 +22,18 @@ export interface ParsedFlowBody {
   doc: FuncFlowDocument;
 }
 
-/** Serialize the live graph into the `.flow` entity body. */
-export function flowScriptText(flow: FlowEditor, settings: FlowSettings): string {
+/** Serialize the live graph into the `.flow` entity body. `extras` merges
+ *  additional document fields (e.g. `outputViews` layouts) that live outside
+ *  the graph itself. */
+export function flowScriptText(flow: FlowEditor, settings: FlowSettings,
+  extras?: Partial<FuncFlowDocument>): string {
   const tags = settings.tags.includes(FLOW_TAG) ? settings.tags : [...settings.tags, FLOW_TAG];
   const doc = serializeFlow(flow, {...settings, tags});
+  if (extras) {
+    for (const [k, v] of Object.entries(extras)) {
+      if (v !== undefined) (doc as unknown as Record<string, unknown>)[k] = v;
+    }
+  }
   const header = emitHeaderLines(flow, {
     name: settings.scriptName,
     description: settings.scriptDescription,

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.filters.free-text]
 realized_as:
   - text-filter-spec.ts
 related_bugs: []

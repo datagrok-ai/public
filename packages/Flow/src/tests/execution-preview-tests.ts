@@ -9,7 +9,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
-import {NodeExecState, NodeExecStatus} from '../execution/execution-state';
+import {NodeExecState, NodeExecStatus, ValueSummary} from '../execution/execution-state';
+import {connectionCountLabel} from '../execution/execution-controller';
 import {
   buildExecutionMeta, buildValuePreviews, hasRenderablePreview, buildPreview,
 } from '../execution/value-inspector';
@@ -37,6 +38,29 @@ function widgetState(type: 'widget' | 'viewer'): {state: NodeExecState; root: HT
 }
 
 category('Flow: execution preview', () => {
+  test('edge count labels read "rows × cols" for tables; __pt entries stay out of panels', async () => {
+    // A table with both dims → "N × K"; dims-only summaries (pass-throughs)
+    // count too; columns keep the bare count; nothing countable → null.
+    expect(connectionCountLabel({type: 'dataframe', rows: 1204, cols: 8}), '1,204 × 8');
+    expect(connectionCountLabel({type: 'dataframe', rows: 5} as ValueSummary), '5 rows', 'no cols → rows fallback');
+    expect(connectionCountLabel({type: 'column', length: 42} as ValueSummary), '42');
+    expect(connectionCountLabel(null), null);
+    expect(connectionCountLabel({type: 'primitive', value: 3} as ValueSummary), null);
+
+    // Panel listings skip the `__pt` bookkeeping entries (and tolerate null).
+    const state: NodeExecState = {
+      status: NodeExecStatus.completed,
+      outputs: {
+        'result': {type: 'primitive', value: 7},
+        'table__pt': {type: 'dataframe', rows: 3, cols: 2},
+        'other__pt': null as unknown as ValueSummary,
+      },
+    };
+    expect(hasRenderablePreview(state), false, 'dims-only entries are not renderable');
+    const meta = buildExecutionMeta(state);
+    expect((meta.textContent ?? '').includes('__pt'), false, 'no __pt rows in the context-panel meta');
+  });
+
   test('widget output is renderable and mounts its live root', async () => {
     const {state, root} = widgetState('widget');
     expect(hasRenderablePreview(state), true, 'widget counts as renderable');

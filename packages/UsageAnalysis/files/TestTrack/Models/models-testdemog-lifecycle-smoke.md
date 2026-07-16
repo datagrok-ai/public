@@ -3,8 +3,8 @@ feature: models
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [train-classification-end-to-end]
-realizes: []
+realizes_atlas: [train-classification-end-to-end, train_and_save_model, apply_model_on_table, compare-multiple-models, delete_model]
+realizes: [views.models]
 realized_as:
   - models-testdemog-lifecycle-smoke-spec.ts
 related_bugs: [GROK-2381, GROK-19177, GROK-19550, GROK-846]

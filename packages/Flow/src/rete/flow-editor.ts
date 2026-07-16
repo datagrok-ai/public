@@ -95,6 +95,11 @@ export class FlowEditor {
    *  drag that ends with `created:false`, accidentally triggering the
    *  suggestion menu. Handlers that should be left-click-only consult this. */
   private lastPointerButton = 0;
+  /** The node most recently reported to the host as selected (`nodepicked` /
+   *  chip click) — i.e. what the context panel currently shows. Re-picking it
+   *  while it's still selected is a no-op and must not re-fire the host
+   *  callbacks (panel/suggestion rebuilds on every click or grab). */
+  private lastPickedId: string | null = null;
   /** Snapshot of the last pointerdown (modifiers, position, whether the node
    *  under the cursor was already selected), taken by
    *  `installPointerDownTracker` in the capture phase — before rete's
@@ -382,17 +387,22 @@ export class FlowEditor {
       return context;
     });
 
-    let lastPickedId: string | null = null;
     this.area.addPipe((context) => {
       if (context.type === 'nodepicked') {
         const node = this.editor.getNode(context.data.id);
         if (node) {
-          if (lastPickedId && lastPickedId !== node.id) {
-            const prev = this.editor.getNode(lastPickedId);
+          // Re-picking the node that is ALREADY the current object (click it
+          // again, grab it to drag) changes nothing — don't make the host
+          // rebuild its panels. `lastPointerDownWasSelected` is the state
+          // snapshot from BEFORE rete's add-only pick, so a click that
+          // re-selects after a deselect-all still fires.
+          const samePick = node.id === this.lastPickedId && this.lastPointerDownWasSelected;
+          if (this.lastPickedId && this.lastPickedId !== node.id) {
+            const prev = this.editor.getNode(this.lastPickedId);
             if (prev) this.callbacks.onNodeDeselected?.(prev);
           }
-          lastPickedId = node.id;
-          this.callbacks.onNodeSelected?.(node);
+          this.lastPickedId = node.id;
+          if (!samePick) this.callbacks.onNodeSelected?.(node);
           this.refreshChipSelection(); // chip selected-state may have changed
         }
       }
@@ -808,7 +818,15 @@ export class FlowEditor {
 
     strip.addEventListener('click', (ev) => {
       const chip = (ev.target as HTMLElement | null)?.closest('[data-node-id]') as HTMLElement | null;
-      if (chip?.dataset.nodeId) void this.selectNode(chip.dataset.nodeId, ev.ctrlKey || ev.metaKey);
+      const id = chip?.dataset.nodeId;
+      if (!id) return;
+      // Re-clicking the chip that is already the sole-selected current object
+      // changes nothing — don't re-fire the host callbacks (panel rebuilds).
+      const accumulate = ev.ctrlKey || ev.metaKey;
+      const node = this.editor.getNode(id) as {selected?: boolean} | undefined;
+      if (node?.selected && this.lastPickedId === id &&
+          (accumulate || this.getSelectedNodeIds().length === 1)) return;
+      void this.selectNode(id, accumulate);
     });
     strip.addEventListener('contextmenu', (ev) => {
       const chip = (ev.target as HTMLElement | null)?.closest('[data-node-id]') as HTMLElement | null;
@@ -2178,6 +2196,11 @@ export class FlowEditor {
     const node = this.editor.getNode(nodeId);
     if (!node) return;
     await this.selectableApi.select(nodeId, accumulate);
+    // Deliberately NOT deduped: programmatic selection (run-complete
+    // auto-select) must re-fire even for an already-selected node — the host
+    // re-shows the panel with fresh execution state. Pointer paths dedupe
+    // at their source (nodepicked, the chip click handler).
+    this.lastPickedId = nodeId;
     this.callbacks.onNodeSelected?.(node);
     this.callbacks.onSelectionChanged?.();
     this.refreshChipSelection();

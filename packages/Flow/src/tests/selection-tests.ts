@@ -84,6 +84,38 @@ category('Flow: selection', () => {
     registerBuiltinNodes();
   });
 
+  test('re-clicking or grabbing the already-selected node fires onNodeSelected once', async () => {
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    let fires = 0;
+    const flow = new FlowEditor(container, {onNodeSelected: () => fires++});
+    const e: TestEditor = {flow, container};
+    try {
+      const a = await addNode(flow, 'Inputs/String Input', 0, 0);
+      await until(() => !!container.querySelector(`.ff-node[data-node-id="${a.id}"]`));
+
+      await clickNode(e, a);
+      expect(await until(() => isSelected(e, a)), true, 'first click selects');
+      expect(fires, 1, 'first click fires once');
+
+      // Re-clicks and grabs of the current node change nothing — no re-fire,
+      // so the host never rebuilds its panels for a no-op.
+      await clickNode(e, a);
+      await clickNode(e, a);
+      expect(fires, 1, 're-clicks do not re-fire');
+
+      // Deselect all, then click again → a real change fires again.
+      await flow.unselectAllNodes();
+      expect(await until(() => !isSelected(e, a)), true, 'deselected');
+      await clickNode(e, a);
+      expect(await until(() => isSelected(e, a)), true, 're-selected after deselect-all');
+      expect(fires, 2, 'a real selection change fires again');
+    } finally {
+      flow.destroy();
+      container.remove();
+    }
+  });
+
   test('shift+drag marquee adds the covered nodes to the selection', async () => {
     const e = makeEditor();
     try {

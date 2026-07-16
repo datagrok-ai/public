@@ -4,7 +4,9 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [upload-save-reopen-golden, derive-then-save-inside-project]
-realizes: []
+realizes: [views.projects]
+realized_as:
+  - uploading-spec.ts
 pyramid_layer: source-matrix
 ui_coverage_responsibility:
   - save-project-dialog

@@ -2,9 +2,9 @@
 feature: models
 target_layer: playwright
 coverage_type: regression
-priority: p1
-realizes_atlas: []
-realizes: []
+priority: p2
+realizes_atlas: [train_and_save_model]
+realizes: [views.models]
 realized_as:
   - models-bug-grok-3525-spec.ts
 related_bugs: [GROK-3525]

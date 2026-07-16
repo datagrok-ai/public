@@ -3,8 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: []
-realizes: []
+realizes_atlas: [eda.cp.one-way-anova, eda.int.anova-significance]
+realizes: [ml.analyze.group-comparison.anova]
 realized_as:
   - anova-spec.ts
 related_bugs: []

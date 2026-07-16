@@ -446,7 +446,10 @@ function emitViewerStep(step: CompiledStep, inst: boolean, options?: EmitOptions
   const lines = [`__ff_emit('node-start', '${step.nodeId}');`, `let ${v};`, 'try {'];
   lines.push(`  ${v} = ${create};`);
   if (setOpts) lines.push(`  ${setOpts}`);
-  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs:{${v}: __ff_summarize(${v}, 'viewer')}});`);
+  // Slot-keyed like every other summary (see wrapInstrumented).
+  const outKey = Array.from(step.outputs.entries()).find(([, varName]) => varName === v)?.[0] ?? v;
+  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', ` +
+    `{outputs:{${JSON.stringify(outKey)}: __ff_summarize(${v}, 'viewer')}});`);
   lines.push('} catch (__ff_err) {');
   lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
   if (options?.haltOnError !== false) {
@@ -516,6 +519,12 @@ function emitPreamble(runId: string): string[] {
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
+    // Dims-only table summary for pass-through wires: enough for the on-edge
+    // "N × K" count label, without the full clone __ff_summarize would take.
+    'function __ff_dims(v) {',
+    '  return (v != null && v.rowCount !== undefined && v.columns !== undefined) ?',
+    '    {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length} : null;',
+    '}',
     // Snapshot a dataframe crossing into a step (anything else passes through).
     // Same duck-type check as __ff_summarize; a func step works on its own copy
     // so in-place transformations never mutate the upstream captured value.
@@ -557,8 +566,13 @@ function wrapInstrumented(
   lines.push(`  ${bodyLine}`);
   if (extra?.outputExpr) {
     const typeArg = extra.declaredType ? `, '${extra.declaredType}'` : '';
+    // Key the summary by the output SLOT key, not the variable name — that's
+    // what `labelOutgoingConnections` (edge counts) and the port-preview
+    // lookup use (`state.outputs[outputKey]`).
+    const slotKey = Array.from(step.outputs.entries())
+      .find(([, varName]) => varName === extra.outputExpr)?.[0] ?? extra.outputExpr;
     lines.push(`  __ff_emit('node-complete', '${step.nodeId}', ` +
-      `{outputs:{${extra.outputExpr}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
+      `{outputs:{${JSON.stringify(slotKey)}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
   } else lines.push(`  __ff_emit('node-complete', '${step.nodeId}');`);
   lines.push('} catch (__ff_err) {');
   lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
@@ -618,6 +632,21 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
       outputEntries.push(`${JSON.stringify(key)}: __ff_col_summary(${outExpr}, ${singleDfInput}${typeArg})`);
     else
       outputEntries.push(`${JSON.stringify(key)}: __ff_summarize(${outExpr}${typeArg})`);
+  }
+
+  // Dataframe pass-throughs: dims-only summaries (rows × cols, no clone —
+  // cheap) keyed by the pass-through slot key, so wires leaving a `<in> →`
+  // port get their "N × K" count label just like wires from real outputs.
+  // The panels skip `__pt` keys (value-inspector.ts).
+  if (node) {
+    for (const key of Object.keys(node.outputs)) {
+      if (isExecKey(key) || !key.endsWith(PASSTHROUGH_SUFFIX)) continue;
+      const slotType = (node.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
+      if (slotType !== 'dataframe') continue;
+      const inExpr = step.inputs.get(key.slice(0, -PASSTHROUGH_SUFFIX.length));
+      if (inExpr && inExpr !== 'undefined')
+        outputEntries.push(`${JSON.stringify(key)}: __ff_dims(${inExpr})`);
+    }
   }
 
   // Capture the (possibly in-place-modified) table(s) threaded through a
