@@ -79,6 +79,9 @@ export function isMutedForVersion(raw: string | null | undefined, version: strin
 export const STATUS_BACK: Record<string, number> = {passed: 0xFFE6F4EA, failed: 0xFFFDE7E7, skipped: 0xFFF3F3F3};
 export const NOT_RUN_BACK = 0xFFFAFAFA;
 export const COLOR_FAIL_TEXT = 0xFF7B2D24;
+// Dimmed palette for a carried-forward result (test didn't run in the latest build → show the last known one, muted).
+export const DIM_STATUS_BACK: Record<string, number> = {passed: 0xFFF0F7F1, failed: 0xFFF7ECEC, skipped: 0xFFF6F6F6};
+export const COLOR_DIM_TEXT = 0xFF9AA0A6;
 
 /** Resolves once the element has a non-zero width (or after ~1s). Sparkline grid columns throw a
  * layout "Wrong range" error if added before the grid is laid out — wait for a real width first. */
@@ -223,7 +226,22 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   const successCols = buildIndexes.map((bi) => `${bi} ok`);
   const resultCols = buildIndexes.map((bi) => `${bi} result`);
 
-  pivot.columns.addNewBool('failing').init((i) => pivot.get(`${latest}`, i) === 'failed');
+  // Carry the last known result forward when the test didn't run in the latest build.
+  const descBuilds = [...buildIndexes].reverse(); // latest → oldest
+  pivot.columns.addNewString('effective_status').init((i) => {
+    for (const bi of descBuilds) {
+      const s = pivot.get(`${bi}`, i);
+      if (s && s !== 'did not run')
+        return s;
+    }
+    return '';
+  });
+  pivot.columns.addNewBool('carried_forward').init((i) => {
+    const latestS = pivot.get(`${latest}`, i);
+    return (latestS == null || latestS === 'did not run') && pivot.get('effective_status', i) !== '';
+  });
+
+  pivot.columns.addNewBool('failing').init((i) => pivot.get('effective_status', i) === 'failed');
   pivot.columns.addNewBool('stable').init((i) => statusCols.every((c) => pivot.get(c, i) === 'passed'));
   pivot.columns.addNewBool('flaky').init((i) => {
     const statuses = statusCols.map((c) => pivot.get(c, i));
@@ -292,7 +310,6 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
 /** Rolls the pivot up into the counts and package-grouped alert lists the Overview needs. */
 export function computeTestAlerts(p: ReleasePivot): TestAlerts {
   const df = p.df;
-  const latestCol = `${p.latest}`;
   const a: TestAlerts = {total: 0, passed: 0, failed: 0, skipped: 0, notRun: 0, flaky: 0, slower: 0,
     passRate: 0, failingByPkg: {}, slowerByPkg: {}, flakyByPkg: {}};
   const testCol = df.getCol('test');
@@ -300,7 +317,7 @@ export function computeTestAlerts(p: ReleasePivot): TestAlerts {
   const mutedCol = df.columns.byName('muted');
   let rawFailed = 0;
   for (let i = 0; i < df.rowCount; i++) {
-    const status = df.get(latestCol, i);
+    const status = df.get('effective_status', i) || 'did not run';
     const muted = !!(mutedCol && mutedCol.get(i) === true);
     const pkg = pkgCol.get(i) ?? '';
     const test = testCol.get(i);

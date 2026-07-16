@@ -5,6 +5,7 @@
 * Release: Added a global Environment (instance) picker to the dashboard ribbon that persists across all tabs and filters Overview and Tests to builds run on the selected instance (replaces the per-tab Tests instance input)
 * Release: Tests tab — per-row mute icon (🔔/🔕) mutes a test for the current release version; version-bound mutes are stored in a dedicated ReleaseMutes sticky-meta schema and drop the test out of the failing/unstable/needs-attention counts for that version
 * Release: Tickets tab — the tickets grid now fills the page
+* Release: Tests tab — when a test didn't run in the latest build, its last known result is carried forward (shown dimmed) and used for the failing/pass-rate counts
 * Release: Added a global Refresh button to the dashboard ribbon that reloads every tab
 * Release: ReleaseTests now counts the latest CI/CD run per test (like TestsDashboard) instead of every test_run — retried-then-passed tests no longer count as failing and non-CI runs are excluded, so the failing counts stop being inflated by reruns
 * Release: Tests tab — the detail grid now fills the page; per-build status cells show `+` (passed) / `−` (failed) / `·` (skipped)

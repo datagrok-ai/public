@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {fetchReleaseTests, computeTestAlerts, ReleasePivot, ReleaseContext, JENKINS_TEST_JOB, colorStatusCell,
-  COLOR_FAIL_TEXT, waitForWidth, openInWorkspaceIcon,
+  COLOR_FAIL_TEXT, DIM_STATUS_BACK, COLOR_DIM_TEXT, NOT_RUN_BACK, waitForWidth, openInWorkspaceIcon,
   getReleaseMutesSchema, MUTED_VERSIONS, MUTE_ON, MUTE_OFF, parseMutedVersions, isMutedForVersion} from './data';
 
 export class TestsView extends UaView {
@@ -80,13 +80,12 @@ export class TestsView extends UaView {
   private buildSummary(p: ReleasePivot): void {
     const a = computeTestAlerts(p);
     const df = p.df;
-    const latestCol = `${p.latest}`;
     const packageCol = df.getCol('package');
     const mutedCol = df.columns.byName('muted');
     const perPkg = new Map<string, {passed: number, failed: number, skipped: number, notRun: number}>();
     for (let i = 0; i < df.rowCount; i++) {
       const pkg = packageCol.get(i) ?? '';
-      const s = df.get(latestCol, i);
+      const s = df.get('effective_status', i) || 'did not run';
       const muted = !!(mutedCol && mutedCol.get(i) === true);
       const row = perPkg.get(pkg) ?? {passed: 0, failed: 0, skipped: 0, notRun: 0};
       if (s === 'passed') row.passed++;
@@ -142,6 +141,13 @@ export class TestsView extends UaView {
       if (gc.isTableCell && p.statusCols.includes(gc.gridColumn.name)) {
         const v = gc.cell.value as string;
         gc.customText = v === 'passed' ? '+' : v === 'failed' ? '−' : v === 'skipped' ? '·' : '';
+      }
+      // Latest build didn't run this test → show the last known result in that cell, dimmed.
+      if (gc.isTableCell && gc.gridColumn.name === `${p.latest}` && df.get('carried_forward', gc.cell.rowIndex) === true) {
+        const eff = df.get('effective_status', gc.cell.rowIndex) as string;
+        gc.customText = eff === 'passed' ? '+' : eff === 'failed' ? '−' : eff === 'skipped' ? '·' : '';
+        gc.style.backColor = DIM_STATUS_BACK[eff] ?? NOT_RUN_BACK;
+        gc.style.textColor = COLOR_DIM_TEXT;
       }
       // The 'mute' column value already holds the 🔔/🔕 glyph (kept aligned per row); click toggles it.
     });
