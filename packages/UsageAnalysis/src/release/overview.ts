@@ -6,7 +6,7 @@ import {UaToolbox} from '../ua-toolbox';
 import {queries} from '../package-api';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
 import {fetchReleaseTests, computeTestAlerts, stressRegression, defaultNextVersion, ReleaseContext, STALE_DAYS} from './data';
-import {fetchReleaseTickets} from './tickets';
+import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
 const BAND_CLASS: Record<Band, string> = {
@@ -127,8 +127,10 @@ export class ReleaseOverviewView extends UaView {
 
     if (ticketsR.status === 'fulfilled') {
       const issues = ticketsR.value ?? [];
-      const open = issues.filter((r: any) => (r.fields?.resolution?.name ?? 'Unresolved') === 'Unresolved').length;
-      this.setCard('Tickets', `${open}`, open === 0 ? 'green' : 'info', `of ${issues.length} total`);
+      // Card counts only actionable tickets (not Done / Won't Fix), split by the MAIN label.
+      const open = issues.filter(isActionable).length;
+      const mainOpen = issues.filter((r: any) => isActionable(r) && hasMainLabel(r)).length;
+      this.setCard('Tickets', `${open}`, open === 0 ? 'green' : 'info', `${mainOpen} MAIN, ${open - mainOpen} other`);
     } else {
       this.setCard('Tickets', 'n/a', 'info');
     }
