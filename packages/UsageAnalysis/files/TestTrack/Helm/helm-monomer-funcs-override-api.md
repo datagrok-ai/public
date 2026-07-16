@@ -3,6 +3,7 @@ feature: helm
 target_layer: apitest
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - helm-monomer-funcs-override-api-spec.ts

@@ -3,7 +3,7 @@
 ## v.next
 
 * Tests: grouped connectivity tests by provider (`Providers: <dataSource>`) via `initPackageTests`; removed the dead `tests/categories.ts` whose provider categories held a `before` but no tests.
-* Tests: skip ClickHouse connectivity tests (test connection unavailable in CI).
+* Tests: skip all ClickHouse tests — the connectivity check (`initPackageTests` skipReason) and the 31 query round-trip tests (`skip:` on the `-- test:` annotations in `clickhouse-*.sql`). The ClickHouse demo DB is down (failing on dev + CI since ~2026-07-12); remove the `skip:` tokens to re-enable once it's restored.
 * Security: pinned the DB test image to `postgres:17-bookworm` and added `apt-get upgrade` to clear stale Debian base CVEs (gnutls28/perl/glibc).
 
 ## 1.3.0 (2025-07-28)

@@ -46,10 +46,25 @@ export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: D
   await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
+//output: dataframe result
+export async function vexImages() : Promise<any> {
+  return await PackageFunctions.vexImages();
+}
+
+//output: dataframe result
+export async function stressSummaryDashboard() : Promise<any> {
+  return await PackageFunctions.stressSummaryDashboard();
+}
+
+//output: dataframe result
+export async function stressRawDashboard() : Promise<any> {
+  return await PackageFunctions.stressRawDashboard();
+}
+
 //name: Metrics
 //output: view result
 //meta.role: adminApp,app
-//meta.url: /
+//meta.url: /metrics
 //meta.icon: images/icons/metrics.svg
 export function metricsApp() : any {
   return PackageFunctions.metricsApp();

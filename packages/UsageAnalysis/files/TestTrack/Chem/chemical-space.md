@@ -3,7 +3,8 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [chem.cp.chemical-space]
+realizes_atlas: [chem.cp.chemical-space]
+realizes: [chem.analyze.chemical-space]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/chemical-space.md
 migration_date: 2026-05-11

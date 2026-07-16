@@ -3,6 +3,7 @@ feature: powerpack
 target_layer: playwright
 coverage_type: smoke
 priority: p1
+realizes_atlas: []
 realizes: []
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:

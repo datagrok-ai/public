@@ -3,6 +3,7 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/info-panels.md

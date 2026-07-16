@@ -3,6 +3,7 @@ feature: scripts
 target_layer: playwright
 coverage_type: regression
 priority: p1
+realizes_atlas: []
 realizes: []
 realized_as:
   - scripts-layout.test.ts

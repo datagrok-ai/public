@@ -3,7 +3,8 @@ feature: models
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [train-regression-end-to-end]
+realizes_atlas: [train-regression-end-to-end]
+realizes: []
 realized_as:
   - predictive-models-spec.ts
 related_bugs: []

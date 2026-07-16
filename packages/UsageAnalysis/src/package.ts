@@ -18,6 +18,7 @@ import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
 import {ClickEventsWidget} from './widgets/click-events-widget';
+import {fetchVexDashboardImages, vexImagesToDataFrame} from './tabs/vulnerabilities';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -293,8 +294,29 @@ export class PackageFunctions {
     return highestPriority;
   }
 
+  /** Published VEX scan results (one row per scanned image) — feeds the
+   * CicdTests dashboard's data-synced VEX table. Core images use their
+   * bleeding-edge scan; packages/tools use the latest released scan. */
+  @grok.decorators.func()
+  static async vexImages(): Promise<DG.DataFrame> {
+    return vexImagesToDataFrame(await fetchVexDashboardImages());
+  }
+
+  /** JS wrappers for the CicdTests dashboard's data-synced stress tables:
+   * project datasync of DataQuery calls intermittently loses the result
+   * dataframe (GROK-20391), while JS-function-backed sync is reliable. */
+  @grok.decorators.func()
+  static async stressSummaryDashboard(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsSummary', {lastBuildsNum: 20});
+  }
+
+  @grok.decorators.func()
+  static async stressRawDashboard(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsRaw', {build: null});
+  }
+
   @grok.decorators.app({
-    'url': '/',
+    'url': '/metrics',
     'name': 'Metrics',
     'icon': 'images/icons/metrics.svg',
     'meta': {'role': 'adminApp'},

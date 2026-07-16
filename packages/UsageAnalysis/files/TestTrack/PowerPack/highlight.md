@@ -3,7 +3,8 @@ feature: powerpack
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [add-new-column-paste-complex-formula]
+realizes_atlas: [add-new-column-paste-complex-formula]
+realizes: []
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/PowerPack/AddNewColumn/highlight.md
 migration_date: 2026-05-20

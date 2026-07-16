@@ -3,7 +3,8 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [tree-rowsource-onclick-state-machine]
+realizes_atlas: [tree-rowsource-onclick-state-machine]
+realizes: [charts.tree]
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

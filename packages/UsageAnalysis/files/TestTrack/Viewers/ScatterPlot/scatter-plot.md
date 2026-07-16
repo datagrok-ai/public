@@ -3,6 +3,7 @@ feature: scatterplot
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - scatter-plot-spec.ts

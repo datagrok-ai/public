@@ -3,6 +3,7 @@ feature: spaces
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - spaces-general-v2.test.ts

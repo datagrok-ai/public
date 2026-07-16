@@ -1,5 +1,6 @@
 ---
 feature: legend
+realizes_atlas: []
 realizes: []
 target_layer: playwright
 coverage_type: smoke

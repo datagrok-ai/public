@@ -3,6 +3,7 @@ feature: calendar
 target_layer: playwright
 coverage_type: smoke
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - calendar-spec.ts

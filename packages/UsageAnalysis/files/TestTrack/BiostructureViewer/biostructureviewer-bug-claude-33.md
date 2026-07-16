@@ -3,7 +3,8 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [CLAUDE-33]
+realizes_atlas: [CLAUDE-33]
+realizes: []
 produced_from: atlas-driven
 related_bugs:
   - CLAUDE-33

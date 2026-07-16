@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [macromolecule_helm_column]
+realizes_atlas: [macromolecule_helm_column]
+realizes: []
 realized_as:
   - st-lifecycle-macromolecule-helm-column-spec.ts
 related_bugs: []

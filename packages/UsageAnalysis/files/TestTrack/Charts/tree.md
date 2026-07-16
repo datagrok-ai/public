@@ -3,6 +3,7 @@ feature: charts
 target_layer: playwright
 coverage_type: regression
 priority: p1
+realizes_atlas: []
 realizes: []
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/tree.md

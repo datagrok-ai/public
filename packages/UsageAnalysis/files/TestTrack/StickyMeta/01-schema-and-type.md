@@ -3,6 +3,7 @@ feature: stickymeta
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - 01-schema-and-type.test.ts

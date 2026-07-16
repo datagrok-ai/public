@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [bio.cp.composition-analysis]
+realizes_atlas: [bio.cp.composition-analysis]
+realizes: [bio.analyze.composition, bio.weblogo]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/composition-analysis.md
 migration_date: 2026-05-31

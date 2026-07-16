@@ -3,7 +3,8 @@ feature: charts
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
+realizes_atlas: [charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
+realizes: [charts.sankey, charts.chord, charts.surface-plot, charts.radar, charts.tree, charts.globe, charts.word-cloud, charts.sunburst]
 pyramid_layer: integration
 ui_coverage_responsibility:
   - add-viewer-sunburst

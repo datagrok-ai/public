@@ -3,7 +3,8 @@ feature: models
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [chemprop-train-apply]
+realizes_atlas: [chemprop-train-apply]
+realizes: []
 realized_as:
   - chemprop-spec.ts
 related_bugs: [GROK-18612, GROK-2381, GROK-19177, GROK-846]

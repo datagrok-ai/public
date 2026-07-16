@@ -3,6 +3,7 @@ feature: connections
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - 09-external-provider.test.ts

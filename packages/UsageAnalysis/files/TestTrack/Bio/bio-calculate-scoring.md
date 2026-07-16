@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [bio.cp.identity-scoring]
+realizes_atlas: [bio.cp.identity-scoring]
+realizes: [bio.calculate.identity]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

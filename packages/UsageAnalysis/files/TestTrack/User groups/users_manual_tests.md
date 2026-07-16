@@ -3,6 +3,7 @@ feature: users
 target_layer: playwright
 coverage_type: smoke
 priority: p0
+realizes_atlas: []
 realizes: []
 realized_as:
   - users.test.ts

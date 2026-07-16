@@ -3,7 +3,8 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [chem.cp.sketcher-open-set-readback, chem.cp.sketcher-backend-switch]
+realizes_atlas: [chem.cp.sketcher-open-set-readback, chem.cp.sketcher-backend-switch]
+realizes: []
 produced_from: atlas-driven
 pyramid_layer: bug-focused
 migration_date: 2026-06-01

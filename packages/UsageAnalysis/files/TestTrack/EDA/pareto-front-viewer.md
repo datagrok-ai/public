@@ -3,6 +3,7 @@ feature: eda
 target_layer: playwright
 coverage_type: edge
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - pareto-front-viewer-spec.ts

@@ -4,7 +4,8 @@ target_layer: playwright
 pyramid_layer: bug-focused
 coverage_type: edge
 priority: p1
-realizes: [GROK-12758]
+realizes_atlas: [GROK-12758]
+realizes: []
 produced_from: atlas-driven
 produced_for: chem-grok-12758-spec.ts
 authored_date: 2026-05-12

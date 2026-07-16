@@ -7,11 +7,18 @@ on:
         required: true
         type: string
   push:
+    branches:
+      - master
+      - 'release/**'
     paths:
       - 'packages/**'
   pull_request:
     paths:
       - 'packages/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
 
 jobs:
   common-check:
@@ -117,11 +124,13 @@ jobs:
                 fi
               fi
               runner='ubuntu-22.04'
-              if [[ "${job_test_env}" == *"JKG"* ]] || \
+              # Only reserve the (billed) larger runner when tests actually run — a
+              # build-only chem/admetica-dependent package fits the free standard runner.
+              if [ -n "${job_test_env}" ] && { [[ "${job_test_env}" == *"JKG"* ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
-                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; }; then
                 runner='ubuntu-latest-m'
               fi
 
@@ -208,6 +217,7 @@ jobs:
       - common-check
     if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
     env:
       HOST: GitHubAction
     strategy:
@@ -307,6 +317,7 @@ jobs:
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 15
         run: |
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
@@ -423,6 +434,7 @@ jobs:
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
+        timeout-minutes: 25
         run: |
           if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
             npm run build -- --mode=production
@@ -464,6 +476,7 @@ jobs:
           grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 20
         run: |
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
           if [ -n "$grok_deps" ]; then
@@ -491,6 +504,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 20
         run: |
           count=0
           retries=5
@@ -628,7 +642,7 @@ jobs:
         with:
           name: ${{ matrix.package }}.test-results
           path: packages/${{ matrix.package }}/test-*
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: warn
       - name: Create error notification
         if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
@@ -719,7 +733,7 @@ jobs:
         with:
           path: /tmp/${{ matrix.package }}.docker.tar
           name: ${{ matrix.package }}.docker.tar
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: warn
 
       - name: Publish package Docker image
