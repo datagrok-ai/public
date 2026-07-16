@@ -215,7 +215,11 @@ export class TestsView extends UaView {
     resultBox.style.overflow = 'auto';
     return ui.divV([
       ui.h2(test),
-      ui.tableFromMap({Package: pkg, 'Latest status': status, Commit: commit || '—'}),
+      ui.tableFromMap({Package: pkg, 'Latest status': status,
+        'Latest ms': df.get(`${p.latest} ms`, i) ?? '—',
+        'Recent avg ms': df.get('be_avg_ms', i) || '—',
+        'Prev release ms': df.get('prev_release_ms', i) || '—',
+        Commit: commit || '—'}),
       ui.link('Open test-build in Jenkins', JENKINS_TEST_JOB),
       ui.divText('Latest build output', 'ua-metrics-panel-title'),
       resultBox,

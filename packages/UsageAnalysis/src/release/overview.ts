@@ -91,8 +91,8 @@ export class ReleaseOverviewView extends UaView {
       if (a.failed > 0)
         alerts.push({label: `${a.failed} failing tests`, band: 'red', tab: 'Tests', groups: a.failingByPkg});
       if (a.slower > 0)
-        alerts.push({label: `${a.slower} tests slower than recent median (passed runs)`, band: 'orange',
-          tab: 'Tests', groups: a.slowerByPkg});
+        alerts.push({label: `${a.slower} tests slower than baseline (recent avg or previous release)`,
+          band: 'orange', tab: 'Tests', groups: a.slowerByPkg});
       if (a.flaky > 0)
         alerts.push({label: `${a.flaky} unstable/flaky tests`, band: 'orange', tab: 'Tests', groups: a.flakyByPkg});
       if (a.stale > 0)

@@ -44,6 +44,33 @@ active_tests AS (
     AND r.instance LIKE 'https://' || @instanceFilter || '.datagrok.ai'
     AND r.date_time >= now() - interval '14 days'
   GROUP BY r.test_name
+),
+prev_version AS (
+  -- Highest release minor strictly below the current window's version (e.g. 1.28 -> 1.27), found across
+  -- ALL instances: a previous release ran on its own instance at the time, not the current one.
+  SELECT v.minor FROM (
+    SELECT DISTINCT (regexp_match(b.name, '(\d+\.\d+)\.'))[1] AS minor
+    FROM builds b WHERE (regexp_match(b.name, '(\d+\.\d+)\.'))[1] IS NOT NULL
+  ) v
+  WHERE string_to_array(v.minor, '.')::int[] <
+        string_to_array((SELECT (regexp_match(build_name, '(\d+\.\d+)\.'))[1]
+                         FROM indexed_builds ORDER BY build_index DESC LIMIT 1), '.')::int[]
+  ORDER BY string_to_array(v.minor, '.')::int[] DESC
+  LIMIT 1
+),
+prev_builds AS (
+  SELECT b.name FROM builds b
+  WHERE (regexp_match(b.name, '(\d+\.\d+)\.'))[1] = (SELECT minor FROM prev_version)
+    AND EXISTS (SELECT 1 FROM test_runs r WHERE r.build_name = b.name
+                AND r.passed AND NOT r.stress_test AND NOT r.benchmark)
+  ORDER BY b.build_date DESC LIMIT 5
+),
+prev_avg AS (
+  -- Average passed-run duration per test across the previous release's last builds (the baseline).
+  SELECT r.test_name, CAST(AVG(r.duration) AS int) AS prev_ms
+  FROM test_runs r JOIN prev_builds pb ON pb.name = r.build_name
+  WHERE r.passed AND NOT r.stress_test AND NOT r.benchmark
+  GROUP BY r.test_name
 )
 SELECT
   COALESCE(p.name, t.package) AS package,
@@ -55,6 +82,7 @@ SELECT
   b.build_date,
   r.instance,
   act.last_run,
+  pa.prev_ms AS prev_release_ms,
   CASE WHEN r.passed IS NULL THEN 'did not run'
        WHEN r.skipped THEN 'skipped'
        WHEN r.passed THEN 'passed'
@@ -68,6 +96,7 @@ CROSS JOIN indexed_builds b
 LEFT JOIN latest_runs r
   ON r.test_name = t.name AND r.build_name = b.build_name AND r.rn = 1
 LEFT JOIN active_tests act ON act.test_name = t.name
+LEFT JOIN prev_avg pa ON pa.test_name = t.name
 LEFT JOIN published_packages p ON p.name = t.package AND p.is_current
 WHERE t.type <> 'manual'
   AND t.name IN (SELECT test_name FROM active_tests)
