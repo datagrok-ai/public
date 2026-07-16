@@ -2251,6 +2251,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   background: #fff;
   color: var(--text-color, #333);
   box-shadow: inset 0 2px 0 var(--blue-1, #2083d5);
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 .ff-view-tab-label {

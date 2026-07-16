@@ -1,172 +1,172 @@
 # Flow
 
-Flow is a visual function chain designer for the [Datagrok](https://datagrok.ai) platform. It provides a node-based graph editor where users can compose Datagrok functions, queries, and scripts into executable JavaScript pipelines — without writing code.
+Flow is the visual workflow builder for the [Datagrok](https://datagrok.ai) platform. You build a data pipeline by
+snapping ready-made steps together on a canvas — load data, transform it, compute new values, chart the results —
+and Flow runs it for you, showing you the data at every step along the way. No code, no formulas to memorize,
+nothing to install.
 
-<!-- TODO: screenshot of the full Flow editor with a sample graph (function browser on the left, canvas in the center, property panel on the right) -->
+![The Flow editor: building blocks on the left, your pipeline in the center, the selected step's settings on the right](img/flow-editor.png)
 
-## Getting Started
+Everything you see above was assembled by pointing and clicking: files and functions were dragged in from the left,
+connected with a few drags, and run with one click. The green checkmarks and the little "1,000 × 10" labels on the
+wires tell you exactly what happened and how much data flowed through.
 
-1. Open the **Flow** application from the Datagrok sidebar or via **Functions > Apps > Flow**
-2. Browse available functions in the left panel and double-click to add nodes
-3. Connect nodes by dragging between input/output slots
-4. Configure node properties in the context panel (right side)
-5. Click **Run** in the ribbon to execute with live visualization
+## Why Flow?
 
-<!-- TODO: gif showing the basic workflow: adding a couple of nodes, connecting them, and running -->
+- **Anyone can build one.** If you can describe your process as "take this, do that to it, then that" — you can
+  build it in Flow.
+- **You see your data the whole time.** Every step shows its result the moment it finishes. No guessing whether
+  something worked.
+- **It's repeatable.** Run the same flow tomorrow, or on next month's data, and get the same process — not a
+  one-off spreadsheet exercise.
+- **It's shareable.** A saved flow becomes something colleagues can open, run, and even use as a single step
+  inside their own flows. Results can be published as dashboards that always show fresh data.
 
-## Features
+## Your first flow
 
-### Visual Node Graph
+Open **Flow** from the Datagrok sidebar (or **Browse > Apps > Flow**). The start screen offers ready-made example
+flows to explore, a blank canvas, and a guided tour:
 
-Build data pipelines by connecting nodes on an interactive canvas. The graph automatically validates connections using Datagrok's type system — only compatible types can be linked. Nodes are color-coded by slot type for visual clarity.
+![The start screen: example flows, a blank canvas, and a tour of the interface](img/start-panel.png)
 
-<!-- TODO: screenshot showing nodes connected with colored links (orange for dataframe, blue for column, etc.) -->
+The fastest way to learn is to let Flow teach you. Click the graduation-cap button (bottom-left, always there) for
+interactive tutorials and one-click answers to "How do I…?" questions:
 
-### Function Browser
+![The built-in tutorials menu](img/help-menu.png)
 
-The left sidebar provides a searchable, groupable catalog of all available nodes:
+Tutorials don't just tell — they point at the exact button and wait for you to actually do each step:
 
-- **Inputs** — Script input parameters (Table, Column, String, Number, Boolean, DateTime, File, Map, and more)
-- **Outputs** — Table Output and configurable Value Output
-- **Constants** — Literal values (String, Int, Double, Boolean, List)
-- **Comparisons** — Equality, ordering, string matching, null checks
-- **Utilities** — Select Column, Add Table View, Log, Info, Warning, type conversions (ToString, FromJSON, ToJSON)
-- **Debug** — Breakpoint node for pausing execution
-- **Datagrok Functions** — All registered platform functions, queries, and scripts, grouped by role, tags, or package
+![A tutorial in progress, highlighting what to do next](img/tutorial-step.png)
 
-### Drag-and-Drop
+## Finding your building blocks
 
-Drag functions, queries, or scripts directly from the Datagrok browse tree onto the canvas to create nodes. Drag files to create pre-configured OpenFile nodes.
+The **toolbox** on the left holds everything a flow can be made of: your files, database queries, hundreds of
+functions from across the platform (statistics, chemistry, biology, text, machine learning…), and the flows you've
+already saved. Type in the search box and the whole catalog filters as you type:
 
-### Script Generation
+![Searching the toolbox](img/toolbox-search.png)
 
-Flow compiles the visual graph into a standard Datagrok JavaScript script with proper `//input:` and `//output:` annotations. The generated script can be:
+Prefer browsing? The **Group by** dropdown organizes functions by what they do — *Data Sources*, *Combine Tables*,
+*Transform Tables*, *Compute Values*, *Visualize* — or by the package they come from.
 
-- Executed directly with live visualization (**Run** button)
-- Opened in the Datagrok script editor for further editing (**Run Script**)
-- Saved and shared as a `.ffjson` file
+Bringing data in is the same story: the **Files** pane shows your data connections, and double-clicking (or
+dragging) a file drops a ready-to-go "Open File" step onto the canvas — no paths to type:
 
-The compiler pipeline: **Validation** (cycle detection, required inputs, type checks) → **Topological Sort** (Kahn's algorithm) → **Compilation** (resolve variables and expressions) → **Emission** (generate JavaScript source).
+![The Files pane: your data, one double-click away](img/files-pane.png)
 
-### Pass-Through Outputs
+Flow also watches what you're working with and **suggests likely next steps**. Loaded a table of molecules? The
+Suggestions pane offers chemistry steps that fit it, ready to drop in:
 
-Function nodes automatically get pass-through output slots (marked with `->`) that mirror each input. These enforce execution order for mutating functions — connect a pass-through output to the next node's input to guarantee sequential execution.
+![Context-aware suggestions based on your data](img/suggestions.png)
 
-<!-- TODO: screenshot showing pass-through outputs on a function node, with an arrow connecting table pass-through to a downstream node -->
+## Building the pipeline
 
-### Live Execution Visualization
+Every step is a card on the canvas with **dots on its sides**: inputs on the left, outputs on the right. Drag from
+one dot to another to connect steps — the dots are color-coded by what they carry (a table, a number, a piece of
+text), and only compatible dots will connect, so you can't wire things up wrong. Dragging from an output into empty
+space pops up a menu of compatible next steps, already connected when you pick one.
 
-When running a graph, Flow provides KNIME-style real-time feedback:
+Click any step to adjust it in the **panel on the right** — plain input fields, checkboxes, and column pickers,
+each explained with a tooltip. You can rename a step, read what it does, and see how it's connected:
 
-| Visual State | Meaning |
-|---|---|
-| Amber (pulsing) | Node is currently executing |
-| Green | Node completed successfully |
-| Red (with "!") | Node encountered an error |
-| Gray | Results are stale (graph was modified after execution) |
+![A step's settings: plain fields and checkboxes, no code](img/context-panel.png)
 
-Click on a completed or errored node to inspect its runtime values (DataFrame dimensions, column samples, error messages with stack traces) in the context panel.
+For steps with rich setup (like computing a new column), one click opens the function's own full dialog, seeded
+with your real data — pick columns from live lists, preview the result, hit OK.
 
-<!-- TODO: gif showing a graph being executed with nodes lighting up green one by one, then clicking a completed node to see its output values in the context panel -->
+A few conveniences while you build: nodes snap into alignment as you drag them, **Tidy up layout** arranges the
+whole flow left-to-right in one click, the **overview map** (bottom-right) lets you jump around large flows,
+collapsing a node folds it down to its title, and undo/redo (Ctrl+Z) covers every single change.
 
-### Debug Mode
+## Run it and watch it work
 
-Add **Breakpoint** nodes to pause execution at specific points. Run in **Debug** mode to enable breakpoints — execution halts at each breakpoint until you click **Continue** in the ribbon.
+Click **Run**. Steps light up as they execute — amber while working, green when done, red if something went wrong
+— and each wire shows how much data passed through it:
 
-<!-- TODO: gif showing debug mode: execution pauses at a breakpoint (amber), user clicks Continue, execution resumes -->
+![A finished run: green steps, row-and-column counts on every wire](img/node-states.png)
 
-### Property Panel
+Click any finished step to see its actual result in the **output panel** at the bottom — tables appear as real,
+scrollable grids (molecules and all), charts render live:
 
-Select any node to configure it in the native Datagrok context panel. Input nodes expose qualifiers (type filters, semantic types, nullable, choices, min/max, sliders). Function nodes show editable default values for unconnected inputs with rich tooltips describing each parameter.
+![Inspecting a step's result in the output panel](img/output-panel.png)
 
-<!-- TODO: screenshot of the context panel showing a function node's properties with tooltips -->
+More ways to stay in control:
 
-### Saving and Loading
+- **Preview any point mid-flow.** Right-click an output dot and choose *Run up to here & preview* — Flow runs just
+  that slice and shows you the data. Great for checking your work as you go.
+- **Autorun.** Toggle the ⚡ bolt and the flow re-runs itself after every change — and only the steps your change
+  actually affected. Everything upstream keeps its result.
+- **Out of date, not lost.** When you change something, affected steps are marked *Out of date* but keep showing
+  their last result until the next run.
+- **Rerun one step.** Right-click a step and rerun just it, feeding it the data captured by the last run — handy
+  when one step of an expensive flow needs a tweak.
+- **Pause where you want.** Drop a *Breakpoint* into the flow and run in Debug mode — execution pauses there until
+  you press Continue.
 
-Flows are saved as `.ffjson` files that capture the complete graph state. Open a `.ffjson` file from anywhere in the platform to restore the flow in the editor.
+## Explore results as full pages
 
-## Node Types
+Every table your flow produces gets its **own tab** next to *Canvas* in the bottom strip. The dot on the tab turns
+green when the result is ready — amber means the flow changed and the table is from the previous run:
 
-### Input Nodes
+![The view tabs: Canvas plus one tab per result](img/view-tabs.png)
 
-Define script input parameters. Each becomes an `//input:` annotation line in the generated script.
+Click a tab and the result opens as a full Datagrok table page — add charts, filter, sort, color, rearrange
+columns, exactly like any table in the platform:
 
-| Node | Type | Configurable Qualifiers |
-|---|---|---|
-| Table Input | `dataframe` | - |
-| Column Input | `column` | type filter, semType filter |
-| Column List Input | `column_list` | type filter, semType filter |
-| String Input | `string` | nullable, choices, caption, semType |
-| Number Input | `double` | nullable, min, max, showSlider, caption |
-| Int Input | `int` | nullable, min, max, showSlider, caption |
-| Boolean Input | `bool` | nullable, caption |
-| DateTime Input | `datetime` | nullable, caption |
-| File Input | `file` | nullable, caption |
-| Map Input | `map` | nullable, caption |
-| Dynamic Input | `dynamic` | nullable, caption |
-| String List Input | `string_list` | - |
-| Blob Input | `blob` | nullable, caption |
+![A result opened as a full page, with a chart added alongside the grid](img/result-view.png)
 
-### Output Nodes
+Whatever you arrange here is **remembered**: it's saved with the flow, comes back when you reopen it, and ships
+with the dashboard when you publish one.
 
-| Node | Description |
-|---|---|
-| Table Output | Marks a dataframe as script output |
-| Value Output | Configurable output type (string, int, double, bool, dataframe, column, object, dynamic, and more) |
+## No black box
 
-### Utility Nodes
+Curious what your flow actually does? Click the 👁 eye icon: every flow is a transparent, readable recipe you can
+inspect, copy, or hand to a developer — and what you see is exactly what runs:
 
-| Node | Generated Code |
-|---|---|
-| Select Column | `df.col('name')` |
-| Select Columns | `[df.col('a'), df.col('b')]` |
-| Add Table View | `grok.shell.addTableView(df)` |
-| Log / Info / Warning | Console and balloon notifications |
-| ToString / FromJSON / ToJSON | Type conversion helpers |
-| Constants | String, Int, Double, Boolean, List literal values |
+![The recipe behind the flow — always one click away](img/generated-script.png)
 
-### Comparison Nodes
+## Saving and sharing
 
-`==`, `!=`, `>`, `>=`, `<`, `<=`, Contains, Starts With, Ends With, Is Null
+Click **Save** to store your flow on the platform. Give it a name and a description, and optionally add it to a
+space so your team can find it:
 
-### Function Nodes
+![The Save dialog: name, description, and the dashboard section](img/save-dialog.png)
 
-Dynamically generated for every registered Datagrok function. Each node's inputs and outputs match the function's signature with proper type coloring.
+A saved flow can be reopened from anywhere, shared like any other Datagrok item, and — this is the fun part —
+**used as a single step inside other flows**: saved flows appear in everyone's toolbox under *Workflows*. Build
+your team's standard data-prep once, and everyone composes on top of it.
 
-## Example
+To pass a flow around as a file instead (email, chat), use **Flow → Export** — a colleague can import it on
+their end and get the complete flow, layouts included.
 
-A typical cheminformatics workflow:
+## Publish a dashboard
 
-1. Add a **Table Input** node (or drag a file from the browse tree)
-2. Add a **Select Column** node to pick the molecule column
-3. Add **Chemical Properties** (from the Chem package) to compute descriptors
-4. Add an **Add New Column** node for custom expressions
-5. Add a **Table Output** node to return results
-6. Connect everything and click **Run**
+Your flow's results can become a **dashboard** — a regular Datagrok project that colleagues open directly, without
+ever seeing the canvas.
 
-<!-- TODO: screenshot of the complete cheminformatics example graph described above -->
+Run the flow, click **Save**, and the dialog's *Dashboard* section lists the tables it produced. Keep *Create
+dashboard* checked and save — the platform's standard project dialog opens with everything pre-filled:
 
-## Development
+![Publishing: the tables, their layouts, and live-data sync, ready to go](img/publish-dialog.png)
 
-### Build
+Notice the **Data sync** toggles: with sync on, the dashboard doesn't store a frozen copy of your data — it re-runs
+your flow whenever someone opens it, so the dashboard always shows current data. (Flows that start from a manually
+provided table publish as snapshots instead.)
 
-```bash
-cd packages/Flow
-npm install
-npm run build    # grok api && grok check --soft && webpack
-```
+And here's what a colleague sees when they open your dashboard — just the results, arranged the way you left them,
+no canvas in sight:
 
-### Publish
+![The published dashboard, opened like any other project](img/dashboard-open.png)
 
-```bash
-grok publish           # debug mode
-grok publish --release # release mode
-```
+Publish again after improving the flow and the **same dashboard updates in place** — no duplicate projects
+piling up. Want a separate copy? Use the *publish as new* link in the Save dialog.
 
-### Key Dependencies
+## Where to learn more
 
-- [Rete.js v2](https://retejs.org) — graph editor framework (core, area, connection, render-utils, react renderer)
-- [React](https://react.dev) `^18` — used by the canvas renderer; the rest of the package is plain TS on Datagrok UI
-- [datagrok-api](https://datagrok.ai/help/develop) — Platform API (external, provided at runtime)
+The in-app tutorials cover everything above hands-on — including a start-to-finish
+*Publish your results as a dashboard* walkthrough. Click the graduation cap in Flow anytime.
 
-See also: [Datagrok Packages](https://datagrok.ai/help/develop/develop#packages)
+---
+
+*For developers: build/publish instructions and architecture notes live in [CLAUDE.md](CLAUDE.md) and
+[docs/](docs/). Flow is a standard [Datagrok package](https://datagrok.ai/help/develop/develop#packages).*
