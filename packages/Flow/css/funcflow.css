@@ -1709,6 +1709,42 @@
   color: #90a4ae;
 }
 
+/* Recent flows — one-line entity rows, Browse-panel style. */
+.funcflow-start-recent {
+  text-align: left;
+  margin: 4px 0 12px 0;
+}
+
+.funcflow-start-recent-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--grey-4, #90a4ae);
+  margin-bottom: 4px;
+}
+
+.funcflow-start-recent-list {
+  max-height: 200px;
+  overflow-y: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.funcflow-start-recent-item {
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 33%;
+}
+
+.funcflow-start-recent-item:hover {
+  background: var(--grey-1, #f2f2f5);
+}
+
 /* ---------- Guide system (tutorials + how-to) ---------- */
 /* Non-invasive floating help button, bottom-left of the canvas. */
 .ff-help-fab {
@@ -1971,6 +2007,25 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   min-width: 0;
 }
 
+/* Pin: freezes the preview on the shown node. Filled + blue when pinned
+ * (font-weight 600 renders the FA glyph solid — same trick as the autorun
+ * bolt). */
+.ff-output-panel-pin {
+  flex: 0 0 auto;
+  cursor: pointer;
+  color: var(--grey-4, #9aa5b1);
+  padding: 4px;
+}
+
+.ff-output-panel-pin:hover {
+  color: var(--grey-6, #495763);
+}
+
+.ff-output-panel-pin[data-pinned="true"] {
+  color: var(--blue-1, #2083d5);
+  font-weight: 600;
+}
+
 .ff-output-panel-caret {
   margin-left: auto;
   align-self: stretch;
@@ -2115,7 +2170,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   justify-content: space-between;
   box-sizing: border-box;
   width: 40px;
-  min-width: 0; /* chips carry .ff-node, whose base rule sets min-width: 160px */
+  min-width: 0;
+  /* chips carry .ff-node, whose base rule sets min-width: 160px */
   height: 24px;
   flex: 0 0 auto;
   padding: 0 5px;

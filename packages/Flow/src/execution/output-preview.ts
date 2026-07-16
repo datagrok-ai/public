@@ -11,6 +11,11 @@
  *    up. Restoring is always an explicit header click.
  *  - `clear()` empties and hides it (graph change / new run — values are
  *    stale), preserving the user's minimized preference.
+ *  - The header pin freezes the preview on the shown node: other node clicks
+ *    no longer switch it, while fresh results of the pinned node re-render
+ *    (the controller re-shows it on node-complete) — adjust an upstream node
+ *    and watch the pinned chart update. The pin survives `clear()`; deleting
+ *    the pinned node or replacing the graph unpins.
  *  - Embedded hosts (the creation-script dialog) construct it disabled: it
  *    never shows there, only in the real editor view.
  *
@@ -38,6 +43,7 @@ export class OutputPreviewPanel {
   private readonly contentEl: HTMLElement;
   private readonly nodeLabelEl: HTMLElement;
   private readonly caretEl: HTMLElement;
+  private readonly pinEl: HTMLElement;
 
   private state: OutputPanelState = 'hidden';
   /** The user minimized the panel — remembered for the view's lifetime so
@@ -54,6 +60,12 @@ export class OutputPreviewPanel {
   private lastNodeId: string | null = null;
   private lastState: NodeExecState | null = null;
 
+  /** When set, the panel is pinned to that node: clicking other nodes no
+   *  longer switches the preview, but fresh state for the pinned node itself
+   *  still re-renders (the controller re-shows it on node-complete). Survives
+   *  `clear()` — an invalidated pinned value comes back pinned once recomputed. */
+  private pinnedId: string | null = null;
+
   /** Called when the user clicks "Edit settings" on a viewer preview — the host
    *  shows the viewer in the context panel and captures its option changes. */
   onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
@@ -61,6 +73,11 @@ export class OutputPreviewPanel {
   /** Fired on every hidden/minimized/expanded transition — the view syncs the
    *  splitter divider (resizing a hidden or minimized pane makes no sense). */
   onStateChanged?: (state: OutputPanelState) => void;
+
+  /** Fired when the user unpins via the header icon (not on programmatic
+   *  `unpin()`) — the controller re-shows the currently selected node, so
+   *  "unpin to see what I clicked while pinned" works without a re-click. */
+  onUnpinned?: () => void;
 
   constructor(options: {enabled?: boolean} = {}) {
     this.enabled = options.enabled !== false;
@@ -71,10 +88,17 @@ export class OutputPreviewPanel {
     this.caretEl.addEventListener('click', () => this.toggle());
     ui.tooltip.bind(this.caretEl, () => this.state === 'minimized' ? 'Expand outputs' : 'Minimize outputs');
     this.nodeLabelEl = setTid(ui.div([], 'ff-output-panel-node'), 'output-panel-node');
+    // Pin: freeze the preview on the current node so clicking other nodes
+    // (to tweak their settings) doesn't hide the result being watched.
+    this.pinEl = setTid(ui.iconFA('thumbtack', () => this.togglePin()), 'output-panel-pin');
+    this.pinEl.classList.add('ff-output-panel-pin');
+    ui.tooltip.bind(this.pinEl, () => this.pinnedId != null ?
+      'Unpin — clicking a node switches the preview again' :
+      'Pin this preview — keep it while you adjust other nodes');
     const title = ui.div([], 'ff-output-panel-title');
-    title.textContent = 'Outputs';
+    title.textContent = 'Preview';
     const header = setTid(
-      ui.div([title, this.nodeLabelEl, this.caretEl], 'ff-output-panel-header'), 'output-panel-header');
+      ui.div([title, this.nodeLabelEl, this.pinEl, this.caretEl], 'ff-output-panel-header'), 'output-panel-header');
 
     this.contentEl = setTid(ui.div([], 'ff-output-panel-content'), 'output-panel-content');
 
@@ -86,6 +110,38 @@ export class OutputPreviewPanel {
     this.root.appendChild(header);
     this.root.appendChild(this.contentEl);
     this.applyState();
+    this.updatePinVisual();
+  }
+
+  /** The node the preview is pinned to, or null when unpinned. */
+  get pinnedNodeId(): string | null {
+    return this.pinnedId;
+  }
+
+  togglePin(): void {
+    if (this.pinnedId != null) {
+      this.unpin();
+      this.onUnpinned?.();
+      return;
+    }
+    if (this.lastNodeId != null) {
+      this.pinnedId = this.lastNodeId;
+      this.updatePinVisual();
+    }
+  }
+
+  /** Drop the pin — the next node click switches the preview again. Called by
+   *  the controller when the pinned node is deleted or the graph is replaced. */
+  unpin(): void {
+    this.pinnedId = null;
+    this.updatePinVisual();
+  }
+
+  private updatePinVisual(): void {
+    this.pinEl.dataset.pinned = this.pinnedId != null ? 'true' : 'false';
+    // Nothing shown and nothing pinned → there is nothing to pin; hide the
+    // icon. A pinned-but-cleared panel keeps it so the user can still unpin.
+    this.pinEl.style.display = this.lastNodeId != null || this.pinnedId != null ? '' : 'none';
   }
 
   get panelState(): OutputPanelState {
@@ -116,6 +172,9 @@ export class OutputPreviewPanel {
    *  in place and the current state is respected. */
   showForNode(node: {id: string; label: string}, state: NodeExecState | undefined): void {
     if (!this.enabled || !state) return;
+    // A pinned preview stays put: selecting other nodes never replaces it.
+    // Fresh state for the pinned node itself still updates in place.
+    if (this.pinnedId != null && node.id !== this.pinnedId) return;
     // Status, duration, error, primitives — those go in the property panel
     // (see `buildExecutionMeta`). This panel only shows rich values.
     if (!hasRenderablePreview(state)) return;
@@ -131,6 +190,7 @@ export class OutputPreviewPanel {
     this.nodeLabelEl.textContent = node.label;
     this.lastNodeId = node.id;
     this.lastState = state;
+    this.updatePinVisual();
 
     if (this.state === 'hidden')
       this.setState(this.userMinimized ? 'minimized' : 'expanded');
@@ -159,13 +219,15 @@ export class OutputPreviewPanel {
   }
 
   /** Empty and hide the panel (graph change / new run — values are stale).
-   *  The user's minimized preference survives. */
+   *  The user's minimized preference AND the pin survive — a pinned node's
+   *  fresh result re-opens into the pinned panel; only `unpin()` drops it. */
   clear(): void {
     this.contentEl.innerHTML = '';
     this.nodeLabelEl.textContent = '';
     this.lastNodeId = null;
     this.lastState = null;
     this.setState('hidden');
+    this.updatePinVisual();
   }
 
   private setState(state: OutputPanelState): void {

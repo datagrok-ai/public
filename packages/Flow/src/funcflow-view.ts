@@ -96,6 +96,8 @@ export class FuncFlowView extends DG.ViewBase {
   private startPanel!: HTMLElement;
   private startBg!: HTMLElement;
   private startBgRaf = 0;
+  private recentFlowsHost!: HTMLElement;
+  private recentFlowsLoading = false;
   private helpButton!: HTMLElement;
   private readonly guideRunner = new GuideRunner();
   private statusBar!: HTMLElement;
@@ -1007,13 +1009,64 @@ export class FuncFlowView extends DG.ViewBase {
     hint.appendChild(document.createTextNode(
       '. You can also double-click a function in the list on the left, or drag a file onto the canvas.'));
 
+    // The 10 most recently updated flows visible to the user, rendered as
+    // one-line entity rows (same markup as the Browse panel). Populated
+    // asynchronously; hidden entirely when the server has none.
+    this.recentFlowsHost = setTid(ui.divV([], 'funcflow-start-recent'), 'start-recent');
+    void this.refreshRecentFlows();
+
     const panel = ui.divV([
       title, subtitle,
       ui.divH(cards, 'funcflow-start-cards'),
+      this.recentFlowsHost,
       actions, hint,
     ], 'funcflow-start-panel');
     setTid(panel, 'start-panel');
     return setTid(ui.div([this.buildStartBackground(), panel], 'funcflow-start-overlay'), 'start-overlay');
+  }
+
+  /** Fill the start panel's "Recent flows" section: the 10 most recently
+   *  updated flow scripts the user can see (own + shared), newest first.
+   *  Each row is the platform's one-line entity markup; clicking it opens
+   *  the flow in this view. Server errors just leave the section empty. */
+  private async refreshRecentFlows(): Promise<void> {
+    if (this.recentFlowsLoading) return;
+    this.recentFlowsLoading = true;
+    try {
+      const flows = await grok.dapi.scripts.list(
+        {pageSize: 12, pageNumber: 1, filter: 'language="flow"', order: '!updatedOn'});
+      this.recentFlowsHost.innerHTML = '';
+      if (flows.length === 0) return;
+      this.recentFlowsHost.appendChild(ui.divText('Recent flows', 'funcflow-start-recent-title'));
+      const list = ui.divV([], 'funcflow-start-recent-list');
+      for (const f of flows) {
+        const row = ui.div([ui.render(f)], 'funcflow-start-recent-item');
+        setTid(row, 'start-recent-item', f.friendlyName || f.name);
+        // Capture-phase so the entity markup's own click (set current object)
+        // doesn't swallow the open.
+        row.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          void this.openRecentFlow(f);
+        }, true);
+        list.appendChild(row);
+      }
+      this.recentFlowsHost.appendChild(list);
+    } catch { /* server unreachable — no section */ }
+    finally {
+      this.recentFlowsLoading = false;
+    }
+  }
+
+  private async openRecentFlow(f: DG.Script): Promise<void> {
+    try {
+      // Re-find by id so the body is guaranteed present, not a lean listing row.
+      const full = await grok.dapi.scripts.find(f.id);
+      this.bindScript((full as DG.Script | null) ?? f);
+      this.hideStartPanel();
+    } catch (e: any) {
+      grok.shell.error(`Could not open "${f.friendlyName || f.name}": ${e?.message ?? e}`);
+    }
   }
 
   /** Decorative animated backdrop host. The graph is drawn by
@@ -1091,6 +1144,7 @@ export class FuncFlowView extends DG.ViewBase {
   private showStartPanel(): void {
     this.startPanel.style.display = 'flex';
     this.drawStartBackgroundSoon();
+    void this.refreshRecentFlows();
   }
 
   private hideStartPanel(): void {
@@ -1099,9 +1153,15 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Hide the overlay only while the canvas has content; show it on an empty one. */
   private updateStartPanelVisibility(): void {
+    const wasHidden = this.startPanel.style.display === 'none';
     const empty = !this.flow || this.flow.getNodeCount() === 0;
     this.startPanel.style.display = empty ? 'flex' : 'none';
-    if (empty) this.drawStartBackgroundSoon();
+    if (empty) {
+      this.drawStartBackgroundSoon();
+      // Re-shown (New flow / everything deleted) → the recent list may be
+      // stale (the user just saved a flow); reload it.
+      if (wasHidden) void this.refreshRecentFlows();
+    }
   }
 
   /** Load a bundled template flow from the package `files/` folder. */

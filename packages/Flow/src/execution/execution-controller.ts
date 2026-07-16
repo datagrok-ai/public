@@ -98,6 +98,15 @@ export class ExecutionController {
     this.state = new ExecutionState();
     this.visualizer = new ExecutionVisualizer(flow);
     this.outputPreview = outputPreview ?? new OutputPreviewPanel();
+    // Unpinning via the header icon jumps to the node the user selected while
+    // pinned — re-clicking an already-selected node fires no selection event,
+    // so without this the preview would stay on the stale pinned content.
+    this.outputPreview.onUnpinned = (): void => {
+      const ids = this.flow.getSelectedNodeIds();
+      if (ids.length !== 1) return;
+      const node = this.flow.getNodeById(ids[0]);
+      if (node && node.id !== this.outputPreview.currentNodeId) this.showOutputsForNode(node);
+    };
   }
 
   runInstrumented(settings: ScriptSettings): void {
@@ -474,6 +483,12 @@ export class ExecutionController {
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);
+      // A pinned preview tracks its node live: the moment a fresh result lands,
+      // re-render it (selection can't bring it back — other nodes are gated).
+      if (this.outputPreview.pinnedNodeId === event.nodeId) {
+        const pinned = this.flow.getNodeById(event.nodeId);
+        if (pinned) this.showOutputsForNode(pinned);
+      }
       break;
     case 'node-error':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.errored, {
@@ -599,6 +614,7 @@ export class ExecutionController {
     const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
     if (reg) delete reg[nodeId];
     if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.clear();
+    if (this.outputPreview.pinnedNodeId === nodeId) this.outputPreview.unpin();
     if (this.autorunPreviewNodeId === nodeId) this.autorunPreviewNodeId = null;
   }
 
@@ -607,6 +623,7 @@ export class ExecutionController {
     this.flow.clearConnectionLabels();
     this.state.reset();
     this.outputPreview.clear();
+    this.outputPreview.unpin();
     this.clearLiveRegistry();
   }
 

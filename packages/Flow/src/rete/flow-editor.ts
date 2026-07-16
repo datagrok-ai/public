@@ -21,7 +21,10 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, EXEC_IN_KEY, EXEC_OUT_KEY} from './scheme';
+import {
+  FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
+  EXEC_IN_KEY, EXEC_OUT_KEY,
+} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
@@ -69,6 +72,20 @@ export interface FlowEditorCallbacks {
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
+
+/** A copyable snapshot of a node set: the node payloads plus every connection
+ *  whose BOTH endpoints are inside the set (data, pass-through, and order edges
+ *  alike). Positions are the originals — materializing applies an offset.
+ *  Deep-copied at snapshot time, so later edits to the originals never leak
+ *  into a paste. */
+interface GraphClip {
+  nodes: Array<{
+    id: string; typeName: string; label: string; description: string;
+    collapsed: boolean; pos: {x: number; y: number};
+    properties: Record<string, any>; inputValues: Record<string, any>;
+  }>;
+  connections: Array<{source: string; sourceOutput: string; target: string; targetInput: string}>;
+}
 
 export class FlowEditor {
   readonly editor = new NodeEditor<FlowScheme>();
@@ -2040,7 +2057,13 @@ export class FlowEditor {
     if (hasRunItem) menu.separator();
     menu
       .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
-      .item('Duplicate', () => void this.duplicateNode(node.id))
+      .item('Duplicate', () => {
+        // Right-clicking a node that is part of a multi-selection duplicates
+        // the whole selection (with its internal connections).
+        const sel = this.getSelectedNodeIds();
+        const inSelection = (node as {selected?: boolean}).selected === true;
+        void this.duplicateNodes(inSelection && sel.length > 1 ? sel : [node.id]);
+      })
       .separator()
       .item('Delete', () => void this.removeNode(node.id))
       .show({causedBy: event});
@@ -2119,18 +2142,26 @@ export class FlowEditor {
     };
     window.addEventListener('pointerup', this.pointerUpTracker, true);
 
-    // Block right- or middle-click pointerdown from reaching the connection
-    // plugin's socket handler. The plugin doesn't filter by button; without
-    // this guard, a right-click on an output socket starts a fake
-    // pseudoconnection drag that follows the cursor until pointerup.
-    // We only stop the event when it landed inside a socket — pan, rect-
-    // select, and contextmenu emission elsewhere are unaffected.
-    this.container.addEventListener('pointerdown', (ev) => {
+    // Block right- or middle-click pointer events on sockets and node bodies
+    // from reaching the rete plugins — neither filters by button:
+    // - the connection plugin's socket pointerdown starts a fake
+    //   pseudoconnection drag that follows the cursor until pointerup;
+    // - the node view ignores non-left pointerdowns, so the event bubbles to
+    //   the area, whose selectable extension counts pointerdown→pointerup with
+    //   <4 moves as an empty-canvas click and unselects ALL — clearing the very
+    //   multi-selection the context menu's "Duplicate" is about to act on. The
+    //   area's pointerup listener sits on `window`, so BOTH halves of the
+    //   gesture must be swallowed here (capture phase, before the bubble path).
+    // Pan, rect-select, and the `contextmenu` DOM event (a separate event — the
+    // node menu still opens) are unaffected.
+    const guardNonPrimary = (ev: PointerEvent): void => {
       if (ev.button === 0) return;
       const target = ev.target as HTMLElement | null;
-      if (target?.closest('.ff-socket-row-input, .ff-socket-row-output, .ff-socket'))
+      if (target?.closest('.ff-socket-row-input, .ff-socket-row-output, .ff-socket, .ff-node'))
         ev.stopPropagation();
-    }, true);
+    };
+    this.container.addEventListener('pointerdown', guardNonPrimary, true);
+    this.container.addEventListener('pointerup', guardNonPrimary, true);
   }
 
   private installKeyboardShortcuts(): void {
@@ -2160,6 +2191,22 @@ export class FlowEditor {
           for (const n of this.editor.getNodes()) void this.selectableApi.select(n.id, true);
         this.callbacks.onSelectionChanged?.();
         this.refreshChipSelection();
+      }
+
+      if (e.key === 'Escape' && this.container.isConnected &&
+          this.getSelectedNodeIds().length > 0)
+        void this.unselectAllNodes();
+
+      // Copy / paste nodes. A live text selection means the user is copying
+      // text — leave the event to the browser.
+      if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
+          this.container.isConnected && !document.getSelection()?.toString())
+        this.copySelection();
+
+      if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
+          this.container.isConnected && this.clipboard) {
+        e.preventDefault();
+        void this.pasteClipboard();
       }
     };
     window.addEventListener('keydown', this.keydownHandler);
@@ -2252,22 +2299,118 @@ export class FlowEditor {
     }
   }
 
-  /** Duplicate a node next to the original (no connections copied). */
-  async duplicateNode(nodeId: string): Promise<FlowNode | null> {
-    const original = this.editor.getNode(nodeId);
-    if (!original || !original.dgTypeName) return null;
+  // ---------- duplicate / copy / paste ----------
+
+  private clipboard: GraphClip | null = null;
+  /** How many times the current clipboard was pasted — each paste fans out
+   *  further so repeated Ctrl+V doesn't stack copies on the same spot. */
+  private pasteCount = 0;
+
+  private snapshotNodes(ids: string[]): GraphClip {
+    const idSet = new Set(ids);
+    const nodes = this.editor.getNodes()
+      .filter((n) => idSet.has(n.id) && n.dgTypeName != null)
+      .map((n) => ({
+        id: n.id, typeName: n.dgTypeName!, label: n.label, description: n.description,
+        collapsed: n.collapsed, pos: {...n.pos},
+        properties: JSON.parse(JSON.stringify(n.properties)),
+        inputValues: JSON.parse(JSON.stringify(n.inputValues)),
+      }));
+    const kept = new Set(nodes.map((n) => n.id));
+    const connections = this.editor.getConnections()
+      .filter((c) => kept.has(c.source) && kept.has(c.target))
+      .map((c) => ({source: c.source, sourceOutput: String(c.sourceOutput),
+        target: c.target, targetInput: String(c.targetInput)}));
+    return {nodes, connections};
+  }
+
+  /** Output paramNames and SetVar variableNames share one namespace (the
+   *  validator flags duplicates as errors) — a copy must land with a unique
+   *  name instead of instantly invalidating the graph. */
+  private dedupeVariableName(fresh: FlowNode): void {
+    const taken = new Set<string>();
+    for (const n of this.editor.getNodes()) {
+      const p = n.properties?.paramName;
+      if (typeof p === 'string' && p !== '') taken.add(p);
+      const v = n.inputValues?.variableName;
+      if (typeof v === 'string' && v !== '') taken.add(v);
+    }
+    const bump = (name: string): string => {
+      if (!taken.has(name)) return name;
+      const m = name.match(/^(.*?)(\d+)$/);
+      const base = m ? m[1] : name;
+      let i = m ? parseInt(m[2], 10) + 1 : 2;
+      while (taken.has(`${base}${i}`)) i++;
+      return `${base}${i}`;
+    };
+    const paramName = fresh.properties?.paramName;
+    if (typeof paramName === 'string' && paramName !== '')
+      fresh.properties.paramName = bump(paramName);
+    const varName = fresh.inputValues?.variableName;
+    if (isSetVarNode(fresh) && typeof varName === 'string' && varName !== '')
+      fresh.inputValues.variableName = bump(varName);
+  }
+
+  /** Instantiate a clip's nodes (offset from their recorded positions) and the
+   *  connections among them; the copies become the new selection so they can
+   *  be dragged as a group right away. */
+  private async materializeClip(clip: GraphClip, offset: number): Promise<FlowNode[]> {
     // Lazy require to avoid a circular import.
     const {createNode} = await import('./node-factory');
-    const fresh = createNode(original.dgTypeName);
-    if (!fresh) return null;
-    fresh.label = original.label;
-    fresh.properties = JSON.parse(JSON.stringify(original.properties));
-    fresh.inputValues = JSON.parse(JSON.stringify(original.inputValues));
-    await this.editor.addNode(fresh);
-    const offset = 30;
-    fresh.pos = {x: original.pos.x + offset, y: original.pos.y + offset};
-    await this.area.translate(fresh.id, fresh.pos);
-    return fresh;
+    const idMap = new Map<string, FlowNode>();
+    for (const snap of clip.nodes) {
+      const fresh = createNode(snap.typeName);
+      if (!fresh) continue;
+      fresh.label = snap.label;
+      fresh.description = snap.description;
+      fresh.collapsed = snap.collapsed;
+      fresh.properties = JSON.parse(JSON.stringify(snap.properties));
+      fresh.inputValues = JSON.parse(JSON.stringify(snap.inputValues));
+      this.dedupeVariableName(fresh);
+      await this.editor.addNode(fresh);
+      fresh.pos = {x: snap.pos.x + offset, y: snap.pos.y + offset};
+      await this.area.translate(fresh.id, fresh.pos);
+      idMap.set(snap.id, fresh);
+    }
+    for (const c of clip.connections) {
+      const source = idMap.get(c.source);
+      const target = idMap.get(c.target);
+      if (source && target)
+        await this.addConnectionByKeys(source.id, c.sourceOutput, target.id, c.targetInput);
+    }
+    const created = [...idMap.values()];
+    if (created.length > 0) {
+      await this.selector.unselectAll();
+      for (const n of created) await this.selectableApi.select(n.id, true);
+      this.lastPickedId = created[0].id;
+      this.callbacks.onSelectionChanged?.();
+      this.refreshChipSelection();
+    }
+    return created;
+  }
+
+  /** Duplicate the given nodes next to the originals. Connections whose both
+   *  endpoints are duplicated are duplicated too, and the copies become the
+   *  selection (so they're immediately movable as a group). */
+  async duplicateNodes(ids: string[]): Promise<FlowNode[]> {
+    return this.materializeClip(this.snapshotNodes(ids), 30);
+  }
+
+  /** Snapshot the selected nodes into the editor clipboard (Ctrl+C). Returns
+   *  how many nodes were copied (0 = nothing selected, clipboard untouched). */
+  copySelection(): number {
+    const clip = this.snapshotNodes(this.getSelectedNodeIds());
+    if (clip.nodes.length === 0) return 0;
+    this.clipboard = clip;
+    this.pasteCount = 0;
+    return clip.nodes.length;
+  }
+
+  /** Materialize the clipboard (Ctrl+V). Each repeated paste offsets further. */
+  async pasteClipboard(): Promise<FlowNode[]> {
+    if (!this.clipboard) return [];
+    this.pasteCount++;
+    return this.materializeClip(this.clipboard, 30 * this.pasteCount);
   }
 
   // ---------- public API consumed by the rest of the package ----------

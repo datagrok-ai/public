@@ -212,6 +212,70 @@ category('Flow: execution preview', () => {
     expect(contentEl() !== rebuilt, true, 'another node rebuilds the preview');
   });
 
+  test('pin freezes the preview on the shown node; unpin releases it', async () => {
+    const panel = new OutputPreviewPanel();
+    const label = (): string =>
+      panel.root.querySelector('[data-testid="ff-output-panel-node"]')!.textContent ?? '';
+    const pin = panel.root.querySelector('[data-testid="ff-output-panel-pin"]') as HTMLElement;
+
+    expect(pin.style.display, 'none', 'no content → nothing to pin, icon hidden');
+
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    expect(pin.style.display === 'none', false, 'the icon appears with content');
+    pin.click();
+    expect(panel.pinnedNodeId, 'n1', 'pin captures the shown node');
+    expect(pin.dataset.pinned, 'true', 'pinned state on the icon');
+
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(label(), 'a', 'other nodes cannot replace a pinned preview');
+    expect(panel.currentNodeId, 'n1', 'still showing the pinned node');
+
+    // Fresh state for the pinned node itself still re-renders (the controller
+    // re-shows it on node-complete — the "watch the chart while editing" case).
+    panel.showForNode({id: 'n1', label: 'a2'}, renderableState());
+    expect(label(), 'a2', 'the pinned node itself updates in place');
+
+    pin.click();
+    expect(panel.pinnedNodeId, null, 'second click unpins');
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(label(), 'b', 'unpinned → node clicks switch the preview again');
+  });
+
+  test('unpinning via the icon reports onUnpinned; programmatic unpin stays silent', async () => {
+    // The controller listens to onUnpinned to re-show the currently selected
+    // node — re-clicking an already-selected node fires no selection event, so
+    // without this "unpin to see what I clicked while pinned" showed stale content.
+    const panel = new OutputPreviewPanel();
+    let fires = 0;
+    panel.onUnpinned = (): void => {fires++;};
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    panel.togglePin();
+    expect(fires, 0, 'pinning does not fire');
+    panel.togglePin();
+    expect(fires, 1, 'a user unpin fires');
+    panel.togglePin();
+    panel.unpin();
+    expect(fires, 1, 'programmatic unpin (node deleted / graph replaced) stays silent');
+  });
+
+  test('the pin survives clear(); unpin() drops it', async () => {
+    const panel = new OutputPreviewPanel();
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    panel.togglePin();
+
+    panel.clear();
+    expect(panel.pinnedNodeId, 'n1', 'clear (invalidation / new run) keeps the pin');
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(panel.panelState, 'hidden', 'other nodes stay gated even after a clear');
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    expect(panel.panelState, 'expanded', 'the pinned node\'s fresh result re-opens the panel');
+
+    panel.unpin();
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(panel.root.querySelector('[data-testid="ff-output-panel-node"]')!.textContent, 'b',
+      'unpin releases the gate');
+  });
+
   test('the panel is a pane of the view splitter; embedded views create it disabled', async () => {
     const view = new FuncFlowView();
     try {
