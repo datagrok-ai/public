@@ -28,6 +28,10 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:AddNewColumnDialog', { call });
   }
 
+  export async function configViewerGallery(view: DG.View ): Promise<void> {
+    return await grok.functions.call('PowerPack:ConfigViewerGallery', { view });
+  }
+
   export async function compareColumns(): Promise<void> {
     return await grok.functions.call('PowerPack:CompareColumns', {});
   }

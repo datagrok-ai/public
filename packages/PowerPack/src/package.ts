@@ -375,8 +375,8 @@ export class PackageFunctions {
 
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
-    grok.events.onViewAdded.subscribe((view) => _viewerGallery(view));
-    _viewerGallery(grok.shell.v);
+    grok.events.onViewAdded.subscribe((view) => configViewerGallery(view));
+    configViewerGallery(grok.shell.v);
   }
 
   @grok.decorators.fileViewer({
@@ -487,7 +487,9 @@ grok.events.onContextMenu.subscribe((args) => {
   });
 });
 
-function _viewerGallery(view: DG.ViewBase): void {
+//name: configViewerGallery
+//input: view view
+export function configViewerGallery(view: DG.ViewBase): void {
   if (view?.type == 'TableView') {
     const panels = view.getRibbonPanels();
     for (const p of panels) {
