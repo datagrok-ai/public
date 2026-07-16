@@ -3,7 +3,7 @@ feature: models
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [trained_on_csv_table]
+realizes_atlas: [train_and_save_model, apply_model_on_table, run_performance_evaluation, edit_model_metadata, share_model, delete_model]
 realizes: [views.models]
 realized_as:
   - models-lifecycle-csv-table-spec.ts

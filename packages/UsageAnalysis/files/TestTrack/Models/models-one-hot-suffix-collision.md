@@ -3,7 +3,7 @@ feature: models
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: []
+realizes_atlas: [train_and_save_model, apply_model_on_table, delete_model]
 realizes: [views.models]
 realized_as:
   - models-one-hot-suffix-collision-spec.ts

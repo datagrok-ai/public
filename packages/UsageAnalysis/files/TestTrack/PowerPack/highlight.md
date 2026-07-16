@@ -2,7 +2,7 @@
 feature: powerpack
 target_layer: playwright
 coverage_type: regression
-priority: p1
+priority: p2
 realizes_atlas: [add-new-column-paste-complex-formula]
 realizes: []
 produced_from: migrated

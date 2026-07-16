@@ -3,7 +3,7 @@ feature: models
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [chemprop-train-apply]
+realizes_atlas: [chemprop-train-apply, train_and_save_model, apply_model_on_table, share_model, delete_model]
 realizes: [views.models]
 realized_as:
   - chemprop-spec.ts

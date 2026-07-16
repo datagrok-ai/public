@@ -3,8 +3,8 @@ feature: eda
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: []
-realizes: []
+realizes_atlas: [eda.cp.pca-analysis]
+realizes: [ml.analyze.pca]
 realized_as:
   - pca-spec.ts
 related_bugs: []

@@ -2,9 +2,9 @@
 feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
-priority: p0
-realizes_atlas: []
-realizes: []
+priority: p1
+realizes_atlas: [file-double-click-preview-full-view]
+realizes: [diffstudio]
 realized_as:
   - files-and-sharing.test.ts
 related_bugs: []
