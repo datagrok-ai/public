@@ -28,35 +28,50 @@ export class ReleaseContext {
 // Version-bound test muting. A test is muted for a specific release version; the mute list lives in its
 // own sticky-meta schema (semtype=autotest) so it never touches the shared 'Autotests' schema.
 export const RELEASE_MUTES_SCHEMA = 'ReleaseMutes';
-export const MUTED_VERSIONS = 'mutedVersions';
+export const MUTED_VERSIONS = 'mutedVersions';           // failing-alert mute (version-bound)
+export const STALE_MUTED_VERSIONS = 'staleMutedVersions'; // stale-alert mute (version-bound, independent)
 export const MUTE_ON = '🔕';  // muted for this release
 export const MUTE_OFF = '🔔'; // active (click to mute)
+export const STALE_DAYS = 7;  // "not run for a week or more"
 let _mutesSchemaPromise: Promise<any> | null = null;
 
-/** The release-mute sticky-meta schema, created on first use. Promise-cached so the Overview and Tests
- * tabs (which both fetch on load) can't race into two createSchema calls; recovers if one loses the race. */
+/** The release-mute sticky-meta schema (fields: mutedVersions, staleMutedVersions), created/migrated on
+ * first use. Promise-cached so the Overview and Tests tabs (both fetch on load) can't race into two
+ * createSchema calls; recovers if one loses the race, and adds staleMutedVersions to a pre-existing schema. */
 export function getReleaseMutesSchema(): Promise<any> {
   _mutesSchemaPromise ??= (async () => {
     let schemas = await grok.dapi.stickyMeta.getSchemas();
     let schema = schemas.find((s) => s.name === RELEASE_MUTES_SCHEMA);
     if (schema)
-      return schema;
+      return await ensureStaleField(schema);
     try {
       // Entity-type name must be globally unique across schemas (the shared 'Autotests' schema owns
       // 'autotest'), so use a distinct name while still matching the same autotest-semtype column.
       return await grok.dapi.stickyMeta.createSchema(RELEASE_MUTES_SCHEMA,
-        [{name: 'releaseMuteAutotest', matchBy: 'semtype=autotest'}], [{name: MUTED_VERSIONS, type: DG.TYPE.STRING}]);
+        [{name: 'releaseMuteAutotest', matchBy: 'semtype=autotest'}],
+        [{name: MUTED_VERSIONS, type: DG.TYPE.STRING}, {name: STALE_MUTED_VERSIONS, type: DG.TYPE.STRING}]);
     } catch (e) {
       // A concurrent caller created it first — re-fetch before giving up.
       schemas = await grok.dapi.stickyMeta.getSchemas();
       schema = schemas.find((s) => s.name === RELEASE_MUTES_SCHEMA);
       if (schema)
-        return schema;
+        return await ensureStaleField(schema);
       _mutesSchemaPromise = null; // allow a later retry on a genuine failure
       throw e;
     }
   })();
   return _mutesSchemaPromise;
+}
+
+/** Adds the staleMutedVersions property to a pre-existing ReleaseMutes schema (migration). */
+async function ensureStaleField(schema: any): Promise<any> {
+  if (schema.properties.some((p: any) => p.name === STALE_MUTED_VERSIONS))
+    return schema;
+  try {
+    schema.properties = [...schema.properties, DG.EntityProperty.create(STALE_MUTED_VERSIONS, DG.TYPE.STRING)];
+    await grok.dapi.stickyMeta.saveSchema(schema);
+  } catch (_) { /* field may already exist from a concurrent migration — safe to ignore */ }
+  return schema;
 }
 
 /** Extracts the release version (e.g. '1.28.0') from a build name like '2026-07-15-1.28.0.BE-3'. */
@@ -153,9 +168,11 @@ export interface TestAlerts {
   flaky: number;
   slower: number;
   passRate: number; // 0..100 over the latest build: passed / (passed + failed), excluding skipped & did-not-run
+  stale: number; // tests not run for >= STALE_DAYS (unmuted)
   failingByPkg: Record<string, string[]>;
   slowerByPkg: Record<string, string[]>;
   flakyByPkg: Record<string, string[]>;
+  staleByPkg: Record<string, string[]>;
 }
 
 function pushByPkg(map: Record<string, string[]>, pkg: string, test: string): void {
@@ -271,6 +288,21 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
     if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
   const version = versionFromBuild(latestBuildName);
 
+  // Most recent run date per test (ms) → staleness. last_run is constant per test in the raw result.
+  const nowMs = Date.now();
+  const lastRunByTest = new Map<string, number>();
+  const rawTestCol = raw.getCol('test');
+  const rawLastRun = raw.columns.byName('last_run');
+  if (rawLastRun) {
+    for (let i = 0; i < raw.rowCount; i++) {
+      const t = rawTestCol.get(i);
+      if (!lastRunByTest.has(t)) {
+        const v: any = rawLastRun.get(i);
+        lastRunByTest.set(t, v == null ? NaN : (v.valueOf ? Number(v.valueOf()) : Number(v)));
+      }
+    }
+  }
+
   const schemas = await grok.dapi.stickyMeta.getSchemas();
   const schema = schemas.find((s) => s.name === 'Autotests');
   pivot.getCol('test').semType = 'autotest';
@@ -303,6 +335,24 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   pivot.columns.addNewBool('needs_attention')
     .init((i) => pivot.get('failing', i) && !pivot.get('muted', i));
 
+  // Staleness: tests not run for >= STALE_DAYS. Its mute is separate (staleMutedVersions) from the failing mute.
+  const testColP = pivot.getCol('test');
+  const smvCol = mutes.col(STALE_MUTED_VERSIONS);
+  if (smvCol)
+    pivot.columns.add(smvCol);
+  const staleMutedVersionsCol = pivot.columns.byName(STALE_MUTED_VERSIONS);
+  pivot.columns.addNewInt('stale_days').init((i) => {
+    const lr = lastRunByTest.get(testColP.get(i));
+    return (lr == null || isNaN(lr)) ? 0 : Math.floor((nowMs - lr) / 86400000);
+  });
+  pivot.columns.addNewBool('stale').init((i) => pivot.get('stale_days', i) >= STALE_DAYS);
+  pivot.columns.addNewBool('staleMutedForVersion').init((i) => isMutedForVersion(staleMutedVersionsCol?.get(i), version));
+  pivot.columns.addNewBool('stale_alert')
+    .init((i) => pivot.get('stale', i) === true && pivot.get('staleMutedForVersion', i) !== true);
+  // Toggle glyph only for stale tests (blank otherwise).
+  pivot.columns.addNewString('staleMute')
+    .init((i) => pivot.get('stale', i) !== true ? '' : (pivot.get('staleMutedForVersion', i) === true ? MUTE_ON : MUTE_OFF));
+
   pivot.name = 'Release tests';
   return {df: pivot, buildIndexes, latest, statusCols, durationCols, successCols, resultCols, version};
 }
@@ -311,7 +361,7 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
 export function computeTestAlerts(p: ReleasePivot): TestAlerts {
   const df = p.df;
   const a: TestAlerts = {total: 0, passed: 0, failed: 0, skipped: 0, notRun: 0, flaky: 0, slower: 0,
-    passRate: 0, failingByPkg: {}, slowerByPkg: {}, flakyByPkg: {}};
+    passRate: 0, stale: 0, failingByPkg: {}, slowerByPkg: {}, flakyByPkg: {}, staleByPkg: {}};
   const testCol = df.getCol('test');
   const pkgCol = df.getCol('package');
   const mutedCol = df.columns.byName('muted');
@@ -332,10 +382,13 @@ export function computeTestAlerts(p: ReleasePivot): TestAlerts {
       pushByPkg(a.flakyByPkg, pkg, test);
     if (df.get('slower', i) === true && !muted)
       pushByPkg(a.slowerByPkg, pkg, test);
+    if (df.get('stale_alert', i) === true)
+      pushByPkg(a.staleByPkg, pkg, test);
   }
   a.failed = countGroups(a.failingByPkg);
   a.flaky = countGroups(a.flakyByPkg);
   a.slower = countGroups(a.slowerByPkg);
+  a.stale = countGroups(a.staleByPkg);
   // Success rate excludes skipped and did-not-run: passed / (passed + failed).
   // floor so it never rounds up to 100% while any test is failing.
   const ran = a.passed + rawFailed;
