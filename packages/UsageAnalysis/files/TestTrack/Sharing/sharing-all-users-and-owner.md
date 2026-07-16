@@ -3,7 +3,7 @@ feature: sharing
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: []
+realizes_atlas: [cp-share-with-all-users, cp-advanced-editor-matrix]
 realizes: []
 realized_as:
   - sharing-all-users-and-owner-spec.ts

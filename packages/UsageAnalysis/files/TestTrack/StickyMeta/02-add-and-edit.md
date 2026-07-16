@@ -3,7 +3,7 @@ feature: stickymeta
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: []
+realizes_atlas: [add-and-edit-metadata-on-cell, materialise-sticky-columns-in-grid, edit-values-in-context-panel-then-indicator-fills, materialise-properties-as-grid-columns]
 realizes: []
 realized_as:
   - 02-add-and-edit.test.ts

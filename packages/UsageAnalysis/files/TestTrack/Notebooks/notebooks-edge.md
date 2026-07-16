@@ -3,7 +3,7 @@ feature: notebooks
 target_layer: playwright
 coverage_type: edge
 priority: p2
-realizes_atlas: []
+realizes_atlas: [apply-notebook-to-open-table, delete-notebook, convert-notebook-to-script]
 realizes: [views.notebooks]
 produced_from: atlas-driven
 related_bugs: []

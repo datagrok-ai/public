@@ -3,8 +3,8 @@ feature: charts
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: []
-realizes: []
+realizes_atlas: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel]
+realizes: [charts.tree]
 realized_as:
   - tree-spec.ts
 produced_from: migrated

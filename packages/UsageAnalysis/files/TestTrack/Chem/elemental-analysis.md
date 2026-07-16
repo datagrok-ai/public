@@ -2,7 +2,7 @@
 feature: chem
 target_layer: playwright
 coverage_type: regression
-priority: p2
+priority: p1
 realizes_atlas: []
 realizes: []
 realized_as:

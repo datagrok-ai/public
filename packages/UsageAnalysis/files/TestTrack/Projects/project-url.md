@@ -2,8 +2,8 @@
 feature: projects
 target_layer: playwright
 coverage_type: regression
-priority: p2
-realizes_atlas: []
+priority: p1
+realizes_atlas: [url-parameterized-share]
 realizes: [views.projects]
 realized_as:
   - project-url-spec.ts

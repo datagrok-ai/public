@@ -3,7 +3,7 @@ feature: stickymeta
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: []
+realizes_atlas: [add-and-edit-metadata-on-cell, edit-values-in-context-panel-then-indicator-fills]
 realizes: []
 realized_as:
   - 03-persistence-copy-delete.test.ts
