@@ -1,5 +1,16 @@
 # sci-comp changelog
 
+## 0.9.1 (2026-07-16)
+
+Non-Compartmental Analysis — λz best-fit window-selection fix (VAL-01-LZ-R019):
+
+* `lambdaZBestFit` now uses PKNCA / WinNonlin's best-fit rule: among windows whose
+  adjusted R² is within `adjRSquaredFactor` of the global-maximum adjusted R², keep the
+  one with the most points. The prior additive score (`adjRSquared + adjRSquaredFactor·n`)
+  over-selected long windows. **This changes computed λz / t½ / Vz / %AUCextrap on affected
+  profiles.** Verified against PKNCA 0.12.1 (rat-IV R019: n=8→n=4, λz 0.23494→0.24047); all
+  reference-suite fixtures unchanged. `factor=0` now breaks exact ties toward more points.
+
 ## 0.9.0 (2026-06-15)
 
 Non-Compartmental Analysis — sparse / destructive-sampling NCA (UC-04 / FR-301..306):

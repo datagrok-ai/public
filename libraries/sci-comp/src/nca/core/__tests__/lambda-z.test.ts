@@ -137,6 +137,51 @@ describe('lambdaZBestFit', () => {
     expect(Math.abs(r.lambdaZ - k)).toBeLessThan(0.05);
   });
 
+  it('PKNCA flat-tolerance window selection: real rat-IV R019 profile → n=4 (VAL-01-LZ-R019)', () => {
+    // Regression for the additive-vs-flat adjRSquaredFactor bug. Ground truth from
+    // PKNCA 0.12.1 (auc.method="lin up/log down", min.hl.points=3, min.hl.r.squared=0.85,
+    // allow.tmax.in.half.life=FALSE, min.span.ratio=2) on rat dataset 03 subject R019:
+    //   lambda.z = 0.2404699, half.life = 2.88247, lambda.z.n.points = 4, window t=[6,24].
+    // Per-window adj-R² peaks at n=4 (0.998164); every longer window is > 1e-4 below it,
+    // so PKNCA's FLAT tolerance keeps n=4. The prior additive score `adjR²+1e-4·n` instead
+    // peaked at n=8 (adjR²=0.997855, score 0.998655 > n=4's 0.998564) → λz=0.23494, 2.3% off
+    // (exceeds NFR-05's 0.5%). This test fails on the additive rule, passes on the flat rule.
+    const time = Float64Array.of(0.0, 0.083, 0.25, 0.5, 1.0, 2.0, 4.0, 6.0, 8.0, 12.0, 24.0);
+    const conc = Float64Array.of(5656.92, 4937.10, 5405.76, 4160.80, 3382.91, 2474.69,
+      1591.91, 1177.43, 646.56, 289.48, 14.85);
+    const blqMask = new Uint8Array(time.length);
+    const strategy: LambdaZStrategy = {
+      mode: 'auto-best-fit', minPoints: 3, minRSquared: 0.85, excludeCmax: true,
+      adjRSquaredFactor: 1e-4, // PKNCA default — where additive and flat diverge
+    };
+    // Cmax is the t=0 IV-bolus point (index 0); excludeCmax drops it.
+    const r = lambdaZBestFit(time, conc, blqMask, 0, strategy)!;
+    expect(r).not.toBeNull();
+    expect(Array.from(r.pointsUsed)).toEqual([7, 8, 9, 10]); // t = 6, 8, 12, 24
+    expect(r.tStart).toBe(6);
+    expect(r.tEnd).toBe(24);
+    expect(Math.abs(r.lambdaZ - 0.2404699) / 0.2404699).toBeLessThan(5e-4); // within PKNCA 0.5%
+    expect(Math.abs(Math.LN2 / r.lambdaZ - 2.88247)).toBeLessThan(0.01); // t½ within 0.01 h
+  });
+
+  it('factor=0 tie-break: on exact adjR² ties, the window with MORE points wins (PKNCA convention)', () => {
+    // A perfect exponential makes every candidate window fit with adjR² = 1 (an exact,
+    // bit-level tie). With adjRSquaredFactor unset (factor=0), the flat-tolerance rule
+    // keeps the MOST points among the tied windows — PKNCA's documented "ties → more
+    // points" direction (half.life.R: n.points == max(n.points[mask_best])). The prior
+    // additive score kept the FIRST/smallest window on exact ties; this locks the corrected
+    // direction so it can't silently regress.
+    const k = 0.25;
+    const {time, conc} = exponential(10, k, 1); // indices 0..9, clean decay from t=0
+    const blqMask = new Uint8Array(10);
+    // cmaxIdx=0, excludeCmax=true → eligible = indices 1..9 (9 points); every window adjR²=1.
+    const r = lambdaZBestFit(time, conc, blqMask, 0, DEFAULT_STRATEGY)!;
+    expect(r).not.toBeNull();
+    expect(r.pointsUsed.length).toBe(9); // most points wins the exact tie, not the shortest
+    expect(Array.from(r.pointsUsed)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(Math.abs(r.lambdaZ - k)).toBeLessThan(1e-10);
+  });
+
   it('reports tStart, tEnd, pointsUsed, intercept consistently', () => {
     const k = 0.2;
     const c0 = 50;
