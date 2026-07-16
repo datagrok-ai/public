@@ -466,7 +466,7 @@ test('Bar chart tests', async ({page}) => {
   await softStep('Scrolling with range slider', async () => {
     const result = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
-      bc.props.splitColumnName = 'SUBJ';
+      bc.props.splitColumnName = 'USUBJID';
       await new Promise(res => setTimeout(res, 500));
       const split1 = bc.props.splitColumnName;
 
@@ -477,7 +477,7 @@ test('Bar chart tests', async ({page}) => {
       bc.props.splitColumnName = 'RACE';
       return {split1, value1};
     });
-    expect(result.split1).toBe('SUBJ');
+    expect(result.split1).toBe('USUBJID');
     expect(result.value1).toBe('AGE');
   });
 
