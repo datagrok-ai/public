@@ -5,10 +5,8 @@ import {EnumeratorConfig} from './config';
 
 const DISABLED_HINT = 'Leave blank to disable this filter.';
 
-// The platform's own +/- steppers can't increment a blank/null value (clicking + is a no-op) and
-// decrement straight through 0 into literal negative numbers — both wrong for a field where blank
-// IS the "disabled" state. Override both buttons: blank "+" -> 1; "0 -" -> blank; otherwise a
-// normal ±1. Exported so enumerator-app.ts can apply the same fix to Max routes per compound.
+// The platform's +/- steppers can't increment from blank and have no floor on decrement.
+// Override both: blank "+" -> 1, "0 -" -> blank, otherwise a normal ±1.
 export function fixNullableIntStepper(input: DG.InputBase<number | null>): void {
   const apply = (next: number | null): void => {
     input.value = next;
@@ -29,9 +27,7 @@ export function fixNullableIntStepper(input: DG.InputBase<number | null>): void 
   override('.ui-input-minus', -1);
 }
 
-// -1 is each field's own "disabled/no cap" sentinel — shown as blank rather than a literal -1,
-// since that's not something a user would type; blank means the same thing and reads that way
-// (same treatment as Max routes per compound).
+// -1 is each field's "no cap" sentinel — shown as blank rather than a literal -1.
 function intInput(
   label: string, value: number, tooltip?: string,
 ): {input: DG.InputBase<number | null>; get: () => number} {
@@ -56,12 +52,7 @@ function csvInput(label: string, items: string[], tooltip?: string) {
   };
 }
 
-// `syncToConfig` writes the current field values into whatever config object is passed to it;
-// fields not covered by either builder below (file paths, column names, delimiter, output path,
-// depth_first, num_rounds, max components, max routes per compound, etc.) are left untouched.
-
-// Rounds-related: how many reactant combinations run per template, and whether round-0 building
-// blocks are kept in the final output. Mounted inline in the Strategy pane, next to num_rounds.
+// `syncToConfig` writes the current field values into the given config object.
 export function buildCombinationLimitFields(initial: EnumeratorConfig): {
   root: HTMLElement;
   inputs: DG.InputBase<unknown>[];
@@ -83,9 +74,7 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
   return {root, inputs: [keepBBs.input, maxCombos.input], syncToConfig};
 }
 
-// Product-level filters (atom counts, charge/radical/isotope rejection) — applied during
-// generation itself, so mounted inline in the Strategy pane alongside the other quantitative
-// constraints on the run's output (num_rounds, max_components, max_routes_per_compound).
+// Product-level filters: atom counts, charge/radical/isotope rejection.
 export function buildProductFilterFields(initial: EnumeratorConfig): {
   root: HTMLElement;
   inputs: DG.InputBase<unknown>[];

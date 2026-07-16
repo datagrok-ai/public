@@ -16,8 +16,7 @@ const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
 // Shared "custom subset" indicator color — round tabs' dot and the Strategy summary's dot.
 const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
-// Core look for every small "changed/custom" dot in this file; call sites add their own display
-// mode (toggle labels hide by default, the inline caveat dot flows with text) and spacing.
+// Shared look for the small "changed/custom" dots; call sites add their own display mode and spacing.
 const CHANGED_DOT_STYLE = {width: '6px', height: '6px', borderRadius: '50%', background: OVERRIDE_DOT_COLOR};
 
 // Shared "differs from platform defaults" checks — drive both the Combination limits/Product
@@ -268,9 +267,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   let config: EnumeratorConfig = cloneConfig(DEFAULT_CONFIG);
 
-  // Combination limits and product filters both live inline in the Strategy pane behind chevron
-  // toggles, edited live on `config`. Declared early since syncQuickInputsToConfig() reads these
-  // hosts during setup, before the accordion/toggles are built.
+  // Declared early since syncQuickInputsToConfig() reads these hosts before the accordion is built.
   let combinationLimitFields = buildCombinationLimitFields(config);
   const combinationLimitFieldsHost = ui.div([combinationLimitFields.root]);
   let productFilterFields = buildProductFilterFields(config);
@@ -619,9 +616,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   function refreshValidation(): void {
-    // Sync `config` from the live inputs before reading it for the ribbon/dots below — validate()
-    // does its own sync too, but that runs after refreshCfgRibbon(), which would otherwise see
-    // config as of the PREVIOUS refresh (one field-change behind whatever just triggered this call).
+    // Sync before reading config below — validate() syncs too, but only after refreshCfgRibbon(),
+    // which would otherwise read one refresh behind.
     syncQuickInputsToConfig();
     refreshCfgRibbon();
     refreshStrategyCards();
@@ -1137,8 +1133,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const accExtrasPane = accordion.addPane('Extras', () =>
     ui.divV([ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]),
       mkNextBtn(() => accPreviewPane, 'Preview')]), false);
-  // Small dot on a toggle label flags "differs from platform defaults" without expanding it —
-  // same orange used for the per-round custom-subset dots.
+  // Flags "differs from platform defaults" without expanding the toggle.
   const mkChangedDot = (tooltip: string): HTMLElement => {
     const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, display: 'none'}});
     ui.tooltip.bind(dot, tooltip);
@@ -1762,9 +1757,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     panelHeader('How the current strategy and round count combine the reaction templates and building blocks.'),
     strategyHost);
 
-  // combChanged/prodChangedCount let refreshCfgRibbon() pass in values it already computed this
-  // tick for the toggle dots — falls back to computing fresh when called on its own (e.g. on
-  // first opening the Strategy pane).
+  // Optional params let refreshCfgRibbon() pass in already-computed values; falls back to
+  // computing fresh otherwise.
   function renderStrategySummary(
     combChanged: boolean = combinationLimitsChanged(config),
     prodChangedCount: number = productFiltersChangedCount(config),
@@ -1861,9 +1855,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const caveatEl = ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
           {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}});
         if (changedFilters > 0) {
-          // inline-block (not a flex sibling) so the dot flows with the text itself — it stays on
-          // the text's first line even when the sentence wraps, instead of centering against the
-          // whole wrapped block and looking like it's floating on its own line.
+          // inline-block so the dot flows with the text instead of centering against the wrapped block.
           const dot = ui.span([], {style: {...CHANGED_DOT_STYLE, display: 'inline-block', marginRight: '6px'}});
           caveatEl.prepend(dot);
         }
