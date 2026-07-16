@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
+import {openInWorkspaceIcon, ReleaseContext} from '../release/data';
 
 export const VEX_INDEX_URL = 'https://data.datagrok.ai/vex/index.json';
 
@@ -51,15 +52,55 @@ export async function fetchVexImages(): Promise<VexImage[]> {
   return [...(index.services ?? []), ...(index.bleeding_edge ?? [])];
 }
 
-/** Dashboard flavor: core images are represented by their bleeding-edge scan
- * (the next-release state); packages/tools keep the latest released scan. */
-export async function fetchVexDashboardImages(): Promise<VexImage[]> {
-  const resp = await grok.dapi.fetchProxy(VEX_INDEX_URL);
-  const index = await resp.json();
-  const services: VexImage[] = index.services ?? [];
-  const bleedingEdge: VexImage[] = index.bleeding_edge ?? [];
+/** Total CRITICAL and HIGH findings across the given VEX images (for the Release overview). */
+export function criticalHighCount(images: VexImage[]): {critical: number, high: number} {
+  return images.reduce((a, r) => ({critical: a.critical + (r.critical ?? 0), high: a.high + (r.high ?? 0)}),
+    {critical: 0, high: 0});
+}
+
+export interface VexDelta {
+  newCritical: number;
+  newHigh: number;
+  images: {repo: string, dCritical: number, dHigh: number}[];
+}
+
+/** CRITICAL/HIGH increase of the bleeding-edge images over their previously released version
+ * (same repo in the release channel) — i.e. what the next release would newly introduce. */
+export function vexReleaseDelta(services: VexImage[], bleedingEdge: VexImage[]): VexDelta {
+  const relByRepo = new Map<string, VexImage>();
+  for (const r of services)
+    if (!relByRepo.has(r.repo))
+      relByRepo.set(r.repo, r);
+  const d: VexDelta = {newCritical: 0, newHigh: 0, images: []};
+  for (const be of bleedingEdge) {
+    const rel = relByRepo.get(be.repo);
+    const dCritical = (be.critical ?? 0) - (rel?.critical ?? 0);
+    const dHigh = (be.high ?? 0) - (rel?.high ?? 0);
+    if (dCritical > 0 || dHigh > 0) {
+      d.newCritical += Math.max(0, dCritical);
+      d.newHigh += Math.max(0, dHigh);
+      d.images.push({repo: be.repo, dCritical, dHigh});
+    }
+  }
+  return d;
+}
+
+/** Dashboard flavor: core images are represented by their bleeding-edge scan (the next-release
+ * state) — the release-channel core scan is dropped; packages/tools keep the latest released scan. */
+export function toDashboardImages(services: VexImage[], bleedingEdge: VexImage[]): VexImage[] {
   const beRepos = new Set(bleedingEdge.map((r) => r.repo));
   return [...bleedingEdge, ...services.filter((r) => !(r.category === 'core' && beRepos.has(r.repo)))];
+}
+
+export async function fetchVexIndex(): Promise<{services: VexImage[], bleedingEdge: VexImage[]}> {
+  const resp = await grok.dapi.fetchProxy(VEX_INDEX_URL);
+  const index = await resp.json();
+  return {services: index.services ?? [], bleedingEdge: index.bleeding_edge ?? []};
+}
+
+export async function fetchVexDashboardImages(): Promise<VexImage[]> {
+  const {services, bleedingEdge} = await fetchVexIndex();
+  return toDashboardImages(services, bleedingEdge);
 }
 
 export class VulnerabilitiesView extends UaView {
@@ -69,10 +110,13 @@ export class VulnerabilitiesView extends UaView {
   private detailsHeader!: HTMLElement;
   private asOfLabel!: HTMLElement;
   private cards = new Map<string, HTMLElement>();
+  private summaryDf: DG.DataFrame | null = null;
+  private detailsDf: DG.DataFrame | null = null;
 
-  constructor(uaToolbox?: UaToolbox) {
+  constructor(uaToolbox?: UaToolbox, ctx?: ReleaseContext) {
     super(uaToolbox);
     this.name = 'Vulnerabilities';
+    ctx?.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 
   async initViewers(): Promise<void> {
@@ -98,11 +142,12 @@ export class VulnerabilitiesView extends UaView {
       ['critical', 'high', 'medium', 'low'].map((s) => this.makeCard(s)), 'ua-metrics-cards-row');
 
     const summaryPanel = ui.div([
-      ui.divH([ui.divText('Scanned images (VEX)', 'ua-metrics-panel-title')], 'ua-metrics-panel-header'),
+      ui.divH([ui.divText('Scanned images (VEX)', 'ua-metrics-panel-title'),
+        openInWorkspaceIcon(() => this.summaryDf)], 'ua-metrics-panel-header'),
       this.summaryHost,
     ], 'ua-metrics-panel');
     const detailsPanel = ui.div([
-      ui.divH([this.detailsHeader], 'ua-metrics-panel-header'),
+      ui.divH([this.detailsHeader, openInWorkspaceIcon(() => this.detailsDf)], 'ua-metrics-panel-header'),
       this.detailsHost,
     ], 'ua-metrics-panel');
 
@@ -115,7 +160,7 @@ export class VulnerabilitiesView extends UaView {
     const root = ui.div([
       ui.divText(severity[0].toUpperCase() + severity.slice(1), 'ua-metrics-card-title'),
       value,
-      ui.divText('released images', 'ua-metrics-card-sub'),
+      ui.divText('scanned images', 'ua-metrics-card-sub'),
     ], 'ua-metrics-card');
     this.cards.set(severity, value);
     return root;
@@ -129,11 +174,12 @@ export class VulnerabilitiesView extends UaView {
       const index = await resp.json();
       const services: VexImage[] = index.services ?? [];
       const bleedingEdge: VexImage[] = index.bleeding_edge ?? [];
-      this.images = [...services, ...bleedingEdge];
+      // Core images: show only their bleeding-edge scan, excluding the release-channel core scan.
+      this.images = toDashboardImages(services, bleedingEdge);
       this.asOfLabel.textContent = `as of ${index.generated ?? '—'}`;
 
       for (const s of ['critical', 'high', 'medium', 'low']) {
-        const total = services.reduce((acc, r) => acc + ((r as any)[s] ?? 0), 0);
+        const total = this.images.reduce((acc, r) => acc + ((r as any)[s] ?? 0), 0);
         this.cards.get(s)!.textContent = `${total}`;
       }
 
@@ -152,6 +198,7 @@ export class VulnerabilitiesView extends UaView {
   private buildSummaryGrid(): HTMLElement {
     const rows = this.images;
     const df = vexImagesToDataFrame(rows);
+    this.summaryDf = df;
     df.onCurrentRowChanged.subscribe(() => {
       if (df.currentRowIdx >= 0)
         this.loadDetails(rows[df.currentRowIdx]);
@@ -162,7 +209,7 @@ export class VulnerabilitiesView extends UaView {
       'allowBlockSelection': false,
       'showCurrentCellOutline': false,
     });
-    grid.sort(['critical', 'high', 'medium'], [false, false, false]);
+    grid.sort(['category', 'critical', 'high'], [true, false, false]);
     const descCol = grid.col('description');
     if (descCol)
       descCol.width = 320;
@@ -207,6 +254,7 @@ export class VulnerabilitiesView extends UaView {
       }
       const df = DG.DataFrame.fromCsv(csv);
       df.name = `${image.repo}:${image.tag} CVEs`;
+      this.detailsDf = df;
       const grid = DG.Viewer.grid(df, {'showColumnGridlines': false});
       grid.root.style.width = '100%';
       grid.root.style.height = '100%';

@@ -28,8 +28,10 @@ export async function issueData(issueKey: string) : Promise<any> {
   return await PackageFunctions.issueData(issueKey);
 }
 
-//input: column<string> ticketColumn 
-//input: string field 
+//name: Get Jira Field
+//description: Fetches a field value from Jira for each ticket key in a column
+//input: column<string> ticketColumn { description: Column of Jira ticket keys (e.g. PROJ-123) }
+//input: string field { description: Field path to extract, colon-separated for nested fields (e.g. status:name) }
 //output: column result
 //meta.vectorFunc: true
 export async function getJiraField(ticketColumn: DG.Column, field: string) : Promise<any> {
