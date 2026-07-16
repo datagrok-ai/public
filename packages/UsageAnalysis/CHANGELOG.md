@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## 2.6.1 (2026-07-16)
+
+* Release: Tickets — match the "Main" label case-insensitively (was looking for "MAIN", so the MAIN panel was always empty)
+
 ## 2.6.0 (2026-07-16)
 
 * Release: Added a global Environment (instance) picker to the dashboard ribbon that persists across all tabs and filters Overview and Tests to builds run on the selected instance (replaces the per-tab Tests instance input)

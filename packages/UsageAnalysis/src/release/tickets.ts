@@ -8,7 +8,7 @@ import {defaultNextVersion, JIRA_BROWSE, ReleaseContext, openInWorkspaceIcon} fr
 
 interface JiraIssue { key: string; fields: Record<string, any>; }
 
-export const MAIN_LABEL = 'MAIN';
+export const MAIN_LABEL = 'Main';
 
 /** Builds the JiraConnect filter object for the next-release fixVersion (equality-only JQL builder). */
 export function fixVersionFilter(version: string): Record<string, string> {
@@ -26,9 +26,10 @@ export function isActionable(issue: JiraIssue): boolean {
   return status !== 'Done' && status !== 'Won\'t Fix' && res !== 'Done' && res !== 'Won\'t Fix';
 }
 
-/** True when the ticket carries the MAIN label. */
+/** True when the ticket carries the "Main" label (case-insensitive). */
 export function hasMainLabel(issue: JiraIssue): boolean {
-  return (issue.fields.labels || []).includes(MAIN_LABEL);
+  const target = MAIN_LABEL.toLowerCase();
+  return (issue.fields.labels || []).some((l: string) => (l ?? '').toLowerCase() === target);
 }
 
 // Grid cell backgrounds (ARGB — grid cells take numeric colors, not design tokens).
