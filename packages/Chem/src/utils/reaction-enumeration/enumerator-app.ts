@@ -1256,13 +1256,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       chip.classList.toggle('chem-enum-chip--err', err);
     };
     setChip(chipReactions, tDf ? `${tDf.rowCount} reactions` : 'No reaction table', !tDf || !smartsColInput.value);
-    setChip(chipBbs, bDf ? `${bDf.rowCount} Building Blocks` : 'No Building Blocks table', !bDf || !bbColInput.value);
+    setChip(chipBbs, bDf ? `${bDf.rowCount} building blocks` : 'No building blocks table', !bDf || !bbColInput.value);
     // Extras is fully optional — never flagged as an error state.
     chipExtras.textContent = rDf ? `${rDf.rowCount} reagents` : 'No reagents (optional)';
     // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
     chipCombine.textContent = `Strategy: ${combineText}`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
-    cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString()} products` : '';
+    cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString('en-US')} products` : '';
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);
     combinationLimitsDot.style.display = combChanged ? '' : 'none';
@@ -1844,7 +1844,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
 
     if (n > 0) {
-      card.appendChild(ui.divText(`≈ ${n.toLocaleString()} estimated products`,
+      card.appendChild(ui.divText(`≈ ${n.toLocaleString('en-US')} estimated products`,
         {style: {marginTop: '12px', fontWeight: 'bold', fontSize: '13px', color: 'var(--blue-2)'}}));
 
       // The estimate above is a naive multiplication — flag when active filters/limits (vs.
