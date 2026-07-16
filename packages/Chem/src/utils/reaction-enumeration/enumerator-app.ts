@@ -490,6 +490,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ui.tooltip.bind(configInfoIcon, () => buildConfigCard());
 
   const syncQuickInputsToConfig = () => {
+    // No-op while syncConfigToQuickInputs() is pushing config -> inputs: each setAndFire() fires
+    // onChanged, which reaches here via refreshValidation()/validate() before every input has been
+    // updated — reading them now would write stale (not-yet-pushed) values back into config.
+    if (pushingConfigToInputs) return;
     config.enumeration.num_rounds = numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!depthFirstInput.value;
     config.max_num_components = maxComponentsInput.value ?? config.max_num_components;
@@ -628,7 +632,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     previewEnumerateBtn.disabled = err != null;
     ui.tooltip.bind(previewEnumerateBtn, err ?? RUN_TOOLTIP_DEFAULT);
   }
-  if (!pushingConfigToInputs) syncQuickInputsToConfig();
+  syncQuickInputsToConfig();
 
   // ---- Side grids with explicit selection-driven subsetting ----
   // "Subset by selection" clones by the selection mask and registers the clone with the workspace,
@@ -1887,6 +1891,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   let previewRunId = 0;
   function showInPreview(content: HTMLElement | null): void {
+    closeMountedViewers(previewHost);
     previewHost.innerHTML = '';
     if (content) previewHost.appendChild(content);
   }
@@ -1989,6 +1994,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       console.warn('Preview grid styling failed:', e);
     }
     showInPreview(grid.root);
+    mountedViewers.set(previewHost, [grid]);
     applyGridColumnSizing(grid, false); // route is not the last column — skip extendLastColumn
     previewStatus.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} rounds, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
