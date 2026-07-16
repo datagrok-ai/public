@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Wire data-count labels now read "N × K" (rows × columns) instead of "N rows", and appear on every table-carrying wire — including pass-through (`table →`) ports and utility nodes like Select Table, which previously never got a count
+
 * Introduced the Outputs strip: a thin vertical "Outputs" column outside the canvas viewport (graph content can never pan or fit behind it) that owns every flow output — Table/Value Output nodes render as small fixed-size chips inside the strip (one-letter type; the tooltip names the output, its type, and what feeds it) instead of free-floating cards; chips are screen-space, so zoom and pan never move or resize them, with wires plugging into the canvas edge at the chip's row; any output socket dragged onto the strip publishes that value as a flow output (auto-named, auto-typed), and the strip lights up as a drop target during output drags; the data model, serialization, and compilation are unchanged, so existing flows load as-is with their outputs docked
 * Context panel: Title, metadata chips, and Description now share one aligned header block; the node and function descriptions are combined into the single editable Description input (function text is the fallback)
 * Context panel: Replaced the Function pane with compact chips (full name, package, roles, tags); the parameters pane is titled with the function name and expanded by default
