@@ -1,6 +1,6 @@
 # Usage Analysis changelog
 
-## v.next
+## 2.6.0 (2026-07-16)
 
 * Release: Added a global Environment (instance) picker to the dashboard ribbon that persists across all tabs and filters Overview and Tests to builds run on the selected instance (replaces the per-tab Tests instance input)
 * Release: Tests tab — per-row mute icon (🔔/🔕) mutes a test for the current release version; version-bound mutes are stored in a dedicated ReleaseMutes sticky-meta schema and drop the test out of the failing/unstable/needs-attention counts for that version
