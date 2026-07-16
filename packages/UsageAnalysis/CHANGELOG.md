@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## 2.7.0 (2026-07-16)
+
+* Release: Tests slow-test alert now compares each test's latest duration against both the bleeding-edge recent average and the previous release (previous minor semver, found across instances) and shows both deltas; sub-second tests are ignored to cut noise; ReleaseTests returns a `prev_release_ms` baseline. (Stress keeps its bleeding-edge p95-vs-prior comparison — the previous release has no stress data to compare against.)
+
 ## 2.6.1 (2026-07-16)
 
 * Release: Tickets — match the "Main" label case-insensitively (was looking for "MAIN", so the MAIN panel was always empty)

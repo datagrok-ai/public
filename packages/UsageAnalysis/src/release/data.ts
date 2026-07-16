@@ -9,6 +9,7 @@ export const DEV_HOST = 'dev.datagrok.ai';
 export const JIRA_BROWSE = 'https://reddata.atlassian.net/browse/';
 export const JENKINS_TEST_JOB = 'https://ops.datagrok.ai/job/test-build/';
 const SLOW_FACTOR = 1.25;
+const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test is noise, not a regression
 
 /** Instances the dashboard can inspect; each maps to a `test_runs.instance` host (see release_tests.sql). */
 export const ENV_CHOICES = ['dev', 'release', 'public', 'release-ec2'];
@@ -243,6 +244,35 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   const successCols = buildIndexes.map((bi) => `${bi} ok`);
   const resultCols = buildIndexes.map((bi) => `${bi} result`);
 
+  // Release version + per-test baselines (last-run date, previous-release avg duration), read from the raw
+  // result up front so the derived flags below (slower, stale) can use them.
+  const buildCol = raw.getCol('build');
+  let latestBuildName = '';
+  for (let i = 0; i < raw.rowCount; i++)
+    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
+  const version = versionFromBuild(latestBuildName);
+  const nowMs = Date.now();
+  const rawTestCol = raw.getCol('test');
+  const lastRunByTest = new Map<string, number>();
+  const rawLastRun = raw.columns.byName('last_run');
+  if (rawLastRun) {
+    for (let i = 0; i < raw.rowCount; i++) {
+      const t = rawTestCol.get(i);
+      if (!lastRunByTest.has(t)) {
+        const v: any = rawLastRun.get(i);
+        lastRunByTest.set(t, v == null ? NaN : (v.valueOf ? Number(v.valueOf()) : Number(v)));
+      }
+    }
+  }
+  const prevReleaseByTest = new Map<string, number>();
+  const rawPrev = raw.columns.byName('prev_release_ms');
+  if (rawPrev) {
+    for (let i = 0; i < raw.rowCount; i++) {
+      const t = rawTestCol.get(i);
+      if (!prevReleaseByTest.has(t)) { const v: any = rawPrev.get(i); prevReleaseByTest.set(t, v == null ? NaN : Number(v)); }
+    }
+  }
+
   // Carry the last known result forward when the test didn't run in the latest build.
   const descBuilds = [...buildIndexes].reverse(); // latest → oldest
   pivot.columns.addNewString('effective_status').init((i) => {
@@ -265,43 +295,41 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
     const flakingFlag = buildIndexes.some((bi) => pivot.get(`${bi} flaking`, i) === true);
     return flakingFlag || (statuses.includes('passed') && statuses.includes('failed'));
   });
-  pivot.columns.addNewBool('slower').init((i) => {
-    // Only compare speed across passed runs — a failed/skipped run's duration isn't comparable.
-    if (pivot.get(`${latest}`, i) !== 'passed')
-      return false;
-    const latestMs = Number(pivot.get(`${latest} ms`, i));
-    if (!latestMs || isNaN(latestMs))
-      return false;
+  // Slow-test baselines: bleeding-edge recent average (prior window passed runs) and the previous-release
+  // average (from the query). A test is "slower" if the latest run exceeds SLOW_FACTOR x either baseline.
+  const baselineTestCol = pivot.getCol('test');
+  pivot.columns.addNewInt('prev_release_ms').init((i) => {
+    const v = prevReleaseByTest.get(baselineTestCol.get(i));
+    return (v == null || isNaN(v)) ? 0 : v;
+  });
+  pivot.columns.addNewInt('be_avg_ms').init((i) => {
     const prior = buildIndexes.slice(0, -1)
       .filter((bi) => pivot.get(`${bi}`, i) === 'passed')
       .map((bi) => Number(pivot.get(`${bi} ms`, i))).filter((v) => v && !isNaN(v));
-    if (prior.length < 2)
-      return false;
-    const med = median(prior);
-    return med > 0 && latestMs > med * SLOW_FACTOR;
+    return prior.length ? Math.round(prior.reduce((a, b) => a + b, 0) / prior.length) : 0;
   });
-
-  // Release version the latest build belongs to — mutes are bound to it.
-  const buildCol = raw.getCol('build');
-  let latestBuildName = '';
-  for (let i = 0; i < raw.rowCount; i++)
-    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
-  const version = versionFromBuild(latestBuildName);
-
-  // Most recent run date per test (ms) → staleness. last_run is constant per test in the raw result.
-  const nowMs = Date.now();
-  const lastRunByTest = new Map<string, number>();
-  const rawTestCol = raw.getCol('test');
-  const rawLastRun = raw.columns.byName('last_run');
-  if (rawLastRun) {
-    for (let i = 0; i < raw.rowCount; i++) {
-      const t = rawTestCol.get(i);
-      if (!lastRunByTest.has(t)) {
-        const v: any = rawLastRun.get(i);
-        lastRunByTest.set(t, v == null ? NaN : (v.valueOf ? Number(v.valueOf()) : Number(v)));
-      }
-    }
-  }
+  pivot.columns.addNewBool('slower').init((i) => {
+    if (pivot.get(`${latest}`, i) !== 'passed')
+      return false;
+    const latestMs = Number(pivot.get(`${latest} ms`, i));
+    if (!latestMs || isNaN(latestMs) || latestMs < MIN_SLOW_MS)
+      return false;
+    const be = pivot.get('be_avg_ms', i);
+    const prev = pivot.get('prev_release_ms', i);
+    return (be > 0 && latestMs > be * SLOW_FACTOR) || (prev > 0 && latestMs > prev * SLOW_FACTOR);
+  });
+  pivot.columns.addNewString('slow_detail').init((i) => {
+    if (pivot.get('slower', i) !== true)
+      return '';
+    const latestMs = Number(pivot.get(`${latest} ms`, i));
+    const be = pivot.get('be_avg_ms', i);
+    const prev = pivot.get('prev_release_ms', i);
+    const pct = (base: number) => { const p = Math.round((latestMs / base - 1) * 100); return `${p >= 0 ? '+' : ''}${p}%`; };
+    const parts: string[] = [];
+    if (be > 0) parts.push(`${pct(be)} vs recent avg ${be}ms`);
+    if (prev > 0) parts.push(`${pct(prev)} vs prev release ${prev}ms`);
+    return `${latestMs}ms — ${parts.join(', ')}`;
+  });
 
   const schemas = await grok.dapi.stickyMeta.getSchemas();
   const schema = schemas.find((s) => s.name === 'Autotests');
@@ -381,7 +409,7 @@ export function computeTestAlerts(p: ReleasePivot): TestAlerts {
     if (df.get('flaky', i) === true && !muted)
       pushByPkg(a.flakyByPkg, pkg, test);
     if (df.get('slower', i) === true && !muted)
-      pushByPkg(a.slowerByPkg, pkg, test);
+      pushByPkg(a.slowerByPkg, pkg, `${test}: ${df.get('slow_detail', i) ?? ''}`);
     if (df.get('stale_alert', i) === true)
       pushByPkg(a.staleByPkg, pkg, test);
   }
