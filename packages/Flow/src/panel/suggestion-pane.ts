@@ -33,6 +33,9 @@ export class SuggestionPane {
   private collapsed = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private refreshSeq = 0;
+  /** JSON of the last rendered set — identical recomputes (a click that didn't
+   *  change the context) skip the DOM rebuild entirely. */
+  private lastRenderedSig = '';
   /** Last rendered set — exposed for tests. */
   suggestions: Suggestion[] = [];
 
@@ -86,7 +89,10 @@ export class SuggestionPane {
     }, REFRESH_DEBOUNCE_MS);
   }
 
-  /** Immediate recompute (tests / expand). Stale async results are dropped. */
+  /** Immediate recompute (tests / expand). Stale async results are dropped;
+   *  a result identical to what's already rendered skips the DOM rebuild
+   *  (suggestions are plain JSON data — the same signature means the same
+   *  items, wiring and prefills included). */
   async refreshNow(): Promise<void> {
     if (this.collapsed) return;
     const seq = ++this.refreshSeq;
@@ -96,6 +102,9 @@ export class SuggestionPane {
     } catch {/* collection failed (mid-teardown) — render empty */}
     if (seq !== this.refreshSeq) return;
     this.suggestions = items;
+    const sig = JSON.stringify(items);
+    if (sig === this.lastRenderedSig) return;
+    this.lastRenderedSig = sig;
     this.render();
   }
 
