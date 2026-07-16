@@ -1,6 +1,11 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//meta.role: init
+export async function initHT() : Promise<void> {
+  await PackageFunctions.initHT();
+}
+
 //input: dynamic treeNode 
 //meta.app: Hit Triage
 export async function hitTriageAppTreeBrowser(treeNode: any) : Promise<void> {

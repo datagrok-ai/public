@@ -102,7 +102,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
     },
   } as unknown as PeptiHitTemplate;
   const funcInput = await chemFunctionsDialog(app, (res) => {funcDialogRes = res;}, () => null,
-    dummyTemplate, false);
+    dummyTemplate, false, true);
   funcInput.root.classList.add('hit-triage-new-template-functions-input');
   const fieldsEditor = getCampaignFieldEditors(preset?.campaignFields);
   const tileCategoriesEditor = getTileCategoryEditor(preset?.stages);
@@ -167,6 +167,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
               name: splitFunc[1],
               package: splitFunc[0],
               args: args,
+              rerunOnOpen: !!funcDialogRes?.rerunOnOpen?.[funcName],
             });
           }),
           scripts: Object.entries(funcDialogRes?.scripts ?? {})
@@ -177,6 +178,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
                 name: scriptNameParts[1] ?? '',
                 id: scriptNameParts[2] ?? '',
                 args: args,
+                rerunOnOpen: !!funcDialogRes?.rerunOnOpen?.[scriptId],
               });
             }),
           queries: Object.entries(funcDialogRes?.queries ?? {})
@@ -187,6 +189,7 @@ export async function newHitDesignTemplateAccordeon(app: HitAppBase<any>,
                 name: queryNameParts[1] ?? '',
                 id: queryNameParts[2] ?? '',
                 args: args,
+                rerunOnOpen: !!funcDialogRes?.rerunOnOpen?.[queryName],
               });
             }),
         },
