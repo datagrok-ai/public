@@ -54,6 +54,7 @@ export abstract class Tutorial extends DG.Widget {
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
   closed: boolean = false;
+  completed: boolean = false;
   activeHints: HTMLElement[] = [];
   progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
   progress: HTMLProgressElement = ui.element('progress');
@@ -184,7 +185,8 @@ export abstract class Tutorial extends DG.Widget {
     }
     this.describe(desc);
 
-    const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.progress.value === this.steps});
+    this.completed = !this.closed;
+    const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.completed});
     await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);
     const statusMap = await this.track?.updateStatus();
 
@@ -279,7 +281,7 @@ export abstract class Tutorial extends DG.Widget {
     // if (this.manualMode)
     //   $(manualMode.firstChild).toggleClass('fal fas');
     const closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
-      if (this.progress.value === this.steps)
+      if (this.completed)
         this.updateProgress(this.track);
       this.close();
     }, 'Close');
@@ -440,6 +442,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   clearRoot(): void {
+    this.completed = false;
     this.progress.value = 1;
     $(this.root).children().each((idx, el) => el.classList.contains('tutorials-main-header') ?
       ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
