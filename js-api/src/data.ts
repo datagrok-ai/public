@@ -153,7 +153,7 @@ export class Db {
  * operations reject with a structured capability error, never a 500). Values are always
  * sent as bound parameters — never interpolated SQL.
  *
- * `where` conditions ({@link update}/{@link delete}) are **equality by value**, plus string
+ * `where` conditions (`update`/`delete`) are **equality by value**, plus string
  * patterns for text columns (e.g. `contains foo`). Numeric/date range grammar (`> 5`,
  * `10-20`) in `where` is phase B.
  */

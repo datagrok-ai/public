@@ -9,6 +9,14 @@ The data is stored persistently and can be accessed throughout the platform with
 
 This is different from [connecting to the database shipped as a plugin docker container](db-in-docker.md).
 
+:::tip
+
+For tables that should get platform security, sharing, managed CRUD, audit, and a standard
+browsing/editing UI out of the box, declare a [domain schema](domain-schemas.md) instead of
+writing raw SQL.
+
+:::
+
 ## Storage Creation
 
 Custom databases can be defined at the package level. To create the database, add a corresponding
