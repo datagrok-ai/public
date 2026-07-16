@@ -1298,6 +1298,13 @@
   min-width: 0;
 }
 
+/* Checkboxes share the .ui-input-editor class with text/number inputs, but shouldn't stretch to
+   fill the row — that grows them into an oversized empty box as the panel narrows. */
+.chem-enumerator .d4-accordion-pane-content .ui-input-bool .ui-input-editor {
+  flex-grow: 0;
+  width: auto;
+}
+
 .chem-enum-accordion {
   width: 100%;
   min-width: 0;
@@ -1318,6 +1325,11 @@
 .chem-enum-next-btn {
   align-self: flex-end;
   margin-top: 6px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chem-enum-chip {
@@ -1327,6 +1339,10 @@
   color: var(--grey-6);
   cursor: pointer;
   font-size: 11px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Override platform's .d4-ribbon .d4-ribbon-item > * { height: 28px } */
