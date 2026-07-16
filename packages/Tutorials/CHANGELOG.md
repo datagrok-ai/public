@@ -10,6 +10,7 @@
 * Tutorials: Fixed the Radar step highlight in the Viewers tutorial landing on the hidden "Recently used" card instead of the visible gallery card
 * Tutorials: Updated the Diff Studio tutorial with respect to the main app modifications
 * GROK-20145: Demo | Form viewer: Error on URL direct opening
+* GROK-20408: Tutorials: Fixed `waitForElementClick` dropping the first 500ms of clicks, hanging forever on a not-yet-rendered element, and leaking listeners with no cancellation — replaced by `elementClick` (immediate listener, polling getter with timeout, Observable so `firstEvent` cancels on close)
 
 ## 1.11.2 (2026-04-10)
 

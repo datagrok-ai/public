@@ -7,7 +7,7 @@ import {getPlatform, Platform} from '../../shortcuts';
 import {_package} from '../../../package';
 import {fromEvent} from 'rxjs';
 import {describeElements} from '../../compute/tutorials/utils';
-import {waitForElementClick} from '../../eda/tutorials/utils';
+import {elementClick} from '../../eda/tutorials/utils';
 
 enum LINKS {
   STICKY_META = 'https://datagrok.ai/help/govern/catalog/sticky-meta',
@@ -51,8 +51,8 @@ export class StickyMetaTutorial extends Tutorial {
       'They are located under <b>Browse → Platform → Sticky Meta → Types.</b>');
     await this.action(
       'Open Types node',
-      waitForElementClick(typesNode!.captionLabel),
-      typesNode!.captionLabel
+      elementClick(() => typesNode?.captionLabel ?? null),
+      typesNode?.captionLabel ?? null
     );
     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -98,8 +98,8 @@ export class StickyMetaTutorial extends Tutorial {
       'They are located under <b>Browse → Platform → Sticky Meta → Schemas.</b>');
     await this.action(
       'Open schemas node',
-      waitForElementClick(schemasNode!.captionLabel),
-      schemasNode!.captionLabel
+      elementClick(() => schemasNode?.captionLabel ?? null),
+      schemasNode?.captionLabel ?? null
     );
     await new Promise(resolve => setTimeout(resolve, 500));
 

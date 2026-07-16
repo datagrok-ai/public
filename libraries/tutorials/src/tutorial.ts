@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {fromEvent, interval, Observable, Subject} from 'rxjs';
+import {fromEvent, interval, Observable, Subject, Subscription} from 'rxjs';
 import {filter, first, map} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
@@ -450,13 +450,17 @@ export abstract class Tutorial extends DG.Widget {
 
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const eventSub = eventStream.pipe(first()).subscribe((_: any) => resolve());
+      let eventSub: Subscription;
       const closeSub = this.onClose.subscribe(() => {
-        eventSub.unsubscribe();
+        eventSub?.unsubscribe();
         closeSub.unsubscribe();
         this._removeHints(this.activeHints);
         // eslint-disable-next-line
         reject();
+      });
+      eventSub = eventStream.pipe(first()).subscribe({
+        next: () => (closeSub.unsubscribe(), resolve()),
+        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve()),
       });
     }).catch((_) => console.log('Closing tutorial', this.name));
   }
