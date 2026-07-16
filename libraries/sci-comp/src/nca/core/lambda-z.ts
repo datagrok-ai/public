@@ -3,11 +3,13 @@ import type {LambdaZResult, LambdaZStrategy} from './types';
 /**
  * Auto best-fit terminal slope (lambda_z).
  *
- * PKNCA-compatible algorithm: iterate over subsets of the last `k` eligible
- * post-Cmax points, fit a log-linear OLS regression on each subset, and
- * pick the candidate that maximises adjusted R². A point is **eligible**
- * when it is post-Cmax (or Cmax itself, if `excludeCmax` is `false`),
- * measurable (`blqMask[i] === 0`), positive, and finite.
+ * The WINDOW-SELECTION tie-break matches PKNCA / WinNonlin's documented best-fit rule:
+ * iterate over subsets of the last `k` eligible post-Cmax points, fit a log-linear OLS
+ * regression on each, and pick the subset with the MOST points whose adjusted R² is
+ * within `adjRSquaredFactor` of the maximum adjusted R² across candidates (see the loop
+ * below and {@link LambdaZStrategy.adjRSquaredFactor}). A point is **eligible** when it
+ * is post-Cmax (or Cmax itself, if `excludeCmax` is `false`), measurable
+ * (`blqMask[i] === 0`), positive, and finite.
  *
  * A subset is **valid** when:
  * - it has at least `options.minPoints` points;
@@ -15,6 +17,20 @@ import type {LambdaZResult, LambdaZStrategy} from './types';
  * - `adjRSquared >= options.minRSquared`.
  *
  * Returns the best valid candidate, or `null` if none qualifies.
+ *
+ * **Scope of the PKNCA claim (deliberate divergence, NOT full parity).** Only the
+ * tie-break above matches PKNCA. Two guards are sci-comp-specific and STRICTER than
+ * PKNCA, and — unlike PKNCA — they drop candidates BEFORE the maximum adjusted R² is
+ * computed (peer review R1, VAL-01-LZ-R019):
+ * - `minRSquared` has **no** PKNCA equivalent — `pk.calc.half.life` carries no adj-R²
+ *   floor parameter; it is an intentional sci-comp guardrail.
+ * - PKNCA computes its adj-R² maximum over the sign-**unfiltered** candidate set and
+ *   rejects `lambda.z <= 0` only at the final selection mask, so a spurious high-R²,
+ *   wrong-signed short window can raise PKNCA's ceiling enough that no window survives →
+ *   PKNCA declines to auto-select (NA / manual review). sci-comp drops such windows
+ *   before the max and so always auto-selects the best VALID window instead.
+ * These stricter guards are by design; aligning the max-over-unfiltered ordering (and a
+ * PKNCA-style degenerate-2-point-fit warning) is tracked as a follow-up, not fixed here.
  *
  * Reference: <https://billdenney.github.io/pknca/articles/Selection-of-Calculation-Intervals.html>
  *
@@ -40,20 +56,40 @@ export function lambdaZBestFit(
   if (eligible.length < options.minPoints) return null;
 
   const factor = options.adjRSquaredFactor ?? 0;
-  let best: LambdaZResult | null = null;
-  let bestScore = -Infinity;
+  // PKNCA / WinNonlin "best fit" window selection: fit every eligible terminal
+  // window, then pick the one with the MOST points whose adjusted R² is within
+  // `factor` of the MAXIMUM adjusted R² across all candidates. This is a FLAT
+  // tolerance measured off the single global maximum — NOT an additive per-point
+  // bonus.
+  //
+  // The previous implementation scored each window as `adjRSquared + factor·n`
+  // and took the max. That accumulates the bonus with window length, so a longer
+  // window only has to sit within `factor·Δn` of the best adj-R² to win — it
+  // diverges from PKNCA on any profile with a candidate between (max − factor)
+  // and (max − factor·Δn). Verified against PKNCA 0.12.1 on rat-IV R019
+  // (VAL-01-LZ-R019): adj-R² peaks at n=4 (0.998164); every longer window is
+  // >1e-4 below it, so PKNCA picks n=4 (λz=0.24047). The additive rule picked
+  // n=8 (adjR²=0.997855, score 0.998655 > n=4's 0.998564) → λz=0.23494, off 2.3%.
+  const candidates: {fit: LambdaZResult; n: number}[] = [];
+  let maxAdjRSquared = -Infinity;
   for (let k = options.minPoints; k <= eligible.length; k++) {
     const subset = eligible.slice(eligible.length - k);
     const fit = fitLogLinear(time, conc, subset);
     if (fit === null) continue;
     if (fit.lambdaZ <= 0) continue;
     if (fit.adjRSquared < options.minRSquared) continue;
-    // Score favours larger subsets when adj-R² values are close
-    // (PKNCA convention; factor = 1e-4 in their defaults).
-    const score = fit.adjRSquared + factor * subset.length;
-    if (score > bestScore) {
+    candidates.push({fit, n: k});
+    if (fit.adjRSquared > maxAdjRSquared) maxAdjRSquared = fit.adjRSquared;
+  }
+  // Among windows within `factor` of the global-max adj-R², keep the most points.
+  // `factor = 0` collapses to "pick the window with the maximum adj-R², ties →
+  // more points" — PKNCA's behaviour with tie-breaking disabled.
+  let best: LambdaZResult | null = null;
+  let bestN = -1;
+  for (const {fit, n} of candidates) {
+    if (fit.adjRSquared >= maxAdjRSquared - factor && n > bestN) {
       best = fit;
-      bestScore = score;
+      bestN = n;
     }
   }
   return best;
