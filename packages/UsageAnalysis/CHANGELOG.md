@@ -7,6 +7,7 @@
 * Release: Tickets tab — the tickets grid now fills the page
 * Release: Tests tab — when a test didn't run in the latest build, its last known result is carried forward (shown dimmed) and used for the failing/pass-rate counts
 * Release: Added a "not run for 7+ days" stale-test alert (Overview + a stale_days column), with a separate per-row mute independent of the failing mute; ReleaseTests now returns each test's last run date over a 14-day lookback
+* Release: Tickets tab — color-coded status/priority/resolution cells; MAIN-labelled tickets shown in their own panel; the Overview Tickets card counts only actionable tickets (not Done / Won't Fix) split into MAIN vs other
 * Release: Added a global Refresh button to the dashboard ribbon that reloads every tab
 * Release: ReleaseTests now counts the latest CI/CD run per test (like TestsDashboard) instead of every test_run — retried-then-passed tests no longer count as failing and non-CI runs are excluded, so the failing counts stop being inflated by reruns
 * Release: Tests tab — the detail grid now fills the page; per-build status cells show `+` (passed) / `−` (failed) / `·` (skipped)
