@@ -108,6 +108,41 @@ export async function joinQueryResults(df: DG.DataFrame, molColName: string, qRe
   }
   if (!resOriginalCol)
     throw new Error('There is no original molecule column in query result dataframe');
-  const newColNames = qRes.columns.names().filter((name) => name !== ComputeQueryMolColName);
-  df.join(qRes, [molColName], [resOriginalCol.name], undefined, newColNames, undefined, true);
+  const resultColNames = qRes.columns.names().filter((name) => name?.toLowerCase() !== ComputeQueryMolColName);
+
+  // A result column that already exists in the target is overwritten in place (matched by molecule)
+  // instead of being appended as a duplicate "<name> (2)" column. A same-named column of a different
+  // type is dropped so the join below can recreate it with the correct type.
+  const toOverwrite = resultColNames.filter((name) => {
+    const existing = df.col(name);
+    return existing != null && existing.type === qRes.col(name)!.type;
+  });
+  for (const name of resultColNames) {
+    if (!toOverwrite.includes(name) && df.col(name))
+      df.columns.remove(name);
+  }
+
+  if (toOverwrite.length) {
+    // Build a molecule -> query-row lookup (first occurrence wins, matching a plain join).
+    const keyToRow = new Map<any, number>();
+    for (let i = 0; i < resOriginalCol.length; i++) {
+      if (resOriginalCol.isNone(i))
+        continue;
+      const key = resOriginalCol.get(i);
+      if (!keyToRow.has(key))
+        keyToRow.set(key, i);
+    }
+    for (const name of toOverwrite) {
+      const src = qRes.col(name)!;
+      const dst = df.col(name)!;
+      for (let r = 0; r < molCol.length; r++) {
+        const qi = molCol.isNone(r) ? undefined : keyToRow.get(molCol.get(r));
+        dst.set(r, (qi === undefined || src.isNone(qi)) ? null : src.get(qi), false);
+      }
+    }
+  }
+
+  const toJoin = resultColNames.filter((name) => !toOverwrite.includes(name));
+  if (toJoin.length)
+    df.join(qRes, [molColName], [resOriginalCol.name], undefined, toJoin, undefined, true);
 }
