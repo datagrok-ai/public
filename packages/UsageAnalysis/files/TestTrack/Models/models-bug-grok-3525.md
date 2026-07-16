@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: []
-realizes: []
+realizes: [views.models]
 realized_as:
   - models-bug-grok-3525-spec.ts
 related_bugs: [GROK-3525]

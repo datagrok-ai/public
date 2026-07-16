@@ -5,6 +5,8 @@ coverage_type: edge
 priority: p1
 realizes_atlas: [tree-rowsource-onclick-state-machine]
 realizes: [charts.tree]
+realized_as:
+  - tree-rowsource-onclick-state-bug-spec.ts
 pyramid_layer: bug-focused
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

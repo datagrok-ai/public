@@ -5,6 +5,8 @@ coverage_type: regression
 priority: p2
 realizes_atlas: []
 realizes: []
+realized_as:
+  - elemental-analysis-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/elemental-analysis.md
 migration_date: 2026-05-11

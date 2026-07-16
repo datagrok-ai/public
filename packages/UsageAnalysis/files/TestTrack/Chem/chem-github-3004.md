@@ -6,6 +6,8 @@ coverage_type: edge
 priority: p1
 realizes_atlas: [github-3004]
 realizes: []
+realized_as:
+  - chem-github-3004-spec.ts
 produced_from: atlas-driven
 produced_for: chem-github-3004-spec.ts
 authored_date: 2026-05-11

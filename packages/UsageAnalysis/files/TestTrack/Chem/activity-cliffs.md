@@ -5,6 +5,8 @@ coverage_type: regression
 priority: p2
 realizes_atlas: []
 realizes: []
+realized_as:
+  - activity-cliffs-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/activity-cliffs.md
 migration_date: 2026-05-11

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [views.models]
 realized_as:
   - models-validators-edge-spec.ts
 related_bugs: []

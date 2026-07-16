@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [trained_on_csv_table]
-realizes: []
+realizes: [views.models]
 realized_as:
   - models-lifecycle-csv-table-spec.ts
 related_bugs: []

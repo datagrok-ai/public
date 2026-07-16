@@ -2,6 +2,8 @@
 feature: legend
 realizes_atlas: []
 realizes: []
+realized_as:
+  - filtering-spec.ts
 target_layer: playwright
 coverage_type: regression
 priority: p1

@@ -5,6 +5,8 @@ coverage_type: regression
 priority: p1
 realizes_atlas: []
 realizes: []
+realized_as:
+  - tree-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/tree.md
 migration_date: 2026-05-07

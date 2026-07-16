@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: edge
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [views.notebooks]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

@@ -4,7 +4,9 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [upload-save-reopen-golden]
-realizes: []
+realizes: [views.projects]
+realized_as:
+  - complex-integration-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md

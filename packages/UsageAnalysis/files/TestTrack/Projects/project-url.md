@@ -4,7 +4,9 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [views.projects]
+realized_as:
+  - project-url-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility:
   - context-panel-links-url-copy
