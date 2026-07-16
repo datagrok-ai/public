@@ -4,7 +4,7 @@ import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, Observable} from 'rxjs';
-import { waitForElementClick } from './utils';
+import { elementClick } from './utils';
 
 export class DashboardTutorial extends Tutorial {
   get name(): string {
@@ -99,7 +99,7 @@ export class DashboardTutorial extends Tutorial {
     const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
     await this.action(
         'Find Browse on the sidebar and click',
-        waitForElementClick(browseSidebar), browseSidebar);
+        elementClick(() => browseSidebar), browseSidebar);
 
     const paramEditorDlg = await this.openDialog('Find the created query in the browse view, right-click it and hit Run',
       queryName, $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.includes(queryName))[0]!);
@@ -148,7 +148,7 @@ export class DashboardTutorial extends Tutorial {
     await DG.delay(1000);
     const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
 
-    await this.action('Open browse and click on Dashboards', waitForElementClick(dashboardsLabel), dashboardsLabel);
+    await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel);
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));
