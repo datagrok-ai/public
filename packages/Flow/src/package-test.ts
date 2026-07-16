@@ -30,6 +30,7 @@ import './tests/invalidation-tests';
 import './tests/selection-tests';
 import './tests/suggestion-tests';
 import './tests/output-strip-tests';
+import './tests/output-views-tests';
 
 export let _package = new DG.Package();
 export { tests };

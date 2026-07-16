@@ -38,7 +38,8 @@ import {FlowSettings, FuncFlowDocument} from './serialization/flow-schema';
 import {ExecutionController} from './execution/execution-controller';
 import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execution/autorun';
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
-import {ValueSummary} from './execution/execution-state';
+import {ValueSummary, NodeExecStatus} from './execution/execution-state';
+import {OutputViewsManager, OutputTab, OutputTabInfo} from './views/output-views-manager';
 import {buildPreview, setPreviewCellFocusHandler} from './execution/value-inspector';
 import {SuggestionPane, FF_SUGGEST_MIME} from './panel/suggestion-pane';
 import {
@@ -101,6 +102,13 @@ export class FuncFlowView extends DG.ViewBase {
   private nodeCountLabel!: HTMLElement;
   private linkCountLabel!: HTMLElement;
   private validationLabel!: HTMLElement;
+  /** Internal output-view tabs (Canvas + one per table output), switched from
+   *  the status bar. Public for tests. */
+  outputViews!: OutputViewsManager;
+  private viewTabStrip!: HTMLElement;
+  /** Flow's own ribbon panels, kept by reference so they can be restored when
+   *  switching back to the Canvas tab (`setRibbonPanels` MOVES elements). */
+  private flowRibbonPanels: HTMLElement[][] = [];
 
   /** Desired initial minimap state, applied once the editor is created (the
    *  editor is built async). Hosts set this before the editor exists — e.g. the
@@ -131,6 +139,11 @@ export class FuncFlowView extends DG.ViewBase {
   /** The platform Script entity (language 'flow') this view edits, when opened
    *  from / saved to the server. Null for scratch flows — Save asks for a name. */
   private boundScript: DG.Script | null = null;
+
+  /** The dashboard project this flow publishes into, persisted in the .ffjson:
+   *  re-publishing updates that project instead of creating a new one per
+   *  save. Cleared on New / Save As / the dialog's "publish as new" link. */
+  private dashboardProjectId: string | null = null;
 
   /** Resolves once `initEditor()` has built the Rete editor (deferred a tick
    *  off the constructor). Load paths await this instead of retrying on
@@ -259,10 +272,13 @@ export class FuncFlowView extends DG.ViewBase {
     setTid(this.validationLabel, 'statusbar-validation');
     ui.tooltip.bind(this.nodeCountLabel, 'Total number of nodes in the graph');
     ui.tooltip.bind(this.linkCountLabel, 'Total number of connections between nodes');
-    this.statusBar = ui.div(
-      [this.nodeCountLabel, this.linkCountLabel, this.validationLabel],
-      'funcflow-status-bar',
-    );
+    // The status bar leads with the view tabs (Canvas + one per table output,
+    // Spotfire-style bottom pages); the counters sit right-aligned after them.
+    this.viewTabStrip = ui.div([], 'ff-view-tabs');
+    setTid(this.viewTabStrip, 'view-tabs');
+    const statusLabels = ui.div(
+      [this.nodeCountLabel, this.linkCountLabel, this.validationLabel], 'ff-status-labels');
+    this.statusBar = ui.div([this.viewTabStrip, statusLabels], 'funcflow-status-bar');
     setTid(this.statusBar, 'statusbar');
 
     // Bottom output panel — a real pane of the view, not a dock-manager dock:
@@ -299,10 +315,20 @@ export class FuncFlowView extends DG.ViewBase {
     const mainLayout = setTid(ui.div([split], 'funcflow-root'), 'root');
     this.root.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
     setTid(this.root, 'view');
-    this.root.appendChild(mainLayout);
+    // The content host stacks the canvas layout and one pane per output-view
+    // tab; panes are display-toggled (never unmounted — the hosted TableView
+    // DOM must persist across tab switches).
+    const contentHost = ui.div([mainLayout], 'ff-view-content');
+    setTid(contentHost, 'view-content');
+    this.root.appendChild(contentHost);
     this.root.appendChild(this.statusBar);
     mainLayout.style.flex = '1';
     mainLayout.style.overflow = 'hidden';
+
+    this.outputViews = new OutputViewsManager(contentHost, mainLayout, this.viewTabStrip, {
+      onActiveTabChanged: (tab) => this.onOutputTabChanged(tab),
+      runFlow: () => this.runInstrumented(),
+    });
 
     this.setupFileDropTarget();
     this.installPortContextMenu();
@@ -506,6 +532,7 @@ export class FuncFlowView extends DG.ViewBase {
         this.flow?.refreshMinimap();
         this.updateSaveButtonState();
         this.suggestionPane?.refresh();
+        this.outputViews?.syncTabs(this.tableOutputs());
       },
       // Classified edits: invalidate exactly the affected downstream cone, and
       // feed the same set to the autorun scheduler (a rerun of just that slice).
@@ -518,6 +545,9 @@ export class FuncFlowView extends DG.ViewBase {
         // a value on a saved flow would leave Save greyed.
         this.updateSaveButtonState();
         this.suggestionPane?.refresh();
+        // paramName renames arrive as params-changed (no onGraphChanged) —
+        // the tab set / labels must track them here too.
+        this.outputViews?.syncTabs(this.tableOutputs());
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
@@ -528,7 +558,12 @@ export class FuncFlowView extends DG.ViewBase {
     this.executionController = new ExecutionController(this.flow, this.outputPreview);
     // Fresh captured values (node completed / invalidated) change what fits
     // next — recompute. Debounced in the pane, so per-node bursts are cheap.
-    this.executionController.onNodeStateChanged = () => this.suggestionPane?.refresh();
+    // Also fans out to the output-view tabs: a completed table output (or
+    // SetVar terminal) refreshes its tab; an invalidated one goes stale.
+    this.executionController.onNodeStateChanged = (nodeId) => {
+      this.suggestionPane?.refresh();
+      this.updateOutputViewValue(nodeId);
+    };
     // Empty-canvas-click deselects happen inside rete with no callback — any
     // release on the canvas re-reads the selection. (Marquee releases never
     // get here — they are swallowed in `installRectSelect`; those report via
@@ -593,6 +628,8 @@ export class FuncFlowView extends DG.ViewBase {
       grok.shell.info('Breakpoint hit — click Continue in the ribbon to resume');
     };
     this.executionController.onRunEnd = (success: boolean) => {
+      // The save dialog's dashboard section refreshes when a run it started ends.
+      this.saveDialogRunEnd?.(success);
       if (!success) return;
       grok.shell.info('Flow execution completed');
       // Land the user on the first output node — selecting it opens the
@@ -653,6 +690,97 @@ export class FuncFlowView extends DG.ViewBase {
       return s && s.outputs && Object.keys(s.outputs).length > 0;
     });
     void this.flow.selectNode((withValue ?? outputs[0]).id);
+  }
+
+  // ---------- output-view tabs (Spotfire-style internal pages) ----------
+
+  /** The flow's table-carrying terminals, one tab each: Table Outputs,
+   *  dataframe-typed Value Outputs, and SetVar terminals whose stored value is
+   *  a table (SetVar and Output are the same concept — Q2). */
+  private tableOutputs(): OutputTabInfo[] {
+    if (!this.flow) return [];
+    const res: OutputTabInfo[] = [];
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType === 'output') {
+        const isTable = n.dgTypeName === 'Outputs/Table Output' ||
+          (n.dgTypeName === 'Outputs/Value Output' && n.properties['outputType'] === 'dataframe');
+        if (isTable)
+          res.push({nodeId: n.id, paramName: String(n.properties['paramName'] ?? '').trim() || n.label});
+      }
+      else if (isSetVarNode(n)) {
+        const name = String(n.inputValues['variableName'] ?? '').trim();
+        if (name === '') continue;
+        const src = this.flow.getInputSource(n.id, 'value');
+        const dgType = src ? (src.node.outputs[src.outputKey] as
+          {socket?: {dgType?: string}} | undefined)?.socket?.dgType : undefined;
+        if (dgType === 'dataframe') res.push({nodeId: n.id, paramName: name});
+      }
+    }
+    return res;
+  }
+
+  /** `onNodeStateChanged` fan-out: a completed table output feeds its tab the
+   *  run's cloned DataFrame (the same instance the output preview shows —
+   *  shared selection for free); an invalidated one marks the tab stale. */
+  private updateOutputViewValue(nodeId: string): void {
+    if (!this.outputViews || !this.flow) return;
+    const node = this.flow.getNodeById(nodeId);
+    if (!node || (node.dgNodeType !== 'output' && !isSetVarNode(node))) return;
+    const st = this.executionController?.state.getNodeState(nodeId);
+    if (st?.status === NodeExecStatus.completed && st.outputs) {
+      const summary = Object.values(st.outputs)
+        .find((s) => s?.type === 'dataframe' && s.clone instanceof DG.DataFrame);
+      if (summary) this.outputViews.setValue(nodeId, summary.clone as DG.DataFrame);
+    }
+    else if (st?.status === NodeExecStatus.stale)
+      this.outputViews.markStale(nodeId);
+  }
+
+  /** Tab switched (or the active tab's TableView appeared): surface that
+   *  view's ribbon panels and toolbox on this shell-attached view — the
+   *  `DG.MultiView.currentView` recipe. Canvas (or an empty tab, which has no
+   *  tools of its own) restores Flow's. The view's name and ribbon menu stay
+   *  Flow's — the tab strip already names the table. */
+  private onOutputTabChanged(tab: OutputTab | null): void {
+    const tv = tab?.tv ?? null;
+    try {
+      if (tv == null) {
+        if (this.flowRibbonPanels.length > 0) this.setRibbonPanels(this.flowRibbonPanels);
+        this.toolbox = this.functionBrowser.root;
+        return;
+      }
+      // Capture the tv's ribbon ONCE, as the inner (unwrapped) elements:
+      // `setRibbonPanels` moves elements between wrappers, so re-reading
+      // `tv.getRibbonPanels()` after a swap-and-restore returns empty husks.
+      // Also drop items core inline-hides (the TableView's own Save button is
+      // display:none'd for a table not in the workspace — copying it verbatim
+      // leaves a vestigial empty panel), and lead with Flow's Save pill:
+      // saving the flow is what persists this tab's layout.
+      if (tab!.ribbonPanels == null) {
+        const unwrap = (el: HTMLElement): HTMLElement =>
+          el.classList.contains('d4-ribbon-item') && el.firstElementChild instanceof HTMLElement ?
+            el.firstElementChild : el;
+        tab!.ribbonPanels = tv.getRibbonPanels()
+          .map((p) => p.map(unwrap).filter((el) => el.style.display !== 'none'))
+          .filter((p) => p.length > 0);
+      }
+      const saveHost = this.flowRibbonPanels[0]?.[0];
+      this.setRibbonPanels(saveHost != null ? [[saveHost], ...tab!.ribbonPanels] : tab!.ribbonPanels);
+      this.toolbox = tv.toolbox;
+    } catch (e) {
+      console.warn('FuncFlow: ribbon/toolbox swap failed', e);
+    }
+  }
+
+  /** Layouts of the output tabs for persistence in the `.ffjson`, keyed by
+   *  paramName; undefined when there is nothing to save (keeps docs clean). */
+  private captureOutputViews(): FuncFlowDocument['outputViews'] {
+    const layouts = this.outputViews?.captureLayouts() ?? {};
+    const names = Object.keys(layouts);
+    if (names.length === 0) return undefined;
+    const res: NonNullable<FuncFlowDocument['outputViews']> = {};
+    for (const name of names) res[name] = {layout: layouts[name]};
+    return res;
   }
 
   /** Accept drops of Datagrok files (→ OpenFile node), DG.Func (→ matching node),
@@ -1005,7 +1133,7 @@ export class FuncFlowView extends DG.ViewBase {
       m = m.item('Open from platform…', () => void this.openFromPlatform());
     m = m.item('Save', () => void this.saveFlow());
     if (!creationMode)
-      m = m.item('Save As…', () => void this.saveAsDialog());
+      m = m.item('Save As…', () => void this.saveDialog({asNew: true}));
     this.ribbonMenu = m
       .separator()
       .item('Import .ffjson…', () => void this.openFlow())
@@ -1020,7 +1148,10 @@ export class FuncFlowView extends DG.ViewBase {
       .item('Continue', () => this.executionController?.continueBreakpoint())
       .item('Stop', () => this.executionController?.stopRun())
       .separator()
-      .item('Clear run highlights', () => this.executionController?.resetVisuals())
+      .item('Clear run highlights', () => {
+        this.executionController?.resetVisuals();
+        this.outputViews?.clearValues();
+      })
       .endGroup()
       .group('Edit')
       .item('Undo', () => void this.flow?.undo())
@@ -1112,6 +1243,9 @@ export class FuncFlowView extends DG.ViewBase {
     ];
 
     this.setRibbonPanels(panels);
+    // Kept by reference: `setRibbonPanels` moves (reparents) elements, so these
+    // same references restore Flow's ribbon when leaving an output-view tab.
+    this.flowRibbonPanels = panels;
     this.updateSaveButtonState();
   }
 
@@ -1164,13 +1298,14 @@ export class FuncFlowView extends DG.ViewBase {
     this.updateSaveButtonState();
   }
 
-  /** Whether Save is available, and the tooltip explaining why not. Save makes
-   *  sense only for a non-empty canvas that differs from the last saved state. */
+  /** Whether Save is available, and its tooltip. The button is the gateway to
+   *  both saving the script AND publishing a dashboard, so it is enabled for
+   *  any non-empty canvas; the tooltip reflects the dirty state. */
   private saveAvailability(): {enabled: boolean; tooltip: string} {
     if ((this.flow?.getNodeCount() ?? 0) === 0)
       return {enabled: false, tooltip: 'Nothing to save yet — the canvas is empty'};
     if (this.savedSnapshot !== null && this.currentSnapshot() === this.savedSnapshot)
-      return {enabled: false, tooltip: 'No changes to save since the last save'};
+      return {enabled: true, tooltip: 'No changes since the last save — open to publish a dashboard or save as new'};
     return {enabled: true, tooltip: 'Save this flow to the platform'};
   }
 
@@ -1221,6 +1356,7 @@ export class FuncFlowView extends DG.ViewBase {
   detach(): void {
     this.autorunScheduler?.reset();
     this.teardownAutoPin();
+    this.outputViews?.destroy();
     this.flow?.destroy();
     super.detach();
   }
@@ -1245,6 +1381,7 @@ export class FuncFlowView extends DG.ViewBase {
   private async newFlow(): Promise<void> {
     await this.flow.clear();
     this.boundScript = null;
+    this.dashboardProjectId = null;
     this.propertyPanel.clear();
     this.updateStatusBar();
     this.updateStartPanelVisibility();
@@ -1272,20 +1409,15 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Save: in creation-script mode writes creation scripts back to the tables;
-   *  otherwise updates the bound entity, or opens Save As for a flow that was
-   *  never saved. A bound id is *not* proof the entity is on the server — a
-   *  template (or a flow whose entity was deleted) carries an id that `find`
-   *  can't resolve — so we verify it exists before a silent update; templates
-   *  previously slipped through and saved silently under the template name. */
+   *  otherwise always opens the combined save dialog — script name/space plus
+   *  the dashboard section (run the flow → publish its result tables). */
   private async saveFlow(): Promise<void> {
     if (!this.flow) return;
     if (this.tableInfos.length > 0) {
       this.saveCreationScriptsDialog();
       return;
     }
-    const id = this.boundScript?.id;
-    if (id && await this.scriptExistsOnServer(id)) await this.saveToServer();
-    else await this.saveAsDialog();
+    await this.saveDialog();
   }
 
   /** Whether a script id resolves to a real, accessible server entity.
@@ -1305,10 +1437,15 @@ export class FuncFlowView extends DG.ViewBase {
   private entityBodyText(): string {
     if (!this.flowSettings.tags.includes(FLOW_TAG))
       this.flowSettings.tags.push(FLOW_TAG);
-    return flowScriptText(this.flow, this.flowSettings);
+    return flowScriptText(this.flow, this.flowSettings, {
+      outputViews: this.captureOutputViews(),
+      dashboard: this.dashboardProjectId != null ? {projectId: this.dashboardProjectId} : undefined,
+    });
   }
 
-  private async saveToServer(): Promise<void> {
+  /** @param silent no "saved" balloon — for follow-up saves that only persist
+   *  metadata (e.g. the dashboard binding right after a publish). */
+  private async saveToServer(silent = false): Promise<void> {
     try {
       const script = DG.Script.create(this.entityBodyText());
       if (this.boundScript?.id)
@@ -1316,17 +1453,23 @@ export class FuncFlowView extends DG.ViewBase {
       this.boundScript = await grok.dapi.scripts.save(script);
       this.name = this.flowSettings.scriptName;
       this.updatePath();
-      this.markSaved(); // this graph is now the saved baseline → Save greys out
-      grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
+      this.markSaved(); // this graph is now the saved baseline
+      if (!silent) grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
     } catch (e: any) {
       grok.shell.error(`Failed to save flow: ${e?.message ?? e}`);
     }
   }
 
-  /** First save (or Save As): name / description, optionally bound to a space
-   *  chosen in the hierarchical picker. By default (no space) the flow is
-   *  saved as a plain script in the user's namespace. */
-  private async saveAsDialog(): Promise<void> {
+  /** Fires while the save dialog is open and a run initiated from it ends —
+   *  refreshes the dialog's dashboard section. */
+  private saveDialogRunEnd: ((success: boolean) => void) | null = null;
+
+  /** The combined save dialog: script name / description / space on top, the
+   *  dashboard section below. A bound entity is updated in place (Save As
+   *  forces a new one via `asNew`). The dashboard section is run-aware: no
+   *  computed outputs → a Run button; outputs → the table list + a "Create
+   *  dashboard" toggle that opens the core Save-project dialog after saving. */
+  private async saveDialog(opts: {asNew?: boolean} = {}): Promise<void> {
     const nameInput = ui.input.string('Name', {value: this.flowSettings.scriptName,
       tooltipText: 'The flow is saved as a platform script entity under this name'});
     const descInput = ui.input.textArea('Description', {value: this.flowSettings.scriptDescription,
@@ -1382,10 +1525,50 @@ export class FuncFlowView extends DG.ViewBase {
       'Choose a space (or subspace) to organize and share this flow; by default it is saved as a plain script in your namespace');
     ui.tooltip.bind(spaceLabel, 'Where this flow will live');
 
+    // ---- dashboard section (run-aware) ----
+    const computedTabs = (): OutputTab[] =>
+      this.outputViews?.getTabs().filter((t) => t.df != null) ?? [];
+    const dashHost = ui.divV([], 'ff-save-dash');
+    const publishInput = ui.input.bool('Create dashboard', {value: true,
+      tooltipText: 'After saving the flow, open the standard Save-project dialog seeded with the ' +
+        'computed output tables and their layouts (data sync, sharing, upload)'});
+    const refreshDash = (running = false): void => {
+      ui.empty(dashHost);
+      dashHost.appendChild(ui.divText('Dashboard', 'ff-save-dash-title'));
+      const tabs = computedTabs();
+      if (tabs.length > 0) {
+        dashHost.appendChild(ui.divV(tabs.map((t) => ui.divText(
+          `• ${t.df!.name || t.paramName} (${t.df!.rowCount.toLocaleString()} × ${t.df!.columns.length})`))));
+        dashHost.appendChild(publishInput.root);
+        if (this.dashboardProjectId != null) {
+          const unbind = ui.link('publish as new', () => {
+            this.dashboardProjectId = null;
+            refreshDash();
+          }, 'Forget the bound project — the next publish creates a new dashboard');
+          const bound = ui.div([], 'ff-save-dash-hint');
+          bound.appendChild(document.createTextNode('Updates the previously published dashboard — or '));
+          bound.appendChild(unbind);
+          dashHost.appendChild(bound);
+        }
+      }
+      else if (running)
+        dashHost.appendChild(ui.divText('Running the flow…', 'ff-save-dash-hint'));
+      else {
+        dashHost.appendChild(ui.divText(
+          'Run the flow to publish its result tables as a dashboard.', 'ff-save-dash-hint'));
+        dashHost.appendChild(ui.button('Run the flow', () => {
+          refreshDash(true);
+          this.runInstrumented();
+        }));
+      }
+    };
+    refreshDash();
+    this.saveDialogRunEnd = () => refreshDash();
+
     const dlg = ui.dialog({title: 'Save Flow'})
       .add(ui.divV([nameInput.root, descInput.root, warningDiv,
         ui.divH([bindBtn, spaceLabel, clearLink], {style: {alignItems: 'center', gap: '8px'}}),
-        pickerHost]))
+        pickerHost, dashHost]))
       .onOK(async () => {
         const name = nameInput.value.trim();
         if (name === '') { // reachable via Enter even while the Save button is disabled
@@ -1394,7 +1577,13 @@ export class FuncFlowView extends DG.ViewBase {
         }
         this.flowSettings.scriptName = name;
         this.flowSettings.scriptDescription = descInput.value;
-        this.boundScript = null; // Save As always creates a new entity
+        // Update the bound entity in place; Save As (or a stale/deleted binding —
+        // e.g. a template id `find` can't resolve) creates a new one. A new
+        // script also gets a new dashboard.
+        if (opts.asNew || !(this.boundScript?.id && await this.scriptExistsOnServer(this.boundScript.id))) {
+          this.boundScript = null;
+          this.dashboardProjectId = null;
+        }
         await this.saveToServer();
         const saved = this.boundScript as DG.Script | null;
         if (targetSpace && saved?.id) {
@@ -1405,7 +1594,10 @@ export class FuncFlowView extends DG.ViewBase {
             grok.shell.error(`Could not add to space: ${e?.message ?? e}`);
           }
         }
+        if (saved != null && publishInput.value === true && computedTabs().length > 0)
+          await this.openDashboardDialog();
       });
+    dlg.onClose.subscribe(() => this.saveDialogRunEnd = null);
     dlg.show({width: 500});
     // Validate before close: empty names never reach the OK handler.
     const okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
@@ -1451,6 +1643,106 @@ export class FuncFlowView extends DG.ViewBase {
         this.bindScript(full ?? picked);
       })
       .show();
+  }
+
+  // ---------- publish as dashboard (via the core Save-project dialog) ----------
+
+  /** Input-node types that cannot be replayed from a literal default — a flow
+   *  taking one of these cannot be data-synced (the creation script would have
+   *  no value to pass), so its outputs publish as static snapshots. */
+  private static readonly NON_SYNCABLE_INPUTS = new Set([
+    'Inputs/Table Input', 'Inputs/Column Input', 'Inputs/Column List Input',
+    'Inputs/File Input', 'Inputs/Blob Input', 'Inputs/Map Input', 'Inputs/Dynamic Input',
+  ]);
+
+  /** How many outputs the flow script declares (output nodes + SetVar
+   *  terminals). Decides whether the creation script needs the output
+   *  accessor — `.param` is only valid with more than one output. */
+  private flowOutputCount(): number {
+    let count = 0;
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType === 'output') count++;
+      else if (isSetVarNode(n) && String(n.inputValues['variableName'] ?? '').trim() !== '' &&
+          this.flow.getInputSource(n.id, 'value') != null) count++;
+    }
+    return count;
+  }
+
+  /** Stamp each computed output table with the producing call (`.script` +
+   *  `.VariableName` df tags) so the core Save-project dialog offers data sync
+   *  — identical producing calls dedup on project open, so the flow runs ONCE
+   *  and every table binds its own output. Skipped (static snapshots) when the
+   *  flow isn't saved or takes inputs without a literal default. */
+  private stampCreationScripts(tabs: OutputTab[]): void {
+    if (this.boundScript == null) return;
+    const nonLiteral = this.flow.getNodes().some((n) =>
+      n.dgNodeType === 'input' && FuncFlowView.NON_SYNCABLE_INPUTS.has(n.dgTypeName ?? ''));
+    if (nonLiteral) return;
+    let callStr: string;
+    try {
+      // Serialized by the platform itself (`prepare().toString()` — the same
+      // source of truth the creation-script emitter uses). Optional inputs at
+      // their defaults are omitted by the serializer.
+      const params: Record<string, unknown> = {};
+      for (const n of this.flow.getNodes()) {
+        if (n.dgNodeType !== 'input') continue;
+        const pname = String(n.properties['paramName'] ?? '').trim();
+        const def = n.properties['defaultValue'];
+        if (pname !== '' && def !== undefined && def !== '') params[pname] = def;
+      }
+      callStr = this.boundScript.prepare(params).toString();
+    } catch (e) {
+      console.warn('FuncFlow: could not serialize the producing call', e);
+      return;
+    }
+    const accessor = this.flowOutputCount() > 1;
+    let ts = Date.now();
+    for (const tab of tabs) {
+      const df = tab.df!;
+      if (!df.name) df.name = tab.paramName;
+      df.setTag(DG.Tags.VariableName, tab.paramName);
+      df.setTag(DG.Tags.CreationScript,
+        `${tab.paramName} = ${callStr}${accessor ? '.' + tab.paramName : ''} //{"timestamp": ${ts++}}`);
+    }
+  }
+
+  /** The platform's standard Save-project dialog, seeded with the computed
+   *  output tables and their tab views — data-sync toggles, dependency
+   *  handling, layout linking, upload, and sharing all come from core
+   *  (`DG.Project.showSaveDialog`). Tabs never opened this session ship their
+   *  stored layout as a view state string (a layout saved with the flow
+   *  applies even without visiting the tab). A previously published project is
+   *  passed back so re-publishing UPDATES it; the binding persists in the
+   *  flow (saved silently right after, since the script was just saved). */
+  private async openDashboardDialog(): Promise<void> {
+    const tabs = this.outputViews?.getTabs().filter((t) => t.df != null) ?? [];
+    if (tabs.length === 0) return;
+    this.stampCreationScripts(tabs);
+    const showSaveDialog = (DG.Project as unknown as {
+      showSaveDialog?: (o: object) => Promise<unknown>;
+    }).showSaveDialog;
+    if (showSaveDialog == null) {
+      grok.shell.warning('This platform version cannot publish dashboards from Flow yet');
+      return;
+    }
+    const layoutsByParam = this.outputViews.captureLayouts();
+    try {
+      const saved = await showSaveDialog.call(DG.Project, {
+        tables: tabs.map((t) => t.df!),
+        views: tabs.map((t) => t.tv),
+        layouts: tabs.map((t) => t.tv != null ? null : layoutsByParam[t.paramName] ?? null),
+        name: this.flowSettings.scriptName,
+        description: this.flowSettings.scriptDescription,
+        project: this.dashboardProjectId ?? undefined,
+      }) as DG.Project | null;
+      if (saved?.id && saved.id !== this.dashboardProjectId) {
+        this.dashboardProjectId = saved.id;
+        if (this.boundScript != null)
+          await this.saveToServer(true); // persist the binding in the entity body
+      }
+    } catch (e) {
+      grok.shell.error(`Publish failed: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   /** Download the graph as a local `.ffjson` file (the pre-entity behavior). */
@@ -1698,6 +1990,15 @@ export class FuncFlowView extends DG.ViewBase {
     await this.editorReady;
     await deserializeFlow(doc, this.flow);
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
+    // Output-view tabs: rebuild the tab set from the fresh graph, then stash
+    // the saved layouts (keyed by paramName — node ids were just remapped);
+    // each applies once its tab is activated with a value.
+    this.outputViews?.syncTabs(this.tableOutputs());
+    if (doc.outputViews) {
+      this.outputViews?.setPendingLayouts(Object.fromEntries(
+        Object.entries(doc.outputViews).map(([name, v]) => [name, v.layout])));
+    }
+    this.dashboardProjectId = doc.dashboard?.projectId ?? null;
     this.name = doc.name || 'FuncFlow';
     this.updateStatusBar();
     this.fitToScreen();

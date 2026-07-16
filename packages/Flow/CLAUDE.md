@@ -60,6 +60,8 @@ src/
 │   ├── function-browser.ts       # Left sidebar catalog
 │   ├── property-panel.ts         # Side-panel node properties editor
 │   └── column-picker.ts          # Column/columns selector menu seeded by the upstream table
+├── views/
+│   └── output-views-manager.ts   # Output-view tabs: status-bar strip + per-output TableView panes
 ├── serialization/
 │   ├── flow-schema.ts            # .ffjson v2 type definitions (Rete-native, no LiteGraph payload)
 │   └── flow-serializer.ts        # serialize / deserialize / download
@@ -276,6 +278,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `inspect-tests.ts` | Flow: inspect / slice | `sliceUpTo` (target + ancestors, excludes downstream/unrelated), `emitScript` `onlyNodeIds` filtering, `missingRequiredInputs` |
 | `invalidation-tests.ts` | Flow: invalidation, Flow: autorun, Flow: in-place isolation | **In-place isolation**: instrumented emission snapshot-clones dataframe inputs (`__ff_clone`; the snapshot feeds the call, pass-through, and stash) while clean emission doesn't; a real Select Table → AddNewColumn run leaves the shell table + upstream capture pristine, previews show at-node state, and an autorun slice re-run is idempotent (validated by disabling `cloneDataframeInputs` → the shell table gets mutated). `sliceDownFrom` (forward closure), `applyGraphEdit` per-kind semantics (node-added → nothing; connection change → target+downstream stale, source + its live value kept; params-changed → node+downstream; node-removed → state forgotten), the editor's classified `onGraphEdited` stream (incl. `notifyNodeParamsChanged`, delete = connection-removed then node-removed, clear), **the user-side click guard** (opening the panel 3× per value-bearing node — Constants, Select Table/Column, Output, Int Input, OpenFile — emits zero `params-changed`; a real textarea edit reports once, same value again nothing; validated by disabling the guard → 3 spurious edits), `pendingNodes` (never-run/stale + downstream; fresh flow → empty), `expandToLiveBoundary` (captured boundary vs full ancestry), `AutorunScheduler` (debounce coalescing + dirty union, disabled/non-invalidating edits never run, `kick` on enable, busy → retry with kept set, skipped → wait for next edit, toggle-off cancels, re-entrant `hold`/`release` suspends firing and fires the backlog) |
 | `creation-script-emit-tests.ts` | Flow: creation script emit | round-trips (producer assignment, bare-call mutators in order, bare variable refs, join-by-name, friendly-name ref, no leaked optionals, full chem), `emit→import→emit` idempotency, an Output node anchors the producer like a SetVar, warn-and-skip for JS-only nodes (needs a live backend) |
+| `output-views-tests.ts` | Flow: output views | status-bar tab strip (Canvas + one per table output; scalar outputs stay out; SetVar-with-table gets a tab, scalar SetVar doesn't — Q2); add/remove/rename tracking + fallback-to-Canvas; empty state (run message + Run button, canvas restore); lazy TableView creation on activation, refresh rebinds the SAME tv (root identity), stale dot keeps the table; ribbon/toolbox swap + restore (containment assertions — the Dart toolbox getter wraps); layouts persist by paramName through `entityBodyText` → `parseFlowBody` → `loadFromDoc` across node-id remapping (scatter plot re-created) |
 | `output-strip-tests.ts` | Flow: output strip | strip column mounts OUTSIDE the canvas viewport (vertical label, ≤50px); an output node renders as a 40×24 chip INSIDE the strip (one-letter type, tooltip names output + source, no canvas card); chips are screen-space (pan/zoom change neither size nor position); analytic wire endpoints stay at the canvas edge across pan/zoom (`listenChipSocket`); chip click selects the node; `bindOutputToStrip` (dataframe → wired Table Output named after the slot + unique suffixing, scalar → Value Output auto-typed, chip letter follows); `.ff-strip-droptarget` during an output drag; minimap/zoomToFit exclusion; destroy removes strip + wrapper |
 
 ## Rete Pipeline
@@ -604,6 +607,73 @@ Ribbon **bolt icon** (`data-testid` ribbon/autorun; `.ff-autorun-toggle` = off: 
 - **Save button state** (`saveAvailability` / `updateSaveButtonState`): the ribbon Save button greys **and goes non-clickable** (class `ff-ribbon-btn-disabled` → `pointer-events: none` + steel colors) unless the canvas is non-empty **and** differs from the saved baseline. The baseline is a serialization recorded by `markSaved()` on save, on `bindScript`'s load (a server entity is already saved), on `newFlow`, and once the editor is ready (empty scratch flow). **`currentSnapshot()` strips `created`/`modified`/`author`** — `serializeFlow` stamps fresh timestamps every call, so without that every comparison reads "changed" (Save never greys; same flow saveable back-to-back). `updateSaveButtonState` runs on **both** `onGraphChanged` (structural: add/remove/clear + annotations) **and** `onGraphEdited` — the latter is the *only* signal for **parameter edits** (`notifyNodeParamsChanged` fires `onGraphEdited`, not `onGraphChanged`; node *drags* fire neither). The "why" tooltip lives on a wrapper `div.ff-save-btn-wrap` (a disabled button fires no hover; `pointer-events:none` passes the hover to the wrapper). The click handler also no-ops when disabled (keyboard-activation belt-and-braces). Only the non-creation Save button is tracked (`this.saveButton`).
 - **Auto-pin the preview** (`setupAutoPin` / `teardownAutoPin`): a flow app/script opens as an unpinned *preview* view (Dart concept — the toolbox stays hidden until pinned). A one-shot capturing `pointerdown`/`keydown` listener on `this.root` pins the view on the first interaction **iff it's the current view** (`grok.shell.v.dart === this.dart`), via `DG.View.fromDart(this.dart).pin()` (ViewBase itself has no `pin`); then it removes itself. Skipped for embedded hosts (`!outputPanelEnabled`), which are never `grok.shell.v`.
 - **`hold()` / `release()`** (re-entrant): suspend firing while a modal interaction is in progress — the view holds around the whole function-editor round-trip. Why this MUST happen: the editor dialog intercepts the global **`d4-before-run-action`** event, which fires for **every client funccall** (verified: `grok.functions.call(...)` and script `fc.call(...)` both fire it), and the interception matches **by func** — an autorun re-running the same function mid-dialog gets its call canceled and resolves the dialog round-trip early with the wrong funccall (stale values; the user's OK writes nothing — the "works the second time" race). Belt-and-braces beyond the hold: `FuncEditorLauncher.open` awaits `waitForRunIdle()` before opening, and passes `ignoreEvent: () => exec.state.isRunning` to `createFuncCallEditor` so events fired by an executing Flow run are never mistaken for the dialog's run action (the `onClose` fallback still resolves with the dialog `fc`, which holds the edited values).
+
+## Output views (internal tabs) — [`src/views/output-views-manager.ts`](src/views/output-views-manager.ts)
+
+Spotfire-style pages inside the Flow view: the status bar leads with a **tab strip**
+(`.ff-view-tabs` — Canvas first, then one tab per **table output**: Table Output,
+dataframe-typed Value Output, or a SetVar terminal whose connected `value` source socket is
+`dataframe`), and the view root's content host (`.ff-view-content`) stacks the canvas layout plus
+one display-toggled pane per tab (never unmounted — hosted TableView DOM must persist). Design doc
+with full research trail: [docs/OUTPUT-VIEWS-PLAN.md](docs/OUTPUT-VIEWS-PLAN.md).
+
+- **Lazy TableView hosting**: a tab's `DG.TableView.create(df, false)` (detached — the df is never
+  registered in the workspace; `grok.data.detectSemanticTypes` is called manually) happens on first
+  **activation with a value**, when the pane is visible and laid out — so `tv._onAdded()` (idempotent,
+  the deferred grid/dock init) never runs against a zero-size root (GROK-13828 corrupts dock layouts
+  docked at 0×0; this is why no `setTimeout` hack is needed). **Never** call `tv.initDock()` on a live
+  TableView (wipes it); cleanup is `tv.detach()`, not `close()` (a no-op for detached views).
+- **Values** come from the view's `onNodeStateChanged` fan-out (`updateOutputViewValue`): a completed
+  output/SetVar node's `NodeExecState.outputs` carries a dataframe `ValueSummary` whose `clone` is a
+  real DataFrame — the same instance the output preview shows, so selection is linked for free.
+  Refresh is `tv.dataFrame = newDf` (full rebind; viewers survive by column matching) on the SAME tv.
+  Invalidation keeps the last table and turns the tab dot amber (`data-state="stale"`); tab states:
+  `empty` (italic, centered "run the flow" message + Run button) / `ready` / `stale`. Tab label =
+  `df.name`, falling back to the paramName. Tabs shrink with ellipsized labels when crowded (no
+  scrolling). Chips are updated **in place** (`data-*`), never rebuilt — the click-survival rule.
+- **Ribbon/toolbox swap** (`FuncFlowView.onOutputTabChanged`, the `DG.MultiView.currentView` recipe):
+  a tab with a tv gets the tv's panels + `this.toolbox = tv.toolbox`; Canvas (or an empty tab)
+  restores `flowRibbonPanels` — kept by reference, because `setRibbonPanels` **moves** elements.
+  Two adjustments to the raw copy: (1) core inline-hides the TableView's own Save button for a table
+  not in the workspace (`_refreshSaveButton`), which would leave a vestigial empty leading panel —
+  items whose unwrap target has inline `display:none` are dropped; (2) **Flow's Save pill leads the
+  swapped strip** (same element reference — saving the flow is what persists the tab's layout).
+  `PowerPack:ConfigViewerGallery` is called once per tv, guarded (PowerPack may be absent), BEFORE
+  the first ribbon copy (it mutates the panels). The view's name and ribbon menu stay Flow's —
+  TableView's top-menu groups gate on `shell.v is TableView` and would render disabled.
+- **Persistence**: `.ffjson` gains an optional `outputViews: {[paramName]: {layout}}` section
+  (`tv.saveLayout().viewState`), written by `entityBodyText()` via `flowScriptText(..., extras)`.
+  Keyed by **paramName** — node ids remap on every load. Loaded layouts stash as `pendingLayout` and
+  apply once the tab's tv exists **and the pane is visible** (`loadLayout` on a hidden embedded view
+  defers forever). Never-opened tabs keep their loaded layout verbatim across saves. `outputViews` is
+  deliberately EXCLUDED from the dirty-tracking snapshot (`currentSnapshot` uses plain
+  `serializeFlow`) — viewStates aren't canonical, so including them would keep Save permanently lit;
+  the flip side (v1): rearranging viewers alone doesn't light Save.
+- **Save dialog + dashboard publish**: the ribbon **Save** pill always opens the combined
+  `saveDialog()` — script name/description/space on top, a run-aware **Dashboard** section below
+  (no computed outputs → a "Run the flow" button that refreshes the section via the
+  `saveDialogRunEnd` hook when the run ends; outputs → the table list + a "Create dashboard"
+  toggle). OK saves the script (updating the bound entity in place; `Save As…` passes
+  `{asNew: true}`), then opens the **platform's standard Save-project dialog** —
+  `DG.Project.showSaveDialog({tables, views, layouts, name, description, project})`, new js-api
+  backed by `grok_Project_OpenSaveDialog` → `ProjectMeta.publishTables` (core,
+  `core/client/xamgle/lib/src/meta/project_meta.dart`) — which handles data-sync toggles,
+  script-dependency scanning, layout linking (each tab's detached TableView ships as the project's
+  ViewInfo; a tab never opened this session ships its stored layout viewState as a **synthetic**
+  TableView ViewInfo instead — layouts apply on the dashboard without visiting the tab), upload
+  ordering, and sharing. **Project binding**: the saved project's id persists in the `.ffjson`
+  (`dashboard.projectId`, written silently right after the first publish) and is passed back on
+  the next publish — core replaces the bound project's table/view children (table ids kept stable
+  by `.VariableName`, so entities update server-side in place) instead of creating a new project
+  per save. Cleared on New / Save As / the dialog's "publish as new" link. Before opening it, `stampCreationScripts` tags each
+  output df: `.VariableName` = paramName, `.script` =
+  `<param> = <FlowNqName>(<defaults>)[.<param>] //{"timestamp": …}` — **the output accessor is
+  appended ONLY when the flow declares more than one output** (`flowOutputCount()`); identical
+  producing calls dedup on project open, so the flow runs once and every table binds its own
+  output. Stamping is skipped (static snapshots) when the flow is unsaved or takes inputs without a
+  literal default (`NON_SYNCABLE_INPUTS`) — the core dialog then simply offers no sync. Because
+  Save is also the dashboard gateway, `saveAvailability()` disables the button only on an EMPTY
+  canvas; the tooltip tracks the dirty state.
 
 ## File Format
 

@@ -21,6 +21,17 @@ export interface FuncFlowDocument {
    *  Optional for back-compat with .ffjson files that pre-date this field. */
   annotations?: FuncFlowAnnotation[];
 
+  /** Saved TableView layouts of the output-view tabs, keyed by the output's
+   *  paramName (node ids remap on load — never key by them). Optional for
+   *  back-compat; excluded from dirty tracking (viewState strings are not
+   *  canonical across serializations). */
+  outputViews?: {[paramName: string]: {layout: string}};
+
+  /** The dashboard project this flow publishes into — re-publishing updates
+   *  that project instead of creating a new one per save. Optional; excluded
+   *  from dirty tracking. */
+  dashboard?: {projectId: string};
+
   metadata: FuncFlowMetadata;
 }
 

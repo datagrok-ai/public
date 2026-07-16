@@ -2166,3 +2166,138 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   font-weight: 700;
   line-height: 1;
 }
+
+/* ---------- Output-view tabs (Spotfire-style internal pages) ---------- */
+
+/* Content host: stacks the canvas layout + one pane per output-view tab. */
+.ff-view-content {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* A tab's pane: hosts the empty state or the TableView root. Display-toggled,
+   never unmounted. */
+.ff-output-view-pane {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ff-output-view-empty {
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--grey-5, #666);
+}
+
+.ff-output-view-empty-title {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.ff-output-view-empty-sub {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+/* Tab strip in the status bar; tabs shrink with ellipsized labels when
+   crowded (no scrolling). */
+.ff-view-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  align-self: stretch;
+}
+
+.ff-status-labels {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.ff-view-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  cursor: pointer;
+  user-select: none;
+  border-right: 1px solid var(--grey-2, #ddd);
+  color: var(--grey-5, #666);
+  flex: 0 1 auto;
+  min-width: 36px;
+  max-width: 180px;
+  overflow: hidden;
+}
+
+.ff-view-tab:hover {
+  background: var(--grey-2, #e8eaee);
+}
+
+.ff-view-tab[data-active="true"] {
+  background: #fff;
+  color: var(--text-color, #333);
+  box-shadow: inset 0 2px 0 var(--blue-1, #2083d5);
+}
+
+.ff-view-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* State dot: hidden on the Canvas tab, grey/green/amber on output tabs. */
+.ff-view-tab-dot {
+  display: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--grey-3, #bbb);
+}
+
+.ff-view-tab[data-state] .ff-view-tab-dot {
+  display: block;
+}
+
+.ff-view-tab[data-state="empty"] {
+  font-style: italic;
+}
+
+.ff-view-tab[data-state="ready"] .ff-view-tab-dot {
+  background: #43a047;
+}
+
+.ff-view-tab[data-state="stale"] .ff-view-tab-dot {
+  background: #ffb300;
+}
+
+/* Save dialog — dashboard section */
+.ff-save-dash {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--grey-2, #ddd);
+  gap: 6px;
+}
+
+.ff-save-dash-title {
+  font-weight: bold;
+}
+
+.ff-save-dash-hint {
+  color: var(--grey-5, #666);
+}
