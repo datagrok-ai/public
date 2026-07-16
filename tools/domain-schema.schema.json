@@ -121,6 +121,11 @@
           "default": false,
           "description": "Unique among live (not soft-deleted) rows."
         },
+        "isName": {
+          "type": "boolean",
+          "default": false,
+          "description": "Marks the primary display-name column (string columns only; at most one per table). Its value titles cards, tooltips, and entity views, and becomes the friendly name of promoted rows. Convention fallback: a string column literally named 'name'."
+        },
         "ref": {
           "$ref": "#/definitions/identifier",
           "description": "Target table name (type = ref only). Cross-plugin refs are not allowed."
