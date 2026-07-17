@@ -29,7 +29,18 @@ public class DataSource
     public boolean supportsUpsert = false;
     public boolean supportsBulkInsert = false;
     public boolean supportsDdl = false;
+    // Advisory: DDL joins the transaction (Postgres, MS SQL); false = implicit DDL commit — a failed
+    // multi-statement DDL or create-mode load cannot roll its DDL back (connector-writes WO-B6).
+    public boolean supportsTransactionalDdl = false;
     public boolean supportsGeneratedKeys = false;
+    /**
+     * dg scalar type (string|int|bigint|float|bool|datetime) → exact native type emitted into
+     * CREATE TABLE / ADD COLUMN / ALTER COLUMN TYPE. Hand-authored per dialect — NOT an inversion of
+     * {@link #typesMap} (regex-keyed, many-to-one). Non-null iff {@link #supportsDdl} (enforced in
+     * ProviderManager); serialized into /conn like typesMap so Datlas and the UI can show the native
+     * type a dg column will become.
+     */
+    public Map<String, String> dgToNativeType;
     public List<Property> connectionTemplate;
     public List<Property> credentialsTemplate;
     public List<Property> cacheTemplate = new ArrayList<Property>() {{

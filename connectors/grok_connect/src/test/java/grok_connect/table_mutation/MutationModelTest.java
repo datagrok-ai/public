@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Gson round-trip tests for the table_mutation wire contract (GROK-20325).
+ * Gson round-trip tests for the table_mutation wire contract (GROK-20322).
  * Fixtures in src/test/resources/table_mutation/ pin the exact JSON shape the
  * Dart side (WO-7) emits; no Docker required.
  */

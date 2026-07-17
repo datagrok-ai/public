@@ -6,5 +6,5 @@ import java.util.List;
 public class IndexSpec {
     public String name; // auto-generated (ix_<table>_<col>...) when absent
     public List<String> columns;
-    public boolean unique;
+    public boolean unique = false;
 }

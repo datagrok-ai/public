@@ -22,12 +22,21 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.log.EventType;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.AddKey;
+import grok_connect.table_mutation.AlterTable;
 import grok_connect.table_mutation.BatchInsertBulkLoader;
 import grok_connect.table_mutation.BulkLoader;
+import grok_connect.table_mutation.ColumnSpec;
+import grok_connect.table_mutation.CreateIndex;
+import grok_connect.table_mutation.CreateTable;
 import grok_connect.table_mutation.DeleteRows;
+import grok_connect.table_mutation.DropIndex;
+import grok_connect.table_mutation.DropTable;
+import grok_connect.table_mutation.IndexSpec;
 import grok_connect.table_mutation.InsertRows;
 import grok_connect.table_mutation.MutationValidationException;
 import grok_connect.table_mutation.TableMutation;
+import grok_connect.table_mutation.TruncateTable;
 import grok_connect.table_mutation.UpdateRows;
 import grok_connect.table_mutation.UpsertRows;
 import grok_connect.table_query.AggrFunctionInfo;
@@ -980,6 +989,219 @@ public abstract class JdbcDataProvider extends DataProvider {
     /** Human-readable mutation-error message; providers may enrich it (Postgres appends the constraint name). */
     public String mutationErrorMessage(SQLException e) {
         return e.getMessage();
+    }
+
+    // ---- DDL emission (connector-writes WO-B6) — statement text only; execution/dryRun is WO-B7 ----
+
+    /** Native column type for a dg scalar type via the descriptor's hand-authored reverse map (ARCHITECTURE §3.3). */
+    public String nativeType(String dgType) {
+        String nativeType = descriptor.dgToNativeType == null ? null : descriptor.dgToNativeType.get(dgType);
+        if (nativeType == null)
+            throw new MutationValidationException("No native type for dg type '" + dgType
+                    + "' on provider " + descriptor.type);
+        return nativeType;
+    }
+
+    /**
+     * DEFAULT-value literal typed by the dg type (DDL cannot bind parameters): parse-validated numerics,
+     * true/false bools, single-quote-doubled strings and ISO datetimes — the DomainDdlGenerator.sqlLiteral
+     * discipline. A hostile value either fails validation or stays an inert quoted literal.
+     */
+    public String ddlLiteral(String dgType, String value) {
+        if (value == null)
+            return "NULL";
+        switch (dgType) {
+            case "int":
+            case "bigint":
+                try {
+                    return Long.toString(Long.parseLong(value.trim()));
+                } catch (NumberFormatException e) {
+                    throw new MutationValidationException("Invalid " + dgType + " literal: '" + value + "'");
+                }
+            case "float":
+                double parsed;
+                try {
+                    parsed = Double.parseDouble(value.trim());
+                } catch (NumberFormatException e) {
+                    throw new MutationValidationException("Invalid float literal: '" + value + "'");
+                }
+                if (Double.isNaN(parsed) || Double.isInfinite(parsed))
+                    throw new MutationValidationException("Invalid float literal: '" + value + "'");
+                return Double.toString(parsed);
+            case "bool":
+                return boolDdlLiteral(value.trim().equalsIgnoreCase("true"));
+            default: // string, datetime
+                return "'" + value.replace("'", "''") + "'";
+        }
+    }
+
+    /** Boolean DDL literal; dialects without a boolean type (MS SQL bit, Oracle number(1)) emit 1/0. */
+    protected String boolDdlLiteral(boolean value) {
+        return value ? "true" : "false";
+    }
+
+    /** Column definition: name, native type, DEFAULT before NOT NULL (the order Oracle requires; valid everywhere). */
+    protected String columnDefinitionSql(ColumnSpec c) {
+        if (c == null)
+            throw new MutationValidationException("Column spec is required");
+        validateMutationIdentifier(c.name);
+        if (GrokConnectUtil.isEmpty(c.type))
+            throw new MutationValidationException("Column '" + c.name + "' requires a dg type");
+        StringBuilder def = new StringBuilder(addBrackets(c.name)).append(" ").append(nativeType(c.type));
+        if (c.defaultValue != null)
+            def.append(" DEFAULT ").append(ddlLiteral(c.type, c.defaultValue));
+        if (!c.nullable)
+            def.append(" NOT NULL");
+        return def.toString();
+    }
+
+    /** IF NOT EXISTS on CREATE TABLE; dialects without the form (MS SQL, Oracle) emit a plain CREATE — a duplicate table surfaces as a db-error. */
+    protected boolean supportsCreateIfNotExists() {
+        return true;
+    }
+
+    /** CREATE TABLE (+ one CREATE [UNIQUE] INDEX per {@link IndexSpec}); FKs are added afterwards via {@link AddKey}. */
+    public List<String> createTableSql(CreateTable m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("CreateTable requires a non-empty columns list");
+        String table = mutationTableName(m);
+        List<String> defs = new ArrayList<>();
+        for (ColumnSpec c : m.columns)
+            defs.add(columnDefinitionSql(c));
+        if (m.primaryKey != null && !m.primaryKey.isEmpty()) {
+            m.primaryKey.forEach(this::validateMutationIdentifier);
+            defs.add("PRIMARY KEY (" + m.primaryKey.stream().map(this::addBrackets)
+                    .collect(Collectors.joining(", ")) + ")");
+        }
+        List<String> statements = new ArrayList<>();
+        statements.add("CREATE TABLE " + (m.ifNotExists && supportsCreateIfNotExists() ? "IF NOT EXISTS " : "")
+                + table + " (" + String.join(", ", defs) + ")");
+        if (m.indexes != null)
+            for (IndexSpec index : m.indexes)
+                statements.add(createIndexStatement(m, index.name, index.columns, index.unique));
+        return statements;
+    }
+
+    /** Single-action ALTER TABLE (ARCHITECTURE §3.4.1); per-action field presence is validated here. */
+    public String alterTableSql(AlterTable m) {
+        String table = mutationTableName(m);
+        if (GrokConnectUtil.isEmpty(m.action))
+            throw new MutationValidationException("AlterTable requires an action");
+        switch (m.action) {
+            case "addColumn":
+                if (m.column == null)
+                    throw new MutationValidationException("AlterTable addColumn requires a column spec");
+                return alterAddColumnSql(m, table);
+            case "dropColumn":
+                validateMutationIdentifier(m.columnName);
+                return "ALTER TABLE " + table + " DROP COLUMN " + addBrackets(m.columnName);
+            case "renameColumn":
+                validateMutationIdentifier(m.columnName);
+                validateMutationIdentifier(m.newName);
+                return alterRenameColumnSql(m, table);
+            case "changeType":
+                validateMutationIdentifier(m.columnName);
+                if (GrokConnectUtil.isEmpty(m.newType))
+                    throw new MutationValidationException("AlterTable changeType requires newType");
+                return alterChangeTypeSql(m, table);
+            case "setNullable":
+                validateMutationIdentifier(m.columnName);
+                if (m.nullable == null)
+                    throw new MutationValidationException("AlterTable setNullable requires an explicit nullable value");
+                return alterSetNullableSql(m, table);
+            default:
+                throw new MutationValidationException("Unknown AlterTable action: '" + m.action + "'");
+        }
+    }
+
+    protected String alterAddColumnSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ADD COLUMN " + columnDefinitionSql(m.column);
+    }
+
+    protected String alterRenameColumnSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " RENAME COLUMN " + addBrackets(m.columnName)
+                + " TO " + addBrackets(m.newName);
+    }
+
+    /** PG shape; MySQL (MODIFY), MS SQL and Oracle override. */
+    protected String alterChangeTypeSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName)
+                + " TYPE " + nativeType(m.newType);
+    }
+
+    /** PG shape; dialects that restate the column type (MySQL, MS SQL) or use MODIFY (Oracle) override. */
+    protected String alterSetNullableSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName)
+                + (m.nullable ? " DROP NOT NULL" : " SET NOT NULL");
+    }
+
+    public String createIndexSql(CreateIndex m) {
+        return createIndexStatement(m, m.indexName, m.columns, m.unique);
+    }
+
+    /** CREATE [UNIQUE] INDEX; auto-name ix_&lt;table&gt;_&lt;col1&gt;_.. (the domain generator convention) when absent. */
+    protected String createIndexStatement(TableMutation m, String name, List<String> columns, boolean unique) {
+        if (columns == null || columns.isEmpty())
+            throw new MutationValidationException("Index requires a non-empty columns list");
+        columns.forEach(this::validateMutationIdentifier);
+        String indexName = GrokConnectUtil.isNotEmpty(name) ? name
+                : "ix_" + baseTableName(m) + "_" + String.join("_", columns);
+        validateMutationIdentifier(indexName);
+        return "CREATE " + (unique ? "UNIQUE " : "") + "INDEX " + addBrackets(indexName)
+                + " ON " + mutationTableName(m) + " ("
+                + columns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) + ")";
+    }
+
+    /** Unqualified table name for auto-generated index/constraint names. */
+    protected String baseTableName(TableMutation m) {
+        validateMutationIdentifier(m.tableName);
+        return m.tableName.substring(m.tableName.lastIndexOf('.') + 1);
+    }
+
+    /** PG/Oracle shape (schema-qualified name); MySQL / MS SQL override with DROP INDEX &lt;name&gt; ON &lt;table&gt;. */
+    public String dropIndexSql(DropIndex m) {
+        validateMutationIdentifier(m.indexName);
+        String qualified = m.indexName;
+        if (GrokConnectUtil.isNotEmpty(m.schema)) {
+            validateMutationIdentifier(m.schema);
+            qualified = m.schema + "." + m.indexName;
+        }
+        return "DROP INDEX " + addBrackets(qualified);
+    }
+
+    /** ALTER TABLE ADD CONSTRAINT — primary or foreign key; auto-names pk_&lt;table&gt; / fk_&lt;table&gt;_&lt;col&gt; (the domain convention). */
+    public String addKeySql(AddKey m) {
+        String table = mutationTableName(m);
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("AddKey requires a non-empty columns list");
+        m.columns.forEach(this::validateMutationIdentifier);
+        String colList = m.columns.stream().map(this::addBrackets).collect(Collectors.joining(", "));
+        if ("primary".equals(m.keyType)) {
+            String name = GrokConnectUtil.isNotEmpty(m.constraintName) ? m.constraintName : "pk_" + baseTableName(m);
+            validateMutationIdentifier(name);
+            return "ALTER TABLE " + table + " ADD CONSTRAINT " + addBrackets(name) + " PRIMARY KEY (" + colList + ")";
+        }
+        if ("foreign".equals(m.keyType)) {
+            if (GrokConnectUtil.isEmpty(m.refTable) || m.refColumns == null || m.refColumns.isEmpty())
+                throw new MutationValidationException("AddKey foreign requires refTable and refColumns");
+            validateMutationIdentifier(m.refTable);
+            m.refColumns.forEach(this::validateMutationIdentifier);
+            String name = GrokConnectUtil.isNotEmpty(m.constraintName) ? m.constraintName
+                    : "fk_" + baseTableName(m) + "_" + String.join("_", m.columns);
+            validateMutationIdentifier(name);
+            return "ALTER TABLE " + table + " ADD CONSTRAINT " + addBrackets(name) + " FOREIGN KEY (" + colList
+                    + ") REFERENCES " + addBrackets(m.refTable) + " ("
+                    + m.refColumns.stream().map(this::addBrackets).collect(Collectors.joining(", ")) + ")";
+        }
+        throw new MutationValidationException("AddKey keyType must be 'primary' or 'foreign', got '" + m.keyType + "'");
+    }
+
+    public String dropTableSql(DropTable m) {
+        return "DROP TABLE " + mutationTableName(m);
+    }
+
+    public String truncateTableSql(TruncateTable m) {
+        return "TRUNCATE TABLE " + mutationTableName(m);
     }
 
     /** Appends a WHERE section identical in shape to TableQuery.toSql's (shared PredicateCompiler). */

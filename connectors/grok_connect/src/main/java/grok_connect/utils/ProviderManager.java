@@ -71,6 +71,13 @@ public class ProviderManager {
             // providers with a native fast path (Postgres COPY) still advertise it here (connector-writes WO-5).
             if (!descriptor.supportsBulkInsert)
                 descriptor.supportsBulkInsert = descriptor.supportsWrite;
+            // DDL is opt-in per provider — no generic-JDBC DDL fallback (unlike DML): a supportsDdl
+            // provider must ship a hand-authored dgToNativeType map (connector-writes WO-B6).
+            if (descriptor.supportsDdl && descriptor.dgToNativeType == null) {
+                LOGGER.error("Provider {} declares supportsDdl without a dgToNativeType map; disabling DDL",
+                        descriptor.type);
+                descriptor.supportsDdl = false;
+            }
         }
     }
 

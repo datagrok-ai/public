@@ -14,6 +14,9 @@ import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.AlterTable;
+import grok_connect.table_mutation.DropIndex;
+import grok_connect.table_mutation.MutationValidationException;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
@@ -37,6 +40,16 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.supportCatalogs = true;
         descriptor.supportsUpsert = true;
         descriptor.supportsGeneratedKeys = true;
+        descriptor.supportsDdl = true;
+        descriptor.supportsTransactionalDdl = true;
+        descriptor.dgToNativeType = new HashMap<String, String>() {{
+            put("string", "nvarchar(max)");
+            put("int", "int");
+            put("bigint", "bigint");
+            put("float", "float");
+            put("bool", "bit");
+            put("datetime", "datetime2");
+        }};
         descriptor.defaultSchema = "dbo";
         descriptor.limitAtEnd = false;
 
@@ -79,6 +92,53 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     @Override
     public int upsertBatchRows(int columnCount) {
         return Math.max(1, Math.min(500, 2000 / Math.max(1, columnCount)));
+    }
+
+    /** T-SQL has no CREATE TABLE IF NOT EXISTS — a duplicate table surfaces as a db-error. */
+    @Override
+    protected boolean supportsCreateIfNotExists() {
+        return false;
+    }
+
+    /** bit has no true/false literals. */
+    @Override
+    protected String boolDdlLiteral(boolean value) {
+        return value ? "1" : "0";
+    }
+
+    /** T-SQL ADD takes no COLUMN keyword. */
+    @Override
+    protected String alterAddColumnSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ADD " + columnDefinitionSql(m.column);
+    }
+
+    /** sp_rename object path; identifiers are pre-validated (no quotes survive), so the literal stays inert. */
+    @Override
+    protected String alterRenameColumnSql(AlterTable m, String table) {
+        String object = (GrokConnectUtil.isNotEmpty(m.schema) ? m.schema + "." : "")
+                + m.tableName + "." + m.columnName;
+        return "EXEC sp_rename '" + object + "', '" + m.newName + "', 'COLUMN'";
+    }
+
+    @Override
+    protected String alterChangeTypeSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName) + " " + nativeType(m.newType);
+    }
+
+    /** ALTER COLUMN restates the column type, so setNullable needs {@code newType} in the payload. */
+    @Override
+    protected String alterSetNullableSql(AlterTable m, String table) {
+        if (GrokConnectUtil.isEmpty(m.newType))
+            throw new MutationValidationException("AlterTable setNullable on " + descriptor.type
+                    + " requires newType — ALTER COLUMN restates the column type");
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName) + " " + nativeType(m.newType)
+                + (m.nullable ? " NULL" : " NOT NULL");
+    }
+
+    @Override
+    public String dropIndexSql(DropIndex m) {
+        validateMutationIdentifier(m.indexName);
+        return "DROP INDEX " + addBrackets(m.indexName) + " ON " + mutationTableName(m);
     }
 
     @Override

@@ -5,7 +5,7 @@ import java.util.List;
 public class CreateIndex extends DdlMutation {
     public String indexName; // auto-generated (ix_<table>_<col>...) when absent
     public List<String> columns;
-    public boolean unique;
+    public boolean unique = false;
 
     public CreateIndex() {
         type = "CreateIndex";

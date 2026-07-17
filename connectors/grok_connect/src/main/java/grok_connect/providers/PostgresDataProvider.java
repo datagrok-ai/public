@@ -37,6 +37,18 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.supportCatalogs = true;
         descriptor.supportsUpsert = true;
         descriptor.supportsGeneratedKeys = true;
+        descriptor.supportsDdl = true;
+        descriptor.supportsTransactionalDdl = true;
+        // Seeded from the domain-schemas generator DomainDdlGenerator._sqlTypes (scalar subset) + bigint,
+        // so an externally created table and a domain table get identical PG types (ARCHITECTURE §3.3).
+        descriptor.dgToNativeType = new HashMap<String, String>() {{
+            put("string", "text");
+            put("int", "int");
+            put("bigint", "int8");
+            put("float", "float8");
+            put("bool", "bool");
+            put("datetime", "timestamp without time zone");
+        }};
         descriptor.defaultSchema = "public";
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);

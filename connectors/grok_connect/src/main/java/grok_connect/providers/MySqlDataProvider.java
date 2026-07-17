@@ -8,9 +8,13 @@ import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.*;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.table_mutation.AlterTable;
+import grok_connect.table_mutation.DropIndex;
+import grok_connect.table_mutation.MutationValidationException;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.GrokConnectUtil;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -31,6 +35,15 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.commentStart = "-- ";
         descriptor.supportsUpsert = true;
         descriptor.supportsGeneratedKeys = true;
+        descriptor.supportsDdl = true; // supportsTransactionalDdl stays false — implicit DDL commit
+        descriptor.dgToNativeType = new HashMap<String, String>() {{
+            put("string", "text"); // no PK/unique without a prefix length — the DB's own error surfaces (§3.3 lossy policy)
+            put("int", "int");
+            put("bigint", "bigint");
+            put("float", "double");
+            put("bool", "boolean");
+            put("datetime", "datetime(6)"); // bare datetime truncates µs
+        }};
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("bool", Types.BOOL);
@@ -79,6 +92,31 @@ public class MySqlDataProvider extends JdbcDataProvider {
                         .collect(Collectors.joining(", "));
         return "INSERT INTO " + mutationTableName(m) + " (" + colList + ") VALUES " + values
                 + " ON DUPLICATE KEY UPDATE " + updates;
+    }
+
+    // DDL dialect notes (WO-B6): the base RENAME COLUMN emission requires MySQL 8+ / MariaDB 10.5+ —
+    // older servers surface the DB's own syntax error.
+
+    /** MySQL has no ALTER COLUMN ... TYPE — MODIFY restates the column definition. */
+    @Override
+    protected String alterChangeTypeSql(AlterTable m, String table) {
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType);
+    }
+
+    /** MODIFY restates the full column type, so setNullable needs {@code newType} in the payload. */
+    @Override
+    protected String alterSetNullableSql(AlterTable m, String table) {
+        if (GrokConnectUtil.isEmpty(m.newType))
+            throw new MutationValidationException("AlterTable setNullable on " + descriptor.type
+                    + " requires newType — MODIFY restates the column type");
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType)
+                + (m.nullable ? " NULL" : " NOT NULL");
+    }
+
+    @Override
+    public String dropIndexSql(DropIndex m) {
+        validateMutationIdentifier(m.indexName);
+        return "DROP INDEX " + addBrackets(m.indexName) + " ON " + mutationTableName(m);
     }
 
     @Override
