@@ -29,6 +29,8 @@ import './tests/editor-bridge-tests';
 import './tests/invalidation-tests';
 import './tests/selection-tests';
 import './tests/clipboard-tests';
+import './tests/annotation-tests';
+import './tests/group-tests';
 import './tests/suggestion-tests';
 import './tests/output-strip-tests';
 import './tests/output-views-tests';

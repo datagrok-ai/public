@@ -527,6 +527,187 @@
   border-bottom-right-radius: 6px;
 }
 
+/* ---------- node groups (collapsible frames, see rete/node-group.ts) ---------- */
+
+/* Expanded: a background frame hugging the member bbox, under the nodes. */
+.ff-group {
+  position: absolute;
+  z-index: 0;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--steel-2, #90a4ae);
+  border-radius: 10px;
+  background: rgba(96, 125, 139, 0.06);
+  user-select: none;
+  cursor: move;
+  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
+}
+
+/* Height kept in sync with GROUP_TITLE_H in node-group.ts. */
+.ff-group-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  background: rgba(96, 125, 139, 0.12);
+}
+
+/* Caret mirrors .ff-node-caret so groups read like nodes. */
+.ff-group-caret {
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  color: #455a64;
+  padding: 2px 4px;
+  margin: -2px -2px -2px 0;
+}
+
+.ff-group-caret:hover {
+  color: #1976d2;
+}
+
+.ff-group-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: #455a64;
+  outline: none;
+  cursor: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ff-group-title:focus {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 3px;
+}
+
+.ff-group-desc {
+  font-size: 11px;
+  color: #78909c;
+  padding: 3px 8px 4px 8px;
+  outline: none;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ff-group-desc:empty::before {
+  content: 'Description…';
+  color: #b0bec5;
+}
+
+/* Aggregate run-status dot — same visual language as .ff-node-status
+   (always-visible white circle when idle, per-status fills + marks). */
+.ff-group-status {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #90a4ae;
+  cursor: default;
+  position: relative;
+}
+
+.ff-group-status[data-status="running"] {
+  background: #1976d2;
+  border-color: #1976d2;
+  animation: ff-pulse 1.2s ease-in-out infinite;
+}
+
+.ff-group-status[data-status="completed"] {
+  background: #43a047;
+  border-color: #43a047;
+}
+
+.ff-group-status[data-status="completed"]::after {
+  content: '';
+  position: absolute;
+  left: 1.5px;
+  top: 3px;
+  width: 5.5px;
+  height: 2.5px;
+  border-left: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  transform: rotate(-50deg);
+}
+
+.ff-group-status[data-status="errored"] {
+  background: #e53935;
+  border-color: #e53935;
+}
+
+.ff-group-status[data-status="errored"]::after {
+  content: '!';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.ff-group-status[data-status="stale"] {
+  background: #9E9E9E;
+  border-color: #9E9E9E;
+  opacity: 0.65;
+}
+
+/* Minimized: a collapsed-node-like card standing in for the members. Sits
+   above annotations/frames (z 1) — it acts as a node, not a background. */
+.ff-group[data-minimized="true"] {
+  z-index: 1;
+  min-width: 170px;
+  max-width: 280px;
+  height: auto;
+  background: #eceff1;
+  border-style: solid;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.10);
+  cursor: grab;
+}
+
+.ff-group[data-minimized="true"] .ff-group-titlebar {
+  background: rgba(96, 125, 139, 0.18);
+}
+
+/* Boundary-wire dots on the card edges. Geometry (top offsets, 9px dot) is
+   driven from node-group.ts (GROUP_DOT_TOP / GROUP_DOT_STEP) — inline styles
+   set `top`; only the horizontal placement lives here. */
+.ff-group-dots {
+  display: none;
+}
+
+.ff-group[data-minimized="true"] .ff-group-dots {
+  display: contents;
+}
+
+.ff-group-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #607d8b;
+  box-sizing: border-box;
+}
+
+.ff-group-dots-in .ff-group-dot { left: -4.5px; }
+.ff-group-dots-out .ff-group-dot { right: -4.5px; }
+
+/* Hidden members / internal wires of a minimized group. */
+.ff-group-hidden {
+  display: none !important;
+}
+
 /* Per-port "View Output" floating popover — anchored next to the port. */
 /* Gear overlay on a viewer preview — top-right corner, no vertical footprint. */
 .ff-viewer-edit-gear {

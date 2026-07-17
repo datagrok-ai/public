@@ -21,6 +21,11 @@ export interface FuncFlowDocument {
    *  Optional for back-compat with .ffjson files that pre-date this field. */
   annotations?: FuncFlowAnnotation[];
 
+  /** Node groups — collapsible titled frames around member node sets. Visual
+   *  only: the `nodes`/`connections` above stay flat; a minimized group just
+   *  renders its members as one card. Optional for back-compat. */
+  groups?: FuncFlowGroup[];
+
   /** Saved TableView layouts of the output-view tabs, keyed by the output's
    *  paramName (node ids remap on load — never key by them). Optional for
    *  back-compat; excluded from dirty tracking (viewState strings are not
@@ -41,6 +46,17 @@ export interface FuncFlowAnnotation {
   size: {w: number; h: number};
   text: string;
   color: string;
+}
+
+export interface FuncFlowGroup {
+  id: string;
+  title: string;
+  description: string;
+  /** Node ids (of the `nodes` array) — remapped through the loader's idMap. */
+  memberIds: string[];
+  minimized: boolean;
+  /** Card anchor (canvas coords); the expanded frame derives from members. */
+  pos: {x: number; y: number};
 }
 
 export interface FuncFlowNode {
