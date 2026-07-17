@@ -32,6 +32,12 @@ export class AIWindowManager {
 
     grok.events.onViewRemoved.subscribe((v) => this.unregister(v));
 
+    // Keep the empty-state suggestion cards in sync with the current view.
+    grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.windows.showAI)
+        this.current?.activate(false);
+    });
+
     getAIPanelToggleSubscription().subscribe((v) => this.toggle((v as DG.ViewBase) ?? grok.shell.v));
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {

@@ -154,6 +154,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
+  private _emptyStateSeq = 0;
   /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
@@ -867,22 +869,32 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.handleRun();
   }
 
+  /** The view the panel currently works against: the pinned one for owned panels, else the live current view. */
+  protected get liveView(): DG.View | DG.ViewBase | null {
+    return this.view ?? grok.shell.v;
+  }
+
   protected shouldShowEmptyState(): boolean {
-    return this.view instanceof DG.TableView &&
-      this._uiMessages.length === 0 &&
-      !this.outputArea.querySelector('.grokky-empty-state');
+    return this.liveView instanceof DG.TableView && this._uiMessages.length === 0;
   }
 
   private setWandVisible(visible: boolean): void {
-    this.wandButton.style.display = visible && this.view instanceof DG.TableView ? '' : 'none';
+    this.wandButton.style.display = visible && this.liveView instanceof DG.TableView ? '' : 'none';
   }
 
+  /** Rebuilds the suggestion cards for the current view; removes them when they no longer apply. */
   protected async renderEmptyState(): Promise<void> {
-    if (!this.shouldShowEmptyState())
+    const seq = ++this._emptyStateSeq;
+    const removeExisting = () => this.outputArea.querySelector('.grokky-empty-state')?.remove();
+    if (!this.shouldShowEmptyState()) {
+      removeExisting();
+      this.setWandVisible(true);
       return;
-    const scopes = await resolveScopes('panel', this.view);
-    if (!this.shouldShowEmptyState())
+    }
+    const scopes = await resolveScopes('panel', this.liveView);
+    if (seq !== this._emptyStateSeq || !this.shouldShowEmptyState())
       return;
+    removeExisting();
 
     const blocks = scopes.map((s) => {
       const icon = ui.iconFA(s.icon ?? 'circle');

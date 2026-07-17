@@ -2,6 +2,7 @@
 
 ## v.next
 
+* AI: Restored empty-state prompt suggestions on table views — the singleton panel now resolves suggestion cards against the live current view (was pinned to its creation view) and refreshes them on view switches
 * AI: View tools now reach JS-defined views — tools are also collected from `view.jsView.getAITools()` (new js-api `View.jsView` exposes the original ViewBase of a JS view); the system prompt mentions Flow and prefers view tools over generic exec code
 
 * AI: View AI tools — views can now ship their own AI tools (`ViewBase.getAITools()` in js-api, Dart `View.getAITools()` with JsViewHost forwarding, or a `viewAIToolsProvider` function role); the singleton panel collects the current view's tools on every prompt and declares them to the Claude runtime (`clientTools` → in-process `datagrok-view` MCP server, calls round-trip to the browser)
