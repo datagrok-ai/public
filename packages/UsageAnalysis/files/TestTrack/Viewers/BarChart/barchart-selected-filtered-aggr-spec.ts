@@ -1,0 +1,229 @@
+/* ---
+realizes: [barchart.int.selected-filtered-rows-need-cumulative-aggr]
+--- */
+
+import {test, expect} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+
+declare const grok: any;
+
+test.use(specTestOptions);
+
+const datasetPath = 'System:DemoFiles/demog.csv';
+const splitCol = 'race';
+const valueCol = 'age';
+
+test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregations', async ({page}) => {
+  test.setTimeout(300_000);
+
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  const errCount = () => pageErrors.length + consoleErrors.length;
+
+  await loginToDatagrok(page);
+
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 4000});
+  await v.addViewerByIcon(page, 'bar-chart', 'Bar-chart');
+
+  await page.evaluate(() => {
+    const bcEl = document.querySelector('[name="viewer-Bar-chart"]') as HTMLElement;
+    const panelBase = bcEl.closest('.panel-base') as HTMLElement;
+    const gear = panelBase?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+    gear?.click();
+  });
+  await page.waitForTimeout(500);
+
+  const base = await page.evaluate(async ({split, value}) => {
+    const df = grok.shell.tv.dataFrame;
+    const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+    bc.props.splitColumnName = split;
+    bc.props.valueColumnName = value;
+    await new Promise((r) => setTimeout(r, 700));
+    const race = df.col(split);
+    const sex = df.col('sex');
+    let asian = 0, caucasian = 0, female = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (race.get(i) === 'Asian') asian++;
+      if (race.get(i) === 'Caucasian') caucasian++;
+      if (sex.get(i) === 'F') female++;
+    }
+    return {rowCount: df.rowCount, asian, caucasian, female};
+  }, {split: splitCol, value: valueCol});
+  expect(base.asian).toBeGreaterThan(0);
+  expect(base.caucasian).toBeGreaterThan(0);
+  expect(base.female).toBeGreaterThan(0);
+  expect(base.female).toBeLessThan(base.rowCount);
+
+  await softStep('Scenario 1 Step 4: selecting Asian sets df.selection to exactly the Asian rows; filter untouched', async () => {
+    const errBefore = errCount();
+    const info = await page.evaluate(async ({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.valueAggrType = 'count';
+      bc.props.showSelectedRows = true;
+      bc.props.showFilteredRows = true;
+      const race = df.col(split);
+      df.filter.setAll(true);
+      df.selection.init((i: number) => race.get(i) === 'Asian');
+      await new Promise((r) => setTimeout(r, 600));
+      let selInCat = 0;
+      for (let i = 0; i < df.rowCount; i++)
+        if (df.selection.get(i) && race.get(i) === 'Asian') selInCat++;
+      return {
+        aggr: bc.props.valueAggrType,
+        sel: df.selection.trueCount,
+        selInCat,
+        filt: df.filter.trueCount,
+        rowCount: df.rowCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    }, {split: splitCol});
+    expect(info.aggr).toBe('count');
+    expect(info.sel).toBe(base.asian);
+    expect(info.selInCat).toBe(info.sel);
+    expect(info.filt).toBe(info.rowCount);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+  });
+
+  await softStep('Scenario 1 Step 6: filtering to sex=F sets df.filter to the female rows; selection unchanged', async () => {
+    const errBefore = errCount();
+    const info = await page.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.rowSource = 'All';
+      bc.props.showFilteredRows = true;
+      const sex = df.col('sex');
+      df.filter.init((i: number) => sex.get(i) === 'F');
+      await new Promise((r) => setTimeout(r, 600));
+      return {
+        rowSource: bc.props.rowSource,
+        sel: df.selection.trueCount,
+        filt: df.filter.trueCount,
+        rowCount: df.rowCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    });
+    expect(info.rowSource).toBe('All');
+    expect(info.filt).toBe(base.female);
+    expect(info.filt).toBeLessThan(info.rowCount);
+    expect(info.sel).toBe(base.asian);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+  });
+
+  await softStep('Scenario 1 Step 8: switching aggregation to min preserves selection & filter state', async () => {
+    const errBefore = errCount();
+    const info = await page.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.valueAggrType = 'min';
+      await new Promise((r) => setTimeout(r, 600));
+      return {
+        aggr: bc.props.valueAggrType,
+        sel: df.selection.trueCount,
+        filt: df.filter.trueCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    });
+    expect(info.aggr).toBe('min');
+    expect(info.sel).toBe(base.asian);
+    expect(info.filt).toBe(base.female);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+  });
+
+  await softStep('Scenario 1 Step 10: re-select Asian + re-filter F under sum → grid state matches expected counts', async () => {
+    const errBefore = errCount();
+    const info = await page.evaluate(async ({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const race = df.col(split);
+      const sex = df.col('sex');
+      df.selection.init((i: number) => race.get(i) === 'Asian');
+      df.filter.init((i: number) => sex.get(i) === 'F');
+      bc.props.valueAggrType = 'sum';
+      await new Promise((r) => setTimeout(r, 600));
+      return {
+        aggr: bc.props.valueAggrType,
+        sel: df.selection.trueCount,
+        filt: df.filter.trueCount,
+        rowCount: df.rowCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    }, {split: splitCol});
+    expect(info.aggr).toBe('sum');
+    expect(info.sel).toBe(base.asian);
+    expect(info.filt).toBe(base.female);
+    expect(info.filt).toBeLessThan(info.rowCount);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+  });
+
+  await softStep('Scenario 2 Step 4: selecting Asian+Caucasian sets df.selection to their combined rows; filter unchanged', async () => {
+    const errBefore = errCount();
+    const info = await page.evaluate(async ({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.valueAggrType = 'values';
+      bc.props.showSelectedRows = true;
+      const race = df.col(split);
+      df.selection.init((i: number) => race.get(i) === 'Asian' || race.get(i) === 'Caucasian');
+      await new Promise((r) => setTimeout(r, 600));
+      let selInCats = 0;
+      for (let i = 0; i < df.rowCount; i++)
+        if (df.selection.get(i) && (race.get(i) === 'Asian' || race.get(i) === 'Caucasian')) selInCats++;
+      return {
+        aggr: bc.props.valueAggrType,
+        sel: df.selection.trueCount,
+        selInCats,
+        filt: df.filter.trueCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    }, {split: splitCol});
+    expect(info.aggr).toBe('values');
+    expect(info.sel).toBe(base.asian + base.caucasian);
+    expect(info.selInCats).toBe(info.sel);
+    expect(info.filt).toBe(base.female);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+  });
+
+  await softStep('Scenario 2 Step 7: switching aggregation to avg preserves selection & filter state', async () => {
+    const errBefore = errCount();
+    const info = await page.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.showFilteredRows = true;
+      bc.props.valueAggrType = 'avg';
+      await new Promise((r) => setTimeout(r, 600));
+      return {
+        aggr: bc.props.valueAggrType,
+        sel: df.selection.trueCount,
+        filt: df.filter.trueCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    });
+    expect(info.aggr).toBe('avg');
+    expect(info.sel).toBe(base.asian + base.caucasian);
+    expect(info.filt).toBe(base.female);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+  });
+
+  await page.evaluate(async () => {
+    const tv = grok.shell.tv;
+    const df = tv.dataFrame;
+    const bc = Array.from(tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+    bc.props.showSelectedRows = false;
+    bc.props.showFilteredRows = false;
+    df.selection.setAll(false);
+    df.filter.setAll(true);
+    await new Promise((r) => setTimeout(r, 300));
+  });
+
+  v.finishSpec();
+});

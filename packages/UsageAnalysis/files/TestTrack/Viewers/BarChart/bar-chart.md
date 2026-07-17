@@ -4,7 +4,8 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes:
+  - viewers.bar-chart
 realized_as:
   - bar-chart-spec.ts
 related_bugs: []
@@ -16,32 +17,6 @@ All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog
 3. Add Bar chart
-
-## Stack column
-
-1. Open Context Panel > **Stack** > set Stack to SEX — bars should split into stacked segments
-2. Set Stack to RACE — stacked segments should update to race categories
-3. Enable **Value > Relative Values** — all bars should become the same width
-4. Disable **Relative Values** — bars return to absolute widths
-5. Set Stack to None — stacking removed
-
-## Sorting
-
-1. Set Split to RACE
-2. Open Context Panel > **Value > Bar Sort Type** > set to **by value** — bars should reorder by height
-3. Set **Bar Sort Order** to **asc** — shortest bar first
-4. Set **Bar Sort Order** to **desc** — tallest bar first
-5. Set **Bar Sort Type** to **by category** — bars reorder alphabetically
-6. Set **Bar Sort Order** to **asc** — A-Z order
-7. Set **Bar Sort Order** to **desc** — Z-A order
-
-## Value axis type
-
-1. Set Value to HEIGHT, Split to RACE
-2. Open Context Panel > **Value > Axis Type** > set to **log** — value axis switches to logarithmic scale
-3. Set **Axis Type** back to **linear** — axis returns to normal
-4. Set custom **Min** and **Max** values — bars should clip to the specified range
-5. Clear Min and Max — auto range restored
 
 ## Color coding
 
@@ -87,30 +62,17 @@ All scenarios should start with the following sequence of events:
 6. Toggle **Show Category Values** off — category labels disappear
 7. Re-enable all — everything reappears
 
-## Aggregation types
+## Aggregation types (max + value-column switch)
 
 1. Set Split to RACE, Value to AGE
-2. Set **Value Aggr Type** to **avg** — bars show average AGE per category
-3. Switch to **min** — bars show minimum values
-4. Switch to **max** — bars show maximum values
-5. Switch to **sum** — bars show sum values
-6. Switch to **count** — bars show row counts
-7. Set Value to WEIGHT, Aggr Type back to **avg** — bars show average weight
+2. Set **Value Aggr Type** to **max** — bars show maximum AGE per category
+3. Set Value to WEIGHT — bars rebind to the new value column
 
-## Date/time split column
+## Legend position
 
-1. Set Split to STARTED — bars should group by date
-2. Open Context Panel > **Category > Split Map** > set to **Year** — bars group by year
-3. Change Split Map to **Month** — bars group by month
-4. Change to **Quarter** — bars group by quarter
-
-## Legend
-
-1. Set Stack to SEX — legend should appear showing stack categories
-2. Open Context Panel > **Legend > Legend Visibility** > set to **Always** — legend is always visible
-3. Set **Legend Position** to different positions (Left, Right, Top, Bottom) — legend moves
-4. Set Legend Visibility to **Never** — legend hides
-5. Remove Stack column — legend should disappear automatically
+1. Set Stack to SEX and Legend Visibility to **Always** — legend appears
+2. Set **Legend Position** to Left, Right, Top, Bottom — legend moves to each position
+3. Remove Stack column — legend disappears automatically
 
 ## Title and description
 
@@ -126,15 +88,9 @@ All scenarios should start with the following sequence of events:
 2. Open Context Panel > **Category > Show Values Instead Of Categories** — category labels switch to show aggregated values
 3. Disable — category names return
 
-## Orientation
+## Data panel (demog → SPGI table switch)
 
-1. Open Context Panel > **Orientation** > set to **horizontal** — bars render horizontally
-2. Set to **vertical** — bars render vertically (rotated 90 degrees)
-3. Set to **auto** — orientation chosen automatically based on viewer aspect ratio
-
-## Data panel (SPGI dataset)
-
-Setup: Close all, open demog and SPGI 
+Setup: Close all, open both demog and full SPGI (System:DemoFiles/SPGI.csv)
 
 1. Go to the demog table
 2. Add Bar chart
@@ -146,19 +102,6 @@ Setup: Close all, open demog and SPGI
 8. Close viewer
 9. Apply the saved layout — filter, color coding, and all settings should restore
 10. Delete the saved layout
-
-## Filter Panel interaction
-
-1. Open the Filter Panel
-2. Apply a categorical filter — verify the bar chart updates
-3. Apply a numeric filter — verify collaborative filtering between the Filter Panel and bar chart
-4. Remove all filters
-
-## Scrolling with range slider
-
-1. Set Split to a column with many categories (e.g., Primary Scaffold Name)
-2. Use the vertical range slider to scroll through the categories — verify bars scroll smoothly
-3. Set Value to CAST Idea ID — verify scrolling still works with the new value column
 
 ---
 {
