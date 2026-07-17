@@ -179,6 +179,8 @@ export class Permission {
 
   static CREATE_SPACE = 'CreateSpace';
 
+  static CREATE_DOMAIN_SCHEMA = 'CreateDomainSchema';
+
   // ===== General =====
   static INVITE_USER = 'InviteUser';
 
@@ -267,8 +269,6 @@ export class ScriptLanguage {
   static Octave = 'octave';
 
   static PythonDocker = 'docker';
-
-  static Flow = 'flow';
 
 }
 import {Entity} from '../entities'

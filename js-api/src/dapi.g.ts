@@ -30,6 +30,33 @@ export namespace dapi2 {
       return _fetch(url);
     }
 
+    /** Creates an empty user-managed domain schema; body {name, friendlyName?, description?}. The physical PostgreSQL schema is 'usr_<name>'; tables are added afterwards via the apply endpoint. Requires the CreateDomainSchema global privilege; the creator receives the full permission set on the schema entity. */
+    export async function createSchema(body: any): Promise<any> {
+      let url = `/domains/schemas`;
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    }
+
+    /** Full manifest of a registered schema, reconstructed from the registry (feeds the schema editor; doubles as export). */
+    export async function getSchemaManifest(schema: string): Promise<any> {
+      let url = `/domains/schemas/${schema}/manifest`;
+      return _fetch(url);
+    }
+
+    /** Applies a partial manifest to a user-managed schema: body {tables?, propertySchemas?, dropTables?, ifVersion?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. Requires Edit on the schema entity. */
+    export async function applySchema(schema: string, body: any, options?: {dryRun?: boolean}): Promise<any> {
+      let url = `/domains/schemas/${schema}/apply`;
+      const params = new URLSearchParams();
+      if (options?.dryRun !== undefined) params.set('dryRun', String(options.dryRun));
+      if (params.toString()) url += '?' + params.toString();
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    }
+
+    /** Deletes (fully purges) a user-managed schema: the PostgreSQL schema with its data and audit partition, registry rows, entity types, promoted row entities, and permissions. Requires Delete on the schema entity. */
+    export async function deleteSchema(schema: string): Promise<any> {
+      let url = `/domains/schemas/${schema}`;
+      return _fetch(url, {method: 'DELETE'});
+    }
+
     /** Direct permission rows on a registry entity (a domain schema, table, or property schema): [{group: {id, friendlyName, personal}, permission}]. Requires Share on the entity. */
     export async function getGrants(entityId: string): Promise<any> {
       let url = `/domains/grants/${entityId}`;
@@ -79,6 +106,47 @@ export namespace dapi2 {
     export async function insertRows(schema: string, table: string, rows: any): Promise<any> {
       let url = `/domains/${schema}/${table}`;
       return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(rows)});
+    }
+
+    /** Current user's subscription state for the table — {'watching': bool}. */
+    export async function getTableWatch(schema: string, table: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/watch`;
+      return _fetch(url);
+    }
+
+    export async function watchTable(schema: string, table: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/watch`;
+      return _fetch(url, {method: 'POST'});
+    }
+
+    export async function unwatchTable(schema: string, table: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/watch`;
+      return _fetch(url, {method: 'DELETE'});
+    }
+
+    export async function getRowWatch(schema: string, table: string, id: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/${id}/watch`;
+      return _fetch(url);
+    }
+
+    /** Row-level watch requires the table's audit trail (`audit: false` → 400). */
+    export async function watchRow(schema: string, table: string, id: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/${id}/watch`;
+      return _fetch(url, {method: 'POST'});
+    }
+
+    export async function unwatchRow(schema: string, table: string, id: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/${id}/watch`;
+      return _fetch(url, {method: 'DELETE'});
+    }
+
+    /** Table-wide audit events, newest first; [limit] clamps to [1, 1000]. */
+    export async function tableAudit(schema: string, table: string, options?: {limit?: number}): Promise<any> {
+      let url = `/domains/${schema}/${table}/audit`;
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.set('limit', String(options.limit));
+      if (params.toString()) url += '?' + params.toString();
+      return _fetch(url);
     }
 
     export async function getRow(schema: string, table: string, id: string): Promise<any> {

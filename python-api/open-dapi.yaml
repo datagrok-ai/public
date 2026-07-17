@@ -53,6 +53,80 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DomainSchema"
+    post:
+      operationId: createSchema
+      summary: create schema
+      description: "Creates an empty user-managed domain schema; body {name, friendlyName?, description?}. The physical PostgreSQL schema is 'usr_<name>'; tables are added afterwards via the apply endpoint. Requires the CreateDomainSchema global privilege; the creator receives the full permission set on the schema entity."
+      tags:
+        - domains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/manifest:
+    get:
+      operationId: getSchemaManifest
+      summary: get schema manifest
+      description: "Full manifest of a registered schema, reconstructed from the registry (feeds the schema editor; doubles as export)."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}/apply:
+    post:
+      operationId: applySchema
+      summary: apply schema
+      description: "Applies a partial manifest to a user-managed schema: body {tables?, propertySchemas?, dropTables?, ifVersion?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. Requires Edit on the schema entity."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/schemas/{schema}:
+    delete:
+      operationId: deleteSchema
+      summary: delete schema
+      description: "Deletes (fully purges) a user-managed schema: the PostgreSQL schema with its data and audit partition, registry rows, entity types, promoted row entities, and permissions. Requires Delete on the schema entity."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/grants/{entityId}:
     get:
       operationId: getGrants
@@ -235,6 +309,166 @@ paths:
           application/json:
             schema:
               {}
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/watch:
+    get:
+      operationId: getTableWatch
+      summary: get table watch
+      description: "Current user's subscription state for the table — {'watching': bool}."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+    post:
+      operationId: watchTable
+      summary: watch table
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+    delete:
+      operationId: unwatchTable
+      summary: unwatch table
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/{id}/watch:
+    get:
+      operationId: getRowWatch
+      summary: get row watch
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+    post:
+      operationId: watchRow
+      summary: watch row
+      description: "Row-level watch requires the table's audit trail (`audit: false` → 400)."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+    delete:
+      operationId: unwatchRow
+      summary: unwatch row
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/audit:
+    get:
+      operationId: tableAudit
+      summary: table audit
+      description: "Table-wide audit events, newest first; [limit] clamps to [1, 1000]."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: Successful response
