@@ -18,6 +18,7 @@ public class LocalTimeConverter implements Converter<Date> {
         LocalTime localTime = (LocalTime) value;
         Instant instant = localTime.atDate(LocalDate.of(1970, 1, 1))
                 .atZone(ZoneId.systemDefault()).toInstant();
-        return java.util.Date.from(instant);
+        // Timestamp keeps the sub-ms fraction (Date.from would truncate to ms)
+        return java.sql.Timestamp.from(instant);
     }
 }

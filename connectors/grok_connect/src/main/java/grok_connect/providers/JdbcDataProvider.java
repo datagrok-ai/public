@@ -558,7 +558,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (!connection.getAutoCommit())
                 connection.rollback();
         } catch (SQLException e) {
-            logger.warn("Failed to rollback transaction", e);
+            // A connection whose transaction state is unknown must never return to the pool:
+            // HikariCP cannot see work done past its proxy (e.g. the Postgres COPY API runs on the
+            // unwrapped physical connection), so its state reset on return would silently COMMIT
+            // the leftover transaction and poison later borrowers. Evict the connection instead.
+            logger.warn("Failed to rollback transaction - evicting the connection from the pool", e);
+            try {
+                connection.abort(Runnable::run);
+            } catch (Throwable t) {
+                logger.warn("Failed to abort connection after rollback failure", t);
+            }
         }
     }
 

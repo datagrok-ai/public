@@ -36,6 +36,7 @@ public class SessionHandler {
     private static final String MUTATION_START = "MUTATION ";
     private static final String MUTATION_EOF = "MUTATION EOF";
     private static final String MUTATION_READY = "MUTATION READY";
+    private static final long MUTATION_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
     private static final String RESULT_PREFIX = "RESULT ";
     private final Session session;
     private final boolean skipLogging;
@@ -116,6 +117,12 @@ public class SessionHandler {
             if (mutationManager != null)
                 throw new MutationValidationException("Mutation already started for this session");
             LOGGER.debug("Received bulk mutation header from the server");
+            // Queries keep the connect-time idle timeout of 0 (a long-running statement legitimately
+            // produces no WS traffic), but a mutation session receives chunks continuously — prolonged
+            // silence means the sender died. Without a timeout a half-open socket would hold the open
+            // transaction (and its pooled connection) forever; on timeout Jetty fires onError/onClose,
+            // which reach mutationManager.abort() -> rollback before the connection returns to the pool.
+            session.setIdleTimeout(MUTATION_IDLE_TIMEOUT_MS);
             mutationManager = new MutationManager(message.substring(MUTATION_START.length()));
             mutationManager.start();
             session.getRemote().sendStringByFuture(MUTATION_READY);

@@ -327,4 +327,27 @@ public class MutationSqlTest {
         // latent NPE closed: printError tolerates a null throwable
         Assertions.assertDoesNotThrow(() -> GrokConnect.printError(null));
     }
+
+    @DisplayName("rollbackQuietly: a failed rollback evicts the connection (abort) instead of pooling it dirty")
+    @Test
+    public void rollbackQuietly_evictsOnFailure() throws Exception {
+        // A connection whose rollback failed may still hold an open transaction the pool proxy cannot
+        // see (COPY runs on the unwrapped physical connection); returning it would let the pool's
+        // autoCommit reset COMMIT the leftovers (GROK-20322 pool-poisoning trap).
+        java.sql.Connection conn = org.mockito.Mockito.mock(java.sql.Connection.class);
+        org.mockito.Mockito.when(conn.getAutoCommit()).thenReturn(false);
+        org.mockito.Mockito.doThrow(new java.sql.SQLException("connection is broken")).when(conn).rollback();
+        postgres.rollbackQuietly(conn);
+        org.mockito.Mockito.verify(conn).abort(org.mockito.Mockito.any());
+    }
+
+    @DisplayName("rollbackQuietly: a successful rollback keeps the connection poolable (no abort)")
+    @Test
+    public void rollbackQuietly_successKeepsConnection() throws Exception {
+        java.sql.Connection conn = org.mockito.Mockito.mock(java.sql.Connection.class);
+        org.mockito.Mockito.when(conn.getAutoCommit()).thenReturn(false);
+        postgres.rollbackQuietly(conn);
+        org.mockito.Mockito.verify(conn).rollback();
+        org.mockito.Mockito.verify(conn, org.mockito.Mockito.never()).abort(org.mockito.Mockito.any());
+    }
 }

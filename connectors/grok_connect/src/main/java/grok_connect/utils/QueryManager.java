@@ -139,11 +139,7 @@ public class QueryManager {
                 if (commit)
                     connection.commit();
                 else
-                    try {
-                        connection.rollback();
-                    } catch (SQLException e) {
-                        LOGGER.warn("Failed to rollback transaction", e);
-                    }
+                    provider.rollbackQuietly(connection); // failed rollback evicts — never pool a dirty connection
             }
             QueryMonitor.getInstance().removeResultSet(query.id);
             connection.close();

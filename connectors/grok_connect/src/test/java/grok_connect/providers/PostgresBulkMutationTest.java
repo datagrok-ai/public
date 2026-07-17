@@ -415,6 +415,49 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(0, countDirect("mut_mismatch"));
     }
 
+    @DisplayName("Datetime µs fidelity: bulk d42 write keeps µs (pinned in psql, bypassing the read path) AND the query read-back keeps µs (GROK-20322)")
+    @Test
+    public void datetimeMicros_bulkWriteAndQueryReadBack() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_us_probe");
+        execDirect("CREATE TABLE mut_us_probe (seq int, ts timestamp)");
+        List<String> cols = Arrays.asList("seq", "ts");
+        List<String> types = Arrays.asList("int", "datetime");
+        // epoch-µs: 2026-07-05 12:34:56.789123 UTC; 1969-07-20 20:17:40.000001 UTC (pre-1970, µs=1); null
+        byte[] chunk = d42(cols, types,
+                new String[] {"0", "1783254896789123"},
+                new String[] {"1", "-14182939999999"},
+                new String[] {"2", null});
+        runManager(insert("mut_us_probe", cols, types), chunk); // COPY fast path — the exact failing transport
+
+        // WRITE-side isolation (direct JDBC, read path bypassed): the stored fraction is the full µs
+        Assertions.assertEquals("789123", scalarString("SELECT to_char(ts, 'US') FROM mut_us_probe WHERE seq = 0"));
+        Assertions.assertEquals("000001", scalarString("SELECT to_char(ts, 'US') FROM mut_us_probe WHERE seq = 1"));
+
+        // READ side: the provider query path must return exactly what the JDBC driver sees, µs included
+        // (was date.getTime()*1000 — ms-truncated). Expectations derive from the driver itself so the
+        // assertion is timezone-agnostic (pgjdbc materializes timestamp-without-tz in the JVM zone).
+        long[] expected = new long[2];
+        try (Connection c = DriverManager.getConnection(container.getJdbcUrl(), container.getUsername(), container.getPassword());
+             ResultSet rs = c.createStatement().executeQuery("SELECT ts FROM mut_us_probe WHERE seq < 2 ORDER BY seq")) {
+            for (int i = 0; i < 2; i++) {
+                Assertions.assertTrue(rs.next());
+                java.sql.Timestamp ts = rs.getTimestamp(1);
+                expected[i] = Math.floorDiv(ts.getTime(), 1000L) * 1_000_000L + ts.getNanos() / 1000L;
+            }
+        }
+        FuncCall query = grok_connect.providers.utils.FuncCallBuilder.fromQuery("SELECT ts FROM mut_us_probe ORDER BY seq");
+        query.func.connection = connection;
+        DataFrame back = provider.execute(query);
+        DateTimeColumn col = (DateTimeColumn) back.getColumn(0);
+        Assertions.assertEquals((double) expected[0], col.get(0), "query read-back lost datetime precision");
+        Assertions.assertEquals(789123L, Math.floorMod((long) (double) col.get(0), 1_000_000L),
+                "the µs fraction must survive the query read-back");
+        Assertions.assertEquals((double) expected[1], col.get(1), "pre-1970 µs read-back");
+        Assertions.assertEquals(1L, Math.floorMod((long) (double) col.get(1), 1_000_000L));
+        Assertions.assertTrue(col.isNone(2), "null datetime stays None through the read-back");
+        execDirect("DROP TABLE IF EXISTS mut_us_probe");
+    }
+
     @DisplayName("Loader-parity pin: identical d42 chunk through COPY and batch stores identical values (us timestamps, doubles, nulls)")
     @Test
     public void loaderParity_copyVsBatch_identical() throws Exception {

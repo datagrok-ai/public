@@ -85,7 +85,11 @@ public class MutationManager {
             loader = provider.createBulkLoader(connection, mutation);
         } catch (SQLException | RuntimeException e) {
             abort();
-            throw e;
+            // loader creation may fail after the auto-committed create leg — the note must ride along
+            Exception noted = withCreateLeftoverNote(e);
+            if (noted instanceof SQLException)
+                throw (SQLException) noted;
+            throw (RuntimeException) noted;
         }
     }
 
