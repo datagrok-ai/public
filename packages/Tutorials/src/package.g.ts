@@ -66,6 +66,14 @@ export async function _databasesDemo() : Promise<void> {
   await PackageFunctions._databasesDemo();
 }
 
+//name: domainDatabasesDemo
+//description: Domain databases turn plugin-shipped PostgreSQL schemas into platform entities with row/column security, audit history, and standard browsing UI. This demo walks through the classic Northwind database shipped with the Tutorials package: browsing schemas and tables, exploring orders with search and filters, opening an order with its line items and audit history, and querying the data from JavaScript.
+//meta.demoPath: Data Access | Domain Databases
+//meta.isDemoScript: True
+export async function _domainDatabasesDemo() : Promise<void> {
+  await PackageFunctions._domainDatabasesDemo();
+}
+
 //name: scatterPlotDemo
 //description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded, you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.
 //meta.demoPath: Visualization | General | Scatter Plot

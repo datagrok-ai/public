@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API
+
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
 * Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split
 * Demo app: Made the "Updating..." overlay clearly readable during demo loading — scoped CSS (`.demo-app-loading > .d4-update-shadow`) gives the overlay a solid translucent white background with a subtle backdrop blur and renders the label/loader at full opacity, so widget text underneath no longer bleeds through

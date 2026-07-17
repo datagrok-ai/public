@@ -1,0 +1,170 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "northwind",
+  "version": "1.0.0",
+  "tables": {
+    "categories": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Categories",
+      "description": "Product categories",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true, "friendlyName": "Category Name"},
+        "description": {"type": "string"}
+      }
+    },
+    "suppliers": {
+      "securityMode": "table",
+      "businessKey": ["company_name"],
+      "friendlyName": "Suppliers",
+      "description": "Companies supplying products",
+      "columns": {
+        "company_name": {"type": "string", "required": true, "unique": true, "isName": true, "friendlyName": "Company Name"},
+        "contact_name": {"type": "string", "friendlyName": "Contact Name"},
+        "contact_title": {"type": "string", "friendlyName": "Contact Title"},
+        "address": {"type": "string"},
+        "city": {"type": "string"},
+        "region": {"type": "string"},
+        "postal_code": {"type": "string", "friendlyName": "Postal Code"},
+        "country": {"type": "string"},
+        "phone": {"type": "string"},
+        "fax": {"type": "string"},
+        "home_page": {"type": "string", "friendlyName": "Home Page"}
+      }
+    },
+    "products": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Products",
+      "description": "Products for sale",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true, "friendlyName": "Product Name"},
+        "supplier_id": {"type": "ref", "ref": "suppliers", "onDelete": "setnull", "friendlyName": "Supplier"},
+        "category_id": {"type": "ref", "ref": "categories", "onDelete": "setnull", "friendlyName": "Category"},
+        "quantity_per_unit": {"type": "string", "friendlyName": "Quantity Per Unit"},
+        "unit_price": {"type": "float", "min": 0, "friendlyName": "Unit Price"},
+        "units_in_stock": {"type": "int", "min": 0, "friendlyName": "Units In Stock"},
+        "units_on_order": {"type": "int", "min": 0, "friendlyName": "Units On Order"},
+        "reorder_level": {"type": "int", "min": 0, "friendlyName": "Reorder Level"},
+        "discontinued": {"type": "bool"}
+      }
+    },
+    "customers": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Customers",
+      "description": "Customer companies",
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "Customer code, e.g. ALFKI"},
+        "company_name": {"type": "string", "required": true, "isName": true, "friendlyName": "Company Name"},
+        "contact_name": {"type": "string", "friendlyName": "Contact Name"},
+        "contact_title": {"type": "string", "friendlyName": "Contact Title"},
+        "address": {"type": "string"},
+        "city": {"type": "string"},
+        "region": {"type": "string"},
+        "postal_code": {"type": "string", "friendlyName": "Postal Code"},
+        "country": {"type": "string"},
+        "phone": {"type": "string"},
+        "fax": {"type": "string"}
+      }
+    },
+    "employees": {
+      "securityMode": "table",
+      "friendlyName": "Employees",
+      "description": "Sales staff",
+      "columns": {
+        "last_name": {"type": "string", "required": true, "isName": true, "friendlyName": "Last Name"},
+        "first_name": {"type": "string", "required": true, "friendlyName": "First Name"},
+        "title": {"type": "string"},
+        "title_of_courtesy": {"type": "string", "friendlyName": "Title Of Courtesy"},
+        "birth_date": {"type": "datetime", "friendlyName": "Birth Date"},
+        "hire_date": {"type": "datetime", "friendlyName": "Hire Date"},
+        "address": {"type": "string"},
+        "city": {"type": "string"},
+        "region": {"type": "string"},
+        "postal_code": {"type": "string", "friendlyName": "Postal Code"},
+        "country": {"type": "string"},
+        "home_phone": {"type": "string", "friendlyName": "Home Phone"},
+        "extension": {"type": "string"},
+        "notes": {"type": "string"},
+        "reports_to": {"type": "ref", "ref": "employees", "onDelete": "setnull", "friendlyName": "Reports To"}
+      }
+    },
+    "shippers": {
+      "securityMode": "table",
+      "businessKey": ["company_name"],
+      "friendlyName": "Shippers",
+      "description": "Shipping companies",
+      "columns": {
+        "company_name": {"type": "string", "required": true, "unique": true, "isName": true, "friendlyName": "Company Name"},
+        "phone": {"type": "string"}
+      }
+    },
+    "regions": {
+      "securityMode": "table",
+      "businessKey": ["name"],
+      "friendlyName": "Regions",
+      "description": "Sales regions",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true}
+      }
+    },
+    "territories": {
+      "securityMode": "table",
+      "businessKey": ["code"],
+      "friendlyName": "Territories",
+      "description": "Sales territories",
+      "columns": {
+        "code": {"type": "string", "required": true, "unique": true, "description": "Territory code, e.g. 01581"},
+        "name": {"type": "string", "required": true, "isName": true},
+        "region_id": {"type": "ref", "ref": "regions", "onDelete": "restrict", "required": true, "friendlyName": "Region"}
+      }
+    },
+    "employee_territories": {
+      "securityMode": "table",
+      "audit": false,
+      "friendlyName": "Employee Territories",
+      "description": "Employee-to-territory assignments",
+      "columns": {
+        "employee_id": {"type": "ref", "ref": "employees", "onDelete": "cascade", "required": true, "friendlyName": "Employee"},
+        "territory_id": {"type": "ref", "ref": "territories", "onDelete": "cascade", "required": true, "friendlyName": "Territory"}
+      }
+    },
+    "orders": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "businessKey": ["order_number"],
+      "friendlyName": "Orders",
+      "description": "Customer orders; individually shareable (row security mode)",
+      "columns": {
+        "order_number": {"type": "int", "required": true, "unique": true, "friendlyName": "Order Number"},
+        "customer_id": {"type": "ref", "ref": "customers", "onDelete": "restrict", "friendlyName": "Customer"},
+        "employee_id": {"type": "ref", "ref": "employees", "onDelete": "setnull", "friendlyName": "Employee"},
+        "order_date": {"type": "datetime", "friendlyName": "Order Date"},
+        "required_date": {"type": "datetime", "friendlyName": "Required Date"},
+        "shipped_date": {"type": "datetime", "friendlyName": "Shipped Date"},
+        "ship_via": {"type": "ref", "ref": "shippers", "onDelete": "setnull", "friendlyName": "Ship Via"},
+        "freight": {"type": "float", "min": 0},
+        "ship_name": {"type": "string", "isName": true, "friendlyName": "Ship Name"},
+        "ship_address": {"type": "string", "friendlyName": "Ship Address"},
+        "ship_city": {"type": "string", "friendlyName": "Ship City"},
+        "ship_region": {"type": "string", "friendlyName": "Ship Region"},
+        "ship_postal_code": {"type": "string", "friendlyName": "Ship Postal Code"},
+        "ship_country": {"type": "string", "friendlyName": "Ship Country"}
+      }
+    },
+    "order_details": {
+      "securityMode": "master",
+      "delegate": "order_id",
+      "friendlyName": "Order Details",
+      "description": "Order line items; security delegates to the order",
+      "columns": {
+        "order_id": {"type": "ref", "ref": "orders", "onDelete": "cascade", "required": true, "friendlyName": "Order"},
+        "product_id": {"type": "ref", "ref": "products", "onDelete": "restrict", "required": true, "friendlyName": "Product"},
+        "unit_price": {"type": "float", "required": true, "min": 0, "friendlyName": "Unit Price"},
+        "quantity": {"type": "int", "required": true, "min": 1},
+        "discount": {"type": "float", "min": 0, "max": 1}
+      }
+    }
+  }
+}
