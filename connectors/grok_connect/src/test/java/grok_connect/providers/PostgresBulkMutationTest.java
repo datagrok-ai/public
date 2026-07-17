@@ -103,6 +103,7 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         for (String table : new String[] {"mut_bulk_copy", "mut_bulk_batch", "mut_bulk_abort", "mut_bulk_bad",
                 "mut_aon", "mut_partial", "mut_bulk_ups", "mut_upd_key", "mut_dup", "mut_null_copy", "mut_null_batch",
                 "mut_nondeterm", "mut_ups_atomic", "mut_parity_copy", "mut_parity_batch", "mut_mismatch",
+                "mut_create_bulk", "mut_create_fail",
                 "mut_fx_forced_string_prefixes", "mut_fx_forced_string_squash",
                 "mut_fx_natural_string_categories", "mut_fx_natural_float64"})
             execDirect("DROP TABLE IF EXISTS " + table);
@@ -320,6 +321,70 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
             conn.close();
         }
         assertSpecialsAndCount("mut_bulk_batch");
+    }
+
+    // ---- batch create mode via the streamed transport (connector-writes WO-B8, §3.4.3) ----
+
+    private String columnType(String table, String column) throws SQLException {
+        return (String) queryCount("SELECT data_type FROM information_schema.columns WHERE table_name = '"
+                + table + "' AND column_name = '" + column + "'");
+    }
+
+    private boolean tableExists(String table) throws SQLException {
+        return ((Number) queryCount("SELECT count(*) FROM information_schema.tables WHERE table_name = '"
+                + table + "'")).intValue() > 0;
+    }
+
+    @DisplayName("mode=create + COPY: the table is derived and created before the load, 100k d42 rows land with §3.3 types")
+    @Test
+    public void createMode_streamedD42_100k() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_create_bulk");
+        InsertRows m = bulkInsert("mut_create_bulk");
+        m.mode = "create";
+        List<byte[]> chunks = flagshipChunks();
+        MutationManager manager = new MutationManager(header(m));
+        long t0 = System.nanoTime();
+        manager.start(); // creates the derived table, then preps COPY — before MUTATION READY would be sent
+        for (byte[] c : chunks)
+            manager.feed(c);
+        MutationResult result = manager.finish();
+        long ms = (System.nanoTime() - t0) / 1_000_000;
+        LOGGER.info("BULK d42 CREATE+COPY: {} rows in {} ms", ROWS, ms);
+        Assertions.assertEquals(ROWS, result.affectedRows);
+        assertSpecialsAndCount("mut_create_bulk");
+        // §3.3 PG types derived from the d42 dg types ('double' -> float8), all nullable, no keys
+        Assertions.assertEquals("integer", columnType("mut_create_bulk", "id"));
+        Assertions.assertEquals("bigint", columnType("mut_create_bulk", "big"));
+        Assertions.assertEquals("double precision", columnType("mut_create_bulk", "val"));
+        Assertions.assertEquals("boolean", columnType("mut_create_bulk", "active"));
+        Assertions.assertEquals("text", columnType("mut_create_bulk", "note"));
+        Assertions.assertEquals(0, ((Number) queryCount("SELECT count(*) FROM information_schema.table_constraints"
+                + " WHERE table_name = 'mut_create_bulk' AND constraint_type IN ('PRIMARY KEY', 'UNIQUE')")).intValue());
+    }
+
+    @DisplayName("mode=create + failed feed: the abort rolls the CREATE back with the transaction (PG transactional DDL)")
+    @Test
+    public void createMode_failedFeed_rollsBackCreate() throws Exception {
+        execDirect("DROP TABLE IF EXISTS mut_create_fail");
+        InsertRows m = insert("mut_create_fail", Arrays.asList("id", "note"), Arrays.asList("int", "string"));
+        m.mode = "create";
+        MutationManager manager = new MutationManager(header(m));
+        manager.start(); // the uncommitted CREATE is invisible to other connections until commit
+        byte[] bad = d42(Arrays.asList("id", "wrong"), Arrays.asList("int", "string"),
+                new String[] {"1", "a"});
+        Assertions.assertThrows(MutationValidationException.class, () -> manager.feed(bad));
+        manager.abort();
+        Assertions.assertFalse(tableExists("mut_create_fail")); // the CREATE was rolled back too
+    }
+
+    @DisplayName("mode=create on a supportsDdl=false provider is refused at header validation, before any connection")
+    @Test
+    public void createMode_onDdlLessProvider_refused() {
+        InsertRows m = insert("mut_create_cap", Arrays.asList("id"), Arrays.asList("int"));
+        m.mode = "create";
+        m.connection = new grok_connect.connectors_info.DataConnection();
+        m.connection.dataSource = "ClickHouse"; // supportsWrite/bulk via normalization, supportsDdl=false
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> new MutationManager(header(m)));
     }
 
     @DisplayName("Abort after a chunk rolls back to zero rows")

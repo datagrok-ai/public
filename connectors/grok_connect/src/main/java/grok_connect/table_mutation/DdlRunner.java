@@ -25,6 +25,42 @@ import org.slf4j.LoggerFactory;
 public class DdlRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DdlRunner.class);
 
+    /**
+     * Derives the CreateTable for {@code InsertRows.mode == "create"} (ARCHITECTURE §3.4.3): one
+     * nullable {@link ColumnSpec} per {@code columns[i]}/{@code columnTypes[i]}, no keys, no indexes,
+     * no ifNotExists — callers wanting keys run an explicit CreateTable first, then a plain bulk insert.
+     */
+    public static CreateTable deriveCreateTable(InsertRows m) {
+        if (m.columns == null || m.columns.isEmpty())
+            throw new MutationValidationException("InsertRows requires a non-empty columns list");
+        if (m.columnTypes == null || m.columnTypes.size() != m.columns.size())
+            throw new MutationValidationException("InsertRows requires columnTypes parallel to columns");
+        CreateTable create = new CreateTable();
+        create.tableName = m.tableName;
+        create.schema = m.schema;
+        create.catalog = m.catalog;
+        create.columns = new ArrayList<>();
+        for (int i = 0; i < m.columns.size(); i++) {
+            ColumnSpec c = new ColumnSpec();
+            c.name = m.columns.get(i);
+            c.type = dgScalarType(m.columnTypes.get(i));
+            create.columns.add(c);
+        }
+        return create;
+    }
+
+    /** InsertRows carries d42 column types, where floats are 'double'/'num' (serialization.Types); ColumnSpec uses 'float' (§3.3). */
+    private static String dgScalarType(String columnType) {
+        return "double".equals(columnType) || "num".equals(columnType) ? "float" : columnType;
+    }
+
+    /** Appended to load errors in create mode on a dialect whose DDL auto-commits (§3.4.3 transaction honesty). */
+    public static String createLeftoverNote(JdbcDataProvider provider, InsertRows m) {
+        return "; create mode: table " + provider.mutationTableName(m)
+                + " was already created and remains empty because DDL is not transactional on "
+                + provider.descriptor.type;
+    }
+
     /** Exact per-provider statements for a DDL op — the single emission path (the WO-B6 emitters). */
     public static List<String> statements(JdbcDataProvider provider, DdlMutation m) {
         if (m instanceof CreateTable)

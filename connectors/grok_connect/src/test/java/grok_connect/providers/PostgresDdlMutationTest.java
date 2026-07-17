@@ -95,7 +95,7 @@ class PostgresDdlMutationTest extends ContainerizedProviderBaseTest {
     public void dropScratchTables() throws SQLException {
         // ddl_child first: it may hold an FK into ddl_life
         for (String table : new String[] {"ddl_child", "ddl_life", "ddl_dry_drop", "ddl_confirm", "ddl_nn",
-                "ddl_req", "ddl_req_empty", "ddl_ct", "ddl_tx", "ddl_dml"})
+                "ddl_req", "ddl_req_empty", "ddl_ct", "ddl_tx", "ddl_dml", "ct_inline", "ct_dry", "ct_dup", "ct_fail"})
             execDirect("DROP TABLE IF EXISTS " + table);
     }
 
@@ -366,6 +366,112 @@ class PostgresDdlMutationTest extends ContainerizedProviderBaseTest {
         MutationBatch withCreate = new MutationBatch();
         withCreate.operations = Collections.singletonList(createMode);
         Assertions.assertThrows(MutationValidationException.class, () -> runMutation(withCreate));
+
+        // the refusal recurses into nested batches — a DDL member cannot hide one level down
+        MutationBatch inner = new MutationBatch();
+        inner.operations = Collections.singletonList(dropTable("ddl_life", true));
+        MutationBatch nested = new MutationBatch();
+        nested.operations = Arrays.asList(
+                insertRows("ddl_life", Arrays.asList("id"), Arrays.asList("int"),
+                        Collections.singletonList(Arrays.asList((Object) 1.0d))),
+                inner);
+        Assertions.assertThrows(MutationValidationException.class, () -> runMutation(nested));
+    }
+
+    // ---- batch create mode (connector-writes WO-B8, ARCHITECTURE §3.4.3) ----
+
+    private InsertRows createMode(String table, List<String> columns, List<String> columnTypes, List<List<Object>> rows) {
+        InsertRows m = insertRows(table, columns, columnTypes, rows);
+        m.mode = "create";
+        return m;
+    }
+
+    @DisplayName("mode=create inline: derives an all-nullable key-less table with the exact §3.3 PG types, then loads value-for-value")
+    @Test
+    public void createMode_inline_typesAndValues() throws Exception {
+        InsertRows m = createMode("ct_inline",
+                Arrays.asList("id", "big_id", "val", "active", "note", "created"),
+                Arrays.asList("int", "bigint", "double", "bool", "string", "datetime"),
+                Arrays.asList(
+                        // values shaped exactly as Gson delivers them: numbers as Double, big bigints as String
+                        Arrays.asList((Object) 1.0d, "9007199254740995", 1.5d, true, "alpha", "2026-07-05T12:34:56.789Z"),
+                        Arrays.asList((Object) 2.0d, null, null, false, null, null),
+                        Arrays.asList((Object) 3.0d, 42.0d, -2.25d, true, "gamma", "2026-01-01T00:00:00.000Z")));
+        MutationResult result = runMutation(m);
+        Assertions.assertNull(result.errorMessage);
+        Assertions.assertEquals(3, result.affectedRows);
+        // §3.3 PG types via dgToNativeType ('double'/'num' d42 types map to the 'float' key); all nullable
+        Assertions.assertArrayEquals(new Object[] {"integer", "YES"}, columnInfo("ct_inline", "id"));
+        Assertions.assertArrayEquals(new Object[] {"bigint", "YES"}, columnInfo("ct_inline", "big_id"));
+        Assertions.assertArrayEquals(new Object[] {"double precision", "YES"}, columnInfo("ct_inline", "val"));
+        Assertions.assertArrayEquals(new Object[] {"boolean", "YES"}, columnInfo("ct_inline", "active"));
+        Assertions.assertArrayEquals(new Object[] {"text", "YES"}, columnInfo("ct_inline", "note"));
+        Assertions.assertArrayEquals(new Object[] {"timestamp without time zone", "YES"}, columnInfo("ct_inline", "created"));
+        // no keys, no indexes on the derived table (§3.4.3 — explicit ddl().createTable first for keys)
+        Assertions.assertTrue(queryDirect("SELECT 1 FROM information_schema.table_constraints"
+                + " WHERE table_name = 'ct_inline' AND constraint_type IN ('PRIMARY KEY', 'UNIQUE')").isEmpty());
+        List<Object[]> rows = queryDirect("SELECT big_id, val, active, note FROM ct_inline ORDER BY id");
+        Assertions.assertEquals(3, rows.size());
+        Assertions.assertArrayEquals(new Object[] {9007199254740995L, 1.5d, true, "alpha"}, rows.get(0));
+        Assertions.assertArrayEquals(new Object[] {null, null, false, null}, rows.get(1));
+        Assertions.assertArrayEquals(new Object[] {42L, -2.25d, true, "gamma"}, rows.get(2));
+    }
+
+    @DisplayName("mode=create dryRun: CREATE TABLE + insert shape returned inline, transactionalDdl honest, nothing created")
+    @Test
+    public void createMode_dryRun_noTable() throws Exception {
+        InsertRows m = createMode("ct_dry", Arrays.asList("id", "note"), Arrays.asList("int", "string"), null);
+        m.dryRun = true; // rows == null && bulk == false — row validation is skipped under dryRun (§3.4.3)
+        MutationResult result = runMutation(m);
+        Assertions.assertNull(result.errorMessage);
+        Assertions.assertEquals(Arrays.asList(
+                "CREATE TABLE \"ct_dry\" (\"id\" int, \"note\" text)",
+                "INSERT INTO \"ct_dry\" (\"id\", \"note\") VALUES (?, ?)"), result.plan.statements);
+        Assertions.assertEquals(Boolean.TRUE, result.plan.transactionalDdl);
+        Assertions.assertFalse(tableExists("ct_dry"));
+    }
+
+    @DisplayName("mode=create against an existing table: the DB's duplicate-table error surfaces as a structured db-error, seed intact")
+    @Test
+    public void createMode_duplicateTable_dbError() throws Exception {
+        execDirect("CREATE TABLE ct_dup (id int)");
+        execDirect("INSERT INTO ct_dup VALUES (1)");
+        InsertRows m = createMode("ct_dup", Arrays.asList("id"), Arrays.asList("int"),
+                Collections.singletonList(Arrays.asList((Object) 2.0d)));
+        MutationResult result = runMutation(m);
+        Assertions.assertNotNull(result.errorMessage);
+        Assertions.assertEquals("db-error", result.errors.get(0).code); // 42P07 has no per-row mapping
+        Assertions.assertEquals(1, countDirect("ct_dup")); // pre-existing table untouched, nothing inserted
+    }
+
+    @DisplayName("Transaction honesty: a failed load rolls the CREATE back on PG (transactional DDL) — no table remains")
+    @Test
+    public void createMode_failedLoad_rollsBackCreate() throws Exception {
+        // NUL in a text value makes the INSERT itself fail server-side, after a successful CREATE
+        InsertRows m = createMode("ct_fail", Arrays.asList("id", "note"), Arrays.asList("int", "string"),
+                Arrays.asList(
+                        Arrays.asList((Object) 1.0d, "ok"),
+                        Arrays.asList((Object) 2.0d, "bad\0value")));
+        MutationResult result = runMutation(m);
+        Assertions.assertNotNull(result.errorMessage);
+        Assertions.assertEquals(1, result.errorCount);
+        Assertions.assertFalse(tableExists("ct_fail")); // the successful CREATE was rolled back too
+    }
+
+    @DisplayName("Capability gate: mode=create on a supportsDdl=false provider is refused, for execute and dryRun alike")
+    @Test
+    public void createMode_onDdlLessProvider_capabilityRefused() {
+        InsertRows m = createMode("ct_cap", Arrays.asList("id"), Arrays.asList("int"),
+                Collections.singletonList(Arrays.asList((Object) 1.0d)));
+        m.connection = connection;
+        FuncCall call = new FuncCall();
+        call.func = m;
+        call.options = new HashMap<>();
+        Assertions.assertThrows(UnsupportedOperationException.class,
+                () -> MutationRunner.execute(new ClickHouseProvider(), call));
+        m.dryRun = true; // dryRun passes the SAME capability gates (§3.4.2)
+        Assertions.assertThrows(UnsupportedOperationException.class,
+                () -> MutationRunner.execute(new ClickHouseProvider(), call));
     }
 
     @DisplayName("DML dryRun: exact statements returned, nothing executed (single op and batch)")

@@ -46,14 +46,19 @@ public class MutationRunner {
             refuseSingleOpMembers(operations); // DDL and mode=create execute one operation per request (§3.4.1)
             result.perStatement = new ArrayList<>();
         }
-        if (mutation instanceof DdlMutation && !provider.descriptor.supportsDdl)
+        boolean createMode = mutation instanceof InsertRows && "create".equals(((InsertRows) mutation).mode);
+        // dryRun passes the SAME capability gates as a real run (§3.4.2), so the gate precedes the dryRun branch
+        if ((mutation instanceof DdlMutation || createMode) && !provider.descriptor.supportsDdl)
             throw new UnsupportedOperationException("DDL is not supported for provider " + provider.descriptor.type);
         if (mutation.dryRun && !(mutation instanceof DdlMutation)) {
-            // DML dryRun: statement emission only — no binding, no pre-checks, no connection (§3.4.2)
+            // DML dryRun: statement emission only — no binding, no pre-checks, no connection (§3.4.2);
+            // create mode travels inline here too (bulk=false, rows=null — row validation is skipped, §3.4.3)
             result.plan = new MutationPlan();
             result.plan.statements = new ArrayList<>();
             for (TableMutation operation : operations)
                 collectDmlStatements(provider, operation, result.plan.statements);
+            if (createMode)
+                result.plan.transactionalDdl = provider.descriptor.supportsTransactionalDdl;
             return result;
         }
         Connection connection = null;
@@ -166,6 +171,7 @@ public class MutationRunner {
             return;
         }
         if (m instanceof UpsertRows) {
+            requireUpsertSupport(provider);
             statements.add(provider.upsertSql((UpsertRows) m, 1));
             return;
         }
@@ -178,10 +184,16 @@ public class MutationRunner {
                     statements.add(provider.insertSql(insert));
                     return;
                 case "upsert":
+                    requireUpsertSupport(provider);
                     statements.add(provider.upsertSql(new UpsertRows(insert), 1));
                     return;
                 case "update":
                     statements.add(provider.updateByKeySql(insert));
+                    return;
+                case "create":
+                    // the CREATE statements + the insert shape (§3.4.3) — same emitters as an explicit CreateTable
+                    statements.addAll(provider.createTableSql(DdlRunner.deriveCreateTable(insert)));
+                    statements.add(provider.insertSql(insert));
                     return;
                 default:
                     throw new MutationValidationException("Unsupported insert mode: " + insert.mode);
@@ -190,21 +202,68 @@ public class MutationRunner {
         throw new MutationValidationException("Unsupported mutation type: " + m.type);
     }
 
+    /** dryRun passes the same capability gates as a real run (§3.4.2) — the descriptor flag, not the emitter, is the authority. */
+    private static void requireUpsertSupport(JdbcDataProvider provider) {
+        if (!provider.descriptor.supportsUpsert)
+            throw new UnsupportedOperationException("Upsert is not supported for provider " + provider.descriptor.type);
+    }
+
     private static int executeInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
         if (GrokConnectUtil.isEmpty(m.mode)) // hand-built payloads may omit it; the contract default is insert
             m.mode = "insert";
-        // an InsertRows carrying mode=upsert/update routes to the matching engine (bulk parity, WO-6);
+        // an InsertRows carrying mode=upsert/update/create routes to the matching engine (bulk parity, WO-6);
         // any other mode fails loud rather than silently doing a plain insert
         switch (m.mode) {
             case "insert":
-                break;
+                return executePlainInsert(provider, connection, m, mainCallId);
             case "upsert":
                 return executeUpsert(provider, connection, m instanceof UpsertRows ? (UpsertRows) m : new UpsertRows(m), mainCallId);
             case "update":
                 return executeUpdateByKey(provider, connection, m, mainCallId);
+            case "create":
+                return executeCreate(provider, connection, m, mainCallId);
             default:
                 throw new MutationValidationException("Unsupported insert mode: " + m.mode);
         }
+    }
+
+    /**
+     * mode=create (ARCHITECTURE §3.4.3): derives an all-nullable key-less CreateTable from
+     * columns/columnTypes, creates it on the same connection through {@link DdlRunner} (the single
+     * emission path — the same emitters an explicit CreateTable uses), then runs the plain insert
+     * engine. Payload validation runs BEFORE the CREATE so a bad payload never leaves a table behind.
+     * On transactional-DDL dialects a failed load rolls the CREATE back with the transaction; elsewhere
+     * the created table remains, empty — reported honestly in the error message.
+     */
+    private static int executeCreate(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
+        CreateTable create = DdlRunner.deriveCreateTable(m); // validates columns/columnTypes before any DDL
+        if (m.bulk && m.rows == null) // the streamed create path runs through MutationManager, not /mutate
+            throw new UnsupportedOperationException("Bulk insert streaming is not supported yet");
+        if (m.rows == null || m.rows.isEmpty())
+            throw new MutationValidationException("InsertRows requires a non-empty rows list");
+        DdlRunner.execute(provider, connection, create, mainCallId); // additive — never destructive, no confirm
+        try {
+            return executePlainInsert(provider, connection, m, mainCallId);
+        } catch (SQLException e) {
+            throw withCreateLeftoverNote(provider, m, e);
+        } catch (MutationValidationException e) {
+            if (provider.descriptor.supportsTransactionalDdl)
+                throw e;
+            throw new MutationValidationException(e.getMessage() + DdlRunner.createLeftoverNote(provider, m), e.refusals);
+        }
+    }
+
+    /** §3.4.3 honesty: on a non-transactional-DDL dialect the CREATE has already committed — a failed load leaves the empty table behind, and the error must say so. */
+    private static SQLException withCreateLeftoverNote(JdbcDataProvider provider, InsertRows m, SQLException e) {
+        if (provider.descriptor.supportsTransactionalDdl)
+            return e;
+        SQLException wrapped = new SQLException(e.getMessage() + DdlRunner.createLeftoverNote(provider, m),
+                e.getSQLState(), e.getErrorCode(), e);
+        wrapped.setNextException(e); // keep driver-specific chains (server-error walkers) intact
+        return wrapped;
+    }
+
+    private static int executePlainInsert(JdbcDataProvider provider, Connection connection, InsertRows m, String mainCallId) throws SQLException {
         if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
             throw new UnsupportedOperationException("Bulk insert streaming is not supported yet");
         String sql = provider.insertSql(m);
@@ -241,8 +300,7 @@ public class MutationRunner {
     }
 
     private static int executeUpsert(JdbcDataProvider provider, Connection connection, UpsertRows m, String mainCallId) throws SQLException {
-        if (!provider.descriptor.supportsUpsert)
-            throw new UnsupportedOperationException("Upsert is not supported for provider " + provider.descriptor.type);
+        requireUpsertSupport(provider);
         if (m.bulk && m.rows == null) // WO-5 adds the streamed payload
             throw new UnsupportedOperationException("Bulk upsert streaming is not supported yet");
         if (m.columns == null || m.columns.isEmpty())

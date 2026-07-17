@@ -30,9 +30,11 @@ public class MutationManager {
 
     public final JdbcDataProvider provider;
     private final InsertRows mutation;
+    private final String mainCallId;
     private Connection connection;
     private BulkLoader loader;
     private boolean finished;
+    private String createLeftoverNote; // §3.4.3 honesty: set once the create leg ran on a non-transactional-DDL dialect
 
     public MutationManager(String message) {
         FuncCall call = GrokConnect.gson.fromJson(message, FuncCall.class);
@@ -44,6 +46,7 @@ public class MutationManager {
         call.afterDeserialization();
         if (!(call.func instanceof InsertRows))
             throw new MutationValidationException("Bulk mutation requires an InsertRows func, got: " + call.func.type);
+        mainCallId = (String) call.aux.get("mainCallId");
         mutation = (InsertRows) call.func;
         if (!mutation.bulk)
             throw new MutationValidationException("Bulk mutation header must set bulk=true");
@@ -59,15 +62,26 @@ public class MutationManager {
             throw new MutationValidationException("Unknown data source: " + mutation.connection.dataSource);
         if (!provider.descriptor.supportsBulkInsert)
             throw new UnsupportedOperationException("Bulk insert is not supported for provider " + provider.descriptor.type);
+        if ("create".equals(mutation.mode) && !provider.descriptor.supportsDdl)
+            throw new UnsupportedOperationException("DDL is not supported for provider " + provider.descriptor.type);
     }
 
-    /** Opens the connection, starts the transaction and creates the loader. */
+    /** Opens the connection, starts the transaction, runs the mode=create leg (§3.4.3) and creates the loader. */
     public void start() throws SQLException, GrokConnectException {
         if (GrokConnectUtil.isNotEmpty(mutation.catalog))
             mutation.connection.parameters.put("db", mutation.catalog);
         try {
             connection = provider.getConnection(mutation.connection);
             provider.configureAutoCommit(connection);
+            if ("create".equals(mutation.mode)) {
+                // mode=create (§3.4.3): create the derived all-nullable table BEFORE the loader prepares its
+                // INSERT/COPY (and before MUTATION READY); post-creation the load is a plain insert, so the
+                // provider's loader routing (the Postgres COPY guard) needs no create case.
+                DdlRunner.execute(provider, connection, DdlRunner.deriveCreateTable(mutation), mainCallId);
+                if (!provider.descriptor.supportsTransactionalDdl)
+                    createLeftoverNote = DdlRunner.createLeftoverNote(provider, mutation);
+                mutation.mode = "insert";
+            }
             loader = provider.createBulkLoader(connection, mutation);
         } catch (SQLException | RuntimeException e) {
             abort();
@@ -78,9 +92,13 @@ public class MutationManager {
     public void feed(byte[] bytes) throws Exception {
         if (finished || loader == null)
             throw new MutationValidationException("Mutation session is not active");
-        DataFrame chunk = DataFrame.fromByteArray(bytes);
-        validateChunkSchema(chunk);
-        loader.feed(chunk);
+        try {
+            DataFrame chunk = DataFrame.fromByteArray(bytes);
+            validateChunkSchema(chunk);
+            loader.feed(chunk);
+        } catch (Exception e) {
+            throw withCreateLeftoverNote(e);
+        }
     }
 
     /**
@@ -120,17 +138,37 @@ public class MutationManager {
         try {
             result = loader.finish();
             boolean rollback = mutation.allOrNothing && result.errorCount != null && result.errorCount > 0;
-            if (rollback)
+            if (rollback) {
                 provider.rollbackQuietly(connection);
+                if (createLeftoverNote != null) // the DML rolled back, but the auto-committed CREATE did not
+                    result.errorMessage = (result.errorMessage == null
+                            ? "Bulk load failed and was rolled back" : result.errorMessage) + createLeftoverNote;
+            }
             else if (connection != null && !connection.getAutoCommit())
                 connection.commit();
         } catch (Exception e) {
             abort();
-            throw e;
+            throw withCreateLeftoverNote(e);
         }
         finished = true;
         closeConnectionQuietly();
         return result;
+    }
+
+    /** §3.4.3 honesty: after the create leg on a non-transactional-DDL dialect, a load failure must say the table remains. */
+    private Exception withCreateLeftoverNote(Exception e) {
+        if (createLeftoverNote == null)
+            return e;
+        if (e instanceof MutationValidationException)
+            return new MutationValidationException(e.getMessage() + createLeftoverNote,
+                    ((MutationValidationException) e).refusals);
+        if (e instanceof SQLException) {
+            SQLException s = (SQLException) e;
+            SQLException wrapped = new SQLException(s.getMessage() + createLeftoverNote, s.getSQLState(), s.getErrorCode(), s);
+            wrapped.setNextException(s); // keep driver-specific chains (server-error walkers) intact
+            return wrapped;
+        }
+        return new RuntimeException(e.getMessage() + createLeftoverNote, e);
     }
 
     /** Rolls back and releases everything; idempotent and never throws. */

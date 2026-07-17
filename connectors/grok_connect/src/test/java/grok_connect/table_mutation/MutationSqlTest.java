@@ -247,6 +247,37 @@ public class MutationSqlTest {
         Assertions.assertDoesNotThrow(() -> postgres.deleteSql(d, new ArrayList<>()));
     }
 
+    @DisplayName("dryRun upsert consults descriptor.supportsUpsert — the same capability gate as a real run (§3.4.2)")
+    @Test
+    public void dryRunUpsert_consultsSupportsUpsert() throws Exception {
+        UpsertRows m = new UpsertRows();
+        m.tableName = "orders";
+        m.columns = Arrays.asList("id", "note");
+        m.columnTypes = Arrays.asList("int", "string");
+        m.matchKeys = Arrays.asList("id");
+        m.dryRun = true;
+        m.connection = new DataConnection();
+        FuncCall call = new FuncCall();
+        call.func = m;
+        call.options = new HashMap<>();
+        // positive control: the stock Postgres descriptor emits the plan
+        Assertions.assertEquals(1, MutationRunner.execute(postgres, call).plan.statements.size());
+
+        PostgresDataProvider noUpsert = new PostgresDataProvider();
+        noUpsert.descriptor.supportsUpsert = false; // the emitter still works — the descriptor flag must be the authority
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> MutationRunner.execute(noUpsert, call));
+
+        InsertRows viaMode = insertOrders();
+        viaMode.matchKeys = Arrays.asList("id");
+        viaMode.mode = "upsert";
+        viaMode.dryRun = true;
+        viaMode.connection = new DataConnection();
+        FuncCall modeCall = new FuncCall();
+        modeCall.func = viaMode;
+        modeCall.options = new HashMap<>();
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> MutationRunner.execute(noUpsert, modeCall));
+    }
+
     @DisplayName("QueryManager refuses mutation FuncCalls (dryRun/streaming path exclusion)")
     @Test
     public void queryManager_refusesMutations() {
