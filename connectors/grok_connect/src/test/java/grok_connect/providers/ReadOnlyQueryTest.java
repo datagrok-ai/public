@@ -189,6 +189,19 @@ class ReadOnlyQueryTest extends ContainerizedProviderBaseTest {
         execDirect("DELETE FROM ro_probe");
     }
 
+    @DisplayName("auditRawWrites (flag ON): a result-set-returning write (INSERT ... RETURNING) is detected")
+    @Test
+    public void auditFlag_insertReturningDetected() throws Exception {
+        execDirect("DELETE FROM ro_probe");
+        FuncCall call = queryCall("INSERT INTO ro_probe (id) VALUES (11) RETURNING id", DataProvider.AUDIT_RAW_WRITES);
+        DataFrame result = provider.execute(call);
+        Assertions.assertEquals(1, result.rowCount, "RETURNING must yield the inserted row");
+        Assertions.assertEquals(1, countProbe(), "the write must land (flag ON preserves behavior)");
+        Assertions.assertEquals(Boolean.TRUE, call.aux.get(DataProvider.RAW_WRITE_DETECTED),
+                "a result-set-returning write must still be counted by the census");
+        execDirect("DELETE FROM ro_probe");
+    }
+
     @DisplayName("auditRawWrites (flag ON): a SELECT is not flagged")
     @Test
     public void auditFlag_selectNotDetected() throws Exception {

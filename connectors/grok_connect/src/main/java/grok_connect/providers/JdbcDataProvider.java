@@ -292,6 +292,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
         }
 
+        // Census completeness (WO-B13 follow-up): result-set-returning writes (INSERT ... RETURNING,
+        // row-returning procedures) never hit the no-result-set detector in executeStatement — reuse
+        // the classifier so they are still counted while allowRawWrites is ON.
+        if (resultSet != null && optionEnabled(queryRun, DataProvider.AUDIT_RAW_WRITES)
+                && !StatementClassifier.isRead(query, descriptor.commentStart))
+            queryRun.aux.put(DataProvider.RAW_WRITE_DETECTED, true);
+
         return resultSet;
     }
 
