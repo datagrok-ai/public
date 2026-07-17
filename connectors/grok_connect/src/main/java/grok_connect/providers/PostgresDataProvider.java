@@ -39,6 +39,10 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.supportsGeneratedKeys = true;
         descriptor.supportsDdl = true;
         descriptor.supportsTransactionalDdl = true;
+        // pgjdbc maps setReadOnly(true) to READ ONLY transaction characteristics (the
+        // default_transaction_read_only semantics) — real enforcement, including writes hidden in
+        // CTEs the first-keyword classifier cannot see (connector-writes WO-B13, §6.2).
+        descriptor.readOnlySessionEnforced = true;
         // Seeded from the domain-schemas generator DomainDdlGenerator._sqlTypes (scalar subset) + bigint,
         // so an externally created table and a domain table get identical PG types (ARCHITECTURE §3.3).
         descriptor.dgToNativeType = new HashMap<String, String>() {{

@@ -100,6 +100,7 @@ public class GrokConnect {
                 long startTime = System.currentTimeMillis();
                 DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
                 DataFrame dataFrame = provider.execute(call);
+                result.rawWriteDetected = Boolean.TRUE.equals(call.aux.get(DataProvider.RAW_WRITE_DETECTED));
                 double execTime = (System.currentTimeMillis() - startTime) / 1000.0;
                 result.blob = dataFrame.toByteArray();
                 result.blobLength = result.blob.length;

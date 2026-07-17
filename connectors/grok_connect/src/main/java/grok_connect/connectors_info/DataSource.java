@@ -33,6 +33,10 @@ public class DataSource
     // multi-statement DDL or create-mode load cannot roll its DDL back (connector-writes WO-B6).
     public boolean supportsTransactionalDdl = false;
     public boolean supportsGeneratedKeys = false;
+    // Whether the driver-level read-only session (Connection.setReadOnly) actually rejects writes on
+    // this provider (real enforcement) or is advisory only — the honesty declaration of the §6.2
+    // read-only query policy (connector-writes WO-B13). Serialized into /conn.
+    public boolean readOnlySessionEnforced = false;
     /**
      * dg scalar type (string|int|bigint|float|bool|datetime) → exact native type emitted into
      * CREATE TABLE / ADD COLUMN / ALTER COLUMN TYPE. Hand-authored per dialect — NOT an inversion of

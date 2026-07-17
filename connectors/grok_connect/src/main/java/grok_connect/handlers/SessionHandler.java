@@ -205,7 +205,10 @@ public class SessionHandler {
             session.getRemote().sendStringByFuture(String.format("DATAFRAME PART SIZE: %d", bytes.length));
         }
         else {
-            session.getRemote().sendStringByFuture(String.format("COMPLETED %s", dfNumber));
+            // The RAW_WRITE token carries the §6.2 post-hoc raw-write detection (WO-B13) to Datlas,
+            // which audit-logs it; older servers only read the chunk-count token and ignore the rest.
+            String rawWrite = queryManager != null && queryManager.isRawWriteDetected() ? " RAW_WRITE" : "";
+            session.getRemote().sendStringByFuture(String.format("COMPLETED %s%s", dfNumber, rawWrite));
         }
     }
 

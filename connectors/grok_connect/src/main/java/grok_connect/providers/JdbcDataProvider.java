@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DataQuery;
@@ -55,6 +56,7 @@ import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
     public static Pattern UUID_REGEX = Pattern.compile("^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$");
+    private static final Gson REFUSAL_GSON = new Gson();
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
@@ -217,8 +219,9 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public ResultSet executeQuery(String query, FuncCall queryRun,
                                   Connection connection, int timeout, int fetchSize) throws SQLException {
+        if (isReadOnly(queryRun))
+            checkReadOnlyStatement(query);
         DataQuery dataQuery = queryRun.func;
-        String mainCallId = (String) queryRun.aux.get("mainCallId");
 
         ResultSet resultSet;
         if (dataQuery.inputParamsCount() > 0) {
@@ -276,32 +279,92 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                 }
                 logger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
-                resultSet = executeStatement(statement, timeout, mainCallId, fetchSize);
+                resultSet = executeStatement(statement, queryRun, timeout, fetchSize);
             } else {
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating manually SQL query parameters...");
                 query = manualQueryInterpolation(query, dataQuery);
                 logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters");
                 logger.info("Query before execution: {}", query);
-                resultSet = executeStatement(connection.prepareStatement(query), timeout, mainCallId, fetchSize);
+                resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
             }
         } else {
             logger.info("Query before execution: {}", query);
-            resultSet = executeStatement(connection.prepareStatement(query), timeout, mainCallId, fetchSize);
+            resultSet = executeStatement(connection.prepareStatement(query), queryRun, timeout, fetchSize);
         }
 
         return resultSet;
     }
 
-    private ResultSet executeStatement(PreparedStatement statement, int timeout, String mainCallId,
+    private ResultSet executeStatement(PreparedStatement statement, FuncCall queryRun, int timeout,
                                        int fetchSize) throws SQLException {
+        String mainCallId = (String) queryRun.aux.get("mainCallId");
         queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
         logger.debug(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing Statement...");
         statement.setFetchSize(fetchSize);
         ResultSet resultSet = executeStatement(statement);
+        // §6.2 deprecation-window telemetry (WO-B13): while allowRawWrites is ON, Datlas asks for
+        // post-hoc detection — a statement that completed without a result set but with an update
+        // count wrote data (or ran DDL); recorded on the call for the Datlas audit event.
+        if (resultSet == null && optionEnabled(queryRun, DataProvider.AUDIT_RAW_WRITES)) {
+            try {
+                if (statement.getUpdateCount() != -1)
+                    queryRun.aux.put(DataProvider.RAW_WRITE_DETECTED, true);
+            } catch (SQLException e) {
+                logger.debug("getUpdateCount is not supported for {}", descriptor.type);
+            }
+        }
         logger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Executed Statement");
         queryMonitor.removeStatement(mainCallId);
         return resultSet;
+    }
+
+    /** True when Datlas requested the §6.2 read-only query policy for this call (allowRawWrites
+     *  off and the caller holds no fine write privilege on the connection). */
+    protected static boolean isReadOnly(FuncCall queryRun) {
+        return optionEnabled(queryRun, DataProvider.READ_ONLY);
+    }
+
+    private static boolean optionEnabled(FuncCall queryRun, String key) {
+        Object value = queryRun == null || queryRun.options == null ? null : queryRun.options.get(key);
+        return Boolean.TRUE.equals(value) || "true".equals(value);
+    }
+
+    /**
+     * Refuses a statement that does not classify as a read (WO-B13, §6.2): a conservative
+     * read-whitelist on the first keyword; batch mode passes every statement here separately.
+     * The refusal is a structured JSON error ({@code {error: 'read-only', message}}) carried in
+     * the SQLException message, so it survives both the /query and the streaming error channels
+     * intact. The driver read-only session ({@link #applyReadOnlySession}) backstops whatever
+     * the classifier lets through (e.g. writes hidden inside CTEs).
+     */
+    protected void checkReadOnlyStatement(String query) throws SQLException {
+        if (StatementClassifier.isRead(query, descriptor.commentStart))
+            return;
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", "read-only");
+        error.put("message", "This connection is read-only for the caller: the statement does not classify as a read, "
+                + "the deployment's allowRawWrites flag is off, and the caller holds none of the fine write privileges "
+                + "(DataConnection.AddRows/ChangeValues/RemoveRows/TruncateTable). "
+                + "Use structured table mutations, or ask the connection owner to grant a write privilege.");
+        throw new SQLException(REFUSAL_GSON.toJson(error));
+    }
+
+    /**
+     * Best-effort driver read-only session for the §6.2 policy, applied before any statement of a
+     * read-only call executes. The default asks the driver via {@link Connection#setReadOnly};
+     * whether that actually rejects writes is declared per provider in
+     * {@code DataSource.readOnlySessionEnforced} (advisory otherwise — the statement classifier
+     * remains the only guard). Never throws: a driver that rejects setReadOnly degrades to
+     * advisory with a warning. HikariCP resets the readOnly flag when the connection returns to
+     * the pool, so later borrowers (e.g. sanctioned mutations) are unaffected.
+     */
+    public void applyReadOnlySession(Connection connection) {
+        try {
+            connection.setReadOnly(true);
+        } catch (SQLException e) {
+            logger.warn("setReadOnly is not supported for {} - read-only enforcement is advisory", descriptor.type, e);
+        }
     }
 
     protected ResultSet executeStatement(PreparedStatement statement) throws SQLException {
@@ -443,6 +506,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+        if (isReadOnly(queryRun))
+            applyReadOnlySession(connection);
         configureAutoCommit(connection);
         try {
             // Remove header lines

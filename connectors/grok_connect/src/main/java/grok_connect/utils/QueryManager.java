@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.handlers.QueryHandler;
 import grok_connect.log.EventType;
@@ -154,6 +155,12 @@ public class QueryManager {
 
     public FuncCall getQuery() {
         return query;
+    }
+
+    /** True when the §6.2 post-hoc detector flagged this call (an update count was observed on a
+     *  no-result-set statement while allowRawWrites auditing was requested — WO-B13). */
+    public boolean isRawWriteDetected() {
+        return Boolean.TRUE.equals(query.aux.get(DataProvider.RAW_WRITE_DETECTED));
     }
 
     private void changeFetchSize(DataFrame df) {
