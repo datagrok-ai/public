@@ -1031,8 +1031,17 @@ public abstract class JdbcDataProvider extends DataProvider {
             case "bool":
                 return boolDdlLiteral(value.trim().equalsIgnoreCase("true"));
             default: // string, datetime
-                return "'" + value.replace("'", "''") + "'";
+                return "'" + stringLiteralEscape(value) + "'";
         }
+    }
+
+    /**
+     * Escapes a value for embedding in a single-quoted SQL literal. Quote doubling is enough for
+     * dialects with standard-conforming strings; MySQL/MariaDB treat backslash as an escape character
+     * by default and override to double it too.
+     */
+    protected String stringLiteralEscape(String value) {
+        return value.replace("'", "''");
     }
 
     /** Boolean DDL literal; dialects without a boolean type (MS SQL bit, Oracle number(1)) emit 1/0. */

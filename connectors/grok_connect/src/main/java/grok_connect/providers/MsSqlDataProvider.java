@@ -120,9 +120,18 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         return "EXEC sp_rename '" + object + "', '" + m.newName + "', 'COLUMN'";
     }
 
+    /**
+     * T-SQL ALTER COLUMN restates the full column definition, so omitting nullability would silently
+     * turn a NOT NULL column nullable. Hence changeType requires an explicit {@code nullable} and
+     * restates it.
+     */
     @Override
     protected String alterChangeTypeSql(AlterTable m, String table) {
-        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName) + " " + nativeType(m.newType);
+        if (m.nullable == null)
+            throw new MutationValidationException("AlterTable changeType on " + descriptor.type
+                    + " requires an explicit nullable value — ALTER COLUMN restates the column definition");
+        return "ALTER TABLE " + table + " ALTER COLUMN " + addBrackets(m.columnName) + " " + nativeType(m.newType)
+                + (m.nullable ? " NULL" : " NOT NULL");
     }
 
     /** ALTER COLUMN restates the column type, so setNullable needs {@code newType} in the payload. */

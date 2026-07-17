@@ -97,10 +97,24 @@ public class MySqlDataProvider extends JdbcDataProvider {
     // DDL dialect notes (WO-B6): the base RENAME COLUMN emission requires MySQL 8+ / MariaDB 10.5+ —
     // older servers surface the DB's own syntax error.
 
-    /** MySQL has no ALTER COLUMN ... TYPE — MODIFY restates the column definition. */
+    /** MySQL treats backslash as an escape character in string literals by default — double it too. */
+    @Override
+    protected String stringLiteralEscape(String value) {
+        return value.replace("\\", "\\\\").replace("'", "''");
+    }
+
+    /**
+     * MySQL has no ALTER COLUMN ... TYPE — MODIFY restates the full column definition, so omitting
+     * nullability would silently turn a NOT NULL column nullable. Hence changeType requires an
+     * explicit {@code nullable} and restates it.
+     */
     @Override
     protected String alterChangeTypeSql(AlterTable m, String table) {
-        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType);
+        if (m.nullable == null)
+            throw new MutationValidationException("AlterTable changeType on " + descriptor.type
+                    + " requires an explicit nullable value — MODIFY restates the column definition");
+        return "ALTER TABLE " + table + " MODIFY " + addBrackets(m.columnName) + " " + nativeType(m.newType)
+                + (m.nullable ? " NULL" : " NOT NULL");
     }
 
     /** MODIFY restates the full column type, so setNullable needs {@code newType} in the payload. */

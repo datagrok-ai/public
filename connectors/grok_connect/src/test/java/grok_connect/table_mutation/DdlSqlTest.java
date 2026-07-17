@@ -87,7 +87,9 @@ public class DdlSqlTest {
         Assertions.assertFalse(mariadb.descriptor.supportsTransactionalDdl);
         AlterTable m = alter(null, "changeType");
         m.newType = "bigint";
-        Assertions.assertEquals("ALTER TABLE `orders` MODIFY `qty` bigint", mariadb.alterTableSql(m));
+        m.nullable = Boolean.TRUE;
+        Assertions.assertEquals("ALTER TABLE `orders` MODIFY `qty` bigint NULL", mariadb.alterTableSql(m));
+        Assertions.assertEquals("'\\\\'' inert'", mariadb.ddlLiteral("string", "\\' inert"));
     }
 
     @DisplayName("nativeType: missing map entry and DDL-less provider are validation errors")
@@ -164,6 +166,16 @@ public class DdlSqlTest {
                 () -> postgres.ddlLiteral("float", "Infinity"));
         Assertions.assertEquals("'''); DROP TABLE orders; --'",
                 postgres.ddlLiteral("string", "'); DROP TABLE orders; --"));
+    }
+
+    @DisplayName("ddlLiteral: MySQL doubles backslashes too — \\' cannot escape out of the literal; PG stays quote-doubling only")
+    @Test
+    public void ddlLiteral_mysqlBackslashEscaping() {
+        String hostile = "\\' ; DROP TABLE x -- ";
+        // backslash doubled AND quote doubled: MySQL reads \\ as a literal backslash, '' as a literal quote
+        Assertions.assertEquals("'\\\\'' ; DROP TABLE x -- '", mysql.ddlLiteral("string", hostile));
+        // Postgres (standard_conforming_strings): backslash is not an escape — quote doubling alone suffices
+        Assertions.assertEquals("'\\'' ; DROP TABLE x -- '", postgres.ddlLiteral("string", hostile));
     }
 
     // ---- CreateTable ----
@@ -260,22 +272,35 @@ public class DdlSqlTest {
         Assertions.assertEquals("EXEC sp_rename 'dbo.orders.qty', 'quantity', 'COLUMN'", mssql.alterTableSql(ms));
     }
 
-    @DisplayName("alterTableSql changeType: ALTER..TYPE (PG), MODIFY (MySQL/Oracle), ALTER COLUMN (MS SQL)")
+    @DisplayName("alterTableSql changeType: ALTER..TYPE (PG), MODIFY (MySQL/Oracle), ALTER COLUMN (MS SQL); PG/Oracle preserve nullability natively — no nullable needed")
     @Test
     public void alterTable_changeType() {
         AlterTable m = alter("public", "changeType");
         m.newType = "bigint";
         Assertions.assertEquals("ALTER TABLE \"public\".\"orders\" ALTER COLUMN \"qty\" TYPE int8",
                 postgres.alterTableSql(m));
-        AlterTable my = alter(null, "changeType");
-        my.newType = "bigint";
-        Assertions.assertEquals("ALTER TABLE `orders` MODIFY `qty` bigint", mysql.alterTableSql(my));
-        AlterTable ms = alter("dbo", "changeType");
-        ms.newType = "bigint";
-        Assertions.assertEquals("ALTER TABLE [dbo].[orders] ALTER COLUMN [qty] bigint", mssql.alterTableSql(ms));
         AlterTable ora = alter(null, "changeType");
         ora.newType = "bigint";
         Assertions.assertEquals("ALTER TABLE \"orders\" MODIFY \"qty\" number(19)", oracle.alterTableSql(ora));
+    }
+
+    @DisplayName("alterTableSql changeType on MySQL / MS SQL restates the column definition: requires explicit nullable, refused without it")
+    @Test
+    public void alterTable_changeType_nullabilityRestatingDialects() {
+        AlterTable my = alter(null, "changeType");
+        my.newType = "bigint";
+        Assertions.assertThrows(MutationValidationException.class, () -> mysql.alterTableSql(my));
+        my.nullable = Boolean.FALSE;
+        Assertions.assertEquals("ALTER TABLE `orders` MODIFY `qty` bigint NOT NULL", mysql.alterTableSql(my));
+        my.nullable = Boolean.TRUE;
+        Assertions.assertEquals("ALTER TABLE `orders` MODIFY `qty` bigint NULL", mysql.alterTableSql(my));
+        AlterTable ms = alter("dbo", "changeType");
+        ms.newType = "bigint";
+        Assertions.assertThrows(MutationValidationException.class, () -> mssql.alterTableSql(ms));
+        ms.nullable = Boolean.FALSE;
+        Assertions.assertEquals("ALTER TABLE [dbo].[orders] ALTER COLUMN [qty] bigint NOT NULL", mssql.alterTableSql(ms));
+        ms.nullable = Boolean.TRUE;
+        Assertions.assertEquals("ALTER TABLE [dbo].[orders] ALTER COLUMN [qty] bigint NULL", mssql.alterTableSql(ms));
     }
 
     @DisplayName("alterTableSql setNullable: PG SET/DROP NOT NULL; Oracle MODIFY without type")
