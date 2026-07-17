@@ -9,6 +9,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.JdbcDataProvider;
+import grok_connect.table_mutation.DestructiveAction;
+import grok_connect.table_mutation.MutationConfirmationRequiredException;
+import grok_connect.table_mutation.MutationPlan;
 import grok_connect.table_mutation.MutationResult;
 import grok_connect.table_mutation.MutationRunner;
 import grok_connect.table_mutation.MutationValidationException;
@@ -162,7 +165,13 @@ public class GrokConnect {
                     return mutationError(response, "capability", "Provider does not support writes", provider.descriptor.type);
                 MutationResult result = MutationRunner.execute((JdbcDataProvider) provider, call);
                 return gson.toJson(result);
-            } catch (JsonParseException | MutationValidationException ex) {
+            } catch (MutationConfirmationRequiredException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "destructive-confirmation-required", ex.getMessage(), ex.providerType, ex.plan, null);
+            } catch (MutationValidationException ex) {
+                PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
+                return mutationError(response, "validation", ex.getMessage(), null, null, ex.refusals);
+            } catch (JsonParseException ex) {
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
                 return mutationError(response, "validation", ex.getMessage(), null);
             } catch (UnsupportedOperationException ex) {
@@ -364,12 +373,21 @@ public class GrokConnect {
     }
 
     private static String mutationError(Response response, String error, String message, String providerType) {
+        return mutationError(response, error, message, providerType, null, null);
+    }
+
+    private static String mutationError(Response response, String error, String message, String providerType,
+                                        MutationPlan plan, List<DestructiveAction> refusals) {
         response.status(HttpURLConnection.HTTP_BAD_REQUEST);
-        Map<String, String> body = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("error", error);
         body.put("message", message);
         if (providerType != null)
             body.put("provider", providerType);
+        if (plan != null)
+            body.put("plan", plan); // the refusal carries the plan — the UI confirms without a second round trip
+        if (refusals != null && !refusals.isEmpty())
+            body.put("refusals", refusals);
         return gson.toJson(body);
     }
 

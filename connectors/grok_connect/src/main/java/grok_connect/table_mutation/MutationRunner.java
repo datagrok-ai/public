@@ -42,24 +42,46 @@ public class MutationRunner {
                 ? ((MutationBatch) mutation).operations : Collections.singletonList(mutation);
         if (operations == null || operations.isEmpty())
             throw new MutationValidationException("MutationBatch requires a non-empty operations list");
-        if (mutation instanceof MutationBatch)
+        if (mutation instanceof MutationBatch) {
+            refuseSingleOpMembers(operations); // DDL and mode=create execute one operation per request (§3.4.1)
             result.perStatement = new ArrayList<>();
+        }
+        if (mutation instanceof DdlMutation && !provider.descriptor.supportsDdl)
+            throw new UnsupportedOperationException("DDL is not supported for provider " + provider.descriptor.type);
+        if (mutation.dryRun && !(mutation instanceof DdlMutation)) {
+            // DML dryRun: statement emission only — no binding, no pre-checks, no connection (§3.4.2)
+            result.plan = new MutationPlan();
+            result.plan.statements = new ArrayList<>();
+            for (TableMutation operation : operations)
+                collectDmlStatements(provider, operation, result.plan.statements);
+            return result;
+        }
         Connection connection = null;
         int currentStatement = 0;
         try {
             connection = provider.getConnection(mutation.connection);
             provider.configureAutoCommit(connection);
-            for (int i = 0; i < operations.size(); i++) {
-                currentStatement = i;
-                int affected = executeOperation(provider, connection, operations.get(i), mainCallId);
-                result.affectedRows += affected;
-                if (result.perStatement != null) {
-                    PerStatementResult statementResult = new PerStatementResult();
-                    statementResult.statementIndex = i;
-                    statementResult.affectedRows = affected;
-                    result.perStatement.add(statementResult);
+            if (mutation instanceof DdlMutation) {
+                DdlMutation ddl = (DdlMutation) mutation;
+                if (mutation.dryRun) {
+                    result.plan = DdlRunner.plan(provider, connection, ddl);
+                    provider.rollbackQuietly(connection); // pre-check SELECTs joined the transaction; nothing ran
+                    return result;
                 }
+                result.plan = DdlRunner.execute(provider, connection, ddl, mainCallId); // affectedRows stays 0
             }
+            else
+                for (int i = 0; i < operations.size(); i++) {
+                    currentStatement = i;
+                    int affected = executeOperation(provider, connection, operations.get(i), mainCallId);
+                    result.affectedRows += affected;
+                    if (result.perStatement != null) {
+                        PerStatementResult statementResult = new PerStatementResult();
+                        statementResult.statementIndex = i;
+                        statementResult.affectedRows = affected;
+                        result.perStatement.add(statementResult);
+                    }
+                }
             if (!connection.getAutoCommit())
                 connection.commit();
             return result;
@@ -103,6 +125,68 @@ public class MutationRunner {
             return executeUpdate(provider, connection, (UpdateRows) m, mainCallId);
         if (m instanceof DeleteRows)
             return executeDelete(provider, connection, (DeleteRows) m, mainCallId);
+        throw new MutationValidationException("Unsupported mutation type: " + m.type);
+    }
+
+    /**
+     * DDL is strictly single-op-per-request (ARCHITECTURE §3.4.1, resolved open question §12.1):
+     * many DBs auto-commit DDL, so batch atomicity would be a lie. Datlas enforces the same rule
+     * fail-fast; this is the defense in depth.
+     */
+    private static void refuseSingleOpMembers(List<TableMutation> operations) {
+        for (TableMutation operation : operations) {
+            if (operation instanceof DdlMutation
+                    || (operation instanceof InsertRows && "create".equals(((InsertRows) operation).mode)))
+                throw new MutationValidationException("DDL executes one operation per request");
+            if (operation instanceof MutationBatch && ((MutationBatch) operation).operations != null)
+                refuseSingleOpMembers(((MutationBatch) operation).operations);
+        }
+    }
+
+    /**
+     * DML dryRun statements (§3.4.2): the same emitters the execute path uses, with predicate
+     * params compiled to placeholders — no binding, no pre-checks. Upserts are emitted in the
+     * one-row shape (chunked dialects repeat the value tuple at execution time).
+     */
+    private static void collectDmlStatements(JdbcDataProvider provider, TableMutation m, List<String> statements) {
+        if (m instanceof MutationBatch) {
+            for (TableMutation operation : ((MutationBatch) m).operations)
+                collectDmlStatements(provider, operation, statements);
+            return;
+        }
+        if (m instanceof UpdateRows || m instanceof DeleteRows) {
+            List<FuncParam> whereParams = new ArrayList<>();
+            String sql = m instanceof UpdateRows
+                    ? provider.updateSql((UpdateRows) m, whereParams)
+                    : provider.deleteSql((DeleteRows) m, whereParams);
+            m.params = whereParams;
+            StringBuilder queryBuffer = new StringBuilder();
+            provider.getParameterNames(sql, m, queryBuffer);
+            statements.add(queryBuffer.toString());
+            return;
+        }
+        if (m instanceof UpsertRows) {
+            statements.add(provider.upsertSql((UpsertRows) m, 1));
+            return;
+        }
+        if (m instanceof InsertRows) {
+            InsertRows insert = (InsertRows) m;
+            if (GrokConnectUtil.isEmpty(insert.mode))
+                insert.mode = "insert";
+            switch (insert.mode) {
+                case "insert":
+                    statements.add(provider.insertSql(insert));
+                    return;
+                case "upsert":
+                    statements.add(provider.upsertSql(new UpsertRows(insert), 1));
+                    return;
+                case "update":
+                    statements.add(provider.updateByKeySql(insert));
+                    return;
+                default:
+                    throw new MutationValidationException("Unsupported insert mode: " + insert.mode);
+            }
+        }
         throw new MutationValidationException("Unsupported mutation type: " + m.type);
     }
 

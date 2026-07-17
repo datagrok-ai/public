@@ -946,7 +946,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return sql.toString();
     }
 
-    protected String mutationTableName(TableMutation m) {
+    public String mutationTableName(TableMutation m) {
         validateMutationIdentifier(m.tableName);
         if (GrokConnectUtil.isNotEmpty(m.schema))
             validateMutationIdentifier(m.schema);
