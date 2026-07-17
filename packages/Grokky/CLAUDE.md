@@ -91,25 +91,39 @@ a structured output schema).
 `CombinedAISearchAssistant` collects all `aiSearchProvider` functions, uses `ClaudeRuntimeClient.query()` to rank them
 by relevance to the user query, then presents results in a lazy tab control.
 
-### AI Panels (`src/ai/panel.ts`) — singleton model
+### AI Panel (`src/ai/panel.ts`) — one singleton everywhere
 
-The main assistant is ONE `AIPanel` instance (created by `initAIWindow()`) with one Claude session.
-It survives view switches — `AIWindowManager` (`src/ai/ai-window.ts`) never remounts on
-`onCurrentViewChanged`; instead, every prompt gets a fresh workspace snapshot from
-`buildWorkspaceContext()` (current view details, all open views, all workspace tables), and
-`datagrok-exec`/`datagrok_verify` blocks run against the live `grok.shell.v`. Table-view ribbon
-icons just toggle this singleton.
+The assistant is ONE `AIPanel` instance (created by `initAIWindow()`) with one Claude session,
+used for every view — there are no per-view or specialized panels anymore. It survives view
+switches — `AIWindowManager` (`src/ai/ai-window.ts`) never remounts on `onCurrentViewChanged`;
+instead, every prompt gets a fresh workspace snapshot from `buildWorkspaceContext()` (current view
+details, all open views, all workspace tables), and `datagrok-exec`/`datagrok_verify` blocks run
+against the live `grok.shell.v`. The ribbon AI icons on table/script/query views just toggle this
+singleton.
 
-Two specialized panels remain:
-
-- `DBAIPanel` — per-query-editor SQL assistant (own SQL tools, no workspace context). Registered
-  `{owned: true}` in `AIWindowManager`: shown only via the query editor's toggle icon, disposed with
-  its view.
-- `ScriptingAIPanel` — a lazy singleton, rebound (`setContextView`) to the script view whose AI icon
-  invoked it; generated code lands in that editor.
-
-All panels stream through `ClaudeRuntimeClient` and share a common `StreamingPanel` base with chat history,
+The panel streams through `ClaudeRuntimeClient` (`StreamingPanel` interface) with chat history,
 streaming display, and conversation persistence via `ConversationStorage`.
+
+### View AI tools (`src/ai/view-tools.ts`, `src/ai/view-tool-providers.ts`)
+
+Views ship their own AI tools; the singleton collects them fresh on every prompt
+(`collectViewAITools(grok.shell.v)`) from two sources:
+
+1. **`view.getAITools()`** — js-api `ViewBase.getAITools(): AIViewTool[]` (`{name, description,
+   inputSchema?, run}`). Dart views override `View.getAITools()` (e.g. `DataQueryView` returns
+   `get_query_info` / `set_query_and_run`); for JS-defined views the Dart `JsViewHost` forwards the
+   call to the original JS `ViewBase` instance (interop: `grok_View_GetAITools`).
+2. **`viewAIToolsProvider` functions** — any package can register a function with
+   `meta: {role: 'viewAIToolsProvider', viewType: '<view.type>'}` taking the view and returning
+   `AIViewTool[]`. Grokky registers two: `queryViewAITools` (DataQueryView — SQL schema exploration +
+   `get_sql_test_result` via `SQLGenerationContext`; discovers the connection through the view's
+   native `get_query_info` tool) and `scriptViewAITools` (ScriptView — `get_script_code` /
+   `set_script_code`).
+
+Tool defs go to the runtime in the `user_message` as `clientTools`; the runtime exposes them via an
+in-process `datagrok-view` MCP server whose calls round-trip to the browser as `input_request`,
+where `streamOnce()` dispatches to the tool's `run`. Name read-only tools `list_*` / `get_*` —
+other names count as actions and the runtime's verifier demands a `datagrok_verify` after them.
 
 #### AI window visibility (sync with core)
 
@@ -142,8 +156,9 @@ Setup functions called from `init()` that attach AI panels to platform UI elemen
 
 - `setupSearchUI()` — wires `CombinedAISearchAssistant` into the global search bar
 - `setupTableViewAIPanelUI()` — adds the AI ribbon icon to table views (toggles the singleton panel)
-- `setupScriptsAIPanelUI()` — adds the AI icon to script views, binds the `ScriptingAIPanel` singleton
-- `setupAIQueryEditorUI()` — registers a `DBAIPanel` for the query editor (shown via its toggle icon)
+- `setupScriptsAIPanelUI()` — adds the AI icon to script views (toggles the singleton panel)
+- `setupAIQueryEditorUI()` — called by the core query editor; just reports whether AI is configured
+  (the query view's tools are collected at prompt time)
 - `setupShellAIPanelUI()` — shows the singleton panel in the AI window
 - `setupAgentScriptsUI()` — adds a Run button to file views under `MyFiles/agents/scripts/`
 

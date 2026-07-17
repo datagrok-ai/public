@@ -39,6 +39,20 @@ type UiType = typeof uiType;
 declare let ui: UiType;
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+/** A tool that the AI assistant can invoke against a view. Declared by views via
+ * {@link ViewBase.getAITools} (or by `viewAIToolsProvider` functions); the assistant
+ * discovers the current view's tools at prompt time and calls `run` with arguments
+ * matching `inputSchema`. */
+export interface AIViewTool {
+  /** Tool name: letters, digits, `_`, `-`. Prefix read-only tools with `list_` / `get_` —
+   * other tools are treated as actions and the assistant verifies their outcome. */
+  name: string;
+  description: string;
+  /** JSON Schema (type: object) describing the arguments passed to {@link run}. */
+  inputSchema?: object;
+  run: (args: any) => Promise<any> | any;
+}
+
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
  * */
@@ -176,6 +190,10 @@ export class ViewBase extends Widget {
   get path(): string { return api.grok_View_Get_Path(this.dart); }
   set path(s: string) { api.grok_View_Set_Path(this.dart, s); }
 
+  /** AI tools this view offers to the assistant. Override in subclasses to expose
+   * view-specific operations (see {@link AIViewTool}). */
+  getAITools(): AIViewTool[] { return []; }
+
   /** Handles URL path. Override in subclasses. */
   handlePath(_urlPath: string): void { }
 
@@ -224,6 +242,13 @@ export class View extends ViewBase {
     super(null, '', false);
     this.dart = dart;
     this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
+  }
+
+  /** AI tools of the underlying view. For Dart views returns natively declared tools;
+   * for JS-defined views the call is forwarded to the original {@link ViewBase} instance. */
+  getAITools(): AIViewTool[] {
+    const f = (api as any).grok_View_GetAITools;
+    return f ? (f(this.dart) ?? []) : [];
   }
 
   static fromDart(dart: any): View | TableView {

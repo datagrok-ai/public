@@ -9,13 +9,12 @@ import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
   fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
   copyToClipboard} from '../utils';
-import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel} from './panel';
+import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
-import {SQLGenerationContext} from '../db/sql-tools';
+import {collectViewAITools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
 import {_package} from '../package';
 
@@ -230,32 +229,14 @@ export async function aiCombinedSearch(prompt: string) {
   await CombinedAISearchAssistant.instance.searchUI(prompt);
 }
 
-export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
+// Called by the core query editor to decide whether to show its AI toggle icon.
+// The query view needs no dedicated panel anymore: its AI tools (get_query_info,
+// set_query_and_run + the SQL schema tools from the viewAIToolsProvider) are collected
+// by the singleton panel at prompt time.
+export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)
     return false;
-  const connection = await grok.dapi.connections.find(connectionID);
-  if (!connection) {
-    grok.shell.error(`Connection with ID ${connectionID} not found.`);
-    return false;
-  }
-
-  const allDbInfos = await BuiltinDBInfoMeta.allFromConnection(connection);
-  const catalogs = allDbInfos.map((d) => d.name);
-  const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
-
   initAIWindow();
-  const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
-  // Registration only — the panel shows when the user clicks the query editor's AI toggle,
-  // never by stealing the AI window from whatever conversation is mounted there.
-  AIWindowManager.instance.register(v, panel, {owned: true});
-
-  let sqlContext: SQLGenerationContext | null = null;
-
-  panel.onRunRequest.subscribe(async (args) => {
-    if (!sqlContext)
-      sqlContext = await SQLGenerationContext.create(connectionID, args.currentPrompt.catalogName);
-    await runPromptWithLifecycle(panel, args.currentPrompt.prompt, v, 'db-query', (toolName, input) => sqlContext!.handleToolCall(toolName, input));
-  });
   return true;
 }
 
@@ -264,7 +245,6 @@ export async function runPromptWithLifecycle(
   prompt: string,
   view: DG.ViewBase,
   quotaCategory: string,
-  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
   displayPrompt?: string,
 ): Promise<void> {
   if (prompt.startsWith('!!'))
@@ -273,7 +253,7 @@ export async function runPromptWithLifecycle(
     const command = prompt.slice(1).trimStart();
     if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
       return;
-    await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
+    await runClaudeStreaming(panel, command, view, 'bash');
     return;
   }
   let session: ReturnType<StreamingPanel['startChatSession']> | undefined;
@@ -304,7 +284,7 @@ export async function runPromptWithLifecycle(
     session?.endSession();
     return;
   }
-  await runClaudeStreaming(panel, prompt, view, clientToolHandler, undefined, session);
+  await runClaudeStreaming(panel, prompt, view, undefined, session);
   if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
@@ -387,7 +367,6 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
 
 async function runClaudeStreaming(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
-  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
   systemPromptMode?: string,
   existingSession?: ReturnType<StreamingPanel['startChatSession']>,
 ): Promise<void> {
@@ -395,7 +374,7 @@ async function runClaudeStreaming(
   if (!existingSession)
     session.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
   try {
-    await streamOnce(panel, userPrompt, view, clientToolHandler, systemPromptMode, session);
+    await streamOnce(panel, userPrompt, view, systemPromptMode, session);
   } finally {
     session.endSession();
   }
@@ -403,7 +382,6 @@ async function runClaudeStreaming(
 
 async function streamOnce(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
-  clientToolHandler: ((toolName: string, input: any) => Promise<string>) | undefined,
   systemPromptMode: string | undefined,
   chatSession: ReturnType<StreamingPanel['startChatSession']>,
 ): Promise<void> {
@@ -436,6 +414,11 @@ async function streamOnce(
       const nativeCtx = panel.flushNativeContext();
       const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
+
+      // Fresh per prompt: the current view may ship its own AI tools (natively or via
+      // viewAIToolsProvider functions). Their defs go to the runtime; calls come back as input_request.
+      const fullMode = !systemPromptMode && !panel.noPrompt;
+      const viewTools = fullMode ? await collectViewAITools(grok.shell.v ?? view) : NO_VIEW_TOOLS;
 
       await client.ensureConnected();
 
@@ -525,14 +508,14 @@ async function streamOnce(
           client.respondToInput(sessionId, evt.requestId, {success: true});
           return;
         }
-        // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
-        const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
-        if (clientToolHandler && mcpToolName !== evt.toolName) {
+        // View-declared tool call — run the tool's implementation from the current view.
+        const runner = viewTools.runners.get(evt.toolName);
+        if (runner) {
           try {
-            const result = await clientToolHandler(mcpToolName, evt.input);
-            client.respondToInput(sessionId, evt.requestId, result);
+            const result = await runner(evt.input ?? {});
+            client.respondToInput(sessionId, evt.requestId, result === undefined ? {success: true} : result);
           } catch (e: any) {
-            client.respondToInput(sessionId, evt.requestId, `Error: ${e.message}`);
+            client.respondToInput(sessionId, evt.requestId, {success: false, error: e.message});
           }
           return;
         }
@@ -558,6 +541,7 @@ async function streamOnce(
       const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
       client.send(sessionId, prompt, {
         ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
+        ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
       });
     } catch (e: any) {
       panel.clearStreaming();
@@ -618,31 +602,14 @@ export async function setupTableViewAIPanelUI() {
   });
 }
 
-let _scriptingPanel: ScriptingAIPanel | null = null;
-
-function getScriptingPanel(view: DG.ScriptView): ScriptingAIPanel {
-  if (!_scriptingPanel) {
-    _scriptingPanel = new ScriptingAIPanel(view);
-    _scriptingPanel.onRunRequest.subscribe(async (args) => {
-      const panel = _scriptingPanel!;
-      await runPromptWithLifecycle(panel, args.currentPrompt.prompt, panel.contextView ?? grok.shell.v, 'scripting');
-    });
-  }
-  return _scriptingPanel;
-}
-
 export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
     if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
-    const iconFse = ui.iconSvg('ai.svg', () => {
-      // Rebind the scripting singleton to this view so generated code lands in the right editor.
-      getScriptingPanel(scriptView).setContextView(scriptView);
-      fireAIPanelToggleEvent(scriptView);
-    }, `Ask AI \n ${SHORTCUT_HINT}`);
+    // The singleton panel picks up the script view's AI tools (get/set code) at prompt time.
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
-    AIWindowManager.instance.register(scriptView, getScriptingPanel(scriptView));
   };
 
   grok.events.onViewAdded.subscribe((view) => {
@@ -680,7 +647,7 @@ async function runAgentScript(name: string): Promise<void> {
       `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
       `---\n${workflow}\n---`;
     const displayPrompt = `▶ Running workflow: ${name}`;
-    await runPromptWithLifecycle(shell, prompt, grok.shell.v, 'shell-ai', undefined, displayPrompt);
+    await runPromptWithLifecycle(shell, prompt, grok.shell.v, 'shell-ai', displayPrompt);
   } catch (e: any) {
     grok.shell.error(`Failed to run ${name}: ${e.message}`);
   }

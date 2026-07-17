@@ -7,7 +7,7 @@ import {ensureUserDir} from './user/user-dir';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
 import {Verifier} from './verify';
 import {GroundingGate} from './grounding';
-import {createBrowserExecServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 
 // ---------------------------------------------------------------------------
 // Session registry — SDK session ids and resume/fork points, LRU-capped
@@ -297,15 +297,17 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         console.warn('handleMessage: failed to sync user files:', e.message));
     }
 
-    const browserExecServer = createBrowserExecServer((toolName, input, timeoutMs) =>
-      awaitBrowserInput(ws, sid, active, toolName, input, timeoutMs));
+    const awaitInput = (toolName: string, input: any, timeoutMs: number) =>
+      awaitBrowserInput(ws, sid, active, toolName, input, timeoutMs);
+    const browserExecServer = createBrowserExecServer(awaitInput);
+    const viewToolsServer = data.clientTools?.length ? createViewToolsServer(awaitInput, data.clientTools) : undefined;
     const fullPromptTurn = !data.systemPromptMode || data.systemPromptMode === 'datagrok';
     verifier = fullPromptTurn ? new Verifier() : undefined;
     groundingGate = fullPromptTurn && !data.outputSchema ? new GroundingGate() : undefined;
 
     const rec = getSession(sid);
     const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,
-      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate);
+      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate, viewToolsServer);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion') {
         const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);

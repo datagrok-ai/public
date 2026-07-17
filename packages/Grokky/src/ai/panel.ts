@@ -17,14 +17,6 @@ type AIPanelInputs = {
     prompt: string,
 }
 
-type DBAIPanelInputs = AIPanelInputs & {
-    catalogName: string,
-}
-
-export type ScriptingAIPanelInputs = AIPanelInputs & {
-  language: DG.ScriptingLanguage
-};
-
 
 
 export interface AskUserOption {
@@ -1130,86 +1122,4 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
 function receiveFeedback(userPrompt: string, aiResponse: string, contextId: string, helpful: boolean) {
   // not implemented yet
-}
-
-
-export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
-  protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
-  protected catalogInput: DG.InputBase<string>;
-  private setAndRunFunc: (query: string) => void;
-
-  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase, setAndRunFunc: (query: string) => void) {
-    super(connectionID, view); // context ID is connection ID
-    this.setAndRunFunc = setAndRunFunc;
-    this.catalogInput = ui.input.choice('Catalog', {
-      items: catalogs,
-      value: defaultCatalog,
-      nullable: false,
-      tooltipText: 'Select the database catalog to use for AI-assisted query generation.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.catalogInput.input);
-    ui.tooltip.bind(this.catalogInput.input, 'Select the database catalog to use for AI-assisted query generation.');
-  }
-
-  public getCurrentInputs(): DBAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      catalogName: this.catalogInput.value!,
-    };
-  }
-
-  // SQL generation context comes from the schema tools, not from the workspace.
-  prependViewContext(prompt: string, _view: DG.ViewBase): string {
-    return prompt;
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract SQL from fenced code blocks and inject into query editor
-    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
-    if (sqlMatch) {
-      const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
-      this.setAndRunFunc(sql);
-    }
-  }
-}
-
-export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
-  protected get placeHolder() { return 'Ask AI to generate a script...'; }
-  protected languageInput: DG.InputBase<string>;
-
-  constructor(view: DG.View | DG.ViewBase) {
-    super('scripting-ai-panel', view); // context ID is fixed for scripting panel
-    this.languageInput = ui.input.choice('Language', {
-      items: Object.values(DG.SCRIPT_LANGUAGE),
-      value: DG.SCRIPT_LANGUAGE.JAVASCRIPT,
-      nullable: false,
-      tooltipText: 'Select scripting language for the generated script.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.languageInput.input);
-    ui.tooltip.bind(this.languageInput.input, 'Select scripting language for the generated script.');
-  }
-
-  public getCurrentInputs(): ScriptingAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      language: this.languageInput.value as DG.ScriptingLanguage,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract code from datagrok-exec blocks and set on the script editor
-    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
-    if (codeMatch) {
-      ui.setUpdateIndicator(this.view.root, true, 'Updating script...');
-      const indicator = this.view.root.querySelector('.d4-update-shadow') as HTMLElement;
-      if (indicator)
-        indicator.style.zIndex = '1000';
-      (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
-      ui.setUpdateIndicator(this.view.root, false);
-    }
-  }
 }

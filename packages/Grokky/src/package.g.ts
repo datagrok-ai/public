@@ -69,6 +69,24 @@ export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string
   return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
 }
 
+//description: SQL schema exploration and test-execution tools for the database query editor
+//input: dynamic view 
+//output: dynamic tools
+//meta.role: viewAIToolsProvider
+//meta.viewType: DataQueryView
+export async function queryViewAITools(view: any) : Promise<any> {
+  return await PackageFunctions.queryViewAITools(view);
+}
+
+//description: Read/write tools for the script editor
+//input: dynamic view 
+//output: dynamic tools
+//meta.role: viewAIToolsProvider
+//meta.viewType: ScriptView
+export async function scriptViewAITools(view: any) : Promise<any> {
+  return await PackageFunctions.scriptViewAITools(view);
+}
+
 //input: string dbName { choices: ["biologics","chembl"] }
 export async function moveMetaToDB(dbName: string) : Promise<void> {
   await PackageFunctions.moveMetaToDB(dbName);

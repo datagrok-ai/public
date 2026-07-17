@@ -1,7 +1,7 @@
 import {createSdkMcpServer, tool as sdkTool} from '@anthropic-ai/claude-agent-sdk';
 import type {HookCallback} from '@anthropic-ai/claude-agent-sdk';
 import {z} from 'zod/v4';
-import type {ToolInputs, McpInputs, ToolName, McpName} from './types';
+import type {ToolInputs, McpInputs, ToolName, McpName, ClientToolDef} from './types';
 import {ClaudeModel} from './types';
 import {WORKSPACE} from './constants';
 import type {Verifier} from './verify';
@@ -87,14 +87,16 @@ const entityRefSchema = z.object({
 const EXEC_TIMEOUT_MS = 300_000;
 const VERIFY_TIMEOUT_MS = 60_000;
 const SHOW_ENTITIES_TIMEOUT_MS = 30_000;
+const VIEW_TOOL_TIMEOUT_MS = 120_000;
 
 type AwaitInput = (toolName: string, input: any, timeoutMs: number) => Promise<any>;
+
+const asResult = (o: unknown) => ({content: [{type: 'text' as const, text: JSON.stringify(o)}]});
 
 // In-process MCP server whose datagrok_exec tool round-trips JS to the browser tab (via
 // awaitInput) and returns the result. Synchronous, so Claude reports only what ran — fixes B2.
 // Created per handleMessage so the ws/sid/active closure behind awaitInput stays current.
 export function createBrowserExecServer(awaitInput: AwaitInput) {
-  const asResult = (o: unknown) => ({content: [{type: 'text' as const, text: JSON.stringify(o)}]});
   return createSdkMcpServer({
     name: 'datagrok-browser',
     version: '1.0.0',
@@ -163,13 +165,69 @@ export function createBrowserExecServer(awaitInput: AwaitInput) {
 }
 
 // ---------------------------------------------------------------------------
+// View tools — in-process server built from browser-declared tool definitions.
+// Each call round-trips to the browser (input_request), where the current view's
+// tool implementation runs. Declared fresh per turn, so the tool set follows the view.
+// ---------------------------------------------------------------------------
+
+const RESERVED_TOOL_NAMES = new Set(['datagrok_exec', 'datagrok_verify', 'datagrok_show_entities']);
+const TOOL_NAME_RE = /^[A-Za-z0-9_-]+$/;
+
+function zodShapeFromJsonSchema(schema: any): Record<string, z.ZodType> {
+  const shape: Record<string, z.ZodType> = {};
+  const required = new Set<string>(Array.isArray(schema?.required) ? schema.required : []);
+  for (const [key, p] of Object.entries<any>(schema?.properties ?? {})) {
+    let t: z.ZodType =
+      p?.type === 'string' ? (Array.isArray(p.enum) && p.enum.length ? z.enum(p.enum) : z.string()) :
+      p?.type === 'number' || p?.type === 'integer' ? z.number() :
+      p?.type === 'boolean' ? z.boolean() :
+      p?.type === 'array' ? z.array(z.any()) :
+      z.any();
+    if (p?.description)
+      t = t.describe(p.description);
+    if (!required.has(key))
+      t = t.optional();
+    shape[key] = t;
+  }
+  return shape;
+}
+
+export function createViewToolsServer(awaitInput: AwaitInput, tools: ClientToolDef[]) {
+  const safe = tools.filter((t) =>
+    t?.name && TOOL_NAME_RE.test(t.name) && !RESERVED_TOOL_NAMES.has(t.name) && t.description);
+  if (safe.length === 0)
+    return undefined;
+  return createSdkMcpServer({
+    name: 'datagrok-view',
+    version: '1.0.0',
+    tools: safe.map((t) => sdkTool(
+      t.name,
+      t.description,
+      zodShapeFromJsonSchema(t.inputSchema),
+      async (input: any) => {
+        try {
+          return asResult(await awaitInput(t.name, input, VIEW_TOOL_TIMEOUT_MS));
+        } catch (e: any) {
+          return asResult({success: false, error: e.message});
+        }
+      },
+    )),
+  });
+}
+
+// ---------------------------------------------------------------------------
 // SDK query options — assembles mcpServers, hooks, and per-mode settings for query()
 // ---------------------------------------------------------------------------
 
-function buildMcpServers(browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string): Record<string, any> | undefined {
+function buildMcpServers(
+  browserExecServer: ReturnType<typeof createBrowserExecServer>, apiKey?: string, mcpServerUrl?: string,
+  viewToolsServer?: ReturnType<typeof createViewToolsServer>,
+): Record<string, any> | undefined {
   const servers: Record<string, any> = {};
 
   servers['datagrok-browser'] = browserExecServer;
+  if (viewToolsServer)
+    servers['datagrok-view'] = viewToolsServer;
 
   const mcpUrl = mcpServerUrl || '';
   if (mcpUrl) {
@@ -192,9 +250,10 @@ export function buildOptions(
   forkSession?: boolean, resumeAt?: string,
   verifier?: Verifier,
   groundingGate?: GroundingGate,
+  viewToolsServer?: ReturnType<typeof createViewToolsServer>,
 ) {
   const systemPrompt = buildSystemPrompt(systemPromptMode);
-  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl);
+  const mcpServers = buildMcpServers(browserExecServer, apiKey, mcpServerUrl, viewToolsServer);
   // Bash and 'none' modes are minimal — no output-format skills, no reasoning. Full-prompt turns
   // get thinking + higher effort so the "ground answers in sources, don't answer from memory" rule
   // has a deliberation step to fire in (see DATAGROK_PROMPT) before the model commits an answer.

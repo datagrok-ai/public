@@ -10,6 +10,7 @@ import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
+import {buildQueryViewAITools, buildScriptViewAITools} from './ai/view-tool-providers';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
 export * from './package.g';
@@ -192,6 +193,20 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  @grok.decorators.func({meta: {role: 'viewAIToolsProvider', viewType: 'DataQueryView'},
+    description: 'SQL schema exploration and test-execution tools for the database query editor',
+    result: {type: 'dynamic', name: 'tools'}})
+  static async queryViewAITools(@grok.decorators.param({type: 'dynamic'}) view: any): Promise<any> {
+    return buildQueryViewAITools(view);
+  }
+
+  @grok.decorators.func({meta: {role: 'viewAIToolsProvider', viewType: 'ScriptView'},
+    description: 'Read/write tools for the script editor',
+    result: {type: 'dynamic', name: 'tools'}})
+  static async scriptViewAITools(@grok.decorators.param({type: 'dynamic'}) view: any): Promise<any> {
+    return buildScriptViewAITools(view);
   }
 
   @grok.decorators.func({})

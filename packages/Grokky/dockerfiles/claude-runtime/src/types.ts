@@ -37,6 +37,15 @@ export interface ImageAttachment {
   data: string;
 }
 
+/** A tool declared by the browser for this turn (usually supplied by the current view).
+ * Calls round-trip to the browser via input_request / input_response. */
+export interface ClientToolDef {
+  name: string;
+  description: string;
+  /** JSON Schema (object type) describing the arguments. */
+  inputSchema?: object;
+}
+
 export interface UserMessage {
   type: 'user_message';
   sessionId: string;
@@ -47,6 +56,7 @@ export interface UserMessage {
   outputSchema?: object;
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
   model?: ClaudeModel;
+  clientTools?: ClientToolDef[];
 }
 
 export interface AbortMessage {
