@@ -3,11 +3,15 @@
   "name": "batch",
   "tableName": "orders",
   "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
   "operations": [
     {
       "#type": "InsertRows",
       "tableName": "orders",
       "schema": "public",
+      "dryRun": false,
+      "confirmDestructive": false,
       "columns": ["id", "big_id"],
       "columnTypes": ["int", "bigint"],
       "rows": [[3, "9007199254740997"]],
@@ -20,6 +24,8 @@
       "#type": "UpdateRows",
       "tableName": "orders",
       "schema": "public",
+      "dryRun": false,
+      "confirmDestructive": false,
       "setColumns": ["qty"],
       "setValues": [7],
       "setTypes": ["int"],
@@ -37,6 +43,8 @@
       "#type": "DeleteRows",
       "tableName": "order_items",
       "schema": "public",
+      "dryRun": false,
+      "confirmDestructive": false,
       "whereClauses": [
         {
           "field": "order_id",
@@ -52,11 +60,15 @@
       "#type": "MutationBatch",
       "tableName": "orders",
       "schema": "public",
+      "dryRun": false,
+      "confirmDestructive": false,
       "operations": [
         {
           "#type": "UpsertRows",
           "tableName": "orders",
           "schema": "public",
+          "dryRun": false,
+          "confirmDestructive": false,
           "columns": ["id", "qty"],
           "columnTypes": ["int", "int"],
           "rows": [[4, 40]],

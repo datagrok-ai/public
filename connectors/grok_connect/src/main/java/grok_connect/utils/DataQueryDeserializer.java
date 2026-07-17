@@ -2,10 +2,17 @@ package grok_connect.utils;
 
 import com.google.gson.*;
 import grok_connect.connectors_info.DataQuery;
+import grok_connect.table_mutation.AddKey;
+import grok_connect.table_mutation.AlterTable;
+import grok_connect.table_mutation.CreateIndex;
+import grok_connect.table_mutation.CreateTable;
 import grok_connect.table_mutation.DeleteRows;
+import grok_connect.table_mutation.DropIndex;
+import grok_connect.table_mutation.DropTable;
 import grok_connect.table_mutation.InsertRows;
 import grok_connect.table_mutation.MutationBatch;
 import grok_connect.table_mutation.TableMutation;
+import grok_connect.table_mutation.TruncateTable;
 import grok_connect.table_mutation.UpdateRows;
 import grok_connect.table_mutation.UpsertRows;
 import grok_connect.table_query.TableQuery;
@@ -21,6 +28,13 @@ public class DataQueryDeserializer implements JsonDeserializer<DataQuery> {
             case "DeleteRows": return DeleteRows.class;
             case "UpsertRows": return UpsertRows.class;
             case "MutationBatch": return MutationBatch.class;
+            case "CreateTable": return CreateTable.class;
+            case "AlterTable": return AlterTable.class;
+            case "CreateIndex": return CreateIndex.class;
+            case "DropIndex": return DropIndex.class;
+            case "AddKey": return AddKey.class;
+            case "DropTable": return DropTable.class;
+            case "TruncateTable": return TruncateTable.class;
             default: return null;
         }
     }

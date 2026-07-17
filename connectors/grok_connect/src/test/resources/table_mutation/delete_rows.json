@@ -3,6 +3,8 @@
   "name": "delete orders",
   "tableName": "orders",
   "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
   "whereClauses": [
     {
       "field": "status",

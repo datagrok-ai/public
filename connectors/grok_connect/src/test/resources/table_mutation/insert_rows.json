@@ -3,6 +3,8 @@
   "name": "insert orders",
   "tableName": "orders",
   "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
   "columns": ["id", "big_id", "active", "note", "created"],
   "columnTypes": ["int", "bigint", "bool", "string", "datetime"],
   "rows": [

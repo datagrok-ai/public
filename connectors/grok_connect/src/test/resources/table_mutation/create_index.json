@@ -1,0 +1,11 @@
+{
+  "#type": "CreateIndex",
+  "name": "index orders",
+  "tableName": "orders",
+  "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
+  "indexName": "ix_orders_status_created",
+  "columns": ["status", "created"],
+  "unique": false
+}

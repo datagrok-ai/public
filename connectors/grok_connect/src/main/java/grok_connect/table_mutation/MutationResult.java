@@ -14,4 +14,5 @@ public class MutationResult {
     public Integer updated;
     public Integer skipped;
     public Integer errorCount;
+    public MutationPlan plan; // dryRun answer; also set on executed DDL (audit value)
 }

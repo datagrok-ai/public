@@ -3,6 +3,8 @@
   "name": "update orders",
   "tableName": "orders",
   "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
   "setColumns": ["status", "qty"],
   "setValues": ["shipped", 5],
   "setTypes": ["string", "int"],

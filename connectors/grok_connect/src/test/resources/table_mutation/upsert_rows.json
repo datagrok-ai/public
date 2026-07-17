@@ -3,6 +3,8 @@
   "name": "upsert orders",
   "tableName": "orders",
   "schema": "public",
+  "dryRun": false,
+  "confirmDestructive": false,
   "columns": ["id", "qty"],
   "columnTypes": ["int", "int"],
   "rows": [
