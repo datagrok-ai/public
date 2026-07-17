@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20322: Added `Dapi: connector ddl` suite for the `grok.data.db.ddl(...)` fluent DDL builder and `DbTable.uploadAs` (create-table-from-DataFrame): scratch-table lifecycle (create → insert → addColumn → dryRun dropTable → typed `DdlConfirmationRequiredError` with the plan attached → confirmed drop), uploadAs dryRun plan + 5k load with native-type spot checks, and a capability negative (PostgresDart, supportsDdl=false). Round trips self-skip on a stack without the DDL dispatch.
+
 GROK-20358: Reworked the `Dapi: connector writes` object[] cases for the typed-DataFrame boundary: 5-row null preservation, a Date column round-tripping as datetime, int→float widening, an all-null-column loud error (client-side, runs in CI), and a 100k object[] going through the same bulk path. Follow-up: added a dayjs-column → datetime case and a `1e21` large-float-magnitude case (no longer throws).
 
 GROK-20341: Made the `Dapi: connector writes` write-DB target configurable (defaults to the local compose demo `world` DB reachable from the grok_connect container; override via a `dgConnectorWritesDb` global) so the suite runs against a local stack instead of the hardcoded remote DB.

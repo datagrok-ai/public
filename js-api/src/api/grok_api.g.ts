@@ -1212,6 +1212,7 @@ export interface IDartApi {
   grok_DomainRow_Get_TableName(r: any): any;
   grok_DomainRow_Get_TypeName(r: any): any;
   grok_DomainRow_Get_SemValue(r: any): any;
+  grok_DomainRow_Get_DisplayName(r: any): any;
   grok_DomainRow_Get_Values(r: any): any;
   grok_DomainRow_Get_Id(r: any): any;
   grok_DomainRow_Get_Version(r: any): any;
@@ -1714,6 +1715,8 @@ export interface IDartApi {
   grok_DbTable_Upsert(p0: any, p1: any, p2: any, p3: any): Promise<any>;
   grok_DbTable_Update(p0: any, p1: any, p2: any, p3: any): Promise<any>;
   grok_DbTable_Delete(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_DbTable_UploadAs(p0: any, p1: any, p2: any, p3: any): Promise<any>;
+  grok_Db_DdlExecute(p0: any, p1: any): Promise<any>;
   grok_Entity_Get_FriendlyName(p: any): any;
   grok_Entity_Set_FriendlyName(p: any, name: String): any;
   grok_Entity_Has_Tag(e: any, tag: String): any;

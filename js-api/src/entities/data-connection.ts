@@ -348,6 +348,8 @@ export interface MutationResult {
   errorMessage?: string;
   perStatement?: {statementIndex: number, affectedRows: number}[];
   generatedKeys?: Record<string, any>[];
+  /** The executed (or, under `dryRun`, planned) DDL plan; DDL and dryRun results only. */
+  plan?: DdlPlan;
 }
 
 /** Fluent builder for structured `UPDATE`/`DELETE` mutations. A thin wrapper over
@@ -386,6 +388,232 @@ export class TableMutationBuilder {
   async delete(): Promise<MutationResult> {
     return JSON.parse(await api.grok_DbTable_Delete(this.connectionId, this.tableName,
       JSON.stringify(this._where), this._allowFullTable));
+  }
+}
+
+/** One destructive (or refused) action of a {@link DdlPlan}. */
+export interface DestructiveAction {
+  /** `table` or `columns.<name>`. */
+  path: string;
+  /** Machine code: `drop-table`, `truncate-table`, `drop-column`, `type-change`,
+   * `not-null-violation`, `required-without-default`. */
+  code: string;
+  message: string;
+  /** Live-data count from the pre-check (rows for table-level actions, non-null
+   * values for column-level ones). */
+  count?: number;
+}
+
+/** The execution plan of a DDL operation ({@link DdlCommand.dryRun}, or riding a
+ * {@link DdlConfirmationRequiredError}): the exact per-provider SQL plus live-data
+ * pre-checks. The apply path always recomputes the plan server-side — an earlier
+ * dry run is informational, never trusted. */
+export interface DdlPlan {
+  /** The exact SQL statements the operation will run, in order. */
+  statements: string[];
+  /** Destructive actions that require `confirmDestructive: true` to proceed. */
+  destructive: DestructiveAction[];
+  /** Whether the provider can roll DDL back on failure (Postgres/MSSQL true;
+   * MySQL/Oracle auto-commit DDL, so a failed multi-statement op cannot roll back). */
+  transactionalDdl?: boolean;
+}
+
+/** Thrown by {@link DdlCommand.execute} when the recomputed plan has destructive
+ * actions and `confirmDestructive` was not set. Carries the {@link plan} so the
+ * caller can render a confirmation without a second round trip, then re-run
+ * `execute({confirmDestructive: true})`. */
+export class DdlConfirmationRequiredError extends Error {
+  constructor(message: string, public readonly plan: DdlPlan, public readonly provider?: string) {
+    super(message);
+    this.name = 'DdlConfirmationRequiredError';
+  }
+}
+
+/** JSON-parse-probes a thrown mutation error: a `destructive-confirmation-required`
+ * refusal (whose 400 body rides the thrown message verbatim) becomes a typed
+ * {@link DdlConfirmationRequiredError}; anything else is returned untouched. */
+function toDdlError(e: any): any {
+  const msg: string = e?.message ?? `${e}`;
+  const start = msg.indexOf('{'), end = msg.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    let body: any = null;
+    try {
+      body = JSON.parse(msg.substring(start, end + 1));
+    } catch (_) {}
+    if (body?.error === 'destructive-confirmation-required')
+      return new DdlConfirmationRequiredError(body.message ?? msg, body.plan, body.provider);
+  }
+  return e;
+}
+
+/** Column definition for {@link DdlBuilder.createTable} / `alterTable(...).addColumn`.
+ * `type` is a dg type (`string`, `int`, `bigint`, `float`, `bool`, `datetime`) mapped
+ * to the provider's native type server-side. */
+export interface DdlColumn {
+  name: string;
+  /** Dg type: `string`, `int`, `bigint`, `float`, `bool`, `datetime`. */
+  type: string;
+  /** Defaults to true. */
+  nullable?: boolean;
+  /** Always a string; typed by `type` and embedded as an escaped literal
+   * (DDL cannot bind parameters). */
+  defaultValue?: string;
+}
+
+/** Index definition for {@link DdlBuilder.createTable}. */
+export interface DdlIndex {
+  columns: string[];
+  unique?: boolean;
+  /** Auto-generated (`ix_<table>_<col>`) when absent. */
+  name?: string;
+}
+
+/** A single addressed DDL operation, built by {@link DdlBuilder}. `dryRun()` returns
+ * the plan without executing; `execute()` recomputes the plan server-side and refuses
+ * destructive actions with {@link DdlConfirmationRequiredError} unless confirmed. */
+export class DdlCommand {
+  constructor(public readonly connectionId: string, private readonly _mutation: Record<string, any>) {}
+
+  /** Returns the execution plan — exact per-provider SQL and live-data destructive
+   * pre-checks — without executing anything. Passes the same privilege and capability
+   * gates as a real run. */
+  async dryRun(): Promise<DdlPlan> {
+    return (await this._run({...this._mutation, dryRun: true})).plan!;
+  }
+
+  /** Executes the operation. When the recomputed plan has destructive actions
+   * (drop/truncate table, drop column, type change) and `confirmDestructive` is not
+   * set, rejects with {@link DdlConfirmationRequiredError} carrying the plan. */
+  async execute(options: {confirmDestructive?: boolean} = {}): Promise<MutationResult> {
+    return this._run(options?.confirmDestructive ? {...this._mutation, confirmDestructive: true} : this._mutation);
+  }
+
+  private async _run(mutation: Record<string, any>): Promise<MutationResult> {
+    try {
+      return JSON.parse(await api.grok_Db_DdlExecute(this.connectionId, JSON.stringify(mutation)));
+    } catch (e: any) {
+      throw toDdlError(e);
+    }
+  }
+}
+
+/** Single-action `ALTER TABLE` operations, obtained via {@link DdlBuilder.alterTable}.
+ * Each method returns a {@link DdlCommand} for exactly one alteration (many databases
+ * auto-commit DDL, so batching alterations would fake an atomicity that isn't there) —
+ * run several alterations as sequential commands. */
+export class AlterTableBuilder {
+  constructor(public readonly connectionId: string, private readonly _tableName: string,
+    private readonly _schema?: string) {}
+
+  /** Adds a column. A non-nullable column without a `defaultValue` is refused on a
+   * populated table (`required-without-default`). */
+  addColumn(column: DdlColumn): DdlCommand { return this._op({action: 'addColumn', column}); }
+
+  /** Drops a column — destructive: requires `confirmDestructive` when the column has
+   * non-null values. */
+  dropColumn(columnName: string): DdlCommand { return this._op({action: 'dropColumn', columnName}); }
+
+  /** Renames a column (native `RENAME COLUMN` — non-destructive). */
+  renameColumn(columnName: string, newName: string): DdlCommand {
+    return this._op({action: 'renameColumn', columnName, newName});
+  }
+
+  /** Changes the column's type to a dg type — destructive: requires `confirmDestructive`
+   * when the column has non-null values (castability is not pre-verified; a failing cast
+   * surfaces as the database's own error). MySQL and MSSQL restate the whole column on a
+   * type change, so `options.nullable` is required there — the server refuses a MySQL/MSSQL
+   * `changeType` without an explicit nullability. */
+  changeType(columnName: string, newType: string, options?: {nullable?: boolean}): DdlCommand {
+    return this._op(options?.nullable !== undefined
+      ? {action: 'changeType', columnName, newType, nullable: options.nullable}
+      : {action: 'changeType', columnName, newType});
+  }
+
+  /** Sets or drops NOT NULL. `setNullable(col, false)` with NULLs present is a hard
+   * refusal (`not-null-violation`) — confirmation cannot help. */
+  setNullable(columnName: string, nullable: boolean): DdlCommand {
+    return this._op({action: 'setNullable', columnName, nullable});
+  }
+
+  private _op(fields: Record<string, any>): DdlCommand {
+    const m: Record<string, any> = {'#type': 'AlterTable', tableName: this._tableName, ...fields};
+    if (this._schema != null)
+      m.schema = this._schema;
+    return new DdlCommand(this.connectionId, m);
+  }
+}
+
+/** Fluent builder for structured DDL against one connection, obtained via
+ * `grok.data.db.ddl(connectionId)`. Mirrors {@link TableMutationBuilder}; every
+ * terminal returns a {@link DdlCommand} carrying exactly one operation.
+ *
+ * Requires a provider with DDL support (Postgres, MySQL/MariaDB, MSSQL, Oracle —
+ * there is no generic-JDBC DDL fallback; others reject with a structured capability
+ * error) and the matching fine-grained saved-connection privilege
+ * (`DataConnection.CreateTable` for createTable, `DropTable` for dropTable,
+ * `TruncateTable` for truncateTable, `AlterSchema` for the rest), enforced
+ * server-side. */
+export class DdlBuilder {
+  private _schema?: string;
+
+  constructor(public readonly connectionId: string) {}
+
+  /** Sets the database schema for subsequently built operations. */
+  schema(schema: string): DdlBuilder { this._schema = schema; return this; }
+
+  /** `CREATE TABLE` with optional primary key and indexes. Foreign keys are not part
+   * of the create — create first, then {@link addKey}. */
+  createTable(tableName: string, columns: DdlColumn[],
+    options?: {primaryKey?: string[], indexes?: DdlIndex[], ifNotExists?: boolean}): DdlCommand {
+    const fields: Record<string, any> = {columns};
+    if (options?.primaryKey !== undefined) fields.primaryKey = options.primaryKey;
+    if (options?.indexes !== undefined) fields.indexes = options.indexes;
+    if (options?.ifNotExists !== undefined) fields.ifNotExists = options.ifNotExists;
+    return this._op('CreateTable', tableName, fields);
+  }
+
+  /** Single-action `ALTER TABLE` operations on [tableName]. */
+  alterTable(tableName: string): AlterTableBuilder {
+    return new AlterTableBuilder(this.connectionId, tableName, this._schema);
+  }
+
+  /** `CREATE [UNIQUE] INDEX` on [columns]; the name is auto-generated
+   * (`ix_<table>_<col>`) when absent. */
+  createIndex(tableName: string, columns: string[], options?: {unique?: boolean, name?: string}): DdlCommand {
+    const fields: Record<string, any> = {columns};
+    if (options?.unique !== undefined) fields.unique = options.unique;
+    if (options?.name !== undefined) fields.indexName = options.name;
+    return this._op('CreateIndex', tableName, fields);
+  }
+
+  /** `DROP INDEX` by name. */
+  dropIndex(tableName: string, indexName: string): DdlCommand {
+    return this._op('DropIndex', tableName, {indexName});
+  }
+
+  /** Adds a primary- or foreign-key constraint; `refTable`/`refColumns` are foreign-only.
+   * The constraint name is auto-generated (`pk_<table>` / `fk_<table>_<col>`) when absent. */
+  addKey(tableName: string, spec: {keyType: 'primary' | 'foreign', columns: string[],
+    refTable?: string, refColumns?: string[], name?: string}): DdlCommand {
+    const fields: Record<string, any> = {keyType: spec.keyType, columns: spec.columns};
+    if (spec.refTable !== undefined) fields.refTable = spec.refTable;
+    if (spec.refColumns !== undefined) fields.refColumns = spec.refColumns;
+    if (spec.name !== undefined) fields.constraintName = spec.name;
+    return this._op('AddKey', tableName, fields);
+  }
+
+  /** `DROP TABLE` — destructive: requires `execute({confirmDestructive: true})` (the
+   * refusal carries the plan with the live row count). */
+  dropTable(tableName: string): DdlCommand { return this._op('DropTable', tableName, {}); }
+
+  /** `TRUNCATE TABLE` — destructive, same confirmation contract as {@link dropTable}. */
+  truncateTable(tableName: string): DdlCommand { return this._op('TruncateTable', tableName, {}); }
+
+  private _op(type: string, tableName: string, fields: Record<string, any>): DdlCommand {
+    const m: Record<string, any> = {'#type': type, tableName, ...fields};
+    if (this._schema != null)
+      m.schema = this._schema;
+    return new DdlCommand(this.connectionId, m);
   }
 }
 

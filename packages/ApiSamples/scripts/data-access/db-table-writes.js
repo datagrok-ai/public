@@ -1,7 +1,7 @@
 // Structured writes to a database table via grok.data.db.table(...).
 // Inserts a small DataFrame into a scratch table and reads it back.
-// Requires a Postgres connection whose provider supports writes and
-// DataConnection.Write permission on it. Replace CONNECTION with your own.
+// Requires a Postgres connection whose provider supports writes and the
+// DataConnection.AddRows permission on it (insert). Replace CONNECTION with your own.
 
 const CONNECTION = 'Samples:PostgresNorthwind';
 const table = `public.apisamples_writes_${Date.now()}`;

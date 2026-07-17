@@ -258,9 +258,10 @@ category('Dapi: connector writes', () => {
   });
 
   test('permission gate', async () => {
-    // The DataConnection.Write permission gate (both directions) is verified end-to-end in
-    // datlas connector_mutation_test. ApiTests runs as a single owner session (implicit Write),
-    // so it cannot exercise the negative path without a second identity.
+    // The fine-grained connection-privilege gate (AddRows/ChangeValues/RemoveRows/...; both
+    // directions) is verified end-to-end in datlas connector_mutation_test. ApiTests runs as a
+    // single owner session (implicit full access), so it cannot exercise the negative path
+    // without a second identity.
     console.log('skipped: permission gate covered by datlas connector_mutation_test (both directions green in CI)');
   }, {skipReason: 'covered by datlas connector_mutation_test'});
 }, {owner: 'askalkin@datagrok.ai'});

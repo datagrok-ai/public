@@ -2,7 +2,7 @@ import {Column, DataFrame} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
-import {ColumnInfo, DataConnection, TableInfo, TableQueryBuilder, TableMutationBuilder, MutationResult, Property} from "./entities";
+import {ColumnInfo, DataConnection, DdlBuilder, TableInfo, TableQueryBuilder, TableMutationBuilder, MutationResult, Property} from "./entities";
 import {IDartApi} from "./api/grok_api.g";
 import { Grid } from "./grid";
 import {Tags} from "./api/ddt.api.g";
@@ -136,6 +136,15 @@ export class Db {
     return TableMutationBuilder.from(tableName, connectionId);
   }
 
+  /** Creates a {@link DdlBuilder} for structured DDL (create/alter/drop tables, indexes,
+   * keys) against the [connectionId] connection. Every operation supports `dryRun()`
+   * (the exact SQL plus live-data destructive pre-checks) and the
+   * `confirmDestructive` execution contract — see {@link DdlCommand}.
+   * @param connectionId - fully-qualified connection name (see [nqName]) */
+  ddl(connectionId: string): DdlBuilder {
+    return new DdlBuilder(connectionId);
+  }
+
   /** Returns database catalog (e.g. database) information for the given connection.
    * If {@link catalog} is specified, returns only the matching catalog.
    * For databases that don't support catalogs (e.g., MySQL, Oracle),
@@ -148,10 +157,11 @@ export class Db {
 
 /**
  * Structured write access to one database table, obtained via {@link Db.table}.
- * All operations return a {@link MutationResult}; a saved-connection `DataConnection.Write`
- * privilege and per-provider write capability are enforced server-side (unsupported
- * operations reject with a structured capability error, never a 500). Values are always
- * sent as bound parameters — never interpolated SQL.
+ * All operations return a {@link MutationResult}; the matching fine-grained saved-connection
+ * privilege (`DataConnection.AddRows` for insert, `ChangeValues` for update, `RemoveRows` for
+ * delete, `AddRows`+`ChangeValues` for upsert) and per-provider write capability are enforced
+ * server-side (unsupported operations reject with a structured capability error, never a 500).
+ * Values are always sent as bound parameters — never interpolated SQL.
  *
  * `where` conditions (`update`/`delete`) are **equality by value**, plus string
  * patterns for text columns (e.g. `contains foo`). Numeric/date range grammar (`> 5`,
@@ -191,6 +201,22 @@ export class DbTable {
   async delete(spec: {where: Record<string, any>, allowFullTable?: boolean}): Promise<MutationResult> {
     return JSON.parse(await api.grok_DbTable_Delete(this.connectionId, this.tableName,
       JSON.stringify(spec.where ?? {}), spec.allowFullTable ?? false));
+  }
+
+  /** Creates the table from the DataFrame's own schema and bulk-loads [df] into it, in
+   * one operation (v1 mode is implicitly `create`; a future `replace` extends the options).
+   * The table must not already exist. Columns map dg type → native type (all nullable, no
+   * keys or indexes — for keys, run `grok.data.db.ddl(...).createTable(...)` first, then a
+   * plain {@link insert}). Requires provider DDL+write support (Postgres, MySQL/MariaDB,
+   * MSSQL, Oracle) and the `DataConnection.CreateTable` privilege. On providers without
+   * transactional DDL (MySQL, Oracle) the CREATE commits first, so a failed load leaves an
+   * empty table — the result's `plan.transactionalDdl` says which contract applies.
+   *
+   * With `dryRun: true`, nothing executes: the result's `plan.statements` carries the exact
+   * `CREATE TABLE` SQL derived from the DataFrame. */
+  async uploadAs(df: DataFrame, options: {dryRun?: boolean} = {}): Promise<MutationResult> {
+    return JSON.parse(await api.grok_DbTable_UploadAs(this.connectionId, this.tableName,
+      df.dart, JSON.stringify(options ?? {})));
   }
 
   private async _insert(rows: DataFrame | object[], options: any, upsert: boolean): Promise<MutationResult> {

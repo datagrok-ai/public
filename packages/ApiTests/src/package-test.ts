@@ -29,6 +29,7 @@ import './dapi/domains';
 import './dapi/domains-batch';
 import './dapi/domain-handlers';
 import './dapi/connector-writes';
+import './dapi/connector-ddl';
 import './dapi/connection';
 import './dapi/entities';
 import './dapi/entities-save';

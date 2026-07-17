@@ -239,7 +239,21 @@ export class Permission {
 
   static DATA_CONNECTION_LIST_FILES = 'DataConnection.ListFiles';
 
-  static DATA_CONNECTION_WRITE = 'DataConnection.Write';
+  // Fine-grained structured-write privileges (UI group 'Write').
+  static DATA_CONNECTION_ADD_ROWS = 'DataConnection.AddRows';
+
+  static DATA_CONNECTION_CHANGE_VALUES = 'DataConnection.ChangeValues';
+
+  static DATA_CONNECTION_REMOVE_ROWS = 'DataConnection.RemoveRows';
+
+  static DATA_CONNECTION_TRUNCATE_TABLE = 'DataConnection.TruncateTable';
+
+  // Fine-grained schema-change privileges (UI group 'Ddl').
+  static DATA_CONNECTION_CREATE_TABLE = 'DataConnection.CreateTable';
+
+  static DATA_CONNECTION_ALTER_SCHEMA = 'DataConnection.AlterSchema';
+
+  static DATA_CONNECTION_DROP_TABLE = 'DataConnection.DropTable';
 
   // ===== Entity: DataQuery =====
   static DATA_QUERY_EXECUTE = 'DataQuery.Execute';
