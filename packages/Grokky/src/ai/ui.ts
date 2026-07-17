@@ -10,7 +10,7 @@ import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEven
   fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
   copyToClipboard} from '../utils';
 import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel, TVAIPanel} from './panel';
+import {AIPanel, DBAIPanel, ScriptingAIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
@@ -245,8 +245,9 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
 
   initAIWindow();
   const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
-  AIWindowManager.instance.register(v, panel);
-  AIWindowManager.instance.showPanel(panel, false);
+  // Registration only — the panel shows when the user clicks the query editor's AI toggle,
+  // never by stealing the AI window from whatever conversation is mounted there.
+  AIWindowManager.instance.register(v, panel, {owned: true});
 
   let sqlContext: SQLGenerationContext | null = null;
 
@@ -601,19 +602,10 @@ export async function setupTableViewAIPanelUI() {
   const handleView = (tableView: DG.TableView) => {
     if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
-    // setup ribbon panel icon
+    // Ribbon icon toggles the shared singleton panel; table context is picked up at prompt time.
     const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
-    // setup the panel itself
-    const panel = new TVAIPanel(tableView);
-    AIWindowManager.instance.register(tableView, panel);
-
-    // Setup request handler
-    panel.onRunRequest.subscribe(async (args) => {
-      const prompt = args.currentPrompt.prompt;
-      await runPromptWithLifecycle(panel, prompt, tableView, 'tableview');
-    });
   };
   // also handle already opened views
   Array.from(grok.shell.tableViews).filter((v) => v.dataFrame != null).forEach((view) => {
@@ -626,19 +618,31 @@ export async function setupTableViewAIPanelUI() {
   });
 }
 
-// TODO: rewrite to use Claude engine instead of deprecated script-tools
+let _scriptingPanel: ScriptingAIPanel | null = null;
+
+function getScriptingPanel(view: DG.ScriptView): ScriptingAIPanel {
+  if (!_scriptingPanel) {
+    _scriptingPanel = new ScriptingAIPanel(view);
+    _scriptingPanel.onRunRequest.subscribe(async (args) => {
+      const panel = _scriptingPanel!;
+      await runPromptWithLifecycle(panel, args.currentPrompt.prompt, panel.contextView ?? grok.shell.v, 'scripting');
+    });
+  }
+  return _scriptingPanel;
+}
+
 export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
     if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
       return;
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), `Ask AI \n ${SHORTCUT_HINT}`);
+    const iconFse = ui.iconSvg('ai.svg', () => {
+      // Rebind the scripting singleton to this view so generated code lands in the right editor.
+      getScriptingPanel(scriptView).setContextView(scriptView);
+      fireAIPanelToggleEvent(scriptView);
+    }, `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
-    const panel = new ScriptingAIPanel(scriptView);
-    AIWindowManager.instance.register(scriptView, panel);
-    panel.onRunRequest.subscribe(async (args) => {
-      await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
-    });
+    AIWindowManager.instance.register(scriptView, getScriptingPanel(scriptView));
   };
 
   grok.events.onViewAdded.subscribe((view) => {

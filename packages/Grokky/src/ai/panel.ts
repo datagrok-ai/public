@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
-import {buildViewContext} from '../claude/exec-blocks';
+import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -26,7 +26,6 @@ export type ScriptingAIPanelInputs = AIPanelInputs & {
 };
 
 
-type TVAIPanelInputs = AIPanelInputs;
 
 export interface AskUserOption {
   label: string;
@@ -245,7 +244,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
     this.wandButton = ui.iconFA('magic', async (e) => {
-      const scopes = await resolveScopes('panel', this.view);
+      const scopes = await resolveScopes('panel', this.view ?? grok.shell.v);
       showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
@@ -282,6 +281,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   mountInto(parent: HTMLElement) {
     parent.appendChild(this.root);
   }
+
+  get contextView(): DG.View | DG.ViewBase { return this.view; }
+  setContextView(view: DG.View | DG.ViewBase): void { this.view = view; }
 
   activate(focus: boolean = false): void {
     this.renderEmptyState();
@@ -599,8 +601,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._streamingMarkdownEl = null;
   }
 
-  prependViewContext(prompt: string, view: DG.ViewBase): string {
-    const ctx = buildViewContext(view);
+  prependViewContext(prompt: string, _view: DG.ViewBase): string {
+    const ctx = buildWorkspaceContext();
     if (!ctx)
       return prompt;
     return ctx + '\n---\n\n' + prompt;
@@ -1157,6 +1159,11 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
     };
   }
 
+  // SQL generation context comes from the schema tools, not from the workspace.
+  prependViewContext(prompt: string, _view: DG.ViewBase): string {
+    return prompt;
+  }
+
   async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
     this.renderFinalContent(displayContent);
     // Extract SQL from fenced code blocks and inject into query editor
@@ -1164,31 +1171,6 @@ export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
     if (sqlMatch) {
       const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
       this.setAndRunFunc(sql);
-    }
-  }
-}
-
-export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
-  protected get placeHolder() { return 'Ask Claude about your data...'; }
-  protected tableView: DG.TableView;
-
-  constructor(view: DG.TableView) {
-    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view);
-    this.tableView = view;
-  }
-
-  protected getConversationMeta() {
-    return {viewState: this.tableView.saveLayout().viewState, sessionId: this.sessionId};
-  }
-
-  protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
-    if (conversation.meta?.sessionId)
-      (this as any)._sessionId = conversation.meta.sessionId;
-    const viewState = conversation.meta?.viewState ?? conversation.meta;
-    const currentViewers = Array.from(this.tableView.viewers);
-    if (!!viewState && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
-      const layout = DG.ViewLayout.fromViewState(viewState);
-      this.tableView.loadLayout(layout, true);
     }
   }
 }

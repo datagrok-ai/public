@@ -2,6 +2,11 @@
 
 ## v.next
 
+* AI: The AI panel is now a single persistent assistant — switching views no longer swaps panels or resets the conversation; workspace context (current view, all open views, all tables) is rebuilt fresh on every prompt
+* AI: `datagrok-exec` / `datagrok_verify` blocks run against the live current view, so code targets views Claude just opened (e.g. a joined table) instead of the view the prompt started from
+* AI: Query-editor AI assistant no longer force-opens the AI panel when a query view opens — it registers and shows only on its toggle icon; it's disposed with its view
+* AI: Script-generation panel became a singleton rebound to the script view whose AI icon invoked it — one scripting conversation across script views
+
 * GROK-18695: Dependency security updates — refreshed lockfile so dev-only puppeteer no longer pins the runtime ws at a vulnerable 8.17.0 (DoS/memory-disclosure advisories)
 * GROK-18695: Docker: raised security floors (VEX) — claude-runtime: deb12 upgrade, npm@latest refresh, pip/setuptools bump, hono/@hono/node-server/ws floors, dropped unused workspace JDBC jars; mcp-server: express-rate-limit/fast-uri/path-to-regexp/qs/ip-address overrides
 * GROK-20054: Report: Error: Claude runtime container is not running

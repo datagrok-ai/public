@@ -50,7 +50,9 @@ src/
 ├── polyfills.ts            # Chrome 50 / Dartium polyfills — imported first from package.ts / package-test.ts
 ├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, isEnterKey/copyToClipboard
 ├── ai/                     # AI panels, search, and UI wiring
-│   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel
+│   ├── panel.ts            # AIPanel (singleton shell chat), DBAIPanel, ScriptingAIPanel, StreamingPanel
+│   ├── ai-window.ts        # AIWindowManager — mounts panels into grok.shell.windows.ai, Ctrl+I toggle
+│   ├── prompt-suggestions.ts # Curated prompt suggestions (files/suggestions.yaml), wand-icon menu
 │   ├── ui.ts               # Setup functions that wire panels into the platform UI
 │   ├── storage.ts          # ConversationStorage — IndexedDB persistence for chat history
 │   ├── usage-limiter.ts    # Per-user daily request limits (group-configurable)
@@ -89,17 +91,32 @@ a structured output schema).
 `CombinedAISearchAssistant` collects all `aiSearchProvider` functions, uses `ClaudeRuntimeClient.query()` to rank them
 by relevance to the user query, then presents results in a lazy tab control.
 
-### AI Panels (`src/ai/panel.ts`)
+### AI Panels (`src/ai/panel.ts`) — singleton model
 
-Four panel classes handle UI for different contexts:
+The main assistant is ONE `AIPanel` instance (created by `initAIWindow()`) with one Claude session.
+It survives view switches — `AIWindowManager` (`src/ai/ai-window.ts`) never remounts on
+`onCurrentViewChanged`; instead, every prompt gets a fresh workspace snapshot from
+`buildWorkspaceContext()` (current view details, all open views, all workspace tables), and
+`datagrok-exec`/`datagrok_verify` blocks run against the live `grok.shell.v`. Table-view ribbon
+icons just toggle this singleton.
 
-- `TVAIPanel` — table view assistant
-- `DBAIPanel` — database query editor assistant
-- `ScriptingAIPanel` — script generation assistant
-- `ShellAIPanel` — context-free shell / general-purpose assistant (set up by `setupShellAIPanelUI()`)
+Two specialized panels remain:
+
+- `DBAIPanel` — per-query-editor SQL assistant (own SQL tools, no workspace context). Registered
+  `{owned: true}` in `AIWindowManager`: shown only via the query editor's toggle icon, disposed with
+  its view.
+- `ScriptingAIPanel` — a lazy singleton, rebound (`setContextView`) to the script view whose AI icon
+  invoked it; generated code lands in that editor.
 
 All panels stream through `ClaudeRuntimeClient` and share a common `StreamingPanel` base with chat history,
 streaming display, and conversation persistence via `ConversationStorage`.
+
+#### AI window visibility (sync with core)
+
+`grok.shell.windows.showAI` (core, xamgle `ai_panel.dart`) is the single source of truth. Manual close
+(X on the docked panel) resets core's `_aiDockNode` (handled in `docking.dart` `onClosing`) and the
+value is persisted in core `Settings.showAI`, restored on startup. PowerPack's status-bar robot icon
+and Grokky's `AIWindowManager` both read/write `showAI` and react to `onPanelVisibilityChanged`.
 
 #### Shell AI Panel features
 
@@ -124,10 +141,11 @@ can vary per turn without restarting the session.
 Setup functions called from `init()` that attach AI panels to platform UI elements:
 
 - `setupSearchUI()` — wires `CombinedAISearchAssistant` into the global search bar
-- `setupTableViewAIPanelUI()` — adds `TVAIPanel` to table views
-- `setupScriptsAIPanelUI()` — adds `ScriptingAIPanel` to script views
-- `setupAIQueryEditorUI()` — adds `DBAIPanel` to the query editor
-- `setupShellAIPanelUI()` — adds `ShellAIPanel` to the shell/AI sidebar
+- `setupTableViewAIPanelUI()` — adds the AI ribbon icon to table views (toggles the singleton panel)
+- `setupScriptsAIPanelUI()` — adds the AI icon to script views, binds the `ScriptingAIPanel` singleton
+- `setupAIQueryEditorUI()` — registers a `DBAIPanel` for the query editor (shown via its toggle icon)
+- `setupShellAIPanelUI()` — shows the singleton panel in the AI window
+- `setupAgentScriptsUI()` — adds a Run button to file views under `MyFiles/agents/scripts/`
 
 `runPromptWithLifecycle()` is the central routing function: intercepts `!`/`!!` prefixes,
 skips `grok.ai.processPrompt()` when `rawRender` is on, and calls `runClaudeStreaming()`.
