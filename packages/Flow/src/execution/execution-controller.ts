@@ -408,7 +408,10 @@ export class ExecutionController {
     } else {
       // A new full/slice run invalidates anything we were showing — and the
       // captured live values (they're recomputed by this run's `__ff_stash`).
-      this.outputPreview.clear();
+      // A pinned preview keeps its stale content in place instead of blinking:
+      // node-start overlays the spinner, node-complete renders fresh.
+      if (this.outputPreview.pinnedNodeId == null || this.outputPreview.currentNodeId == null)
+        this.outputPreview.clear();
       this.state.startRun(runId);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
@@ -474,6 +477,8 @@ export class ExecutionController {
     case 'node-start':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.running, {startTime: event.timestamp});
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.running);
+      // The pinned node is recomputing — spinner over the kept stale content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.markUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'node-complete':
@@ -495,6 +500,8 @@ export class ExecutionController {
         endTime: event.timestamp, error: event.error, stack: event.stack,
       });
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.errored);
+      // A failed pinned recompute: drop the spinner, keep the last good content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.clearUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'breakpoint-hit':
@@ -504,6 +511,9 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
+      // Safety: if the pinned node never completed this run (skipped/halted),
+      // don't leave the spinner spinning over the kept content.
+      this.outputPreview.clearUpdating();
       if (this.pendingOnComplete) {
         const cb = this.pendingOnComplete;
         this.pendingOnComplete = null;
@@ -596,9 +606,13 @@ export class ExecutionController {
     if (reg)
       for (const id of affected) delete reg[id];
     // Stale values aren't worth previewing; close (and remember the node so an
-    // autorun can bring the preview back once fresh values exist).
+    // autorun can bring the preview back once fresh values exist). A PINNED
+    // preview keeps its stale content instead — hiding and re-docking on every
+    // upstream edit reads as jumping; node-start overlays the recalculating
+    // spinner and node-complete swaps in the fresh render in place.
     const previewId = this.outputPreview.currentNodeId;
-    if (previewId !== null && affected.has(previewId)) {
+    if (previewId !== null && affected.has(previewId) &&
+        this.outputPreview.pinnedNodeId !== previewId) {
       this.outputPreview.clear();
       this.autorunPreviewNodeId = previewId;
     }

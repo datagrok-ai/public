@@ -258,6 +258,36 @@ category('Flow: execution preview', () => {
     expect(fires, 1, 'programmatic unpin (node deleted / graph replaced) stays silent');
   });
 
+  test('markUpdating overlays a spinner on the kept content; the next render releases it', async () => {
+    // The pinned-preview recompute path: instead of hiding + re-docking (which
+    // reads as jumping), the stale content stays with a "Recalculating…"
+    // indicator until the fresh render lands.
+    const panel = new OutputPreviewPanel();
+    const content = panel.root.querySelector('[data-testid="ff-output-panel-content"]') as HTMLElement;
+    const shadow = (): Element | null => content.querySelector('.d4-update-shadow');
+
+    panel.markUpdating();
+    expect(shadow(), null, 'no content → no indicator (nothing to overlay)');
+
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    panel.togglePin();
+    panel.markUpdating();
+    expect(panel.panelState, 'expanded', 'the panel stays visible — no hide');
+    expect(!!shadow(), true, 'indicator overlays the kept content');
+    expect(content.childElementCount >= 2, true, 'the stale preview is still mounted under it');
+
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    expect(shadow(), null, 'a fresh render releases the indicator');
+
+    panel.markUpdating();
+    panel.clearUpdating();
+    expect(shadow(), null, 'clearUpdating releases it without a render (error / skipped run)');
+
+    panel.markUpdating();
+    panel.clear();
+    expect(shadow(), null, 'clear() drops the indicator with the content');
+  });
+
   test('the pin survives clear(); unpin() drops it', async () => {
     const panel = new OutputPreviewPanel();
     panel.showForNode({id: 'n1', label: 'a'}, renderableState());

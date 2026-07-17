@@ -66,6 +66,11 @@ export class OutputPreviewPanel {
    *  `clear()` — an invalidated pinned value comes back pinned once recomputed. */
   private pinnedId: string | null = null;
 
+  /** A spinner overlay is on the kept (stale) content — the pinned node is
+   *  recomputing. Set by the controller on the pinned node's node-start;
+   *  released by the next render, `clearUpdating()`, or `clear()`. */
+  private updating = false;
+
   /** Called when the user clicks "Edit settings" on a viewer preview — the host
    *  shows the viewer in the context panel and captures its option changes. */
   onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
@@ -137,6 +142,23 @@ export class OutputPreviewPanel {
     this.updatePinVisual();
   }
 
+  /** Overlay a "Recalculating…" spinner on the current (stale) content instead
+   *  of hiding the panel — the pinned node is being recomputed and its fresh
+   *  render will take over. No-op without visible content. */
+  markUpdating(message = 'Recalculating...'): void {
+    if (!this.enabled || this.state === 'hidden' || this.lastNodeId == null) return;
+    this.updating = true;
+    ui.setUpdateIndicator(this.contentEl, true, message);
+  }
+
+  /** Remove the spinner overlay, keeping whatever content is shown. Safe to
+   *  call when no indicator is on. */
+  clearUpdating(): void {
+    if (!this.updating) return;
+    this.updating = false;
+    ui.setUpdateIndicator(this.contentEl, false);
+  }
+
   private updatePinVisual(): void {
     this.pinEl.dataset.pinned = this.pinnedId != null ? 'true' : 'false';
     // Nothing shown and nothing pinned → there is nothing to pin; hide the
@@ -181,8 +203,12 @@ export class OutputPreviewPanel {
 
     // Same node, same captured state, panel visible → the content is already
     // right; rebuilding would re-mount the grids and reset their scroll.
-    if (this.state !== 'hidden' && node.id === this.lastNodeId && state === this.lastState) return;
+    if (this.state !== 'hidden' && node.id === this.lastNodeId && state === this.lastState) {
+      this.clearUpdating();
+      return;
+    }
 
+    this.clearUpdating();
     const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
     inner.style.padding = '8px 12px';
     this.contentEl.innerHTML = '';
@@ -222,6 +248,7 @@ export class OutputPreviewPanel {
    *  The user's minimized preference AND the pin survive — a pinned node's
    *  fresh result re-opens into the pinned panel; only `unpin()` drops it. */
   clear(): void {
+    this.clearUpdating();
     this.contentEl.innerHTML = '';
     this.nodeLabelEl.textContent = '';
     this.lastNodeId = null;

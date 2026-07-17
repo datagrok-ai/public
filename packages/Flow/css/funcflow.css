@@ -2046,6 +2046,9 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   flex: 1 1 0;
   min-height: 0;
   overflow: auto;
+  /* Anchor for the absolute .d4-update-shadow overlay (ui.setUpdateIndicator)
+   * shown over kept stale content while a pinned node recomputes. */
+  position: relative;
 }
 
 .funcflow-value-previews {
