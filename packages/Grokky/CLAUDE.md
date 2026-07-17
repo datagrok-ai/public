@@ -112,7 +112,11 @@ Views ship their own AI tools; the singleton collects them fresh on every prompt
 1. **`view.getAITools()`** — js-api `ViewBase.getAITools(): AIViewTool[]` (`{name, description,
    inputSchema?, run}`). Dart views override `View.getAITools()` (e.g. `DataQueryView` returns
    `get_query_info` / `set_query_and_run`); for JS-defined views the Dart `JsViewHost` forwards the
-   call to the original JS `ViewBase` instance (interop: `grok_View_GetAITools`).
+   call to the original JS `ViewBase` instance (interop: `grok_View_GetAITools`). The collector also
+   reads `view.jsView?.getAITools()` — js-api `View.jsView` (interop `grok_View_Get_JsView`) exposes
+   the original JS `ViewBase` of a JS-hosted view (e.g. Flow's `FuncFlowView`, which ships
+   graph-building tools: `list_flow_nodes`, `find_flow_node_types`, `add_flow_node`,
+   `connect_flow_nodes`, `set_flow_node_inputs`, `select_flow_node`, `run_flow`).
 2. **`viewAIToolsProvider` functions** — any package can register a function with
    `meta: {role: 'viewAIToolsProvider', viewType: '<view.type>'}` taking the view and returning
    `AIViewTool[]`. Grokky registers two: `queryViewAITools` (DataQueryView — SQL schema exploration +

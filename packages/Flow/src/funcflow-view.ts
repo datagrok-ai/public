@@ -52,6 +52,7 @@ import {GuideRunner} from './guide/guide-runner';
 import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
 import {TUTORIALS} from './guide/guide-content';
 import {summarizeFlow} from './summary/summary-generator';
+import {buildFlowAITools} from './ai-tools';
 
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
@@ -855,6 +856,20 @@ export class FuncFlowView extends DG.ViewBase {
     await this.flow.addNodeAtCenter(node);
     this.updateStatusBar();
     return node;
+  }
+
+  /** AI tools of this view — collected by the AI assistant at prompt time
+   *  (via `grok.shell.v.jsView.getAITools()` / the JsViewHost forwarding). */
+  getAITools(): DG.AIViewTool[] {
+    if (!this.flow)
+      return [];
+    return buildFlowAITools({
+      flow: () => this.flow,
+      execution: () => this.executionController ?? null,
+      addNodeByType: (typeName: string) => this.addNodeByType(typeName),
+      run: () => this.runInstrumented(),
+      runGuide: (guide) => void this.guideRunner.run(guide, this.guideHost),
+    });
   }
 
   /** Accept a toolbox suggestion: create the node — at the drop point when the

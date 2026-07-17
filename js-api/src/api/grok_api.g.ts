@@ -99,6 +99,7 @@ export interface IDartApi {
   grok_View_SetRibbonPanels(v: any, panels: any, clear: Bool): any;
   grok_View_GetRibbonPanels(v: any): any;
   grok_View_GetAITools(v: any): any;
+  grok_View_Get_JsView(v: any): any;
   grok_View_Get_ToolboxPage(v: any): any;
   grok_View_Detach(v: any): any;
   grok_View_DetachViewers(v: any): any;

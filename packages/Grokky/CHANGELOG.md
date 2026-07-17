@@ -2,6 +2,8 @@
 
 ## v.next
 
+* AI: View tools now reach JS-defined views — tools are also collected from `view.jsView.getAITools()` (new js-api `View.jsView` exposes the original ViewBase of a JS view); the system prompt mentions Flow and prefers view tools over generic exec code
+
 * AI: View AI tools — views can now ship their own AI tools (`ViewBase.getAITools()` in js-api, Dart `View.getAITools()` with JsViewHost forwarding, or a `viewAIToolsProvider` function role); the singleton panel collects the current view's tools on every prompt and declares them to the Claude runtime (`clientTools` → in-process `datagrok-view` MCP server, calls round-trip to the browser)
 * AI: Query editor — removed the dedicated DB panel and catalog selector; the assistant now works on the query view through tools: `get_query_info` / `set_query_and_run` (Dart-native) plus SQL schema exploration and test-execution tools (`list_db_*`, `get_db_table_details`, `get_sql_test_result`)
 * AI: Script editor — removed the dedicated scripting panel and language selector; the assistant reads/writes the open editor via `get_script_code` / `set_script_code` and infers the language from the script header

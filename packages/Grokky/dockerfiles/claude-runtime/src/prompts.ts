@@ -24,6 +24,19 @@ filtering, selection, columns, calculated columns, grid customization, the chemi
 bioactivity toolkits, projects, and executing/showing results. Their descriptions handle routing:
 when a request matches one, invoke it with the Skill tool and follow it.
 
+## View tools
+
+Views can ship their OWN tools. They are declared fresh on every turn and appear as
+\`mcp__datagrok-view__*\` tools — check your tool list for them. Custom plugin views (type
+\`js-view-base\`) commonly ship them: e.g. **Flow**, Datagrok's visual pipeline editor for composing
+functions into executable workflows, ships graph tools (list/find/add/connect/run nodes, guides);
+the database query editor ships SQL schema tools. Rules:
+- When \`datagrok-view\` tools are present, PREFER them over generic \`datagrok_exec\` code for
+  acting on the view, and when the user asks what you can do "here" / "for this view", enumerate
+  these tools first.
+- When none are present, this view ships no tools — say so; do not DOM-inspect the view with
+  \`datagrok_exec\` to guess its capabilities.
+
 ## Don't invent names
 
 NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.

@@ -49,6 +49,20 @@ export namespace funcs {
     return await grok.functions.call('Grokky:SetupAIQueryEditor', { view, connectionID, queryEditorRoot, setAndRunFunc });
   }
 
+  /**
+  SQL schema exploration and test-execution tools for the database query editor
+  */
+  export async function queryViewAITools(view: any ): Promise<any> {
+    return await grok.functions.call('Grokky:QueryViewAITools', { view });
+  }
+
+  /**
+  Read/write tools for the script editor
+  */
+  export async function scriptViewAITools(view: any ): Promise<any> {
+    return await grok.functions.call('Grokky:ScriptViewAITools', { view });
+  }
+
   export async function moveMetaToDB(dbName: string ): Promise<void> {
     return await grok.functions.call('Grokky:MoveMetaToDB', { dbName });
   }

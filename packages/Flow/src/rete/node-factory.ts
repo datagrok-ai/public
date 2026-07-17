@@ -458,7 +458,7 @@ export function getRegisteredTypeNames(): string[] {
  *  important for the suggestion menu where we may probe hundreds of factories. */
 const _sampleInputTypesCache = new Map<string, string[]>();
 
-function getInputTypesForType(typeName: string): string[] {
+export function getInputTypesForType(typeName: string): string[] {
   let cached = _sampleInputTypesCache.get(typeName);
   if (cached !== undefined) return cached;
   const factory = FACTORIES.get(typeName);
@@ -480,7 +480,7 @@ function getInputTypesForType(typeName: string): string[] {
  *  `getInputTypesForType`. */
 const _sampleOutputTypesCache = new Map<string, {real: string[]; passthrough: string[]}>();
 
-function getOutputTypesForType(typeName: string): {real: string[]; passthrough: string[]} {
+export function getOutputTypesForType(typeName: string): {real: string[]; passthrough: string[]} {
   let cached = _sampleOutputTypesCache.get(typeName);
   if (cached !== undefined) return cached;
   const factory = FACTORIES.get(typeName);

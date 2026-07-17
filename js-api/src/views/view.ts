@@ -251,6 +251,14 @@ export class View extends ViewBase {
     return f ? (f(this.dart) ?? []) : [];
   }
 
+  /** The original JS {@link ViewBase} instance when this view hosts a JS-defined view
+   * (e.g. a plugin app view), null for native Dart views. Lets callers reach the actual
+   * view class (its methods, tools, state) from `grok.shell.v`. */
+  get jsView(): ViewBase | null {
+    const f = (api as any).grok_View_Get_JsView;
+    return f ? (f(this.dart) ?? null) : null;
+  }
+
   static fromDart(dart: any): View | TableView {
     let type = api.grok_View_Get_Type(dart);
     if (type === VIEW_TYPE.TABLE_VIEW)

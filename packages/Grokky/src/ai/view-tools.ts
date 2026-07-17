@@ -29,6 +29,14 @@ export async function collectViewAITools(view: DG.ViewBase | null): Promise<Coll
   } catch (e: any) {
     console.warn('Grokky: view.getAITools failed:', e.message);
   }
+  // JS-defined views (e.g. plugin apps like Flow): reach the original ViewBase instance directly.
+  try {
+    const jsTools = (view as any).jsView?.getAITools?.();
+    if (Array.isArray(jsTools))
+      tools.push(...jsTools);
+  } catch (e: any) {
+    console.warn('Grokky: jsView.getAITools failed:', e.message);
+  }
   for (const f of DG.Func.find({meta: {role: 'viewAIToolsProvider'}})) {
     if (f.options['viewType'] !== view.type)
       continue;
