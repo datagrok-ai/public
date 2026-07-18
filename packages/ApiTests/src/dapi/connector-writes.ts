@@ -243,6 +243,37 @@ category('Dapi: connector writes', () => {
     expect(rows.col('c')!.get(0), 2);
   });
 
+  test('total failure rejects (WO-B15)', async () => {
+    if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
+    // A mutation that failed as a whole (rolled back, nothing applied) REJECTS with the SQL
+    // message — it must never resolve green-shaped with affectedRows 0. Update travels the
+    // inline /mutate path, whose embedded errorMessage is promoted server-side (WO-B15).
+    const missing = `apitests_cw_missing_${rnd()}`;
+    let error = '';
+    try {
+      await grok.data.db.table(conn.nqName, `${schema}.${missing}`)
+        .update({set: {name: 'x'}, where: {id: 1}});
+    } catch (e: any) {
+      error = e.message ?? `${e}`;
+    }
+    expect(error !== '', true, 'a rolled-back mutation must reject, not resolve');
+    expect(error.includes(missing), true, `the rejection must carry the SQL message, got: ${error}`);
+  });
+
+  test('partial mode resolves with per-row errors', async () => {
+    if (!writesEnabled) { console.log(`skipped: ${skipReason}`); return; }
+    await reset();
+    // allOrNothing: false — per-row errors are the EXPECTED payload of a RESOLVED promise;
+    // only whole-operation failures reject (WO-B15 keeps this §5.6 contract intact).
+    const res = await t().insert(
+      [{id: null, name: 'bad', qty: 0}, {id: 1, name: 'a', qty: 1}, {id: 2, name: 'b', qty: 2}],
+      {allOrNothing: false});
+    expect(res.errorCount ?? 0, 1, `expected one per-row error, got: ${JSON.stringify(res)}`);
+    expect(res.affectedRows, 2);
+    const c = await grok.data.db.query(conn.nqName, `select count(*) as c from ${fqTable}`);
+    expect(c.col('c')!.get(0), 2);
+  });
+
   test('capability negative (non-write provider)', async () => {
     // PostgresDart reports supportsWrite=false; the mutation must be refused at the Datlas
     // capability gate with a structured error — no GrokConnect round trip. Runs in CI.

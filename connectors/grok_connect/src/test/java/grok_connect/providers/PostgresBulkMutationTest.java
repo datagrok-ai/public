@@ -524,6 +524,7 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(Integer.valueOf(1), result.errorCount);
         Assertions.assertEquals(500, result.errors.get(0).index);
         Assertions.assertEquals("notnull", result.errors.get(0).code);
+        Assertions.assertNull(result.errorMessage); // partial-mode per-row errors never set the total-failure signal (WO-B15)
         Assertions.assertEquals(0, ((Number) queryCount("SELECT count(*) FROM mut_partial WHERE id = 500")).intValue());
     }
 
@@ -739,6 +740,10 @@ class PostgresBulkMutationTest extends ContainerizedProviderBaseTest {
         Assertions.assertEquals(Integer.valueOf(1), result.errorCount);
         Assertions.assertEquals(1, result.errors.get(0).index);
         Assertions.assertEquals("notnull", result.errors.get(0).code);
+        // WO-B15: the atomic rollback ALWAYS carries the canonical total-failure signal
+        Assertions.assertNotNull(result.errorMessage);
+        Assertions.assertTrue(result.errorMessage.contains("rolled back"), result.errorMessage);
+        Assertions.assertTrue(result.errorMessage.contains(result.errors.get(0).message), result.errorMessage);
     }
 
     // ---- Committed Dart d42 fixtures (exotic encoders) replayed through the real transport ----

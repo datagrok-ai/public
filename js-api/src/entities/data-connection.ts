@@ -344,7 +344,9 @@ export interface MutationResult {
   updated?: number | null;
   skipped?: number | null;
   errorCount?: number | null;
-  /** Top-level SQL error message, when the whole operation failed. */
+  /** Top-level SQL error message — set ⇔ the whole operation failed and was rolled back
+   * (nothing applied). Such failures REJECT the returned promise, so you will only see
+   * this field on a resolved result coming from a pre-fix server. */
   errorMessage?: string;
   perStatement?: {statementIndex: number, affectedRows: number}[];
   generatedKeys?: Record<string, any>[];

@@ -161,6 +161,9 @@ export class Db {
  * privilege (`DataConnection.AddRows` for insert, `ChangeValues` for update, `RemoveRows` for
  * delete, `AddRows`+`ChangeValues` for upsert) and per-provider write capability are enforced
  * server-side (unsupported operations reject with a structured capability error, never a 500).
+ * An operation that fails as a whole (rolled back, nothing applied) REJECTS the returned
+ * promise with the SQL error; per-row errors under `allOrNothing: false` resolve with
+ * `errors`/`errorCount` in the {@link MutationResult}.
  * Values are always sent as bound parameters — never interpolated SQL.
  *
  * `where` conditions (`update`/`delete`) are **equality by value**, plus string
@@ -208,9 +211,10 @@ export class DbTable {
    * The table must not already exist. Columns map dg type → native type (all nullable, no
    * keys or indexes — for keys, run `grok.data.db.ddl(...).createTable(...)` first, then a
    * plain {@link insert}). Requires provider DDL+write support (Postgres, MySQL/MariaDB,
-   * MSSQL, Oracle) and the `DataConnection.CreateTable` privilege. On providers without
-   * transactional DDL (MySQL, Oracle) the CREATE commits first, so a failed load leaves an
-   * empty table — the result's `plan.transactionalDdl` says which contract applies.
+   * MSSQL, Oracle) and the `DataConnection.CreateTable` privilege. A failed load REJECTS
+   * the returned promise; on providers without transactional DDL (MySQL, Oracle) the CREATE
+   * commits first, so a failed load leaves an empty table — the leftover note rides in the
+   * rejection message, and the result's `plan.transactionalDdl` says which contract applies.
    *
    * With `dryRun: true`, nothing executes: the result's `plan.statements` carries the exact
    * `CREATE TABLE` SQL derived from the DataFrame. */

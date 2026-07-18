@@ -144,9 +144,16 @@ public class MutationManager {
             boolean rollback = mutation.allOrNothing && result.errorCount != null && result.errorCount > 0;
             if (rollback) {
                 provider.rollbackQuietly(connection);
+                // errorMessage is the canonical whole-operation-failure signal (WO-B15):
+                // ALWAYS set on rollback, so Datlas promotes it to the FuncCall error channel.
+                if (result.errorMessage == null) {
+                    String first = result.errors == null || result.errors.isEmpty()
+                            ? "" : "; first: " + result.errors.get(0).message;
+                    result.errorMessage = "Bulk load failed and was rolled back ("
+                            + result.errorCount + " row error(s)" + first + ")";
+                }
                 if (createLeftoverNote != null) // the DML rolled back, but the auto-committed CREATE did not
-                    result.errorMessage = (result.errorMessage == null
-                            ? "Bulk load failed and was rolled back" : result.errorMessage) + createLeftoverNote;
+                    result.errorMessage += createLeftoverNote;
             }
             else if (connection != null && !connection.getAutoCommit())
                 connection.commit();
