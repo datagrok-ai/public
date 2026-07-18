@@ -248,5 +248,14 @@ export async function filesSearch(s: string): Promise<DG.FileInfo[]> {
   const appDataFiles = await grok.dapi.files.list('System:AppData/', true, s);
   allFiles.push(...appDataFiles);
 
+  // demo datasets live in a shared connection not covered above; match client-side because
+  // the server-side searchPattern filter is case-sensitive and would drop e.g. SPGI.csv for 'spgi'
+  try {
+    const demoFiles = await grok.dapi.files.list('System:DemoFiles/', true, null);
+    allFiles.push(...demoFiles.filter((f) => f.name.toLowerCase().includes(s)));
+  } catch (e) {
+    console.error('Error fetching demo files:', e);
+  }
+
   return allFiles;
 }

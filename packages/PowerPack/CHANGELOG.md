@@ -2,7 +2,7 @@
 
 ## v.next
 
-
+* GROK-17130: Search: Files search now includes System:DemoFiles and matches file names case-insensitively, so demo datasets like SPGI.csv are found in Search everywhere
 * Moved the PowerPack Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * Workspace: Fixed the editor-header "Open" doing nothing for a pinned query/function or data connection — it now opens the entity's own view the way the Browse tree does (a query's run view, a connection's queries browser) via the handler's `renderPreview`, consistently for all entity types, instead of `Func.apply()` (which ran with empty inputs and added no view) or only setting the context object. Running the query and viewing its table result stays on Run / the bottom-preview "Open"
 * Search: Added Spaces, Plugins, Notebooks, and Models to the search provider
