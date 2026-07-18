@@ -205,6 +205,13 @@ public class SessionHandler {
             session.getRemote().sendStringByFuture(String.format("DATAFRAME PART SIZE: %d", bytes.length));
         }
         else {
+            // Commit BEFORE the COMPLETED token: Datlas resolves the caller's future on it, and WS
+            // frames are FIFO — commit-before-send is the happens-before edge that closes the
+            // commit-visibility race. Safe only here: the state machine reaches this branch with a
+            // fully-drained resultset. A failed commit propagates as a query ERROR instead of being
+            // swallowed post-success in onClose.
+            if (queryManager != null)
+                queryManager.commitPending();
             // The RAW_WRITE token carries the §6.2 post-hoc raw-write detection (WO-B13) to Datlas,
             // which audit-logs it; older servers only read the chunk-count token and ignore the rest.
             String rawWrite = queryManager != null && queryManager.isRawWriteDetected() ? " RAW_WRITE" : "";

@@ -45,6 +45,7 @@ public class QueryManager {
     private int columnCount;
     private boolean isFinished = false;
     private boolean supportsFetchSize = true;
+    private boolean committed;
 
     public QueryManager(String message) {
         LOGGER.debug("Deserializing json call and preprocessing it...");
@@ -76,6 +77,7 @@ public class QueryManager {
     }
 
     public void initResultSet(FuncCall query) throws GrokConnectException, QueryCancelledByUser, SQLException {
+        committed = false; // dryRun re-inits the SAME instance: a stale flag would skip the real run's commit
         LOGGER.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.START), "Receiving connection to {} database...", provider.descriptor.type);
         connection = provider.getConnection(query.func.connection);
         LOGGER.debug(EventType.CONNECTION_RECEIVE.getMarker(EventType.Stage.END), "Received connection to {} database", provider.descriptor.type);
@@ -131,12 +133,21 @@ public class QueryManager {
         return df;
     }
 
+    /** Commits once, right before the COMPLETED token is sent (WS frames are FIFO, so this
+     *  happens-before Datlas resolving the caller's future); close(true) is a no-op afterwards. */
+    public void commitPending() throws SQLException {
+        if (connection != null && !connection.isClosed() && !connection.getAutoCommit() && !committed) {
+            connection.commit();
+            committed = true;
+        }
+    }
+
     public void close(boolean commit) throws SQLException {
         if (resultSet != null && !resultSet.isClosed())
             resultSet.close();
         if (connection != null && !connection.isClosed()) {
             LOGGER.debug("Closing DB connection...");
-            if (!connection.getAutoCommit()) {
+            if (!committed && !connection.getAutoCommit()) {
                 if (commit)
                     connection.commit();
                 else
