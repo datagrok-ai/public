@@ -171,10 +171,14 @@ class TranslatorAppLayout {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.meta.units = units;
-      const seqHandler = this.seqHelper.getSeqHandler(translatedColumn as DG.Column<string>);
-      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? this.seqHelper.setUnitsToFastaColumn :
-        this.seqHelper.setUnitsToHelmColumn;
-      setUnits(seqHandler);
+      try {
+        const seqHandler = this.seqHelper.getSeqHandler(translatedColumn as DG.Column<string>);
+        const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? this.seqHelper.setUnitsToFastaColumn :
+          this.seqHelper.setUnitsToHelmColumn;
+        setUnits(seqHandler);
+      } catch (e: any) {
+        grok.shell.warning(e.message ?? 'Failed to detect sequence alphabet');
+      }
     }
 
     // add newColumn to the table
