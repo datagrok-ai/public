@@ -17,7 +17,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:1.0.0
+    image: datagrok/grok_pipe:latest
     platform: linux/amd64
     container_name: grok_pipe
     ports:
@@ -65,6 +65,7 @@ services:
             "proxyRequestTimeout": 60000
           },
           "queueSettings": {
+            "useQueue": true,
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
             "amqpPort": 5672,
@@ -137,6 +138,16 @@ services:
           "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_started
+        restart: true
+      grok_pipe:
+        condition: service_started
+        restart: false
+      datagrok:
+        condition: service_started
+        restart: false
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
