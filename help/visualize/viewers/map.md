@@ -73,7 +73,7 @@ The system provides interaction with files of the following extensions:
 | Show Color Selector | boolean |  |
 | Allow Pan Zoom | boolean |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |

@@ -91,7 +91,7 @@ General:
 | Min Max Orientation | textorientation |  |
 | Axis Font | string |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | Whisker Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
 | **Box Plot** | | |
