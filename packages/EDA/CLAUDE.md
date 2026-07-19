@@ -98,6 +98,14 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
   - Export to MPO desirability profiles (integration with `@datagrok-libraries/statistics`)
 - Sample data in `files/` directory for testing and demos
 
+### Implementation Guides
+
+The package has dedicated guides for implementing new methods:
+
+- **`src/guides/COMPUTATION-PATTERNS.md`** — raw typed array access, manual null handling, single-pass aggregation, bool column bitwise extraction, data locality, module structure. **Read this before implementing any new computational method.**
+- **`src/guides/WORKER-GUIDE.md`** — `WorkerColumn`/`WorkerDataFrame` types, transform functions (`toWorker*`/`fromWorker*`), null-handling conventions, worker lifecycle. **Read this before implementing any worker-based method.**
+- **`src/guides/PARALLEL-EXECUTION.md`** — fan-out/fan-in pattern, worker count configuration. **Read this when distributing work across multiple workers.**
+
 ### WASM Integration
 
 - **sci-comp-ml** (PCA, PLS, softmax, linear regression): a Rust + WASM crate built with `wasm-pack`, copied into `wasm/` (`sci_comp_ml.js` + `sci_comp_ml_bg.wasm`). Initialised lazily on first use via `src/wasm-loader.ts`; the binary is emitted to `dist/` (via the `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js`) and located relative to the running bundle (`document.currentScript`), **not** `_package.webRoot` — so it resolves in the separate `package-test.js` bundle too. Wrapped by `wasm/eda-api.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts`.
