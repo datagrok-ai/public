@@ -11,7 +11,6 @@ import {
   saveAnalysisResult, saveAnalysisRunParameter
 } from '../../plates/plates-crud';
 import {AnalysisRequiredFields} from '../../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import {_package} from '../../package';
 import {PlateWidget} from '../plate-widget/plate-widget';
 
 export interface IAnalysisProperty {
@@ -154,7 +153,7 @@ export abstract class AnalysisBase implements IPlateAnalysis {
         grok.shell.info(`Saved ${this.friendlyName} results for plate ${plate.barcode}.`);
       } catch (e: any) {
         const errorMessage = `Failed to save ${this.friendlyName} results. Reason: ${e.message}`;
-        _package.logger.debug(errorMessage);
+        console.error(errorMessage);
         if (runId) {
           try {
             await grok.data.db.query('Plates:Plts', `DELETE FROM plts.analysis_runs WHERE id = ${runId};`);
