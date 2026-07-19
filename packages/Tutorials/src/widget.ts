@@ -54,7 +54,7 @@ export class TutorialWidget extends DG.Widget {
             if (existingDock)
               grok.shell.dockManager.close(existingDock);
           }
-          grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.27);
+          grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.22);
         });
 
         tracksRoot.append(ui.divV([

@@ -248,7 +248,7 @@ export class PeptidesSarTutorial extends Tutorial {
         step7B2.remove();
 
         // ########## Step 8: Sequence Variability Map · Mutation Cliffs ##########
-        const s81b = paragraphs(['Mutation Cliffs', 'In this mode, each <b>cell</b> shows <b>counts</b> of sequence pairs that differ only at that <br>monomer(row)-position(column) (<b>Size</b>) and <br>their mean activity difference (<b>Color</b>).','<b>Hover/Click</b> any non-empty cell.']);
+        const s81b = paragraphs(['In this mode, each <b>cell</b> shows <b>counts</b> of sequence pairs that differ only at that monomer(row)-position(column) (<b>Size</b>) and their mean activity difference (<b>Color</b>).','<b>Hover/Click</b> any non-empty cell.'], 'Mutation Cliffs');
         const step8B1 = greenHint(svmRoot, s81b, 'top');
         const mutViewerClickPromise = new Promise<void>((res) => {
             const timer = setInterval(() => {
@@ -308,7 +308,7 @@ export class PeptidesSarTutorial extends Tutorial {
         invariantHint.remove();
 
         // Step 9: Invariant Map
-        const step91Hint = greenHint(svmRoot, paragraphs(['Invariant Map', 'In this mode, each <b>cell</b> shows how many sequences contain <br>that monomer at that position (<b>number</b>) and <br>the mean activity of those sequences (<b>color</b>).','<b>Hover</b> or <b>click</b> any cell to see details']), 'right');
+        const step91Hint = greenHint(svmRoot, paragraphs(['In this mode, each <b>cell</b> shows how many sequences contain that monomer at that position (<b>number</b>) and the mean activity of those sequences (<b>color</b>).','<b>Hover</b> or <b>click</b> any cell to see details'], 'Invariant Map'), 'right');
         const step91Next = ui.button('NEXT', () => {});
         step91Hint.appendChild(step91Next);
         const step91Prom = new Promise<void>((resolve) => {
@@ -379,7 +379,7 @@ export class PeptidesSarTutorial extends Tutorial {
 
         const aggColumnsButton = aggColumnsHost!.querySelector('button') as HTMLButtonElement;
         const aggColumnsClick = rxjs.fromEvent(aggColumnsButton, 'click').pipe(operators.take(1)).toPromise();
-        const lstHint = greenHint(contextPanelRoot, paragraphs(['Add aggregated column','Under <b>Aggregations</b>, choose position <b>14</b> (Column named "14") and hit <b>OK</b> to add a <b>pie chart</b> distribution column.']), 'left');
+        const lstHint = greenHint(contextPanelRoot, paragraphs(['Under <b>Aggregations</b>, choose position <b>14</b> (Column named "14") and hit <b>OK</b> to add a <b>pie chart</b> distribution column.'], 'Add aggregated column'), 'left');
         const lstAggRegationPromise = new Promise<void>(async (resolve) => {
             await aggColumnsClick;
             const int = setInterval(() => {
@@ -450,7 +450,7 @@ export class PeptidesSarTutorial extends Tutorial {
             setTimeout(() => resolve(), 2000);
         });
 
-        const finalHintDiv = ui.divV([paragraphs([`All set!`, `You launched <b>SAR</b>, explored <b>WebLogos</b> and <b>monomers</b>,<br>configured <b>Sequence Variability Map</b> modes,<br>reviewed <b>Most Potent Residues</b>, examined <b>clusters</b>,<br>enriched the <b>Logo Summary Table</b>, and updated <b>global settings</b>.`]),
+        const finalHintDiv = ui.divV([paragraphs([`You launched <b>SAR</b>, explored <b>WebLogos</b> and <b>monomers</b>, configured <b>Sequence Variability Map</b> modes, reviewed <b>Most Potent Residues</b>, examined <b>clusters</b>, enriched the <b>Logo Summary Table</b>, and updated <b>global settings</b>.`], `All set!`),
             ui.link('Read more', 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar')
         ])
         const finalHint = greenHint(svmRoot, finalHintDiv, 'top');
@@ -474,12 +474,19 @@ function greenHint(el: HTMLElement, content: HTMLElement, position?: "top" | "bo
     return hint;
 }
 
-function paragraphs(texts: string[]) {
-    return ui.divV(texts.map((t, i) => {
-        const thing = i == 0 ? ui.h2(t, {style: {marginBottom: '0.8em'}}) : ui.divText(t);
-        thing.innerHTML = t;
-        return thing;
-}));
+function paragraphs(texts: string[], title?: string) {
+    const items: HTMLElement[] = [];
+    if (title != null) {
+        const heading = ui.h2(title, {style: {marginBottom: '0.8em'}});
+        heading.innerHTML = title;
+        items.push(heading);
+    }
+    for (const t of texts) {
+        const p = ui.divText(t);
+        p.innerHTML = t;
+        items.push(p);
+    }
+    return ui.divV(items);
 }
 
 function attachRemovingHintListener(hintDiv: HTMLElement, onRemoved: () => void) {
