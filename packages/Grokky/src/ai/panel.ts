@@ -927,11 +927,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected shouldShowEmptyState(): boolean {
-    return this.liveView instanceof DG.TableView && this._uiMessages.length === 0;
+    // Global suggestions (Anywhere, Code generation) apply on any view, so show the empty state
+    // and wand everywhere — not just on table views (view/column blocks self-add when applicable).
+    return this._uiMessages.length === 0;
   }
 
   private setWandVisible(visible: boolean): void {
-    this.wandButton.style.display = visible && this.liveView instanceof DG.TableView ? '' : 'none';
+    this.wandButton.style.display = visible ? '' : 'none';
   }
 
   /** Rebuilds the suggestion cards for the current view; removes them when they no longer apply. */
