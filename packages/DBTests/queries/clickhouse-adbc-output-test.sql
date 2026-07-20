@@ -24,7 +24,7 @@ SELECT * FROM UNSIGNED_INTEGER_TYPES;
 
 -- name: ClickHouseADBCFloatTypes
 -- connection: ClickHouseADBCDBTests
--- test: Dbtests:expectTable(ClickHouseADBCFloatTypes(), OpenFile('System:AppData/Dbtests/clickhouse/clickhouse_output_floats.d42')) // cat: ClickHouseADBC
+-- test: Dbtests:expectTable(ClickHouseADBCFloatTypes(), OpenFile('System:AppData/Dbtests/clickhouse-adbc/clickhouse_output_floats.d42')) // cat: ClickHouseADBC
 SELECT * FROM FLOAT_TYPES ORDER BY float32_type DESC;
 -- end
 
