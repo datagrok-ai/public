@@ -3,9 +3,14 @@ import {bareToolName, isActionTool} from './verify';
 
 function openedDocs(toolName: string, input: any): boolean {
   const bare = bareToolName(toolName);
+  // Web lookups are legitimate grounding — re-blocking a WebFetch-sourced answer just forces
+  // wasted re-search round-trips (measured: each block costs a full discarded answer).
+  if (bare === 'WebFetch' || bare === 'WebSearch')
+    return true;
   if (bare !== 'Read' && bare !== 'Grep' && bare !== 'Glob' && bare !== 'Bash')
     return false;
-  return JSON.stringify(input ?? '').includes('help/');
+  const source = JSON.stringify(input ?? '');
+  return source.includes('help/') || source.includes('js-api/');
 }
 
 export class GroundingGate {
@@ -30,9 +35,10 @@ export class GroundingGate {
     return {
       decision: 'block',
       reason: 'You answered a platform question without opening the documentation this turn. A skill ' +
-        'alone is not enough — grep `workspace/help/` for the terms in the question, read the page, and ' +
-        'quote the menu path / syntax from it. If a help search finds nothing, say the docs do not cover ' +
-        'it. If the user\'s message is not a platform how-to question, disregard this and answer normally.',
+        'alone is not enough — Read `workspace/help/INDEX.md`, pick the matching page from it, Read that ' +
+        'page, and quote the menu path / syntax from it. If the index has no page for the topic, say the ' +
+        'docs do not cover it — do not keep searching. If the user\'s message is not a platform how-to ' +
+        'question, disregard this and answer normally.',
     };
   };
 }

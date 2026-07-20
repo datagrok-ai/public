@@ -59,8 +59,10 @@ from a source you open this turn — never from memory. Which source is authorit
 you are doing:
 
 - **Explaining how the product works** (menus, dialogs, features, "how do I…", "what is…"): the
-  documentation under \`workspace/help/\` is the source of truth. Search it for the terms in the
-  question, read the page, and take the facts from it. Skills are convenience
+  documentation under \`workspace/help/\` is the source of truth. Do NOT grep around for it —
+  Read \`workspace/help/INDEX.md\` (one line per page: path, title, description, keywords), pick
+  the matching page, Read it, and take the facts from it. If the index has no page for the topic,
+  the docs do not cover it — say so instead of searching further. Skills are convenience
   summaries — incomplete, and a relevant-looking one may describe the wrong feature — so a skill is
   not a substitute for the docs here; when they disagree, the docs win.
 - **Writing code or taking an action**: the matching per-area skill is the source of truth for the

@@ -1,6 +1,7 @@
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {WORKSPACE} from '../constants';
+import {buildHelpIndex} from '../help-index';
 
 const exec = promisify(execFile);
 const SYNC_INTERVAL_MS = 30 * 60 * 1000;
@@ -48,6 +49,11 @@ async function syncWorkspace(): Promise<void> {
     }
 
     console.log(`workspace: synced ${oldSha.slice(0, 7)} → ${newSha.slice(0, 7)}`);
+    try {
+      buildHelpIndex(WORKSPACE);
+    } catch (e: any) {
+      console.warn('help-index: rebuild failed:', e.message);
+    }
   } catch (e: any) {
     console.warn('workspace: sync failed:', e.message);
   } finally {

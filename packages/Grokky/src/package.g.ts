@@ -30,6 +30,22 @@ export async function askHelpLLMProvider(prompt: string, sessionId?: string) : P
   return await PackageFunctions.askHelpLLMProvider(prompt, sessionId);
 }
 
+//description: Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
+//input: string label { description: Config label for this run, e.g. baseline / medium-effort }
+//input: int reps { optional: true; description: Repetitions per prompt (default 3) }
+//output: string result
+export async function runBenchmark(label: string, reps?: number) : Promise<string> {
+  return await PackageFunctions.runBenchmark(label, reps);
+}
+
+//description: Diff two saved benchmark runs (by label) into a Markdown delta report and download it.
+//input: string labelA { description: Baseline run label }
+//input: string labelB { description: Comparison run label }
+//output: string result
+export async function compareBenchmarks(labelA: string, labelB: string) : Promise<string> {
+  return await PackageFunctions.compareBenchmarks(labelA, labelB);
+}
+
 //name: Execute
 //description: Plans and executes function steps to achieve needed results
 //input: string prompt 

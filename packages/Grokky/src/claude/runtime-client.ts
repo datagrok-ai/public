@@ -10,7 +10,14 @@ export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
-export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean};
+/** Per-turn metrics the runtime forwards from the SDK `result` message (see docs/BENCHMARK.md). */
+export type TurnServerMetrics = {
+  inputTokens: number | null, outputTokens: number | null,
+  cacheReadTokens: number | null, cacheCreationTokens: number | null,
+  costUsd: number | null, numTurns: number | null,
+  durationMs: number | null, durationApiMs: number | null,
+};
+export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean, metrics?: TurnServerMetrics};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
@@ -107,6 +114,7 @@ export class ClaudeRuntimeClient {
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
           ...(data.unverified ? {unverified: true} : {}),
+          ...(data.metrics ? {metrics: data.metrics} : {}),
         });
         break;
       case 'error':

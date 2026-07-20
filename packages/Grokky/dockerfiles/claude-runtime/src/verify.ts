@@ -69,8 +69,16 @@ export class Verifier {
       } else
         this.verifyFailures++;
     } else if (isActionTool(input.tool_name)) {
-      this.pendingActions++;
       this.stats.actions++;
+      // datagrok_exec can self-verify: the browser runs the provided verify.assertion right after
+      // the action code (same round-trip) and returns it as `verified` — a passing one is exactly
+      // a datagrok_verify pass, minus the extra model round-trip.
+      const res = bare === 'datagrok_exec' ? parseMcpToolResponse(input.tool_response) : undefined;
+      if (res?.verified?.passed === true) {
+        this.stats.verifies++;
+        this.stats.passes++;
+      } else
+        this.pendingActions++;
     }
     return {continue: true};
   };

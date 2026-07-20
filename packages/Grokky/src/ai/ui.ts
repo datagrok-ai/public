@@ -487,9 +487,16 @@ async function streamOnce(
             segmentStart = accumulated.length;
             toolStatus = '';
           }
-          const result = error ?
+          let result: any = error ?
             {success: false, error: error.error} :
             {success: true, ...(value != null ? {returnValue: value} : {})};
+          // In-round-trip verification: run the provided assertion right after the action code, so a
+          // passing action needs no separate datagrok_verify round-trip (see verify.ts in the runtime).
+          if (!error && evt.input.verify?.assertion) {
+            const v = await runVerification(evt.input.verify.assertion, view);
+            result = {...result, verified: {passed: v.passed,
+              ...(v.observed !== undefined ? {observed: v.observed} : {}), ...(v.error ? {error: v.error} : {})}};
+          }
           client.respondToInput(sessionId, evt.requestId, result);
           return;
         }

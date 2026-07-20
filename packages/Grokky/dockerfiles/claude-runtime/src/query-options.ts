@@ -104,15 +104,30 @@ export function createBrowserExecServer(awaitInput: AwaitInput) {
       sdkTool(
         'datagrok_exec',
         'Run JavaScript in the Datagrok tab to perform an action (add viewer, filter, open file, ' +
-        'upload data, …). Returns {success, returnValue?, error?}. For informational questions ' +
-        '("how do I…", "what is…") answer in plain text — do NOT call this tool.',
-        {code: z.string().describe(
-          'Async JS (await works). Globals: grok, ui, DG, view, t. Return a plain object confirming the ' +
-          'action (shape per the datagrok-exec skill), or an HTMLElement only to render output in chat.',
-        )},
-        async ({code}) => {
+        'upload data, …). Returns {success, returnValue?, verified?, error?}. ALWAYS provide `verify` ' +
+        'with state-changing code — it runs right after your code in the same round-trip and its ' +
+        '{passed, observed} comes back as `verified`, so no separate datagrok_verify call is needed ' +
+        'when it passes. For informational questions ("how do I…", "what is…") answer in plain text — ' +
+        'do NOT call this tool.',
+        {
+          code: z.string().describe(
+            'Async JS (await works). Globals: grok, ui, DG, view, t. Return a plain object confirming the ' +
+            'action (shape per the datagrok-exec skill), or an HTMLElement only to render output in chat.',
+          ),
+          verify: z.object({
+            assertion: z.string().describe(
+              'Async JS that re-reads the state your code changed and MUST `return` the observed result ' +
+              '(truthy = verified). Runs in a fresh scope (globals grok, ui, DG, view, t) — it cannot see ' +
+              'your code\'s variables, so re-derive everything from live state.',
+            ),
+            description: z.string().describe('Short human-readable statement of what is being verified.'),
+          }).optional().describe(
+            'Required for any state-changing code; omit only when the code is a pure read/render.',
+          ),
+        },
+        async ({code, verify}) => {
           try {
-            return asResult(await awaitInput('datagrok_exec', {code}, EXEC_TIMEOUT_MS));
+            return asResult(await awaitInput('datagrok_exec', {code, ...(verify ? {verify} : {})}, EXEC_TIMEOUT_MS));
           } catch (e: any) {
             return asResult({success: false, error: e.message});
           }

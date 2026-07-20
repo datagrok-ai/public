@@ -84,10 +84,22 @@ export interface AuthCodeMessage {type: 'auth_code'; code: string}
 
 export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
 
+/** Per-turn metrics forwarded from the SDK `result` message (see docs/BENCHMARK.md). */
+export interface TurnMetrics {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheCreationTokens: number | null;
+  costUsd: number | null;
+  numTurns: number | null;
+  durationMs: number | null;
+  durationApiMs: number | null;
+}
+
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}

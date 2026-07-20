@@ -146,6 +146,18 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
         type: 'final', sessionId: sid, content: e.result || '',
         ...(e.structured_output ? {structured_output: e.structured_output} : {}),
         ...(verifier?.exhausted ? {unverified: true} : {}),
+        // Turn metrics the SDK already computed on the result message — surfaced for the
+        // latency benchmark harness (see docs/BENCHMARK.md). All optional; older runtimes omit them.
+        metrics: {
+          inputTokens: e.usage?.input_tokens ?? null,
+          outputTokens: e.usage?.output_tokens ?? null,
+          cacheReadTokens: e.usage?.cache_read_input_tokens ?? null,
+          cacheCreationTokens: e.usage?.cache_creation_input_tokens ?? null,
+          costUsd: e.total_cost_usd ?? null,
+          numTurns: e.num_turns ?? null,
+          durationMs: e.duration_ms ?? null,
+          durationApiMs: e.duration_api_ms ?? null,
+        },
       });
     } else
       emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
