@@ -1,9 +1,5 @@
 # Arrow changelog
 
-## v.next
-
-* GROK-20379: Added the `narrowFloatsToFloat32` parameter to `FromFeather`
-
 ## 1.6.0 (2026-06-03)
 
 * Extracted conversion core into `@datagrok-libraries/arrow`; package now delegates to the library

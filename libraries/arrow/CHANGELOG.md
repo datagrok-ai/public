@@ -4,7 +4,6 @@
 
 * GROK-20379: Added `fromFeather` decoding for 128/256-bit decimals
 * GROK-20379: Added nested types (list, struct, map) to `fromFeather` as Java-formatted strings
-* GROK-20379: Added the `narrowFloatsToFloat32` option to `fromFeather`
 * GROK-20379: Fixed 64-bit ints mapping to `int` when values happened to fit
 
 ## 1.1.0 (2026-06-03)

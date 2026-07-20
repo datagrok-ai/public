@@ -21,10 +21,9 @@ export function toFeather(table: DG.DataFrame, asStream: boolean) : any {
 
 //description: Converts arrow ipc stream to DG.DataFrame
 //input: blob bytes 
-//input: bool narrowFloatsToFloat32 = false 
 //output: dataframe result
-export function fromFeather(bytes: Uint8Array, narrowFloatsToFloat32: boolean) : any {
-  return PackageFunctions.fromFeather(bytes, narrowFloatsToFloat32);
+export function fromFeather(bytes: Uint8Array) : any {
+  return PackageFunctions.fromFeather(bytes);
 }
 
 //description: Converts DG.DataFrame to parquet

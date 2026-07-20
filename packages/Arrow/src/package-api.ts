@@ -30,8 +30,8 @@ export namespace funcs {
   /**
   Converts arrow ipc stream to DG.DataFrame
   */
-  export async function fromFeather(bytes: any , narrowFloatsToFloat32: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Arrow:FromFeather', { bytes, narrowFloatsToFloat32 });
+  export async function fromFeather(bytes: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Arrow:FromFeather', { bytes });
   }
 
   /**

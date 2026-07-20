@@ -88,18 +88,7 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
   return arrow.tableToIPC(tableArrow, asStream ? 'stream' : 'file');
 }
 
-// TODO(review with lead): `narrowFloatsToFloat32` exists only so the ADBC connector can
-// reproduce a Java bug. `serialization/FloatColumn.java` is the only floating-point column
-// class grok_connect has — it stores a `float[]` and writes it with `writeFloat32List` — and
-// both `double` and `decimal` are mapped onto it. So every float the Java connector emits has
-// already lost ~29 bits of mantissa by the time it reaches a stored `.d42` baseline.
-// Datagrok's `double` column type is precision-agnostic (`FloatColumn.doublePrecision` in ddt),
-// so the two variants are indistinguishable by type — only by value.
-//
-// Opting in keeps the ADBC results comparable with those baselines without touching the
-// parquet/feather file viewers, which keep full float64. The clean fix is to stop narrowing
-// in Java and re-capture the baselines; that touches the d42 wire format and every provider.
-export function fromFeather(bytes: Uint8Array, narrowFloatsToFloat32: boolean = false): DG.DataFrame | null {
+export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
   if (!bytes) return null;
   const table = arrow.tableFromIPC(bytes);
   const columns = [];
@@ -149,12 +138,12 @@ export function fromFeather(bytes: Uint8Array, narrowFloatsToFloat32: boolean = 
       else if (type.bitWidth < 64)
         columns.push(DG.Column.fromFloat32Array(name, values as Float32Array));
       else
-        columns.push(floatColumn(name, values as Float64Array, narrowFloatsToFloat32));
+        columns.push(DG.Column.fromFloat64Array(name, values as Float64Array));
       break;
     // A 128/256-bit decimal arrives as 4/8 raw `Uint32` words per value, so it cannot share
     // the `Float` path — that would read the words themselves as the column's values.
     case arrow.Type.Decimal:
-      columns.push(floatColumn(name, decimalColumnToDoubles(vector), narrowFloatsToFloat32));
+      columns.push(DG.Column.fromFloat64Array(name, decimalColumnToDoubles(vector)));
       break;
     case arrow.Type.Utf8:
     case arrow.Type.Interval:
@@ -226,13 +215,6 @@ function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Colu
     }
   }
   return DG.Column.fromIndexes(name, data, indexes);
-}
-
-// Values that overflow a float32 become ±Infinity, exactly as they do in Java.
-function floatColumn(name: string, values: Float64Array, narrowToFloat32: boolean): DG.Column {
-  return narrowToFloat32
-    ? DG.Column.fromFloat32Array(name, Float32Array.from(values))
-    : DG.Column.fromFloat64Array(name, values);
 }
 
 function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string, forceBigInt: boolean = false): DG.Column {
