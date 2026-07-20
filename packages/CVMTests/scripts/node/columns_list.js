@@ -5,4 +5,4 @@
 //input: column_list cols
 //output: dataframe result
 
-result = df.select(...cols.slice(1));
+result = DG.DataFrame.fromColumns(cols.slice(1).map((name) => df.col(name)));

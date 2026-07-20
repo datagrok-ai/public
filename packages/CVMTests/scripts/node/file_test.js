@@ -8,5 +8,5 @@
 //condition: file.isFile && file.name.endsWith("csv")
 //output: int num_lines
 
-df = await DataFrame.fromCSV("file://" + path.resolve(file));
-num_lines = df.dim()[0];
+df = DG.DataFrame.fromCsv(await fs.readFile(file, 'utf-8'));
+num_lines = df.rowCount;
