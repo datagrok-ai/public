@@ -109,28 +109,22 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
     }
 
     switch (type.typeId) {
+    // apache-arrow reports every integer DataType with `typeId === Type.Int` (width and signedness
+    // live in `bitWidth`/`isSigned`), so all ints funnel through this one case. Type mapping mirrors
+    // the Java (grok_connect) type map so ADBC results match the stored d42 baselines: 64-bit ints
+    // and UInt32 → `bigint` (UInt32's range overflows a signed int32), narrower ints → `int`. Forcing
+    // by width rather than downcasting when values happen to fit avoids a `int`/`bigint` type
+    // mismatch against Java under strict column-type comparison.
     case arrow.Type.Int8:
     case arrow.Type.Int16:
     case arrow.Type.Int32:
     case arrow.Type.Int:
-      if (ArrayBuffer.isView(values)) {
-        if (type.bitWidth < 64)
-          columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
-        else
-          columns.push(convertInt64Column(values as BigInt64Array, name, true));
-      } else
+      if (type.bitWidth >= 64 || (!type.isSigned && type.bitWidth >= 32))
+        columns.push(convertInt64Column(values, name, true));
+      else if (ArrayBuffer.isView(values))
+        columns.push(DG.Column.fromInt32Array(name, values as Int32Array));
+      else
         columns.push(DG.Column.fromList(DG.COLUMN_TYPE.INT as DG.ColumnType, name, values));
-      break;
-    case arrow.Type.Uint32:
-      columns.push(convertInt64Column(values, name));
-      break;
-    // 64-bit ints map to `bigint` regardless of the actual values — schema-oriented, to
-    // mirror the Java (grok_connect) type map (int64/uint64 → bigint) so ADBC results
-    // match the stored d42 baselines. Downcasting to int32 when values happen to fit
-    // would produce a `int` column that fails strict type comparison against Java's.
-    case arrow.Type.Int64:
-    case arrow.Type.Uint64:
-      columns.push(convertInt64Column(values, name, true));
       break;
     case arrow.Type.Float:
       if (!ArrayBuffer.isView(values))
@@ -147,7 +141,14 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
       break;
     case arrow.Type.Utf8:
     case arrow.Type.Interval:
-      columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
+      // ClickHouse's Int128/256 and UInt128/256 arrive as a Utf8 column (the connector casts them
+      // to a decimal string, because the driver's raw FixedSizeBinary form is sign-less and
+      // undecodable) tagged `datagrok.type=bigint`. Rebuild those as an arbitrary-precision bigint
+      // column so the result matches the Java connector, which maps all of these to `bigint`.
+      if (table.schema.fields[i].metadata?.get('datagrok.type') === 'bigint')
+        columns.push(bigIntColumnFromStrings(name, values));
+      else
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.STRING as DG.ColumnType, name, values));
       break;
     case arrow.Type.Bool:
       if (ArrayBuffer.isView(values))
@@ -215,6 +216,16 @@ function stringColumnFromDictionary(name: string, vector: arrow.Vector): DG.Colu
     }
   }
   return DG.Column.fromIndexes(name, data, indexes);
+}
+
+// Build an arbitrary-precision `bigint` column from decimal strings. `DG.Column.fromBigInt64Array`
+// only covers 64-bit values, so we reuse the same interop it does under the hood
+// (`grok_BigIntJs_To_BigInt`), which parses a decimal string of any width. `globalThis` is the
+// browser `window` the Datagrok client runs on, where this handler is registered.
+function bigIntColumnFromStrings(name: string, values: ArrayLike<string | null>): DG.Column {
+  const toBigInt = (globalThis as any).grok_BigIntJs_To_BigInt as (s: string) => any;
+  const list = Array.from(values, (v) => v === null || v === undefined ? null : toBigInt(String(v)));
+  return DG.Column.fromList(DG.COLUMN_TYPE.BIG_INT as DG.ColumnType, name, list);
 }
 
 function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string, forceBigInt: boolean = false): DG.Column {
