@@ -9,7 +9,7 @@ import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClip
 import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, ChoiceOption} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
@@ -239,7 +239,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }, 'Toggle raw console');
     this.wandButton = ui.iconFA('magic', async (e) => {
       const scopes = await resolveScopes('panel', this.view ?? grok.shell.v);
-      showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
+      showSuggestionsMenu(scopes, (s) => this.runSuggestion(s), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
     this.setWandVisible(true);
@@ -429,6 +429,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }, loader?: HTMLElement
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
+    this.removeChoiceBlocks();
     const emptyState = this.outputArea.querySelector('.grokky-empty-state');
     if (emptyState) {
       emptyState.remove();
@@ -564,6 +565,46 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   public appendArtifact(node: HTMLElement): void {
     this.outputArea.appendChild(ui.divV([node], 'd4-ai-assistant-response-container'));
     this.showContentIcons();
+  }
+
+  /** Removes any pending inline choice blocks — they're transient and shouldn't linger once
+   * the user moves on (submits a prompt, gets a new message, or opens another picker). */
+  private removeChoiceBlocks(): void {
+    const blocks = this.outputArea.querySelectorAll('.grokky-choice-container');
+    for (let i = 0; i < blocks.length; i++)
+      blocks[i].remove();
+  }
+
+  /** Renders an inline choice block that reads like an assistant reply (used by suggestion actions).
+   * Picking an option removes the block; the option's handler adds its own follow-up message. */
+  public addChoice(prompt: string | null, options: ChoiceOption[]): void {
+    const emptyState = this.outputArea.querySelector('.grokky-empty-state');
+    if (emptyState) {
+      emptyState.remove();
+      this.setWandVisible(true);
+    }
+    this.removeChoiceBlocks();
+    const container = ui.divV([], 'd4-ai-assistant-response-container grokky-choice-container');
+    const cards = options.map((o) => {
+      const card = ui.div(ui.divText(o.label), 'grokky-choice-card');
+      card.onclick = () => {
+        container.remove();
+        o.onSelect();
+      };
+      return card;
+    });
+    const children: HTMLElement[] = [];
+    if (prompt)
+      children.push(this.createStyledMarkdown(prompt));
+    children.push(ui.divH(cards, 'grokky-choice-row'));
+    container.appendChild(ui.divV(children, 'grokky-choice-block'));
+    this.outputArea.appendChild(container);
+    this.showContentIcons();
+  }
+
+  /** Appends a short assistant-style note (e.g. an action's result confirmation) to the transcript. */
+  public addNote(markdown: string): void {
+    this.appendMessage('' as any, {title: '', content: markdown, fromUser: false, uiOnly: true});
   }
 
   enableNoPrompt(): void {
@@ -864,8 +905,19 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.renderEmptyState();
   }
 
-  protected runSuggestion(prompt: string): void {
-    this.textArea.value = prompt;
+  protected runSuggestion(s: Suggestion): void {
+    if (runSuggestionAction(s.action, this))
+      return;
+    // Ask-for-a-detail suggestions: post the question as the assistant's reply without calling the
+    // AI, and carry the task forward so the user's answer runs it with full context.
+    if (s.immediateResponse) {
+      this.appendMessage('' as any, {title: '', content: s.immediateResponse, fromUser: false, uiOnly: true});
+      if (s.prompt)
+        this.pushNativeContext(s.prompt);
+      this.textArea.focus();
+      return;
+    }
+    this.textArea.value = s.prompt ?? '';
     this.handleRun();
   }
 
@@ -903,8 +955,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         icon.classList.add(`grokky-scope-${s.key}`);
       const header = ui.h3(ui.span([icon, s.label]));
       const cards = s.suggestions.slice(0, 2).map((sg) => {
-        const card = ui.card(ui.divText(sg.label ?? sg.prompt));
-        card.onclick = () => this.runSuggestion(sg.prompt);
+        const card = ui.card(ui.divText(sg.label ?? sg.prompt ?? ''));
+        card.onclick = () => this.runSuggestion(sg);
         return card;
       });
       return ui.divV([header, ui.divH(cards)]);

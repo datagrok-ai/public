@@ -183,7 +183,8 @@ export function setupSearchUI() {
     const parent: HTMLElement = searchInput.parentElement!;
     const wandIcon = ui.iconFA('magic', async (e) => {
       const scopes = await resolveScopes('powerSearch');
-      showSuggestionsMenu(scopes, (prompt) => {
+      showSuggestionsMenu(scopes, (s) => {
+        const prompt = s.prompt ?? '';
         searchInput.value = prompt;
         searchInput.dispatchEvent(new Event('input', {bubbles: true}));
         // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
