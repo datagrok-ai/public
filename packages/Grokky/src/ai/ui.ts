@@ -14,7 +14,7 @@ import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
-import {collectViewAITools, NO_VIEW_TOOLS} from './view-tools';
+import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
 import {_package} from '../package';
 
@@ -230,9 +230,9 @@ export async function aiCombinedSearch(prompt: string) {
 }
 
 // Called by the core query editor to decide whether to show its AI toggle icon.
-// The query view needs no dedicated panel anymore: its AI tools (get_query_info,
-// set_query_and_run + the SQL schema tools from the viewAIToolsProvider) are collected
-// by the singleton panel at prompt time.
+// The query view needs no dedicated panel anymore: its functions (get_query_info,
+// set_query_and_run + the meta.viewType-registered SQL schema functions) are reached
+// by the singleton panel through the view-function meta-tools.
 export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)
     return false;
@@ -415,10 +415,11 @@ async function streamOnce(
       const enrichedUserPrompt = nativeCtx ? nativeCtx + userPrompt : userPrompt;
       const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
 
-      // Fresh per prompt: the current view may ship its own AI tools (natively or via
-      // viewAIToolsProvider functions). Their defs go to the runtime; calls come back as input_request.
+      // Three static meta-tools let Claude search and invoke the current view's functions
+      // (view.getFunctions()) without declaring them all. Defs are identical every turn
+      // (prompt-cache friendly); the runners resolve the live grok.shell.v at call time.
       const fullMode = !systemPromptMode && !panel.noPrompt;
-      const viewTools = fullMode ? await collectViewAITools(grok.shell.v ?? view) : NO_VIEW_TOOLS;
+      const viewTools = fullMode ? viewFunctionTools() : NO_VIEW_TOOLS;
 
       await client.ensureConnected();
 

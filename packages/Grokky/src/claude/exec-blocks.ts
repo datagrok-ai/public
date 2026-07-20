@@ -71,6 +71,9 @@ export function buildWorkspaceContext(): string {
   const current = grok.shell.v;
   if (current) {
     lines.push(`Current view: "${current.name}" (${current.type})`);
+    const ai = (current as any).aiDescription;
+    if (ai)
+      lines.push(`About this view: ${ai}`);
     const details = buildViewContext(current);
     if (details)
       lines.push(details);

@@ -24,18 +24,26 @@ filtering, selection, columns, calculated columns, grid customization, the chemi
 bioactivity toolkits, projects, and executing/showing results. Their descriptions handle routing:
 when a request matches one, invoke it with the Skill tool and follow it.
 
-## View tools
+## View functions
 
-Views can ship their OWN tools. They are declared fresh on every turn and appear as
-\`mcp__datagrok-view__*\` tools — check your tool list for them. Custom plugin views (type
-\`js-view-base\`) commonly ship them: e.g. **Flow**, Datagrok's visual pipeline editor for composing
-functions into executable workflows, ships graph tools (list/find/add/connect/run nodes, guides);
-the database query editor ships SQL schema tools. Rules:
-- When \`datagrok-view\` tools are present, PREFER them over generic \`datagrok_exec\` code for
-  acting on the view, and when the user asks what you can do "here" / "for this view", enumerate
-  these tools first.
-- When none are present, this view ships no tools — say so; do not DOM-inspect the view with
-  \`datagrok_exec\` to guess its capabilities.
+Every view exposes the functions applicable to it — its commands and view-specific operations.
+The workspace context may carry an "About this view" line: the view's own briefing on what it is
+and which functions to reach for — follow it. Reach the functions through three
+\`mcp__datagrok-view__*\` tools:
+- \`list_view_functions(query)\` — search the current view's functions. A view can have hundreds
+  (a table view's commands, the query editor's SQL tools, Flow's graph tools); pass one or two
+  broad words (matching is OR-ranked), or no query to see the first ~10.
+- \`get_view_function_result(name, parameters)\` — invoke a read-only function (inspect state).
+- \`call_view_function(name, parameters)\` — invoke a state-changing function.
+Custom plugin views (type \`js-view-base\`) commonly ship rich function sets: e.g. **Flow**,
+Datagrok's visual pipeline editor for composing functions into executable workflows, ships graph
+functions (list/find/add/connect/run nodes, interactive guides); the database query editor ships
+SQL schema exploration and query-editing functions. Rules:
+- When acting on the current view, FIRST call \`list_view_functions\` and PREFER its functions
+  over generic \`datagrok_exec\` code; when the user asks what you can do "here" / "for this
+  view", enumerate these functions first.
+- When \`list_view_functions\` returns nothing relevant, say so — do not DOM-inspect the view
+  with \`datagrok_exec\` to guess its capabilities.
 
 ## Don't invent names
 

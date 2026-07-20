@@ -50,17 +50,45 @@ export namespace funcs {
   }
 
   /**
-  SQL schema exploration and test-execution tools for the database query editor
+  List the catalogs available on this connection
   */
-  export async function queryViewAITools(view: any ): Promise<any> {
-    return await grok.functions.call('Grokky:QueryViewAITools', { view });
+  export async function listDbCatalogs(view: any ): Promise<string> {
+    return await grok.functions.call('Grokky:ListDbCatalogs', { view });
   }
 
   /**
-  Read/write tools for the script editor
+  List schemas of a catalog (defaults to the connection default catalog)
   */
-  export async function scriptViewAITools(view: any ): Promise<any> {
-    return await grok.functions.call('Grokky:ScriptViewAITools', { view });
+  export async function listDbSchemas(view: any , catalogName?: string ): Promise<string> {
+    return await grok.functions.call('Grokky:ListDbSchemas', { view, catalogName });
+  }
+
+  /**
+  List tables of a schema with row counts
+  */
+  export async function listDbTables(view: any , schemaName: string , catalogName?: string ): Promise<string> {
+    return await grok.functions.call('Grokky:ListDbTables', { view, schemaName, catalogName });
+  }
+
+  /**
+  Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table
+  */
+  export async function getDbTableDetails(view: any , tables: string ): Promise<string> {
+    return await grok.functions.call('Grokky:GetDbTableDetails', { view, tables });
+  }
+
+  /**
+  Foreign-key relationships involving the given tables — use to build correct JOINs
+  */
+  export async function listDbJoins(view: any , tables: string ): Promise<string> {
+    return await grok.functions.call('Grokky:ListDbJoins', { view, tables });
+  }
+
+  /**
+  Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
+  */
+  export async function getSqlTestResult(view: any , sql: string , description: string ): Promise<string> {
+    return await grok.functions.call('Grokky:GetSqlTestResult', { view, sql, description });
   }
 
   export async function moveMetaToDB(dbName: string ): Promise<void> {

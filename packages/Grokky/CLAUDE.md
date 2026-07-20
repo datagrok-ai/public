@@ -104,30 +104,33 @@ singleton.
 The panel streams through `ClaudeRuntimeClient` (`StreamingPanel` interface) with chat history,
 streaming display, and conversation persistence via `ConversationStorage`.
 
-### View AI tools (`src/ai/view-tools.ts`, `src/ai/view-tool-providers.ts`)
+### View functions (`src/ai/view-tools.ts`, `src/ai/db-view-functions.ts`)
 
-Views ship their own AI tools; the singleton collects them fresh on every prompt
-(`collectViewAITools(grok.shell.v)`) from two sources:
+The assistant reaches a view's operations through the platform's `getFunctions()` — every Widget
+(and thus every view) returns the registered `DG.Func`s applicable to it. A view's set comes from:
 
-1. **`view.getAITools()`** — js-api `ViewBase.getAITools(): AIViewTool[]` (`{name, description,
-   inputSchema?, run}`). Dart views override `View.getAITools()` (e.g. `DataQueryView` returns
-   `get_query_info` / `set_query_and_run`); for JS-defined views the Dart `JsViewHost` forwards the
-   call to the original JS `ViewBase` instance (interop: `grok_View_GetAITools`). The collector also
-   reads `view.jsView?.getAITools()` — js-api `View.jsView` (interop `grok_View_Get_JsView`) exposes
-   the original JS `ViewBase` of a JS-hosted view (e.g. Flow's `FuncFlowView`, which ships
-   graph-building tools: `list_flow_nodes`, `find_flow_node_types`, `add_flow_node`,
-   `connect_flow_nodes`, `set_flow_node_inputs`, `select_flow_node`, `run_flow`).
-2. **`viewAIToolsProvider` functions** — any package can register a function with
-   `meta: {role: 'viewAIToolsProvider', viewType: '<view.type>'}` taking the view and returning
-   `AIViewTool[]`. Grokky registers two: `queryViewAITools` (DataQueryView — SQL schema exploration +
-   `get_sql_test_result` via `SQLGenerationContext`; discovers the connection through the view's
-   native `get_query_info` tool) and `scriptViewAITools` (ScriptView — `get_script_code` /
-   `set_script_code`).
+1. **Dart `View.getFunctions()`** (core) — the base returns registered functions declaring
+   `meta.viewType: <viewType>`; subclasses add view-specific `CustomFunc`s on top
+   (`DataQueryView`: `get_query_info` / `set_query_and_run`; `ScriptView`: `get_script_code` /
+   `set_script_code`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
+2. **JS `ViewBase.getFunctions()`** (js-api) — a JS-defined view overrides it to return its
+   registered package functions; e.g. Flow's `FuncFlowView` returns the `flowViewFunction`-tagged
+   Flow functions (`listFlowNodes`, `findFlowNodeTypes`, `addFlowNode`, `connectFlowNodes`,
+   `setFlowNodeInputs`, `selectFlowNode`, `runFlow`, guides). Those functions take the generic
+   `view` argument and reach the instance via `view.jsView` (interop `grok_View_Get_JsView`).
+3. **`meta.viewType` package functions** — any package can register a function with
+   `meta: {viewType: '<viewType>'}` taking the view; Grokky registers the DataQueryView SQL set
+   (`listDbCatalogs/Schemas/Tables`, `getDbTableDetails`, `listDbJoins`, `getSqlTestResult` — in
+   `db-view-functions.ts`, discovering the connection through the view's native `get_query_info`).
 
-Tool defs go to the runtime in the `user_message` as `clientTools`; the runtime exposes them via an
-in-process `datagrok-view` MCP server whose calls round-trip to the browser as `input_request`,
-where `streamOnce()` dispatches to the tool's `run`. Name read-only tools `list_*` / `get_*` —
-other names count as actions and the runtime's verifier demands a `datagrok_verify` after them.
+Because a view can have hundreds of functions (TableView commands), Grokky never declares them all
+to Claude. Instead `viewFunctionTools()` declares three STATIC meta-tools every full-mode turn
+(stable defs — prompt-cache friendly): `list_view_functions(query)` (search, ≤10 results),
+`get_view_function_result(name, parameters)` (read-only invoke), and `call_view_function` (
+state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
+`grok.shell.v` at call time, inject the `view` argument, run `func.apply()`, and serialize the
+result. Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
+`datagrok-view` MCP server whose calls round-trip to the browser as `input_request`.
 
 #### AI window visibility (sync with core)
 

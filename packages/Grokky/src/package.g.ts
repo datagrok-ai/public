@@ -69,22 +69,59 @@ export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string
   return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
 }
 
-//description: SQL schema exploration and test-execution tools for the database query editor
-//input: dynamic view 
-//output: dynamic tools
-//meta.role: viewAIToolsProvider
+//description: List the catalogs available on this connection
+//input: view view 
+//output: string result
 //meta.viewType: DataQueryView
-export async function queryViewAITools(view: any) : Promise<any> {
-  return await PackageFunctions.queryViewAITools(view);
+export async function listDbCatalogs(view: any) : Promise<string> {
+  return await PackageFunctions.listDbCatalogs(view);
 }
 
-//description: Read/write tools for the script editor
-//input: dynamic view 
-//output: dynamic tools
-//meta.role: viewAIToolsProvider
-//meta.viewType: ScriptView
-export async function scriptViewAITools(view: any) : Promise<any> {
-  return await PackageFunctions.scriptViewAITools(view);
+//description: List schemas of a catalog (defaults to the connection default catalog)
+//input: view view 
+//input: string catalogName { optional: true }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbSchemas(view: any, catalogName?: string) : Promise<string> {
+  return await PackageFunctions.listDbSchemas(view, catalogName);
+}
+
+//description: List tables of a schema with row counts
+//input: view view 
+//input: string schemaName 
+//input: string catalogName { optional: true }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbTables(view: any, schemaName: string, catalogName?: string) : Promise<string> {
+  return await PackageFunctions.listDbTables(view, schemaName, catalogName);
+}
+
+//description: Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table
+//input: view view 
+//input: string tables { description: Comma-separated table references to describe }
+//output: string result
+//meta.viewType: DataQueryView
+export async function getDbTableDetails(view: any, tables: string) : Promise<string> {
+  return await PackageFunctions.getDbTableDetails(view, tables);
+}
+
+//description: Foreign-key relationships involving the given tables — use to build correct JOINs
+//input: view view 
+//input: string tables { description: Comma-separated table references }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbJoins(view: any, tables: string) : Promise<string> {
+  return await PackageFunctions.listDbJoins(view, tables);
+}
+
+//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
+//input: view view 
+//input: string sql { description: The SQL to test }
+//input: string description { description: One line describing what the query does }
+//output: string result
+//meta.viewType: DataQueryView
+export async function getSqlTestResult(view: any, sql: string, description: string) : Promise<string> {
+  return await PackageFunctions.getSqlTestResult(view, sql, description);
 }
 
 //input: string dbName { choices: ["biologics","chembl"] }

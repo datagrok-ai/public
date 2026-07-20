@@ -52,7 +52,7 @@ import {GuideRunner} from './guide/guide-runner';
 import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
 import {TUTORIALS} from './guide/guide-content';
 import {summarizeFlow} from './summary/summary-generator';
-import {buildFlowAITools} from './ai-tools';
+import {FlowAIContext} from './ai-tools';
 
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
@@ -169,6 +169,12 @@ export class FuncFlowView extends DG.ViewBase {
   constructor(tableInfos: DG.TableInfo[] = [], options: {outputPanel?: boolean} = {}) {
     super();
     this.name = 'FuncFlow';
+    this.aiDescription = 'Flow — Datagrok\'s visual pipeline editor: the user composes functions, ' +
+      'queries, and scripts into an executable graph on a canvas. Act on it through the view ' +
+      'functions (search list_view_functions with the word "flow"): listFlowNodes (call first to ' +
+      'see the canvas), getFlowNodeDetails, findFlowNodeTypes, addFlowNode, connectFlowNodes, ' +
+      'setFlowNodeInputs, selectFlowNode, runFlow; listFlowGuides / startFlowGuide launch ' +
+      'interactive tutorials — offer one when the user asks how to do something here.';
     this.tableInfos = tableInfos;
     this.outputPanelEnabled = options.outputPanel !== false;
 
@@ -858,18 +864,24 @@ export class FuncFlowView extends DG.ViewBase {
     return node;
   }
 
-  /** AI tools of this view — collected by the AI assistant at prompt time
-   *  (via `grok.shell.v.jsView.getAITools()` / the JsViewHost forwarding). */
-  getAITools(): DG.AIViewTool[] {
+  /** Functions applicable to this view — collected by the AI assistant through
+   *  `view.getFunctions()` (the Dart JsViewHost forwards the call here). */
+  getFunctions(): DG.Func[] {
+    return DG.Func.find({package: 'Flow', tags: ['flowViewFunction']});
+  }
+
+  /** Facade the registered Flow view functions (ai-tools.ts) use to act on this
+   *  instance — they receive the generic view and reach it via `view.jsView`. */
+  aiContext(): FlowAIContext | null {
     if (!this.flow)
-      return [];
-    return buildFlowAITools({
+      return null;
+    return {
       flow: () => this.flow,
       execution: () => this.executionController ?? null,
       addNodeByType: (typeName: string) => this.addNodeByType(typeName),
       run: () => this.runInstrumented(),
       runGuide: (guide) => void this.guideRunner.run(guide, this.guideHost),
-    });
+    };
   }
 
   /** Accept a toolbox suggestion: create the node — at the drop point when the

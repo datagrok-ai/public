@@ -166,8 +166,9 @@ export function createBrowserExecServer(awaitInput: AwaitInput) {
 
 // ---------------------------------------------------------------------------
 // View tools — in-process server built from browser-declared tool definitions.
-// Each call round-trips to the browser (input_request), where the current view's
-// tool implementation runs. Declared fresh per turn, so the tool set follows the view.
+// Each call round-trips to the browser (input_request). The browser declares the
+// static view-function meta-tools (list/get/call_view_function) that search and
+// invoke the current view's getFunctions() set, so defs stay stable across turns.
 // ---------------------------------------------------------------------------
 
 const RESERVED_TOOL_NAMES = new Set(['datagrok_exec', 'datagrok_verify', 'datagrok_show_entities']);
