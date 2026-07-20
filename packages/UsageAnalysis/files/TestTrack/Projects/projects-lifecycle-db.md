@@ -3,7 +3,10 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [share_with_recipient_open, rename_project]
+realizes_atlas: [share_with_recipient_open, rename_project]
+realizes: [views.projects]
+realized_as:
+  - projects-lifecycle-db-spec.ts
 pyramid_layer: proactive-lifecycle
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md

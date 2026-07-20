@@ -2,6 +2,20 @@
 
 ## v.next
 
+* AI: Views brief the assistant — new `View.aiDescription` (js-api `ViewBase`/`View`, Dart `View` with JsViewHost forwarding) carries a short what-this-view-is + which-functions-to-call note, prepended to every prompt as "About this view"; query and script editors ship one
+* AI: `list_view_functions` matching is now OR-ranked (functions matching more query words rank higher) — AND-matching returned nothing for multi-word queries; a zero-match response now says how many functions the view actually has
+* AI: View functions replace view AI tools — the assistant now works with the platform's `getFunctions()` (registered `DG.Func`s applicable to the view: `meta.viewType` functions, Dart view overrides, JS views via `view.jsView`) through three static meta-tools (`list_view_functions` search with ≤10 results, `get_view_function_result`, `call_view_function`), so views with hundreds of functions no longer bloat the context; `getAITools`/`AIViewTool`/`viewAIToolsProvider` are removed
+* AI: Restored empty-state prompt suggestions on table views — the singleton panel now resolves suggestion cards against the live current view (was pinned to its creation view) and refreshes them on view switches
+* AI: Query editor — removed the dedicated DB panel and catalog selector; the assistant now works on the query view through tools: `get_query_info` / `set_query_and_run` (Dart-native) plus SQL schema exploration and test-execution tools (`list_db_*`, `get_db_table_details`, `get_sql_test_result`)
+* AI: Script editor — removed the dedicated scripting panel and language selector; the assistant reads/writes the open editor via `get_script_code` / `set_script_code` and infers the language from the script header
+
+* AI: The AI panel is now a single persistent assistant — switching views no longer swaps panels or resets the conversation; workspace context (current view, all open views, all tables) is rebuilt fresh on every prompt
+* AI: `datagrok-exec` / `datagrok_verify` blocks run against the live current view, so code targets views Claude just opened (e.g. a joined table) instead of the view the prompt started from
+* AI: Query-editor AI assistant no longer force-opens the AI panel when a query view opens — it registers and shows only on its toggle icon; it's disposed with its view
+* AI: Script-generation panel became a singleton rebound to the script view whose AI icon invoked it — one scripting conversation across script views
+
+* GROK-18695: Dependency security updates — refreshed lockfile so dev-only puppeteer no longer pins the runtime ws at a vulnerable 8.17.0 (DoS/memory-disclosure advisories)
+* GROK-18695: Docker: raised security floors (VEX) — claude-runtime: deb12 upgrade, npm@latest refresh, pip/setuptools bump, hono/@hono/node-server/ws floors, dropped unused workspace JDBC jars; mcp-server: express-rate-limit/fast-uri/path-to-regexp/qs/ip-address overrides
 * GROK-20054: Report: Error: Claude runtime container is not running
 * AI: Fixed query/script view going blank (tab unselected) on first click when switching back to it with the AI panel open — defer the panel dock/undock until after the view switch settles
 * AI: Replaced the 15-min skill/agent sync poll with an on-demand, TTL-gated refresh of packages + shared connections — idle sessions no longer sync

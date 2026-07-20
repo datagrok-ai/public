@@ -28,6 +28,7 @@ The results of SAR analysis are presented in multiple integrated tables and view
 * **Visualize** point-mutations and sequence variability for every monomer-position.
 * **Explore** Mutation cliffs that lead to significant changes in activity.
 * **Predict** Most potent residues for every monomer-position based on activity statistics.
+* **Generate** new candidate peptides ranked by predicted activity with the [Peptide Generation](../../../../visualize/viewers/peptide-generation.md) viewer.
 
 ![Peptide SAR Analysis](img/peptides/pep-analysis-view.png)
 
@@ -82,6 +83,18 @@ This viewer identifies the most significant monomers for each position based on 
 Configurable options include activity column, scaling method and activity target (minimize or maximize).
 
 ![Most Potent Residues](./img/peptides/mpr.png)
+
+## Peptide Generation
+
+The optional [Peptide Generation](../../../../visualize/viewers/peptide-generation.md) viewer reuses the monomer-position statistics to design new candidate peptides and rank them by predicted activity. It combines the best-scoring monomers at each position, toward a High or Low activity target, into whole sequences using an additive positional model, and shows the statistical basis for every choice.
+
+* Generated peptides are listed with predicted activity, confidence and support statistics, and a novelty flag
+* Per-position basis columns show each chosen monomer with an effect circle (size for effect magnitude, color for direction and significance) and its contribution
+* Hovering over a basis cell shows the activity distribution behind the choice
+
+This viewer is not added by default. Add it from the **Add viewer** menu.
+
+![Peptide Generation](./img/peptides/peptide-generation.png)
 
 ## Logo Summary Table and Clustering
 

@@ -2,8 +2,11 @@
 feature: projects
 target_layer: playwright
 coverage_type: regression
-priority: p2
+priority: p1
+realizes_atlas: []
 realizes: []
+realized_as:
+  - complex-move-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: projects-ui-smoke.md

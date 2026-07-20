@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [molecule_column]
+realizes_atlas: [molecule_column]
+realizes: []
 realized_as:
   - st-lifecycle-molecule-column-spec.ts
 related_bugs: []

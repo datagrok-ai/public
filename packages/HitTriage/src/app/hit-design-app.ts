@@ -326,6 +326,11 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     if (campaignId && this.campaign?.mergeConfig?.autoMergeOnOpen && this.campaign.mergeConfig.filePath)
       await autoMergeOnCampaignOpen(this);
 
+    // Recompute any compute functions flagged "re-run when campaign opens" over the whole molecule
+    // column. Like the auto-merge pass, this runs only for existing campaigns and is not auto-saved.
+    if (campaignId && this.campaign)
+      await this.reComputeOnCampaignOpen();
+
     const designV = this.designView;
     this.currentDesignViewId = designV.name;
     this.setBaseUrl();
@@ -451,6 +456,55 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           this.saveCampaign(false);
   }
 
+  /**
+   * Recomputes the compute functions/scripts/queries flagged with `rerunOnOpen` over the whole
+   * molecule column. Called once when an existing campaign is opened, before the design view is
+   * shown. Mirrors the auto-merge-on-open pass: values are updated in memory but the campaign is
+   * not auto-saved, and failures never bubble up so the campaign still opens.
+   */
+  private async reComputeOnCampaignOpen(): Promise<void> {
+    const compute = this.template?.compute;
+    if (!compute || !this.dataFrame || !this.molColName)
+      return;
+
+    // Descriptors are deterministic from structure, so they are intentionally never re-run on open.
+    const functions = (compute.functions ?? []).filter((f) => f.rerunOnOpen);
+    const scripts = (compute.scripts ?? []).filter((s) => s.rerunOnOpen);
+    const queries = (compute.queries ?? []).filter((q) => q.rerunOnOpen);
+    if (!functions.length && !scripts.length && !queries.length)
+      return;
+
+    const molCol = this.dataFrame.col(this.molColName);
+    if (!molCol)
+      return;
+
+    try {
+      // Compute against a temporary molecule-only table, then merge the results back in. Merging by
+      // column name lets us overwrite an existing column in place instead of appending a duplicate
+      // "<name> (2)" column — e.g. a query that re-resolves a ChEMBL molregno already in the table.
+      const values = molCol.toList();
+      const calcDf = await calculateCellValues(values, [], functions, scripts, queries);
+      for (const resCol of calcDf.columns.toList()) {
+        if (resCol.name === this.molColName || resCol.name === HitDesignMolColName)
+          continue;
+        let targetCol = this.dataFrame.col(resCol.name);
+        if (!targetCol || targetCol.type !== resCol.type) {
+          if (targetCol) // existing column of a different type: replace it wholesale
+            this.dataFrame.columns.remove(resCol.name);
+          targetCol = this.dataFrame.columns.addNew(resCol.name, resCol.type);
+        }
+        targetCol.semType = resCol.semType;
+        const rows = Math.min(resCol.length, targetCol.length);
+        for (let i = 0; i < rows; i++)
+          targetCol.set(i, resCol.isNone(i) ? null : resCol.get(i), false);
+      }
+      this.dataFrame.fireValuesChanged();
+    } catch (e) {
+      _package.logger.error(e);
+      grok.shell.warning('Re-run on open failed for some functions; opening the campaign anyway.');
+    }
+  }
+
   private _refreshCampaignIcon: HTMLElement | null = null;
   protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[], addDesignerButton = false) {
     const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
@@ -489,6 +543,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
                   name: splitFunc[1],
                   package: splitFunc[0],
                   args: args,
+                  rerunOnOpen: !!resultMap?.rerunOnOpen?.[funcName],
                 });
               }),
               scripts: Object.entries(resultMap?.scripts ?? {})
@@ -499,6 +554,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
                     name: scriptNameParts[1] ?? '',
                     id: scriptNameParts[2] ?? '',
                     args: args,
+                    rerunOnOpen: !!resultMap?.rerunOnOpen?.[scriptId],
                   });
                 }),
               queries: Object.entries(resultMap?.queries ?? {})
@@ -509,6 +565,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
                     name: queryNameParts[1] ?? '',
                     id: queryNameParts[2] ?? '',
                     args: args,
+                    rerunOnOpen: !!resultMap?.rerunOnOpen?.[queryName],
                   });
                 }),
             };
@@ -551,7 +608,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
               ui.setUpdateIndicator(view.grid.root, false);
               this.saveCampaign(false);
             }
-          }, () => null, this.campaign?.template!, true);
+          }, () => null, this.campaign?.template!, true, true);
         };
 
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');

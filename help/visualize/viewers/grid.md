@@ -807,7 +807,7 @@ or press Alt+C.
 | Allow Col Header Resizing | boolean | Resizing column header by dragging the border between the header and the first row |
 | Allow Col Resizing | boolean | Resizing columns by dragging the border between column headers |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls grid tooltip visibility |
 | Show Labels | visibilitymode |  |

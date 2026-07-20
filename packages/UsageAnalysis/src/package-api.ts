@@ -392,6 +392,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ProjectsList', {});
   }
 
+  export async function releaseTests(instanceFilter: string , lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseTests', { instanceFilter, lastBuildsNum });
+  }
+
+  export async function releaseManualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseManualTests', { lastBatchesNum });
+  }
+
   export async function userReports(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserReports', { date });
   }
@@ -554,8 +562,24 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects });
   }
 
+  export async function releaseDashboardApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:ReleaseDashboardApp', { path });
+  }
+
   export async function getTicketsVerdict(ticketColumn: DG.Column , resultColumn: DG.Column ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn });
+  }
+
+  export async function vexImages(): Promise<DG.DataFrame> {
+    return await grok.functions.call('UsageAnalysis:VexImages', {});
+  }
+
+  export async function stressSummaryDashboard(): Promise<DG.DataFrame> {
+    return await grok.functions.call('UsageAnalysis:StressSummaryDashboard', {});
+  }
+
+  export async function stressRawDashboard(): Promise<DG.DataFrame> {
+    return await grok.functions.call('UsageAnalysis:StressRawDashboard', {});
   }
 
   export async function metricsApp(): Promise<DG.View> {

@@ -1,5 +1,9 @@
 ---
 feature: legend
+realizes_atlas: []
+realizes: []
+realized_as:
+  - visibility-and-positioning-spec.ts
 target_layer: playwright
 coverage_type: smoke
 priority: p0

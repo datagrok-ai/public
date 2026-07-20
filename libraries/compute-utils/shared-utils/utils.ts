@@ -54,7 +54,7 @@ export const getPackage = (func: DG.Func) => {
 }
 
 export const hasContextHelp = (func?: DG.Func) => {
-  return !!(func?.options?.['help']);
+  return !!(func?.options?.['help'] ?? func?.options?.['readme']);
 };
 
 export const isRunningOnInput = (func: DG.Func) => {

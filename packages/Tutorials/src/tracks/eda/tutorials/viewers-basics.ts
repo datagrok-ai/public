@@ -5,7 +5,7 @@ import { filter, map } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { fromEvent, interval, merge } from 'rxjs';
 import $ from 'cash-dom';
-import { waitForElementClick } from './utils';
+import { elementClick } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
@@ -44,21 +44,20 @@ export class ViewersTutorial extends Tutorial {
     const addViewerIcon = ribbonPanels[1][1];
     await this.action(
       'Click the Add viewer icon to open the gallery',
-      waitForElementClick(addViewerIcon), addViewerIcon);
+      elementClick(() => addViewerIcon), addViewerIcon);
 
-    const chartsSpanDiv = Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
+    const getChartsTag = (): HTMLElement | null => Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
       const span = div.querySelector('span');
       return span && span.textContent === 'Charts';
-    }) as HTMLElement;
-    await this.action('Click the "Charts" tag to filter the viewers', waitForElementClick(chartsSpanDiv), chartsSpanDiv);
+    }) as HTMLElement ?? null;
+    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), getChartsTag());
 
-    const radarViewerElement = this.getViewerCard('Radar');
     await this.action('Select the Radar viewer',
-    waitForElementClick(radarViewerElement), radarViewerElement);
+      elementClick(() => this.getViewerCard('Radar')), this.getViewerCard('Radar'));
 
     const sunburstInfo = 'This time, find a viewer by searching instead of using tags. ' +
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
-    await this.action('Open the viewer gallery again', waitForElementClick(addViewerIcon), addViewerIcon, sunburstInfo);
+    await this.action('Open the viewer gallery again', elementClick(() => addViewerIcon), addViewerIcon, sunburstInfo);
 
     const searchInput = document.querySelector('.vg-controls input.ui-input-editor') as HTMLInputElement;
     await this.action('Type "Sunburst" in the search box',

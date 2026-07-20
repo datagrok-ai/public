@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [macromolecule_fasta_separator_column]
+realizes_atlas: [macromolecule_fasta_separator_column]
+realizes: []
 realized_as:
   - st-lifecycle-macromolecule-fasta-separator-column-spec.ts
 related_bugs: []

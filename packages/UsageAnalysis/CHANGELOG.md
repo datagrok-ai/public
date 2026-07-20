@@ -1,6 +1,47 @@
 # Usage Analysis changelog
 
-## v.next
+## 2.7.0 (2026-07-16)
+
+* Release: Tests slow-test alert now compares each test's latest duration against both the bleeding-edge recent average and the previous release (previous minor semver, found across instances) and shows both deltas; sub-second tests are ignored to cut noise; ReleaseTests returns a `prev_release_ms` baseline. (Stress keeps its bleeding-edge p95-vs-prior comparison — the previous release has no stress data to compare against.)
+
+## 2.6.1 (2026-07-16)
+
+* Release: Tickets — match the "Main" label case-insensitively (was looking for "MAIN", so the MAIN panel was always empty)
+
+## 2.6.0 (2026-07-16)
+
+* Release: Added a global Environment (instance) picker to the dashboard ribbon that persists across all tabs and filters Overview and Tests to builds run on the selected instance (replaces the per-tab Tests instance input)
+* Release: Tests tab — per-row mute icon (🔔/🔕) mutes a test for the current release version; version-bound mutes are stored in a dedicated ReleaseMutes sticky-meta schema and drop the test out of the failing/unstable/needs-attention counts for that version
+* Release: Tickets tab — the tickets grid now fills the page
+* Release: Tests tab — when a test didn't run in the latest build, its last known result is carried forward (shown dimmed) and used for the failing/pass-rate counts
+* Release: Added a "not run for 7+ days" stale-test alert (Overview + a stale_days column), with a separate per-row mute independent of the failing mute; ReleaseTests now returns each test's last run date over a 14-day lookback
+* Release: Tickets tab — color-coded status/priority/resolution cells; MAIN-labelled tickets shown in their own panel; the Overview Tickets card counts only actionable tickets (not Done / Won't Fix) split into MAIN vs other
+* Release: Added a global Refresh button to the dashboard ribbon that reloads every tab
+* Release: ReleaseTests now counts the latest CI/CD run per test (like TestsDashboard) instead of every test_run — retried-then-passed tests no longer count as failing and non-CI runs are excluded, so the failing counts stop being inflated by reruns
+* Release: Tests tab — the detail grid now fills the page; per-build status cells show `+` (passed) / `−` (failed) / `·` (skipped)
+* Release: Stress tab — replaced the last-build scatter plot with a box plot of duration by thread count (zero-padded `threads_string` category for numeric ordering, logarithmic ms axis); fixed charts being clipped by the fixed-height panel host
+
+## 2.5.4 (2026-07-15)
+
+* Release: Beautified the Tests grid — per-test passing history across the last 5 builds (color-coded status cells + a passing sparkline) and a duration sparkline, sorted to surface failing/flaky/slower tests first (mirrors the Overview alerts)
+* Release: Fixed the success rate rounding up to 100% while tests were failing (now floored); the Tests card sub shows "N passed, M failing"
+
+## 2.5.3 (2026-07-15)
+
+* Release: Overview alerts pane fills the view and groups a second level by package (category → package → test); the success rate excludes skipped and did-not-run tests (passed / passed+failed, floored)
+
+## 2.5.2 (2026-07-15)
+
+* Release: Added a dev-only `/release` release-readiness dashboard (Overview + Tests + Manual + Stress + Vulnerabilities + Tickets) — reuses the Stress/Vulnerabilities tabs, adds a per-package Tests tab (unit/integration/package tests, success & duration sparklines, sticky-meta muting, raw+Jenkins drilldown), a Manual (Test Track batches) tab, and a Jira fixVersion Tickets tab, with an Overview of traffic-light status cards and computed alerts. Vulnerabilities show bleeding-edge core scans (release-channel core excluded)
+* Release: Overview alerts are a navigable tree (categories → individual tests, click to open the tab); the vulnerabilities alert compares bleeding-edge vs the previously released image (new critical/high only); the test speed-regression check uses only passed runs; every grid has a '+' to open it as a table in the workspace; the Vulnerabilities grid is sorted by category
+* Release: Fixed a "Wrong range" grid error on the Tests tab by deferring sparkline columns until the grid is laid out
+* Vulnerabilities: Added a tab showing the published VEX scan results (data.datagrok.ai/vex) — per-image severity summary with drill-down to the per-CVE report
+* Stress: Added a tab with per-build stress metrics (median duration by build split by threads, full metrics grid) and a last-build scatter plot (threads vs duration, colored by pass/fail)
+* Metrics: Fixed app registration url ('/' → '/metrics') that shadowed all Usage Analysis deep links — any /apps/usage/<tab> URL used to land on Metrics
+* Stress: Added passthrough JS post-processing to StressTestsRaw/StressTestsSummary — project datasync of plain (post-process-free) queries loses the result dataframe client-side, which broke the CicdTests dashboard's stress views on open
+* Added the vexImages function (VEX scan results as a dataframe) — feeds the CicdTests dashboard's data-synced VEX view; core images use their bleeding-edge scan, packages/tools the latest released scan
+* Added stressSummaryDashboard/stressRawDashboard wrapper functions for the CicdTests dashboard's stress tables (project datasync of DataQuery calls is unreliable — GROK-20391)
+* Tests dashboard: Added an Unignore button next to "Mark as triaged" in the test properties panel — clears the ignored flag and its reason
 
 * Stress tests: Replaced the old stress dashboards/queries with `StressTestsSummary` (all builds — median/avg/min/max/p95 of ms by threads, pass rate as the mean per-test pass fraction), `StressTestsRaw` (per-build raw runs incl. error text, latest default, boxplot of ms), and `StressTestsFailures` (failing test×thread combos with a sample error); rewired the CI/CD tests project. Backed by the new server `stress_tests` table populated from the Jenkins stress job.
 * GROK-14456: Usage Analysis: Log tab improvements (added parameter details to the context panel and stack traces for errors)

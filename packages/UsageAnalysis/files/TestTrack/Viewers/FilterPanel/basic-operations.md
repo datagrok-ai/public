@@ -3,7 +3,8 @@ feature: filters
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [filters.path.add-categorical-and-select, filters.path.reset-clears-all]
+realizes_atlas: [filters.path.add-categorical-and-select, filters.path.reset-clears-all]
+realizes: [viewers.filters, viewers.filters.categorical, viewers.filters.histogram]
 realized_as:
   - basic-operations-spec.ts
 related_bugs: []

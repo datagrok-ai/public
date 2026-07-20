@@ -3,7 +3,8 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: []
+realizes_atlas: [biostructure-file-open-routing, biostructure-grid-cell-to-viewer]
+realizes: [biostructureviewer.ngl]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

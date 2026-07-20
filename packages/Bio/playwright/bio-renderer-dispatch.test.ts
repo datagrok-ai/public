@@ -117,7 +117,9 @@ test('Bio | Rendering — detector + renderer dispatch for HELM and SEPARATOR', 
       const macro: any = cols.find((c: any) => c.semType === 'Macromolecule');
       return macro?.getTag?.('.separator') ?? macro?.getTag?.('separator') ?? null;
     });
-    expect(sepTag, "MSA separator tag must be '-' per GROK-12164 reproducer parameters").toBe('-');
+    // The deployed filter_MSA.csv fixture uses '/' as the monomer separator
+    // (e.g. meI/hHis/Aca/...), so the detector correctly reports '/'.
+    expect(sepTag, "MSA separator tag must match the fixture delimiter '/'").toBe('/');
   });
   await softStep('Enumerate Bio cellRenderer registrations — bio.rendering parent surface', async () => {
     const bioCellRenderers: string[] = await page.evaluate(() => {

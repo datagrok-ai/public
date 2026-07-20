@@ -3,7 +3,8 @@ feature: bio
 target_layer: apitest
 coverage_type: smoke
 priority: p0
-realizes: [bio.cp.bio-service-surface-init]
+realizes_atlas: [bio.cp.bio-service-surface-init]
+realizes: []
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

@@ -190,18 +190,19 @@ category('Flow: guide', () => {
     }
   });
 
-  test('untilSectionExpanded reacts to the header collapsed class', async () => {
+  test('untilSectionExpanded reacts to the accordion expanded class', async () => {
     const ac = new AbortController();
     const ctx: GuideContext = {host: fakeHost(), signal: ac.signal};
+    // Sections are DG.Accordion panes; an expanded pane's header gets 'expanded'.
     const header = document.createElement('div');
-    header.className = 'funcflow-section-header collapsed';
+    header.className = 'd4-accordion-pane-header';
     header.dataset.section = 'Inputs';
     document.body.appendChild(header);
     try {
       const p = untilSectionExpanded('Inputs')(ctx);
-      setTimeout(() => header.classList.remove('collapsed'), 30);
+      setTimeout(() => header.classList.add('expanded'), 30);
       await p;
-      expect(header.classList.contains('collapsed'), false);
+      expect(header.classList.contains('expanded'), true);
     } finally {
       header.remove();
     }
@@ -242,8 +243,8 @@ category('Flow: guide', () => {
     }
   });
 
-  test('content: 5 tutorials, 10+ questions, unique ids, every step has text', async () => {
-    expect(TUTORIALS.length, 5);
+  test('content: 6 tutorials, 10+ questions, unique ids, every step has text', async () => {
+    expect(TUTORIALS.length, 6);
     expect(QUESTIONS.length >= 10, true, `expected 10+ questions, got ${QUESTIONS.length}`);
 
     const all = [...TUTORIALS, ...QUESTIONS];
@@ -263,14 +264,19 @@ category('Flow: guide', () => {
 
     // Feature coverage added after the initial guide set — autorun, precise
     // invalidation, the function-editor dialog, platform save + Workflows
-    // reuse, single-node rerun. Each must keep a how-to answer.
-    for (const id of ['how-autorun', 'how-out-of-date', 'how-func-editor', 'how-reuse-flow', 'how-rerun-node'])
+    // reuse, single-node rerun, output view tabs, layout persistence, and
+    // dashboard publishing. Each must keep a how-to answer.
+    for (const id of ['how-autorun', 'how-out-of-date', 'how-func-editor', 'how-reuse-flow', 'how-rerun-node',
+      'how-open-result', 'how-table-layouts', 'how-publish-dashboard', 'how-update-dashboard'])
       expect(QUESTIONS.some((g) => g.id === id), true, `question ${id} exists`);
-    // The interface tour walks the ribbon — it must include the autorun toggle
-    // and the output panel among its stops.
+    // Dashboard publishing has a dedicated end-to-end tutorial.
+    expect(TUTORIALS.some((t) => t.id === 'publish-dashboard'), true, 'dashboard tutorial exists');
+    // The interface tour walks the ribbon — it must include the autorun toggle,
+    // the output panel, and the result tabs among its stops.
     const tour = TUTORIALS.find((t) => t.id === 'interface-tour')!;
     expect(tour.steps.some((s) => s.title === 'Autorun'), true, 'tour covers the autorun toggle');
     expect(tour.steps.some((s) => s.title === 'The output panel'), true, 'tour covers the output panel');
+    expect(tour.steps.some((s) => s.title === 'Result tabs'), true, 'tour covers the result tabs');
   });
 });
 

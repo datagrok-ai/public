@@ -291,6 +291,32 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
 .ua-metrics-red { color: var(--red-3); }
 .ua-metrics-info { color: var(--grey-5); }
 
+.ua-release-ribbon-refresh {
+  cursor: pointer;
+  color: var(--grey-5);
+  padding: 0 6px;
+}
+.ua-release-ribbon-refresh:hover { color: var(--blue-1); }
+
+.ua-release-open {
+  cursor: pointer;
+  color: var(--grey-5);
+  margin-left: 8px;
+}
+.ua-release-open:hover { color: var(--blue-1); }
+.ua-release-alert-tree { padding: 4px 0; }
+
+.ua-release-alerts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ua-release-alerts > .ua-metrics-grid-host {
+  flex: 1;
+  overflow: auto;
+}
+
 .ua-metrics-panel {
   border: 1px solid var(--grey-2);
   border-radius: 4px;
@@ -363,6 +389,37 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
 
 .ua-metrics-grid-host.ua-metrics-queries-host {
   height: 240px;
+}
+
+/* Full-height tab layout: the opted-in panel/host grows to eat the remaining vertical space
+   (used by the Tests tab so its detail grid fills the page instead of the fixed 200px). */
+.ua-metrics-fill {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ua-metrics-fill > .ua-metrics-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ua-metrics-panel-grow {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ua-metrics-panel-grow > .ua-metrics-grid-host {
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Chart hosts must not clip: charts render taller than the fixed 200px grid host (Stress line/box). */
+.ua-metrics-chart-host {
+  height: auto;
+  overflow: visible;
 }
 
 .ua-metrics-tables-row {

@@ -28,7 +28,17 @@ category('Viewers: Core Viewers', () => {
 
   for (const v of coreViewers) {
     test(v, async () => {
-      await testViewer(v, v === '3d scatter plot' ? grok.data.demo.demog(100) : df.clone());
+      let viewerDf: DG.DataFrame;
+      if (v === '3d scatter plot')
+        viewerDf = grok.data.demo.demog(100);
+      // Tile Viewer builds a DOM tile per row; the 100-row chemistry df froze the
+      // browser past grok test's 180s inactivity watchdog, which aborts the WHOLE
+      // puppeteer pass (0 results). A small, non-chemistry df renders instantly.
+      else if (v === DG.VIEWER.TILE_VIEWER)
+        viewerDf = grok.data.demo.demog(20);
+      else
+        viewerDf = df.clone();
+      await testViewer(v, viewerDf);
     }, { skipReason: skip[v] });
   }
 }, { owner: 'dkovalyov@datagrok.ai' });

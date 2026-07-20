@@ -1,3 +1,15 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: []
+realizes: [views.connections]
+realized_as:
+  - 01-adding.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases**
 2. Right-click the **Postgres** and select **Add connection**
 3. Enter `test_postgres` to the **Name** field

@@ -1,9 +1,11 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType} from '../rete/node-factory';
+import {registerBuiltinNodes, registerAllFunctions, ensureFuncNodeType, getRegisteredFuncs} from '../rete/node-factory';
 import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
+import {emitCreationScript} from '../compiler/creation-script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {makeEditor, destroyEditor, addNode} from './test-utils';
 
@@ -252,6 +254,138 @@ category('Flow: script emitter', () => {
       destroyEditor(e);
     }
   });
+
+  test('a no-output mutator with two table inputs captures both modified tables', async () => {
+    // A node that transforms tables in place and declares no output: the
+    // instrumented run captures every connected dataframe input as a
+    // "<input> (modified)" summary, so the preview can show both.
+    const script = DG.Script.create([
+      '//name: TwoTableMutator',
+      '//language: javascript',
+      '//input: dataframe t1',
+      '//input: dataframe t2',
+      'grok.shell.info("noop");',
+    ].join('\n'));
+    expect(script.outputs.length, 0, 'the synthetic mutator declares no outputs');
+
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const in1 = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const in2 = await addNode(e.flow, 'Inputs/Table Input', 0, 140);
+      in1.properties['paramName'] = 'a';
+      in2.properties['paramName'] = 'b';
+      const mut = await addNode(e.flow, typeName, 320, 60);
+      await e.flow.addConnectionByKeys(in1.id, 'table', mut.id, 't1');
+      await e.flow.addConnectionByKeys(in2.id, 'table', mut.id, 't2');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes(`'t1 (modified)': __ff_summarize(`), true, 'first input table captured');
+      expect(inst.includes(`'t2 (modified)': __ff_summarize(`), true, 'second input table captured');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('dataframe pass-throughs get dims-only summaries; utility summaries are slot-keyed', async () => {
+    // A func that threads a table through (real output is an int): its
+    // `t__pt` pass-through must appear in the node-complete outputs as a cheap
+    // __ff_dims entry, so the outgoing pass-through wire gets its "N × K" label.
+    const script = DG.Script.create([
+      '//name: TableThreader',
+      '//language: javascript',
+      '//input: dataframe t',
+      '//output: int result',
+      'result = t.rowCount;',
+    ].join('\n'));
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      const fn = await addNode(e.flow, typeName, 320, 0);
+      await e.flow.addConnectionByKeys(src.id, 'table', fn.id, 't');
+
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes('function __ff_dims'), true, 'dims helper in the preamble');
+      expect(inst.includes('"t__pt": __ff_dims('), true, 'pass-through summarized (dims-only)');
+
+      // A utility step's summary is keyed by its output SLOT key (what the
+      // edge-count and port-preview lookups use), not by its variable name.
+      const sel = await addNode(e.flow, 'Utilities/Select Table', 0, 200);
+      sel.properties['tableName'] = 'demog';
+      const inst2 = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r2'});
+      const selOutKey = Object.keys(sel.outputs).find((k) => !k.startsWith('__'))!;
+      expect(inst2.includes(`{outputs:{${JSON.stringify(selOutKey)}: __ff_summarize(`), true,
+        `utility summary keyed by slot key "${selOutKey}"`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: multi-output funcs', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  test('reads outputs off the call object; variable names are valid identifiers', async () => {
+    // A func whose NAME starts with a digit and declares TWO outputs — both bugs
+    // at once: an illegal variable name (`let 2InputsFlow… ` is a syntax error),
+    // and downstream references to per-output variables that `grok.functions.call`
+    // never declares. It returns the value directly for a single output but an
+    // object keyed by the output names when there are several — so the outputs
+    // must be read as `<call>.result1` / `<call>.result2`.
+    const script = DG.Script.create([
+      '//name: 2InputsFlow',
+      '//language: javascript',
+      '//input: int firstNum',
+      '//input: int secondNum',
+      '//output: dataframe result1',
+      '//output: dataframe result2',
+      'result1 = grok.data.demo.demog();',
+      'result2 = grok.data.demo.demog();',
+    ].join('\n'));
+    expect(script.outputs.length, 2, 'the synthetic func has two outputs');
+
+    const typeName = ensureFuncNodeType(script);
+    const e = makeEditor();
+    try {
+      const fn = await addNode(e.flow, typeName);
+      const out1 = await addNode(e.flow, 'Outputs/Value Output', 340, 20);
+      const out2 = await addNode(e.flow, 'Outputs/Value Output', 340, 140);
+      out1.properties['paramName'] = 'Result';
+      out2.properties['paramName'] = 'Result2';
+      await e.flow.addConnectionByKeys(fn.id, 'result1', out1.id, 'value');
+      await e.flow.addConnectionByKeys(fn.id, 'result2', out2.id, 'value');
+
+      const clean = emitScript(e.flow, SETTINGS);
+
+      // 1. No emitted variable declaration starts with a digit.
+      expect(/\blet\s+[0-9]/.test(clean), false, 'no variable name starts with a digit');
+      const m = clean.match(/let\s+(\w+)\s*=\s*await grok\.functions\.call\(/);
+      expect(m != null, true, 'the func call is assigned to a variable');
+      const callVar = m![1];
+      expect(/^[0-9]/.test(callVar), false, `call var "${callVar}" must not start with a digit`);
+
+      // 2. Downstream reads a PROPERTY off the call object, not a phantom variable.
+      expect(clean.includes(`Result = ${callVar}.result1;`), true, 'Result assigned from the result1 property');
+      expect(clean.includes(`Result2 = ${callVar}.result2;`), true, 'Result2 assigned from the result2 property');
+      expect(clean.includes(`${callVar}_result1`), false, 'no reference to an undeclared per-output variable');
+      // detectSemanticTypes on each dataframe output uses the property expression.
+      expect(clean.includes(`if (${callVar}.result1 != null) await ${callVar}.result1.meta.detectSemanticTypes();`),
+        true, 'semantic detection runs on the property expression');
+
+      // 3. Instrumented summary is keyed by the slot key (a valid object key), and
+      // its value is the property expression.
+      const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'r1'});
+      expect(inst.includes(`"result1": __ff_summarize(${callVar}.result1`), true,
+        'summary keyed by slot key, value reads the property');
+      expect(inst.includes(`"result2": __ff_summarize(${callVar}.result2`), true);
+    } finally {
+      destroyEditor(e);
+    }
+  });
 });
 
 category('Flow: validator', () => {
@@ -326,6 +460,85 @@ category('Flow: validator', () => {
       sv.inputValues['variableName'] = 'stored';
       expect(validateGraph(e.flow).some((r) => r.message.startsWith('Duplicate')), false,
         'distinct names across outputs and SetVars pass');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+});
+
+category('Flow: func wrappers', () => {
+  before(async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+  });
+
+  const appendType = (): string | null =>
+    getRegisteredFuncs().find((f) => f.func.name === 'AppendTables')?.nodeTypeName ?? null;
+
+  test('a wrapped func node exposes the wrapper inputs, not the raw signature', async () => {
+    const typeName = appendType();
+    if (!typeName) return; // AppendTables not on this stand — skip
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      expect(!!node.funcWrapper, true, 'wrapper read onto the node');
+      expect('table1' in node.inputs, true, 'exposed table socket');
+      expect('table2' in node.inputs, true, 'exposed table socket');
+      expect('tables' in node.inputs, false, 'raw dataframe_list slot not exposed');
+      expect('table1__pt' in node.outputs, true, 'pass-throughs mirror the exposed inputs');
+      expect(node.passthroughCount, 2, 'pass-through count follows the wrapper');
+      expect(node.requiredInputs.join(','), 'table1,table2', 'exposed tables gate the run');
+      expect('result' in node.outputs, true, 'real output untouched');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('compile folds the exposed inputs into the real call arguments', async () => {
+    const typeName = appendType();
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Inputs/Table Input', 0, 0);
+      a.properties['paramName'] = 'tA';
+      const b = await addNode(e.flow, 'Inputs/Table Input', 0, 200);
+      b.properties['paramName'] = 'tB';
+      const ap = await addNode(e.flow, typeName, 300, 100);
+      await e.flow.addConnectionByKeys(a.id, 'table', ap.id, 'table1');
+      await e.flow.addConnectionByKeys(b.id, 'table', ap.id, 'table2');
+
+      const script = emitScript(e.flow, SETTINGS);
+      expect(/grok\.functions\.call\('AppendTables', \{tables: \[\w+, \w+\]\}\)/.test(script), true,
+        `real list argument emitted (script: ${script})`);
+      expect(script.includes('table1:'), false, 'exposed names never leak into the call');
+
+      const instrumented = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'w1'});
+      expect(instrumented.includes('{tables: ['), true, 'instrumented call reshaped too');
+      expect(instrumented.includes('"table1__pt":'), true,
+        'pass-through stash still keyed by the exposed input');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('the reshaped call shape is what the platform accepts', async () => {
+    if (!appendType()) return;
+    const dfA = DG.DataFrame.fromCsv('x\n1\n2');
+    const dfB = DG.DataFrame.fromCsv('x\n3');
+    const res = await grok.functions.call('AppendTables', {tables: [dfA, dfB]}) as DG.DataFrame;
+    expect(res.rowCount, 3, 'a JS array of DataFrames marshals to the dataframe_list param');
+  });
+
+  test('a wrapped node has no creation-script equivalent — warns instead of emitting garbage', async () => {
+    const typeName = appendType();
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, typeName);
+      const r = emitCreationScript(e.flow);
+      expect(r.warnings.some((w) => w.includes('AppendTables')), true,
+        `warning names the wrapped func (got: ${r.warnings.join(' ; ')})`);
+      expect(r.script.includes('AppendTables'), false, 'no bogus call emitted');
     } finally {
       destroyEditor(e);
     }

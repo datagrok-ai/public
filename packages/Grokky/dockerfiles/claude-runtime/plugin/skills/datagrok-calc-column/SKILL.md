@@ -35,7 +35,8 @@ DataFrame from elsewhere, replace `t` with that variable.
 | `row`                | current row index                                  |
 | `+ - * / ^`          | operators                                          |
 | `Round`, `RoundFloat`, `Log`, `Log10`, `Sqrt`, `Abs` | math functions      |
-| `Avg($[col])`, `Sum($[col])`, `Min`, `Max`, `StDev` | aggregates over a whole column |
+| `Avg($[col])`, `Sum($[col])`, `Min($[col])`, `Max($[col])`, `StDev($[col])` | aggregates over a whole column |
+| `Max([${A}, ${B}])`, `Min([${A}, ${B}])` | per-row max / min across columns — the argument is an **array** |
 | `Chem:getInchis(${molecule})`, `HeavyAtomCount(${molecule})` | only functions tagged `vectorFunc: 'true'` work here — see [Which functions work in a formula](#which-functions-work-in-a-formula) |
 | `"text"`             | string literal (double quotes)                     |
 
@@ -53,6 +54,11 @@ await t.columns.addNewCalculated('HAC', 'HeavyAtomCount(${molecule})', 'int');
 ```datagrok-exec
 // Log of activity
 await t.columns.addNewCalculated('logIC50', 'Log10(${IC50})');
+```
+
+```datagrok-exec
+// Per-row maximum of two columns — note the array argument.
+await t.columns.addNewCalculated('CS max', 'Max([${Chemical Space X}, ${Chemical Space Y}])');
 ```
 
 ## Which functions work in a formula

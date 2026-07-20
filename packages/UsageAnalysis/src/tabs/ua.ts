@@ -36,6 +36,12 @@ export class UaView extends DG.ViewBase {
     this._resolveToolbox();
   }
 
+  // Unblocks initViewers() for toolbox-independent hosts (e.g. the Release app), which reuse
+  // toolbox-free tabs (Stress, Vulnerabilities, ...) without building the shared UaToolbox.
+  markToolboxReady() {
+    this._resolveToolbox();
+  }
+
   async tryToInitViewers(path?: string): Promise<void> {
     await this._toolboxReady;
     if (!this.initialized) {

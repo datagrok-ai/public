@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [bio.cp.convert-notation-roundtrip]
+realizes_atlas: [bio.cp.convert-notation-roundtrip]
+realizes: [bio.transform.convert-sequence-notation]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/convert.md
 migration_date: 2026-05-31

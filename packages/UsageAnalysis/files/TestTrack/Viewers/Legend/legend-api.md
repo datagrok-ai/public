@@ -3,7 +3,10 @@ feature: legend
 target_layer: apitest
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
+realized_as:
+  - legend-api-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

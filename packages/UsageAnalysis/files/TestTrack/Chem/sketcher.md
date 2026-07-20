@@ -3,7 +3,10 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p0
+realizes_atlas: []
 realizes: []
+realized_as:
+  - sketcher-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/sketcher.md
 migration_date: 2026-05-11

@@ -16,7 +16,7 @@ module.exports = {
   cache: {
     type: 'filesystem',
   },
-  mode: 'development',
+  mode: 'production',
   entry: {
     package: './src/package.ts',
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'}

@@ -3,7 +3,8 @@ feature: dendrogram
 target_layer: apitest
 coverage_type: regression
 priority: p2
-realizes: []
+realizes_atlas: [dendrogram.cross.tree-helper-cross-package]
+realizes: [dendrogram]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

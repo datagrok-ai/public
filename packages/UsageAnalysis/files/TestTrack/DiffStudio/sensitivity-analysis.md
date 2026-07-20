@@ -1,3 +1,15 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p1
+realizes_atlas: [load-library-ivp-run]
+realizes: [diffstudio]
+realized_as:
+  - sensitivity-analysis.test.ts
+related_bugs: []
+---
+
 ### Sensitivity Analysis in Diff Studio (Bioreactor)
 
 To validate the functionality of the Sensitivity Analysis tool in [Diff Studio](https://docs.google.com/document/d/1vXeUMv6S8L94KvMsOHgodOiJ2eHzsuHRzoFGnONm0jg/edit?tab=t.0), ensuring that the analysis runs correctly and the results are visualized properly.

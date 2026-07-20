@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## v.next
+
+* `grok test` — `--no-retry` is now honored for Playwright runs. minimist parsed `--no-retry` as `{retry:false}`, so the flag was silently dropped and failed specs were still retried once; normalized so `--retries=0` reaches Playwright.
+
 ## 6.4.5 (2026-06-23)
 
 * `grok test` — screen recording (`--record`) is now optional: if `page.screencast()` can't start (e.g. `ffmpeg` is missing on the runner, `spawnSync ffmpeg ENOENT`), the run warns and continues instead of failing the whole Puppeteer pass with 0 tests executed.

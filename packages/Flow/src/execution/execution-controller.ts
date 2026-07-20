@@ -38,12 +38,16 @@ export function expandToLiveBoundary(
   return slice;
 }
 
-/** Short count label for a wire from a source output's summary — "1,204 rows"
- *  for a table, "1,204" for a column. Null when there's nothing countable. */
-function connectionCountLabel(summary?: ValueSummary): string | null {
+/** Short count label for a wire from a source output's summary — "1,204 × 8"
+ *  (rows × columns) for a table, "1,204" for a column. Null when there's
+ *  nothing countable. Exported for tests. */
+export function connectionCountLabel(summary?: ValueSummary | null): string | null {
   if (!summary) return null;
   const n = (v: number): string => v.toLocaleString('en-US');
-  if (summary.type === 'dataframe' && typeof summary.rows === 'number') return `${n(summary.rows)} rows`;
+  if (summary.type === 'dataframe' && typeof summary.rows === 'number') {
+    return typeof summary.cols === 'number' ?
+      `${n(summary.rows)} × ${n(summary.cols)}` : `${n(summary.rows)} rows`;
+  }
   if (summary.type === 'column' && typeof summary.length === 'number') return n(summary.length);
   return null;
 }
@@ -94,6 +98,15 @@ export class ExecutionController {
     this.state = new ExecutionState();
     this.visualizer = new ExecutionVisualizer(flow);
     this.outputPreview = outputPreview ?? new OutputPreviewPanel();
+    // Unpinning via the header icon jumps to the node the user selected while
+    // pinned — re-clicking an already-selected node fires no selection event,
+    // so without this the preview would stay on the stale pinned content.
+    this.outputPreview.onUnpinned = (): void => {
+      const ids = this.flow.getSelectedNodeIds();
+      if (ids.length !== 1) return;
+      const node = this.flow.getNodeById(ids[0]);
+      if (node && node.id !== this.outputPreview.currentNodeId) this.showOutputsForNode(node);
+    };
   }
 
   runInstrumented(settings: ScriptSettings): void {
@@ -226,16 +239,25 @@ export class ExecutionController {
     if (!node) return false;
     // Inputs/outputs have nothing to recompute on their own.
     if (node.dgNodeType !== 'func' && node.dgNodeType !== 'utility') return false;
+    const anyConnected = Object.keys(node.inputs)
+      .some((k) => !isExecKey(k) && !!this.flow.getInputSource(nodeId, k));
+    return anyConnected && this.readyForLiveRun(nodeId);
+  }
+
+  /** Inputs satisfied for a run that must not touch upstream: no missing
+   *  requirements, and every connected input is fed by a captured live value.
+   *  Unlike {@link canRerunNode}, a node with no connected inputs qualifies —
+   *  an Open File runs from its parameters alone. */
+  private readyForLiveRun(nodeId: string): boolean {
+    const node = this.flow.getNodeById(nodeId);
+    if (!node) return false;
     if (nodeMissingRequirements(node, (k) => this.flow.isInputConnected(nodeId, k)).length > 0) return false;
-    let anyConnected = false;
     for (const key of Object.keys(node.inputs)) {
       if (isExecKey(key)) continue;
       const src = this.flow.getInputSource(nodeId, key);
-      if (!src) continue;
-      anyConnected = true;
-      if (!this.hasLiveValue(src.node.id, src.outputKey)) return false;
+      if (src && !this.hasLiveValue(src.node.id, src.outputKey)) return false;
     }
-    return anyConnected;
+    return true;
   }
 
   /** Re-run just this node using upstream values captured from a prior run — its
@@ -269,6 +291,44 @@ export class ExecutionController {
    *  silent — no validation toasts, no run dialog, no selection stealing —
    *  because it fires after every edit. The outcome tells the scheduler
    *  whether to retry ('busy') or wait for the next edit ('skipped'). */
+  /** Debounced live-node entry — the global autorun toggle is OFF and an edit
+   *  touched live-by-default nodes (Open File, viewers, …). Runs ONLY the given
+   *  nodes, and only those whose inputs are satisfied (see
+   *  {@link readyForLiveRun}); everything else on the canvas — including the
+   *  live nodes' own downstream — is left alone. Unready live nodes are
+   *  silently dropped; if none remain, nothing runs. */
+  runLiveNodes(liveIds: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
+    if (this.state.isRunning) return 'busy';
+    // A mid-edit graph is often momentarily invalid; just wait for more edits.
+    if (validateGraph(this.flow).some((e) => e.severity === 'error')) return 'skipped';
+
+    const runSet = new Set<string>();
+    for (const id of liveIds) {
+      const node = this.flow.getNodeById(id);
+      // An input node would emit `//input:` headers → a dialog; never live-run.
+      if (!node || node.dgNodeType === 'input') continue;
+      if (this.readyForLiveRun(id)) runSet.add(id);
+    }
+    if (runSet.size === 0) return 'skipped';
+
+    const restorePreviewId = this.autorunPreviewNodeId;
+    this.autorunPreviewNodeId = null;
+    this.executeInstrumented(settings, false, {
+      onlyNodeIds: runSet,
+      liveExternalInputs: true,
+      preserveState: true,
+      skipValidation: true,
+      onComplete: () => {
+        if (!restorePreviewId) return;
+        const node = this.flow.getNodeById(restorePreviewId);
+        const state = this.state.getNodeState(restorePreviewId);
+        if (node && state?.status === NodeExecStatus.completed)
+          this.outputPreview.showForNode(node, state);
+      },
+    });
+    return 'started';
+  }
+
   runAutorun(dirty: Set<string>, settings: ScriptSettings): 'started' | 'busy' | 'skipped' {
     if (this.state.isRunning) return 'busy';
     // A mid-edit graph is often momentarily invalid; just wait for more edits.
@@ -348,7 +408,10 @@ export class ExecutionController {
     } else {
       // A new full/slice run invalidates anything we were showing — and the
       // captured live values (they're recomputed by this run's `__ff_stash`).
-      this.outputPreview.clear();
+      // A pinned preview keeps its stale content in place instead of blinking:
+      // node-start overlays the spinner, node-complete renders fresh.
+      if (this.outputPreview.pinnedNodeId == null || this.outputPreview.currentNodeId == null)
+        this.outputPreview.clear();
       this.state.startRun(runId);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
@@ -414,6 +477,8 @@ export class ExecutionController {
     case 'node-start':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.running, {startTime: event.timestamp});
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.running);
+      // The pinned node is recomputing — spinner over the kept stale content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.markUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'node-complete':
@@ -423,12 +488,20 @@ export class ExecutionController {
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);
+      // A pinned preview tracks its node live: the moment a fresh result lands,
+      // re-render it (selection can't bring it back — other nodes are gated).
+      if (this.outputPreview.pinnedNodeId === event.nodeId) {
+        const pinned = this.flow.getNodeById(event.nodeId);
+        if (pinned) this.showOutputsForNode(pinned);
+      }
       break;
     case 'node-error':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.errored, {
         endTime: event.timestamp, error: event.error, stack: event.stack,
       });
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.errored);
+      // A failed pinned recompute: drop the spinner, keep the last good content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.clearUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'breakpoint-hit':
@@ -438,6 +511,9 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
+      // Safety: if the pinned node never completed this run (skipped/halted),
+      // don't leave the spinner spinning over the kept content.
+      this.outputPreview.clearUpdating();
       if (this.pendingOnComplete) {
         const cb = this.pendingOnComplete;
         this.pendingOnComplete = null;
@@ -530,9 +606,13 @@ export class ExecutionController {
     if (reg)
       for (const id of affected) delete reg[id];
     // Stale values aren't worth previewing; close (and remember the node so an
-    // autorun can bring the preview back once fresh values exist).
+    // autorun can bring the preview back once fresh values exist). A PINNED
+    // preview keeps its stale content instead — hiding and re-docking on every
+    // upstream edit reads as jumping; node-start overlays the recalculating
+    // spinner and node-complete swaps in the fresh render in place.
     const previewId = this.outputPreview.currentNodeId;
-    if (previewId !== null && affected.has(previewId)) {
+    if (previewId !== null && affected.has(previewId) &&
+        this.outputPreview.pinnedNodeId !== previewId) {
       this.outputPreview.clear();
       this.autorunPreviewNodeId = previewId;
     }
@@ -548,6 +628,7 @@ export class ExecutionController {
     const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
     if (reg) delete reg[nodeId];
     if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.clear();
+    if (this.outputPreview.pinnedNodeId === nodeId) this.outputPreview.unpin();
     if (this.autorunPreviewNodeId === nodeId) this.autorunPreviewNodeId = null;
   }
 
@@ -556,6 +637,7 @@ export class ExecutionController {
     this.flow.clearConnectionLabels();
     this.state.reset();
     this.outputPreview.clear();
+    this.outputPreview.unpin();
     this.clearLiveRegistry();
   }
 

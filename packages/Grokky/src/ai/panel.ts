@@ -6,7 +6,7 @@ import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
-import {buildViewContext} from '../claude/exec-blocks';
+import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
@@ -17,16 +17,7 @@ type AIPanelInputs = {
     prompt: string,
 }
 
-type DBAIPanelInputs = AIPanelInputs & {
-    catalogName: string,
-}
 
-export type ScriptingAIPanelInputs = AIPanelInputs & {
-  language: DG.ScriptingLanguage
-};
-
-
-type TVAIPanelInputs = AIPanelInputs;
 
 export interface AskUserOption {
   label: string;
@@ -163,6 +154,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
+  private _emptyStateSeq = 0;
   /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
@@ -245,7 +238,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
     this.wandButton = ui.iconFA('magic', async (e) => {
-      const scopes = await resolveScopes('panel', this.view);
+      const scopes = await resolveScopes('panel', this.view ?? grok.shell.v);
       showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
@@ -282,6 +275,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   mountInto(parent: HTMLElement) {
     parent.appendChild(this.root);
   }
+
+  get contextView(): DG.View | DG.ViewBase { return this.view; }
+  setContextView(view: DG.View | DG.ViewBase): void { this.view = view; }
 
   activate(focus: boolean = false): void {
     this.renderEmptyState();
@@ -599,8 +595,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._streamingMarkdownEl = null;
   }
 
-  prependViewContext(prompt: string, view: DG.ViewBase): string {
-    const ctx = buildViewContext(view);
+  prependViewContext(prompt: string, _view: DG.ViewBase): string {
+    const ctx = buildWorkspaceContext();
     if (!ctx)
       return prompt;
     return ctx + '\n---\n\n' + prompt;
@@ -873,22 +869,32 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.handleRun();
   }
 
+  /** The view the panel currently works against: the pinned one for owned panels, else the live current view. */
+  protected get liveView(): DG.View | DG.ViewBase | null {
+    return this.view ?? grok.shell.v;
+  }
+
   protected shouldShowEmptyState(): boolean {
-    return this.view instanceof DG.TableView &&
-      this._uiMessages.length === 0 &&
-      !this.outputArea.querySelector('.grokky-empty-state');
+    return this.liveView instanceof DG.TableView && this._uiMessages.length === 0;
   }
 
   private setWandVisible(visible: boolean): void {
-    this.wandButton.style.display = visible && this.view instanceof DG.TableView ? '' : 'none';
+    this.wandButton.style.display = visible && this.liveView instanceof DG.TableView ? '' : 'none';
   }
 
+  /** Rebuilds the suggestion cards for the current view; removes them when they no longer apply. */
   protected async renderEmptyState(): Promise<void> {
-    if (!this.shouldShowEmptyState())
+    const seq = ++this._emptyStateSeq;
+    const removeExisting = () => this.outputArea.querySelector('.grokky-empty-state')?.remove();
+    if (!this.shouldShowEmptyState()) {
+      removeExisting();
+      this.setWandVisible(true);
       return;
-    const scopes = await resolveScopes('panel', this.view);
-    if (!this.shouldShowEmptyState())
+    }
+    const scopes = await resolveScopes('panel', this.liveView);
+    if (seq !== this._emptyStateSeq || !this.shouldShowEmptyState())
       return;
+    removeExisting();
 
     const blocks = scopes.map((s) => {
       const icon = ui.iconFA(s.icon ?? 'circle');
@@ -1128,106 +1134,4 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
 function receiveFeedback(userPrompt: string, aiResponse: string, contextId: string, helpful: boolean) {
   // not implemented yet
-}
-
-
-export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
-  protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
-  protected catalogInput: DG.InputBase<string>;
-  private setAndRunFunc: (query: string) => void;
-
-  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase, setAndRunFunc: (query: string) => void) {
-    super(connectionID, view); // context ID is connection ID
-    this.setAndRunFunc = setAndRunFunc;
-    this.catalogInput = ui.input.choice('Catalog', {
-      items: catalogs,
-      value: defaultCatalog,
-      nullable: false,
-      tooltipText: 'Select the database catalog to use for AI-assisted query generation.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.catalogInput.input);
-    ui.tooltip.bind(this.catalogInput.input, 'Select the database catalog to use for AI-assisted query generation.');
-  }
-
-  public getCurrentInputs(): DBAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      catalogName: this.catalogInput.value!,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract SQL from fenced code blocks and inject into query editor
-    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
-    if (sqlMatch) {
-      const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
-      this.setAndRunFunc(sql);
-    }
-  }
-}
-
-export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
-  protected get placeHolder() { return 'Ask Claude about your data...'; }
-  protected tableView: DG.TableView;
-
-  constructor(view: DG.TableView) {
-    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view);
-    this.tableView = view;
-  }
-
-  protected getConversationMeta() {
-    return {viewState: this.tableView.saveLayout().viewState, sessionId: this.sessionId};
-  }
-
-  protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
-    if (conversation.meta?.sessionId)
-      (this as any)._sessionId = conversation.meta.sessionId;
-    const viewState = conversation.meta?.viewState ?? conversation.meta;
-    const currentViewers = Array.from(this.tableView.viewers);
-    if (!!viewState && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
-      const layout = DG.ViewLayout.fromViewState(viewState);
-      this.tableView.loadLayout(layout, true);
-    }
-  }
-}
-
-export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
-  protected get placeHolder() { return 'Ask AI to generate a script...'; }
-  protected languageInput: DG.InputBase<string>;
-
-  constructor(view: DG.View | DG.ViewBase) {
-    super('scripting-ai-panel', view); // context ID is fixed for scripting panel
-    this.languageInput = ui.input.choice('Language', {
-      items: Object.values(DG.SCRIPT_LANGUAGE),
-      value: DG.SCRIPT_LANGUAGE.JAVASCRIPT,
-      nullable: false,
-      tooltipText: 'Select scripting language for the generated script.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.languageInput.input);
-    ui.tooltip.bind(this.languageInput.input, 'Select scripting language for the generated script.');
-  }
-
-  public getCurrentInputs(): ScriptingAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      language: this.languageInput.value as DG.ScriptingLanguage,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract code from datagrok-exec blocks and set on the script editor
-    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
-    if (codeMatch) {
-      ui.setUpdateIndicator(this.view.root, true, 'Updating script...');
-      const indicator = this.view.root.querySelector('.d4-update-shadow') as HTMLElement;
-      if (indicator)
-        indicator.style.zIndex = '1000';
-      (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
-      ui.setUpdateIndicator(this.view.root, false);
-    }
-  }
 }

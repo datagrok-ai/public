@@ -1,3 +1,15 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: [eda.cp.pca-analysis]
+realizes: [ml.analyze.pca]
+realized_as:
+  - pca-spec.ts
+related_bugs: []
+---
+
 ### Principal component analysis (PCA)
 
 1. Open the DataFrame:

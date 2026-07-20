@@ -78,6 +78,10 @@ async function runBattery(page: import('@playwright/test').Page, backend: string
     await sleep(2000);
     res.checks.persistInner = !!sk.sketcher;
     res.checks.persistRootInDom = document.body.contains(sk.root);
+    // External sketchers (Ketcher) rebuild the molfile asynchronously through a remote widget and
+    // can briefly report an empty block on a cold CI stack; poll until it re-materializes before
+    // sampling persistence, mirroring the C1 poll (was a single sample → flaky on the minimal stack).
+    { const t0 = Date.now(); while (Date.now() - t0 < 15000) { if ((sk.getMolFile() ?? '').length > 0) break; await sleep(400); } }
     res.checks.persistMolfileLen = (sk.getMolFile() ?? '').length;
 
     // C3: MOLBLOCK (V2000) round-trip

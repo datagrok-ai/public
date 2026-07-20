@@ -39,6 +39,9 @@ import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
 
+/** Mirrors `chemEnumerateMarkushTopMenu`'s description in package.ts (the app entry registers none of its own). */
+const MARKUSH_DESCRIPTION = 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)';
+
 const DEFAULT_TABLE_NAME = 'Markush enumeration';
 const DEFAULT_REMOVE_DUPLICATES = true;
 
@@ -455,7 +458,8 @@ async function openImportWizard(
       } else {
         vv.setData(items.length, (i) => buildCard({smiles: items[i].smi, subtitle: items[i].subtitle, error: items[i].err}));
       }
-      if (okButton) okButton.disabled = values.length === 0;
+      // Block import while any entry is invalid.
+      if (okButton) okButton.disabled = values.length === 0 || errs.length > 0;
     };
 
     tableInput.onChanged.subscribe(async () => {
@@ -713,7 +717,20 @@ function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => v
       if (errs.length === 0) { root.style.display = 'none'; return; }
       root.style.display = 'inline-flex';
       root.innerText = `⚠ ${errs.length} issue${errs.length === 1 ? '' : 's'}`;
-      ui.tooltip.bind(root, errs.join('\n'));
+      // Collapse duplicate messages and cap the list so the tooltip stays a small box.
+      const byBody = new Map<string, number>();
+      for (const e of errs) {
+        const body = e.replace(/^[^:]+:\s*/, ''); // drop the positional prefix ("R-group 393: ")
+        byBody.set(body, (byBody.get(body) ?? 0) + 1);
+      }
+      const lines = [...byBody.entries()].map(([body, n]) => n > 1 ? `${body} (×${n})` : body);
+      const MAX_LINES = 12;
+      const shown = lines.slice(0, MAX_LINES);
+      if (lines.length > MAX_LINES) shown.push(`…and ${lines.length - MAX_LINES} more`);
+      ui.tooltip.bind(root, () => ui.divText(shown.join('\n'), {style: {
+        maxWidth: '360px', maxHeight: '240px', overflow: 'hidden',
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      }}));
     },
   };
 }
@@ -982,6 +999,28 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
     }
     view.root.appendChild(ui.div([panel.root],
       {style: {height: '100%', width: '100%', padding: '8px', boxSizing: 'border-box'}}));
+
+    // Fill the toolbox so this view's sidebar isn't empty.
+    const aboutAcc = ui.accordion('markushEnumeratorAbout');
+    aboutAcc.addPane('About', () => ui.divV([
+      ui.divText(MARKUSH_DESCRIPTION),
+      ui.divV([
+        ui.divText('Usage', {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', margin: '0 0 2px'}}),
+        ui.divText('1. Draw or import cores — molecules with R-labels.'),
+        ui.divText('2. Add R-group substituents for each R.'),
+        ui.divText('3. Pick Enumerator Type (Zip — same-length list, Cartesian — all combinations).'),
+        ui.divText('4. Enumerate to build the molecule table.'),
+      ], {style: {gap: '2px'}}),
+      ui.info([
+        ui.divText('An R-group can be a single atom (N, O, Cl, …) drawn without an R-label.'),
+        ui.divText('Import cores or R-groups from any open table with the folder button.'),
+        ui.divText('Save the whole setup (cores + R-groups) as a CSV with the download button.'),
+        ui.divText('Use the Templates button to add ready-made R-group sets.'),
+        ui.divText('Reopen a recent setup from the History (clock) button.'),
+      ], 'Tips'),
+    ], {style: {padding: '8px', gap: '8px'}}), true);
+    view.toolbox = aboutAcc.root;
+
     return view;
   } catch (err: any) {
     defaultErrorHandler(err);
@@ -1008,6 +1047,23 @@ interface ChemEnumPanel {
 
 type ChemEnumLayout = 'dialog' | 'app';
 
+// Horizontal scroll of a virtualView row lives on the root or its viewport; setData resets it, so
+// callers snapshot with readRowScrollLeft before a rebuild and restore with restoreRowScrollLeft after.
+function readRowScrollLeft(vvRoot: HTMLElement): number {
+  const viewport = vvRoot.firstElementChild as HTMLElement | null;
+  return Math.max(vvRoot.scrollLeft, viewport?.scrollLeft ?? 0);
+}
+
+function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
+  if (scrollLeft <= 0) return;
+  // Restore after the virtualView lays out (setData resets scroll synchronously).
+  setTimeout(() => {
+    const viewport = vvRoot.firstElementChild as HTMLElement | null;
+    vvRoot.scrollLeft = scrollLeft;
+    if (viewport) viewport.scrollLeft = scrollLeft;
+  }, 0);
+}
+
 export function buildChemEnumPanel(
   rdkit: RDModule, preloadCore: ChemEnumCore | null, layout: ChemEnumLayout = 'dialog',
   opts: {hideAppendToTable?: boolean} = {},
@@ -1020,6 +1076,16 @@ export function buildChemEnumPanel(
     removeDuplicates: DEFAULT_REMOVE_DUPLICATES,
     tableName: DEFAULT_TABLE_NAME,
   };
+
+  /** Confirm before a bulk removal. */
+  const confirmDelete = (message: string, action: () => void) => {
+    ui.dialog({title: 'Confirm removal'})
+      .add(ui.divText(message))
+      .onOK(action)
+      .show();
+  };
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const rGroupTotal = () => [...state.rGroupsByNum.values()].reduce((sum, l) => sum + l.length, 0);
 
   // ── Cores: single-row horizontal virtualView (dialog) or wrapped flow (app) ─
   const ROW_H = CARD_H + 16; // card height + horizontal scrollbar breathing room
@@ -1082,7 +1148,10 @@ export function buildChemEnumPanel(
       applyHorizontalRowStyle(coresVv.root);
       coresVvHost.appendChild(coresVv.root);
     } else {
+      // setData resets scroll; preserve it.
+      const scrollLeft = readRowScrollLeft(coresVv.root);
       coresVv.setData(state.cores.length, coresRenderer);
+      restoreRowScrollLeft(coresVv.root, scrollLeft);
     }
   };
 
@@ -1108,88 +1177,112 @@ export function buildChemEnumPanel(
   }});
   const rGroupsEmpty = ui.divText('No R-groups — draw or import for each R number used by your cores.', {style: {color: 'var(--grey-4)', padding: '12px', fontSize: '12px'}});
 
-  const rGroupsRenderers = new Map<number, {row: HTMLElement, vv: DG.VirtualView, header: HTMLElement}>();
+  interface RGroupRow { row: HTMLElement; vv: DG.VirtualView; countEl: HTMLElement; }
+  const rGroupsRenderers = new Map<number, RGroupRow>();
+
+  // Rebuilt each redraw and fed to vv.setData so the same virtualView is reused (recreating resets scroll).
+  const makeRGroupRenderer = (n: number, list: ChemEnumRGroup[]) => (i: number): HTMLElement => {
+    const rg = list[i];
+    const subtitle = rg.error ? 'invalid' :
+      rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
+        `r group ${i + 1} · R${rg.rNumber}`;
+    return buildCard({
+      smiles: rg.error ? '' : rg.smiles,
+      subtitle,
+      error: rg.error,
+      onEdit: async () => {
+        const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+        if (!edited) return;
+        // If the R# changed, move between lists.
+        if (edited.rNumber !== rg.rNumber) {
+          list.splice(i, 1);
+          if (list.length === 0) state.rGroupsByNum.delete(rg.rNumber);
+          const target = state.rGroupsByNum.get(edited.rNumber) ?? [];
+          target.push(edited);
+          state.rGroupsByNum.set(edited.rNumber, target);
+        } else {
+          list[i] = edited;
+        }
+        refresh();
+      },
+      onDuplicate: async () => {
+        const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+        if (!dup) return;
+        const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
+        target.push(dup);
+        state.rGroupsByNum.set(dup.rNumber, target);
+        refresh();
+      },
+      onRemove: () => {
+        list.splice(i, 1);
+        if (list.length === 0) state.rGroupsByNum.delete(n);
+        refresh();
+      },
+    });
+  };
+
+  // Built once per R# and kept in rGroupsRenderers; redraws update it via setData, not by recreating.
+  const buildRGroupRow = (n: number): RGroupRow => {
+    const color = getRGroupColor(n);
+    const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
+      const el = ui.iconFA(fa, onClick, tip);
+      el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
+      return el;
+    };
+    const stripIcons = [
+      stripIcon('pencil', `Draw an R${n} substituent`, () => {
+        openRGroupSketchDialog(rdkit, '', n).then((rg) => {
+          if (!rg) return;
+          const l = state.rGroupsByNum.get(rg.rNumber) ?? [];
+          l.push(rg); state.rGroupsByNum.set(rg.rNumber, l); refresh();
+        });
+      }),
+      stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
+      stripIcon('trash-alt', `Remove all R${n}`, () => confirmDelete(`Remove all ${plural(state.rGroupsByNum.get(n)?.length ?? 0, 'substituent')} for R${n}?`, () => { state.rGroupsByNum.delete(n); refresh(); })),
+    ];
+    const countEl = ui.divText('0', {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}});
+    ui.tooltip.bind(countEl, `Number of R${n} substituents`);
+    const strip = ui.divV([
+      ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
+      ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
+      countEl,
+      ...stripIcons,
+    ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
+
+    const vv = ui.virtualView(0, () => ui.div(), false, 1);
+    applyHorizontalRowStyle(vv.root);
+    vv.root.style.flex = '1 1 0';
+    const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
+    // Strip icons stay hidden until the R# row is hovered.
+    ui.tools.setHoverVisibility(row, stripIcons);
+    return {row, vv, countEl};
+  };
 
   const redrawRGroups = () => {
-    ui.empty(rGroupsHost);
-    rGroupsRenderers.clear();
-
-    if (state.rGroupsByNum.size === 0) { rGroupsHost.appendChild(rGroupsEmpty); return; }
+    if (state.rGroupsByNum.size === 0) {
+      ui.empty(rGroupsHost);
+      rGroupsRenderers.clear();
+      rGroupsHost.appendChild(rGroupsEmpty);
+      return;
+    }
+    if (rGroupsEmpty.parentElement === rGroupsHost) rGroupsEmpty.remove();
 
     const sortedNums = [...state.rGroupsByNum.keys()].sort((a, b) => a - b);
+    const wanted = new Set(sortedNums);
+    // Drop rows for R#s that no longer exist.
+    for (const [n, entry] of [...rGroupsRenderers]) {
+      if (!wanted.has(n)) { entry.row.remove(); rGroupsRenderers.delete(n); }
+    }
+    // Reuse each row via setData (recreating resets scroll); capture scroll before the move, restore after.
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
-      const color = getRGroupColor(n);
-      const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
-        const el = ui.iconFA(fa, onClick, tip);
-        el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
-        return el;
-      };
-      const stripIcons = [
-        stripIcon('pencil', `Draw an R${n} substituent`, () => {
-          openRGroupSketchDialog(rdkit, '', n).then((rg) => {
-            if (!rg) return;
-            const l = state.rGroupsByNum.get(rg.rNumber) ?? [];
-            l.push(rg); state.rGroupsByNum.set(rg.rNumber, l); refresh();
-          });
-        }),
-        stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
-        stripIcon('trash-alt', `Remove all R${n}`, () => { state.rGroupsByNum.delete(n); refresh(); }),
-      ];
-      const strip = ui.divV([
-        ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
-        ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
-        ui.divText(String(list.length), {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}}),
-        ...stripIcons,
-      ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
-
-      const renderer = (i: number): HTMLElement => {
-        const rg = list[i];
-        const subtitle = rg.error ? 'invalid' :
-          rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
-            `r group ${i + 1} · R${rg.rNumber}`;
-        return buildCard({
-          smiles: rg.error ? '' : rg.smiles,
-          subtitle,
-          error: rg.error,
-          onEdit: async () => {
-            const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
-            if (!edited) return;
-            // If the R# changed, move between lists.
-            if (edited.rNumber !== rg.rNumber) {
-              list.splice(i, 1);
-              if (list.length === 0) state.rGroupsByNum.delete(rg.rNumber);
-              const target = state.rGroupsByNum.get(edited.rNumber) ?? [];
-              target.push(edited);
-              state.rGroupsByNum.set(edited.rNumber, target);
-            } else {
-              list[i] = edited;
-            }
-            refresh();
-          },
-          onDuplicate: async () => {
-            const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
-            if (!dup) return;
-            const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
-            target.push(dup);
-            state.rGroupsByNum.set(dup.rNumber, target);
-            refresh();
-          },
-          onRemove: () => {
-            list.splice(i, 1);
-            if (list.length === 0) state.rGroupsByNum.delete(n);
-            refresh();
-          },
-        });
-      };
-      const vv = ui.virtualView(list.length, renderer, false, 1);
-      applyHorizontalRowStyle(vv.root);
-      vv.root.style.flex = '1 1 0';
-      const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
-      // Strip icons stay hidden until the R# row is hovered.
-      ui.tools.setHoverVisibility(row, stripIcons);
-      rGroupsHost.appendChild(row);
-      rGroupsRenderers.set(n, {row, vv, header: strip});
+      let entry = rGroupsRenderers.get(n);
+      if (!entry) { entry = buildRGroupRow(n); rGroupsRenderers.set(n, entry); }
+      const scrollLeft = readRowScrollLeft(entry.vv.root);
+      rGroupsHost.appendChild(entry.row); // moves the existing node into sorted position
+      entry.countEl.textContent = String(list.length);
+      entry.vv.setData(list.length, makeRGroupRenderer(n, list));
+      restoreRowScrollLeft(entry.vv.root, scrollLeft);
     }
   };
 
@@ -1368,13 +1461,14 @@ export function buildChemEnumPanel(
     onDraw?: () => void, onImport?: () => void, onClear?: () => void, onTemplate?: () => void,
   ): {root: HTMLElement, clearBtn?: HTMLButtonElement} => {
     const parts: HTMLElement[] = [
-      ui.divText(label, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
+      ui.divText(label, {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
     ];
     const iconBtn = (fa: string, onClick: () => void, tip: string): HTMLButtonElement => {
       const icon = ui.iconFA(fa);
       icon.style.cssText = 'font-size:inherit;';
       const btn = ui.button([icon], onClick, tip);
-      btn.style.marginLeft = '4px';
+      btn.style.margin = '0';
+      btn.style.padding = '2px 3px';
       parts.push(btn);
       return btn;
     };
@@ -1398,7 +1492,7 @@ export function buildChemEnumPanel(
   // ── Section headers (shared between layouts) ──────────────────────────────
   const coresHeader = sectionHeader(
     'Cores', addCoreFromSketcher, addCoresFromImport,
-    () => { state.cores.splice(0, state.cores.length); refresh(); },
+    () => confirmDelete(`Remove all ${plural(state.cores.length, 'core')}?`, () => { state.cores.splice(0, state.cores.length); refresh(); }),
   );
   coresClearBtn = coresHeader.clearBtn;
 
@@ -1407,7 +1501,7 @@ export function buildChemEnumPanel(
 
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
-    () => { state.rGroupsByNum.clear(); refresh(); },
+    () => confirmDelete(`Remove all ${plural(rGroupTotal(), 'R-group substituent')}?`, () => { state.rGroupsByNum.clear(); refresh(); }),
     addRGroupsFromTemplate,
   );
   rGroupsClearBtn = rGroupsHeader.clearBtn;
@@ -1431,7 +1525,7 @@ export function buildChemEnumPanel(
     const rGroupsCell = ui.divV([rGroupsHeader.root, rGroupsHost], {style: growCellStyle});
 
     // Preview header: title on left, live count + error badge on right.
-    const previewTitle = ui.divText('Preview', {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
+    const previewTitle = ui.divText('Preview', {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', alignSelf: 'center'}});
     countText.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:auto;align-self:center;';
     const previewHeaderRow = ui.divH([previewTitle, countText, errorBadge.root],
       {style: {alignItems: 'center', gap: '8px', margin: '0 0 2px', flex: '0 0 auto'}});
@@ -1461,11 +1555,11 @@ export function buildChemEnumPanel(
     }, 'Show recent enumerations');
     historyBtn.style.cssText = 'font-size:16px;padding:4px 6px;cursor:pointer;color:var(--blue-3);';
 
-    const clearAllBtn = ui.button('Clear all', () => {
+    const clearAllBtn = ui.button('Clear all', () => confirmDelete(`Remove all ${plural(state.cores.length, 'core')} and ${plural(rGroupTotal(), 'R-group substituent')}?`, () => {
       state.cores.splice(0, state.cores.length);
       state.rGroupsByNum.clear();
       refresh();
-    });
+    }));
     ui.tooltip.bind(clearAllBtn, 'Remove all cores and R-groups');
 
     ribbonGroups = [

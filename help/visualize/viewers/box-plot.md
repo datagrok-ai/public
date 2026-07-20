@@ -156,7 +156,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Violin Line Width | number | Width of the violin outline; drawn on top of the points. |
 | Control Band Color | number | Color of the band highlighting the control group in control comparisons mode. |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |

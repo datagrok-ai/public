@@ -3,7 +3,8 @@ feature: filters
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: []
+realizes_atlas: []
+realizes: [viewers.filters]
 realized_as:
   - cloned-views-spec.ts
 related_bugs: []

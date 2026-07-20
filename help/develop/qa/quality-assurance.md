@@ -39,7 +39,13 @@ is made to the codebase in Git. It automatically executes the following tasks:
   2. Unit tests
   3. Compilation
   4. Packaging the platform in Docker containers
-  5. [Snyk](https://snyk.io/)
+  5. Vulnerability scanning: container images via
+  [Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview)
+  (published openly as [VEX](https://data.datagrok.ai/vex/index.html)); source code and
+  dependencies via [CodeQL](https://codeql.github.com/) and
+  [Grype](https://github.com/anchore/grype/). See
+  [vulnerability remediation](../../datagrok/solutions/teams/it/security.md#vulnerability-remediation)
+  for details
 * Docker Hub stores built artifacts, such as compiled code and packages that
 are generated during the build process.
 * Ansible automates the process of provisioning and configuring servers for

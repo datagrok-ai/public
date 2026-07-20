@@ -4,7 +4,6 @@ import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import $ from 'cash-dom';
 import { interval } from 'rxjs';
 import { filter } from 'rxjs/operators';
-import { waitForElementClick } from '../../eda/tutorials/utils';
 import { Platform, getPlatform, platformKeyMap } from '../../shortcuts';
 
 
@@ -118,7 +117,7 @@ export class AggregationTutorial extends Tutorial {
 
 
     // const viewerPopup = $(aggRoot).find('.d4-combo-popup').get(0);
-    // await this.action('Add viewer to visualize aggregation', waitForElementClick(viewerPopup as HTMLElement), viewerPopup,
+    // await this.action('Add viewer to visualize aggregation', elementClick(() => viewerPopup as HTMLElement), viewerPopup,
     //   'To change the viewer, click on the combobox.' +
     //   'This action will open a dropdown list containing various visualization options for aggregations.' +
     //   'You\'ll find a selection of standard viewers like scatterplot, barchart, piechart, and more.'
@@ -127,7 +126,7 @@ export class AggregationTutorial extends Tutorial {
     // const lineChartEl = $(aggRoot).find('label.ui-label').filter(function() {
     //   return $(this).text().trim() === "Line chart";
     // }).closest('div.d4-icon-text.d4-list-item').get(0);
-    // await this.action('Choose Line Chart from the viewers list', waitForElementClick(lineChartEl as HTMLElement), lineChartEl,
+    // await this.action('Choose Line Chart from the viewers list', elementClick(() => lineChartEl as HTMLElement), lineChartEl,
     //   'Now, choose the Line Chart viewer from the list.' +
     //   'By doing so, you\'ll be able to visualize the aggregation results in a line chart format.' +
     //   'In this scenario, the data has been aggregated based on weight, and the Line Chart will represent this aggregation accordingly.'

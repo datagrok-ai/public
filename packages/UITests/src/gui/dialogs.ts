@@ -97,6 +97,13 @@ category('GUI: Dialogs', () => {
     demog = df.clone();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    // PCA lives under ML | Analyze | PCA…, registered by the EDA package. When EDA
+    // isn't deployed (e.g. the minimal CI test stand) the menu is absent; skip rather
+    // than crash with `Cannot read properties of undefined (reading 'find')`.
+    if (grok.shell.topMenu.find('ML') == null) {
+      console.log('pca: ML menu unavailable (EDA not deployed on this instance) — skipping');
+      return;
+    }
     grok.shell.topMenu.find('ML').find('Analyze').find('PCA...').click();
     await awaitCheck(() => checkDialog('PCA'), 'Dialog is not open 1', 1000);
     await delay(200);

@@ -1,3 +1,15 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes_atlas: []
+realizes: [views.queries]
+realized_as:
+  - columns-inspect.test.ts
+related_bugs: []
+---
+
 **1. PostgresDart**
 1. Go to **Browse** > **Databases** > **PostgresDart** > **NorthwindTest** > **Schemas** > **public**. A list of tables opens
 3. Expand each DB table to the column level

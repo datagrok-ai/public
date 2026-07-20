@@ -15,7 +15,7 @@ src/nca/
     auc.ts                          # AUC: 3 methods × {naive, Neumaier-compensated} = 6 + neumaierSum + aucExtrapolateToInfinity
     aumc.ts                         # AUMC first-moment: 3 methods × {naive, compensated} = 6 + two-term aumcExtrapolateToInfinity
     cmax.ts                         # findCmax — first-occurrence Cmax/Tmax
-    lambda-z.ts                     # lambdaZBestFit (auto subset, adj-R² + tie-break) + lambdaZManual; centered-sum OLS
+    lambda-z.ts                     # lambdaZBestFit (auto subset; PKNCA/WinNonlin flat-tolerance adj-R² tie-break — most points within adjRSquaredFactor of the global-max adj-R²) + lambdaZManual; centered-sum OLS
     c0.ts                           # estimateC0 + insertC0 — IV bolus back-extrapolation;
     derived.ts                      # halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated, meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag
     compute-nca.ts                  # computeNca orchestrator — full pipeline

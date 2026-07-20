@@ -8,10 +8,16 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  /**
+  Entities the user interacted with most recently (last 30 days)
+  */
   export async function mostRecentEntities(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:MostRecentEntities', { user });
   }
 
+  /**
+  Entities recently shared with the user or their groups (last 30 days)
+  */
   export async function recentlySharedWithMe(user: string ): Promise<DG.DataFrame> {
     return await grok.data.query('PowerPack:RecentlySharedWithMe', { user });
   }
@@ -20,6 +26,10 @@ export namespace queries {
 export namespace funcs {
   export async function addNewColumnDialog(call?: any ): Promise<void> {
     return await grok.functions.call('PowerPack:AddNewColumnDialog', { call });
+  }
+
+  export async function configViewerGallery(view: DG.View ): Promise<void> {
+    return await grok.functions.call('PowerPack:ConfigViewerGallery', { view });
   }
 
   export async function compareColumns(): Promise<void> {
@@ -104,12 +114,15 @@ export namespace funcs {
   }
 
   /**
-  Opens Excel file
+  Opens an Excel (.xlsx) file as one or more tables (one per sheet)
   */
   export async function xlsxFileHandler(bytes: any , sheetName?: string ): Promise<any> {
     return await grok.functions.call('PowerPack:XlsxFileHandler', { bytes, sheetName });
   }
 
+  /**
+  Enriches a table with values looked up from a database column via a linked key
+  */
   export async function runEnrichment(conn: any , schema: string , table: string , column: string , name: string , df: DG.DataFrame , db: string , localColumn?: string ): Promise<void> {
     return await grok.functions.call('PowerPack:RunEnrichment', { conn, schema, table, column, name, df, db, localColumn });
   }

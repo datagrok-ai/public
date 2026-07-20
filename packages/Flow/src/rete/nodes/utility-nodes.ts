@@ -7,12 +7,13 @@
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
 
-const COLOR_UTILITY = '#78909C';
-const COLOR_INFO = '#66BB6A';
-const COLOR_WARNING = '#FFA726';
-const COLOR_VIEW = '#42A5F5';
-const COLOR_CONST = '#66BB6A';
+const COLOR_UTILITY = categoricalColor(CAT.gray);
+const COLOR_INFO = categoricalColor(CAT.green);
+const COLOR_WARNING = categoricalColor(CAT.orange);
+const COLOR_VIEW = categoricalColor(CAT.blue);
+const COLOR_CONST = categoricalColor(CAT.green);
 
 // ---------- helpers ----------
 

@@ -1,3 +1,15 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: []
+realizes: [views.queries]
+realized_as:
+  - get-all-get-top-100.test.ts
+related_bugs: []
+---
+
 **1. PostgresDart**
 1. Go to **Browse** > **Databases** > **PostgresDart** > **NorthwindTest** > **Schemas** > **public**. A list of tables opens
 3. Right-click the **orders** table

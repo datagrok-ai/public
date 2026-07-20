@@ -256,11 +256,16 @@ function buildOutputLine(step: CompiledStep, node: FlowNode): string {
   return `//output: ${outputType} ${paramName}`;
 }
 
-function emitFuncStep(step: CompiledStep): string {
+/** The named-argument literal for the `grok.functions.call` — a wrapper's
+ *  reshaped arguments (`callInputs`) when present, else the node's inputs. */
+function funcCallParamsStr(step: CompiledStep): string {
   const params: string[] = [];
-  for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
-  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
-  return `let ${step.variableName} = await grok.functions.call('${step.funcName}', ${paramsStr});`;
+  for (const [name, expr] of step.callInputs ?? step.inputs) params.push(`${name}: ${expr}`);
+  return params.length > 0 ? `{${params.join(', ')}}` : '{}';
+}
+
+function emitFuncStep(step: CompiledStep): string {
+  return `let ${step.variableName} = await grok.functions.call('${step.funcName}', ${funcCallParamsStr(step)});`;
 }
 
 // eslint-disable-next-line complexity
@@ -441,7 +446,10 @@ function emitViewerStep(step: CompiledStep, inst: boolean, options?: EmitOptions
   const lines = [`__ff_emit('node-start', '${step.nodeId}');`, `let ${v};`, 'try {'];
   lines.push(`  ${v} = ${create};`);
   if (setOpts) lines.push(`  ${setOpts}`);
-  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', {outputs:{${v}: __ff_summarize(${v}, 'viewer')}});`);
+  // Slot-keyed like every other summary (see wrapInstrumented).
+  const outKey = Array.from(step.outputs.entries()).find(([, varName]) => varName === v)?.[0] ?? v;
+  lines.push(`  __ff_emit('node-complete', '${step.nodeId}', ` +
+    `{outputs:{${JSON.stringify(outKey)}: __ff_summarize(${v}, 'viewer')}});`);
   lines.push('} catch (__ff_err) {');
   lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
   if (options?.haltOnError !== false) {
@@ -511,6 +519,12 @@ function emitPreamble(runId: string): string[] {
     'function __ff_emit(type, nodeId, data) {',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
+    // Dims-only table summary for pass-through wires: enough for the on-edge
+    // "N × K" count label, without the full clone __ff_summarize would take.
+    'function __ff_dims(v) {',
+    '  return (v != null && v.rowCount !== undefined && v.columns !== undefined) ?',
+    '    {type:\'dataframe\', rows:v.rowCount, cols:v.columns.length} : null;',
+    '}',
     // Snapshot a dataframe crossing into a step (anything else passes through).
     // Same duck-type check as __ff_summarize; a func step works on its own copy
     // so in-place transformations never mutate the upstream captured value.
@@ -552,8 +566,13 @@ function wrapInstrumented(
   lines.push(`  ${bodyLine}`);
   if (extra?.outputExpr) {
     const typeArg = extra.declaredType ? `, '${extra.declaredType}'` : '';
+    // Key the summary by the output SLOT key, not the variable name — that's
+    // what `labelOutgoingConnections` (edge counts) and the port-preview
+    // lookup use (`state.outputs[outputKey]`).
+    const slotKey = Array.from(step.outputs.entries())
+      .find(([, varName]) => varName === extra.outputExpr)?.[0] ?? extra.outputExpr;
     lines.push(`  __ff_emit('node-complete', '${step.nodeId}', ` +
-      `{outputs:{${extra.outputExpr}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
+      `{outputs:{${JSON.stringify(slotKey)}: __ff_summarize(${extra.outputExpr}${typeArg})}});`);
   } else lines.push(`  __ff_emit('node-complete', '${step.nodeId}');`);
   lines.push('} catch (__ff_err) {');
   lines.push(`  __ff_emit('node-error', '${step.nodeId}', {error: __ff_err.message, stack: __ff_err.stack});`);
@@ -581,9 +600,7 @@ function singleDataframeInputExpr(step: CompiledStep, node: FlowNode | undefined
 }
 
 function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow: FlowEditor): string[] {
-  const params: string[] = [];
-  for (const [name, expr] of step.inputs) params.push(`${name}: ${expr}`);
-  const paramsStr = params.length > 0 ? `{${params.join(', ')}}` : '{}';
+  const paramsStr = funcCallParamsStr(step);
 
   const lines: string[] = [];
   lines.push(`__ff_emit('node-start', '${step.nodeId}');`);
@@ -605,32 +622,50 @@ function emitFuncStepInstrumented(step: CompiledStep, options: EmitOptions, flow
   // unambiguous; with zero or several we fall back to the plain column summary.
   const singleDfInput = singleDataframeInputExpr(step, node);
   const outputEntries: string[] = [];
-  for (const [key, varName] of step.outputs) {
+  // Key each entry by the output *slot key* (what `labelOutgoingConnections`
+  // and the live-stash look up), not by the value expression — a multi-output
+  // func's expression is `<var>.<name>`, which is not a valid object-literal key.
+  for (const [key, outExpr] of step.outputs) {
     const slotType = (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
     const typeArg = slotType ? `, '${slotType}'` : '';
     if (slotType === 'column' && singleDfInput)
-      outputEntries.push(`${varName}: __ff_col_summary(${varName}, ${singleDfInput}${typeArg})`);
+      outputEntries.push(`${JSON.stringify(key)}: __ff_col_summary(${outExpr}, ${singleDfInput}${typeArg})`);
     else
-      outputEntries.push(`${varName}: __ff_summarize(${varName}${typeArg})`);
+      outputEntries.push(`${JSON.stringify(key)}: __ff_summarize(${outExpr}${typeArg})`);
   }
 
-  // Capture the (possibly in-place-modified) table threaded through a dataframe
-  // input, keyed `<input> (modified)`. Covers two cases the real-output summaries
-  // miss: a pure in-place mutator (no outputs at all), AND a node whose real
-  // output isn't a table but still threads one through its passthrough — e.g.
-  // AddNewColumn returns a *column*, yet a viewer wired to its "table →"
+  // Dataframe pass-throughs: dims-only summaries (rows × cols, no clone —
+  // cheap) keyed by the pass-through slot key, so wires leaving a `<in> →`
+  // port get their "N × K" count label just like wires from real outputs.
+  // The panels skip `__pt` keys (value-inspector.ts).
+  if (node) {
+    for (const key of Object.keys(node.outputs)) {
+      if (isExecKey(key) || !key.endsWith(PASSTHROUGH_SUFFIX)) continue;
+      const slotType = (node.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType;
+      if (slotType !== 'dataframe') continue;
+      const inExpr = step.inputs.get(key.slice(0, -PASSTHROUGH_SUFFIX.length));
+      if (inExpr && inExpr !== 'undefined')
+        outputEntries.push(`${JSON.stringify(key)}: __ff_dims(${inExpr})`);
+    }
+  }
+
+  // Capture the (possibly in-place-modified) table(s) threaded through a
+  // dataframe input, keyed `<input> (modified)`. Covers two cases the real-output
+  // summaries miss: a pure in-place mutator (no outputs at all), AND a node whose
+  // real output isn't a table but still threads one through its passthrough —
+  // e.g. AddNewColumn returns a *column*, yet a viewer wired to its "table →"
   // passthrough needs that post-execution table (for inspect + the column
-  // picker). Skipped when a real dataframe output already carries it.
+  // picker). Every connected dataframe input is captured (a two-table mutator
+  // with no output previews both), so the preview shows all it transformed.
+  // Skipped when a real dataframe output already carries it.
   const hasDataframeOutput = Array.from(step.outputs.keys()).some((key) =>
     (node?.outputs as Record<string, {socket: {dgType: string}} | undefined>)[key]?.socket.dgType === 'dataframe');
   if (node && !hasDataframeOutput) {
     for (const [inKey, input] of Object.entries(node.inputs) as Array<[string, {socket: {dgType: string}} | undefined]>) {
       if (input?.socket.dgType !== 'dataframe') continue;
       const inputExpr = step.inputs.get(inKey);
-      if (inputExpr && inputExpr !== 'undefined') {
+      if (inputExpr && inputExpr !== 'undefined')
         outputEntries.push(`'${inKey} (modified)': __ff_summarize(${inputExpr}, 'dataframe')`);
-        break;
-      }
     }
   }
 

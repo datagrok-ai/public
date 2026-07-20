@@ -1,4 +1,4 @@
-/** The actual guides: 4 multi-step tutorials and a set of how-to answers.
+/** The actual guides: 6 multi-step tutorials and a set of how-to answers.
  *
  *  Every step highlights a CONCRETE element — a specific browser item, canvas
  *  node, ribbon icon, or context-panel field (addressed by the `data-testid` /
@@ -50,8 +50,8 @@ const openFiles = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(80);
   const header = document.querySelector(
-    '[data-testid="ff-browser-files"] .funcflow-section-header') as HTMLElement | null;
-  if (header?.classList.contains('collapsed')) header.click();
+    '[data-testid="ff-browser-files"] .d4-accordion-pane-header') as HTMLElement | null;
+  if (header && !header.classList.contains('expanded')) header.click();
 };
 
 /** True once demog.csv exists in the Files tree AND is scrolled into view. */
@@ -237,11 +237,32 @@ const loadDataAddColumn: Guide = {
       until: untilClick(byTid('ribbon', 'run')),
     },
     {
+      title: 'Open the result tab',
+      text: 'Look at the bottom status bar — your Table Output got its own tab next to “Canvas”. ' +
+        'Its dot turns green when the result is ready. Click the tab (highlighted) to open the ' +
+        'result as a full table view.',
+      // A prior step may have been skipped, leaving the tab empty forever — target
+      // and gate on any output tab so the guide never dead-ends (skip-tolerance).
+      target: (ctx) => bySel('.ff-view-tab[data-state="ready"]')(ctx) ?? bySel('.ff-view-tab[data-node-id]')(ctx),
+      position: 'top',
+      until: untilExists('.ff-view-tab[data-node-id][data-active="true"]'),
+    },
+    {
+      title: 'A real table view',
+      text: 'This is a full Datagrok table view — add viewers, filter, reorder columns, everything. ' +
+        'Whatever you arrange here is saved with the flow and comes back when you reopen it. ' +
+        'Click “Canvas” (highlighted) to go back to the graph.',
+      target: byTid('view-tab', 'canvas'),
+      position: 'top',
+      until: untilExists('.ff-view-tab[data-param="canvas"][data-active="true"]'),
+    },
+    {
       title: 'You built a working flow! 🎉',
-      text: 'Inputs → transform → output, wired and run. Click any completed node to see its data in ' +
-        'the bottom output panel, or right-click an output dot and choose “Run up to here & preview”. ' +
-        'Tip: toggle the ⚡ bolt in the ribbon and the flow reruns by itself after every change — ' +
-        'only the nodes the change affected.',
+      text: 'Inputs → transform → output, wired, run, and explored. Click any completed node to see ' +
+        'its data in the bottom output panel, or right-click an output dot and choose “Run up to ' +
+        'here & preview”. Tip: toggle the ⚡ bolt in the ribbon and the flow reruns by itself after ' +
+        'every change. Ready to share? Click Save — the dialog can also publish your computed ' +
+        'tables as a dashboard (the “Publish your results as a dashboard” tutorial walks through it).',
     },
   ],
 };
@@ -389,9 +410,10 @@ const reuseScript: Guide = {
     },
     {
       title: 'Save your flow',
-      text: 'Click Save (highlighted) to store your flow on the platform — the first save asks for a ' +
-        'name. It becomes a script entity you can reopen from anywhere. (To share a file instead, ' +
-        'use Flow → Export .ffjson.)',
+      text: 'Click Save (highlighted) — the Save dialog stores your flow on the platform as a ' +
+        'script entity you can reopen from anywhere: name it, describe it, optionally add it to a ' +
+        'space. After a run, its Dashboard section can also publish the computed tables as a ' +
+        'dashboard. (To share a file instead, use Flow → Export .ffjson.)',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
@@ -510,10 +532,10 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Save & Open',
-      text: 'Save stores your flow on the platform (the first save asks for a name) — it becomes a ' +
-        'script others can find and run, and it shows up in the toolbox under Workflows for reuse ' +
-        'inside other flows. Open (📂) loads a saved flow back; the Flow menu also imports/exports ' +
-        '.ffjson files for sharing.',
+      text: 'Save opens the Save dialog: name and describe your flow, optionally add it to a space, ' +
+        'and — once the flow has run — publish its result tables as a dashboard. Saved flows show ' +
+        'up in the toolbox under Workflows for reuse inside other flows. Open (📂) loads a saved ' +
+        'flow back; the Flow menu also imports/exports .ffjson files for sharing.',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
     },
@@ -585,8 +607,9 @@ const interfaceTour: Guide = {
     {
       title: 'Sockets',
       text: 'The colored dots are sockets — inputs on the left, outputs on the right. Drag between two ' +
-        'compatible (same-colored) dots to connect nodes. The small gray squares at the corners are ' +
-        'execution-order ports.',
+        'compatible (same-colored) dots to connect nodes. Hovering a node also reveals two small gray ' +
+        'squares at its top corners — execution-order ports: drag square to square to make one node ' +
+        'run after another (order only, no data).',
       target: bySel('.ff-node .ff-socket'),
       position: 'right',
     },
@@ -602,6 +625,15 @@ const interfaceTour: Guide = {
       text: 'Along the bottom, the status bar reports your node and connection counts and any validation ' +
         'problems with the flow.',
       target: byTid('statusbar'),
+      position: 'top',
+    },
+    {
+      title: 'Result tabs',
+      text: 'At the left of the status bar live the view tabs: “Canvas” is the graph, and every table ' +
+        'output of your flow gets its own tab. After a run, a tab\'s dot turns green — click it to ' +
+        'open the result as a full table view; amber means the result is out of date. Anything you ' +
+        'arrange there is saved with the flow.',
+      target: byTid('view-tab', 'canvas'),
       position: 'top',
     },
     {
@@ -654,8 +686,6 @@ const interfaceTour: Guide = {
   ],
 };
 
-export const TUTORIALS: Guide[] = [loadDataAddColumn, findFunctions, organizeCanvas, reuseScript, interfaceTour];
-
 // ============================ HOW-TO QUESTIONS ============================
 
 function q(id: string, title: string, steps: GuideStep | GuideStep[]): Guide {
@@ -697,6 +727,111 @@ const ancTableConnected = (ctx: GuideContext): boolean => {
   return flow.getNodes().some((n) =>
     (n.dgFuncName ?? '').toLowerCase().includes('addnewcolumn') && flow.isInputConnected(n.id, 'table'));
 };
+
+/** True once some Table Output node has a table wired into it. */
+const tableOutputConnected = (ctx: GuideContext): boolean => {
+  const flow = ctx.host.getFlow();
+  if (!flow) return false;
+  return flow.getNodes().some((n) =>
+    n.dgTypeName === TABLE_OUTPUT_TYPE && flow.isInputConnected(n.id, 'table'));
+};
+
+/** Dashboard publishing end-to-end: run a flow, explore the result tab, then
+ *  Save → Create dashboard → the platform's standard Save-project dialog.
+ *  Defined here (not with the other tutorials) because it reuses the
+ *  prerequisite builders above. */
+const publishDashboard: Guide = {
+  id: 'publish-dashboard',
+  kind: 'tutorial',
+  title: 'Publish your results as a dashboard',
+  summary: 'Run a flow, arrange the result view, and publish it as a project.',
+  steps: [
+    {
+      title: 'From flow to dashboard',
+      text: 'Any flow with table outputs can publish them as a Datagrok dashboard — a project ' +
+        'colleagues open without ever seeing the graph. Let\'s build one. Click Next.',
+    },
+    ...loadDemogViaFiles(openFileHasPath),
+    ensureBuiltin(TABLE_OUTPUT_TYPE, 'Table Output'),
+    {
+      title: 'Move it clear',
+      text: 'Drag the “Table Output” node to the right of Open File so you can wire them together.',
+      skipIf: tableOutputConnected,
+      target: byNodeType(TABLE_OUTPUT_TYPE),
+      position: 'top',
+      until: untilNodeRightOf(byNodeType(TABLE_OUTPUT_TYPE), byNodeFunc('OpenFile'), 200),
+    },
+    {
+      title: 'Connect the table',
+      text: 'Drag from Open File\'s result output dot (highlighted) to the Table Output\'s input ' +
+        'dot (highlighted).',
+      skipIf: tableOutputConnected,
+      target: byNodeType(TABLE_OUTPUT_TYPE),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
+        socketOf(byNodeType(TABLE_OUTPUT_TYPE), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
+      title: 'Run the flow',
+      text: 'Click Run (the ▶ icon) so the output gets a value to publish.',
+      target: byTid('ribbon', 'run'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'run')),
+    },
+    {
+      title: 'Open the result tab',
+      text: 'In the bottom status bar, the output\'s tab gets a green dot when the run finishes. ' +
+        'Click the tab (highlighted) to open the result as a full table view. (Empty dot? The ' +
+        'output isn\'t wired in or the run didn\'t reach it — the tab tells you what to do.)',
+      // Skip-tolerant: highlight and gate on any output tab, so a skipped connect
+      // step upstream can't dead-end the guide here.
+      target: (ctx) => bySel('.ff-view-tab[data-state="ready"]')(ctx) ?? bySel('.ff-view-tab[data-node-id]')(ctx),
+      position: 'top',
+      until: untilExists('.ff-view-tab[data-node-id][data-active="true"]'),
+    },
+    {
+      title: 'Make it look like a dashboard',
+      text: 'This is a real table view — add a viewer or two, reorder columns, set up filters. ' +
+        'This layout is saved with the flow and ships with the dashboard, even if you never open ' +
+        'this tab again. Click Next when it looks right.',
+    },
+    {
+      title: 'Save & publish',
+      text: 'Click Save (highlighted) in the ribbon.',
+      target: byTid('ribbon', 'save'),
+      position: 'bottom',
+      until: untilClick(byTid('ribbon', 'save')),
+    },
+    {
+      title: 'The Save dialog',
+      text: 'Name the flow. Below, the Dashboard section lists your computed tables — keep ' +
+        '“Create dashboard” checked and click Save. (No tables listed? The flow hasn\'t run — the ' +
+        'dialog offers a Run button right there.)',
+      target: preferDialog(bySel('.ff-save-dash')),
+      position: 'left',
+    },
+    {
+      title: 'The Save-project dialog',
+      text: 'Next, the platform\'s standard Save-project dialog opens, seeded with your output ' +
+        'tables and layouts. Data sync is pre-checked where possible — the dashboard reopens by ' +
+        're-running your flow, so it always shows fresh data. Name the project and click OK.',
+      target: preferDialog(bySel('.ff-save-dash')),
+      position: 'left',
+    },
+    {
+      title: 'Published! 🎉',
+      text: 'Your dashboard is a regular Datagrok project — find it in Browse > Projects and share ' +
+        'it like any other. The flow remembers it: the next Save updates the same project instead ' +
+        'of creating a new one (use “publish as new” in the Save dialog to detach).',
+    },
+  ],
+};
+
+export const TUTORIALS: Guide[] =
+  [loadDataAddColumn, findFunctions, organizeCanvas, reuseScript, publishDashboard, interfaceTour];
 
 export const QUESTIONS: Guide[] = [
   q('how-add-function', 'How do I add a function?', {
@@ -792,7 +927,8 @@ export const QUESTIONS: Guide[] = [
     text: 'When you edit a node\'s parameters or rewire a connection, that node and everything ' +
       'downstream of it lose their last result — they show “Out of date”. Upstream nodes keep ' +
       'theirs. Rerun with ▶, toggle Autorun (the ⚡ bolt) to rerun automatically, or right-click ' +
-      'one node and choose “Rerun this node only”.',
+      'one node and choose “Rerun this node only”. The result tabs in the status bar show the ' +
+      'same state — an amber dot means the table you see is from the previous run.',
   }),
   q('how-func-editor', 'How do I edit parameters in the function\'s own dialog?', [
     ...loadDemogViaFiles(openFileHasPath),
@@ -818,7 +954,7 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Open the function\'s editor',
-      text: 'In the Input Parameters pane header, click “Open editor” (highlighted). Flow opens the ' +
+      text: 'In the parameters pane header (titled with the function name), click “Open editor” (highlighted). Flow opens the ' +
         'function\'s own dialog seeded with the real upstream table — running the flow up to that ' +
         'point first if it hasn\'t run yet.',
       target: byTid('prop-func-editor'),
@@ -907,9 +1043,10 @@ export const QUESTIONS: Guide[] = [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
     {
       title: 'Save / share',
-      text: 'Click Save (highlighted) to store the flow on the platform — the first save asks for a ' +
-        'name. Saved flows reopen from anywhere, and they appear in the toolbox under “Workflows” so ' +
-        'other flows can use them. To hand a colleague a file instead, use Flow → Export .ffjson.',
+      text: 'Click Save (highlighted) — the Save dialog names the flow, can add it to a space, and ' +
+        '(after a run) publishes the computed tables as a dashboard. Saved flows reopen from ' +
+        'anywhere, and they appear in the toolbox under “Workflows” so other flows can use them. ' +
+        'To hand a colleague a file instead, use Flow → Export .ffjson.',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
@@ -1200,4 +1337,44 @@ export const QUESTIONS: Guide[] = [
       until: untilClick(byTid('ribbon', 'run')),
     },
   ]),
+  q('how-open-result', 'How do I see a result as a full table?', {
+    title: 'Result tabs',
+    text: 'Every table output of your flow gets its own tab next to “Canvas” in the bottom status ' +
+      'bar (highlighted). Run the flow, then click the tab once its dot turns green — the result ' +
+      'opens as a full Datagrok table view where you can add viewers, filter, and rearrange. An ' +
+      'amber dot means the result is out of date — run again to refresh it.',
+    target: byTid('view-tab', 'canvas'),
+    position: 'top',
+  }),
+  q('how-table-layouts', 'Are my result views saved with the flow?', {
+    title: 'Layouts persist',
+    text: 'Yes. Whatever you arrange in a result tab — viewers, filters, column order — is saved ' +
+      'with the flow and restored when you reopen it. Published dashboards ship the same layouts, ' +
+      'even for tabs you never opened in this session.',
+    target: byTid('view-tab', 'canvas'),
+    position: 'top',
+  }),
+  q('how-publish-dashboard', 'How do I publish my results as a dashboard?', [
+    {
+      title: 'Run, then Save',
+      text: 'Run the flow, then click Save (highlighted). In the Save dialog, the Dashboard ' +
+        'section lists your computed tables — keep “Create dashboard” checked and click Save.',
+      target: byTid('ribbon', 'save'),
+      position: 'bottom',
+    },
+    {
+      title: 'The Save-project dialog',
+      text: 'The platform\'s standard Save-project dialog opens, seeded with your output tables ' +
+        'and their layouts. Data sync is pre-checked where possible, so the dashboard re-runs your ' +
+        'flow and always opens fresh. Name it and click OK — done. The “Publish your results as a ' +
+        'dashboard” tutorial walks this end to end.',
+    },
+  ]),
+  q('how-update-dashboard', 'How do I update a published dashboard?', {
+    title: 'Re-publish — same project',
+    text: 'Just Save again with “Create dashboard” checked: once published, the dashboard is ' +
+      'bound to the flow, and every publish updates the same project in place — tables, views, ' +
+      'and layouts. To start a fresh project instead, click “publish as new” in the Save dialog\'s ' +
+      'Dashboard section — or use Flow → Save As, which detaches both the script and the dashboard.',
+  }),
 ];

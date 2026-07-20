@@ -32,6 +32,11 @@ module.exports = {
     'rxjs/operators': 'rxjs.operators',
   },
   resolve: {
+    alias: {
+      // marked v4 (security override) has no default export; @jupyterlab/rendermime@2.x expects one.
+      'marked$': path.resolve(__dirname, 'src/marked-shim.js'),
+      'marked-esm$': path.join(path.dirname(require.resolve('marked/package.json')), 'lib', 'marked.esm.js'),
+    },
     fallback: {
       'path': false,
     },

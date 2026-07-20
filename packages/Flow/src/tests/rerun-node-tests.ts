@@ -113,8 +113,11 @@ category('Flow: rerun node', () => {
       withRegistry({}, () => {
         expect(ctrl.canRerunNode(anc.id), false, 'no captured upstream value');
       });
-      // The upstream value is captured → rerunnable.
+      // Captured table, but the required string params are still blank.
       withRegistry({[src.id]: {table: {}}}, () => {
+        expect(ctrl.canRerunNode(anc.id), false, 'blank required params (name, expression) block the rerun');
+        anc.inputValues['name'] = 'x2';
+        anc.inputValues['expression'] = '${x} * 2';
         expect(ctrl.canRerunNode(anc.id), true, 'ready to re-run');
       });
       // An input node has nothing to recompute on its own.

@@ -3,7 +3,8 @@ feature: filters
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: []
+realizes_atlas: []
+realizes: [viewers.filters.categorical, viewers.filters.histogram]
 realized_as:
   - viewers-spec.ts
 related_bugs: []

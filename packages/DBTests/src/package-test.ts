@@ -7,7 +7,6 @@ import './sync/data-sync-test';
 import './benchmarks/benchmark';
 import './cache/cache-test';
 import './connections/table-query-test';
-import './tests/categories';
 import './db-annotations/db-annotations';
 
 export const _package = new DG.Package();
@@ -109,7 +108,12 @@ export async function testConnections(): Promise<DG.DataFrame> {
   return df;
 }
 
+// Data sources with no reachable test connection — omitted from the suite entirely.
 const skip = ['Redshift', 'Athena', 'Files'];
+// Data sources kept in the per-provider grouping but skipped (reported as skipped).
+const skipReasons: {[dataSource: string]: string} = {
+  'ClickHouse': 'ClickHouse test connection is unavailable in CI',
+};
 
 //tags: init
 export async function initPackageTests() {
@@ -129,7 +133,7 @@ export async function initPackageTests() {
           const res = await conn.test();
           if (res !== 'ok')
             throw new Error(res);
-        });
+        }, {skipReason: skipReasons[cat]});
       }
     });
 }

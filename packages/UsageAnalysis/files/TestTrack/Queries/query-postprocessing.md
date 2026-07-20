@@ -1,3 +1,15 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes_atlas: []
+realizes: [views.queries]
+realized_as:
+  - query-postprocessing.test.ts
+related_bugs: []
+---
+
 1. Go to **Databases > Postgres > NorthwindTest**.
 2. Right-click the **NorthwindTest** and select **New Query...**:
 - name: `Test_Postprocessing`

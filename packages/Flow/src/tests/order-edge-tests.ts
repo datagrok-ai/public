@@ -7,7 +7,7 @@ import {topologicalSort} from '../compiler/topological-sort';
 import {emitScript} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {serializeFlow, deserializeFlow} from '../serialization/flow-serializer';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 const SETTINGS = {name: 'OrderFlow', description: '', tags: ['funcflow']};
 
@@ -34,6 +34,64 @@ category('Flow: order edges', () => {
       expect(EXEC_OUT_KEY in node.outputs, true, `${type} has exec-out`);
       expect((node.inputs[EXEC_IN_KEY] as {socket: {dgType: string}}).socket.dgType, 'order');
       expect((node.outputs[EXEC_OUT_KEY] as {socket: {dgType: string}}).socket.dgType, 'order');
+    }
+  });
+
+  test('exec squares are hover-only until wired: data-wired flips with an order edge', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Utilities/Info', 0, 0);
+      const b = await addNode(e.flow, 'Utilities/Info', 300, 0);
+      const row = (id: string): HTMLElement | null =>
+        e.container.querySelector(`.ff-node[data-node-id="${id}"] .ff-node-exec-row`);
+      await until(() => row(a.id) != null && row(b.id) != null);
+      // Unwired → the row is marked not-wired (CSS keeps it invisible except
+      // on node hover / during an order drag).
+      expect(row(a.id)!.dataset.wired, 'false', 'unwired row hidden by default');
+      // The tooltip explains the port in plain words, not just "order" — and
+      // the inner socket dot must NOT carry its own title (a nested title
+      // would shadow the wrapper's explanation with the bare type name).
+      const port = e.container.querySelector(`.ff-node[data-node-id="${a.id}"] .ff-exec-out`);
+      expect((port?.getAttribute('title') ?? '').includes('Run order'), true, 'plain-language tooltip');
+      expect(port?.querySelector('.ff-socket')?.hasAttribute('title'), false, 'order dot has no shadowing title');
+
+      await e.flow.addConnectionByKeys(a.id, EXEC_OUT_KEY, b.id, EXEC_IN_KEY);
+      await e.flow.updateNode(a.id);
+      await e.flow.updateNode(b.id);
+      const wired = await until(() =>
+        row(a.id)?.dataset.wired === 'true' && row(b.id)?.dataset.wired === 'true');
+      expect(wired, true, 'both ends stay visible once an order edge exists');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('an order drag lights every other node\'s opposite exec square and dims the rest', async () => {
+    const e = makeEditor();
+    try {
+      const a = await addNode(e.flow, 'Utilities/Info', 0, 0);
+      const b = await addNode(e.flow, 'Utilities/Info', 300, 0);
+      const c = await addNode(e.flow, 'Utilities/Info', 600, 0);
+      const nodeEl = (id: string): HTMLElement | null =>
+        e.container.querySelector(`.ff-node[data-node-id="${id}"]`);
+      await until(() => nodeEl(a.id) != null && nodeEl(b.id) != null && nodeEl(c.id) != null);
+
+      (e.flow as unknown as {beginConnectHints(n: string, k: string, s: string): void})
+        .beginConnectHints(a.id, EXEC_OUT_KEY, 'output');
+      expect(e.container.classList.contains('ff-connecting'), true, 'connect mode on');
+      expect(e.container.classList.contains('ff-connecting-order'), true, 'order drag marked (squares stay visible)');
+      expect(nodeEl(a.id)!.classList.contains('ff-node-source'), true, 'source undimmed');
+      for (const other of [b, c]) {
+        expect(nodeEl(other.id)!.classList.contains('ff-node-compat'), true, 'other node lit as a target');
+        expect(nodeEl(other.id)!.querySelector('[data-testid="ff-exec-in"]')!
+          .classList.contains('ff-socket-compat'), true, 'its exec-in square glows');
+      }
+
+      (e.flow as unknown as {endConnectHints(): void}).endConnectHints();
+      expect(e.container.classList.contains('ff-connecting-order'), false, 'order class cleared on drop');
+      expect(e.container.querySelectorAll('.ff-socket-compat, .ff-node-compat').length, 0, 'hints cleared');
+    } finally {
+      destroyEditor(e);
     }
   });
 

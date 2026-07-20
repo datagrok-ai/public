@@ -33,6 +33,7 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
 
   let projectId: string | null = null;
   let savedTableInfoIds: string[] = [];
+  let savedLayoutId: string | null = null;
   let demogName: string | null = null;
   const projectName = `radar-rebind-${Date.now()}`;
 
@@ -98,12 +99,13 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
     }
     projectId = saved!.projectId;
     savedTableInfoIds = saved!.tableInfoIds;
+    savedLayoutId = saved!.layoutId;
     expect(typeof projectId).toBe('string');
     expect((projectId as string).length).toBeGreaterThan(0);
     // Step 4 persists BOTH demog and SPGI so the reopen can re-materialize the rebind.
     expect(savedTableInfoIds.length).toBe(2);
 
-    const reopenResult = await page.evaluate(async (id) => {
+    const reopenResult = await page.evaluate(async ({id, layoutId}) => {
       const grok = (window as any).grok;
       const poll = async (pred: () => boolean, timeout = 30_000, step = 200) => {
         const deadline = Date.now() + timeout;
@@ -121,6 +123,15 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
       try {
         const proj = await grok.dapi.projects.find(id);
         if (proj.open) await proj.open();
+        // proj.open() re-materializes the tables + default Grid but does not auto-apply the
+        // attached custom-viewer layout, so the Radar (carrying the rebind under test) is absent
+        // until its saved layout is loaded explicitly onto the active TableView.
+        if (!hasRadar() && layoutId) {
+          try {
+            const lay = await grok.dapi.layouts.find(layoutId);
+            if (lay && grok.shell.tv?.loadLayout) grok.shell.tv.loadLayout(lay);
+          } catch (_) { /* fall through to poll */ }
+        }
         await poll(hasRadar, 30_000);
         const tv = grok.shell.tv;
         const types: string[] = [];
@@ -135,7 +146,7 @@ test('Charts / Radar — table-rebind on project save/reopen (GROK-18085)', asyn
       } catch (e) {
         return {ok: false, err: String(e).substring(0, 300)};
       }
-    }, projectId);
+    }, {id: projectId as string, layoutId: savedLayoutId});
 
     // The reopen is the operation under test — a thrown reopen must fail, not just warn.
     expect(reopenResult.ok, reopenResult.ok ? '' : `Project reopen failed: ${(reopenResult as any).err}`).toBe(true);

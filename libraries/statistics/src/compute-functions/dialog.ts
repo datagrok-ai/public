@@ -16,6 +16,10 @@ export async function chemFunctionsDialog(
   descriptorsProvider?: () => Promise<IDescriptorTree>,
   orderingStorageKey?: string,
   singleSelect?: boolean,
+  // When provided, each function/script/query pane shows an extra checkbox that flags the function
+  // to be recomputed every time the campaign is opened. The label/tooltip are supplied by the caller
+  // so the shared dialog stays domain-agnostic. Descriptor panes never get this checkbox.
+  rerunOnOpenOption?: {label: string, tooltip: string},
 ): Promise<IChemFunctionsDialogResult> {
   const storageKey = orderingStorageKey ?? 'HTFunctionOrderingLS';
 
@@ -87,6 +91,22 @@ export async function chemFunctionsDialog(
   const calculatedFunctions: {[key: string]: boolean} = {[descriptorsName]: false};
   calculatedFunctions[descriptorsName] =
     !!template?.compute?.descriptors?.enabled && template?.compute?.descriptors?.args?.length > 0;
+  // per-function "re-run when campaign opens" state, keyed the same as calculatedFunctions
+  const rerunOnOpen: {[key: string]: boolean} = {};
+
+  // Prepends a "re-run on open" checkbox to a function pane's content when the option is enabled.
+  // Never applied to the descriptors pane — descriptors are deterministic from structure.
+  function wrapWithRerun(key: string, content: HTMLElement): HTMLElement {
+    if (!rerunOnOpenOption || key === descriptorsName)
+      return content;
+    const rerunInput = ui.input.bool(rerunOnOpenOption.label, {
+      value: !!rerunOnOpen[key],
+      onValueChanged: (v) => {rerunOnOpen[key] = !!v;},
+    });
+    rerunInput.setTooltip(rerunOnOpenOption.tooltip);
+    rerunInput.root.classList.add('statistics-compute-dialog-rerun-input');
+    return ui.divV([rerunInput.root, content]);
+  }
   // handling package functions
   for (const func of allFunctions) {
     try {
@@ -117,13 +137,19 @@ export async function chemFunctionsDialog(
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
       editor.style.removeProperty('max-width');
-      tabControlArgs[f.friendlyName ?? f.name] = editor;
+      tabControlArgs[f.friendlyName ?? f.name] = wrapWithRerun(keyName, editor);
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = (template?.compute?.functions?.some(
         (f) => func.func.type === funcTypeNames.function &&
         f.name === func.func.name && f.package === getFuncPackageNameSafe(func.func)) ||
           template?.compute?.scripts?.some((s) => s.id === f.id) ||
           template?.compute?.queries?.some((s) => s.id === f.id)) ?? false;
+      rerunOnOpen[keyName] = (template?.compute?.functions?.some(
+        (tf) => `${tf.package}:${tf.name}` === keyName && tf.rerunOnOpen) ||
+          template?.compute?.scripts?.some(
+            (ts) => `${HTScriptPrefix}:${ts.name}:${ts.id}` === keyName && ts.rerunOnOpen) ||
+          template?.compute?.queries?.some(
+            (tq) => `${HTQueryPrefix}:${tq.name}:${tq.id}` === keyName && tq.rerunOnOpen)) ?? false;
     } catch (e) {
       console.error(e);
       continue;
@@ -195,6 +221,14 @@ export async function chemFunctionsDialog(
   initTabs(getSavedFunctionOrdering(storageKey));
   function onOkProxy() {
     const res: IComputeDialogResult = {descriptors: [], externals: {}, scripts: {}, queries: {}};
+    if (rerunOnOpenOption) {
+      res.rerunOnOpen = {};
+      // Only flag functions that are actually enabled for calculation.
+      Object.keys(rerunOnOpen).forEach((key) => {
+        if (calculatedFunctions[key] && rerunOnOpen[key])
+          res.rerunOnOpen![key] = true;
+      });
+    }
     res.descriptors = calculatedFunctions[descriptorsName] ?
       descriptorItems.filter((i) => i.checked).map((i) => i.value.name) : [];
     const filteredFuncs = Object.entries(funcInputsMap).filter(([name, _]) => calculatedFunctions[name]);

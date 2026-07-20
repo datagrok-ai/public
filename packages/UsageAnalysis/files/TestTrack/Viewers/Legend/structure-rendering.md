@@ -1,8 +1,12 @@
 ---
 feature: legend
+realizes_atlas: []
+realizes: []
+realized_as:
+  - structure-rendering-spec.ts
 target_layer: playwright
 coverage_type: regression
-priority: p1
+priority: p2
 pyramid_layer: integration
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Viewers/Legend/structure-rendering.md

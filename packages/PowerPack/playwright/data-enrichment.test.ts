@@ -244,6 +244,10 @@ async function countEnrichmentsListed(page: Page): Promise<number> {
 }
 
 test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + multi-enrichment + persistence', async ({page}) => {
+  // CI SKIP (approved): the DB-Explorer enrichment flow joins the `public.users_sessions` platform DB
+  // table, which is absent/unpopulated on the CI stack (the join-table picker never lists it). Runs on a
+  // stack with the platform DB. See PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md §B3.
+  test.skip(true, 'CI-env: requires the public.users_sessions platform DB table, absent on CI (findings §B3)');
   test.setTimeout(900_000);
   stepErrors.length = 0;
 

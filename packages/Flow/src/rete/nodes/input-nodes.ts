@@ -9,8 +9,9 @@
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
 
-const COLOR_INPUT = '#66BB6A';
+const COLOR_INPUT = categoricalColor(CAT.green);
 
 abstract class InputBase extends FlowNode {
   constructor(label: string, paramName: string, dgType: string, slotName = 'value', extraProps: Record<string, any> = {}) {

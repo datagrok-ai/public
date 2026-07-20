@@ -3,10 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  DE_COMPLETE_TAG, PublishOptions, findPriorShare, slugifyTarget,
+  DE_COMPLETE_TAG, PublishOptions, findPriorShare, slugifyProject,
 } from './publish-state';
 import {publishAnalysis} from './publish-project';
-import {reviewNamePrefix, verifyPublishedDashboard} from './publish-settings';
+import {defaultReviewerGroup, getProjectVocabulary, reviewNamePrefix, verifyPublishedDashboard} from './publish-settings';
+import {loadReviewerGroups, reviewerGroupName} from './reviewer-groups';
 
 /**
  * Analyst-facing share dialog. Single entry point into the publish flow —
@@ -32,15 +33,7 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
     return;
   }
 
-  const allGroups = await grok.dapi.groups.list();
-  const allUsersId = (DG.Group as any).defaultGroupsIds?.['All users'];
-  const filteredGroups = (allGroups ?? []).filter((g: any) => {
-    if (g == null) return false;
-    if (g.hidden) return false;
-    if (g.personal) return false;
-    if (allUsersId && g.id === allUsersId) return false;
-    return true;
-  });
+  const filteredGroups = await loadReviewerGroups();
 
   if (filteredGroups.length === 0) {
     grok.shell.warning('No teams available to share with. Ask an admin to create a reviewer team.');
@@ -49,16 +42,38 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
 
   const groupByName = new Map<string, DG.Group>();
   for (const g of filteredGroups) {
-    const name = (g as any).friendlyName ?? (g as any).name ?? '';
+    const name = reviewerGroupName(g);
     if (name && !groupByName.has(name)) groupByName.set(name, g);
   }
   const groupItems = Array.from(groupByName.keys());
 
-  const targetInput = ui.input.string('Target', {value: ''});
-  targetInput.setTooltip('Free text — your team\'s name for this target (e.g., MYH7-DMD, muscle-atrophy panel)');
+  // Pre-select the admin-configured default team when it's still available;
+  // otherwise fall back to the first team in the list.
+  const configuredDefault = defaultReviewerGroup();
+  const defaultGroupName = configuredDefault && groupItems.includes(configuredDefault)
+    ? configuredDefault
+    : groupItems[0];
+
+  // Project is a controlled vocabulary — admins maintain the list in the
+  // `projectVocabulary` package setting; the analyst picks, never free-types.
+  const projectVocabulary = getProjectVocabulary();
+  if (projectVocabulary.length === 0) {
+    grok.shell.warning(
+      'No projects are configured to share under. Ask a package administrator to add project ' +
+      'names in the Proteomics package settings (projectVocabulary).');
+    return;
+  }
+
+  const projectInput = ui.input.choice('Project', {
+    value: projectVocabulary[0],
+    items: projectVocabulary,
+    nullable: false,
+  });
+  projectInput.setTooltip('Pick the project to share this analysis under. ' +
+    'Maintained by package administrators in the Proteomics package settings.');
 
   const groupInput = ui.input.choice('Share with team', {
-    value: groupItems[0],
+    value: defaultGroupName,
     items: groupItems,
     nullable: false,
   });
@@ -92,14 +107,14 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
   };
 
   const updateBannerAndSummary = async (): Promise<void> => {
-    const target = (targetInput.value ?? '').trim();
+    const project = (projectInput.value ?? '').trim();
     const groupName = groupInput.value;
     const group = groupName ? groupByName.get(groupName) ?? null : null;
-    const slug = target ? slugifyTarget(target) : '<no-target>';
+    const slug = project ? slugifyProject(project) : '<no-project>';
     const dateStr = new Date().toISOString().slice(0, 10);
 
-    if (target && group) {
-      try { priorVersion = await findPriorShare(target, group); }
+    if (project && group) {
+      try { priorVersion = await findPriorShare(project, group); }
       catch { priorVersion = null; }
     } else {
       priorVersion = null;
@@ -124,32 +139,32 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
       : 'New share';
 
     summary.innerHTML = '';
-    summary.appendChild(ui.divText(`Project: ${projectName}`));
+    summary.appendChild(ui.divText(`Published as: ${projectName}`));
     summary.appendChild(ui.divText(`Will be visible to: ${groupLabel}`));
     summary.appendChild(ui.divText(`Status: ${statusLabel}`));
     summary.appendChild(ui.divText(`Date: ${dateStr}`));
   };
 
-  targetInput.onChanged.subscribe(() => { void updateBannerAndSummary(); });
+  projectInput.onChanged.subscribe(() => { void updateBannerAndSummary(); });
   groupInput.onChanged.subscribe(() => { void updateBannerAndSummary(); });
 
   await updateBannerAndSummary();
 
   ui.dialog('Share Analysis for Review')
-    .add(targetInput)
+    .add(projectInput)
     .add(groupInput)
     .add(noteInput)
     .add(verifyInput)
     .add(banner)
     .add(summary)
     .onOK(async () => {
-      const target = (targetInput.value ?? '').trim();
-      if (!target) { grok.shell.warning('Target is required.'); return; }
+      const project = (projectInput.value ?? '').trim();
+      if (!project) { grok.shell.warning('Project is required.'); return; }
       const group = groupInput.value ? groupByName.get(groupInput.value) : null;
       if (!group) { grok.shell.warning('Pick a team to share with.'); return; }
 
       const opts: PublishOptions = {
-        target,
+        project,
         reviewerGroup: group,
         note: (noteInput.value ?? '') as string,
         priorVersion,
@@ -157,12 +172,12 @@ export async function showShareForReviewDialog(df: DG.DataFrame): Promise<void> 
       };
 
       try {
-        const project = await publishAnalysis(df, opts);
+        const publishedProject = await publishAnalysis(df, opts);
         const groupName = (group as any).friendlyName ?? (group as any).name ?? '(unnamed team)';
         // Single non-modal confirmation — the published project is browsable in the
         // Spaces tree, so no modal or action links are needed. publishAnalysis no
         // longer emits its own toast, so this is the one and only confirmation.
-        grok.shell.info(`Shared as ${(project as any).name} with team ${groupName}.`);
+        grok.shell.info(`Shared as ${(publishedProject as any).name} with team ${groupName}.`);
       } catch (e: any) {
         grok.shell.error(`Share failed: ${e?.message ?? String(e)}`);
       }

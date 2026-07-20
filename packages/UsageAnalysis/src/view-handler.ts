@@ -13,6 +13,8 @@ import {ErrorsView} from './tabs/errors';
 import {ProjectsView} from "./tabs/projects";
 import {ClicksView} from './tabs/clicks';
 import {MetricsView} from './tabs/metrics';
+import {VulnerabilitiesView} from './tabs/vulnerabilities';
+import {StressView} from './tabs/stress-tests';
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
@@ -27,7 +29,7 @@ export class ViewHandler {
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ErrorsView, ProjectsView, MetricsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
     const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i]();
@@ -59,8 +61,8 @@ export class ViewHandler {
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
     toolbox.toggleProjectsInput(urlTab == 'Projects');
-    toolbox.togglePackagesInput(urlTab !== 'Projects' && urlTab !== 'Metrics');
-    toolbox.toggleGroupsInput(urlTab !== 'Metrics');
+    toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
+    toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
 
     const paramsHaveDate = date != undefined;
     const paramsHaveUsers = groups != undefined;
@@ -135,8 +137,8 @@ export class ViewHandler {
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
       toolbox.toggleProjectsInput(view.name == 'Projects');
-      toolbox.togglePackagesInput(view.name !== 'Projects' && view.name !== 'Metrics');
-      toolbox.toggleGroupsInput(view.name !== 'Metrics');
+      toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
+      toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
       if (view instanceof UaView) {

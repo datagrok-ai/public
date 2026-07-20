@@ -10,6 +10,7 @@ import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
+import {listDbCatalogs, listDbSchemas, listDbTables, getDbTableDetails, listDbJoins, getSqlTestResult} from './ai/db-view-functions';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
 export * from './package.g';
@@ -192,6 +193,57 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  // Functions applicable to the database query editor (surfaced via View.getFunctions()
+  // by their meta.viewType). Each takes the view; the AI assistant injects it automatically.
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List the catalogs available on this connection'})
+  static async listDbCatalogs(@grok.decorators.param({type: 'view'}) view: any): Promise<string> {
+    return listDbCatalogs(view);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List schemas of a catalog (defaults to the connection default catalog)'})
+  static async listDbSchemas(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbSchemas(view, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List tables of a schema with row counts'})
+  static async listDbTables(
+    @grok.decorators.param({type: 'view'}) view: any,
+    schemaName: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbTables(view, schemaName, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table'})
+  static async getDbTableDetails(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references to describe'}}) tables: string): Promise<string> {
+    return getDbTableDetails(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Foreign-key relationships involving the given tables — use to build correct JOINs'})
+  static async listDbJoins(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references'}}) tables: string): Promise<string> {
+    return listDbJoins(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run'})
+  static async getSqlTestResult(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'The SQL to test'}}) sql: string,
+    @grok.decorators.param({type: 'string', options: {description: 'One line describing what the query does'}}) description: string): Promise<string> {
+    return getSqlTestResult(view, sql, description);
   }
 
   @grok.decorators.func({})

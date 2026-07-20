@@ -186,8 +186,10 @@ Yes, we adhere to secure development and industry best practices across infrastr
   (OAuth, SSO, Active Directory), and role-based access control.  
   [Learn more](../../deploy/GCP/deploy-gcp-gke-terraform.md) | [Authentication & authorization](../../develop/how-to/apps/build-an-app.md#authentication) | [Role-based access](../../compute/compute.md#privileges-and-visibility)
 
-* Quality assurance – automated check for vulnerabilities (Snyk) and
-  multi-layered testing including unit, integration, UI, and performance tests.  
+* Quality assurance – automated vulnerability scanning (Google Cloud Artifact Analysis
+  for images, CodeQL and Grype for code, published openly as
+  [VEX](https://data.datagrok.ai/vex/index.html)) and multi-layered testing including
+  unit, integration, UI, and performance tests.  
   [Learn more](../../develop/qa/quality-assurance.md#continuous-integration-and-deployment-system) | [Testing](../../develop/qa/quality-assurance.md#automated-testing)
 
 * Secure development lifecycle – CI/CD pipelines enforce automated build, test,
@@ -250,11 +252,14 @@ Yes, all client-server communications use [HTTPS](https://en.wikipedia.org/wiki/
 
 ##### <b>Q: How do you manage vulnerabilities in the application and cloud infrastructure?</b>
 
-We monitor CISA alerts and scan container images with [Snyk](https://snyk.io/) on
-every build and with [Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview). Vulnerabilities are triaged, remediated via infrastructure-as-code
-pipelines, and verified through CI/CD testing. Customers are notified and
-supported in version upgrades as needed. Learn more about
-[Infrastructure](../../develop/under-the-hood/infrastructure.md)
+We monitor CISA alerts and scan every shipped container image for known CVEs with
+[Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview),
+weekly and at build time. Results are published openly as
+[VEX](https://data.datagrok.ai/vex/index.html). Vulnerabilities are triaged, remediated via
+infrastructure-as-code pipelines, and verified through CI/CD testing. Customers are notified
+and supported in version upgrades as needed. See
+[vulnerability remediation](../solutions/teams/it/security.md#vulnerability-remediation)
+and [Infrastructure](../../develop/under-the-hood/infrastructure.md)
 
 ##### <b>Q: How are OS and server patching handled?</b>
 

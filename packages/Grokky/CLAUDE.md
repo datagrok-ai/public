@@ -50,7 +50,9 @@ src/
 ├── polyfills.ts            # Chrome 50 / Dartium polyfills — imported first from package.ts / package-test.ts
 ├── utils.ts                # Shared utilities: viewer/dataframe descriptions, events, isEnterKey/copyToClipboard
 ├── ai/                     # AI panels, search, and UI wiring
-│   ├── panel.ts            # TVAIPanel, DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel
+│   ├── panel.ts            # AIPanel (singleton shell chat), DBAIPanel, ScriptingAIPanel, StreamingPanel
+│   ├── ai-window.ts        # AIWindowManager — mounts panels into grok.shell.windows.ai, Ctrl+I toggle
+│   ├── prompt-suggestions.ts # Curated prompt suggestions (files/suggestions.yaml), wand-icon menu
 │   ├── ui.ts               # Setup functions that wire panels into the platform UI
 │   ├── storage.ts          # ConversationStorage — IndexedDB persistence for chat history
 │   ├── usage-limiter.ts    # Per-user daily request limits (group-configurable)
@@ -89,17 +91,53 @@ a structured output schema).
 `CombinedAISearchAssistant` collects all `aiSearchProvider` functions, uses `ClaudeRuntimeClient.query()` to rank them
 by relevance to the user query, then presents results in a lazy tab control.
 
-### AI Panels (`src/ai/panel.ts`)
+### AI Panel (`src/ai/panel.ts`) — one singleton everywhere
 
-Four panel classes handle UI for different contexts:
+The assistant is ONE `AIPanel` instance (created by `initAIWindow()`) with one Claude session,
+used for every view — there are no per-view or specialized panels anymore. It survives view
+switches — `AIWindowManager` (`src/ai/ai-window.ts`) never remounts on `onCurrentViewChanged`;
+instead, every prompt gets a fresh workspace snapshot from `buildWorkspaceContext()` (current view
+details, all open views, all workspace tables), and `datagrok-exec`/`datagrok_verify` blocks run
+against the live `grok.shell.v`. The ribbon AI icons on table/script/query views just toggle this
+singleton.
 
-- `TVAIPanel` — table view assistant
-- `DBAIPanel` — database query editor assistant
-- `ScriptingAIPanel` — script generation assistant
-- `ShellAIPanel` — context-free shell / general-purpose assistant (set up by `setupShellAIPanelUI()`)
-
-All panels stream through `ClaudeRuntimeClient` and share a common `StreamingPanel` base with chat history,
+The panel streams through `ClaudeRuntimeClient` (`StreamingPanel` interface) with chat history,
 streaming display, and conversation persistence via `ConversationStorage`.
+
+### View functions (`src/ai/view-tools.ts`, `src/ai/db-view-functions.ts`)
+
+The assistant reaches a view's operations through the platform's `getFunctions()` — every Widget
+(and thus every view) returns the registered `DG.Func`s applicable to it. A view's set comes from:
+
+1. **Dart `View.getFunctions()`** (core) — the base returns registered functions declaring
+   `meta.viewType: <viewType>`; subclasses add view-specific `CustomFunc`s on top
+   (`DataQueryView`: `get_query_info` / `set_query_and_run`; `ScriptView`: `get_script_code` /
+   `set_script_code`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
+2. **JS `ViewBase.getFunctions()`** (js-api) — a JS-defined view overrides it to return its
+   registered package functions; e.g. Flow's `FuncFlowView` returns the `flowViewFunction`-tagged
+   Flow functions (`listFlowNodes`, `findFlowNodeTypes`, `addFlowNode`, `connectFlowNodes`,
+   `setFlowNodeInputs`, `selectFlowNode`, `runFlow`, guides). Those functions take the generic
+   `view` argument and reach the instance via `view.jsView` (interop `grok_View_Get_JsView`).
+3. **`meta.viewType` package functions** — any package can register a function with
+   `meta: {viewType: '<viewType>'}` taking the view; Grokky registers the DataQueryView SQL set
+   (`listDbCatalogs/Schemas/Tables`, `getDbTableDetails`, `listDbJoins`, `getSqlTestResult` — in
+   `db-view-functions.ts`, discovering the connection through the view's native `get_query_info`).
+
+Because a view can have hundreds of functions (TableView commands), Grokky never declares them all
+to Claude. Instead `viewFunctionTools()` declares three STATIC meta-tools every full-mode turn
+(stable defs — prompt-cache friendly): `list_view_functions(query)` (search, ≤10 results),
+`get_view_function_result(name, parameters)` (read-only invoke), and `call_view_function` (
+state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
+`grok.shell.v` at call time, inject the `view` argument, run `func.apply()`, and serialize the
+result. Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
+`datagrok-view` MCP server whose calls round-trip to the browser as `input_request`.
+
+#### AI window visibility (sync with core)
+
+`grok.shell.windows.showAI` (core, xamgle `ai_panel.dart`) is the single source of truth. Manual close
+(X on the docked panel) resets core's `_aiDockNode` (handled in `docking.dart` `onClosing`) and the
+value is persisted in core `Settings.showAI`, restored on startup. PowerPack's status-bar robot icon
+and Grokky's `AIWindowManager` both read/write `showAI` and react to `onPanelVisibilityChanged`.
 
 #### Shell AI Panel features
 
@@ -108,14 +146,14 @@ Only affects rendering — the Datagrok system prompt is still active unless `no
 
 **`!cmd`**: executes the shell command via bash without `DATAGROK_PROMPT`. The `!` prefix is stripped and
 the message is sent with `systemPromptMode: 'bash'` (a minimal "output only stdout" system prompt defined in
-`claude-runtime/src/server.ts`). Works in any mode, independent of `rawRender`.
+`claude-runtime/src/prompts.ts`). Works in any mode, independent of `rawRender`.
 `!!cmd` escapes to a literal `!cmd` prompt through the normal AI pipeline.
 
 **`/noprompt`**: client-side slash command intercepted in `setupShellAIPanelUI()` before reaching Claude.
 Calls `panel.enableNoPrompt()`: resets the session, clears output, enables `rawRender`, sets `_noPrompt = true`.
 All subsequent messages in that session use `systemPromptMode: 'none'` (empty system prompt — pure Claude Code).
 
-**System prompt is per-message, not per-session.** `buildOptions()` in `claude-runtime/src/server.ts` is called
+**System prompt is per-message, not per-session.** `buildOptions()` in `claude-runtime/src/query-options.ts` is called
 fresh for every WebSocket message. The `resume` field carries conversation history only, so `systemPromptMode`
 can vary per turn without restarting the session.
 
@@ -124,10 +162,12 @@ can vary per turn without restarting the session.
 Setup functions called from `init()` that attach AI panels to platform UI elements:
 
 - `setupSearchUI()` — wires `CombinedAISearchAssistant` into the global search bar
-- `setupTableViewAIPanelUI()` — adds `TVAIPanel` to table views
-- `setupScriptsAIPanelUI()` — adds `ScriptingAIPanel` to script views
-- `setupAIQueryEditorUI()` — adds `DBAIPanel` to the query editor
-- `setupShellAIPanelUI()` — adds `ShellAIPanel` to the shell/AI sidebar
+- `setupTableViewAIPanelUI()` — adds the AI ribbon icon to table views (toggles the singleton panel)
+- `setupScriptsAIPanelUI()` — adds the AI icon to script views (toggles the singleton panel)
+- `setupAIQueryEditorUI()` — called by the core query editor; just reports whether AI is configured
+  (the query view's tools are collected at prompt time)
+- `setupShellAIPanelUI()` — shows the singleton panel in the AI window
+- `setupAgentScriptsUI()` — adds a Run button to file views under `MyFiles/agents/scripts/`
 
 `runPromptWithLifecycle()` is the central routing function: intercepts `!`/`!!` prefixes,
 skips `grok.ai.processPrompt()` when `rawRender` is on, and calls `runClaudeStreaming()`.
@@ -164,8 +204,8 @@ Also provides `buildViewContext()` — serializes the current view (table column
 
 ### SQL Tools (`src/db/sql-tools.ts`)
 
-`SQLGenerationContext` — manages tool execution for natural-language-to-SQL generation. Supports multiple
-catalogs. Tool calls (`db_list_schemas`, `db_get_table_info`, etc.) are defined in the MCP server and forwarded from the Claude runtime to the browser for execution.
+`SQLGenerationContext` — client-side natural-language-to-SQL generation against a connection's schema,
+supporting multiple catalogs. Backs the `DBAIPanel` query-editor assistant.
 
 ### DB Index Tools (`src/db/db-index-tools.ts`)
 
@@ -174,7 +214,7 @@ Also provides `genDBConnectionMeta()` for generating and persisting LLM-friendly
 
 ### Docker Containers (`dockerfiles/`)
 
-- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `tool_result`, `final`, `error`, `aborted`, `input_request`. Includes the skills & knowledge sync system (`src/user-files.ts`) — see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
+- `claude-runtime/` — Hono + WebSocket server wrapping `@anthropic-ai/claude-agent-sdk`. Runs Claude sessions with a Datagrok-specific system prompt and resumable session support. Streams structured events to the browser: `chunk`, `tool_activity`, `final`, `error`, `aborted`, `queued`, `input_request`, `sync_status`, `auth_url` / `auth_done` / `auth_error`. The `src/` is split into `server.ts` (transport + `/ws` dispatch, auth subprocess, provider config, startup), `prompts.ts` (system prompts), `query-options.ts` (SDK query config + browser MCP tools + tool-activity summaries), and `session.ts` (session registry, streaming, turn queue, abort). Includes the skills & knowledge sync system (`src/sync/`, `src/user/`) — see [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) for the full spec. Ships a local Claude Code plugin (`plugin/`) with `datagrok-exec` and `datagrok-entities` skills describing the fenced-block formats; the plugin is attached for full-prompt sessions and skipped for `bash` / `none` modes.
 - `mcp-server/` — MCP server (`@modelcontextprotocol/sdk`, HTTP transport) exposing Datagrok operations as tools: functions (list/get/call/create), files (list/download/upload), projects, spaces, and user info. Auth via per-request `x-user-api-key` / `x-datagrok-api-url` headers.
 
 ### Deprecated Code (`src/depr/`)
@@ -188,6 +228,26 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 - `ClaudeRuntimeClient.getInstance()` — WebSocket connection to Claude runtime
 - `CombinedAISearchAssistant.instance` — AI search routing
 - `UsageLimiter.getInstance()` — daily request limit enforcement
+
+## Subscription authorization (UI)
+
+On a Claude **subscription** (mounted `~/.claude/.credentials.json`, not an API key) the token
+expires periodically. The panel renews it inline via a browser-relayed `claude auth login`: the user
+opens the OAuth page, pastes the returned code, and clicks **Submit**; on success the strip turns
+green and the message can be re-sent. Handlers `handleAuthStart` / `handleAuthCode` in
+[`server.ts`](dockerfiles/claude-runtime/src/server.ts) drive the CLI; UI in
+[`src/ai/ui.ts`](src/ai/ui.ts); `auth_*` messages in [CLAUDE_CODE_FLOW.md](docs/CLAUDE_CODE_FLOW.md).
+
+| Session expired | Code pasted | Session renewed |
+|---|---|---|
+| ![](docs/images/auth-session-expired.png) | ![](docs/images/auth-code-entered.png) | ![](docs/images/auth-session-renewed.png) |
+
+## Rebuilding the container images
+
+`claude-runtime` and `mcp-server` code — `dockerfiles/*/src/`, the runtime `plugin/` skills and
+`prompts.ts`, the Dockerfiles — compiles **inside** the image. `grok publish` / `npm run build`
+rebuild only the browser bundle, not the images: rebuild the image (`docker build` in the container
+dir) and redeploy after any change under `dockerfiles/`, or the container keeps serving old code.
 
 ## Configuration
 

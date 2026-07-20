@@ -16,8 +16,9 @@
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
 
-const COLOR_VIEWER = '#26A69A';
+const COLOR_VIEWER = categoricalColor(CAT.cyan);
 
 /** One option surfaced as an editable field in the property panel. `kind`
  *  drives the editor (a `column` field is a column-name text box). */

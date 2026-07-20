@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {fromEvent, interval, Observable, Subject} from 'rxjs';
+import {fromEvent, interval, Observable, Subject, Subscription} from 'rxjs';
 import {filter, first, map} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
@@ -54,6 +54,7 @@ export abstract class Tutorial extends DG.Widget {
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
   closed: boolean = false;
+  completed: boolean = false;
   activeHints: HTMLElement[] = [];
   progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
   progress: HTMLProgressElement = ui.element('progress');
@@ -184,7 +185,8 @@ export abstract class Tutorial extends DG.Widget {
     }
     this.describe(desc);
 
-    const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.progress.value === this.steps});
+    this.completed = !this.closed;
+    const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.completed});
     await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);
     const statusMap = await this.track?.updateStatus();
 
@@ -279,7 +281,7 @@ export abstract class Tutorial extends DG.Widget {
     // if (this.manualMode)
     //   $(manualMode.firstChild).toggleClass('fal fas');
     const closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
-      if (this.progress.value === this.steps)
+      if (this.completed)
         this.updateProgress(this.track);
       this.close();
     }, 'Close');
@@ -440,6 +442,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   clearRoot(): void {
+    this.completed = false;
     this.progress.value = 1;
     $(this.root).children().each((idx, el) => el.classList.contains('tutorials-main-header') ?
       ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
@@ -447,13 +450,17 @@ export abstract class Tutorial extends DG.Widget {
 
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const eventSub = eventStream.pipe(first()).subscribe((_: any) => resolve());
+      let eventSub: Subscription;
       const closeSub = this.onClose.subscribe(() => {
-        eventSub.unsubscribe();
+        eventSub?.unsubscribe();
         closeSub.unsubscribe();
         this._removeHints(this.activeHints);
         // eslint-disable-next-line
         reject();
+      });
+      eventSub = eventStream.pipe(first()).subscribe({
+        next: () => (closeSub.unsubscribe(), resolve()),
+        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve()),
       });
     }).catch((_) => console.log('Closing tutorial', this.name));
   }
