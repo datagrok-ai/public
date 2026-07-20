@@ -1,5 +1,9 @@
 # DB Tests changelog
 
+## v.next
+
+* GROK-20379: Added ClickHouseADBC coverage — connection, mock_data pattern tests, per-type output tests (full mirror of the ClickHouse suite), and category guard for the experimental ADBC/Arrow connector
+
 ## 1.3.0 (2025-07-28)
 
 * Datagrok api dependency >= 1.26.0

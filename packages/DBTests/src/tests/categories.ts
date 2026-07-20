@@ -2,7 +2,7 @@ import {before, category} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-const categories = {'Postgresql': 'PostgreSQLDBTests', 'Oracle': 'OracleDBTests', 'Neo4j': 'Neo4jDBTests', 'MySql': 'MySqlDBTests', 'MSSQL': 'MSSQLDBTests', 'MariaDb': 'MariaDbDBTests', 'ClickHouse': 'ClickHouseDBTests'};
+const categories = {'Postgresql': 'PostgreSQLDBTests', 'Oracle': 'OracleDBTests', 'Neo4j': 'Neo4jDBTests', 'MySql': 'MySqlDBTests', 'MSSQL': 'MSSQLDBTests', 'MariaDb': 'MariaDbDBTests', 'ClickHouse': 'ClickHouseDBTests', 'ClickHouseADBC': 'ClickHouseADBCDBTests'};
 
 for (const [cat, conn] of Object.entries(categories)) {
     category(cat, () => {

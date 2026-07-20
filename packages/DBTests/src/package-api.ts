@@ -8,6 +8,130 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  export async function clickHouseADBCUuidType(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCUuidType', {});
+  }
+
+  export async function clickHouseADBCSignedIntTypes(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCSignedIntTypes', {});
+  }
+
+  export async function clickHouseADBCUnsignedIntTypes(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCUnsignedIntTypes', {});
+  }
+
+  export async function clickHouseADBCFloatTypes(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCFloatTypes', {});
+  }
+
+  export async function clickHouseADBCArrayType(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCArrayType', {});
+  }
+
+  export async function clickHouseADBCTupleType(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCTupleType', {});
+  }
+
+  export async function clickHouseADBCMapType(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCMapType', {});
+  }
+
+  export async function clickHouseADBCDateTypes(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCDateTypes', {});
+  }
+
+  export async function clickHouseADBCNestedType(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCNestedType', {});
+  }
+
+  export async function clickHouseADBCGeoType(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCGeoType', {});
+  }
+
+  export async function clickHouseADBCPatternsAll(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCPatternsAll', {});
+  }
+
+  export async function clickHouseADBCIntTypePatternNone(id: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCIntTypePatternNone', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpMore(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpMore', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpMoreEq(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpMoreEq', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpLessEq(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpLessEq', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpLess(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpLess', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpIn(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpIn', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpNotIn(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpNotIn', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpMinMax(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpMinMax', { id });
+  }
+
+  export async function clickHouseADBCStringTypeIntPatternOpNotEq(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypeIntPatternOpNotEq', { id });
+  }
+
+  export async function clickHouseADBCDoubleTypePatternNone(some_number: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCDoubleTypePatternNone', { some_number });
+  }
+
+  export async function clickHouseADBCStringTypePatternDoubleOpMore(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternDoubleOpMore', { some_number });
+  }
+
+  export async function clickHouseADBCStringTypePatternDoubleOpMoreEq(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternDoubleOpMoreEq', { some_number });
+  }
+
+  export async function clickHouseADBCStringTypePatternDoubleOpLess(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternDoubleOpLess', { some_number });
+  }
+
+  export async function clickHouseADBCStringTypePatternDoubleOpLessEq(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternDoubleOpLessEq', { some_number });
+  }
+
+  export async function clickHouseADBCStringTypePatternStringOpContains(first_name: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternStringOpContains', { first_name });
+  }
+
+  export async function clickHouseADBCStringTypePatternStringOpStartsWith(first_name: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternStringOpStartsWith', { first_name });
+  }
+
+  export async function clickHouseADBCStringTypePatternStringOpEndsWith(first_name: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternStringOpEndsWith', { first_name });
+  }
+
+  export async function clickHouseADBCStringTypePatternStringOpIn(country: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternStringOpIn', { country });
+  }
+
+  export async function clickHouseADBCStringTypePatternStringOpRegex(email: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCStringTypePatternStringOpRegex', { email });
+  }
+
+  export async function clickHouseADBCPatternsAllParams(first_name: string , id: string , bool: boolean , email: string , some_number: string , country: string , date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseADBCPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+  }
+
   export async function clickHouseUuidType(): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:ClickHouseUuidType', {});
   }
