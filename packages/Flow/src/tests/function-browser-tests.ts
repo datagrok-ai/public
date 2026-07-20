@@ -1,20 +1,18 @@
-/** Regression tests for the function catalog: the Flow-specific exclusion list
- *  and the "what it does" classification. Designed from the live catalog — see
- *  docs/func-catalog-snapshot.md (and the retired func-inventory-diag) for the
- *  data these assertions encode. */
+/** Regression tests for the function catalog: the allowlist-based inclusion
+ *  rule and the "what it does" classification. Designed from the live catalog —
+ *  see docs/func-catalog-snapshot.md for the data these assertions encode. */
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {
-  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, EXCLUDED_PACKAGES, isWorkflowFunc,
+  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc, shouldIncludeFunc,
 } from '../rete/node-factory';
-import {EXCLUDED_FUNC_NQNAMES} from '../rete/excluded-funcs';
+import {INCLUDED_FUNC_NQNAMES} from '../rete/included-funcs';
 import {
   categorizeFunc, FUNC_CATEGORIES, funcMatchesSearch, nameMatchesQuery,
   queryConnectionName, FunctionBrowser, funcOutputsWidget, orderDomainSection,
 } from '../panel/function-browser';
 import type {FuncInfo} from '../rete/node-factory';
-import {getTags} from '../utils/dart-proxy-utils';
 import {statusLabel} from '../execution/execution-visualizer';
 import {NodeExecStatus} from '../execution/execution-state';
 
@@ -24,40 +22,42 @@ category('Flow: function browser', () => {
     registerAllFunctions();
   });
 
-  test('exclusion list keeps the catalog clean', async () => {
+  test('the catalog is allowlist-based: only explicitly included funcs survive', async () => {
     const funcs = getRegisteredFuncs();
     expect(funcs.length > 100, true, 'catalog is non-trivially populated');
 
-    // No dev/test/internal packages.
-    const fromExcludedPkg = funcs.filter((f) => EXCLUDED_PACKAGES.includes(f.packageName));
-    expect(fromExcludedPkg.length, 0, `excluded packages leaked: ${fromExcludedPkg.map((f) => f.packageName).join(',')}`);
+    // Known allowlisted core funcs are present.
+    const names = new Set(funcs.map((f) => f.func.name));
+    for (const known of ['JoinTables', 'OpenFile', 'AddNewColumn', 'Aggregate'])
+      expect(names.has(known), true, `allowlisted ${known} present`);
 
-    // No test scaffolding by name.
-    const testNamed = funcs.filter((f) => (f.func.name ?? '').toLowerCase().startsWith('test'));
-    expect(testNamed.length, 0, `test* funcs leaked: ${testNamed.map((f) => f.func.name).slice(0, 5).join(',')}`);
-
-    // No command/dialog wrappers (funccall inputs).
-    const funccallWrappers = funcs.filter((f) => {
-      try {return f.func.inputs.some((p) => String(p.propertyType) === 'funccall');} catch {return false;}
-    });
-    expect(funccallWrappers.length, 0, 'funccall-wrapper funcs leaked');
-
-    // No view-producing functions (a whole TableView can't be composed/previewed).
-    const viewOutputs = funcs.filter((f) => {
-      try {return f.func.outputs.some((p) => String(p.propertyType) === 'view');} catch {return false;}
-    });
-    expect(viewOutputs.length, 0, `view-output funcs leaked: ${viewOutputs.map((f) => f.func.name).slice(0, 5).join(',')}`);
+    // Formerly-denied machinery is NOT on the allowlist and stays out: dev/test
+    // packages, denylist-era helpers, panels/sketchers — none of them listed.
+    for (const gone of ['Chem:getRdKitModule', 'core:BatchCall', 'core:Project'])
+      expect(INCLUDED_FUNC_NQNAMES.has(gone), false, `${gone} not on the include list`);
+    const devPkgs = new Set(['Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis']);
+    const fromDevPkg = funcs.filter((f) => devPkgs.has(f.packageName));
+    expect(fromDevPkg.length, 0, `dev/test packages leaked: ${fromDevPkg.map((f) => f.packageName).join(',')}`);
   });
 
-  test('denylisted nqNames never survive into the catalog', async () => {
-    const survivingNq = new Set(getRegisteredFuncs().map((f) => {
-      try {return f.func.nqName;} catch {return f.func.name;}
-    }));
-    // Every entry that exists on this stand must be filtered out.
-    const leaked: string[] = [];
-    for (const nq of EXCLUDED_FUNC_NQNAMES)
-      if (survivingNq.has(nq)) leaked.push(nq);
-    expect(leaked.length, 0, `denylisted funcs leaked: ${leaked.slice(0, 8).join(', ')}`);
+  test('shouldIncludeFunc: allowlist, opt-in, opt-out precedence', async () => {
+    const fake = (nqName: string, options: Record<string, unknown> = {}): DG.Func =>
+      ({nqName, name: nqName.split(':').pop(), options} as unknown as DG.Func);
+    expect(shouldIncludeFunc(fake('core:JoinTables')), true, 'allowlisted → in');
+    expect(shouldIncludeFunc(fake('SomePkg:notListedAnywhere')), false, 'unlisted → out');
+    expect(shouldIncludeFunc(fake('SomePkg:optedIn', {includeInFlow: 'true'})), true, 'meta opt-in (string) → in');
+    expect(shouldIncludeFunc(fake('SomePkg:optedIn2', {includeInFlow: true})), true, 'meta opt-in (bool) → in');
+    expect(shouldIncludeFunc(fake('core:JoinTables', {includeInFlow: 'false'})), false,
+      'meta opt-out beats the allowlist');
+    // A saved flow (Script with language `flow`) is always included, listed or not.
+    const flowScript = DG.Script.create('//name: MyFlow\n//language: flow\n');
+    expect(shouldIncludeFunc(flowScript), true, 'workflow → always in');
+    // A query (DG.DataQuery) is always included by kind — never needs listing.
+    const query = getRegisteredFuncs().map((f) => f.func).find((f) => f instanceof DG.DataQuery);
+    if (query) {
+      expect(shouldIncludeFunc(query), true, 'query → always in');
+      expect(INCLUDED_FUNC_NQNAMES.has(query.nqName), false, 'queries are not on the static list');
+    }
   });
 
   test('meta.includeInFlow: false opts a function out of the catalog', async () => {
@@ -79,45 +79,16 @@ category('Flow: function browser', () => {
     expect(inCatalog, false, 'openCreationScriptFlowDialog is opted out via meta.includeInFlow');
   });
 
-  test('machinery tags and right-click actions are excluded (but widgets are kept)', async () => {
-    const funcs = getRegisteredFuncs();
-    // No surviving func carries a UI-machinery tag — checking tags (not just the
-    // role field) is the biggest declutter lever. NOTE: panel/widget/widgets/
-    // tooltip are deliberately NOT banned — widget-producing functions are usable
-    // in Flow (Widgets pane + preview).
-    const banned = new Set(['internal', 'moleculesketcher', 'folderviewer',
-      'cellrenderer', 'viewers', 'filehandler', 'semtypedetector', 'apptreebrowser', '@editors']);
-    const withBannedTag = funcs.filter((f) => {
-      const tokens = getTags(f.func).map((t) => t.trim().toLowerCase());
-      return tokens.some((t) => banned.has(t));
-    });
-    expect(withBannedTag.length, 0,
-      `machinery leaked: ${withBannedTag.map((f) => f.func.name).slice(0, 6).join(', ')}`);
-
-    // No semantic_value (right-click) inputs, no filter-DSL-call outputs.
-    const semValue = funcs.filter((f) => {
-      try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
-    });
-    expect(semValue.length, 0, 'semantic_value right-click actions leaked');
-    const filterCalls = funcs.filter((f) => {
-      try {
-        return f.func.outputs.some((p) =>
-          ['tablerowfiltercall', 'colfiltercall'].includes(String(p.propertyType)));
-      } catch {return false;}
-    });
-    expect(filterCalls.length, 0, 'filter-DSL builder funcs leaked');
-  });
-
   test('widget-producing functions are kept (Widgets pane populated)', async () => {
-    // Widgets are supported (preview) — a function that outputs a widget must not
-    // be excluded just for being a widget/panel. There should be widget nodes.
+    // Widgets are supported (preview) — allowlisted widget-producing functions
+    // survive into the Widgets pane.
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
     expect(widgets.length > 0, true, 'at least one widget-producing function survives');
-    // And a right-click widget (semantic_value input) is still excluded.
+    // And right-click (semantic_value) widgets were never allowlisted.
     const ctxWidgets = widgets.filter((f) => {
       try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
     });
-    expect(ctxWidgets.length, 0, 'context (semantic_value) widgets are still excluded');
+    expect(ctxWidgets.length, 0, 'context (semantic_value) widgets stay out');
   });
 
   test('categorizeFunc places funcs by what they do', async () => {

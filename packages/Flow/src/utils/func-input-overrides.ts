@@ -1,5 +1,5 @@
 /** Per-function input overrides — curated maps keyed by `Func.nqName` (same
- *  convention as `EXCLUDED_FUNC_NQNAMES`), consulted when a func node and its
+ *  convention as `INCLUDED_FUNC_NQNAMES`), consulted when a func node and its
  *  parameter form are built:
  *
  *  - {@link HIDDEN_FUNC_INPUTS} — inputs users should never see: no socket row

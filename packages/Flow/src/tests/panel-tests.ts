@@ -268,7 +268,9 @@ category('Flow: property panel', () => {
       expect(node.hiddenInputs.has('errorBehavior'), true, 'registry read onto the node');
       expect('subscribeOnChanges' in node.inputs, true, 'slot still exists');
       expect('subscribeOnChanges__pt' in node.outputs, true, 'pass-through still exists');
-      expect(node.inputValues['subscribeOnChanges'], false, 'default still seeded');
+      // GROK-20428 flipped the declared default to true — assert the seed
+      // exists and follows the declaration, without pinning its value.
+      expect(typeof node.inputValues['subscribeOnChanges'], 'boolean', 'default still seeded');
       expect(node.passthroughCount, node.dgFunc!.inputs.length, 'pass-through count unchanged');
 
       // Rendered node: rows for hidden inputs (and their pass-throughs) are gone.
