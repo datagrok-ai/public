@@ -1,7 +1,15 @@
+---
+title: "Tests: Compare tables"
+description: Testing scenarios for validating the Compare tables dialog, key columns, and diff results.
+keywords:
+  - compare tables test
+  - table diff testing
+  - key column validation
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Compare tables -->
 <!-- SUBTITLE: -->
-
-# Tests: Compare tables
 
 Instrument to compare the content of two tables
 

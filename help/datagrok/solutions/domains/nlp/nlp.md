@@ -1,6 +1,16 @@
 ---
 title: "Natural language processing"
 sidebar_position: 0
+description: Extract, translate, and analyze text from files using Datagrok's natural language processing tools.
+keywords:
+  - nlp
+  - text extraction
+  - language identification
+  - machine translation
+  - readability scores
+  - flesch reading ease
+  - text statistics
+  - cld3
 ---
 
 The Datagrok platform has a plugin designed for natural language processing. This plugin

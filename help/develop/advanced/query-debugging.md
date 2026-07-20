@@ -1,5 +1,13 @@
 ---
 title: "Query debugging"
+description: How to use the Datagrok inspector to profile and troubleshoot database query execution.
+keywords:
+  - debug queries
+  - inspector alt+i
+  - dataquery last call
+  - java type
+  - execution time
+  - sql troubleshooting
 ---
 
 To debug and troubleshoot the database queries, use the built-in tool

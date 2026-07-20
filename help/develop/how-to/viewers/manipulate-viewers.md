@@ -1,5 +1,14 @@
 ---
 title: "Manipulate viewers"
+description: Add, configure, dock, and inspect properties of native and custom viewers programmatically via the JS API.
+keywords:
+  - addViewer
+  - DG.Viewer.fromType
+  - dockManager.dock
+  - getOptions setOptions
+  - getProperties
+  - initializationFunction
+  - viewer docking
 ---
 
 [Viewers](../../../visualize/viewers/viewers.md) are main visual components of the Datagrok platform. Our JavaScript API exposes

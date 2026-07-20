@@ -1,5 +1,15 @@
 ---
 title: "Security"
+description: Overview of Datagrok's security architecture, authentication, credential management, and vulnerability remediation.
+keywords:
+  - authentication and authorization
+  - credential management
+  - vulnerability scanning
+  - cve remediation
+  - openvex
+  - encryption at rest
+  - on-premises security
+  - codeql scanning
 ---
 
 Datagrok was designed with security as one of the primary objectives. The platform gives users complete control of their

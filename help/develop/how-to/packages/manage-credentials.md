@@ -1,5 +1,13 @@
 ---
 title: "Manage credentials"
+description: Securely store and retrieve login/password or API-key credentials for packages and data connections.
+keywords:
+  - credentials storage
+  - package credentials
+  - connection credentials
+  - api/credentials/for
+  - service user
+  - _package.getCredentials
 ---
 
 [Security credentials](../../../govern/access-control/access-control.md#credentials-management-system) are used to gain access to external resources. For example,

@@ -1,5 +1,13 @@
 ---
 title: "Twitter"
+description: Search Twitter posts by keyword and geocode from Datagrok and return the results as a table.
+keywords:
+  - twitter search
+  - social media data
+  - tweets
+  - geocode search
+  - api key
+  - access token
 ---
 
 Lets you search [Twitter](https://twitter.com/) posts by search key and geocode parameters and return

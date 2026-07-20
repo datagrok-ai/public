@@ -1,6 +1,16 @@
 ---
 title: "URL Parameters"
 sidebar_position: 5
+description: Reference for query parameters that control Datagrok startup, navigation, embedding, and debugging.
+keywords:
+  - query parameters
+  - mode=embed
+  - includePackages
+  - excludePackages
+  - cmd parameter
+  - debug settings
+  - dapiUrl
+  - iframe embedding
 ---
 
 # URL parameters

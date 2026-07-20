@@ -1,6 +1,14 @@
 ---
 title: "Data types"
 sidebar_position: 6
+description: Reference table mapping Datagrok parameter types to their native equivalents in Python, R, Octave, Julia, and JavaScript.
+keywords:
+  - type correspondence
+  - python r octave julia javascript types
+  - pandas dataframe
+  - datetime conversion
+  - jupyter kernel gateway
+  - parameter type mapping
 ---
 
 When a script runs, Datagrok converts each input parameter to a native value in the

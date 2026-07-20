@@ -1,5 +1,16 @@
 ---
 title: "Infrastructure"
+description: Overview of Datagrok's deployment components, from Datlas and Nginx to scripting workers and Docker plugin containers.
+keywords:
+  - datlas
+  - nginx reverse proxy
+  - grok connect
+  - amqp queue
+  - jupyter kernel worker
+  - grok pipe
+  - grok spawner
+  - on-premise deployment
+  - resource sizing
 ---
 
 ![Infrastructure diagram](architecture-diagram.drawio.png)

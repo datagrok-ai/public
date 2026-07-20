@@ -1,6 +1,17 @@
 ---
 title: "Dimensionality reduction"
 sidebar_position: 4
+description: Reduce a dataset's feature count using UMAP, t-SNE, or PCA while preserving key structure for visualization.
+keywords:
+  - umap
+  - t-sne
+  - pca
+  - principal component analysis
+  - feature reduction
+  - embeddings
+  - chemical space
+  - sequence space
+  - webgpu acceleration
 ---
 
 **Dimensionality Reduction** capabilities of Datagrok allow you to reduce the number of features in your dataset while preserving the most important information using either [UMAP or t-SNE](https://en.wikipedia.org/wiki/Nonlinear_dimensionality_reduction) algorithms. It extends the functionality of the [Chemical Space](../datagrok/solutions/domains/chem/chem.md#chemical-space) and [Sequence Space](../datagrok/solutions/domains/bio/bio.md#sequence-space) tools, while also providing a way to combine **multiple columns** and **different data types** in a single analysis. Each column can be configured with its own encoding function (for example, molecules are first converted to fingerprints), distance metric, weight and other parameters (for example, which fingerprints should be used for molecules). The distances between corresponding values are combined using a weighted aggregation function (Manhattan or Euclidean) to produce a single distance matrix, which is then used for dimensionality reduction. 

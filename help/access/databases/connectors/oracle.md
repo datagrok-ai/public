@@ -1,5 +1,15 @@
 ---
 title: "Oracle"
+description: Connect Datagrok to an Oracle Database and query it using SQL over JDBC.
+keywords:
+  - oracle database
+  - oracle db jdbc driver
+  - connect to oracle
+  - sql queries
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - connection test
 ---
 
 Provides access to [Oracle Database](https://www.oracle.com/database/) database

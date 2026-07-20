@@ -1,8 +1,16 @@
 ---
 title: "AI"
+description: Overview of Datagrok's AI capabilities, including the smart assistant, natural-language queries, and agents.
+keywords:
+  - ai assistant
+  - chatbot
+  - natural language query
+  - grokky
+  - mcp server
+  - ask questions about data
+  - vibe coding
+  - llm agents
 ---
-
-# AI in Datagrok
 
 Datagrok provides first-class AI capabilities that enhance data exploration, analysis,
 application development, and user experience across the entire platform.

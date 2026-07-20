@@ -1,6 +1,16 @@
 ---
 title: "Third-party licenses"
 sidebar_position: 6
+description: Lists third-party open-source components bundled with the Datagrok Platform Core and reproduces their license texts.
+keywords:
+  - open-source licenses
+  - license notices
+  - bsd 3-clause license
+  - bsd 2-clause license
+  - mit license
+  - apache license 2.0
+  - third-party notices
+  - license compliance
 ---
 
 # Third-Party Notices — Datagrok Platform (Core)

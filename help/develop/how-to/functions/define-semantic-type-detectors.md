@@ -1,5 +1,14 @@
 ---
 title: "Define semantic type detectors"
+description: Write custom semTypeDetector functions in detectors.js to automatically assign semantic types to columns.
+keywords:
+  - semTypeDetector role
+  - detectors.js
+  - custom semantic type
+  - column type detection
+  - DG.Detector.sampleCategories
+  - meta.skipTest
+  - meta.testData
 ---
 
 Datagrok helps you get the most out of your data by encoding its meaning into

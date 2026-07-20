@@ -3,6 +3,16 @@ mdx:
   format: mdx
 title: "Rich Function View"
 sidebar_position: 1
+description: Use the RichFunctionView UI editor to build a full-featured interface with tabs, history, and export for scripts.
+keywords:
+  - richfunctionview editor
+  - input and output viewers
+  - run history comparison
+  - custom export
+  - form layout
+  - runOnInput
+  - sensitivity analysis integration
+  - parameter fitting integration
 ---
 
 ```mdx-code-block

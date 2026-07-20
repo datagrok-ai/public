@@ -1,5 +1,12 @@
 ---
 title: "Form"
+description: Design a custom row layout by positioning fields, images, and panels for a single-record view.
+keywords:
+  - record view
+  - custom row layout
+  - form designer
+  - editable record
+  - tile template
 ---
 
 Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual

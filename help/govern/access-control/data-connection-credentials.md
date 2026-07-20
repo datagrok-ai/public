@@ -3,6 +3,15 @@ title: "Secrets Managers"
 mdx:
   format: mdx
 sidebar_position: 2
+description: Configure Datagrok connections to AWS and GCP secrets managers to supply credentials for other connections.
+keywords:
+  - secrets manager
+  - aws secrets manager
+  - google secret manager
+  - credential vault
+  - iam credentials
+  - service account key
+  - connection credentials
 ---
 
 # Secrets Managers

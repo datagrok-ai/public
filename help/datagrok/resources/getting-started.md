@@ -3,6 +3,15 @@ title: "Getting started"
 mdx:
   format: mdx
 sidebar_position: 1
+description: Walks new users through finding help, installing plugins, creating a project, connecting to data, and building dynamic dashboards.
+keywords:
+  - onboarding
+  - first steps
+  - install plugins
+  - drag and drop csv
+  - connect to database
+  - dynamic dashboard tutorial
+  - bio and chem menus
 ---
 
 ## Where to find help

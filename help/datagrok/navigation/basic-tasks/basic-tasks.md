@@ -1,5 +1,16 @@
 ---
 title: "Basic tasks"
+description: Learn how to import, save, share, download, and favorite data and files in Datagrok.
+keywords:
+  - import file
+  - open file
+  - save project
+  - save dashboard
+  - share entity
+  - download table
+  - export csv
+  - add to favorites
+  - data sync
 mdx:
   format: mdx
 ---

@@ -1,5 +1,14 @@
 ---
 title: "Test packages"
+description: Run and review Datagrok package tests locally, in the platform console, via Test Manager, or in GitHub Actions.
+keywords:
+  - grok test
+  - Test Manager
+  - testViewer utility
+  - expectExceptionAsync
+  - local testing
+  - GitHub Actions test workflow
+  - awaitCheck
 ---
 
 Testing is an essential part of development process. You should ensure that your product works properly at each stage of

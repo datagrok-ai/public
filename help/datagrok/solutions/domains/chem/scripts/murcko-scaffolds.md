@@ -1,5 +1,13 @@
 ---
 title: "Murcko Scaffolds"
+description: Explains the Bemis-Murcko framework for decomposing molecules into ring systems, linkers, and side chains.
+keywords:
+  - Bemis-Murcko framework
+  - core scaffold extraction
+  - ring systems and linkers
+  - Markush structure
+  - scaffold diversity analysis
+  - medicinal chemistry scaffolds
 ---
 
 The scaffold concept is widely applied in medicinal chemistry. Scaffolds are mostly used to represent core structures of

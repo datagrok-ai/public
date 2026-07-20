@@ -1,7 +1,16 @@
+---
+title: "Tests: Join tables"
+description: Testing scenarios for validating the Join tables dialog across inner, outer, left, and right joins.
+keywords:
+  - join tables test
+  - merge tables testing
+  - inner outer join validation
+  - key column matching testing
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Join tables -->
 <!-- SUBTITLE: -->
-
-# Tests: Join tables
 
 Joins two tables, using the specified key columns. Сan be used inner join, outer join, left and right joins
 

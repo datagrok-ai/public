@@ -1,5 +1,13 @@
 ---
 title: "Add package tests"
+description: Add unit tests and function-level test annotations to a Datagrok package using the built-in test framework.
+keywords:
+  - grok add tests
+  - package-test.ts
+  - category and test functions
+  - skipReason
+  - test annotation parameter
+  - unit testing packages
 ---
 
 Packages developed for the platform should be tested. Datagrok supports several

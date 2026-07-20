@@ -1,5 +1,16 @@
 ---
 title: "Cheminformatics"
+description: Options for developing cheminformatics solutions on Datagrok, including the JS API, OpenChemLib, and RDKit.
+keywords:
+  - RDKit
+  - OpenChemLib
+  - WebAssembly
+  - substructure search
+  - similarity scoring
+  - Tanimoto similarity
+  - Morgan fingerprints
+  - molecule rendering
+  - grok.chem
 ---
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options

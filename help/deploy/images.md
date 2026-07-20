@@ -1,6 +1,13 @@
 ---
 title: "Images and versions"
 sidebar_position: 12
+description: Reference for Datagrok's Docker Hub images, version tags, and per-service pinning conventions across deployment paths.
+keywords:
+  - docker hub images
+  - version tags
+  - bleeding-edge tag
+  - pin image version
+  - helm chart tag
 ---
 
 The Datagrok services that run on every deployment path

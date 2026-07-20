@@ -1,5 +1,13 @@
 ---
 title: "Drug likeness"
+description: Explains how Datagrok calculates the drug-likeness and drug score info panel using substructure fragment scoring.
+keywords:
+  - druglikeness score
+  - drug score
+  - clogp logs molecular weight
+  - substructure fragment scoring
+  - openchemlib
+  - lead-likeness assessment
 ---
 
 From [openmolecules](https://www.openmolecules.org/properties/properties.html#druglikeness):

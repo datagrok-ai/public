@@ -1,5 +1,12 @@
 ---
 title: "Butina cluster"
+description: Explains the Butina clustering algorithm for grouping molecules by Tanimoto similarity into representative sets.
+keywords:
+  - Butina clustering algorithm
+  - Tanimoto similarity clustering
+  - representative compound sets
+  - training set design
+  - molecular clustering
 ---
 
 Clustering has been described as 'the art of finding groups in data' and is widely used within the pharmaceutical

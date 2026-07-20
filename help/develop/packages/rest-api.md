@@ -1,5 +1,14 @@
 ---
 title: "REST API"
+description: Reference for Datagrok's REST API endpoints for files, tables, dashboards, and function calls from external code.
+keywords:
+  - bearer token
+  - api key
+  - external integration
+  - upload and download tables
+  - dashboard creation
+  - function call endpoint
+  - entity identifiers
 
 ---
 

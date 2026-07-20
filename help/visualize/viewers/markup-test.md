@@ -1,7 +1,14 @@
+---
+title: "Tests: Markup"
+description: Test scenario for verifying markup viewer content detection, editing, and external viewer embedding.
+keywords:
+  - markup viewer test
+  - test scenario
+  - html embedding test
+---
+
 <!-- TITLE: Tests: Markup viewer -->
 <!-- SUBTITLE: -->
-
-# Tests: Markup
 
 Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../../datagrok/markdown.md). In
 most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.

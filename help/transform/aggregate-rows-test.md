@@ -1,7 +1,16 @@
+---
+title: "Tests: Aggregate rows"
+description: Testing scenarios for validating the Aggregate rows dialog, including grouping, measures, and history.
+keywords:
+  - aggregate rows test
+  - group by testing
+  - pivot table validation
+  - measures field testing
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Aggregate rows -->
 <!-- SUBTITLE: -->
-
-# Test: Aggregate rows
 
 ["Aggregate rows"](aggregate-rows.md) tool allows to interactivity define aggregation logic, and immediately see results
 

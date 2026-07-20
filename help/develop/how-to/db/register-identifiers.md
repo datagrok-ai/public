@@ -1,5 +1,15 @@
 ---
 title: "Register identifier patterns"
+description: Register custom identifier patterns and handlers, or use the DB-explorer library, to detect and display database-linked IDs.
+keywords:
+  - semantic type pattern
+  - regex identifier
+  - ObjectHandler
+  - CHEMBL ID
+  - DB-explorer library
+  - db-explorer editor
+  - drill-down exploration
+  - foreign key join
 ---
 
 Datagrok allows you to easily register identifier patterns, attach handlers to them and detect them in text everywhere on the platform. For example, you can register a pattern for CHEMBL identifiers (`CHEMBL` followed by numbers), attach a handler to it that queries the database for the compound and retrieves its structure to display it in the tooltip or context panel.

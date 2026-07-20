@@ -1,5 +1,12 @@
 ---
 title: "Register context actions"
+description: Register a meta.action function to add a custom right-click action for a semantically typed value.
+keywords:
+  - meta.action
+  - context menu action
+  - Actions pane
+  - right-click action
+  - semType input action
 ---
 
 To register a context-specific action that would get offered to a user when right-clicking

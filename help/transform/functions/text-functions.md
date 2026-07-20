@@ -1,5 +1,12 @@
 ---
 title: "Text functions"
+description: Reference for string manipulation functions such as substring, replace, trim, and regex matching.
+keywords:
+  - text functions reference
+  - string manipulation functions
+  - regex string functions
+  - trim substring functions
+  - startswith endswith contains
 ---
 
 As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be

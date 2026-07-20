@@ -1,6 +1,16 @@
 ---
 title: "Multivariate analysis"
 sidebar_position: 3
+description: Model relationships between multiple predictors and a response variable using partial least squares regression.
+keywords:
+  - pls regression
+  - partial least squares
+  - mva
+  - latent factors
+  - scores plot
+  - loadings plot
+  - regression coefficients
+  - explained variance
 ---
 
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation

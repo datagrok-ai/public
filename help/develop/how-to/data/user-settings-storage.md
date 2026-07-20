@@ -1,5 +1,12 @@
 ---
 title: "User settings storage"
+description: Save, load, explore, and delete key-value pairs shared between applications using grok.userSettings.
+keywords:
+  - grok.userSettings
+  - key-value storage
+  - application settings
+  - persist user data
+  - save and load preferences
 ---
 
 It is often the case that certain settings need to be shared between different applications or

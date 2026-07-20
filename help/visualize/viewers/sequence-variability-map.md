@@ -1,4 +1,13 @@
-# Sequence Variability Map viewer
+---
+title: "Sequence Variability Map viewer"
+description: Show a matrix of monomers by sequence position, in Mutation Cliffs or Invariant Map mode, for SAR analysis.
+keywords:
+  - mutation cliffs
+  - invariant map
+  - monomer position matrix
+  - peptides sar
+  - sequence heatmap
+---
 
 The Sequence Variability Map Viewer presents data in a matrix-like grid where rows represent monomers and columns represent positions. This viewer operates in two distinct modes: Mutation Cliffs and Invariant Map.
 

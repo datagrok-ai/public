@@ -1,7 +1,11 @@
-<!-- TITLE: Tests: Shape map -->
-<!-- SUBTITLE: -->
-
-# Tests: shape map
+---
+title: "Tests: Shape map"
+description: Testing scenario for the Shape map viewer, covering region matching, aggregation, and selection.
+keywords:
+  - shape map testing
+  - geospatial viewer test
+  - test scenario
+---
 
 Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries,
 states, counties, etc), but also it can show an arbitrary shapes (such as a store floor plan, brain regions, or EEG

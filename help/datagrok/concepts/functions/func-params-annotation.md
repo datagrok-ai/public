@@ -1,5 +1,15 @@
 ---
 title: "Function annotations"
+description: Reference for annotating function parameters in Datagrok scripts and queries to auto-generate validated UI.
+keywords:
+  - function header
+  - parameter annotation
+  - input output annotation
+  - choices and validators
+  - autocomplete suggestions
+  - lookup tables
+  - complex calculated columns
+  - custom function editor
 ---
 
 # Function annotations

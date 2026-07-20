@@ -1,6 +1,13 @@
 ---
 title: "Link tables"
 
+description: Synchronize the current record, filter, or selection between two tables based on shared key columns.
+keywords:
+  - link tables
+  - synchronize tables
+  - master-detail linking
+  - table relationships
+  - filter selection sync
 ---
 
 You can link tables based on the key columns. The link type determines which records should be synchronized between the

@@ -1,6 +1,14 @@
 ---
 title: "AWS Terraform"
 sidebar_position: 3
+description: Deploy Datagrok on an AWS ECS cluster with RDS and S3 using a Terraform module.
+keywords:
+  - terraform module
+  - aws ecs
+  - infrastructure as code
+  - aws rds
+  - amazon s3
+  - iam role
 ---
 
 The deployment consists of several Docker containers, a [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,

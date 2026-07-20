@@ -3,6 +3,13 @@ mdx:
   format: mdx
 title: "Release notes policy"
 position: 5 # float position is supported
+description: Guidelines for writing CHANGELOG.md files for Datagrok packages and libraries.
+keywords:
+  - changelog
+  - release notes
+  - CHANGELOG.md
+  - semantic versioning
+  - breaking change
 ---
 
 ```mdx-code-block

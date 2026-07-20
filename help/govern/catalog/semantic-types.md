@@ -1,5 +1,13 @@
 ---
 title: "Semantic types"
+description: How Datagrok assigns and uses semantic types to identify the meaning of column data beyond its data type.
+keywords:
+  - semantic type
+  - column metadata
+  - automatic type detection
+  - molecule column
+  - macromolecule column
+  - custom semantic type
 ---
 
 Unlike Excel, table columns in Datagrok are strongly-typed, meaning all cells use

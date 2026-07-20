@@ -1,5 +1,12 @@
 ---
 title: "Scaffold tree"
+description: Organize molecular datasets into a hierarchy of chemical scaffolds derived by iterative ring removal.
+keywords:
+  - molecular hierarchy
+  - chemical scaffolds
+  - scaffold hierarchy
+  - cheminformatics tree
+  - molecule clustering
 ---
 
 Scaffold tree lets you organize large molecular data sets by arranging sets of

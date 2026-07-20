@@ -1,5 +1,12 @@
 ---
 title: "Data wrangling"
+description: Overview of data transformation routines for cleaning and restructuring data, recordable as macros.
+keywords:
+  - data wrangling
+  - data transformation overview
+  - data cleaning
+  - data manipulation routines
+  - macros
 ---
 
 _Data wrangling converts raw data into a clean, structured format ready for analysis._

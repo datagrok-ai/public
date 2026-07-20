@@ -1,4 +1,15 @@
-# Creating Python Docker Apps
+---
+title: "Creating Python Docker Apps"
+description: Build Python functions that run as Celery tasks in Docker containers managed automatically by Datagrok.
+keywords:
+  - Celery task
+  - python/ folder
+  - requirements.in
+  - environment.yaml conda
+  - RabbitMQ worker
+  - annotated python function
+  - grok_spawner
+---
 
 ## Overview
 

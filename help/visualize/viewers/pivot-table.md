@@ -1,5 +1,13 @@
 ---
 title: "Pivot table"
+description: Aggregate, group, and cross-tabulate data by pivoting column values into rows and columns.
+keywords:
+  - pivot viewer
+  - cross-tabulation
+  - group by
+  - aggregation
+  - data summarization
+  - spreadsheet pivot
 ---
 
 Aggregate and summarize your data using a pivot viewer. 

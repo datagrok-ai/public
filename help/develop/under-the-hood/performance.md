@@ -1,5 +1,14 @@
 ---
 title: "Performance"
+description: Deep dive into the internal design of Datagrok's in-memory columnar database and high-performance viewers.
+keywords:
+  - columnar in-memory database
+  - binary serialization
+  - adaptive bit storage
+  - csv parser internals
+  - canvas rendering
+  - webgl
+  - viewer architecture
 ---
 
 The importance of performance cannot be overstated. A modern system should be capable of working with hundreds of

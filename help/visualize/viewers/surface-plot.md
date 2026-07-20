@@ -1,5 +1,12 @@
 ---
 title: "Surface plot"
+description: Render a 3D surface to show how three continuous variables interact, useful for topography and scientific data.
+keywords:
+  - 3d surface visualization
+  - topographical mapping
+  - continuous variable relationships
+  - heat distribution
+  - fluid dynamics
 ---
 A Surface plot is a 3D visualization that shows how three continuous variables
 interact within a dataset. It displays data as a smooth or faceted surface where

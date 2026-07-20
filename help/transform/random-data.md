@@ -1,5 +1,13 @@
 ---
 title: "Random data"
+description: Add a numerical column filled with random data from a chosen probability distribution and seed.
+keywords:
+  - generate random data
+  - random column
+  - synthetic dataset
+  - normal distribution sample
+  - random number generation
+  - test data generator
 ---
 
 Adds a numerical column with random data with the specified distribution with initial seed. Parameters of the

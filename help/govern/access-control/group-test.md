@@ -1,7 +1,15 @@
+---
+title: "Tests: group management"
+description: Manual test scenarios for creating, editing, and managing group membership and admin roles.
+keywords:
+  - group management testing
+  - group admin
+  - membership request
+  - test scenarios
+---
+
 <!-- TITLE: Tests: Group management -->
 <!-- SUBTITLE: -->
-
-# Tests: group management
 
 User [groups](../users-and-groups#users) let you flexibly configure user rights. Users can request membership
 in [groups](../users-and-groups#users), start chat with other members, view [group](../users-and-groups#users) members, and more.

@@ -1,5 +1,12 @@
 ---
 title: "Pie chart"
+description: Show numerical proportions across categories as slices of a circle, with segment size, angle, and length options.
+keywords:
+  - donut chart
+  - proportions
+  - categorical breakdown
+  - segment visualization
+  - part-to-whole
 ---
 
 A pie chart shows numerical proportions across categories. Like a bar chart, it

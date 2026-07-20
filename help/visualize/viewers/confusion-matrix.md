@@ -1,5 +1,12 @@
 ---
 title: "Confusion matrix"
+description: Evaluate a classification model by comparing predicted versus actual values in a tabular format.
+keywords:
+  - classification evaluation
+  - predicted vs actual
+  - model accuracy
+  - prediction errors
+  - machine learning evaluation
 ---
 
 Confusion matrix evaluates a model by comparing its predictions with actual results in a tabular format. 

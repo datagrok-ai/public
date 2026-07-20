@@ -1,5 +1,12 @@
 ---
 title: "Develop widgets for home page"
+description: Register a dashboard-role function to add a custom widget to the Datagrok home page.
+keywords:
+  - dashboard role
+  - home page widget
+  - DG.Widget
+  - recent projects widget
+  - custom home page panel
 ---
 
 When you start Datagrok, the [Home page](../../../datagrok/navigation/views/browse.md#home-page)

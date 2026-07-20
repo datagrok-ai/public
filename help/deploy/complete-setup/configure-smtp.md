@@ -1,6 +1,13 @@
 ---
 title: "Configure SMTP"
 sidebar_position: 2
+description: Configure Mailgun or an SMTP server so Datagrok can send signup, confirmation, and password-reset emails.
+keywords:
+  - smtp server setup
+  - mailgun integration
+  - amazon ses
+  - email delivery
+  - sender email address
 ---
 
 Datagrok supports [Mailgun email delivery platform](https://www.mailgun.com/) and different SMTP servers,

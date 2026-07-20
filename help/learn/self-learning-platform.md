@@ -1,5 +1,11 @@
 ---
 title: "Self-learning platform"
+description: Datagrok learns from usage patterns across all users to suggest visualizations, models, and derived columns.
+keywords:
+  - usage pattern suggestions
+  - ai recommendations
+  - derived column suggestion
+  - organizational knowledge sharing
 ---
 
 One of Datagrok's unique features is that most data operations happen within the

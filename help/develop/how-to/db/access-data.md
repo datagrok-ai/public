@@ -1,5 +1,14 @@
 ---
 title: "Access data"
+description: Programmatically extract data in Datagrok using connections, parameterized queries, REST endpoints, and file shares.
+keywords:
+  - data connection
+  - parameterized query
+  - grok.data.query
+  - fetchProxy
+  - file share
+  - connection credentials
+  - grok add connection
 ---
 
 This article walks you through extracting data using various methods, such as:

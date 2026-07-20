@@ -1,5 +1,14 @@
 ---
 title: "MySQL"
+description: Connect Datagrok to a MySQL database and query it using SQL over JDBC.
+keywords:
+  - mysql database
+  - jdbc driver
+  - connect to mysql
+  - sql queries
+  - browse database schema
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to [MySQL](https://www.mysql.com/) database using SQL queries

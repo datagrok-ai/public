@@ -1,6 +1,13 @@
----  
+---
 title: "Timelines"  
----  
+description: Visualize events over time per subject, using bars or point markers, commonly for clinical data.
+keywords:
+  - event timeline
+  - clinical data visualization
+  - sdtm
+  - subject-level events
+  - swimlane chart
+---
   
 Timelines viewer displays the flow of events over time. Each row represents a subject, with events shown as bars or points along the time axis. The viewer is commonly used for clinical data visualization.
   

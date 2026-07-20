@@ -2,6 +2,16 @@
 mdx:
   format: mdx
 title: "Filters"
+description: Use the filter panel to quickly narrow down, select, and visually assess column values across data types.
+keywords:
+  - filter panel
+  - categorical filter
+  - numerical range filter
+  - structure filter
+  - scaffold tree filter
+  - hierarchical filter
+  - expression filter
+  - text search filter
 ---
 
 ```mdx-code-block

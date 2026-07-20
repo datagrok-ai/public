@@ -1,5 +1,12 @@
 ---
 title: "Batch edit"
+description: View or edit attribute values for a subset of rows (all, filtered, selected, or current) in one form.
+keywords:
+  - batch edit
+  - edit multiple rows
+  - bulk edit values
+  - mass update column values
+  - edit selected rows
 ---
 
 Lets you view or edit specified attributes for specified subsets of rows in the current table. If all values

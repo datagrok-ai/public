@@ -1,5 +1,12 @@
 ---
 title: "Histogram"
+description: Show the distribution of numerical data as binned bars, with optional split-by-category overlays.
+keywords:
+  - distribution chart
+  - binned values
+  - frequency chart
+  - split by category
+  - distribution lines
 ---
 
 A histogram is a graphical representation of the distribution of numerical data.

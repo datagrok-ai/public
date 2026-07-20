@@ -4,6 +4,16 @@ mdx:
   format: mdx
 unlisted: false
 sidebar_position: 1
+description: Create and manage Datagrok users and groups, including administrators, invitations, and bulk provisioning.
+keywords:
+  - user management
+  - group management
+  - add a user
+  - invite a user
+  - administrators group
+  - block a user
+  - group admin
+  - bulk user provisioning
 ---
 
 ```mdx-code-block

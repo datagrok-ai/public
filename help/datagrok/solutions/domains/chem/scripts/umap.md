@@ -1,5 +1,13 @@
 ---
 title: "Chemical Space Using UMAP"
+description: Visualize and reduce dimensionality of chemical space using Uniform Manifold Approximation and Projection (UMAP).
+keywords:
+  - umap
+  - dimensionality reduction
+  - manifold approximation
+  - chemical space visualization
+  - nonlinear projection
+  - clustering molecules
 ---
 
 Uniform Manifold Approximation and Projection (UMAP) is a dimensionality reduction technique that can be used for

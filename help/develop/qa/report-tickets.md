@@ -1,5 +1,13 @@
 ---
 title: "Report bugs and feature requests"
+description: Rules for writing and managing bug reports and feature requests in JIRA and GitHub Tracker.
+keywords:
+  - jira ticket
+  - github tracker
+  - bug report format
+  - steps to reproduce
+  - issue priority
+  - ticket status
 ---
 
 This guide provides a set of rules for reporting issues and managing

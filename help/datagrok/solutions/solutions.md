@@ -2,6 +2,14 @@
 title: "Solutions"
 mdx:
   format: mdx
+description: Overview of Datagrok solutions for cheminformatics, bioinformatics, data science, and enterprise IT.
+keywords:
+  - domain solutions
+  - cheminformatics
+  - bioinformatics
+  - scientific computing
+  - enterprise it
+  - fit-for-purpose apps
 ---
 
 ```mdx-code-block

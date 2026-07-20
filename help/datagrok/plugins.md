@@ -3,6 +3,16 @@ mdx:
   format: mdx
 title: "Plugins"
 sidebar_position: 5 
+description: Catalogs Datagrok's plugins by area — access, visualization, compute, scripting, cheminformatics, bioinformatics, NLP, and clinical data.
+keywords:
+  - plugin catalog
+  - power pack
+  - power grid
+  - ketcher sketcher
+  - hit triage
+  - biostructure viewer
+  - helm notation
+  - diff studio
 ---
 
 ## General

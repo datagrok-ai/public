@@ -1,5 +1,14 @@
 ---
 title: "Tags"
+description: Reference of standard Datagrok tags for annotating tables and columns, including quality, units, and format.
+keywords:
+  - column tags
+  - table metadata
+  - column properties
+  - number format
+  - datetime format
+  - color coding
+  - data lineage tags
 ---
 
 You can annotate most Datagrok objects with metadata (key-value pairs). You set

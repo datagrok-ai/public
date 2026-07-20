@@ -1,5 +1,14 @@
 ---
 title: "Map viewer"
+description: Show geospatial data as markers or a heat map, with support for geojson, topojson, kml, and kmz files.
+keywords:
+  - geospatial map
+  - marker map
+  - heat map overlay
+  - geojson
+  - kml
+  - color coding
+  - size coding
 ---
 
 Map viewer shows geospatial data on a map as either markers, or a heat map.

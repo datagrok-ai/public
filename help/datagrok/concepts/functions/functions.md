@@ -1,6 +1,16 @@
 ---
 title: "Functions"
 sidebar_position: 0
+description: Explains what functions are in Datagrok, their shared features, and how scheduling, auditing, and macros work.
+keywords:
+  - scripts and queries as functions
+  - macro recording
+  - function scheduling
+  - cron schedule
+  - schedule.runAs
+  - auditable function calls
+  - console history
+  - data flow and security
 ---
 
 Datagrok provides first-class support for functions. Nearly anything that can be

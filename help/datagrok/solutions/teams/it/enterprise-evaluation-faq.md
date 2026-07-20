@@ -1,5 +1,14 @@
 ---
 title: "Enterprise evaluation FAQ"
+description: FAQ covering architecture, security, scalability, and extensibility for enterprise Datagrok evaluations.
+keywords:
+  - enterprise evaluation
+  - security assessment
+  - encryption at rest
+  - disaster recovery
+  - infrastructure as code
+  - high availability
+  - vendor evaluation checklist
 ---
 
 * [Architecture](../../../../develop/under-the-hood/architecture.md)

@@ -1,5 +1,15 @@
 ---
 title: "DB2"
+description: Connect Datagrok to an IBM Db2 database via JDBC to query, browse schemas, and join tables.
+keywords:
+  - ibm db2
+  - database 2
+  - db2 family connector
+  - jdbc driver
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - mainframe database
 ---
 
 Provides access to [IBM Db2](https://www.ibm.com/analytics/db2) service using

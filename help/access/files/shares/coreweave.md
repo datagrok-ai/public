@@ -1,5 +1,13 @@
 ---
 title: "CoreWeave"
+description: Connect Datagrok to CoreWeave object storage as a file share using an access key and secret key.
+keywords:
+  - coreweave object storage
+  - object storage connector
+  - s3-compatible storage
+  - cloud storage
+  - access key
+  - secret key
 ---
 
 Provides access to the

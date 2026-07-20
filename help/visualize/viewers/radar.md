@@ -1,5 +1,12 @@
 ---
 title: "Radar viewer"
+description: Compare multivariate data across several numerical dimensions using a spider-style axis chart.
+keywords:
+  - spider chart
+  - multivariate comparison
+  - polar chart
+  - elemental analysis
+  - inline summary column
 ---
 
 Radar viewer (a spider chart) compares multivariate data across several

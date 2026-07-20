@@ -1,6 +1,15 @@
 ---
 title: "Developer exercises"
 sidebar_position: 0
+description: Progressive programming exercises for learning Datagrok development by building nucleotide sequence support.
+keywords:
+  - semantic type detector
+  - scripting exercise
+  - custom cell renderer
+  - info panel tutorial
+  - query database exercise
+  - dna_nucleotide
+  - hands-on exercises
 ---
 
 These programming exercises are designed to help developers get proficient with the Datagrok platform. The exercises are

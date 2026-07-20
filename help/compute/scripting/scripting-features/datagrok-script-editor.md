@@ -3,6 +3,15 @@ title: "Work with the Datagrok script editor"
 sidebar_position: 5
 mdx:
   format: mdx
+description: Create, debug, execute, find, and share scripts using the built-in Datagrok script editor.
+keywords:
+  - script editor
+  - debug script
+  - execute script
+  - find and edit script
+  - share script
+  - function browser
+  - js api function call
 ---
 
 ```mdx-code-block

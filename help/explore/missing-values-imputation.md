@@ -1,5 +1,13 @@
 ---
 title: "Missing values imputation"
+description: Fill in missing dataframe values automatically using k-nearest neighbors imputation.
+keywords:
+  - k-nn imputation
+  - k-nearest neighbors
+  - fill missing data
+  - null value handling
+  - data cleaning
+  - impute nulls
 ---
 
 Use [imputation](https://en.wikipedia.org/wiki/Imputation_\(statistics\)) to fill in missing values in a dataframe.

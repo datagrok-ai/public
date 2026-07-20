@@ -1,5 +1,14 @@
 ---
 title: "Snowflake"
+description: Connect Datagrok to a Snowflake database using SQL queries via a JDBC driver, with password, key-pair, or OAuth (JWT) authentication.
+keywords:
+  - snowflake database
+  - jdbc driver
+  - connect to a database
+  - private key authentication
+  - snowflake oauth
+  - schema browsing
+  - join db tables
 ---
 
 Provides access to [Snowflake](https://www.snowflake.com/en/) database using SQL

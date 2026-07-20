@@ -1,5 +1,14 @@
 ---
 title: "Solubility prediction"
+description: Predict aqueous solubility from molecular descriptors using a generalized linear model trained on H2O.
+keywords:
+  - aqueous solubility
+  - logp
+  - molecular descriptors
+  - qsar
+  - generalized linear model
+  - admet prediction
+  - lipinski descriptors
 ---
 
 Solubility is one of basic physical chemistry properties important for understanding how molecules interact with

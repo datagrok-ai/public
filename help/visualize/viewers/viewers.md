@@ -2,6 +2,12 @@
 mdx:
   format: mdx
 title: "Supported viewers"
+description: Browse the catalog of built-in Datagrok viewers, with a short summary and preview of each chart type.
+keywords:
+  - viewer gallery
+  - chart types
+  - visualization catalog
+  - available viewers
 ---
 
 A _viewer_ is a visual component associated with a

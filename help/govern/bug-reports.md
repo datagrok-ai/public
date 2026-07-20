@@ -3,6 +3,14 @@ mdx:
   format: mdx
 title: "Feedback"
 sidebar_position: 5
+description: Report errors, submit feedback, and configure automatic error reporting in Datagrok.
+keywords:
+  - report an error
+  - bug report
+  - submit feedback
+  - error reporting
+  - auto report errors
+  - stack trace
 ---
 
 ```mdx-code-block

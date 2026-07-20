@@ -5,6 +5,15 @@ mdx:
 sidebar_position: 2
 toc_max_heading_level: 3
 unlisted: false
+description: How Datagrok records, stores, and exports audit logs of user and system activity across entities.
+keywords:
+  - audit log
+  - activity log
+  - track usage
+  - event logging
+  - cloudwatch export
+  - audit record types
+  - entity history
 ---
 
 In Datagrok, users can perform a wide range of tasks, from self-service data analytics to using custom applications. Datagrok's audit system provides detailed insights into how

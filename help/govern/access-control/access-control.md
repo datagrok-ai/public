@@ -4,6 +4,16 @@ mdx:
   format: mdx
 sidebar_position: 1
 unlisted: false
+description: How Datagrok handles authentication, role-based authorization, permissions, and credential storage.
+keywords:
+  - access control
+  - rbac
+  - role-based access control
+  - authentication
+  - authorization
+  - permissions
+  - single sign-on
+  - credentials management
 ---
 
 ```mdx-code-block

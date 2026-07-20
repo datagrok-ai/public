@@ -1,5 +1,15 @@
 ---
 title: "Box plot"
+description: Display the five-number summary of a distribution, with optional group comparison statistics.
+keywords:
+  - whisker plot
+  - box and whisker diagram
+  - violin plot
+  - quartiles
+  - outliers
+  - t-test
+  - anova
+  - group comparison
 ---
 
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the

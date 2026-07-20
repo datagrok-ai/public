@@ -1,5 +1,14 @@
 ---
 title: "Jupyter Notebook"
+description: Create, import, and link Jupyter notebooks to Datagrok tables for data analysis and visualization.
+keywords:
+  - jupyter notebooks
+  - ipynb
+  - python notebook
+  - data cleaning and transformation
+  - numerical simulation
+  - notebook environments
+  - apply notebook to table
 ---
 
 The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live

@@ -1,6 +1,13 @@
 ---
 title: "AWS Marketplace"
 sidebar_position: 0
+description: Deploy Datagrok from AWS Marketplace with a one-click CloudFormation template and BYOL licensing.
+keywords:
+  - aws marketplace
+  - byol licensing
+  - one-click deployment
+  - cloudformation template
+  - subscribe and configure
 ---
 
 To provide our users with the easiest way to deploy Datagrok to AWS, we integrated Datagrok with [AWS Marketplace](https://aws.amazon.com/marketplace). Using AWS Marketplace, you can deploy all [Datagrok components](../../develop/under-the-hood/infrastructure.md) and the required AWS infrastructure from scratch with just a few clicks. If you want to customize the deployment or use your existing infrastructure, we suggest using [CloudFormation (EKS)](deploy-amazon-eks.mdx) or [Terraform](deploy-amazon-terraform.md) options instead.

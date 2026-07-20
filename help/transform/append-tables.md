@@ -1,6 +1,13 @@
 ---
 title: "Append tables"
 
+description: Combine the rows of two tables into a single result table containing their common columns.
+keywords:
+  - append tables
+  - union tables
+  - stack tables
+  - combine rows
+  - concatenate tables
 ---
 
 Appends the content of two tables.
