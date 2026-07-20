@@ -337,7 +337,7 @@ jobs:
           #   fi
           # else
 
-          profiles='--profile datagrok --profile db --profile grok_connect'
+          profiles='--profile datagrok --profile db --profile grok_connect --profile grok_connect_adbc'
           echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
