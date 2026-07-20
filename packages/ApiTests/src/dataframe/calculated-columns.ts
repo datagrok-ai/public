@@ -34,7 +34,7 @@ category('DataFrame: Calculated columns', () => {
     } finally {
       df.columns.remove('new');
     }
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'client package functions are not loaded in NodeJS' : undefined});
 
   test('Create a calculated column with async formula', async () => {
     try {
@@ -44,7 +44,7 @@ category('DataFrame: Calculated columns', () => {
     } finally {
       df.columns.remove('new');
     }
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'client package functions are not loaded in NodeJS' : undefined});
 
   test('Add new column dialog', () => new Promise(async (resolve, reject) => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
