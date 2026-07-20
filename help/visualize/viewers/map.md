@@ -64,12 +64,6 @@ The system provides interaction with files of the following extensions:
 | Add a point to selection                | Shift+Click the point                   |
 | Select multiple points                    | Ctrl+Mouse Drag                       |
 
-## See also
-
-* [Viewers](../viewers/viewers.md)
-* [Globe](globe.md)
-* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
-
 ## Properties
 
 | Property | Type | Description |

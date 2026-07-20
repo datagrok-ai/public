@@ -401,5 +401,5 @@ See also:
 * [Table view](../table-view-1.md)
 * [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
 * Community:
-    * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
-    * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+  * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

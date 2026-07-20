@@ -18,9 +18,9 @@ Timelines viewer displays the flow of events over time. Each row represents a su
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
 1. In the dialog, select **Timelines**.
 
-> Developers: To add the viewer from the console, use:
-`grok.shell.tv.addViewer('Timelines');`
-
+> Developers: To add the viewer from the console, use
+> `grok.shell.tv.addViewer('Timelines');`
+>
 > Note: You can use this viewer with clinical data. When you add a timelines viewer, it automatically selects appropriate columns based on [SDTM](https://www.cdisc.org/standards/foundational/sdtm) vocabulary and data characteristics.
 
 ## Configuring a timelines viewer

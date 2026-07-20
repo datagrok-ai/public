@@ -765,8 +765,8 @@ Viewers | New Scripting Viewer`.
 
    ![exercises-transforming-dataframes](exercises-transforming-dataframes.png).
 
-If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
-of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
+   If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
+   of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
 
 9. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with

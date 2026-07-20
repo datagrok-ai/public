@@ -23,8 +23,8 @@ This notice covers the platform core (`datlas`, `xamgle`, `ddt`, `d4`) and the
 libraries vendored under `core/server/libs/` and `core/client/libs/`.
 
 > Note: Each plugin has its own THIRD-PARTY-LICENSES.md file that is distributed along
-with the plugin.
-
+> with the plugin.
+>
 > Maintainers: regenerate this file when `pubspec.yaml` / `pubspec.lock` change in
 > any of the four core packages. The companion analysis lives at
 > `core/docs/deps/LICENSES.md`.
@@ -154,11 +154,11 @@ text in [Section 5](#apache-license-version-20)).
 
 | Component                        | Version | License      | Upstream                                          |
 |----------------------------------|---------|--------------|---------------------------------------------------|
-| OpenChemLib JS                   | 7.x     | BSD-3-Clause | https://github.com/cheminfo/openchemlib-js        |
-| RxJS                             | 6.x     | Apache-2.0   | https://github.com/ReactiveX/rxjs                 |
-| cash-dom                         | 8.x     | MIT          | https://github.com/fabiospampinato/cash           |
-| Day.js                           | 1.x     | MIT          | https://github.com/iamkun/dayjs                   |
-| wu.js                            | 2.x     | MIT          | https://github.com/fitzgen/wu.js                  |
+| OpenChemLib JS                   | 7.x     | BSD-3-Clause | <https://github.com/cheminfo/openchemlib-js>        |
+| RxJS                             | 6.x     | Apache-2.0   | <https://github.com/ReactiveX/rxjs>                 |
+| cash-dom                         | 8.x     | MIT          | <https://github.com/fabiospampinato/cash>           |
+| Day.js                           | 1.x     | MIT          | <https://github.com/iamkun/dayjs>                   |
+| wu.js                            | 2.x     | MIT          | <https://github.com/fitzgen/wu.js>                  |
 
 
 ## 5. Full License Texts
@@ -425,4 +425,4 @@ THE SOFTWARE.
 ---
 
 *Last updated: 2026-05-04. If you believe a notice or attribution is missing or
-incorrect, please contact info@datagrok.ai.*
+incorrect, please contact <info@datagrok.ai>.*

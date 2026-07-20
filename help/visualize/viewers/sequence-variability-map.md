@@ -41,20 +41,20 @@ You can modify the Sequence Variability Map Viewer by changing the following pro
 - **Target**: The target column to be used as internal filter.
 - **Aggregations**: Additional columns to aggregate in the table.
 
-    ### Mutation Cliffs
+### Mutation Cliffs
     
-    - **Min Activity Delta**: The minimum activity difference to be considered in mutation cliffs (0 by default).
-    - **Max Mutations**: The maximum number of point mutations to be considered in mutation cliffs (1 by default).
+- **Min Activity Delta**: The minimum activity difference to be considered in mutation cliffs (0 by default).
+- **Max Mutations**: The maximum number of point mutations to be considered in mutation cliffs (1 by default).
 
-    ### Invariant Map
+### Invariant Map
 
-    - **Value**: Activity column to be used for invariant map.
-    - **Value Aggregation**: Aggregation function to be applied to the activity column.
-    - **Color**: Color column to be used for invariant map, defaults to activity column.
-    - **Color Aggregation**: Aggregation function to be applied to the color column.
-    - **Lower/Mid/Upper Bound Color**: Bounds for the color scale.
-    - **Log Scale Color**: Use logarithmic scale for color.
-    - **Custom Color Range**: Custom color range for the color scale (instead of column min/max).
+- **Value**: Activity column to be used for invariant map.
+- **Value Aggregation**: Aggregation function to be applied to the activity column.
+- **Color**: Color column to be used for invariant map, defaults to activity column.
+- **Color Aggregation**: Aggregation function to be applied to the color column.
+- **Lower/Mid/Upper Bound Color**: Bounds for the color scale.
+- **Log Scale Color**: Use logarithmic scale for color.
+- **Custom Color Range**: Custom color range for the color scale (instead of column min/max).
 
 ## Interactivity
 

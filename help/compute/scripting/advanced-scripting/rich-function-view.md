@@ -209,6 +209,7 @@ test2 = demog.clone();
 </TabItem>
 </Tabs>
 ```
+
 ### Group scalar outputs
 
 You can use the `category` keyword to group scalar output parameters.

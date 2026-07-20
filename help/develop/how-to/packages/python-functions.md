@@ -30,9 +30,9 @@ Create a `python/` directory inside your plugin root. Inside it:
 * One or more folders, each representing a separate application
 * Each folder can contain:
 
-    * One or more `.py` files with functions.
-    * An optional `requirements.in` or `environment.yaml` file for Python dependencies
-    * An optional `container.json` file for resource configuration
+  * One or more `.py` files with functions.
+  * An optional `requirements.in` or `environment.yaml` file for Python dependencies
+  * An optional `container.json` file for resource configuration
 
 **Example layout:**
 

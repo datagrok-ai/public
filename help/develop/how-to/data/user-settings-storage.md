@@ -17,10 +17,10 @@ Table of contents:
 
 * [General Structure](#general-structure)
 * [JavaScript API](#javascript-api)
-    * [Saving](#saving)
-    * [Loading](#loading)
-    * [Exploring](#exploring)
-    * [Deleting](#deleting)
+  * [Saving](#saving)
+  * [Loading](#loading)
+  * [Exploring](#exploring)
+  * [Deleting](#deleting)
 * [Examples and Use Cases](#examples-and-use-cases)
 
 ## General structure

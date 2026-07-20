@@ -36,24 +36,28 @@ Datagrok supports two authentication methods for AWS:
     - **ECS/Fargate:** Credentials are fetched from the task role endpoint.
 
 ### Creating an AWS Connection
+
 1. Navigate to **Platform → Credentials → AWS**.
 2. Right-click the provider and select **Add connection...**.
 3. Select the **Authentication Method**.
 4. Fill in the required fields and **save** the connection.
 
 ### Using an AWS Connection
+
 The IAM or task role used by Datagrok must have the necessary permissions for the resources you intend to use, such as:
 
 - **Athena:** `athena:*`, `s3:*`, and `glue:*` (for the Data Catalog).
 - **Logging:** `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`.
 
 #### As credentials provider for Athena
+
 1. Navigate to **Databases → Athena**.
 2. Right-click the provider and select **Add connection...**.
 3. Set **Credentials** to the AWS connection you created, then complete the remaining parameters.
 4. (Optional) Specify a **Secret name**. Datagrok will fetch the credentials object from [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html) using this **AWS** connection.
 
 #### For logs export to CloudWatch
+
 1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
 2. Select **Amazon CloudWatch** and choose the AWS connection in the **Connection** field.
 
@@ -67,24 +71,28 @@ Datagrok supports two authentication methods for GCP:
 2. **Service account impersonation** – Provide a **Service Account Email**. If Datagrok runs under a service account with the **Service Account Token Creator** role, it can impersonate the specified account.
 
 ### Creating a GCP Connection
+
 1. Navigate to **Platform → Credentials → GCP**.
 2. Right-click the provider and select **Add connection...**.
 3. Select the **Authentication Method**.
 4. Fill in the required fields and **save** the connection.
 
 ### Using a GCP Connection
+
 The service account (or impersonated account) must have the necessary permissions:
 
 - **BigQuery:** `roles/bigquery.dataViewer` (dataset access).
 - **Logging:** `roles/logging.logWriter` (permission to write logs).
 
 #### As credentials provider for BigQuery
+
 1. Navigate to **Databases → BigQuery**.
 2. Right-click the provider and select **Add connection...**.
 3. Set **Credentials** to the GCP connection you created, then complete the remaining parameters.
 4. (Optional) Specify a **Secret name**. Datagrok will fetch the credentials object from [Google Secret Manager](https://cloud.google.com/security/products/secret-manager) using this **GCP** connection.
 
 #### For logs export to Google Cloud Logging
+
 1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
 2. Select **Google Cloud Logging** and choose the GCP connection in the **Connection** field.
 
