@@ -37,10 +37,12 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
 
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
   // Content-level check (github-2904): a blank chart still has a non-zero
-  // bounding rect, so measure drawn pixels instead of geometry. -1 (no canvas
-  // or getImageData fault) fails the > 100 threshold and surfaces as non-empty
-  // being false.
-  return (await countCanvasPixels(page, 'Line chart')).total > 100;
+  // bounding rect, so measure drawn pixels instead of geometry. The threshold
+  // must sit ABOVE the axes/labels-only floor — dev empirics (666x308 canvas):
+  // axes with no data lines paint ~6449 px, data lines bring it to ~18061 —
+  // so 8000 fails the axes-only "blank" state that > 0-ish thresholds would
+  // pass. -1 (no canvas / getImageData fault) fails the threshold too.
+  return (await countCanvasPixels(page, 'Line chart')).total > 8000;
 }
 
 test('Line Chart — Multi-Axis and Split', async ({page}) => {

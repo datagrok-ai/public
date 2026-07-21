@@ -94,6 +94,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     // Overlay signal: selection paints the DarkOrange (#ff8c00) hue onto the bars
     // (~29 orange-range px on dev for the Asian subset).
     const huePx = await v.countSelectionHuePixels(page, 'Bar chart');
+    expect(huePxBefore).toBe(0); // also rejects a -1 fault masking the delta below
     expect(huePx).toBeGreaterThan(0);
     expect(huePx).toBeGreaterThan(huePxBefore);
     // Secondary state checks (selection/filter bitsets behind the overlay).
@@ -116,6 +117,14 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
       await new Promise((r) => setTimeout(r, 900));
     });
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    // Stability precheck: prove the mode-flip repaint has settled BEFORE the
+    // filter lands, so the measured delta below is the filter's effect, not a
+    // late tail of the rowSource/showFilteredRows re-render. diffCanvasColors
+    // replaces the snapshot, so the stable frame becomes the baseline.
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
+    expect(settle.deltaPx).toBeLessThan(50);
     const info = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;

@@ -434,6 +434,11 @@ export interface CanvasPixelCounts {
  * getImageData throw returns {total: -1, matched: -1} — the caller decides
  * whether that is a failure. Viewer canvases are same-origin drawn, so
  * getImageData is not blocked by tainting (validated on dev, demog.csv).
+ *
+ * LIGHT-THEME assumption: `total` treats near-white (r,g,b >= 250) as the
+ * background. On a dark theme the background is not white, so `total` would
+ * approach the whole canvas area and total-based thresholds turn vacuous;
+ * rgbRange-based `matched` counts stay theme-independent.
  */
 export async function countCanvasPixels(
   page: Page, viewerType: string, opts?: {rgbRange?: RgbRange},
@@ -470,6 +475,11 @@ export async function countCanvasPixels(
  * the default bar fill #96d794 (150,215,148) fails gMax=200; white fails the
  * non-white pre-filter; every grey (r=g=b) is impossible here because
  * rMin=150 with bMax=110 cannot both hold when r == b.
+ *
+ * CAVEAT: only valid while the chart draws no other orange — a viewer with
+ * colorColumnName / stackColumnName set may paint categorical-palette oranges
+ * inside this range and break the `=== 0` "overlay absent" reading. Keep such
+ * columns unset in steps that assert on this range.
  */
 export const SELECTION_HUE_RANGE: RgbRange = {rMin: 150, rMax: 255, gMin: 100, gMax: 200, bMin: 0, bMax: 110};
 
@@ -490,6 +500,11 @@ export async function countSelectionHuePixels(page: Page, viewerType: string): P
  * the histogram on the page; diffCanvasColors returns the summed per-color
  * pixel delta vs the stored snapshot and replaces it. deltaPx is -1 when the
  * viewer/canvas cannot be read or no snapshot was taken (fault, not "equal").
+ *
+ * The snapshot persists on the page and diff REPLACES it (this is what lets a
+ * settle-precheck diff chain into the measured diff). The flip side: a later
+ * step that forgets its own snapshotCanvasColors will silently diff against a
+ * stale frame — always snapshot at the step's own baseline.
  */
 export async function snapshotCanvasColors(page: Page, viewerType: string): Promise<boolean> {
   return await page.evaluate((vt) => {

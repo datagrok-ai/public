@@ -22,7 +22,8 @@ expected_results:
   - anchor: "Scenario 1 Step 4"
     expectation: >-
       With stacking enabled on the negative-sum value column, the stacked bars
-      keep rendering and the stack legend is visible (GROK-19480).
+      keep rendering and the stack legend appears as a result of the stack
+      action — absent before it, visible after (GROK-19480).
   - anchor: "Scenario 1 Step 5"
     expectation: >-
       With negative-sum categories present, the vertical bars render without

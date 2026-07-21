@@ -95,10 +95,12 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
       await new Promise((r) => setTimeout(r, 600));
     });
     // Legend appears as a RESULT of enabling stacking (with no stack column the
-    // bar chart shows no legend even under legendVisibility Always), so the
-    // before/after delta below is caused by the stack action itself. GROK-19480
-    // broke stacking whenever the aggregated value column has negative sums,
-    // which Chemical Space X does.
+    // bar chart shows no legend even under legendVisibility Always — observed
+    // platform behavior this step depends on; a build that renders an empty
+    // legend host under Always would fail the legendBefore assert and needs
+    // this step re-based). The before/after delta below is therefore caused by
+    // the stack action itself. GROK-19480 broke stacking whenever the
+    // aggregated value column has negative sums, which Chemical Space X does.
     const legendBefore = await v.readLegend(page, 'Bar chart');
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
