@@ -50,8 +50,11 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - Supports both linear and quadratic PLS models
 
 #### XGBoost (`xgbooster.ts`)
-- **XGBoost** integration via WASM (`wasm/XGBoostAPI.wasm`)
-- Binary classification and regression
+- **XGBoost** v3.3.0 via a minimal C++/Emscripten wasm module (`wasm/XGBoostAPI.*`)
+- Regression (numeric targets), `binary:logistic` (bool / 2-category string targets, threshold 0.5) and `multi:softmax` (3+ categories)
+- Glue: `wasm/xgbooster.ts` (DG-free: typed-array views + dims). Training runs in a long-lived worker (`wasm/workers/xgboostWorker.ts`, transferable buffers, job queue, auto-recreated on crash); prediction is synchronous on the main thread over a cached model handle (`dispose()` frees it)
+- The wasm build has C++ exceptions disabled: validate ALL hyperparameters/labels in TypeScript before any wasm call; a bad call aborts the whole instance
+- Packed model container v2 (objective in the header); pre-upgrade v1 models (no Version field in the header) are rejected with a clear error — they must be retrained
 - Requires initialization via `initXgboost()` in package init
 
 #### Other Supervised Machine Techniques
@@ -101,7 +104,7 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 ### WASM Integration
 
 - **sci-comp-ml** (PCA, PLS, softmax, linear regression): a Rust + WASM crate built with `wasm-pack`, copied into `wasm/` (`sci_comp_ml.js` + `sci_comp_ml_bg.wasm`). Initialised lazily on first use via `src/wasm-loader.ts`; the binary is emitted to `dist/` (via the `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js`) and located relative to the running bundle (`document.currentScript`), **not** `_package.webRoot` — so it resolves in the separate `package-test.js` bundle too. Wrapped by `wasm/eda-api.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts`.
-- **XGBoost**: a C++/Emscripten module (`wasm/XGBoostAPI.*`), initialised via `initXgboost()` in `PackageFunctions.init()`.
+- **XGBoost**: a C++/Emscripten module (`wasm/XGBoostAPI.js` + `.wasm`, classic MODULARIZE with a UMD tail) imported by webpack in both the main bundle and the worker bundle; the binary is emitted to `dist/` (listed in the webpack `package` entry) and located relative to the running bundle, like `sci_comp_ml_bg.wasm`. Initialised via `initXgboost()` in `PackageFunctions.init()`. Rebuilt by `wasm/xgboost/build.ps1` from an external XGBoost clone (tag v3.3.0 + minimal-build patch; see the self-contained `wasm/xgboost/README.md`); the build fails unless `wasm/xgboost/smoke/api-test.mjs` passes.
 
 Do not modify generated `.js`/`.wasm` files directly. The Rust source lives in the separate `sci-comp-rust` repo; refresh the artefact by rebuilding there and re-copying into `wasm/`.
 
@@ -180,8 +183,27 @@ category('Feature Name', () => {
 ### Working with WASM
 
 - **sci-comp-ml** (PCA/PLS/softmax/linreg): Rust source lives in the separate `sci-comp-rust` repo; the built `sci_comp_ml.js` + `sci_comp_ml_bg.wasm` are committed in `wasm/`. Loaded via `src/wasm-loader.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts` (the worker `init`s the wasm from a URL passed by the main thread).
-- **XGBoost**: C++/Emscripten (`wasm/XGBoostAPI.*`), initialised in `PackageFunctions.init()`.
+- **XGBoost**: C++/Emscripten (`wasm/XGBoostAPI.*`), rebuilt via `wasm/xgboost/build.ps1` (XGBoost sources come from an external clone, any location; api-test gate). See 'Rebuilding the XGBoost wasm module' below. Glue `wasm/xgbooster.ts`, worker `wasm/workers/xgboostWorker.ts`. When copying `col.getRawData()` in bulk, ALWAYS slice to `col.length` first (`raw.subarray(0, col.length)`) - the raw array may be longer (capacity mechanism).
 - The `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js` emit `sci_comp_ml_bg.wasm` to `dist/` with its original name.
+
+### Rebuilding the XGBoost wasm module
+
+Canonical, self-contained instructions: `wasm/xgboost/README.md` (prerequisites
+are public clones of dmlc/xgboost and emsdk, any location; node in PATH). Short form:
+1. `powershell -File wasm/xgboost/build.ps1 -XgboostDir <clone> -EmsdkDir <emsdk>` -
+   worktree at the pinned tag + patch, emcmake build in TEMP, then the
+   `wasm/xgboost/smoke/api-test.mjs` gate; artifacts are copied into `wasm/`
+   ONLY if the test passes.
+2. `npx webpack` - re-bundles the loader (compiled into `package.js`) and
+   re-emits the `.wasm` to `dist/`.
+3. `grok test --host local --no-retry --category XGBoost` - full suite must pass.
+
+When changing the patch or the XGBoost version, additionally run the native smoke
+(9/9 including negative checks; procedure and patch-conflict repair rules are in
+`wasm/xgboost/README.md`). Never change build flags casually - in particular:
+`-msimd128` only together with `-flto` (SIMD alone regresses fit up to 45%), and
+`-sGROWABLE_ARRAYBUFFERS=0` is mandatory (Emscripten 6.x defaults break
+TextDecoder in new Chrome otherwise).
 
 ### pMPO Model Development
 

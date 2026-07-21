@@ -86,19 +86,20 @@ export function GetMCLEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetMCLEditor(call);
 }
 
+//name: MCL Clustering
 //description: Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.
 //input: dataframe df 
 //input: list<column> cols 
-//input: list<string> metrics 
-//input: list<double> weights 
-//input: string aggregationMethod 
-//input: list<func> preprocessingFuncs 
-//input: object preprocessingFuncArgs 
-//input: int threshold = 80 
-//input: int maxIterations = 10 
-//input: bool useWebGPU = false 
-//input: double inflate = 2 
-//input: int minClusterSize = 5 
+//input: list<string> metrics { description: Distance metric per column used to measure similarity between rows. }
+//input: list<double> weights { description: Relative weight of each column when combining per-column distances. }
+//input: string aggregationMethod { description: How per-column distances are aggregated into a single distance. }
+//input: list<func> preprocessingFuncs { description: Preprocessing function applied to each column before distances are computed. }
+//input: object preprocessingFuncArgs { description: Arguments passed to the preprocessing functions. }
+//input: int threshold = 80 { description: Similarity threshold (percentile): edges below it are dropped before clustering. }
+//input: int maxIterations = 10 { description: Maximum number of expansion/inflation iterations. }
+//input: bool useWebGPU = false { description: Run the computation on the GPU via WebGPU when available. }
+//input: double inflate = 2 { description: Inflation factor controlling cluster granularity: higher values yield more, smaller clusters. }
+//input: int minClusterSize = 5 { description: Clusters smaller than this are merged into noise. }
 //top-menu: ML | Cluster | MCL...
 //editor: EDA:GetMCLEditor
 export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics: any, weights: number[], aggregationMethod: any, preprocessingFuncs: any[], preprocessingFuncArgs: any[], threshold: number, maxIterations: number, useWebGPU: boolean, inflate: number, minClusterSize: number) : Promise<any> {
@@ -194,8 +195,10 @@ export async function trainLinearRegression(df: DG.DataFrame, predictColumn: DG.
   return await PackageFunctions.trainLinearRegression(df, predictColumn, rate, iterations, alpha, lambda);
 }
 
+//name: Apply Linear Regression
+//description: Predict the target for a table using a trained linear regression model.
 //input: dataframe df 
-//input: dynamic model 
+//input: dynamic model { description: Trained linear regression model to apply. }
 //output: dataframe result
 //meta.mlname: Linear Regression
 //meta.mlrole: apply
@@ -234,8 +237,10 @@ export async function trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column, r
   return await PackageFunctions.trainSoftmax(df, predictColumn, rate, iterations, penalty, tolerance);
 }
 
+//name: Apply Softmax
+//description: Classify the rows of a table using a trained softmax (multinomial logistic regression) model.
 //input: dataframe df 
-//input: dynamic model 
+//input: dynamic model { description: Trained softmax classifier model to apply. }
 //output: dataframe result
 //meta.mlname: Softmax
 //meta.mlrole: apply
@@ -271,8 +276,10 @@ export async function trainPLSRegression(df: DG.DataFrame, predictColumn: DG.Col
   return await PackageFunctions.trainPLSRegression(df, predictColumn, components);
 }
 
+//name: Apply PLS Regression
+//description: Predict the target for a table using a trained partial least squares (PLS) regression model.
 //input: dataframe df 
-//input: dynamic model 
+//input: dynamic model { description: Trained PLS regression model to apply. }
 //output: dataframe result
 //meta.mlname: PLS Regression
 //meta.mlrole: apply
@@ -323,8 +330,10 @@ export async function trainXGBooster(df: DG.DataFrame, predictColumn: DG.Column,
   return await PackageFunctions.trainXGBooster(df, predictColumn, iterations, eta, maxDepth, lambda, alpha);
 }
 
+//name: Apply XGBoost
+//description: Predict the target for a table using a trained XGBoost gradient-boosting model.
 //input: dataframe df 
-//input: dynamic model 
+//input: dynamic model { description: Trained XGBoost model to apply. }
 //output: dataframe result
 //meta.mlname: XGBoost
 //meta.mlrole: apply
@@ -378,8 +387,9 @@ export async function getPmpoAppItems(view: any) : Promise<any> {
   return await PackageFunctions.getPmpoAppItems(view);
 }
 
-//description: Generates syntethetic dataset oriented on the pMPO modeling
-//input: int samples 
+//name: Generate pMPO Dataset
+//description: Generate a synthetic dataset oriented on probabilistic multi-parameter optimization (pMPO) modeling.
+//input: int samples { description: Number of rows (samples) to generate. }
 //output: dataframe Synthetic
 export async function generatePmpoDataset(samples: number) : Promise<any> {
   return await PackageFunctions.generatePmpoDataset(samples);

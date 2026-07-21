@@ -30,5 +30,7 @@ test-console-output.log
 
 
 
+# XGBoost wasm build intermediates (build.ps1 builds in TEMP; guard anyway)
+wasm/xgboost/build/
 # Package-owned Playwright E2E suite — not shipped in the npm artifact
 playwright/

@@ -1,0 +1,127 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 4f7b5622b..e5bf8e46e 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -8,10 +8,35 @@ if(PLUGIN_SYCL)
+   list(REMOVE_ITEM CPU_SOURCES ${xgboost_SOURCE_DIR}/src/objective/multiclass_obj.cc)
+ endif()
+ 
++# Minimal build for the WebAssembly target: keep only gbtree + hist,
++# reg:* / binary:* / multi:* objectives and their default metrics.
++# Every excluded source must have its DMLC_REGISTRY_LINK_TAG guarded by
++# XGBOOST_WASM_MINIMAL in the corresponding registry file.
++if(XGBOOST_WASM_MINIMAL)
++  list(REMOVE_ITEM CPU_SOURCES
++    ${xgboost_SOURCE_DIR}/src/objective/lambdarank_obj.cc
++    ${xgboost_SOURCE_DIR}/src/objective/quantile_obj.cc
++    ${xgboost_SOURCE_DIR}/src/objective/hinge.cc
++    ${xgboost_SOURCE_DIR}/src/objective/aft_obj.cc
++    ${xgboost_SOURCE_DIR}/src/metric/auc.cc
++    ${xgboost_SOURCE_DIR}/src/metric/rank_metric.cc
++    ${xgboost_SOURCE_DIR}/src/metric/survival_metric.cc
++    ${xgboost_SOURCE_DIR}/src/tree/updater_colmaker.cc
++    ${xgboost_SOURCE_DIR}/src/tree/updater_approx.cc
++    ${xgboost_SOURCE_DIR}/src/gbm/gblinear.cc
++    ${xgboost_SOURCE_DIR}/src/linear/linear_updater.cc
++    ${xgboost_SOURCE_DIR}/src/linear/updater_shotgun.cc
++    ${xgboost_SOURCE_DIR}/src/linear/updater_coordinate.cc
++  )
++endif()
++
+ #-- Object library
+ # Object library is necessary for jvm-package, which creates its own shared library.
+ add_library(objxgboost OBJECT)
+ target_sources(objxgboost PRIVATE ${CPU_SOURCES})
++if(XGBOOST_WASM_MINIMAL)
++  target_compile_definitions(objxgboost PRIVATE -DXGBOOST_WASM_MINIMAL=1)
++endif()
+ # Skip files with factory object
+ set_source_files_properties(
+   predictor/predictor.cc gbm/gbm.cc tree/tree_updater.cc metric/metric.cc objective/objective.cc
+diff --git a/src/common/quantile.cc b/src/common/quantile.cc
+index f17b2d9b7..2bcd61898 100644
+--- a/src/common/quantile.cc
++++ b/src/common/quantile.cc
+@@ -35,7 +35,8 @@ HostSketchContainer::HostSketchContainer(Context const *ctx, bst_bin_t max_bin,
+   ParallelFor(sketches_.size(), n_threads_, Sched::Auto(), [&](auto i) {
+     auto eps = SketchEpsilon(max_bins_, columns_size_[i]);
+     if (!IsCat(this->feature_types_, i)) {
+-      sketches_[i] = WQSketch{columns_size_[i], eps};
++      // Explicit cast: on 32-bit targets (wasm32) size_t is narrower than bst_idx_t.
++      sketches_[i] = WQSketch{static_cast<size_t>(columns_size_[i]), eps};
+     }
+   });
+ }
+diff --git a/src/gbm/gbm.cc b/src/gbm/gbm.cc
+index d0d4de86b..391db95b5 100644
+--- a/src/gbm/gbm.cc
++++ b/src/gbm/gbm.cc
+@@ -32,7 +32,9 @@ GradientBooster* GradientBooster::Create(const std::string& name, Context const*
+ namespace xgboost {
+ namespace gbm {
+ // List of files that will be force linked in static links.
+-DMLC_REGISTRY_LINK_TAG(gblinear);
+ DMLC_REGISTRY_LINK_TAG(gbtree);
++#ifndef XGBOOST_WASM_MINIMAL
++DMLC_REGISTRY_LINK_TAG(gblinear);
++#endif  // XGBOOST_WASM_MINIMAL
+ }  // namespace gbm
+ }  // namespace xgboost
+diff --git a/src/metric/metric.cc b/src/metric/metric.cc
+index d7e2683ec..825200a1e 100644
+--- a/src/metric/metric.cc
++++ b/src/metric/metric.cc
+@@ -60,11 +60,13 @@ DMLC_REGISTRY_ENABLE(::xgboost::MetricReg);
+ 
+ namespace xgboost::metric {
+ // List of files that will be force linked in static links.
+-DMLC_REGISTRY_LINK_TAG(auc);
+ DMLC_REGISTRY_LINK_TAG(elementwise_metric);
+ DMLC_REGISTRY_LINK_TAG(multiclass_metric);
++#ifndef XGBOOST_WASM_MINIMAL
++DMLC_REGISTRY_LINK_TAG(auc);
+ DMLC_REGISTRY_LINK_TAG(survival_metric);
+ DMLC_REGISTRY_LINK_TAG(rank_metric);
++#endif  // XGBOOST_WASM_MINIMAL
+ #ifdef XGBOOST_USE_CUDA
+ DMLC_REGISTRY_LINK_TAG(auc_gpu);
+ DMLC_REGISTRY_LINK_TAG(rank_metric_gpu);
+diff --git a/src/objective/objective.cc b/src/objective/objective.cc
+index 8731394df..111643de5 100644
+--- a/src/objective/objective.cc
++++ b/src/objective/objective.cc
+@@ -51,10 +51,12 @@ DMLC_REGISTRY_LINK_TAG(lambdarank_obj);
+ DMLC_REGISTRY_LINK_TAG(lambdarank_obj_cu);
+ #else
+ DMLC_REGISTRY_LINK_TAG(regression_obj);
++DMLC_REGISTRY_LINK_TAG(multiclass_obj);
++#ifndef XGBOOST_WASM_MINIMAL
+ DMLC_REGISTRY_LINK_TAG(quantile_obj);
+ DMLC_REGISTRY_LINK_TAG(hinge_obj);
+-DMLC_REGISTRY_LINK_TAG(multiclass_obj);
+ DMLC_REGISTRY_LINK_TAG(lambdarank_obj);
++#endif  // XGBOOST_WASM_MINIMAL
+ #endif  // XGBOOST_USE_CUDA
+ }  // namespace obj
+ }  // namespace xgboost
+diff --git a/src/tree/tree_updater.cc b/src/tree/tree_updater.cc
+index a1d657b82..c767b634d 100644
+--- a/src/tree/tree_updater.cc
++++ b/src/tree/tree_updater.cc
+@@ -26,12 +26,14 @@ TreeUpdater* TreeUpdater::Create(const std::string& name, Context const* ctx, Ob
+ 
+ namespace xgboost::tree {
+ // List of files that will be force linked in static links.
+-DMLC_REGISTRY_LINK_TAG(updater_colmaker);
+ DMLC_REGISTRY_LINK_TAG(updater_refresh);
+ DMLC_REGISTRY_LINK_TAG(updater_prune);
+ DMLC_REGISTRY_LINK_TAG(updater_quantile_hist);
+-DMLC_REGISTRY_LINK_TAG(updater_approx);
+ DMLC_REGISTRY_LINK_TAG(updater_sync);
++#ifndef XGBOOST_WASM_MINIMAL
++DMLC_REGISTRY_LINK_TAG(updater_colmaker);
++DMLC_REGISTRY_LINK_TAG(updater_approx);
++#endif  // XGBOOST_WASM_MINIMAL
+ #ifdef XGBOOST_USE_CUDA
+ DMLC_REGISTRY_LINK_TAG(updater_gpu_hist);
+ #endif  // XGBOOST_USE_CUDA
