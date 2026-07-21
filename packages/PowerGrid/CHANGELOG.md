@@ -13,6 +13,7 @@
 * Pie chart sparkline: Filter null columns in hit-test so hovering with stale/missing column names no longer throws
 * Forms cell renderer: Scoped per-cell scene via WeakMap keyed on grid (removes cross-grid contamination) and debounced tooltip shows (no more flicker)
 * Vlaaivis manager: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
+* GROK-19904: Color cell renderer: Resolve color from `gridCell.value` instead of the row-bound table cell, so viewer legends/labels render each category's own color
 
 ## 1.8.1 (2026-03-17)
 
