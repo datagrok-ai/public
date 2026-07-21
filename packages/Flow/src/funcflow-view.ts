@@ -174,7 +174,8 @@ export class FuncFlowView extends DG.ViewBase {
       'functions (search list_view_functions with the word "flow"): listFlowNodes (call first to ' +
       'see the canvas), getFlowNodeDetails, findFlowNodeTypes, addFlowNode, connectFlowNodes, ' +
       'setFlowNodeInputs, selectFlowNode, runFlow; listFlowGuides / startFlowGuide launch ' +
-      'interactive tutorials — offer one when the user asks how to do something here.';
+      'interactive tutorials — offer one when the user asks how to do something here. When user asks about how to do something, ' +
+      'Make sure to list guides (run the function listing the guides) to see if there are guides that cover the question, and if so and confidence is high, call that guide function';
     this.tableInfos = tableInfos;
     this.outputPanelEnabled = options.outputPanel !== false;
 
