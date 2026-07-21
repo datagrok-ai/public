@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20445: Env tests: dropped the obsolete `numpy < 2` assertion (base env now resolves numpy-2-native pyarrow); made the two DG-idiom nodejs scripts (Column list, Lines count) runtime-agnostic until the Node js-api runtime lands on master
 * Scripts: Migrated nodejs test scripts to the js-api (`grok`/`DG` globals); dataframe-js/axios are no longer injected into nodejs scripts (breaking — legacy scripts must `require()` them explicitly or move to `DG.DataFrame`)
 
 * Tests: fixed Docker tests — the container-name filter never matched. Platform registers package containers as `kebab(package.name)-<dockerfileFolder>` (`cvm-tests-cvmtests-docker-test1/2`); the test queried `cvmtests-Cvmtests-...`, so `before()` got `undefined` and all 5 Docker tests failed. Also added a clear not-found error instead of a cryptic undefined cascade.

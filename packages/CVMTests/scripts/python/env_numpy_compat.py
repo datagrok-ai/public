@@ -10,8 +10,10 @@ import pandas as pd
 import pyarrow as pa
 import cv2
 
-# Verify numpy is < 2.0 (template constraint must be respected)
-assert int(np.__version__.split('.')[0]) < 2, f"numpy {np.__version__} >= 2.0, ABI will break pyarrow"
+# The functional checks below are the real ABI test: a pip-installed opencv
+# compiled against a different numpy major than the conda one fails cv2 import
+# or the pyarrow interop with _ARRAY_API errors. (An old `numpy < 2` assert
+# guarded the pyarrow-13 era base env; pyarrow >= 25 is numpy-2-native.)
 
 # Verify pyarrow works (would fail with _ARRAY_API error if numpy ABI mismatch)
 table = pa.table({'col': pa.array(range(rows))})
