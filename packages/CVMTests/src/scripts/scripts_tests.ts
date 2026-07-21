@@ -170,35 +170,39 @@ for (const lang of languages) {
         expect(49090022, result);
       }, {timeout: 240000, skipReason: 'Unstable'});
 
+      // Env budgets: creation normally takes seconds, but in CI these run while
+      // ApiTests/DBTests load the same 8-core stand and a template extract +
+      // conda/uv solve was observed to take ~4 min — 360s keeps real hangs
+      // detectable without failing on a busy stand.
       test('Env: numpy ABI compat (conda numpy + pip opencv)', async () => {
         const result = await grok.functions.call('CVMTests:PythonEnvNumpyCompat',
           {'rows': 100});
         expect(result, 110);
-      }, {timeout: 240000});
+      }, {timeout: 360000});
 
       test('Env: pip-only deps (chardet + pyyaml)', async () => {
         const result = await grok.functions.call('CVMTests:PythonEnvPipOnly',
           {'text': 'hello'});
         expect(result, 'ok:hello');
-      }, {timeout: 240000});
+      }, {timeout: 360000});
 
       test('Env: conda-only extras (scipy + sklearn)', async () => {
         const result = await grok.functions.call('CVMTests:PythonEnvCondaExtras',
           {'text': 'hello world test'});
         expect(result.startsWith('scipy='), true);
-      }, {timeout: 240000});
+      }, {timeout: 360000});
 
       test('Env: mixed conda + pip deps (scipy + orjson + msgpack)', async () => {
         const result = await grok.functions.call('CVMTests:PythonEnvMixedDeps',
           {'data': 'test'});
         expect(result.startsWith('test:'), true);
-      }, {timeout: 240000});
+      }, {timeout: 360000});
 
       test('Env: Python 3.12 template', async () => {
         const result = await grok.functions.call('CVMTests:PythonEnvPy312',
           {'text': 'hello'});
         expect(result.startsWith('py3.12:'), true);
-      }, {timeout: 240000});
+      }, {timeout: 360000});
 
       test('Env: reuse existing environment', async () => {
         // First call creates the env
@@ -211,9 +215,9 @@ for (const lang of languages) {
           {'text': 'second call'});
         const elapsed = Date.now() - t0;
         expect(result2.startsWith('ok:'), true);
-        // Reuse should be fast — env creation takes 10-45s, reuse should be under 60s total (script exec time)
+        // Reuse must skip creation — allow script-exec slack on a busy CI stand
         expect(elapsed < 120000, true);
-      }, {timeout: 300000});
+      }, {timeout: 360000});
     }
 
     if (lang === 'R') {
@@ -221,13 +225,13 @@ for (const lang of languages) {
         const result = await grok.functions.call('CVMTests:REnvStringReverse',
           {'input_string': 'datagrok'});
         expect(result, 'korgatad');
-      }, {timeout: 240000});
+      }, {timeout: 360000});
 
       test('Environment yaml file', async () => {
         const result = await grok.functions.call('CVMTests:REnvFileStringReverse',
           {'input_string': 'hello'});
         expect(result, 'olleh');
-      }, {timeout: 240000});
+      }, {timeout: 360000});
     }
   });
 

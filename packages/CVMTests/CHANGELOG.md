@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: raised env-test budgets to 360s — env creation shares the CI stand with ApiTests/DBTests since the stages were merged and a template extract + solve was observed at ~4 min under load
 * GROK-20445: Env tests: dropped the obsolete `numpy < 2` assertion (base env now resolves numpy-2-native pyarrow); made the two DG-idiom nodejs scripts (Column list, Lines count) runtime-agnostic until the Node js-api runtime lands on master
 * Scripts: Migrated nodejs test scripts to the js-api (`grok`/`DG` globals); dataframe-js/axios are no longer injected into nodejs scripts (breaking — legacy scripts must `require()` them explicitly or move to `DG.DataFrame`)
 
