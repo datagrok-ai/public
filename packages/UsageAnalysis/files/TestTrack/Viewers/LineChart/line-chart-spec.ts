@@ -464,29 +464,57 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     });
     await page.locator('[name="viewer-Line-chart"]').first().waitFor({timeout: 10000});
 
-    const spgiTableName = await page.evaluate(() => {
+    // Bind the chart to SPGI: props.table echoes the SPGI name AND the viewer's
+    // bound dataFrame becomes SPGI's (3624 rows) — the row source really moved,
+    // it is not just the string being stored.
+    const toSpgi = await page.evaluate(() => {
       const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 3624);
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
       lc.props.table = spgiTv!.dataFrame.name;
-      return lc.props.table;
+      return {name: lc.props.table, wanted: spgiTv!.dataFrame.name};
     });
-    expect(spgiTableName).toBeTruthy();
+    await page.waitForTimeout(500);
+    expect(toSpgi.name).toBe(toSpgi.wanted);
+    expect(await page.evaluate(() => {
+      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+      return (lc as any).dataFrame.rowCount;
+    })).toBe(3624);
 
+    // Switch back to demog: the bound dataFrame returns to 5850 rows.
     await page.evaluate(() => {
       const demogTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 5850);
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
       lc.props.table = demogTv!.dataFrame.name;
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => {
+      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+      return (lc as any).dataFrame.rowCount;
+    })).toBe(5850);
 
-    await lcSetProps(page, {rowSource: 'Selected'});
-    expect((await lcProps(page, 'rowSource')).rowSource).toBe('Selected');
-
+    // Row source = Selected: selecting rows re-renders the chart to the selected
+    // subset. Under rowSource=Selected an empty selection still paints, so the
+    // signal is that selecting CHANGES the canvas (per-color diff), not a
+    // blank-vs-drawn threshold. Drain the render tail with a settle-precheck diff
+    // before the measured one.
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT'], rowSource: 'Selected'});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await page.waitForTimeout(800);
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await page.waitForTimeout(700);
+    // Settle-precheck: prove the rowSource-flip repaint has drained before the
+    // baseline snapshot, so the measured delta is the selection's effect only.
+    const preSel = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    expect(preSel).toBeGreaterThanOrEqual(0);
+    expect(preSel).toBeLessThan(200);
+    await v.snapshotCanvasColors(page, 'Line chart');
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       for (let i = 0; i < 100; i++) df.selection.set(i, true);
     });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(1000);
+    const selDelta = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    expect(selDelta).toBeGreaterThan(1000);
 
     await lcSetProps(page, {rowSource: 'Filtered'});
 
@@ -505,6 +533,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
       fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 0, max: 100});
     });
     await page.waitForTimeout(300);
+    await lcSetProps(page, {rowSource: 'All'});
 
     await page.evaluate(() => {
       const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 3624);
@@ -512,13 +541,25 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     });
   });
 
-  await softStep('Filter expression and collaborative filtering (SPGI)', async () => {
+  await softStep('Filter expression and collaborative filtering', async () => {
     await openDatasetWithLineChart(page, 'System:DemoFiles/SPGI.csv');
 
-    await lcSetProps(page, {filter: '${CAST Idea ID} <636500'});
-    const filterVal = (await lcProps(page, 'filter')).filter;
-    expect(filterVal).toBe('${CAST Idea ID} <636500');
+    const full = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
 
+    // The expression filter is a viewer-local predicate: it narrows the rows the
+    // line chart plots (lc.filter) without touching the shared df.filter. The
+    // real signal is that in-viewer count dropping below the full row set — the
+    // points on the chart are filtered — not the string echoing back.
+    await lcSetProps(page, {filter: '${CAST Idea ID} <636500'});
+    const lcFiltered = await page.evaluate(() => {
+      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+      return (lc as any).filter.trueCount;
+    });
+    expect(lcFiltered).toBeGreaterThan(0);
+    expect(lcFiltered).toBeLessThan(full);
+
+    // Collaborative filtering: a Filter Panel numeric filter narrows the shared
+    // df.filter on top of the in-viewer expression filter.
     await page.evaluate(async () => {
       const fg = grok.shell.tv.getFiltersGroup();
       await new Promise(r => setTimeout(r, 500));
@@ -527,7 +568,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await page.waitForTimeout(500);
 
     const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filtered).toBeLessThan(3624);
+    expect(filtered).toBeLessThan(full);
 
     await page.evaluate(() => {
       const fg = grok.shell.tv.getFiltersGroup();
@@ -538,7 +579,15 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
   });
 
   await softStep('Selection checkboxes', async () => {
-    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+    // The previous step left SPGI open; this step needs demog's AGE/HEIGHT
+    // columns, so reopen demog with a fresh line chart.
+    await openDatasetWithLineChart(page, datasetPath);
+    const errBefore = errorCount();
+    // Single-line chart with no split column: no categorical-palette orange is
+    // painted, so the only orange on the canvas is the selection overlay
+    // (SELECTION_HUE_RANGE), which makes the hue count a clean selection signal.
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT'], splitColumnName: '',
+      rowSource: 'All', showSelectedRows: true});
 
     const box = await page.evaluate(() => {
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
@@ -559,10 +608,39 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await page.mouse.move(box.x2, box.y2, {steps: 10});
     await page.mouse.up();
     await page.keyboard.up('Shift');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(700);
 
+    // Shift-drag selects rows in the dataframe...
     const sel = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    console.log(`Selection checkboxes: ${sel} rows selected`);
+    expect(sel).toBeGreaterThan(0);
+    // ...and the line chart paints the selection overlay for them.
+    const hueSelected = await v.countSelectionHuePixels(page, 'Line chart');
+    expect(hueSelected).toBeGreaterThan(0);
+
+    // Show Selected Rows checkbox: unchecking it removes the overlay, rechecking
+    // restores it — the checkbox's real visual effect, not just its stored value.
+    await lcSetProps(page, {showSelectedRows: false});
+    const hueOff = await v.countSelectionHuePixels(page, 'Line chart');
+    // Near-zero: unchecking must remove the overlay, not just halve it.
+    expect(hueOff).toBeLessThan(hueSelected * 0.15);
+    await lcSetProps(page, {showSelectedRows: true});
+    expect(await v.countSelectionHuePixels(page, 'Line chart')).toBeGreaterThan(0);
+
+    // The remaining Selection checkboxes drive mouse-over highlights that need a
+    // live pointer path (no headless canvas signal), so exercise each through its
+    // stored value and guard that toggling raises nothing.
+    for (const p of ['showCurrentRowLine', 'showMouseOverCategory', 'showMouseOverRowLine']) {
+      const cur = (await lcProps(page, p))[p];
+      await lcSetProps(page, {[p]: !cur});
+      expect((await lcProps(page, p))[p]).toBe(!cur);
+    }
+    expect(errorCount()).toBe(errBefore);
+
+    // Persist a non-default Selection combo and confirm it survives a layout
+    // save → close → restore round-trip.
+    const combo = {showCurrentRowLine: true, showMouseOverCategory: false,
+      showSelectedRows: false, showMouseOverRowLine: false};
+    await lcSetProps(page, combo);
 
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
@@ -583,18 +661,37 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
       await new Promise(r => setTimeout(r, 3000));
     }, layoutId);
 
-    const lcRestored = await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).some(v => v.type === 'Line chart'));
-    expect(lcRestored).toBe(true);
+    const restored = await lcProps(page, 'showCurrentRowLine', 'showMouseOverCategory',
+      'showSelectedRows', 'showMouseOverRowLine');
+    expect(restored).toEqual(combo);
 
     await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
       await grok.dapi.layouts.delete(saved);
     }, layoutId);
+    await lcSetProps(page, {showCurrentRowLine: false, showMouseOverCategory: true,
+      showSelectedRows: true, showMouseOverRowLine: true});
     await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
   });
 
   await softStep('Data panel checkboxes', async () => {
+    const errBefore = errorCount();
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['AGE', 'HEIGHT']});
+
+    // A demog line chart exposes no Show Null / Show Missing checkboxes (those
+    // are grid props); the Data-section booleans that exist are Pack Categories
+    // and Multi Axis. Toggle each off its default and read the stored value back.
+    for (const p of ['packCategories', 'multiAxis']) {
+      const cur = (await lcProps(page, p))[p];
+      await lcSetProps(page, {[p]: !cur});
+      expect((await lcProps(page, p))[p]).toBe(!cur);
+    }
+    expect(errorCount()).toBe(errBefore);
+
+    // The toggled Data state must survive a layout save → close → restore.
+    const combo = {packCategories: false, multiAxis: true};
+    await lcSetProps(page, combo);
+
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
       await grok.dapi.layouts.save(layout);
@@ -614,14 +711,14 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
       await new Promise(r => setTimeout(r, 3000));
     }, layoutId);
 
-    const lcRestored = await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).some(v => v.type === 'Line chart'));
-    expect(lcRestored).toBe(true);
+    const restored = await lcProps(page, 'packCategories', 'multiAxis');
+    expect(restored).toEqual(combo);
 
     await page.evaluate(async (id) => {
       const saved = await grok.dapi.layouts.find(id);
       await grok.dapi.layouts.delete(saved);
     }, layoutId);
+    await lcSetProps(page, {packCategories: true, multiAxis: false});
   });
 
   await softStep('GROK-17835 regression (SPGI)', async () => {

@@ -11,6 +11,36 @@ realized_as:
 related_bugs:
   - id: GROK-17835
     status: fixed
+expected_results:
+  - anchor: "Table switching and row source"
+    expectation: >-
+      After binding the line chart to SPGI its bound dataFrame.rowCount reads
+      3624, and after binding back to demog it reads 5850 — the row source
+      really moves between tables. Under Row Source = Selected, selecting rows
+      changes the canvas (per-color diff deltaPx > 1000 against the pre-selection
+      snapshot), and a Filtered row source with an AGE 20-40 filter drops
+      df.filter.trueCount below 5850.
+  - anchor: "Filter expression and collaborative filtering"
+    expectation: >-
+      Setting the in-viewer Filter expression drops the chart's own
+      lc.filter.trueCount below the full SPGI row count (points are filtered on
+      the chart) while leaving it above zero; a Filter Panel numeric filter then
+      narrows the shared df.filter.trueCount below the full count on top of the
+      expression filter.
+  - anchor: "Selection checkboxes"
+    expectation: >-
+      A Shift-drag rubber-band selects rows (selection.trueCount > 0) and the
+      chart paints the orange selection overlay (SELECTION_HUE_RANGE pixel count
+      > 0). Unchecking Show Selected Rows removes the overlay (hue count drops
+      below half); rechecking restores it. Toggling the remaining Selection
+      checkboxes raises no errors, and a non-default Selection combo survives a
+      layout save/close/restore round-trip unchanged.
+  - anchor: "Data panel checkboxes"
+    expectation: >-
+      Toggling real viewer checkboxes (Pack Categories from Data, Multi Axis
+      from Controls) off their defaults reads the new value back and raises no
+      errors, and the toggled combo (packCategories=false, multiAxis=true)
+      survives a layout save/close/restore round-trip unchanged.
 ---
 
 # Line chart tests (Playwright)
@@ -150,7 +180,7 @@ All scenarios should start with the following sequence of events:
 8. Verify all properties match the configuration from steps 1-4
 9. Delete the saved layout
 
-## Table switching and row source (uses SPGI dataset)
+## Table switching and row source
 
 Setup: Close all, open demog, then also open SPGI
 
@@ -161,6 +191,16 @@ Setup: Close all, open demog, then also open SPGI
 5. Select some rows in the grid — the line chart should show only selected rows
 6. Set Row Source to Filtered
 7. Open the filter panel and apply a filter — the line chart should reflect the filter
+
+Actuation note (recon 2026-07-21): the table switch is driven by assigning
+`lc.props.table` (the Context Panel > Data > Table dropdown backs the same
+property); the observable is the viewer's bound `dataFrame.rowCount` moving
+between the two tables (3624 ↔ 5850), which is the "shows the other table's
+columns" outcome. "Shows only selected rows" is measured as a canvas change:
+under Row Source = Selected an empty selection still paints the axes/lines, so a
+blank-vs-drawn threshold is meaningless — instead the per-color canvas histogram
+is snapshotted (after a settle-precheck diff) and the selection is applied, and
+the resulting `deltaPx` proves the selected subset re-rendered.
 
 ## GROK-17835 regression (uses SPGI dataset)
 
@@ -182,20 +222,47 @@ Setup: Close all, open SPGI (not demog)
 6. Apply a numeric filter — verify collaborative filtering between the Filter Panel and the in-viewer Filter value
 7. Remove all filters
 
+Actuation note (recon 2026-07-21): "points are filtered on the chart" is
+measured as the viewer's own `lc.filter.trueCount` dropping below the full row
+count (the expression filter is viewer-local — it narrows the plotted points
+without touching the shared `df.filter`). The Filter Panel numeric filter is
+applied through `getFiltersGroup().updateOrAdd` (the range strip is a
+canvas-drawn embedded Histogram with no scriptable DOM handle), and
+collaboration is confirmed by the shared `df.filter.trueCount` narrowing on top
+of the expression filter.
+
 ## Selection checkboxes
 
 1. Close all and open demog
 2. On the viewer, set X to AGE, Y to HEIGHT
 3. Hold Shift and drag a rectangle to select points — verify selection in the grid
 4. Go to the Context Panel > Selection
-5. Toggle the available checkboxes (e.g., Show Selected Only, Invert Selection) — verify the line chart interaction updates accordingly
+5. Toggle the available checkboxes — verify the line chart interaction updates accordingly
 6. Save the layout, close the line chart, apply the layout — verify selection settings are preserved
+
+Actuation note (recon 2026-07-21): the Selection section on a line chart has no
+"Show Selected Only" or "Invert Selection" checkbox — those were illustrative
+names in the source scenario. The real Selection checkboxes are Show Selected
+Rows, Show Current Row Line, Show Mouse-over Category, and Show Mouse-over Row
+Line. Show Selected Rows has a measurable canvas effect: with rows selected and
+no split column (so the only orange is the selection overlay), unchecking it
+drops the SELECTION_HUE_RANGE pixel count and rechecking restores it. The three
+mouse-over checkboxes need a live hovering pointer that headless automation
+cannot drive, so they are exercised through their stored value plus a no-error
+guard; persistence of a non-default combo is verified by the layout round-trip.
 
 ## Data panel checkboxes
 
 1. Go to the Context Panel > Data
-2. Toggle the available checkboxes (e.g., Show Null Values, Show Missing Values) one by one — verify the line chart updates after each toggle
+2. Toggle the available checkboxes one by one — verify the line chart updates after each toggle
 3. Save the layout, close the line chart, apply the layout — verify the checkbox states are preserved
+
+Actuation note (recon 2026-07-21): a line chart's Data section has no "Show Null
+Values" or "Show Missing Values" checkbox — those were illustrative names in the
+source scenario (they are grid properties). The real viewer booleans toggled
+here are Pack Categories (Data) and Multi Axis (Controls); each is set off its
+default with the new value read back and a no-error guard, and the toggled combo
+is confirmed to survive a layout save/close/restore round-trip.
 ---
 {
   "order": 2,
