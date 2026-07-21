@@ -16,8 +16,8 @@ related_bugs:
     status: fixed
 expected_results:
   - anchor: "Scenario 1 Step 4"
-    expectation: "The viewer's columnNames list length is 3 (one axis per selected
-      column: AGE, HEIGHT, WEIGHT)"
+    expectation: "The viewer RENDERS one axis slider per selected column — the DOM
+      axis-slider names equal AGE, HEIGHT, WEIGHT in order"
   - anchor: "Scenario 2 Step 4"
     expectation: "df.filter.trueCount drops below the full row count (500) after
       dragging the AGE axis range-slider to a narrower window"

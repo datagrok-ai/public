@@ -37,14 +37,19 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
   await page.locator('[name="viewer-PC-Plot"]').waitFor({timeout: 15000});
 
   await softStep('Column setup — select AGE, HEIGHT, WEIGHT (axis count = 3)', async () => {
-    const cols = await page.evaluate(async () => {
+    // Cross-channel signal: columnNames is WRITTEN via props but read back from
+    // the RENDERED DOM (one axis-slider element per column), so a broken
+    // re-render fails instead of echoing the prop value. Setting the columns
+    // through the Context Panel dialog is not scriptable headless (the
+    // Select-columns list is canvas-rendered — 2026-07-21 recon).
+    const axes = await page.evaluate(async () => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
       pc.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT'];
-      await new Promise((r) => setTimeout(r, 500));
-      return pc.getOptions().look.columnNames.slice();
+      await new Promise((r) => setTimeout(r, 900));
+      return Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
+        .map((e) => e.getAttribute('name')!.replace('axis-slider-', ''));
     });
-    expect(cols.length).toBe(3);
-    expect(cols).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
+    expect(axes).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
   });
 
   await softStep('In-chart range-filter drop + Reset View restore (PRIMARY SIGNAL)', async () => {
