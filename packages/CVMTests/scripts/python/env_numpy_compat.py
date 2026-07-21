@@ -2,6 +2,7 @@
 #description: Verifies numpy ABI compatibility when pip packages depend on numpy
 #language: python
 #environment: env_numpy_compat
+#meta.timeout: 600
 #input: int rows
 #output: int result
 
