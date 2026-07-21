@@ -243,6 +243,7 @@ export interface IGridSettings {
 
   linearColorScheme: Array<number>;
 
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
   categoricalColorScheme: Array<number>;
 
   columnHeaderTypes: Array<string>;
@@ -637,6 +638,7 @@ export interface IScatterPlotSettings {
 
   linearColorScheme: Array<number>;
 
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
   categoricalColorScheme: Array<number>;
 
   /// Determines whether the axes should follow the non-precision-related format (such as "money")
@@ -1303,6 +1305,7 @@ export interface IBoxPlotSettings {
 
   linearColorScheme: Array<number>;
 
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
   categoricalColorScheme: Array<number>;
 
   /// Controls box plot tooltip visibility
@@ -2574,6 +2577,7 @@ export interface IMapViewerSettings {
 
   linearColorScheme: Array<number>;
 
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
   categoricalColorScheme: Array<number>;
 
   /// Determines the rows shown on the plot.
@@ -2991,6 +2995,7 @@ export interface IPcPlotSettings {
 
   linearColorScheme: Array<number>;
 
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
   categoricalColorScheme: Array<number>;
 
   backColor: number;
@@ -3434,6 +3439,7 @@ export interface IScatterPlot3dSettings {
 
   linearColorScheme: Array<number>;
 
+  /// Applies only to columns with 100+ categories; below that, the column's color coding is used.
   categoricalColorScheme: Array<number>;
 
   dynamicCameraMovement: boolean;
