@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/nodejs-api-demo",
   "friendlyName": "NodeJS API Demo",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "End-to-end demo: nodejs scripts using the js-api (grok/DG) and package functions",
   "repository": {
     "type": "git",

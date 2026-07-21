@@ -1,4 +1,4 @@
-#name: PyMean
+#name: ColumnMean
 #language: python
 #input: dataframe df
 #input: string colName
