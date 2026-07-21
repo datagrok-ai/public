@@ -35,6 +35,16 @@ expected_results:
       After saving the layout and reopening from it, the per-category color
       property reads back the same value that was set before saving —
       persistence round-trip for layout (GROK-17278 regression guard).
+  - anchor: "Scenario 2 Step 12"
+    expectation: >-
+      After saving the project via the SAVE button, closing all, and reopening
+      the project, the Line chart viewer is restored and the per-category color
+      reads back the value set before saving (GROK-17278 — project
+      serialization preserves per-category color).
+  - anchor: "Scenario 2 Step 13"
+    expectation: >-
+      The markers legend is present in the reopened project's Line chart viewer
+      (GROK-19825 — the legend must not disappear on project reopen).
 ---
 
 # Line Chart — Legend filter-color and layout/project persistence
@@ -48,6 +58,9 @@ expected_results:
 4. In the property panel under **Data**, set **Split** to a categorical column that has
    3–5 distinct categories (e.g. `Stereo Category`).
 5. Confirm the legend renders one colored entry per category.
+6. Assign a known per-category baseline color to each category (e.g. R_ONE=red,
+   S_ABS=green, S_ACHIR=blue, S_PART=yellow, S_UNKN=magenta) so the github-1498
+   color guard in Scenario 1 can assert an exact value rather than a default.
 
 ## Scenarios
 
@@ -92,16 +105,22 @@ Steps:
 8. Assert: the per-category color property reads back the same value recorded in
    Step 2 — color is restored from the layout round-trip (GROK-17278 regression
    guard; save→close→reopen is a real signal, not a setter re-read).
-9. Re-open SPGI, re-add the Line Chart, restore the split configuration (or apply
-   the layout again). Then open **Save Project** and save the project with a
-   distinct name.
-10. Close all. Reopen the project from the **Projects** panel.
-11. Locate the line chart viewer in the reopened project layout.
-12. Assert: the per-category color property reads back the same value from Step 2 —
-    color is restored from the project round-trip (GROK-17278 regression guard).
+9. With the split Line Chart still active and the category color set, click the
+   **SAVE** ribbon button, name the project distinctly, and confirm (**OK**).
+   A "Share …" dialog appears after the save — dismiss it (**Cancel**).
+   (Only the SAVE button captures the viewer layout — a JS-API
+   `Project.create().addChild(saveLayout())` throws "Unable to add entity to the
+   project", and `addChild(df)` alone restores the table but not the viewer.)
+10. Close all. Reopen the saved project.
+11. Locate the Line Chart viewer in the reopened project layout.
+12. Assert: the Line chart viewer is restored and the per-category color property
+    reads back the same value from Step 2 — color is restored from the project
+    round-trip (GROK-17278 regression guard).
 13. Assert: the markers legend is present in the reopened viewer (GROK-19825
     regression guard — legend must not disappear on project reopen).
-14. Assert: no console errors or page errors occurred during Steps 3–13.
+14. Assert: no console errors or page errors from the spec's own steps (the
+    platform's post-save Share dialog may log a benign NullError, which is
+    excluded from the spec's error gate).
 
 Expected:
 - After saving the layout and reopening, the color applied to the category in Step 1
