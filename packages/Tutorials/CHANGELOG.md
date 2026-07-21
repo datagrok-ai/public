@@ -11,6 +11,7 @@
 * Tutorials: Updated the Diff Studio tutorial with respect to the main app modifications
 * GROK-20145: Demo | Form viewer: Error on URL direct opening
 * GROK-20408: Tutorials: Fixed `waitForElementClick` dropping the first 500ms of clicks, hanging forever on a not-yet-rendered element, and leaking listeners with no cancellation — replaced by `elementClick` (immediate listener, polling getter with timeout, Observable so `firstEvent` cancels on close)
+* GROK-20424: Tutorials: Fixed the Calculated Columns tutorial hanging on the "Enter the expression" step — the MutationObserver watched `.cm-line`, which is null before CodeMirror renders, throwing `observe: parameter 1 is not of type 'Node'`; now watches the always-present dialog root subtree
 
 ## 1.11.2 (2026-04-10)
 
