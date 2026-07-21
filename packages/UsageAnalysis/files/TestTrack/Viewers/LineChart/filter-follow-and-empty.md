@@ -37,8 +37,9 @@ expected_results:
       dragged — the live filter update propagates to the dataframe state.
   - anchor: "Scenario 3 Step 6"
     expectation: >-
-      No new console errors or page errors are raised while dragging the filter
-      range slider (GROK-20185 regression guard).
+      No new console errors or page errors are raised while the X range is
+      narrowed and applied through the Filter Panel (GROK-20185 regression
+      guard).
   - anchor: "Scenario 3 Step 8"
     expectation: >-
       After restoring the slider to full range, df.filter.trueCount returns to
@@ -110,21 +111,31 @@ Expected:
   filtered out in this combination.
 - No errors are raised during the structure filter application.
 
-### Scenario 3: Dragging the X range slider updates chart live
+### Scenario 3: Narrowing the X range in the Filter Panel updates the chart live
+
+Actuation note (recon 2026-07-21): the range-slider DRAG is not scriptable
+headless — the Filter Panel numeric filter is an embedded Histogram whose range
+strip is canvas-drawn with no DOM handle elements, canvas-strip drags leave the
+filter untouched, and the min/max text inputs stay invisible to automation. The
+range narrowing is therefore applied programmatically through the Filter
+Panel's filter (`getFiltersGroup().updateOrAdd`), which still exercises the
+GROK-20185 observable: the live `df.filter.trueCount` update and its
+reversibility. A manual drag check stays a human-side variation of this
+scenario.
 
 Steps:
 1. Confirm the X column is set to the numeric column from Setup and the axis
    scale is **Linear**.
-2. Locate the X-axis range slider in the Filter Panel (the slider for the X
-   column range).
+2. Locate the X-column filter in the Filter Panel.
 3. Record the current `df.filter.trueCount` (baseline — all rows).
-4. Drag the range slider to narrow the X range to roughly the middle 50% of the
-   column's value span (drag the right handle inward).
+4. Narrow the X range to roughly the middle 50% of the column's value span by
+   applying the range through the Filter Panel filter.
 5. Assert: `df.filter.trueCount` is strictly less than the baseline from Step 3 —
    the live filter update propagates to the dataframe state (GROK-20185
-   regression guard; dragging must not leave the count unchanged).
-6. Assert: no new console errors or page errors occurred during the drag.
-7. Restore the slider to its full range (drag both handles back to the extremes).
+   regression guard; the narrowing must not leave the count unchanged).
+6. Assert: no new console errors or page errors occurred while the range was
+   narrowed and applied.
+7. Restore the full range through the same Filter Panel filter.
 8. Assert: `df.filter.trueCount` returns to the baseline value from Step 3.
 
 Expected:

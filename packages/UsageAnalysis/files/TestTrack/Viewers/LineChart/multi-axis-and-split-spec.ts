@@ -88,8 +88,8 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     const cv = lc?.root?.querySelector('canvas') as HTMLCanvasElement | null;
     return cv ? {w: cv.width, h: cv.height} : {w: -1, h: -1};
   });
-  expect(cvDims.w).toBeGreaterThan(450);
-  expect(cvDims.h).toBeGreaterThan(200);
+  expect(cvDims.w, 'canvas width changed — recalibrate the 8000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(450);
+  expect(cvDims.h, 'canvas height changed — recalibrate the 8000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(200);
 
   await softStep('S1: enable Multi Axis with 2 Y columns', async () => {
     const before = realErrors().length;
@@ -122,43 +122,70 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     await setProps(page, {splitColumnNames: [], yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
     expect((await getProps(page, 'yColumnNames')).yColumnNames).toHaveLength(3);
     // GROK-18484: EDITING the Y list through the property-panel multi-select
-    // dialog must not silently reset it. Drive the real UI: open the context
-    // panel, click the Y row's [...] editor, type into the dialog's Search
-    // input, close with Escape — then the Y list must survive intact.
+    // dialog must not silently reset it. Drive the real UI: the Y row of the
+    // context panel's property grid, its [...] editor, the Select-columns
+    // dialog's Search input, Escape. The dialog's column LIST is
+    // canvas-rendered (probed 2026-07-21: no DOM rows/checkboxes; row clicks
+    // at several offsets leave the 'N checked' label unchanged), so a
+    // checkbox-toggle+OK mutation is not reachable headless — open/search/close
+    // is the deepest scriptable editor interaction; the wrong-dialog and
+    // reset failure modes are held by the '3 checked' identity assert and the
+    // exact-set assert below.
     await setProps(page, {yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
-    await page.evaluate(() => {
-      const el = document.querySelector('[name="viewer-Line-chart"]') as HTMLElement;
-      const panelBase = el.closest('.panel-base') as HTMLElement;
-      (panelBase?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement)?.click();
+    // The context panel usually auto-opens for a selected viewer; click the
+    // gear only when the Y property row is not present (a blind gear click
+    // toggles an open panel CLOSED — observed live).
+    const clickYDots = () => page.evaluate(() => {
+      // Viewer props render as table.property-grid rows: TR.property-grid-item
+      // with the prop name in TD.property-grid-item-name. The Y section header
+      // also carries the text 'Y' but has .property-grid-category.
+      const rows = Array.from(document.querySelectorAll('table.property-grid tr.property-grid-item')) as HTMLElement[];
+      const yRow = rows.find((tr) => !tr.classList.contains('property-grid-category') &&
+        (tr.querySelector('td.property-grid-item-name')?.textContent ?? '').trim() === 'Y');
+      if (!yRow) return false;
+      const dots = (Array.from(yRow.querySelectorAll('*')) as HTMLElement[])
+        .find((el) => el.childElementCount === 0 && /^(\.\.\.|…)$/.test((el.textContent ?? '').trim()));
+      if (!dots) return false;
+      dots.click();
+      return true;
     });
-    await page.waitForTimeout(900);
-    const dotsClicked = await page.evaluate(() => {
-      // The Y row: a leaf 'Y' label whose ancestor row also holds an 'N / M'
-      // counter and the '...' editor button (disambiguates from Split's row).
-      const leaves = (Array.from(document.querySelectorAll('*')) as HTMLElement[])
-        .filter((el) => el.childElementCount === 0);
-      const label = leaves.find((el) => (el.textContent ?? '').trim() === 'Y' &&
-        el.closest('.property-grid, .grok-prop-panel, .d4-accordion, .d4-flex-col'));
-      let row: HTMLElement | null = label ?? null;
-      for (let up = 0; up < 6 && row; up++, row = row.parentElement) {
-        const kids = Array.from(row.querySelectorAll('*')) as HTMLElement[];
-        const counter = kids.find((el) => el.childElementCount === 0 &&
-          /^\d+\s*\/\s*\d+$/.test((el.textContent ?? '').trim()));
-        const dots = kids.find((el) => el.childElementCount === 0 &&
-          /^(\.\.\.|…)$/.test((el.textContent ?? '').trim()));
-        if (counter && dots) { dots.click(); return true; }
-      }
-      return false;
-    });
+    let dotsClicked = await clickYDots();
+    if (!dotsClicked) {
+      await page.evaluate(() => {
+        const el = document.querySelector('[name="viewer-Line-chart"]') as HTMLElement;
+        const panelBase = el.closest('.panel-base') as HTMLElement;
+        (panelBase?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement)?.click();
+      });
+      await page.waitForTimeout(900);
+      dotsClicked = await clickYDots();
+    }
     expect(dotsClicked).toBe(true);
     const search = page.locator('.d4-dialog .d4-column-grid input[placeholder="Search"]');
     await search.waitFor({timeout: 5000});
+    // Identity: this dialog belongs to the Y row — exactly the 3 Y columns are
+    // pre-checked (Split's dialog would read '0 checked' here).
+    const checkedLabel = await page.evaluate(() =>
+      (Array.from(document.querySelectorAll('.d4-dialog *')) as HTMLElement[])
+        .filter((el) => el.childElementCount === 0)
+        .map((el) => (el.textContent ?? '').trim())
+        .find((t) => /^\d+ checked$/.test(t)) ?? null);
+    expect(checkedLabel).toBe('3 checked');
     await search.fill('Chemical');
     await page.waitForTimeout(600);
-    await page.keyboard.press('Escape');
+    // Close deterministically via the CANCEL button (an Escape can be consumed
+    // by the focused search input), then prove THIS dialog is gone. The dialog
+    // root is position:fixed (offsetParent is null even when shown) — check
+    // closure by rect. The exact-set assert below makes a wrong-row click or a
+    // silent reset fail loudly, not pass on a length check.
+    await page.locator('.d4-dialog button', {hasText: 'CANCEL'}).first().click();
     await page.waitForTimeout(800);
+    const openDialogs = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-dialog'))
+        .filter((d) => d.getBoundingClientRect().width > 0 &&
+          d.querySelector('.dlg-select-columns')).length);
+    expect(openDialogs).toBe(0);
     const y = (await getProps(page, 'yColumnNames')).yColumnNames;
-    expect(y).toHaveLength(3);
+    expect(y).toEqual(['Chemical Space X', 'Chemical Space Y', 'TPSA']);
   });
 
   // GROK-20033: the column-selector search input must stay inside the selector.

@@ -140,10 +140,14 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
   // GROK-18375: with a time-split X axis, applying a filter removed every row. The
   // Chem substructure filter cannot be driven headless, so a categorical filter on
   // the structure-family Series column stands in for it.
-  await softStep('S2 Step 1-2: set X to a date column (time-split), no error', async () => {
+  await softStep('S2 Step 1-2: set X to a date column with Year-quarter time-split, no error', async () => {
     const before = realErrors().length;
-    await setProps(page, {xColumnName: 'Competition assay Date'});
-    expect((await getProps(page, 'xColumnName')).xColumnName).toBe('Competition assay Date');
+    // xMap is the time-split the GROK-18375 repro requires — without it the
+    // bug's configuration (time-split x filter) is not actually exercised.
+    await setProps(page, {xColumnName: 'Competition assay Date', xMap: 'Year quarter'});
+    const cfg = await getProps(page, 'xColumnName', 'xMap');
+    expect(cfg.xColumnName).toBe('Competition assay Date');
+    expect(cfg.xMap).toBe('Year quarter');
     expect(realErrors().length).toBe(before);
   });
 
@@ -156,13 +160,18 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
 
   await softStep('S2 Step 7: remove filter, restore numeric X for next scenario', async () => {
     await filterSeries(page, null);
-    await setProps(page, {xColumnName: 'Chemical Space X'});
+    await setProps(page, {xColumnName: 'Chemical Space X', xMap: ''});
     expect((await getProps(page, 'xColumnName')).xColumnName).toBe('Chemical Space X');
     expect(await trueCount(page)).toBe(baseline);
   });
 
-  // The range-slider drag is a canvas gesture that cannot be synthesized headless,
-  // so the range is driven through fg.updateOrAdd instead.
+  // The range-slider drag is gesture-uncontrollable-headless — MCP recon
+  // 2026-07-21: the Filter Panel numeric filter is an embedded Histogram with a
+  // canvas-drawn range strip (no DOM handle elements), canvas-strip drags at
+  // two positions leave df.filter untouched, and the min/max d4-filter-inputs
+  // exist but stay invisible (null boundingBox) even after hover. The range is
+  // therefore driven through fg.updateOrAdd, which still verifies the
+  // GROK-20185 observable: the live count update and its reversibility.
   await softStep('S3 Step 1: confirm numeric X, linear scale', async () => {
     const cfg = await getProps(page, 'xColumnName', 'xAxisType');
     expect(cfg.xColumnName).toBe('Chemical Space X');
