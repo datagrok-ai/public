@@ -5,6 +5,7 @@ import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 
 declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
@@ -154,6 +155,51 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
     expect(result.cleared).not.toBe(result.expected); // clear really removed it
     expect(result.restored).toBe(result.expected);    // layout round-trip restored it
     expect(realErrors().length).toBe(before);
+  });
+
+  await softStep('S2 Steps 9-12: category color survives a full project save/close/reopen (GROK-17278)', async () => {
+    const before = realErrors().length;
+    // Project-level round-trip (stronger than the layout round-trip above: the
+    // table is closed and RELOADED from the server-side project). Root-cause
+    // note for the manual companion: Project.create().addChild(df).save() fails
+    // with project_relations_entity_id_fkey ONLY when the table has no
+    // server-side entity — uploadDataFrame first and the JS-API save works.
+    // This is NOT the "dev-server regression" the companion assumed.
+    const result = await page.evaluate(async (args) => {
+      const tv = grok.shell.tv;
+      const cat = tv.dataFrame.col(args.col);
+      const colors = cat.meta.colors;
+      colors.setCategorical({R_ONE: 0xFF00AAFF});
+      await new Promise((r) => setTimeout(r, 400));
+      const readOn = (t: any) => {
+        const c = t.dataFrame.col(args.col);
+        for (let i = 0; i < t.dataFrame.rowCount; i++)
+          if (c.get(i) === 'R_ONE') return c.meta.colors.getColor(i, c);
+        return null;
+      };
+      const expected = readOn(tv);
+      await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
+      const proj = DG.Project.create();
+      proj.name = 'zz-linechart-color-persist-' + Date.now();
+      proj.addChild(tv.dataFrame);
+      const saved = await grok.dapi.projects.save(proj);
+      await new Promise((r) => setTimeout(r, 1000));
+      grok.shell.closeAll();
+      await new Promise((r) => setTimeout(r, 1500));
+      const reopened = await grok.dapi.projects.find(saved.id);
+      await reopened.open();
+      await new Promise((r) => setTimeout(r, 3500));
+      const restored = readOn(grok.shell.tv);
+      await grok.dapi.projects.delete(saved);
+      return {expected, restored};
+    }, {col: splitColumn});
+    // GROK-17278: per-category color survived the project serialization round-trip.
+    expect(result.restored).toBe(result.expected);
+    expect(realErrors().length).toBe(before);
+    // GROK-19825 (markers legend PRESENT after reopen) stays in the manual
+    // companion: a df-only project restores the table, not the viewer layout,
+    // so the legend DOM node is not reconstructed headless. See
+    // legend-color-and-persistence-ui.md.
   });
 
   await page.evaluate(() => grok.shell.closeAll());
