@@ -34,14 +34,13 @@ expected_results:
       (github-2329)."
   - anchor: "Scenario 2 Step 2"
     expectation: "Setting Max below Min (e.g. Max = 20 when Min = 40) does not
-      crash: df.filter.trueCount drops below the prior valid-range count and no
-      new console error is raised (GROK-19581, GROK-19760). OBSERVED BEHAVIOR
-      (recon 2026-07-21, demog.csv), NEEDS PRODUCT CONFIRMATION: the build
-      applies the inverted range verbatim — it neither refuses nor corrects it —
-      collapsing the filter to almost no rows with no user-facing signal. The
-      tickets guarantee only no-crash; whether silently accepting an inverted
-      range is intended is a product question. The spec asserts the observed
-      collapse + no-error floor, not a rejection the product does not perform."
+      crash: the filter card shows the validation warning \"max should be
+      greater than min\", df.filter.trueCount drops below the prior valid-range
+      count, and no new console error is raised (GROK-19581, GROK-19760). This
+      is intended behavior (confirmed by the operator): the UI flags the
+      inverted range to the user and still applies the collapsed sub-range. The
+      spec asserts the collapse + no-error floor; the warning text is a
+      DOM-assertable signal available if a stronger check is wanted later."
   - anchor: "Scenario 2 Step 3"
     expectation: "Setting Min to a value below the column minimum (e.g. -999) is
       applied verbatim, not clamped, and widens the lower bound to the data
@@ -94,16 +93,16 @@ Expected:
 - df.filter.trueCount is unchanged after enabling Split Stack (the range filter survives stacking, GROK-18948).
 - Enabling Normalise to Filter and then narrowing the range via the Min input does not raise a new console error and the viewer re-renders (github-2329).
 
-### Scenario 2: Invalid range inputs are rejected without crashing
+### Scenario 2: Out-of-range and inverted inputs are handled without crashing
 
 Steps:
 1. Set **Min** to `40` and **Max** to `60` via the range input fields (establish a known-valid sub-range).
-2. Set **Max** to `20` (below the current Min of 40) — a Min >= Max violation. Verify: the inverted range is applied (not refused) and collapses the sub-range so `df.filter.trueCount` drops below the prior valid-range count, with no new console error (GROK-19581, GROK-19760).
+2. Set **Max** to `20` (below the current Min of 40) — a Min >= Max violation. Verify: the filter card shows the validation warning "max should be greater than min", the inverted range still applies and collapses the sub-range so `df.filter.trueCount` drops below the prior valid-range count, with no new console error (GROK-19581, GROK-19760). Intended behavior — the UI warns the user and still applies the collapsed range.
 3. Restore a valid Max (e.g. `60`), then set **Min** to `-999` (below the column minimum). Verify the value is applied verbatim (not clamped) and widens the lower bound to the data extent — `df.filter.trueCount` rises, the effective range stays non-inverted (min <= max), and no new console error is raised (GROK-19581).
 4. Set **Min** back to `40`, then set **Max** to `999` (above the column maximum). Verify the value is applied verbatim (not clamped) and widens the upper bound to the data extent — `df.filter.trueCount` rises, the effective range stays non-inverted (min <= max), and no new console error is raised (GROK-19760).
 
 Expected:
-- Setting Max below Min applies the inverted range and collapses the filter (trueCount drops); the build does not refuse or correct the inversion, but raises no console error (GROK-19581, GROK-19760).
+- Setting Max below Min shows the "max should be greater than min" warning and still applies the inverted range, collapsing the filter (trueCount drops), with no console error (GROK-19581, GROK-19760) — intended behavior.
 - Setting Min below the column minimum is applied verbatim (not clamped) and widens the lower bound to the data extent (trueCount rises), effective range non-inverted, no new console error (GROK-19581).
 - Setting Max above the column maximum is applied verbatim (not clamped) and widens the upper bound to the data extent (trueCount rises), effective range non-inverted, no new console error (GROK-19760).
 
