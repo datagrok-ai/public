@@ -13,7 +13,7 @@ test.use(specTestOptions);
 const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 const splitCol = 'Primary Series Name';
 
-test('Bar Chart — Value-Axis Range, Scale, and Selected/Filtered Rows Overlays', async ({page}) => {
+test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
   test.setTimeout(300_000);
 
   const pageErrors: string[] = [];
@@ -122,15 +122,12 @@ test('Bar Chart — Value-Axis Range, Scale, and Selected/Filtered Rows Overlays
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const rangeSliders = bc.root.querySelectorAll('svg[type="range-slider"]').length;
       return {
-        valueMin: bc.props.valueMin,
-        valueMax: bc.props.valueMax,
         rangeSliders,
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     });
     const errAfter = pageErrors.length + consoleErrors.length;
-    expect(info.valueMin).not.toBeNull();
-    expect(info.valueMax).not.toBeNull();
+    expect(info.rangeSliders).toBeGreaterThan(0); // the value-axis scroll bar is present on the constrained range
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);
   });

@@ -127,10 +127,13 @@ export async function addViewerByIcon(
   // reaches for the viewer via `tv.viewers.find(...)` right after this returns
   // otherwise gets `undefined`. Poll enumerability so downstream prop reads are
   // safe regardless of the render-vs-registration race.
+  // `viewerName` is the DOM-attribute form ('Bar-chart'), while viewer.type is
+  // the display form ('Bar chart') — compare hyphen/space-insensitively.
   await page.waitForFunction((vn) => {
     const tv = (window as any).grok?.shell?.tv;
     if (!tv) return false;
-    const v = Array.from(tv.viewers).find((x: any) => x.type === vn);
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(tv.viewers).find((x: any) => norm(x.type) === norm(vn));
     return !!(v && (v as any).props);
   }, viewerName, {timeout: timeoutMs});
 }
@@ -225,17 +228,23 @@ export interface PickColumnOptions {
   /** Column name to type into the selector. */
   columnName: string;
   /**
-   * Optional viewer type for fallback verification + scope (e.g. 'Scatter plot').
-   * When set, after the UI flow the helper reads `props[propName]` and, if it
-   * doesn't equal `columnName`, falls back to JS API. Pass propName too.
+   * Optional viewer type for post-flow verification (e.g. 'Scatter plot').
+   * When set together with propName, the helper reads `props[propName]` after
+   * the UI flow and reports (via `usedFallback`) whether the JS-API
+   * substitution had to be applied.
    */
   viewerType?: string;
   /**
    * Property name to verify the change landed (e.g. 'colorColumnName',
-   * 'splitColumnName'). When set together with viewerType, enables the
-   * JS-API fallback safety net described in scatter-plot-spec.ts:25-47.
+   * 'splitColumnName'). Pass together with viewerType.
    */
   propName?: string;
+  /**
+   * Opt-in JS-API substitution: when true (and viewerType/propName are set),
+   * a UI flow that did not land the column falls back to assigning the prop
+   * directly. Default false — a broken UI path is reported, not masked.
+   */
+  allowFallback?: boolean;
   /**
    * How to wait for the popup to open after the trigger mousedown:
    *   - `'sleep'` (default) — fixed 500ms wait. Matches the original
@@ -265,7 +274,8 @@ export interface PickColumnOptions {
  * scatter-plot-spec.ts:25-47 — same mousedown-on-`.d4-column-selector-column`
  * trigger, same first-key + rest-of-name typing rhythm (avoids the timing
  * bug where the popup's async-focused search input drops the first letter),
- * same ArrowDown + Enter commit, same prop-equality JS-API fallback.
+ * same ArrowDown + Enter commit. The prop-equality JS-API fallback is
+ * opt-in via `allowFallback`; the return value reports whether it fired.
  *
  * Assumes the viewer's properties Context Panel (gear) is already open, or
  * the target column-combobox is rendered somewhere on the page. Callers that
@@ -275,7 +285,9 @@ export interface PickColumnOptions {
  * Selectors on Viewers" + `density-plot-run.md` rows 17-19 (UI flow
  * validated against dev).
  */
-export async function pickColumnViaSelector(page: Page, opts: PickColumnOptions): Promise<void> {
+export async function pickColumnViaSelector(
+  page: Page, opts: PickColumnOptions,
+): Promise<{usedFallback: boolean}> {
   const selectorName = `div-column-combobox-${opts.comboboxSuffix}`;
   const scope = opts.scopeSelector ?? null;
   const strategy = opts.popupWaitStrategy ?? 'sleep';
@@ -314,15 +326,23 @@ export async function pickColumnViaSelector(page: Page, opts: PickColumnOptions)
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
 
-  // JS-API fallback verify: if the UI didn't apply, set the prop directly so
-  // downstream assertions can proceed (mirrors scatter-plot-spec.ts pattern).
+  // Post-flow verify: read the prop back and, only when the caller opted in,
+  // substitute via JS API. `usedFallback` lets callers assert the UI path.
+  let usedFallback = false;
   if (opts.viewerType && opts.propName) {
-    await page.evaluate(({vt, prop, col}) => {
+    const applied = await page.evaluate(({vt, prop, col}) => {
       const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
-      if (view && (view.props as any)[prop] !== col)
-        (view.props as any)[prop] = col;
+      return !!view && (view.props as any)[prop] === col;
     }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName});
+    if (!applied && opts.allowFallback === true) {
+      await page.evaluate(({vt, prop, col}) => {
+        const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
+        if (view) (view.props as any)[prop] = col;
+      }, {vt: opts.viewerType, prop: opts.propName, col: opts.columnName});
+      usedFallback = true;
+    }
   }
+  return {usedFallback};
 }
 
 /**

@@ -74,7 +74,7 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
   });
 
   await softStep('S1: in-plot value=HEIGHT propagates to panel (github-2296)', async () => {
-    await v.pickColumnViaSelector(page, {
+    const {usedFallback} = await v.pickColumnViaSelector(page, {
       comboboxSuffix: 'value',
       columnName: 'HEIGHT',
       viewerType: 'Histogram',
@@ -85,6 +85,7 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
       return h.props.valueColumnName;
     });
+    expect(usedFallback).toBe(false); // the value must arrive via the in-plot UI flow
     expect(prop).toBe('HEIGHT');
   });
 

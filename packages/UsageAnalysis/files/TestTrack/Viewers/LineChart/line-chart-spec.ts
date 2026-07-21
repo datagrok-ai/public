@@ -637,8 +637,9 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
 
     await lcSetProps(page, {xColumnName: 'Chemist 521'});
 
-    // Hovering the chart must not add warnings.
-    const warningsBefore = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
+    // Hovering the chart must not raise errors. grok.shell.warnings is
+    // undefined on this build, so page and console errors are the channel.
+    const errBefore = errorCount();
 
     const hoverBox = await page.evaluate(() => {
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
@@ -655,8 +656,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await page.mouse.move(hoverBox.cx, hoverBox.cy);
     await page.waitForTimeout(1000);
 
-    const warningsAfter = await page.evaluate(() => grok.shell.warnings?.length ?? 0);
-    expect(warningsAfter).toBe(warningsBefore);
+    expect(errorCount()).toBe(errBefore);
   });
 
   v.finishSpec();

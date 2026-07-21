@@ -81,8 +81,9 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
     const before = realErrors().length;
     await setProps(page, {showStatisticalProcessControl: true});
     expect((await getProps(page, 'showStatisticalProcessControl')).showStatisticalProcessControl).toBe(true);
-    // No-freeze guard: a follow-up JS roundtrip must resolve within the timeout.
-    const alive = await page.evaluate(() => true, {timeout: 10_000} as any);
+    // No-freeze guard: a follow-up JS roundtrip must resolve — a frozen page
+    // would hang this evaluate until the test timeout.
+    const alive = await page.evaluate(() => true);
     expect(alive).toBe(true);
     // grok.shell.warnings is undefined on this build, so page and console errors
     // are the error channel.

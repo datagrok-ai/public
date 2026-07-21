@@ -87,25 +87,31 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Scenario 1 Step 4: Legend Visibility Always; vertical config preserved (GROK-19480)', async () => {
+  await softStep('Scenario 1 Step 4: stacking holds on the negative-sum value column (GROK-19480)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.legendVisibility = 'Always';
+      bc.props.stackColumnName = 'Stereo Category';
       await new Promise((r) => setTimeout(r, 900));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       return {
-        orientation: bc.props.orientation,
-        barSortType: bc.props.barSortType,
-        barSortOrder: bc.props.barSortOrder,
         splitColumnName: bc.props.splitColumnName,
         hasCanvas: !!cv && cv.getBoundingClientRect().width > 0,
       };
     });
+    // Legend presence is the DOM proxy for active stacking (see
+    // barchart-relative-requires-stack): GROK-19480 broke stacking whenever the
+    // aggregated value column has negative sums, which Chemical Space X does.
+    const legend = await v.readLegend(page, 'Bar chart');
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.stackColumnName = null;
+      await new Promise((r) => setTimeout(r, 600));
+    });
     const errAfter = pageErrors.length + consoleErrors.length;
-    expect(info.orientation).toBe('vertical');
-    expect(info.barSortType).toBe('by value');
-    expect(info.barSortOrder).toBe('desc');
+    expect(legend.legendRendered).toBe(true);
+    expect(legend.itemCount).toBeGreaterThanOrEqual(2);
     expect(info.splitColumnName).toBe(splitCol);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);

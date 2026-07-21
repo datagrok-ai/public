@@ -32,6 +32,7 @@ test('Legend visibility and positioning', async ({page}) => {
       columnName: 'Series',
       viewerType: 'Scatter plot',
       propName: 'colorColumnName',
+      allowFallback: true,
     });
     const result = await page.evaluate(async () => {
       const sp = (window as any).grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot');

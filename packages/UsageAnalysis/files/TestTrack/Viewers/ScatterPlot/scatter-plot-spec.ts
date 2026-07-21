@@ -10,7 +10,7 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 
 /** Set a Scatter plot column via the column-combobox UI flow (pickColumnViaSelector alias). */
 const setCol = (page: Page, comboboxSuffix: string, columnName: string, propName: string) =>
-  v.pickColumnViaSelector(page, {comboboxSuffix, columnName, viewerType: 'Scatter plot', propName});
+  v.pickColumnViaSelector(page, {comboboxSuffix, columnName, viewerType: 'Scatter plot', propName, allowFallback: true});
 
 /** Right-click center of scatter plot canvas to open context menu using real Playwright mouse */
 async function openScatterContextMenu(page: Page) {

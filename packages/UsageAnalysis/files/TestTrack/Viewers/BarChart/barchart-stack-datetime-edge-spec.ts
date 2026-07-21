@@ -96,14 +96,16 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
       bc.props.splitColumnName = 'RACE';
       grok.shell.o = bc;
       await new Promise((r) => setTimeout(r, 1200));
+      const splitType = bc.dataFrame.col('RACE').type;
       const host = document.querySelector('[name="input-aggr-selector-split-map"]') as HTMLElement | null;
-      if (!host) return {present: false, visible: false};
+      // A host absent from the DOM is a legitimate "selector hidden" outcome.
+      if (!host) return {present: false, visible: false, splitType};
       const rect = host.getBoundingClientRect();
       const display = getComputedStyle(host).display;
       return {
         present: true,
         visible: rect.width > 0 && rect.height > 0 && display !== 'none' && host.offsetParent !== null,
-        splitType: bc.dataFrame.col('RACE').type,
+        splitType,
       };
     });
     expect(strMap.splitType).toBe('string');

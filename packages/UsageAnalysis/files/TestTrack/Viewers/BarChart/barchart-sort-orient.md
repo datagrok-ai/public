@@ -21,8 +21,8 @@ expected_results:
       with heights decreasing left to right by aggregated value.
   - anchor: "Scenario 1 Step 4"
     expectation: >-
-      With Legend Visibility set to Always, the legend is visible under vertical
-      orientation (GROK-19480).
+      With stacking enabled on the negative-sum value column, the stacked bars
+      keep rendering and the stack legend is visible (GROK-19480).
   - anchor: "Scenario 1 Step 5"
     expectation: >-
       With negative-sum categories present, the vertical bars render without
@@ -60,9 +60,11 @@ Steps:
 2. In the Context Panel > Style section, set **Bar Sort** to **Descending** (non-default; default is Ascending).
 3. Verify that bars render vertically and that bar heights decrease from left to right, confirming
    the descending sort order by aggregated **Chemical Space X** sum is applied under vertical orientation.
-4. In the Context Panel > Style section, set **Legend Visibility** to **Always**.
-   Verify that the legend is visible in the viewer area (GROK-19480 regression guard: legend must
-   be shown in vertical orientation when Visibility is Always).
+4. In the Context Panel > Style section, set **Legend Visibility** to **Always** and enable stacking
+   (set **Stack** to **Stereo Category**). Verify that stacking holds on the negative-sum
+   **Chemical Space X** aggregation: the stack legend is visible in the viewer area (GROK-19480
+   regression guard — stacking used to break for negative aggregated values). Then clear the Stack
+   column to restore the un-stacked baseline for the following steps.
 5. Confirm that the **Chemical Space X** column contains categories with negative sum totals.
    Verify that the chart renders correctly with negative-value bars displayed below the zero baseline
    without breaking the layout or producing a JavaScript error (GROK-19480 regression guard).

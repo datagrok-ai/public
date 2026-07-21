@@ -34,6 +34,7 @@ const setColumnViaPopup = (page: Page, axis: 'x' | 'y', colName: string) =>
     popupWaitStrategy: 'backdrop',
     viewerType: 'Density plot',
     propName: axis === 'x' ? 'xColumnName' : 'yColumnName',
+    allowFallback: true,
   });
 
 test('Density plot tests', async ({page}: {page: Page}) => {
