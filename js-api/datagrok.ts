@@ -3,8 +3,9 @@ import * as wu from "wu";
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { createWindowProxy, DGNotSupportedError } from './src/node/window-proxy';
 import { installDomStub } from './src/node/dom-stub';
+import { loadPackage } from './src/node/package-loader';
 
-export { DGNotSupportedError };
+export { DGNotSupportedError, loadPackage };
 
 (globalThis as any).self = globalThis;
 // grok_* registrations from the dart2js bundle land on the Proxy target;
