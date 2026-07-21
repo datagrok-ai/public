@@ -16,7 +16,10 @@ related_bugs:
     status: fixed
 expected_results:
   - anchor: "Scenario 1 Step 3"
-    expectation: "Per-bin value counts are rendered on top of each bin (Show Values on)."
+    expectation: "Per-bin value counts are rendered on top of each bin (Show Values on).
+      Actuation: the count glyphs are canvas-drawn text, not headless-readable, so
+      the spec asserts the driving prop (showValues === true) plus the no-error
+      render floor rather than the label pixels."
   - anchor: "Scenario 1 Step 4"
     expectation: "Increasing bin count to 50 does not crash or produce an error."
   - anchor: "Scenario 1 Step 5"
@@ -35,10 +38,18 @@ expected_results:
     expectation: "Clicking a bin selects the rows in that bin; the status bar shows
       a non-zero selected count matching the bin height."
   - anchor: "Scenario 1 Step 10"
-    expectation: "The current-row indicator and mouse-over indicator reflect a row
-      from the clicked bin."
+    expectation: "The current-row indicator is functional and hovering a bin
+      raises no error: df.currentRowIdx clears to -1 and round-trips to a set
+      row whose value lies within the value column's range. Actuation: a
+      headless canvas hover drives NEITHER df.mouseOverRowIdx (stays -1) NOR
+      df.currentRowIdx (recon 2026-07-21, demog.csv), so the hover itself is
+      covered by the no-error floor and the indicator is exercised through its
+      own set/read path."
   - anchor: "Scenario 2 Step 2"
-    expectation: "Show Values is off; per-bin count labels are no longer rendered."
+    expectation: "Show Values is off; per-bin count labels are no longer rendered.
+      Actuation: the labels are canvas-drawn text, not headless-readable, so the
+      spec asserts the driving prop (showValues === false) plus the no-error
+      render floor rather than the absence of label pixels."
   - anchor: "Scenario 2 Step 3"
     expectation: "Bin count reverts to 20; the properties panel and in-plot selector
       both show 20."
@@ -71,7 +82,7 @@ Steps:
 7. In the in-plot column selector, switch the value column to `HEIGHT`. Verify that the properties panel **Value** field updates to `HEIGHT` (github-2296).
 8. In the properties panel, set **Value** back to `WEIGHT`. Verify that the in-plot column selector updates to `WEIGHT` (github-2296). Per-bin counts displayed via Show Values should update to reflect the WEIGHT distribution (GROK-19759).
 9. Click a bin in the histogram. Verify that the rows belonging to that bin become selected and the status bar shows a non-zero selected count equal to the bin height.
-10. Hover over the selected bin and verify that the current-row indicator and mouse-over row indicator reflect a row from within the clicked bin's value range.
+10. Hover over the selected bin (no error expected) and verify the current-row indicator is functional: it clears and round-trips to a set row whose value is within the value column's range. (A headless hover drives neither the current-row nor the mouse-over indicator, so those visual cues are a human-side check.)
 
 Expected:
 - Per-bin value counts render on top of bins when Show Values is on (GROK-19759).

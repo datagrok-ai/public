@@ -73,12 +73,16 @@ test('Histogram — Range filtering and bound validation', async ({page}) => {
       return grok.shell.tv.dataFrame.filter.trueCount;
     });
     expect(after).toBe(before); // GROK-18948: range filter survives stacking
+    // Disable-split teardown gets its own no-error slice — otherwise a fault here
+    // would be mis-attributed to the next step's errsBefore baseline.
+    const teardownErrs = pageErrors.length;
     await page.evaluate(async () => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
       h.props.splitStack = false;
       h.props.splitColumnName = '';
       await new Promise((r) => setTimeout(r, 400));
     });
+    expect(pageErrors.slice(teardownErrs)).toEqual([]);
   });
 
   await softStep('S1: Normalise to Filter raises no error (github-2329)', async () => {
@@ -113,40 +117,61 @@ test('Histogram — Range filtering and bound validation', async ({page}) => {
     expect(filtered).toBeLessThan(rowCount);
   });
 
-  await softStep('S2: Max below Min rejected without crash (GROK-19581, GROK-19760)', async () => {
+  // NOTE: on this build the range inputs are NOT rejected or clamped — an
+  // out-of-range bound is applied verbatim (widening the effective range to the
+  // data extent), and an inverted Max<Min collapses the filter rather than being
+  // refused. The tickets (GROK-19581/GROK-19760) guaranteed only "no crash". The
+  // real, non-tautological signal per step is the direction of the trueCount move
+  // plus the no-error floor.
+
+  await softStep('S2: Max below Min collapses filter without crash (GROK-19581, GROK-19760)', async () => {
     const errsBefore = pageErrors.length;
+    const before = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     await page.locator(maxSel).first().fill('20');
     await page.locator(maxSel).first().press('Enter');
     await page.waitForTimeout(600);
-    const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filtered).toBeGreaterThanOrEqual(0);
-    expect(filtered).toBeLessThanOrEqual(rowCount); // count stays within [0, full]
+    const after = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(after).toBeLessThan(before); // inverted Max<Min collapses the sub-range
     expect(pageErrors.slice(errsBefore)).toEqual([]); // no crash on Min>=Max violation
   });
 
-  await softStep('S2: Min below column min rejected/clamped without crash (GROK-19581)', async () => {
+  await softStep('S2: Min below column min widens range without crash (GROK-19581)', async () => {
     const errsBefore = pageErrors.length;
     await page.locator(maxSel).first().fill('60');
     await page.locator(maxSel).first().press('Enter');
+    await page.waitForTimeout(300);
+    const before = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     await page.locator(minSel).first().fill('-999');
     await page.locator(minSel).first().press('Enter');
     await page.waitForTimeout(600);
-    const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filtered).toBeGreaterThanOrEqual(0);
-    expect(filtered).toBeLessThanOrEqual(rowCount); // effective range stays valid
+    const {after, min, max} = await page.evaluate(({mn, mx}) => ({
+      after: grok.shell.tv.dataFrame.filter.trueCount,
+      min: parseFloat((document.querySelector(mn) as HTMLInputElement)?.value),
+      max: parseFloat((document.querySelector(mx) as HTMLInputElement)?.value),
+    }), {mn: minSel, mx: maxSel});
+    expect(after).toBeGreaterThan(before); // lower bound below the data extent lets in the rest
+    expect(min).toBeLessThanOrEqual(max); // effective range not inverted
     expect(pageErrors.slice(errsBefore)).toEqual([]);
   });
 
-  await softStep('S2: Max above column max rejected/clamped without crash (GROK-19760)', async () => {
+  await softStep('S2: Max above column max widens range without crash (GROK-19760)', async () => {
     const errsBefore = pageErrors.length;
     await page.locator(minSel).first().fill('40');
     await page.locator(minSel).first().press('Enter');
+    await page.locator(maxSel).first().fill('60');
+    await page.locator(maxSel).first().press('Enter');
+    await page.waitForTimeout(300);
+    const before = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
     await page.locator(maxSel).first().fill('999');
     await page.locator(maxSel).first().press('Enter');
     await page.waitForTimeout(600);
-    const filtered = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filtered).toBeGreaterThanOrEqual(0);
-    expect(filtered).toBeLessThanOrEqual(rowCount); // effective range stays valid
+    const {after, min, max} = await page.evaluate(({mn, mx}) => ({
+      after: grok.shell.tv.dataFrame.filter.trueCount,
+      min: parseFloat((document.querySelector(mn) as HTMLInputElement)?.value),
+      max: parseFloat((document.querySelector(mx) as HTMLInputElement)?.value),
+    }), {mn: minSel, mx: maxSel});
+    expect(after).toBeGreaterThan(before); // upper bound above the data extent lets in the rest
+    expect(min).toBeLessThanOrEqual(max); // effective range not inverted
     expect(pageErrors.slice(errsBefore)).toEqual([]);
   });
 

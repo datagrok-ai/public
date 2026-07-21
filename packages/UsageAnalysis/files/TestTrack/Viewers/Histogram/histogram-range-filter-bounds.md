@@ -33,17 +33,27 @@ expected_results:
       df.filter.trueCount and the viewer re-renders without error
       (github-2329)."
   - anchor: "Scenario 2 Step 2"
-    expectation: "Setting Max below Min (e.g. Max = 20 when Min = 40) is rejected:
-      df.filter.trueCount stays within [0, full row count], Min stays below Max,
-      and no new console error is raised (GROK-19581, GROK-19760)."
+    expectation: "Setting Max below Min (e.g. Max = 20 when Min = 40) does not
+      crash: df.filter.trueCount drops below the prior valid-range count and no
+      new console error is raised (GROK-19581, GROK-19760). OBSERVED BEHAVIOR
+      (recon 2026-07-21, demog.csv), NEEDS PRODUCT CONFIRMATION: the build
+      applies the inverted range verbatim — it neither refuses nor corrects it —
+      collapsing the filter to almost no rows with no user-facing signal. The
+      tickets guarantee only no-crash; whether silently accepting an inverted
+      range is intended is a product question. The spec asserts the observed
+      collapse + no-error floor, not a rejection the product does not perform."
   - anchor: "Scenario 2 Step 3"
     expectation: "Setting Min to a value below the column minimum (e.g. -999) is
-      rejected or clamped: the effective filter range stays valid and no new
-      console error is raised (GROK-19581)."
+      applied verbatim, not clamped, and widens the lower bound to the data
+      extent: df.filter.trueCount rises above the prior count, the effective range
+      stays non-inverted (min <= max), and no new console error is raised
+      (GROK-19581)."
   - anchor: "Scenario 2 Step 4"
     expectation: "Setting Max to a value above the column maximum (e.g. 999) is
-      rejected or clamped: the effective filter range stays valid and no new
-      console error is raised (GROK-19760)."
+      applied verbatim, not clamped, and widens the upper bound to the data
+      extent: df.filter.trueCount rises above the prior count, the effective range
+      stays non-inverted (min <= max), and no new console error is raised
+      (GROK-19760)."
   - anchor: "Scenario 3 Step 2"
     expectation: "df.filter.trueCount returns to the full row count after restoring
       Min and Max to the full column range."
@@ -88,14 +98,14 @@ Expected:
 
 Steps:
 1. Set **Min** to `40` and **Max** to `60` via the range input fields (establish a known-valid sub-range).
-2. Set **Max** to `20` (below the current Min of 40) — a Min >= Max violation. Verify: `df.filter.trueCount` stays within [0, full row count], Min stays below Max in the effective range, and no new console error is raised (GROK-19581, GROK-19760).
-3. Restore a valid Max (e.g. `60`), then set **Min** to `-999` (below the column minimum). Verify the effective filter range stays valid (no inversion, no crash, no new console error) — the input is rejected or clamped (GROK-19581).
-4. Set **Min** back to `40`, then set **Max** to `999` (above the column maximum). Verify the effective filter range stays valid (no inversion, no crash, no new console error) — the input is rejected or clamped (GROK-19760).
+2. Set **Max** to `20` (below the current Min of 40) — a Min >= Max violation. Verify: the inverted range is applied (not refused) and collapses the sub-range so `df.filter.trueCount` drops below the prior valid-range count, with no new console error (GROK-19581, GROK-19760).
+3. Restore a valid Max (e.g. `60`), then set **Min** to `-999` (below the column minimum). Verify the value is applied verbatim (not clamped) and widens the lower bound to the data extent — `df.filter.trueCount` rises, the effective range stays non-inverted (min <= max), and no new console error is raised (GROK-19581).
+4. Set **Min** back to `40`, then set **Max** to `999` (above the column maximum). Verify the value is applied verbatim (not clamped) and widens the upper bound to the data extent — `df.filter.trueCount` rises, the effective range stays non-inverted (min <= max), and no new console error is raised (GROK-19760).
 
 Expected:
-- Setting Max below Min is rejected: df.filter.trueCount stays within [0, full row count], the effective Min stays below Max, and no new console error is raised (GROK-19581, GROK-19760).
-- Setting Min below the column minimum is rejected or clamped: the effective filter range stays valid with no new console error (GROK-19581).
-- Setting Max above the column maximum is rejected or clamped: the effective filter range stays valid with no new console error (GROK-19760).
+- Setting Max below Min applies the inverted range and collapses the filter (trueCount drops); the build does not refuse or correct the inversion, but raises no console error (GROK-19581, GROK-19760).
+- Setting Min below the column minimum is applied verbatim (not clamped) and widens the lower bound to the data extent (trueCount rises), effective range non-inverted, no new console error (GROK-19581).
+- Setting Max above the column maximum is applied verbatim (not clamped) and widens the upper bound to the data extent (trueCount rises), effective range non-inverted, no new console error (GROK-19760).
 
 ### Scenario 3: Round-trip — restore full range and disable filtering
 
