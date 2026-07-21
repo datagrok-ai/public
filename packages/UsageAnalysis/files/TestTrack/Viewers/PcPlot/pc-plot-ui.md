@@ -1,25 +1,20 @@
 # PC plot manual checklist
 
-Manual checklist. Not included in PW automation.
+Human-only visual/gesture checks. The automatable steps (area selection, current-row line
+highlight, the Show Current Line / Show Mouse Over Line / Show All Lines toggles, legend
+add and positioning) are now covered automatically in the spec(s); what remains here needs
+a human eye — hover colors and tooltips, "only selected lines visible" checks, window
+operations, and context-menu consistency.
 
 All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog
 3. Add PC plot
 
-## Area selection
+## Mouse-over and row group
 
-1. On the viewer Shift-drag a rectangular area between two axes -- lines passing through the area should be selected
-2. Shift-drag another area while holding Ctrl -- selection should be added to existing selection
-3. Click on empty space -- selection should be cleared
-
-## Current row and mouse-over
-
-1. Click a row in the grid -- the corresponding line should be highlighted in the PC plot with the current line color
-2. Hover over a line in the plot -- the line should be highlighted with the mouse-over color, and a tooltip should appear
-3. Disable **Selection > Show Current Line** -- current row line no longer highlighted
-4. Disable **Selection > Show Mouse Over Line** -- hover highlighting no longer shown
-5. Enable **Selection > Show Mouse Over Row Group** -- hovering over a row highlights all rows sharing the same row group
+1. Hover over a line in the plot -- the line should be highlighted with the mouse-over color, and a tooltip should appear
+2. Enable **Selection > Show Mouse Over Row Group** -- hovering over a row highlights all rows sharing the same row group
 
 ## Show all lines with grid selection
 
@@ -34,8 +29,7 @@ All scenarios should start with the following sequence of events:
 3. Open and close the Context Panel
 4. Display the help window
 5. Close the viewer and return it by **Edit > Undo** (Ctrl+Z)
-6. Add a legend and change its position
-7. Resize the viewer -- check mini-legend appearing and self-adjustable viewer layout
+6. Resize the viewer -- check mini-legend appearing and self-adjustable viewer layout
 
 ## Context menu: General and Tooltip
 

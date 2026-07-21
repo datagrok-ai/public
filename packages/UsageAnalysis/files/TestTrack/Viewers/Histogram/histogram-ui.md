@@ -1,6 +1,9 @@
 # Histogram tests (manual checklist)
 
-Manual checklist. Not included in Playwright automation.
+Human-only visual/gesture checks. The automatable steps (grid selection reflected in the
+histogram, the Y-axis-area context menu) are now covered automatically in the spec(s);
+what remains here needs a human eye — canvas dot indicators that move on click/hover, and
+cross-viewer mouse-over highlighting.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -22,17 +25,6 @@ All scenarios should start with the following sequence of events:
 2. Ensure **Selection > Show Mouse Over Row Group** is enabled on the histogram
 3. Hover over a cluster of points in the scatter plot -- the histogram should highlight the distribution of the hovered group
 4. Move the mouse away -- highlight disappears
-
-## Grid selection reflected in histogram
-
-1. Go to the grid and select the first 50 rows
-2. Verify the selection is reflected on the histogram (selected bins highlighted)
-
-## Context menu: Y axis area
-
-1. Enable **Show Y Axis**
-2. Right-click on the Y axis area -- menu should show "Show Y Axis", "Controls Font", "Axis Font"
-3. Verify toggling items works
 
 ---
 {
