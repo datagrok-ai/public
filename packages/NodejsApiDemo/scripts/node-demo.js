@@ -1,24 +1,27 @@
 //name: NodeDemo
-//description: nodejs script using the js-api (grok/DG) + a package python script + package files
+//description: Server-side js-api from a nodejs script - dapi, DataFrame/column ops, package python and JS functions, package files
 //language: nodejs
+//input: dataframe df
+//input: string colName
 //output: string user
-//output: int cells
+//output: dataframe enriched
 //output: double mean
+//output: int jsSum
 //output: string fileText
 
-// js-api bootstrap: resolves globally on images that ship datagrok-api;
-// falls back to the staged copy on this stand
-let dgapi;
-try { dgapi = require('datagrok-api/datagrok'); }
-catch (_) { dgapi = require('/tmp/datagrok-api/datagrok.js'); }
-if (!globalThis.__dgReady)
-  globalThis.__dgReady = dgapi.startDatagrok({apiUrl: @DATAGROK_API_URL, apiToken: @USER_API_KEY, detached: true});
-await globalThis.__dgReady;
-grok.dapi.token = @USER_API_KEY;
-grok.dapi.root = @DATAGROK_API_URL;
-
+// grok/DG globals and the caller's auth come from the platform - no bootstrap needed
 user = (await grok.dapi.users.current()).friendlyName;
-const t = DG.DataFrame.fromCsv('x\n1\n2\n3\n4');
-cells = t.rowCount * t.columns.length;
-mean = await grok.functions.call('NodejsApiDemo:PyMean', {df: t});
+
+// DataFrame + column ops
+enriched = df.clone();
+enriched.columns.addNewFloat('doubled').init((i) => df.col(colName).get(i) * 2);
+
+// package python function - the dataframe crosses languages
+mean = await grok.functions.call('NodejsApiDemo:PyMean', {df, colName});
+
+// package JS function, loaded and executed in-process
+await loadPackage('ApiTests');
+jsSum = await grok.functions.call('ApiTests:dummyPackageFunction', {a: 20, b: 22});
+
+// package AppData file via dapi
 fileText = (await grok.dapi.files.readAsText('System:AppData/NodejsApiDemo/hello.txt')).trim();

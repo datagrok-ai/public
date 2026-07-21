@@ -1,5 +1,6 @@
 #name: PyMean
 #language: python
 #input: dataframe df
+#input: string colName
 #output: double mean_out
-mean_out = float(df['x'].mean())
+mean_out = float(df[colName].mean())
