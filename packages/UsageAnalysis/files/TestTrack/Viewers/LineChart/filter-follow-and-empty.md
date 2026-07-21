@@ -33,8 +33,9 @@ expected_results:
       (GROK-18375 regression guard).
   - anchor: "Scenario 3 Step 5"
     expectation: >-
-      df.filter.trueCount changes from its initial value as the range slider is
-      dragged — the live filter update propagates to the dataframe state.
+      df.filter.trueCount changes from its initial value as the narrowed X
+      range is applied through the Filter Panel — the live filter update
+      propagates to the dataframe state.
   - anchor: "Scenario 3 Step 6"
     expectation: >-
       No new console errors or page errors are raised while the X range is
@@ -139,8 +140,8 @@ Steps:
 8. Assert: `df.filter.trueCount` returns to the baseline value from Step 3.
 
 Expected:
-- Dragging the X range slider causes `df.filter.trueCount` to change in real
-  time — the chart and the dataframe filter state are updated while the drag is
-  in progress (GROK-20185 guard).
-- No errors are raised at any point during the drag or after it is released.
+- Narrowing the X range through the Filter Panel causes `df.filter.trueCount`
+  to change — the chart and the dataframe filter state update live
+  (GROK-20185 guard).
+- No errors are raised while the range is narrowed, applied, or restored.
 - Restoring the full range brings the row count back to the original baseline.

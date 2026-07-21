@@ -179,10 +179,13 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     // silent reset fail loudly, not pass on a length check.
     await page.locator('.d4-dialog button', {hasText: 'CANCEL'}).first().click();
     await page.waitForTimeout(800);
+    // Same marker as the open-detect above (.d4-column-grid), not the
+    // title-derived dlg-select-columns class — a dialog-title change would
+    // silently turn a slug-based check vacuous.
     const openDialogs = await page.evaluate(() =>
       Array.from(document.querySelectorAll('.d4-dialog'))
         .filter((d) => d.getBoundingClientRect().width > 0 &&
-          d.querySelector('.dlg-select-columns')).length);
+          d.querySelector('.d4-column-grid')).length);
     expect(openDialogs).toBe(0);
     const y = (await getProps(page, 'yColumnNames')).yColumnNames;
     expect(y).toEqual(['Chemical Space X', 'Chemical Space Y', 'TPSA']);

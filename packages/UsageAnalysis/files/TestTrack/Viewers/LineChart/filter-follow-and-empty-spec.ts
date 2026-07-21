@@ -161,7 +161,9 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
   await softStep('S2 Step 7: remove filter, restore numeric X for next scenario', async () => {
     await filterSeries(page, null);
     await setProps(page, {xColumnName: 'Chemical Space X', xMap: ''});
-    expect((await getProps(page, 'xColumnName')).xColumnName).toBe('Chemical Space X');
+    const cfg = await getProps(page, 'xColumnName', 'xMap');
+    expect(cfg.xColumnName).toBe('Chemical Space X');
+    expect(cfg.xMap).toBe(''); // time-split must not leak into Scenario 3
     expect(await trueCount(page)).toBe(baseline);
   });
 
