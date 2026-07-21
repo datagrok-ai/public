@@ -5,7 +5,7 @@ import * as v from '../helpers/viewers';
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:DemoFiles/SPGI.csv';
+const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Pie chart tests', async ({page}) => {
   test.setTimeout(600_000);
@@ -446,7 +446,7 @@ test('Pie chart tests', async ({page}) => {
         setTimeout(resolve, 3000);
       });
 
-      const df2 = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const df2 = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       df2.name = 'SPGI';
       grok.shell.addTableView(df2);
       await new Promise(resolve => {

@@ -40,7 +40,7 @@ Each Scenario is independent (starts with "Open SPGI" and ends with "Close All" 
 
 ### 1. Color + Marker combined legend on Scatter plot [coverage_type: edge]
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`)
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`)
 2. Add a scatterplot
 3. Set **Color** = `Series` and **Marker** = `Series`
 4. Verify the legend is combined (one legend entry per `Series` category showing both color and marker glyph)
@@ -129,5 +129,5 @@ Each Scenario is independent (starts with "Open SPGI" and ends with "Close All" 
 ---
 {
   "order": 5,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

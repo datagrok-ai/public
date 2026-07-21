@@ -84,5 +84,5 @@ Setup: Close all, open SPGI
 ---
 {
   "order": 101,
-  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/chem/SPGI.csv"]
 }

@@ -15,7 +15,7 @@ test('Working with NaN and Infinity values in viewers', async ({page}) => {
     (grok.shell.settings as any).showFiltersIconsConstantly = true;
     grok.shell.windows.simpleMode = true;
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI_v2_infinity.csv');
+    const df = await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/SPGI_v2_infinity.csv');
     const tv = grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });

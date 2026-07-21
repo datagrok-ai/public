@@ -33,7 +33,7 @@ Smoke-tests the standard legend UI that every viewer shares: showing/hiding, pos
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`) — wait for table view to be ready
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`) — wait for table view to be ready
 2. Add seven viewers via the JS API: **Scatter plot**, **Histogram**, **Line chart**, **Bar chart**, **Pie chart**, **Trellis plot**, **Box plot**
 3. Arrange viewers in the default tiled grid layout (`tv.addViewer(...)` placement is acceptable for automation; manual run can dock into a 2×4 grid)
 4. Set the categorical legend on each viewer to `Stereo Category`, using the viewer's own legend-source property:
@@ -139,5 +139,5 @@ Smoke-tests the standard legend UI that every viewer shares: showing/hiding, pos
 ---
 {
   "order": 1,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

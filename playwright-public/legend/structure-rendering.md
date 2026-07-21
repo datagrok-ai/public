@@ -23,7 +23,7 @@ related_bugs:
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`) and wait for `Molecule` semantic-type detection on the `Core` and `Structure` columns
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`) and wait for `Molecule` semantic-type detection on the `Core` and `Structure` columns
 2. Add seven viewers via the JS API: **Scatter plot**, **Histogram**, **Line chart**, **Bar chart**, **Pie chart**, **Trellis plot**, **Box plot**
 
 ## Scenarios
@@ -69,5 +69,5 @@ related_bugs:
 ---
 {
   "order": 2,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

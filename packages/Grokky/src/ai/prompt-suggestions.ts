@@ -139,7 +139,7 @@ export interface SuggestionActionHost {
 
 const DEMO_DATASETS: {label: string; open: () => Promise<DG.DataFrame>}[] = [
   {label: 'Demographics (clinical)', open: () => grok.dapi.files.readCsv('System:DemoFiles/demog.csv')},
-  {label: 'SPGI (small molecules)', open: () => grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv')},
+  {label: 'SPGI (small molecules)', open: () => grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv')},
   {label: 'Dose-response curves', open: () => grok.dapi.files.readCsv('System:DemoFiles/curves.csv')},
   {label: 'Beer reviews', open: () => grok.dapi.files.readCsv('System:DemoFiles/beer.csv')},
   {label: 'Random walk', open: async () => grok.data.demo.randomWalk()},

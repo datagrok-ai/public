@@ -165,5 +165,5 @@ Setup: open SPGI dataset, add Histogram.
 ---
 {
   "order": 5,
-  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/chem/SPGI.csv"]
 }

@@ -120,5 +120,5 @@ All scenarios should start with the following sequence of events:
 ---
 {
   "order": 102,
-  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/SPGI.csv", "System:DemoFiles/SPGI-linked1.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/SPGI.csv", "System:AppData/ApiTests/datasets/SPGI-linked1.csv"]
 }
