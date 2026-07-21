@@ -1,13 +1,30 @@
 import * as dayjs from "dayjs";
 import * as wu from "wu";
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { createWindowProxy, DGNotSupportedError } from './src/node/window-proxy';
+import { installDomStub } from './src/node/dom-stub';
+
+export { DGNotSupportedError };
 
 (globalThis as any).self = globalThis;
-(globalThis as any).window = {};
+// grok_* registrations from the dart2js bundle land on the Proxy target;
+// unregistered names degrade gracefully instead of `undefined is not a function`.
+(globalThis as any).window = createWindowProxy();
 
-(globalThis as any).fetchWithCallback = function(url:any, params:any, callback:any, errorCallback:any) {
+// Stub asset imports (.css etc.) for unbundled CommonJS consumption; the webpack
+// bundle null-loads them already, tsx/ESM consumers use their own loader hooks.
+try {
+    const Module = require('node:module');
+    for (const ext of ['.css', '.scss', '.svg', '.png', '.jpg', '.gif', '.woff', '.woff2', '.ttf', '.eot'])
+        Module._extensions[ext] ??= (m: any) => { m.exports = {}; };
+} catch (_) { /* ESM-only runtime — loader hooks handle assets there */ }
+
+(globalThis as any).fetchWithCallback = function(url: any, params: any, callback: any, errorCallback: any) {
     fetch(url, params)
-        .then(async(response: any) => {callback(await response.bytes(), response.status, response.statusText, response.headers);})
+        .then(async (response: any) => {
+            // Response.bytes() is unavailable before Node 22 (JKG runs Node 18)
+            callback(new Uint8Array(await response.arrayBuffer()), response.status, response.statusText, response.headers);
+        })
         .catch(err => errorCallback(err));
 };
 
@@ -70,33 +87,56 @@ export function getContext() {
     return store?.token ?? null;
 }
 
-export async function startDatagrok(options: {apiUrl: string, apiToken?: string | undefined}): Promise<any> {
+/** Initializes the Datagrok environment under Node.js.
+ *
+ *  - Regular mode fetches startup data (functions registry, data sources, script
+ *    handlers) for the token's user — full `grok.functions` support, single-user.
+ *  - `detached: true` skips startup data: functions resolve lazily over REST and
+ *    server scripts run remotely. Required in shared/multi-user processes
+ *    (JKG kernels, per-request server contexts) so no per-user state is cached.
+ *
+ *  Idempotent: a second call only re-binds `grok.dapi.token` / `grok.dapi.root`. */
+export async function startDatagrok(options: {apiUrl: string, apiToken?: string | undefined, detached?: boolean}): Promise<void> {
+    const g = globalThis as any;
+    if (g.grok && g.DG) {
+        g.grok.dapi.token = options.apiToken;
+        g.grok.dapi.root = options.apiUrl;
+        return;
+    }
     console.log('Initializing Datagrok environment');
     //@ts-ignore
     await import ('./src/datagrok/build/web/grok_shared.dart.js');
 
-    await new Promise(resolve => setTimeout(resolve, 100));
-    (globalThis as any).document = {createElement: () => {return {bind: {}}}};
+    // dart2js runs async main() in a microtask after the import; wait for the interop
+    // surface ('in' bypasses the Proxy get-fallback and answers truthfully)
+    for (let waited = 0; !('grok_Init' in g.window); waited += 10) {
+        if (waited > 10000)
+            throw new Error('Datagrok Dart runtime failed to initialize (grok_Init never registered)');
+        await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    installDomStub();
     let DG = await import('./node-api');
+    // ui builders work against the DOM stub (inert elements); Dart-backed widgets
+    // still throw DGNotSupportedError via the window Proxy
+    let ui = await import('./ui');
 
-    (globalThis as any).grok = DG.grok;
-    (globalThis as any).DG = DG;
+    g.grok = DG.grok;
+    g.DG = DG;
+    g.ui = ui;
     const api: any = (typeof window !== 'undefined' ? window : global.window) as any;
     api.dayjs = dayjs;
     api.wu = wu;
     api.grok = DG.grok;
     api.DG = DG;
-    (globalThis as any).wu = wu;
-    (globalThis as any).dayjs = dayjs;
+    g.wu = wu;
+    g.dayjs = dayjs;
 
 
     DG.grok.dapi.token = options.apiToken;
     DG.grok.dapi.root = options.apiUrl;
 
-    let status = await (globalThis as any).window.grok_Init();
-    if (status != 0) {
-        console.log('Init function returned non-zero code');
-        process.exit(status);
-    }
+    let status = await g.window.grok_Init(options.detached === true);
+    if (status != 0)
+        throw new Error(`Datagrok initialization failed (grok_Init returned ${status}, see log above)`);
     console.log('Datagrok environment is ready');
 }

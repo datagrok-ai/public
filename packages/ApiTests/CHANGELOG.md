@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+* Node runner: Expanded coverage from `dapi/` to all UI-independent categories (dataframe, functions, bitset, valuematcher, property, stats, shell); added `--mode functional|stress` (stress keeps the old stressTest-only behavior); per-file load errors no longer abort the run
+
 * Security: rebuilt `apitests-docker-test1` on `python:3.12-alpine` (+ `apk upgrade`, refreshed pip/setuptools/wheel) to clear base-OS CVEs (expat/krb5/openssl/musl) and stale Python tooling.
 
 Add `Dapi: entities.save (polymorphic)` tests covering Project and DataConnection round-trip via `grok.dapi.entities.save`.
