@@ -47,13 +47,24 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     await new Promise((r) => setTimeout(r, 900));
   }, {split: splitCol, value: valueCol});
 
-  await softStep('Step 4: Relative Values + Stack renders stacked segments, chart not blank (github-2659)', async () => {
+  await softStep('Scenario 1 Step 4: Relative Values + Stack normalizes bars to equal width (canvas delta), chart not blank (github-2659)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    const info = await page.evaluate(async ({split, stack}) => {
+    // Set the Stack column and let the absolute-width stacked layout settle.
+    const pre = await page.evaluate(async ({stack}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.stackColumnName = stack;
       await new Promise((r) => setTimeout(r, 900));
-      const stackDefaultRel = bc.props.relativeValues;
+      return {stackDefaultRel: bc.props.relativeValues};
+    }, {stack: stackCol});
+    // Snapshot the absolute-width stacked layout, then enable Relative Values:
+    // each outer bar normalizes to equal width — the width normalization is a
+    // large canvas color delta (not just a prop echo).
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeLessThan(500);
+    const info = await page.evaluate(async ({split, stack}) => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.relativeValues = true;
       await new Promise((r) => setTimeout(r, 1000));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
@@ -65,7 +76,6 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
         stack: bc.props.stackColumnName,
         split: bc.props.splitColumnName,
         rel: bc.props.relativeValues,
-        stackDefaultRel,
         hasCanvas: !!cv,
         canvasW: rect.width,
         canvasH: rect.height,
@@ -75,11 +85,14 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
         stackCats: df.col(stack).categories.length,
       };
     }, {split: splitCol, stack: stackCol});
+    await page.waitForTimeout(300);
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.stack).toBe(stackCol);
     expect(info.split).toBe(splitCol);
-    expect(info.stackDefaultRel).toBe(false);
+    expect(pre.stackDefaultRel).toBe(false);
     expect(info.rel).toBe(true);
+    expect(deltaPx).toBeGreaterThan(5000);
     expect(info.hasCanvas).toBe(true);
     expect(info.canvasW).toBeGreaterThan(0);
     expect(info.canvasH).toBeGreaterThan(0);
@@ -87,7 +100,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 5: at least two stacked segments visible (legend has >= 2 stack categories)', async () => {
+  await softStep('Scenario 1 Step 5: at least two stacked segments visible (legend has >= 2 stack categories)', async () => {
     const info = await page.evaluate(({stack}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const legendItems = bc.root.querySelectorAll('[name="legend"] .d4-legend-item').length;
@@ -102,7 +115,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     expect(info.stackCats).toBeGreaterThanOrEqual(2);
   });
 
-  await softStep('Step 7: stacked bars render error-free with negative sum totals (GROK-19480)', async () => {
+  await softStep('Scenario 1 Step 7: stacked bars render error-free with negative sum totals (GROK-19480)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(({value}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -133,7 +146,13 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 9: disabling Relative Values reverts bars to absolute widths', async () => {
+  await softStep('Scenario 1 Step 9: disabling Relative Values reverts bars to absolute widths (canvas delta)', async () => {
+    // Snapshot the normalized (equal-width) layout, disable Relative Values, and
+    // measure the canvas color delta as bars revert to absolute widths.
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeLessThan(500);
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.relativeValues = false;
@@ -148,13 +167,16 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
         stack: bc.props.stackColumnName,
       };
     });
+    await page.waitForTimeout(300);
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     expect(info.rel).toBe(false);
     expect(info.stack).toBe(stackCol);
     expect(info.hasCanvas).toBe(true);
     expect(info.canvasW).toBeGreaterThan(0);
+    expect(deltaPx).toBeGreaterThan(5000);
   });
 
-  await softStep('Step 11: removing the Stack column collapses to single-segment bars, no legend', async () => {
+  await softStep('Scenario 1 Step 11: removing the Stack column collapses to single-segment bars, no legend', async () => {
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.stackColumnName = null;

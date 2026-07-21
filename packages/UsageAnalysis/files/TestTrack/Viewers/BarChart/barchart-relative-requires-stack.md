@@ -18,7 +18,8 @@ expected_results:
   - anchor: "Scenario 2 Step 6"
     expectation: >-
       Setting a Stack column with Relative Values on normalizes bars to equal
-      width, split into stacked segments.
+      width, split into stacked segments — the width normalization produces a
+      large canvas color delta.
   - anchor: "Scenario 2 Step 7"
     expectation: >-
       Removing the Stack column reverts bars to absolute widths — Relative Values
@@ -36,7 +37,7 @@ expected_results:
 1. Close all open tables and viewers.
 2. Open spgi-100 — a 100-row SPGI sample (`System:AppData/Chem/tests/spgi-100.csv`).
 3. Add a Bar Chart viewer to the current table view.
-4. In the Context Panel > Data section, set **Split** to **Primary Series names**.
+4. In the Context Panel > Data section, set **Split** to **Primary Series Name**.
 5. Set **Value** to **CAST Idea ID** and **Value Aggr Type** to **Count**.
 6. Confirm that **Stack** is set to **None** (no Stack column, baseline state).
 

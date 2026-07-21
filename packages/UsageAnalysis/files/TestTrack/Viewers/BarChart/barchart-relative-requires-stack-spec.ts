@@ -84,8 +84,16 @@ test('Bar Chart — Relative Values requires Stack column', async ({page}) => {
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Scenario 2 Step 5-6: setting a Stack column activates stacking (legend renders)', async () => {
+  await softStep('Scenario 2 Step 5-6: setting a Stack column activates stacking — bars normalize to equal width (canvas delta), legend renders', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
+    // At entry Relative Values is on but inert (no Stack). Snapshot the inert
+    // single-segment layout, add the Stack column, and measure the canvas color
+    // delta: Relative Values now activates and each bar normalizes to equal
+    // width, split into stacked segments — a large, not prop-echo, signal.
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeLessThan(500);
     const info = await page.evaluate(async ({stack}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.stackColumnName = stack;
@@ -102,9 +110,12 @@ test('Bar Chart — Relative Values requires Stack column', async ({page}) => {
         stackCats: grok.shell.tv.dataFrame.col(stack).categories.length,
       };
     }, {stack: stackCol});
+    await page.waitForTimeout(300);
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.stack).toBe(stackCol);
     expect(info.rel).toBe(true);
+    expect(deltaPx).toBeGreaterThan(5000);
     expect(info.hasCanvas).toBe(true);
     expect(info.canvasW).toBeGreaterThan(0);
     expect(info.legendRendered).toBe(true);

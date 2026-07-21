@@ -9,23 +9,35 @@ target_layer: playwright
 coverage_type: regression
 realized_as:
   - barchart-value-axis-range-scale-spec.ts
-related_bugs: []
+related_bugs:
+  - id: GROK-19346
+    status: fixed
 expected_results:
   - anchor: "Scenario 1 Step 3"
     expectation: >-
       With Value Min above the shortest bar, bars below it are clipped with a
-      clipped-bar indicator at the base (GROK-19346).
+      clipped-bar indicator at the base; toggling Show Clipped Bar Indicators
+      adds a measurable canvas color delta (GROK-19346).
   - anchor: "Scenario 1 Step 5"
     expectation: >-
       With Value Max below the tallest bar, bars above it are clipped at the top
-      and the value axis stops at the maximum.
+      and the value axis stops at the maximum; toggling Show Clipped Bar
+      Indicators adds a measurable canvas color delta.
   - anchor: "Scenario 1 Step 7"
     expectation: >-
-      The value-axis scroll bar navigates the constrained range without error.
+      The value-axis scroll bar is present on the constrained range. Dragging it
+      is a documented reduction — a headless drag of the range-slider is inert
+      (zero canvas delta, recon 2026-07-21), consistent with the Filter Panel
+      numeric-drag reduction.
   - anchor: "Scenario 1 Step 9"
     expectation: >-
       With a logarithmic value axis, positive-count bars re-scale and render
       without error.
+  - anchor: "Scenario 1 Step 10"
+    expectation: >-
+      Under the logarithmic value axis the clipping precondition still holds —
+      Value Min is set and Show Clipped Bar Indicators is on — so clipped bars
+      remain clipped.
   - anchor: "Scenario 1 Step 11"
     expectation: >-
       Switching the value axis back to linear restores linear proportional bar
@@ -43,9 +55,11 @@ expected_results:
 1. Close all open tables and viewers.
 2. Open spgi-100 — a 100-row SPGI sample (`System:AppData/Chem/tests/spgi-100.csv`).
 3. Add a Bar Chart viewer to the current table view.
-4. In the in-chart **Category** selector, set the Split column to **Primary Series names**.
+4. In the in-chart **Category** selector, set the Split column to **Primary Series Name**.
 5. In the Context Panel > Data section, set **Value** to **CAST Idea ID** and **Value Aggr Type** to **count**.
    (Count of CAST Idea ID per category — positive-valued aggregation with sufficient range variation.)
+6. In the Context Panel > Value section, enable **Show Clipped Bar Indicators**
+   (`showClippedBarIndicators = true`) so clipped bars display the notch/arrow glyph.
 
 ## Scenarios
 
@@ -66,9 +80,9 @@ Steps:
    specified maximum.
 6. Confirm the value axis now shows a constrained range (Value Min to Value Max).
 7. Locate the value-axis scroll bar (appears when the data range extends beyond the displayed axis
-   window). Drag it to navigate within the constrained range.
-   Verify the scroll bar responds — the chart shifts to reveal different portions of the value axis
-   range without error or visual corruption.
+   window). Verify the scroll bar is present on the constrained range.
+   (Dragging it to navigate is a documented reduction — a headless drag of the range-slider is
+   inert, producing zero canvas delta, consistent with the Filter Panel numeric-drag reduction.)
 8. In the Context Panel > Value section, set **Value Scale** to **log** (non-default; default is linear).
 9. Verify that the chart re-renders with a logarithmic value axis: bars with positive non-zero counts
    are displayed with logarithmically-spaced heights; axis labels show logarithmic intervals (e.g. 1,

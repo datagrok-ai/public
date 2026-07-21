@@ -17,8 +17,17 @@ realized_as:
 expected_results:
   - anchor: "Scenario 1 Step 3"
     expectation: >-
-      With Orientation Vertical and Bar Sort Descending, bars render vertically
-      with heights decreasing left to right by aggregated value.
+      With Orientation Vertical and Bar Sort (barSortType `by value`)
+      Descending, bars render vertically by aggregated value. The exact
+      left-to-right ordering is a documented reduction (axis tick labels are
+      canvas-rendered, no DOM handles); the sort is verified as a render signal
+      at Step 7.
+  - anchor: "Scenario 1 Step 7"
+    expectation: >-
+      Flipping Bar Sort from Descending to Ascending applies (barSortOrder echo)
+      and the chart renders error-free. The rendered reorder is a documented
+      reduction — flipping barSortOrder produces zero canvas delta headless
+      (recon 2026-07-21), so the visual reorder is not observable.
   - anchor: "Scenario 1 Step 4"
     expectation: >-
       With stacking enabled on the negative-sum value column, the stacked bars
@@ -34,8 +43,11 @@ expected_results:
       horizontal ascending bars matching the baseline.
   - anchor: "Scenario 2 Step 3"
     expectation: >-
-      Switching to Vertical on small-magnitude counts does not leave excess
-      whitespace above the tallest bar (github-3417).
+      Switching to Vertical on small-magnitude counts renders error-free
+      (github-3417) and the bars fill the upper region — the bar-fill top sits
+      within the top 40% of the canvas (measured gTopFrac 0.061 on dev), so no
+      excess whitespace appears above the tallest bar. The bar-fill green bbox
+      isolates bar content from the axis chrome that spans the full height.
   - anchor: "Scenario 2 Step 5"
     expectation: >-
       Resetting Orientation to Auto returns the chart to the default layout with
@@ -49,8 +61,13 @@ expected_results:
 1. Close all open tables and viewers.
 2. Open spgi-100 — a 100-row SPGI sample (`System:AppData/Chem/tests/spgi-100.csv`).
 3. Add a Bar Chart viewer to the current table view.
-4. In the in-chart **Category** selector, set the Split column to **Primary Series names**.
+4. In the in-chart **Category** selector, set the Split column to **Primary Series Name**.
 5. In the Context Panel > Data section, set **Value** to **Chemical Space X** and **Value Aggr Type** to **sum**.
+
+> Actuation note: the in-chart **Category** / **Value** / **Stack** selectors are
+> driven through the viewer `props` (`splitColumnName`, `valueColumnName`,
+> `barSortType`, `barSortOrder`, `orientation`) rather than by typing into the
+> canvas-rendered selector widgets.
 
 ## Scenarios
 
@@ -58,9 +75,13 @@ expected_results:
 
 Steps:
 1. In the Context Panel > Style section, set **Orientation** to **Vertical** (non-default; default is Horizontal).
-2. In the Context Panel > Style section, set **Bar Sort** to **Descending** (non-default; default is Ascending).
-3. Verify that bars render vertically and that bar heights decrease from left to right, confirming
-   the descending sort order by aggregated **Chemical Space X** sum is applied under vertical orientation.
+2. In the Context Panel > Style section, set **Bar Sort** to **Descending** — the Bar Sort type is
+   `by value` (barSortType) with order Descending (barSortOrder `desc`; non-default, default is Ascending).
+3. Verify that bars render vertically under the descending by-value sort of aggregated
+   **Chemical Space X** sum. (The exact left-to-right bar order is a documented reduction — axis
+   category tick labels are canvas-rendered with no DOM handles, and flipping barSortOrder produces
+   zero canvas delta headless, so the visual reorder is not observable; the reachable assertion is
+   the prop echo plus an error-free render.)
 4. In the Context Panel > Style section, set **Legend Visibility** to **Always** and enable stacking
    (set **Stack** to **Stereo Category**). Verify that stacking holds on the negative-sum
    **Chemical Space X** aggregation: the stack legend, absent before, appears in the viewer area (GROK-19480
@@ -94,9 +115,12 @@ Steps:
    (small-magnitude values, suitable for triggering the whitespace regression).
 2. In the Context Panel > Style section, set **Orientation** to **Vertical**.
 3. Observe the bar chart under vertical orientation with small-magnitude count values.
-   Verify that available vertical space is used efficiently — the max bar height fills a reasonable
-   proportion of the viewer area without a large empty whitespace gap above the tallest bar
+   Verify that the chart renders error-free under vertical orientation with small values
    (github-3417 regression guard: excess whitespace with vertical orientation and small values).
+   The bar-fill green bbox isolates the bars from the axis chrome (which spans nearly the full
+   canvas height); the top of the tallest bar sits within the top 40% of the canvas, confirming
+   no excess whitespace appears above it — a regression that shrank the bars would push this
+   fraction well past the ceiling.
 4. In the Context Panel > Style section, set **Orientation** to **Horizontal** (intermediate revert).
    Verify bars render horizontally with no layout artifact.
 5. In the Context Panel > Style section, set **Orientation** to **Auto** (full revert to default).

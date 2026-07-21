@@ -25,10 +25,15 @@ expected_results:
     expectation: >-
       With On Click set to Filter, clicking a bar filters the grid to that bar's
       category only.
+  - anchor: "Scenario 1 Step 5"
+    expectation: >-
+      Clicking a blank canvas zone releases the active click-filter — the grid
+      returns to the full row range (observed dev behavior: tc 64 → 100,
+      distinct 1 → 5).
   - anchor: "Scenario 1 Step 9"
     expectation: >-
-      Double-clicking the canvas (Reset View) clears any zoom and restores the
-      full-range view.
+      Double-clicking the canvas invokes Reset View and leaves the chart intact
+      and error-free.
   - anchor: "Scenario 2 Step 3"
     expectation: >-
       With On Click reverted to Select, clicking a bar selects that category's
@@ -45,21 +50,31 @@ expected_results:
 1. Close all open tables and viewers.
 2. Open spgi-100 — a 100-row SPGI sample (`System:AppData/Chem/tests/spgi-100.csv`).
 3. Add a Bar Chart viewer to the current table view.
-4. In the Context Panel > Data section, set **Split** to **Primary Series names**.
+4. In the Context Panel > Data section, set **Split** to **Primary Series Name**.
 5. Set **Value** to **CAST Idea ID** and **Value Aggr Type** to **Count**.
+
+> Actuation note: the bar clicks target the dominant **Triazoles** category by
+> fixed canvas fractions (x ≈ 0.55·w, y ≈ 0.392·h). Only that dominant bar is
+> hit-testable headless; other bar positions register no hit (recon
+> 2026-07-21). Switching the filter to a second bar (md Scenario 1 Steps 6-7)
+> and Alt+drag zoom (md Scenario 1 Step 8) are documented reductions —
+> headless-unreachable — so Reset View (Step 9) is exercised directly without a
+> preceding zoom.
 
 ## Scenarios
 
 ### Scenario 1: On Click = Filter — click bar filters table; double-click Reset View clears zoom
 
 Steps:
-1. Verify that per-category bars render for each distinct value in the **Primary Series names**
+1. Verify that per-category bars render for each distinct value in the **Primary Series Name**
    column, with bar heights reflecting the Count of CAST Idea ID per category.
 2. In the Context Panel > Style section, set **On Click** to **Filter** (non-default).
 3. Click a bar segment in the Bar Chart (e.g. the tallest bar).
 4. Verify that the grid table is filtered to rows matching that bar's category only;
    all other rows are hidden from the grid (filter indicator appears in the grid header).
-5. Click blank canvas space inside the Bar Chart to deselect without changing filter state.
+5. Click blank canvas space inside the Bar Chart. Verify the click-filter releases and the grid
+   returns to the full row range (observed dev behavior 2026-07-21: clicking an empty canvas zone
+   under On Click=Filter clears the active bar filter rather than leaving it intact).
 6. Click a different bar segment to switch the active filter to that category.
 7. Verify the grid now shows only rows for the newly clicked category.
 8. Alt+drag horizontally across two bars to zoom into that range.

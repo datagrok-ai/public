@@ -43,7 +43,7 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     await new Promise((r) => setTimeout(r, 900));
   }, {split: splitCol});
 
-  await softStep('Step 3: Value Min above the shortest bar clips it (clipped-bar indicators)', async () => {
+  await softStep('Scenario 1 Step 3: Value Min above the shortest bar clips it; clipped-bar indicators render (GROK-19346)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(async ({split}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -69,16 +69,39 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     }, {split: splitCol});
+    // Isolate the clipped-bar indicator glyphs (GROK-19346): with Value Min
+    // holding the bars clipped, turn the indicators off, snapshot, turn them
+    // back on and measure the canvas color delta they add.
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.showClippedBarIndicators = false;
+      await new Promise((r) => setTimeout(r, 700));
+    });
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    // Settle-precheck: the indicators-off frame is quiescent (measured 0 px on
+    // dev 2026-07-21). Ceiling 30 sits well below the glyph signal floor 150.
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeLessThan(30);
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.showClippedBarIndicators = true;
+      await new Promise((r) => setTimeout(r, 700));
+    });
+    // Toggling the clipped-bar indicator glyphs back on adds a measurable color
+    // delta (measured ~340 px on dev), well above the settle ceiling.
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.valueMin).toBe(info.shortest + info.minOffset);
     expect(info.valueMin).toBeLessThan(info.tallest);
     expect(info.barsBelowMin).toBeGreaterThanOrEqual(1);
     expect(info.clippedIndicators).toBe(true);
+    expect(deltaPx).toBeGreaterThan(150);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 5: Value Max below the tallest bar clips it; axis stops at the maximum', async () => {
+  await softStep('Scenario 1 Step 5: Value Max below the tallest bar clips it; axis stops at the maximum; top clipped-bar indicators render', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(async ({split}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -104,17 +127,38 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     }, {split: splitCol});
+    // Same indicator-glyph isolation as Step 3, now with top-clipped bars.
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.showClippedBarIndicators = false;
+      await new Promise((r) => setTimeout(r, 700));
+    });
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    // Settle-precheck: the indicators-off frame is quiescent (measured 0 px on
+    // dev 2026-07-21). Ceiling 30 sits well below the glyph signal floor 150.
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeLessThan(30);
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.showClippedBarIndicators = true;
+      await new Promise((r) => setTimeout(r, 700));
+    });
+    // Top-clipped indicator glyphs add a measurable color delta (measured ~496
+    // px on dev), well above the settle ceiling.
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.valueMax).toBe(info.tallest - info.maxOffset);
     expect(info.valueMax).toBeGreaterThan(info.shortest);
     expect(info.valueMax).toBeGreaterThan(info.valueMin);
     expect(info.barsAboveMax).toBeGreaterThanOrEqual(1);
     expect(info.valueMin).not.toBeNull();
+    expect(deltaPx).toBeGreaterThan(150);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 7: the value-axis scroll bar navigates the constrained range without error', async () => {
+  await softStep('Scenario 1 Step 7: the value-axis scroll bar is present on the constrained range', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     await page.locator('[name="viewer-Bar-chart"]').first().hover();
     await page.waitForTimeout(400);
@@ -127,12 +171,16 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
       };
     });
     const errAfter = pageErrors.length + consoleErrors.length;
-    expect(info.rangeSliders).toBeGreaterThan(0); // the value-axis scroll bar is present on the constrained range
+    // Presence-only: dragging the range-slider to navigate the constrained range
+    // (md Scenario 1 Step 7) is a documented reduction — a headless drag of the
+    // range-slider is inert (zero canvas delta, recon 2026-07-21), consistent
+    // with the Filter Panel numeric-drag reduction.
+    expect(info.rangeSliders).toBeGreaterThan(0);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 9: logarithmic value axis re-scales positive-count bars without error', async () => {
+  await softStep('Scenario 1 Step 9: logarithmic value axis re-scales positive-count bars without error', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -152,7 +200,28 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 11: switching back to linear restores linear proportional heights', async () => {
+  await softStep('Scenario 1 Step 10: under the log axis the clipping precondition still holds (Value Min set, indicators on)', async () => {
+    const errBefore = pageErrors.length + consoleErrors.length;
+    const info = await page.evaluate(() => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      return {
+        axisType: bc.props.axisType,
+        valueMin: bc.props.valueMin,
+        clippedIndicators: bc.props.showClippedBarIndicators,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    });
+    const errAfter = pageErrors.length + consoleErrors.length;
+    // Clipped bars stay clipped under log because the clipping precondition
+    // (Value Min set + indicators on) is unchanged by the axis-type switch.
+    expect(info.axisType).toBe('logarithmic');
+    expect(info.valueMin).not.toBeNull();
+    expect(info.clippedIndicators).toBe(true);
+    expect(info.hasCanvas).toBe(true);
+    expect(errAfter).toBe(errBefore);
+  });
+
+  await softStep('Scenario 1 Step 11: switching back to linear restores linear proportional heights', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -172,7 +241,7 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Step 13: clearing Value Min/Max restores the full-range axis (no clipping)', async () => {
+  await softStep('Scenario 1 Step 13: clearing Value Min/Max restores the full-range axis (no clipping)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;

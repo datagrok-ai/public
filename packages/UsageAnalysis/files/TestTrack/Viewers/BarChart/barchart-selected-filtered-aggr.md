@@ -31,6 +31,10 @@ expected_results:
     expectation: >-
       Under value-count (cumulative), selecting two categories drives the
       Selected Rows overlay for their combined rows; the filter is unchanged.
+  - anchor: "Scenario 2 Step 6"
+    expectation: >-
+      Under value-count (the `values` aggregation), filtering re-renders the
+      Filtered Rows overlay (canvas color delta); the selection is unchanged.
   - anchor: "Scenario 2 Step 7"
     expectation: >-
       Switching to avg (non-cumulative) preserves selection and filter state
@@ -90,14 +94,16 @@ Expected:
 
 Steps:
 1. In the Bar Chart property panel, set **Value Aggr Type** to `value-count`
-   (cumulative — counts non-null values).
+   (the `values` property literal; cumulative — counts non-null values).
 2. Enable **Show Selected Rows** in the property panel.
 3. Select several rows across different categories in the grid.
 4. Verify: the Selected Rows overlay segment appears inside bars for categories
    that contain selected rows.
 5. Enable **Show Filtered Rows**; add a filter to reduce visible rows to a subset.
-6. Verify: the Filtered Rows overlay appears inside the bars reflecting the
-   filtered-row counts under value-count aggregation.
+6. Change the filter subset while **Value Aggr Type** is `values` (value-count).
+   Verify: the Filtered Rows overlay re-renders inside the bars (the bar segments
+   recolor in place) reflecting the new filtered-row counts under the `values`
+   aggregation, before switching to avg.
 7. Change **Value Aggr Type** to `avg` (non-cumulative). Keep the selection
    and filter active.
    Verify: the Selected Rows and Filtered Rows overlays are absent from all bars

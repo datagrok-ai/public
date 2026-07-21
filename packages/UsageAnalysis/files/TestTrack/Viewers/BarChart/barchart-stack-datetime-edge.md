@@ -25,11 +25,15 @@ expected_results:
   - anchor: "Scenario 2 Step 12"
     expectation: With a DateTime Split column (STARTED), the Split Map selector
       becomes available.
-  - anchor: "Scenario 2 Step 14"
-    expectation: Changing Split Map from Year to Month re-categorizes bars by month.
-  - anchor: "Scenario 2 Step 15"
-    expectation: Reverting Split Map to Year re-categorizes bars by year; the chart
-      is not broken or blank.
+  - anchor: "Scenario 2 Step 13"
+    expectation: The in-chart Category selector reflects the STARTED split column.
+      The "(Year)" map suffix on the axis header is a documented reduction
+      (canvas-rendered, not exposed to the DOM).
+  - anchor: "Scenario 2 Step 14-15"
+    expectation: Changing Split Map from Year to Month re-categorizes bars by month
+      (distinct month buckets outnumber year buckets; the map change repaints the
+      canvas), and reverting to Year re-categorizes bars by year (a second repaint);
+      the chart stays intact through both re-categorizations.
 realized_as:
   - barchart-stack-datetime-edge-spec.ts
 ---

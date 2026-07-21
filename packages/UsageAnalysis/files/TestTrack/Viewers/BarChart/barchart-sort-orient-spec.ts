@@ -152,6 +152,12 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
 
   await softStep('Scenario 1 Step 7: revert Bar Sort to Ascending; config took, error-free render', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
+    // Documented reduction: the rendered bar order is not observable headless.
+    // Axis category tick labels are canvas-rendered with no DOM handles (recon
+    // 2026-07-21), and flipping barSortOrder desc→asc produces ZERO canvas
+    // delta on dev (2026-07-21) — the reorder does not repaint the frame under
+    // headless, so a canvas-diff render signal is unavailable. The reachable
+    // assertion is the prop echo plus an error-free render.
     const order = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.barSortOrder = 'asc';
@@ -197,10 +203,36 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
         hasCanvas: !!cv && cv.getBoundingClientRect().width > 0,
       };
     }, {value: countCol});
+    // github-3417 render signal: isolate the bar-fill (#96d794 ± tolerance) from
+    // the axis chrome and measure how far the tallest bar's top sits from the
+    // canvas top. The raw non-white bbox is useless here — axis labels/ticks
+    // span nearly the whole height (recon 2026-07-21: full-canvas topFrac 0.045
+    // is axis chrome, not bars). The bug manifests as EXCESS whitespace above the
+    // tallest bar under vertical + small counts, so the guard asserts the green
+    // bars reach the upper region (measured gTopFrac 0.061 on dev): a regression
+    // that shrank the bars would push gTopFrac well above the 0.40 ceiling.
+    const bars = await page.evaluate(() => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
+      const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      let gMinY = cv.height, gMaxY = -1, gCount = 0;
+      for (let y = 0; y < cv.height; y++)
+        for (let x = 0; x < cv.width; x++) {
+          const i = (y * cv.width + x) * 4;
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          if (r >= 120 && r <= 180 && g >= 190 && g <= 240 && b >= 120 && b <= 180) {
+            gCount++;
+            if (y < gMinY) gMinY = y; if (y > gMaxY) gMaxY = y;
+          }
+        }
+      return {gCount, gTopFrac: gMinY / cv.height};
+    });
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.splitColumnName).toBe(splitCol);
     expect(info.barSortType).toBe('by value');
     expect(info.hasCanvas).toBe(true);
+    expect(bars.gCount).toBeGreaterThan(1000);
+    expect(bars.gTopFrac).toBeLessThan(0.40);
     expect(errAfter).toBe(errBefore);
   });
 

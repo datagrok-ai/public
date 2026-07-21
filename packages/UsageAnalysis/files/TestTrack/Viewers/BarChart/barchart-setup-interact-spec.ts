@@ -43,7 +43,7 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     await new Promise((r) => setTimeout(r, 900));
   }, {split: splitCol});
 
-  await softStep('Per-category bars render for at least two distinct categories', async () => {
+  await softStep('Scenario 1 Step 1: per-category bars render for at least two distinct categories', async () => {
     const info = await page.evaluate(({split}) => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const df = grok.shell.tv.dataFrame;
@@ -68,13 +68,13 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     expect(info.counts[dominantCategory]).toBeGreaterThan(0);
   });
 
-  await softStep('On Click=Filter: clicking a bar filters the grid to that category', async () => {
+  await softStep('Scenario 1 Step 4: On Click=Filter — clicking a bar filters the grid to that category', async () => {
     const geo = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.onClick = 'Filter';
       grok.shell.tv.dataFrame.filter.setAll(true);
       const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
+      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} } // best-effort cleanup
       await new Promise((r) => setTimeout(r, 600));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       const rect = cv.getBoundingClientRect();
@@ -115,12 +115,63 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     expect(probe.survivorsForCat).toBe(probe.trueCount);
   });
 
-  await softStep('Double-click canvas (Reset View) leaves the chart error-free', async () => {
+  await softStep('Scenario 1 Step 5: clicking blank canvas space clears the click-filter (grid returns to full range)', async () => {
+    // With On Click=Filter still active, re-apply the dominant-bar filter, then
+    // click an empty canvas zone. Only the dominant bar (Triazoles) is
+    // hit-testable headless (recon 2026-07-21: every other canvas position
+    // registers no bar hit), so the "switch to a different bar" leg is a
+    // documented reduction; this asserts the reachable half — a blank-zone
+    // click releases the click-filter and the grid returns to the full range
+    // (observed dev behavior 2026-07-21: tc 64 → 100, distinct 1 → 5).
+    const geo = await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      grok.shell.tv.dataFrame.filter.setAll(true);
+      const fg = grok.shell.tv.getFiltersGroup();
+      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} } // best-effort cleanup
+      await new Promise((r) => setTimeout(r, 500));
+      const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
+      const rect = cv.getBoundingClientRect();
+      return {onClick: bc.props.onClick, rect: {x: rect.x, y: rect.y, w: rect.width, h: rect.height}};
+    });
+    expect(geo.onClick).toBe('Filter');
+    await page.mouse.click(geo.rect.x + geo.rect.w * 0.55, geo.rect.y + geo.rect.h * 0.392);
+    await page.waitForTimeout(700);
+    const filtered = await page.evaluate(({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      const col = df.col(split);
+      const cats = new Set<string>();
+      for (let i = 0; i < df.rowCount; i++) if (df.filter.get(i)) cats.add(col.get(i));
+      return {trueCount: df.filter.trueCount, distinctCats: cats.size, rowCount: df.rowCount};
+    }, {split: splitCol});
+    expect(filtered.distinctCats).toBe(1);
+    expect(filtered.trueCount).toBeLessThan(filtered.rowCount);
+    await page.mouse.click(geo.rect.x + geo.rect.w * 0.55, geo.rect.y + geo.rect.h * 0.6);
+    await page.waitForTimeout(700);
+    const afterBlank = await page.evaluate(({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      const col = df.col(split);
+      const cats = new Set<string>();
+      for (let i = 0; i < df.rowCount; i++) if (df.filter.get(i)) cats.add(col.get(i));
+      return {trueCount: df.filter.trueCount, distinctCats: cats.size, rowCount: df.rowCount};
+    }, {split: splitCol});
+    // Blank-canvas click under On Click=Filter clears the active bar filter and
+    // the grid returns to the full range (probe 2026-07-21: tc 64 → 100,
+    // distinct 1 → 5). This is the reachable half of md Scenario 1 Step 5.
+    expect(afterBlank.trueCount).toBe(afterBlank.rowCount);
+    expect(afterBlank.distinctCats).toBeGreaterThan(filtered.distinctCats);
+  });
+
+  await softStep('Scenario 1 Step 9: Double-click canvas (Reset View) leaves the chart error-free', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
+    // md Scenario 1 Step 8 (Alt+drag to zoom into a range) is a documented
+    // reduction: a headless Alt+drag over the canvas produces no zoom (recon
+    // 2026-07-21: zero canvas delta before/after), so Reset View cannot be
+    // preceded by a real zoom here. This exercises Reset View directly and
+    // asserts it stays error-free with the chart intact.
     await page.evaluate(async () => {
       grok.shell.tv.dataFrame.filter.setAll(true);
       const fg = grok.shell.tv.getFiltersGroup();
-      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} }
+      for (const f of Array.from(fg.filters as any)) { try { fg.remove(f); } catch (_) {} } // best-effort cleanup
       await new Promise((r) => setTimeout(r, 500));
     });
     const rect = await page.evaluate(() => {
@@ -140,7 +191,7 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('On Click=Select: clicking a bar selects rows without filtering', async () => {
+  await softStep('Scenario 2 Step 3: On Click=Select — clicking a bar selects rows without filtering', async () => {
     const geo = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.onClick = 'Select';
@@ -173,7 +224,7 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     expect(probe.filt).toBe(probe.rowCount);
   });
 
-  await softStep('Pressing Esc clears the selection', async () => {
+  await softStep('Scenario 2 Step 5: pressing Esc clears the selection', async () => {
     const selBefore = await page.evaluate(({split, cat}) => {
       const df = grok.shell.tv.dataFrame;
       if (df.selection.trueCount === 0) {

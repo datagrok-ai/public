@@ -242,6 +242,62 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     expect(errCount()).toBe(errBefore);
   });
 
+  await softStep('Scenario 2 Step 6: filtering under values aggregation re-renders the Filtered Rows overlay (canvas color delta); selection unchanged', async () => {
+    const errBefore = errCount();
+    // Enter the overlay mode and let it settle so the color snapshot isolates
+    // the FILTER effect from the rowSource/showFilteredRows repaint (mirrors
+    // Scenario 1 Step 6). This asserts the Filtered Rows overlay under the
+    // values (value-count) aggregation, before switching to avg.
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.rowSource = 'All';
+      bc.props.showFilteredRows = true;
+      await new Promise((r) => setTimeout(r, 900));
+    });
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
+    // Ceiling 40 sits well below the filter recolor signal floor 120 (measured
+    // settle 0 px / recolor ~192 px on dev 2026-07-21).
+    expect(settle.deltaPx).toBeLessThan(40);
+    const info = await page.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const sex = df.col('sex');
+      df.filter.init((i: number) => sex.get(i) === 'M');
+      await new Promise((r) => setTimeout(r, 900));
+      return {
+        aggr: bc.props.valueAggrType,
+        rowSource: bc.props.rowSource,
+        sel: df.selection.trueCount,
+        filt: df.filter.trueCount,
+        rowCount: df.rowCount,
+        hasCanvas: !!bc.root.querySelector('canvas'),
+      };
+    });
+    await page.waitForTimeout(500);
+    // Under rowSource 'All' the filter RECOLORS the bar segments in place, so
+    // assert the per-color histogram delta, not the non-white total.
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
+    expect(deltaPx).toBeGreaterThan(120);
+    expect(info.aggr).toBe('values');
+    expect(info.rowSource).toBe('All');
+    expect(info.filt).toBeLessThan(info.rowCount);
+    expect(info.filt).toBeGreaterThan(0);
+    expect(info.sel).toBe(base.asian + base.caucasian);
+    expect(info.hasCanvas).toBe(true);
+    expect(errCount()).toBe(errBefore);
+    // Restore the sex=F filter so the following avg step sees the documented
+    // filtered-row count.
+    await page.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      const sex = df.col('sex');
+      df.filter.init((i: number) => sex.get(i) === 'F');
+      await new Promise((r) => setTimeout(r, 600));
+    });
+  });
+
   await softStep('Scenario 2 Step 7: switching aggregation to avg removes the overlays; selection & filter state preserved', async () => {
     const errBefore = errCount();
     const info = await page.evaluate(async () => {
