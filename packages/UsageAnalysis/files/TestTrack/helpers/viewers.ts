@@ -407,6 +407,142 @@ export async function readLegend(page: Page, viewerType: string): Promise<Legend
 }
 
 // ---------------------------------------------------------------------------
+// 3b. countCanvasPixels — content-level read of a viewer's canvas.
+// ---------------------------------------------------------------------------
+
+export interface RgbRange {
+  rMin: number; rMax: number;
+  gMin: number; gMax: number;
+  bMin: number; bMax: number;
+}
+
+export interface CanvasPixelCounts {
+  /** Non-white opaque pixels on the viewer's first canvas. -1 on fault. */
+  total: number;
+  /** Subset of `total` inside `opts.rgbRange` (== total without a range). -1 on fault. */
+  matched: number;
+}
+
+/**
+ * Count content pixels on a viewer's first canvas via getImageData. The viewer
+ * is located in `grok.shell.tv.viewers` hyphen/space-insensitively (same
+ * normalization as addViewerByIcon, so both 'Bar chart' and 'Bar-chart' work).
+ * `total` counts opaque non-white pixels; `matched` counts the subset that
+ * falls inside `opts.rgbRange` (inclusive bounds per channel).
+ *
+ * Fault-tolerant by contract: a missing viewer/canvas/2d-context or a
+ * getImageData throw returns {total: -1, matched: -1} — the caller decides
+ * whether that is a failure. Viewer canvases are same-origin drawn, so
+ * getImageData is not blocked by tainting (validated on dev, demog.csv).
+ */
+export async function countCanvasPixels(
+  page: Page, viewerType: string, opts?: {rgbRange?: RgbRange},
+): Promise<CanvasPixelCounts> {
+  return await page.evaluate(({vt, range}) => {
+    try {
+      const tv = (window as any).grok?.shell?.tv;
+      const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+      const v = tv ? Array.from(tv.viewers).find((x: any) => norm(x.type) === norm(vt)) as any : null;
+      const cv = v?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+      const ctx = cv?.getContext('2d');
+      if (!cv || !ctx) return {total: -1, matched: -1};
+      const data = ctx.getImageData(0, 0, cv.width, cv.height).data;
+      let total = 0, matched = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (a === 0 || (r >= 250 && g >= 250 && b >= 250)) continue;
+        total++;
+        if (!range || (r >= range.rMin && r <= range.rMax &&
+            g >= range.gMin && g <= range.gMax && b >= range.bMin && b <= range.bMax))
+          matched++;
+      }
+      return {total, matched};
+    } catch (_) {
+      return {total: -1, matched: -1};
+    }
+  }, {vt: viewerType, range: opts?.rgbRange ?? null});
+}
+
+/**
+ * Orange selection-overlay hue range. Covers the canonical Datagrok selection
+ * color #ff8c00 (255,140,0) and the bar-overlay blend shades observed on dev:
+ * #bc9a4e (188,154,78) and #e5b354 (229,179,84). Exclusions by construction:
+ * the default bar fill #96d794 (150,215,148) fails gMax=200; white fails the
+ * non-white pre-filter; every grey (r=g=b) is impossible here because
+ * rMin=150 with bMax=110 cannot both hold when r == b.
+ */
+export const SELECTION_HUE_RANGE: RgbRange = {rMin: 150, rMax: 255, gMin: 100, gMax: 200, bMin: 0, bMax: 110};
+
+/**
+ * Count canvas pixels in the orange selection-overlay hue. Returns 0 when the
+ * Selected Rows overlay is absent, > 0 when it is rendered, and -1 on fault
+ * (no canvas / getImageData failure) — the caller decides how to treat -1.
+ */
+export async function countSelectionHuePixels(page: Page, viewerType: string): Promise<number> {
+  return (await countCanvasPixels(page, viewerType, {rgbRange: SELECTION_HUE_RANGE})).matched;
+}
+
+/**
+ * Per-color canvas histogram snapshot + diff. Catches repaints that RECOLOR
+ * pixels without changing the non-white total (e.g. the Filtered Rows overlay
+ * under rowSource 'All' re-shades bar segments in place, so countCanvasPixels
+ * totals stay equal while ~570 px change color). snapshotCanvasColors stores
+ * the histogram on the page; diffCanvasColors returns the summed per-color
+ * pixel delta vs the stored snapshot and replaces it. deltaPx is -1 when the
+ * viewer/canvas cannot be read or no snapshot was taken (fault, not "equal").
+ */
+export async function snapshotCanvasColors(page: Page, viewerType: string): Promise<boolean> {
+  return await page.evaluate((vt) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!cv) return false;
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      const colors = new Map<number, number>();
+      for (let i = 0; i < img.length; i += 4) {
+        const key = (img[i] << 16) | (img[i + 1] << 8) | img[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+      w.__canvasColorSnap = w.__canvasColorSnap || {};
+      w.__canvasColorSnap[norm(vt)] = colors;
+      return true;
+    } catch {
+      return false;
+    }
+  }, viewerType);
+}
+
+export async function diffCanvasColors(page: Page, viewerType: string): Promise<{deltaPx: number}> {
+  return await page.evaluate((vt) => {
+    const w = window as any;
+    const norm = (s: string) => s.replace(/[\s-]+/g, ' ').toLowerCase();
+    const prev = w.__canvasColorSnap?.[norm(vt)] as Map<number, number> | undefined;
+    const v = Array.from(w.grok?.shell?.tv?.viewers ?? [])
+      .find((x: any) => norm(x.type) === norm(vt)) as any;
+    const cv = v?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!cv || !prev) return {deltaPx: -1};
+    try {
+      const img = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+      const colors = new Map<number, number>();
+      for (let i = 0; i < img.length; i += 4) {
+        const key = (img[i] << 16) | (img[i + 1] << 8) | img[i + 2];
+        colors.set(key, (colors.get(key) ?? 0) + 1);
+      }
+      let deltaPx = 0;
+      for (const [c, n] of colors) deltaPx += Math.abs(n - (prev.get(c) ?? 0));
+      for (const [c, n] of prev) if (!colors.has(c)) deltaPx += n;
+      w.__canvasColorSnap[norm(vt)] = colors;
+      return {deltaPx};
+    } catch {
+      return {deltaPx: -1};
+    }
+  }, viewerType);
+}
+
+// ---------------------------------------------------------------------------
 // 4. changeLegendItemColor — picker UI flow + JS-API fallback.
 // ---------------------------------------------------------------------------
 

@@ -89,9 +89,19 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
 
   await softStep('Scenario 1 Step 4: stacking holds on the negative-sum value column (GROK-19480)', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    const info = await page.evaluate(async () => {
+    await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.legendVisibility = 'Always';
+      await new Promise((r) => setTimeout(r, 600));
+    });
+    // Legend appears as a RESULT of enabling stacking (with no stack column the
+    // bar chart shows no legend even under legendVisibility Always), so the
+    // before/after delta below is caused by the stack action itself. GROK-19480
+    // broke stacking whenever the aggregated value column has negative sums,
+    // which Chemical Space X does.
+    const legendBefore = await v.readLegend(page, 'Bar chart');
+    const info = await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.stackColumnName = 'Stereo Category';
       await new Promise((r) => setTimeout(r, 900));
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
@@ -100,18 +110,16 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
         hasCanvas: !!cv && cv.getBoundingClientRect().width > 0,
       };
     });
-    // Legend presence is the DOM proxy for active stacking (see
-    // barchart-relative-requires-stack): GROK-19480 broke stacking whenever the
-    // aggregated value column has negative sums, which Chemical Space X does.
-    const legend = await v.readLegend(page, 'Bar chart');
+    const legendAfter = await v.readLegend(page, 'Bar chart');
     await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.stackColumnName = null;
       await new Promise((r) => setTimeout(r, 600));
     });
     const errAfter = pageErrors.length + consoleErrors.length;
-    expect(legend.legendRendered).toBe(true);
-    expect(legend.itemCount).toBeGreaterThanOrEqual(2);
+    expect(legendBefore.legendRendered).toBe(false);
+    expect(legendAfter.legendRendered).toBe(true);
+    expect(legendAfter.itemCount).toBeGreaterThanOrEqual(2);
     expect(info.splitColumnName).toBe(splitCol);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);

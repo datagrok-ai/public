@@ -57,16 +57,25 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
   expect(base.female).toBeGreaterThan(0);
   expect(base.female).toBeLessThan(base.rowCount);
 
-  await softStep('Scenario 1 Step 4: selecting Asian sets df.selection to exactly the Asian rows; filter untouched', async () => {
+  await softStep('Scenario 1 Step 4: selecting Asian renders the Selected Rows overlay (orange hue on canvas); filter untouched', async () => {
     const errBefore = errCount();
-    const info = await page.evaluate(async ({split}) => {
+    await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.valueAggrType = 'count';
       bc.props.showSelectedRows = true;
       bc.props.showFilteredRows = true;
-      const race = df.col(split);
       df.filter.setAll(true);
+      df.selection.setAll(false);
+      await new Promise((r) => setTimeout(r, 600));
+    });
+    await page.waitForTimeout(500);
+    // No selection yet — the orange selection hue must be absent from the canvas.
+    const huePxBefore = await v.countSelectionHuePixels(page, 'Bar chart');
+    const info = await page.evaluate(async ({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const race = df.col(split);
       df.selection.init((i: number) => race.get(i) === 'Asian');
       await new Promise((r) => setTimeout(r, 600));
       let selInCat = 0;
@@ -81,6 +90,13 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     }, {split: splitCol});
+    await page.waitForTimeout(500);
+    // Overlay signal: selection paints the DarkOrange (#ff8c00) hue onto the bars
+    // (~29 orange-range px on dev for the Asian subset).
+    const huePx = await v.countSelectionHuePixels(page, 'Bar chart');
+    expect(huePx).toBeGreaterThan(0);
+    expect(huePx).toBeGreaterThan(huePxBefore);
+    // Secondary state checks (selection/filter bitsets behind the overlay).
     expect(info.aggr).toBe('count');
     expect(info.sel).toBe(base.asian);
     expect(info.selInCat).toBe(info.sel);
@@ -89,16 +105,23 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Scenario 1 Step 6: filtering to sex=F sets df.filter to the female rows; selection unchanged', async () => {
+  await softStep('Scenario 1 Step 6: filtering to sex=F re-renders the bars (canvas pixel delta); selection unchanged', async () => {
     const errBefore = errCount();
-    const info = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
+    // Enter the overlay mode first and let it settle, so the color snapshot
+    // isolates the FILTER effect from the rowSource/showFilteredRows flip.
+    await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.rowSource = 'All';
       bc.props.showFilteredRows = true;
+      await new Promise((r) => setTimeout(r, 900));
+    });
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    const info = await page.evaluate(async () => {
+      const df = grok.shell.tv.dataFrame;
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const sex = df.col('sex');
       df.filter.init((i: number) => sex.get(i) === 'F');
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 900));
       return {
         rowSource: bc.props.rowSource,
         sel: df.selection.trueCount,
@@ -107,6 +130,13 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     });
+    await page.waitForTimeout(500);
+    // Filtered Rows overlay signal: under rowSource 'All' the bar geometry is
+    // fixed — the overlay RECOLORS bar segments in place (~570 px per-color
+    // delta on dev), so assert the color-histogram delta, not the non-white
+    // total (which stays equal by design here).
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
+    expect(deltaPx).toBeGreaterThan(100);
     expect(info.rowSource).toBe('All');
     expect(info.filt).toBe(base.female);
     expect(info.filt).toBeLessThan(info.rowCount);
@@ -115,7 +145,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Scenario 1 Step 8: switching aggregation to min preserves selection & filter state', async () => {
+  await softStep('Scenario 1 Step 8: switching aggregation to min removes the overlays; selection & filter state preserved', async () => {
     const errBefore = errCount();
     const info = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
@@ -129,6 +159,10 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     });
+    await page.waitForTimeout(500);
+    // Non-cumulative aggregation removes the overlays: no orange selection hue
+    // may remain on the canvas (0 expected; -1 fault also fails here).
+    expect(await v.countSelectionHuePixels(page, 'Bar chart')).toBe(0);
     expect(info.aggr).toBe('min');
     expect(info.sel).toBe(base.asian);
     expect(info.filt).toBe(base.female);
@@ -136,7 +170,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Scenario 1 Step 10: re-select Asian + re-filter F under sum → grid state matches expected counts', async () => {
+  await softStep('Scenario 1 Step 10: re-select Asian + re-filter F under sum restores the Selected Rows overlay', async () => {
     const errBefore = errCount();
     const info = await page.evaluate(async ({split}) => {
       const df = grok.shell.tv.dataFrame;
@@ -155,6 +189,10 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     }, {split: splitCol});
+    await page.waitForTimeout(500);
+    // Cumulative aggregation restores the overlays: the orange selection hue
+    // reappears on the bars.
+    expect(await v.countSelectionHuePixels(page, 'Bar chart')).toBeGreaterThan(0);
     expect(info.aggr).toBe('sum');
     expect(info.sel).toBe(base.asian);
     expect(info.filt).toBe(base.female);
@@ -163,7 +201,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Scenario 2 Step 4: selecting Asian+Caucasian sets df.selection to their combined rows; filter unchanged', async () => {
+  await softStep('Scenario 2 Step 4: selecting Asian+Caucasian renders the Selected Rows overlay under values aggr; filter unchanged', async () => {
     const errBefore = errCount();
     const info = await page.evaluate(async ({split}) => {
       const df = grok.shell.tv.dataFrame;
@@ -184,6 +222,9 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     }, {split: splitCol});
+    await page.waitForTimeout(500);
+    // Selected Rows overlay under value-count (cumulative): orange hue present.
+    expect(await v.countSelectionHuePixels(page, 'Bar chart')).toBeGreaterThan(0);
     expect(info.aggr).toBe('values');
     expect(info.sel).toBe(base.asian + base.caucasian);
     expect(info.selInCats).toBe(info.sel);
@@ -192,7 +233,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Scenario 2 Step 7: switching aggregation to avg preserves selection & filter state', async () => {
+  await softStep('Scenario 2 Step 7: switching aggregation to avg removes the overlays; selection & filter state preserved', async () => {
     const errBefore = errCount();
     const info = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
@@ -207,6 +248,10 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
         hasCanvas: !!bc.root.querySelector('canvas'),
       };
     });
+    await page.waitForTimeout(500);
+    // Non-cumulative avg removes the overlays: no orange selection hue on the
+    // canvas (0 expected; -1 fault also fails here).
+    expect(await v.countSelectionHuePixels(page, 'Bar chart')).toBe(0);
     expect(info.aggr).toBe('avg');
     expect(info.sel).toBe(base.asian + base.caucasian);
     expect(info.filt).toBe(base.female);

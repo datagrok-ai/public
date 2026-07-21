@@ -85,7 +85,10 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;
       return h.props.valueColumnName;
     });
-    expect(usedFallback).toBe(false); // the value must arrive via the in-plot UI flow
+    // The real UI-path guard is the prop assert below (fallback is off, so only
+    // the in-plot flow can set it); usedFallback only protects against a future
+    // allowFallback-default change in the helper.
+    expect(usedFallback).toBe(false);
     expect(prop).toBe('HEIGHT');
   });
 

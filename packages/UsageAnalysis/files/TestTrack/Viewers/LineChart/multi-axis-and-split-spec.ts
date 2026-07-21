@@ -3,6 +3,7 @@ realizes: [linechart.cp.multi-axis-and-split]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {countCanvasPixels} from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -35,16 +36,11 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
 }
 
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
-    const canvases = lc.root.querySelectorAll('canvas');
-    let maxArea = 0;
-    for (const c of canvases) {
-      const r = (c as HTMLCanvasElement).getBoundingClientRect();
-      maxArea = Math.max(maxArea, r.width * r.height);
-    }
-    return maxArea > 0;
-  });
+  // Content-level check (github-2904): a blank chart still has a non-zero
+  // bounding rect, so measure drawn pixels instead of geometry. -1 (no canvas
+  // or getImageData fault) fails the > 100 threshold and surfaces as non-empty
+  // being false.
+  return (await countCanvasPixels(page, 'Line chart')).total > 100;
 }
 
 test('Line Chart — Multi-Axis and Split', async ({page}) => {

@@ -53,7 +53,7 @@ expected_results:
 
 ## Scenarios
 
-### Scenario 1: Vertical orientation with Descending sort, legend visibility, and negative values
+### Scenario 1: Vertical orientation with Descending sort, stacking on negative sums, and negative values
 
 Steps:
 1. In the Context Panel > Style section, set **Orientation** to **Vertical** (non-default; default is Horizontal).
@@ -77,7 +77,10 @@ Steps:
 Expected:
 - After Step 3: bars are vertical with decreasing heights left-to-right; values and colors are
   rendered correctly for all displayed categories.
-- After Step 4: legend is visible in the Bar Chart viewer without requiring hover or any extra action.
+- After Step 4: enabling the Stack column on the negative-sum Chemical Space X aggregation keeps
+  stacking functional — the stack legend appears as a result of the stack action (it is absent
+  before it) and no errors are raised (GROK-19480); clearing the Stack column restores the
+  un-stacked baseline.
 - After Step 5: chart remains functional with no errors despite negative Chemical Space X sums;
   negative bars appear below the baseline.
 - After Step 8: chart reverts to horizontal bars in ascending order; no residual style artifact
