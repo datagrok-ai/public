@@ -1,0 +1,63 @@
+name: Generate gif thumbnails
+
+# Every help gif must have a sibling <name>-thumb.png: the platform image ships
+# only the thumbnails (the help viewer shows them with a play button and streams
+# the gif from data.datagrok.ai on click). This generates thumbs for committed
+# gifs and pushes them back. workflow_dispatch backfills missing thumbs in help/.
+
+on:
+  push:
+    branches: [master]
+    paths: ['help/**.gif']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gif-thumbnails
+  cancel-in-progress: false
+
+jobs:
+  thumbnails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Generate thumbnails
+        id: gen
+        run: |
+          set -e
+          count=0
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # backfill: only gifs with no thumbnail at all
+            find help -type f -name '*.gif' > /tmp/gifs.txt
+            only_missing=true
+          else
+            # push: added/modified gifs always get a fresh thumbnail
+            git diff --name-only --diff-filter=AM HEAD^ HEAD -- 'help/**.gif' > /tmp/gifs.txt
+            only_missing=false
+          fi
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            thumb="${f%.gif}-thumb.png"
+            if [ "$only_missing" = "true" ] && [ -f "$thumb" ]; then continue; fi
+            echo "Generating $thumb"
+            ffmpeg -loglevel error -y -i "$f" -frames:v 1 "$thumb"
+            count=$((count+1))
+          done < /tmp/gifs.txt
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Commit
+        if: steps.gen.outputs.count != '0'
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A 'help/**-thumb.png'
+          git diff --cached --quiet && exit 0
+          git commit -m 'CI: generate gif thumbnails [skip ci]'
+          git push
