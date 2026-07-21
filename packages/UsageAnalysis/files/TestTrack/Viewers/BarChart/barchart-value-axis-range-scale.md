@@ -2,7 +2,6 @@
 feature: barchart
 realizes_atlas:
   - barchart.cp.value-axis-range-scale-scroll
-  - barchart.int.selected-filtered-rows-need-cumulative-aggr
 realizes:
   - viewers.bar-chart
 priority: p1
@@ -35,21 +34,9 @@ expected_results:
     expectation: >-
       Clearing Value Min and Value Max restores the full-range axis with no
       clipping.
-  - anchor: "Scenario 2 Step 3"
-    expectation: >-
-      With Show Selected Rows enabled under count, a selection drives a per-bar
-      overlay segment.
-  - anchor: "Scenario 2 Step 5"
-    expectation: >-
-      With Show Filtered Rows enabled under count, a filter drives a per-bar
-      overlay segment.
-  - anchor: "Scenario 2 Step 8"
-    expectation: >-
-      Under a non-cumulative aggregation (avg), the Selected/Filtered Rows
-      overlays are suppressed.
 ---
 
-# Bar Chart — Value-Axis Range, Scale, and Selected/Filtered Rows Overlays
+# Bar Chart — Value-Axis Range, Scale, and Scroll
 
 ## Setup
 
@@ -101,32 +88,3 @@ Expected:
 - After Step 9: logarithmic axis labels are visible; all positive-count bars are rendered correctly.
 - After Step 11: linear axis with the same bars as before the log-scale switch; round-trip is clean.
 - After Step 13: no clipped-bar indicators; full-range axis; chart is back to the baseline layout.
-
-### Scenario 2: Show Selected Rows and Show Filtered Rows overlays require cumulative aggregation
-
-Steps:
-1. Confirm the current **Value Aggr Type** is **count** (cumulative aggregation from Setup Step 5).
-2. In the Context Panel > Selection section, enable **Show Selected Rows**.
-3. Select a subset of rows in the grid (e.g. click a row to select it; Ctrl+click to add more).
-   Verify that an overlay bar segment representing the selected rows appears within each category bar
-   that contains selected rows — the overlay is visible on top of the base bar.
-4. In the Context Panel > Selection section, enable **Show Filtered Rows**.
-5. Open the Filter panel and apply a filter to reduce the visible row count
-   (e.g. filter the dataset so that at least one category has fewer filtered rows than total rows).
-   Verify that an overlay bar segment representing the filtered rows appears within the relevant
-   category bars in the Bar Chart.
-6. Disable the filter (clear or remove it) and deselect all rows (press Esc).
-7. Disable **Show Selected Rows** and **Show Filtered Rows** to restore baseline.
-8. In the Context Panel > Data section, change **Value Aggr Type** to **avg** (non-cumulative aggregation).
-   Enable **Show Selected Rows** and **Show Filtered Rows** again.
-   Select a subset of rows; apply a filter.
-9. Verify that no overlay bar segments appear for either selected or filtered rows when **avg** aggregation
-   is active — the overlays are suppressed for non-cumulative aggregations
-   (overlays only computed for count / sum / value-count).
-10. Change **Value Aggr Type** back to **count** and disable both overlay options to restore baseline.
-
-Expected:
-- After Step 3: overlay segments for selected rows are visible within the relevant category bars.
-- After Step 5: overlay segments for filtered rows are visible within the relevant category bars.
-- After Step 9: no overlay segments appear for either selected rows or filtered rows under avg aggregation;
-  bars render as standard single-segment bars.

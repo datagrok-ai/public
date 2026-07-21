@@ -191,13 +191,7 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(600);
-    let selAfter = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    if (selAfter !== 0) {
-      selAfter = await page.evaluate(() => {
-        grok.shell.tv.dataFrame.selection.setAll(false);
-        return grok.shell.tv.dataFrame.selection.trueCount;
-      });
-    }
+    const selAfter = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
     expect(selAfter).toBe(0);
   });
 

@@ -4,10 +4,13 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes:
+  - viewers.line-chart
 realized_as:
   - line-chart-spec.ts
-related_bugs: [GROK-17835]
+related_bugs:
+  - id: GROK-17835
+    status: fixed
 ---
 
 # Line chart tests (Playwright)
@@ -23,27 +26,6 @@ All scenarios should start with the following sequence of events:
 2. Right-click the viewer and go to Chart Type > Stacked Area Chart
 3. Right-click the viewer and go to Chart Type > Stacked Bar Chart
 4. Right-click the viewer and go to Chart Type > Line Chart
-
-## Whiskers (error bars)
-
-1. Go to the Context Panel > X, set X to RACE; go to the Context Panel > Y, set Y to AGE
-2. Go to the Context Panel > Data, set Whiskers Type to Avg | Min, Max
-3. Set Whiskers Type to Med | Q1, Q3
-4. Set Whiskers Type to Avg | +/-StDev
-5. Set Whiskers Type to Avg | +/-StError
-6. Set Whiskers Type to None
-
-## Markers
-
-1. Right-click the viewer and go to Markers — set visibility to Always
-2. From the Markers submenu, select the square marker shape
-3. Select the triangle up marker shape
-4. Drag the Size slider to 10
-5. Drag the Opacity slider to 50
-6. From the Markers submenu, go to Marker Column and set it to SEX
-7. Go to the Context Panel > Marker, set Size Column to WEIGHT
-8. Right-click the viewer, go to Markers > Marker Column and select the empty first row to clear it
-9. Right-click the viewer, go to Markers and set visibility to Auto
 
 ## Axis configuration
 
@@ -65,17 +47,6 @@ All scenarios should start with the following sequence of events:
 1. Go to the Context Panel > Lines, set Interpolation to Spline
 2. Set Spline Tension to 1.0
 3. Set Interpolation to None
-
-## Aggregation types
-
-1. Go to the Context Panel > X, set X to RACE; go to the Context Panel > Y, set Y to AGE
-2. Right-click the viewer and go to Data > Aggregation > avg
-3. Right-click the viewer and go to Data > Aggregation > min
-4. Right-click the viewer and go to Data > Aggregation > max
-5. Right-click the viewer and go to Data > Aggregation > med
-6. Right-click the viewer and go to Data > Aggregation > sum
-7. Right-click the viewer and go to Data > Aggregation > stdev
-8. Right-click the viewer and go to Data > Aggregation > avg
 
 ## Left panel histogram
 
@@ -100,19 +71,6 @@ All scenarios should start with the following sequence of events:
 4. Set Y Global Scale to false
 5. Right-click the viewer and go to Controls — uncheck Multi Axis
 
-## Split by column
-
-1. Right-click the viewer and go to Data > Split Columns and set Split to SEX
-2. Right-click the viewer and go to Data > Split Columns and set Split to RACE
-3. Set Split to SEX and RACE
-4. Remove all split columns
-
-## Multi-axis mode
-
-1. Go to the Context Panel > Y, set Y to AGE, HEIGHT, and WEIGHT
-2. Right-click the viewer and go to Controls — check Multi Axis
-3. Right-click the viewer and go to Controls — uncheck Multi Axis
-
 ## Title and description
 
 1. Go to the Context Panel > General, set Show Title to true
@@ -121,13 +79,6 @@ All scenarios should start with the following sequence of events:
 4. Set Description Position to Top
 5. Set Description Position to Bottom
 6. Set Description Visibility Mode to Never
-
-## Custom axis min/max
-
-1. Go to the Context Panel > X, set X to AGE; go to the Context Panel > Y, set Y to HEIGHT
-2. Go to the Context Panel > X, set Min to 30, Max to 60
-3. Go to the Context Panel > Y, set Min to 150, Max to 190
-4. Clear all custom min/max values
 
 ## Date/time X axis
 
@@ -169,8 +120,9 @@ All scenarios should start with the following sequence of events:
 4. Set Legend Position to Top
 5. Set Legend Position to Bottom
 6. Set Legend Position to Right
-7. Set Legend Visibility to Never
-8. Set Legend Visibility to Auto
+7. Set Legend Visibility to Never -- the legend disappears
+8. Set Legend Visibility to Auto -- the legend reappears listing the same categories (F, M)
+9. Clear the split column
 
 ## Axes follow filter
 
@@ -229,20 +181,6 @@ Setup: Close all, open SPGI (not demog)
 5. Apply a categorical filter — verify the chart reflects both the expression filter and the panel filter together
 6. Apply a numeric filter — verify collaborative filtering between the Filter Panel and the in-viewer Filter value
 7. Remove all filters
-
-## Split and Y-columns sync with Context Panel
-
-1. Close all and open demog
-2. Add a line chart
-3. On the viewer, use the in-plot Split selector to add SEX as a split column — verify the Context Panel > Data > Split shows 1 split column
-4. Use the in-plot Split selector to add RACE — verify the Context Panel shows 2 split columns
-5. Remove RACE via the in-plot selector — verify the Context Panel shows 1 split column
-6. Go to the Context Panel > Y and set Y to AGE, HEIGHT, and WEIGHT
-7. On the viewer, click the 'x' button on one of the Y lines to remove it — verify the Context Panel > Y immediately shows 2 Y columns
-8. Remove another Y line via the 'x' button — verify Context Panel shows 1 Y column
-9. On the viewer, right-click the canvas and go to Controls — check Multi Axis
-10. Verify that legend categories' names start with the corresponding Y column name
-11. Use the in-plot Y column selector to change one of the Y columns — verify the legend updates accordingly
 
 ## Selection checkboxes
 

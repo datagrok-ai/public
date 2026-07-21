@@ -11,19 +11,19 @@ realized_as:
   - barchart-relative-requires-stack-spec.ts
 related_bugs: []
 expected_results:
-  - anchor: "Step 3"
+  - anchor: "Scenario 1 Step 3"
     expectation: >-
       With no Stack column, enabling Relative Values has no effect — bars keep
       absolute widths (not normalized).
-  - anchor: "Step 5"
+  - anchor: "Scenario 2 Step 6"
     expectation: >-
       Setting a Stack column with Relative Values on normalizes bars to equal
       width, split into stacked segments.
-  - anchor: "Step 7"
+  - anchor: "Scenario 2 Step 7"
     expectation: >-
       Removing the Stack column reverts bars to absolute widths — Relative Values
       inert again.
-  - anchor: "Step 9"
+  - anchor: "Scenario 3 Step 10"
     expectation: >-
       Disabling Relative Values with no Stack column restores the baseline
       single-segment bars, no error.

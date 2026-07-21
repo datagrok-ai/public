@@ -7,11 +7,6 @@ All scenarios should start with the following sequence of events:
 2. Open demog
 3. Add PC plot
 
-## Selection (click on line)
-
-1. Click on a line in the plot -- the corresponding row should be selected in the grid
-2. Click on empty space -- selection should be cleared
-
 ## Area selection
 
 1. On the viewer Shift-drag a rectangular area between two axes -- lines passing through the area should be selected

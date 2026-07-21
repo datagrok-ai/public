@@ -8,7 +8,8 @@ priority: p1
 target_layer: playwright
 coverage_type: regression
 related_bugs:
-  - GROK-19480
+  - id: GROK-19480
+    status: fixed
   - id: github-3417
     status: regression-risk
 realized_as:

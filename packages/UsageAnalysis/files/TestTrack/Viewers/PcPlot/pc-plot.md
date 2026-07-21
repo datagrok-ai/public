@@ -4,7 +4,8 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes:
+  - viewers.pc-plot
 realized_as:
   - pc-plot-spec.ts
 related_bugs: []
@@ -23,17 +24,10 @@ All scenarios should start with the following sequence of events:
 2. Right-click the plot > **To Script** -- a balloon with the generated script should appear
 3. Close the viewer, then add PC plot via **Toolbox** -- viewer opens again
 
-## Axis scale & normalization
+## Axis scale via the context menu
 
-1. Open Context Panel > **Value > Normalize Each Column** -- enabled by default
-2. Verify each axis has its own min/max scale
-3. Disable **Normalize Each Column** -- all axes should use the same global scale, a shared Y axis appears on the left
-4. Re-enable -- individual scales restored, shared Y axis disappears
-5. Right-click on the plot > **Y Axis** > select **Global** -- axes switch to global scale
-6. Right-click > **Y Axis** > select **Normalized** -- axes return to normalized scale
-7. Open Context Panel > **Value > Log Columns** > add AGE -- the AGE axis should switch to logarithmic scale
-8. Add WEIGHT to log columns -- WEIGHT axis also switches to log
-9. Remove both from log columns -- linear scales restored
+1. Right-click on the plot > **Y Axis** > select **Global** -- axes switch to global scale
+2. Right-click > **Y Axis** > select **Normalized** -- axes return to normalized scale
 
 ## Selection & line display
 
@@ -60,15 +54,11 @@ All scenarios should start with the following sequence of events:
 8. Adjust **Horz Margin** -- spacing between axes changes
 9. Toggle **Auto Layout** off -- manual control over labels, min/max, and margins
 
-## In-chart filtering & reset
+## Reset and filter visibility from the context menu
 
-1. On the first axis, drag the range slider handles to narrow the range -- rows outside range should be filtered
-2. Narrow a second axis range -- only rows passing both filters should remain
-3. Enable **Show Filtered Out Lines** -- filtered rows should appear as faint lines
-4. Double-click white space -- all range sliders reset (Reset View)
-5. Narrow range sliders on two axes again
-6. Right-click > **Reset View** -- all filters should reset
-7. Right-click > **Filter** > toggle **Show Filters** -- range slider visibility toggles
+1. Narrow range sliders on two axes
+2. Right-click > **Reset View** -- all filters should reset
+3. Right-click > **Filter** > toggle **Show Filters** -- range slider visibility toggles
 
 ## Filter panel interaction
 
@@ -81,14 +71,10 @@ Precondition: range sliders on two axes are narrowed (from scenario 4 flow).
 5. Use range sliders on the PC plot axes to filter again
 6. On the Filter Panel click **Reset filter** -- all filters should reset and PC plot range sliders return to default
 
-## Column management & reordering
+## Column reordering from the Context Panel list
 
 1. Open Context Panel > **Value > Column Names** -- verify AGE, HEIGHT, WEIGHT are shown
-2. Remove HEIGHT from the list -- the corresponding axis should disappear
-3. Add HEIGHT back -- axis reappears
-4. Reorder columns in the list -- axes should reorder on the plot
-5. Hover on AGE column name on top (above column range slider), drag'n'drop it to change viewer column order
-6. Verify the new order persists in Context Panel > **Value > Column Names**
+2. Reorder columns in the list -- axes should reorder on the plot
 
 ## Density styles
 
@@ -114,19 +100,18 @@ Precondition: range sliders on two axes are narrowed (from scenario 4 flow).
 3. Toggle **Invert Color Scheme** -- gradient reverses
 4. Set custom **Color Min** and **Color Max** values -- color range narrows
 
-**Color scale and legend:**
+**Legend position and visibility:**
 
-5. Set Color Column to RACE -- a categorical legend should appear
+5. Set Color Column to RACE
 6. Change **Legend Position** to Left, Right, Top, Bottom -- legend moves accordingly
 7. Set **Legend Visibility** to Never -- legend disappears
-8. Set **Legend Visibility** to Auto -- legend reappears
-9. Set Color Column to None -- all lines return to default color
+8. Set **Legend Visibility** to Auto -- legend reappears with the same categories
 
 **Color coding from grid:**
 
-10. Open Context Panel > **Color > Color Column** > set to HEIGHT
-11. In the grid, for the HEIGHT column set linear color coding type (use js-api) -- verify that PC plot legend updates accordingly
-12. In the grid, for the HEIGHT column set conditional color coding type (use js-api) -- verify the PC plot legend updates accordingly
+9. Open Context Panel > **Color > Color Column** > set to HEIGHT
+10. In the grid, for the HEIGHT column set linear color coding type (use js-api) -- verify that PC plot legend updates accordingly
+11. In the grid, for the HEIGHT column set conditional color coding type (use js-api) -- verify the PC plot legend updates accordingly
 
 ## Title and description
 

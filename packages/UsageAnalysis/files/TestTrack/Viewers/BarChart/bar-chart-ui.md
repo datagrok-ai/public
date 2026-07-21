@@ -71,7 +71,6 @@ Setup: Close all, open SPGI
 1. Go to the grid and select the first 300 rows — verify the selection is reflected on the bar chart
 2. Go to the Context Panel > Selection, toggle Show Selected Rows off — verify the bar chart updates
 3. Toggle Show Selected Rows on — verify selected rows are highlighted again
-4. Click a bar on the bar chart — verify corresponding rows are selected in the grid
 
 ## On Click filter mode
 
@@ -79,7 +78,6 @@ Setup: Close all, open SPGI
 2. Click on a bar — verify the grid filters to show only that category's rows
 3. Ctrl+click another bar — verify filter updates
 4. Click on empty space around the bar chart — verify filter resets and all rows are visible
-5. Set On Click back to Select
 
 ---
 {

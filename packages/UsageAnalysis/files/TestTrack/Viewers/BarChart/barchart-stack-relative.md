@@ -8,28 +8,29 @@ priority: p1
 target_layer: playwright
 coverage_type: regression
 related_bugs:
-  - GROK-19480
+  - id: GROK-19480
+    status: fixed
   - id: github-2659
     status: fixed
 realized_as:
   - barchart-stack-relative-spec.ts
 expected_results:
-  - anchor: "Step 4"
+  - anchor: "Scenario 1 Step 4"
     expectation: >-
       With Relative Values enabled and a Stack column set, each bar normalizes
       to equal width and splits into stacked segments — the chart is not blank
       (github-2659).
-  - anchor: "Step 5"
+  - anchor: "Scenario 1 Step 5"
     expectation: >-
       At least two stacked segments per bar are visible.
-  - anchor: "Step 7"
+  - anchor: "Scenario 1 Step 7"
     expectation: >-
       With a sum aggregation whose totals include negative values, the stacked
       bars render without error (GROK-19480).
-  - anchor: "Step 9"
+  - anchor: "Scenario 1 Step 9"
     expectation: >-
       Disabling Relative Values reverts bars to absolute single-segment widths.
-  - anchor: "Step 11"
+  - anchor: "Scenario 1 Step 11"
     expectation: >-
       Removing the Stack column collapses bars to single-segment with no legend
       column.

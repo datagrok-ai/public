@@ -17,23 +17,23 @@ related_bugs:
 realized_as:
   - barchart-setup-interact-spec.ts
 expected_results:
-  - anchor: "Step 5"
+  - anchor: "Scenario 1 Step 1"
     expectation: >-
       Per-category bars render for each distinct Split value, heights reflecting
       the aggregated Value.
-  - anchor: "Scenario 1"
+  - anchor: "Scenario 1 Step 4"
     expectation: >-
       With On Click set to Filter, clicking a bar filters the grid to that bar's
       category only.
-  - anchor: "Step 9"
+  - anchor: "Scenario 1 Step 9"
     expectation: >-
       Double-clicking the canvas (Reset View) clears any zoom and restores the
       full-range view.
-  - anchor: "Step 10"
+  - anchor: "Scenario 2 Step 3"
     expectation: >-
       With On Click reverted to Select, clicking a bar selects that category's
       rows without filtering (filter count unchanged).
-  - anchor: "Step 11"
+  - anchor: "Scenario 2 Step 5"
     expectation: >-
       Pressing Esc clears the selection (no rows highlighted).
 ---

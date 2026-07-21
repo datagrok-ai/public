@@ -122,6 +122,17 @@ export async function addViewerByIcon(
     (document.querySelector('[name="icon-' + n + '"]') as HTMLElement).click();
   }, iconName);
   await page.locator('[name="viewer-' + viewerName + '"]').waitFor({timeout: timeoutMs});
+  // The DOM node attaches a tick before the viewer is enumerable in
+  // grok.shell.tv.viewers (and before its props object exists). A caller that
+  // reaches for the viewer via `tv.viewers.find(...)` right after this returns
+  // otherwise gets `undefined`. Poll enumerability so downstream prop reads are
+  // safe regardless of the render-vs-registration race.
+  await page.waitForFunction((vn) => {
+    const tv = (window as any).grok?.shell?.tv;
+    if (!tv) return false;
+    const v = Array.from(tv.viewers).find((x: any) => x.type === vn);
+    return !!(v && (v as any).props);
+  }, viewerName, {timeout: timeoutMs});
 }
 
 // ---------------------------------------------------------------------------

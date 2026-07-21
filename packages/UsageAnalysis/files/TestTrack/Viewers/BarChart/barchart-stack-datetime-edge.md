@@ -10,24 +10,24 @@ target_layer: playwright
 coverage_type: edge
 related_bugs: []
 expected_results:
-  - anchor: "Step 4"
+  - anchor: "Scenario 1 Step 4"
     expectation: With a non-additive aggregation (avg) and a Stack column, no
       stacked segments appear and the legend column is suppressed.
-  - anchor: "Step 5"
+  - anchor: "Scenario 1 Step 5"
     expectation: Switching to sum (additive) with the same Stack column produces
       stacked bars with a visible legend.
-  - anchor: "Step 7"
+  - anchor: "Scenario 1 Step 7"
     expectation: Under count (additive), removing the Stack column collapses bars
       to single-segment with no legend column.
-  - anchor: "Step 10"
+  - anchor: "Scenario 2 Step 9"
     expectation: With a non-DateTime Split column, the Split Map selector is absent
       or disabled.
-  - anchor: "Step 13"
+  - anchor: "Scenario 2 Step 12"
     expectation: With a DateTime Split column (STARTED), the Split Map selector
       becomes available.
-  - anchor: "Step 14"
+  - anchor: "Scenario 2 Step 14"
     expectation: Changing Split Map from Year to Month re-categorizes bars by month.
-  - anchor: "Step 15"
+  - anchor: "Scenario 2 Step 15"
     expectation: Reverting Split Map to Year re-categorizes bars by year; the chart
       is not broken or blank.
 realized_as:
