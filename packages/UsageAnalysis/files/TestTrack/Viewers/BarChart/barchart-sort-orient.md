@@ -63,7 +63,7 @@ Steps:
    the descending sort order by aggregated **Chemical Space X** sum is applied under vertical orientation.
 4. In the Context Panel > Style section, set **Legend Visibility** to **Always** and enable stacking
    (set **Stack** to **Stereo Category**). Verify that stacking holds on the negative-sum
-   **Chemical Space X** aggregation: the stack legend is visible in the viewer area (GROK-19480
+   **Chemical Space X** aggregation: the stack legend, absent before, appears in the viewer area (GROK-19480
    regression guard — stacking used to break for negative aggregated values). Then clear the Stack
    column to restore the un-stacked baseline for the following steps.
 5. Confirm that the **Chemical Space X** column contains categories with negative sum totals.

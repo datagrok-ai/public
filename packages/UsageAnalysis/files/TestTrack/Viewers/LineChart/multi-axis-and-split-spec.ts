@@ -80,6 +80,17 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
 
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X', 'Chemical Space Y']});
 
+  // The 8000-px blank threshold in chartCanvasNonEmpty is calibrated for the
+  // ~666x308 canvas the fixed viewport produces — fail loudly if a layout or
+  // viewport change resizes it, instead of silently devaluing the threshold.
+  const cvDims = await page.evaluate(() => {
+    const lc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Line chart') as any;
+    const cv = lc?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+    return cv ? {w: cv.width, h: cv.height} : {w: -1, h: -1};
+  });
+  expect(cvDims.w).toBeGreaterThan(450);
+  expect(cvDims.h).toBeGreaterThan(200);
+
   await softStep('S1: enable Multi Axis with 2 Y columns', async () => {
     const before = realErrors().length;
     await setProps(page, {multiAxis: true});
@@ -110,9 +121,42 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
   await softStep('S2: 3 Y columns survive an edit, not reset to 1', async () => {
     await setProps(page, {splitColumnNames: [], yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
     expect((await getProps(page, 'yColumnNames')).yColumnNames).toHaveLength(3);
-    // GROK-18484: re-issuing the same 3-column selection must not silently shrink
-    // the Y-column list to one column.
+    // GROK-18484: EDITING the Y list through the property-panel multi-select
+    // dialog must not silently reset it. Drive the real UI: open the context
+    // panel, click the Y row's [...] editor, type into the dialog's Search
+    // input, close with Escape — then the Y list must survive intact.
     await setProps(page, {yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
+    await page.evaluate(() => {
+      const el = document.querySelector('[name="viewer-Line-chart"]') as HTMLElement;
+      const panelBase = el.closest('.panel-base') as HTMLElement;
+      (panelBase?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement)?.click();
+    });
+    await page.waitForTimeout(900);
+    const dotsClicked = await page.evaluate(() => {
+      // The Y row: a leaf 'Y' label whose ancestor row also holds an 'N / M'
+      // counter and the '...' editor button (disambiguates from Split's row).
+      const leaves = (Array.from(document.querySelectorAll('*')) as HTMLElement[])
+        .filter((el) => el.childElementCount === 0);
+      const label = leaves.find((el) => (el.textContent ?? '').trim() === 'Y' &&
+        el.closest('.property-grid, .grok-prop-panel, .d4-accordion, .d4-flex-col'));
+      let row: HTMLElement | null = label ?? null;
+      for (let up = 0; up < 6 && row; up++, row = row.parentElement) {
+        const kids = Array.from(row.querySelectorAll('*')) as HTMLElement[];
+        const counter = kids.find((el) => el.childElementCount === 0 &&
+          /^\d+\s*\/\s*\d+$/.test((el.textContent ?? '').trim()));
+        const dots = kids.find((el) => el.childElementCount === 0 &&
+          /^(\.\.\.|…)$/.test((el.textContent ?? '').trim()));
+        if (counter && dots) { dots.click(); return true; }
+      }
+      return false;
+    });
+    expect(dotsClicked).toBe(true);
+    const search = page.locator('.d4-dialog .d4-column-grid input[placeholder="Search"]');
+    await search.waitFor({timeout: 5000});
+    await search.fill('Chemical');
+    await page.waitForTimeout(600);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(800);
     const y = (await getProps(page, 'yColumnNames')).yColumnNames;
     expect(y).toHaveLength(3);
   });
