@@ -20,7 +20,7 @@ const t = (typeof df.toCSV === 'function' && typeof df.toCsv !== 'function')
   ? DG.DataFrame.fromCsv(df.toCSV(true)) : df;
 rows = t.rowCount;
 colMax = t.col(colName).stats.max;
-const out = t.clone();
-out.columns.addNewFloat('doubled').init((i) => t.col(colName).get(i) * 2);
-result = out;
-result.toCSV = () => out.toCsv();  // legacy output path calls toCSV(true)
+const copy = t.clone();
+copy.columns.addNewFloat('doubled').init((i) => t.col(colName).get(i) * 2);
+result = copy;
+result.toCSV = () => copy.toCsv();  // legacy output path calls toCSV(true)
