@@ -103,16 +103,35 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
     expect(result.restoredCount).toBe(result.fullCount);
   });
 
-  await softStep('GROK-18000 — add then remove a column, no error (no-error floor)', async () => {
+  await softStep('GROK-18000 — add then remove a column, axes update immediately (DOM axis-slider count 3 → 4 → 3)', async () => {
+    // GROK-18000: the axes must update immediately with no manual refresh. The
+    // read-back is the RENDERED axis-slider set, not the prop echo: adding STARTED
+    // (a valid DateTime axis — it renders axis-slider-STARTED, probed 2026-07-21)
+    // grows the slider set to four, removing it returns to three.
     const errBefore = pageErrors.length + consoleErrors.length;
-    await page.evaluate(async () => {
+    const names = (): Promise<string[]> => page.evaluate(() =>
+      Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
+        .map((e) => e.getAttribute('name')!.replace('axis-slider-', '')));
+    const base = await page.evaluate(() => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      const base = pc.props.columnNames.slice();
-      pc.props.columnNames = [...base, 'STARTED'];
-      await new Promise((r) => setTimeout(r, 400));
-      pc.props.columnNames = base;
-      await new Promise((r) => setTimeout(r, 400));
+      return pc.props.columnNames.slice();
     });
+    await page.evaluate(async (b) => {
+      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
+      pc.props.columnNames = [...b, 'STARTED'];
+      await new Promise((r) => setTimeout(r, 500));
+    }, base);
+    const afterAdd = await names();
+    await page.evaluate(async (b) => {
+      const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
+      pc.props.columnNames = b;
+      await new Promise((r) => setTimeout(r, 500));
+    }, base);
+    const afterRemove = await names();
+    expect(afterAdd.length).toBe(base.length + 1);
+    expect(afterAdd).toContain('STARTED');
+    expect(afterRemove.length).toBe(base.length);
+    expect(afterRemove).not.toContain('STARTED');
     expect(pageErrors.length + consoleErrors.length).toBe(errBefore);
   });
 
@@ -170,15 +189,22 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
       await new Promise((r) => setTimeout(r, 800));
       const legends = root.querySelectorAll('.d4-legend');
       const legendText = legends.length ? legends[0].textContent : '';
+      // Per-item labels from `.d4-legend-value` — the clean category strings, so a
+      // set comparison catches EXTRA entries the `toContain` loop would miss.
+      const legendValues = legends.length
+        ? Array.from(legends[0].querySelectorAll('.d4-legend-value')).map((e) => (e.textContent ?? '').trim())
+        : [];
       pc.props.colorColumnName = '';
       await new Promise((r) => setTimeout(r, 800));
       const legendAfterClear = root.querySelectorAll('.d4-legend').length;
-      return {raceCats, legendBefore, legendAfterCount: legends.length, legendText, legendAfterClear};
+      return {raceCats, legendBefore, legendAfterCount: legends.length, legendText, legendValues, legendAfterClear};
     });
     expect(result.legendBefore).toBe(0);
     expect(result.legendAfterCount).toBeGreaterThan(0);
     for (const cat of result.raceCats)
       expect(result.legendText).toContain(cat);
+    // Exactly the RACE categories, no extras — set equality both ways.
+    expect([...result.legendValues].sort()).toEqual([...result.raceCats].sort());
     expect(result.legendAfterClear).toBe(0);
   });
 

@@ -19,18 +19,19 @@ expected_results:
     expectation: "The viewer RENDERS one axis slider per selected column — the DOM
       axis-slider names equal AGE, HEIGHT, WEIGHT in order"
   - anchor: "Scenario 2 Step 4"
-    expectation: "df.filter.trueCount drops below the full row count (500) after
-      dragging the AGE axis range-slider to a narrower window"
+    expectation: "df.filter.trueCount drops below the full row count after dragging
+      the AGE axis range-slider (its max-handle DOM element) to a narrower window"
   - anchor: "Scenario 2 Step 7"
-    expectation: "df.filter.trueCount restores to the full row count (500) after
-      double-clicking whitespace (Reset View)"
+    expectation: "df.filter.trueCount restores to the full row count after Reset
+      View (actuated via the canvas context menu)"
   - anchor: "Scenario 3 Step 6"
     expectation: "No browser console errors after setting the secondary options in
-      sequence — setting the column list (add then remove a column, GROK-18000),
-      setting the color column to HEIGHT and switching the coloring type to
-      categorical, numerical, then none (GROK-17754), toggling Show Filtered Out
-      Lines, and setting AGE to a logarithmic scale; the plot keeps updating
-      without a manual refresh"
+      sequence — adding then removing a column (GROK-18000), with the rendered
+      axis-slider set growing 3 → 4 (STARTED, a valid DateTime axis) on add and
+      returning to 3 on remove; setting the color column to HEIGHT and switching
+      the coloring type to categorical, numerical, then none (GROK-17754),
+      toggling Show Filtered Out Lines, and setting AGE to a logarithmic scale;
+      the plot keeps updating without a manual refresh"
   - anchor: "Scenario 4 Step 4"
     expectation: "The legend element inside the viewer lists exactly the RACE
       column's categories (Asian, Black, Caucasian, Other) once RACE is set as
@@ -43,7 +44,7 @@ expected_results:
 ## Setup
 
 1. Close all open views (`grok.shell.closeAll()` or close all tabs).
-2. Open the demog dataset: `System:DemoFiles/demog.csv` — wait for the table view to load (500 rows).
+2. Open the demog dataset: `System:DemoFiles/demog.csv` — wait for the table view to load (full row count, read dynamically; ~5850 rows on dev).
 3. Add a PC Plot viewer to the current table view via the toolbar (Add viewer > PC Plot).
 4. Acquire a JS handle to the viewer:
    `const v = grok.shell.tv.viewers.find(v => v.type === 'pc_plot');`
@@ -61,6 +62,12 @@ Steps:
 
 Expected:
 - The viewer's columnNames list length is 3 (one axis per selected column: AGE, HEIGHT, WEIGHT)
+
+**Actuation note:** the spec sets the columns by assigning `pc.props.columnNames`
+rather than through the Context Panel > Value > Column Names control — that
+Select-columns list is canvas-rendered and not scriptable headless (2026-07-21
+recon). The read-back is still the RENDERED DOM (one `axis-slider-<col>` element per
+column), so a broken re-render fails instead of echoing the prop.
 
 ### Scenario 2: In-chart range-filter with Reset View round-trip (PRIMARY SIGNAL)
 
@@ -80,8 +87,15 @@ Steps:
    Assert `restoredCount === fullCount` — the filter is fully reset to the original row count.
 
 Expected:
-- df.filter.trueCount drops below the full row count (500) after dragging the AGE axis range-slider to a narrower window
-- df.filter.trueCount restores to the full row count (500) after double-clicking whitespace (Reset View)
+- df.filter.trueCount drops below the full row count after dragging the AGE axis range-slider to a narrower window
+- df.filter.trueCount restores to the full row count after Reset View
+
+**Actuation note:** the range-filter is driven by dragging the real
+`[name="axis-slider-AGE"] [name="max-handle"]` DOM element (standard mouse events);
+Reset View is actuated through the canvas context menu (`Reset View` item), not a
+whitespace double-click — the context-menu path is the scriptable-headless
+equivalent and fully restores the filter. The full row count is read dynamically
+from `df.filter.trueCount` (demog is ~5850 rows on dev), not hard-coded.
 
 ### Scenario 3: Secondary settings — no-error floor (GROK-18000 + GROK-17754 + display toggles)
 
@@ -92,7 +106,7 @@ multiply into near-identical asserts.
 
 Steps:
 1. Record the pageerror baseline (subscribe `page.on('pageerror', ...)` and capture the current console-error count).
-2. GROK-18000 — change the column selection: add a fourth numeric column (e.g. STARTED is DateTime and excluded, so use a numeric column already present) then remove it, restoring AGE/HEIGHT/WEIGHT. The axes must update immediately with no manual refresh.
+2. GROK-18000 — change the column selection: add a fourth column (STARTED, a valid DateTime axis — the PC Plot renders `axis-slider-STARTED` and round-trips it in `columnNames`, confirmed on dev 2026-07-21) then remove it, restoring AGE/HEIGHT/WEIGHT. The axes must update immediately with no manual refresh: the rendered axis-slider set grows from 3 to 4 (STARTED present) on add and returns to 3 on remove.
 3. GROK-17754 — set the color column to HEIGHT, then switch the coloring type categorical → numerical → none. No leftover legend whitespace / no error.
 4. Toggle Show Filtered Out Lines on, then off.
 5. Switch the AGE column to a logarithmic scale, then back to linear.

@@ -16,7 +16,8 @@ expected_results:
       over the chart"
   - anchor: "Scenario 1 Step 7"
     expectation: "df.selection.trueCount rises again (additive, not replaced) after
-      shift+Ctrl+drag a second band"
+      a second shift+drag band — in PC Plot shift+drag is additive by design, no
+      Ctrl modifier is required"
   - anchor: "Scenario 1 Step 9"
     expectation: "df.selection.trueCount returns to zero after clicking empty space
       in the chart"
@@ -51,7 +52,7 @@ Steps:
 3. Read `grok.shell.t.currentRowIdx` — record the baseline value (expected: -1).
 4. Shift+drag a rectangle between the AGE and HEIGHT axes to select the polylines crossing that band.
 5. Verify: `grok.shell.t.selection.trueCount` rises above zero.
-6. Shift+Ctrl+drag a second narrower band between HEIGHT and WEIGHT (add to selection, not replace).
+6. Shift+drag a second narrower band between HEIGHT and WEIGHT (adds to the selection, does not replace — in PC Plot shift+drag is additive by design, so no Ctrl modifier is needed; adding Ctrl instead replaces the selection with a smaller set).
 7. Verify: `grok.shell.t.selection.trueCount` rises again (value is strictly greater than after Step 4).
 8. Click empty space in the chart area (outside any polyline) to clear the selection.
 9. Verify: `grok.shell.t.selection.trueCount` returns to zero (round-trip).
@@ -60,7 +61,7 @@ Steps:
 
 Expected:
 - After shift+drag (Step 4): `df.selection.trueCount > 0`.
-- After shift+Ctrl+drag (Step 6): `df.selection.trueCount` is strictly larger than the value from Step 4 (additive, not replacing).
+- After the second shift+drag (Step 6): `df.selection.trueCount` is strictly larger than the value from Step 4 (additive, not replacing; Ctrl is not required).
 - After click empty space (Step 8): `df.selection.trueCount == 0` (round-trip verified).
 - After click polyline (Step 10): `df.currentRowIdx >= 0` (not -1).
 

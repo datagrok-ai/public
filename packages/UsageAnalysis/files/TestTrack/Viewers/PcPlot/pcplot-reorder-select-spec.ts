@@ -41,7 +41,18 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     await new Promise((r) => setTimeout(r, 800));
   });
 
-  await softStep('Scenario 1 Step 4 — shift+drag rectangle selects polylines (selection rises above zero)', async () => {
+  const readAxisNames = () => page.evaluate(() =>
+    Array.from(document.querySelectorAll('[name="viewer-PC-Plot"] [name^="axis-slider-"]'))
+      .map((e) => e.getAttribute('name')!.replace('axis-slider-', '')));
+
+  await softStep('Setup — confirm three axes AGE, HEIGHT, WEIGHT (DOM axis-slider names)', async () => {
+    // Baseline for Scenario 1 Step 1 / Scenario 2 Step 1: the viewer RENDERS one
+    // axis-slider element per column, so the DOM names are a real re-render read
+    // rather than an echo of the prop just written.
+    expect(await readAxisNames()).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
+  });
+
+  await softStep('Scenario 1 Step 5 — shift+drag rectangle selects polylines (selection rises above zero)', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       df.selection.setAll(false);
@@ -71,7 +82,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     expect(result.after).toBeGreaterThan(0);
   });
 
-  await softStep('Scenario 1 Step 5 — additive second shift+drag band (selection rises again, not replaced)', async () => {
+  await softStep('Scenario 1 Step 7 — additive second shift+drag band (selection rises again, not replaced)', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const beforeSecond = df.selection.trueCount;
@@ -79,7 +90,12 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number, extra: any) => Object.assign(
         {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
-      // A second band, this one in the HEIGHT/WEIGHT region.
+      // Second band in the HEIGHT/WEIGHT region. In PC Plot a shift+drag is
+      // ADDITIVE by design — no Ctrl modifier is needed to add to the selection.
+      // Probed 2026-07-21: a shift-only second band grows the selection past the
+      // first band's count, whereas adding ctrlKey REPLACES it with a smaller set
+      // (708 vs 3648 on demog). So this second drag stays shift-only to match the
+      // additive product behaviour the assertion below checks.
       const x1 = r0.x + r0.width * 0.58, y1 = r0.y + r0.height * 0.42;
       const x2 = r0.x + r0.width * 0.72, y2 = r0.y + r0.height * 0.58;
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));
@@ -98,7 +114,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     expect(result.afterSecond).toBeGreaterThan(result.beforeSecond);
   });
 
-  await softStep('Scenario 1 Step 6 — click empty space clears the selection (round-trip to zero)', async () => {
+  await softStep('Scenario 1 Step 9 — click empty space clears the selection (round-trip to zero)', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const beforeClear = df.selection.trueCount;
@@ -118,7 +134,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     expect(result.afterClear).toBe(0);
   });
 
-  await softStep('Scenario 1 Step 7 — click a polyline sets current row off -1', async () => {
+  await softStep('Scenario 1 Step 11 — click a polyline sets current row off -1', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       df.currentRowIdx = -1;
@@ -142,7 +158,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     expect(result.after).toBeGreaterThanOrEqual(0);
   });
 
-  await softStep('Scenario 2 Step 4 — drag a column label reorders the axes (columnNames order changes, still 3)', async () => {
+  await softStep('Scenario 2 Step 5 — drag a column label reorders the axes (columnNames order changes, still 3)', async () => {
     const result = await page.evaluate(async () => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
       const before = pc.getOptions().look.columnNames.slice();
@@ -171,6 +187,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
       const after = pc.getOptions().look.columnNames.slice();
       return {before, after};
     });
+    expect(result.before).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
     expect(result.after.length).toBe(3);
     expect(result.after).not.toEqual(result.before);
     expect([...result.after].sort()).toEqual([...result.before].sort());
@@ -205,7 +222,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
     expect(result.after).toBeGreaterThan(0);
   });
 
-  await softStep('Scenario 2 Step 8 — click empty space clears on the reordered chart (round-trip to zero)', async () => {
+  await softStep('Scenario 2 Step 9 — click empty space clears on the reordered chart (round-trip to zero)', async () => {
     const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
       const beforeClear = df.selection.trueCount;

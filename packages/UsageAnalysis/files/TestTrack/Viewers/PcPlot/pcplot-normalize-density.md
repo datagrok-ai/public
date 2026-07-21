@@ -17,10 +17,12 @@ expected_results:
     expectation: "Switching the vertical scale to a shared global scale and back to
       Normalized raises no page or console error and the PC Plot root element is
       still in the DOM"
-  - anchor: "Scenario 2 Step 5"
-    expectation: "Enabling density and cycling the style through circles, box plot
-      and violin raises no page or console error and the PC Plot root element is
-      still in the DOM"
+  - anchor: "Scenario 2 Step 6"
+    expectation: "Enabling density, cycling the style through circles, box plot and
+      violin, and driving the per-part box/violin toggles (Show Median,
+      Interquartile Range, Mean Cross, upper/lower whisker dash, Show Circles) and
+      the Bins change raises no page or console error and the PC Plot root element
+      is still in the DOM"
   - anchor: "Scenario 3 Step 8"
     expectation: "github-1546 regression guard: with density on, double-toggling
       normalization and then switching AGE to a log scale raises no page or
@@ -83,15 +85,19 @@ Steps:
 3. Set the density style to Circles (`pc.props.densityStyle = 'circles'`), wait 300 ms.
 4. Set the density style to Box Plot (`pc.props.densityStyle = 'box plot'`), wait 300 ms.
 5. Set the density style to Violin (`pc.props.densityStyle = 'violin plot'`), wait 300 ms.
-   Then assert that no new page or console error appeared since the baseline and that
-   the PC Plot root element is still present in the DOM.
-6. Disable the density overlay (`pc.props.showDensity = false`) and wait 300 ms.
+6. Switch the style back to Box Plot, then drive each per-part component toggle:
+   Show Median (`showMedian`), Interquartile Range (`showInterquartileRange`),
+   Mean Cross (`showMeanCross`), upper/lower whisker dash (`showUpperDash`,
+   `showLowerDash`), Show Circles (`showCircles`) and the Bins change (`bins`
+   200 → 100). Then assert that no new page or console error appeared since the
+   baseline and that the PC Plot root element is still present in the DOM.
+7. Disable the density overlay (`pc.props.showDensity = false`) and wait 300 ms.
 
-The per-part toggles (Show Median, Interquartile Range, Mean Cross, whisker dash,
-Show Circles) and the Bins change are exercised incidentally, not asserted here.
+Each per-part toggle redraws to canvas only, so they share the single no-error +
+DOM-presence floor of this scenario rather than a per-toggle assertion.
 
 Expected:
-- Enabling density and cycling the style through circles, box plot and violin raises no page or console error and the PC Plot root element is still in the DOM.
+- Enabling density, cycling the style through circles, box plot and violin, and driving the per-part box/violin toggles (Show Median, Interquartile Range, Mean Cross, upper/lower whisker dash, Show Circles) and the Bins change raises no page or console error and the PC Plot root element is still in the DOM.
 
 ### Scenario 3: Density recalculates on normalization changes and log scale (github-1546)
 
