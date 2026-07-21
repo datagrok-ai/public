@@ -3,4 +3,5 @@
 #input: dataframe df
 #input: string colName
 #output: double mean_out
-mean_out = float(df[colName].mean())
+import pandas as pd
+mean_out = float(pd.to_numeric(df[colName], errors='coerce').mean())
