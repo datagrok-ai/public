@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20419: Tutorials: Fixed the missing highlight on the Embedded Viewers tutorial's final step — pointed the hint at the inline Trellis inner-viewer properties (`.d4-trellis-plot-props-host`) instead of a dead `.grok-font-icon-settings.d4-viewer-icon` selector that matched no element
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page
 * Demo app: Fixed clipped/misplaced "Updating..." overlay — place it on the tab-content of the active view instead of `tab-content[0]`, so it stays bounded (tab-content is `position: relative`) and lands on the pane that's actually being replaced rather than a sibling (e.g. the home page) when the dock is split
 * Demo app: Made the "Updating..." overlay clearly readable during demo loading — scoped CSS (`.demo-app-loading > .d4-update-shadow`) gives the overlay a solid translucent white background with a subtle backdrop blur and renders the label/loader at full opacity, so widget text underneath no longer bleeds through

@@ -75,8 +75,8 @@ export class EmbeddedViewersTutorial extends Tutorial {
       interval(1000).pipe(
         map((_) => (trellis.getOptions() as {[key: string]: any }).look.innerViewerLook.colorColumnName),
         filter((name: string | undefined) => name === 'AGE')),
-      $(trellis!.root).find('.grok-font-icon-settings.d4-viewer-icon')[0],
-      'Click on the gear icon to edit the scatter plot properties. ' +
-      'Find the <b>Color</b> property within the <b>Color</b> section.');
+      $(trellis!.root).find('.d4-trellis-plot-props-host')[0],
+      'Use the inner scatter plot properties shown above the Trellis plot, ' +
+      'and set the <b>Color</b> property to <b>AGE</b>.');
   }
 }
