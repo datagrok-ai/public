@@ -3,6 +3,7 @@ realizes: [linechart.cp.setup-split-aggregate-markers]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {countCanvasPixels} from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -32,6 +33,16 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
     for (const n of ns) out[n] = (lc.props as any)[n];
     return out;
   }, names);
+}
+
+// Render assert (GROK-20255 / Step 4 trend line): a blank Line chart paints 0
+// non-white px (measured live: yColumnNames=[] → 0 on this canvas), while a
+// rendered chart with a data line paints ~240k-283k px on the 1147x488 canvas
+// this viewport produces (Step 4 single Y ~283k, Step 12 two Y + split ~243k).
+// 40000 sits far above any axes-only paint and far below the data render; -1
+// (no canvas / getImageData fault) fails the threshold too.
+async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
+  return (await countCanvasPixels(page, 'Line chart')).total > 40000;
 }
 
 async function hoverChart(page: Page) {
@@ -89,6 +100,18 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
     const props = await getProps(page, 'xColumnName', 'yColumnNames');
     expect(props.xColumnName).toBe('CAST Idea ID');
     expect(props.yColumnNames).toEqual(['Chemical Space X']);
+    // The 40000-px floor is calibrated for the ~1147x488 canvas this viewport
+    // produces — fail loudly if a layout change resizes it rather than silently
+    // devaluing the threshold.
+    const cvDims = await page.evaluate(() => {
+      const lc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Line chart') as any;
+      const cv = lc?.root?.querySelector('canvas') as HTMLCanvasElement | null;
+      return cv ? {w: cv.width, h: cv.height} : {w: -1, h: -1};
+    });
+    expect(cvDims.w, 'canvas width changed — recalibrate the 40000-px floor in chartCanvasNonEmpty').toBeGreaterThan(800);
+    expect(cvDims.h, 'canvas height changed — recalibrate the 40000-px floor in chartCanvasNonEmpty').toBeGreaterThan(350);
+    // The canvas renders a connected trend line, not just a blank frame.
+    expect(await chartCanvasNonEmpty(page)).toBe(true);
     expect(realErrors().length).toBe(before);
   });
 
@@ -124,6 +147,9 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
     await setProps(page, {yColumnNames: ['Chemical Space X', 'Chemical Space Y']});
     expect((await getProps(page, 'yColumnNames')).yColumnNames).toHaveLength(2);
     await hoverChart(page);
+    // With 2+ split categories a per-category average line renders (GROK-20255):
+    // the canvas stays non-empty, not a blank frame.
+    expect(await chartCanvasNonEmpty(page)).toBe(true);
     expect(realErrors().length).toBe(before);
   });
 

@@ -103,12 +103,24 @@ Expected:
 
 ### Scenario 2: Formula lines layout round-trip
 
+Actuation note (recon 2026-07-21): the formula line and band are added by
+assigning the viewer's `formulaLines` JSON property directly, not through the
+Formula Lines dialog. The dialog is a modal whose expression editor and preview
+are not headless-drivable (its interactive contents render on a canvas, matching
+the Select-columns dialog pattern documented for the Line chart column editors),
+and `formulaLines` is exactly the serialized form the dialog writes and the
+layout round-trip persists. The observable — the formula-lines configuration
+surviving a layout save → clear → reapply (GROK-19943 + GROK-19949) — is
+exercised identically through the prop path. Adding the lines by hand through the
+dialog stays a human-side variation of this scenario.
+
 Steps:
 1. Starting from a clean chart state (no overlays, no split, X = `CAST Idea ID`,
    Y = `Chemical Space X`), record the current warning/error baseline.
-2. Open the **Formula Lines** dialog via the Line Chart context menu
-   (right-click the chart > **Tools** > **Formula Lines**, or via the property
-   panel Tools section).
+2. Add the formula line and band (in the real UI this is the **Formula Lines**
+   dialog; the exact menu path is unverified — the grok-browser refdoc's Tools
+   submenu does not list Formula Lines — so the spec drives the serialized
+   `formulaLines` property directly, see the actuation note below).
 3. Add one formula line: set **Expression** to a constant (e.g. `500`) and confirm.
    Add one formula band: set **Expression** to `400..600` or equivalent band syntax
    and confirm.

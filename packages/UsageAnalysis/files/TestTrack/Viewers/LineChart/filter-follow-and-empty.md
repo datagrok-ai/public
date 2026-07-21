@@ -65,6 +65,17 @@ expected_results:
 
 ### Scenario 1: Filter to zero rows and hover empty log-axis chart
 
+Actuation note (recon 2026-07-21): the empty-chart state (Step 2, "matches NO
+rows") is driven through a CATEGORICAL Filter Panel filter on the `Series`
+column with an empty selection, not through a numeric X-range filter. A numeric
+Filter Panel filter is an embedded Histogram whose range strip clamps the
+selection to at least one bucket (`df.filter.trueCount` never reaches 0), so it
+cannot produce the exactly-zero-rows state github-2574 needs; a categorical
+filter with `selected: []` yields `trueCount === 0` deterministically. The
+observable — an empty log-axis chart that must not throw on hover — is exercised
+identically. Reaching zero rows via a hand-dragged numeric range stays a
+human-side variation.
+
 Steps:
 1. In the viewer property panel, switch the **X axis scale** to **Logarithmic**.
 2. In the Filter Panel, set a numeric filter on the X column with a range that

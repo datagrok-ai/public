@@ -81,7 +81,8 @@ Steps:
 6. Assert: no console error since the previous checkpoint (Step 6 no-error floor).
 7. Under **Data**, set **Aggregation** to `avg` (a non-default aggregation for
    duplicate X values).
-8. Set **Whiskers** mode to `std err` (an error-bar mode).
+8. Set **Whiskers** mode to the standard-error error-bar mode (the property
+   enum literal is `Avg | ±StError`).
    Assert: no console error since the previous checkpoint (Step 8 no-error floor).
 9. Under **Markers**, set **Marker type** to `circle`.
 10. Under **Markers**, set **Marker size** column to `Chemical Space Y`
@@ -106,8 +107,8 @@ Expected:
   Y = `Chemical Space X`, with no console error (Step 4).
 - Split by `Stereo Category` renders per-category series with no console error
   (Step 6).
-- Aggregation to `avg` and whiskers mode `std err` are applied with no console
-  error (Step 8).
+- Aggregation to `avg` and whiskers mode `Avg | ±StError` (standard error) are
+  applied with no console error (Step 8).
 - Marker type and size-coding column set with no console error (Step 10 —
   GROK-19883 path).
 - With 2+ split categories, a per-category average line renders with no console

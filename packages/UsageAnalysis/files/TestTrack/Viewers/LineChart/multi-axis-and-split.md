@@ -85,7 +85,7 @@ Steps:
    non-empty — a follow-up `page.evaluate` that checks the viewer element is
    visible resolves within timeout (Step 5 — github-2904 partial path, one split
    column).
-6. Under **Data**, append a second split column: add `Activity Flag`
+6. Under **Data**, append a second split column: add `Series`
    (a second categorical column — github-2904 full repro path: two split columns
    combined with multi-axis).
 7. Assert: the chart canvas remains non-empty (a follow-up evaluate resolves
@@ -103,10 +103,21 @@ Expected:
 
 ### Scenario 2: Y-column edit does not reset selection; column-selector search input position
 
+Actuation note (recon 2026-07-21): the "Select columns" dialog reached from the
+Y-columns `...` editor renders its column LIST on a canvas — there are no DOM
+rows or checkboxes, and clicks on the canvas do not toggle columns (probed on
+dev: row clicks at several offsets leave the `N checked` label unchanged). A
+checkbox-toggle + OK mutation is therefore not reachable headless; open / search
+/ cancel is the deepest scriptable editor interaction. The GROK-18484 observable
+(the edit must NOT silently reset the selection) is still exercised: the dialog's
+`3 checked` identity label proves the correct row was opened, and the exact
+`yColumnNames` set read back after cancel proves the list was not shrunk to one
+column. A checkbox-driven mutation stays a human-side variation of this scenario.
+
 Steps:
 1. Starting from the state at the end of Scenario 1 (multi-axis on, two split
    columns), clear the split columns: under **Data**, set **Split** back to none.
-   Reset Y columns to `Chemical Space X`, `Chemical Space Y`, and `Activity Class`
+   Reset Y columns to `Chemical Space X`, `Chemical Space Y`, and `TPSA`
    (3 Y columns set).
 2. Record the current Y-column count from the viewer's property object
    (`viewer.props.yColumnNames.length` — expected: 3).

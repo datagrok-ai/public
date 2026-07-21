@@ -18,6 +18,10 @@ expected_results:
       After enabling Statistical Process Control, a follow-up page.evaluate
       resolves within timeout (the page has not frozen) and the page/console
       error count is unchanged since baseline.
+  - anchor: "Scenario 1 Step 6"
+    expectation: >-
+      Reverting the SPC toggle restores the prior state with no new page/console
+      error (teardown is asserted, not left unchecked).
   - anchor: "Scenario 2 Step 6"
     expectation: >-
       Reset View resets the wheel-zoom (the zoomed and reset-view events fire)
@@ -54,13 +58,15 @@ Steps:
 5. Assert: the evaluate resolves within the configured timeout AND
    `grok.shell.warnings` / page error count is unchanged since baseline
    (GROK-20126 repro: the no-freeze guard — Step 5).
-6. Disable SPC (revert to off) — no-error teardown; do not assert as a
-   separate bullet (revert is not an asserted boundary here).
+6. Disable SPC (revert to off) and assert the no-error teardown: SPC reads back
+   off and no new console/page error was raised since the previous checkpoint.
 
 Expected:
 - After enabling SPC, the page remains responsive: page.evaluate resolves
   and no new console or page error is raised (Step 5 — GROK-20126 no-freeze
   guard).
+- Disabling SPC reverts cleanly: SPC reads back off and no new console or page
+  error is raised (Step 6 — no-error teardown).
 
 ### Scenario 2: Reset View clears the zoom, not the explicit X Min/Max
 

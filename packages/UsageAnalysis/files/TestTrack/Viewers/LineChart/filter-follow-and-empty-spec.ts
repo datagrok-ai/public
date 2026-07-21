@@ -120,7 +120,7 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
     expect(cnt).toBe(0);
   });
 
-  await softStep('S1 Step 5: hover empty log-axis chart raises no error (github-2574)', async () => {
+  await softStep('S1 Step 5-6: hover empty log-axis chart raises no error (github-2574)', async () => {
     const before = realErrors().length;
     await page.locator('[name="viewer-Line-chart"]').hover();
     await page.waitForTimeout(800);
