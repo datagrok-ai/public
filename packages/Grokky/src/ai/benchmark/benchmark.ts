@@ -162,7 +162,8 @@ async function runTurn(client: ClaudeRuntimeClient, prompt: string, view: DG.Vie
       }
     });
 
-    forSession(client.onFinal, (e) => finish({server: e.metrics ?? null, content: accumulated || e.content}));
+    forSession(client.onFinal, (e) => finish({server: e.metrics ?? null,
+      content: e.revision === 'replaced' ? e.content : (accumulated || e.content)}));
     forSession(client.onError, (e) => finish({error: e.message}));
 
     tSend = performance.now();

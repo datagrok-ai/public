@@ -424,21 +424,54 @@ async function streamOnce(
 
       await client.ensureConnected();
 
+      // Text before and after a tool call arrives as separate assistant segments; without a
+      // separator they concatenate mid-sentence ("…check those.No, there are…").
+      let pendingSegmentBreak = false;
       forSession(client.onChunk, (evt) => {
+        if (pendingSegmentBreak) {
+          pendingSegmentBreak = false;
+          if (accumulated && !/\n\s*$/.test(accumulated))
+            accumulated += '\n\n';
+        }
         accumulated += evt.content;
         toolStatus = '';
         panel.updateStreaming(accumulated.slice(segmentStart), chatSession.loader);
       });
 
       forSession(client.onToolActivity, (evt) => {
+        pendingSegmentBreak = true;
         toolStatus = `\n\n---\n**${evt.summary}**`;
         panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
+      let revisingTimer: number | null = null;
+      forSession(client.onRevisionStart, () => {
+        // A gate demanded a revision. The visible answer stays put; the revision streams hidden
+        // (the runtime suppresses its chunks) and `final.revision` decides whether it replaces the
+        // original. The status appears only if revising takes noticeable time — an immediate
+        // NO_REVISION resolves before it ever shows.
+        revisingTimer = window.setTimeout(() => {
+          if (toolStatus) return; // a live tool-activity status is more informative
+          toolStatus = '\n\n---\n*Revising…*';
+          panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+        }, 1200);
+      });
+
 
       forSession(client.onFinal, async (evt) => {
         panel.cancelInputRequest();
+        if (revisingTimer != null) {
+          clearTimeout(revisingTimer);
+          revisingTimer = null;
+        }
+        if (evt.revision === 'replaced') {
+          // The revision supersedes the visible answer — render it in place of the original.
+          accumulated = evt.content;
+          segmentStart = 0;
+          toolStatus = '';
+        } else if (evt.revision === 'kept')
+          toolStatus = ''; // original answer stands; just drop the Revising status
         const fullContent = accumulated || evt.content;
         if (/Failed to authenticate.*API Error: 401|authentication_error|\/login/i.test(fullContent)) {
           panel.clearStreaming();

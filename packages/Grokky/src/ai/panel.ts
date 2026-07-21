@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
 import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
@@ -650,7 +650,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       pre.style.cssText = 'white-space:pre-wrap;user-select:text;margin:0';
       return pre;
     }
-    const md = ui.markdown(content);
+    const md = ui.markdown(normalizeMarkdownTables(content));
     dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
     return md;
   }

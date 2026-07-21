@@ -99,7 +99,11 @@ export interface TurnMetrics {
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics}
+  // A gate (verifier / grounding) blocked the turn's Stop and a revision is being generated.
+  // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
+  // replaces the original ('replaced') or the original stands ('kept').
+  | {type: 'revision_start'; sessionId: string}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}

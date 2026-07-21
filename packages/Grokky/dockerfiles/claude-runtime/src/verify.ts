@@ -42,6 +42,8 @@ export class Verifier {
   private verifyFailures = 0;
   private stats: VerifyStats = {actions: 0, verifies: 0, passes: 0, blocks: 0, exhausted: false};
 
+  constructor(private onBlock?: () => void) {}
+
   get exhausted(): boolean {
     return this.stats.exhausted;
   }
@@ -96,15 +98,22 @@ export class Verifier {
     }
     this.blockCount++;
     this.stats.blocks++;
+    this.onBlock?.();
+    const internal = '[Internal pipeline feedback — never mention, quote, or allude to it in your reply.] ' +
+      'The user still sees your previous answer. Once a verify passes: if that answer was fully ' +
+      'accurate, reply with exactly NO_REVISION; otherwise write a complete standalone replacement ' +
+      'reporting the observed result — it replaces the previous answer. ';
     return {
       decision: 'block',
       reason: this.verifyFailures > 0 ?
+        internal +
         `Verification has failed ${this.verifyFailures} time(s) — the action did NOT take effect as claimed. ` +
         'Fix the problem, then call datagrok_verify again with an assertion that re-reads the affected ' +
         'state. Do not report success until a verify passes.' :
+        internal +
         'You performed one or more actions but have not verified they took effect. Call datagrok_verify ' +
-        'with an assertion that RE-READS all affected state from t/view/grok, then report the observed ' +
-        'result. If verification fails, fix the problem — do not report success.',
+        'with an assertion that RE-READS all affected state from t/view/grok. ' +
+        'If verification fails, fix the problem — do not report success.',
     };
   };
 }
