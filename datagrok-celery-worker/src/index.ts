@@ -4,7 +4,7 @@ export {FanoutPublisher, CALLS_FANOUT} from './fanout-publisher';
 export type {FanoutType} from './fanout-publisher';
 export {CeleryConsumer} from './celery-consumer';
 export {PipeClient, Const} from './pipe-client';
-export type {PipeClientOptions} from './pipe-client';
+export type {PipeClientOptions, ReceivedParam} from './pipe-client';
 export {marshalInput, marshalOutput, validateCall} from './marshal';
 export type {MarshaledOutput} from './marshal';
 export {PackageHost} from './package-host';

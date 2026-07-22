@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 import {category, test, expect, expectTable, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 
@@ -32,6 +33,23 @@ category('Celery: node worker', () => {
       DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'b', [true, false, true]),
     ]);
     expectTable(await grok.functions.call('CVMTests:jsCvmDataframe', {df}), df);
+  }, {timeout: 90000});
+
+  test('DataFrame binary fidelity', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'i', [1, 2, 3]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'd', [1.5, 2.5, 3.5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, 's', ['a', 'b', 'c']),
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'b', [true, false, true]),
+      DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'dt',
+        [dayjs('2020-01-01T00:00:00Z'), dayjs('2021-06-15T12:30:45Z'), dayjs('2022-12-31T23:59:59Z')]),
+    ]);
+    df.col('i')!.setTag('foo', 'bar'); // d42 keeps column tags, CSV did not
+    const result: DG.DataFrame = await grok.functions.call('CVMTests:jsCvmDataframeTypes', {df});
+    for (const col of df.columns)
+      expect(result.col(col.name)!.type, col.type);
+    expectTable(result, df);
+    expect(result.col('i')!.getTag('foo'), 'bar');
   }, {timeout: 90000});
 
   test('Empty dataframe', async () => {

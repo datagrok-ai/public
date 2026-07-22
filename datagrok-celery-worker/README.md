@@ -27,7 +27,9 @@ result back.
    Inputs: send `PARAM <name>`, receive `SENDING DATAFRAME <size> <tagsJson>` + binary
    chunks (each acked with `PART OK`), terminated by `PARAM_SENT <name>`. Outputs: the
    same `SENDING`/chunks/`PART OK` exchange in the other direction. Dataframes travel as
-   UTF-8 CSV (`DG.DataFrame.fromCsv` / `df.toCsv()`).
+   native d42 binary (`DG.DataFrame.fromByteArray` / `df.toByteArray()`, pipe tag
+   `.type: 'dataframe'`); CSV input (`.type: 'csv'`) is still accepted for compatibility
+   with older datlas versions that send CSV to js-lang funcs.
 4. **Result** — a `CALL <funcCallJson>` text frame over the pipe when one is open,
    otherwise a `call` message on `calls_fanout`. Progress reports go out as
    `PROGRESS {json}` frames / `progress` fanout messages; package code can call
@@ -85,8 +87,9 @@ npm start
 
 ## Limitations
 
-- **CSV-only dataframe transfer** — no parquet; the server sends CSV for js-lang funcs
-  (a call with `options.isParquet = true` fails fast).
+- **No parquet dataframe transfer** — dataframes travel as native d42 binary in both
+  directions (preserving column types and tags); CSV input is still accepted from an
+  older datlas. A call with `options.isParquet = true` fails fast.
 - **Single in-flight task** — tasks are acked immediately and drained from an in-memory
   FIFO one at a time.
 - **Cooperative cancellation** — a revoke publishes the `Canceled` result right away,

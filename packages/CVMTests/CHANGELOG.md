@@ -3,6 +3,7 @@
 ## v.next
 
 * Tests: Added `Celery: node worker` suite — JS queue functions (`meta.queue` / `meta.server`) executed server-side in the celery Node worker: scalar/string/dataframe round-trips, error propagation, progress, cancellation, dapi token pass-through, and a custom `dockerfiles/node-worker` container
+* Tests: Celery node worker — added `DataFrame binary fidelity` (`jsCvmDataframeTypes`): the d42 binary transfer preserves int/float/string/bool/datetime column types and column tags round-trip
 
 * Tests: env scripts now declare `#meta.timeout: 600` (the 300s server exec default fired at ~318s under merged-stage load) and env-test client budgets sit above it at 660s — real hangs still surface, a busy stand doesn't flake
 * GROK-20445: Env tests: dropped the obsolete `numpy < 2` assertion (base env now resolves numpy-2-native pyarrow); made the two DG-idiom nodejs scripts (Column list, Lines count) runtime-agnostic until the Node js-api runtime lands on master

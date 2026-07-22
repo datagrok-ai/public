@@ -48,8 +48,11 @@ export class TaskRunner {
         context.pipe = pipe;
       }
       for (const param of call.inputParams)
-        if (param.isStreamable)
-          param.value = await pipe!.receiveParam(param.name);
+        if (param.isStreamable) {
+          const received = await pipe!.receiveParam(param.name);
+          param.value = received?.bytes ?? null;
+          param.receivedType = received?.tags['.type'] ?? null;
+        }
       const dg = this.host.dg;
       for (const param of call.inputParams)
         marshalInput(param, dg);

@@ -33,6 +33,12 @@ interface Waiter {
   timer: NodeJS.Timeout;
 }
 
+export interface ReceivedParam {
+  bytes: Uint8Array;
+  /** Tags from the 'SENDING DATAFRAME <size> <tagsJson>' header ('.id', '.type', ...). */
+  tags: {[key: string]: string};
+}
+
 export interface PipeClientOptions {
   /** Per-message wait timeout, ms (DATAGROK_WS_MESSAGE_TIMEOUT). */
   messageTimeoutMs: number;
@@ -160,14 +166,17 @@ export class PipeClient {
 
   /** Requests an input param ('PARAM <name>') and collects the peer's
    *  'SENDING DATAFRAME <size> <tags>' + binary chunks (each acked with 'PART OK'),
-   *  terminated by 'PARAM_SENT <name>'. Returns null when no data was sent. */
-  async receiveParam(name: string): Promise<Uint8Array | null> {
+   *  terminated by 'PARAM_SENT <name>'. Returns the assembled bytes together with the
+   *  SENDING header tags (the '.type' tag picks the decoder — 'dataframe'/'csv'/'blob'),
+   *  or null when no data was sent. */
+  async receiveParam(name: string): Promise<ReceivedParam | null> {
     logInfo(`Receiving param ${name}`);
     const start = Date.now();
     this.sendText(`${Const.PARAM} ${name}`);
     const chunks: Uint8Array[] = [];
     let expectedSize: number | null = null;
     let received = 0;
+    let tags: {[key: string]: string} = {};
     for (;;) {
       if (Date.now() - start > this.options.paramTimeoutMs)
         throw new Error(`Timeout receiving param ${name}`);
@@ -175,8 +184,10 @@ export class PipeClient {
       if (typeof message === 'string') {
         if (message.startsWith(`${Const.PARAM_SENT} ${name}`))
           break;
-        else if (message.startsWith('SENDING'))
+        else if (message.startsWith('SENDING')) {
           expectedSize = PipeClient.parseExpectedSize(message);
+          tags = PipeClient.parseTags(message);
+        }
         else if (message === Const.PART_ERROR || message === Const.ERROR)
           throw new Error(`Peer reported an error while sending param ${name}`);
         // unrelated frames (LOG/PROGRESS/relay echoes) are tolerated and skipped
@@ -194,7 +205,7 @@ export class PipeClient {
     if (chunks.length === 0)
       return null;
     logInfo(`Received param ${name} (${received} bytes in ${chunks.length} chunks)`);
-    return chunks.length === 1 ? chunks[0] : PipeClient.concat(chunks, received);
+    return {bytes: chunks.length === 1 ? chunks[0] : PipeClient.concat(chunks, received), tags: tags};
   }
 
   /** Sends an output param: 'SENDING DATAFRAME <size> <tagsJson>' followed by binary
@@ -246,6 +257,19 @@ export class PipeClient {
     if (!Number.isFinite(size))
       throw new Error(`Could not parse size from SENDING message: ${message.substring(0, 50)}`);
     return size;
+  }
+
+  /** The tags json is everything after the size token: 'SENDING DATAFRAME <size> <tagsJson>'.
+   *  A missing/broken json yields empty tags (Dart SocketReceiver falls back the same way). */
+  private static parseTags(message: string): {[key: string]: string} {
+    const start = message.indexOf(' ', Const.SENDING.length + 1);
+    try {
+      const tags = start >= 0 ? JSON.parse(message.substring(start + 1)) : null;
+      return tags != null && typeof tags === 'object' ? tags : {};
+    }
+    catch (_) {
+      return {};
+    }
   }
 
   private static concat(chunks: Uint8Array[], totalLength: number): Uint8Array {

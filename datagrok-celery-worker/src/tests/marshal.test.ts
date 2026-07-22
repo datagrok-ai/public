@@ -62,13 +62,33 @@ describe('marshalInput', () => {
     expect(() => marshalInput(param(Type.DATE_TIME, 'not-a-date'))).toThrow(/ISO datetime/);
   });
 
-  test('dataframe: UTF-8 CSV bytes through DG.DataFrame.fromCsv', () => {
+  test('dataframe: d42 bytes through DG.DataFrame.fromByteArray', () => {
+    const fromByteArray = jest.fn().mockReturnValue({'fake': 'df'});
+    const dg = {DataFrame: {fromByteArray: fromByteArray}};
+    const bytes = new Uint8Array([0xd4, 0x20, 0xa0, 1]);
+    const p = param(Type.DATA_FRAME, bytes);
+    p.receivedType = 'dataframe';
+    expect(marshalInput(p, dg)).toEqual({'fake': 'df'});
+    expect(fromByteArray).toHaveBeenCalledWith(bytes);
+    expect(() => marshalInput(param(Type.DATA_FRAME, 'not-bytes'), dg)).toThrow(/Incorrect input type/);
+  });
+
+  test('dataframe: UTF-8 CSV bytes through DG.DataFrame.fromCsv (older datlas)', () => {
     const fromCsv = jest.fn().mockReturnValue({'fake': 'df'});
     const dg = {DataFrame: {fromCsv: fromCsv}};
     const p = param(Type.DATA_FRAME, new Uint8Array(Buffer.from('a,b\n1,2\n', 'utf8')));
+    p.receivedType = 'csv';
     expect(marshalInput(p, dg)).toEqual({'fake': 'df'});
     expect(fromCsv).toHaveBeenCalledWith('a,b\n1,2\n');
-    expect(() => marshalInput(param(Type.DATA_FRAME, 'not-bytes'), dg)).toThrow(/Incorrect input type/);
+  });
+
+  test('dataframe: unknown transfer type fails with a clear error', () => {
+    const dg = {DataFrame: {fromCsv: jest.fn(), fromByteArray: jest.fn()}};
+    const parquet = param(Type.DATA_FRAME, new Uint8Array([1]));
+    parquet.receivedType = 'parquet';
+    expect(() => marshalInput(parquet, dg)).toThrow(/Unsupported dataframe transfer type 'parquet'/);
+    const untyped = param(Type.DATA_FRAME, new Uint8Array([1]));
+    expect(() => marshalInput(untyped, dg)).toThrow(/Unsupported dataframe transfer type/);
   });
 
   test('blob passes bytes through', () => {
@@ -83,13 +103,14 @@ describe('marshalInput', () => {
 });
 
 describe('marshalOutput', () => {
-  test('dataframe: csv bytes + value {id} + tags', () => {
+  test('dataframe: d42 bytes + value {id} + tags', () => {
     const p = param(Type.DATA_FRAME, null, false);
-    const df = {toCsv: () => 'a,b\n1,2\n'};
+    const bytes = new Uint8Array([0xd4, 0x20, 0xa0, 1]);
+    const df = {toByteArray: () => bytes};
     const out = marshalOutput(p, df);
-    expect(Buffer.from(out.bytes!).toString('utf8')).toBe('a,b\n1,2\n');
+    expect(out.bytes).toBe(bytes);
     expect(p.value).toEqual({'id': out.tags!['.id']});
-    expect(out.tags!['.type']).toBe('csv');
+    expect(out.tags!['.type']).toBe('dataframe');
     expect(() => marshalOutput(param(Type.DATA_FRAME, null, false), 'not-a-df')).toThrow(/Incorrect return type/);
   });
 

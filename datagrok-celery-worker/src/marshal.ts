@@ -9,7 +9,7 @@ export function validateCall(call: FuncCall): void {
   // The server sets options.isParquet = false for js-lang funcs (docker_func.dart
   // executeCall); a parquet payload means a misconfigured deployment.
   if (call.useParquetTransfer)
-    throw new Error('Parquet transfer is not supported by the JS worker: the server must send dataframes as CSV (call.options.isParquet must be false)');
+    throw new Error('Parquet transfer is not supported by the JS worker: the server must send dataframes as d42 or CSV (call.options.isParquet must be false)');
   if (call.outputParams.length > 1)
     throw new Error('Only one return parameter is allowed, but more are present in the Datagrok function declaration.');
 }
@@ -75,10 +75,17 @@ export function marshalInput(param: FuncCallParam, dg?: any): any {
     }
     case Type.DATA_FRAME: {
       if (!(value instanceof Uint8Array))
-        throw inputError(param, 'bytes (streamed CSV)');
-      if (dg?.DataFrame?.fromCsv == null)
+        throw inputError(param, 'bytes (streamed dataframe)');
+      if (dg?.DataFrame == null)
         throw new Error('DG runtime is not initialized: cannot parse a dataframe input');
-      param.value = dg.DataFrame.fromCsv(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8'));
+      // the pipe '.type' tag picks the decoder: 'dataframe' is native d42 (what
+      // server_action.dart sends to js-lang funcs), 'csv' comes from older datlas versions
+      if (param.receivedType === Type.DATA_FRAME)
+        param.value = dg.DataFrame.fromByteArray(value);
+      else if (param.receivedType === 'csv')
+        param.value = dg.DataFrame.fromCsv(Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString('utf8'));
+      else
+        throw new Error(`Unsupported dataframe transfer type '${param.receivedType}' for ${param.name}: expected 'dataframe' (d42 binary) or 'csv'`);
       break;
     }
     case Type.FILE:
@@ -106,8 +113,8 @@ function returnError(param: FuncCallParam, expected: string, value: any): Error 
 
 /** Sets param.value to the serialized value that goes into the result CALL json
  *  (mirrors ReturnValueProcessor + _send_param_grok_pipe: dataframe -> {id: uuid} with
- *  tags {'.id': id, '.type': 'csv'}, blob -> param name with {'.id': name, '.type': 'blob'})
- *  and returns the bytes to stream for streamable outputs. */
+ *  tags {'.id': id, '.type': 'dataframe'} and d42 bytes, blob -> param name with
+ *  {'.id': name, '.type': 'blob'}) and returns the bytes to stream for streamable outputs. */
 export function marshalOutput(param: FuncCallParam, value: any, dg?: any): MarshaledOutput {
   if (value == null) {
     param.value = null;
@@ -115,12 +122,13 @@ export function marshalOutput(param: FuncCallParam, value: any, dg?: any): Marsh
   }
   switch (param.propertyType) {
     case Type.DATA_FRAME: {
-      if (typeof value?.toCsv !== 'function')
+      if (typeof value?.toByteArray !== 'function')
         throw returnError(param, 'DG.DataFrame', value);
-      const bytes = new Uint8Array(Buffer.from(value.toCsv(), 'utf8'));
       const id = randomUUID();
       param.value = {'id': id};
-      return {bytes: bytes, tags: {'.id': id, '.type': 'csv'}};
+      // native d42 — the Dart receiver (sockets.dart GrokSocketDecoder) decodes any
+      // non-csv dataframe with DataFrame.fromByteArray
+      return {bytes: value.toByteArray(), tags: {'.id': id, '.type': Type.DATA_FRAME}};
     }
     // python's ReturnValueProcessor supports blob only; the Dart server handles FILE
     // identically to BLOB (server_action.dart getParamsFromRemoteCall), so file outputs
