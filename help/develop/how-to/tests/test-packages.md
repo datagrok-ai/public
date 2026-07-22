@@ -139,8 +139,9 @@ If you do not have any datagrok instance run locally, you can use [docker-compos
 ### Node (browserless) test pass
 
 Tests that use only server API and data structures (no views, dialogs, or DOM) can run headless
-under the js-api Node runtime. Annotate them with the `node` option — per test or for a whole
-category:
+under the js-api Node runtime. Tests are **browser-only by default** (`node: false`): an
+unannotated test always stays in the browser. Opt in with the `node` option — per test, or at
+the category level only when every test in the category is verified under Node:
 
 ```typescript
 category('Dapi: groups', () => {

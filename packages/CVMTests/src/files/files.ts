@@ -6,6 +6,11 @@ import {
   expect,
 } from '@datagrok-libraries/test/src/test';
 
+// Tests are browser-only by default; none here are node-capable yet: OpenFile is an
+// xamgle-only @CmdFunc, so it does not resolve under the Node runtime ("Variable
+// OpenFile not found") even though its core path is a pure dapi round-trip
+// (dapi.files.readBinaryDataFrames). Annotate node: true once OpenFile is registered
+// in the shared/Node interop surface.
 category('Files: OpenFile', () => {
   test('Open big csv', async () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/chem/zbb/99_p0_ph7.csv'});
@@ -45,6 +50,6 @@ category('Files: OpenFile', () => {
         await grok.dapi.projects.delete(await grok.dapi.projects.filter(projectName).first());
       } catch (_) {}
     }
-  }, {timeout: 120000, stressTest: true, node: false}); // grok.shell table view / project open
-}, {node: true});
+  }, {timeout: 120000, stressTest: true}); // grok.shell table view / project open
+});
 
