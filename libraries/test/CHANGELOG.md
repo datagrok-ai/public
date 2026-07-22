@@ -1,5 +1,9 @@
 # test changelog
 
+## 1.4.0 (WIP)
+
+* Added the `node` option to `TestOptions`/`CategoryOptions` (test runs headless under the js-api Node runtime, no browser) and `nodeOnly`/`excludeNodeTests` to `TestExecutionOptions`; categories with no tests in the requested node/browser target are skipped entirely, including `before()`/`after()`
+
 ## 1.3.1 (WIP)
 
 * Compiled `src/playwright/` to CommonJS `.js` + `.d.ts` (via `src/playwright/tsconfig.build.json`) so consumers can `require()` the helpers from `node_modules` — Playwright does not transpile `.ts` inside `node_modules`, so 1.3.0 shipped without usable helper output

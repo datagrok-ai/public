@@ -18,6 +18,8 @@ export interface TestOptions {
     stressTest?: boolean;
     owner?: string;
     tags?: string[];
+    /** Test needs no browser: it uses only Node-available API and can run headless under the js-api Node runtime. */
+    node?: boolean;
 }
 export interface TestResult {
     date: string;
@@ -41,12 +43,15 @@ export interface CategoryOptions {
     benchmarks?: boolean;
     stressTests?: boolean;
     owner?: string;
+    /** Default for all tests in the category that don't set their own `node` option. */
+    node?: boolean;
 }
 export declare class TestContext {
     stressTest?: boolean;
     catchUnhandled: boolean;
     report: boolean;
     returnOnFail: boolean;
+    closeAll: boolean;
     constructor(catchUnhandled?: boolean, report?: boolean, returnOnFail?: boolean);
 }
 export declare class Test {
@@ -68,6 +73,7 @@ export declare class Category {
     benchmarkTimeout?: number;
     stressTests?: boolean;
     owner?: string;
+    node?: boolean;
 }
 export declare class NodeTestExecutionOptions {
     package: _DG.Package;
@@ -84,6 +90,10 @@ export declare class TestExecutionOptions {
     skipToCategory?: string;
     skipToTest?: string;
     returnOnFail?: boolean;
+    /** Run only tests marked `node: true` (the headless Node pass of `grok test`). */
+    nodeOnly?: boolean;
+    /** Skip tests marked `node: true` (the browser pass of `grok test` after a Node pass already ran them). */
+    excludeNodeTests?: boolean;
 }
 export declare function testEvent<T>(event: Observable<T>, handler: (args: T) => void, trigger: () => void, ms?: number, reason?: string): Promise<any>;
 export declare function testEventAsync<T>(event: Observable<T>, handler: (args: T) => Promise<void>, trigger: () => void, ms?: number, reason?: string): Promise<any>;

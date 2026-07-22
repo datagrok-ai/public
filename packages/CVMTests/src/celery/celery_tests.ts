@@ -101,7 +101,7 @@ category('Celery: datagrok-celery-task', () => {
       {blob: DG.FileInfo.fromBytes('mi.bin', blob), df});
     expect(result, `${size}:4:2`);
   }, {timeout: 90000});
-});
+}, {node: true});
 
 function makeBytes(size: number): Uint8Array {
   const data = new Uint8Array(size);

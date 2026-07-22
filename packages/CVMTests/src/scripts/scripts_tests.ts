@@ -234,7 +234,7 @@ for (const lang of languages) {
         expect(result, 'olleh');
       }, {timeout: 660000});
     }
-  });
+  }, {node: true});
 
   category(`Benchmarks: Scripts: ${lang} scripts`, () => {
     test('Calculated column performance', async () => {
@@ -267,14 +267,14 @@ for (const lang of languages) {
       return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
     }, {timeout: 180000, benchmark: true});
-  });
+  }, {node: true});
 }
 
 category('Stdout', () => {
   test('Console printing', async () => {
     await grok.functions.call('CVMTests:OctaveStdout', {'df': grok.data.demo.demog(1000)});
   }, {timeout: 90000});
-});
+}, {node: true});
 
 category('Scripts: Client cache test', () => {
   before(async () => {

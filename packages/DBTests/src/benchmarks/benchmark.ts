@@ -35,12 +35,12 @@ category('Benchmarks', () => {
   test('Performance: TestWide client cached', async () => {
     const count = DG.Test.isInBenchmark ? 5 : 2;
     return await benchmarkQuery('PostgresqlTableWideCachedClient', count);
-  }, {benchmark: true, stressTest: true});
+  }, {benchmark: true, stressTest: true, node: false});
 
   test('Performance: TestWide server cached', async () => {
     const count = DG.Test.isInBenchmark ? 5 : 2;
     return await benchmarkQuery('PostgresqlTableWideCachedServer', count);
-  }, {timeout: 120000, benchmark: true, stressTest: true});
+  }, {timeout: 120000, benchmark: true, stressTest: true, node: false});
 
   test('Performance: TestLong', async () => {
     return `Execution time: ${await getDataQueryTime('PostgresqlTableLong')}`;
@@ -51,7 +51,7 @@ category('Benchmarks', () => {
     const compressionOffTime = await getDataQueryTime('PostgresqlCompressionIntOff');
     expect(compressionOnTime < compressionOffTime * 2, true);
   }, {skipReason: 'Feature of compression in development', benchmark: true});
-});
+}, {node: true});
 
 function getTestResult(times: number[], expectedCount: number): object {
   const totalTime = times.reduce((acc, currentValue) => acc + currentValue, 0);

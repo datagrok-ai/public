@@ -44,6 +44,8 @@ export interface TestOptions {
   stressTest?: boolean;
   owner?: string;
   tags?: string[];
+  /** Test needs no browser: it uses only Node-available API and can run headless under the js-api Node runtime. */
+  node?: boolean;
 }
 
 export interface TestResult {
@@ -71,6 +73,8 @@ export interface CategoryOptions {
   benchmarks?: boolean;
   stressTests?: boolean;
   owner?: string;
+  /** Default for all tests in the category that don't set their own `node` option. */
+  node?: boolean;
 }
 
 export class TestContext {
@@ -136,6 +140,7 @@ export class Category {
   benchmarkTimeout?: number;
   stressTests?: boolean;
   owner?: string;
+  node?: boolean;
 }
 
 export class NodeTestExecutionOptions {
@@ -154,6 +159,10 @@ export class TestExecutionOptions {
   skipToCategory?: string;
   skipToTest?: string;
   returnOnFail?: boolean;
+  /** Run only tests marked `node: true` (the headless Node pass of `grok test`). */
+  nodeOnly?: boolean;
+  /** Skip tests marked `node: true` (the browser pass of `grok test` after a Node pass already ran them). */
+  excludeNodeTests?: boolean;
 }
 
 export async function testEvent<T>(event: Observable<T>,
@@ -301,6 +310,7 @@ export function category(category: string, tests_: () => void, options?: Categor
     tests[currentCategory].benchmarks = options?.benchmarks;
     tests[currentCategory].stressTests = options?.stressTests;
     tests[currentCategory].owner = options?.owner;
+    tests[currentCategory].node = options?.node;
   }
 }
 
@@ -320,6 +330,12 @@ export function after(after: () => Promise<void>): void {
 
 function addNamespace(s: string, f: _DG.Func): string {
   return s.replace(new RegExp(f.name, 'gi'), f.nqName);
+}
+
+/** Whether a test matches the node/browser split requested by the run options. */
+function matchesNodeTarget(t: Test, cat: Category, options: TestExecutionOptions): boolean {
+  const isNode = t.options?.node ?? cat.node ?? false;
+  return options.nodeOnly ? isNode : options.excludeNodeTests ? !isNode : true;
 }
 
 export async function initAutoTests(package_: _DG.Package, module?: any) {
@@ -494,7 +510,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
   }
 
   async function invokeTestsInCategory(category: Category, options: TestExecutionOptions, isTargetCategory: boolean): Promise<TestResultExtended[]> {
-    let t = category.tests ?? [];
+    let t = (category.tests ?? []).filter((e) => matchesNodeTarget(e, category, options));
     const res : TestResultExtended[] = [];
     // let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
     const widgetsBefore = getWidgetsCountSafe();
@@ -634,19 +650,22 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
                   }
               }
           }
-          //@ts-ignore
-          const skipped = value.tests?.every((t: Test) => t.options?.skipReason
-              || (options?.test != null && options.test.toLowerCase() !== t.name.toLowerCase()));
+          let t = (value.tests ?? []).filter((e) => matchesNodeTarget(e, value, options));
+          // Node/browser split: if no tests of this category belong to the requested target,
+          // skip it entirely — including before()/after().
+          if ((options.nodeOnly || options.excludeNodeTests) && t.length === 0)
+              continue;
+
+          const skipped = value.tests == undefined ? undefined : t.every((e: Test) => e.options?.skipReason
+              || (options?.test != null && options.test.toLowerCase() !== e.name.toLowerCase()));
 
           if (!skipped) {
-              //@ts-ignore
-              const skippedCount = (value.tests ?? []).filter((t: Test) =>
-                t.options?.skipReason || (options?.test != null && options.test.toLowerCase() !== t.name.toLowerCase())
+              const skippedCount = t.filter((e: Test) =>
+                e.options?.skipReason || (options?.test != null && options.test.toLowerCase() !== e.name.toLowerCase())
               ).length;
               stdLog(`Package testing: Started {{${key}}}${skippedCount > 0 ? ` skipped {{${skippedCount}}}` : ''}`);
               value.beforeStatus = await invokeCategoryMethod(value.before, key);
           }
-          let t = value.tests ?? [];
 
           if (options.stressTest) {
               t = t.filter((e) => e.options?.stressTest);

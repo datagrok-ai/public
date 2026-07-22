@@ -121,7 +121,7 @@ category('Dapi: files', () => {
     expect(!!res);
   }, {stressTest: true});
 
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 category('Dapi: files: formats', () => {
   const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip', 'kmz', 'kml'];
@@ -135,7 +135,7 @@ category('Dapi: files: formats', () => {
           : ['kmz', 'kml'].includes(ext) ? 'GROK-13263'
               : undefined});
   }
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 async function safeDeleteFile(path: string): Promise<void> {
   try {

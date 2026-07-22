@@ -11,4 +11,4 @@ category('Dapi: tables', () => {
     const id = await grok.dapi.tables.uploadDataFrame(df);
     await grok.dapi.tables.getTable(id);
   }, {stressTest: true,  owner: 'aparamonov@datagrok.ai'});
-});
+}, {node: true});

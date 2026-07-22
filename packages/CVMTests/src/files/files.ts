@@ -45,6 +45,6 @@ category('Files: OpenFile', () => {
         await grok.dapi.projects.delete(await grok.dapi.projects.filter(projectName).first());
       } catch (_) {}
     }
-  }, {timeout: 120000, stressTest: true});
-});
+  }, {timeout: 120000, stressTest: true, node: false}); // grok.shell table view / project open
+}, {node: true});
 

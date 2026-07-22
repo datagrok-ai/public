@@ -119,4 +119,4 @@ category('Dapi: groups', () => {
     }
   }, {stressTest: true});
 
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});

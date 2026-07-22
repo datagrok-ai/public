@@ -63,7 +63,7 @@ category('Server cache', () => {
   after(async () => {
     await cleanCache(testConnections);
   });
-});
+}, {node: true});
 
 async function invalidationCacheTest(dataQuery: string): Promise<void> {
   const func: DG.Func = await grok.functions.eval('Dbtests:' + dataQuery);

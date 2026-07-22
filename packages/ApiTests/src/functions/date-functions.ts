@@ -124,4 +124,4 @@ category('Functions: Date', () => {
     'Year(Date(1999, 1, 1))': 1999,
     'Year(Date(2100, 1, 1))': 2100,
   }));
-});
+}, {node: true});

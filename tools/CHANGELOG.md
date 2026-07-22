@@ -2,6 +2,8 @@
 
 ## v.next
 
+* `grok test` — added a Node (browserless) pass: tests annotated `{node: true}` run headless under the js-api Node runtime before the browser launches; the browser pass excludes them and is skipped entirely when nothing browser-only matches. New flags: `--skip-node`, `--node-only`. Packages opt in by exporting `testNode()` from `package-test.ts`; others keep the previous behavior.
+
 * `grok test` — `--no-retry` is now honored for Playwright runs. minimist parsed `--no-retry` as `{retry:false}`, so the flag was silently dropped and failed specs were still retried once; normalized so `--retries=0` reaches Playwright.
 
 ## 6.4.5 (2026-06-23)

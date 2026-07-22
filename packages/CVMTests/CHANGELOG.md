@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: annotated API-only categories (scripts, celery, docker, files) with `node: true` — `grok test` now runs them headless in Node; the WebSocket proxy, project/table-view, and client-cache tests stay in the browser
+
 * Tests: env scripts now declare `#meta.timeout: 600` (the 300s server exec default fired at ~318s under merged-stage load) and env-test client budgets sit above it at 660s — real hangs still surface, a busy stand doesn't flake
 * GROK-20445: Env tests: dropped the obsolete `numpy < 2` assertion (base env now resolves numpy-2-native pyarrow); made the two DG-idiom nodejs scripts (Column list, Lines count) runtime-agnostic until the Node js-api runtime lands on master
 * Scripts: Migrated nodejs test scripts to the js-api (`grok`/`DG` globals); dataframe-js/axios are no longer injected into nodejs scripts (breaking — legacy scripts must `require()` them explicitly or move to `DG.DataFrame`)

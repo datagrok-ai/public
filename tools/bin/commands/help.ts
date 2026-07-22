@@ -213,6 +213,8 @@ Options:
 --skip-publish      Skip the package publication step
 --skip-puppeteer    Skip the Puppeteer/DG.Test pass; only run Playwright (for playwright-only test directories)
 --skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
+--skip-node         Skip the Node (browserless) pass; run all tests in the browser
+--node-only         Run only tests annotated {node: true} headless under Node, no browser
 --link  	        Link the package to local utils
 --record            Records the test execution process in mp4 format
 --platform          Runs only platform tests (applicable for ApiTests package only)

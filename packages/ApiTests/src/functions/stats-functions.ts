@@ -139,4 +139,4 @@ category('Functions: Statistical', () => {
     'Variance([7, 14, 21])': 49,
     'Variance([-15, -5, 5, 15])': 166.667,
   }));
-});
+}, {node: true});

@@ -96,8 +96,8 @@ category('Docker', () => {
     } finally {
       ws?.close();
     }
-  });
-});
+  }, {node: false}); // browser WebSocket global with cookie-session auth
+}, {node: true});
 
 async function findContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();

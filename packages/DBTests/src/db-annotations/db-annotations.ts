@@ -107,7 +107,7 @@ category('Database Meta: DbInfo', async () => {
             await dbInfo?.clearProperties();
         } catch (_) {}
     });
-});
+}, {node: true});
 
 category('Database Meta: DbSchemaInfo', async () => {
     let conn: DG.DataConnection;
@@ -211,7 +211,7 @@ category('Database Meta: DbSchemaInfo', async () => {
             await dbInfo?.clearProperties();
         } catch (_) {}
     });
-});
+}, {node: true});
 
 category('Database Meta: DbRelationInfo', async () => {
     let conn: DG.DataConnection;
@@ -257,4 +257,4 @@ category('Database Meta: DbRelationInfo', async () => {
             await dbInfo?.clearProperties();
         } catch (_) {}
     });
-});
+}, {node: true});
