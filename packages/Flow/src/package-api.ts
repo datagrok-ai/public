@@ -17,6 +17,20 @@ export namespace funcs {
   }
 
   /**
+  Reads a file uploaded into a flow and parses it into a table
+  */
+  export async function readUploadedFile(fileId: string , fileName: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:ReadUploadedFile', { fileId, fileName });
+  }
+
+  /**
+  Keeps uploaded-file permissions in sync when a flow script is shared
+  */
+  export async function flowShareSync(): Promise<void> {
+    return await grok.functions.call('Flow:FlowShareSync', {});
+  }
+
+  /**
   Interactive function chain designer
   */
   export async function funcflowApp(path?: string ): Promise<DG.View> {

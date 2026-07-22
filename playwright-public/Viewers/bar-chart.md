@@ -151,5 +151,5 @@ Setup: Close all, open demog and SPGI
 ---
 {
   "order": 3,
-  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/chem/SPGI.csv"]
 }

@@ -40,7 +40,7 @@ test('Line chart: aggregated tooltip with split column', async ({page}) => {
     grok.shell.settings.showFiltersIconsConstantly = true;
     grok.shell.windows.simpleMode = true;
     grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     grok.shell.addTableView(df);
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });

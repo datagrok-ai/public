@@ -284,7 +284,7 @@ test('PowerPack: Add new column - column-name highlight (GROK-17004 invariant)',
     await page.evaluate(async () => {
       const grok = (window as any).grok;
       try { grok.shell.closeAll(); } catch (_) {  }
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       grok.shell.addTableView(df);
       await new Promise<void>((resolve) => {
         const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });

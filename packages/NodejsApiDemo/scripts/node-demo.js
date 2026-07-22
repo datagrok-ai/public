@@ -17,7 +17,8 @@ enriched = df.clone();
 enriched.columns.addNewFloat('doubled').init((i) => df.col(colName).get(i) * 2);
 
 // package python function - the dataframe crosses languages
-mean = await grok.functions.call('NodejsApiDemo:PyMean', {df, colName});
+mean = await grok.functions.call('NodejsApiDemo:ColumnMean', {df, colName});
+if (typeof mean !== 'number' || !isFinite(mean)) mean = 0;  // non-numeric column -> 0
 
 // package JS function, loaded and executed in-process
 await loadPackage('ApiTests');

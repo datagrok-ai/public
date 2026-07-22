@@ -893,6 +893,10 @@ export enum EVENT_TYPE {
   // File events
   FILE_EDITED = 'grok-file-edited',
   FILE_IMPORT_REQUEST = 'd4-file-import-request',
+  FILE_DRAG_ENTER = 'd4-file-drag-enter',
+
+  // Entity events
+  ENTITY_SHARED = 'd4-entity-shared',
 
   // Grid events
   GRID_CELL_LINK_CLICKED = 'd4-grid-cell-link-clicked-global',

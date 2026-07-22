@@ -47,6 +47,9 @@ import {
 } from './suggest/suggestion-engine';
 import {_package} from './package';
 import {setTid} from './utils/test-ids';
+import {
+  addPendingFile, getPendingFile, isPendingFileId, persistPendingFile, syncFlowFilePermissions,
+} from './utils/uploaded-files';
 import {GuideHost} from './guide/guide-model';
 import {GuideRunner} from './guide/guide-runner';
 import {createHelpButton, openGuideMenu} from './guide/guide-launcher';
@@ -90,6 +93,9 @@ export class FuncFlowView extends DG.ViewBase {
   /** Serialized graph+settings at the last save / load, for detecting unsaved
    *  changes; null before the first baseline is recorded. */
   private savedSnapshot: string | null = null;
+  /** Platform event subscriptions (file-drag overlay suppression, entity-shared
+   *  permission sync) — disposed in `detach`. */
+  private platformSubs: {unsubscribe(): void}[] = [];
   /** One-shot handler that pins this (preview) view on the first interaction so
    *  the toolbox appears; cleared once it fires (see `setupAutoPin`). */
   private autoPinHandler: (() => void) | null = null;
@@ -198,6 +204,17 @@ export class FuncFlowView extends DG.ViewBase {
         console.warn('FuncFlow: error registering functions:', e);
       }
     }, 100);
+
+    // Local-file drops: while this view is active, suppress the platform's
+    // "drop to open" overlay so the canvas underneath receives the OS drag;
+    // the drop handler in setupFileDropTarget turns each file into an
+    // Uploaded File node. (Share-driven permission sync is global — the
+    // package's flowShareSync autostart — so it works with no view open.)
+    this.platformSubs.push(grok.events.onFileDragEnter.subscribe((ev) => {
+      const target = ev.causedBy?.target;
+      if (target !== null && target instanceof HTMLElement &&  (target === this.canvasContainer || this.canvasContainer.contains(target)))
+        ev.preventDefault();
+    }));
   }
 
   /** A view bound to a platform flow-script entity: loads its body and makes
@@ -811,16 +828,26 @@ export class FuncFlowView extends DG.ViewBase {
       },
     });
 
-    // Native HTML5 drag/drop from the function browser and the Suggestions pane.
+    // Native HTML5 drag/drop from the function browser and the Suggestions pane,
+    // plus local (OS) files — the platform's drop overlay is suppressed while
+    // this view is active (see the onFileDragEnter subscription).
     this.canvasContainer.addEventListener('dragover', (ev) => {
       if (!ev.dataTransfer) return;
       const types = Array.from(ev.dataTransfer.types);
-      if (types.includes(FF_DRAG_MIME) || types.includes(FF_SUGGEST_MIME)) {
+      if (types.includes(FF_DRAG_MIME) || types.includes(FF_SUGGEST_MIME) || types.includes('Files')) {
         ev.preventDefault();
         ev.dataTransfer.dropEffect = 'copy';
       }
     });
     this.canvasContainer.addEventListener('drop', (ev) => {
+      // Local files from the user's computer → one Uploaded File node each.
+      const osFiles = ev.dataTransfer?.files;
+      if (osFiles != null && osFiles.length > 0) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        void this.addUploadedFileNodes(Array.from(osFiles), ev);
+        return;
+      }
       // A dragged suggestion carries its full JSON payload — apply it (wiring,
       // prefill and all) at the drop point.
       const sug = ev.dataTransfer?.getData(FF_SUGGEST_MIME);
@@ -963,6 +990,79 @@ export class FuncFlowView extends DG.ViewBase {
         return info.nodeTypeName;
     }
     return null;
+  }
+
+  private findUploadedFileNodeType(): string | null {
+    for (const info of getRegisteredFuncs()) {
+      if (info.func.name === 'readUploadedFile')
+        return info.nodeTypeName;
+    }
+    return null;
+  }
+
+  /** Local (OS) files dropped onto the canvas: register the bytes in the
+   *  pending store (100 MB cap) and add an Uploaded File node per file. Bytes
+   *  reach the server only when the flow is saved (`persistPendingUploads`);
+   *  until then the node replays from memory. */
+  private async addUploadedFileNodes(files: File[], dropEvent?: MouseEvent): Promise<void> {
+    const typeName = this.findUploadedFileNodeType();
+    if (!typeName) {
+      grok.shell.warning('Uploaded File node is not available');
+      return;
+    }
+    let offset = 0;
+    for (const file of files) {
+      let fileId: string;
+      try {
+        fileId = addPendingFile(file.name, new Uint8Array(await file.arrayBuffer()));
+      } catch (e: any) {
+        grok.shell.error(e?.message ?? String(e));
+        continue;
+      }
+      const node = dropEvent ?
+        await this.addNodeByTypeAt(typeName, dropEvent.clientX + offset, dropEvent.clientY + offset) :
+        await this.addNodeByType(typeName);
+      if (!node) continue;
+      node.label = file.name;
+      node.inputValues['fileId'] = fileId;
+      node.inputValues['fileName'] = file.name;
+      await this.flow.updateNode(node.id);
+      // Report the programmatic param write like a panel edit — it drives
+      // invalidation and lets the live-by-default autorun parse the file.
+      this.flow.notifyNodeParamsChanged(node.id);
+      offset += 40;
+    }
+    this.updateStatusBar();
+  }
+
+  /** Uploads every pending local file referenced by an Uploaded File node to
+   *  the server's GUID-addressed file store and rewrites the node's `fileId`
+   *  to the real entity id. Called before any serialization that outlives this
+   *  session (entity save, creation-script save, .ffjson export). */
+  private async persistPendingUploads(): Promise<void> {
+    if (!this.flow) return;
+    const upType = this.findUploadedFileNodeType();
+    if (!upType) return;
+    for (const node of this.flow.getNodes()) {
+      if (node.dgTypeName !== upType) continue;
+      const fileId = node.inputValues['fileId'];
+      if (typeof fileId !== 'string' || !isPendingFileId(fileId)) continue;
+      if (!getPendingFile(fileId)) {
+        throw new Error(`Uploaded file "${node.inputValues['fileName'] ?? node.label}" is no longer ` +
+          'available in this session — drop it onto the canvas again before saving');
+      }
+      const fi = await persistPendingFile(fileId);
+      node.inputValues['fileId'] = fi.id;
+      await this.flow.updateNode(node.id);
+    }
+  }
+
+  /** Post-save permission sync: the freshly saved body references the real
+   *  file ids, so delegate to the shared util (share-time syncs run globally
+   *  through the flowShareSync autostart, view or no view). */
+  private async syncUploadedFilePermissions(): Promise<void> {
+    if (this.boundScript?.script)
+      await syncFlowFilePermissions(this.boundScript);
   }
 
   // ---------- guide system (tutorials + how-to) ----------
@@ -1225,7 +1325,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.ribbonMenu = m
       .separator()
       .item('Import .ffjson…', () => void this.openFlow())
-      .item('Export .ffjson', () => this.exportFfjson())
+      .item('Export .ffjson', () => void this.exportFfjson())
       .separator()
       .item('Templates…', () => this.showStartPanel())
       .item('Settings…', () => this.editSettings())
@@ -1283,7 +1383,7 @@ export class FuncFlowView extends DG.ViewBase {
     // Saving leads the ribbon; saveFlow routes to the right target (entity
     // update / Save As for never-saved flows / creation scripts).
     const saveButton = creationMode ?
-      ui.bigButton('Save', () => this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
+      ui.bigButton('Save', () => void this.saveCreationScriptsDialog(), 'Review and save a creation script for each table') :
       ui.bigButton('Save', () => {if (this.saveAvailability().enabled) void this.saveFlow();}, '');
     saveButton.prepend(ui.iconFA('cloud-upload'));
     const saveEl = setTid(saveButton, 'ribbon', creationMode ? 'save-creation-scripts' : 'save');
@@ -1444,6 +1544,8 @@ export class FuncFlowView extends DG.ViewBase {
   detach(): void {
     this.autorunScheduler?.reset();
     this.teardownAutoPin();
+    for (const sub of this.platformSubs) sub.unsubscribe();
+    this.platformSubs = [];
     this.outputViews?.destroy();
     this.flow?.destroy();
     super.detach();
@@ -1502,7 +1604,7 @@ export class FuncFlowView extends DG.ViewBase {
   private async saveFlow(): Promise<void> {
     if (!this.flow) return;
     if (this.tableInfos.length > 0) {
-      this.saveCreationScriptsDialog();
+      await this.saveCreationScriptsDialog();
       return;
     }
     await this.saveDialog();
@@ -1535,6 +1637,9 @@ export class FuncFlowView extends DG.ViewBase {
    *  metadata (e.g. the dashboard binding right after a publish). */
   private async saveToServer(silent = false): Promise<void> {
     try {
+      // Local files live in memory until this moment — persist them first so
+      // the saved body references real, server-addressable file ids.
+      await this.persistPendingUploads();
       const script = DG.Script.create(this.entityBodyText());
       if (this.boundScript?.id)
         script.id = this.boundScript.id;
@@ -1542,6 +1647,7 @@ export class FuncFlowView extends DG.ViewBase {
       this.name = this.flowSettings.scriptName;
       this.updatePath();
       this.markSaved(); // this graph is now the saved baseline
+      void this.syncUploadedFilePermissions();
       if (!silent) grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
     } catch (e: any) {
       grok.shell.error(`Failed to save flow: ${e?.message ?? e}`);
@@ -1834,7 +1940,14 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Download the graph as a local `.ffjson` file (the pre-entity behavior). */
-  private exportFfjson(): void {
+  private async exportFfjson(): Promise<void> {
+    // Best-effort: an export with pending (in-memory) file ids would not be
+    // portable — persist them first; on failure export anyway with a warning.
+    try {
+      await this.persistPendingUploads();
+    } catch (e: any) {
+      grok.shell.warning(`Uploaded files were not persisted — the export will not be portable. ${e?.message ?? e}`);
+    }
     const doc = serializeFlow(this.flow, this.flowSettings);
     downloadFlow(doc);
     grok.shell.info('Flow exported as .ffjson');
@@ -1987,8 +2100,17 @@ export class FuncFlowView extends DG.ViewBase {
    *  horizontal tab, and on Save write it back to the table via
    *  `TableInfo.saveCreationScript`. Only available when the view was opened with
    *  `tableInfos` (the `creationScriptEditor` entry point). */
-  private saveCreationScriptsDialog(): void {
+  private async saveCreationScriptsDialog(): Promise<void> {
     if (!this.flow || this.tableInfos.length === 0) return;
+
+    // Creation scripts outlive the session — pending local files must be on
+    // the server before the emitted script can reference them.
+    try {
+      await this.persistPendingUploads();
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? String(e));
+      return;
+    }
 
     // The variable name a table is referenced by in the script — its
     // `.VariableName` tag, matching the SetVar/anchor names the emitter splits on

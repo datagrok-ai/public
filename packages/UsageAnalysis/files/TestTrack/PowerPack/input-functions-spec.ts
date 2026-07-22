@@ -203,7 +203,7 @@ test('PowerPack: Add new column — function insertion (plus icon, drag-and-drop
     try { grok.shell.closeAll(); } catch (_) { /* best-effort */ }
     let df: any = null;
     try { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
-    catch (_) { df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv'); }
+    catch (_) { df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv'); }
     grok.shell.addTableView(df);
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });

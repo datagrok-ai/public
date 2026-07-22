@@ -254,6 +254,23 @@ jobs:
           REMOTE_USER: ${{ secrets.HELP_USER }}
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
 
+      # The platform image ships only *-thumb.png stills; the help viewer
+      # streams gifs from https://data.datagrok.ai/help/... on click, so every
+      # help deploy mirrors the gifs to the datagrok-data bucket.
+      - name: Checkout help for gif sync
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: help
+          path: help-src
+      - name: Publish help gifs to data.datagrok.ai
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_HELP_MEDIA_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_HELP_MEDIA_SECRET }}
+        run: |
+          aws s3 sync help-src/help s3://datagrok-data/help \
+            --exclude "*" --include "*.gif" \
+            --acl public-read --region us-east-2 --only-show-errors
+
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |

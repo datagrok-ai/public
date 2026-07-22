@@ -151,7 +151,7 @@ test('Legend scatterplot — Color + Marker combined', async ({page}) => {
       const tv = (window as any).grok.shell.tv;
       if (!tv) {
         (window as any).grok.shell.closeAll();
-        const df2 = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+        const df2 = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
         (window as any).grok.shell.addTableView(df2);
         await new Promise((r) => setTimeout(r, 3000));
         (window as any).grok.shell.tv.addViewer('Scatter plot');

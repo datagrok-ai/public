@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Local file upload: drop a file from your computer onto the canvas (or several at once) and it becomes a replayable, shareable **Uploaded File** node — bytes stay in memory until the flow is saved, then upload to the server's GUID-addressed file store and the node references the stable id; saving/sharing the flow grants read on the files to the same people — share handling runs globally via the `flowShareSync` autostart, so sharing a flow from Browse with no Flow view open works too; 100 MB per-file cap; CSV/TSV/TXT/d42 parse natively, other formats go through the platform's registered file importers (the platform's "drop to open" overlay is suppressed while a Flow view is active via the new `grok.events.onFileDragEnter`)
+
 * Function catalog: inverted the inclusion logic from deny-based (structural filters + role/tag rules + a curated denylist) to an explicit **allowlist** (`INCLUDED_FUNC_NQNAMES`, frozen from the exact catalog the old filters produced on a live server) — any other function now needs `meta.includeInFlow: true` to appear in the toolbox; saved flows and queries are always included by kind (queries from dev/test packages like Dbtests excepted), and `meta.includeInFlow: false` still opts out unconditionally
 
 * AI: the flow view exposes its operations to the AI assistant as registered package functions (`flowViewFunction` tag, returned from `FuncFlowView.getFunctions()`) — list/inspect nodes and connections, search the curated node catalog with filters (text query, accepted/produced DG type), add nodes with prefilled inputs, connect ports with type checking, set node input values, select a node, and run the flow with validation and per-node failure reporting; each function takes the generic view and acts on `view.jsView`

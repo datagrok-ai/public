@@ -45,7 +45,7 @@ A clean Datagrok session. Single scenario; SPGI.csv as the source
 
 Steps:
 
-1. Open `System:DemoFiles/SPGI.csv`. Wait for semType detection.
+1. Open `System:DemoFiles/chem/SPGI.csv`. Wait for semType detection.
 
 2. Add a Sunburst viewer via `tv.addViewer('Sunburst')`. Wait 3000ms.
    Configure Sunburst hierarchy to a categorical string column likely
@@ -105,6 +105,6 @@ Steps:
 ```json
 {
   "order": 36,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }
 ```

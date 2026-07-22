@@ -26,7 +26,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec
 test.use(specTestOptions);
 
 const demogPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:DemoFiles/SPGI.csv';
+const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Legend — JS API contract', async ({page}) => {
   // Validator B 2026-05-09 run 2 timed out at 318s on Scenario 8 (300_000 budget too tight
