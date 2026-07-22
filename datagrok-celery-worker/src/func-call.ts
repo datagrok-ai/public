@@ -36,6 +36,9 @@ export class FuncCallParam {
   isInput: boolean;
   value: any;
   originalValue: any;
+  /** grok_pipe '.type' tag received with a streamed input ('dataframe' = d42 binary,
+   *  'csv', 'blob', ...), null for non-streamed params. */
+  receivedType: string | null = null;
 
   constructor(name: string, propertyType: string, isInput: boolean, value: any) {
     this.name = name;

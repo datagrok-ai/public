@@ -97,7 +97,7 @@ describe('PipeClient', () => {
 
     expect((await peer.nextFrame()).data).toBe('PARAM df');
     peer.send('LOG {"message":"unrelated"}'); // must be tolerated and skipped
-    peer.send(`${Const.SENDING} 5 {".id":"x",".type":"csv"}`);
+    peer.send(`${Const.SENDING} 5 {".id":"x",".type":"dataframe"}`);
     peer.send(chunk1);
     expect((await peer.nextFrame()).data).toBe(Const.PART_OK);
     peer.send(chunk2);
@@ -105,7 +105,28 @@ describe('PipeClient', () => {
     peer.send('PARAM_SENT df');
 
     const result = await resultPromise;
-    expect(Array.from(result!)).toEqual([1, 2, 3, 4, 5]);
+    expect(Array.from(result!.bytes)).toEqual([1, 2, 3, 4, 5]);
+    expect(result!.tags).toEqual({'.id': 'x', '.type': 'dataframe'});
+  });
+
+  test('receiveParam surfaces the csv type tag and tolerates a broken tags json', async () => {
+    const resultPromise = client.receiveParam('df');
+    expect((await peer.nextFrame()).data).toBe('PARAM df');
+    peer.send(`${Const.SENDING} 2 {".id":"x",".type":"csv"}`);
+    peer.send(new Uint8Array([1, 2]));
+    expect((await peer.nextFrame()).data).toBe(Const.PART_OK);
+    peer.send('PARAM_SENT df');
+    expect((await resultPromise)!.tags['.type']).toBe('csv');
+
+    const brokenPromise = client.receiveParam('df2');
+    expect((await peer.nextFrame()).data).toBe('PARAM df2');
+    peer.send(`${Const.SENDING} 1 {not-json`);
+    peer.send(new Uint8Array([7]));
+    expect((await peer.nextFrame()).data).toBe(Const.PART_OK);
+    peer.send('PARAM_SENT df2');
+    const broken = await brokenPromise;
+    expect(Array.from(broken!.bytes)).toEqual([7]);
+    expect(broken!.tags).toEqual({});
   });
 
   test('receiveParam returns null when the peer sends no data', async () => {
@@ -131,10 +152,10 @@ describe('PipeClient', () => {
 
   test('sendParam: chunks by batchSize and waits for PART OK after each chunk', async () => {
     const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); // batchSize 4 -> 4+4+2
-    const sendPromise = client.sendParam(data, {'.id': 'out', '.type': 'csv'});
+    const sendPromise = client.sendParam(data, {'.id': 'out', '.type': 'dataframe'});
 
     const header = await peer.nextFrame();
-    expect(header.data).toBe(`${Const.SENDING} 10 {".id":"out",".type":"csv"}`);
+    expect(header.data).toBe(`${Const.SENDING} 10 {".id":"out",".type":"dataframe"}`);
 
     const received: number[] = [];
     for (let i = 0; i < 3; i++) {

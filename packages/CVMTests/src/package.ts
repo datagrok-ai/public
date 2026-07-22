@@ -71,6 +71,14 @@ export function jsCvmDataframe(df: DG.DataFrame): DG.DataFrame {
   return df;
 }
 
+//name: jsCvmDataframeTypes
+//meta.queue: true
+//input: dataframe df
+//output: dataframe result
+export function jsCvmDataframeTypes(df: DG.DataFrame): DG.DataFrame {
+  return df;
+}
+
 //name: jsCvmEmptyDataframe
 //meta.queue: true
 //output: dataframe result
