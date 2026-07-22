@@ -182,10 +182,10 @@ function makeColInput(
   label: string, table: DG.DataFrame | null, preferredName: string,
   filter: (c: DG.Column) => boolean, tooltip: string, nullable: boolean,
 ): DG.InputBase<DG.Column | null> {
-  const opts: any = {filter};
+  // `nullable` must apply even when `table` is already set, or the platform defaults to required.
+  const opts: any = {filter, nullable};
   if (table) {
     opts.table = table;
-    opts.nullable = nullable;
     const c = table.col(preferredName);
     if (c && filter(c)) opts.value = c;
   }
@@ -312,6 +312,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const reagentsColInput = makeColInput('Reagent SMILES column', null,
     config.enumeration.reagent_smiles_column, isStringCol,
     'Column in the reagents file that contains the reagent SMILES.', true);
+  // Genuinely optional (no reagents file means no reagents mode) — the platform's own "missing
+  // value" red underline reads as an error, which it isn't here.
+  reagentsColInput.root.classList.add('chem-enum-optional-col');
 
   const exclusionInput = ui.input.table('Exclusion substructures file (Optional)', {
     value: exclusionDf ?? undefined, nullable: true,
@@ -649,7 +652,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // per panel) — see DataPanel.applyOverrideForRound.
 
   // Tab row-count badge. Reactions/BBs already show their row count via the always-visible ribbon
-  // chips (chipReactions/chipBbs) and the accordion pane subtitles — a tab badge there would just
+  // chips (chipReactionsC/chipBbsC) and the accordion pane subtitles — a tab badge there would just
   // repeat the same number a third time. Reagents has neither, so it keeps a badge.
   type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
   const makeTabBadge = (): TabBadge => {
@@ -1063,18 +1066,18 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     'Grow each product with original blocks — linear chains.');
   const stratBreadthCard = buildStratCard('sitemap', 'Breadth-first',
     'Combine any earlier products — convergent routes.');
-  const stratReagentsCard = buildStratCard('flask', 'Reagents mode',
-    'One block per round + reagents in remaining slots. Needs a reagents file.');
-  // Explains the disabled state on hover — no balloon needed on click.
-  ui.tooltip.bind(stratReagentsCard.root,
-    () => reagentsInput.value == null ? 'Add a reagents file in "Extras" to switch to reagents mode.' : null);
+  // Reagents mode is auto-derived (set via a file in Extras), never manually selectable here.
+  const reagentsModeNote = ui.divH([ui.iconFA('info-circle'),
+    ui.span([' Reagents mode active — set via a reagents file in Extras.'])],
+  {style: {fontSize: '11px', color: 'var(--grey-6)', gap: '6px', alignItems: 'center',
+    padding: '6px 10px', display: 'none'}});
 
   function refreshStrategyCards(): void {
     const cur = currentMode();
     const hasReagents = cur === 'reagents';
     applyStratCardStyle(stratDepthCard, 'depth', cur, !hasReagents);
     applyStratCardStyle(stratBreadthCard, 'breadth', cur, !hasReagents);
-    applyStratCardStyle(stratReagentsCard, 'reagents', cur, hasReagents);
+    reagentsModeNote.style.display = hasReagents ? '' : 'none';
   }
   stratDepthCard.root.onclick = (): void => {
     if (reagentsInput.value != null) return;
@@ -1096,8 +1099,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     chevron.style.transition = 'transform 0.15s';
     const labelChildren = [chevron, ui.span([` ${label}`])];
     if (dot) labelChildren.push(dot);
+    // Neutral color — a disclosure toggle, not a call to action like the blue Next/Back buttons.
     const link = ui.divH(labelChildren,
-      {style: {fontSize: '12px', color: 'var(--blue-2)', cursor: 'pointer', marginTop: '2px',
+      {style: {fontSize: '12px', color: 'var(--grey-6)', cursor: 'pointer', marginTop: '2px',
         gap: '2px', alignItems: 'center'}});
     let open = false;
     link.onclick = (): void => {
@@ -1119,24 +1123,50 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let bbsPane: DG.TabPane | undefined;
   let reagentsPane: DG.TabPane | undefined;
 
-  // Target pane resolved lazily via a thunk: Reactions pane is added expanded, so its factory runs
+  // Target pane resolved lazily via a thunk: Reactions pane is added first, so its factory runs
   // synchronously inside addPane, before later panes exist — capturing directly would hit the TDZ.
-  const mkNextBtn = (getTarget: () => DG.AccordionPane, label: string): HTMLElement => {
-    const btn = ui.button(`Next: ${label}`, () => openAccPaneAndSyncTab(getTarget()));
-    btn.classList.add('chem-enum-next-btn');
+  const mkNavBtn = (kind: 'next' | 'back', getTarget: () => DG.TabPane, label: string): HTMLElement => {
+    const btn = ui.button(`${kind === 'next' ? 'Next' : 'Back'}: ${label}`, () => openAccPaneAndSyncTab(getTarget()));
+    btn.classList.add(`chem-enum-${kind}-btn`);
     return btn;
   };
+  const mkNextBtn = (getTarget: () => DG.TabPane, label: string): HTMLElement =>
+    mkNavBtn('next', getTarget, label);
+  const mkBackBtn = (getTarget: () => DG.TabPane, label: string): HTMLElement =>
+    mkNavBtn('back', getTarget, label);
+  // Back (if any) on the left, Next/action (if any) on the right — one consistent row per pane.
+  const navRow = (back: HTMLElement | null, next: HTMLElement | null): HTMLElement =>
+    ui.divH([back ?? ui.div([]), next ?? ui.div([])], {classes: 'chem-enum-nav-row'});
 
-  const accordion = ui.accordion();
+  // A TabControl (not Accordion) with its native tab strip hidden — only one section is ever
+  // shown, navigated exclusively via the ribbon chips below. Accordion has no "always exactly one
+  // pane open" mode (its own header click always toggles collapse), which previously needed a
+  // DOM-level hack to suppress; TabControl's `currentPane` is inherently exclusive, so none is
+  // needed here. Same pattern as DiffStudio's step UI (`DiffStudio/src/app.ts`).
+  const accordion = ui.tabControl();
+  accordion.header.hidden = true;
   accordion.root.classList.add('chem-enum-accordion');
+  // Visible pane title + live subtitle — replaces the (now-hidden) native tab header.
+  const paneTitle = (name: string): {row: HTMLElement; sub: HTMLElement} => {
+    const sub = document.createElement('span');
+    sub.className = 'chem-enum-pane-subtitle';
+    const row = ui.divH([ui.divText(name, {style: {fontWeight: 'bold', fontSize: '13px'}}), sub],
+      {style: {alignItems: 'baseline'}});
+    return {row, sub};
+  };
+  const titleReactions = paneTitle('Reactions');
   const accReactionsPane = accordion.addPane('Reactions', () =>
-    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsToggle,
-      mkNextBtn(() => accBbsPane, 'Building blocks')]), true);
+    ui.divV([titleReactions.row, ui.form([templatesInput, smartsColInput]), mapColsToggle,
+      navRow(mkBackBtn(() => accCombinePane, 'How to combine'), mkNextBtn(() => accBbsPane, 'Building blocks'))]));
+  const titleBbs = paneTitle('Building blocks');
   const accBbsPane = accordion.addPane('Building blocks', () =>
-    ui.divV([ui.form([bbsInput, bbColInput]), mkNextBtn(() => accExtrasPane, 'Extras')]), false);
+    ui.divV([titleBbs.row, ui.form([bbsInput, bbColInput]),
+      navRow(mkBackBtn(() => accReactionsPane, 'Reactions'), mkNextBtn(() => accExtrasPane, 'Extras'))]));
+  const titleExtras = paneTitle('Extras');
+  const extrasForm = ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]);
   const accExtrasPane = accordion.addPane('Extras', () =>
-    ui.divV([ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]),
-      mkNextBtn(() => accPreviewPane, 'Preview')]), false);
+    ui.divV([titleExtras.row, extrasForm,
+      navRow(mkBackBtn(() => accBbsPane, 'Building blocks'), mkNextBtn(() => accPreviewPane, 'Preview'))]));
   // Flags "differs from platform defaults" without expanding the toggle.
   const mkChangedDot = (tooltip: string): HTMLElement => {
     const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, display: 'none'}});
@@ -1151,18 +1181,20 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     undefined, productFiltersDot);
   // Combination limits and product filters both live here, next to num_rounds/maxComponents/
   // maxRoutes — every quantitative constraint on the run's output stays in one place.
+  const titleCombine = paneTitle('How to combine');
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
+    titleCombine.row,
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
       configInfoIcon,
     ], {style: {alignItems: 'center', gap: '4px'}}),
-    ui.divV([stratDepthCard.root, stratBreadthCard.root, stratReagentsCard.root], {style: {gap: '6px'}}),
+    ui.divV([stratDepthCard.root, stratBreadthCard.root, reagentsModeNote], {style: {gap: '6px'}}),
     ui.form([numRoundsInput, maxComponentsInput, maxRoutesInput]),
     combinationLimitToggle,
     productFilterToggle,
-    // Strategy opens first now, so it needs its own way into the Reactions chain.
-    mkNextBtn(() => accReactionsPane, 'Reactions'),
-  ], {style: {gap: '8px'}}), false);
+    // First pane in the chain — no Back target.
+    navRow(null, mkNextBtn(() => accReactionsPane, 'Reactions')),
+  ], {style: {gap: '8px'}}));
   // Left panel for Preview.
   const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
   function renderPreviewRecap(): void {
@@ -1199,43 +1231,38 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     addComponentRows('Building blocks', bDf, 'buildingBlocks');
   }
 
+  const titlePreview = paneTitle('Preview');
   const accPreviewPane = accordion.addPane('Preview', () => ui.divV([
+    titlePreview.row,
     ui.divText('Runs a reduced-budget sample (≤ 2 rounds, ≤ 3 combinations / template) using the ' +
     'global reactions, building blocks, and reagents — per-round subsets are not applied here.',
     {style: {fontSize: '12px', color: 'var(--grey-6)', lineHeight: '1.4'}}),
     previewRecapHost,
-    // End of the Next-button chain, so the run action lives here too, not just up in the ribbon.
+    // Last pane in the chain — no Next target; the run action lives here too.
+    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), null),
     previewEnumerateBtn,
-  ], {style: {gap: '10px'}}), false);
-  const accPanes = [accReactionsPane, accBbsPane, accExtrasPane, accCombinePane, accPreviewPane];
+  ], {style: {gap: '10px'}}));
 
-  // Subtitle spans injected into each pane header — updated by refreshCfgRibbon().
-  const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
-    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
-    const sub = document.createElement('span');
-    sub.className = 'chem-enum-pane-subtitle';
-    header?.appendChild(sub);
-    return sub;
-  };
-  const subReactions = injectPaneSub(accReactionsPane);
-  const subBbs = injectPaneSub(accBbsPane);
-  const subExtras = injectPaneSub(accExtrasPane);
-  const subCombine = injectPaneSub(accCombinePane);
 
   // Left pane scrolls vertically if it overflows so the action bar stays visible.
   const leftPane = ui.divV([accordion.root],
     {style: {minWidth: '320px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
 
   // === Config-summary ribbon (shown above the right-pane tabs) ===
-  const cfgChipEl = (text: string): HTMLElement => {
-    const chip = ui.divText(text);
-    chip.className = 'chem-enum-chip';
-    return chip;
+  // Each chip's dot flags "customized": Reactions/Building blocks/Reagents show it when any round
+  // has a custom subset (same check behind the round tabs' own dot); Strategy shows it when
+  // Combination limits or Product filters differ from platform defaults. Text lives in a child
+  // span so refreshing it doesn't wipe the dot out (chip.textContent replaces all children).
+  const cfgChipEl = (tooltip: string): {root: HTMLElement; textEl: HTMLElement; dot: HTMLElement} => {
+    const dot = mkChangedDot(tooltip);
+    const textEl = ui.span([], {style: {overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: '0'}});
+    const root = ui.divH([dot, textEl], {classes: 'chem-enum-chip', style: {alignItems: 'center', gap: '4px'}});
+    return {root, textEl, dot};
   };
-  const chipReactions = cfgChipEl('');
-  const chipBbs = cfgChipEl('');
-  const chipExtras = cfgChipEl('');
-  const chipCombine = cfgChipEl('');
+  const chipReactionsC = cfgChipEl('One or more rounds use a custom subset of reaction templates.');
+  const chipBbsC = cfgChipEl('One or more rounds use a custom subset of building blocks.');
+  const chipExtrasC = cfgChipEl('One or more rounds use a custom subset of reagents.');
+  const chipCombineC = cfgChipEl('Changed from platform defaults.');
   const cfgEstEl = ui.divText('');
   cfgEstEl.className = 'chem-enum-chip';
   // A separate arrow node per gap — one DOM node can't be reused in three places at once.
@@ -1251,34 +1278,40 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value; const rDf = reagentsInput.value;
     const combineText = `${MODE_LABEL[currentMode()]} · ${roundsLabel(currentRounds())}`;
-    const setChip = (chip: HTMLElement, text: string, err: boolean): void => {
-      chip.textContent = text;
-      chip.classList.toggle('chem-enum-chip--err', err);
+    const setChip = (chip: {root: HTMLElement; textEl: HTMLElement}, text: string, err: boolean): void => {
+      chip.textEl.textContent = text;
+      chip.root.classList.toggle('chem-enum-chip--err', err);
     };
-    setChip(chipReactions, tDf ? `${tDf.rowCount} reactions` : 'No reaction table', !tDf || !smartsColInput.value);
-    setChip(chipBbs, bDf ? `${bDf.rowCount} building blocks` : 'No building blocks table', !bDf || !bbColInput.value);
+    setChip(chipReactionsC, tDf ? `${tDf.rowCount} reactions` : 'No reaction table',
+      !tDf || !smartsColInput.value);
+    setChip(chipBbsC, bDf ? `${bDf.rowCount} building blocks` : 'No building blocks table',
+      !bDf || !bbColInput.value);
     // Extras is fully optional — never flagged as an error state.
-    chipExtras.textContent = rDf ? `${rDf.rowCount} reagents` : 'No reagents (optional)';
+    chipExtrasC.textEl.textContent = rDf ? `${rDf.rowCount} reagents` : 'No reagents (optional)';
     // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
-    chipCombine.textContent = `Strategy: ${combineText}`;
+    chipCombineC.textEl.textContent = `Strategy: ${combineText}`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
     cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString('en-US')} products` : '';
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);
     combinationLimitsDot.style.display = combChanged ? '' : 'none';
     productFiltersDot.style.display = prodChangedCount > 0 ? '' : 'none';
+    chipCombineC.dot.style.display = (combChanged || prodChangedCount > 0) ? '' : 'none';
+    chipReactionsC.dot.style.display = templatesCtl.hasAnyOverride() ? '' : 'none';
+    chipBbsC.dot.style.display = bbsCtl.hasAnyOverride() ? '' : 'none';
+    chipExtrasC.dot.style.display = reagentsCtl.hasAnyOverride() ? '' : 'none';
     // Re-render Strategy/Preview even when already the visible tab, so in-tab edits stay current.
     // Pass the values just computed above instead of having renderStrategySummary re-derive them.
     if (tabs.currentPane === strategyPane) renderStrategySummary(combChanged, prodChangedCount);
     if (tabs.currentPane === previewPane) renderPreviewRecap();
-    subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
-    subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
-    subExtras.textContent = rDf ? `${rDf.rowCount} reagents` : 'Optional';
-    subCombine.textContent = combineText;
+    titleReactions.sub.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
+    titleBbs.sub.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
+    titleExtras.sub.textContent = rDf ? `${rDf.rowCount} reagents` : 'Optional';
+    titleCombine.sub.textContent = combineText;
   }
   // === Exclusive accordion — only the selected section is shown, on either side ===
 
-  function switchTabForAccPane(pane: DG.AccordionPane): void {
+  function switchTabForAccPane(pane: DG.TabPane): void {
     if (pane === accReactionsPane && templatesPane) {
       tabs.currentPane = templatesPane;
     } else if (pane === accBbsPane && bbsPane) {
@@ -1295,35 +1328,31 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     }
   }
 
-  // Maps a left-accordion pane to its ribbon chip, so the chip for the currently open section can
+  // Maps a left-navigator pane to its ribbon chip, so the chip for the currently shown section can
   // be marked active — same `--<state>` modifier convention as chem-enum-chip--err.
-  const chipForPane = (pane: DG.AccordionPane): HTMLElement | undefined => {
-    if (pane === accReactionsPane) return chipReactions;
-    if (pane === accBbsPane) return chipBbs;
-    if (pane === accExtrasPane) return chipExtras;
-    if (pane === accCombinePane) return chipCombine;
+  const chipForPane = (pane: DG.TabPane): HTMLElement | undefined => {
+    if (pane === accReactionsPane) return chipReactionsC.root;
+    if (pane === accBbsPane) return chipBbsC.root;
+    if (pane === accExtrasPane) return chipExtrasC.root;
+    if (pane === accCombinePane) return chipCombineC.root;
     if (pane === accPreviewPane) return cfgEstEl;
     return undefined;
   };
 
-  // Expands `pane` and hides every other section's header entirely (not just collapsed), syncing
-  // the right-side tab to match — the ribbon chips are the only navigator now.
-  function openAccPaneAndSyncTab(pane: DG.AccordionPane): void {
-    accPanes.forEach((p) => {
-      p.expanded = (p === pane);
-      const header = p.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
-      if (header) header.style.display = (p === pane) ? '' : 'none';
-    });
+  // Shows `pane` (TabControl already guarantees exactly one at a time) and syncs the right-side
+  // tab to match — the ribbon chips are the only navigator.
+  function openAccPaneAndSyncTab(pane: DG.TabPane): void {
+    accordion.currentPane = pane;
     const activeChip = chipForPane(pane);
-    [chipReactions, chipBbs, chipExtras, chipCombine, cfgEstEl].forEach((c) =>
+    [chipReactionsC.root, chipBbsC.root, chipExtrasC.root, chipCombineC.root, cfgEstEl].forEach((c) =>
       c.classList.toggle('chem-enum-chip--active', c === activeChip));
     switchTabForAccPane(pane);
   }
 
-  chipReactions.onclick = () => openAccPaneAndSyncTab(accReactionsPane);
-  chipBbs.onclick = () => openAccPaneAndSyncTab(accBbsPane);
-  chipExtras.onclick = () => openAccPaneAndSyncTab(accExtrasPane);
-  chipCombine.onclick = () => openAccPaneAndSyncTab(accCombinePane);
+  chipReactionsC.root.onclick = () => openAccPaneAndSyncTab(accReactionsPane);
+  chipBbsC.root.onclick = () => openAccPaneAndSyncTab(accBbsPane);
+  chipExtrasC.root.onclick = () => openAccPaneAndSyncTab(accExtrasPane);
+  chipCombineC.root.onclick = () => openAccPaneAndSyncTab(accCombinePane);
   // Initial pane selection must happen near the end of this function, after `tabs`/`strategyPane`
   // exist (switchTabForAccPane reads them) — calling it earlier crashes with a TDZ error.
 
@@ -1384,6 +1413,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // Applies this component's round-r override (if any) onto `out`; returns whether it did.
     // Lets buildPerRoundOverrides reach each panel's own stepState without a shared indexed array.
     applyOverrideForRound: (r: number, out: PerRoundOverride, cfg: EnumeratorConfig) => boolean;
+    // Whether any round has a custom subset for this component — drives its ribbon chip's dot.
+    hasAnyOverride: () => boolean;
   }
   function makeDataPanel(o: DataPanelOpts): DataPanel {
     let selStep = 0; // 0 = All steps (full library); 1..rounds = that round's subset
@@ -1474,6 +1505,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       setStepWork(k, subset);
       stepState[k - 1].committed = true;
       renderGrid(); renderBar(); updateDots();
+      refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
       deferredFilterReset(subset);
     };
 
@@ -1482,6 +1514,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       setStepWork(k, null);
       stepState[k - 1].committed = false;
       renderGrid(); renderBar(); updateDots();
+      refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
       // stepClone(k) can inherit the global table's active filter — reset it.
       const w = stepState[k - 1]?.df;
       if (w) deferredFilterReset(w);
@@ -1679,7 +1712,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const panel = ui.div([stepTabsHost], {style: {
       height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--white)', overflow: 'hidden'}});
     buildStepTabs(0); // also mounts the grid once hosts are in the DOM
-    return {panel, render, onTableChanged, onRoundsChanged, refreshDisplay, applyOverrideForRound};
+    return {panel, render, onTableChanged, onRoundsChanged, refreshDisplay, applyOverrideForRound, hasAnyOverride};
   }
 
   const templatesCtl = makeDataPanel({idx: 0, noun: 'reaction templates',
@@ -1781,31 +1814,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       overrideCountFor(overrides, mode, r, key);
 
     const card = ui.div([], {style: {maxWidth: '480px'}});
-    card.appendChild(ui.divText(MODE_LABEL[mode],
-      {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '8px'}}));
-
-    const diagram = ui.divH([], {style: {alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '12px'}});
-    for (let r = 1; r <= rounds; r++) {
-      const rc = tDf ? (overrideCount(r, 'templates') ?? tDf.rowCount) : null;
-      const bc = bDf ? (overrideCount(r, 'buildingBlocks') ?? bDf.rowCount) : null;
-      const chipChildren: HTMLElement[] = [
-        ui.divText(`Round ${r}`, {style: {fontSize: '11.5px', fontWeight: 'bold', color: 'var(--blue-2)'}}),
-      ];
-      if (rc != null && bc != null) {
-        chipChildren.push(ui.divText(`${rc} × ${bc}`,
-          {style: {fontSize: '10px', color: 'var(--grey-6)', marginTop: '1px'}}));
-      }
-      diagram.appendChild(ui.divV(chipChildren, {style: {
-        padding: '4px 10px', border: '1px solid var(--blue-1)', background: 'var(--blue-6, #eaf4fc)',
-        borderRadius: '4px', alignItems: 'center', gap: '0',
-      }}));
-      if (r < rounds) {
-        const arrow = ui.iconFA('arrow-right');
-        arrow.style.color = 'var(--grey-4)';
-        diagram.appendChild(arrow);
-      }
-    }
-    card.appendChild(diagram);
+    card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`,
+      {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '10px'}}));
 
     if (tDf && bDf) {
       // One section per component, each listing what every round uses.
@@ -2043,15 +2053,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   if (splitLeft && splitRight)
     sizeSplitOnceLaidOut(splitLeft, splitRight, (total) => Math.round(total * 0.35));
 
-  // Small page header — the view title (ribbon) already says "Reaction Enumerator", so this is
-  // just the one-line description, not a duplicate title.
-  const pageHeader = ui.divV([
-    ui.divText('Combine reaction templates, building blocks, and reagents into an enumerated product library.',
-      {style: {color: 'var(--grey-6)', fontSize: '12px'}}),
-  ], {style: {flex: '0 0 auto', marginBottom: '4px'}});
-
+  // Redundant with the ribbon title and the app-info icon's tooltip — dropped rather than moved.
   const root = ui.divV([
-    pageHeader,
     mainRow,
     validationDiv,
   ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
@@ -2064,8 +2067,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     [appInfoIcon],
     [runBtn, cancelBtn, progressLabel],
     // Strategy first (the "how"), then reactions/BBs/extras (the "what"), then the resulting estimate.
-    [chipCombine, mkRibbonArrow(), chipReactions, mkRibbonArrow(), chipBbs, mkRibbonArrow(), chipExtras,
-      mkRibbonArrow(), cfgEstEl],
+    [chipCombineC.root, mkRibbonArrow(), chipReactionsC.root, mkRibbonArrow(), chipBbsC.root, mkRibbonArrow(),
+      chipExtrasC.root, mkRibbonArrow(), cfgEstEl],
     [loadYamlBtn, saveYamlBtn],
   ]);
   view.append(root);

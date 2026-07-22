@@ -1298,11 +1298,66 @@
   min-width: 0;
 }
 
+/* A form built while its pane is still hidden (0-width) gets permanently marked "condensed" by
+   the platform, which then forces every editor's width to 0 via a tag-qualified `!important` rule
+   more specific than the plain-class one above. Match its specificity to cancel the forced zero,
+   regardless of whether the form ever becomes wide enough to un-condense on its own. Excludes
+   checkboxes, handled by their own rule below. */
+.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root:not(.ui-input-bool) > input.ui-input-editor,
+.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root:not(.ui-input-bool) > select.ui-input-editor,
+.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root:not(.ui-input-bool) > div.ui-input-editor {
+  width: auto !important;
+  max-width: none !important;
+  flex-grow: 1 !important;
+}
+
+/* Numeric fields (narrowed by +/- steppers) and the plain string field share flex-grow, so the
+   string field renders wider than the rest. Cap every editor here to one width instead. Matches
+   the specificity of (and is declared after) the condensed-form override above, so it wins for
+   these fields specifically even when their form is marked condensed. Only ever `input` elements
+   here (int/string fields) — no select or non-bool div editors occur in these two forms. */
+.chem-enumerator .d4-accordion-pane-content .chem-enum-filter-form .ui-input-root:not(.ui-input-bool) > input.ui-input-editor {
+  flex-grow: 0 !important;
+  width: 140px !important;
+  max-width: 140px !important;
+}
+
 /* Checkboxes share the .ui-input-editor class with text/number inputs, but shouldn't stretch to
    fill the row — that grows them into an oversized empty box as the panel narrows. */
 .chem-enumerator .d4-accordion-pane-content .ui-input-bool .ui-input-editor {
   flex-grow: 0;
   width: auto;
+}
+
+/* Same condensed-form fight as above, but for checkboxes — their editor is a `div` (not `input`),
+   which the platform's `flex-grow: 10000; width: 0` rule also matches, growing it oversized. */
+.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root.ui-input-bool > div.ui-input-editor {
+  width: auto !important;
+  max-width: none !important;
+  flex-grow: 0 !important;
+}
+
+/* Forms built before their pane is attached get marked "condensed" by the platform, wrapping the
+   label onto its own line above the input instead of beside it. Force the normal row layout. */
+.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root {
+  flex-wrap: nowrap;
+}
+
+/* Each ui.form() sizes its label column to its own widest label, so separate forms in the same
+   pane land on different widths. Share one value, sized to the widest label in the app. Direct
+   child only — a `.d4-column-selector` editor has its own internal caption that reuses the
+   `.ui-input-label` class for an unrelated purpose; matching it squeezes the value to 0 width. */
+.chem-enumerator .d4-accordion-pane-content .ui-input-root > .ui-input-label {
+  min-width: 250px !important;
+  max-width: 250px !important;
+  width: 250px !important;
+}
+
+/* The platform marks a null column-selector `.d4-invalid` regardless of `nullable` — not an error
+   here. Its own rule uses `!important`, so the override needs one too. */
+.chem-enum-optional-col .d4-invalid {
+  border-color: var(--grey-2) !important;
+  color: inherit !important;
 }
 
 .chem-enum-accordion {
@@ -1322,9 +1377,18 @@
   pointer-events: none;
 }
 
-.chem-enum-next-btn {
-  align-self: flex-end;
+.chem-enum-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   margin-top: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.chem-enum-next-btn,
+.chem-enum-back-btn {
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
@@ -1376,7 +1440,6 @@
   background: #e9f3fb;
   border-color: var(--blue-1);
   color: var(--blue-1);
-  font-weight: 600;
 }
 
 .chem-enum-ribbon-arrow {

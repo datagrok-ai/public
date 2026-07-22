@@ -65,6 +65,7 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
     'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.');
 
   const root = ui.form([keepBBs.input, maxCombos.input]);
+  root.classList.add('chem-enum-filter-form');
 
   const syncToConfig = (target: EnumeratorConfig): void => {
     target.keep_building_blocks_in_final_output = keepBBs.get();
@@ -105,6 +106,7 @@ export function buildProductFilterFields(initial: EnumeratorConfig): {
 
   const inputs = Object.values(products).map((p) => p.input);
   const root = ui.form(inputs);
+  root.classList.add('chem-enum-filter-form');
 
   const syncToConfig = (target: EnumeratorConfig): void => {
     Object.assign(target.products_specs, {
