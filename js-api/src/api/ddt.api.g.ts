@@ -391,6 +391,10 @@ export class FuncOptions {
   /// 'true' — an auto-created Node worker container; a name — the package's dockerfiles/[name] container.
   static Queue = 'queue';
 
+  /// When set to 'true', runs a package JS function server-side in the default
+  /// worker queue — an alias of [Queue] = 'true'.
+  static Server = 'server';
+
   /// Function that should be cached
   static Cache = 'cache';
 

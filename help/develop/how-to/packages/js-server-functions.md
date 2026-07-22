@@ -42,6 +42,9 @@ Or with a decorator:
 @grok.decorators.func({meta: {queue: true}})
 ```
 
+`//meta.server: true` (decorator: `meta: {server: true}`) is an alias of `meta.queue: true` —
+the function runs server-side in the default worker queue.
+
 Calling it is unchanged:
 
 ```typescript

@@ -2,9 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import * as color from './color-utils';
 
-// Matches `//meta.queue: true` in package.ts — functions executed as celery tasks
-// in the Node worker (see help/develop/how-to/packages/js-server-functions.md).
-const queueTrueRegex = /^\s*\/\/\s*meta\.queue\s*:\s*true\s*$/m;
+// Matches `//meta.queue: true` (or its alias `//meta.server: true`) in package.ts —
+// functions executed as celery tasks in the Node worker
+// (see help/develop/how-to/packages/js-server-functions.md).
+const queueTrueRegex = /^\s*\/\/\s*meta\.(queue|server)\s*:\s*true\s*$/m;
 
 const QUEUE_DIR = 'queue';
 
