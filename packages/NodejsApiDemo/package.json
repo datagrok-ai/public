@@ -1,0 +1,18 @@
+{
+  "name": "@datagrok/nodejs-api-demo",
+  "friendlyName": "NodeJS API Demo",
+  "version": "0.0.5",
+  "description": "End-to-end demo: nodejs scripts using the js-api (grok/DG) and package functions",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/NodejsApiDemo"
+  },
+  "dependencies": {},
+  "scripts": {
+    "build": "echo source-only package, no build step"
+  },
+  "canEdit": ["Administrators"],
+  "canView": ["All users"],
+  "category": "Development"
+}

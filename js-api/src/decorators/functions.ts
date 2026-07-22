@@ -163,6 +163,9 @@ export namespace decorators {
     url?: string;
     propertyType?: string;
     semType?: string;
+    /** Runs the function server-side as a celery task in a docker-based Node worker.
+     * `true` — an auto-created worker container; a string — the package's `dockerfiles/<name>` container. */
+    queue?: boolean | string;
   }
 
   interface FunctionOptions {

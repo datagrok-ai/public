@@ -34,7 +34,7 @@ test('PowerPack: Add new column functions-panel sorting (SPGI — by type, by na
     try {
       df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     } catch (_) {
-      df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     }
     grok.shell.addTableView(df);
     // Poll for Structure.semType='Molecule' (or any Molecule col); the onSemanticTypeDetected event is racy.

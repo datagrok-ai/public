@@ -1,5 +1,15 @@
 ---
 title: "Cassandra"
+description: Connect Datagrok to an Apache Cassandra database via JDBC and query it with SQL-like CQL.
+keywords:
+  - apache cassandra
+  - cql queries
+  - nosql database connector
+  - jdbc driver
+  - schema browsing
+  - parameterized query support
+  - allow filtering
+  - secondary indexes
 ---
 
 Provides access to [Apache Cassandra](https://cassandra.apache.org/) database

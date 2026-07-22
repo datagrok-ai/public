@@ -1,0 +1,122 @@
+# Grokky latency/accuracy benchmark suite — see docs/BENCHMARK.md
+#
+# Each entry is one prompt sent through the real runtime pipeline (workspace context +
+# view tools, exactly like the panel). Fields:
+#   category : grouping for the report (help | visualization | analysis | codegen | multitool | query)
+#   prompt   : the user message
+#   table    : optional demo table opened as the workspace before the turn
+#              (demog | randomWalk — add SPGI/curves/beer if available on your server)
+#   assert   : optional deterministic check, run AFTER the turn. A JS expression evaluated
+#              with (grok, DG, view, t, before, opened) in scope; truthy = pass.
+#                view   — the TableView the turn ran against
+#                t      — view.dataFrame
+#                before — {cols:[names], viewers:n, tableViews:n} snapshot taken pre-turn
+#                opened — how many new table views appeared during the turn
+#   rubric   : optional grading rubric for a Haiku judge (used for free-text answers)
+# A prompt may have assert, rubric, or both. Prompts with neither are latency-only.
+
+# ---- Help / documentation Q&A (judge-scored) -------------------------------------------
+- category: help
+  prompt: What semantic types can Datagrok automatically detect in a column?
+  rubric: >
+    Pass if the answer names several concrete semantic types (e.g. Molecule, Macromolecule,
+    and how detectors assign them). Fail if it refuses, is empty, or is off-topic.
+
+- category: help
+  prompt: How do I create a scatter plot in Datagrok?
+  rubric: >
+    Pass if it explains a real way to add a scatter plot (viewer menu / Add viewer / API).
+    Fail if it invents non-existent UI or is empty.
+
+- category: help
+  prompt: What file formats can I import as a table into Datagrok?
+  rubric: >
+    Pass if it lists several real importable formats (CSV, Excel, etc.). Fail if empty or wrong.
+
+- category: help
+  prompt: How does Datagrok decide that a column contains molecules?
+  rubric: >
+    Pass if it references semantic-type detection / SMILES/molblock parsing. Fail if empty or wrong.
+
+# ---- Visualization (deterministic: a viewer of the right type must exist) ---------------
+- category: visualization
+  prompt: Add a histogram of the AGE column.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM)
+
+- category: visualization
+  prompt: Add a scatter plot of HEIGHT versus WEIGHT.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT)
+
+- category: visualization
+  prompt: Add a bar chart grouped by RACE.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.BAR_CHART)
+
+- category: visualization
+  prompt: Add a box plot of WEIGHT split by SEX.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.BOX_PLOT)
+
+- category: visualization
+  prompt: Add a pie chart of the SEX column.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.PIE_CHART)
+
+# ---- Analysis (deterministic on dataframe state) ---------------------------------------
+- category: analysis
+  prompt: Add a calculated column equal to WEIGHT divided by HEIGHT squared.
+  table: demog
+  assert: t.columns.length > before.cols.length
+
+- category: analysis
+  prompt: Select all rows where AGE is greater than 50.
+  table: demog
+  assert: t.selection.trueCount > 0 && t.selection.trueCount < t.rowCount
+
+- category: analysis
+  prompt: Filter the table to show only female patients.
+  table: demog
+  assert: t.filter.trueCount < t.rowCount
+
+- category: analysis
+  prompt: What is the average WEIGHT across all patients?
+  table: demog
+  rubric: >
+    Pass if the answer states a single average weight as a number (demog weights are ~60-90).
+    Fail if it gives no number or an obviously wrong magnitude.
+
+# ---- Code generation & execution (deterministic via real datagrok-exec) ----------------
+- category: codegen
+  prompt: Write and run code to add a column with the natural log of WEIGHT.
+  table: demog
+  assert: t.columns.length > before.cols.length
+
+- category: codegen
+  prompt: Generate and run JavaScript that builds a small table with columns x and y (5 rows) and opens it.
+  assert: opened >= 1
+
+- category: codegen
+  prompt: Using code, count how many patients are older than 60 and tell me the number.
+  table: demog
+  rubric: >
+    Pass if it reports a specific integer count of patients older than 60. Fail if no number.
+
+# ---- Multi-tool workflows (deterministic, two effects) ---------------------------------
+- category: multitool
+  prompt: Add a histogram of AGE, then select the patients older than 60.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM) && t.selection.trueCount > 0
+
+- category: multitool
+  prompt: Add a scatter plot of HEIGHT versus WEIGHT and color the points by SEX.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT)
+
+# ---- Query / connections (judge-scored; add real SQL prompts once a connection exists) --
+- category: query
+  prompt: What database connections do I have access to, and what kind of data can I query?
+  rubric: >
+    Pass if it describes the user's available connections or explains how to browse them.
+    Fail if it hallucinates specific databases it cannot know or is empty.

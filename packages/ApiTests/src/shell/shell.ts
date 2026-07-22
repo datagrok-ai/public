@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 category('Shell', () => {
+  const nodeSkip = typeof process !== 'undefined' ? 'NodeJS environment' : undefined;
   let demog: DG.DataFrame;
 
   before(async () => {
@@ -18,7 +19,7 @@ category('Shell', () => {
     expect(grok.shell.t, v.dataFrame);
     v.close();
     expect(grok.shell.v != v, true);
-  });
+  }, {skipReason: nodeSkip});
 
   test('addView', async () => {
     let view = DG.View.create();
@@ -28,7 +29,7 @@ category('Shell', () => {
     v.close();
     //@ts-ignore
     expect(grok.shell.v?.id != view.id, true);
-  });
+  }, {skipReason: nodeSkip});
 
   test('tables', async () => {
     grok.shell.closeAll();
@@ -38,20 +39,20 @@ category('Shell', () => {
     expectArray(grok.shell.tables.map(e => e.name), [t.name, t2.name, t3.name]);
     grok.shell.closeTable(t);
     expect(grok.shell.tables.length, 2)
-  });
+  }, {skipReason: nodeSkip});
 
   test('closeTable', async () => {
     grok.shell.closeAll();
     const t = grok.shell.addTableView(demog);
     grok.shell.closeTable(t.dataFrame);
     expect(grok.shell.tables.length, 0)
-  });
+  }, {skipReason: nodeSkip});
 
   test('tableByName', async () => {
     grok.shell.closeAll();
     const t = grok.shell.addTableView(demog);
     expect(grok.shell.tableByName(demog.name), t.dataFrame)
-  });
+  }, {skipReason: nodeSkip});
 
   test('dockManager', async () => {
     grok.shell.closeAll();
@@ -61,7 +62,7 @@ category('Shell', () => {
     expect(document.querySelector(".dockManagerTest"), v);
     grok.shell.dockManager.close(docked);
     expect(document.querySelector(".dockManagerTest"), null);
-  });
+  }, {skipReason: nodeSkip});
 
   test('closeAll', async () => {
     grok.shell.addTableView(demog);
@@ -70,14 +71,14 @@ category('Shell', () => {
     const views = Array.from(grok.shell.views);
     expect(views.length == 0 || views.every((v) => v.name === 'Datagrok' || v.name === 'Home' || v.name == 'Test Manager'), true);
     expect(document.querySelector(".dockManagerTest"), null);
-  });
+  }, {skipReason: nodeSkip});
 
   test('ViewBase rename after toDart-toJs conversion', async () => {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.ViewBase;
     const testName = 'TestViewName';
     view.name = testName;
     expect(view.name, testName);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('getSetVar', async () => {
     let x  = { test: 'test1' };
@@ -98,7 +99,7 @@ category('Shell', () => {
     expect(grok.shell.project.isDirty, true);
     grok.shell.clearDirtyFlag();
     expect(grok.shell.project.isDirty, false);
-  });
+  }, {skipReason: nodeSkip});
 
   test('sideBar', async () => {
     grok.shell.sidebar.addPane('testSideBarElement', ()=>ui.div());
@@ -107,5 +108,5 @@ category('Shell', () => {
     grok.shell.sidebar.clear();
     pane = document.querySelector('[name="testSideBarElement"]');
     expect(pane === null, true);
-  });
+  }, {skipReason: nodeSkip});
 }, { owner: 'aparamonov@datagrok.ai' });

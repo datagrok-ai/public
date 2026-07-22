@@ -1,5 +1,12 @@
 ---
 title: "FAIR Principles"
+description: How Datagrok applies the FAIR principles of findability, accessibility, interoperability, and reuse to data.
+keywords:
+  - fair principles
+  - findable accessible interoperable reusable
+  - data stewardship
+  - metadata standards
+  - data governance principles
 ---
 
 Datagrok's mission is to connect data, algorithms, models, analysis, and visualizations all together.

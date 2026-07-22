@@ -2,6 +2,7 @@
 #description: Environment with extra conda-only dependencies beyond base
 #language: python
 #environment: env_conda_extras
+#meta.timeout: 600
 #input: string text
 #output: string result
 

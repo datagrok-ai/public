@@ -3,7 +3,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 
 test.use(specTestOptions);
 
-const spgiPath = 'System:DemoFiles/SPGI.csv';
+const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Sunburst x Scatterplot — color-state isolation (github-3412)', async ({page}) => {
   test.setTimeout(300_000);

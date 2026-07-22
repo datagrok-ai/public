@@ -1,5 +1,12 @@
 ---
 title: "Selection to column"
+description: Save the currently selected rows as a new boolean column.
+keywords:
+  - selection to column
+  - save selection as column
+  - boolean selection flag
+  - persist row selection
+  - mark selected rows
 ---
 
 Saves currently selected rows as a column.

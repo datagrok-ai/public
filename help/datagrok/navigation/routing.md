@@ -1,6 +1,16 @@
 ---
 title: "Routing"
 unlisted: true
+description: Datagrok uses URL routing to preserve and share application state, including dashboards, files, and queries.
+keywords:
+  - url routing
+  - share a link
+  - deep link
+  - entity browsers
+  - dashboard url
+  - query url
+  - parameterized query link
+  - permalink
 ---
 
 Datagrok uses URL routing to preserve application state across browser refreshes.

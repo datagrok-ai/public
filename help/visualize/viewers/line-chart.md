@@ -1,5 +1,14 @@
 ---
 title: "Line chart"
+description: Track trends and changes over time by connecting data points into one or more line series.
+keywords:
+  - trend chart
+  - time series
+  - multiple series comparison
+  - regression line
+  - moving average
+  - statistical process control
+  - control limits
 ---
 
 Line chart shows data points as connected line segments. It is commonly used to track trends, changes over time, and compare multiple data series. 

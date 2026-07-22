@@ -1,5 +1,13 @@
 ---
 title: "Join tables"
+description: Join two tables on key columns using inner, outer, left, or right join types.
+keywords:
+  - merge tables
+  - vlookup
+  - inner join
+  - outer join
+  - left join right join
+  - combine tables by key
 ---
 
 Joins two tables, using the specified key columns.

@@ -1,5 +1,11 @@
 ---
 title: "Tile viewer"
+description: Visualize table rows as a grid of editable form-based tiles.
+keywords:
+  - card view
+  - tile grid
+  - form-based rows
+  - gallery layout
 ---
 
 Visualizes rows as a collection of forms that are positioned as tiles.

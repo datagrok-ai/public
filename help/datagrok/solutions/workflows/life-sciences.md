@@ -1,6 +1,15 @@
 ---
 title: "Life sciences"
 sidebar_position: 3
+description: How Datagrok handles the volume, complexity, and specialized formats of scientific and life sciences data.
+keywords:
+  - scientific data formats
+  - in-memory database
+  - lims integration
+  - fair principles
+  - jupyter notebooks
+  - instrument data
+  - semantic types
 ---
 
 Datagrok is a great tool for working with tabular data of any origin. It will retrieve, analyze, visualize and transform

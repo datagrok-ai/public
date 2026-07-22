@@ -1,5 +1,16 @@
 ---
 title: "Datagrok UI"
+description: Reference for building user interfaces with the ui namespace, covering layouts, views, viewers, dialogs, and components.
+keywords:
+  - ui namespace
+  - layouts and boxes
+  - table view
+  - dialogs
+  - accordion
+  - inputs
+  - ribbon and toolbox
+  - context panel
+  - figma uikit
 ---
 
 This article describes the routines for building a user interface in Datagrok.

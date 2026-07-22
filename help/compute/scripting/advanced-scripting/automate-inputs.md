@@ -3,6 +3,15 @@ title: "Automate inputs"
 sidebar_position: 7
 mdx:
   format: mdx
+description: Add autocomplete suggestions, precalculated values, choice lists, and validators to script input parameters.
+keywords:
+  - autocomplete values
+  - input suggestions
+  - parameter validators
+  - dynamic choices
+  - combo box input
+  - precalculate inputs
+  - input validation
 ---
 
 ```mdx-code-block

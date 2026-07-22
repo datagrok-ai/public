@@ -1,6 +1,14 @@
 ---
 title: "GCP GKE Terraform"
 sidebar_position: 1
+description: Deploy Datagrok on Google Cloud Platform using a Terraform module that provisions GKE, Cloud SQL, GCS, and a VPC.
+keywords:
+  - gcp
+  - google kubernetes engine
+  - cloud sql
+  - google cloud storage
+  - terraform module
+  - workload identity
 ---
 
 Deploy Datagrok on Google Cloud Platform using a Terraform module that provisions GKE,

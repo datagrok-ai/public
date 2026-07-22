@@ -1,5 +1,16 @@
 ---
 title: "Infrastructure"
+description: Overview of Datagrok's deployment components, from Datlas and Nginx to scripting workers and Docker plugin containers.
+keywords:
+  - datlas
+  - nginx reverse proxy
+  - grok connect
+  - amqp queue
+  - jupyter kernel worker
+  - grok pipe
+  - grok spawner
+  - on-premise deployment
+  - resource sizing
 ---
 
 ![Infrastructure diagram](architecture-diagram.drawio.png)
@@ -10,6 +21,7 @@ The Datagrok platform consists of multiple interconnected services that support 
 and external integrations. The infrastructure includes the following key components:
 
 ### 1. Core Components
+
 - **Datlas (Main Web Server)**: The central brain of the Datagrok platform, responsible for managing user interactions, processing requests, and orchestrating services.
 - [**Nginx (Reverse Proxy)**](https://www.nginx.com/): Routes incoming web traffic to the server, allowing multiple instances of Datlas to run.
 - [**PostgreSQL**](https://www.postgresql.org/): Stores platform metadata, including user accounts, projects, and configurations.
@@ -18,17 +30,20 @@ and external integrations. The infrastructure includes the following key compone
 ---
 
 ### 2. Authentication & Credential Management
+
 - **Credentials Service**: Manages secure storage and retrieval of user credentials or credentials to external data sources.
 - **External Credentials Storage**: A separate service that securely stores enterprise authentication credentials.
 
 ---
 
 ### 3. External Database Connectivity
+
 - [**Grok Connect**](../../access/access.md#data-connection): A dedicated in-house service for integrating with external databases (PostgreSQL, Oracle, MySQL, MSSQL, etc.).
 
 ---
 
 ### 4. Scripting and Computation
+
 - **AMQP**: Handles the queuing of script execution requests. [RabbitMQ](https://www.rabbitmq.com/docs) is typically used, but can be replaced with any message queue that implements AMQP protocol.
 - **Scripting Workers**: A set of workers that process user scripts:
   - [**Jupyter Kernel-Based Worker**](https://docs.jupyter.org/en/stable/projects/kernels.html): Executes Python, R, Julia, Octave, and Node.js scripts.
@@ -38,6 +53,7 @@ and external integrations. The infrastructure includes the following key compone
 ---
 
 ### 5. Plugin & Docker Container Management
+
 - **Grok Spawner**: Manages the deployment of Docker Containers that are delivered within [Datagrok Plugins](../packages/extensions). See [Docker containers (under the hood)](docker-containers.md) for the full lifecycle, registry setup, and per-deployment configuration.
 - **Plugin Docker Containers**: There are various specialized containers for AI, Bioinformatics, Machine Learning, Cheminformatics and Jupyter Notebooks that are supplied within Datagrok Plugins.
 

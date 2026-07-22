@@ -1,5 +1,14 @@
 ---
 title: "Integration"
+description: Overview of Datagrok's integration mechanisms, including custom scripts, data connectors, OpenAPI, and the JS API.
+keywords:
+  - custom data connectors
+  - grok connect
+  - openapi integration
+  - javascript api
+  - web api
+  - grok server cli
+  - scripting integration
 ---
 
 Datagrok was designed to be as extensible and customizable as possible. The platform exposes a number of integration

@@ -1,6 +1,15 @@
 ---
 title: "Datagrok: Swiss Army Knife for Data"
-
+description: Introduces Datagrok's core capabilities across data access, governance, transformation, exploration, computation, learning, and collaboration.
+keywords:
+  - data analytics platform overview
+  - in-memory data engine
+  - deepwiki
+  - chembl database
+  - semantic types
+  - data provenance and lineage
+  - who is datagrok for
+  - platform architecture
 ---
 
 :::tip Ask DeepWiki

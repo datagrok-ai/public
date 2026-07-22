@@ -1,6 +1,12 @@
 ---
 title: "Widgets"
 sidebar_position: 4
+description: Overview of the UI elements, such as accordions, menus, and progress indicators, that make up the Datagrok interface.
+keywords:
+  - ui elements
+  - accordion
+  - custom widget
+  - platform interface components
 ---
 
 Widgets are various Datagrok UI elements that together comprise the platform's user interface. For instance, an

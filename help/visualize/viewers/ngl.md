@@ -1,5 +1,12 @@
 ---
 title: "NGL viewer"
+description: View and analyze 3D macromolecule structures and docking results using the NGL rendering library.
+keywords:
+  - 3d structure viewer
+  - protein structure
+  - docking results
+  - ligand visualization
+  - macromolecule rendering
 ---
 
 NGL viewer is used for visualizing and analyzing macromolecules.

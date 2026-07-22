@@ -1,5 +1,14 @@
 ---
 title: "Build an application"
+description: Build a Datagrok application in JavaScript/TypeScript, covering data access, dataframes, scripting, viewers, privileges, and lifecycle.
+keywords:
+  - app development
+  - app entry point
+  - AppTreeBrowser
+  - datagrok-tools
+  - grok add app
+  - main view
+  - table view
 ---
 
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a particular

@@ -1,5 +1,14 @@
 ---
 title: "ClickHouse"
+description: Connect Datagrok to a ClickHouse database via JDBC to query, browse schemas, and join tables.
+keywords:
+  - clickhouse database
+  - olap database connector
+  - jdbc driver
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - columnar database
 ---
 
 Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database using SQL queries via a JDBC driver.

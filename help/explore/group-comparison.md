@@ -1,6 +1,16 @@
 ---
 title: "Group comparison"
 sidebar_position: 6
+description: Test whether a numeric feature's average differs between groups using t-test, ANOVA, or control comparisons.
+keywords:
+  - t-test
+  - anova
+  - analysis of variance
+  - dunnett's test
+  - statistical significance
+  - hypothesis testing
+  - compare groups
+  - effect size
 ---
 
 Group comparison capabilities let you check whether the average of a numeric feature differs between

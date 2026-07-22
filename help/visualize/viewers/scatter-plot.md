@@ -2,6 +2,14 @@
 title: "Scatterplot"
 mdx:
   format: mdx
+description: Plot data points on X and Y axes with color, shape, and size encoding, regression lines, and formula annotations.
+keywords:
+  - xy plot
+  - regression line
+  - chemical space
+  - activity cliffs
+  - webgpu acceleration
+  - annotation regions
 ---
 
 A scatterplot displays data points on the X and Y axes
@@ -393,5 +401,5 @@ See also:
 * [Table view](../table-view-1.md)
 * [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
 * Community:
-    * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
-    * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+  * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

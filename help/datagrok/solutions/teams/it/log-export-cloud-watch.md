@@ -1,4 +1,13 @@
-# Export logs to Amazon CloudWatch
+---
+title: "Export logs to Amazon CloudWatch"
+description: Configure Log Export Blocks to send Datagrok logs to Amazon CloudWatch log groups and streams.
+keywords:
+  - cloudwatch logging
+  - log export blocks
+  - aws log groups
+  - putlogevents
+  - centralized logging
+---
 
 Datagrok can send logs to [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) according to the **Log Export Blocks** you can create.
 

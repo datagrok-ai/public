@@ -1,5 +1,15 @@
 ---
 title: "Supported connectors"
+description: Full list of Datagrok's 30+ database, file, and web service connectors with supported parameters.
+keywords:
+  - list of database connectors
+  - supported data sources
+  - jdbc connectors
+  - connection parameters comparison
+  - schema browsing support
+  - cache schema and results
+  - ssl connection support
+  - open source connectors
 ---
 
 

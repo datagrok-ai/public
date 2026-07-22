@@ -1,5 +1,13 @@
 ---
 title: "Chemical space using tSNE"
+description: Visualize high-dimensional chemical space using t-distributed Stochastic Neighbor Embedding (tSNE).
+keywords:
+  - t-sne
+  - dimensionality reduction
+  - chemical space visualization
+  - stochastic neighbor embedding
+  - kullback-leibler divergence
+  - clustering molecules
 ---
 
 t-distributed Stochastic Neighbor Embedding (tSNE) is a tool to visualize high-dimensional data. It converts

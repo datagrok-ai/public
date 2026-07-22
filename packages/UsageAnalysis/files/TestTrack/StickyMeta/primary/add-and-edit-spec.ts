@@ -14,7 +14,7 @@ test('StickyMeta: Add and edit metadata (single cell, sticky column, batch)', as
     (window as any).grok.shell.settings.showFiltersIconsConstantly = true;
     (window as any).grok.shell.windows.simpleMode = true;
     (window as any).grok.shell.closeAll();
-    const df = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await (window as any).grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     (window as any).grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });

@@ -1,5 +1,13 @@
 ---
 title: "Work with package files"
+description: Read and access data bundled with a package via webRoot URLs or the _package.files API.
+keywords:
+  - webRoot property
+  - package files folder
+  - package tables folder
+  - _package.files.readAsText
+  - FilesDataSource
+  - bundled demo data
 ---
 
 There are multiple ways to access your data in the Datagrok platform. To learn more about them,

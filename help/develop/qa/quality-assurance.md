@@ -1,5 +1,15 @@
 ---
 title: "Quality assurance"
+description: Overview of Datagrok's CI/CD pipeline, automated and manual testing practices, and issue tracking tools.
+keywords:
+  - ci/cd flow
+  - jenkins pipeline
+  - unit and integration tests
+  - selenium ui tests
+  - stress testing
+  - grok tester
+  - test tracking system
+  - usage analysis
 ---
 
 Datagrok is an incredibly powerful platform. To give users the best possible

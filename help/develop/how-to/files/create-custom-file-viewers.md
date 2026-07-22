@@ -1,5 +1,12 @@
 ---
 title: "Create custom file viewers"
+description: Define a function annotated with the fileViewer role to render custom previews for specific file extensions.
+keywords:
+  - fileViewer role
+  - meta.fileViewer
+  - file share browser
+  - custom file preview
+  - NglViewer
 ---
 
 Datagrok provides a way to define custom file viewers that are used by the

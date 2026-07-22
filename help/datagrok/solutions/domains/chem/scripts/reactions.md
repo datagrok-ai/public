@@ -1,5 +1,14 @@
 ---
 title: "Reactions"
+description: Enumerate molecules from a template reaction and building blocks using SMARTS reaction templates.
+keywords:
+  - reaction enumeration
+  - smarts reaction
+  - library generation
+  - combinatorial chemistry
+  - virtual library
+  - building blocks
+  - matrix expansion
 ---
 
 Enumeration of many molecules with template reaction and building blocks are useful for library generation. Reaction

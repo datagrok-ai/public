@@ -1,6 +1,14 @@
 ---
 title: "Versioning policy"
 position: 4 # float position is supported
+description: Semantic versioning rules and release process for Datagrok packages, libraries, JS API, and Docker images.
+keywords:
+  - semantic versioning
+  - semver
+  - major minor patch
+  - bleeding-edge release
+  - dependency version
+  - release request
 ---
 
 We follow one of the most common versioning strategies for our

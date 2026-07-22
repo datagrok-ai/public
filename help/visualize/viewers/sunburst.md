@@ -1,5 +1,12 @@
 ---
 title: "Sunburst"
+description: Show hierarchical, multi-level categorical data as concentric rings that support drill-down navigation.
+keywords:
+  - hierarchical visualization
+  - concentric rings
+  - multi-level categories
+  - drill down
+  - r-groups
 ---
 
 A sunburst viewer shows hierarchical data. Use a sunburst to understand data composition and explore patterns in multi-level categories.

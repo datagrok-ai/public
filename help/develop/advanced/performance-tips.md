@@ -1,5 +1,12 @@
 ---
 title: "Performance tips"
+description: Guiding principles for tuning application performance around DataFrame access, databases, and the UI.
+keywords:
+  - getRawData
+  - query caching
+  - columnar engine
+  - snappy ui
+  - static datasets
 ---
 
 Datagrok was designed to be as efficient as possible. While many of the features work very fast any way you use them,

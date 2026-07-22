@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Function catalog: inverted the inclusion logic from deny-based (structural filters + role/tag rules + a curated denylist) to an explicit **allowlist** (`INCLUDED_FUNC_NQNAMES`, frozen from the exact catalog the old filters produced on a live server) — any other function now needs `meta.includeInFlow: true` to appear in the toolbox; saved flows and queries are always included by kind (queries from dev/test packages like Dbtests excepted), and `meta.includeInFlow: false` still opts out unconditionally
+
 * AI: the flow view exposes its operations to the AI assistant as registered package functions (`flowViewFunction` tag, returned from `FuncFlowView.getFunctions()`) — list/inspect nodes and connections, search the curated node catalog with filters (text query, accepted/produced DG type), add nodes with prefilled inputs, connect ports with type checking, set node input values, select a node, and run the flow with validation and per-node failure reporting; each function takes the generic view and acts on `view.jsView`
 * AI: guides — `listFlowGuides` / `startFlowGuide` let the assistant find a matching interactive tutorial or "how do I…" walkthrough and launch it (after asking the user) instead of explaining in text
 * AI: the view sets `aiDescription` — a briefing shown to the assistant with every prompt naming the Flow view functions to use

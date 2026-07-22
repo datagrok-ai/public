@@ -1,5 +1,12 @@
 ---
 title: "Forms"
+description: Compare current, mouse-over, and selected rows side-by-side using individual record forms.
+keywords:
+  - side-by-side records
+  - row comparison
+  - selection review
+  - current row view
+  - powergrid
 ---
 
 **Forms viewer** shows rows in forms positioned side-by-side.

@@ -1,5 +1,15 @@
 ---
 title: "Athena"
+description: Connect Datagrok to Amazon Athena via JDBC to query S3 data, browse schemas, and join tables.
+keywords:
+  - amazon athena
+  - aws athena
+  - query s3 data with sql
+  - jdbc driver
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - link csv files from s3
 ---
 
 Provides access to [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)

@@ -1,5 +1,13 @@
 ---
 title: "Add new column"
+description: Add a calculated column to a table using formulas, functions, and platform object properties.
+keywords:
+  - calculated column
+  - formula column
+  - add calculated column
+  - derived column
+  - column formula editor
+  - custom column expression
 ---
 
 Adds a column of the specified type to the current table and initializes it using the specified expression (

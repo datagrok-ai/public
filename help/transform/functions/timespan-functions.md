@@ -1,5 +1,12 @@
 ---
 title: "TimeSpan functions"
+description: Reference for functions that create and convert time interval (duration) values in formulas.
+keywords:
+  - timespan functions reference
+  - duration functions
+  - time interval conversion
+  - totalhours totalminutes
+  - elapsed time formula
 ---
 
 TimeSpan (or duration) functions work with time intervals. The internal representation of time intervals is the amount

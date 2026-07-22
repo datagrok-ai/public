@@ -1,5 +1,11 @@
 ---
 title: "Release History"
+description: Archived changelog of addressed issues and Docker image versions for older Datagrok releases.
+keywords:
+  - archived release notes
+  - changelog
+  - docker image version
+  - addressed issues
 ---
 
 ### Latest Docker Images

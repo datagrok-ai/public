@@ -1,8 +1,14 @@
 ---
 title: "Mutation Cliffs Viewer"
+description: Display sequence mutation cliffs as a line chart to reveal single-position amino acid changes with large activity impact.
+keywords:
+  - mutation cliffs
+  - activity cliffs
+  - amino acid substitution
+  - sar analysis
+  - peptides sar
+  - position analysis
 ---
-
-# Mutation Cliffs Viewer
 
 The Mutation Cliffs Viewer displays sequence mutation cliffs as a line chart, showing how single amino acid changes at specific positions affect activity values. This viewer helps identify critical positions where small structural changes lead to significant activity differences.
 

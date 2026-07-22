@@ -25,7 +25,7 @@ related_bugs:
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`) — wait for table view + semantic-type detection on `Core` / `Structure` columns
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`) — wait for table view + semantic-type detection on `Core` / `Structure` columns
 2. Add seven viewers via the JS API: **Scatter plot**, **Histogram**, **Line chart**, **Bar chart**, **Pie chart**, **Trellis plot**, **Box plot**
 3. Set the categorical legend on each viewer to `Stereo Category`, using the viewer's own legend-source property:
    * Scatter plot → **Color**
@@ -118,5 +118,5 @@ related_bugs:
 ---
 {
   "order": 3,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

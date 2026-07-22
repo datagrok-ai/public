@@ -1,6 +1,15 @@
 ---
 title: "Word list"
 sidebar_position: 4
+description: A glossary of preferred spellings, capitalization, and terminology for writing Datagrok documentation.
+keywords:
+  - glossary
+  - terminology
+  - spelling conventions
+  - dataframe
+  - dropdown list
+  - dialog
+  - style guide reference
 ---
 
 ## allow, enable

@@ -119,9 +119,9 @@ The context panel updates dynamically based on current selections and filtering,
 
 * **Selection Sources** displays information about current selections from clusters, monomer-positions, most potent residues, mutation cliffs, and WebLogo.
 * **Actions** provides the following options for the current selection:
-    * **New cluster**: Creates a cluster from the intersection of filter and selection
-    * **Remove cluster**: Deletes selected custom cluster
-    * **New view**: Creates and adds a new table from current selection with Logo Summary Table
+  * **New cluster**: Creates a cluster from the intersection of filter and selection
+  * **Remove cluster**: Deletes selected custom cluster
+  * **New view**: Creates and adds a new table from current selection with Logo Summary Table
 * **Mutation Cliffs Pairs** displays sequence pairs and unique sequences forming mutation cliffs. Filter by specific monomers or expand to full screen for detailed examination.
 * **Distribution** shows statistics and activity distribution of selected sequences compared to all sequences. Optional breakdown by monomers, positions, or clusters is available via checkboxes.
 * **Selection Table** Lists selected sequences with corresponding activity values and a summary WebLogo header.

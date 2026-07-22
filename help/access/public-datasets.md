@@ -3,6 +3,15 @@ mdx:
   format: mdx
 title: "Public datasets"
 sidebar_position: 4
+description: Public and synthetic datasets hosted by Datagrok for analysis, testing, and prototyping.
+keywords:
+  - public datasets
+  - sample data
+  - test dataset
+  - synthetic data
+  - open datasets
+  - chembl
+  - clinical trials data
 ---
 
 ## Public datasets

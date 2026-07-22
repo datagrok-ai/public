@@ -1,5 +1,12 @@
 ---
 title: "Aggregation functions"
+description: Reference for aggregation functions like sum, avg, and count used in Aggregate rows and markup.
+keywords:
+  - aggregation functions reference
+  - sum avg count functions
+  - group by functions
+  - statistical rollup functions
+  - custom aggregation function
 ---
 
 The same set of aggregation functions is used across the whole platform in different context

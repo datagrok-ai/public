@@ -1,5 +1,11 @@
 ---
 title: "Viewer event scripts"
+description: Add custom JavaScript event handlers to viewers for interactive dashboard behaviors like clicks and hovers.
+keywords:
+  - custom event handlers
+  - dashboard interactivity
+  - javascript viewer events
+  - on click script
 ---
 
 Bring more interactivity to your dashboards by defining custom event handlers. For instance,

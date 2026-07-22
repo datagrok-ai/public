@@ -1,7 +1,13 @@
-<!-- TITLE: Tests: Chem descriptors -->
-<!-- SUBTITLE: -->
-
-# Tests: Chem descriptors
+---
+title: "Tests: Chem descriptors"
+description: Manual test scenario for verifying the chemical descriptors calculation dialog and its group/tree selection behavior.
+keywords:
+  - descriptors dialog test
+  - molecular descriptor calculation
+  - test scenario
+  - EState VSA descriptors
+  - Lipinski descriptors
+---
 
 [Molecular descriptor](descriptors.md) is the final result of a logic and mathematical procedure which
 transforms chemical information encoded within a symbolic representation of a molecule into a useful number or the

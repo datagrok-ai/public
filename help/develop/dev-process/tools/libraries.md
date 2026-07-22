@@ -1,5 +1,15 @@
 ---
 title: "Library tour"
+description: A tour of common libraries used to develop Datagrok applications, including bundlers, TypeScript, and visualization tools.
+keywords:
+  - datagrok-tools
+  - datagrok-api
+  - webpack
+  - TypeScript
+  - d3
+  - three.js
+  - echarts
+  - custom viewer libraries
 ---
 
 This tour takes you through common libraries used to develop applications on top of the platform. Note that the list is

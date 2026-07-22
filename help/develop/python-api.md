@@ -1,5 +1,13 @@
 ---
 title: Python API
+description: How to install and use the datagrok-api Python library to access Datagrok over REST from Python.
+keywords:
+  - datagrok_api
+  - DatagrokClient
+  - pip install
+  - pandas dataframe
+  - python client
+  - automation scripts
 ---
 
 The datagrok-api Python library is designed for integration with the Datagrok platform via REST API. It provides a convenient 

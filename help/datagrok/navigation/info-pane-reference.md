@@ -10,6 +10,8 @@ toc_max_heading_level: 4
 unlisted: false
 ---
 
+<!-- markdownlint-disable MD024 -->
+
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';

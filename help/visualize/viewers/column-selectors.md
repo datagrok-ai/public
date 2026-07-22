@@ -1,5 +1,11 @@
 ---
 title: "Column Selector"
+description: Use the combo box control for choosing and previewing a column to plot on a viewer axis.
+keywords:
+  - column picker
+  - combo box
+  - axis selector
+  - column preview
 ---
 
 A combo box for selecting a column

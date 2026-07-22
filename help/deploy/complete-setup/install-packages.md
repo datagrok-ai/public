@@ -1,6 +1,13 @@
 ---
 title: "Install packages"
 sidebar_position: 3
+description: Use the Package Manager to install Datagrok packages such as Bio, Chem, and PowerPack after deployment.
+keywords:
+  - package manager
+  - install extensions
+  - bioinformatics package
+  - cheminformatics package
+  - post-deployment setup
 ---
 
 Datagrok is very extensible. You can install any of our [public packages](../../collaborate/public-repository.md) to add new capabilities to your platform.

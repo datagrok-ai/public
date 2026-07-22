@@ -1,5 +1,14 @@
 ---
 title: "Chemprop"
+description: Train and apply Chemprop message-passing neural network models for molecular property prediction directly in Datagrok.
+keywords:
+  - message passing neural network
+  - graph neural network chemistry
+  - property prediction
+  - QSAR deep learning
+  - molecular machine learning
+  - PyTorch chemistry model
+  - train and apply model
 ---
 
 Property prediction plays a key role in drug discovery and materials science, helping researchers estimate characteristics like toxicity, bioactivity, and solubility.

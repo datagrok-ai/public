@@ -1,5 +1,12 @@
 ---
 title: "Extract RegExp"
+description: Split a column into new columns using regular expression groups matched against its content.
+keywords:
+  - split column by regex
+  - regular expression extraction
+  - regex groups to columns
+  - pattern matching column
+  - extract substring column
 ---
 
 Matches the specified regular expression against the content of the specified column.

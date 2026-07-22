@@ -1,6 +1,15 @@
 ---
 title: "Performance"
 sidebar_position: 0
+description: General recommendations and common root causes for writing high-performance Datagrok JavaScript code.
+keywords:
+  - fast javascript
+  - memory-efficient code
+  - typed arrays
+  - chrome profiler
+  - dataframe performance
+  - viewer optimization
+  - debouncing
 ---
 
 # Performance

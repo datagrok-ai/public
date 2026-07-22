@@ -1,6 +1,17 @@
 ---
 title: "Dimensionality reduction"
 sidebar_position: 4
+description: Reduce a dataset's feature count using UMAP, t-SNE, or PCA while preserving key structure for visualization.
+keywords:
+  - umap
+  - t-sne
+  - pca
+  - principal component analysis
+  - feature reduction
+  - embeddings
+  - chemical space
+  - sequence space
+  - webgpu acceleration
 ---
 
 **Dimensionality Reduction** capabilities of Datagrok allow you to reduce the number of features in your dataset while preserving the most important information using either [UMAP or t-SNE](https://en.wikipedia.org/wiki/Nonlinear_dimensionality_reduction) algorithms. It extends the functionality of the [Chemical Space](../datagrok/solutions/domains/chem/chem.md#chemical-space) and [Sequence Space](../datagrok/solutions/domains/bio/bio.md#sequence-space) tools, while also providing a way to combine **multiple columns** and **different data types** in a single analysis. Each column can be configured with its own encoding function (for example, molecules are first converted to fingerprints), distance metric, weight and other parameters (for example, which fingerprints should be used for molecules). The distances between corresponding values are combined using a weighted aggregation function (Manhattan or Euclidean) to produce a single distance matrix, which is then used for dimensionality reduction. 
@@ -18,22 +29,22 @@ The dialog has the following inputs:
 * **Column Options**: For each chosen column, you can specify what encoding function to use, distance metric, weight, and other parameters.
 For example, for biological sequences, you can choose encoding function to convert them to big molecules and then calculate the distance between them using the chemical fingerprint distance, or treat them as sequences and use one of sequence distance functions (Hamming, Levenstain, Needleman-Wunsh or Monomer chemical distance). In case if encoding function can be configured further, you can adjust its parameters using the gear (⚙️) button next to the encoding function selection. For example, for molecules, you can adjust which fingerprints should be used for encoding.
 * **Aggregation**: The function used to combine distances between corresponding values in different columns. The options are:
-    * **Euclidean**: The Euclidean distance between two points in Euclidean space is the length of the line segment connecting them.
-    * **Manhattan**: The Manhattan distance between two points is the sum of the lengths of the projections of the line segment between the points onto the coordinate axes.
+  * **Euclidean**: The Euclidean distance between two points in Euclidean space is the length of the line segment connecting them.
+  * **Manhattan**: The Manhattan distance between two points is the sum of the lengths of the projections of the line segment between the points onto the coordinate axes.
 * **Method**: The dimensionality reduction method that will be used. The options are:
-    * **UMAP**: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualisation similarly to t-SNE, but also for general non-linear dimension reduction.
-    * **t-SNE**: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+  * **UMAP**: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualisation similarly to t-SNE, but also for general non-linear dimension reduction.
+  * **t-SNE**: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
 
     Each method has its own set of parameters that can be accessed through the gear (⚙️) button next to the method selection. For example, for UMAP, you can adjust the `number of neighbors`, `minimum distance`, `learning rate`, `epochs`, `spread` and `random seed`.
 
 * **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished on scatter plot.
 
 * **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
-    * **None**: No postprocessing will be applied.
-    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
-        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
-        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
-    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+  * **None**: No postprocessing will be applied.
+  * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+    * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+    * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+  * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
 
 
 ![Dimensionality reduction dialog](../compute/dim-reduction-dialog.png)
@@ -86,7 +97,7 @@ The dimensionality reduction process consists of the following steps:
 
     ```
 
-    ### Currently, we support numerical, string, molecule, macromolecule and text(semtype) columns.
+   Currently, we support numerical, string, molecule, macromolecule and text (semtype) columns.
 
 2. **Distance calculation**: The pairwise distances between encoded values is calculated using the specified distance metrics. Distances are then aggregated using the specified aggregation function to produce a single distance. These aggregated distances are then used as the basis for dimensionality reduction.
 

@@ -10,7 +10,17 @@ export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ToolActivityEvent = {sessionId: string, summary: string};
-export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean};
+/** A runtime gate blocked the turn's Stop — a revision is being generated behind the visible
+ * answer; `FinalEvent.revision` will say whether it replaces the original or the original stands. */
+export type RevisionStartEvent = {sessionId: string};
+/** Per-turn metrics the runtime forwards from the SDK `result` message (see docs/BENCHMARK.md). */
+export type TurnServerMetrics = {
+  inputTokens: number | null, outputTokens: number | null,
+  cacheReadTokens: number | null, cacheCreationTokens: number | null,
+  costUsd: number | null, numTurns: number | null,
+  durationMs: number | null, durationApiMs: number | null,
+};
+export type FinalEvent = {sessionId: string, content: string, structured_output?: any, unverified?: boolean, metrics?: TurnServerMetrics, revision?: 'kept' | 'replaced'};
 export type ErrorEvent = {sessionId: string, message: string};
 export type AbortedEvent = {sessionId: string};
 export type InputRequestEvent = {sessionId: string, requestId: string, toolName: string, input: any};
@@ -27,6 +37,7 @@ export class ClaudeRuntimeClient {
 
   public onChunk = new rxjs.Subject<ChunkEvent>();
   public onToolActivity = new rxjs.Subject<ToolActivityEvent>();
+  public onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
   public onFinal = new rxjs.Subject<FinalEvent>();
   public onError = new rxjs.Subject<ErrorEvent>();
   public onAborted = new rxjs.Subject<AbortedEvent>();
@@ -102,11 +113,16 @@ export class ClaudeRuntimeClient {
       case 'tool_activity':
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
         break;
+      case 'revision_start':
+        this.onRevisionStart.next({sessionId: data.sessionId});
+        break;
       case 'final':
         this.onFinal.next({
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
           ...(data.unverified ? {unverified: true} : {}),
+          ...(data.metrics ? {metrics: data.metrics} : {}),
+          ...(data.revision ? {revision: data.revision} : {}),
         });
         break;
       case 'error':
@@ -239,6 +255,7 @@ export class ClaudeRuntimeClient {
     }
     this.onChunk.complete();
     this.onToolActivity.complete();
+    this.onRevisionStart.complete();
     this.onFinal.complete();
     this.onError.complete();
     this.onAborted.complete();
@@ -250,6 +267,7 @@ export class ClaudeRuntimeClient {
     this.onAuthError.complete();
     this.onChunk = new rxjs.Subject<ChunkEvent>();
     this.onToolActivity = new rxjs.Subject<ToolActivityEvent>();
+    this.onRevisionStart = new rxjs.Subject<RevisionStartEvent>();
     this.onFinal = new rxjs.Subject<FinalEvent>();
     this.onError = new rxjs.Subject<ErrorEvent>();
     this.onAborted = new rxjs.Subject<AbortedEvent>();

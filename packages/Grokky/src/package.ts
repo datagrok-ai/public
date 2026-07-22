@@ -13,6 +13,7 @@ import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './d
 import {listDbCatalogs, listDbSchemas, listDbTables, getDbTableDetails, listDbJoins, getSqlTestResult} from './ai/db-view-functions';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
+import {runBenchmark as runBenchmarkImpl, compareBenchmarks as compareBenchmarksImpl} from './ai/benchmark/benchmark';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
@@ -153,6 +154,24 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
   ): Promise<DG.Widget | null> {
     return await askWiki(prompt, sessionId);
+  }
+
+  @grok.decorators.func({name: 'runBenchmark',
+    description: 'Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.'})
+  static async runBenchmark(
+    @grok.decorators.param({type: 'string', options: {description: 'Config label for this run, e.g. baseline / medium-effort'}}) label: string,
+    @grok.decorators.param({type: 'int', options: {optional: true, description: 'Repetitions per prompt (default 3)'}}) reps?: number,
+  ): Promise<string> {
+    return runBenchmarkImpl(label, reps ?? 3);
+  }
+
+  @grok.decorators.func({name: 'compareBenchmarks',
+    description: 'Diff two saved benchmark runs (by label) into a Markdown delta report and download it.'})
+  static async compareBenchmarks(
+    @grok.decorators.param({type: 'string', options: {description: 'Baseline run label'}}) labelA: string,
+    @grok.decorators.param({type: 'string', options: {description: 'Comparison run label'}}) labelB: string,
+  ): Promise<string> {
+    return compareBenchmarksImpl(labelA, labelB);
   }
 
   @grok.decorators.func({meta: {

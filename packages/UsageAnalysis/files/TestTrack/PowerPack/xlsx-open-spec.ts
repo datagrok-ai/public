@@ -51,14 +51,26 @@ async function openTableFromFileWithTimeout(
   ]);
 }
 
-// Locate the first reachable XLSX fixture under System:DemoFiles, or null.
+// Locate an XLSX fixture in the public test-data bucket (s3://datagrok-data/tests/excel,
+// aka data.datagrok.ai) through an anonymous S3 connection, created on first use.
 async function locatePlatformXlsxFixture(page: Page): Promise<string | null> {
   return await page.evaluate(async () => {
     const grok = (window as any).grok;
+    const DG = (window as any).DG;
+    let conn = await grok.dapi.connections.filter('name = "PowerPackXlsxFixtures"').first();
+    if (!conn) {
+      conn = DG.DataConnection.create('PowerPackXlsxFixtures', {
+        dataSource: 'S3',
+        region: 'us-east-2',
+        bucket: 'datagrok-data',
+        dir: 'tests/excel',
+        anonymous: true,
+      });
+      conn = await grok.dapi.connections.save(conn);
+    }
     const candidates = [
-      'System:DemoFiles/test/excel/excel-1mb.xlsx',
-      'System:DemoFiles/test/excel/excel-rich-text-test.xlsx',
-      'System:DemoFiles/SPGI-linked.xlsx',
+      `${conn.nqName}/excel-1mb.xlsx`,
+      `${conn.nqName}/excel-rich-text-test.xlsx`,
     ];
     for (const path of candidates) {
       try {
@@ -66,11 +78,11 @@ async function locatePlatformXlsxFixture(page: Page): Promise<string | null> {
       } catch (_) { /* try next */ }
     }
     try {
-      const items = await grok.dapi.files.list('System:DemoFiles/test/excel', false);
+      const items = await grok.dapi.files.list(conn.nqName, false);
       for (const it of items ?? []) {
         const n = (it?.name ?? it?.fileName ?? '').toLowerCase();
         if (n.endsWith('.xlsx')) {
-          const full = it?.fullPath ?? it?.path ?? `System:DemoFiles/test/excel/${it?.name}`;
+          const full = it?.fullPath ?? it?.path ?? `${conn.nqName}/${it?.name}`;
           return full as string;
         }
       }
@@ -208,10 +220,10 @@ test('PowerPack: GROK-19329 XLSX opens across all 5 entry paths (regression)', a
   const xlsxPath = await locatePlatformXlsxFixture(page);
   test.skip(
     !xlsxPath,
-    'No XLSX fixture reachable under System:DemoFiles on this server.\n' +
-    'Tried: System:DemoFiles/test/excel/excel-1mb.xlsx, excel-rich-text-test.xlsx,\n' +
-    'SPGI-linked.xlsx. Setup step 2 prerequisite from xlsx-open.md is not satisfied.\n' +
-    'Provision an XLSX fixture under System:DemoFiles, then re-run.',
+    'No XLSX fixture reachable through the PowerPackXlsxFixtures S3 connection\n' +
+    '(s3://datagrok-data/tests/excel — anonymous public bucket behind data.datagrok.ai).\n' +
+    'Tried: excel-1mb.xlsx, excel-rich-text-test.xlsx, plus a directory listing.\n' +
+    'Check outbound S3 access from the server, then re-run.',
   );
   const xlsxFullPath = xlsxPath!;
   const xlsxFileName = xlsxFullPath.split('/').pop() ?? 'fixture.xlsx';

@@ -2,6 +2,7 @@
 #description: Environment with pip-only extra dependencies
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.11, {pip: [chardet, pyyaml]}]
+#meta.timeout: 600
 #input: string text
 #output: string result
 

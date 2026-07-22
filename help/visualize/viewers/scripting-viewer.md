@@ -1,5 +1,12 @@
 ---
 title: "Scripting viewer"
+description: Build custom visualizations using R, Python, or Julia scripts integrated into the Datagrok platform.
+keywords:
+  - r visualization
+  - python visualization
+  - julia visualization
+  - custom scripted chart
+  - ggplot2
 ---
 
 **Scripting viewers** are viewers implemented in R, Python, or Julia. Internally, they

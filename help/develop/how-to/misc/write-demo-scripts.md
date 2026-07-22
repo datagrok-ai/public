@@ -1,5 +1,12 @@
 ---
 title: "Write demo scripts"
+description: Create a step-by-step DemoScript class with delays and descriptions, and register it as a package demo function.
+keywords:
+  - DemoScript class
+  - meta.demoPath
+  - meta.isDemoScript
+  - demo application steps
+  - "@datagrok-libraries/tutorials"
 ---
 
 ## Definition

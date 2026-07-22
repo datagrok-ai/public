@@ -1,5 +1,13 @@
 ---
 title: "Scaling"
+description: Explains the infrastructure, application, and ecosystem techniques Datagrok uses to scale to millions of users and datasets.
+keywords:
+  - infrastructure scaling
+  - postgres and s3
+  - autoscaling compute
+  - big datasets in browser
+  - extensibility
+  - dart application server
 ---
 
 Datagrok was designed to connect millions of users with millions of datasets, data sources, algorithms, scripts, and

@@ -1,7 +1,17 @@
+---
+title: "Function types"
+description: Reference for the function roles a package can define, such as app, init, autostart, and semantic type detector.
+keywords:
+  - "#app role"
+  - "#init and #autostart"
+  - semantic type detectors
+  - cell renderers
+  - file viewers and exporters
+  - package settings editors
+---
+
 <!-- TITLE: Function Types -->
 <!-- ORDER: 4 -->
-
-# Function types
 
 A package can contain various functions, and each function is annotated with a role that defines what this function does:
 

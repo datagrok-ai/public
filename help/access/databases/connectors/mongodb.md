@@ -1,5 +1,13 @@
 ---
 title: "MongoDB"
+description: Connect Datagrok to a MongoDB NoSQL database using a JDBC driver.
+keywords:
+  - mongodb database
+  - mongo nosql database
+  - mongodb jdbc driver
+  - connect to mongodb
+  - document database
+  - browse database schema
 ---
 
 Provides access to [Mongo](https://www.mongodb.com/) NoSQL database via a JDBC driver.
