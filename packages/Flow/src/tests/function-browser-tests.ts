@@ -178,7 +178,7 @@ category('Flow: function browser', () => {
     expect(cat !== 'Cheminformatics', true, `${chemSource.func.name} is a source, not a chem operation (got ${cat})`);
   });
 
-  test('the toolbox floats Cheminformatics/Bioinformatics to the top, after Queries', async () => {
+  test('the toolbox floats Cheminformatics/Bioinformatics to the top of the categories', async () => {
     if (!getRegisteredFuncs().some((f) => f.packageName === 'Chem')) {
       expect(true, true, 'no Chem funcs on this stand — skipped');
       return;
@@ -191,9 +191,9 @@ category('Flow: function browser', () => {
       browser.render();
       const chem = browser.root.querySelector('[data-testid="ff-browser-section-cheminformatics"]');
       expect(!!chem, true, 'Cheminformatics section header present');
-      // Order: Queries → domain sections → task categories (Data Sources…) →
-      // Viewers → built-ins (Inputs…) → Other → Debug last.
-      const queries = browser.root.querySelector('[data-testid="ff-browser-queries"]');
+      // Order (Files/Queries/Workflows live in the top tabs now): domain
+      // sections → task categories (Data Sources…) → Viewers → built-ins
+      // (Inputs…) → Other → Debug last.
       const viewers = browser.root.querySelector('[data-testid="ff-browser-viewers"]');
       const inputs = browser.root.querySelector('[data-testid="ff-browser-section-inputs"]');
       const dataSources = browser.root.querySelector('[data-testid="ff-browser-section-data-sources"]');
@@ -201,7 +201,6 @@ category('Flow: function browser', () => {
       const debug = browser.root.querySelector('[data-testid="ff-browser-section-debug"]');
       const before = (a: Element | null, b: Element | null): boolean =>
         !!a && !!b && !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-      if (queries) expect(before(queries, chem), true, 'Cheminformatics comes after Queries');
       if (dataSources) expect(before(chem, dataSources), true, 'Cheminformatics comes before Data Sources');
       if (viewers && dataSources) expect(before(dataSources, viewers), true, 'task categories come before Viewers');
       if (viewers && inputs) expect(before(viewers, inputs), true, 'Viewers comes before the Inputs built-ins');
@@ -209,6 +208,9 @@ category('Flow: function browser', () => {
       expect(!!debug, true, 'Debug section present');
       if (other) expect(before(inputs, other), true, 'Other comes after the built-ins');
       if (other) expect(before(other, debug), true, 'Debug comes last, after Other');
+      // The accordion holds no Files/Queries/Workflows panes anymore.
+      expect(browser.accordion!.panes.some((p) => ['Files', 'Queries', 'Workflows'].includes(p.name)),
+        false, 'collection panes moved out of the accordion');
     } finally {
       browser.root.remove();
     }
@@ -255,25 +257,23 @@ category('Flow: function browser', () => {
     try {
       browser.render();
 
-      // The Files pane (open by default) and the Queries pane both exist.
-      expect(!!browser.root.querySelector('[data-testid="ff-browser-files"]'), true, 'Files pane present');
+      // Queries live in the top Queries TAB now — activate it so its content
+      // attaches, then expand every per-connection sub-pane so items
+      // materialize in the DOM.
+      browser.showTab('Queries');
       const queriesPane = browser.root.querySelector('[data-testid="ff-browser-queries"]') as HTMLElement | null;
-      expect(!!queriesPane, true, 'Queries pane present');
-
-      // Accordion content is lazy — expand the Queries pane, then every
-      // per-connection sub-pane, so the items materialize in the DOM.
-      browser.accordion!.getPane('Queries').expanded = true;
+      expect(!!queriesPane, true, 'Queries tab content present');
       const connSections = browser.root.querySelectorAll('[data-testid^="ff-browser-query-conn"]');
       expect(connSections.length > 0, true, 'queries split into per-connection sub-sections');
       expect((connSections[0] as HTMLElement).dataset.queryConn != null, true, 'sub-section carries data-query-conn');
       for (const p of browser.queriesAccordion!.panes) p.expanded = true;
 
-      // A known query lives INSIDE the Queries pane and NOT in any category section.
+      // A known query lives INSIDE the Queries tab and NOT in any category section.
       const sample = queries[0];
       const items = Array.from(browser.root.querySelectorAll(`[data-func="${sample.func.name}"]`)) as HTMLElement[];
       expect(items.length > 0, true, `query ${sample.func.name} appears in the toolbox`);
       for (const it of items)
-        expect(queriesPane!.contains(it), true, `query item ${sample.func.name} is under the Queries pane`);
+        expect(queriesPane!.contains(it), true, `query item ${sample.func.name} is under the Queries tab`);
     } finally {
       browser.root.remove();
     }

@@ -5,6 +5,7 @@ import {FuncInfo, getRegisteredFuncs, isWorkflowFunc, VIEWER_NODE_TYPES} from '.
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
 import {categorizeBySignature, domainCategory} from '../types/type-map';
+import {getFavorites, isFavorite, toggleFavorite, onFavoritesChanged} from './favorites';
 
 /** Whether a function's output is a widget (→ the Widgets pane, not a category). */
 export function funcOutputsWidget(f: FuncInfo): boolean {
@@ -146,6 +147,11 @@ const LS_KEY = 'funcflow.browser.v1';
 /** Persistence key of the toolbox accordion; the nested per-connection
  *  accordion inside the Queries pane uses `<key>.queries`. */
 export const TOOLBOX_ACCORDION_KEY = 'funcflow.toolbox';
+/** Persistence key of the top tab strip (Files / Queries / Workflows /
+ *  Favorites) — DG.TabControl remembers the selected tab itself. */
+export const TOOLBOX_TABS_KEY = 'funcflow.toolbox.tab';
+/** The top-strip tab names, in order. */
+export const TOOLBOX_TABS = ['Files', 'Queries', 'Workflows', 'Favorites'] as const;
 const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
 
 /** Case- AND whitespace-insensitive substring match — so "openfile" matches
@@ -174,10 +180,49 @@ export function funcMatchesSearch(f: FuncInfo, query: string): boolean {
 }
 
 /** Left sidebar: searchable, groupable function catalog */
+/** Display labels for the group-by modes (the "by: …" catalog-header button). */
+const GROUP_BY_LABELS: Record<GroupByMode, string> = {
+  category: 'what it does',
+  role: 'role',
+  tags: 'tags',
+  package: 'package',
+};
+
+/** FA5 icon per toolbox section header (muted grey — recognition, not decor).
+ *  Covers the "what it does" categories and the fixed panes; other group-by
+ *  modes produce keys outside this map and simply render without an icon. */
+const SECTION_ICONS: Record<string, string> = {
+  'Cheminformatics': 'flask',
+  'Bioinformatics': 'dna',
+  'Data Sources': 'database',
+  'Combine Tables': 'layer-group',
+  'Transform Tables': 'random',
+  'Column Operations': 'columns',
+  'Compute Values': 'calculator',
+  'Visualize': 'chart-bar',
+  'Other': 'ellipsis-h',
+  'Viewers': 'chart-pie',
+  'Widgets': 'puzzle-piece',
+  'Inputs': 'sign-in-alt',
+  'Outputs': 'sign-out-alt',
+  'Constants': 'hashtag',
+  'Utilities': 'wrench',
+  'Debug': 'bug',
+};
+
+/** A muted section-header icon (fixed 16px box so labels align). `name` is a
+ *  bare FA5 name (light weight) or a full `fas fa-…` override. */
+function sectionIcon(name: string): HTMLElement {
+  const i = document.createElement('i');
+  const cls = name.includes(' ') ? name : `fal fa-${name}`;
+  i.className = `grok-icon ${cls} funcflow-section-icon`;
+  return i;
+}
+
 export class FunctionBrowser {
   root: HTMLElement;
   private searchInput!: HTMLInputElement;
-  private groupBySelect!: HTMLSelectElement;
+  private groupByBtn!: HTMLElement;
   private treeContainer!: HTMLElement;
   private groupBy: GroupByMode = 'category';
   /** The toolbox accordion, rebuilt on every render. A keyed `ui.accordion`
@@ -191,11 +236,29 @@ export class FunctionBrowser {
   /** The Files tree (KNIME-style file browser). Built lazily once and reused
    *  across renders so its expanded state and scroll position survive a search. */
   private filesTreeRoot?: HTMLElement;
+  /** The top tab strip (Files / Queries / Workflows / Favorites). Exposed for tests. */
+  topTabs: DG.TabControl | null = null;
+  private queriesTabContent!: HTMLElement;
+  private workflowsTabContent!: HTMLElement;
+  private favoritesTabContent!: HTMLElement;
+  private favoritesUnsub: (() => void) | null = null;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
     this.callbacks = callbacks;
     this.loadState();
     this.root = this.buildUI();
+    // A star toggled anywhere updates every visible star and the Favorites tab
+    // in place — no full re-render, so tree scroll positions survive.
+    this.favoritesUnsub = onFavoritesChanged(() => {
+      this.syncStars();
+      this.renderFavoritesTab();
+    });
+  }
+
+  /** Unhooks the global favorites listener. Call when the hosting view closes. */
+  destroy(): void {
+    this.favoritesUnsub?.();
+    this.favoritesUnsub = null;
   }
 
   // ---------- persistence (localStorage) ----------
@@ -217,10 +280,11 @@ export class FunctionBrowser {
   }
 
   private buildUI(): HTMLElement {
-    // Search bar
+    // Search bar — filters everything below it: the collection tabs
+    // (queries / workflows / favorites, with match counts) AND the catalog.
     this.searchInput = document.createElement('input');
     this.searchInput.type = 'text';
-    this.searchInput.placeholder = 'Search functions...';
+    this.searchInput.placeholder = 'Search functions, queries, flows…';
     this.searchInput.className = 'funcflow-search-input';
     setTid(this.searchInput, 'browser-search');
     this.searchInput.addEventListener('input', () => this.render());
@@ -243,38 +307,103 @@ export class FunctionBrowser {
     syncClear();
     const searchWrap = ui.div([this.searchInput, clearBtn], 'funcflow-search-wrap');
 
-    // Group by selector
-    this.groupBySelect = document.createElement('select');
-    this.groupBySelect.className = 'funcflow-groupby-select';
-    setTid(this.groupBySelect, 'browser-groupby');
-    const groupByLabels: Record<GroupByMode, string> = {
-      category: 'what it does',
-      role: 'role',
-      tags: 'tags',
-      package: 'package',
-    };
-    for (const opt of Object.keys(groupByLabels) as GroupByMode[]) {
-      const option = document.createElement('option');
-      option.value = opt;
-      option.textContent = `Group by: ${groupByLabels[opt]}`;
-      this.groupBySelect.appendChild(option);
-    }
-    this.groupBySelect.value = this.groupBy; // restore persisted mode
-    this.groupBySelect.addEventListener('change', () => {
-      this.groupBy = this.groupBySelect.value as GroupByMode;
-      this.saveState();
-      this.render();
+    // Group-by: a compact "by: <mode> ▾" text-button in the catalog zone
+    // header — it scopes ONLY the categories accordion, so it sits on that
+    // zone rather than next to the global search. Opens a popup menu.
+    this.groupByBtn = setTid(ui.div([], 'funcflow-groupby-btn'), 'browser-groupby');
+    this.syncGroupByLabel();
+    ui.tooltip.bind(this.groupByBtn, 'How the function list below is organized');
+    this.groupByBtn.addEventListener('click', () => {
+      DG.Menu.popup()
+        .items(Object.values(GROUP_BY_LABELS), (label) => {
+          const mode = (Object.keys(GROUP_BY_LABELS) as GroupByMode[])
+            .find((k) => GROUP_BY_LABELS[k] === label)!;
+          this.setGroupBy(mode);
+        }, {radioGroup: 'ff-groupby', isChecked: (label) => GROUP_BY_LABELS[this.groupBy] === label})
+        .show();
     });
+    const zoneLabel = ui.div([], 'funcflow-zone-label');
+    zoneLabel.textContent = 'Functions';
+    const catalogHeader = setTid(
+      ui.div([zoneLabel, this.groupByBtn], 'funcflow-catalog-header'), 'browser-catalog-header');
 
     this.treeContainer = setTid(ui.div([], 'funcflow-tree-container'), 'browser-tree');
 
+    // Zones top-to-bottom: global search, the collection tabs, the labeled
+    // function catalog, and (appended by the view) the Suggestions strip.
     const container = ui.divV([
       searchWrap,
-      this.groupBySelect,
+      this.buildTopTabs(),
+      catalogHeader,
       this.treeContainer,
     ], 'funcflow-browser');
 
     return setTid(container, 'browser');
+  }
+
+  /** Switches the accordion grouping mode (the popup menu + tests use this). */
+  setGroupBy(mode: GroupByMode): void {
+    this.groupBy = mode;
+    this.saveState();
+    this.syncGroupByLabel();
+    this.render();
+  }
+
+  private syncGroupByLabel(): void {
+    this.groupByBtn.textContent = `by: ${GROUP_BY_LABELS[this.groupBy]} ▾`;
+  }
+
+  /** The top strip: a platform tab control with the item *collections* — Files,
+   *  Queries, Workflows (saved flows), and Favorites (starred nodes) — leaving
+   *  the accordion below to the function categories. The selected tab persists
+   *  via the TabControl key; the Files tree builds lazily on first show. */
+  private buildTopTabs(): HTMLElement {
+    const tabs = DG.TabControl.create(false, TOOLBOX_TABS_KEY);
+    this.topTabs = tabs;
+    this.queriesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-queries');
+    this.workflowsTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-workflows');
+    this.favoritesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-favorites');
+    const filesContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-files');
+
+    const panes: Array<{name: string; content: () => HTMLElement; tip: string}> = [
+      {name: 'Files', tip: 'Browse data files. Double-click or drag a file onto the canvas to load it.',
+        content: () => {
+          if (filesContent.childElementCount === 0) {
+            const hint = ui.div([], 'funcflow-tab-hint');
+            hint.textContent = 'Double-click a file to load it — or drag one from your computer onto the canvas.';
+            filesContent.appendChild(hint);
+          }
+          filesContent.appendChild(this.getFilesTreeRoot());
+          return filesContent;
+        }},
+      {name: 'Queries', tip: 'Database queries, grouped by data connection. Double-click or drag to add.',
+        content: () => this.queriesTabContent},
+      {name: 'Workflows', tip: 'Saved flows — reuse them as nodes in this flow. Double-click or drag to add.',
+        content: () => this.workflowsTabContent},
+      {name: 'Favorites', tip: 'Nodes you starred. Hover any node in the toolbox and click its ★ to pin it here.',
+        content: () => this.favoritesTabContent},
+    ];
+    for (const p of panes) {
+      const pane = tabs.addPane(p.name, p.content);
+      setTid(pane.header, 'browser-tab', p.name);
+      pane.header.dataset.tab = p.name;
+      // Wrap the header text so a squeezed tab truncates its LABEL with an
+      // ellipsis instead of clipping the search badge appended after it
+      // (narrow toolbox / zoomed-in screens).
+      const label = document.createElement('span');
+      label.className = 'funcflow-tab-label';
+      while (pane.header.firstChild) label.appendChild(pane.header.firstChild);
+      pane.header.appendChild(label);
+      ui.tooltip.bind(pane.header, p.tip);
+    }
+
+    const host = ui.div([tabs.root], 'funcflow-top-tabs');
+    return setTid(host, 'browser-tabs');
+  }
+
+  /** Programmatically activates one of the top tabs (used by the guide). */
+  showTab(name: (typeof TOOLBOX_TABS)[number]): void {
+    if (this.topTabs) this.topTabs.currentPane = this.topTabs.getPane(name);
   }
 
   /** Domain sections floated to the very top of the function list (right after
@@ -282,6 +411,9 @@ export class FunctionBrowser {
   private static readonly DOMAIN_CATEGORIES = ['Cheminformatics', 'Bioinformatics'];
 
   render(): void {
+    // While a query is active the Suggestions strip (canvas-contextual, not
+    // search results) mutes via CSS so its items aren't mistaken for matches.
+    this.root.dataset.searching = String(!!this.searchInput.value);
     this.treeContainer.innerHTML = '';
     // The platform accordion: a keyed one restores/persists pane states itself.
     // While a search is active every matching section is forced open — build an
@@ -290,10 +422,11 @@ export class FunctionBrowser {
     this.accordion = acc;
     this.queriesAccordion = null;
 
-    // DG function nodes — queries, widget-producers, and (already-excluded)
-    // viewer functions don't appear here; they live in their dedicated panes.
+    // DG function nodes — queries, workflows, widget-producers, and (already-
+    // excluded) viewer functions don't appear here; queries and workflows live
+    // in the top tabs, widgets/viewers in their dedicated panes.
     const funcs = this.filterBySearch(getRegisteredFuncs()
-      .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f)));
+      .filter((f) => !(f.func instanceof DG.DataQuery) && !funcOutputsWidget(f) && !isWorkflowFunc(f.func)));
     const grouped = this.groupFunctions(funcs);
     const renderCategory = (category: string): void => {
       const raw = grouped[category];
@@ -307,13 +440,12 @@ export class FunctionBrowser {
       }, {count: items.length});
     };
 
-    // Section order: Files, Queries, the Cheminformatics / Bioinformatics
-    // domain sections (the science a chemist/biologist reaches for first),
-    // the task categories (Data Sources → … → Compute Values), Viewers,
-    // Widgets, the building-block built-ins (Inputs / Outputs / Constants /
-    // Utilities), then the Other catch-all, and Debug last.
-    this.renderFilesSection(acc);
-    this.renderQueriesSection(acc);
+    // Section order: the Cheminformatics / Bioinformatics domain sections (the
+    // science a chemist/biologist reaches for first), the task categories
+    // (Data Sources → … → Compute Values), Viewers, Widgets, the
+    // building-block built-ins (Inputs / Outputs / Constants / Utilities),
+    // then the Other catch-all, and Debug last. Files, Queries, and Workflows
+    // live in the top tabs, not here.
     for (const domain of FunctionBrowser.DOMAIN_CATEGORIES) renderCategory(domain);
 
     const sortedKeys = this.orderGroupKeys(Object.keys(grouped))
@@ -328,6 +460,53 @@ export class FunctionBrowser {
 
     acc.end();
     this.treeContainer.appendChild(acc.root);
+    this.renderTabs();
+  }
+
+  /** Refreshes the search-dependent top-tab contents (Files is a persistent
+   *  tree and refreshes itself). */
+  private renderTabs(): void {
+    this.renderQueriesTab();
+    this.renderWorkflowsTab();
+    this.renderFavoritesTab();
+    this.updateTabBadges();
+  }
+
+  /** During a search each tab header shows how many of its rows match (blue
+   *  count badge; a 0-match tab dims) — matches hiding behind an inactive tab
+   *  stay discoverable without auto-switching tabs. Files isn't part of the
+   *  search and stays neutral. Cleared when the query clears. */
+  private updateTabBadges(): void {
+    if (!this.topTabs) return;
+    const query = this.searchInput.value.toLowerCase();
+    const counts: Record<string, number> = {
+      'Queries': getRegisteredFuncs()
+        .filter((f) => f.func instanceof DG.DataQuery && funcMatchesSearch(f, query)).length,
+      'Workflows': getRegisteredFuncs()
+        .filter((f) => isWorkflowFunc(f.func) && funcMatchesSearch(f, query)).length,
+      'Favorites': getFavorites().filter((e) => nameMatchesQuery(e.label, query)).length,
+    };
+    for (const name of Object.keys(counts)) {
+      let header: HTMLElement | null = null;
+      try {
+        header = this.topTabs.getPane(name)?.header ?? null;
+      } catch {/* pane missing — nothing to badge */}
+      if (!header) continue;
+      let badge = header.querySelector<HTMLElement>('.funcflow-tab-badge');
+      // A 0-match tab just dims — a "0" badge adds noise and crowds the strip.
+      if (!query || counts[name] === 0) {
+        badge?.remove();
+        header.classList.toggle('funcflow-tab-dim', !!query && counts[name] === 0);
+        continue;
+      }
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'funcflow-tab-badge';
+        header.appendChild(badge);
+      }
+      badge.textContent = String(counts[name]);
+      header.classList.remove('funcflow-tab-dim');
+    }
   }
 
   /** Adds one toolbox section as an accordion pane. Content builds lazily on
@@ -347,6 +526,7 @@ export class FunctionBrowser {
     if (header) {
       header.dataset.section = title;
       setTid(header, 'browser-section', title);
+      if (SECTION_ICONS[title]) header.insertBefore(sectionIcon(SECTION_ICONS[title]), header.firstChild);
       if (opts.tooltip) ui.tooltip.bind(header, opts.tooltip);
     }
     if (opts.tidParts) setTid(pane.root, ...opts.tidParts);
@@ -373,25 +553,31 @@ export class FunctionBrowser {
         (f) => this.callbacks.onFileDoubleClick(f),                // dbl-click / Enter → OpenFile node
         'funcflow.files.v1');
       this.filesTreeRoot = tree.root;
+      // The tab pane owns the height now — drop the tree's standalone cap.
+      this.filesTreeRoot.style.maxHeight = '';
     }
     return this.filesTreeRoot;
   }
 
-  private renderFilesSection(acc: DG.Accordion): void {
-    this.addSection(acc, 'Files',
-      () => ui.div([this.getFilesTreeRoot()], 'funcflow-section-content'), {
-        expanded: true,
-        tooltip: 'Browse data files. Double-click or drag a file onto the canvas to load it.',
-        tidParts: ['browser-files'],
-      });
+  /** A muted hint shown when a top tab has nothing to list. */
+  private static emptyNote(text: string): HTMLElement {
+    const el = ui.div([], 'funcflow-tab-empty');
+    el.textContent = text;
+    return el;
   }
 
-  private renderQueriesSection(acc: DG.Accordion): void {
+  private renderQueriesTab(): void {
     // Group every registered query by its connection (friendlyName ?? name).
     const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
     const query = this.searchInput.value.toLowerCase();
     const matching = query ? queries.filter((f) => funcMatchesSearch(f, query)) : queries;
-    if (matching.length === 0) return;
+    this.queriesTabContent.innerHTML = '';
+    this.queriesAccordion = null;
+    if (matching.length === 0) {
+      this.queriesTabContent.appendChild(FunctionBrowser.emptyNote(
+        query ? 'No queries match the search.' : 'No database queries available.'));
+      return;
+    }
 
     const byConn = new Map<string, FuncInfo[]>();
     for (const f of matching) {
@@ -400,12 +586,53 @@ export class FunctionBrowser {
       if (!arr) byConn.set(conn, arr = []);
       arr.push(f);
     }
+    this.queriesTabContent.appendChild(this.buildQueriesContent(byConn));
+  }
 
-    this.addSection(acc, 'Queries', () => this.buildQueriesContent(byConn), {
-      count: matching.length,
-      tooltip: 'Database queries, grouped by data connection. Double-click or drag to add.',
-      tidParts: ['browser-queries'],
-    });
+  private renderWorkflowsTab(): void {
+    const flows = getRegisteredFuncs().filter((f) => isWorkflowFunc(f.func));
+    const query = this.searchInput.value.toLowerCase();
+    const matching = query ? flows.filter((f) => funcMatchesSearch(f, query)) : flows;
+    matching.sort((a, b) => a.name.localeCompare(b.name));
+    this.workflowsTabContent.innerHTML = '';
+    if (matching.length === 0) {
+      this.workflowsTabContent.appendChild(FunctionBrowser.emptyNote(
+        query ? 'No workflows match the search.' :
+          'No saved flows yet. Save a flow and it appears here, ready to reuse as a node.'));
+      return;
+    }
+    const content = ui.div([], 'funcflow-section-content');
+    for (const info of matching) content.appendChild(this.createFuncItem(info));
+    this.workflowsTabContent.appendChild(content);
+  }
+
+  private renderFavoritesTab(): void {
+    const query = this.searchInput.value.toLowerCase();
+    const favs = getFavorites().filter((e) => nameMatchesQuery(e.label, query));
+    this.favoritesTabContent.innerHTML = '';
+    if (favs.length === 0) {
+      this.favoritesTabContent.appendChild(FunctionBrowser.emptyNote(
+        query ? 'No favorites match the search.' :
+          'Nothing starred yet. Hover any node in the toolbox and click its ★ to pin it here.'));
+      return;
+    }
+    const content = ui.div([], 'funcflow-section-content');
+    for (const e of favs) {
+      // A favorite may be a DG function (rich FuncInfo available) or a
+      // builtin/viewer type — either way the type name alone creates the node.
+      const info = getRegisteredFuncs().find((f) => f.nodeTypeName === e.type);
+      const item = this.makeToolboxItem(e.label, e.type);
+      item.dataset.testid = tid('browser-fav-item', e.type);
+      if (info) item.dataset.func = info.func.name;
+      ui.tooltip.bind(item, info?.func.description || `${e.label}. Double-click or drag to add.`);
+      item.addEventListener('dblclick', () => {
+        if (info) this.callbacks.onFunctionDoubleClick(info);
+        else this.callbacks.onBuiltinNodeDoubleClick(e.type);
+      });
+      this.makeItemDraggable(item, e.type);
+      content.appendChild(item);
+    }
+    this.favoritesTabContent.appendChild(content);
   }
 
   /** The Queries pane content: a nested accordion with one pane per connection
@@ -427,7 +654,13 @@ export class FunctionBrowser {
       pane.root.dataset.queryConn = conn;
       setTid(pane.root, 'browser-query-conn', conn);
       const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
-      if (header) ui.tooltip.bind(header, `Queries from the “${conn}” connection`);
+      if (header) {
+        // A uniform glyph down the list says "these are all connections" —
+        // together with the tray background it keeps the Queries tab from
+        // reading as more function categories.
+        header.insertBefore(sectionIcon('database'), header.firstChild);
+        ui.tooltip.bind(header, `Queries from the “${conn}” connection`);
+      }
     }
     inner.end();
     return ui.div([inner.root], 'funcflow-section-content funcflow-subsections');
@@ -437,16 +670,20 @@ export class FunctionBrowser {
    *  discovered package viewers). Each adds a `Viewers/<label>` node. */
   private renderViewersSection(acc: DG.Accordion): void {
     const query = this.searchInput.value.toLowerCase();
-    const types = query ? VIEWER_NODE_TYPES.filter((v) => nameMatchesQuery(v.label, query)) : VIEWER_NODE_TYPES;
+    // "chart"/"plot"/"graph" are what a scientist actually types when hunting
+    // for a visualization — any of them surfaces the whole Viewers pane.
+    const synonymHit = query.length >= 3 &&
+      ['chart', 'charts', 'plot', 'plots', 'graph', 'graphs', 'viewer', 'viewers']
+        .some((w) => w.startsWith(query) || query.startsWith(w));
+    const types = query && !synonymHit ?
+      VIEWER_NODE_TYPES.filter((v) => nameMatchesQuery(v.label, query)) : VIEWER_NODE_TYPES;
     if (types.length === 0) return;
 
     this.addSection(acc, 'Viewers', () => {
       const content = ui.div([], 'funcflow-section-content');
       for (const vt of types) {
-        const item = ui.div([], 'funcflow-func-item');
-        item.textContent = vt.label;
+        const item = this.makeToolboxItem(vt.label, vt.nodeTypeName);
         item.dataset.testid = tid('browser-item', vt.nodeTypeName);
-        item.dataset.nodeTypeName = vt.nodeTypeName;
         ui.tooltip.bind(item, `Add a ${vt.label} viewer. Wire a table in, then run. Double-click or drag.`);
         item.addEventListener('dblclick', () => this.callbacks.onBuiltinNodeDoubleClick(vt.nodeTypeName));
         this.makeItemDraggable(item, vt.nodeTypeName);
@@ -549,10 +786,8 @@ export class FunctionBrowser {
       this.addSection(acc, section.title, () => {
         const content = ui.div([], 'funcflow-section-content');
         for (const node of filtered) {
-          const item = ui.div([], 'funcflow-func-item');
-          item.textContent = node.name;
+          const item = this.makeToolboxItem(node.name, node.type); // type e.g. "Inputs/Table Input"
           item.dataset.testid = tid('browser-item', node.type);
-          item.dataset.nodeTypeName = node.type; // e.g. "Inputs/Table Input"
           const tip = node.desc ?
             `${node.desc}. Double-click or drag to add` :
             `Double-click or drag to add ${node.name}`;
@@ -568,13 +803,45 @@ export class FunctionBrowser {
     }
   }
 
+  /** Sets a star icon's visual state (outline vs. filled gold). */
+  private static applyStarState(star: HTMLElement, fav: boolean): void {
+    star.className = `funcflow-item-star grok-icon ${fav ? 'fas' : 'fal'} fa-star` +
+      (fav ? ' funcflow-item-star-active' : '');
+  }
+
+  /** The base toolbox row every catalog item shares: an ellipsized label plus a
+   *  trailing ★ that stars the node type into the Favorites tab. Sets
+   *  `data-node-type-name` (used by node creation, drag, and star sync). */
+  private makeToolboxItem(label: string, typeName: string): HTMLElement {
+    const labelEl = ui.div([], 'funcflow-item-label');
+    labelEl.textContent = label;
+    const star = document.createElement('i');
+    FunctionBrowser.applyStarState(star, isFavorite(typeName));
+    ui.tooltip.bind(star, () => isFavorite(typeName) ? 'Remove from Favorites' : 'Add to Favorites');
+    star.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleFavorite({type: typeName, label});
+    });
+    star.addEventListener('dblclick', (ev) => ev.stopPropagation());
+    setTid(star, 'browser-item-star', typeName);
+    const item = ui.div([labelEl, star], 'funcflow-func-item');
+    item.dataset.nodeTypeName = typeName;
+    return item;
+  }
+
+  /** Repaints every visible star after a favorites change. */
+  private syncStars(): void {
+    for (const item of Array.from(this.root.querySelectorAll<HTMLElement>('.funcflow-func-item[data-node-type-name]'))) {
+      const star = item.querySelector<HTMLElement>('.funcflow-item-star');
+      if (star) FunctionBrowser.applyStarState(star, isFavorite(item.dataset.nodeTypeName!));
+    }
+  }
+
   /** One draggable, double-clickable catalog row for a DG function. Shared by
    *  the category sections and the Queries pane. */
   private createFuncItem(info: FuncInfo): HTMLElement {
-    const item = ui.div([], 'funcflow-func-item');
-    item.textContent = info.name;
+    const item = this.makeToolboxItem(info.name, info.nodeTypeName);
     item.dataset.testid = tid('browser-item', info.nodeTypeName);
-    item.dataset.nodeTypeName = info.nodeTypeName;     // registered factory name
     item.dataset.func = info.func.name;                // the DG function it adds
     if (info.packageName) item.dataset.package = info.packageName;
     let tip = info.func.description || info.name;

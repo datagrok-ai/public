@@ -44,14 +44,12 @@ const DEMOG_COLUMN_COUNT = 11;
 
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** Reveal the toolbox and make sure the Files pane is expanded (click its header
- *  if a previous session left it collapsed). */
+/** Reveal the toolbox and make sure the Files tab is active (a previous
+ *  session may have left another top tab selected). */
 const openFiles = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(80);
-  const header = document.querySelector(
-    '[data-testid="ff-browser-files"] .d4-accordion-pane-header') as HTMLElement | null;
-  if (header && !header.classList.contains('expanded')) header.click();
+  ctx.host.showToolboxTab('Files');
 };
 
 /** True once demog.csv exists in the Files tree AND is scrolled into view. */
@@ -68,7 +66,7 @@ const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[]
   const steps: GuideStep[] = [
     {
       title: 'Open the Files browser',
-      text: 'In the toolbox on the left, the Files pane lists your data connections — this is the ' +
+      text: 'In the toolbox on the left, the Files tab lists your data connections — this is the ' +
         'easiest way to bring data in. Click Next.',
       setup: openFiles,
       target: byTid('browser-files'),
@@ -465,27 +463,44 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Search',
-      text: 'Type here to filter the whole catalog by name — it matches both the display name ' +
-        '(“Open File”) and the raw name (“OpenFile”).',
+      text: 'Type here to filter everything below — the function catalog plus the Queries, ' +
+        'Workflows, and Favorites tabs (each tab shows how many of its items match). It matches ' +
+        'both the display name (“Open File”) and the raw name (“OpenFile”).',
       target: byTid('browser-search'),
     },
     {
-      title: 'Group by',
-      text: 'Choose how functions are organized: by what they do (default), by role, by tags, or by ' +
-        'package.',
-      target: byTid('browser-groupby'),
-    },
-    {
       title: 'Files',
-      text: 'A file browser of your data connections. Expand a connection, then double-click — or drag ' +
-        '— a file onto the canvas to load it as an Open File node.',
+      text: 'The tabs on top hold your data collections. Files is a browser of your data connections — ' +
+        'expand a connection, then double-click or drag a file onto the canvas to load it.',
+      setup: (ctx) => ctx.host.showToolboxTab('Files'),
       target: byTid('browser-files'),
     },
     {
       title: 'Queries',
-      text: 'Database queries, grouped into sub-sections by their data connection. Double-click or drag ' +
-        'one to add it as a node.',
+      text: 'The Queries tab lists database queries, grouped by their data connection. Double-click or ' +
+        'drag one to add it as a node.',
+      setup: (ctx) => ctx.host.showToolboxTab('Queries'),
       target: byTid('browser-queries'),
+    },
+    {
+      title: 'Workflows',
+      text: 'The Workflows tab holds flows you saved — each one can be reused as a single node inside ' +
+        'another flow.',
+      setup: (ctx) => ctx.host.showToolboxTab('Workflows'),
+      target: byTid('browser-workflows'),
+    },
+    {
+      title: 'Favorites',
+      text: 'Hover any node in the toolbox and click its ★ to pin it to the Favorites tab — your ' +
+        'personal shortlist of go-to steps.',
+      setup: (ctx) => ctx.host.showToolboxTab('Favorites'),
+      target: byTid('browser-favorites'),
+    },
+    {
+      title: 'Group by',
+      text: 'The Functions list below is grouped by what each function does (default). Click ' +
+        '“by: …” to organize it by role, tags, or package instead.',
+      target: byTid('browser-groupby'),
     },
     {
       title: 'Built-in building blocks',

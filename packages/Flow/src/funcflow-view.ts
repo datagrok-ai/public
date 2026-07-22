@@ -69,7 +69,7 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
-  /** Toolbox Suggestions pane (bottom ~30% of the browser). Public for tests. */
+  /** Toolbox Suggestions pane (bottom 25% of the browser). Public for tests. */
   suggestionPane!: SuggestionPane;
   /** The node the user last clicked — a suggestion-context signal that
    *  outlives a deselect ("the currently clicked node"). */
@@ -257,7 +257,7 @@ export class FuncFlowView extends DG.ViewBase {
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
     });
 
-    // Suggestions pane — the bottom ~30% of the toolbox. Recomputes from the
+    // Suggestions pane — the bottom 25% of the toolbox. Recomputes from the
     // full canvas context (selection, focus node, captured data, preview cell).
     this.suggestionPane = new SuggestionPane(
       async () => this.flow ?
@@ -1077,6 +1077,11 @@ export class FuncFlowView extends DG.ViewBase {
           this.functionBrowser.render();
         } catch {/* not ready yet */}
       },
+      showToolboxTab: (name) => {
+        try {
+          this.functionBrowser.showTab(name);
+        } catch {/* not ready yet */}
+      },
       anchorEl: this.helpButton,
     };
   }
@@ -1546,6 +1551,8 @@ export class FuncFlowView extends DG.ViewBase {
     this.teardownAutoPin();
     for (const sub of this.platformSubs) sub.unsubscribe();
     this.platformSubs = [];
+    this.suggestionPane?.destroy();
+    this.functionBrowser?.destroy();
     this.outputViews?.destroy();
     this.flow?.destroy();
     super.detach();

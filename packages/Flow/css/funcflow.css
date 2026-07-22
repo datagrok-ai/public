@@ -63,38 +63,90 @@
   background: var(--grey-1, #eee);
 }
 
-.funcflow-groupby-select {
-  width: calc(100% - 16px);
-  margin: 0 8px 8px 8px;
-  padding: 4px 8px;
-  border: 1px solid var(--grey-2, #ddd);
-  border-radius: 4px;
+/* Catalog zone header: "FUNCTIONS" micro-label + the compact group-by
+   text-button (group-by scopes only the accordion below, so it lives on that
+   zone rather than next to the global search). */
+.funcflow-catalog-header {
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 2px 12px;
+  background: #fff;
+  /* Soft recess under the grey collections tray. Inset (not a drop shadow on
+     the tray) so the scrolling zones can never clip it. */
+  box-shadow: inset 0 3px 4px -2px rgba(31, 45, 61, 0.12);
+}
+
+.funcflow-zone-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--grey-4, #888);
+  user-select: none;
+}
+
+.funcflow-groupby-btn {
   font-size: 12px;
-  background: white;
+  color: var(--grey-5, #666);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.funcflow-groupby-btn:hover {
+  color: var(--blue-1, #2083d5);
+  background: var(--grey-1, #f2f2f5);
 }
 
 .funcflow-tree-container {
-  flex: 1;
+  /* flex-basis 0 (not auto): the catalog takes the LEFTOVER space instead of
+     competing with its huge content size — a tall accordion must never
+     squeeze the collections tab below its own content (up to its cap). */
+  flex: 1 1 0;
   overflow-y: auto;
   padding: 0 4px;
-  min-height: 0;
+  /* The catalog is the workhorse — a stuffed collections tab or a full
+     suggestions strip can never crush it below this floor. */
+  min-height: 40%;
 }
 
 /* ---------- Suggestions pane (bottom of the toolbox) ---------- */
-/* Expanded: a fixed 30% of the browser height under the function tree.
-   Collapsed: just the header strip. */
+/* Expanded: a fixed 25% of the browser height under the function tree.
+   Deliberately reads as a DIFFERENT surface than the catalog above it — an
+   accent top edge + a blue-tinted background — so a first-time user notices
+   the assistant strip without it shouting. Collapsed: just the header strip. */
 .ff-suggest-pane {
-  flex: 0 0 30%;
+  /* Content-driven height capped at a quarter of the toolbox; under layout
+     pressure it may shrink (the list scrolls internally). The tint + header
+     carry the zone identity — the boundary is a quiet hairline. */
+  flex: 0 1 auto;
+  max-height: 25%;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-top: 1px solid var(--grey-2, #ddd);
-  background: #fcfcfd;
-  box-shadow: var(--grey-1) 0px -3px 22px 9px;
+  border-top: 1px solid var(--grey-2, #e0e0e0);
+  background: #eef5fc;
 }
 
-.ff-suggest-pane[data-collapsed="true"] {
+.ff-suggest-pane[data-collapsed="true"],
+.ff-suggest-pane[data-empty="true"] {
   flex: 0 0 auto;
+}
+
+/* Suggestions are canvas context, not search results — while the user is
+   searching the strip collapses to a dimmed header, both freeing the space
+   for results and making clear it isn't part of them. */
+.funcflow-browser[data-searching="true"] .ff-suggest-pane {
+  opacity: 0.45;
+  flex: 0 0 auto;
+}
+
+.funcflow-browser[data-searching="true"] .ff-suggest-pane-list {
+  display: none;
 }
 
 .ff-suggest-pane-header {
@@ -106,27 +158,34 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #607d8b;
-  background: #eceff1;
+  color: #1565c0;
+  background: #ddeafa;
   cursor: pointer;
   user-select: none;
 }
 
+/* A dimmed --orange-2 bulb — a warm "idea" glyph against the blue header. */
+.ff-suggest-pane-bulb {
+  color: var(--orange-2, #ffa24a);
+  opacity: 0.8;
+  font-size: 12px;
+}
+
 .ff-suggest-pane-count {
-  color: #90a4ae;
+  color: #5e8fc7;
   font-weight: 500;
 }
 
 .ff-suggest-pane-caret {
   margin-left: auto;
   cursor: pointer;
-  color: #90a4ae;
+  color: #5e8fc7;
   padding: 0 2px;
   line-height: 1;
 }
 
 .ff-suggest-pane-caret:hover {
-  color: #455a64;
+  color: #1565c0;
 }
 
 .ff-suggest-pane[data-collapsed="true"] .ff-suggest-pane-list {
@@ -134,14 +193,22 @@
 }
 
 .ff-suggest-pane-list {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  padding: 2px 0;
+  padding: 4px 0 2px;
 }
 
+/* One suggestion = one thin line: the action leads, its reason trails inline
+   in a muted tone (both ellipsize). Twice as many fit vs. the old 2-row card. */
 .ff-suggest-pane-item {
-  padding: 4px 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 10px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .ff-suggest-pane-item:hover {
@@ -149,6 +216,7 @@
 }
 
 .ff-suggest-pane-item-label {
+  flex: 0 1 auto;
   font-size: 12px;
   color: var(--grey-6, #333);
   white-space: nowrap;
@@ -161,11 +229,19 @@
 }
 
 .ff-suggest-pane-item-reason {
-  font-size: 10px;
+  /* core css forces flex-shrink: 0 on spans in ui-div flex rows — without the
+     override the reason hard-clips at the panel edge instead of ellipsizing */
+  flex: 1 1 auto !important;
+  min-width: 0;
+  font-size: 10.5px;
   color: var(--grey-4, #888);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ff-suggest-pane-item-reason::before {
+  content: '— ';
 }
 
 .ff-suggest-pane-empty {
@@ -175,18 +251,258 @@
 }
 
 .funcflow-func-item {
-  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 12px;
   font-size: 12px;
   color: var(--grey-5, #555);
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .funcflow-func-item:hover {
   background: var(--blue-0, #e3f2fd);
   color: var(--blue-2, #1565c0);
+}
+
+.funcflow-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Trailing ★ on every catalog row: invisible until the row is hovered (or the
+   node is already starred). Gold when active — the platform favorites color. */
+.funcflow-item-star {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  padding: 1px 2px;
+  color: var(--grey-3, #b7bdc6);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.funcflow-func-item:hover .funcflow-item-star {
+  opacity: 1;
+}
+
+.funcflow-item-star:hover {
+  color: #f0ab00;
+}
+
+.funcflow-item-star-active {
+  opacity: 1 !important;
+  color: #f0ab00;
+}
+
+/* ---------- Top tabs (Files / Queries / Workflows / Favorites) ---------- */
+/* The collections strip above the search box: a platform tab control whose
+   pane content scrolls internally. Height is content-driven (a 2-row Files
+   tree doesn't reserve a third of the panel) but capped at 32%, after which
+   the pane content scrolls. */
+.funcflow-top-tabs {
+  flex: 0 1 auto;
+  min-height: 90px;
+  max-height: 32%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* The collections zone sits on a grey "tray" — the white FUNCTIONS catalog
+     below reads as a different surface (especially on the Queries tab, whose
+     per-connection rows otherwise mimic the category rows). */
+  background: var(--grey-1, #f7f8fa);
+  border-bottom: 1px solid rgba(31, 45, 61, 0.10);
+  /* Size container so the strip can compact itself when the toolbox is
+     narrow (small screens / browser zoom) — see the @container rule below. */
+  container-type: inline-size;
+}
+
+/* Very narrow dock: compact the headers unconditionally. */
+@container (max-width: 240px) {
+  .funcflow-top-tabs .d4-tab-header {
+    padding: 4px 4px;
+    font-size: 11px;
+  }
+}
+
+/* While search chips are visible the strip needs the compaction much earlier
+   (zoomed-in screens, narrow docks) — four labels + count chips must fit
+   without clipping; labels ellipsize before a chip ever clips. */
+@container (max-width: 330px) {
+  .funcflow-browser[data-searching="true"] .d4-tab-header {
+    padding: 4px 4px;
+    font-size: 11px;
+  }
+
+  .funcflow-browser[data-searching="true"] .funcflow-tab-badge {
+    font-size: 10px;
+    padding: 0 3px;
+    margin-left: 2px;
+  }
+}
+
+/* The platform tab host defaults to a fixed 400×300 footprint — inside the
+   ~250px-wide toolbox that clips content on the right and reserves dead
+   vertical space, so neutralize it and let the content drive the size. */
+.funcflow-top-tabs > .d4-tab-host {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  /* platform forces flex-shrink: 0 on tab hosts — without shrink the host
+     keeps its full content height inside the clamped strip and the pane can
+     never scroll (the strip just clips it) */
+  flex: 0 1 auto !important;
+  display: flex;
+  flex-direction: column;
+  /* Clicking a tab must never scroll the host sideways (that clips the pane
+     content) — the compact headers below make all four tabs fit instead. */
+  overflow: hidden;
+}
+
+/* Compact headers so Files / Queries / Workflows / Favorites all fit the
+   ~250px toolbox width without a horizontal scroll. */
+.funcflow-top-tabs .d4-tab-header-stripe {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.funcflow-top-tabs .d4-tab-header {
+  padding: 4px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  /* Inactive tabs read as options, not four active tabs: grey until selected. */
+  color: var(--grey-5, #666);
+}
+
+/* The label shrinks and ellipsizes; the badge after it never clips. */
+.funcflow-top-tabs .d4-tab-header .funcflow-tab-label {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funcflow-top-tabs .d4-tab-header:hover {
+  color: var(--grey-6, #333);
+}
+
+.funcflow-top-tabs .d4-tab-header.selected {
+  color: var(--blue-1, #2083d5);
+  box-shadow: inset 0 -2px 0 var(--blue-1, #2083d5);
+}
+
+/* Search-time match-count badge on a tab header (shown only when > 0);
+   a 0-match tab dims instead of carrying a "0" badge. */
+.funcflow-tab-badge {
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--blue-2, #1565c0);
+  background: #dcebfb;
+  border-radius: 7px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  flex: 0 0 auto;
+}
+
+.funcflow-top-tabs .d4-tab-header.funcflow-tab-dim {
+  color: var(--grey-3, #ccc);
+}
+
+.funcflow-top-tabs .d4-tab-header.funcflow-tab-dim .funcflow-tab-badge {
+  color: var(--grey-4, #999);
+  background: var(--grey-1, #f2f2f5);
+}
+
+.funcflow-top-tabs .d4-tab-content {
+  flex: 0 1 auto !important;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.funcflow-tab-content {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* The tab pane is the ONE scroll container — the files tree must not nest its
+   own scrollbar inside it (d4-tree-view-root defaults to overflow auto, which
+   showed a second scrollbar once the inline max-height cap was dropped). */
+.funcflow-tab-content .d4-tree-view-root {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Sticky folder rows carry a background so they cover content while stuck —
+   core hardcodes white, which paints a patchwork on the grey tray. Match the
+   tray instead. */
+.funcflow-tab-content .d4-tree-view-root.d4-tree-view-sticky .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node:not(.d4-tree-view-node-selected):not(:hover) {
+  background-color: var(--grey-1, #f7f8fa);
+}
+
+/* The Queries tab reuses .funcflow-subsections, whose own light background and
+   shadow were designed for nesting inside the old white accordion — on the
+   grey tray they read as a stray white slab. Flat on the tray instead. */
+.funcflow-tab-content .funcflow-subsections {
+  background: transparent;
+  border-radius: 0;
+}
+
+.funcflow-tab-content .funcflow-subsections .d4-accordion-pane-content {
+  box-shadow: none;
+  background: transparent;
+}
+
+.funcflow-tab-content .d4-accordion {
+  background: transparent;
+}
+
+/* Short hint above the Files tree pointing at local-file upload — the one
+   sentence a novice needs, so it must stay legible (grey-5, not the palest). */
+.funcflow-tab-hint {
+  padding: 4px 10px 2px;
+  font-size: 11.5px;
+  color: var(--grey-5, #666);
+  line-height: 1.4;
+}
+
+.funcflow-tab-empty {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--grey-4, #999);
+  line-height: 1.5;
+}
+
+/* Muted section-header glyph — fixed 16px box so labels align vertically.
+   Grey always: colored icons would compete with the blue selection accent. */
+.funcflow-section-icon {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  margin-right: 6px;
+  color: var(--grey-4, #7d8b99);
+  flex: 0 0 auto;
+}
+
+/* Per-connection query rows: one size down from the category headers —
+   together with the tray + database glyph they read as a different kind of
+   list, not more categories. */
+.funcflow-subsections .d4-accordion-pane-header {
+  font-size: 12px;
 }
 
 /* The nested per-connection accordion under "Queries" (a platform

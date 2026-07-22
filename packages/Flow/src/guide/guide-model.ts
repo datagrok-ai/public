@@ -20,6 +20,8 @@ export interface GuideHost {
   getFlow(): FlowEditor | undefined;
   /** Ensure the function browser (toolbox) is visible. */
   showFunctionBrowser(): void;
+  /** Activate one of the toolbox top tabs (Files / Queries / Workflows / Favorites). */
+  showToolboxTab(name: 'Files' | 'Queries' | 'Workflows' | 'Favorites'): void;
   /** An always-present element intro/outro popups can anchor to (the help button). */
   readonly anchorEl: HTMLElement;
 }
