@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.1 (2026-07-22)
+
+* `grok test` — the Node-pass report now merges into the browser report by column name. The line-wise merge assumed identical column order, so node rows landed misaligned (string values in the integer `ms` column) and the CI test-report upload failed with `invalid input syntax for type integer`.
+
 ## 6.5.0 (WIP)
 
 * `grok test` — added a Node (browserless) pass: tests annotated `{node: true}` run headless under the js-api Node runtime before the browser launches; the browser pass excludes them and is skipped entirely when nothing browser-only matches. New flags: `--skip-node`, `--node-only`. Packages opt in by exporting `testNode()` from `package-test.ts`; others keep the previous behavior.
