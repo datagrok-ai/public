@@ -645,7 +645,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
       - name: Create error notification
-        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
+        if: ${{ !cancelled() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure') }}
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             docker compose -p datagrok logs --no-color --timestamps
@@ -859,4 +859,14 @@ jobs:
         run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # `Test Package` is continue-on-error for *Tests / Chemspace / DevTools / ApiSamples
+      # so that publishing and notifications still run after a red test run. That used to
+      # leave the whole job green — failing tests were invisible at the workflow level.
+      # This final gate keeps the publish path intact but fails the job.
+      - name: Fail job on test failures
+        if: ${{ !cancelled() && steps.test-package.outcome == 'failure' }}
+        run: |
+          echo "::error title=${{ matrix.package }}: failed tests::'Test Package' step failed - see job output"
+          exit 1
 
