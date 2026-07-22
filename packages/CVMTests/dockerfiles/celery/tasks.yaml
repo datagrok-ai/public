@@ -1,0 +1,72 @@
+{
+  "tasks": [
+    {
+      "name": "cvmDataframe",
+      "module": "dataframe"
+    },
+    {
+      "name": "cvmDataframeNulls",
+      "module": "dataframe"
+    },
+    {
+      "name": "cvmIntInBound",
+      "module": "dataframe"
+    },
+    {
+      "name": "cvmIntOutBound",
+      "module": "dataframe"
+    },
+    {
+      "name": "cvmEmptyDataframe",
+      "module": "dataframe"
+    },
+    {
+      "name": "cvmApiKey",
+      "module": "misc"
+    },
+    {
+      "name": "cvmCancel",
+      "module": "misc"
+    },
+    {
+      "name": "cvmTwoOutputs",
+      "module": "misc"
+    },
+    {
+      "name": "cvmInt",
+      "module": "scalars"
+    },
+    {
+      "name": "cvmDouble",
+      "module": "scalars"
+    },
+    {
+      "name": "cvmBool",
+      "module": "scalars"
+    },
+    {
+      "name": "cvmString",
+      "module": "scalars"
+    },
+    {
+      "name": "cvmBigInt",
+      "module": "scalars"
+    },
+    {
+      "name": "cvmDate",
+      "module": "scalars"
+    },
+    {
+      "name": "cvmBlob",
+      "module": "streaming"
+    },
+    {
+      "name": "cvmFile",
+      "module": "streaming"
+    },
+    {
+      "name": "cvmMultiInput",
+      "module": "streaming"
+    }
+  ]
+}
