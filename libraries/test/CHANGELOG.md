@@ -3,6 +3,7 @@
 ## 1.4.0 (WIP)
 
 * Added the `node` option to `TestOptions`/`CategoryOptions` (test runs headless under the js-api Node runtime, no browser) and `nodeOnly`/`excludeNodeTests` to `TestExecutionOptions`; categories with no tests in the requested node/browser target are skipped entirely, including `before()`/`after()`
+* Auto tests generated from query `-- test:` annotations are marked `node: true` — they evaluate server-side and, with the shared `OpenFile` fallback in the Node runtime, run headless (moves ~200 DBTests query tests off the browser)
 
 ## 1.3.1 (WIP)
 

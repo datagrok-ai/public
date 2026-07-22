@@ -6,23 +6,21 @@ import {
   expect,
 } from '@datagrok-libraries/test/src/test';
 
-// Tests are browser-only by default; none here are node-capable yet: OpenFile is an
-// xamgle-only @CmdFunc, so it does not resolve under the Node runtime ("Variable
-// OpenFile not found") even though its core path is a pure dapi round-trip
-// (dapi.files.readBinaryDataFrames). Annotate node: true once OpenFile is registered
-// in the shared/Node interop surface.
+// The csv tests run headless via the shared OpenFile fallback (grok_shared
+// shared_actions.dart, dapi.files.readBinaryDataFrames); the browser supersedes it
+// with xamgle's OpenFile.
 category('Files: OpenFile', () => {
   test('Open big csv', async () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/chem/zbb/99_p0_ph7.csv'});
     expect(df.name, '99_p0_ph7', 'Table name differs');
     expect(df.rowCount, 574356);
-  }, {stressTest: true});
+  }, {stressTest: true, node: true});
 
   test('Open small csv', async () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/cars.csv'});
     expect(df.name, 'cars', 'Table name differs');
     expect(df.rowCount, 30);
-  }, {stressTest: true});
+  }, {stressTest: true, node: true});
 
   test('Project with big table csv', async () => {
     const projectName = 'Test tables > 20mb';

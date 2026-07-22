@@ -380,7 +380,11 @@ export async function initAutoTests(package_: _DG.Package, module?: any) {
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
-        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT });
+        }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT,
+          // Query tests evaluate server-side (expressions like ExpectTable(Query(), OpenFile(...))
+          // resolve through core functions available in the Node runtime), so they can run headless;
+          // tests of client JS functions need the browser-loaded package.
+          node: f instanceof DG.DataQuery });
         if (map.cat) {
           const cat: string = map.cat;
           if (moduleTests[cat] === undefined)
