@@ -13,11 +13,14 @@ module.exports = {
   },
   resolve: {
     symlinks: false,
-    extensions: ['.wasm', '.mjs', '.ts', '.json', '.js', '.tsx'],
+    // '.js' before '.ts' (like ApiTests): with @datagrok-libraries linked from the
+    // repo, node_modules ships .ts sources next to the compiled .js, and ts-loader
+    // refuses to compile .ts inside node_modules.
+    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      { test: /\.tsx?$/, loader: 'ts-loader', exclude: /node_modules/ }
     ],
   },
   devtool: 'source-map',
