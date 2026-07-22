@@ -14,6 +14,7 @@ import {loadPackages} from '../utils/test-utils';
 import * as color from '../utils/color-utils';
 import {check} from './check';
 import {generateCeleryArtifacts} from '../utils/python-celery-gen';
+import {generateQueueArtifacts} from '../utils/queue-worker-gen';
 
 const {exec, execSync} = require('child_process');
 
@@ -577,6 +578,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 
   // Generate Celery Docker artifacts from python/ if present
   generateCeleryArtifacts(curDir);
+
+  // Generate the Node worker container for meta.queue JS functions if present
+  generateQueueArtifacts(curDir);
 
   // Process Docker images and inject image.json into the ZIP
   let dockerVersion = json.version;

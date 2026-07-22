@@ -387,6 +387,10 @@ export class FuncOptions {
   /// Function that returns a Widget that gets added as a tab to the "Inspector" window
   static InspectorPanel = 'inspectorPanel';
 
+  /// Runs a package JS function as a celery task in a docker-based worker.
+  /// 'true' — an auto-created Node worker container; a name — the package's dockerfiles/[name] container.
+  static Queue = 'queue';
+
   /// Function that should be cached
   static Cache = 'cache';
 
