@@ -52,10 +52,18 @@ category('Celery: node worker benchmark', () => {
   }
 
   test('Cold start: spin-up + first call', async () => {
+    // stop → explicit run(await) → first call: call-triggered auto-start only
+    // exists for on-demand containers, the auto queue container is a regular one
     const container = await queueContainer();
-    await grok.dapi.docker.dockerContainers.stop(container.id, true);
-    const ms = await timedCall('CVMTests:jsCvmInt', {x: 42});
-    log('cold start (container start + worker init + loadPackage + call)', ms);
+    if (!`${container.status}`.includes('stopped'))
+      await grok.dapi.docker.dockerContainers.stop(container.id, true);
+    const t0 = performance.now();
+    await grok.dapi.docker.dockerContainers.run(container.id, true);
+    const startMs = performance.now() - t0;
+    const callMs = await timedCall('CVMTests:jsCvmInt', {x: 42});
+    log('cold start: container start', startMs);
+    log('cold start: first call (worker init + loadPackage)', callMs);
+    log('cold start: total', startMs + callMs);
   }, {benchmark: true, timeout: 600000});
 
   test('Warm scalar call', async () => {
