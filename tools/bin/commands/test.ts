@@ -15,6 +15,7 @@ const execFileAsync = promisify(execFile);
 import * as Papa from 'papaparse';
 import * as testUtils from '../utils/test-utils';
 import * as playwrightRunner from '../utils/playwright-runner';
+import {runNodeTests, NodeTestResult} from '../utils/node-test-runner';
 import {BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv} from '../utils/test-utils';
 import {setAlphabeticalOrder} from '../utils/order-functions';
 
@@ -24,7 +25,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = parseInt(process.env['GROK_TEST_INVOCATION_TIMEOUT_MS'] ?? '', 10) || 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer', 'skip-node', 'node-only'];
 
 const curDir = process.cwd();
 
@@ -251,19 +252,43 @@ export async function test(args: TestArgs): Promise<boolean> {
       }
   }
   process.env.TARGET_PACKAGE = packageName;
+
+  // Node (browserless) pass: runs tests annotated {node: true} headless under the
+  // js-api Node runtime; the browser pass then excludes them. Skipped for --gui/--debug
+  // so every test stays visible in the browser there.
+  let nodeRes: NodeTestResult | undefined = undefined;
+  if (!args['skip-node'] && !args['skip-puppeteer'] && !args.gui && !args.debug && !args.package) {
+    nodeRes = await runNodeTests({
+      packageDir: curDir,
+      packageName: packageName,
+      host: args.host ?? '',
+      category: args.category,
+      test: args.test,
+      stressTest: args['stress-test'],
+      benchmark: args.benchmark,
+      verbose: args.verbose,
+    });
+  }
+  if (args['node-only'] && nodeRes == null) {
+    color.error('--node-only: the Node test pass is not available for this package.');
+    process.exit(1);
+  }
+
   let res: ResultObject;
-  if (args['skip-puppeteer']) {
+  if (args['skip-puppeteer'] || args['node-only'] || (nodeRes != null && nodeRes.browserTestsRemaining === 0)) {
     // Playwright-only mode: skip the Puppeteer browser launch + DG.Test runner.
     // Used by Playwright-only test directories (e.g. public/playwright-public)
     // that have a `playwrightTests` field in package.json but no Dart/JS package
-    // tests on the server.
+    // tests on the server. Also taken when the Node pass covered every matched test.
+    if (nodeRes != null && nodeRes.browserTestsRemaining === 0 && !args['node-only'] && !args['skip-puppeteer'])
+      color.info('All matched tests ran in the Node pass; skipping the browser run.');
     res = {
       failed: false, verbosePassed: '', verboseSkipped: '', verboseFailed: '',
       passedAmount: 0, skippedAmount: 0, failedAmount: 0, csv: '',
     };
   } else {
     try {
-      res = await runTesting(args);
+      res = await runTesting(args, nodeRes != null);
     } catch (e: any) {
       // Don't let Puppeteer-side failures (login error, browser crash) skip the
       // Playwright pass — the two suites have independent auth and runtime paths,
@@ -278,7 +303,26 @@ export async function test(args: TestArgs): Promise<boolean> {
     }
   }
 
-  if (!args['skip-playwright']) {
+  if (nodeRes != null) {
+    // Merge the Node pass into the browser result (same CSV columns/order).
+    if (!res.csv || res.csv.trim().split('\n').length < 2) {
+      res.csv = nodeRes.csv;
+      res.passedAmount += nodeRes.passedAmount;
+      res.failedAmount += nodeRes.failedAmount;
+      res.skippedAmount += nodeRes.skippedAmount;
+      res.failed = res.failed || nodeRes.failed;
+      res.verbosePassed = (res.verbosePassed || '') + nodeRes.verbosePassed;
+      res.verboseFailed = (res.verboseFailed || '') + nodeRes.verboseFailed;
+      res.verboseSkipped = (res.verboseSkipped || '') + nodeRes.verboseSkipped;
+      res.modernOutput = res.modernOutput || nodeRes.modernOutput;
+    } else if (nodeRes.csv && nodeRes.csv.trim().split('\n').length >= 2) {
+      res = await mergeBrowsersResults([res, nodeRes]);
+    } else {
+      res.failed = res.failed || nodeRes.failed;
+    }
+  }
+
+  if (!args['skip-playwright'] && !args['node-only']) {
     const ptDir = playwrightRunner.hasPlaywrightTests(curDir);
     if (ptDir) {
       const ptRes = await playwrightRunner.runPlaywrightTests(curDir, ptDir, args, args.host ?? '');
@@ -333,7 +377,7 @@ let totalRetries = 0;
 const MAX_RETRIES_PER_SESSION = 10;
 let retryEnabled = true;
 
-async function runTesting(args: TestArgs): Promise<ResultObject> {
+async function runTesting(args: TestArgs, excludeNodeTests: boolean = false): Promise<ResultObject> {
 
   retryEnabled = args['retry'] ?? true;
   if (args.test || args.category)
@@ -343,6 +387,7 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
     params: {
       category: args.category ?? '',
       test: args.test ?? '',
+      excludeNodeTests: excludeNodeTests || undefined,
       options: {
         catchUnhandled: args.catchUnhandled,
         report: args.report,
@@ -556,6 +601,8 @@ interface TestArgs {
   logfailed?: boolean | string,
   'skip-playwright'?: boolean,
   'skip-puppeteer'?: boolean,
+  'skip-node'?: boolean,
+  'node-only'?: boolean,
 }
 
 interface TestResult {
@@ -1112,6 +1159,8 @@ function buildTestArgs(args: TestArgs): string[] {
   if (args['stress-test']) parts.push('--stress-test');
   if (args['ci-cd']) parts.push('--ci-cd');
   if (args['no-retry']) parts.push('--no-retry');
+  if (args['skip-node']) parts.push('--skip-node');
+  if (args['node-only']) parts.push('--node-only');
   return parts;
 }
 
