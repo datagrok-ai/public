@@ -34,6 +34,7 @@ import './tests/group-tests';
 import './tests/suggestion-tests';
 import './tests/output-strip-tests';
 import './tests/output-views-tests';
+import './tests/uploaded-file-tests';
 
 export let _package = new DG.Package();
 export { tests };

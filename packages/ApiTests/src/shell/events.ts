@@ -69,6 +69,22 @@ category('Events', () => {
         expect(fired, true);
     });
 
+    test('onFileDragEnter', async () => {
+        let fired = false;
+        const tv = grok.shell.addTableView(grok.data.demo.demog(10));
+        const subscription = grok.events.onFileDragEnter.subscribe((ev) => {
+            fired = true;
+            ev.preventDefault(); // suppresses the platform's drop overlay
+        });
+        const dt = new DataTransfer();
+        dt.items.add(new File(['a,b\n1,2'], 'drag-enter-test.csv'));
+        tv.root.dispatchEvent(new DragEvent('dragenter', {bubbles: true, cancelable: true, dataTransfer: dt}));
+        await delay(500);
+        subscription.unsubscribe();
+        grok.shell.closeTable(tv.dataFrame);
+        expect(fired, true);
+    });
+
     test('debounce', async () => {
         let subscriptionPassed = false;
         let tv = grok.shell.addTableView(grok.data.demo.demog())

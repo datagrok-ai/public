@@ -7,8 +7,9 @@ export * from './package.g';
 
 import {FuncFlowView} from './funcflow-view';
 import {FlowEntityHandler} from './entity/flow-entity-handler';
-import {parseFlowBody} from './serialization/flow-script-format';
+import {parseFlowBody, FLOW_LANGUAGE} from './serialization/flow-script-format';
 import { getFilesBrowser } from './utils/files-browser-tree';
+import {readUploadedFileBytes, parseFileToDataFrame, syncFlowFilePermissions} from './utils/uploaded-files';
 import * as aiTools from './ai-tools';
 
 export const _package = new DG.Package();
@@ -37,6 +38,43 @@ export function info() {
 //meta.includeInFlow: false
 export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> {
   await FlowEntityHandler.instance.run(scriptCall);
+}
+
+/* The node behind local-file uploads: dropping a file onto the canvas stores
+ * its bytes (in memory until the flow is saved, then in the server's
+ * GUID-addressed file store) and adds this function as a node, so the flow
+ * replays and shares like any other. See utils/uploaded-files.ts. */
+//name: readUploadedFile
+//friendlyName: Uploaded File
+//description: Reads a file uploaded into a flow and parses it into a table
+//input: string fileId
+//input: string fileName
+//output: dataframe result
+//meta.includeInFlow: true
+export async function readUploadedFile(fileId: string, fileName: string): Promise<DG.DataFrame> {
+  const bytes = await readUploadedFileBytes(fileId, fileName);
+  return parseFileToDataFrame(fileName, bytes);
+}
+
+/* Runs at platform startup (not just when a Flow view is open): sharing a flow
+ * script from anywhere — Browse, a link, the context panel — must extend read
+ * access to the uploaded-file blobs its nodes reference. */
+//name: flowShareSync
+//tags: autostart
+//description: Keeps uploaded-file permissions in sync when a flow script is shared
+//meta.includeInFlow: false
+export function flowShareSync(): void {
+  grok.events.onEntityShared.subscribe((e) => {
+    if (e instanceof DG.Script && (e.language as string) === FLOW_LANGUAGE)
+      void syncSharedFlow(e.id);
+  });
+}
+
+/** The shared entity from the dialog can be shallow — re-fetch for the body. */
+async function syncSharedFlow(id: string): Promise<void> {
+  const script = await grok.dapi.scripts.find(id).catch(() => null);
+  if (script?.script)
+    await syncFlowFilePermissions(script);
 }
 
 export class PackageFunctions {
