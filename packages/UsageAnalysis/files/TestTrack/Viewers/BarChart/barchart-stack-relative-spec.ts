@@ -58,7 +58,7 @@ test('Bar Chart — Stacking, Relative Values, and Negative Aggregates', async (
     }, {stack: stackCol});
     // Snapshot the absolute-width stacked layout, then enable Relative Values:
     // each outer bar normalizes to equal width — the width normalization is a
-    // large canvas color delta (not just a prop echo).
+    // large canvas color delta.
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     await page.waitForTimeout(400);
     const settle = await v.diffCanvasColors(page, 'Bar chart');

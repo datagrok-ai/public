@@ -59,7 +59,7 @@ expected_results:
 ## Setup
 
 1. Close all open views.
-2. Open the SPGI dataset (use `readDataframe` helper or open via the file browser).
+2. Open the spgi-100 dataset (use `readDataframe` helper or open via the file browser).
 3. Add a Line Chart viewer to the active table view (use `findViewer` helper or
    add via the Toolbox Viewers icon).
 4. Record the current page-error count and `grok.shell.warnings` baseline before
@@ -71,13 +71,13 @@ expected_results:
 
 Steps:
 1. In the Line Chart property panel, set **X column** to `CAST Idea ID`
-   (a numeric column present in SPGI).
+   (a numeric column present in spgi-100).
 2. Set **Y columns** to `Chemical Space X` (one column to establish a connected-line trend).
 3. Verify that the chart builds — Step 4.
 4. Assert: no console error or page error since baseline (warnings delta == 0,
    page error count unchanged). The canvas renders a connected trend line.
 5. In the property panel under **Data**, set **Split** to `Stereo Category`
-   (a categorical column in SPGI — non-default, lead action).
+   (a categorical column in spgi-100 — non-default, lead action).
 6. Assert: no console error since the previous checkpoint (Step 6 no-error floor).
 7. Under **Data**, set **Aggregation** to `avg` (a non-default aggregation for
    duplicate X values).

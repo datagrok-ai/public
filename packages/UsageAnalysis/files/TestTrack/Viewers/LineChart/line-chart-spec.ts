@@ -436,7 +436,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
 
     // SPGI has Bio/Chem columns, so the grid needs the extra render wait.
     await page.evaluate(async () => {
-      const spgi = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const spgi = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
       grok.shell.addTableView(spgi);
       await new Promise(resolve => {
         const sub = spgi.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -464,11 +464,11 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     });
     await page.locator('[name="viewer-Line-chart"]').first().waitFor({timeout: 10000});
 
-    // Bind the chart to SPGI: props.table echoes the SPGI name AND the viewer's
-    // bound dataFrame becomes SPGI's (3624 rows) — the row source really moved,
-    // it is not just the string being stored.
+    // Bind the chart to SPGI: props.table echoes the SPGI name and the viewer's
+    // bound dataFrame switches to SPGI's, so the row source moved between tables,
+    // not just the stored string.
     const toSpgi = await page.evaluate(() => {
-      const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 3624);
+      const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 100);
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
       lc.props.table = spgiTv!.dataFrame.name;
       return {name: lc.props.table, wanted: spgiTv!.dataFrame.name};
@@ -478,9 +478,9 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     expect(await page.evaluate(() => {
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
       return (lc as any).dataFrame.rowCount;
-    })).toBe(3624);
+    })).toBe(100);
 
-    // Switch back to demog: the bound dataFrame returns to 5850 rows.
+    // Switch back to demog: the bound dataFrame returns to demog's row count.
     await page.evaluate(() => {
       const demogTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 5850);
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
@@ -536,13 +536,13 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await lcSetProps(page, {rowSource: 'All'});
 
     await page.evaluate(() => {
-      const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 3624);
+      const spgiTv = Array.from(grok.shell.tableViews).find(v => v.dataFrame.rowCount === 100);
       spgiTv?.close();
     });
   });
 
   await softStep('Filter expression and collaborative filtering', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/SPGI.csv');
+    await openDatasetWithLineChart(page, 'System:AppData/Chem/tests/spgi-100.csv');
 
     const full = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
 
@@ -550,7 +550,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     // line chart plots (lc.filter) without touching the shared df.filter. The
     // real signal is that in-viewer count dropping below the full row set — the
     // points on the chart are filtered — not the string echoing back.
-    await lcSetProps(page, {filter: '${CAST Idea ID} <636500'});
+    await lcSetProps(page, {filter: '${CAST Idea ID} <634834'});
     const lcFiltered = await page.evaluate(() => {
       const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
       return (lc as any).filter.trueCount;
@@ -722,7 +722,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
   });
 
   await softStep('GROK-17835 regression (SPGI)', async () => {
-    await openDatasetWithLineChart(page, 'System:DemoFiles/SPGI.csv');
+    await openDatasetWithLineChart(page, 'System:AppData/Chem/tests/spgi-100.csv');
 
     await lcSetProps(page, {multiAxis: true});
 

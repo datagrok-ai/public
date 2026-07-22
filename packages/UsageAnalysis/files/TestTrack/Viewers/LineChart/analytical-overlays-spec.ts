@@ -9,7 +9,7 @@ declare const grok: any;
 
 test.use(specTestOptions);
 
-const datasetPath = 'System:DemoFiles/SPGI.csv';
+const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 const pageErrors: string[] = [];
 const consoleErrors: string[] = [];

@@ -18,9 +18,9 @@ All scenarios should start with the following sequence of events:
 4. Right-click on the HEIGHT chart area, go to HEIGHT > Hide other charts — only HEIGHT remains
 5. Verify Y columns reduced to HEIGHT only
 
-## Custom tooltip (uses SPGI dataset)
+## Custom tooltip (uses spgi-100 dataset)
 
-Setup: Close all, open SPGI (not demog)
+Setup: Close all, open spgi-100 (not demog)
 
 1. Add a line chart by clicking the Line Chart icon in the Toolbox > Viewers section
 2. Go to the Context Panel > X, set X to Chemist 521
@@ -41,5 +41,5 @@ Setup: Close all, open SPGI (not demog)
 ---
 {
   "order": 102,
-  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv,System:AppData/Chem/tests/spgi-100.csv"]
 }

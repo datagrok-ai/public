@@ -79,8 +79,8 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     });
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     await page.waitForTimeout(400);
-    // Settle-precheck: the indicators-off frame is quiescent (measured 0 px on
-    // dev 2026-07-21). Ceiling 30 sits well below the glyph signal floor 150.
+    // Settle-precheck: the indicators-off frame is quiescent. Ceiling 30 sits
+    // well below the glyph signal floor 150.
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeLessThan(30);
     await page.evaluate(async () => {
@@ -89,7 +89,7 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
       await new Promise((r) => setTimeout(r, 700));
     });
     // Toggling the clipped-bar indicator glyphs back on adds a measurable color
-    // delta (measured ~340 px on dev), well above the settle ceiling.
+    // delta, well above the settle ceiling.
     const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.valueMin).toBe(info.shortest + info.minOffset);
@@ -135,8 +135,8 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     });
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     await page.waitForTimeout(400);
-    // Settle-precheck: the indicators-off frame is quiescent (measured 0 px on
-    // dev 2026-07-21). Ceiling 30 sits well below the glyph signal floor 150.
+    // Settle-precheck: the indicators-off frame is quiescent. Ceiling 30 sits
+    // well below the glyph signal floor 150.
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeLessThan(30);
     await page.evaluate(async () => {
@@ -144,8 +144,8 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
       bc.props.showClippedBarIndicators = true;
       await new Promise((r) => setTimeout(r, 700));
     });
-    // Top-clipped indicator glyphs add a measurable color delta (measured ~496
-    // px on dev), well above the settle ceiling.
+    // Top-clipped indicator glyphs add a measurable color delta, well above the
+    // settle ceiling.
     const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.valueMax).toBe(info.tallest - info.maxOffset);
@@ -173,8 +173,8 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     const errAfter = pageErrors.length + consoleErrors.length;
     // Presence-only: dragging the range-slider to navigate the constrained range
     // (md Scenario 1 Step 7) is a documented reduction — a headless drag of the
-    // range-slider is inert (zero canvas delta, recon 2026-07-21), consistent
-    // with the Filter Panel numeric-drag reduction.
+    // range-slider is inert, consistent with the Filter Panel numeric-drag
+    // reduction.
     expect(info.rangeSliders).toBeGreaterThan(0);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);

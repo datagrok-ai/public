@@ -9,7 +9,7 @@ declare const grok: any;
 
 test.use(specTestOptions);
 
-const datasetPath = 'System:DemoFiles/SPGI.csv';
+const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 const pageErrors: string[] = [];
 const consoleErrors: string[] = [];
@@ -36,13 +36,11 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
 }
 
 // Render assert (GROK-20255 / Step 4 trend line): a blank Line chart paints 0
-// non-white px (measured live: yColumnNames=[] → 0 on this canvas), while a
-// rendered chart with a data line paints ~240k-283k px on the 1147x488 canvas
-// this viewport produces (Step 4 single Y ~283k, Step 12 two Y + split ~243k).
-// 40000 sits far above any axes-only paint and far below the data render; -1
-// (no canvas / getImageData fault) fails the threshold too.
+// non-white px, while a rendered chart with a data line paints far more. The
+// 28000 threshold sits far above any axes-only paint and far below the data
+// render; -1 (no canvas / getImageData fault) fails the threshold too.
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
-  return (await countCanvasPixels(page, 'Line chart')).total > 40000;
+  return (await countCanvasPixels(page, 'Line chart')).total > 28000;
 }
 
 async function hoverChart(page: Page) {
@@ -100,16 +98,16 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
     const props = await getProps(page, 'xColumnName', 'yColumnNames');
     expect(props.xColumnName).toBe('CAST Idea ID');
     expect(props.yColumnNames).toEqual(['Chemical Space X']);
-    // The 40000-px floor is calibrated for the ~1147x488 canvas this viewport
-    // produces — fail loudly if a layout change resizes it rather than silently
-    // devaluing the threshold.
+    // The 28000-px floor assumes the canvas size this viewport produces — fail
+    // loudly if a layout change resizes it rather than silently devaluing the
+    // threshold.
     const cvDims = await page.evaluate(() => {
       const lc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Line chart') as any;
       const cv = lc?.root?.querySelector('canvas') as HTMLCanvasElement | null;
       return cv ? {w: cv.width, h: cv.height} : {w: -1, h: -1};
     });
-    expect(cvDims.w, 'canvas width changed — recalibrate the 40000-px floor in chartCanvasNonEmpty').toBeGreaterThan(800);
-    expect(cvDims.h, 'canvas height changed — recalibrate the 40000-px floor in chartCanvasNonEmpty').toBeGreaterThan(350);
+    expect(cvDims.w, 'canvas width changed — recalibrate the 28000-px floor in chartCanvasNonEmpty').toBeGreaterThan(800);
+    expect(cvDims.h, 'canvas height changed — recalibrate the 28000-px floor in chartCanvasNonEmpty').toBeGreaterThan(350);
     // The canvas renders a connected trend line, not just a blank frame.
     expect(await chartCanvasNonEmpty(page)).toBe(true);
     expect(realErrors().length).toBe(before);
@@ -167,7 +165,7 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
       }, cols);
       await page.waitForTimeout(500);
       // Page still responds: a follow-up evaluate resolves within timeout.
-      const responsive = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount === 3624);
+      const responsive = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount === 100);
       expect(responsive).toBe(true);
     }
     expect((await getProps(page, 'splitColumnNames')).splitColumnNames).toHaveLength(4);

@@ -41,7 +41,7 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
     // the RENDERED DOM (one axis-slider element per column), so a broken
     // re-render fails instead of echoing the prop value. Setting the columns
     // through the Context Panel dialog is not scriptable headless (the
-    // Select-columns list is canvas-rendered — 2026-07-21 recon).
+    // Select-columns list is canvas-rendered).
     const axes = await page.evaluate(async () => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
       pc.props.columnNames = ['AGE', 'HEIGHT', 'WEIGHT'];
@@ -106,7 +106,7 @@ test('PC Plot — Setup, Column Selection, Color, In-Chart Range Filter, Log Sca
   await softStep('GROK-18000 — add then remove a column, axes update immediately (DOM axis-slider count 3 → 4 → 3)', async () => {
     // GROK-18000: the axes must update immediately with no manual refresh. The
     // read-back is the RENDERED axis-slider set, not the prop echo: adding STARTED
-    // (a valid DateTime axis — it renders axis-slider-STARTED, probed 2026-07-21)
+    // (a valid DateTime axis — it renders axis-slider-STARTED)
     // grows the slider set to four, removing it returns to three.
     const errBefore = pageErrors.length + consoleErrors.length;
     const names = (): Promise<string[]> => page.evaluate(() =>

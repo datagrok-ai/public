@@ -152,10 +152,10 @@ test('Histogram — Core setup, tuning, and bin selection', async ({page}) => {
     await page.waitForTimeout(400);
     // Neither the current-row nor the mouse-over indicator is driven by a
     // headless canvas hover (df.mouseOverRowIdx stays -1, df.currentRowIdx is
-    // not moved by the hover — recon 2026-07-21, demog.csv). So the hover is a
-    // no-error floor, and the current-row indicator is exercised through its
-    // own set/read path: clearing then setting it must round-trip to a real row
-    // whose value sits in the column range (a broken indicator fails this).
+    // not moved by the hover). So the hover is a no-error floor, and the
+    // current-row indicator is exercised through its own set/read path: clearing
+    // then setting it must round-trip to a real row whose value sits in the
+    // column range (a broken indicator fails this).
     const {clearedCur, setCur, valInRange} = await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       const h = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Histogram') as any;

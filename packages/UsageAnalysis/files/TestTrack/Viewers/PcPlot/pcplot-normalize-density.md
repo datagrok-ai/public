@@ -42,12 +42,6 @@ is raised, the page still responds, and the viewer element is still present in t
 DOM. That is the assertion this scenario makes, three times, for the three distinct
 flows named in the atlas critical path.
 
-Nothing here reads back a property the test itself set. The axis count is not
-re-read after `pc.props.columnNames` is assigned — that is a vacuous round-trip.
-The filter count is not carried as an invariant because no reliable programmatic
-filter is applied in Setup; the no-error + DOM-presence floor is the honest
-assertion for this canvas-dominated cp.
-
 ## Setup
 
 1. Close all open views.

@@ -28,8 +28,7 @@ expected_results:
   - anchor: "Scenario 1 Step 5"
     expectation: >-
       Clicking a blank canvas zone releases the active click-filter — the grid
-      returns to the full row range (observed dev behavior: tc 64 → 100,
-      distinct 1 → 5).
+      returns to the full row range.
   - anchor: "Scenario 1 Step 9"
     expectation: >-
       Double-clicking the canvas invokes Reset View and leaves the chart intact
@@ -41,6 +40,12 @@ expected_results:
   - anchor: "Scenario 2 Step 5"
     expectation: >-
       Pressing Esc clears the selection (no rows highlighted).
+  - anchor: "Scenario 3 Step 1"
+    expectation: >-
+      Setting categorical color coding on the Split column through the grid
+      recolors the bars (large canvas delta above the settle floor), and after a
+      save → close → clear → reload layout round-trip the Split column's color
+      scheme is restored and the bar chart reopens.
 ---
 
 # Bar Chart — Setup and core interaction (On Click Filter vs Select)
@@ -55,8 +60,8 @@ expected_results:
 
 > Actuation note: the bar clicks target the dominant **Triazoles** category by
 > fixed canvas fractions (x ≈ 0.55·w, y ≈ 0.392·h). Only that dominant bar is
-> hit-testable headless; other bar positions register no hit (recon
-> 2026-07-21). Switching the filter to a second bar (md Scenario 1 Steps 6-7)
+> hit-testable headless; other bar positions register no hit. Switching the
+> filter to a second bar (md Scenario 1 Steps 6-7)
 > and Alt+drag zoom (md Scenario 1 Step 8) are documented reductions —
 > headless-unreachable — so Reset View (Step 9) is exercised directly without a
 > preceding zoom.
@@ -73,8 +78,8 @@ Steps:
 4. Verify that the grid table is filtered to rows matching that bar's category only;
    all other rows are hidden from the grid (filter indicator appears in the grid header).
 5. Click blank canvas space inside the Bar Chart. Verify the click-filter releases and the grid
-   returns to the full row range (observed dev behavior 2026-07-21: clicking an empty canvas zone
-   under On Click=Filter clears the active bar filter rather than leaving it intact).
+   returns to the full row range (clicking an empty canvas zone under On Click=Filter clears the
+   active bar filter rather than leaving it intact).
 6. Click a different bar segment to switch the active filter to that category.
 7. Verify the grid now shows only rows for the newly clicked category.
 8. Alt+drag horizontally across two bars to zoom into that range.
@@ -102,3 +107,17 @@ Expected:
 - After Step 3: selected rows in the grid are highlighted, but the total visible row count
   equals the full dataset row count (On Click = Select does not filter).
 - After Step 5: no grid rows are highlighted; selection count shows 0.
+
+### Scenario 3: grid color coding on the Split column drives bar colors and persists across a layout round-trip
+
+Steps:
+1. In the grid, apply categorical **Color coding** to the **Primary Series Name** (Split)
+   column and edit the scheme. Verify the bars in the Bar Chart recolor to match the column's
+   category colors. Save the layout, close the bar chart, clear the column color coding, then
+   apply the saved layout again and verify the color scheme is restored and the bar chart reopens.
+
+Expected:
+- After the color scheme is applied: the bars adopt the Split column's category colors
+  (a large canvas repaint versus the uncolored baseline).
+- After the layout round-trip: the Split column's categorical color scheme is restored
+  (the color-coding tag matches the applied scheme) and the bar chart reopens intact.

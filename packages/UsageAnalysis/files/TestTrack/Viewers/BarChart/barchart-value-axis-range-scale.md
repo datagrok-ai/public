@@ -26,9 +26,8 @@ expected_results:
   - anchor: "Scenario 1 Step 7"
     expectation: >-
       The value-axis scroll bar is present on the constrained range. Dragging it
-      is a documented reduction — a headless drag of the range-slider is inert
-      (zero canvas delta, recon 2026-07-21), consistent with the Filter Panel
-      numeric-drag reduction.
+      is a documented reduction — a headless drag of the range-slider is inert,
+      consistent with the Filter Panel numeric-drag reduction.
   - anchor: "Scenario 1 Step 9"
     expectation: >-
       With a logarithmic value axis, positive-count bars re-scale and render

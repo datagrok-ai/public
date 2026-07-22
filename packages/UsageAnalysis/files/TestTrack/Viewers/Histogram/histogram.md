@@ -65,7 +65,7 @@ expected_results:
       canvas content; clearing the formula restores it exactly.
   - anchor: "Data properties Step 7"
     expectation: >-
-      Switching the viewer's Table from SPGI to demog rebinds the histogram to
+      Switching the viewer's Table from spgi-100 to demog rebinds the histogram to
       the demog dataframe and re-picks a value column that belongs to demog.
 ---
 
@@ -89,7 +89,7 @@ All scenarios should start with the following sequence of events:
 3. Disable **Fill Spline**
 4. Disable **Spline**
 
-Actuation note (recon 2026-07-21): spline and fill-spline are pure canvas
+Actuation note: spline and fill-spline are pure canvas
 painting — there is no DOM element or dataframe value that changes when they
 toggle. The automated check is therefore the no-error floor (driving all four
 toggles raises no console/page error and the viewer stays alive), not a
@@ -107,13 +107,11 @@ property read-back. A visual before/after comparison stays a human variation.
 8. Disable **Show Range Slider**
 9. Re-enable all four
 
-Actuation note (recon 2026-07-21): two of these toggles DO carry a real DOM
+Actuation note: two of these toggles DO carry a real DOM
 signal. **Show Column Selector** drives the visibility of the value-column
 combobox (`[name="div-column-combobox-value"]`) and **Show Split Selector**
 drives the split-column combobox (`[name="div-column-combobox-split"]`, visible
-only while a Split Column is set). A live probe flipped each prop off→on three
-times and the combobox computed-visibility tracked it deterministically (off →
-hidden, on → visible). Those two are asserted as a real present→absent→present
+only while a Split Column is set). Those two are asserted as a present→absent→present
 round-trip. **Show Bin Selector**, **Show Range Slider**, the axis toggles and
 X-axis height have no headless DOM signal — the axes and the bin/range strip are
 canvas-drawn — so they ride the no-error floor (drive every toggle, revert to
@@ -135,7 +133,7 @@ appear/hide is a human variation.
    viewer
 7. Clear title and description -- the description text is gone
 
-Actuation note (recon 2026-07-21): the legend is a real DOM signal
+Actuation note: the legend is a real DOM signal
 (`[name="legend"] .d4-legend-item` count tracks the split categories) and the
 description is read back from the viewer's rendered `innerText`. The **title**
 lives in the surrounding header chrome (not inside the viewer element), so it is
@@ -154,7 +152,7 @@ confirm the legend survives the layout pass.
    `showFilteredOutRows` property flips
 4. (Human variation) Right-click specifically on the X axis area
 
-Actuation note (recon 2026-07-21): right-clicking the histogram canvas opens a
+Actuation note: right-clicking the histogram canvas opens a
 single flattened menu (`.d4-menu-item-label`) that already contains BOTH the
 table/view entries AND the histogram-specific entries — the old spec's claim
 that only the view menu appears was wrong. The automated check asserts the
@@ -178,7 +176,7 @@ stays a human variation.
 
 ## Data properties
 
-Setup: open SPGI dataset, add Histogram.
+Setup: open spgi-100 dataset, add Histogram.
 
 1. Select some rows in the grid
 2. Go to the Context Panel > Data, set Row Source to Selected — the histogram's
@@ -190,33 +188,31 @@ Setup: open SPGI dataset, add Histogram.
 6. Open Context Panel > **Data > Table**
 7. Switch the viewer's Table to demog — the histogram rebinds to the demog
    dataframe and re-picks a demog value column
-8. Switch back to SPGI
+8. Switch back to spgi-100
 
-Actuation note (recon 2026-07-21):
+Actuation note:
 
 - **Row Source** (Step 2-3) is measured two independent ways. The non-white
-  canvas total shrinks when Selected paints only the selected rows (All 433634 px
-  → Selected 430846 px, Δ 2788), restoring exactly when switched back (restore
-  noise 0 across selection sizes 3–500). The orange selection-overlay hue
-  (`countSelectionHuePixels`) is the second signal: 566 px under All (the overlay
-  highlights the selected rows on top of the full-data bars), exactly 0 under
-  Selected (no overlay when the whole chart IS the selection), 566 px restored.
-  SPGI is used because it carries a selection large enough to measure. The prior
-  spec only read `props.rowSource` back (a vacuous set-then-read), which this
-  replaces.
-- **Filter formula** (Step 4-5) is measured the same way (cleared 229645 px →
-  filtered 228276 px, restored exactly). The viewer `filter` prop filters only
-  which rows the histogram paints — it does NOT change
-  `df.filter.trueCount` — so the dataframe filter count is not a valid signal
-  here. **demog** is used because the filter expression references its **AGE**
-  column, which SPGI does not have; on SPGI the same formula would be inert.
+  canvas total shrinks when Selected paints only the selected rows, restoring
+  exactly when switched back. The orange selection-overlay hue
+  (`countSelectionHuePixels`) is the second signal: present under All (the overlay
+  highlights the selected rows on top of the full-data bars), zero under Selected
+  (no overlay when the whole chart IS the selection), restored under All. spgi-100 is
+  used because it carries a selection large enough to measure. The prior spec only
+  read `props.rowSource` back (a vacuous set-then-read), which this replaces.
+- **Filter formula** (Step 4-5) is measured the same way (canvas content shrinks
+  under the predicate, restores when cleared). The viewer `filter` prop filters
+  only which rows the histogram paints — it does NOT change `df.filter.trueCount`
+  — so the dataframe filter count is not a valid signal here. **demog** is used
+  because the filter expression references its **AGE** column, which spgi-100 does not
+  have; on spgi-100 the same formula would be inert.
 - **Table switching** (Step 7) is implemented via `props.table = 'demog'` with
-  both tables open, asserting the bound `dataFrame.name` changes SPGI → demog and
-  the auto-picked value column becomes a demog column (CAST Idea ID → AGE). This
-  replaces the prior silent SKIP.
+  both tables open, asserting the bound `dataFrame.name` changes spgi-100 → demog and
+  the auto-picked value column becomes a demog column. This replaces the prior
+  silent SKIP.
 
 ---
 {
   "order": 5,
-  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv","System:AppData/Chem/tests/spgi-100.csv"]
 }

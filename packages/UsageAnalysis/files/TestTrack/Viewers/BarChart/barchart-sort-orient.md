@@ -26,8 +26,8 @@ expected_results:
     expectation: >-
       Flipping Bar Sort from Descending to Ascending applies (barSortOrder echo)
       and the chart renders error-free. The rendered reorder is a documented
-      reduction — flipping barSortOrder produces zero canvas delta headless
-      (recon 2026-07-21), so the visual reorder is not observable.
+      reduction — flipping barSortOrder produces zero canvas delta headless,
+      so the visual reorder is not observable.
   - anchor: "Scenario 1 Step 4"
     expectation: >-
       With stacking enabled on the negative-sum value column, the stacked bars
@@ -45,8 +45,8 @@ expected_results:
     expectation: >-
       Switching to Vertical on small-magnitude counts renders error-free
       (github-3417) and the bars fill the upper region — the bar-fill top sits
-      within the top 40% of the canvas (measured gTopFrac 0.061 on dev), so no
-      excess whitespace appears above the tallest bar. The bar-fill green bbox
+      within the top 40% of the canvas, so no excess whitespace appears above
+      the tallest bar. The bar-fill green bbox
       isolates bar content from the axis chrome that spans the full height.
   - anchor: "Scenario 2 Step 5"
     expectation: >-

@@ -92,10 +92,9 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
         {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0}, extra || {});
       // Second band in the HEIGHT/WEIGHT region. In PC Plot a shift+drag is
       // ADDITIVE by design — no Ctrl modifier is needed to add to the selection.
-      // Probed 2026-07-21: a shift-only second band grows the selection past the
-      // first band's count, whereas adding ctrlKey REPLACES it with a smaller set
-      // (708 vs 3648 on demog). So this second drag stays shift-only to match the
-      // additive product behaviour the assertion below checks.
+      // A shift-only second band grows the selection past the first band's count,
+      // whereas adding ctrlKey REPLACES it with a smaller set. So this second drag
+      // stays shift-only to match the additive product behaviour the assertion checks.
       const x1 = r0.x + r0.width * 0.58, y1 = r0.y + r0.height * 0.42;
       const x2 = r0.x + r0.width * 0.72, y2 = r0.y + r0.height * 0.58;
       overlay.dispatchEvent(new MouseEvent('mousedown', mk(x1, y1, {shiftKey: true})));

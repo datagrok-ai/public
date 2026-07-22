@@ -9,8 +9,8 @@ declare const DG: any;
 
 test.use(specTestOptions);
 
-const datasetPath = 'System:DemoFiles/SPGI.csv';
-const fullRowCount = 3624;
+const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
+const fullRowCount = 100;
 
 const pageErrors: string[] = [];
 const consoleErrors: string[] = [];
@@ -167,13 +167,11 @@ test('Line Chart — Filter Follow and Empty-Chart Resilience', async ({page}) =
     expect(await trueCount(page)).toBe(baseline);
   });
 
-  // The range-slider drag is gesture-uncontrollable-headless — MCP recon
-  // 2026-07-21: the Filter Panel numeric filter is an embedded Histogram with a
-  // canvas-drawn range strip (no DOM handle elements), canvas-strip drags at
-  // two positions leave df.filter untouched, and the min/max d4-filter-inputs
-  // exist but stay invisible (null boundingBox) even after hover. The range is
-  // therefore driven through fg.updateOrAdd, which still verifies the
-  // GROK-20185 observable: the live count update and its reversibility.
+  // The range-slider drag is not scriptable — the Filter Panel numeric filter is
+  // an embedded Histogram with a canvas-drawn range strip (no DOM handle elements)
+  // and min/max inputs that stay invisible to automation. The range is therefore
+  // driven through fg.updateOrAdd, which still verifies the GROK-20185 observable:
+  // the live count update and its reversibility.
   await softStep('S3 Step 1: confirm numeric X, linear scale', async () => {
     const cfg = await getProps(page, 'xColumnName', 'xAxisType');
     expect(cfg.xColumnName).toBe('Chemical Space X');

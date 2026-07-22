@@ -89,7 +89,7 @@ test('Bar Chart — Relative Values requires Stack column', async ({page}) => {
     // At entry Relative Values is on but inert (no Stack). Snapshot the inert
     // single-segment layout, add the Stack column, and measure the canvas color
     // delta: Relative Values now activates and each bar normalizes to equal
-    // width, split into stacked segments — a large, not prop-echo, signal.
+    // width, split into stacked segments.
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     await page.waitForTimeout(400);
     const settle = await v.diffCanvasColors(page, 'Bar chart');

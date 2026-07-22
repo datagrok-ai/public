@@ -47,8 +47,7 @@ test('Histogram tests', async ({page}) => {
   // value-column combobox ([name="div-column-combobox-value"]) and
   // showSplitSelector controls the split-column combobox
   // ([name="div-column-combobox-split"]) — each combobox's computed visibility
-  // flips with its prop (live probe 2026-07-21, deterministic present→absent→
-  // present across 3 rounds). Assert that visibility round-trip.
+  // flips with its prop. Assert that visibility round-trip.
   await softStep('Appearance — selector visibility', async () => {
     const r = await page.evaluate(async () => {
       const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
@@ -62,7 +61,7 @@ test('Histogram tests', async ({page}) => {
       const read = () => ({value: vis('div-column-combobox-value'), split: vis('div-column-combobox-split')});
       // Warm up: set the split column and let the combobox settle out of its
       // cold-start layout transient, then assert the OFF→ON toggle round-trip
-      // (deterministic across 3 probe rounds; the cold-start state is not).
+      // (the settled state is deterministic, the cold-start state is not).
       h.props.splitColumnName = 'SEX';
       h.props.showColumnSelector = true; h.props.showSplitSelector = true; await wait(700);
       h.props.showColumnSelector = false; h.props.showSplitSelector = false; await wait();
@@ -81,8 +80,8 @@ test('Histogram tests', async ({page}) => {
   // The axis toggles, X-axis height, allowColumnSelection, showBinSelector and
   // showRangeSlider have no headless DOM signal — axes and the bin/range strip
   // are canvas-drawn and the bin/range controls do not add, remove, or change the
-  // visibility of a DOM node (live probe 2026-07-21). Drive every one and revert
-  // to defaults under the no-error floor.
+  // visibility of a DOM node. Drive every one and revert to defaults under the
+  // no-error floor.
   await softStep('Appearance — canvas floor', async () => {
     const errBefore = errorCount();
     await page.evaluate(async () => {
@@ -236,7 +235,7 @@ test('Histogram tests', async ({page}) => {
     await page.evaluate(async () => {
       grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-      const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const df = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
       df.name = 'SPGI';
       const tv = grok.shell.addTableView(df);
       await new Promise(resolve => {
@@ -267,11 +266,9 @@ test('Histogram tests', async ({page}) => {
     });
     const restoredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
     const restoredHue = await v.countSelectionHuePixels(page, 'Histogram');
-    // Live measurement 2026-07-21: All 433634 px, Selected 430846 px (Δ 2788),
-    // restored to 433634 exactly (restore noise 0 across selection sizes). The
-    // orange selection overlay is a second, independent signal: 566 px under All,
-    // exactly 0 under Selected (no overlay when the whole chart IS the selection),
-    // 566 px restored. Thresholds carry margin below both observed deltas.
+    // The orange selection overlay is a second, independent signal: present under
+    // All, exactly 0 under Selected (no overlay when the whole chart IS the
+    // selection), and restored under All again.
     expect(allPx).toBeGreaterThan(1000);
     expect(allPx - selectedPx).toBeGreaterThan(1000);
     expect(Math.abs(restoredPx - allPx)).toBeLessThan(500);
@@ -282,10 +279,10 @@ test('Histogram tests', async ({page}) => {
   });
 
   // The viewer `filter` formula narrows which rows the histogram paints (it does
-  // not touch df.filter.trueCount — recon 2026-07-21), so the signal is the
-  // canvas content shrinking under the predicate and restoring when cleared.
-  // demog is used because its AGE column carries the filter expression; SPGI has
-  // no AGE column (Actuation note in histogram.md).
+  // not touch df.filter.trueCount), so the signal is the canvas content shrinking
+  // under the predicate and restoring when cleared. demog is used because its AGE
+  // column carries the filter expression; SPGI has no AGE column (Actuation note
+  // in histogram.md).
   await softStep('Data — filter formula', async () => {
     const errBefore = errorCount();
     await page.evaluate(async () => {
@@ -317,8 +314,6 @@ test('Histogram tests', async ({page}) => {
       await new Promise(r => setTimeout(r, 600));
     });
     const restoredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
-    // Live measurement 2026-07-21: cleared 229645 px, filtered 228276 px (Δ 1369),
-    // restored to 229645 exactly. Thresholds carry margin below the observed Δ.
     expect(clearedPx).toBeGreaterThan(1000);
     expect(clearedPx - filteredPx).toBeGreaterThan(400);
     expect(Math.abs(restoredPx - clearedPx)).toBeLessThan(300);
@@ -331,7 +326,7 @@ test('Histogram tests', async ({page}) => {
     const result = await page.evaluate(async () => {
       grok.shell.closeAll();
       await new Promise(r => setTimeout(r, 500));
-      const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const dfSpgi = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
       dfSpgi.name = 'SPGI';
       grok.shell.addTableView(dfSpgi);
       await new Promise(resolve => {

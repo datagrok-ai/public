@@ -35,7 +35,7 @@ expected_results:
 ## Setup
 
 1. Close all open views.
-2. Open the SPGI dataset (use `readDataframe` helper or open via the file browser).
+2. Open the spgi-100 dataset (use `readDataframe` helper or open via the file browser).
 3. Add a Line Chart viewer to the active table view (use `findViewer` helper or
    add via the Toolbox Viewers icon).
 4. In the Line Chart property panel, set **X column** to `CAST Idea ID` and

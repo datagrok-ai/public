@@ -118,11 +118,10 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
   await softStep('Scenario 1 Step 5: clicking blank canvas space clears the click-filter (grid returns to full range)', async () => {
     // With On Click=Filter still active, re-apply the dominant-bar filter, then
     // click an empty canvas zone. Only the dominant bar (Triazoles) is
-    // hit-testable headless (recon 2026-07-21: every other canvas position
-    // registers no bar hit), so the "switch to a different bar" leg is a
-    // documented reduction; this asserts the reachable half — a blank-zone
-    // click releases the click-filter and the grid returns to the full range
-    // (observed dev behavior 2026-07-21: tc 64 → 100, distinct 1 → 5).
+    // hit-testable headless (every other canvas position registers no bar hit),
+    // so the "switch to a different bar" leg is a documented reduction; this
+    // asserts the reachable half — a blank-zone click releases the click-filter
+    // and the grid returns to the full range.
     const geo = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       grok.shell.tv.dataFrame.filter.setAll(true);
@@ -155,8 +154,8 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
       return {trueCount: df.filter.trueCount, distinctCats: cats.size, rowCount: df.rowCount};
     }, {split: splitCol});
     // Blank-canvas click under On Click=Filter clears the active bar filter and
-    // the grid returns to the full range (probe 2026-07-21: tc 64 → 100,
-    // distinct 1 → 5). This is the reachable half of md Scenario 1 Step 5.
+    // the grid returns to the full range. This is the reachable half of md
+    // Scenario 1 Step 5.
     expect(afterBlank.trueCount).toBe(afterBlank.rowCount);
     expect(afterBlank.distinctCats).toBeGreaterThan(filtered.distinctCats);
   });
@@ -164,10 +163,9 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
   await softStep('Scenario 1 Step 9: Double-click canvas (Reset View) leaves the chart error-free', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     // md Scenario 1 Step 8 (Alt+drag to zoom into a range) is a documented
-    // reduction: a headless Alt+drag over the canvas produces no zoom (recon
-    // 2026-07-21: zero canvas delta before/after), so Reset View cannot be
-    // preceded by a real zoom here. This exercises Reset View directly and
-    // asserts it stays error-free with the chart intact.
+    // reduction: a headless Alt+drag over the canvas produces no zoom, so Reset
+    // View cannot be preceded by a real zoom here. This exercises Reset View
+    // directly and asserts it stays error-free with the chart intact.
     await page.evaluate(async () => {
       grok.shell.tv.dataFrame.filter.setAll(true);
       const fg = grok.shell.tv.getFiltersGroup();
@@ -244,6 +242,75 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
     await page.waitForTimeout(600);
     const selAfter = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
     expect(selAfter).toBe(0);
+  });
+
+  await softStep('Scenario 3 Step 1: grid color coding on the Split column drives bar colors and survives a layout round-trip', async () => {
+    // FLOOR sits far above the settle-precheck ceiling (so a settle-drain
+    // artifact cannot satisfy it) and far below a real setCategorical recolor.
+    const CEIL = 250;
+    const FLOOR = 8000;
+
+    // Clean, uncolored baseline on the current Split column.
+    await page.evaluate(async ({split}) => {
+      const df = grok.shell.tv.dataFrame;
+      df.filter.setAll(true);
+      df.selection.setAll(false);
+      const col = df.col(split);
+      delete col.tags['.color-coding-categorical'];
+      delete col.tags['.color-coding-type'];
+      col.meta.colors.setCategorical({});
+      await new Promise((r) => setTimeout(r, 500));
+    }, {split: splitCol});
+
+    await v.snapshotCanvasColors(page, 'Bar chart');
+    await page.waitForTimeout(500);
+    const precheck = (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
+
+    // Categorical color coding set on the Split column through the grid recolors
+    // the bars — a large canvas delta above the settle floor.
+    const scheme = await page.evaluate(async ({split}) => {
+      const col = grok.shell.tv.dataFrame.col(split);
+      const palette = ['#ff0000', '#00ff00', '#0000ff', '#ff00ff', '#00ffff', '#ffff00', '#ff8000', '#8000ff'];
+      const s: Record<string, string> = {};
+      col.categories.forEach((c: string, i: number) => { s[c] = palette[i % palette.length]; });
+      col.meta.colors.setCategorical(s);
+      for (const vw of grok.shell.tv.viewers) if (vw.type !== 'Grid') try { vw.invalidate?.(); } catch (_) {}
+      await new Promise((r) => setTimeout(r, 800));
+      return s;
+    }, {split: splitCol});
+    const colorDelta = (await v.diffCanvasColors(page, 'Bar chart')).deltaPx;
+
+    // Layout round-trip: save, close the bar chart, clear the column coloring,
+    // then reload — loadLayout restores the Split column's categorical scheme.
+    const rt = await page.evaluate(async ({split}) => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const col = grok.shell.tv.dataFrame.col(split);
+      const layout = grok.shell.tv.saveLayout();
+      await grok.dapi.layouts.save(layout);
+      const id = layout.id;
+      await new Promise((r) => setTimeout(r, 800));
+      bc.close();
+      await new Promise((r) => setTimeout(r, 500));
+      delete col.tags['.color-coding-categorical'];
+      delete col.tags['.color-coding-type'];
+      col.meta.colors.setCategorical({});
+      await new Promise((r) => setTimeout(r, 400));
+      const cleared = JSON.parse(col.tags['.color-coding-categorical'] ?? '{}');
+      const saved = await grok.dapi.layouts.find(id);
+      grok.shell.tv.loadLayout(saved);
+      await new Promise((r) => setTimeout(r, 3000));
+      const col2 = grok.shell.tv.dataFrame.col(split);
+      const bc2 = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const restored = JSON.parse(col2.tags['.color-coding-categorical'] ?? '{}');
+      await grok.dapi.layouts.delete(saved);
+      return {clearedKeys: Object.keys(cleared).length, restored, reopened: !!bc2};
+    }, {split: splitCol});
+
+    expect(precheck).toBeLessThan(CEIL);
+    expect(colorDelta).toBeGreaterThan(FLOOR);
+    expect(rt.clearedKeys).toBe(0);
+    expect(rt.restored).toEqual(scheme);
+    expect(rt.reopened).toBe(true);
   });
 
   v.finishSpec();

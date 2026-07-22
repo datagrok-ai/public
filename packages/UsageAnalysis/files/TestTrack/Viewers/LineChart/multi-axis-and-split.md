@@ -59,11 +59,11 @@ expected_results:
 ## Setup
 
 1. Close all open views.
-2. Open the SPGI dataset (use `readDataframe` helper or open via the file browser).
+2. Open the spgi-100 dataset (use `readDataframe` helper or open via the file browser).
 3. Add a Line Chart viewer to the active table view (use `findViewer` helper or
    add via the Toolbox Viewers icon).
 4. In the Line Chart property panel, set **X column** to `CAST Idea ID`
-   (a numeric column present in SPGI).
+   (a numeric column present in spgi-100).
 5. Set **Y columns** to `Chemical Space X` and `Chemical Space Y` (two Y columns
    — the minimum required to exercise the Multi Axis path).
 6. Record the current page-error count and `grok.shell.warnings` baseline before
@@ -80,7 +80,7 @@ Steps:
 3. Assert: no console error or page error since baseline (Step 3 no-error floor —
    multi-axis enabled with 2 Y columns).
 4. Under **Data**, set **Split** to `Stereo Category`
-   (a categorical column in SPGI — first split column added while multi-axis is active).
+   (a categorical column in spgi-100 — first split column added while multi-axis is active).
 5. Assert: no console error since the previous checkpoint AND the chart canvas is
    non-empty — a follow-up `page.evaluate` that checks the viewer element is
    visible resolves within timeout (Step 5 — github-2904 partial path, one split
@@ -103,16 +103,15 @@ Expected:
 
 ### Scenario 2: Y-column edit does not reset selection; column-selector search input position
 
-Actuation note (recon 2026-07-21): the "Select columns" dialog reached from the
-Y-columns `...` editor renders its column LIST on a canvas — there are no DOM
-rows or checkboxes, and clicks on the canvas do not toggle columns (probed on
-dev: row clicks at several offsets leave the `N checked` label unchanged). A
-checkbox-toggle + OK mutation is therefore not reachable headless; open / search
-/ cancel is the deepest scriptable editor interaction. The GROK-18484 observable
-(the edit must NOT silently reset the selection) is still exercised: the dialog's
-`3 checked` identity label proves the correct row was opened, and the exact
-`yColumnNames` set read back after cancel proves the list was not shrunk to one
-column. A checkbox-driven mutation stays a human-side variation of this scenario.
+Actuation note: the "Select columns" dialog reached from the Y-columns `...`
+editor renders its column LIST on a canvas — there are no DOM rows or checkboxes,
+and clicks on the canvas do not toggle columns. A checkbox-toggle + OK mutation
+is therefore not reachable in automation; open / search / cancel is the deepest
+scriptable editor interaction. The GROK-18484 observable (the edit must NOT
+silently reset the selection) is still exercised: the dialog's `3 checked`
+identity label confirms the correct row was opened, and the exact `yColumnNames`
+set read back after cancel confirms the list was not shrunk to one column. A
+checkbox-driven mutation stays a human-side variation of this scenario.
 
 Steps:
 1. Starting from the state at the end of Scenario 1 (multi-axis on, two split

@@ -433,7 +433,7 @@ export interface CanvasPixelCounts {
  * Fault-tolerant by contract: a missing viewer/canvas/2d-context or a
  * getImageData throw returns {total: -1, matched: -1} — the caller decides
  * whether that is a failure. Viewer canvases are same-origin drawn, so
- * getImageData is not blocked by tainting (validated on dev, demog.csv).
+ * getImageData is not blocked by tainting.
  *
  * LIGHT-THEME assumption: `total` treats near-white (r,g,b >= 250) as the
  * background. On a dark theme the background is not white, so `total` would
@@ -470,8 +470,8 @@ export async function countCanvasPixels(
 
 /**
  * Orange selection-overlay hue range. Covers the canonical Datagrok selection
- * color #ff8c00 (255,140,0) and the bar-overlay blend shades observed on dev:
- * #bc9a4e (188,154,78) and #e5b354 (229,179,84). Exclusions by construction:
+ * color #ff8c00 (255,140,0) and its bar-overlay blend shades #bc9a4e
+ * (188,154,78) and #e5b354 (229,179,84). Exclusions by construction:
  * the default bar fill #96d794 (150,215,148) fails gMax=200; white fails the
  * non-white pre-filter; every grey (r=g=b) is impossible here because
  * rMin=150 with bMax=110 cannot both hold when r == b.

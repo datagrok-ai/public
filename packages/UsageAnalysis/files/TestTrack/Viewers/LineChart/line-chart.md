@@ -14,8 +14,8 @@ related_bugs:
 expected_results:
   - anchor: "Table switching and row source"
     expectation: >-
-      After binding the line chart to SPGI its bound dataFrame.rowCount reads
-      3624, and after binding back to demog it reads 5850 — the row source
+      After binding the line chart to spgi-100 its bound dataFrame.rowCount reads
+      100, and after binding back to demog it reads 5850 — the row source
       really moves between tables. Under Row Source = Selected, selecting rows
       changes the canvas (per-color diff deltaPx > 1000 against the pre-selection
       snapshot), and a Filtered row source with an AGE 20-40 filter drops
@@ -23,7 +23,7 @@ expected_results:
   - anchor: "Filter expression and collaborative filtering"
     expectation: >-
       Setting the in-viewer Filter expression drops the chart's own
-      lc.filter.trueCount below the full SPGI row count (points are filtered on
+      lc.filter.trueCount below the full spgi-100 row count (points are filtered on
       the chart) while leaving it above zero; a Filter Panel numeric filter then
       narrows the shared df.filter.trueCount below the full count on top of the
       expression filter.
@@ -182,29 +182,29 @@ All scenarios should start with the following sequence of events:
 
 ## Table switching and row source
 
-Setup: Close all, open demog, then also open SPGI
+Setup: Close all, open demog, then also open spgi-100
 
 1. Add a line chart on demog by clicking the Line Chart icon in the Toolbox > Viewers section
-2. Go to the Context Panel > Data, switch the table to SPGI — the line chart should update to show SPGI columns
+2. Go to the Context Panel > Data, switch the table to spgi-100 — the line chart should update to show spgi-100 columns
 3. Switch back to demog — the line chart should restore demog columns
 4. Set Row Source to Selected
 5. Select some rows in the grid — the line chart should show only selected rows
 6. Set Row Source to Filtered
 7. Open the filter panel and apply a filter — the line chart should reflect the filter
 
-Actuation note (recon 2026-07-21): the table switch is driven by assigning
-`lc.props.table` (the Context Panel > Data > Table dropdown backs the same
-property); the observable is the viewer's bound `dataFrame.rowCount` moving
-between the two tables (3624 ↔ 5850), which is the "shows the other table's
-columns" outcome. "Shows only selected rows" is measured as a canvas change:
-under Row Source = Selected an empty selection still paints the axes/lines, so a
-blank-vs-drawn threshold is meaningless — instead the per-color canvas histogram
-is snapshotted (after a settle-precheck diff) and the selection is applied, and
-the resulting `deltaPx` proves the selected subset re-rendered.
+Actuation note: the table switch is driven by assigning `lc.props.table` (the
+Context Panel > Data > Table dropdown backs the same property); the observable is
+the viewer's bound `dataFrame.rowCount` moving between the two tables, which is
+the "shows the other table's columns" outcome. "Shows only selected rows" is
+measured as a canvas change: under Row Source = Selected an empty selection still
+paints the axes/lines, so a blank-vs-drawn threshold is meaningless — instead the
+per-color canvas histogram is snapshotted (after a settle-precheck diff) and the
+selection is applied, and the resulting `deltaPx` shows the selected subset
+re-rendered.
 
-## GROK-17835 regression (uses SPGI dataset)
+## GROK-17835 regression (uses spgi-100 dataset)
 
-Setup: Close all, open SPGI (not demog)
+Setup: Close all, open spgi-100 (not demog)
 
 1. Add a line chart by clicking the Line Chart icon in the Toolbox > Viewers section
 2. Right-click the viewer and go to Controls — check Multi Axis
@@ -214,16 +214,16 @@ Setup: Close all, open SPGI (not demog)
 
 ## Filter expression and collaborative filtering
 
-1. Close all and open SPGI
+1. Close all and open spgi-100
 2. Add a line chart
-3. Go to the Context Panel > Data, set Filter to `${CAST Idea ID} <636500` — verify points are filtered on the chart
+3. Go to the Context Panel > Data, set Filter to `${CAST Idea ID} <634834` — verify points are filtered on the chart
 4. Open the filter panel
 5. Apply a categorical filter — verify the chart reflects both the expression filter and the panel filter together
 6. Apply a numeric filter — verify collaborative filtering between the Filter Panel and the in-viewer Filter value
 7. Remove all filters
 
-Actuation note (recon 2026-07-21): "points are filtered on the chart" is
-measured as the viewer's own `lc.filter.trueCount` dropping below the full row
+Actuation note: "points are filtered on the chart" is measured as the viewer's
+own `lc.filter.trueCount` dropping below the full row
 count (the expression filter is viewer-local — it narrows the plotted points
 without touching the shared `df.filter`). The Filter Panel numeric filter is
 applied through `getFiltersGroup().updateOrAdd` (the range strip is a
@@ -240,7 +240,7 @@ of the expression filter.
 5. Toggle the available checkboxes — verify the line chart interaction updates accordingly
 6. Save the layout, close the line chart, apply the layout — verify selection settings are preserved
 
-Actuation note (recon 2026-07-21): the Selection section on a line chart has no
+Actuation note: the Selection section on a line chart has no
 "Show Selected Only" or "Invert Selection" checkbox — those were illustrative
 names in the source scenario. The real Selection checkboxes are Show Selected
 Rows, Show Current Row Line, Show Mouse-over Category, and Show Mouse-over Row
@@ -257,7 +257,7 @@ guard; persistence of a non-default combo is verified by the layout round-trip.
 2. Toggle the available checkboxes one by one — verify the line chart updates after each toggle
 3. Save the layout, close the line chart, apply the layout — verify the checkbox states are preserved
 
-Actuation note (recon 2026-07-21): a line chart's Data section has no "Show Null
+Actuation note: a line chart's Data section has no "Show Null
 Values" or "Show Missing Values" checkbox — those were illustrative names in the
 source scenario (they are grid properties). The real viewer booleans toggled
 here are Pack Categories (Data) and Multi Axis (Controls); each is set off its
@@ -266,5 +266,5 @@ is confirmed to survive a layout save/close/restore round-trip.
 ---
 {
   "order": 2,
-  "datasets": ["System:DemoFiles/demog.csv,System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv,System:AppData/Chem/tests/spgi-100.csv"]
 }

@@ -9,7 +9,7 @@ declare const grok: any;
 
 test.use(specTestOptions);
 
-const datasetPath = 'System:DemoFiles/SPGI.csv';
+const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
 const pageErrors: string[] = [];
 const consoleErrors: string[] = [];
@@ -38,11 +38,9 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
   // Content-level check (github-2904): a blank chart still has a non-zero
   // bounding rect, so measure drawn pixels instead of geometry. The threshold
-  // must sit ABOVE the axes/labels-only floor — dev empirics (666x308 canvas):
-  // axes with no data lines paint ~6449 px, data lines bring it to ~18061 —
-  // so 8000 fails the axes-only "blank" state that > 0-ish thresholds would
-  // pass. -1 (no canvas / getImageData fault) fails the threshold too.
-  return (await countCanvasPixels(page, 'Line chart')).total > 8000;
+  // sits ABOVE the axes/labels-only floor so an axes-only "blank" state fails it.
+  // -1 (no canvas / getImageData fault) fails the threshold too.
+  return (await countCanvasPixels(page, 'Line chart')).total > 38000;
 }
 
 test('Line Chart — Multi-Axis and Split', async ({page}) => {
@@ -80,16 +78,16 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
 
   await setProps(page, {xColumnName: 'CAST Idea ID', yColumnNames: ['Chemical Space X', 'Chemical Space Y']});
 
-  // The 8000-px blank threshold in chartCanvasNonEmpty is calibrated for the
-  // ~666x308 canvas the fixed viewport produces — fail loudly if a layout or
-  // viewport change resizes it, instead of silently devaluing the threshold.
+  // The 38000-px blank threshold in chartCanvasNonEmpty assumes the canvas size the
+  // fixed viewport produces — fail loudly if a layout or viewport change resizes
+  // it, instead of silently devaluing the threshold.
   const cvDims = await page.evaluate(() => {
     const lc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Line chart') as any;
     const cv = lc?.root?.querySelector('canvas') as HTMLCanvasElement | null;
     return cv ? {w: cv.width, h: cv.height} : {w: -1, h: -1};
   });
-  expect(cvDims.w, 'canvas width changed — recalibrate the 8000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(450);
-  expect(cvDims.h, 'canvas height changed — recalibrate the 8000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(200);
+  expect(cvDims.w, 'canvas width changed — recalibrate the 38000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(450);
+  expect(cvDims.h, 'canvas height changed — recalibrate the 38000-px blank threshold in chartCanvasNonEmpty').toBeGreaterThan(200);
 
   await softStep('S1: enable Multi Axis with 2 Y columns', async () => {
     const before = realErrors().length;
@@ -113,7 +111,7 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     await setProps(page, {splitColumnNames: ['Stereo Category', 'Series']});
     expect((await getProps(page, 'splitColumnNames')).splitColumnNames).toHaveLength(2);
     expect(await chartCanvasNonEmpty(page)).toBe(true);
-    const followup = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount === 3624);
+    const followup = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount === 100);
     expect(followup).toBe(true);
     expect(realErrors().length).toBe(before);
   });
@@ -124,17 +122,15 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     // GROK-18484: EDITING the Y list through the property-panel multi-select
     // dialog must not silently reset it. Drive the real UI: the Y row of the
     // context panel's property grid, its [...] editor, the Select-columns
-    // dialog's Search input, Escape. The dialog's column LIST is
-    // canvas-rendered (probed 2026-07-21: no DOM rows/checkboxes; row clicks
-    // at several offsets leave the 'N checked' label unchanged), so a
-    // checkbox-toggle+OK mutation is not reachable headless — open/search/close
-    // is the deepest scriptable editor interaction; the wrong-dialog and
-    // reset failure modes are held by the '3 checked' identity assert and the
-    // exact-set assert below.
+    // dialog's Search input, Escape. The dialog's column LIST is canvas-rendered
+    // (no DOM rows/checkboxes), so a checkbox-toggle+OK mutation is not reachable
+    // in automation — open/search/close is the deepest scriptable editor
+    // interaction; the wrong-dialog and reset failure modes are held by the
+    // '3 checked' identity assert and the exact-set assert below.
     await setProps(page, {yColumnNames: ['Chemical Space X', 'Chemical Space Y', 'TPSA']});
     // The context panel usually auto-opens for a selected viewer; click the
     // gear only when the Y property row is not present (a blind gear click
-    // toggles an open panel CLOSED — observed live).
+    // toggles an open panel CLOSED).
     const clickYDots = () => page.evaluate(() => {
       // Viewer props render as table.property-grid rows: TR.property-grid-item
       // with the prop name in TD.property-grid-item-name. The Y section header

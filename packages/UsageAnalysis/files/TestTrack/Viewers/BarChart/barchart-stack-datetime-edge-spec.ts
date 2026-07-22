@@ -155,9 +155,9 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
     const errBefore = errCount();
     // The effective split column name is shown in the in-chart Category
     // selector. The Split Map suffix (e.g. "STARTED (Year)") is canvas-rendered
-    // on the axis header and not exposed to the DOM (recon 2026-07-21), so
-    // asserting the "(Year)" suffix is a documented reduction; the reachable
-    // signal is the selector text reflecting the STARTED column.
+    // on the axis header and not exposed to the DOM, so asserting the "(Year)"
+    // suffix is a documented reduction; the reachable signal is the selector
+    // text reflecting the STARTED column.
     const sel = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const texts = Array.from(bc.root.querySelectorAll('.d4-column-selector-column'))
@@ -191,9 +191,9 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
     expect(dist.monthN).toBeGreaterThan(dist.yearN);
     expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
     await page.waitForTimeout(400);
-    // Settle-precheck: the pre-map frame is quiescent (measured 0 px on dev
-    // 2026-07-21). Ceiling 300 sits far below the map-change signal floor 5000,
-    // so a residual repaint tail cannot masquerade as the re-categorization.
+    // Settle-precheck: the pre-map frame is quiescent. Ceiling 300 sits far
+    // below the map-change signal floor 5000, so a residual repaint tail cannot
+    // masquerade as the re-categorization.
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeLessThan(300);
     const monthMap = await page.evaluate(async () => {
@@ -203,8 +203,8 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
       return {splitMap: bc.props.splitMap, hasCanvas: !!bc.root.querySelector('canvas')};
     });
     await page.waitForTimeout(300);
-    // Year→Month re-categorization repaints the whole plot (measured ~233k px on
-    // dev). Floor 5000 is an order of magnitude above the settle ceiling.
+    // Year→Month re-categorization repaints the whole plot. Floor 5000 is an
+    // order of magnitude above the settle ceiling.
     const monthDelta = await v.diffCanvasColors(page, 'Bar chart');
     const yearMap = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -213,7 +213,7 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
       return {splitMap: bc.props.splitMap, hasCanvas: !!bc.root.querySelector('canvas'), splitCol: bc.props.splitColumnName};
     });
     // Month→Year revert re-categorizes back — a real render signal for the
-    // year-revert leg (measured ~233k px on dev), not merely a prop echo.
+    // year-revert leg.
     const yearDelta = await v.diffCanvasColors(page, 'Bar chart');
     expect(monthMap.splitMap).toBe('month');
     expect(monthMap.hasCanvas).toBe(true);

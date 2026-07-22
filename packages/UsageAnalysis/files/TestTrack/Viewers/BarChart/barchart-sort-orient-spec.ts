@@ -94,12 +94,10 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
       bc.props.legendVisibility = 'Always';
       await new Promise((r) => setTimeout(r, 600));
     });
-    // Legend appears as a RESULT of enabling stacking (with no stack column the
-    // bar chart shows no legend even under legendVisibility Always — observed
-    // platform behavior this step depends on; a build that renders an empty
-    // legend host under Always would fail the legendBefore assert and need
-    // this step re-based. The before/after delta below is therefore caused by
-    // the stack action itself. GROK-19480 broke stacking whenever the
+    // Legend appears as a RESULT of enabling stacking: with no stack column the
+    // bar chart shows no legend even under legendVisibility Always, so a build
+    // that renders an empty legend host under Always would fail the legendBefore
+    // assert and need this step re-based. GROK-19480 broke stacking whenever the
     // aggregated value column has negative sums, which Chemical Space X does.
     const legendBefore = await v.readLegend(page, 'Bar chart');
     const info = await page.evaluate(async () => {
@@ -153,11 +151,11 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
   await softStep('Scenario 1 Step 7: revert Bar Sort to Ascending; config took, error-free render', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
     // Documented reduction: the rendered bar order is not observable headless.
-    // Axis category tick labels are canvas-rendered with no DOM handles (recon
-    // 2026-07-21), and flipping barSortOrder desc→asc produces ZERO canvas
-    // delta on dev (2026-07-21) — the reorder does not repaint the frame under
-    // headless, so a canvas-diff render signal is unavailable. The reachable
-    // assertion is the prop echo plus an error-free render.
+    // Axis category tick labels are canvas-rendered with no DOM handles, and
+    // flipping barSortOrder desc→asc produces zero canvas delta — the reorder
+    // does not repaint the frame under headless, so a canvas-diff render signal
+    // is unavailable. The reachable assertion is the prop echo plus an
+    // error-free render.
     const order = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.barSortOrder = 'asc';
@@ -206,11 +204,10 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
     // github-3417 render signal: isolate the bar-fill (#96d794 ± tolerance) from
     // the axis chrome and measure how far the tallest bar's top sits from the
     // canvas top. The raw non-white bbox is useless here — axis labels/ticks
-    // span nearly the whole height (recon 2026-07-21: full-canvas topFrac 0.045
-    // is axis chrome, not bars). The bug manifests as EXCESS whitespace above the
-    // tallest bar under vertical + small counts, so the guard asserts the green
-    // bars reach the upper region (measured gTopFrac 0.061 on dev): a regression
-    // that shrank the bars would push gTopFrac well above the 0.40 ceiling.
+    // span nearly the whole height. The bug manifests as excess whitespace above
+    // the tallest bar under vertical + small counts, so the guard asserts the
+    // green bars reach the upper region: a regression that shrank the bars would
+    // push gTopFrac well above the 0.40 ceiling.
     const bars = await page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;

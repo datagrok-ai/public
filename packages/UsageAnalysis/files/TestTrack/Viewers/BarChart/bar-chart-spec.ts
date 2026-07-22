@@ -8,14 +8,8 @@ test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 
-// Per-color canvas-delta floors, calibrated from live measurement on dev
-// (demog.csv, headless, 2026-07-21). Each floor sits with a wide margin below
-// the observed deliberate-change delta and far above the settle-precheck noise
-// (measured 0 px on every baseline); the precheck ceiling proves the baseline
-// frame was drained before measuring. Live deltas backing the four formerly
-// tight floors: includeNulls 330940, barBorder 6176, labels 2250, showValues
-// 1770 — each floor is under half its measured delta, so a real repaint fires
-// it comfortably while a settle artifact cannot.
+// Per-color canvas-delta floors. Each floor MUST stay above PRECHECK_CEIL so a
+// settle-drain artifact cannot satisfy it, and below a real repaint's delta.
 const T = {
   colorColumn: 800,
   invertScheme: 800,
@@ -253,11 +247,10 @@ test('Bar chart tests', async ({page}) => {
 
     // The in-chart selector nodes (value / category / stack) are always present
     // but toggle their computed `display` (flex ↔ none) with the show*Selector
-    // props. Count the ones actually laid out (display !== none) — probed live to
-    // be exactly 3 when on, 0 when off. showValueAxis and showCategoryValues are
-    // canvas-drawn — probed 2026-07-21: no DOM node toggles (0 axis/category
-    // nodes) and their canvas delta is ~13 px ≈ settle noise — so they stay
-    // covered by the prop read-back rather than a DOM count. See the .md note.
+    // props. Count the ones actually laid out (display !== none): 3 when on, 0
+    // when off. showValueAxis and showCategoryValues are canvas-drawn — they
+    // toggle no DOM node, so they stay covered by the prop read-back rather than
+    // a DOM count. See the .md note.
     const countVisibleSelectors = () => page.evaluate(() => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       const root = bc.root as HTMLElement;
@@ -274,7 +267,7 @@ test('Bar chart tests', async ({page}) => {
     expect(onReads[0]).toEqual(on);
     expect(offVisible).toBe(0);
     // Exactly three column-selector nodes (value / category / stack) lay out when
-    // the show*Selector props are on — probed live 2026-07-21.
+    // the show*Selector props are on.
     expect(onVisible).toBe(3);
   });
 
@@ -318,11 +311,8 @@ test('Bar chart tests', async ({page}) => {
   await softStep('Legend position', async () => {
     // Replace the viewer with a fresh Bar chart: after the earlier sections'
     // prop churn the stacked-legend host will not render, whereas a clean-state
-    // viewer materializes it reliably. This is expected platform behavior — the
-    // legend host is churn-sensitive, not broken — confirmed by a live probe
-    // (2026-07-21): the same stack+legend props render items=0 on the churned
-    // widget yet items=2 on a fresh one. Recreating is a harness reset, not a
-    // silent workaround for a product bug.
+    // viewer materializes it reliably. The legend host is churn-sensitive, not
+    // broken, so recreating is a harness reset, not a workaround for a product bug.
     await page.evaluate(async () => {
       const old = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       if (old) old.close();
@@ -449,6 +439,46 @@ test('Bar chart tests', async ({page}) => {
     expect(showDelta).toBeGreaterThan(T.showValues);
   });
 
+  await softStep('Context menu', async () => {
+    // Right-clicking the bar chart canvas opens its context menu; the whole menu
+    // tree is materialized into the DOM as .d4-menu-item-label nodes, so the
+    // bar-chart-specific groups and their children can be read from the flat list
+    // in one pass. The manual scenario's value-axis and legend zone right-clicks
+    // (Axis Type / Include Nulls / Legend Visibility / Legend Position) are
+    // reduced to the same labels surfaced here — a positional right-click on those
+    // zones is not reliable headless. Toggling Show Value Axis from the menu
+    // confirms the menu is live (the prop round-trips).
+    const result = await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Bar chart') as any;
+      bc.props.splitColumnName = 'RACE';
+      bc.props.valueColumnName = 'AGE';
+      bc.props.stackColumnName = 'SEX';
+      await new Promise((r) => setTimeout(r, 600));
+      const canvas = bc.root.querySelector('canvas')!;
+      const rect = canvas.getBoundingClientRect();
+      canvas.dispatchEvent(new MouseEvent('contextmenu', {
+        bubbles: true, cancelable: true, button: 2,
+        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
+      }));
+      await new Promise((r) => setTimeout(r, 600));
+      const items = Array.from(document.querySelectorAll('.d4-menu-item-label')).map((e) => e.textContent!.trim());
+      const before = bc.props.showValueAxis;
+      const sva = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .find((e) => e.textContent!.trim() === 'Show Value Axis');
+      if (sva) (sva.closest('.d4-menu-item') as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 500));
+      const after = bc.props.showValueAxis;
+      bc.props.showValueAxis = before;
+      return {items, before, after};
+    });
+    for (const label of ['Reset View', 'Orientation', 'On Click', 'Order', 'Controls',
+      'Selection', 'Show Value Axis', 'Show Category Values', 'Show Selected Rows',
+      'Include Nulls', 'Axis Type', 'Legend Visibility', 'Legend Position'])
+      expect(result.items).toContain(label);
+    expect(result.after).toBe(!result.before);
+    await page.keyboard.press('Escape');
+  });
+
   await softStep('Data panel', async () => {
     const result = await page.evaluate(async () => {
       grok.shell.closeAll();
@@ -461,7 +491,7 @@ test('Bar chart tests', async ({page}) => {
         setTimeout(resolve, 3000);
       });
 
-      const df2 = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const df2 = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
       df2.name = 'SPGI';
       grok.shell.addTableView(df2);
       await new Promise((resolve) => {
@@ -494,7 +524,7 @@ test('Bar chart tests', async ({page}) => {
       await new Promise((res) => setTimeout(res, 500));
       r.push(bc.dataFrame.name);
 
-      bc.props.filter = '${CAST Idea ID} < 636500';
+      bc.props.filter = '${CAST Idea ID} < 634835';
       await new Promise((res) => setTimeout(res, 500));
       r.push(bc.props.filter);
 
@@ -524,12 +554,12 @@ test('Bar chart tests', async ({page}) => {
     });
     expect(result.slice(0, 3)).toEqual(['Filtered', 'Selected', 'All']);
     expect(result[3]).toBe('SPGI');
-    expect(result[4]).toBe('${CAST Idea ID} < 636500');
+    expect(result[4]).toBe('${CAST Idea ID} < 634835');
     expect(result[5]).toBe('Chemical Space Y');
     // Honest layout round-trip: color coding and filter survive save → close →
     // reload.
     expect(result[6]).toBe('Chemical Space Y');
-    expect(result[7]).toBe('${CAST Idea ID} < 636500');
+    expect(result[7]).toBe('${CAST Idea ID} < 634835');
   });
 
   await softStep('No page errors', async () => {

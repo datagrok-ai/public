@@ -42,7 +42,7 @@ expected_results:
       raises no error: df.currentRowIdx clears to -1 and round-trips to a set
       row whose value lies within the value column's range. Actuation: a
       headless canvas hover drives NEITHER df.mouseOverRowIdx (stays -1) NOR
-      df.currentRowIdx (recon 2026-07-21, demog.csv), so the hover itself is
+      df.currentRowIdx, so the hover itself is
       covered by the no-error floor and the indicator is exercised through its
       own set/read path."
   - anchor: "Scenario 2 Step 2"

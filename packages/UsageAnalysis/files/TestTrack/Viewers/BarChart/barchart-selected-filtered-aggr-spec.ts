@@ -91,8 +91,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
       };
     }, {split: splitCol});
     await page.waitForTimeout(500);
-    // Overlay signal: selection paints the DarkOrange (#ff8c00) hue onto the bars
-    // (~29 orange-range px on dev for the Asian subset).
+    // Overlay signal: selection paints the DarkOrange (#ff8c00) hue onto the bars.
     const huePx = await v.countSelectionHuePixels(page, 'Bar chart');
     expect(huePxBefore).toBe(0); // also rejects a -1 fault masking the delta below
     expect(huePx).toBeGreaterThan(0);
@@ -141,9 +140,9 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     });
     await page.waitForTimeout(500);
     // Filtered Rows overlay signal: under rowSource 'All' the bar geometry is
-    // fixed — the overlay RECOLORS bar segments in place (~570 px per-color
-    // delta on dev), so assert the color-histogram delta, not the non-white
-    // total (which stays equal by design here).
+    // fixed — the overlay RECOLORS bar segments in place, so assert the
+    // color-histogram delta, not the non-white total (which stays equal by
+    // design here).
     const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
     expect(deltaPx).toBeGreaterThan(100);
     expect(info.rowSource).toBe('All');
@@ -258,8 +257,7 @@ test('Bar Chart — Selected / Filtered Rows overlays with cumulative aggregatio
     await page.waitForTimeout(400);
     const settle = await v.diffCanvasColors(page, 'Bar chart');
     expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
-    // Ceiling 40 sits well below the filter recolor signal floor 120 (measured
-    // settle 0 px / recolor ~192 px on dev 2026-07-21).
+    // Ceiling 40 sits well below the filter recolor signal floor 120.
     expect(settle.deltaPx).toBeLessThan(40);
     const info = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;

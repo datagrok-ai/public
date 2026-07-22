@@ -58,7 +58,7 @@ expected_results:
 ## Setup
 
 1. Close all open views.
-2. Open the SPGI dataset (use `readDataframe` helper or open via the file browser).
+2. Open the spgi-100 dataset (use `readDataframe` helper or open via the file browser).
 3. Add a Line Chart viewer to the active table view (use `findViewer` helper or
    add via the Toolbox Viewers icon).
 4. In the Line Chart property panel, set **X column** to `CAST Idea ID` and
@@ -83,7 +83,7 @@ Steps:
 6. Enable the **Standard deviation** overlay (overall dataset, no split).
 7. Assert: no console error since the previous checkpoint (Step 7 no-error floor).
 8. In the property panel under **Data**, set **Split** to `Stereo Category`
-   (a categorical column in SPGI). Keep rolling average and std-dev overlays active
+   (a categorical column in spgi-100). Keep rolling average and std-dev overlays active
    so they render per-category (GROK-20218 repro path).
 9. Assert: no console error since the previous checkpoint. The rolling average and
    std-dev overlays render per category with no freeze (Step 9 no-error floor —
@@ -103,10 +103,10 @@ Expected:
 
 ### Scenario 2: Formula lines layout round-trip
 
-Actuation note (recon 2026-07-21): the formula line and band are added by
-assigning the viewer's `formulaLines` JSON property directly, not through the
-Formula Lines dialog. The dialog is a modal whose expression editor and preview
-are not headless-drivable (its interactive contents render on a canvas, matching
+Actuation note: the formula line and band are added by assigning the viewer's
+`formulaLines` JSON property directly, not through the Formula Lines dialog. The
+dialog is a modal whose expression editor and preview are not scriptable (its
+interactive contents render on a canvas, matching
 the Select-columns dialog pattern documented for the Line chart column editors),
 and `formulaLines` is exactly the serialized form the dialog writes and the
 layout round-trip persists. The observable — the formula-lines configuration

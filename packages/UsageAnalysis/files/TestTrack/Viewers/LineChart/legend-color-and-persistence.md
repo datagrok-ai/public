@@ -51,7 +51,7 @@ expected_results:
 
 ## Setup
 
-1. Open the SPGI dataset (use `readDataframe` helper for `SPGI.csv`).
+1. Open the spgi-100 dataset (use `readDataframe` helper for `spgi-100.csv`).
 2. Add a Line Chart viewer to the table view (use `findViewer` helper or add via the Toolbox).
 3. In the viewer property panel, set **X** to a numeric column (e.g. `Chemical Space X`)
    and add at least one **Y** column (e.g. `Chemical Space Y`).

@@ -121,8 +121,7 @@ test('Histogram — Range filtering and bound validation', async ({page}) => {
   // out-of-range bound is applied verbatim (widening the effective range to the
   // data extent), and an inverted Max<Min collapses the filter rather than being
   // refused. The tickets (GROK-19581/GROK-19760) guaranteed only "no crash". The
-  // real, non-tautological signal per step is the direction of the trueCount move
-  // plus the no-error floor.
+  // signal per step is the direction of the trueCount move plus the no-error floor.
 
   await softStep('S2: Max below Min collapses filter without crash (GROK-19581, GROK-19760)', async () => {
     const errsBefore = pageErrors.length;

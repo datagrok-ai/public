@@ -51,7 +51,7 @@ expected_results:
 
 ## Setup
 
-1. Open the SPGI dataset (use `readDataframe` helper for `SPGI.csv`).
+1. Open the spgi-100 dataset (use `readDataframe` helper for `spgi-100.csv`).
 2. Add a Line Chart viewer to the table view (use `findViewer` helper or add via
    the Toolbox).
 3. In the viewer property panel, set **X** to a numeric column (e.g.
@@ -65,7 +65,7 @@ expected_results:
 
 ### Scenario 1: Filter to zero rows and hover empty log-axis chart
 
-Actuation note (recon 2026-07-21): the empty-chart state (Step 2, "matches NO
+Actuation note: the empty-chart state (Step 2, "matches NO
 rows") is driven through a CATEGORICAL Filter Panel filter on the `Series`
 column with an empty selection, not through a numeric X-range filter. A numeric
 Filter Panel filter is an embedded Histogram whose range strip clamps the
@@ -108,7 +108,7 @@ Steps:
 2. Confirm the chart re-renders with time-bucketed X values and no error.
 3. In the Filter Panel, add a **Structure** filter on a SMILES column
    (e.g. `Smiles`) with a non-empty substructure query (e.g. a simple ring
-   fragment that is present in several rows of SPGI).
+   fragment that is present in several rows of spgi-100).
 4. Wait for the filter to propagate.
 5. Assert: `df.filter.trueCount` is strictly greater than `0` — a structure
    filter applied while the X axis uses time-split must NOT reduce all rows to
@@ -125,8 +125,8 @@ Expected:
 
 ### Scenario 3: Narrowing the X range in the Filter Panel updates the chart live
 
-Actuation note (recon 2026-07-21): the range-slider DRAG is not scriptable
-headless — the Filter Panel numeric filter is an embedded Histogram whose range
+Actuation note: the range-slider DRAG is not scriptable in automation — the
+Filter Panel numeric filter is an embedded Histogram whose range
 strip is canvas-drawn with no DOM handle elements, canvas-strip drags leave the
 filter untouched, and the min/max text inputs stay invisible to automation. The
 range narrowing is therefore applied programmatically through the Filter
