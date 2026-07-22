@@ -242,29 +242,31 @@ function deployFolder(packageDir: string, folderPath: string, dockerSubfolder: s
   return true;
 }
 
-export function generateCeleryArtifacts(packageDir: string): boolean {
+/** Returns the generated dockerfiles/<dir> names (empty when nothing generated). */
+export function generateCeleryArtifacts(packageDir: string): string[] {
   const pythonDir = path.join(packageDir, 'python');
   if (!fs.existsSync(pythonDir))
-    return false;
+    return [];
 
   const packageJson = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), 'utf-8'));
   const base = removeScope(packageJson.name).toLowerCase();
 
   const entries = fs.readdirSync(pythonDir, {withFileTypes: true});
   const isNested = entries.length > 0 && entries.every((e) => e.isDirectory());
-  let generated = false;
+  const generated: string[] = [];
 
   if (isNested) {
     for (const entry of entries) {
       if (!entry.isDirectory())
         continue;
       const folderPath = path.join(pythonDir, entry.name);
-      if (deployFolder(packageDir, folderPath, `${entry.name.toLowerCase()}-celery`, base))
-        generated = true;
+      const subfolder = `${entry.name.toLowerCase()}-celery`;
+      if (deployFolder(packageDir, folderPath, subfolder, base))
+        generated.push(subfolder);
     }
   } else {
     if (deployFolder(packageDir, pythonDir, 'celery', base))
-      generated = true;
+      generated.push('celery');
   }
 
   return generated;

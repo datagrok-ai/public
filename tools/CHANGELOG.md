@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.4.8 (2026-07-22)
+
+* GROK-20452: `grok publish` — always `docker build` the tools-generated worker dirs (`dockerfiles/queue`, `dockerfiles/celery`, `dockerfiles/<app>-celery`) instead of reusing a cached local tag. The "found local image" shortcut froze the worker at whatever stock base the daemon had when the tag was first built (CI ran day-old worker code with a fresh base available); the layer cache keeps an unchanged rebuild near-instant.
+
 ## 6.4.7 (2026-07-22)
 
 * GROK-20452: `grok publish` — generate `dockerfiles/celery` / `dockerfiles/queue` **before** gathering files for the zip. They were generated after, so the generated Dockerfile never reached the server: `meta.queue` functions fell back to a server-side container named `<pkg>-queue-celery` while the client had built `<pkg>-queue` — image validation 404'd and the worker container never started ("Container is not started" on every call).

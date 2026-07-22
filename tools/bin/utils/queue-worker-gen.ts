@@ -16,14 +16,15 @@ EXPOSE 8000
 /** Generates dockerfiles/queue/ for packages with \`meta.queue: true\` functions so the
  *  standard docker build/push/image.json flow covers the auto-created Node worker
  *  container (mirror of generateCeleryArtifacts for python/). The worker fetches the
- *  package bundle at runtime, so the image is just the stock worker base. */
-export function generateQueueArtifacts(packageDir: string): boolean {
+ *  package bundle at runtime, so the image is just the stock worker base.
+ *  Returns the generated dockerfiles/<dir> names (empty when nothing generated). */
+export function generateQueueArtifacts(packageDir: string): string[] {
   const candidates = ['package.ts', 'package.g.ts']
     .map((f) => path.join(packageDir, 'src', f))
     .filter((f) => fs.existsSync(f));
   const hasQueueFuncs = candidates.some((f) => queueTrueRegex.test(fs.readFileSync(f, 'utf-8')));
   if (!hasQueueFuncs)
-    return false;
+    return [];
 
   const dockerfilesDir = path.join(packageDir, 'dockerfiles', QUEUE_DIR);
   const dockerfilePath = path.join(dockerfilesDir, 'Dockerfile');
@@ -38,5 +39,5 @@ export function generateQueueArtifacts(packageDir: string): boolean {
     fs.copyFileSync(containerJsonSrc, containerJsonDest);
 
   color.log(`Generated Node worker Docker artifacts in dockerfiles/${QUEUE_DIR}/`);
-  return true;
+  return [QUEUE_DIR];
 }

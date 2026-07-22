@@ -299,6 +299,7 @@ async function processDockerImages(
   localTimestamps: Indexable,
   debug: boolean,
   skipDockerRebuild: boolean = false,
+  generatedDirs: string[] = [],
 ): Promise<void> {
   const dockerImages = discoverDockerfiles(packageName, version, debug);
   if (dockerImages.length === 0)
@@ -342,6 +343,14 @@ async function processDockerImages(
       dockerRemove(img.fullLocalName);
       if (registry)
         dockerRemove(`${registry}/datagrok/${remoteFullName}`);
+      result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
+    }
+    else if (generatedDirs.includes(img.dirName)) {
+      // Generated worker dirs are just FROM the stock base: a cached local tag
+      // pins whatever base the daemon had when it was first built (CI served a
+      // day-old worker this way). Always run docker build — the layer cache
+      // makes an unchanged rebuild near-instant, and a refreshed base lands.
+      color.log(`Rebuilding generated image ${img.fullLocalName} against the current base...`);
       result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
     }
     else {
@@ -487,8 +496,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   // never binds the queue funcs to the client-built image and falls back to a
   // differently-named server-side container that never starts
   // (<pkg>-queue-celery vs the built <pkg>-queue).
-  generateCeleryArtifacts(curDir);
-  generateQueueArtifacts(curDir);
+  const generatedDockerDirs = [...generateCeleryArtifacts(curDir), ...generateQueueArtifacts(curDir)];
 
   // Gather the files
   const localTimestamps: Indexable = {};
@@ -591,7 +599,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (userInfo)
       dockerVersion = userInfo.login;
   }
-  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false);
+  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false, generatedDockerDirs);
 
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
