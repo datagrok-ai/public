@@ -35,6 +35,16 @@ export interface NodeTestOptions {
 }
 
 export async function runNodeTests(opts: NodeTestOptions): Promise<NodeTestResult | undefined> {
+  // Cheap opt-in gate: don't pay the worker spawn + runtime init for the vast
+  // majority of packages that don't export testNode() from package-test.ts.
+  try {
+    const testSrc = ['ts', 'js']
+      .map((ext) => path.join(opts.packageDir, 'src', `package-test.${ext}`))
+      .find((p) => fs.existsSync(p));
+    if (testSrc != null && !fs.readFileSync(testSrc, 'utf8').includes('testNode'))
+      return undefined;
+  } catch {}
+
   let url: string; let key: string;
   try {
     ({url, key} = getDevKey(opts.host));
