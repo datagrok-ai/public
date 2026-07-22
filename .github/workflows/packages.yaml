@@ -536,13 +536,16 @@ jobs:
         timeout-minutes: 20
         run: |
           npm install
-          # @datagrok-libraries/arrow ships raw TS (main: src/index.ts) that is compiled
-          # straight into the bundle, and the ClickHouse decoder fix is unreleased - the
-          # in-repo library and npm are both 1.1.0 - so `npm install` silently restores the
-          # published decoder over it. Overlay the in-repo source so the branch's decoder is
-          # what actually gets built. Drop this once the library is published with a bump.
+          # The ClickHouse decoder fix is unreleased - libraries/arrow is 1.1.0 both in-repo
+          # and on npm - so `npm install` resolves to the published 1.1.0 and silently
+          # restores the old decoder. Build the in-repo library and overlay it so the
+          # branch's decoder is what actually gets bundled. The published tarball is
+          # compiled (main: src/index.js) while only index.ts is tracked here, so the tsc
+          # pass is required. Drop this once the library is published with a version bump.
+          ( cd ../../libraries/arrow && npm install --no-audit --no-fund && npx tsc )
           rm -rf node_modules/@datagrok-libraries/arrow/src
           cp -r ../../libraries/arrow/src node_modules/@datagrok-libraries/arrow/src
+          test -f node_modules/@datagrok-libraries/arrow/src/index.js
           npm run build
           count=0
           retries=5
