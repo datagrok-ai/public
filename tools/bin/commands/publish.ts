@@ -482,6 +482,14 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const chunks = [];
   zip.on('data', (chunk: any) => chunks.push(chunk));
 
+  // Generate Celery / Node-worker Docker artifacts BEFORE gathering files: the
+  // generated dockerfiles/<dir>/Dockerfile must land in the zip, or the server
+  // never binds the queue funcs to the client-built image and falls back to a
+  // differently-named server-side container that never starts
+  // (<pkg>-queue-celery vs the built <pkg>-queue).
+  generateCeleryArtifacts(curDir);
+  generateQueueArtifacts(curDir);
+
   // Gather the files
   const localTimestamps: Indexable = {};
   const files = await walk({
@@ -575,12 +583,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     errs.forEach((e) => color.error(e));
     return 1;
   }
-
-  // Generate Celery Docker artifacts from python/ if present
-  generateCeleryArtifacts(curDir);
-
-  // Generate the Node worker container for meta.queue JS functions if present
-  generateQueueArtifacts(curDir);
 
   // Process Docker images and inject image.json into the ZIP
   let dockerVersion = json.version;

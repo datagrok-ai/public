@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.4.7 (2026-07-22)
+
+* GROK-20452: `grok publish` — generate `dockerfiles/celery` / `dockerfiles/queue` **before** gathering files for the zip. They were generated after, so the generated Dockerfile never reached the server: `meta.queue` functions fell back to a server-side container named `<pkg>-queue-celery` while the client had built `<pkg>-queue` — image validation 404'd and the worker container never started ("Container is not started" on every call).
+
 ## 6.4.6 (2026-07-22)
 
 * `grok test` — the whole-run Puppeteer cap (60 min) is now overridable via `GROK_TEST_INVOCATION_TIMEOUT_MS`. When the cap fires mid-pass all collected results are discarded (empty `test-report.csv`, "Passed tests: 0"), which CI reports as "no results produced"; loaded CI agents can now raise the cap instead.
