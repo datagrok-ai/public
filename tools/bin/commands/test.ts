@@ -304,22 +304,18 @@ export async function test(args: TestArgs): Promise<boolean> {
   }
 
   if (nodeRes != null) {
-    // Merge the Node pass into the browser result (same CSV columns/order).
-    if (!res.csv || res.csv.trim().split('\n').length < 2) {
-      res.csv = nodeRes.csv;
-      res.passedAmount += nodeRes.passedAmount;
-      res.failedAmount += nodeRes.failedAmount;
-      res.skippedAmount += nodeRes.skippedAmount;
-      res.failed = res.failed || nodeRes.failed;
-      res.verbosePassed = (res.verbosePassed || '') + nodeRes.verbosePassed;
-      res.verboseFailed = (res.verboseFailed || '') + nodeRes.verboseFailed;
-      res.verboseSkipped = (res.verboseSkipped || '') + nodeRes.verboseSkipped;
-      res.modernOutput = res.modernOutput || nodeRes.modernOutput;
-    } else if (nodeRes.csv && nodeRes.csv.trim().split('\n').length >= 2) {
-      res = await mergeBrowsersResults([res, nodeRes]);
-    } else {
-      res.failed = res.failed || nodeRes.failed;
-    }
+    // Merge the Node pass into the browser result. CSVs merge by column NAME —
+    // the two passes emit different column orders, and a line-wise concat would
+    // misalign rows (string values in integer columns break the report upload).
+    res.csv = testUtils.mergeCsvByHeader(res.csv, nodeRes.csv);
+    res.passedAmount += nodeRes.passedAmount;
+    res.failedAmount += nodeRes.failedAmount;
+    res.skippedAmount += nodeRes.skippedAmount;
+    res.failed = res.failed || nodeRes.failed;
+    res.verbosePassed = (res.verbosePassed || '') + nodeRes.verbosePassed;
+    res.verboseFailed = (res.verboseFailed || '') + nodeRes.verboseFailed;
+    res.verboseSkipped = (res.verboseSkipped || '') + nodeRes.verboseSkipped;
+    res.modernOutput = res.modernOutput || nodeRes.modernOutput;
   }
 
   if (!args['skip-playwright'] && !args['node-only']) {

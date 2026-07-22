@@ -1096,6 +1096,24 @@ export type OrganizedTests = {
   }
 }
 
+/**
+ * Merges two test-result CSVs by column NAME (union of headers), unlike
+ * mergeBrowsersResults' line concatenation which assumes identical column order.
+ * Used to merge the Node-pass report into the browser report.
+ */
+export function mergeCsvByHeader(a: string, b: string): string {
+  const hasRows = (csv: string) => csv && csv.trim().split('\n').length >= 2;
+  if (!hasRows(a)) return hasRows(b) ? b : (a || b || '');
+  if (!hasRows(b)) return a;
+  const pa = Papa.parse(a.trim(), {header: true, skipEmptyLines: true});
+  const pb = Papa.parse(b.trim(), {header: true, skipEmptyLines: true});
+  const columns = [...(pa.meta.fields ?? [])];
+  for (const f of pb.meta.fields ?? [])
+    if (!columns.includes(f))
+      columns.push(f);
+  return Papa.unparse([...(pa.data as any[]), ...(pb.data as any[])], {columns});
+}
+
 export function addColumnToCsv(
     csv: string,
     columnName: string,
