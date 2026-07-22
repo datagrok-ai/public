@@ -1,7 +1,8 @@
 # Datagrok-tools changelog
 
-## v.next
+## 6.4.6 (2026-07-22)
 
+* `grok test` — the whole-run Puppeteer cap (60 min) is now overridable via `GROK_TEST_INVOCATION_TIMEOUT_MS`. When the cap fires mid-pass all collected results are discarded (empty `test-report.csv`, "Passed tests: 0"), which CI reports as "no results produced"; loaded CI agents can now raise the cap instead.
 * `grok test` — `--no-retry` is now honored for Playwright runs. minimist parsed `--no-retry` as `{retry:false}`, so the flag was silently dropped and failed specs were still retried once; normalized so `--retries=0` reaches Playwright.
 
 ## 6.4.5 (2026-06-23)

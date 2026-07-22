@@ -18,7 +18,10 @@ import * as playwrightRunner from '../utils/playwright-runner';
 import {BrowserOptions, loadTestsList, runBrowser, ResultObject, saveCsvResults, printBrowsersResult, mergeBrowsersResults, Test, OrganizedTests as OrganizedTest, timeout, addColumnToCsv} from '../utils/test-utils';
 import {setAlphabeticalOrder} from '../utils/order-functions';
 
-const testInvocationTimeout = 3600000;
+// Whole-run cap for the Puppeteer pass; when it fires, results collected so far
+// are discarded (they live in the page until a pass completes). CI runners on
+// loaded agents can exceed the 1h default — override via env.
+const testInvocationTimeout = parseInt(process.env['GROK_TEST_INVOCATION_TIMEOUT_MS'] ?? '', 10) || 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
   'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer'];
