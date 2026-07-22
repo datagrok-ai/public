@@ -6,26 +6,9 @@ import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
 import {getDataQueryTime} from '../benchmarks/benchmark';
 
-category('Client cache', () => {
-  before(async () => {
-    await grok.functions.clientCache.start();
-  });
-
-  test('Scalars cache test', async () => {
-    await grok.functions.clientCache.clear();
-    await basicCacheTest('PostgresqlScalarCacheTestClient', 2);
-  });
-
-  test('TestNormal table cache test', async () => {
-    await grok.functions.clientCache.clear();
-    await basicCacheTest('PostgresqlTestCacheTableNormalClient', 3);
-  });
-
-  after(async () => {
-    await grok.functions.clientCache.clear();
-  });
-});
-
+// The client-cache tests (IndexedDB-backed grok.functions.clientCache) live in
+// ApiTests ('DB: Client cache') — they need the browser, and DBTests runs fully
+// headless under the grok test Node pass.
 category('Server cache', () => {
   const testConnections: String[] = ['PostgreSQLDBTests', 'PostgreSQLDBTestsCached'];
 

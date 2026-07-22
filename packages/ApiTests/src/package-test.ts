@@ -40,6 +40,7 @@ import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
+import './db/db-browser-tests';
 // import './package/upload';
 import './packages/properties';
 import './packages/docker';
