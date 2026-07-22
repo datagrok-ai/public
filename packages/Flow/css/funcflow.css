@@ -2377,6 +2377,13 @@
   border-radius: 4px;
 }
 
+/* Large containers (a toolbox pane, the canvas): outline only — the orange
+   fill would wash over every row inside. The runner adds this class when the
+   target is big. */
+.ff-guide-target-large {
+  background-color: transparent !important;
+}
+
 /* A pulsing dot the runner pins to the target's top-left corner (body-level, so
    the canvas can't clip it). The expanding ring is the actual pulse. */
 .ff-guide-blob {

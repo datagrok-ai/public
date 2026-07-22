@@ -11,6 +11,7 @@
 import * as ui from 'datagrok-api/ui';
 import {
   Guide, GuideStep, GuideContext, GuideHost, isAborted, Side, computePlacement, openDialogEl,
+  isScrolledIntoView, prefillSearch,
 } from './guide-model';
 import {setTid} from '../utils/test-ids';
 
@@ -25,9 +26,11 @@ export class GuideRunner {
 
   /** Abort any running guide (e.g. the user launched another, or left the view). */
   stop(): void {
+    const wasRunning = this.isRunning;
     this.controller?.abort();
     this.controller = null;
     GuideRunner.clearAllHighlights();
+    if (wasRunning) prefillSearch('');
   }
 
   async run(guide: Guide, host: GuideHost): Promise<void> {
@@ -35,10 +38,37 @@ export class GuideRunner {
     const controller = new AbortController();
     this.controller = controller;
     const ctx: GuideContext = {host, signal: controller.signal};
+    // The start overlay covers the canvas every early step points at.
+    try {
+      host.hideStartPanel?.();
+    } catch { /* optional */ }
+
+    // Steps skipped via skipIf must not leave holes in the "Step i of n"
+    // counter ("Step 9" followed by "Step 11" reads as a missed instruction).
+    // Show a running count instead, with the total estimated over the steps
+    // whose skipIf isn't already satisfied — it self-corrects as state changes.
+    let shown = 0;
+    const remainingEstimate = (from: number): number => {
+      let count = 0;
+      for (let k = from; k < guide.steps.length; k++) {
+        try {
+          if (!guide.steps[k].skipIf?.(ctx)) count++;
+        } catch {
+          count++;
+        }
+      }
+      return count;
+    };
 
     for (let i = 0; i < guide.steps.length; i++) {
       if (controller.signal.aborted) return;
-      const outcome = await this.runStep(guide.steps[i], i, guide.steps.length, ctx, () => controller.abort());
+      const step = guide.steps[i];
+      try {
+        if (step.skipIf?.(ctx)) continue;
+      } catch {/* a throwing predicate counts as not-satisfied */}
+      shown++;
+      const total = shown + remainingEstimate(i + 1);
+      const outcome = await this.runStep(step, shown - 1, total, ctx, () => controller.abort());
       if (outcome === 'exit' || controller.signal.aborted) {
         this.controller = null;
         return;
@@ -53,8 +83,13 @@ export class GuideRunner {
   ): Promise<StepOutcome> {
     // Nuke any stragglers from a previous step before we add ours — covers the
     // case where a step resolved instantly and a queued frame re-applied a
-    // highlight after cleanup (see clearAllHighlights).
+    // highlight after cleanup (see clearAllHighlights). Also drop any platform
+    // tooltip left hanging by the previous step's hover — a stale "Run the
+    // flow" tooltip beside a fresh highlight misleads.
     GuideRunner.clearAllHighlights();
+    try {
+      ui.tooltip.hide();
+    } catch { /* tooltip host not ready */ }
     // Prerequisite steps declare `skipIf`: when already satisfied, skip silently
     // (no card, no setup) — that's what makes "ensure X exists" steps invisible
     // when X is already there.
@@ -85,7 +120,7 @@ export class GuideRunner {
       const want = highlightsOf();
       for (const [el, blob] of blobByEl) {
         if (!want.includes(el) || !document.body.contains(el)) {
-          el.classList.remove('ff-guide-target');
+          el.classList.remove('ff-guide-target', 'ff-guide-target-large');
           blob.remove();
           blobByEl.delete(el);
         }
@@ -98,6 +133,11 @@ export class GuideRunner {
           document.body.appendChild(blob);
           blobByEl.set(el, blob);
         }
+        // Big containers (a whole toolbox pane, the canvas) get an outline-only
+        // highlight — the orange fill washes over every row inside and reads
+        // as "everything is broken" rather than "look here".
+        const r = el.getBoundingClientRect();
+        el.classList.toggle('ff-guide-target-large', r.width * r.height > 30000);
       }
       for (const [el, blob] of blobByEl) {
         const r = el.getBoundingClientRect();
@@ -112,7 +152,7 @@ export class GuideRunner {
     };
     const clearHighlights = (): void => {
       for (const [el, blob] of blobByEl) {
-        el.classList.remove('ff-guide-target');
+        el.classList.remove('ff-guide-target', 'ff-guide-target-large');
         blob.remove();
       }
       blobByEl.clear();
@@ -129,6 +169,19 @@ export class GuideRunner {
     const card = this.buildCard(step, i, n, !step.until, () => resolveControl('next'), onExit);
     document.body.appendChild(card);
 
+    // If the anchor exists but sits scrolled out of view inside a scrollable
+    // pane (a toolbox item below the fold, a context-panel row), bring it in —
+    // otherwise the highlight lands on a clipped, invisible element. Canvas
+    // nodes aren't inside a scroll container, so this is a no-op for them.
+    // The one step that TEACHES scrolling targets the pane itself until its
+    // file is visible, so it is not short-circuited by this.
+    const anchor0 = anchorOf();
+    if (anchor0 && !isScrolledIntoView(anchor0)) {
+      try {
+        anchor0.scrollIntoView({block: 'nearest'});
+      } catch { /* detached mid-step — the reanchor timer recovers */ }
+    }
+
     // Re-anchor on a timer: nodes re-render (replacing their DOM element), the
     // context panel opening shifts layout, and the user may drag the target.
     // Re-resolving each tick keeps highlights + popup glued to the live
@@ -137,11 +190,14 @@ export class GuideRunner {
     const reanchor = (): void => {
       if (finished) return; // a queued frame must never re-highlight after cleanup
       syncHighlights();
-      this.place(card, anchorOf(), step.position);
-      // Never sit on top of a platform dialog (z-index 3000): while one is open,
-      // drop the card just below it so the dialog stays interactive (the step's
-      // target re-anchors beside the dialog, so the card is still visible).
-      card.style.zIndex = openDialogEl() ? '2900' : '5000';
+      // A target-less step while a dialog is open must anchor BESIDE the
+      // dialog — centered, it would sit underneath it (the card drops below
+      // dialog z-index so the dialog stays interactive).
+      const dialog = openDialogEl();
+      const extraAvoid = (step.avoid?.(ctx) ?? []).filter((e): e is HTMLElement => !!e);
+      this.place(card, anchorOf() ?? dialog, step.position,
+        [...blobByEl.keys(), ...extraAvoid, ...(dialog ? [dialog] : [])]);
+      card.style.zIndex = dialog ? '2900' : '5000';
     };
     reanchor();
     const timer = window.setInterval(reanchor, 250);
@@ -179,21 +235,31 @@ export class GuideRunner {
    *  boundary and on finish/exit so a highlight can never linger (e.g. when a
    *  step resolves instantly and its per-step cleanup races a queued frame). */
   static clearAllHighlights(): void {
-    document.querySelectorAll('.ff-guide-target').forEach((el) => el.classList.remove('ff-guide-target'));
+    document.querySelectorAll('.ff-guide-target')
+      .forEach((el) => el.classList.remove('ff-guide-target', 'ff-guide-target-large'));
     document.querySelectorAll('.ff-guide-blob').forEach((el) => el.remove());
   }
 
   /** Place `popup` next to `target`, choosing the side with room and clamping it
    *  fully into the viewport. `preferred` is honored when it fits, else we flip
    *  to its opposite, else fall back to right/left/bottom/top — so a target low
-   *  on screen gets a popup above it, one far left gets it to the right, etc. */
-  private place(popup: HTMLElement, target: HTMLElement | null, preferred?: Side): void {
+   *  on screen gets a popup above it, one far left gets it to the right, etc.
+   *  Sides whose popup would sit on top of a highlighted element (e.g. the
+   *  other socket of a connect step) lose to sides that keep every highlight
+   *  visible. */
+  private place(popup: HTMLElement, target: HTMLElement | null, preferred?: Side,
+    avoidEls: HTMLElement[] = []): void {
     const pw = popup.offsetWidth || 300;
     const ph = popup.offsetHeight || 170;
     const rect = target && document.body.contains(target) ? target.getBoundingClientRect() : null;
     // A detached/hidden target has a zero-size rect → fall back to centered.
     const usable = rect && rect.width > 0 && rect.height > 0 ? rect : null;
-    const p = computePlacement(usable, pw, ph, window.innerWidth, window.innerHeight, preferred);
+    const avoid = avoidEls
+      .filter((el) => document.body.contains(el))
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0);
+    const p = computePlacement(usable, pw, ph, window.innerWidth, window.innerHeight, preferred,
+      undefined, undefined, avoid);
     popup.style.left = `${p.x}px`;
     popup.style.top = `${p.y}px`;
     popup.dataset.side = p.side;
@@ -233,6 +299,9 @@ export class GuideRunner {
 
   private showCompletion(guide: Guide, host: GuideHost): void {
     GuideRunner.clearAllHighlights();
+    // Steps prefill the toolbox search to spotlight one function — don't leave
+    // the catalog filtered once the guide is over.
+    prefillSearch('');
     let timer = 0;
     const close = (): void => {
       window.clearTimeout(timer);

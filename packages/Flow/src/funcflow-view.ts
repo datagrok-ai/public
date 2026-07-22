@@ -561,6 +561,9 @@ export class FuncFlowView extends DG.ViewBase {
         this.updateSaveButtonState();
         this.suggestionPane?.refresh();
         this.outputViews?.syncTabs(this.tableOutputs());
+        // A new/removed wire changes the shown node's Connections pane —
+        // stale "MISSING — required" rows read as "you did it wrong".
+        this.propertyPanel.refreshShownNode();
       },
       // Classified edits: invalidate exactly the affected downstream cone, and
       // feed the same set to the autorun scheduler (a rerun of just that slice).
@@ -1083,6 +1086,7 @@ export class FuncFlowView extends DG.ViewBase {
           this.functionBrowser.showTab(name);
         } catch {/* not ready yet */}
       },
+      hideStartPanel: () => this.hideStartPanel(),
       anchorEl: this.helpButton,
     };
   }
@@ -1285,10 +1289,12 @@ export class FuncFlowView extends DG.ViewBase {
     this.startPanel.style.display = 'none';
   }
 
-  /** Hide the overlay only while the canvas has content; show it on an empty one. */
+  /** Hide the overlay only while the canvas has content; show it on an empty
+   *  one. While a guide runs it stays hidden regardless — it would sit mid-
+   *  canvas competing with the instruction cards. */
   private updateStartPanelVisibility(): void {
     const wasHidden = this.startPanel.style.display === 'none';
-    const empty = !this.flow || this.flow.getNodeCount() === 0;
+    const empty = (!this.flow || this.flow.getNodeCount() === 0) && !this.guideRunner.isRunning;
     this.startPanel.style.display = empty ? 'flex' : 'none';
     if (empty) {
       this.drawStartBackgroundSoon();

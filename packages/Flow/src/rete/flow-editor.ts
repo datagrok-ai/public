@@ -3060,11 +3060,61 @@ export class FlowEditor {
 
   async addNodeAtCenter(node: FlowNode): Promise<FlowNode> {
     await this.editor.addNode(node);
-    const center = this.viewportCenter();
-    node.pos = center;
-    await this.area.translate(node.id, center);
-    await this.panToNode(node.id);
+    const spot = this.findFreeSpot(this.viewportCenter(), node.id);
+    node.pos = spot;
+    await this.area.translate(node.id, spot);
+    // Pan only when the chosen spot isn't already in view — chasing every new
+    // node re-centers the viewport and walks the EARLIER nodes off-screen
+    // (by the third added node the first one sat behind the toolbox).
+    if (!this.isSpotVisible(spot))
+      await this.panToNode(node.id);
     return node;
+  }
+
+  /** Whether a node placed at `spot` (canvas coords, assumed ~220×140) would
+   *  be fully inside the current viewport. */
+  private isSpotVisible(spot: {x: number; y: number}, w = 220, h = 140): boolean {
+    const t = this.area.area.transform;
+    const rect = this.area.container.getBoundingClientRect();
+    const x1 = spot.x * t.k + t.x;
+    const y1 = spot.y * t.k + t.y;
+    const x2 = (spot.x + w) * t.k + t.x;
+    const y2 = (spot.y + h) * t.k + t.y;
+    return x1 >= 0 && y1 >= 0 && x2 <= rect.width && y2 <= rect.height;
+  }
+
+  /** A position at/near `start` where a node of roughly `w`×`h` overlaps no
+   *  existing canvas node — a freshly added node must never bury the previous
+   *  one (that hides the very sockets the user is about to wire). Prefers
+   *  moving right (data flows left→right), then down, ring by ring. */
+  private findFreeSpot(
+    start: {x: number; y: number}, skipId: string, w = 220, h = 140,
+  ): {x: number; y: number} {
+    const others = this.editor.getNodes()
+      .filter((n) => n.id !== skipId && n.dgNodeType !== 'output' && !this.minimizedGroupOf(n.id))
+      .map((n) => {
+        const sz = this.measureNode(n.id);
+        return {x: n.pos.x, y: n.pos.y, w: sz.w, h: sz.h};
+      });
+    const margin = 30;
+    const free = (x: number, y: number): boolean => others.every((o) =>
+      x + w + margin <= o.x || x >= o.x + o.w + margin ||
+      y + h + margin <= o.y || y >= o.y + o.h + margin);
+    if (free(start.x, start.y)) return start;
+    for (let ring = 1; ring <= 8; ring++) {
+      const dx = ring * 260;
+      const dy = ring * 180;
+      const candidates = [
+        {x: start.x + dx, y: start.y}, {x: start.x, y: start.y + dy},
+        {x: start.x + dx, y: start.y + dy}, {x: start.x - dx, y: start.y},
+        {x: start.x, y: start.y - dy}, {x: start.x - dx, y: start.y + dy},
+        {x: start.x + dx, y: start.y - dy}, {x: start.x - dx, y: start.y - dy},
+      ];
+      for (const c of candidates) {
+        if (free(c.x, c.y)) return c;
+      }
+    }
+    return start;
   }
 
   async addNodeAt(node: FlowNode, x: number, y: number): Promise<FlowNode> {

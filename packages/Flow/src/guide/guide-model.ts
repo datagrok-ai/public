@@ -22,6 +22,10 @@ export interface GuideHost {
   showFunctionBrowser(): void;
   /** Activate one of the toolbox top tabs (Files / Queries / Workflows / Favorites). */
   showToolboxTab(name: 'Files' | 'Queries' | 'Workflows' | 'Favorites'): void;
+  /** Hide the "Start a flow" overlay while a guide runs — it competes with the
+   *  instruction cards and covers the canvas the steps point at. Optional so
+   *  bare test hosts don't need it. */
+  hideStartPanel?(): void;
   /** An always-present element intro/outro popups can anchor to (the help button). */
   readonly anchorEl: HTMLElement;
 }
@@ -45,6 +49,9 @@ export interface GuideStep {
   /** Elements to highlight (pulse + tint). Defaults to `[target]`. Use this to
    *  highlight more than one thing — e.g. both pins the user must connect. */
   highlights?: (ctx: GuideContext) => Array<HTMLElement | null>;
+  /** Extra elements the instruction card must not cover (highlights are
+   *  avoided automatically) — e.g. the node whose tiny detail is the target. */
+  avoid?: (ctx: GuideContext) => Array<HTMLElement | null>;
   /** Where the popup appears relative to the target. Default 'right'. */
   position?: 'top' | 'bottom' | 'left' | 'right';
   /** Optional setup run before the step shows (e.g. open the toolbox). */
@@ -327,10 +334,21 @@ export function untilValueContains(selector: string, substr: string) {
     }, ctx.signal);
 }
 
-/** Wait until a node is selected (the property panel shows a node's title row). */
+/** Wait until a node is selected (the property panel shows a node's title row).
+ *  NOTE: satisfied by a panel left over from a previous selection — prefer
+ *  {@link untilNodeOfTypeSelected} / {@link untilNodeSelectedOfFunc}, which
+ *  wait for the RIGHT node to carry the selection. */
 export function untilNodeSelected() {
   return (ctx: GuideContext): Promise<void> =>
     untilExists(`[data-testid="${tid('property-title-row')}"]`)(ctx);
+}
+
+/** Wait until a node of the given registered type name is selected on the
+ *  canvas (its `data-selected` flips) — immune to a stale property panel. */
+export function untilNodeOfTypeSelected(typeName: string) {
+  return (ctx: GuideContext): Promise<void> =>
+    poll(() => (Array.from(document.querySelectorAll('.ff-node[data-selected="true"]')) as HTMLElement[])
+      .some((n) => n.dataset.nodeTypeName === typeName), ctx.signal);
 }
 
 /** Wait until a node on the canvas is collapsed. */
@@ -388,6 +406,22 @@ export function untilValueMatches(selector: string, term: string) {
     }, ctx.signal);
 }
 
+/** True when the node found by `rightResolver` sits at least `minDx` screen-px
+ *  to the right of the node found by `leftResolver`. Doubles as a `skipIf` so
+ *  "drag it clear" steps skip silently when the node already sits clear. */
+export function nodeIsRightOf(
+  rightResolver: (ctx: GuideContext) => HTMLElement | null,
+  leftResolver: (ctx: GuideContext) => HTMLElement | null,
+  minDx = 200,
+): (ctx: GuideContext) => boolean {
+  return (ctx) => {
+    const a = rightResolver(ctx);
+    const b = leftResolver(ctx);
+    if (!a || !b) return false;
+    return a.getBoundingClientRect().left - b.getBoundingClientRect().left >= minDx;
+  };
+}
+
 /** Wait until the node found by `rightResolver` sits at least `minDx` screen-px
  *  to the right of the node found by `leftResolver` (user dragged it clear). */
 export function untilNodeRightOf(
@@ -396,12 +430,66 @@ export function untilNodeRightOf(
   minDx = 200,
 ) {
   return (ctx: GuideContext): Promise<void> =>
-    poll(() => {
-      const a = rightResolver(ctx);
-      const b = leftResolver(ctx);
-      if (!a || !b) return false;
-      return a.getBoundingClientRect().left - b.getBoundingClientRect().left >= minDx;
+    poll(() => nodeIsRightOf(rightResolver, leftResolver, minDx)(ctx), ctx.signal);
+}
+
+/** True when the node found by `resolver` overlaps no other canvas node (with
+ *  a small margin) — i.e. all its sockets are grabbable. Freshly added nodes
+ *  land half-overlapping the previous one, hiding the very dots a "connect"
+ *  step highlights; "drag it clear" steps gate on this. */
+export function nodeIsApart(
+  resolver: (ctx: GuideContext) => HTMLElement | null, margin = 8,
+): (ctx: GuideContext) => boolean {
+  return (ctx) => {
+    const el = resolver(ctx);
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return false;
+    for (const other of Array.from(document.querySelectorAll('.ff-node')) as HTMLElement[]) {
+      if (other === el || el.contains(other) || other.contains(el)) continue;
+      const o = other.getBoundingClientRect();
+      if (o.width === 0) continue;
+      if (r.left < o.right + margin && r.right > o.left - margin &&
+          r.top < o.bottom + margin && r.bottom > o.top - margin)
+        return false;
+    }
+    return true;
+  };
+}
+
+/** Wait until the node found by `resolver` no longer overlaps any other node. */
+export function untilNodeApart(
+  resolver: (ctx: GuideContext) => HTMLElement | null, margin = 8,
+) {
+  return (ctx: GuideContext): Promise<void> =>
+    poll(() => nodeIsApart(resolver, margin)(ctx), ctx.signal);
+}
+
+/** Wait until the node found by `resolver` moved at least `minPx` screen-px
+ *  from where it was when the step started — a pure "try dragging it" gate. */
+export function untilNodeMovedBy(
+  resolver: (ctx: GuideContext) => HTMLElement | null, minPx = 60,
+) {
+  return (ctx: GuideContext): Promise<void> => {
+    const r0 = resolver(ctx)?.getBoundingClientRect();
+    return poll(() => {
+      const el = resolver(ctx);
+      if (!el || !r0) return false;
+      const r = el.getBoundingClientRect();
+      return Math.hypot(r.left - r0.left, r.top - r0.top) >= minPx;
     }, ctx.signal);
+  };
+}
+
+/** Wait until ANY element matching `selector` is VISIBLE in the layout
+ *  (exists and has a box) — `untilExists` alone is fooled by permanently-
+ *  present-but-hidden hosts. */
+export function untilVisible(selector: string) {
+  return (ctx: GuideContext): Promise<void> =>
+    poll(() => Array.from(document.querySelectorAll(selector)).some((node) => {
+      const r = node.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    }), ctx.signal);
 }
 
 /** Wait until a connection row in the Files tree is expanded (its triangle has
@@ -507,11 +595,14 @@ const OPPOSITE: Record<Side, Side> = {right: 'left', left: 'right', top: 'bottom
 
 /** Choose where a popup of size pw×ph goes next to `target` within a vw×vh
  *  viewport: honor `preferred` if it fits, else its opposite, else
- *  right→left→bottom→top; then clamp fully on screen. With no target, center
- *  horizontally / upper-third vertically. Pure so it can be unit-tested. */
+ *  right→left→bottom→top; then clamp fully on screen. Among the sides that
+ *  fit, one whose (clamped) popup does NOT cover any `avoid` rect wins — so
+ *  the card never sits on the very element the step highlights (e.g. the
+ *  second socket of a connect step). With no target, center horizontally /
+ *  upper-third vertically. Pure so it can be unit-tested. */
 export function computePlacement(
   target: PlaceRect | null, pw: number, ph: number, vw: number, vh: number,
-  preferred?: Side, gap = 14, margin = 10,
+  preferred?: Side, gap = 14, margin = 10, avoid: PlaceRect[] = [],
 ): Placement {
   if (!target)
     return {side: 'center', x: Math.round((vw - pw) / 2), y: Math.round((vh - ph) / 3)};
@@ -530,6 +621,15 @@ export function computePlacement(
     if (s === 'bottom') return at.bottom.y + ph <= vh - margin;
     return at.top.y >= margin;
   };
+  const clamped = (s: Side): {x: number; y: number} => ({
+    x: Math.max(margin, Math.min(at[s].x, vw - pw - margin)),
+    y: Math.max(margin, Math.min(at[s].y, vh - ph - margin)),
+  });
+  const clear = (s: Side): boolean => {
+    const c = clamped(s);
+    return !avoid.some((a) =>
+      c.x < a.right && c.x + pw > a.left && c.y < a.bottom && c.y + ph > a.top);
+  };
 
   const order: Side[] = [];
   const add = (s: Side): void => {
@@ -541,14 +641,8 @@ export function computePlacement(
   }
   (['right', 'left', 'bottom', 'top'] as Side[]).forEach(add);
 
-  let side: Side = order[0];
-  for (const s of order) {
-    if (fits(s)) {
-      side = s;
-      break;
-    }
-  }
-  const x = Math.max(margin, Math.min(at[side].x, vw - pw - margin));
-  const y = Math.max(margin, Math.min(at[side].y, vh - ph - margin));
+  const side: Side = order.find((s) => fits(s) && clear(s)) ??
+    order.find(fits) ?? order[0];
+  const {x, y} = clamped(side);
   return {side, x: Math.round(x), y: Math.round(y)};
 }

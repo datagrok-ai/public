@@ -725,8 +725,19 @@ the [Test IDs](#test-ids-data-testid) matter: targets are addressed by `data-tes
 
 The instruction card is **our own popup** (not `ui.hints.addHint`, whose injected ✕ collided with our
 Exit link and whose placement never flips to the side with room). `computePlacement` (pure,
-unit-tested) picks the best side and clamps fully on-screen; the card re-anchors on a timer and the
-target gets a pulsing `.ff-guide-target` outline. No `scrollIntoView` (it used to jerk the whole UI).
+unit-tested) picks the best side, clamps fully on-screen, and **avoids covering the highlighted
+elements** (an `avoid` rect list — highlights + open dialog + a step's optional `avoid` resolver, so
+e.g. a "status dot" step's card can't sit on the node it describes); the card re-anchors on a timer
+and the target gets a pulsing `.ff-guide-target` outline. Runner invariants learned from the 33-guide
+screenshot audit (2026-07): the **start panel is hidden** for the whole guide (`host.hideStartPanel` +
+`updateStartPanelVisibility` checks `guideRunner.isRunning`); big targets (> 30 000 px²) get
+`ff-guide-target-large` (outline only — the orange fill washes over every row of a whole pane); a
+clipped-in-a-scroll-pane anchor is `scrollIntoView({block: 'nearest'})`-ed once at step start (nearest,
+never center — full-page jerk was the reason it was removed before); `skipIf`-skipped steps **don't
+leave holes in the "Step i of n" numbering** (shown-count + live re-estimate of the remaining
+non-skipped steps); a target-less step while a dialog is open anchors **beside** the dialog (the card
+z-drops below dialogs, so centered it would hide underneath); stale platform tooltips are hidden on
+every step boundary; and the toolbox search prefill is cleared on finish/stop.
 
 | File | Role |
 |---|---|
@@ -736,12 +747,27 @@ target gets a pulsing `.ff-guide-target` outline. No `scrollIntoView` (it used t
 | `guide-launcher.ts` | `createHelpButton` + `openGuideMenu` (DG.Menu with Tutorials / How do I…? groups). |
 
 The view ([funcflow-view.ts](src/funcflow-view.ts)) implements `GuideHost` (`getFlow`,
-`showFunctionBrowser`, `anchorEl = helpButton`), mounts the button, and wires the Start-panel tour to
-`TUTORIALS[0]`. Conditions, placement, and a live playthrough are tested in
-[tests/guide-tests.ts](src/tests/guide-tests.ts). **Adding a guide**: append a `Guide` to `TUTORIALS`
-or `QUESTIONS`; reuse the `until*` helpers and target a concrete element via `byTid`/`byNodeFunc`/
-`byBrowserFunc`/`byParam`. Concrete targets (params, demo file) should be verified empirically (e.g.
-`grok test --host localhost`) before being hard-coded.
+`showFunctionBrowser`, `showToolboxTab`, `hideStartPanel`, `anchorEl = helpButton`), mounts the
+button, and wires the Start-panel tour to `TUTORIALS[0]`. Conditions, placement, and a live
+playthrough are tested in [tests/guide-tests.ts](src/tests/guide-tests.ts). **Adding a guide**:
+append a `Guide` to `TUTORIALS` or `QUESTIONS`; reuse the `until*` helpers and target a concrete
+element via `byTid`/`byNodeFunc`/`byBrowserFunc`/`byParam`. Concrete targets (params, demo file)
+should be verified empirically (e.g. `grok test --host localhost`) before being hard-coded.
+
+Content rules distilled from the persona audit — follow them for every new step:
+- **Gate on the RIGHT state, not just any state**: `untilNodeSelected` (any panel content) was
+  satisfied by a stale panel — use `untilNodeOfTypeSelected`/`untilNodeSelectedOfFunc`; `untilExists`
+  is fooled by mounted-but-hidden hosts — use `untilVisible`.
+- **Every "drag it clear" step needs a matching `skipIf`** (`nodeIsApart`/`nodeIsRightOf`) — since
+  `addNodeAtCenter` finds a free spot (`findFreeSpot` in flow-editor), nodes rarely overlap and the
+  step usually self-skips.
+- **Table Output is a strip chip**, not a floating node: never ask the user to move it; connect
+  steps say "the dot in the OUTPUTS strip at the right edge" and use `position: 'left'`.
+- Steps that point at Run/Save must ensure the canvas isn't empty first (empty ⇒ Save disabled,
+  empty script, input-request dialog on Run).
+- Give each action step a one-line success cue ("a line appears", "the nodes snap into a row") and
+  don't celebrate unconditionally — gate dialog narration on the dialog actually being there
+  (e.g. publish-dashboard's Save step waits for `.ff-save-dash` to close).
 
 ## Auto-summaries (U12) — [`src/summary/`](src/summary)
 

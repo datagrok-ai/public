@@ -112,6 +112,7 @@ export class PropertyPanel {
   private flow: FlowEditor;
   /** The node the panel currently renders — the target of change reports. */
   private currentNode: FlowNode | null = null;
+  private currentExecState?: NodeExecState;
 
   /** Set by the view: opens a column / columns picker dialog for a func-node
    *  column input, seeded by the upstream table (running the flow up to that
@@ -133,6 +134,7 @@ export class PropertyPanel {
   showNode(node: FlowNode, execState?: NodeExecState): void {
     this.contentDiv.innerHTML = '';
     this.currentNode = node;
+    this.currentExecState = execState;
 
     // Coerce: labels can be derived from non-string values (constant nodes
     // title themselves after their value) and DG string inputs throw on
@@ -192,8 +194,24 @@ export class PropertyPanel {
 
   clear(): void {
     this.currentNode = null;
+    this.currentExecState = undefined;
     this.contentDiv.innerHTML = '';
     this.contentDiv.appendChild(ui.divText('Select a node to view its properties'));
+  }
+
+  /** Rebuild the panel for the node it currently shows — the graph changed
+   *  under it (a wire added/removed), and the Connections pane's "MISSING —
+   *  required" rows must not go stale while the node reads Done. Skipped when
+   *  the user is typing in the panel (a rebuild would steal focus) and when
+   *  the shown node no longer exists. */
+  refreshShownNode(): void {
+    if (!this.currentNode) return;
+    if (this.root.contains(document.activeElement) && document.activeElement !== document.body) return;
+    if (!this.flow.getNodes().some((n) => n.id === this.currentNode!.id)) {
+      this.clear();
+      return;
+    }
+    this.showNode(this.currentNode, this.currentExecState);
   }
 
   /** Report a (non-cosmetic) parameter edit on the shown node — routed to the
@@ -202,7 +220,10 @@ export class PropertyPanel {
    *  below funnels its change through a {@link changeReporter}, never here
    *  directly. */
   private paramsChanged(): void {
-    if (this.currentNode) this.flow.notifyNodeParamsChanged(this.currentNode.id);
+    if (this.currentNode) {
+      this.flow.notifyNodeParamsChanged(this.currentNode.id);
+      this.syncMissingRows(this.currentNode);
+    }
   }
 
   /** A change reporter for ONE editor: report a parameter edit only when the
@@ -656,6 +677,36 @@ export class PropertyPanel {
     const row = ui.div([detail, endSpan], 'funcflow-prop-row funcflow-conn-row');
     row.dataset.conn = kind === 'after' ? EXEC_IN_KEY : EXEC_OUT_KEY;
     return row;
+  }
+
+  /** Drop "MISSING — required" rows that are no longer missing — called after
+   *  every panel edit, so filling Name/Expression clears their warnings right
+   *  away instead of contradicting the fields above until the next rebuild.
+   *  Surgical (no rebuild): typing keeps focus, and resolved rows just vanish. */
+  private syncMissingRows(node: FlowNode): void {
+    const rows = Array.from(this.contentDiv.querySelectorAll<HTMLElement>('.funcflow-conn-missing'));
+    if (rows.length === 0) return;
+    const isConnected = (key: string): boolean => this.flow.isInputConnected(node.id, key);
+    const still = new Set<string>([
+      ...missingRequiredInputs(node, isConnected),
+      ...missingRequiredProps(node),
+    ]);
+    let removed = false;
+    for (const row of rows) {
+      if (!still.has(row.dataset.missing ?? '')) {
+        row.remove();
+        removed = true;
+      }
+    }
+    if (removed && still.size === 0) {
+      for (const lbl of Array.from(this.contentDiv.querySelectorAll<HTMLElement>('.funcflow-conn-group-label'))) {
+        if (lbl.textContent === 'Missing') {
+          if (lbl.nextElementSibling?.classList.contains('funcflow-conn-separator'))
+            lbl.nextElementSibling.remove();
+          lbl.remove();
+        }
+      }
+    }
   }
 
   private buildMissingRow(label: string, why: string, key = label): HTMLElement {
