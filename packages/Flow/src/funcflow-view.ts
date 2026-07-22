@@ -211,7 +211,8 @@ export class FuncFlowView extends DG.ViewBase {
     // Uploaded File node. (Share-driven permission sync is global — the
     // package's flowShareSync autostart — so it works with no view open.)
     this.platformSubs.push(grok.events.onFileDragEnter.subscribe((ev) => {
-      if (grok.shell.v?.root === this.root)
+      const target = ev.causedBy?.target;
+      if (target !== null && target instanceof HTMLElement &&  (target === this.canvasContainer || this.canvasContainer.contains(target)))
         ev.preventDefault();
     }));
   }
