@@ -862,8 +862,15 @@ match-count badge (`funcflow-tab-badge`, only when >0) and a 0-match tab dims (`
   height inside the clamped strip and the pane can never scroll); height is content-driven, capped at
   32% with the pane content scrolling, headers are compacted so all four tabs fit the ~250px toolbox
   (inactive grey, active blue + underline), and the accordion keeps a `min-height: 40%` floor.
-- **Files tab** (`ff-browser-files`): a hint line (`funcflow-tab-hint`, "double-click a file — or
-  drag one from your computer onto the canvas") above the KNIME-style file browser
+- **Files tab** (`ff-browser-files`): a hint line (`funcflow-tab-hint`, "double-click or drag a file
+  to load it — or open a local one:") sharing its row with the **open-local-file button**
+  (`ff-browser-upload`, `buildUploadButton`; icon-only `fa-folder-open` — the platform's "Open local
+  file" vocabulary): a hidden `<input type="file">` whose `accept` is computed **at click time**
+  from `supportedUploadExtensions()` (csv/tsv/txt/d42 + registered `file-handler` exts — lazy
+  packages count); picked files flow through the `onLocalFilesPicked` callback → the view's
+  `addUploadedFileNodes`, the same pending-store pipeline as dropping OS files onto the canvas. The
+  chip lives inside the hint row (flex; the text wraps first), so it costs no vertical space. Below,
+  the KNIME-style file browser
   ([utils/files-browser-tree.ts](src/utils/files-browser-tree.ts), `getFilesBrowser`) listing every
   file connection + its folders/files. Built **once** on first tab activation and reused (so expanded
   folders / scroll survive a search keystroke). **Double-click or drag a file → an `OpenFile` node**

@@ -184,7 +184,8 @@ category('Flow: function browser', () => {
       return;
     }
     const browser = new FunctionBrowser({
-      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
     });
     document.body.appendChild(browser.root);
     try {
@@ -251,7 +252,8 @@ category('Flow: function browser', () => {
       expect(queryConnectionName(q).length > 0, true, `query ${q.func.name} has a connection name`);
 
     const browser = new FunctionBrowser({
-      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
     });
     document.body.appendChild(browser.root);
     try {
@@ -281,7 +283,8 @@ category('Flow: function browser', () => {
 
   test('toolbox sections are platform accordion panes with self-persisted state', async () => {
     const browser = new FunctionBrowser({
-      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {}, onFileDoubleClick: () => {},
+      onFunctionDoubleClick: () => {}, onBuiltinNodeDoubleClick: () => {},
+      onFileDoubleClick: () => {}, onLocalFilesPicked: () => {},
     });
     document.body.appendChild(browser.root);
     const lsKey = 'Accordion:funcflow.toolbox';

@@ -255,6 +255,7 @@ export class FuncFlowView extends DG.ViewBase {
       onFunctionDoubleClick: (info: FuncInfo) => void this.addNodeByType(info.nodeTypeName),
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
+      onLocalFilesPicked: (files: File[]) => void this.addUploadedFileNodes(files),
     });
 
     // Suggestions pane — the bottom 25% of the toolbox. Recomputes from the

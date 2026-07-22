@@ -8,12 +8,14 @@ import {category, test, expect, before, after} from '@datagrok-libraries/utils/s
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc} from '../rete/node-factory';
 import {FunctionBrowser, TOOLBOX_TABS} from '../panel/function-browser';
 import {getFavorites, isFavorite, toggleFavorite, clearFavorites, onFavoritesChanged} from '../panel/favorites';
+import {supportedUploadExtensions} from '../utils/uploaded-files';
 
-function makeBrowser(onAdd?: (type: string) => void): FunctionBrowser {
+function makeBrowser(onAdd?: (type: string) => void, onFiles?: (files: File[]) => void): FunctionBrowser {
   return new FunctionBrowser({
     onFunctionDoubleClick: (info) => onAdd?.(info.nodeTypeName),
     onBuiltinNodeDoubleClick: (type) => onAdd?.(type),
     onFileDoubleClick: () => {},
+    onLocalFilesPicked: (files) => onFiles?.(files),
   });
 }
 
@@ -179,6 +181,40 @@ category('Flow: toolbox tabs', () => {
       if (saved == null) localStorage.removeItem('funcflow.browser.v1');
       else localStorage.setItem('funcflow.browser.v1', saved);
     }
+  });
+
+  test('the Files tab Upload chip hands picked files to the view', async () => {
+    const picked: File[][] = [];
+    const browser = makeBrowser(undefined, (files) => picked.push(files));
+    document.body.appendChild(browser.root);
+    try {
+      browser.render();
+      browser.showTab('Files');
+      const btn = browser.root.querySelector('[data-testid="ff-browser-upload"]') as HTMLElement;
+      expect(!!btn, true, 'Upload chip rendered in the Files tab');
+      const hint = btn.closest('.funcflow-tab-hint');
+      expect(!!hint, true, 'chip shares the hint row — no extra vertical space');
+
+      // Simulate the OS picker returning a file (input.files is read-only —
+      // a DataTransfer is the standard way to set it programmatically).
+      const input = btn.querySelector('input[type="file"]') as HTMLInputElement;
+      const dt = new DataTransfer();
+      dt.items.add(new File(['a,b\n1,2\n'], 'picked.csv', {type: 'text/csv'}));
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', {bubbles: true}));
+      expect(picked.length, 1, 'callback fired once');
+      expect(picked[0].map((f) => f.name).join(','), 'picked.csv', 'the picked file came through');
+      expect(input.value, '', 'input cleared so re-picking the same file fires again');
+    } finally {
+      browser.root.remove();
+      browser.destroy();
+    }
+  });
+
+  test('supported upload extensions cover the natively-parsed formats', async () => {
+    const exts = supportedUploadExtensions();
+    for (const e of ['csv', 'tsv', 'txt', 'd42'])
+      expect(exts.includes(e), true, `.${e} is uploadable`);
   });
 
   test('a DG-function favorite resolves back to its FuncInfo', async () => {

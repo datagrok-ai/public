@@ -6,6 +6,7 @@ import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
 import {categorizeBySignature, domainCategory} from '../types/type-map';
 import {getFavorites, isFavorite, toggleFavorite, onFavoritesChanged} from './favorites';
+import {supportedUploadExtensions} from '../utils/uploaded-files';
 
 /** Whether a function's output is a widget (→ the Widgets pane, not a category). */
 export function funcOutputsWidget(f: FuncInfo): boolean {
@@ -122,6 +123,8 @@ export interface FunctionBrowserCallbacks {
   onBuiltinNodeDoubleClick: (nodeTypeName: string) => void;
   /** Double-click (or Enter) on a file in the Files tree → add an OpenFile node. */
   onFileDoubleClick: (file: DG.FileInfo) => void;
+  /** Files chosen via the Files-tab Upload button → add Uploaded File nodes. */
+  onLocalFilesPicked: (files: File[]) => void;
 }
 
 /** Connection display name for a query func, used to group queries in the
@@ -369,8 +372,12 @@ export class FunctionBrowser {
       {name: 'Files', tip: 'Browse data files. Double-click or drag a file onto the canvas to load it.',
         content: () => {
           if (filesContent.childElementCount === 0) {
-            const hint = ui.div([], 'funcflow-tab-hint');
-            hint.textContent = 'Double-click a file to load it — or drag one from your computer onto the canvas.';
+            const text = document.createElement('span');
+            text.className = 'funcflow-tab-hint-text';
+            // Ends by pointing at the open-local-file button beside it; short
+            // enough to share the row with it in two lines.
+            text.textContent = 'Double-click or drag a file to load it — or open a local one:';
+            const hint = ui.div([text, this.buildUploadButton()], 'funcflow-tab-hint');
             filesContent.appendChild(hint);
           }
           filesContent.appendChild(this.getFilesTreeRoot());
@@ -557,6 +564,38 @@ export class FunctionBrowser {
       this.filesTreeRoot.style.maxHeight = '';
     }
     return this.filesTreeRoot;
+  }
+
+  /** The Files-tab "Upload" chip: opens the OS file picker (filtered to the
+   *  table formats the platform can read) and hands the picked files to the
+   *  view, which registers the bytes and adds an Uploaded File node per file —
+   *  the same pipeline as dropping files onto the canvas. Lives inside the
+   *  hint row, so it costs no extra vertical space. */
+  private buildUploadButton(): HTMLElement {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.style.display = 'none';
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files ?? []);
+      if (files.length > 0) this.callbacks.onLocalFilesPicked(files);
+      input.value = ''; // re-picking the same file must fire change again
+    });
+    // input.click() bubbles back up to the chip — don't re-trigger the picker.
+    input.addEventListener('click', (ev) => ev.stopPropagation());
+    // The platform's "Open local file" affordance is a folder icon — reuse
+    // that vocabulary here, icon-only (the tooltip carries the explanation).
+    const icon = document.createElement('i');
+    icon.className = 'grok-icon fal fa-folder-open';
+    const btn = ui.div([icon, input], 'funcflow-upload-btn');
+    ui.tooltip.bind(btn, 'Open a local file — it becomes a node on the canvas ' +
+      'and is stored with the flow when you save.');
+    btn.addEventListener('click', () => {
+      // Resolved at click time so handlers from lazily-loaded packages count.
+      input.accept = supportedUploadExtensions().map((e) => `.${e}`).join(',');
+      input.click();
+    });
+    return setTid(btn, 'browser-upload');
   }
 
   /** A muted hint shown when a top tab has nothing to list. */

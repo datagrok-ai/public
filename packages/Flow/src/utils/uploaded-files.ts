@@ -141,6 +141,18 @@ export async function readUploadedFileBytes(fileId: string, fileName: string): P
 
 const TEXT_TABLE_EXTS = new Set(['csv', 'tsv', 'txt']);
 
+/** Every file extension {@link parseFileToDataFrame} can turn into a table:
+ *  the CSV family and `.d42` natively, plus whatever `file-handler` functions
+ *  are registered (xlsx, sdf, …). Drives the upload picker's `accept` filter. */
+export function supportedUploadExtensions(): string[] {
+  const exts = new Set([...TEXT_TABLE_EXTS, 'd42']);
+  for (const f of DG.Func.find({tags: ['file-handler']})) {
+    for (const e of String(f.options['ext'] ?? '').split(','))
+      if (e.trim()) exts.add(e.trim().toLowerCase());
+  }
+  return [...exts].sort();
+}
+
 /** Parses raw file bytes into a DataFrame: CSV-family natively, `.d42`
  *  directly, anything else through the platform's registered `file-handler`
  *  functions (xlsx, sdf, ...). Multi-table files yield their first table. */
