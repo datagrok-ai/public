@@ -524,6 +524,34 @@ jobs:
             fi
           done
         working-directory: packages/${{ matrix.package }}
+      # DBTests' ClickHouse ADBC queries come back as Arrow IPC, which the client can
+      # only decode when the Arrow package is installed on the stand ("Arrow package is
+      # absent or version is incompatible"). DBTests has no npm dependency on Arrow - it
+      # is a runtime prerequisite, not a build-time one - so the usual "Install Grok
+      # Dependencies" step does not cover it. Publish it from source so the tests run
+      # against this branch's Arrow rather than the last npm release.
+      - name: Publish Arrow package to Datagrok
+        if: ${{ matrix.test == 'test' && matrix.package == 'DBTests' }}
+        id: publish-arrow
+        timeout-minutes: 20
+        run: |
+          npm install
+          npm run build
+          count=0
+          retries=5
+          until grok publish ${{ steps.datagrok-image.outputs.alias }} --release --skip-docker-rebuild; do
+            exit=$?
+            wait=$((2 ** count))
+            count=$((count + 1))
+            if [ "$count" -lt "$retries" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for Arrow in $wait seconds..."
+              sleep $wait
+            else
+              echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${{ steps.datagrok-image.outputs.alias }}' for Arrow."
+              exit $exit
+            fi
+          done
+        working-directory: packages/Arrow
       - name: Set required credentials
         if: ${{ matrix.test == 'test' }}
         env:
