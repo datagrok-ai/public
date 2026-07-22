@@ -166,6 +166,8 @@ export namespace decorators {
     /** Runs the function server-side as a celery task in a docker-based Node worker.
      * `true` — an auto-created worker container; a string — the package's `dockerfiles/<name>` container. */
     queue?: boolean | string;
+    /** Runs the function server-side in the default worker queue — an alias of `queue: true`. */
+    server?: boolean;
   }
 
   interface FunctionOptions {

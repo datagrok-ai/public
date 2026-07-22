@@ -109,6 +109,14 @@ export async function jsCvmCurrentUser(): Promise<string> {
   return (await grok.dapi.users.current()).login;
 }
 
+//name: jsCvmServer
+//meta.server: true
+//input: string x
+//output: string result
+export function jsCvmServer(x: string): string {
+  return x;
+}
+
 //name: jsCvmCustomContainer
 //meta.queue: node-worker
 //output: string result

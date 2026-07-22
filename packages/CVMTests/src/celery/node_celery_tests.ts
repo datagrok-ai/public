@@ -65,6 +65,10 @@ category('Celery: node worker', () => {
     expect(call.status, 'Canceled');
   }, {timeout: 120000});
 
+  test('meta.server alias', async () => {
+    expect(await grok.functions.call('CVMTests:jsCvmServer', {x: 'srv'}), 'srv');
+  }, {timeout: 90000});
+
   test('Custom container', async () => {
     expect(await grok.functions.call('CVMTests:jsCvmCustomContainer', {}), 'custom');
   }, {timeout: 240000 /* separate container cold start */});
