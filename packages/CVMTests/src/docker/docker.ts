@@ -96,8 +96,12 @@ category('Docker', () => {
     } finally {
       ws?.close();
     }
-  });
+  }); // browser WebSocket global with cookie-session auth
 });
+// Tests are browser-only by default. This category has no node-capable tests yet:
+// under the Node runtime the docker proxy returns 401 where the browser (cookie
+// session) gets the real status (e.g. 404 for a missing container), and the
+// WebSocket proxy relies on the browser WebSocket global.
 
 async function findContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();

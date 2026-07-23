@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: annotated API-only tests (scripts, celery, docker, files) with `node: true` — `grok test` now runs them headless in Node; the WebSocket proxy, project/table-view, client-cache, and Parquet-dataframe tests stay in the browser
 * GROK-20452: Added `queue/container.json` (`on_demand: true`, mirrors the python celery config) — the auto-generated node-worker container now lazy-starts on first call, which the `Cold start` benchmark relies on (it stops the container and expects the platform to revive it)
 
 * Tests: Added `Celery: node worker` suite — JS queue functions (`meta.queue` / `meta.server`) executed server-side in the celery Node worker: scalar/string/dataframe round-trips, error propagation, progress, cancellation, dapi token pass-through, and a custom `dockerfiles/node-worker` container

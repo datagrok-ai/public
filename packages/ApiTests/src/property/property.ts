@@ -34,7 +34,7 @@ category('Property: General', () => {
     expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
     await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 category('Property: Header parsing', () => {
   let func!: DG.Func;
@@ -81,5 +81,5 @@ category('Property: Header parsing', () => {
   test('Complex caption', async () => {
     expect(func.inputs[11].friendlyName, 'MIC O2 P/V exponent');
     expect(ui.input.forProperty(func.inputs[11]).caption, 'MIC O2 P/V exponent');
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
-});
+  }, {node: false, skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+}, {node: true});

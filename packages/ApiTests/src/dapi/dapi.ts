@@ -35,4 +35,4 @@ category('Dapi', () => {
     //TODO: find log
     // console.log(await grok.dapi.log.list({filter: 'jsApiTest1 = "jsApiTest2"'}));
   }, {owner: 'aparamonov@datagrok.ai', skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
-});
+}, {node: true});

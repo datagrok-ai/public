@@ -136,6 +136,33 @@ This command builds your package and deploys it in debug mode for testing. You c
   
 If you do not have any datagrok instance run locally, you can use [docker-compose](../../../deploy/docker-compose/docker-compose.mdx) to run the stand.
 
+### Node (browserless) test pass
+
+Tests that use only server API and data structures (no views, dialogs, or DOM) can run headless
+under the js-api Node runtime. Tests are **browser-only by default** (`node: false`): an
+unannotated test always stays in the browser. Opt in with the `node` option — per test, or at
+the category level only when every test in the category is verified under Node:
+
+```typescript
+category('Dapi: groups', () => {
+  test('create', async () => { /* grok.dapi only */ });
+}, {node: true});                       // whole category runs under Node
+
+test('open dialog', async () => { ... }, {node: false});  // keep one test in the browser
+```
+
+When a package's `package-test.ts` exports `testNode()` and declares the `excludeNodeTests`
+input on `test()` (see ApiTests for the reference setup), `grok test` first runs all
+`node: true` tests in a Node process — no browser launch — and then runs only the remaining
+tests in the browser. If every matched test is node-capable, the browser never starts, which
+makes API-only packages like DBTests dramatically faster to test.
+
+Related flags:
+
+* `--skip-node` runs everything in the browser (previous behavior).
+* `--node-only` runs only the Node pass.
+* `--gui` and `--debug` imply `--skip-node`, so every test stays visible in the browser.
+
 ### Trigger GitHub Actions manually
 
 If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.

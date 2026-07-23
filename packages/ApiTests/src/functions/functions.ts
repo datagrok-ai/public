@@ -54,7 +54,7 @@ category('Functions: Multiple outputs', () => {
     expect(call.outputs.get('mol'), 'c1ccccc1', 'mol');
     expect(call.outputs.get('score'), 0.95, 'score');
   }, {skipReason: nodeSkip});
-});
+}, {node: true});
 
 category('Functions: General', () => {
   test('eval', async () => {
@@ -115,5 +115,5 @@ category('Functions: General', () => {
     expect(views.length, 1, 'one view');
     expect(views[0] instanceof DG.TableView, true, 'view is TableView');
     expect((views[0] as DG.TableView).dataFrame.columns.length, 2, 'dataframe columns');
-  }, {skipReason: nodeSkip});
-});
+  }, {skipReason: nodeSkip, node: false});
+}, {node: true});

@@ -2,6 +2,9 @@
 
 ## 1.10.3 (WIP)
 
+* Tests: annotated UI-independent categories (dapi, dataframe, functions, bitset, valuematcher, property, stats, shell) with `node: true` — `grok test` now runs them headless in Node before the browser pass; view/dialog/grid tests keep `node: false`
+* Tests: adopted DBTests' browser-bound tests as `DB: Data sync` / `DB: Client cache` / `DB: Benchmarks` (streaming into a table view, IndexedDB client cache, cached benchmarks) so DBTests runs fully headless
+
 * Moved SPGI test datasets (`SPGI-linked1/2`, `SPGI_v2_infinity`) from the Demo files root into the package (`files/datasets`); viewer tests now read `System:AppData/ApiTests/datasets/...`
 
 * Node runner: Expanded coverage from `dapi/` to all UI-independent categories (dataframe, functions, bitset, valuematcher, property, stats, shell); added `--mode functional|stress` (stress keeps the old stressTest-only behavior); per-file load errors no longer abort the run

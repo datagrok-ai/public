@@ -44,4 +44,4 @@ category('Functions: Logical', () => {
     'Xor(1, 0)': undefined,
     'Xor(1, 1)': undefined,
   }));
-});
+}, {node: true});

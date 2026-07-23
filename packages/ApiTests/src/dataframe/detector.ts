@@ -15,4 +15,4 @@ category('Detector', () => {
     if (res)
       throw new Error('DG.Detector.sampleCategories() always returns true on single empty category.');
   });
-});
+}, {node: true});

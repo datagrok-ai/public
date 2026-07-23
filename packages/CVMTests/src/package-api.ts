@@ -536,6 +536,10 @@ export namespace funcs {
     return await grok.functions.call('CVMTests:JsCvmDataframe', { df });
   }
 
+  export async function jsCvmDataframeTypes(df: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('CVMTests:JsCvmDataframeTypes', { df });
+  }
+
   export async function jsCvmEmptyDataframe(): Promise<DG.DataFrame> {
     return await grok.functions.call('CVMTests:JsCvmEmptyDataframe', {});
   }
@@ -554,6 +558,10 @@ export namespace funcs {
 
   export async function jsCvmCurrentUser(): Promise<string> {
     return await grok.functions.call('CVMTests:JsCvmCurrentUser', {});
+  }
+
+  export async function jsCvmServer(x: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmServer', { x });
   }
 
   export async function jsCvmCustomContainer(): Promise<string> {
