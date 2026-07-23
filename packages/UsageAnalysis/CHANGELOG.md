@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## 2.7.1 (2026-07-23)
+
+* Restored the npm release channel: `datagrok-api` local path dependency replaced with the published `^1.27.7` (path deps block CI publishing, so 2.5.2–2.7.0 never reached npm and environments tracking `latest` kept downgrading to 2.5.1)
+
 ## 2.7.0 (2026-07-16)
 
 * Release: Tests slow-test alert now compares each test's latest duration against both the bleeding-edge recent average and the previous release (previous minor semver, found across instances) and shows both deltas; sub-second tests are ignored to cut noise; ReleaseTests returns a `prev_release_ms` baseline. (Stress keeps its bleeding-edge p95-vs-prior comparison — the previous release has no stress data to compare against.)
