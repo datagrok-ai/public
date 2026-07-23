@@ -69,7 +69,7 @@ export class FuncFlowView extends DG.ViewBase {
   private functionBrowser!: FunctionBrowser;
   private propertyPanel!: PropertyPanel;
   private executionController!: ExecutionController;
-  /** Toolbox Suggestions pane (bottom ~30% of the browser). Public for tests. */
+  /** Toolbox Suggestions pane (bottom 25% of the browser). Public for tests. */
   suggestionPane!: SuggestionPane;
   /** The node the user last clicked — a suggestion-context signal that
    *  outlives a deselect ("the currently clicked node"). */
@@ -255,9 +255,10 @@ export class FuncFlowView extends DG.ViewBase {
       onFunctionDoubleClick: (info: FuncInfo) => void this.addNodeByType(info.nodeTypeName),
       onBuiltinNodeDoubleClick: (typeName: string) => void this.addNodeByType(typeName),
       onFileDoubleClick: (file: DG.FileInfo) => void this.addOpenFileNode(file.fullPath),
+      onLocalFilesPicked: (files: File[]) => void this.addUploadedFileNodes(files),
     });
 
-    // Suggestions pane — the bottom ~30% of the toolbox. Recomputes from the
+    // Suggestions pane — the bottom 25% of the toolbox. Recomputes from the
     // full canvas context (selection, focus node, captured data, preview cell).
     this.suggestionPane = new SuggestionPane(
       async () => this.flow ?
@@ -560,6 +561,9 @@ export class FuncFlowView extends DG.ViewBase {
         this.updateSaveButtonState();
         this.suggestionPane?.refresh();
         this.outputViews?.syncTabs(this.tableOutputs());
+        // A new/removed wire changes the shown node's Connections pane —
+        // stale "MISSING — required" rows read as "you did it wrong".
+        this.propertyPanel.refreshShownNode();
       },
       // Classified edits: invalidate exactly the affected downstream cone, and
       // feed the same set to the autorun scheduler (a rerun of just that slice).
@@ -1077,6 +1081,12 @@ export class FuncFlowView extends DG.ViewBase {
           this.functionBrowser.render();
         } catch {/* not ready yet */}
       },
+      showToolboxTab: (name) => {
+        try {
+          this.functionBrowser.showTab(name);
+        } catch {/* not ready yet */}
+      },
+      hideStartPanel: () => this.hideStartPanel(),
       anchorEl: this.helpButton,
     };
   }
@@ -1279,10 +1289,12 @@ export class FuncFlowView extends DG.ViewBase {
     this.startPanel.style.display = 'none';
   }
 
-  /** Hide the overlay only while the canvas has content; show it on an empty one. */
+  /** Hide the overlay only while the canvas has content; show it on an empty
+   *  one. While a guide runs it stays hidden regardless — it would sit mid-
+   *  canvas competing with the instruction cards. */
   private updateStartPanelVisibility(): void {
     const wasHidden = this.startPanel.style.display === 'none';
-    const empty = !this.flow || this.flow.getNodeCount() === 0;
+    const empty = (!this.flow || this.flow.getNodeCount() === 0) && !this.guideRunner.isRunning;
     this.startPanel.style.display = empty ? 'flex' : 'none';
     if (empty) {
       this.drawStartBackgroundSoon();
@@ -1546,6 +1558,8 @@ export class FuncFlowView extends DG.ViewBase {
     this.teardownAutoPin();
     for (const sub of this.platformSubs) sub.unsubscribe();
     this.platformSubs = [];
+    this.suggestionPane?.destroy();
+    this.functionBrowser?.destroy();
     this.outputViews?.destroy();
     this.flow?.destroy();
     super.detach();

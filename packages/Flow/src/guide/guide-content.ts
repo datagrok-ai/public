@@ -17,9 +17,10 @@ import {
   byFileTreeConn, byFileTreeFile, preferDialog, openDialogEl,
   untilClick, untilNodeType, untilMoreNodes, untilMoreConnections, untilFuncNode,
   untilFewerNodes, untilValueContains, untilValueMatches, untilValueNonEmpty, untilNodeRightOf,
+  nodeIsRightOf, nodeIsApart, untilNodeApart, untilNodeMovedBy, untilVisible, untilNodeOfTypeSelected,
   untilNodeSelected, untilNodeSelectedOfFunc, untilMoreCollapsed, untilColumnCountAtLeast,
   untilFileTreeConnExpanded, untilScrolledIntoView, untilFuncNodeWithInput, isScrolledIntoView,
-  untilExists, copyToClipboard, prefillSearch, hasFuncNode, hasNodeType,
+  untilExists, copyToClipboard, prefillSearch, hasFuncNode, hasNodeType, poll, el,
 } from './guide-model';
 import {createNode} from '../rete/node-factory';
 
@@ -44,14 +45,32 @@ const DEMOG_COLUMN_COUNT = 11;
 
 const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** Reveal the toolbox and make sure the Files pane is expanded (click its header
- *  if a previous session left it collapsed). */
+/** Frame the whole graph before a wiring step — with several nodes added one
+ *  after another, the drag SOURCE (e.g. Open File) may have drifted off-screen.
+ *  The small delay lets the previous step's own add-pan finish first — the
+ *  step gate fires the moment the node exists, before its pan settles, and a
+ *  late pan would override the fit. */
+const fitGraph = async (ctx: GuideContext): Promise<void> => {
+  await delay(350);
+  try {
+    await ctx.host.getFlow()?.zoomToFit();
+  } catch {/* editor not ready */}
+};
+
+/** True while a node running `funcName` is selected (its settings are already
+ *  open) — lets "click the node" steps skip silently instead of flashing. */
+const funcNodeSelected = (funcName: string) => (): boolean => {
+  const lc = funcName.toLowerCase();
+  return (Array.from(document.querySelectorAll('.ff-node[data-selected="true"]')) as HTMLElement[])
+    .some((n) => (n.dataset.func ?? '').toLowerCase().includes(lc));
+};
+
+/** Reveal the toolbox and make sure the Files tab is active (a previous
+ *  session may have left another top tab selected). */
 const openFiles = async (ctx: GuideContext): Promise<void> => {
   ctx.host.showFunctionBrowser();
   await delay(80);
-  const header = document.querySelector(
-    '[data-testid="ff-browser-files"] .d4-accordion-pane-header') as HTMLElement | null;
-  if (header && !header.classList.contains('expanded')) header.click();
+  ctx.host.showToolboxTab('Files');
 };
 
 /** True once demog.csv exists in the Files tree AND is scrolled into view. */
@@ -60,15 +79,21 @@ const demogVisible = (ctx: GuideContext): boolean => {
   return !!fileEl && isScrolledIntoView(fileEl);
 };
 
+/** True once the Demo connection row is expanded (its files are listed). */
+const demoConnExpanded = (ctx: GuideContext): boolean =>
+  !!byFileTreeConn(DEMO_CONN)(ctx)?.querySelector('.d4-tree-view-tri-expanded');
+
 /** The reusable "bring data in from the Files browser" sequence: open Files →
  *  expand the Demo connection → scroll to demog.csv → double-click / drag it.
  *  Ends with an OpenFile node already pointing at the file (no path typing).
- *  Pass `skipIf` to skip the whole sequence when data is already loaded. */
+ *  Pass `skipIf` to skip the whole sequence when data is already loaded.
+ *  Steps whose action is already done (connection expanded, file in view) skip
+ *  silently instead of flashing a card that instantly self-advances. */
 const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[] => {
   const steps: GuideStep[] = [
     {
       title: 'Open the Files browser',
-      text: 'In the toolbox on the left, the Files pane lists your data connections — this is the ' +
+      text: 'In the toolbox on the left, the Files tab lists your data connections — this is the ' +
         'easiest way to bring data in. Click Next.',
       setup: openFiles,
       target: byTid('browser-files'),
@@ -77,6 +102,7 @@ const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[]
       title: 'Open the Demo connection',
       text: `Double-click the “${DEMO_CONN}” connection (highlighted) — or click its ▸ triangle — to ` +
         'expand it and list its files.',
+      skipIf: demoConnExpanded,
       setup: openFiles,
       target: byFileTreeConn(DEMO_CONN),
       until: untilFileTreeConnExpanded(DEMO_CONN),
@@ -85,6 +111,7 @@ const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[]
       title: 'Scroll to demog.csv',
       text: `The files are listed below the folders. Scroll the Files list down until “${DEMOG_FILE}” ` +
         'comes into view.',
+      skipIf: demogVisible,
       // Highlight the whole Files pane while scrolling (the file itself is off-screen
       // and would otherwise pulse over unrelated rows); switch to the file only once
       // it's actually in view.
@@ -100,7 +127,10 @@ const loadDemogViaFiles = (skipIf?: (ctx: GuideContext) => boolean): GuideStep[]
       until: untilFuncNodeWithInput('OpenFile', 'fullPath', 'demog'),
     },
   ];
-  return skipIf ? steps.map((s) => ({...s, skipIf})) : steps;
+  // An outer skipIf ("data already loaded") composes with each step's own.
+  return skipIf ?
+    steps.map((s) => ({...s, skipIf: (ctx: GuideContext) => skipIf(ctx) || (s.skipIf?.(ctx) ?? false)})) :
+    steps;
 };
 
 /** Reveal the function list with a cleared search box, so the user types the
@@ -155,17 +185,24 @@ const loadDataAddColumn: Guide = {
       until: untilFuncNode('AddNewColumn'),
     },
     {
+      // Nodes land in free space now, so this repair step almost always skips.
+      // The skipIf treats "node not there yet" as skipped too — otherwise the
+      // step-count estimate includes it at guide start and the visible total
+      // shrinks mid-run when it self-skips.
       title: 'Move it clear of Open File',
-      text: 'New nodes land in the center, so this one overlaps Open File. Drag the “Add New Column” ' +
-        'node to the right until it sits clear, with room to wire them together.',
+      text: 'Give it room: drag the “Add New Column” node by its title bar to the right of Open ' +
+        'File, so there\'s space to wire them together.',
+      skipIf: (ctx) => !byNodeFunc('AddNewColumn')(ctx) ||
+        nodeIsApart(byNodeFunc('AddNewColumn'))(ctx),
       target: byNodeFunc('AddNewColumn'),
       position: 'top',
-      until: untilNodeRightOf(byNodeFunc('AddNewColumn'), byNodeFunc('OpenFile'), 220),
+      until: untilNodeApart(byNodeFunc('AddNewColumn')),
     },
     {
       title: 'Connect the data',
       text: 'Drag from Open File\'s result output dot (right) to Add New Column\'s table input dot ' +
-        '(left). Both dots are highlighted — matching colors mean compatible types.',
+        '(left). Both dots are highlighted — matching colors mean compatible types. A line between ' +
+        'the nodes means it worked.',
       target: byNodeFunc('AddNewColumn'),
       position: 'top',
       highlights: (ctx) => [
@@ -177,6 +214,7 @@ const loadDataAddColumn: Guide = {
     {
       title: 'Select Add New Column',
       text: 'Click the “Add New Column” node so its settings open on the right.',
+      skipIf: funcNodeSelected('AddNewColumn'),
       target: byNodeFunc('AddNewColumn'),
       until: untilNodeSelectedOfFunc('AddNewColumn'),
     },
@@ -205,23 +243,17 @@ const loadDataAddColumn: Guide = {
     },
     {
       title: 'Add the Table Output node',
-      text: 'Double-click “Table Output” (highlighted) — it marks a table as your flow\'s result.',
+      text: 'Double-click “Table Output” (highlighted) — it marks a table as your flow\'s result. ' +
+        'Outputs don\'t float on the canvas: it docks into the OUTPUTS strip on the right edge.',
       target: byTid('browser-item', TABLE_OUTPUT_TYPE),
       until: untilNodeType(TABLE_OUTPUT_TYPE),
     },
     {
-      title: 'Move it clear of Add New Column',
-      text: 'Drag the “Table Output” node to the right of Add New Column so you can wire them up.',
-      target: byNodeType(TABLE_OUTPUT_TYPE),
-      position: 'top',
-      until: untilNodeRightOf(byNodeType(TABLE_OUTPUT_TYPE), byNodeFunc('AddNewColumn'), 220),
-    },
-    {
       title: 'Connect the result',
       text: 'Drag from Add New Column\'s “table →” pass-through output dot (highlighted) to the Table ' +
-        'Output\'s input dot (highlighted).',
+        'Output\'s dot at the very right edge, in the OUTPUTS strip (also highlighted).',
       target: byNodeType(TABLE_OUTPUT_TYPE),
-      position: 'top',
+      position: 'left',
       highlights: (ctx) => [
         socketOf(byNodeFunc('AddNewColumn'), 'output', 'table__pt')(ctx),
         socketOf(byNodeType(TABLE_OUTPUT_TYPE), 'input', 'table')(ctx),
@@ -238,9 +270,9 @@ const loadDataAddColumn: Guide = {
     },
     {
       title: 'Open the result tab',
-      text: 'Look at the bottom status bar — your Table Output got its own tab next to “Canvas”. ' +
-        'Its dot turns green when the result is ready. Click the tab (highlighted) to open the ' +
-        'result as a full table view.',
+      text: 'Look at the bottom status bar — your result got its own tab next to “Canvas” ' +
+        '(highlighted). Its dot turns green when the result is ready. Click it to open the result ' +
+        'as a full table view.',
       // A prior step may have been skipped, leaving the tab empty forever — target
       // and gate on any output tab so the guide never dead-ends (skip-tolerance).
       target: (ctx) => bySel('.ff-view-tab[data-state="ready"]')(ctx) ?? bySel('.ff-view-tab[data-node-id]')(ctx),
@@ -249,20 +281,18 @@ const loadDataAddColumn: Guide = {
     },
     {
       title: 'A real table view',
-      text: 'This is a full Datagrok table view — add viewers, filter, reorder columns, everything. ' +
-        'Whatever you arrange here is saved with the flow and comes back when you reopen it. ' +
-        'Click “Canvas” (highlighted) to go back to the graph.',
+      text: 'This is a full Datagrok table view. Scroll right to find “My New Column” — the column ' +
+        'your formula computed. Add viewers, filter, reorder — whatever you arrange here is saved ' +
+        'with the flow. Click “Canvas” (highlighted) to go back to the graph.',
       target: byTid('view-tab', 'canvas'),
       position: 'top',
       until: untilExists('.ff-view-tab[data-param="canvas"][data-active="true"]'),
     },
     {
       title: 'You built a working flow! 🎉',
-      text: 'Inputs → transform → output, wired, run, and explored. Click any completed node to see ' +
-        'its data in the bottom output panel, or right-click an output dot and choose “Run up to ' +
-        'here & preview”. Tip: toggle the ⚡ bolt in the ribbon and the flow reruns by itself after ' +
-        'every change. Ready to share? Click Save — the dialog can also publish your computed ' +
-        'tables as a dashboard (the “Publish your results as a dashboard” tutorial walks through it).',
+      text: 'Data in → transform → result out, wired and run. Click any completed node to see its ' +
+        'data in the bottom panel. Tip: the ⚡ bolt makes the flow rerun by itself after every ' +
+        'change. When you\'re ready to share, click Save.',
     },
   ],
 };
@@ -275,21 +305,21 @@ const findFunctions: Guide = {
   steps: [
     {
       title: 'The function list',
-      text: 'Every Datagrok function is here, grouped by what it does. Let\'s learn to find things ' +
-        'fast. Click Next.',
+      text: 'The FUNCTIONS list in the lower half of the left panel holds every Datagrok function, ' +
+        'grouped by what it does. Let\'s learn to find things fast. Click Next.',
       setup: (ctx) => ctx.host.showFunctionBrowser(),
-      target: byTid('browser'),
+      target: byTid('browser-tree'),
     },
     {
       title: 'Group by what it does',
-      text: 'This dropdown buckets functions into Data Sources, Combine Tables, Transform Tables, ' +
-        'Column Operations, and more — Data Sources first. Flows you saved get their own ' +
-        '“Workflows” section, in every grouping. Click Next when you\'ve seen it.',
+      text: 'The “by: …” button switches how the list is organized — by what functions do (Data ' +
+        'Sources, Combine Tables, Transform Tables, …), by role, tags, or package. Click Next.',
       target: byTid('browser-groupby'),
     },
     {
       title: 'Search by name',
-      text: 'Type join into the search box to filter the whole catalog down to matching functions.',
+      text: 'Type "join" into the search box — the list below narrows to matching functions as ' +
+        'you type.',
       target: byTid('browser-search'),
       until: untilValueMatches(SEARCH_SEL, 'join'),
     },
@@ -301,8 +331,9 @@ const findFunctions: Guide = {
     },
     {
       title: 'Let Flow suggest the next step',
-      text: 'Drag from Join Tables\' result output dot (highlighted) into empty canvas. Flow pops up ' +
-        'compatible next functions, common ones first — pick any one to add it, already connected.',
+      text: 'Drag from the small circle next to “Result” on the Join Tables node (highlighted) into ' +
+        'empty canvas. Flow pops up compatible next functions, common ones first — pick any one to ' +
+        'add it, already connected.',
       target: byNodeFunc('JoinTables'),
       position: 'top',
       highlights: (ctx) => [socketOf(byNodeFunc('JoinTables'), 'output', 'result')(ctx)],
@@ -325,44 +356,47 @@ const organizeCanvas: Guide = {
       until: untilNodeType('Inputs/Table Input'),
     },
     {
-      title: 'Add a Table Output',
-      text: 'Now double-click “Table Output” (highlighted). It lands in the center, on top of the ' +
-        'first node — we\'ll fix that next.',
-      setup: findInBrowser('Table Output'),
-      target: byTid('browser-item', TABLE_OUTPUT_TYPE),
-      until: untilNodeType(TABLE_OUTPUT_TYPE),
+      title: 'Add a String Input',
+      text: 'Now double-click “String Input” (highlighted). It lands next to the first node, in ' +
+        'free space.',
+      setup: findInBrowser('String Input'),
+      target: byTid('browser-item', 'Inputs/String Input'),
+      until: untilNodeType('Inputs/String Input'),
     },
     {
-      title: 'Move it apart',
-      text: 'Drag the “Table Output” node to the right until it no longer overlaps the Table Input.',
-      target: byNodeType(TABLE_OUTPUT_TYPE),
+      title: 'Move a node',
+      text: 'Drag the “String Input” node (highlighted) anywhere — grab it by its title bar. Nodes ' +
+        'stay wherever you put them.',
+      target: byNodeType('Inputs/String Input'),
       position: 'top',
-      until: untilNodeRightOf(byNodeType(TABLE_OUTPUT_TYPE), byNodeType('Inputs/Table Input'), 220),
+      until: untilNodeMovedBy(byNodeType('Inputs/String Input'), 60),
     },
     {
       title: 'Collapse a node',
-      text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it to just the title. ' +
-        'Click ▸ to expand it again.',
+      text: 'Click the ▾ caret in a node\'s title bar (highlighted) to fold it to just the title — ' +
+        'it shrinks to a single row. Click ▸ to expand it again.',
       target: bySel('.ff-node:not(.ff-node-collapsed) .ff-node-caret'),
       until: untilMoreCollapsed(),
     },
     {
       title: 'Tidy the layout',
-      text: 'Click “Tidy up layout” (highlighted) to auto-arrange everything left-to-right.',
+      text: 'Click “Tidy up layout” (highlighted) — the nodes snap into a neat left-to-right ' +
+        'arrangement.',
       target: byTid('ribbon', 'layout'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'layout')),
     },
     {
       title: 'Undo it',
-      text: 'Changed your mind? Click Undo (highlighted) — or press Ctrl+Z — to revert the layout.',
+      text: 'Changed your mind? Click Undo (highlighted) — or press Ctrl+Z — and the nodes jump ' +
+        'back to where you had them.',
       target: byTid('ribbon', 'undo'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'undo')),
     },
     {
       title: 'Redo it',
-      text: 'Click Redo (highlighted) to put it back. Undo/redo cover every edit.',
+      text: 'Click Redo (highlighted) to apply the tidy layout again. Undo/redo cover every edit.',
       target: byTid('ribbon', 'redo'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'redo')),
@@ -397,6 +431,17 @@ const reuseScript: Guide = {
         'Click Next.',
     },
     {
+      // An empty canvas has no script to show and Save stays disabled — make
+      // sure there's at least one node before pointing at those buttons.
+      title: 'First, put something on the canvas',
+      text: 'An empty flow has nothing to compile. Double-click “Table Input” (highlighted) to add ' +
+        'a node — any node makes a script.',
+      skipIf: (ctx) => (ctx.host.getFlow()?.getNodeCount() ?? 0) > 0,
+      setup: findInBrowser('Table Input'),
+      target: byTid('browser-item', 'Inputs/Table Input'),
+      until: untilNodeType('Inputs/Table Input'),
+    },
+    {
       title: 'See the steps',
       text: 'Click “See the steps” — the 👁 (eye) icon — to view the generated script for your flow.',
       target: byTid('ribbon', 'view-script'),
@@ -410,10 +455,8 @@ const reuseScript: Guide = {
     },
     {
       title: 'Save your flow',
-      text: 'Click Save (highlighted) — the Save dialog stores your flow on the platform as a ' +
-        'script entity you can reopen from anywhere: name it, describe it, optionally add it to a ' +
-        'space. After a run, its Dashboard section can also publish the computed tables as a ' +
-        'dashboard. (To share a file instead, use Flow → Export .ffjson.)',
+      text: 'Click Save (highlighted) and give your flow a name — it\'s stored on the platform so ' +
+        'you can reopen it from anywhere. (To hand someone a file instead: Flow → Export .ffjson.)',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
@@ -421,8 +464,10 @@ const reuseScript: Guide = {
     {
       title: 'No black box',
       text: 'You can always see exactly what a flow does and hand the script to a colleague. Saved ' +
-        'flows even appear in the toolbox under “Workflows” — drop one into another flow like any ' +
-        'function. Done!',
+        'flows also appear in the toolbox\'s Workflows tab (highlighted) — drop one into another ' +
+        'flow like any function. Done!',
+      setup: (ctx) => ctx.host.showToolboxTab('Workflows'),
+      target: byTid('browser-tab', 'Workflows'),
     },
   ],
 };
@@ -465,39 +510,55 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Search',
-      text: 'Type here to filter the whole catalog by name — it matches both the display name ' +
-        '(“Open File”) and the raw name (“OpenFile”).',
+      text: 'Type here to filter everything below — functions, queries, workflows, and favorites. ' +
+        'Each tab shows how many of its items match.',
       target: byTid('browser-search'),
     },
     {
-      title: 'Group by',
-      text: 'Choose how functions are organized: by what they do (default), by role, by tags, or by ' +
-        'package.',
-      target: byTid('browser-groupby'),
-    },
-    {
       title: 'Files',
-      text: 'A file browser of your data connections. Expand a connection, then double-click — or drag ' +
-        '— a file onto the canvas to load it as an Open File node.',
+      text: 'The tabs on top hold your data collections. Files is a browser of your data connections — ' +
+        'expand a connection, then double-click or drag a file onto the canvas to load it.',
+      setup: (ctx) => ctx.host.showToolboxTab('Files'),
       target: byTid('browser-files'),
     },
     {
       title: 'Queries',
-      text: 'Database queries, grouped into sub-sections by their data connection. Double-click or drag ' +
-        'one to add it as a node.',
+      text: 'The Queries tab lists database queries, grouped by their data connection. Double-click or ' +
+        'drag one to add it as a node.',
+      setup: (ctx) => ctx.host.showToolboxTab('Queries'),
       target: byTid('browser-queries'),
     },
     {
-      title: 'Built-in building blocks',
-      text: 'Below the data, collapsible sections hold the wiring blocks: Inputs, Outputs, Constants, ' +
-        'Utilities, and Debug. Click a header to expand it.',
-      target: byTid('browser-section', 'Inputs'),
+      title: 'Workflows',
+      text: 'The Workflows tab holds flows you saved — each one can be reused as a single node inside ' +
+        'another flow.',
+      setup: (ctx) => ctx.host.showToolboxTab('Workflows'),
+      target: byTid('browser-workflows'),
+    },
+    {
+      title: 'Favorites',
+      text: 'Hover any node in the toolbox and click its ★ to pin it to the Favorites tab — your ' +
+        'personal shortlist of go-to steps.',
+      setup: (ctx) => ctx.host.showToolboxTab('Favorites'),
+      target: byTid('browser-favorites'),
+    },
+    {
+      title: 'Group by',
+      text: 'The Functions list below is grouped by what each function does (default). Click ' +
+        '“by: …” to organize it by role, tags, or package instead.',
+      target: byTid('browser-groupby'),
     },
     {
       title: 'Functions by category',
-      text: 'Then come Datagrok\'s functions, grouped by what they do — Data Sources, Combine Tables, ' +
-        'Transform Tables, Column Operations, Compute Values, Visualize — Data Sources first.',
+      text: 'The FUNCTIONS list groups everything by what it does — categories like Data Sources, ' +
+        'Combine Tables, Transform Tables, and Visualize. Click a header to expand it.',
       target: byTid('browser-section', 'Data Sources'),
+    },
+    {
+      title: 'Built-in building blocks',
+      text: 'Further down, collapsible sections hold the wiring blocks: Inputs, Outputs, Constants, ' +
+        'Utilities, and Debug.',
+      target: byTid('browser-section', 'Inputs'),
     },
 
     // ---------------- Ribbon (top) ----------------
@@ -525,17 +586,16 @@ const interfaceTour: Guide = {
     },
     {
       title: 'See the script',
-      text: 'The 👁 eye opens the real, readable Datagrok script your flow compiles to — copy it, export ' +
-        'a .js file, or open it in the Script editor. Flow is a glass box.',
+      text: 'The 👁 eye shows the recipe behind your flow — the exact steps, as a script you can ' +
+        'copy or share. Nothing is hidden.',
       target: byTid('ribbon', 'view-script'),
       position: 'bottom',
     },
     {
       title: 'Save & Open',
-      text: 'Save opens the Save dialog: name and describe your flow, optionally add it to a space, ' +
-        'and — once the flow has run — publish its result tables as a dashboard. Saved flows show ' +
-        'up in the toolbox under Workflows for reuse inside other flows. Open (📂) loads a saved ' +
-        'flow back; the Flow menu also imports/exports .ffjson files for sharing.',
+      text: 'Save stores your flow on the platform with a name, so you can reopen it from anywhere ' +
+        '— saved flows also appear in the toolbox\'s Workflows tab for reuse. Open (📂) loads a ' +
+        'saved flow back.',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
     },
@@ -568,8 +628,7 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Help & tutorials',
-      text: 'The 🎓 cap (and the floating help button) opens this menu of tutorials and how-to answers ' +
-        'anytime.',
+      text: 'The 🎓 cap opens this menu of tutorials and how-to answers anytime.',
       target: byTid('ribbon', 'help'),
       position: 'bottom',
     },
@@ -598,20 +657,21 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Status indicator',
-      text: 'This dot shows the node\'s run state — idle, running, done, or error — and turns amber when a ' +
-        'required input is still missing. After you change something, only the nodes your change ' +
-        'affects flip to “Out of date”; everything upstream keeps its result.',
+      text: 'This dot shows whether the node is idle, running, done, or failed — amber means it\'s ' +
+        'still waiting for an input. When you change something, only the affected nodes rerun.',
       target: bySel('.ff-node [data-testid="ff-node-status"]'),
-      position: 'right',
+      position: 'bottom',
+      avoid: (ctx) => [bySel('.ff-node')(ctx)],
     },
     {
       title: 'Sockets',
       text: 'The colored dots are sockets — inputs on the left, outputs on the right. Drag between two ' +
-        'compatible (same-colored) dots to connect nodes. Hovering a node also reveals two small gray ' +
-        'squares at its top corners — execution-order ports: drag square to square to make one node ' +
-        'run after another (order only, no data).',
-      target: bySel('.ff-node .ff-socket'),
-      position: 'right',
+        'compatible (same-colored) dots to connect nodes.',
+      // The first .ff-socket in DOM order is a hover-only order port hidden
+      // under the title bar — highlight a REAL data socket in a socket row.
+      target: bySel('.ff-node .ff-socket-row .ff-socket'),
+      position: 'bottom',
+      avoid: (ctx) => [bySel('.ff-node')(ctx)],
     },
     {
       title: 'The overview',
@@ -629,18 +689,18 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Result tabs',
-      text: 'At the left of the status bar live the view tabs: “Canvas” is the graph, and every table ' +
-        'output of your flow gets its own tab. After a run, a tab\'s dot turns green — click it to ' +
-        'open the result as a full table view; amber means the result is out of date. Anything you ' +
-        'arrange there is saved with the flow.',
+      text: 'At the left of the status bar live the view tabs: “Canvas” is the graph, and after a ' +
+        'run every table output gets its own tab — green dot means ready, amber means out of date.',
       target: byTid('view-tab', 'canvas'),
       position: 'top',
     },
     {
       title: 'The output panel',
-      text: 'Just above the status bar, an output panel appears once a run produces something to show. ' +
-        'Click any completed node to see its data there — tables render as real grids, viewers as ' +
-        'live charts. The ▾ caret at its right edge minimizes it to a slim strip.',
+      text: 'Outputs dock along this right-edge strip. After you run the flow, an output panel also ' +
+        'opens just above the status bar — click any completed node to see its data there: tables ' +
+        'as real grids, plots as live charts.',
+      target: byTid('output-strip'),
+      position: 'left',
     },
 
     // ---------------- Context panel (right) ----------------
@@ -661,14 +721,9 @@ const interfaceTour: Guide = {
     },
     {
       title: 'Rename a node',
-      text: 'The title row lets you rename the node — the new name flows through to the generated script.',
+      text: 'The title row renames the node, and the badge next to it shows the node\'s kind ' +
+        '(input, output, utility, or function).',
       target: byTid('property-title-row'),
-      position: 'left',
-    },
-    {
-      title: 'Node type',
-      text: 'This badge shows the node\'s kind (input, output, utility, or function).',
-      target: byTid('property-type-badge'),
       position: 'left',
     },
     {
@@ -694,20 +749,25 @@ function q(id: string, title: string, steps: GuideStep | GuideStep[]): Guide {
 
 // ---- prerequisite step builders (skipped when already satisfied) ----
 
-/** Ensure a DG-function node exists (adds it via the browser if missing). */
-const ensureFuncNode = (funcName: string, friendly: string): GuideStep => ({
-  title: `First, add “${friendly}”`,
-  text: `This needs a “${friendly}” node. Double-click it (highlighted) to add one.`,
+/** Ensure a DG-function node exists (adds it via the browser if missing).
+ *  Searches by the friendly name — that's what a user would type. */
+const ensureFuncNode = (funcName: string, friendly: string, opts: {title?: string; text?: string} = {},
+): GuideStep => ({
+  title: opts.title ?? `First, add “${friendly}”`,
+  text: opts.text ?? `This needs a “${friendly}” node to demonstrate on. Double-click it ` +
+    '(highlighted) to add one.',
   skipIf: hasFuncNode(funcName),
-  setup: findInBrowser(funcName),
+  setup: findInBrowser(friendly),
   target: byBrowserFunc(funcName),
   until: untilFuncNode(funcName),
 });
 
 /** Ensure a built-in node (e.g. Table Input/Output) exists. */
-const ensureBuiltin = (typeName: string, friendly: string): GuideStep => ({
-  title: `First, add “${friendly}”`,
-  text: `This needs a “${friendly}” node. Double-click it (highlighted) to add one.`,
+const ensureBuiltin = (typeName: string, friendly: string, opts: {title?: string; text?: string} = {},
+): GuideStep => ({
+  title: opts.title ?? `First, add “${friendly}”`,
+  text: opts.text ?? `This needs a “${friendly}” node to demonstrate on. Double-click it ` +
+    '(highlighted) to add one.',
   skipIf: hasNodeType(typeName),
   setup: findInBrowser(friendly),
   target: byTid('browser-item', typeName),
@@ -754,20 +814,12 @@ const publishDashboard: Guide = {
     ...loadDemogViaFiles(openFileHasPath),
     ensureBuiltin(TABLE_OUTPUT_TYPE, 'Table Output'),
     {
-      title: 'Move it clear',
-      text: 'Drag the “Table Output” node to the right of Open File so you can wire them together.',
-      skipIf: tableOutputConnected,
-      target: byNodeType(TABLE_OUTPUT_TYPE),
-      position: 'top',
-      until: untilNodeRightOf(byNodeType(TABLE_OUTPUT_TYPE), byNodeFunc('OpenFile'), 200),
-    },
-    {
       title: 'Connect the table',
-      text: 'Drag from Open File\'s result output dot (highlighted) to the Table Output\'s input ' +
-        'dot (highlighted).',
+      text: 'Drag from Open File\'s result output dot (highlighted) to the Table Output\'s dot at ' +
+        'the very right edge — outputs dock in the OUTPUTS strip there (also highlighted).',
       skipIf: tableOutputConnected,
       target: byNodeType(TABLE_OUTPUT_TYPE),
-      position: 'top',
+      position: 'left',
       highlights: (ctx) => [
         socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
         socketOf(byNodeType(TABLE_OUTPUT_TYPE), 'input', 'table')(ctx),
@@ -783,9 +835,9 @@ const publishDashboard: Guide = {
     },
     {
       title: 'Open the result tab',
-      text: 'In the bottom status bar, the output\'s tab gets a green dot when the run finishes. ' +
-        'Click the tab (highlighted) to open the result as a full table view. (Empty dot? The ' +
-        'output isn\'t wired in or the run didn\'t reach it — the tab tells you what to do.)',
+      text: 'In the bottom status bar, a tab named after your table gets a green dot when the run ' +
+        'finishes. Click it (highlighted) to open the result as a full table view. (Empty dot? ' +
+        'The output isn\'t wired in or the run didn\'t reach it — the tab tells you what to do.)',
       // Skip-tolerant: highlight and gate on any output tab, so a skipped connect
       // step upstream can't dead-end the guide here.
       target: (ctx) => bySel('.ff-view-tab[data-state="ready"]')(ctx) ?? bySel('.ff-view-tab[data-node-id]')(ctx),
@@ -794,9 +846,10 @@ const publishDashboard: Guide = {
     },
     {
       title: 'Make it look like a dashboard',
-      text: 'This is a real table view — add a viewer or two, reorder columns, set up filters. ' +
-        'This layout is saved with the flow and ships with the dashboard, even if you never open ' +
-        'this tab again. Click Next when it looks right.',
+      text: 'This is a real table view — the panel on the left lists viewers you can add, and you ' +
+        'can reorder columns or set up filters right here. Whatever you arrange ships with the ' +
+        'dashboard, even if you never open this tab again. Click Next when it looks the way ' +
+        'colleagues should see it.',
     },
     {
       title: 'Save & publish',
@@ -809,23 +862,26 @@ const publishDashboard: Guide = {
       title: 'The Save dialog',
       text: 'Name the flow. Below, the Dashboard section lists your computed tables — keep ' +
         '“Create dashboard” checked and click Save. (No tables listed? The flow hasn\'t run — the ' +
-        'dialog offers a Run button right there.)',
+        'dialog offers a Run button right there. A name clash? Pick another name.)',
       target: preferDialog(bySel('.ff-save-dash')),
       position: 'left',
+      // Advance only when the Save dialog is actually done (saved or closed) —
+      // never narrate the NEXT dialog while this one is still on screen.
+      until: (ctx) => poll(() => el('.ff-save-dash') == null, ctx.signal),
     },
     {
       title: 'The Save-project dialog',
-      text: 'Next, the platform\'s standard Save-project dialog opens, seeded with your output ' +
-        'tables and layouts. Data sync is pre-checked where possible — the dashboard reopens by ' +
-        're-running your flow, so it always shows fresh data. Name the project and click OK.',
+      text: 'Next, the platform\'s Save-project dialog opens with your output tables and layouts. ' +
+        'Name the project and click OK — the dashboard will re-run your flow when opened, so it ' +
+        'always shows fresh data.',
       target: preferDialog(bySel('.ff-save-dash')),
       position: 'left',
     },
     {
       title: 'Published! 🎉',
-      text: 'Your dashboard is a regular Datagrok project — find it in Browse > Projects and share ' +
-        'it like any other. The flow remembers it: the next Save updates the same project instead ' +
-        'of creating a new one (use “publish as new” in the Save dialog to detach).',
+      text: 'Once the project is saved, your dashboard is a regular Datagrok project — find it in ' +
+        'Browse > Projects and share it like any other. The flow remembers it: the next Save ' +
+        'updates the same project instead of creating a new one.',
     },
   ],
 };
@@ -842,13 +898,39 @@ export const QUESTIONS: Guide[] = [
     target: byTid('browser-search'),
     until: untilMoreNodes(),
   }),
-  q('how-add-data', 'How do I bring data in?', loadDemogViaFiles()),
+  q('how-add-data', 'How do I bring data in?', [
+    ...loadDemogViaFiles(),
+    {
+      title: 'Your own files work too',
+      text: 'To load a file from your computer, click the folder icon at the top of the Files tab ' +
+        '(highlighted) — or simply drag the file from your computer onto the canvas. It becomes a ' +
+        'node just the same, and is stored with the flow when you save.',
+      setup: openFiles,
+      target: byTid('browser-upload'),
+    },
+  ]),
   q('how-add-column', 'How do I add a calculated column?', [
+    // The formula references a real column, so the answer builds on real data
+    // (all skipped when the flow already has it).
+    ...loadDemogViaFiles(openFileHasPath),
     ensureFuncNode('AddNewColumn', 'Add New Column'),
     {
+      title: 'Wire the table in',
+      text: 'Drag from Open File\'s result output dot (highlighted) to Add New Column\'s table ' +
+        'input dot (highlighted) — the formula needs data to work on.',
+      skipIf: ancTableConnected,
+      target: byNodeFunc('AddNewColumn'),
+      position: 'top',
+      highlights: (ctx) => [
+        socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx),
+        socketOf(byNodeFunc('AddNewColumn'), 'input', 'table')(ctx),
+      ],
+      until: untilMoreConnections(),
+    },
+    {
       title: 'Open its settings',
-      text: 'Click the “Add New Column” node (highlighted) so its fields open on the right. ' +
-        '(Wire a table into its table input so the formula has data to work on.)',
+      text: 'Click the “Add New Column” node (highlighted) so its fields open on the right.',
+      skipIf: funcNodeSelected('AddNewColumn'),
       target: byNodeFunc('AddNewColumn'),
       until: untilNodeSelectedOfFunc('AddNewColumn'),
     },
@@ -861,32 +943,53 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Write the formula',
-      text: 'Type an expression into the Expression field — for example ${AGE} * 12, referencing ' +
-        'columns of the incoming table with ${ColumnName}.',
+      text: 'Type an expression into the Expression field — for example ${AGE} * 12. ' +
+        '${ColumnName} refers to a column of the incoming table. Run the flow to see the new ' +
+        'column appear.',
       target: byParam('expression'),
       position: 'left',
       until: untilValueNonEmpty(paramFieldSelector('expression')),
     },
   ]),
+  q('how-upload-file', 'How do I use a file from my computer?', {
+    title: 'Open a local file',
+    text: 'Click the folder icon at the top of the Files tab (highlighted) and pick a file — or ' +
+      'simply drag one from your computer onto the canvas. Either way it becomes a node, and the ' +
+      'file is stored with the flow when you save, so colleagues can rerun it.',
+    setup: openFiles,
+    target: byTid('browser-upload'),
+  }),
+  q('how-group-nodes', 'How do I group nodes?', {
+    title: 'Group nodes into a frame',
+    text: 'Select several nodes (drag a box around them, or Ctrl-click one by one), then press ' +
+      'Ctrl+G — they get a titled frame that moves as one. The frame\'s ▾ caret folds the whole ' +
+      'group into a single card; Ctrl+Shift+G ungroups. Grouping is purely visual — it never ' +
+      'changes what the flow computes.',
+  }),
   q('how-set-param', 'How do I edit a node\'s settings?', [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
     {
       title: 'Select the node',
-      text: 'Click a node (the highlighted Table Input). Its parameters open in the panel on the ' +
-        'right, each an editable field you can type or paste into.',
+      text: 'Click the highlighted node. Its settings open in the panel on the right — each ' +
+        'parameter is an editable field you can type or paste into.',
       target: byNodeType('Inputs/Table Input'),
-      until: untilNodeSelected(),
+      until: untilNodeOfTypeSelected('Inputs/Table Input'),
     },
   ]),
   q('how-connect', 'How do I connect two nodes?', [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
-    ensureBuiltin('Outputs/Table Output', 'Table Output'),
+    ensureBuiltin('Outputs/Table Output', 'Table Output', {
+      title: 'Also add “Table Output”',
+      text: 'Now double-click “Table Output” (highlighted). Outputs don\'t float on the canvas — ' +
+        'it docks into the OUTPUTS strip on the right edge.',
+    }),
     {
       title: 'Drag between the dots',
-      text: 'Drag from the Table Input\'s output dot (right, highlighted) to the Table Output\'s ' +
-        'input dot (left, highlighted). Matching colors mean compatible types.',
+      text: 'Drag from the Table Input\'s output dot (highlighted) to the Table Output\'s dot at ' +
+        'the very right edge — outputs dock in the OUTPUTS strip there (also highlighted). ' +
+        'Matching colors mean compatible types.',
       target: byNodeType('Outputs/Table Output'),
-      position: 'top',
+      position: 'left',
       highlights: (ctx) => [
         socketOf(byNodeType('Inputs/Table Input'), 'output', 'table')(ctx),
         socketOf(byNodeType('Outputs/Table Output'), 'input', 'table')(ctx),
@@ -898,11 +1001,18 @@ export const QUESTIONS: Guide[] = [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
     {
       title: 'Press Run',
-      text: 'Click Run (the ▶ icon, highlighted) in the ribbon. Nodes light up as they execute; each ' +
+      text: 'Click Run (the ▶ icon, highlighted) at the top. Nodes light up as they execute; each ' +
         'reports its row × column counts underneath.',
       target: byTid('ribbon', 'run'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'run')),
+    },
+    {
+      title: 'If Datagrok asks for values',
+      text: 'A flow with unset inputs (like a Table Input with no table wired in) asks for them in ' +
+        'a dialog when you press Run — pick or type the values and click OK, and the run proceeds.',
+      target: preferDialog(byTid('ribbon', 'run')),
+      position: 'bottom',
     },
   ]),
   q('how-autorun', 'How do I rerun automatically after every change?', [
@@ -917,26 +1027,52 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Only what changed',
-      text: 'Autorun is incremental: results upstream of your change are reused, only the affected ' +
-        'nodes recompute, and the output panel refreshes with fresh values. Flows that would ask ' +
-        'for input values are left alone — run those with ▶.',
+      text: 'Autorun is smart about it: only the steps affected by your change are re-run — ' +
+        'earlier results are reused. Flows that would ask for input values are left alone — run ' +
+        'those with ▶.',
     },
   ]),
-  q('how-out-of-date', 'Why do nodes say “Out of date”?', {
-    title: '“Out of date” = a change affects this node',
-    text: 'When you edit a node\'s parameters or rewire a connection, that node and everything ' +
-      'downstream of it lose their last result — they show “Out of date”. Upstream nodes keep ' +
-      'theirs. Rerun with ▶, toggle Autorun (the ⚡ bolt) to rerun automatically, or right-click ' +
-      'one node and choose “Rerun this node only”. The result tabs in the status bar show the ' +
-      'same state — an amber dot means the table you see is from the previous run.',
-  }),
+  q('how-out-of-date', 'Why do nodes say “Out of date”?', [
+    {
+      title: '“Out of date” = a change affects this node',
+      text: 'When you edit a setting or rewire a connection, that node and every step after it ' +
+        'lose their last result — they show “Out of date”. Steps before it keep theirs. ' +
+        'Click Next.',
+    },
+    {
+      title: 'Rerun to refresh',
+      text: 'Rerun with ▶ Run (highlighted) — or toggle the ⚡ bolt next to it so the flow reruns ' +
+        'by itself after every change. Right-clicking one node offers “Rerun this node only”.',
+      target: byTid('ribbon', 'run'),
+      position: 'bottom',
+    },
+    {
+      title: 'The result tabs show it too',
+      text: 'The tabs at the bottom (highlighted) mirror the state — an amber dot means the table ' +
+        'you see is from the previous run; green means fresh.',
+      target: (ctx) => bySel('.ff-view-tab[data-node-id]')(ctx) ?? byTid('view-tab', 'canvas')(ctx),
+      position: 'top',
+    },
+  ]),
   q('how-func-editor', 'How do I edit parameters in the function\'s own dialog?', [
     ...loadDemogViaFiles(openFileHasPath),
     ensureFuncNode('AddNewColumn', 'Add New Column'),
     {
+      // A freshly added node half-covers the previous one, hiding the very
+      // dots the next step highlights — get it clear first.
+      title: 'Move it clear of Open File',
+      text: 'The new node landed overlapping Open File. Drag the “Add New Column” node aside (by ' +
+        'its title bar) until both nodes are fully visible.',
+      skipIf: (ctx) => !byNodeFunc('AddNewColumn')(ctx) || ancTableConnected(ctx) ||
+        nodeIsApart(byNodeFunc('AddNewColumn'))(ctx),
+      target: byNodeFunc('AddNewColumn'),
+      position: 'top',
+      until: untilNodeApart(byNodeFunc('AddNewColumn')),
+    },
+    {
       title: 'Wire the table in',
       text: 'The editor needs real data. Drag from Open File\'s result output dot (highlighted) to ' +
-        'Add New Column\'s table input dot (highlighted) — drag the nodes apart first if they overlap.',
+        'Add New Column\'s table input dot (highlighted).',
       skipIf: ancTableConnected,
       target: byNodeFunc('AddNewColumn'),
       position: 'top',
@@ -970,10 +1106,10 @@ export const QUESTIONS: Guide[] = [
   ]),
   q('how-rerun-node', 'How do I rerun just one node?', {
     title: 'Rerun this node only',
-    text: 'After a run, right-click a node and choose “Rerun this node only”. Its inputs are fed ' +
-      'from the values captured by the last run, so nothing upstream re-executes — ideal for ' +
-      'tweaking one step of an expensive flow. (Offered once the node\'s inputs have captured ' +
-      'values; a graph change invalidates them until the next run.)',
+    text: 'After a run, right-click a node and choose “Rerun this node only”. It reuses the data ' +
+      'that flowed into it during the last run, so the earlier steps don\'t run again — handy for ' +
+      'tweaking one step of a slow flow. (Available once the node has run; rewiring clears the ' +
+      'stored data until the next run.)',
   }),
   q('how-preview', 'How do I preview a node\'s data?', [
     ...loadDemogViaFiles(openFileHasPath),
@@ -984,7 +1120,8 @@ export const QUESTIONS: Guide[] = [
       target: byNodeFunc('OpenFile'),
       position: 'top',
       highlights: (ctx) => [socketOf(byNodeFunc('OpenFile'), 'output', 'result')(ctx)],
-      until: untilExists('[data-testid="ff-port-preview"], [data-testid="ff-output-panel"]'),
+      // untilExists would be fooled by a permanently-mounted-but-hidden panel.
+      until: untilVisible('[data-testid="ff-port-preview"], [data-testid="ff-output-panel"]'),
     },
   ]),
   q('how-delete', 'How do I delete a node?', [
@@ -1011,9 +1148,9 @@ export const QUESTIONS: Guide[] = [
   ]),
   q('how-categories', 'How do I find functions by category?', {
     title: 'Browse by category',
-    text: 'Open the function list and use the “Group by” dropdown (highlighted). Functions bucket by ' +
-      'what they do — Data Sources, Combine Tables, Transform Tables, Column Operations, Compute ' +
-      'Values, Visualize — with Data Sources first. Click Finish when you\'ve seen it.',
+    text: 'The FUNCTIONS list is grouped by what each function does — Data Sources, Combine ' +
+      'Tables, Transform Tables, and more. The “by: …” button (highlighted) switches the ' +
+      'grouping. Click Finish when you\'ve seen it.',
     setup: (ctx) => ctx.host.showFunctionBrowser(),
     target: byTid('browser-groupby'),
   }),
@@ -1043,22 +1180,25 @@ export const QUESTIONS: Guide[] = [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
     {
       title: 'Save / share',
-      text: 'Click Save (highlighted) — the Save dialog names the flow, can add it to a space, and ' +
-        '(after a run) publishes the computed tables as a dashboard. Saved flows reopen from ' +
-        'anywhere, and they appear in the toolbox under “Workflows” so other flows can use them. ' +
-        'To hand a colleague a file instead, use Flow → Export .ffjson.',
+      text: 'Click Save (highlighted) and give your flow a name — it\'s stored on the platform so ' +
+        'you can reopen it from anywhere, and it appears in the toolbox\'s Workflows tab for reuse. ' +
+        '(To hand a colleague a file instead: Flow → Export .ffjson.)',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
     },
   ]),
   q('how-reuse-flow', 'How do I reuse a saved flow inside another flow?', {
-    title: 'Saved flows are functions',
-    text: 'Save your flow (the Save button) — it becomes a platform script. Every saved flow then ' +
-      'shows up in this toolbox under its own “Workflows” section, in every grouping. Search for ' +
-      'its name and double-click or drag it in like any other function.',
-    setup: (ctx) => ctx.host.showFunctionBrowser(),
-    target: byTid('browser'),
+    title: 'Saved flows are building blocks',
+    text: 'Save a flow (the Save button) and it appears in the toolbox\'s Workflows tab ' +
+      '(highlighted) — every saved flow is listed there. Double-click or drag one onto the ' +
+      'canvas to use it as a single step inside the flow you\'re building.',
+    setup: async (ctx) => {
+      ctx.host.showFunctionBrowser();
+      await delay(60);
+      ctx.host.showToolboxTab('Workflows');
+    },
+    target: byTid('browser-workflows'),
   }),
   q('how-view-script', 'How do I see the generated script?', [
     ensureBuiltin('Inputs/Table Input', 'Table Input'),
@@ -1105,6 +1245,7 @@ export const QUESTIONS: Guide[] = [
     {
       title: 'Move it clear of Open File',
       text: 'Drag the “Scatter Plot” node to the right until it no longer overlaps Open File.',
+      skipIf: nodeIsRightOf(byNodeType('Viewers/Scatter Plot'), byNodeFunc('OpenFile'), 200),
       target: byNodeType('Viewers/Scatter Plot'),
       position: 'top',
       until: untilNodeRightOf(byNodeType('Viewers/Scatter Plot'), byNodeFunc('OpenFile'), 200),
@@ -1125,7 +1266,7 @@ export const QUESTIONS: Guide[] = [
       title: 'Open the chart\'s options',
       text: 'Click the “Scatter Plot” node so its options open in the panel on the right.',
       target: byNodeType('Viewers/Scatter Plot'),
-      until: untilNodeSelected(),
+      until: untilNodeOfTypeSelected('Viewers/Scatter Plot'),
     },
     {
       title: 'Choose the X column',
@@ -1152,9 +1293,20 @@ export const QUESTIONS: Guide[] = [
       until: untilNodeType('Viewers/Bar Chart'),
     },
     {
+      title: 'Move the Bar Chart clear',
+      text: 'If the new chart overlaps another node, drag the “Bar Chart” aside until it overlaps ' +
+        'nothing.',
+      skipIf: (ctx) => !byNodeType('Viewers/Bar Chart')(ctx) ||
+        nodeIsApart(byNodeType('Viewers/Bar Chart'))(ctx),
+      target: byNodeType('Viewers/Bar Chart'),
+      position: 'top',
+      until: untilNodeApart(byNodeType('Viewers/Bar Chart')),
+    },
+    {
       title: 'Wire the Bar Chart up',
-      text: 'Drag the Bar Chart clear if it overlaps, then drag from Open File\'s result output dot ' +
-        '(highlighted) to its table input dot (highlighted).',
+      text: 'Drag from Open File\'s result output dot (highlighted) to the Bar Chart\'s table input ' +
+        'dot (highlighted).',
+      setup: fitGraph,
       target: byNodeType('Viewers/Bar Chart'),
       position: 'top',
       highlights: (ctx) => [
@@ -1172,9 +1324,19 @@ export const QUESTIONS: Guide[] = [
       until: untilNodeType('Viewers/Pie Chart'),
     },
     {
+      title: 'Move the Pie Chart clear',
+      text: 'Same again — if it overlaps, drag the “Pie Chart” aside until it overlaps nothing.',
+      skipIf: (ctx) => !byNodeType('Viewers/Pie Chart')(ctx) ||
+        nodeIsApart(byNodeType('Viewers/Pie Chart'))(ctx),
+      target: byNodeType('Viewers/Pie Chart'),
+      position: 'top',
+      until: untilNodeApart(byNodeType('Viewers/Pie Chart')),
+    },
+    {
       title: 'Wire the Pie Chart up',
-      text: 'Drag the Pie Chart clear if needed, then drag from Open File\'s result output dot to its ' +
-        'table input dot (highlighted).',
+      text: 'Drag from Open File\'s result output dot (highlighted) to the Pie Chart\'s table input ' +
+        'dot (highlighted).',
+      setup: fitGraph,
       target: byNodeType('Viewers/Pie Chart'),
       position: 'top',
       highlights: (ctx) => [
@@ -1185,8 +1347,8 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Run to see the charts',
-      text: 'Click Run (the ▶ icon). Then click any viewer node to render it in the bottom preview ' +
-        'panel — use the gear in a chart\'s corner to fine-tune every setting.',
+      text: 'Click Run (the ▶ icon). When every node reports Done, click any chart node to render ' +
+        'it in the bottom panel — use the gear in a chart\'s corner to fine-tune every setting.',
       target: byTid('ribbon', 'run'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'run')),
@@ -1215,10 +1377,21 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Add the second table',
-      text: `Double-click “${DEMOG_FILE}” (highlighted) to drop a second Open File node — we'll join ` +
-        'the two tables.',
+      text: `Double-click “${DEMOG_FILE}” (highlighted) to drop a second Open File node. (We use ` +
+        'the same file twice so the columns are guaranteed to match — with your data these would ' +
+        'be two different tables.)',
       target: byFileTreeFile(DEMOG_FILE),
       until: untilMoreNodes(),
+    },
+    {
+      title: 'Move the new file aside',
+      text: 'If the second Open File overlaps anything, drag it (by its title bar) below the ' +
+        'first one so both are fully visible.',
+      skipIf: (ctx) => !byNodeFuncNth('OpenFile', 1)(ctx) ||
+        nodeIsApart(byNodeFuncNth('OpenFile', 1))(ctx),
+      target: byNodeFuncNth('OpenFile', 1),
+      position: 'top',
+      until: untilNodeApart(byNodeFuncNth('OpenFile', 1)),
     },
     {
       title: 'Add Join Tables',
@@ -1230,16 +1403,18 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Move it into open space',
-      text: 'Drag the “Join Tables” node clear of the Open File nodes so you can wire both tables ' +
-        'into it.',
+      text: 'Drag the “Join Tables” node to the right of both Open File nodes, clear of everything, ' +
+        'so you can wire both tables into it.',
+      skipIf: (ctx) => !byNodeFunc('JoinTables')(ctx) || nodeIsApart(byNodeFunc('JoinTables'))(ctx),
       target: byNodeFunc('JoinTables'),
       position: 'top',
-      until: untilNodeRightOf(byNodeFunc('JoinTables'), byNodeFunc('OpenFile'), 180),
+      until: untilNodeApart(byNodeFunc('JoinTables')),
     },
     {
       title: 'Connect the first table',
       text: 'Drag from the first Open File node\'s result output dot (highlighted) to Join Tables\' ' +
         'table1 input dot (highlighted).',
+      setup: fitGraph,
       target: byNodeFunc('JoinTables'),
       position: 'top',
       highlights: (ctx) => [
@@ -1252,6 +1427,7 @@ export const QUESTIONS: Guide[] = [
       title: 'Connect the second table',
       text: 'Now drag from the second Open File node\'s result output dot (highlighted) to Join ' +
         'Tables\' table2 input dot (highlighted).',
+      setup: fitGraph,
       target: byNodeFunc('JoinTables'),
       position: 'top',
       highlights: (ctx) => [
@@ -1309,8 +1485,8 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Mark the result',
-      text: 'Search table output and double-click “Table Output” (highlighted) to capture the joined ' +
-        'table.',
+      text: 'Search table output and double-click “Table Output” (highlighted) — it marks the ' +
+        'joined table as the flow\'s result and docks into the OUTPUTS strip on the right edge.',
       skipIf: hasNodeType(TABLE_OUTPUT_TYPE),
       setup: findInBrowser('Table Output'),
       target: byTid('browser-item', TABLE_OUTPUT_TYPE),
@@ -1318,10 +1494,11 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Wire up the result',
-      text: 'Drag from Join Tables\' result output dot (highlighted) to the Table Output\'s input dot ' +
-        '(highlighted).',
+      text: 'Drag from Join Tables\' result output dot (highlighted) to the Table Output\'s dot in ' +
+        'the OUTPUTS strip at the very right edge (also highlighted).',
+      setup: fitGraph,
       target: byNodeType(TABLE_OUTPUT_TYPE),
-      position: 'top',
+      position: 'left',
       highlights: (ctx) => [
         socketOf(byNodeFunc('JoinTables'), 'output', 'result')(ctx),
         socketOf(byNodeType(TABLE_OUTPUT_TYPE), 'input', 'table')(ctx),
@@ -1330,8 +1507,8 @@ export const QUESTIONS: Guide[] = [
     },
     {
       title: 'Run the join',
-      text: 'Click Run (the ▶ icon). Click the Table Output (or Join Tables) node to preview the ' +
-        'joined table in the bottom panel.',
+      text: 'Click Run (the ▶ icon). When Join Tables reports Done with its row × column counts, ' +
+        'click it to preview the joined table in the bottom panel.',
       target: byTid('ribbon', 'run'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'run')),
@@ -1340,41 +1517,42 @@ export const QUESTIONS: Guide[] = [
   q('how-open-result', 'How do I see a result as a full table?', {
     title: 'Result tabs',
     text: 'Every table output of your flow gets its own tab next to “Canvas” in the bottom status ' +
-      'bar (highlighted). Run the flow, then click the tab once its dot turns green — the result ' +
-      'opens as a full Datagrok table view where you can add viewers, filter, and rearrange. An ' +
-      'amber dot means the result is out of date — run again to refresh it.',
-    target: byTid('view-tab', 'canvas'),
+      'bar. Run the flow, then click the tab once its dot turns green — the result opens as a ' +
+      'full Datagrok table view where you can add viewers, filter, and rearrange. An amber dot ' +
+      'means the result is out of date — run again to refresh it.',
+    // Point at a real output tab when one exists; a highlighted "Canvas" tab
+    // would be a decoy on a flow with no outputs yet.
+    target: (ctx) => bySel('.ff-view-tab[data-node-id]')(ctx),
     position: 'top',
   }),
   q('how-table-layouts', 'Are my result views saved with the flow?', {
     title: 'Layouts persist',
     text: 'Yes. Whatever you arrange in a result tab — viewers, filters, column order — is saved ' +
-      'with the flow and restored when you reopen it. Published dashboards ship the same layouts, ' +
-      'even for tabs you never opened in this session.',
-    target: byTid('view-tab', 'canvas'),
+      'with the flow and restored when you reopen it. Published dashboards use the same layouts, ' +
+      'even for tabs you never opened.',
+    target: (ctx) => bySel('.ff-view-tab[data-node-id]')(ctx),
     position: 'top',
   }),
   q('how-publish-dashboard', 'How do I publish my results as a dashboard?', [
     {
       title: 'Run, then Save',
-      text: 'Run the flow, then click Save (highlighted). In the Save dialog, the Dashboard ' +
-        'section lists your computed tables — keep “Create dashboard” checked and click Save.',
+      text: 'Run the flow, then click Save (highlighted — it stays greyed out until the canvas ' +
+        'has something on it). In the Save dialog, the Dashboard section lists your computed ' +
+        'tables — keep “Create dashboard” checked and click Save.',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
     },
     {
-      title: 'The Save-project dialog',
-      text: 'The platform\'s standard Save-project dialog opens, seeded with your output tables ' +
-        'and their layouts. Data sync is pre-checked where possible, so the dashboard re-runs your ' +
-        'flow and always opens fresh. Name it and click OK — done. The “Publish your results as a ' +
-        'dashboard” tutorial walks this end to end.',
+      title: 'Then name the project',
+      text: 'A second dialog opens with your output tables and their layouts — name the project ' +
+        'and click OK. Colleagues open the dashboard without ever seeing the flow graph. The ' +
+        '“Publish your results as a dashboard” tutorial walks this end to end.',
     },
   ]),
   q('how-update-dashboard', 'How do I update a published dashboard?', {
     title: 'Re-publish — same project',
-    text: 'Just Save again with “Create dashboard” checked: once published, the dashboard is ' +
-      'bound to the flow, and every publish updates the same project in place — tables, views, ' +
-      'and layouts. To start a fresh project instead, click “publish as new” in the Save dialog\'s ' +
-      'Dashboard section — or use Flow → Save As, which detaches both the script and the dashboard.',
+    text: 'Just Save again with “Create dashboard” checked: the dashboard remembers its flow, so ' +
+      'every publish updates the same project in place — tables, views, and layouts. To start a ' +
+      'fresh project instead, click “publish as new” in the Save dialog\'s Dashboard section.',
   }),
 ];

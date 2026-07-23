@@ -25,7 +25,7 @@ function rect(x: number, y: number, w: number, h: number) {
 
 function fakeHost(): GuideHost {
   const el = document.createElement('div');
-  return {getFlow: () => undefined, showFunctionBrowser: () => {}, anchorEl: el};
+  return {getFlow: () => undefined, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: el};
 }
 
 category('Flow: guide', () => {
@@ -296,7 +296,8 @@ category('Flow: guide playthrough', () => {
     }
     const e = makeEditor();
     const ac = new AbortController();
-    const host: GuideHost = {getFlow: () => e.flow, showFunctionBrowser: () => {}, anchorEl: e.container};
+    const host: GuideHost = {
+      getFlow: () => e.flow, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: e.container};
     const ctx: GuideContext = {host, signal: ac.signal};
     try {
       const node = createNode(reg.nodeTypeName)!;
@@ -342,7 +343,8 @@ category('Flow: guide playthrough', () => {
     document.body.appendChild(tree.root);
     const e = makeEditor();
     const ac = new AbortController();
-    const host: GuideHost = {getFlow: () => e.flow, showFunctionBrowser: () => {}, anchorEl: e.container};
+    const host: GuideHost = {
+      getFlow: () => e.flow, showFunctionBrowser: () => {}, showToolboxTab: () => {}, anchorEl: e.container};
     const ctx: GuideContext = {host, signal: ac.signal};
     try {
       // The Demo connection row is resolvable by the guide helper.

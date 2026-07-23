@@ -269,6 +269,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `function-browser-tests.ts` | Flow: function browser | allowlist-based inclusion (**known funcs on the list are in, dev/test pkgs and denylist-era helpers stay out; `shouldIncludeFunc` precedence: `includeInFlow:false` > `true` opt-in > workflow > `INCLUDED_FUNC_NQNAMES`; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out, flow scripts→Workflows in every mode**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
 | `uploaded-file-tests.ts` | Flow: uploaded files | pending registry (add/read/remove, 100 MB cap asserted without allocating), csv parse + table naming, `readUploadedFile` from memory (no server round-trip), actionable lost-pending error, catalog registration via `meta.includeInFlow: true`, server blob round-trip (persist → `readAsBytes` → node function → entity cleanup), creation-script import/emit round-trip |
+| `toolbox-tabs-tests.ts` | Flow: toolbox tabs | the four top tabs (Files/Queries/Workflows/Favorites) + header test-ids, Workflows tab lists saved flows (and they're out of the accordion), favorites store toggle/persistence/notifications, row-star → Favorites tab round-trip (star, list, dblclick-create, unstar in place), search badges (>0 count pill, 0-match dim, cleared with the query), group-by catalog-header button (label + persistence), DG-func favorite resolves back to its FuncInfo |
 | `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; panel state machine (hidden → expanded on first renderable output; minimize remembered — content updates never pop it up; `clear()` hides but keeps the preference; caret click toggles + fires `onStateChanged`, header body does not; disabled panels never show); same node + same state → no preview rebuild (new state / other node → rebuild); **pin**: pinning gates `showForNode` to the pinned node (others ignored), the pinned node still updates in place, the pin survives `clear()`, `unpin()` releases, user-unpin fires `onUnpinned`, `markUpdating`/`clearUpdating` overlay/release the recalculating indicator over kept content; the panel is a pane of the view splitter, disabled in embedded views; **opening the panel minimizes the overview minimap** (one-shot, hidden → visible edge) |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
 | `column-picker-tests.ts` | Flow: column picker | `column`/`column_list` inputs render a `ff-prop-pick-columns-<param>` icon; the request resolves the right dataframe input per column (JoinTables `keys1`→`table1`, `keys2`→`table2`); **viewer** axis options and **Select Column(s)** utilities get the picker too (resolving their `table` input); the request carries the icon as its menu `anchor`; `buildColumnMatchFilter` gates by `semType` / `columnTypeFilter`; no icon without an `onPickColumns` handler |
@@ -724,8 +725,19 @@ the [Test IDs](#test-ids-data-testid) matter: targets are addressed by `data-tes
 
 The instruction card is **our own popup** (not `ui.hints.addHint`, whose injected ✕ collided with our
 Exit link and whose placement never flips to the side with room). `computePlacement` (pure,
-unit-tested) picks the best side and clamps fully on-screen; the card re-anchors on a timer and the
-target gets a pulsing `.ff-guide-target` outline. No `scrollIntoView` (it used to jerk the whole UI).
+unit-tested) picks the best side, clamps fully on-screen, and **avoids covering the highlighted
+elements** (an `avoid` rect list — highlights + open dialog + a step's optional `avoid` resolver, so
+e.g. a "status dot" step's card can't sit on the node it describes); the card re-anchors on a timer
+and the target gets a pulsing `.ff-guide-target` outline. Runner invariants learned from the 33-guide
+screenshot audit (2026-07): the **start panel is hidden** for the whole guide (`host.hideStartPanel` +
+`updateStartPanelVisibility` checks `guideRunner.isRunning`); big targets (> 30 000 px²) get
+`ff-guide-target-large` (outline only — the orange fill washes over every row of a whole pane); a
+clipped-in-a-scroll-pane anchor is `scrollIntoView({block: 'nearest'})`-ed once at step start (nearest,
+never center — full-page jerk was the reason it was removed before); `skipIf`-skipped steps **don't
+leave holes in the "Step i of n" numbering** (shown-count + live re-estimate of the remaining
+non-skipped steps); a target-less step while a dialog is open anchors **beside** the dialog (the card
+z-drops below dialogs, so centered it would hide underneath); stale platform tooltips are hidden on
+every step boundary; and the toolbox search prefill is cleared on finish/stop.
 
 | File | Role |
 |---|---|
@@ -735,12 +747,27 @@ target gets a pulsing `.ff-guide-target` outline. No `scrollIntoView` (it used t
 | `guide-launcher.ts` | `createHelpButton` + `openGuideMenu` (DG.Menu with Tutorials / How do I…? groups). |
 
 The view ([funcflow-view.ts](src/funcflow-view.ts)) implements `GuideHost` (`getFlow`,
-`showFunctionBrowser`, `anchorEl = helpButton`), mounts the button, and wires the Start-panel tour to
-`TUTORIALS[0]`. Conditions, placement, and a live playthrough are tested in
-[tests/guide-tests.ts](src/tests/guide-tests.ts). **Adding a guide**: append a `Guide` to `TUTORIALS`
-or `QUESTIONS`; reuse the `until*` helpers and target a concrete element via `byTid`/`byNodeFunc`/
-`byBrowserFunc`/`byParam`. Concrete targets (params, demo file) should be verified empirically (e.g.
-`grok test --host localhost`) before being hard-coded.
+`showFunctionBrowser`, `showToolboxTab`, `hideStartPanel`, `anchorEl = helpButton`), mounts the
+button, and wires the Start-panel tour to `TUTORIALS[0]`. Conditions, placement, and a live
+playthrough are tested in [tests/guide-tests.ts](src/tests/guide-tests.ts). **Adding a guide**:
+append a `Guide` to `TUTORIALS` or `QUESTIONS`; reuse the `until*` helpers and target a concrete
+element via `byTid`/`byNodeFunc`/`byBrowserFunc`/`byParam`. Concrete targets (params, demo file)
+should be verified empirically (e.g. `grok test --host localhost`) before being hard-coded.
+
+Content rules distilled from the persona audit — follow them for every new step:
+- **Gate on the RIGHT state, not just any state**: `untilNodeSelected` (any panel content) was
+  satisfied by a stale panel — use `untilNodeOfTypeSelected`/`untilNodeSelectedOfFunc`; `untilExists`
+  is fooled by mounted-but-hidden hosts — use `untilVisible`.
+- **Every "drag it clear" step needs a matching `skipIf`** (`nodeIsApart`/`nodeIsRightOf`) — since
+  `addNodeAtCenter` finds a free spot (`findFreeSpot` in flow-editor), nodes rarely overlap and the
+  step usually self-skips.
+- **Table Output is a strip chip**, not a floating node: never ask the user to move it; connect
+  steps say "the dot in the OUTPUTS strip at the right edge" and use `position: 'left'`.
+- Steps that point at Run/Save must ensure the canvas isn't empty first (empty ⇒ Save disabled,
+  empty script, input-request dialog on Run).
+- Give each action step a one-line success cue ("a line appears", "the nodes snap into a row") and
+  don't celebrate unconditionally — gate dialog narration on the dialog actually being there
+  (e.g. publish-dashboard's Save step waits for `.ff-save-dash` to close).
 
 ## Auto-summaries (U12) — [`src/summary/`](src/summary)
 
@@ -839,23 +866,63 @@ The bottom **Output panel** is a pane of the view's vertical splitter (not a doc
 
 ### Function Browser ([panel/function-browser.ts](src/panel/function-browser.ts))
 
-- **Files pane** (first, `ff-browser-files`, expanded by default): the KNIME-style file browser
+Zones top-to-bottom: **global search** (filters the catalog AND the collection tabs) → the
+**collections tab strip** (on a grey `--grey-1` tray with a soft inset recess under it, painted by
+the catalog header — the tint difference is the zone boundary) → a labeled **Functions catalog**
+(micro-header `FUNCTIONS` + a compact `by: <mode> ▾` group-by popup button, `ff-browser-groupby` /
+`setGroupBy(mode)`; group-by scopes only the accordion, which is why it sits on that zone, not next
+to the search) → the **Suggestions** strip (appended by the view). Section headers get a muted grey
+FA icon (`SECTION_ICONS` / `sectionIcon()` — bare name → `fal`, or a full `fas fa-…` override;
+`fa-dna` is avoided — it reads as an hourglass at 12px, Bioinformatics uses `microscope`); each
+query-connection row gets a uniform `fa-database` glyph + a smaller 12px header so the Queries tab
+doesn't read as more categories. During a search each of Queries/Workflows/Favorites headers gets a blue
+match-count badge (`funcflow-tab-badge`, only when >0) and a 0-match tab dims (`funcflow-tab-dim`) —
+`updateTabBadges()`; Files isn't searched and stays neutral.
+
+- **Top tab strip** (`ff-browser-tabs`, a platform `DG.TabControl` keyed `TOOLBOX_TABS_KEY =
+  'funcflow.toolbox.tab'` so the selected tab persists): the item *collections* — **Files / Queries /
+  Workflows / Favorites** (`TOOLBOX_TABS`). Tab headers carry `ff-browser-tab-<name>` + `data-tab`;
+  `showTab(name)` activates one programmatically (the guide host's `showToolboxTab`). CSS neutralizes
+  the platform tab host's fixed 400×300 default (`min-width/min-height` → 0, width 100%) **and its
+  `flex-shrink: 0`** (`flex: 0 1 auto !important` — without shrink the host keeps its full content
+  height inside the clamped strip and the pane can never scroll); height is content-driven, capped at
+  32% with the pane content scrolling, headers are compacted so all four tabs fit the ~250px toolbox
+  (inactive grey, active blue + underline), and the accordion keeps a `min-height: 40%` floor.
+- **Files tab** (`ff-browser-files`): a hint line (`funcflow-tab-hint`, "double-click or drag a file
+  to load it — or open a local one:") sharing its row with the **open-local-file button**
+  (`ff-browser-upload`, `buildUploadButton`; icon-only `fa-folder-open` — the platform's "Open local
+  file" vocabulary): a hidden `<input type="file">` whose `accept` is computed **at click time**
+  from `supportedUploadExtensions()` (csv/tsv/txt/d42 + registered `file-handler` exts — lazy
+  packages count); picked files flow through the `onLocalFilesPicked` callback → the view's
+  `addUploadedFileNodes`, the same pending-store pipeline as dropping OS files onto the canvas. The
+  chip lives inside the hint row (flex; the text wraps first), so it costs no vertical space. Below,
+  the KNIME-style file browser
   ([utils/files-browser-tree.ts](src/utils/files-browser-tree.ts), `getFilesBrowser`) listing every
-  file connection + its folders/files. Built **once** and reused across renders (so expanded folders /
-  scroll survive a search keystroke). **Double-click or drag a file → an `OpenFile` node** pre-set to
-  that file (`onFileDoubleClick` callback → `addOpenFileNode`; drag uses the existing `DG.FileInfo`
-  droppable). Every row carries a name-based `data-testid` (`ff-files-conn-<name>` /
+  file connection + its folders/files. Built **once** on first tab activation and reused (so expanded
+  folders / scroll survive a search keystroke). **Double-click or drag a file → an `OpenFile` node**
+  pre-set to that file (`onFileDoubleClick` callback → `addOpenFileNode`; drag uses the existing
+  `DG.FileInfo` droppable). Every row carries a name-based `data-testid` (`ff-files-conn-<name>` /
   `ff-files-folder-<name>` / `ff-files-file-<name>`) plus raw `data-conn`/`data-folder`/`data-file`/
   `data-file-path` attributes.
-- **Queries pane** (`ff-browser-queries`): every `DG.DataQuery` from the registry, **excluded from the
+- **Queries tab** (`ff-browser-queries`): every `DG.DataQuery` from the registry, **excluded from the
   category list** and grouped into one sub-accordion **per connection** (`queryConnectionName` =
   `connection.friendlyName ?? connection.name`; `ff-browser-query-conn-<name>` + `data-query-conn`),
   **regardless of the group-by mode**.
+- **Workflows tab** (`ff-browser-workflows`): the saved flows (`isWorkflowFunc`), excluded from the
+  accordion categories in every group-by mode; empty state explains that saved flows appear here.
+- **Favorites tab** (`ff-browser-favorites`) + row stars ([panel/favorites.ts](src/panel/favorites.ts)):
+  every catalog row (`makeToolboxItem`: `funcflow-item-label` + trailing `funcflow-item-star`) shows a
+  ★ on hover — click stars the node type into `localStorage['funcflow.favorites.v1']` (`{type, label}`
+  entries; gold `funcflow-item-star-active` everywhere once starred). `onFavoritesChanged` →
+  `syncStars()` repaints stars **in place** (no re-render, tree scroll survives) + `renderFavoritesTab`.
+  Favorite rows resolve a live `FuncInfo` by `nodeTypeName` when available (dblclick routes through
+  `onFunctionDoubleClick`, else `onBuiltinNodeDoubleClick`) and are draggable like any catalog row.
+  `FunctionBrowser.destroy()` (called from the view's `detach`) unhooks the module-level listener.
 - **Viewers pane** (`ff-browser-viewers`): the manual **viewer nodes** (`VIEWER_NODE_TYPES`, core charts
   first, then discovered package viewers) — see [Viewer Nodes](#viewer-nodes-retenodesviewer-nodets).
 - **Widgets pane** (`ff-browser-widgets`): functions whose output is a `widget` (`funcOutputsWidget`),
   also kept out of the categories.
-- Search input (with a **clear ✕**, `ff-browser-search-clear`) + Group-by selector. **Default mode is `category` ("what it does")**; other modes are `role` / `tags` / `package`.
+- Search input (top of the toolbox, with a **clear ✕**, `ff-browser-search-clear`; placeholder advertises the cross-tab scope) + the catalog-header group-by button. **Default mode is `category` ("what it does")**; other modes are `role` / `tags` / `package`. While searching, the browser root carries `data-searching` and CSS collapses the Suggestions strip to a dimmed header (context, not results). Narrow/zoomed toolboxes: tab labels (`funcflow-tab-label` wrap) ellipsize before a count chip can clip, and a `@container` query on `.funcflow-top-tabs` compacts headers+chips (<330px while searching, <240px always). The tab pane is the single scroll container — `d4-tree-view-root` gets `overflow: visible` inside it so the files tree never nests a second scrollbar; and because `d4-tree-view-sticky` hardcodes **white** on sticky folder rows (they must cover content while stuck), the tab CSS re-colors that background to the tray's `--grey-1` — otherwise folder rows paint a white patchwork on the grey collections tray.
 - **`categorizeFunc(func, role, packageName?)`** buckets by **domain then signature** (validated against the live catalog — see [docs/func-catalog-snapshot.md](docs/func-catalog-snapshot.md)). `FUNC_CATEGORIES` is also the **tree order** (Data Sources first):
   - **Domain wins (for operations only)**: a function from a `CHEMINFORMATICS_PACKAGES` / `BIOINFORMATICS_PACKAGES` package (in [type-map.ts](src/types/type-map.ts)) groups under **Cheminformatics** / **Bioinformatics** — via `domainCategory(pkg, inputTypes)`, which routes it there **only if it takes a dataframe/column input** (`isDomainOperation`); a chem/bio *source* (produces a table from scalars — a DB fetch, generator, or query) falls back to its signature category (Data Sources). It gets the matching title-bar color (pink / deep-purple). `DG.DataQuery` instances are filtered from the tree entirely into the **Queries pane**. Everything else falls through to the signature categories:
   - **Data Sources** — outputs a table, **0 table inputs** (OpenFile, DB queries). A join is *not* a data source.
@@ -867,7 +934,7 @@ The bottom **Output panel** is a pane of the view's vertical splitter (not a doc
     [node-factory.ts](src/rete/node-factory.ts)); checked before everything else (their signature
     would misfile them under Data Sources) and forced in **every** group-by mode, not just
     category — a flow's role/tags/package say nothing useful.
-- **Section order** (fixed in `render()`): Files, Queries, **Cheminformatics / Bioinformatics** (`DOMAIN_CATEGORIES`, the science first), the task categories ordered by `FUNC_CATEGORIES` in category mode / alphabetical in other modes (**minus `Other`**), Viewers, Widgets, the built-ins **Inputs / Outputs / Constants / Utilities**, then the **Other** catch-all, and **Debug last** (`renderBuiltinNodes(acc, titles)` takes the section titles so Debug can be emitted separately). Every section except Files shows an item-count badge (`addCountPane`). All sections start collapsed except Files. (The **Comparisons** group is currently hidden from the toolbox — its nodes stay registered so saved flows still load.)
+- **Section order** (fixed in `render()`; Files/Queries/Workflows live in the top tabs, not here): **Cheminformatics / Bioinformatics** (`DOMAIN_CATEGORIES`, the science first), the task categories ordered by `FUNC_CATEGORIES` in category mode / alphabetical in other modes (**minus `Other`**), Viewers, Widgets, the built-ins **Inputs / Outputs / Constants / Utilities**, then the **Other** catch-all, and **Debug last** (`renderBuiltinNodes(acc, titles)` takes the section titles so Debug can be emitted separately). Every section shows an item-count badge (`addCountPane`); all start collapsed. Searching "chart"/"plot"/"graph"/"viewer" (≥3 chars) surfaces the whole Viewers pane (synonym match in `renderViewersSection`). (The **Comparisons** group is currently hidden from the toolbox — its nodes stay registered so saved flows still load.)
 - **Parameter descriptions**: `FuncNode` captures each slot's description (`getParamDescription` → `inputDescriptions`/`outputDescriptions`) and the source package (`dgPackageName`) from the live `DG.Func`. The node component shows them as socket-row `title` tooltips; the property panel's input rows use `buildFuncInputTooltip` (which reads the same description) and the header chips row shows a **Package** chip (`ff-prop-func-package`).
 - **Parameter captions (display only)**: `getParamDisplayName(prop)` resolves an input's **display label** — its declared `caption` (`options.caption`, else a `friendlyName` that **differs from the raw name** — the Dart getter is `friendlyName ?? name`, so an equal value is just the fallback), else the **humanized name**: `propertyNameToFriendly` in [utils/naming.ts](src/utils/naming.ts), a **TS mirror of core** (`capitalizeWords(camelCaseToWords(n.replaceAll('.', ' ')))`, helpers from `prop_gen_annotation.dart`; no digit-splitting; ONE deliberate deviation: all-caps acronym words are preserved — `'MW'` → `'MW'`, `'maxMW'` → `'Max MW'`, where core would fold to `'Mw'`) so a caption-less `maxNumOfSomething` reads `Max Num Of Something` exactly as `ui.input.forProperty` shows it. Additionally `createNode` runs `humanizeSlotLabels`: any slot whose **label still equals its raw key** (built-in nodes' `table`/`value`/…, func real outputs) gets the humanized label — declared captions and the `→` pass-through markers are untouched, and exec-port labels (`before`/`after`) differ from their keys anyway. Used for the **node slot labels** and the **context-panel** field labels: the "(connected only)"/"connected" info rows, the `ui.input.string` caption for `column`/`column_list` (`createColumnFieldRow` `caption ?? label`) and `string_list` (`createStringInput`'s `caption` arg), the utility **Configuration** rows (display `caption` args on `createTextarea`/`createNumberInput`/`createToggle`), and the Connections-pane row/endpoint names. `ui.input.forProperty` (primitives + `list`) already reads the caption itself. **Identity is never affected** — `inputValues`, connections, `data-param`/test-ids, and compiled args all stay keyed by `prop.name` / the slot key.
 - Item tooltips: built-ins use `<description>. Double-click to add`; DG functions show `func.description (packageName)`.
@@ -875,7 +942,7 @@ The bottom **Output panel** is a pane of the view's vertical splitter (not a doc
 
 ### Suggestions pane ([panel/suggestion-pane.ts](src/panel/suggestion-pane.ts) + [suggest/suggestion-engine.ts](src/suggest/suggestion-engine.ts))
 
-The bottom ~30% of the toolbox (`ff-suggest-pane`, appended after the browser tree; caret minimizes to the header strip, state in `localStorage['funcflow-suggestions-collapsed']`). Shows the ≤10 (`MAX_SUGGESTIONS`) next steps ranked from the **full canvas context**. Items behave like toolbox catalog rows: **double-click** creates the node next to its (first) source, and they are **HTML5-draggable onto the canvas** — the whole `Suggestion` travels as JSON under `FF_SUGGEST_MIME` (its own DataTransfer type; the browser's `FF_DRAG_MIME` carries only a typeName), so a drop still applies the wiring and prefill, just at the drop point. Both paths land in `FuncFlowView.applySuggestion(s, at?)` — prefills its inputs and wires the suggested connections; prefills report via `notifyNodeParamsChanged`, so live-by-default nodes autorun.
+The bottom 25% of the toolbox (`ff-suggest-pane`, appended after the browser tree) — styled as a distinct **assistant surface** (accent top edge, blue-tinted body, lightbulb header) so it doesn't read as another catalog section. Items are **thin one-line rows**: the action label + the inline muted reason (CSS `— ` lead-in; the reason span needs `flex: 1 1 auto !important` — core css forces `flex-shrink: 0` on spans in ui-div flex rows, which would hard-clip instead of ellipsizing). With zero suggestions the pane shrinks to its hint text (`data-empty`); the caret minimizes it to the header strip, state in `localStorage['funcflow-suggestions-collapsed']`. Shows the ≤10 (`MAX_SUGGESTIONS`) next steps ranked from the **full canvas context**. Items behave like toolbox catalog rows: **double-click** creates the node next to its (first) source, and they are **HTML5-draggable onto the canvas** — the whole `Suggestion` travels as JSON under `FF_SUGGEST_MIME` (its own DataTransfer type; the browser's `FF_DRAG_MIME` carries only a typeName), so a drop still applies the wiring and prefill, just at the drop point. Both paths land in `FuncFlowView.applySuggestion(s, at?)` — prefills its inputs and wires the suggested connections; prefills report via `notifyNodeParamsChanged`, so live-by-default nodes autorun.
 
 - **Two halves**: `collectSuggestContext(flow, exec, focusNodeId, cell)` (async — reads the live editor + captured `__ffFlowLive` values into a plain `SuggestContext`) and `computeSuggestions(ctx)` (pure rule pipeline — unit-testable with hand-built contexts, [tests/suggestion-tests.ts](src/tests/suggestion-tests.ts)).
 - **Context signals**: the selection (fresh from `flow.getSelectedNodeIds()`), the **focus node** (last clicked — outlives a deselect), each candidate node's **dataframe output** (real output first, else the first dataframe **pass-through**; captured live value → columns → **semantic types**, running `detectSemanticTypes` once if none set), scalar outputs, the **preview cell last clicked** (`setPreviewCellFocusHandler` in [value-inspector.ts](src/execution/value-inspector.ts) — every preview grid reports `onCurrentCellChanged` with the column's semType + value), canvas packages/domains/func-names, and the **existing wiring** (`wiredTargets` — a suggestion whose every source already feeds a node of that type is suppressed). With nothing selected the scan falls back canvas-wide, so the pane fills right after a run.
