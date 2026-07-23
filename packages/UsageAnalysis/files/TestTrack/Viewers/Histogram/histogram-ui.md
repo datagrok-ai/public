@@ -1,9 +1,7 @@
 # Histogram tests (manual checklist)
 
-Human-only visual/gesture checks. The automatable steps (grid selection reflected in the
-histogram, the Y-axis-area context menu) are now covered automatically in the spec(s);
-what remains here needs a human eye — canvas dot indicators that move on click/hover, and
-cross-viewer mouse-over highlighting.
+Automated coverage lives in the paired spec(s) of this section; this file lists
+only checks that need a human eye.
 
 All scenarios should start with the following sequence of events:
 1. Close all

@@ -13,22 +13,22 @@ related_bugs:
   - id: GROK-18399
     status: fixed
 expected_results:
-  - anchor: "Scenario 1 Step 3"
+  - anchor: "S1: Color property rows active (opacity 1.0) with no split"
     expectation: >-
       Color property-grid rows (tr[name='prop-color'],
       tr[name='prop-color-aggr-type'], tr[name='prop-invert-color-scheme']) are
       active — getComputedStyle(tr).opacity === '1' for all three.
-  - anchor: "Scenario 1 Step 5"
+  - anchor: "S1: split RACE disables Color rows (opacity 0.5)"
     expectation: >-
       After setting a Split Column, all three Color property-grid rows become
       disabled — getComputedStyle(tr).opacity === '0.5' (or < 1.0) for all
       three.
-  - anchor: "Scenario 1 Step 6"
+  - anchor: "S1: range narrow under split keeps filter valid, no error"
     expectation: >-
       While the split column is set and the range slider is adjusted,
       df.filter.trueCount stays in the valid range [0, df.rowCount] and no new
       console error is raised.
-  - anchor: "Scenario 1 Step 8"
+  - anchor: "S1: clear split re-activates Color rows (opacity 1.0 round-trip)"
     expectation: >-
       After clearing the Split Column, the three Color property-grid rows
       re-activate — getComputedStyle(tr).opacity returns to '1' for all three
@@ -41,10 +41,10 @@ realized_as:
 
 ## Setup
 
-1. Close all open tables and viewers (`grok.shell.closeAll()`).
-2. Open the **demog** dataset (use `readDataframe('demog')` or navigate Files > demog.csv, open the table).
-3. Add a Histogram viewer to the table view (`view.addViewer('Histogram')`); capture it as `h`.
-4. Make the histogram the current object so the Context Panel shows its properties: `grok.shell.o = h`.
+1. Close all open tables and viewers.
+2. Open the **demog** dataset (Files > Demo Files > demog.csv).
+3. Add a Histogram viewer to the table view.
+4. Click the histogram so it becomes the current object and the Context Panel shows its properties.
 5. In the property panel (Context Panel), set the **Value Column** to `AGE`.
 
 ## Scenarios
@@ -55,28 +55,31 @@ realized_as:
 
 Steps:
 
-1. With no split column set, open the Context Panel if not already shown. Ensure the histogram is the current object (`grok.shell.o = h`).
+1. With no split column set, open the Context Panel if not already shown and make sure the histogram is the current object.
 2. In the property panel, set **Color Column** to `SEX`, **Color Aggr Type** to `avg`, **Invert Color Scheme** to `true` (non-default lead — the color configuration is applied first, before any split).
-3. Query the three Color property-grid rows via their `name` attributes under `.property-grid`:
-   `tr[name='prop-color']`, `tr[name='prop-color-aggr-type']`, `tr[name='prop-invert-color-scheme']`.
-   Wait for `state: 'attached'` (NOT `state: 'visible'` — rows may be inside a collapsed accordion pane).
-   Read `getComputedStyle(tr).opacity` for each — it must equal `'1'` for all three (color-coding active, GROK-19761 baseline). **Do NOT try to expand accordion panes; do NOT gate on visibility.**
-4. Record `const fullCount = df.filter.trueCount` (baseline: all rows in).
+3. In the Context Panel, locate the three Color rows — **Color**, **Color Aggr Type**, and **Invert Color Scheme**. Verify all three appear active (fully opaque, not dimmed) — color-coding is available while no split is set (GROK-19761 baseline).
+4. Note the current filtered row count as the baseline (all rows pass the filter).
 5. Set the histogram's **Split Column** property to `RACE` (a categorical column — non-default, lead).
-   Re-query the same three `tr` nodes (they remain attached) and read their computed opacity.
-   Each must now be `< 1` (expected: `'0.5'`) — the split disabling the Color property rows is the product-state signal (GROK-19761). **Do NOT assert splitColumnName round-trip.**
-6. While the split column is `RACE`, use the in-histogram range-slider (or set `h.min` / `h.max` via JS) to narrow the displayed range to a sub-range of `AGE` (e.g. set min to 20, max to 60).
-   Assert: `df.filter.trueCount` is in `[0, df.rowCount]` (valid, non-negative) and `df.filter.trueCount <= fullCount`.
-   Assert: no new console error has been raised since step 5 (GROK-18399).
-7. Reset the range to the full column extent (clear min/max or drag slider to full width) so df.filter is no longer narrowed.
+   Look at the same three Color rows again — each must now appear dimmed (disabled). The split disabling the Color rows is the product-state signal (GROK-19761). **Do NOT assert a Split Column value round-trip.**
+6. While the split column is `RACE`, use the in-histogram range slider to narrow the displayed range to a sub-range of `AGE` (roughly 20 to 60).
+   Verify the filtered row count stays valid — between zero and the total row count, and not above the baseline from step 4.
+   Verify no new console error has been raised since step 5 (GROK-18399).
+7. Reset the range to the full column extent (clear min/max or drag the slider to full width) so the filter is no longer narrowed.
 8. Clear the **Split Column** (set to empty/none).
-   Re-query the three Color `tr` nodes and read computed opacity — each must be `'1'` again (round-trip: color-coding re-activates, GROK-19761 regression guard).
+   Look at the three Color rows once more — all three are active (undimmed) again (round-trip: color-coding re-activates, GROK-19761 regression guard).
 
 Expected:
-- Step 3: all three Color property-grid rows have computed opacity `'1'` (color active, no split).
-- Step 5: all three Color property-grid rows have computed opacity `< 1` (opacity `'0.5'`) after split is set (GROK-19761).
-- Step 6: `df.filter.trueCount` ∈ [0, df.rowCount]; no new console errors (GROK-18399).
-- Step 8: all three Color property-grid rows return to computed opacity `'1'` (round-trip).
+- Step 3: all three Color rows appear active (fully opaque) — color available, no split.
+- Step 5: all three Color rows appear dimmed (disabled) after the split is set (GROK-19761).
+- Step 6: the filtered row count stays within the valid range and no new console errors appear (GROK-18399).
+- Step 8: all three Color rows return to the active (undimmed) state (round-trip).
+
+## Automation notes
+
+Scenario 1:
+- The three Color rows are `tr[name='prop-color']`, `tr[name='prop-color-aggr-type']`, `tr[name='prop-invert-color-scheme']` under `.property-grid`. Wait for `state: 'attached'` (NOT `state: 'visible'` — the rows may sit inside a collapsed accordion pane); do NOT try to expand accordion panes and do NOT gate on visibility. "Active" reads as `getComputedStyle(tr).opacity === '1'`; "dimmed" as opacity `< 1` (expected `'0.5'`).
+- The histogram is made current via `grok.shell.o = h`; the baseline and filtered row counts are read from `df.filter.trueCount` (valid range: `[0, df.rowCount]`); the range narrow in step 6 is driven by setting the viewer's min/max range properties (e.g. `valueMin = 20`, `valueMax = 60`).
+- Setup mechanics: close views via `grok.shell.closeAll()`; open demog from `System:DemoFiles/demog.csv`; add the viewer via `view.addViewer('Histogram')` and capture it as `h`.
 
 **Out of scope (do NOT assert):**
 - The per-category legend rendered on the canvas (canvas-only, no reliable DOM host).

@@ -15,29 +15,29 @@ related_bugs:
   - id: github-2296
     status: fixed
 expected_results:
-  - anchor: "Scenario 1 Step 3"
+  - anchor: "S1: Show Values renders per-bin counts (no error)"
     expectation: "Per-bin value counts are rendered on top of each bin (Show Values on).
       Actuation: the count glyphs are canvas-drawn text, not headless-readable, so
       the spec asserts the driving prop (showValues === true) plus the no-error
       render floor rather than the label pixels."
-  - anchor: "Scenario 1 Step 4"
+  - anchor: "S1: in-plot bins=50 propagates to panel (GROK-18223, github-2296)"
     expectation: "Increasing bin count to 50 does not crash or produce an error."
-  - anchor: "Scenario 1 Step 5"
+  - anchor: "bins=50 propagates to panel (GROK-18223, github-2296)"
     expectation: "Bin count shown in the properties panel matches the in-plot bin
       selector (both read 50 after the in-plot change)."
-  - anchor: "Scenario 1 Step 6"
+  - anchor: "S1: panel bins=30 propagates in-plot (github-2296)"
     expectation: "Bin count shown in the in-plot selector matches the properties
       panel after setting via the panel (both read 30)."
-  - anchor: "Scenario 1 Step 7"
+  - anchor: "S1: in-plot value=HEIGHT propagates to panel (github-2296)"
     expectation: "Value column shown in the in-plot column selector matches the
       properties panel Value field (both read HEIGHT after the in-plot change)."
-  - anchor: "Scenario 1 Step 8"
+  - anchor: "S1: panel value=WEIGHT propagates in-plot (github-2296, GROK-19759)"
     expectation: "Value column shown in the properties panel matches the in-plot
       selector (both read WEIGHT after the panel change)."
-  - anchor: "Scenario 1 Step 9"
+  - anchor: "S1: click bin selects its rows"
     expectation: "Clicking a bin selects the rows in that bin; the status bar shows
       a non-zero selected count matching the bin height."
-  - anchor: "Scenario 1 Step 10"
+  - anchor: "S1: current-row indicator is functional; hovering a bin raises no error"
     expectation: "The current-row indicator is functional and hovering a bin
       raises no error: df.currentRowIdx clears to -1 and round-trips to a set
       row whose value lies within the value column's range. Actuation: a
@@ -45,15 +45,15 @@ expected_results:
       df.currentRowIdx, so the hover itself is
       covered by the no-error floor and the indicator is exercised through its
       own set/read path."
-  - anchor: "Scenario 2 Step 2"
+  - anchor: "S2: Show Values off removes labels (no error)"
     expectation: "Show Values is off; per-bin count labels are no longer rendered.
       Actuation: the labels are canvas-drawn text, not headless-readable, so the
       spec asserts the driving prop (showValues === false) plus the no-error
       render floor rather than the absence of label pixels."
-  - anchor: "Scenario 2 Step 3"
+  - anchor: "S2: bins revert to 20 in panel and in-plot"
     expectation: "Bin count reverts to 20; the properties panel and in-plot selector
       both show 20."
-  - anchor: "Scenario 2 Step 4"
+  - anchor: "S2: value reads AGE in panel and in-plot"
     expectation: "Value column reverts to AGE in both the properties panel and the
       in-plot selector."
 realized_as:

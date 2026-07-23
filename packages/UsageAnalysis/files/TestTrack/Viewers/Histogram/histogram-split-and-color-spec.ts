@@ -31,7 +31,7 @@ test('Histogram — Split vs Color-coding Transition', async ({page}) => {
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
-  // grok.shell.warnings is undefined on this build, so uncaught page errors and
+  // grok.shell.warnings is not exposed to JS here, so uncaught page errors and
   // console errors are the no-error floor for the range-slider step.
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));

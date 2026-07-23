@@ -25,45 +25,49 @@ expected_results:
       Show Bin Selector and Show Range Slider and reverting to defaults raises no
       console or page errors and leaves the histogram alive (canvas-only, no-error
       floor).
-  - anchor: "Labels Step 1"
+  - anchor: "Labels"
     expectation: >-
       Splitting by SEX renders a legend with exactly the two categories F and M;
       splitting by RACE renders four legend items — the legend item count tracks
       the split column's categories.
-  - anchor: "Labels Step 2"
+  - anchor: "Labels"
     expectation: >-
       Setting Legend Visibility to Never removes the legend host from the DOM;
       setting it back to Always restores it.
-  - anchor: "Labels Step 6"
+  - anchor: "Labels"
     expectation: >-
       Setting a Description makes its text appear inside the viewer's rendered
       content; clearing it removes the text.
-  - anchor: "Context menu Step 1"
+  - anchor: "Context menu"
     expectation: >-
       Right-clicking the histogram canvas opens a menu that contains the
       histogram entries Show Filtered Out Rows, Selection, Show Current Row, Show
       Mouse Over Row, Show Mouse Over Row Group, plus the axis entries Show X
       Axis, Axis Font, Controls Font.
-  - anchor: "Context menu Step 3"
+  - anchor: "Context menu"
     expectation: >-
       Clicking Show Filtered Out Rows in the context menu flips the viewer's
       showFilteredOutRows property (menu-to-prop round-trip).
-  - anchor: "Layout persistence Step 8"
+  - anchor: "Layout persistence"
     expectation: >-
       After saving the layout, closing the viewer, and re-applying the layout,
       the histogram restores with WEIGHT value, 15 bins, RACE split, and stacked
       mode.
-  - anchor: "Data properties Step 2"
+  - anchor: "Data — row source"
     expectation: >-
       Setting Row Source to Selected shrinks the histogram's rendered canvas
       content against the All baseline and removes the orange selection overlay
       (present under All, zero under Selected); switching back to All restores both
       the content and the overlay exactly.
-  - anchor: "Data properties Step 4"
+  - anchor: "Data — filter formula"
     expectation: >-
       Setting the Filter formula to ${AGE} > 40 shrinks the histogram's rendered
-      canvas content; clearing the formula restores it exactly.
-  - anchor: "Data properties Step 7"
+      canvas content (measured after a settle precheck confirms the baseline
+      render is stable) and narrows the viewer-local filter (h.filter.trueCount
+      drops strictly between 0 and the full row count without touching
+      df.filter); clearing the formula restores both the rendered content and
+      the full trueCount exactly.
+  - anchor: "Data — table switching"
     expectation: >-
       Switching the viewer's Table from spgi-100 to demog rebinds the histogram to
       the demog dataframe and re-picks a value column that belongs to demog.
@@ -89,12 +93,6 @@ All scenarios should start with the following sequence of events:
 3. Disable **Fill Spline**
 4. Disable **Spline**
 
-Actuation note: spline and fill-spline are pure canvas
-painting — there is no DOM element or dataframe value that changes when they
-toggle. The automated check is therefore the no-error floor (driving all four
-toggles raises no console/page error and the viewer stays alive), not a
-property read-back. A visual before/after comparison stays a human variation.
-
 ## Appearance
 
 1. Enable **Value > Show X Axis**
@@ -106,17 +104,6 @@ property read-back. A visual before/after comparison stays a human variation.
 7. Disable **Show Split Selector**
 8. Disable **Show Range Slider**
 9. Re-enable all four
-
-Actuation note: two of these toggles DO carry a real DOM
-signal. **Show Column Selector** drives the visibility of the value-column
-combobox (`[name="div-column-combobox-value"]`) and **Show Split Selector**
-drives the split-column combobox (`[name="div-column-combobox-split"]`, visible
-only while a Split Column is set). Those two are asserted as a present→absent→present
-round-trip. **Show Bin Selector**, **Show Range Slider**, the axis toggles and
-X-axis height have no headless DOM signal — the axes and the bin/range strip are
-canvas-drawn — so they ride the no-error floor (drive every toggle, revert to
-defaults, no error, viewer alive). Verifying the bin/range controls actually
-appear/hide is a human variation.
 
 ## Labels
 
@@ -133,14 +120,6 @@ appear/hide is a human variation.
    viewer
 7. Clear title and description -- the description text is gone
 
-Actuation note: the legend is a real DOM signal
-(`[name="legend"] .d4-legend-item` count tracks the split categories) and the
-description is read back from the viewer's rendered `innerText`. The **title**
-lives in the surrounding header chrome (not inside the viewer element), so it is
-driven but not asserted — same treatment as PC Plot. Legend **position** is a
-canvas/layout property with no per-position DOM signal, so it is driven only to
-confirm the legend survives the layout pass.
-
 ## Context menu
 
 1. Right-click on the histogram canvas -- the context menu shows the histogram
@@ -151,17 +130,6 @@ confirm the legend survives the layout pass.
 3. Toggle "Show Filtered Out Rows" from the context menu -- the viewer's
    `showFilteredOutRows` property flips
 4. (Human variation) Right-click specifically on the X axis area
-
-Actuation note: right-clicking the histogram canvas opens a
-single flattened menu (`.d4-menu-item-label`) that already contains BOTH the
-table/view entries AND the histogram-specific entries — the old spec's claim
-that only the view menu appears was wrong. The automated check asserts the
-promised histogram items are present and that clicking "Show Filtered Out Rows"
-round-trips the property. Step 4's position-precise right-click on the X-axis
-region is reduced to the same axis items ("Show X Axis", "Axis Font", "Controls
-Font") that the main-area menu already surfaces, because the axis strip is
-canvas-drawn with no DOM handle to target headless; the axis-region right-click
-stays a human variation.
 
 ## Layout persistence
 
@@ -178,19 +146,60 @@ stays a human variation.
 
 Setup: open spgi-100 dataset, add Histogram.
 
-1. Select some rows in the grid
+1. Select some rows in the grid (Ctrl+click a row to toggle its selection,
+   Shift+drag to select a range)
 2. Go to the Context Panel > Data, set Row Source to Selected — the histogram's
    rendered canvas content shrinks against the All baseline
 3. Set Row Source to All — the rendered content restores to the full-data
    baseline exactly
 4. Set **Filter** formula to `${AGE} > 40` — the rendered canvas content shrinks
-5. Clear filter formula — the rendered content restores exactly
+   and the viewer-local filter count drops below the full row count
+5. Clear filter formula — the rendered content and the viewer-local filter count
+   restore exactly
 6. Open Context Panel > **Data > Table**
 7. Switch the viewer's Table to demog — the histogram rebinds to the demog
    dataframe and re-picks a demog value column
 8. Switch back to spgi-100
 
-Actuation note:
+## Automation notes
+
+Spline mode: spline and fill-spline are pure canvas
+painting — there is no DOM element or dataframe value that changes when they
+toggle. The automated check is therefore the no-error floor (driving all four
+toggles raises no console/page error and the viewer stays alive), not a
+property read-back. A visual before/after comparison stays a human variation.
+
+Appearance: two of these toggles DO carry a real DOM
+signal. **Show Column Selector** drives the visibility of the value-column
+combobox (`[name="div-column-combobox-value"]`) and **Show Split Selector**
+drives the split-column combobox (`[name="div-column-combobox-split"]`, visible
+only while a Split Column is set). Those two are asserted as a present→absent→present
+round-trip. **Show Bin Selector**, **Show Range Slider**, the axis toggles and
+X-axis height have no headless DOM signal — the axes and the bin/range strip are
+canvas-drawn — so they ride the no-error floor (drive every toggle, revert to
+defaults, no error, viewer alive). Verifying the bin/range controls actually
+appear/hide is a human variation.
+
+Labels: the legend is a real DOM signal
+(`[name="legend"] .d4-legend-item` count tracks the split categories) and the
+description is read back from the viewer's rendered `innerText`. The **title**
+lives in the surrounding header chrome (not inside the viewer element), so it is
+driven but not asserted — same treatment as PC Plot. Legend **position** is a
+canvas/layout property with no per-position DOM signal, so it is driven only to
+confirm the legend survives the layout pass.
+
+Context menu: right-clicking the histogram canvas opens a
+single flattened menu (`.d4-menu-item-label`) that already contains BOTH the
+table/view entries AND the histogram-specific entries — the old spec's claim
+that only the view menu appears was wrong. The automated check asserts the
+promised histogram items are present and that clicking "Show Filtered Out Rows"
+round-trips the property. Step 4's position-precise right-click on the X-axis
+region is reduced to the same axis items ("Show X Axis", "Axis Font", "Controls
+Font") that the main-area menu already surfaces, because the axis strip is
+canvas-drawn with no DOM handle to target headless; the axis-region right-click
+stays a human variation.
+
+Data properties:
 
 - **Row Source** (Step 2-3) is measured two independent ways. The non-white
   canvas total shrinks when Selected paints only the selected rows, restoring
@@ -205,7 +214,13 @@ Actuation note:
   only which rows the histogram paints — it does NOT change `df.filter.trueCount`
   — so the dataframe filter count is not a valid signal here. **demog** is used
   because the filter expression references its **AGE** column, which spgi-100 does not
-  have; on spgi-100 the same formula would be inert.
+  have; on spgi-100 the same formula would be inert. The baseline pixel count is
+  taken only after a settle precheck (two consecutive canvas measurements agree),
+  so the measured delta is the formula's effect rather than a render tail. The
+  second, product-state signal is the viewer-local combined filter exposed as
+  `h.filter` (the same viewer-local expression-filter mechanism the Line chart
+  uses): its `trueCount` drops strictly between 0 and the full row count under
+  the formula and returns to the full count when the formula is cleared.
 - **Table switching** (Step 7) is implemented via `props.table = 'demog'` with
   both tables open, asserting the bound `dataFrame.name` changes spgi-100 → demog and
   the auto-picked value column becomes a demog column. This replaces the prior

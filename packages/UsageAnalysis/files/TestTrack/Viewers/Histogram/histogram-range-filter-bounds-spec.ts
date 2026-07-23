@@ -23,7 +23,7 @@ test('Histogram — Range filtering and bound validation', async ({page}) => {
   await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
   await v.addViewerByIcon(page, 'histogram', 'Histogram');
 
-  // grok.shell.warnings is undefined on this build, so uncaught page errors and
+  // grok.shell.warnings is not exposed to JS here, so uncaught page errors and
   // console errors are the no-throw floor for the canvas and validation steps.
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
@@ -117,7 +117,7 @@ test('Histogram — Range filtering and bound validation', async ({page}) => {
     expect(filtered).toBeLessThan(rowCount);
   });
 
-  // NOTE: on this build the range inputs are NOT rejected or clamped — an
+  // NOTE: the range inputs are NOT rejected or clamped — an
   // out-of-range bound is applied verbatim (widening the effective range to the
   // data extent), and an inverted Max<Min collapses the filter rather than being
   // refused. The tickets (GROK-19581/GROK-19760) guaranteed only "no crash". The

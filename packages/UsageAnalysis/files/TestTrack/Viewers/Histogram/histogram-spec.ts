@@ -1,3 +1,7 @@
+/* ---
+realizes: []
+--- */
+
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -10,8 +14,7 @@ test('Histogram tests', async ({page}) => {
   test.setTimeout(600_000);
 
   // Several sections below drive canvas-only properties whose only observable
-  // outcome is how the plot is painted. grok.shell.warnings is undefined on this
-  // build, so those steps assert a no-error floor built from page/console errors.
+  // outcome is how the plot is painted. grok.shell.warnings is undefined, so those steps assert a no-error floor built from page/console errors.
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
@@ -278,11 +281,14 @@ test('Histogram tests', async ({page}) => {
     expect(errorCount()).toBe(errBefore);
   });
 
-  // The viewer `filter` formula narrows which rows the histogram paints (it does
-  // not touch df.filter.trueCount), so the signal is the canvas content shrinking
-  // under the predicate and restoring when cleared. demog is used because its AGE
-  // column carries the filter expression; SPGI has no AGE column (Actuation note
-  // in histogram.md).
+  // The viewer `filter` formula narrows which rows the histogram paints. Two
+  // independent signals: the canvas content shrinks under the predicate and
+  // restores when cleared, and the viewer-local combined filter (h.filter —
+  // the same viewer-local mechanism as the Line chart's expression filter; it
+  // does NOT touch df.filter) narrows its trueCount under the formula and
+  // returns to the full count on reset. demog is used because its AGE column
+  // carries the filter expression; SPGI has no AGE column (Actuation note in
+  // histogram.md).
   await softStep('Data — filter formula', async () => {
     const errBefore = errorCount();
     await page.evaluate(async () => {
@@ -301,22 +307,52 @@ test('Histogram tests', async ({page}) => {
       h.props.filter = '';
       await new Promise(r => setTimeout(r, 600));
     });
-    const clearedPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    // Settle precheck: two consecutive pixel counts must agree before the
+    // baseline is taken, so the measured delta is the formula's effect and not
+    // a render tail.
+    let prevPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    let clearedPx = prevPx;
+    for (let i = 0; i < 5; i++) {
+      await page.waitForTimeout(300);
+      clearedPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+      if (Math.abs(clearedPx - prevPx) < 200) break;
+      prevPx = clearedPx;
+    }
+    expect(Math.abs(clearedPx - prevPx)).toBeLessThan(200);
+    const cleared = await page.evaluate(() => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      return {rowCount: grok.shell.tv.dataFrame.rowCount, trueCount: (h as any).filter.trueCount};
+    });
     await page.evaluate(async () => {
       const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
       h.props.filter = '${AGE} > 40';
       await new Promise(r => setTimeout(r, 700));
     });
     const filteredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const filteredCount = await page.evaluate(() => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      return (h as any).filter.trueCount;
+    });
     await page.evaluate(async () => {
       const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
       h.props.filter = '';
       await new Promise(r => setTimeout(r, 600));
     });
     const restoredPx = (await v.countCanvasPixels(page, 'Histogram')).total;
+    const restoredCount = await page.evaluate(() => {
+      const h = grok.shell.tv.viewers.find(v => v.type === 'Histogram')!;
+      return (h as any).filter.trueCount;
+    });
     expect(clearedPx).toBeGreaterThan(1000);
     expect(clearedPx - filteredPx).toBeGreaterThan(400);
     expect(Math.abs(restoredPx - clearedPx)).toBeLessThan(300);
+    // Product-state signal: h.filter is the histogram's combined filter
+    // (row set AND formula bitset) — the formula narrows it without touching
+    // df.filter, and clearing the formula restores the full count.
+    expect(cleared.trueCount).toBe(cleared.rowCount);
+    expect(filteredCount).toBeGreaterThan(0);
+    expect(filteredCount).toBeLessThan(cleared.rowCount);
+    expect(restoredCount).toBe(cleared.rowCount);
     expect(errorCount()).toBe(errBefore);
   });
 
