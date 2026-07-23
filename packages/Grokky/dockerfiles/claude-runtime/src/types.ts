@@ -37,6 +37,15 @@ export interface ImageAttachment {
   data: string;
 }
 
+/** A tool declared by the browser for this turn (usually supplied by the current view).
+ * Calls round-trip to the browser via input_request / input_response. */
+export interface ClientToolDef {
+  name: string;
+  description: string;
+  /** JSON Schema (object type) describing the arguments. */
+  inputSchema?: object;
+}
+
 export interface UserMessage {
   type: 'user_message';
   sessionId: string;
@@ -47,6 +56,7 @@ export interface UserMessage {
   outputSchema?: object;
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
   model?: ClaudeModel;
+  clientTools?: ClientToolDef[];
 }
 
 export interface AbortMessage {
@@ -74,10 +84,26 @@ export interface AuthCodeMessage {type: 'auth_code'; code: string}
 
 export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
 
+/** Per-turn metrics forwarded from the SDK `result` message (see docs/BENCHMARK.md). */
+export interface TurnMetrics {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheCreationTokens: number | null;
+  costUsd: number | null;
+  numTurns: number | null;
+  durationMs: number | null;
+  durationApiMs: number | null;
+}
+
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
   | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean}
+  // A gate (verifier / grounding) blocked the turn's Stop and a revision is being generated.
+  // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
+  // replaces the original ('replaced') or the original stands ('kept').
+  | {type: 'revision_start'; sessionId: string}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
   | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}

@@ -3,6 +3,14 @@ mdx:
   format: mdx
 title: "Feedback"
 sidebar_position: 5
+description: Report errors, submit feedback, and configure automatic error reporting in Datagrok.
+keywords:
+  - report an error
+  - bug report
+  - submit feedback
+  - error reporting
+  - auto report errors
+  - stack trace
 ---
 
 ```mdx-code-block
@@ -66,7 +74,7 @@ If the **Email** checkbox is not selected, the report is stored internally and c
 :::
 
 :::note Note
-If external sending is not configured, you can save the report as a JSON file using the **Save as JSON** icon and share it with the support team at support@datagrok.ai.
+If external sending is not configured, you can save the report as a JSON file using the **Save as JSON** icon and share it with the support team at <support@datagrok.ai>.
 :::
 
 ![Report an error](img/report-an-error.gif)

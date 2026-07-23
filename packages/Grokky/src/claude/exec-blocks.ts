@@ -11,10 +11,12 @@ export async function executeSingleBlock(
   code: string, view: DG.ViewBase, blockIndex: number,
 ): Promise<{element: HTMLElement | null; value: any; error: ExecError | null}> {
   try {
-    const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
+    // Prefer the live current view: Claude may have opened a new view earlier in the same turn.
+    const liveView = grok.shell.v ?? view;
+    const t = liveView?.type === DG.VIEW_TYPE.TABLE_VIEW ? (liveView as DG.TableView).dataFrame : undefined;
     const result = await new Function('grok', 'ui', 'DG', 'view', 't',
       'return (async () => {' + code + '})()',
-    )(grok, ui, DG, view, t);
+    )(grok, ui, DG, liveView, t);
     const element = result instanceof HTMLElement ? result : null;
     return {element, value: element ? undefined : result, error: null};
   } catch (e: any) {
@@ -43,13 +45,15 @@ export async function runVerification(
   return {passed: res.error == null && !!res.value, observed: res.value, error: res.error?.error ?? null};
 }
 
+function describeTable(df: DG.DataFrame): string {
+  const cols = df.columns.toList().map((c) => `${c.name}(${c.type})`).join(', ');
+  return `Table "${df.name}" (${df.rowCount} rows): ${cols}`;
+}
+
 export function buildViewContext(view: DG.ViewBase): string {
   if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
     const df = (view as DG.TableView).dataFrame;
-    if (!df)
-      return '';
-    const cols = df.columns.toList().map((c) => `${c.name}(${c.type})`).join(', ');
-    return `Table "${df.name}" (${df.rowCount} rows): ${cols}`;
+    return df ? describeTable(df) : '';
   }
   if (view.type === 'ScriptView') {
     const scriptView = view as DG.ScriptView;
@@ -59,6 +63,32 @@ export function buildViewContext(view: DG.ViewBase): string {
     return `ScriptView "${view.name}" (empty script)`;
   }
   return '';
+}
+
+/** Snapshot of everything the user has open: current view (detailed), other views, and workspace tables. */
+export function buildWorkspaceContext(): string {
+  const lines: string[] = [];
+  const current = grok.shell.v;
+  if (current) {
+    lines.push(`Current view: "${current.name}" (${current.type})`);
+    const ai = (current as any).aiDescription;
+    if (ai)
+      lines.push(`About this view: ${ai}`);
+    const details = buildViewContext(current);
+    if (details)
+      lines.push(details);
+  }
+  const others = Array.from(grok.shell.views).filter((v) => v !== current);
+  if (others.length > 0) {
+    lines.push('Other open views: ' + others.map((v) => {
+      const df = v.type === DG.VIEW_TYPE.TABLE_VIEW ? (v as DG.TableView).dataFrame : null;
+      return `"${v.name}" (${v.type}${df ? `, table "${df.name}"` : ''})`;
+    }).join(', '));
+  }
+  const currentTable = current?.type === DG.VIEW_TYPE.TABLE_VIEW ? (current as DG.TableView).dataFrame : null;
+  for (const t of grok.shell.tables.filter((t) => t !== currentTable))
+    lines.push(describeTable(t));
+  return lines.length > 0 ? 'Workspace state (live, changes as the user navigates):\n' + lines.join('\n') : '';
 }
 
 export interface DgEntityRef {

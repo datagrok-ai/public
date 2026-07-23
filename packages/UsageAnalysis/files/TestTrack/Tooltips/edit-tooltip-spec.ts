@@ -14,7 +14,7 @@ test('Viewers: Edit tooltip', async ({page}) => {
     (grok as any).shell.settings.showFiltersIconsConstantly = true;
     (grok as any).shell.windows.simpleMode = true;
     (grok as any).shell.closeAll();
-    const df = await (grok as any).dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await (grok as any).dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     (grok as any).shell.addTableView(df);
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });

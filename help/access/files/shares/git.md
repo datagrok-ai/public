@@ -1,5 +1,13 @@
 ---
 title: "Git"
+description: Connect Datagrok to a Git repository as a file share, including private repositories.
+keywords:
+  - git repository
+  - github
+  - version control
+  - private repo
+  - source code repository
+  - file indexing
 ---
 
 Provides access to [Git](https://git-scm.com/) repository as [file share](files.md). Works with any Git repository.

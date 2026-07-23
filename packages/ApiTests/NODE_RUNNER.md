@@ -37,10 +37,17 @@ npm run stress-node
 
 | Script | What it does | Server? |
 |--------|--------------|---------|
-| `start-node` | Run the dapi suite once | yes |
-| `stress-node` | Run the suite repeatedly at increasing concurrency (`--concurrencyRange=10-100 --step=5`) | yes |
+| `start-node` | Run all UI-independent suites once (`--mode functional`, the default) | yes |
+| `stress-node` | Run the stressTest-marked suite repeatedly at increasing concurrency (`--mode stress --concurrencyRange=10-100 --step=5`) | yes |
+
+The runner loads the UI-independent category folders (`nodeTestDirs` in
+`package-test-node.ts`): `dapi`, `dataframe`, `functions`, `bitset`, `valuematcher`,
+`property`, `stats`, `shell`. `grid/`, `widgets/`, `ai/`, `packages/`, `utils/` stay
+browser-only. A test file that fails to load is reported and skipped — it doesn't
+abort the run (but fails the exit code).
 
 CLI flags (see `parseArgs` in `package-test-node.ts`): `--apiUrl`, `--devKey` (required),
+`--mode functional|stress` (default `functional`; `stress` = only stressTest-marked tests),
 `-c/--categories`, `--concurrentRuns`, `--concurrencyRange "1-10"`, `--step`, `-l/--loop`.
 
 Results are written to `test-report.csv` (gitignored), **overwritten on every run**.
@@ -82,8 +89,11 @@ few adjustments let Node load the same sources unchanged:
   transitively load the entire browser suite (which would run import-time browser/Dart side
   effects such as `cache.ts`'s top-level `grok.functions.register`).
 
-## Known failures under Node
+## UI degradation under Node
 
-A handful of tests depend on Dart-client features the Node client doesn't expose (e.g.
-`grok.shell.user` → `grok_User`, `grok.dapi.groups.currentUserGroups`). These are reported as
-failures rather than hidden — they are genuine Node-client gaps, not runner problems.
+The former known failures (`grok.shell.user`, `grok.dapi.groups.currentUserGroups`) are fixed —
+the Node Dart bundle now registers `grok_User`, shell vars, custom events, and client build info.
+Remaining browser-only APIs degrade gracefully: notifications (`grok.shell.info/warning/error`)
+log to the console, DOM builders return inert elements, and Dart-backed UI (views, dialogs,
+viewers, grid) throws a descriptive `DGNotSupportedError`. Tests that need them carry
+`skipReason: 'NodeJS environment'`.

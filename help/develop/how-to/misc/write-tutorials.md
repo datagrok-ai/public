@@ -1,5 +1,13 @@
 ---
 title: "Write tutorials"
+description: Write an interactive Tutorial subclass with steps and register it under a track for the Tutorials app.
+keywords:
+  - Tutorial class
+  - tutorial track
+  - meta.track
+  - interactive hints
+  - registerTutorial
+  - "@datagrok-libraries/tutorials"
 ---
 
 ## Definition

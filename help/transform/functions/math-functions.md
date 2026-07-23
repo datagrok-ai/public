@@ -1,5 +1,12 @@
 ---
 title: "Math functions"
+description: Reference for math, trigonometric, and logical functions available in Datagrok formulas.
+keywords:
+  - math functions reference
+  - trigonometric functions
+  - logical functions
+  - rounding functions
+  - formula math operators
 ---
 
 This type of function includes math, trigonometric, and logic functions.

@@ -1,5 +1,12 @@
 ---
 title: "Sankey"
+description: Visualize flow and proportional relationships between categories using directed, width-scaled arrows.
+keywords:
+  - flow diagram
+  - sankey diagram
+  - source target flow
+  - energy flow visualization
+  - material transfer
 ---
 A Sankey plot is a type of flow diagram that visualizes the distribution and
 proportional relationships between different categories within a dataset. It uses

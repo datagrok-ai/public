@@ -1,5 +1,13 @@
 ---
 title: "Deployment"
+description: Overview of Datagrok's Docker-based components and the deployment paths available for AWS, GCP, and Kubernetes.
+keywords:
+  - deployment paths
+  - docker containers
+  - kubernetes helm chart
+  - aws cloudformation
+  - grok_spawner
+  - grok_connect
 ---
 
 Datagrok runs as a set of Docker containers on top of a PostgreSQL metadata database and

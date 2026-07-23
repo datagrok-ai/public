@@ -1,6 +1,14 @@
 ---
 title: "Server configuration"
 sidebar_position: 13
+description: Reference for GROK_MODE and GROK_PARAMETERS environment variables that configure the Datlas server.
+keywords:
+  - grok_parameters
+  - grok_mode
+  - environment variable overrides
+  - queue settings
+  - docker settings
+  - connectors settings
 ---
 
 Datagrok supports several deployment schemas which can be configured using `GROK_MODE` and `GROK_PARAMETERS` environment variables.

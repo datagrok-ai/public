@@ -33,11 +33,7 @@ import {
   getRole, getTags, getPackageName, getFuncDisplayName, getFuncQualifiedName, safeGet,
 } from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
-import {EXCLUDED_FUNC_NQNAMES} from './excluded-funcs';
-
-/** Scalar property types — a function whose inputs AND outputs are *only* these
- *  is pure scalar plumbing (math/string helpers), not a data-flow step → hidden. */
-const PRIMITIVE_TYPES = new Set<string>(['string', 'int', 'double', 'bool', 'dynamic', 'num']);
+import {INCLUDED_FUNC_NQNAMES} from './included-funcs';
 
 export interface FuncInfo {
   func: DG.Func;
@@ -94,113 +90,39 @@ function register(name: string, factory: Factory): void {
   FACTORIES.set(name, factory);
 }
 
-/** Roles/tags that mark a function as platform/UI machinery rather than a
- *  pipeline step. A function declares these either as its `role`
- *  (`func.options.role`) OR — very commonly — as a **tag**: panel / widgets /
- *  moleculeSketcher / folderViewer / Internal / … are almost always stored as
- *  tags, not in the role field, so `shouldExcludeFunc` checks BOTH,
- *  case-insensitively. This is the single biggest declutter lever: without the
- *  tag check, every package's context-panel and widget functions leaked into
- *  the toolbox. */
-export const EXCLUDED_ROLES: string[] = [
-  DG.FUNC_TYPES.APP, 'aiSearchProvider', 'antibodyNumbering', 'appTreeBrowser', 'canonicalizer',
-  DG.FUNC_TYPES.CELL_RENDERER, 'dashboard', DG.FUNC_TYPES.FILE_VIEWER, DG.FUNC_TYPES.FILE_IMPORTER,
-  DG.FUNC_TYPES.FILE_EXPORTER, DG.FUNC_TYPES.FILTER, DG.FUNC_TYPES.FOLDER_VIEWER, DG.FUNC_TYPES.MOLECULE_SKETCHER,
-  'notationProviderConstructor', 'notationRefiner', 'packageSettingsEditor', 'searchProvider', 'semTypeDetector',
-  'semValueExtractor', 'valueEditor', 'editor', 'cellEditor', 'panel', 'widgets', 'tooltip',
-];
-
-/** Tags that mark UI/platform machinery, matched case-insensitively against a
- *  function's tags (panels/sketchers/renderers/… usually declare their kind as
- *  a *tag*, not in the role field — checking tags is the biggest declutter
- *  lever). **Deliberately excludes `panel` / `widget` / `widgets` / `tooltip`:**
- *  functions that produce a widget (including context panels) are usable in Flow
- *  now — they flow to the Widgets pane and can be previewed. `filter` is handled
- *  by the filter-DSL output rule instead. `Viewers`-tagged core charts are
- *  dropped (the Viewers pane covers them). */
-const EXCLUDED_TAGS = new Set<string>([
-  'app', 'aisearchprovider', 'antibodynumbering', 'apptreebrowser', 'canonicalizer',
-  'cellrenderer', 'dashboard', 'fileviewer', 'fileexporter', 'file-handler', 'filehandler',
-  'folderviewer', 'moleculesketcher', 'notationproviderconstructor', 'notationrefiner',
-  'packagesettingseditor', 'searchprovider', 'semtypedetector', 'semvalueextractor',
-  'valueeditor', 'editor', 'celleditor', 'internal', '@editors', 'viewers', 'design',
+/** Dev/test packages whose *queries* would otherwise flood the Queries pane —
+ *  queries are included by kind, and Dbtests alone ships ~290 test queries. */
+const DEV_TEST_PACKAGES = new Set<string>([
+  'Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis',
 ]);
 
-/** Output property types that are internal filter-DSL builder calls (produced
- *  only to feed Aggregate/Filter machinery) — never a wireable pipeline value. */
-const FILTER_CALL_OUTPUT_TYPES = new Set<string>(['tablerowfiltercall', 'colfiltercall']);
-
-/** Whole packages that are dev / test / internal-telemetry only — never useful
- *  in a user-facing flow. (Empirically the largest source of catalog noise:
- *  Dbtests ~287, UsageAnalysis ~132, ApiTests ~36, … — see docs/func-catalog-snapshot.md.) */
-export const EXCLUDED_PACKAGES: string[] = [
-  'Dbtests', 'ApiTests', 'UiTests', 'DevTools', 'Tutorials', 'ApiSamples', 'UsageAnalysis',
-];
-
-/** A function is excluded when it is test scaffolding, lives in a dev/test
- *  package, carries an excluded role/tag, or is a command/dialog wrapper that
- *  takes a `funccall` (e.g. CmdAggregate, addNewColumnDialog) rather than data. */
-function shouldExcludeFunc(func: DG.Func, role: string | null, tags: string[], pkgName: string): boolean {
-  // Explicit author opt-out: `meta.includeInFlow: false` on the function
-  // (meta.* surfaces as func.options; the value may arrive as a string).
+/** Allowlist-based inclusion — the opposite of the old deny pipeline. A
+ *  function enters the Flow catalog only when:
+ *   - it declares **`meta.includeInFlow: true`** (the author opt-in — meta.*
+ *     surfaces as `func.options`; the value may arrive as a string), or
+ *   - it is a **saved flow** (`isWorkflowFunc`) or a **query**
+ *     (`DG.DataQuery`, except from a dev/test package) — user artifacts that
+ *     can't be enumerated statically (own toolbox panes: Workflows section /
+ *     per-connection Queries pane), or
+ *   - its `nqName` is in [`INCLUDED_FUNC_NQNAMES`](./included-funcs.ts) — the
+ *     curated include list, frozen from the catalog the old filters produced.
+ *  `meta.includeInFlow: false` opts out unconditionally (wins over the list).
+ *  Everything else — dev/test packages, panels, sketchers, dialog wrappers,
+ *  scalar helpers — is simply *not on the list*. */
+export function shouldIncludeFunc(func: DG.Func): boolean {
   try {
     const include = safeGet(func.options, 'includeInFlow');
-    if (include === false || String(include).toLowerCase() === 'false') return true;
+    if (include === false || String(include).toLowerCase() === 'false') return false;
+    if (include === true || String(include).toLowerCase() === 'true') return true;
   } catch {/* options can throw on odd Dart proxies — fall through */}
 
-  if (pkgName && EXCLUDED_PACKAGES.includes(pkgName)) return true;
+  if (isWorkflowFunc(func)) return true;
+  if (func instanceof DG.DataQuery)
+    return !DEV_TEST_PACKAGES.has(getPackageName(func));
 
-  // Curated denylist of individually-assessed, non-pipeline functions (helpers,
-  // internal twins, demo/test, plumbing) — keyed by namespace-qualified name.
   try {
-    if (EXCLUDED_FUNC_NQNAMES.has(func.nqName)) return true;
-  } catch {/* nqName can throw on odd Dart proxies — fall through */}
-
-  // Test scaffolding by name (TestData, testFunction, Pkg:test, …).
-  const nm = (func.name || '').toLowerCase();
-  if (nm === 'test' || nm.startsWith('test')) return true;
-
-  // UI-extension roles (comma-split, exact match).
-  if (role) {
-    for (const r of role.split(',').map((s) => s.trim()))
-      if (r && EXCLUDED_ROLES.includes(r)) return true;
-  }
-  // UI/platform-machinery tags (moleculeSketcher, Internal, Viewers, …) —
-  // case-insensitive. Widget/panel/tooltip tags are intentionally NOT here.
-  if (tags.some((t) => EXCLUDED_TAGS.has(t.trim().toLowerCase()))) return true;
-
-  // Command / dialog wrappers operate on a FuncCall, not on data.
-  try {
-    if (func.inputs.some((p) => String(p.propertyType) === 'funccall')) return true;
-  } catch {/* ignore introspection failures */}
-
-  // Right-click / context actions take a `semantic_value` (the cell's value) and
-  // just mutate the UI or clipboard — not a pipeline step.
-  try {
-    if (func.inputs.some((p) => String(p.propertyType) === 'semantic_value')) return true;
-  } catch {/* ignore introspection failures */}
-
-  // Functions that produce a *view* (a whole TableView/ViewBase, not a viewer
-  // widget) can't be previewed or composed in a flow — drop them.
-  // Viewer-producing functions are likewise dropped: they need a TableView
-  // lifecycle and are replaced by the manual viewer nodes (the Viewers pane).
-  // Filter-DSL builder outputs (tablerowfiltercall / colfiltercall) exist only
-  // to feed Aggregate/Filter internals — likewise not wireable.
-  try {
-    if (func.outputs.some((p) => {
-      const t = String(p.propertyType);
-      return t === 'view' || t === 'viewer' || FILTER_CALL_OUTPUT_TYPES.has(t);
-    })) return true;
-  } catch {/* ignore introspection failures */}
-
-  // Primitive-only helpers: every input AND output is a scalar (string / number /
-  // bool / dynamic) — not a data-flow step. Hidden to cut catalog noise.
-  try {
-    const allPrim = (props: DG.Property[]): boolean =>
-      props.every((p) => PRIMITIVE_TYPES.has(String(p.propertyType)));
-    if (allPrim(func.inputs) && allPrim(func.outputs)) return true;
-  } catch {/* ignore introspection failures */}
-
+    return INCLUDED_FUNC_NQNAMES.has(func.nqName);
+  } catch {/* nqName can throw on odd Dart proxies */}
   return false;
 }
 
@@ -314,10 +236,10 @@ export function registerAllFunctions(): FuncInfo[] {
   for (const func of allFuncs) {
     try {
       if (func.inputs.length === 0 && func.outputs.length === 0) continue;
+      if (!shouldIncludeFunc(func)) continue;
       const role = getRole(func);
       const tags = getTags(func);
       const pkgName = getPackageName(func);
-      if (shouldExcludeFunc(func, role, tags, pkgName)) continue;
 
       const category = role || 'Uncategorized';
 
@@ -375,7 +297,7 @@ export function ensureFunctionsRegistered(): void {
 }
 
 /** Node type name for a DG.Func, registering a factory on the fly when the
- *  function is not in the catalog (e.g. its role is excluded). Used by the
+ *  function is not in the catalog (i.e. not on the include list). Used by the
  *  creation-script importer, where parsed funcs must always yield a node —
  *  and a `dgTypeName` the serializer can persist. Matching is by qualified
  *  name, so a freshly parsed Dart instance finds its registered twin. */
@@ -458,7 +380,7 @@ export function getRegisteredTypeNames(): string[] {
  *  important for the suggestion menu where we may probe hundreds of factories. */
 const _sampleInputTypesCache = new Map<string, string[]>();
 
-function getInputTypesForType(typeName: string): string[] {
+export function getInputTypesForType(typeName: string): string[] {
   let cached = _sampleInputTypesCache.get(typeName);
   if (cached !== undefined) return cached;
   const factory = FACTORIES.get(typeName);
@@ -480,7 +402,7 @@ function getInputTypesForType(typeName: string): string[] {
  *  `getInputTypesForType`. */
 const _sampleOutputTypesCache = new Map<string, {real: string[]; passthrough: string[]}>();
 
-function getOutputTypesForType(typeName: string): {real: string[]; passthrough: string[]} {
+export function getOutputTypesForType(typeName: string): {real: string[]; passthrough: string[]} {
   let cached = _sampleOutputTypesCache.get(typeName);
   if (cached !== undefined) return cached;
   const factory = FACTORIES.get(typeName);

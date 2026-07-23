@@ -39,6 +39,15 @@ export function usageAnalysisApp(path?: string, date?: string, groups?: string, 
   return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
 }
 
+//name: Release
+//input: string path { optional: true; meta.url: true }
+//output: view result
+//meta.role: adminApp,app
+//meta.url: /release
+export function releaseDashboardApp(path?: string) : any {
+  return PackageFunctions.releaseDashboardApp(path);
+}
+
 //input: column<string> ticketColumn 
 //input: column<string> resultColumn 
 //meta.vectorFunc: true

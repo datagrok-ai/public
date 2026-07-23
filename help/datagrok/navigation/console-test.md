@@ -1,7 +1,17 @@
+---
+title: "Tests: console"
+description: Test scenarios for verifying console command execution, macro recording, and autocomplete behavior.
+keywords:
+  - console tests
+  - test scenarios
+  - macro recording
+  - command console
+  - script browser
+  - autocomplete
+---
+
 <!-- TITLE: Tests: Console -->
 <!-- SUBTITLE: -->
-
-# Tests: console
 
 [Console](../navigation/panels/panels.md#console) is used to execute commands and record macros.
 

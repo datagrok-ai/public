@@ -2,6 +2,16 @@
 mdx:
   format: mdx
 title: "Filters"
+description: Use the filter panel to quickly narrow down, select, and visually assess column values across data types.
+keywords:
+  - filter panel
+  - categorical filter
+  - numerical range filter
+  - structure filter
+  - scaffold tree filter
+  - hierarchical filter
+  - expression filter
+  - text search filter
 ---
 
 ```mdx-code-block
@@ -55,12 +65,12 @@ To restrict selection to one category at a time, switch to **Radio** mode: click
 Numerical filter displays a histogram of value distribution with a range slider underneath. Use the range slider to filter rows by value range.
 
 The filter menu provides the following options:
-  * **Reset**: Restores the range to its full extent.
-  * **Histogram**: shows or hides the histogram.
-  * **Slider**: shows or hides the range slider handles.
-  * **Min / max**: shows or hides the min and max value input fields for precise
+* **Reset**: Restores the range to its full extent.
+* **Histogram**: shows or hides the histogram.
+* **Slider**: shows or hides the range slider handles.
+* **Min / max**: shows or hides the min and max value input fields for precise
     range entry.
-  * **Missing values**: controls how missing values are handled 
+* **Missing values**: controls how missing values are handled 
   (keep, exclude, or show only missing values).
 
 ### Switch to categorical filter
@@ -319,6 +329,6 @@ See also:
 * [Table View](../table-view-1.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)
 * Community:
-    * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
-    * [Filters updates](https://community.datagrok.ai/t/filters-updates/603)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+  * [Filters updates](https://community.datagrok.ai/t/filters-updates/603)
 

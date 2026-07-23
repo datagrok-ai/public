@@ -1,6 +1,13 @@
 ---
 title: "Compare tables"
 
+description: Compare two tables on key columns and view added, removed, and changed values in a color-coded diff.
+keywords:
+  - compare tables
+  - table diff
+  - data comparison
+  - detect changed rows
+  - reconcile datasets
 ---
 
 Compares the content of two tables.

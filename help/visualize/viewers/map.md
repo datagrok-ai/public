@@ -1,5 +1,14 @@
 ---
 title: "Map viewer"
+description: Show geospatial data as markers or a heat map, with support for geojson, topojson, kml, and kmz files.
+keywords:
+  - geospatial map
+  - marker map
+  - heat map overlay
+  - geojson
+  - kml
+  - color coding
+  - size coding
 ---
 
 Map viewer shows geospatial data on a map as either markers, or a heat map.
@@ -55,12 +64,6 @@ The system provides interaction with files of the following extensions:
 | Add a point to selection                | Shift+Click the point                   |
 | Select multiple points                    | Ctrl+Mouse Drag                       |
 
-## See also
-
-* [Viewers](../viewers/viewers.md)
-* [Globe](globe.md)
-* [Community: Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
-
 ## Properties
 
 | Property | Type | Description |
@@ -73,7 +76,7 @@ The system provides interaction with files of the following extensions:
 | Show Color Selector | boolean |  |
 | Allow Pan Zoom | boolean |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |

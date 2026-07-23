@@ -6,7 +6,7 @@ and MDX (`.mdx`). The Docusaurus config lives in `../docusaurus/`, not here.
 ## Purpose
 
 This documentation serves multiple purposes:
-1. Online help: https://datagrok.ai/help/datagrok/
+1. Online help: <https://datagrok.ai/help/datagrok/>
 2. In-application [Context Help](datagrok/navigation/panels/panels.md#context-help)
 3. A resource for answering user questions using AI.
 

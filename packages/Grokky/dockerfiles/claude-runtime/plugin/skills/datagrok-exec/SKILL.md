@@ -10,8 +10,8 @@ Regular markdown code blocks do NOT execute.
 
 Call `datagrok_exec` to *perform* an action the user asked for (add a viewer, filter,
 open a file, run a function). For informational questions — "how do I…", "what
-is…", "explain…", "can you…" — do not call `datagrok_exec`; look the answer up in the
-documentation under `workspace/help/` first, then answer in plain text.
+is…", "explain…", "can you…" — do not call `datagrok_exec`; find the page via
+`workspace/help/INDEX.md`, read it, use it to find needed material, then answer in plain text.
 
 ## Globals available inside the code
 
@@ -27,7 +27,7 @@ The code runs in an async IIFE, so `await` works directly.
 
 ## Tool result
 
-The tool returns `{success, returnValue?, error?}`.
+The tool returns `{success, returnValue?, verified?, error?}`.
 
 **`success` only means the JS did not throw — NOT that the intended effect happened.** A typo'd
 viewer name, a no-op, or an action that ran twice all return `success: true`. `returnValue` is
@@ -49,19 +49,22 @@ code `return` a plain confirmation object so the user sees accurate details:
 
 **Never pre-announce** success before calling the tool.
 
-## Verifying actions — required after every action
+## Verifying actions — required with every action
 
-Proof does not come from your own action code — it comes from **re-reading live state in a separate
-call**. After any action (`datagrok_exec` that changed something, or any MCP call that changed
-platform state), call the **`datagrok_verify`** tool before reporting success. It runs your assertion in a
-fresh scope (globals `grok`, `ui`, `DG`, `view`, `t`) that **cannot see your action's
-variables**, so it can only pass by re-deriving from the real platform state.
+Proof does not come from your own action code — it comes from **re-reading live state in a fresh
+scope**. For any state-changing `datagrok_exec`, pass the **`verify`** parameter with the call:
+`{assertion, description}`. The browser runs your action code, then immediately runs the assertion
+in a fresh scope (globals `grok`, `ui`, `DG`, `view`, `t`) that **cannot see your action's
+variables**, and returns its result as `verified: {passed, observed?}` — one round-trip, no
+separate verify call needed.
 
 The assertion is yours to design for whatever you changed: re-read that thing and `return` the
 observed result (truthy = verified).
-`{passed: true}` → report the observed value, not the value you intended. `{passed: false}` → the
-action did NOT work; fix it and verify again — do not report success. The runtime blocks the turn
-from ending until a verify passes (bounded retries — if they run out, the response is shown to the
+`verified.passed: true` → report the observed value, not the value you intended.
+`verified.passed: false` (or missing) → the action is NOT confirmed; fix it and verify — the
+standalone **`datagrok_verify`** tool exists for that fix-loop and for MCP calls that changed
+platform state (it takes the same `{assertion, description}`). The runtime blocks the turn from
+ending until a verification passes (bounded retries — if they run out, the response is shown to the
 user flagged as **unverified**, so never present unverified work as done).
 
 ## Returning a result to the chat

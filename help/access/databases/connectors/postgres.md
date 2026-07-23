@@ -1,5 +1,14 @@
 ---
 title: "Postgres"
+description: Connect Datagrok to a PostgreSQL database using SQL queries via a JDBC driver.
+keywords:
+  - postgres
+  - postgresql
+  - jdbc driver
+  - connect to a database
+  - schema browsing
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to [PostgreSQL](https://www.postgresql.org/) database using SQL queries via a JDBC driver.

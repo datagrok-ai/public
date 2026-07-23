@@ -1,5 +1,13 @@
 ---
 title: "Categorize data"
+description: Assign categories to rows by matching patterns against column values, with color coding and matrix output.
+keywords:
+  - categorize data
+  - pattern matching classification
+  - bin numerical column
+  - assign categories
+  - color code rows
+  - classify rows by pattern
 ---
 
 Evaluate multiple patterns against the dataset, and assign categories to the rows, based on the conditions (patterns).

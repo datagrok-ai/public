@@ -1,5 +1,15 @@
 ---
 title: "Impala"
+description: Connect Datagrok to the Apache Impala query engine using SQL over JDBC, with schema browsing and joins.
+keywords:
+  - apache impala
+  - impala query engine
+  - impala jdbc driver
+  - connect to impala
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - connection test
 ---
 
 Provides access to [Impala](https://impala.apache.org/) query engine via a JDBC driver.

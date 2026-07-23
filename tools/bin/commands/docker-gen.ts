@@ -6,7 +6,7 @@ export async function dockerGen(args: any) {
   const packageDir = process.cwd();
 
   const generated = generateCeleryArtifacts(packageDir);
-  if (generated)
+  if (generated.length)
     color.success('Generated Celery Docker artifacts');
   else
     console.log('No python/ directory with annotated functions found');

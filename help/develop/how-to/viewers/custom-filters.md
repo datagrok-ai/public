@@ -1,5 +1,12 @@
 ---
 title: "Develop custom filters"
+description: Extend DG.Filter to create and register a custom column filter for the filter panel.
+keywords:
+  - DG.Filter
+  - filter role
+  - grok.decorators.filter
+  - custom filter panel
+  - radio button filter
 ---
 
 Developers can extend Datagrok with custom filters. This could be done by defining a class that extends

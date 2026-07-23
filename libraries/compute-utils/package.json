@@ -12,6 +12,7 @@
     "@datagrok-libraries/utils": "^4.7.0",
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/uuid": "^10.0.0",
+    "@types/wu": "^2.1.44",
     "apache-arrow": "^21.0.0",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.27.0",
@@ -33,7 +34,6 @@
   "devDependencies": {
     "@datagrok-libraries/codegen-async-to-sync": "^0.1.0",
     "@types/lodash.isequal": "^4.5.8",
-    "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",
     "datagrok-tools": "^5.1.9",

@@ -1,4 +1,15 @@
-# Caching function results
+---
+title: "Caching function results"
+description: Enable client-side and server-side caching of Datagrok function results to speed up repeated calls.
+keywords:
+  - meta.cache
+  - client-side cache
+  - server-side cache
+  - IndexedDB cache
+  - cache invalidation
+  - cacheResults connection
+  - cache queries and scripts
+---
 
 Caching is a process that stores multiple copies of data or files in a temporary storage location so that future requests for that data are served up faster than accessing the original source. 
 Datagrok can cache the results of [functions](../../../datagrok/concepts/functions/functions.md) on both client and server sides. This feature can drastically enhance the user experience and increase network efficiency.

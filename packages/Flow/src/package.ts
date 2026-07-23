@@ -7,8 +7,10 @@ export * from './package.g';
 
 import {FuncFlowView} from './funcflow-view';
 import {FlowEntityHandler} from './entity/flow-entity-handler';
-import {parseFlowBody} from './serialization/flow-script-format';
+import {parseFlowBody, FLOW_LANGUAGE} from './serialization/flow-script-format';
 import { getFilesBrowser } from './utils/files-browser-tree';
+import {readUploadedFileBytes, parseFileToDataFrame, syncFlowFilePermissions} from './utils/uploaded-files';
+import * as aiTools from './ai-tools';
 
 export const _package = new DG.Package();
 
@@ -36,6 +38,43 @@ export function info() {
 //meta.includeInFlow: false
 export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> {
   await FlowEntityHandler.instance.run(scriptCall);
+}
+
+/* The node behind local-file uploads: dropping a file onto the canvas stores
+ * its bytes (in memory until the flow is saved, then in the server's
+ * GUID-addressed file store) and adds this function as a node, so the flow
+ * replays and shares like any other. See utils/uploaded-files.ts. */
+//name: readUploadedFile
+//friendlyName: Uploaded File
+//description: Reads a file uploaded into a flow and parses it into a table
+//input: string fileId
+//input: string fileName
+//output: dataframe result
+//meta.includeInFlow: true
+export async function readUploadedFile(fileId: string, fileName: string): Promise<DG.DataFrame> {
+  const bytes = await readUploadedFileBytes(fileId, fileName);
+  return parseFileToDataFrame(fileName, bytes);
+}
+
+/* Runs at platform startup (not just when a Flow view is open): sharing a flow
+ * script from anywhere — Browse, a link, the context panel — must extend read
+ * access to the uploaded-file blobs its nodes reference. */
+//name: flowShareSync
+//tags: autostart
+//description: Keeps uploaded-file permissions in sync when a flow script is shared
+//meta.includeInFlow: false
+export function flowShareSync(): void {
+  grok.events.onEntityShared.subscribe((e) => {
+    if (e instanceof DG.Script && (e.language as string) === FLOW_LANGUAGE)
+      void syncSharedFlow(e.id);
+  });
+}
+
+/** The shared entity from the dialog can be shallow — re-fetch for the body. */
+async function syncSharedFlow(id: string): Promise<void> {
+  const script = await grok.dapi.scripts.find(id).catch(() => null);
+  if (script?.script)
+    await syncFlowFilePermissions(script);
 }
 
 export class PackageFunctions {
@@ -144,6 +183,88 @@ export class PackageFunctions {
   static flowScriptWidget(
     @grok.decorators.param({type: 'script'}) script: DG.Script): DG.Widget {
     return FlowEntityHandler.instance.widget(script);
+  }
+
+  // ---------- Flow view functions (AI) ----------
+  // Returned by FuncFlowView.getFunctions() (found by the 'flowViewFunction' tag) so the
+  // AI assistant can act on the open editor. Each takes the generic current view and
+  // reaches the FuncFlowView instance through `view.jsView`; `includeInFlow: false`
+  // keeps them out of Flow's own node catalog.
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'List the current flow graph: all nodes (id, label, type, status, set input values) and connections. Call this first to understand what is on the canvas'})
+  static listFlowNodes(@grok.decorators.param({type: 'view'}) view: any): any {
+    return aiTools.listFlowNodes(view);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Ports (with DG types), editable input values, unmet requirements, and last-run outputs of one node'})
+  static getFlowNodeDetails(@grok.decorators.param({type: 'view'}) view: any, nodeId: string): any {
+    return aiTools.getFlowNodeDetails(view, nodeId);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Search the flow node catalog (a curated subset of platform functions plus input/output/utility nodes). ALWAYS filter: pass a query with what the node should do (e.g. "join tables", "open file"), and/or a DG type it must accept or produce (dataframe, column, string, ...). Returns at most limit (default 15) matches with their input/output types'})
+  static findFlowNodeTypes(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Words describing what the node does'}}) query?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'DG type one of its inputs must accept'}}) acceptsInputType?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'DG type one of its outputs must produce'}}) producesOutputType?: string,
+    @grok.decorators.param({type: 'int', options: {optional: true}}) limit?: number): any {
+    return aiTools.findFlowNodeTypes(view, query, acceptsInputType, producesOutputType, limit);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Add a node to the canvas by its registered typeName (from findFlowNodeTypes). Optionally set editable input values right away. Returns the new node id and its ports'})
+  static async addFlowNode(
+    @grok.decorators.param({type: 'view'}) view: any,
+    typeName: string,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Optional custom title'}}) label?: string,
+    @grok.decorators.param({type: 'map', options: {optional: true, description: 'Editable primitive inputs, key to value'}}) inputValues?: object): Promise<any> {
+    return aiTools.addFlowNode(view, typeName, label, inputValues);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Connect a source node output to a target node input (port keys from getFlowNodeDetails / addFlowNode). Types must be compatible'})
+  static async connectFlowNodes(
+    @grok.decorators.param({type: 'view'}) view: any,
+    sourceNodeId: string, sourceOutput: string, targetNodeId: string, targetInput: string): Promise<any> {
+    return aiTools.connectFlowNodes(view, sourceNodeId, sourceOutput, targetNodeId, targetInput);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Set editable input values of a node (key to value; keys from getFlowNodeDetails). Marks the node and its downstream stale'})
+  static async setFlowNodeInputs(
+    @grok.decorators.param({type: 'view'}) view: any,
+    nodeId: string,
+    @grok.decorators.param({type: 'map'}) values: object): Promise<any> {
+    return aiTools.setFlowNodeInputs(view, nodeId, values);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Select a node on the canvas so the user sees it (opens its properties panel)'})
+  static async selectFlowNode(@grok.decorators.param({type: 'view'}) view: any, nodeId: string): Promise<any> {
+    return aiTools.selectFlowNode(view, nodeId);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'List Flow built-in interactive guides: step-by-step tutorials and short "how do I" walkthroughs that highlight the actual UI. When the user asks how to do something in Flow, check here first — a matching guide beats a textual explanation'})
+  static listFlowGuides(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {optional: true, description: 'Words to filter by'}}) query?: string): any {
+    return aiTools.listFlowGuides(view, query);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Start an interactive guide (id from listFlowGuides) — it highlights the real UI step by step and waits for the user to act. ALWAYS confirm with the user first before starting one; never launch it unasked'})
+  static startFlowGuide(@grok.decorators.param({type: 'view'}) view: any, guideId: string): any {
+    return aiTools.startFlowGuide(view, guideId);
+  }
+
+  @grok.decorators.func({tags: ['flowViewFunction'], meta: {includeInFlow: 'false'},
+    description: 'Validate and execute the whole flow. Returns validation problems instead of running if the graph is invalid; otherwise waits for the run and reports per-node failures'})
+  static async runFlow(@grok.decorators.param({type: 'view'}) view: any): Promise<any> {
+    return aiTools.runFlow(view);
   }
 
   /** `.flow` exports sitting in file shares open in the editor too. */

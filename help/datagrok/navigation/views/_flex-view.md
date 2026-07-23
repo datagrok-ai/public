@@ -1,6 +1,14 @@
 ---
 title: "Flex View"
 sidebar_position: 6
+description: Flex View lets you combine data, viewers, and statistics from multiple tables into a single markup-based dashboard summary.
+keywords:
+  - dashboard summary
+  - markup view
+  - drag-and-drop viewers
+  - view links
+  - table summary
+  - custom layout
 ---
 
 Use this view to reference data, viewers, summary statistics, and other things from disparate tables. This view is a

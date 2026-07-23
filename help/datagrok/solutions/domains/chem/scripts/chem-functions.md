@@ -1,6 +1,15 @@
 ---
 title: Chemical scripts
 unlisted: true
+description: Reference list of built-in cheminformatics scripts and functions, with performance benchmarks for large datasets.
+keywords:
+  - RDKit script functions
+  - chemical function reference
+  - descriptor calculation performance
+  - fingerprint calculation performance
+  - substructure search function
+  - MCS most common substructure
+  - two component reaction function
 ---
 
 ## Supported scripts

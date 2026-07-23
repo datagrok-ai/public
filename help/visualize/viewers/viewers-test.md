@@ -1,7 +1,12 @@
-<!-- TITLE: Tests: Viewers -->
-<!-- SUBTITLE: -->
-
-# Tests: Viewers
+---
+title: "Tests: Viewers"
+description: Common testing scenarios and categories applicable across all Datagrok viewers, illustrated with scatter plot.
+keywords:
+  - viewer testing
+  - test scenarios
+  - qa checklist
+  - scatter plot test
+---
 
 A [viewer](../viewers/viewers.md) is a visual component associated with a table.
 

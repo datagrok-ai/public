@@ -1,5 +1,13 @@
 ---
 title: "Biostructure viewer"
+description: View and analyze 3D macromolecule structures and docking results using the Molstar rendering engine.
+keywords:
+  - molstar
+  - 3d structure viewer
+  - protein structure
+  - docking results
+  - macromolecule visualization
+  - rcsb
 ---
 
 Biostructure viewer is used for visualizing and analyzing macromolecules.

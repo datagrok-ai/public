@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
-import {buildViewContext} from '../claude/exec-blocks';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
+import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, ChoiceOption} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
@@ -17,16 +17,7 @@ type AIPanelInputs = {
     prompt: string,
 }
 
-type DBAIPanelInputs = AIPanelInputs & {
-    catalogName: string,
-}
 
-export type ScriptingAIPanelInputs = AIPanelInputs & {
-  language: DG.ScriptingLanguage
-};
-
-
-type TVAIPanelInputs = AIPanelInputs;
 
 export interface AskUserOption {
   label: string;
@@ -163,6 +154,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
+  private _emptyStateSeq = 0;
   /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
@@ -245,8 +238,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
     this.wandButton = ui.iconFA('magic', async (e) => {
-      const scopes = await resolveScopes('panel', this.view);
-      showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
+      const scopes = await resolveScopes('panel', this.view ?? grok.shell.v);
+      showSuggestionsMenu(scopes, (s) => this.runSuggestion(s), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
     this.setWandVisible(true);
@@ -282,6 +275,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   mountInto(parent: HTMLElement) {
     parent.appendChild(this.root);
   }
+
+  get contextView(): DG.View | DG.ViewBase { return this.view; }
+  setContextView(view: DG.View | DG.ViewBase): void { this.view = view; }
 
   activate(focus: boolean = false): void {
     this.renderEmptyState();
@@ -433,6 +429,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }, loader?: HTMLElement
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
+    this.removeChoiceBlocks();
     const emptyState = this.outputArea.querySelector('.grokky-empty-state');
     if (emptyState) {
       emptyState.remove();
@@ -570,6 +567,46 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.showContentIcons();
   }
 
+  /** Removes any pending inline choice blocks — they're transient and shouldn't linger once
+   * the user moves on (submits a prompt, gets a new message, or opens another picker). */
+  private removeChoiceBlocks(): void {
+    const blocks = this.outputArea.querySelectorAll('.grokky-choice-container');
+    for (let i = 0; i < blocks.length; i++)
+      blocks[i].remove();
+  }
+
+  /** Renders an inline choice block that reads like an assistant reply (used by suggestion actions).
+   * Picking an option removes the block; the option's handler adds its own follow-up message. */
+  public addChoice(prompt: string | null, options: ChoiceOption[]): void {
+    const emptyState = this.outputArea.querySelector('.grokky-empty-state');
+    if (emptyState) {
+      emptyState.remove();
+      this.setWandVisible(true);
+    }
+    this.removeChoiceBlocks();
+    const container = ui.divV([], 'd4-ai-assistant-response-container grokky-choice-container');
+    const cards = options.map((o) => {
+      const card = ui.div(ui.divText(o.label), 'grokky-choice-card');
+      card.onclick = () => {
+        container.remove();
+        o.onSelect();
+      };
+      return card;
+    });
+    const children: HTMLElement[] = [];
+    if (prompt)
+      children.push(this.createStyledMarkdown(prompt));
+    children.push(ui.divH(cards, 'grokky-choice-row'));
+    container.appendChild(ui.divV(children, 'grokky-choice-block'));
+    this.outputArea.appendChild(container);
+    this.showContentIcons();
+  }
+
+  /** Appends a short assistant-style note (e.g. an action's result confirmation) to the transcript. */
+  public addNote(markdown: string): void {
+    this.appendMessage('' as any, {title: '', content: markdown, fromUser: false, uiOnly: true});
+  }
+
   enableNoPrompt(): void {
     this._noPrompt = true;
     if (!this._rawRender) {
@@ -599,8 +636,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._streamingMarkdownEl = null;
   }
 
-  prependViewContext(prompt: string, view: DG.ViewBase): string {
-    const ctx = buildViewContext(view);
+  prependViewContext(prompt: string, _view: DG.ViewBase): string {
+    const ctx = buildWorkspaceContext();
     if (!ctx)
       return prompt;
     return ctx + '\n---\n\n' + prompt;
@@ -613,7 +650,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       pre.style.cssText = 'white-space:pre-wrap;user-select:text;margin:0';
       return pre;
     }
-    const md = ui.markdown(content);
+    const md = ui.markdown(normalizeMarkdownTables(content));
     dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
     return md;
   }
@@ -868,27 +905,50 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.renderEmptyState();
   }
 
-  protected runSuggestion(prompt: string): void {
-    this.textArea.value = prompt;
+  protected runSuggestion(s: Suggestion): void {
+    if (runSuggestionAction(s.action, this))
+      return;
+    // Ask-for-a-detail suggestions: post the question as the assistant's reply without calling the
+    // AI, and carry the task forward so the user's answer runs it with full context.
+    if (s.immediateResponse) {
+      this.appendMessage('' as any, {title: '', content: s.immediateResponse, fromUser: false, uiOnly: true});
+      if (s.prompt)
+        this.pushNativeContext(s.prompt);
+      this.textArea.focus();
+      return;
+    }
+    this.textArea.value = s.prompt ?? '';
     this.handleRun();
   }
 
+  /** The view the panel currently works against: the pinned one for owned panels, else the live current view. */
+  protected get liveView(): DG.View | DG.ViewBase | null {
+    return this.view ?? grok.shell.v;
+  }
+
   protected shouldShowEmptyState(): boolean {
-    return this.view instanceof DG.TableView &&
-      this._uiMessages.length === 0 &&
-      !this.outputArea.querySelector('.grokky-empty-state');
+    // Global suggestions (Anywhere, Code generation) apply on any view, so show the empty state
+    // and wand everywhere — not just on table views (view/column blocks self-add when applicable).
+    return this._uiMessages.length === 0;
   }
 
   private setWandVisible(visible: boolean): void {
-    this.wandButton.style.display = visible && this.view instanceof DG.TableView ? '' : 'none';
+    this.wandButton.style.display = visible ? '' : 'none';
   }
 
+  /** Rebuilds the suggestion cards for the current view; removes them when they no longer apply. */
   protected async renderEmptyState(): Promise<void> {
-    if (!this.shouldShowEmptyState())
+    const seq = ++this._emptyStateSeq;
+    const removeExisting = () => this.outputArea.querySelector('.grokky-empty-state')?.remove();
+    if (!this.shouldShowEmptyState()) {
+      removeExisting();
+      this.setWandVisible(true);
       return;
-    const scopes = await resolveScopes('panel', this.view);
-    if (!this.shouldShowEmptyState())
+    }
+    const scopes = await resolveScopes('panel', this.liveView);
+    if (seq !== this._emptyStateSeq || !this.shouldShowEmptyState())
       return;
+    removeExisting();
 
     const blocks = scopes.map((s) => {
       const icon = ui.iconFA(s.icon ?? 'circle');
@@ -897,8 +957,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         icon.classList.add(`grokky-scope-${s.key}`);
       const header = ui.h3(ui.span([icon, s.label]));
       const cards = s.suggestions.slice(0, 2).map((sg) => {
-        const card = ui.card(ui.divText(sg.label ?? sg.prompt));
-        card.onclick = () => this.runSuggestion(sg.prompt);
+        const card = ui.card(ui.divText(sg.label ?? sg.prompt ?? ''));
+        card.onclick = () => this.runSuggestion(sg);
         return card;
       });
       return ui.divV([header, ui.divH(cards)]);
@@ -1128,106 +1188,4 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
 function receiveFeedback(userPrompt: string, aiResponse: string, contextId: string, helpful: boolean) {
   // not implemented yet
-}
-
-
-export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
-  protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
-  protected catalogInput: DG.InputBase<string>;
-  private setAndRunFunc: (query: string) => void;
-
-  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase, setAndRunFunc: (query: string) => void) {
-    super(connectionID, view); // context ID is connection ID
-    this.setAndRunFunc = setAndRunFunc;
-    this.catalogInput = ui.input.choice('Catalog', {
-      items: catalogs,
-      value: defaultCatalog,
-      nullable: false,
-      tooltipText: 'Select the database catalog to use for AI-assisted query generation.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.catalogInput.input);
-    ui.tooltip.bind(this.catalogInput.input, 'Select the database catalog to use for AI-assisted query generation.');
-  }
-
-  public getCurrentInputs(): DBAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      catalogName: this.catalogInput.value!,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract SQL from fenced code blocks and inject into query editor
-    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
-    if (sqlMatch) {
-      const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
-      this.setAndRunFunc(sql);
-    }
-  }
-}
-
-export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
-  protected get placeHolder() { return 'Ask Claude about your data...'; }
-  protected tableView: DG.TableView;
-
-  constructor(view: DG.TableView) {
-    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view);
-    this.tableView = view;
-  }
-
-  protected getConversationMeta() {
-    return {viewState: this.tableView.saveLayout().viewState, sessionId: this.sessionId};
-  }
-
-  protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
-    if (conversation.meta?.sessionId)
-      (this as any)._sessionId = conversation.meta.sessionId;
-    const viewState = conversation.meta?.viewState ?? conversation.meta;
-    const currentViewers = Array.from(this.tableView.viewers);
-    if (!!viewState && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
-      const layout = DG.ViewLayout.fromViewState(viewState);
-      this.tableView.loadLayout(layout, true);
-    }
-  }
-}
-
-export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
-  protected get placeHolder() { return 'Ask AI to generate a script...'; }
-  protected languageInput: DG.InputBase<string>;
-
-  constructor(view: DG.View | DG.ViewBase) {
-    super('scripting-ai-panel', view); // context ID is fixed for scripting panel
-    this.languageInput = ui.input.choice('Language', {
-      items: Object.values(DG.SCRIPT_LANGUAGE),
-      value: DG.SCRIPT_LANGUAGE.JAVASCRIPT,
-      nullable: false,
-      tooltipText: 'Select scripting language for the generated script.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.languageInput.input);
-    ui.tooltip.bind(this.languageInput.input, 'Select scripting language for the generated script.');
-  }
-
-  public getCurrentInputs(): ScriptingAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      language: this.languageInput.value as DG.ScriptingLanguage,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract code from datagrok-exec blocks and set on the script editor
-    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
-    if (codeMatch) {
-      ui.setUpdateIndicator(this.view.root, true, 'Updating script...');
-      const indicator = this.view.root.querySelector('.d4-update-shadow') as HTMLElement;
-      if (indicator)
-        indicator.style.zIndex = '1000';
-      (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
-      ui.setUpdateIndicator(this.view.root, false);
-    }
-  }
 }

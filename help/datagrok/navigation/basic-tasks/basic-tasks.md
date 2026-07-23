@@ -1,5 +1,16 @@
 ---
 title: "Basic tasks"
+description: Learn how to import, save, share, download, and favorite data and files in Datagrok.
+keywords:
+  - import file
+  - open file
+  - save project
+  - save dashboard
+  - share entity
+  - download table
+  - export csv
+  - add to favorites
+  - data sync
 mdx:
   format: mdx
 ---
@@ -198,8 +209,8 @@ right-click the file and select the download option from its **Context Menu**.
 To add an entity to favorites, do any of the following:
 
 * Drag-and-drop in the [Browse](../views/browse.md) tree:
-    * Drag and drop the entity on the **Favorites** directory under **My stuff**.
-    * Click the **Favorites** directory under **My stuff**. This opens the
+  * Drag and drop the entity on the **Favorites** directory under **My stuff**.
+  * Click the **Favorites** directory under **My stuff**. This opens the
   **Favorites** view. Drag and drop the entity on the view.
 * Use the **Context Panel**
   1. In the **Browse** tree, click the entity you want. The **Context Panel** shows entity-specific information and actions.

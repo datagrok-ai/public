@@ -113,3 +113,4 @@ playwright-public/migration-report.html
 # local-only test findings/summary docs (do not merge)
 playwright-public/CORE-TESTS-SUMMARY.md
 playwright-public/PACKAGE-PLAYWRIGHT-CODE-FINDINGS.md
+.claude/.tmp

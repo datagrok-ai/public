@@ -1,7 +1,16 @@
+---
+title: "Tests: Random data"
+description: Testing scenarios for validating the Random data dialog across supported probability distributions.
+keywords:
+  - random data test
+  - synthetic data testing
+  - probability distribution validation
+  - random column generation testing
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Random data -->
 <!-- SUBTITLE: -->
-
-# Tests: Random data
 
 Adds a numerical column with [random data](random-data.md) with the specified distribution. Parameters of the
 distribution can be edited as well.

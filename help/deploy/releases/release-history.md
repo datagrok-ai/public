@@ -5,6 +5,12 @@ position: 6 # float position is supported
 hide_search: true
 hide_sidebar: true
 unlisted: true
+description: Version-by-version list of Datagrok service Docker image tags and their release dates.
+keywords:
+  - release history
+  - docker image tags
+  - service versions
+  - upgrade version
 ---
 
 ## Latest version

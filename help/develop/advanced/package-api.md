@@ -1,5 +1,13 @@
 ---
 title: "Package API"
+description: How to generate and share a strongly typed package API so other packages can call its functions safely.
+keywords:
+  - grok api
+  - package-api.ts
+  - strongly typed function calls
+  - grok.functions.call
+  - cross-package dependency
+  - declaration files
 ---
 
 # Strongly Typed Function Calls in Grok

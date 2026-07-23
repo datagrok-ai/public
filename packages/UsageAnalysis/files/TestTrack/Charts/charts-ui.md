@@ -45,11 +45,11 @@ Source: extracted from `sunburst.md` `### Multi-selection behaviour`
 section (canvas-rendered ECharts segments — no per-segment DOM, hit
 tests must be done by mouse position on canvas).
 
-Dataset: `System:DemoFiles/SPGI_v2.csv` (or `System:DemoFiles/test/spgi-100.csv`).
+Dataset: `System:DemoFiles/chem/SPGI.csv` (or `System:AppData/Chem/tests/spgi-100.csv`).
 
 Steps:
 
-1. Open `System:DemoFiles/SPGI_v2.csv` and add a Sunburst viewer.
+1. Open `System:DemoFiles/chem/SPGI.csv` and add a Sunburst viewer.
 2. Configure Sunburst hierarchy with at least 2 columns (e.g. via
    the Select Columns dialog: choose **Core** and **R101**).
 3. **Click** a single Sunburst segment with the left mouse button.
@@ -74,7 +74,7 @@ Source: extracted from `sunburst.md` `### Select / filter on empty
 category (SPGI_v2.csv)` section (clicking the grey null-segment is
 canvas hit-testing on a non-string category bucket).
 
-Dataset: `System:DemoFiles/SPGI_v2.csv`.
+Dataset: `System:DemoFiles/chem/SPGI.csv`.
 
 Steps:
 
@@ -173,7 +173,7 @@ exercise the actual canvas + Filter Panel UI coordination chain.
 {
   "order": 35,
   "datasets": [
-    "System:DemoFiles/SPGI_v2.csv",
+    "System:DemoFiles/chem/SPGI.csv",
     "System:DemoFiles/demog.csv"
   ]
 }

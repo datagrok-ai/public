@@ -2,6 +2,14 @@
 title: "Table Manager"
 unlisted: true
 sidebar_position: 3
+description: Use Table Manager to view, select, and batch-manage all currently open tables in a grid.
+keywords:
+  - view tables
+  - manage open tables
+  - table list
+  - batch actions on tables
+  - multiple table selection
+  - table metadata
 ---
 
 Table Manager, available via **View | Tables**, contains a list of currently open tables. Use it to navigate between

@@ -7,7 +7,7 @@ import {ensureUserDir} from './user/user-dir';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
 import {Verifier} from './verify';
 import {GroundingGate} from './grounding';
-import {createBrowserExecServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 
 // ---------------------------------------------------------------------------
 // Session registry — SDK session ids and resume/fork points, LRU-capped
@@ -60,11 +60,18 @@ interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; 
 const fenceStates = new Map<string, FenceState>();
 const FENCE_RE = /^```([\w-]*)\s*$/;
 
+// Sessions whose turn is in a gate-demanded revision: the already-streamed answer stays visible in
+// the browser, the revision text is NOT streamed, and the `result` decides kept vs replaced.
+const revisingSids = new Set<string>();
+const NO_REVISION_RE = /^`?NO_REVISION`?\.?$/;
+
 // Streams text from a Claude text_delta. Holds only the partial trailing line when it could
 // still become a fence marker (starts with `` ` `` at line start); everything else is emitted
 // immediately under the current mode. Complete lines are batched per same-mode group so a
 // 50-line delta yields ~3 emits, not 50.
 function emitFiltered(ws: WsSender, sid: string, text: string): void {
+  if (revisingSids.has(sid))
+    return;
   const st = fenceStates.get(sid) ?? {mode: 'prose' as FenceMode, carry: '', lineInProgress: false};
   fenceStates.set(sid, st);
 
@@ -135,21 +142,37 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
   case 'tool_use_summary':
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
     break;
-  case 'result':
+  case 'result': {
+    const revising = revisingSids.delete(sid);
     flushFenceState(ws, sid);
     if (e.subtype === 'success') {
       // Commit the resume point only on clean completion — aborted turns never reach here.
       if (e.session_id)
         storeSession(sid, e.session_id, pendingUuid.get(sid));
       pendingUuid.delete(sid);
+      const noRevision = revising && NO_REVISION_RE.test((e.result ?? '').trim());
       emit(ws, {
-        type: 'final', sessionId: sid, content: e.result || '',
+        type: 'final', sessionId: sid, content: noRevision ? '' : (e.result || ''),
+        ...(revising ? {revision: noRevision ? 'kept' as const : 'replaced' as const} : {}),
         ...(e.structured_output ? {structured_output: e.structured_output} : {}),
         ...(verifier?.exhausted ? {unverified: true} : {}),
+        // Turn metrics the SDK already computed on the result message — surfaced for the
+        // latency benchmark harness (see docs/BENCHMARK.md). All optional; older runtimes omit them.
+        metrics: {
+          inputTokens: e.usage?.input_tokens ?? null,
+          outputTokens: e.usage?.output_tokens ?? null,
+          cacheReadTokens: e.usage?.cache_read_input_tokens ?? null,
+          cacheCreationTokens: e.usage?.cache_creation_input_tokens ?? null,
+          costUsd: e.total_cost_usd ?? null,
+          numTurns: e.num_turns ?? null,
+          durationMs: e.duration_ms ?? null,
+          durationApiMs: e.duration_api_ms ?? null,
+        },
       });
     } else
       emit(ws, {type: 'error', sessionId: sid, message: (e.errors ?? []).join(', ') || e.subtype || 'unknown'});
     break;
+  }
   }
 }
 
@@ -297,15 +320,27 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         console.warn('handleMessage: failed to sync user files:', e.message));
     }
 
-    const browserExecServer = createBrowserExecServer((toolName, input, timeoutMs) =>
-      awaitBrowserInput(ws, sid, active, toolName, input, timeoutMs));
+    const awaitInput = (toolName: string, input: any, timeoutMs: number) =>
+      awaitBrowserInput(ws, sid, active, toolName, input, timeoutMs);
+    const browserExecServer = createBrowserExecServer(awaitInput);
+    const viewToolsServer = data.clientTools?.length ? createViewToolsServer(awaitInput, data.clientTools) : undefined;
     const fullPromptTurn = !data.systemPromptMode || data.systemPromptMode === 'datagrok';
-    verifier = fullPromptTurn ? new Verifier() : undefined;
-    groundingGate = fullPromptTurn && !data.outputSchema ? new GroundingGate() : undefined;
+    // On a gate block a revision starts: flush the fence buffer so the visible answer is complete,
+    // then stream the revision hidden — the browser keeps showing the original until `final`
+    // says whether the revision replaces it (see revisingSids / the NO_REVISION protocol).
+    const onGateBlock = () => {
+      if (!revisingSids.has(sid)) {
+        flushFenceState(ws, sid);
+        revisingSids.add(sid);
+        emit(ws, {type: 'revision_start', sessionId: sid});
+      }
+    };
+    verifier = fullPromptTurn ? new Verifier(onGateBlock) : undefined;
+    groundingGate = fullPromptTurn && !data.outputSchema ? new GroundingGate(onGateBlock) : undefined;
 
     const rec = getSession(sid);
     const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,
-      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate);
+      rec?.forkNext, rec?.forkNext ? rec.lastCleanUuid : undefined, verifier, groundingGate, viewToolsServer);
     const canUseTool = async (toolName: string, input: any) => {
       if (toolName === 'AskUserQuestion') {
         const updatedInput = await awaitBrowserInput(ws, sid, active, toolName, input);
@@ -331,8 +366,10 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       console.log(`verify[${sid}]: ${verifier.statsLine()}`);
     if (groundingGate)
       console.log(`grounding[${sid}]: ${groundingGate.summary()}`);
-    if (activeQueries.get(sid) === active)
+    if (activeQueries.get(sid) === active) {
       fenceStates.delete(sid);
+      revisingSids.delete(sid);
+    }
     unregisterActiveQuery(sid, active);
   }
 }
@@ -352,6 +389,7 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
   if (rec)
     rec.forkNext = true;
   pendingUuid.delete(sid);
+  revisingSids.delete(sid);
   if (ws)
     flushFenceState(ws, sid);
   else

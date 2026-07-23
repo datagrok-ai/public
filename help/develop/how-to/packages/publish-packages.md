@@ -1,5 +1,13 @@
 ---
 title: "Publish packages"
+description: Publish a Datagrok package publicly via NPM through GitHub Actions, or privately to a platform instance.
+keywords:
+  - grok publish
+  - NPM registry
+  - GitHub Actions workflow
+  - semantic versioning
+  - private package
+  - package.json version bump
 ---
 
 To make your package publicly available, you need to publish a package to NPM. Then you will be able to install it to

@@ -1,5 +1,15 @@
 ---
 title: "Data augmentation"
+description: Automatically enrich datasets with suggested layouts, predictive models, external data, and info panes.
+keywords:
+  - enrich dataset
+  - auto-suggested layouts
+  - predictive model suggestions
+  - info panels
+  - identifier recognition
+  - chembl id lookup
+  - geocoding addresses
+  - external data lookup
 ---
 
 _Data augmentation adds value to base data by adding information derived from internal and external sources within an

@@ -1,6 +1,16 @@
 ---
 title: "Data science"
 sidebar_position: 4
+description: Explore Datagrok's data science tools for hypothesis testing, normalization, clustering, and predictive modeling.
+keywords:
+  - hypothesis testing
+  - t-test
+  - kolmogorov-smirnov test
+  - data normalization
+  - k-means clustering
+  - missing value imputation
+  - predictive modeling
+  - h2o modeling
 ---
 
 Datagrok was built for data scientists, by data scientists. Our goal is to let scientist focus on science, not

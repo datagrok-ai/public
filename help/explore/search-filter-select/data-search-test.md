@@ -1,7 +1,14 @@
-<!-- TITLE: Tests: Search -->
-<!-- SUBTITLE: -->
-
-# Tests: Search
+---
+title: "Tests: Search"
+description: Testing scenarios for validating data search, including pattern matching, auto-select, and auto-filter.
+keywords:
+  - data search test
+  - search patterns
+  - qa testing
+  - test cases
+  - auto-filter
+  - auto-select
+---
 
 Data [search](data-search.md) allows you to find data in a dataset. Here supported all patterns for numeric, string and
 datetime types. It is possible to select and filter the values found

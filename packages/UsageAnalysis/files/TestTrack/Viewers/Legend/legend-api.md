@@ -84,7 +84,7 @@ custom legend coloring (per ApiSamples
 legend color-picker dialog calls it internally
 (`public/js-api/src/dataframe/column-helpers.ts` L103-111).
 
-1. Open `System:DemoFiles/SPGI.csv` and `addTableView(df)`.
+1. Open `System:DemoFiles/chem/SPGI.csv` and `addTableView(df)`.
 2. Add Scatter plot, set `colorColumnName = 'Stereo Category'`.
 3. Set `df.col('Stereo Category').tags['.color-coding-type'] = 'Categorical'`.
 4. Call `col.meta.colors.setCategorical({'R_ONE': '#FF0000',
@@ -99,7 +99,7 @@ Viewers exposing `includeNulls` (Histogram, Bar chart) honor the legend
 `(no value)` swatch via the property bind (per
 `visibility-and-positioning-spec.ts` Sc 6).
 
-1. Open `System:DemoFiles/SPGI.csv` (has `Primary Scaffold Name` with
+1. Open `System:DemoFiles/chem/SPGI.csv` (has `Primary Scaffold Name` with
    nulls — per `visibility-and-positioning-run.md` L20).
 2. Add Histogram, set `splitColumnName = 'Primary Scaffold Name'`.
 3. Set `histogram.props.includeNulls = true` then `false`; verify each
@@ -116,7 +116,7 @@ internally
 the contract is that `setCategorical` does not throw on a typical
 column.
 
-1. Open `System:DemoFiles/SPGI.csv` (`Stereo Category` has 5
+1. Open `System:DemoFiles/chem/SPGI.csv` (`Stereo Category` has 5
    categories — well under threshold).
 2. Build a categorical map covering all 5 categories.
 3. Call `col.meta.colors.setCategorical(map)`.
@@ -147,7 +147,7 @@ The legend re-renders when filters are reset
 after a Filter Panel filter exercises the equivalent reset path
 without driving DOM (per `filtering-spec.ts` Sc 3).
 
-1. Open `System:DemoFiles/SPGI.csv` and `addTableView(df)`.
+1. Open `System:DemoFiles/chem/SPGI.csv` and `addTableView(df)`.
 2. Add Scatter plot, set `colorColumnName = 'Stereo Category'`,
    `legendVisibility = 'Always'`.
 3. Apply Filter Panel categorical filter (subset to two categories).
@@ -177,6 +177,6 @@ without driving DOM (per `filtering-spec.ts` Sc 3).
 ```json
 {
   "order": 7,
-  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/SPGI.csv"]
 }
 ```

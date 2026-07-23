@@ -1,6 +1,13 @@
 ---
 title: "Regular machine"
 sidebar_position: 1
+description: Install Datagrok manually on a bare-metal server, on-prem VM, or single host using Docker Compose.
+keywords:
+  - bare metal install
+  - on-prem vm
+  - docker compose install
+  - manual install
+  - reverse proxy tls
 ---
 
 Datagrok runs as a set of Docker containers on top of a PostgreSQL metadata database and

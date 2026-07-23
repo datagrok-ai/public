@@ -98,6 +98,15 @@ export class ExecutionController {
     this.state = new ExecutionState();
     this.visualizer = new ExecutionVisualizer(flow);
     this.outputPreview = outputPreview ?? new OutputPreviewPanel();
+    // Unpinning via the header icon jumps to the node the user selected while
+    // pinned — re-clicking an already-selected node fires no selection event,
+    // so without this the preview would stay on the stale pinned content.
+    this.outputPreview.onUnpinned = (): void => {
+      const ids = this.flow.getSelectedNodeIds();
+      if (ids.length !== 1) return;
+      const node = this.flow.getNodeById(ids[0]);
+      if (node && node.id !== this.outputPreview.currentNodeId) this.showOutputsForNode(node);
+    };
   }
 
   runInstrumented(settings: ScriptSettings): void {
@@ -399,7 +408,10 @@ export class ExecutionController {
     } else {
       // A new full/slice run invalidates anything we were showing — and the
       // captured live values (they're recomputed by this run's `__ff_stash`).
-      this.outputPreview.clear();
+      // A pinned preview keeps its stale content in place instead of blinking:
+      // node-start overlays the spinner, node-complete renders fresh.
+      if (this.outputPreview.pinnedNodeId == null || this.outputPreview.currentNodeId == null)
+        this.outputPreview.clear();
       this.state.startRun(runId);
       this.visualizer.resetAllNodes();
       this.flow.clearConnectionLabels();
@@ -465,6 +477,8 @@ export class ExecutionController {
     case 'node-start':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.running, {startTime: event.timestamp});
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.running);
+      // The pinned node is recomputing — spinner over the kept stale content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.markUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'node-complete':
@@ -474,12 +488,20 @@ export class ExecutionController {
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);
+      // A pinned preview tracks its node live: the moment a fresh result lands,
+      // re-render it (selection can't bring it back — other nodes are gated).
+      if (this.outputPreview.pinnedNodeId === event.nodeId) {
+        const pinned = this.flow.getNodeById(event.nodeId);
+        if (pinned) this.showOutputsForNode(pinned);
+      }
       break;
     case 'node-error':
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.errored, {
         endTime: event.timestamp, error: event.error, stack: event.stack,
       });
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.errored);
+      // A failed pinned recompute: drop the spinner, keep the last good content.
+      if (this.outputPreview.pinnedNodeId === event.nodeId) this.outputPreview.clearUpdating();
       this.onNodeStateChanged?.(event.nodeId);
       break;
     case 'breakpoint-hit':
@@ -489,6 +511,9 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
+      // Safety: if the pinned node never completed this run (skipped/halted),
+      // don't leave the spinner spinning over the kept content.
+      this.outputPreview.clearUpdating();
       if (this.pendingOnComplete) {
         const cb = this.pendingOnComplete;
         this.pendingOnComplete = null;
@@ -581,9 +606,13 @@ export class ExecutionController {
     if (reg)
       for (const id of affected) delete reg[id];
     // Stale values aren't worth previewing; close (and remember the node so an
-    // autorun can bring the preview back once fresh values exist).
+    // autorun can bring the preview back once fresh values exist). A PINNED
+    // preview keeps its stale content instead — hiding and re-docking on every
+    // upstream edit reads as jumping; node-start overlays the recalculating
+    // spinner and node-complete swaps in the fresh render in place.
     const previewId = this.outputPreview.currentNodeId;
-    if (previewId !== null && affected.has(previewId)) {
+    if (previewId !== null && affected.has(previewId) &&
+        this.outputPreview.pinnedNodeId !== previewId) {
       this.outputPreview.clear();
       this.autorunPreviewNodeId = previewId;
     }
@@ -599,6 +628,7 @@ export class ExecutionController {
     const reg = (globalThis as {__ffFlowLive?: Record<string, unknown>}).__ffFlowLive;
     if (reg) delete reg[nodeId];
     if (this.outputPreview.currentNodeId === nodeId) this.outputPreview.clear();
+    if (this.outputPreview.pinnedNodeId === nodeId) this.outputPreview.unpin();
     if (this.autorunPreviewNodeId === nodeId) this.autorunPreviewNodeId = null;
   }
 
@@ -607,6 +637,7 @@ export class ExecutionController {
     this.flow.clearConnectionLabels();
     this.state.reset();
     this.outputPreview.clear();
+    this.outputPreview.unpin();
     this.clearLiveRegistry();
   }
 

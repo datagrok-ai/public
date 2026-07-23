@@ -1,5 +1,12 @@
 ---
 title: "Logo Summary Table"
+description: Show WebLogo, activity distribution, and statistics for each sequence cluster in a summary table.
+keywords:
+  - sequence logo
+  - weblogo
+  - cluster statistics
+  - activity distribution
+  - peptide cluster comparison
 ---
 
 The Logo Summary Table shows WebLogo, activity distribution and statistics for each sequence cluster in your data. Statistics include mean difference, p-value, count and ratio. You can add other column aggregations to the table from its property panel. Numeric columns will use your chosen numeric aggregation (average by default) and categorical columns will add a pie chart showing the distribution within a cluster.

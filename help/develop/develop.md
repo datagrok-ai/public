@@ -1,6 +1,15 @@
 ---
 title: "Develop"
 sidebar_position: 0
+description: Overview of package-based JavaScript and TypeScript development on Datagrok, from structure to publishing.
+keywords:
+  - package.json
+  - package.js
+  - webpack.config.js
+  - detectors.js
+  - grok publish
+  - creating a package
+  - custom viewers and applications
 ---
 
 ## JavaScript development

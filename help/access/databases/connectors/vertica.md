@@ -1,5 +1,14 @@
 ---
 title: "Vertica"
+description: Connect Datagrok to a Vertica analytics database using SQL queries via a JDBC driver.
+keywords:
+  - vertica database
+  - analytics database
+  - jdbc driver
+  - connect to a database
+  - schema browsing
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to [Vertica](https://www.opentext.com/products/analytics-database) database using

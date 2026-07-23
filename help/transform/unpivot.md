@@ -1,5 +1,12 @@
 ---
 title: "Unpivoting"
+description: Transform data from a short/wide format to a tall/skinny format using the Unpivot function.
+keywords:
+  - unpivot
+  - melt
+  - wide to long
+  - reshape data
+  - stack columns to rows
 ---
 
 Unpivoting transforms data from a short/wide to a tall/skinny format.

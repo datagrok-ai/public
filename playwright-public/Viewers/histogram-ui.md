@@ -37,5 +37,5 @@ All scenarios should start with the following sequence of events:
 ---
 {
   "order": 105,
-  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/chem/SPGI.csv"]
 }

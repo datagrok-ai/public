@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {delay} from 'rxjs/operators';
 
 import {AIPanel} from './panel';
 import {getAIPanelToggleSubscription, isToggleKey} from '../utils';
@@ -16,6 +15,8 @@ export class AIWindowManager {
   }
 
   private readonly byView = new WeakMap<DG.ViewBase, AnyPanel>();
+  /** Panels owned by a single view (e.g. DB query assistants) — disposed when that view closes. */
+  private readonly owned = new WeakSet<AnyPanel>();
   private shell: AnyPanel | null = null;
   private current: AnyPanel | null = null;
   private initialized = false;
@@ -26,12 +27,16 @@ export class AIWindowManager {
       return;
     this.initialized = true;
 
-    grok.events.onCurrentViewChanged.pipe(delay(150)).subscribe(() => {
-      if (grok.shell.windows.showAI)
-        this.open(this.panelFor(grok.shell.v), false);
-    });
+    // The mounted panel deliberately survives view switches: one panel, one session.
+    // It learns the current view at prompt time (buildWorkspaceContext), not by remounting.
 
     grok.events.onViewRemoved.subscribe((v) => this.unregister(v));
+
+    // Keep the empty-state suggestion cards in sync with the current view.
+    grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.windows.showAI)
+        this.current?.activate(false);
+    });
 
     getAIPanelToggleSubscription().subscribe((v) => this.toggle((v as DG.ViewBase) ?? grok.shell.v));
 
@@ -43,8 +48,10 @@ export class AIWindowManager {
     });
   }
 
-  register(view: DG.ViewBase, panel: AnyPanel): void {
+  register(view: DG.ViewBase, panel: AnyPanel, opts: {owned?: boolean} = {}): void {
     this.byView.set(view, panel);
+    if (opts.owned)
+      this.owned.add(panel);
   }
 
   show(view: DG.ViewBase | null = grok.shell.v): void {
@@ -62,7 +69,7 @@ export class AIWindowManager {
   }
 
   private panelFor(view: DG.ViewBase | null): AnyPanel {
-    return (view && this.byView.get(view)) || this.shell!;
+    return (view && this.byView.get(view)) || this.current || this.shell!;
   }
 
   private open(panel: AnyPanel, focus: boolean): void {
@@ -92,6 +99,8 @@ export class AIWindowManager {
     if (!panel)
       return;
     this.byView.delete(view);
+    if (!this.owned.has(panel))
+      return; // shared panel (shell/scripting singleton) — keep it alive
     if (this.current === panel) {
       this.current = null;
       if (grok.shell.windows.showAI && this.shell)

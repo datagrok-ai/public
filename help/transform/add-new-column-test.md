@@ -1,7 +1,16 @@
+---
+title: "Tests: Add new column"
+description: Testing scenarios for validating the Add new column dialog and calculated column formulas.
+keywords:
+  - add new column test
+  - calculated column testing
+  - formula field validation
+  - column type autodetection
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Add new column -->
 <!-- SUBTITLE: -->
-
-# Tests: Add new column
 
 [Adds a column](add-new-column.md) of the specified type to the current table, and initializes it using the specified
 expression (mathematical function, constants, platform objects properties and functions).

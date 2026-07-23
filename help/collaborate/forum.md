@@ -1,5 +1,12 @@
 ---
 title: "Community forum"
+description: Ask generic or entity-specific questions in the community forum, with owner notifications for linked entities.
+keywords:
+  - ask a question
+  - forum topics
+  - notify entity owner
+  - discuss a project
+  - socialize with the community
 ---
 
 A place to socialize and ask either generic questions or questions related to particular entities, such as queries or

@@ -1,5 +1,9 @@
 # Jira Connect changelog
 
+## 1.2.4 (2026-07-15)
+
+* Migrated issue search from the removed `/rest/api/3/search` endpoint (HTTP 410) to the enhanced, token-paginated `/rest/api/3/search/jql`; fixed a null-response crash ("Cannot read properties of null (reading 'errorMessages')")
+
 ## 1.2.3 (2025-08-28)
 
 Added ability to detect few tickets in one cell

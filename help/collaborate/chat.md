@@ -1,5 +1,12 @@
 ---
 title: "Chat"
+description: Use in-app chat with markdown formatting, object mentions, and tag mentions to discuss data with your team.
+keywords:
+  - team chat
+  - mention a user
+  - drag and drop object into message
+  - markdown formatting
+  - community forums
 ---
 
 Use [Markdown](https://en.wikipedia.org/wiki/Markdown) for rich formatting.

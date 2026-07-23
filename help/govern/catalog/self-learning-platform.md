@@ -1,5 +1,12 @@
 ---
 title: "Self-learning platform"
+description: How Datagrok uses observed user behavior to suggest visualizations, models, and derived columns.
+keywords:
+  - self-learning platform
+  - usage-based suggestions
+  - recommendation engine
+  - ai suggestions
+  - pattern detection
 ---
 
 One of Datagrok's unique features is the ability to perform most data operations from within the

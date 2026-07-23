@@ -1,7 +1,13 @@
-<!-- TITLE: Tests: multivariate analysis -->
-<!-- SUBTITLE: -->
-
-# Tests: Multivariate analysis
+---
+title: "Tests: Multivariate analysis"
+description: Testing scenarios for validating PLS multivariate analysis, including null-value handling and imputation.
+keywords:
+  - multivariate analysis test
+  - pls test scenario
+  - qa testing
+  - test cases
+  - missing values imputation
+---
 
 [Multivariate analysis (MVA)](pls.md) is based on the statistical principle of multivariate statistics.
 

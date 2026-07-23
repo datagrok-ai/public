@@ -1,5 +1,13 @@
 ---
 title: "Filter by catalogs"
+description: Explains how to screen out undesirable molecules using PAINS, BRENK, NIH, and ZINC filter catalogs.
+keywords:
+  - PAINS pan assay interference
+  - BRENK unwanted functionality
+  - NIH problematic functional groups
+  - ZINC drug-likeness filter
+  - compound library screening
+  - undesirable substructure removal
 ---
 
 Filter by Catalogs give the ability to screen out or reject undesirable molecules based on various criteria.

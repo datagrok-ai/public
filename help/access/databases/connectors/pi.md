@@ -1,5 +1,12 @@
 ---
 title: "PI"
+description: Connect Datagrok to an AVEVA PI System process historian and query it with SQL via a JDBC driver.
+keywords:
+  - aveva pi system
+  - process historian
+  - pi database
+  - jdbc driver
+  - connect to a database
 ---
 
 Provides access to the

@@ -1,5 +1,13 @@
 ---
 title: "Developer qualifications"
+description: Skills and topics a Datagrok developer should master across platform usage, common development, and cheminformatics tracks.
+keywords:
+  - developer track
+  - onboarding checklist
+  - platform user skills
+  - cheminformatics track
+  - machine learning track
+  - DevTools
 ---
 
 ## Platform user track

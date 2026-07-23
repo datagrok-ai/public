@@ -1,7 +1,12 @@
-<!-- TITLE: Tests: View layout -->
-<!-- SUBTITLE: -->
-
-# Tests: View layout
+---
+title: "Tests: View layout"
+description: Testing scenario for view layout cloning, saving, and applying across table views.
+keywords:
+  - view layout testing
+  - layout gallery test
+  - clone view
+  - test scenario
+---
 
 [View Layout](view-layout.md) contains relative positions of [viewers](../visualize/viewers/viewers.md) in
 a [table view](../visualize/table-view-1.md), along with the viewers' properties. By separating layouts from the actual

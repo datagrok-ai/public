@@ -17,9 +17,9 @@ test('Collaborative Filtering for Linked Tables', async ({page}) => {
       grok.shell.windows.simpleMode = true;
       grok.shell.closeAll();
 
-      const df1 = await grok.data.files.openTable('System:DemoFiles/SPGI.csv');
-      const df2 = await grok.data.files.openTable('System:DemoFiles/SPGI-linked1.csv');
-      const df3 = await grok.data.files.openTable('System:DemoFiles/SPGI-linked2.csv');
+      const df1 = await grok.data.files.openTable('System:DemoFiles/chem/SPGI.csv');
+      const df2 = await grok.data.files.openTable('System:AppData/ApiTests/datasets/SPGI-linked1.csv');
+      const df3 = await grok.data.files.openTable('System:AppData/ApiTests/datasets/SPGI-linked2.csv');
 
       grok.data.linkTables(df3, df2,
         ['Sample Name', 'link column 1', 'link column 2', 'link column 3'],

@@ -19,6 +19,8 @@ import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
 import {ClickEventsWidget} from './widgets/click-events-widget';
 import {fetchVexDashboardImages, vexImagesToDataFrame} from './tabs/vulnerabilities';
+import {ReleaseHandler} from './release/release-handler';
+import {isDevHost} from './release/data';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -113,6 +115,23 @@ export class PackageFunctions {
     const handler = new ViewHandler();
     handler.view.parentCall = grok.functions.getCurrentCall();
     handler.init(date, groups, packages, tags, categories, projects, path);
+    return handler.view;
+  }
+
+  // Release-readiness dashboard. Dev-only: available and visible on dev.datagrok.ai; a no-op elsewhere.
+  @grok.decorators.app({
+    'url': '/release',
+    'name': 'Release',
+    'meta': {'role': 'adminApp'},
+  })
+  static releaseDashboardApp(
+    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): DG.ViewBase | null {
+    if (!isDevHost()) {
+      grok.shell.warning('The Release dashboard is available on dev.datagrok.ai only.');
+      return null;
+    }
+    const handler = new ReleaseHandler(path);
+    handler.view.parentCall = grok.functions.getCurrentCall();
     return handler.view;
   }
 

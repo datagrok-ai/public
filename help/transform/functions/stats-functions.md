@@ -1,5 +1,12 @@
 ---
 title: "Statistical functions"
+description: Reference for statistical functions that operate on whole columns or sets of numbers in formulas.
+keywords:
+  - statistical functions reference
+  - column statistics functions
+  - quartile functions
+  - standard deviation formula
+  - stdev variance skew kurt
 ---
 
 This type of function assumes working with whole columns or a set of numbers.

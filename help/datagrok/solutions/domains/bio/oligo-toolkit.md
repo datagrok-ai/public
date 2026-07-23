@@ -1,6 +1,16 @@
 ---
 title: "Oligo Toolkit"
 sidebar_position: 3
+description: Tools for chemical modification, format conversion, structure generation, and property calculation of oligonucleotide sequences.
+keywords:
+  - oligonucleotide modifications
+  - siRNA
+  - antisense oligonucleotides
+  - sirna sense antisense strands
+  - fasta helm mermade biospring
+  - phosphorothioate 2'-ome lna
+  - oligo batch calculator
+  - sequence pattern editor
 ---
 
 The OligoToolkit is a collection of tools helping you to work with oligonucleotide sequences 

@@ -1,6 +1,15 @@
 ---
 title: "Dashboards"
 sidebar_position: 2
+description: Explains how to create, save, and embed Datagrok dashboards that combine a dataframe with its visual layout.
+keywords:
+  - creating a dashboard
+  - table view
+  - embed view iframe
+  - dynamic dashboards
+  - data sync
+  - viewers and filters
+  - linked tables
 mdx:
   format: mdx
 ---

@@ -21,12 +21,18 @@ import {getDOMSocketPosition} from 'rete-render-utils';
 import {createRoot} from 'react-dom/client';
 import * as DG from 'datagrok-api/dg';
 
-import {FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, EXEC_IN_KEY, EXEC_OUT_KEY} from './scheme';
+import {
+  FlowConnection, FlowEditorBridge, FlowNode, FlowScheme, isExecKey, isSetVarNode,
+  EXEC_IN_KEY, EXEC_OUT_KEY,
+} from './scheme';
 import {TypedSocket} from './sockets';
 import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
+import {
+  FlowGroup, GroupDoc, GROUP_TITLE_H, GROUP_PAD, GROUP_DOT_TOP, GROUP_DOT_STEP,
+} from './node-group';
 import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
 
 /** A classified graph edit — tells listeners *what* changed, so run results
@@ -69,6 +75,20 @@ export interface FlowEditorCallbacks {
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
+
+/** A copyable snapshot of a node set: the node payloads plus every connection
+ *  whose BOTH endpoints are inside the set (data, pass-through, and order edges
+ *  alike). Positions are the originals — materializing applies an offset.
+ *  Deep-copied at snapshot time, so later edits to the originals never leak
+ *  into a paste. */
+interface GraphClip {
+  nodes: Array<{
+    id: string; typeName: string; label: string; description: string;
+    collapsed: boolean; pos: {x: number; y: number};
+    properties: Record<string, any>; inputValues: Record<string, any>;
+  }>;
+  connections: Array<{source: string; sourceOutput: string; target: string; targetInput: string}>;
+}
 
 export class FlowEditor {
   readonly editor = new NodeEditor<FlowScheme>();
@@ -138,6 +158,19 @@ export class FlowEditor {
   /** Workflow annotations — colored frames behind the graph (KNIME pattern).
    *  Owned by the editor (not by Rete), persisted alongside the graph. */
   private annotations = new Map<string, FlowAnnotation>();
+
+  /** Node groups — collapsible frames around member node sets (see
+   *  `node-group.ts`). Editor-level like annotations: the graph stays flat. */
+  private groups = new Map<string, FlowGroup>();
+  /** Wire-endpoint subscriptions for sockets on groupable (non-output) nodes,
+   *  keyed by node id — while a node hides inside a minimized group, the
+   *  editor pushes card-edge anchors through these instead of DOM positions
+   *  (same pattern as `chipSocketSubs`). */
+  private groupSocketSubs = new Map<string, Set<{
+    side: 'input' | 'output'; key: string; cb: (pos: {x: number; y: number}) => void;
+  }>>();
+  /** Group ids with a frame refit already scheduled for the next frame. */
+  private groupRefitScheduled = new Set<string>();
 
   /** Snap-to-grid step in canvas units; alignment guides override grid when within threshold. */
   private readonly gridSize = 20;
@@ -225,9 +258,11 @@ export class FlowEditor {
         onChange: (pos: {x: number; y: number}) => void): (() => void) => {
         if (this.editor.getNode(nodeId)?.dgNodeType === 'output')
           return this.listenChipSocket(nodeId, onChange);
-        return (domWatcher as unknown as {
+        // Group-aware: while the node hides inside a minimized group, the
+        // wire endpoint is the group card's edge, not the (display:none) DOM.
+        return this.listenGroupableSocket(nodeId, side, key, onChange, domWatcher as unknown as {
           listen(n: string, s: string, k: string, cb: (p: {x: number; y: number}) => void): () => void;
-        }).listen(nodeId, side, key, onChange);
+        });
       },
     };
 
@@ -366,14 +401,23 @@ export class FlowEditor {
       // on its very first render.
       if (context.type === 'connectioncreate')
         this.decorateConnection(context.data);
-      if (context.type === 'noderemoved')
+      if (context.type === 'noderemoved') {
         this.chipSocketSubs.delete(context.data.id);
+        this.groupSocketSubs.delete(context.data.id);
+        this.handleGroupMemberRemoved(context.data.id);
+      }
       if (context.type === 'connectioncreated')
         this.maybeAutoTypeValueOutput(context.data);
       if (context.type === 'connectionremoved')
         this.connectionStatuses.delete(context.data.id);
-      if (context.type === 'connectioncreated' || context.type === 'connectionremoved')
+      if (context.type === 'connectioncreated' || context.type === 'connectionremoved') {
         this.refreshCollapsedEndpoints(context.data);
+        // A wire into/out of a minimized group changes its boundary dot rows.
+        for (const id of [context.data.source, context.data.target]) {
+          const g = this.minimizedGroupOf(id);
+          if (g) this.refreshGroupCard(g);
+        }
+      }
       if (
         context.type === 'nodecreated' || context.type === 'noderemoved' ||
         context.type === 'connectioncreated' || context.type === 'connectionremoved' ||
@@ -424,6 +468,9 @@ export class FlowEditor {
       if (context.type === 'nodetranslated') {
         const node = this.editor.getNode(context.data.id);
         if (node) node.pos = {...context.data.position};
+        // An expanded group's frame hugs its members — refit when one moves.
+        const g = this.groupOf(context.data.id);
+        if (g && !g.minimized) this.scheduleGroupRefit(g);
         this.scheduleMinimapRedraw();
       }
       if (context.type === 'nodedragged') this.hideGuides();
@@ -528,8 +575,10 @@ export class FlowEditor {
 
     for (const other of this.editor.getNodes()) {
       // Strip-pinned rows sit at viewport-dependent positions — never a
-      // meaningful alignment target for canvas nodes.
-      if (other.id === draggedId || other.dgNodeType === 'output') continue;
+      // meaningful alignment target for canvas nodes. Neither are nodes
+      // hidden inside a minimized group.
+      if (other.id === draggedId || other.dgNodeType === 'output' ||
+          this.minimizedGroupOf(other.id)) continue;
       const sz = this.measureNode(other.id);
       const ox = [other.pos.x, other.pos.x + sz.w / 2, other.pos.x + sz.w];
       const oy = [other.pos.y, other.pos.y + sz.h / 2, other.pos.y + sz.h];
@@ -733,8 +782,9 @@ export class FlowEditor {
     const boxes: Array<{x: number; y: number; w: number; h: number; color: string}> = [];
     for (const node of nodes) {
       // Strip-pinned rows track the viewport, not the graph — including them
-      // would smear the overview bounds on every pan.
-      if (node.dgNodeType === 'output') continue;
+      // would smear the overview bounds on every pan. Members hidden inside a
+      // minimized group are drawn as their group's card below.
+      if (node.dgNodeType === 'output' || this.minimizedGroupOf(node.id)) continue;
       const sz = this.measureNode(node.id);
       const color = (node as unknown as {color?: string}).color ?? '#90a4ae';
       boxes.push({x: node.pos.x, y: node.pos.y, w: sz.w, h: sz.h, color});
@@ -742,6 +792,19 @@ export class FlowEditor {
       minY = Math.min(minY, node.pos.y);
       maxX = Math.max(maxX, node.pos.x + sz.w);
       maxY = Math.max(maxY, node.pos.y + sz.h);
+    }
+    for (const g of this.groups.values()) {
+      if (!g.minimized) continue;
+      const w = g.element.offsetWidth || 180; const h = g.element.offsetHeight || 40;
+      boxes.push({x: g.pos.x, y: g.pos.y, w, h, color: '#607d8b'});
+      minX = Math.min(minX, g.pos.x);
+      minY = Math.min(minY, g.pos.y);
+      maxX = Math.max(maxX, g.pos.x + w);
+      maxY = Math.max(maxY, g.pos.y + h);
+    }
+    if (!Number.isFinite(minX)) {
+      delete svg.dataset.scale;
+      return;
     }
 
     const graphW = Math.max(1, maxX - minX);
@@ -1550,6 +1613,68 @@ export class FlowEditor {
     return Array.from(this.annotations.values());
   }
 
+  /** Everything an annotation drag carries along: nodes whose CENTER sits
+   *  inside the annotation rect (strip-pinned output rows excluded), smaller
+   *  annotations fully inside it, and the waypoints of connections linking two
+   *  carried nodes (so routed wires travel with their endpoints). Computed at
+   *  drag START — a stateless "capture": a node dragged out of the frame simply
+   *  isn't inside at the next grab, so nothing has to be remembered or saved. */
+  private annotationCargo(ann: FlowAnnotation): {
+    nodes: Array<{id: string; start: {x: number; y: number}}>;
+    annotations: Array<{ann: FlowAnnotation; start: {x: number; y: number}}>;
+    groups: Array<{g: FlowGroup; start: {x: number; y: number}}>;
+    waypoints: Array<{wp: {x: number; y: number}; start: {x: number; y: number}}>;
+    connIds: string[];
+  } {
+    const x1 = ann.pos.x, y1 = ann.pos.y;
+    const x2 = x1 + ann.size.w, y2 = y1 + ann.size.h;
+    const nodes: Array<{id: string; start: {x: number; y: number}}> = [];
+    const carried = new Set<string>();
+    for (const node of this.editor.getNodes()) {
+      // Members of a minimized group travel with their CARD (below), never
+      // individually — moving them without the card would tear the group.
+      if (node.dgNodeType === 'output' || this.minimizedGroupOf(node.id)) continue;
+      const sz = this.measureNode(node.id);
+      const cx = node.pos.x + sz.w / 2, cy = node.pos.y + sz.h / 2;
+      if (cx >= x1 && cx <= x2 && cy >= y1 && cy <= y2) {
+        nodes.push({id: node.id, start: {...node.pos}});
+        carried.add(node.id);
+      }
+    }
+    // Minimized group cards, carried card + hidden members together.
+    const groups: Array<{g: FlowGroup; start: {x: number; y: number}}> = [];
+    for (const g of this.groups.values()) {
+      if (!g.minimized) continue;
+      const w = g.element.offsetWidth || 180, h = g.element.offsetHeight || 40;
+      const cx = g.pos.x + w / 2, cy = g.pos.y + h / 2;
+      if (cx >= x1 && cx <= x2 && cy >= y1 && cy <= y2) {
+        groups.push({g, start: {...g.pos}});
+        for (const id of g.memberIds) {
+          const n = this.editor.getNode(id);
+          if (n) {
+            nodes.push({id, start: {...n.pos}});
+            carried.add(id);
+          }
+        }
+      }
+    }
+    const annotations: Array<{ann: FlowAnnotation; start: {x: number; y: number}}> = [];
+    for (const other of this.annotations.values()) {
+      if (other === ann) continue;
+      if (other.pos.x >= x1 && other.pos.y >= y1 &&
+          other.pos.x + other.size.w <= x2 && other.pos.y + other.size.h <= y2)
+        annotations.push({ann: other, start: {...other.pos}});
+    }
+    const waypoints: Array<{wp: {x: number; y: number}; start: {x: number; y: number}}> = [];
+    const connIds: string[] = [];
+    for (const c of this.editor.getConnections() as FlowConnection[]) {
+      if (!c.waypoints || !carried.has(c.source) || !carried.has(c.target)) continue;
+      connIds.push(c.id);
+      for (const wp of c.waypoints) waypoints.push({wp, start: {...wp}});
+    }
+    return {nodes, annotations, groups, waypoints, connIds};
+  }
+
   /** Drag-to-move on the body, drag-to-resize on the corner handle, custom
    *  contextmenu (Color · Delete), inline contenteditable for the title.
    *  Pointer deltas are divided by zoom so visible movement matches cursor. */
@@ -1589,12 +1714,36 @@ export class FlowEditor {
       ev.stopPropagation();
       const startPos = {...ann.pos};
       const startClient = {x: ev.clientX, y: ev.clientY};
-      el.setPointerCapture(ev.pointerId);
+      // The frame carries its contents: whatever is inside NOW moves with it.
+      const cargo = this.annotationCargo(ann);
+      // Synthetic pointers (tests) aren't active — capture is best-effort.
+      try {el.setPointerCapture(ev.pointerId);} catch { /* no active pointer */ }
       const onMove = (e: PointerEvent): void => {
         const k = this.area.area.transform.k || 1;
-        ann.pos.x = startPos.x + (e.clientX - startClient.x) / k;
-        ann.pos.y = startPos.y + (e.clientY - startClient.y) / k;
+        const dx = (e.clientX - startClient.x) / k;
+        const dy = (e.clientY - startClient.y) / k;
+        ann.pos.x = startPos.x + dx;
+        ann.pos.y = startPos.y + dy;
         ann.applyPos();
+        // Carried nodes are never "picked", so the snap interception in the
+        // nodetranslate pipe skips them — group geometry stays intact.
+        for (const n of cargo.nodes)
+          void this.area.translate(n.id, {x: n.start.x + dx, y: n.start.y + dy});
+        for (const a of cargo.annotations) {
+          a.ann.pos.x = a.start.x + dx;
+          a.ann.pos.y = a.start.y + dy;
+          a.ann.applyPos();
+        }
+        for (const gr of cargo.groups) {
+          gr.g.pos = {x: gr.start.x + dx, y: gr.start.y + dy};
+          gr.g.applyCardPos();
+          this.notifyGroupSockets(gr.g);
+        }
+        for (const w of cargo.waypoints) {
+          w.wp.x = w.start.x + dx;
+          w.wp.y = w.start.y + dy;
+        }
+        for (const id of cargo.connIds) void this.area.update('connection', id);
       };
       const onUp = (): void => {
         el.removeEventListener('pointermove', onMove);
@@ -1613,7 +1762,7 @@ export class FlowEditor {
       ev.stopPropagation();
       const startSize = {...ann.size};
       const startClient = {x: ev.clientX, y: ev.clientY};
-      handle.setPointerCapture(ev.pointerId);
+      try {handle.setPointerCapture(ev.pointerId);} catch { /* no active pointer */ }
       // Tiny floor only so the resize handle stays grabbable; the user
       // explicitly wanted no real lower bound.
       const minSize = 8;
@@ -1632,6 +1781,480 @@ export class FlowEditor {
       handle.addEventListener('pointerup', onUp);
       handle.addEventListener('pointercancel', onUp);
     });
+  }
+
+  // ---------- node groups ----------
+
+  /** Create a group around the given nodes. Output nodes (strip-pinned) and
+   *  nodes already in a group are filtered out; an empty remainder aborts.
+   *  `opts` carries deserialized state (title, minimized, card pos). */
+  createGroup(memberIds: string[], opts: Partial<GroupDoc> = {}): FlowGroup | null {
+    const ids = memberIds.filter((id) => {
+      const n = this.editor.getNode(id);
+      return !!n && n.dgNodeType !== 'output' && !this.groupOf(id);
+    });
+    if (ids.length === 0) return null;
+    const g = new FlowGroup({...opts, memberIds: ids});
+    this.groups.set(g.id, g);
+    const content = this.area.area.content;
+    content.add(g.element);
+    // Behind the nodes and wires, like annotations (see addAnnotation).
+    const firstChild = content.holder.firstChild;
+    if (firstChild && firstChild !== g.element)
+      void content.reorder(g.element, firstChild);
+    this.installGroupInteractions(g);
+    if (g.minimized) {
+      // Load path: the card lands at its saved pos with members hidden.
+      this.setGroupHidden(g, true);
+      g.applyMode();
+      this.refreshGroupCard(g);
+    } else {
+      this.fitGroupFrame(g);
+      // Member sizes settle when React mounts the views — refit shortly after
+      // (fresh .ffjson loads create groups before the first paint).
+      this.scheduleGroupRefit(g);
+      setTimeout(() => {
+        if (this.groups.has(g.id) && !g.minimized) this.fitGroupFrame(g);
+      }, 300);
+    }
+    this.scheduleMinimapRedraw();
+    this.callbacks.onGraphChanged?.();
+    return g;
+  }
+
+  /** Group the current multi-selection (Ctrl+G / node context menu). */
+  async createGroupFromSelection(): Promise<FlowGroup | null> {
+    const ids = this.getSelectedNodeIds().filter((id) =>
+      this.editor.getNode(id)?.dgNodeType !== 'output' && !this.groupOf(id));
+    if (ids.length < 2) return null;
+    const g = this.createGroup(ids);
+    if (g) await this.unselectAllNodes();
+    return g;
+  }
+
+  /** Dissolve a group — members stay on the canvas exactly where they are. */
+  ungroup(id: string): void {
+    const g = this.groups.get(id);
+    if (!g) return;
+    if (g.minimized) {
+      g.minimized = false;
+      this.setGroupHidden(g, false);
+      for (const mid of g.memberIds) void this.area.update('node', mid);
+    }
+    this.groups.delete(id);
+    this.area.area.content.remove(g.element);
+    this.scheduleMinimapRedraw();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  /** Delete the group AND every member node (clearly-labeled menu item). */
+  async deleteGroupWithNodes(id: string): Promise<void> {
+    const g = this.groups.get(id);
+    if (!g) return;
+    const ids = Array.from(g.memberIds);
+    this.ungroup(id);
+    await this.removeNodes(ids);
+  }
+
+  getGroups(): FlowGroup[] {
+    return Array.from(this.groups.values());
+  }
+
+  getGroupById(id: string): FlowGroup | undefined {
+    return this.groups.get(id);
+  }
+
+  /** The group a node belongs to (a node is in at most one group). */
+  groupOf(nodeId: string): FlowGroup | undefined {
+    for (const g of this.groups.values())
+      if (g.memberIds.has(nodeId)) return g;
+    return undefined;
+  }
+
+  private minimizedGroupOf(nodeId: string): FlowGroup | undefined {
+    const g = this.groupOf(nodeId);
+    return g?.minimized ? g : undefined;
+  }
+
+  /** Pull one node out of its group (node context menu). The node stays put;
+   *  a group left empty dissolves. */
+  removeFromGroup(nodeId: string): void {
+    const g = this.groupOf(nodeId);
+    if (!g) return;
+    g.memberIds.delete(nodeId);
+    if (g.minimized) {
+      this.setNodeHidden(nodeId, false);
+      void this.area.update('node', nodeId);
+    }
+    if (g.memberIds.size === 0) {
+      this.ungroup(g.id);
+      return;
+    }
+    if (g.minimized) this.refreshGroupCard(g);
+    else this.scheduleGroupRefit(g);
+    this.callbacks.onGraphChanged?.();
+  }
+
+  async toggleGroupMinimized(id: string): Promise<void> {
+    const g = this.groups.get(id);
+    if (!g) return;
+    if (g.minimized) await this.maximizeGroup(id);
+    else await this.minimizeGroup(id);
+  }
+
+  /** Collapse the frame into a card at the frame's top-left: members and
+   *  internal wires hide, boundary wires re-anchor to the card's edge dots. */
+  async minimizeGroup(id: string): Promise<void> {
+    const g = this.groups.get(id);
+    if (!g || g.minimized) return;
+    g.minimized = true;
+    // Invisible nodes can't stay selected.
+    for (const mid of g.memberIds) {
+      const n = this.editor.getNode(mid) as {selected?: boolean} | undefined;
+      if (n?.selected) await this.selectableApi.unselect(mid);
+    }
+    this.setGroupHidden(g, true);
+    g.applyMode();
+    this.refreshGroupCard(g);
+    this.scheduleMinimapRedraw();
+    this.callbacks.onSelectionChanged?.();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  /** Expand the card back into the frame. Members reappear where they are —
+   *  card drags translated them live, so contents track the card's travels. */
+  async maximizeGroup(id: string): Promise<void> {
+    const g = this.groups.get(id);
+    if (!g || !g.minimized) return;
+    g.minimized = false;
+    this.setGroupHidden(g, false);
+    g.applyMode();
+    this.fitGroupFrame(g);
+    // Re-render members so the DOM socket watcher re-measures and re-emits
+    // endpoints — releases the card anchors the boundary wires were glued to.
+    for (const mid of g.memberIds) void this.area.update('node', mid);
+    this.scheduleMinimapRedraw();
+    this.callbacks.onGraphChanged?.();
+  }
+
+  /** Hide/show one node's canvas view (the wrapper element persists across
+   *  React re-renders, so the class survives status updates). */
+  private setNodeHidden(nodeId: string, hidden: boolean): void {
+    const views = (this.area as unknown as {nodeViews: Map<string, {element: HTMLElement}>}).nodeViews;
+    views?.get(nodeId)?.element.classList.toggle('ff-group-hidden', hidden);
+  }
+
+  /** The rendered wrapper element of a connection. */
+  private connectionViewEl(connId: string): HTMLElement | null {
+    const views = (this.area as unknown as {
+      connectionViews?: Map<string, {element: HTMLElement}>;
+    }).connectionViews;
+    return views?.get(connId)?.element ??
+      this.container.querySelector(`[data-connection-id="${CSS.escape(connId)}"]`);
+  }
+
+  /** Hide/show a group's member views and fully-internal connections. */
+  private setGroupHidden(g: FlowGroup, hidden: boolean): void {
+    for (const id of g.memberIds) this.setNodeHidden(id, hidden);
+    for (const c of this.editor.getConnections()) {
+      if (!g.memberIds.has(c.source) || !g.memberIds.has(c.target)) continue;
+      this.connectionViewEl(c.id)?.classList.toggle('ff-group-hidden', hidden);
+    }
+  }
+
+  /** Distinct member sockets with at least one connection crossing the group
+   *  boundary, in stable connection order — each gets a dot row on the card. */
+  private groupBoundarySockets(g: FlowGroup, side: 'input' | 'output'): Array<{nodeId: string; key: string}> {
+    const result: Array<{nodeId: string; key: string}> = [];
+    const seen = new Set<string>();
+    for (const c of this.editor.getConnections()) {
+      const memberEnd = side === 'input' ? c.target : c.source;
+      const otherEnd = side === 'input' ? c.source : c.target;
+      if (!g.memberIds.has(memberEnd) || g.memberIds.has(otherEnd)) continue;
+      const key = side === 'input' ? String(c.targetInput) : String(c.sourceOutput);
+      const dedupe = `${memberEnd}:${key}`;
+      if (seen.has(dedupe)) continue;
+      seen.add(dedupe);
+      result.push({nodeId: memberEnd, key});
+    }
+    return result;
+  }
+
+  /** Canvas-coord wire anchor for a hidden member's socket: the matching dot
+   *  on the minimized card's edge (inputs left, outputs right, stacked by the
+   *  boundary row order — same math as `FlowGroup.renderDots`). */
+  private groupSocketAnchor(
+    g: FlowGroup, nodeId: string, side: 'input' | 'output', key: string,
+  ): {x: number; y: number} {
+    const rows = this.groupBoundarySockets(g, side);
+    const i = Math.max(0, rows.findIndex((s) => s.nodeId === nodeId && s.key === key));
+    const w = g.element.offsetWidth || 180;
+    return {
+      x: side === 'input' ? g.pos.x : g.pos.x + w,
+      y: g.pos.y + GROUP_DOT_TOP + i * GROUP_DOT_STEP,
+    };
+  }
+
+  /** `socketPositionWatcher.listen` for canvas nodes (see the constructor):
+   *  forwards DOM-measured positions while the node is visible, and swallows
+   *  them in favor of card-edge anchors while it hides in a minimized group
+   *  (a display:none view measures at 0,0). */
+  private listenGroupableSocket(
+    nodeId: string, side: 'input' | 'output', key: string,
+    onChange: (pos: {x: number; y: number}) => void,
+    domWatcher: {listen(n: string, s: string, k: string, cb: (p: {x: number; y: number}) => void): () => void},
+  ): () => void {
+    let subs = this.groupSocketSubs.get(nodeId);
+    if (!subs) {
+      subs = new Set();
+      this.groupSocketSubs.set(nodeId, subs);
+    }
+    const entry = {side, key, cb: onChange};
+    subs.add(entry);
+    const unsub = domWatcher.listen(nodeId, side, key, (pos) => {
+      if (!this.minimizedGroupOf(nodeId)) onChange(pos);
+    });
+    const g = this.minimizedGroupOf(nodeId);
+    if (g) onChange(this.groupSocketAnchor(g, nodeId, side, key));
+    return () => {
+      this.groupSocketSubs.get(nodeId)?.delete(entry);
+      unsub();
+    };
+  }
+
+  /** Push fresh card-edge anchors to every subscribed wire endpoint of a
+   *  minimized group's members (card drags, dot-row changes). */
+  private notifyGroupSockets(g: FlowGroup): void {
+    if (!g.minimized) return;
+    for (const id of g.memberIds) {
+      const subs = this.groupSocketSubs.get(id);
+      if (!subs) continue;
+      for (const e of subs) e.cb(this.groupSocketAnchor(g, id, e.side, e.key));
+    }
+  }
+
+  /** Re-sync a minimized card: boundary dots, wire anchors, internal-wire
+   *  hiding (idempotent), aggregate status. */
+  private refreshGroupCard(g: FlowGroup): void {
+    if (!g.minimized) return;
+    g.renderDots(
+      this.groupBoundarySockets(g, 'input').length,
+      this.groupBoundarySockets(g, 'output').length,
+    );
+    this.setGroupHidden(g, true);
+    this.notifyGroupSockets(g);
+    this.refreshGroupStatus(g);
+  }
+
+  /** Aggregate member run status → the card's title-bar dot. */
+  private refreshGroupStatus(g: FlowGroup): void {
+    const statuses = Array.from(g.memberIds)
+      .map((id) => (this.editor.getNode(id) as {dgStatus?: string} | undefined)?.dgStatus ?? 'idle');
+    let status = 'idle';
+    if (statuses.some((s) => s === 'running')) status = 'running';
+    else if (statuses.some((s) => s === 'errored')) status = 'errored';
+    else if (statuses.some((s) => s === 'stale')) status = 'stale';
+    else if (statuses.length > 0 && statuses.every((s) => s === 'completed')) status = 'completed';
+    g.setStatus(status);
+  }
+
+  /** Size the expanded frame to the member bounding box (+ title bar and
+   *  padding), keeping `g.pos` at the frame's top-left so minimizing collapses
+   *  the group in place. */
+  private fitGroupFrame(g: FlowGroup): void {
+    if (g.minimized) return;
+    let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+    for (const id of g.memberIds) {
+      const n = this.editor.getNode(id);
+      if (!n) continue;
+      const sz = this.measureNode(id);
+      minX = Math.min(minX, n.pos.x);
+      minY = Math.min(minY, n.pos.y);
+      maxX = Math.max(maxX, n.pos.x + sz.w);
+      maxY = Math.max(maxY, n.pos.y + sz.h);
+    }
+    if (!Number.isFinite(minX)) return;
+    g.pos = {x: minX - GROUP_PAD, y: minY - GROUP_PAD - GROUP_TITLE_H};
+    g.frameSize = {
+      w: maxX - minX + 2 * GROUP_PAD,
+      h: maxY - minY + 2 * GROUP_PAD + GROUP_TITLE_H,
+    };
+    g.applyFrame();
+  }
+
+  /** Coalesce frame refits to one per animation frame (member drags emit many
+   *  translates per pointermove). */
+  private scheduleGroupRefit(g: FlowGroup): void {
+    if (this.groupRefitScheduled.has(g.id)) return;
+    this.groupRefitScheduled.add(g.id);
+    requestAnimationFrame(() => {
+      this.groupRefitScheduled.delete(g.id);
+      if (this.groups.has(g.id) && !g.minimized) this.fitGroupFrame(g);
+    });
+  }
+
+  /** A member node was removed from the editor — shrink (or dissolve) its group. */
+  private handleGroupMemberRemoved(nodeId: string): void {
+    const g = this.groupOf(nodeId);
+    if (!g) return;
+    g.memberIds.delete(nodeId);
+    if (g.memberIds.size === 0) {
+      this.ungroup(g.id);
+      return;
+    }
+    if (g.minimized) this.refreshGroupCard(g);
+    else this.scheduleGroupRefit(g);
+  }
+
+  /** Re-arrange just a group's members with the layered layout, anchored at
+   *  the current bounding box's top-left (the rest of the canvas stays put). */
+  async tidyGroup(id: string): Promise<void> {
+    const g = this.groups.get(id);
+    if (!g || g.minimized) return;
+    const members = Array.from(g.memberIds)
+      .map((mid) => this.editor.getNode(mid))
+      .filter((n): n is FlowNode => !!n);
+    if (members.length === 0) return;
+    const inGroup = new Set(members.map((n) => n.id));
+    const edges: LayoutEdge[] = [];
+    for (const c of this.editor.getConnections()) {
+      if (inGroup.has(c.source) && inGroup.has(c.target))
+        edges.push({source: this.editor.getNode(c.source)!, target: this.editor.getNode(c.target)!});
+    }
+    const oldMinX = Math.min(...members.map((n) => n.pos.x));
+    const oldMinY = Math.min(...members.map((n) => n.pos.y));
+    layoutGraph(members, edges, computeLayers(members, edges));
+    const newMinX = Math.min(...members.map((n) => n.pos.x));
+    const newMinY = Math.min(...members.map((n) => n.pos.y));
+    const dx = oldMinX - newMinX; const dy = oldMinY - newMinY;
+    for (const n of members) await this.area.translate(n.id, {x: n.pos.x + dx, y: n.pos.y + dy});
+    this.fitGroupFrame(g);
+  }
+
+  /** Drag (frame or card) carries the members; caret toggles minimized;
+   *  double-click on the card maximizes; contextmenu offers group actions.
+   *  Title/description are inline-editable (pointerdown stops propagation so
+   *  the drag never starts on them). */
+  private installGroupInteractions(g: FlowGroup): void {
+    const el = g.element;
+
+    el.addEventListener('contextmenu', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      (ev as MouseEvent & {_ffHandled?: boolean})._ffHandled = true;
+      this.showGroupContextMenu(ev, g);
+    });
+
+    // While a title/description edit is in progress, keep pointer gestures out
+    // of the drag/pan machinery; otherwise the title bar is the drag handle.
+    for (const editable of [g.titleEl, g.descEl])
+      editable.addEventListener('pointerdown', (ev) => {
+        if (editable.isContentEditable) ev.stopPropagation();
+      });
+    g.descEl.addEventListener('blur', () => {
+      delete g.descEl.dataset.editing;
+      g.descEl.contentEditable = 'false';
+      g.applyMode();
+      this.callbacks.onGraphChanged?.();
+    });
+    g.titleEl.addEventListener('blur', () => this.callbacks.onGraphChanged?.());
+
+    g.caretEl.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+    g.caretEl.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      void this.toggleGroupMinimized(g.id);
+    });
+
+    // Double-press on the card maximizes. Detected on pointerdown ourselves:
+    // the drag handler preventDefaults pointerdown, which suppresses the
+    // browser's compatibility `dblclick` for that pointer.
+    let lastDown = {t: 0, x: 0, y: 0};
+
+    el.addEventListener('pointerdown', (ev) => {
+      if (ev.button !== 0) return;
+      const target = ev.target as HTMLElement | null;
+      if (target && (target === g.caretEl || target.closest('[contenteditable="true"]'))) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const now = Date.now();
+      const isDouble = now - lastDown.t < 400 &&
+        Math.abs(ev.clientX - lastDown.x) < 5 && Math.abs(ev.clientY - lastDown.y) < 5;
+      lastDown = {t: now, x: ev.clientX, y: ev.clientY};
+      if (isDouble) {
+        // Double-press on the title renames, on the description edits it,
+        // anywhere else on a minimized card maximizes.
+        if (target && (target === g.titleEl || g.titleEl.contains(target))) {
+          g.startTitleEdit();
+          return;
+        }
+        if (target && (target === g.descEl || g.descEl.contains(target))) {
+          g.startDescEdit();
+          return;
+        }
+        if (g.minimized) {
+          void this.toggleGroupMinimized(g.id);
+          return;
+        }
+      }
+      const startClient = {x: ev.clientX, y: ev.clientY};
+      const startPos = {...g.pos};
+      const members = Array.from(g.memberIds)
+        .map((id) => this.editor.getNode(id))
+        .filter((n): n is FlowNode => !!n)
+        .map((n) => ({id: n.id, start: {...n.pos}}));
+      // Waypoints of internal connections travel too.
+      const waypoints: Array<{wp: {x: number; y: number}; start: {x: number; y: number}}> = [];
+      const connIds: string[] = [];
+      for (const c of this.editor.getConnections() as FlowConnection[]) {
+        if (!c.waypoints || !g.memberIds.has(c.source) || !g.memberIds.has(c.target)) continue;
+        connIds.push(c.id);
+        for (const wp of c.waypoints) waypoints.push({wp, start: {...wp}});
+      }
+      try {el.setPointerCapture(ev.pointerId);} catch { /* synthetic pointer */ }
+      const onMove = (e: PointerEvent): void => {
+        const k = this.area.area.transform.k || 1;
+        const dx = (e.clientX - startClient.x) / k;
+        const dy = (e.clientY - startClient.y) / k;
+        if (g.minimized) {
+          g.pos = {x: startPos.x + dx, y: startPos.y + dy};
+          g.applyCardPos();
+        }
+        // Members follow (hidden ones too — contents must track the card).
+        // The expanded frame follows via the nodetranslated → refit path.
+        for (const m of members)
+          void this.area.translate(m.id, {x: m.start.x + dx, y: m.start.y + dy});
+        for (const w of waypoints) {
+          w.wp.x = w.start.x + dx;
+          w.wp.y = w.start.y + dy;
+        }
+        if (!g.minimized)
+          for (const id of connIds) void this.area.update('connection', id);
+        if (g.minimized) this.notifyGroupSockets(g);
+      };
+      const onUp = (): void => {
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+        el.removeEventListener('pointercancel', onUp);
+      };
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onUp);
+    });
+  }
+
+  private showGroupContextMenu(event: MouseEvent, g: FlowGroup): void {
+    const menu = DG.Menu.popup()
+      .item(g.minimized ? 'Maximize' : 'Minimize', () => void this.toggleGroupMinimized(g.id));
+    if (!g.minimized)
+      menu.item('Tidy layout', () => void this.tidyGroup(g.id));
+    menu.item('Edit description', () => g.startDescEdit());
+    menu.separator()
+      .item('Ungroup', () => this.ungroup(g.id))
+      .item('Delete group and nodes', () => void this.deleteGroupWithNodes(g.id))
+      .show({causedBy: event});
   }
 
   // ---------- connection waypoints ----------
@@ -1805,6 +2428,7 @@ export class FlowEditor {
 
     let touched = false;
     for (const node of this.editor.getNodes()) {
+      if (this.minimizedGroupOf(node.id)) continue; // invisible — not selectable
       const sz = this.measureNode(node.id);
       const nx1 = node.pos.x, ny1 = node.pos.y;
       const nx2 = nx1 + sz.w, ny2 = ny1 + sz.h;
@@ -1955,6 +2579,11 @@ export class FlowEditor {
     data.element.dataset.status = this.connectionStatuses.get(data.payload.id) ?? 'idle';
     // Execution-ordering edges render dashed/gray (CSS keys off data-order).
     data.element.dataset.order = isExecKey(String(data.payload.sourceOutput)) ? 'true' : 'false';
+    // A connection internal to a minimized group that mounts late (load path,
+    // wires created while collapsed) must come up hidden.
+    const g = this.minimizedGroupOf(data.payload.source);
+    if (g && g.memberIds.has(data.payload.target))
+      data.element.classList.add('ff-group-hidden');
   }
 
   /** Set the status of a connection (drives the data-flow animation). */
@@ -2038,9 +2667,24 @@ export class FlowEditor {
       hasRunItem = true;
     }
     if (hasRunItem) menu.separator();
+    const sel = this.getSelectedNodeIds();
+    const inSelection = (node as {selected?: boolean}).selected === true;
     menu
       .item(node.collapsed ? 'Expand' : 'Collapse', () => void this.toggleCollapsed(node.id))
-      .item('Duplicate', () => void this.duplicateNode(node.id))
+      .item('Duplicate', () => {
+        // Right-clicking a node that is part of a multi-selection duplicates
+        // the whole selection (with its internal connections).
+        void this.duplicateNodes(inSelection && sel.length > 1 ? sel : [node.id]);
+      });
+    // Grouping: a multi-selection of ungrouped canvas nodes can become a
+    // group; a grouped node offers the way out.
+    const groupable = inSelection && sel.length > 1 && sel.filter((id) =>
+      this.editor.getNode(id)?.dgNodeType !== 'output' && !this.groupOf(id)).length > 1;
+    if (groupable)
+      menu.item('Group selected', () => void this.createGroupFromSelection());
+    if (this.groupOf(node.id))
+      menu.item('Remove from group', () => this.removeFromGroup(node.id));
+    menu
       .separator()
       .item('Delete', () => void this.removeNode(node.id))
       .show({causedBy: event});
@@ -2119,18 +2763,27 @@ export class FlowEditor {
     };
     window.addEventListener('pointerup', this.pointerUpTracker, true);
 
-    // Block right- or middle-click pointerdown from reaching the connection
-    // plugin's socket handler. The plugin doesn't filter by button; without
-    // this guard, a right-click on an output socket starts a fake
-    // pseudoconnection drag that follows the cursor until pointerup.
-    // We only stop the event when it landed inside a socket — pan, rect-
-    // select, and contextmenu emission elsewhere are unaffected.
-    this.container.addEventListener('pointerdown', (ev) => {
+    // Block right- or middle-click pointer events on sockets and node bodies
+    // from reaching the rete plugins — neither filters by button:
+    // - the connection plugin's socket pointerdown starts a fake
+    //   pseudoconnection drag that follows the cursor until pointerup;
+    // - the node view ignores non-left pointerdowns, so the event bubbles to
+    //   the area, whose selectable extension counts pointerdown→pointerup with
+    //   <4 moves as an empty-canvas click and unselects ALL — clearing the very
+    //   multi-selection the context menu's "Duplicate" is about to act on. The
+    //   area's pointerup listener sits on `window`, so BOTH halves of the
+    //   gesture must be swallowed here (capture phase, before the bubble path).
+    // Pan, rect-select, and the `contextmenu` DOM event (a separate event — the
+    // node menu still opens) are unaffected.
+    const guardNonPrimary = (ev: PointerEvent): void => {
       if (ev.button === 0) return;
       const target = ev.target as HTMLElement | null;
-      if (target?.closest('.ff-socket-row-input, .ff-socket-row-output, .ff-socket'))
+      if (target?.closest('.ff-socket-row-input, .ff-socket-row-output, .ff-socket, .ff-node, ' +
+          '.ff-group, .ff-annotation'))
         ev.stopPropagation();
-    }, true);
+    };
+    this.container.addEventListener('pointerdown', guardNonPrimary, true);
+    this.container.addEventListener('pointerup', guardNonPrimary, true);
   }
 
   private installKeyboardShortcuts(): void {
@@ -2157,9 +2810,45 @@ export class FlowEditor {
         if (e.shiftKey)
           void this.unselectAllNodes();
         else
-          for (const n of this.editor.getNodes()) void this.selectableApi.select(n.id, true);
+          // Members hidden inside minimized groups are invisible — selecting
+          // them would arm Delete/copy on nodes the user can't see.
+          for (const n of this.editor.getNodes())
+            if (!this.minimizedGroupOf(n.id)) void this.selectableApi.select(n.id, true);
         this.callbacks.onSelectionChanged?.();
         this.refreshChipSelection();
+      }
+
+      // Ctrl+G groups the selection; Ctrl+Shift+G ungroups every group any
+      // selected node belongs to.
+      if ((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey) &&
+          this.container.isConnected) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          const seen = new Set<string>();
+          for (const id of this.getSelectedNodeIds()) {
+            const g = this.groupOf(id);
+            if (g) seen.add(g.id);
+          }
+          for (const gid of seen) this.ungroup(gid);
+        }
+        else
+          void this.createGroupFromSelection();
+      }
+
+      if (e.key === 'Escape' && this.container.isConnected &&
+          this.getSelectedNodeIds().length > 0)
+        void this.unselectAllNodes();
+
+      // Copy / paste nodes. A live text selection means the user is copying
+      // text — leave the event to the browser.
+      if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
+          this.container.isConnected && !document.getSelection()?.toString())
+        this.copySelection();
+
+      if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
+          this.container.isConnected && this.clipboard) {
+        e.preventDefault();
+        void this.pasteClipboard();
       }
     };
     window.addEventListener('keydown', this.keydownHandler);
@@ -2175,7 +2864,8 @@ export class FlowEditor {
     this.container.addEventListener('dblclick', (e) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (target.closest('.ff-node, .ff-socket, .ff-control, .ff-minimap, .d4-menu-item, input, textarea, select'))
+      if (target.closest(
+        '.ff-node, .ff-socket, .ff-control, .ff-minimap, .ff-group, .d4-menu-item, input, textarea, select'))
         return;
       e.preventDefault();
       void this.zoomToFit();
@@ -2252,33 +2942,179 @@ export class FlowEditor {
     }
   }
 
-  /** Duplicate a node next to the original (no connections copied). */
-  async duplicateNode(nodeId: string): Promise<FlowNode | null> {
-    const original = this.editor.getNode(nodeId);
-    if (!original || !original.dgTypeName) return null;
+  // ---------- duplicate / copy / paste ----------
+
+  private clipboard: GraphClip | null = null;
+  /** How many times the current clipboard was pasted — each paste fans out
+   *  further so repeated Ctrl+V doesn't stack copies on the same spot. */
+  private pasteCount = 0;
+
+  private snapshotNodes(ids: string[]): GraphClip {
+    const idSet = new Set(ids);
+    const nodes = this.editor.getNodes()
+      .filter((n) => idSet.has(n.id) && n.dgTypeName != null)
+      .map((n) => ({
+        id: n.id, typeName: n.dgTypeName!, label: n.label, description: n.description,
+        collapsed: n.collapsed, pos: {...n.pos},
+        properties: JSON.parse(JSON.stringify(n.properties)),
+        inputValues: JSON.parse(JSON.stringify(n.inputValues)),
+      }));
+    const kept = new Set(nodes.map((n) => n.id));
+    const connections = this.editor.getConnections()
+      .filter((c) => kept.has(c.source) && kept.has(c.target))
+      .map((c) => ({source: c.source, sourceOutput: String(c.sourceOutput),
+        target: c.target, targetInput: String(c.targetInput)}));
+    return {nodes, connections};
+  }
+
+  /** Output paramNames and SetVar variableNames share one namespace (the
+   *  validator flags duplicates as errors) — a copy must land with a unique
+   *  name instead of instantly invalidating the graph. */
+  private dedupeVariableName(fresh: FlowNode): void {
+    const taken = new Set<string>();
+    for (const n of this.editor.getNodes()) {
+      const p = n.properties?.paramName;
+      if (typeof p === 'string' && p !== '') taken.add(p);
+      const v = n.inputValues?.variableName;
+      if (typeof v === 'string' && v !== '') taken.add(v);
+    }
+    const bump = (name: string): string => {
+      if (!taken.has(name)) return name;
+      const m = name.match(/^(.*?)(\d+)$/);
+      const base = m ? m[1] : name;
+      let i = m ? parseInt(m[2], 10) + 1 : 2;
+      while (taken.has(`${base}${i}`)) i++;
+      return `${base}${i}`;
+    };
+    const paramName = fresh.properties?.paramName;
+    if (typeof paramName === 'string' && paramName !== '')
+      fresh.properties.paramName = bump(paramName);
+    const varName = fresh.inputValues?.variableName;
+    if (isSetVarNode(fresh) && typeof varName === 'string' && varName !== '')
+      fresh.inputValues.variableName = bump(varName);
+  }
+
+  /** Instantiate a clip's nodes (offset from their recorded positions) and the
+   *  connections among them; the copies become the new selection so they can
+   *  be dragged as a group right away. */
+  private async materializeClip(clip: GraphClip, offset: number): Promise<FlowNode[]> {
     // Lazy require to avoid a circular import.
     const {createNode} = await import('./node-factory');
-    const fresh = createNode(original.dgTypeName);
-    if (!fresh) return null;
-    fresh.label = original.label;
-    fresh.properties = JSON.parse(JSON.stringify(original.properties));
-    fresh.inputValues = JSON.parse(JSON.stringify(original.inputValues));
-    await this.editor.addNode(fresh);
-    const offset = 30;
-    fresh.pos = {x: original.pos.x + offset, y: original.pos.y + offset};
-    await this.area.translate(fresh.id, fresh.pos);
-    return fresh;
+    const idMap = new Map<string, FlowNode>();
+    for (const snap of clip.nodes) {
+      const fresh = createNode(snap.typeName);
+      if (!fresh) continue;
+      fresh.label = snap.label;
+      fresh.description = snap.description;
+      fresh.collapsed = snap.collapsed;
+      fresh.properties = JSON.parse(JSON.stringify(snap.properties));
+      fresh.inputValues = JSON.parse(JSON.stringify(snap.inputValues));
+      this.dedupeVariableName(fresh);
+      await this.editor.addNode(fresh);
+      fresh.pos = {x: snap.pos.x + offset, y: snap.pos.y + offset};
+      await this.area.translate(fresh.id, fresh.pos);
+      idMap.set(snap.id, fresh);
+    }
+    for (const c of clip.connections) {
+      const source = idMap.get(c.source);
+      const target = idMap.get(c.target);
+      if (source && target)
+        await this.addConnectionByKeys(source.id, c.sourceOutput, target.id, c.targetInput);
+    }
+    const created = [...idMap.values()];
+    if (created.length > 0) {
+      await this.selector.unselectAll();
+      for (const n of created) await this.selectableApi.select(n.id, true);
+      this.lastPickedId = created[0].id;
+      this.callbacks.onSelectionChanged?.();
+      this.refreshChipSelection();
+    }
+    return created;
+  }
+
+  /** Duplicate the given nodes next to the originals. Connections whose both
+   *  endpoints are duplicated are duplicated too, and the copies become the
+   *  selection (so they're immediately movable as a group). */
+  async duplicateNodes(ids: string[]): Promise<FlowNode[]> {
+    return this.materializeClip(this.snapshotNodes(ids), 30);
+  }
+
+  /** Snapshot the selected nodes into the editor clipboard (Ctrl+C). Returns
+   *  how many nodes were copied (0 = nothing selected, clipboard untouched). */
+  copySelection(): number {
+    const clip = this.snapshotNodes(this.getSelectedNodeIds());
+    if (clip.nodes.length === 0) return 0;
+    this.clipboard = clip;
+    this.pasteCount = 0;
+    return clip.nodes.length;
+  }
+
+  /** Materialize the clipboard (Ctrl+V). Each repeated paste offsets further. */
+  async pasteClipboard(): Promise<FlowNode[]> {
+    if (!this.clipboard) return [];
+    this.pasteCount++;
+    return this.materializeClip(this.clipboard, 30 * this.pasteCount);
   }
 
   // ---------- public API consumed by the rest of the package ----------
 
   async addNodeAtCenter(node: FlowNode): Promise<FlowNode> {
     await this.editor.addNode(node);
-    const center = this.viewportCenter();
-    node.pos = center;
-    await this.area.translate(node.id, center);
-    await this.panToNode(node.id);
+    const spot = this.findFreeSpot(this.viewportCenter(), node.id);
+    node.pos = spot;
+    await this.area.translate(node.id, spot);
+    // Pan only when the chosen spot isn't already in view — chasing every new
+    // node re-centers the viewport and walks the EARLIER nodes off-screen
+    // (by the third added node the first one sat behind the toolbox).
+    if (!this.isSpotVisible(spot))
+      await this.panToNode(node.id);
     return node;
+  }
+
+  /** Whether a node placed at `spot` (canvas coords, assumed ~220×140) would
+   *  be fully inside the current viewport. */
+  private isSpotVisible(spot: {x: number; y: number}, w = 220, h = 140): boolean {
+    const t = this.area.area.transform;
+    const rect = this.area.container.getBoundingClientRect();
+    const x1 = spot.x * t.k + t.x;
+    const y1 = spot.y * t.k + t.y;
+    const x2 = (spot.x + w) * t.k + t.x;
+    const y2 = (spot.y + h) * t.k + t.y;
+    return x1 >= 0 && y1 >= 0 && x2 <= rect.width && y2 <= rect.height;
+  }
+
+  /** A position at/near `start` where a node of roughly `w`×`h` overlaps no
+   *  existing canvas node — a freshly added node must never bury the previous
+   *  one (that hides the very sockets the user is about to wire). Prefers
+   *  moving right (data flows left→right), then down, ring by ring. */
+  private findFreeSpot(
+    start: {x: number; y: number}, skipId: string, w = 220, h = 140,
+  ): {x: number; y: number} {
+    const others = this.editor.getNodes()
+      .filter((n) => n.id !== skipId && n.dgNodeType !== 'output' && !this.minimizedGroupOf(n.id))
+      .map((n) => {
+        const sz = this.measureNode(n.id);
+        return {x: n.pos.x, y: n.pos.y, w: sz.w, h: sz.h};
+      });
+    const margin = 30;
+    const free = (x: number, y: number): boolean => others.every((o) =>
+      x + w + margin <= o.x || x >= o.x + o.w + margin ||
+      y + h + margin <= o.y || y >= o.y + o.h + margin);
+    if (free(start.x, start.y)) return start;
+    for (let ring = 1; ring <= 8; ring++) {
+      const dx = ring * 260;
+      const dy = ring * 180;
+      const candidates = [
+        {x: start.x + dx, y: start.y}, {x: start.x, y: start.y + dy},
+        {x: start.x + dx, y: start.y + dy}, {x: start.x - dx, y: start.y},
+        {x: start.x, y: start.y - dy}, {x: start.x - dx, y: start.y + dy},
+        {x: start.x + dx, y: start.y - dy}, {x: start.x - dx, y: start.y - dy},
+      ];
+      for (const c of candidates) {
+        if (free(c.x, c.y)) return c;
+      }
+    }
+    return start;
   }
 
   async addNodeAt(node: FlowNode, x: number, y: number): Promise<FlowNode> {
@@ -2363,6 +3199,10 @@ export class FlowEditor {
     // An output node's visible form is its strip chip — re-render it too
     // (param renames, declared-type changes, run status).
     if (this.editor.getNode(nodeId)?.dgNodeType === 'output') this.scheduleStripSync(true);
+    // Run-status changes arrive here (ExecutionVisualizer) — keep the node's
+    // group card dot in sync.
+    const g = this.groupOf(nodeId);
+    if (g) this.refreshGroupStatus(g);
   }
 
   // ---------- viewport ----------
@@ -2397,7 +3237,33 @@ export class FlowEditor {
     // anyway). Fall back to everything when only output rows exist.
     const nodes = this.editor.getNodes();
     const inner = nodes.filter((n) => n.dgNodeType !== 'output');
-    await AreaExtensions.zoomAt(this.area, inner.length > 0 ? inner : nodes, {scale: 0.9});
+    if (!Array.from(this.groups.values()).some((g) => g.minimized)) {
+      await AreaExtensions.zoomAt(this.area, inner.length > 0 ? inner : nodes, {scale: 0.9});
+      return;
+    }
+    // Manual fit: zoomAt measures node views, and hidden members measure at
+    // (0,0) — compute the bounds from visible nodes + minimized cards instead.
+    let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+    const grow = (x: number, y: number, w: number, h: number): void => {
+      minX = Math.min(minX, x); minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x + w); maxY = Math.max(maxY, y + h);
+    };
+    for (const n of inner) {
+      if (this.minimizedGroupOf(n.id)) continue;
+      const sz = this.measureNode(n.id);
+      grow(n.pos.x, n.pos.y, sz.w, sz.h);
+    }
+    for (const g of this.groups.values()) {
+      if (!g.minimized) continue;
+      grow(g.pos.x, g.pos.y, g.element.offsetWidth || 180, g.element.offsetHeight || 40);
+    }
+    if (!Number.isFinite(minX)) return;
+    const rect = this.canvasEl.getBoundingClientRect();
+    const gw = Math.max(1, maxX - minX); const gh = Math.max(1, maxY - minY);
+    const k = Math.min(2.5, Math.max(0.2, Math.min(rect.width / gw, rect.height / gh) * 0.9));
+    await this.area.area.zoom(k);
+    await this.area.area.translate(
+      rect.width / 2 - (minX + gw / 2) * k, rect.height / 2 - (minY + gh / 2) * k);
   }
 
   /** Re-arrange the whole graph with the layered/banded layout used by the
@@ -2406,6 +3272,10 @@ export class FlowEditor {
    *  path, producer paths above the paths that consume them. Repositions every
    *  node and zooms to fit. */
   async autoLayout(): Promise<void> {
+    // A whole-canvas re-layout repositions every node — expand minimized
+    // groups first so their (hidden) members don't land under a stale card.
+    for (const g of this.groups.values())
+      if (g.minimized) await this.maximizeGroup(g.id);
     // Output rows are strip-pinned — lay out the graph proper without them
     // (their translates would be canceled by the pin guard anyway).
     const nodes = this.editor.getNodes().filter((n) => n.dgNodeType !== 'output');
@@ -2432,6 +3302,8 @@ export class FlowEditor {
     this.connectionStatuses.clear();
     for (const ann of Array.from(this.annotations.values()))
       this.removeAnnotation(ann.id);
+    for (const g of Array.from(this.groups.values()))
+      this.ungroup(g.id);
     await this.editor.clear();
   }
 
@@ -2452,6 +3324,8 @@ export class FlowEditor {
     this.outputStripEl = null;
     this.stripChipsEl = null;
     this.chipSocketSubs.clear();
+    this.groupSocketSubs.clear();
+    this.groups.clear();
     this.area.destroy();
     this.canvasWrap.remove();
   }

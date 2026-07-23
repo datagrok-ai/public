@@ -1,6 +1,15 @@
 ---
 title: "Environment setup"
 sidebar_position: 0
+description: How to install Node.js, npm, webpack, and datagrok-tools, and configure your developer key for package development.
+keywords:
+  - developer key
+  - grok config
+  - datagrok-tools
+  - Node.js
+  - npm
+  - webpack
+  - local development setup
 ---
 
 This article explains how to set up a development environment for developing Datagrok [packages](../develop.md#packages).

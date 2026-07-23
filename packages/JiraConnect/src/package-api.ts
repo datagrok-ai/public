@@ -28,6 +28,9 @@ export namespace funcs {
     return await grok.functions.call('JiraConnect:IssueData', { issueKey });
   }
 
+  /**
+  Fetches a field value from Jira for each ticket key in a column
+  */
   export async function getJiraField(ticketColumn: DG.Column , field: string ): Promise<DG.Column> {
     return await grok.functions.call('JiraConnect:GetJiraField', { ticketColumn, field });
   }

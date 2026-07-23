@@ -1,5 +1,15 @@
 ---
 title: "Docking"
+description: How to configure and run molecular docking simulations with the AutoDock GPU plugin in Datagrok.
+keywords:
+  - AutoDock GPU
+  - PDBQT
+  - macromolecule target
+  - ligand
+  - binding energy
+  - docking pose
+  - Molstar viewer
+  - grid parameter file
 ---
 
 The Docking package is a plugin that seamlessly integrates the [AutoDock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) 

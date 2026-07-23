@@ -512,6 +512,62 @@ export namespace funcs {
     return await grok.functions.call('CVMTests:GetColumn', { table, columnName });
   }
 
+  export async function jsCvmInt(x: number ): Promise<number> {
+    return await grok.functions.call('CVMTests:JsCvmInt', { x });
+  }
+
+  export async function jsCvmDouble(x: number ): Promise<number> {
+    return await grok.functions.call('CVMTests:JsCvmDouble', { x });
+  }
+
+  export async function jsCvmBool(x: boolean ): Promise<boolean> {
+    return await grok.functions.call('CVMTests:JsCvmBool', { x });
+  }
+
+  export async function jsCvmString(x: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmString', { x });
+  }
+
+  export async function jsCvmBigInt(x: bigint ): Promise<bigint> {
+    return await grok.functions.call('CVMTests:JsCvmBigInt', { x });
+  }
+
+  export async function jsCvmDataframe(df: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('CVMTests:JsCvmDataframe', { df });
+  }
+
+  export async function jsCvmDataframeTypes(df: DG.DataFrame ): Promise<DG.DataFrame> {
+    return await grok.functions.call('CVMTests:JsCvmDataframeTypes', { df });
+  }
+
+  export async function jsCvmEmptyDataframe(): Promise<DG.DataFrame> {
+    return await grok.functions.call('CVMTests:JsCvmEmptyDataframe', {});
+  }
+
+  export async function jsCvmError(): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmError', {});
+  }
+
+  export async function jsCvmCancel(seconds: number ): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmCancel', { seconds });
+  }
+
+  export async function jsCvmProgress(): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmProgress', {});
+  }
+
+  export async function jsCvmCurrentUser(): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmCurrentUser', {});
+  }
+
+  export async function jsCvmServer(x: string ): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmServer', { x });
+  }
+
+  export async function jsCvmCustomContainer(): Promise<string> {
+    return await grok.functions.call('CVMTests:JsCvmCustomContainer', {});
+  }
+
   export async function info(): Promise<void> {
     return await grok.functions.call('CVMTests:Info', {});
   }

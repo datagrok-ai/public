@@ -1,6 +1,14 @@
 ---
 title: "Webservices"
 sidebar_position: 3
+description: Connect Datagrok to webservices by importing OpenAPI/Swagger specifications as data connections and queries.
+keywords:
+  - openapi
+  - swagger
+  - webservice connector
+  - rest api integration
+  - api key authentication
+  - webservices manager
 ---
 
 [OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs, 

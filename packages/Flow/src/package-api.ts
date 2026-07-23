@@ -17,6 +17,20 @@ export namespace funcs {
   }
 
   /**
+  Reads a file uploaded into a flow and parses it into a table
+  */
+  export async function readUploadedFile(fileId: string , fileName: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:ReadUploadedFile', { fileId, fileName });
+  }
+
+  /**
+  Keeps uploaded-file permissions in sync when a flow script is shared
+  */
+  export async function flowShareSync(): Promise<void> {
+    return await grok.functions.call('Flow:FlowShareSync', {});
+  }
+
+  /**
   Interactive function chain designer
   */
   export async function funcflowApp(path?: string ): Promise<DG.View> {
@@ -55,6 +69,76 @@ export namespace funcs {
 
   export async function flowScriptWidget(script: any ): Promise<any> {
     return await grok.functions.call('Flow:FlowScriptWidget', { script });
+  }
+
+  /**
+  List the current flow graph: all nodes (id, label, type, status, set input values) and connections. Call this first to understand what is on the canvas
+  */
+  export async function listFlowNodes(view: DG.View ): Promise<any> {
+    return await grok.functions.call('Flow:ListFlowNodes', { view });
+  }
+
+  /**
+  Ports (with DG types), editable input values, unmet requirements, and last-run outputs of one node
+  */
+  export async function getFlowNodeDetails(view: DG.View , nodeId: string ): Promise<any> {
+    return await grok.functions.call('Flow:GetFlowNodeDetails', { view, nodeId });
+  }
+
+  /**
+  Search the flow node catalog (a curated subset of platform functions plus input/output/utility nodes). ALWAYS filter: pass a query with what the node should do (e.g. "join tables", "open file"), and/or a DG type it must accept or produce (dataframe, column, string, ...). Returns at most limit (default 15) matches with their input/output types
+  */
+  export async function findFlowNodeTypes(view: DG.View , query?: string , acceptsInputType?: string , producesOutputType?: string , limit?: number ): Promise<any> {
+    return await grok.functions.call('Flow:FindFlowNodeTypes', { view, query, acceptsInputType, producesOutputType, limit });
+  }
+
+  /**
+  Add a node to the canvas by its registered typeName (from findFlowNodeTypes). Optionally set editable input values right away. Returns the new node id and its ports
+  */
+  export async function addFlowNode(view: DG.View , typeName: string , label?: string , inputValues?: any ): Promise<any> {
+    return await grok.functions.call('Flow:AddFlowNode', { view, typeName, label, inputValues });
+  }
+
+  /**
+  Connect a source node output to a target node input (port keys from getFlowNodeDetails / addFlowNode). Types must be compatible
+  */
+  export async function connectFlowNodes(view: DG.View , sourceNodeId: string , sourceOutput: string , targetNodeId: string , targetInput: string ): Promise<any> {
+    return await grok.functions.call('Flow:ConnectFlowNodes', { view, sourceNodeId, sourceOutput, targetNodeId, targetInput });
+  }
+
+  /**
+  Set editable input values of a node (key to value; keys from getFlowNodeDetails). Marks the node and its downstream stale
+  */
+  export async function setFlowNodeInputs(view: DG.View , nodeId: string , values: any ): Promise<any> {
+    return await grok.functions.call('Flow:SetFlowNodeInputs', { view, nodeId, values });
+  }
+
+  /**
+  Select a node on the canvas so the user sees it (opens its properties panel)
+  */
+  export async function selectFlowNode(view: DG.View , nodeId: string ): Promise<any> {
+    return await grok.functions.call('Flow:SelectFlowNode', { view, nodeId });
+  }
+
+  /**
+  List Flow built-in interactive guides: step-by-step tutorials and short "how do I" walkthroughs that highlight the actual UI. When the user asks how to do something in Flow, check here first — a matching guide beats a textual explanation
+  */
+  export async function listFlowGuides(view: DG.View , query?: string ): Promise<any> {
+    return await grok.functions.call('Flow:ListFlowGuides', { view, query });
+  }
+
+  /**
+  Start an interactive guide (id from listFlowGuides) — it highlights the real UI step by step and waits for the user to act. ALWAYS confirm with the user first before starting one; never launch it unasked
+  */
+  export async function startFlowGuide(view: DG.View , guideId: string ): Promise<any> {
+    return await grok.functions.call('Flow:StartFlowGuide', { view, guideId });
+  }
+
+  /**
+  Validate and execute the whole flow. Returns validation problems instead of running if the graph is invalid; otherwise waits for the run and reports per-node failures
+  */
+  export async function runFlow(view: DG.View ): Promise<any> {
+    return await grok.functions.call('Flow:RunFlow', { view });
   }
 
   export async function viewFlowFile(file: DG.FileInfo ): Promise<DG.View> {

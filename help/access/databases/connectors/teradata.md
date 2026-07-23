@@ -1,5 +1,13 @@
 ---
 title: "Teradata"
+description: Connect Datagrok to a Teradata database using SQL queries via a JDBC driver.
+keywords:
+  - teradata database
+  - jdbc driver
+  - connect to a database
+  - schema browsing
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to

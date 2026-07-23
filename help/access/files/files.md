@@ -2,6 +2,15 @@
 title: "Files"
 mdx:
   format: mdx
+description: Connect Datagrok to file storage, browse and preview files, set up indexing, caching, and sharing.
+keywords:
+  - file share
+  - file storage
+  - file manager
+  - network drive
+  - file indexing
+  - file caching
+  - share a folder
 ---
 
 ```mdx-code-block

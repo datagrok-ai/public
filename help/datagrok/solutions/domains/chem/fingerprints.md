@@ -1,5 +1,14 @@
 ---
 title: "Supported fingerprints"
+description: Reference list of molecular fingerprint types Datagrok supports for similarity search and clustering.
+keywords:
+  - molecular fingerprints
+  - Morgan circular fingerprint
+  - MACCS keys
+  - RDKit fingerprint
+  - atom pair fingerprint
+  - topological torsion fingerprint
+  - similarity screening
 ---
 
 Datagrok supports calculation of the following fingerprints:

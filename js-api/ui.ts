@@ -2592,11 +2592,35 @@ export namespace hints {
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
+    let clippers: HTMLElement[] | null = null;
+    function targetClipped(): boolean {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0)
+        return true;
+      if (r.bottom <= 0 || r.right <= 0 || r.top >= window.innerHeight || r.left >= window.innerWidth)
+        return true;
+      if (clippers == null) {
+        clippers = [];
+        for (let p = el.parentElement; p != null && p !== document.body; p = p.parentElement) {
+          const style = getComputedStyle(p);
+          if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
+            clippers.push(p);
+        }
+      }
+      for (const p of clippers) {
+        const pr = p.getBoundingClientRect();
+        if (r.bottom <= pr.top || r.top >= pr.bottom || r.right <= pr.left || r.left >= pr.right)
+          return true;
+      }
+      return false;
+    }
+
     let setPosition = setInterval(function () {
       if ($('body').has(el).length != 0) {
         const indicatorNode = el.getBoundingClientRect();
         hintIndicator.style.left = indicatorNode.left + 'px';
         hintIndicator.style.top = indicatorNode.top + 'px';
+        hintIndicator.style.display = targetClipped() ? 'none' : '';
       } else {
         hintIndicator.remove();
         clearInterval(setPosition);

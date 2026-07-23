@@ -1,5 +1,12 @@
 ---
 title: "Create file exporters"
+description: Register a fileExporter function to add a custom "Save as" entry to the file export menu.
+keywords:
+  - fileExporter role
+  - export menu
+  - save as SDF
+  - custom file format
+  - download converted file
 ---
 
 Part of Datagrok's functionality is built for easy file management. File exporters, along

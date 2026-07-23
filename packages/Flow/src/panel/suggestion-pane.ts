@@ -1,4 +1,4 @@
-/** Toolbox Suggestions pane — the bottom ~30% of the function browser.
+/** Toolbox Suggestions pane — the bottom 25% of the function browser.
  *
  *  Renders the ranked next steps from the suggestion engine
  *  ([suggestion-engine.ts](../suggest/suggestion-engine.ts)) and refreshes,
@@ -51,19 +51,23 @@ export class SuggestionPane {
     this.caretEl.addEventListener('click', () => this.setCollapsed(!this.collapsed));
     ui.tooltip.bind(this.caretEl, () => this.collapsed ? 'Expand suggestions' : 'Minimize suggestions');
 
+    // The bulb marks the strip as "the assistant", not another catalog section.
+    const bulb = ui.iconFA('lightbulb');
+    bulb.classList.add('ff-suggest-pane-bulb');
     const title = ui.div([], 'ff-suggest-pane-title');
     title.textContent = 'Suggestions';
     this.countEl = setTid(ui.div([], 'ff-suggest-pane-count'), 'suggest-pane-count');
     const header = setTid(
-      ui.div([title, this.countEl, this.caretEl], 'ff-suggest-pane-header'), 'suggest-pane-header');
+      ui.div([bulb, title, this.countEl, this.caretEl], 'ff-suggest-pane-header'), 'suggest-pane-header');
     header.addEventListener('click', (e) => {
-      if (e.target === header || e.target === title) this.setCollapsed(!this.collapsed);
+      if (e.target === header || e.target === title || e.target === bulb) this.setCollapsed(!this.collapsed);
     });
 
     this.listEl = setTid(ui.div([], 'ff-suggest-pane-list'), 'suggest-pane-list');
 
     this.root = setTid(ui.div([header, this.listEl], 'ff-suggest-pane'), 'suggest-pane');
     this.applyCollapsed();
+    this.render(); // show the "select a node…" hint until the first refresh
   }
 
   private setCollapsed(v: boolean): void {
@@ -111,16 +115,21 @@ export class SuggestionPane {
   private render(): void {
     this.listEl.innerHTML = '';
     this.countEl.textContent = this.suggestions.length ? String(this.suggestions.length) : '';
+    // With nothing to suggest the pane hugs its hint text instead of holding
+    // a tall empty strip (see .ff-suggest-pane[data-empty] in funcflow.css).
+    this.root.dataset.empty = String(this.suggestions.length === 0);
     if (this.suggestions.length === 0) {
       const empty = ui.div([], 'ff-suggest-pane-empty');
-      empty.textContent = 'Select a node — or run the flow — to see what fits next.';
+      empty.textContent = 'Click a step on the canvas — or run the flow — to see what you can add next.';
       this.listEl.appendChild(empty);
       return;
     }
     for (const s of this.suggestions) {
-      const label = ui.div([], 'ff-suggest-pane-item-label');
+      // One thin line per suggestion: action first, inline muted reason after
+      // (the "— " lead-in comes from CSS) — more fit in the 25% strip.
+      const label = ui.span([], 'ff-suggest-pane-item-label');
       label.textContent = s.label;
-      const reason = ui.div([], 'ff-suggest-pane-item-reason');
+      const reason = ui.span([], 'ff-suggest-pane-item-reason');
       reason.textContent = s.reason;
       const item = setTid(ui.div([label, reason], 'ff-suggest-pane-item'), 'suggest-pane-item');
       item.addEventListener('dblclick', () => this.onAccept(s));

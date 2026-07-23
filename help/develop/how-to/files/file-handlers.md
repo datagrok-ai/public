@@ -1,5 +1,12 @@
 ---
 title: "Develop custom file handlers"
+description: Register a fileHandler function to open a custom file extension as one or more Datagrok tables.
+keywords:
+  - fileHandler role
+  - meta.ext
+  - custom file extension
+  - open file as table
+  - fasta file handler
 ---
 
 To handle custom file formats, register a function with the `fileHandler` role, and specify the comma-separated

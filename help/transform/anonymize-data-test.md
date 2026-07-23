@@ -1,7 +1,15 @@
+---
+title: "Tests: Anonymize data"
+description: Testing scenarios for validating the Anonymize data dialog on categorical and numerical columns.
+keywords:
+  - anonymize data test
+  - data masking testing
+  - randomization factor validation
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Anonymize data -->
 <!-- SUBTITLE: -->
-
-# Tests: Anonymize data
 
 Sometimes, it is needed to prepare a dataset that conveys an idea of the structure in the data along with the patterns
 in it, but does not contain the real data points. "[Anonymize Data](anonymize-data.md)" functionality can be handy here.

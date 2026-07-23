@@ -1,5 +1,12 @@
 ---
 title: "Statistics"
+description: Show descriptive statistics such as mean, median, standard deviation, and min/max for chosen columns.
+keywords:
+  - descriptive statistics
+  - summary statistics
+  - mean median
+  - standard deviation
+  - data summary table
 ---
 
 Provides specified descriptive statistics for the chosen columns.

@@ -1,5 +1,13 @@
 ---
 title: "Structural alerts"
+description: Describes how Datagrok flags potentially hazardous substructures using PAINS and other structural alert rule sets.
+keywords:
+  - PAINS filters
+  - pan assay interference compounds
+  - toxicophore detection
+  - SMARTS substructure alerts
+  - read-across categorization
+  - BMS Dundee Glaxo Inpharmatica rule sets
 ---
 
 Structural alerts are widely accepted in chemical toxicology and regulatory decision support as a simple and transparent

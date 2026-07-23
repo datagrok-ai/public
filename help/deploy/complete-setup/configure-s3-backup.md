@@ -1,6 +1,13 @@
 ---
 title: "Advanced: Configure AWS S3 backup"
 sidebar_position: 4
+description: Enable AWS Backup with bucket versioning to automatically back up the S3 bucket used by Datagrok.
+keywords:
+  - s3 bucket versioning
+  - aws backup vault
+  - backup plan schedule
+  - iam backup role
+  - restore from backup
 ---
 
 This document contains instructions to configure AWS S3 bucket backup

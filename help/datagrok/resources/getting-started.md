@@ -3,6 +3,15 @@ title: "Getting started"
 mdx:
   format: mdx
 sidebar_position: 1
+description: Walks new users through finding help, installing plugins, creating a project, connecting to data, and building dynamic dashboards.
+keywords:
+  - onboarding
+  - first steps
+  - install plugins
+  - drag and drop csv
+  - connect to database
+  - dynamic dashboard tutorial
+  - bio and chem menus
 ---
 
 ## Where to find help
@@ -19,7 +28,7 @@ on how to start and grow your data ecosystem. Here is how to get help:
   (requires the [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials) package). These tutorials cover multiple areas, such as data access, exploratory
   data analysis, cheminformatics, or machine learning. This requires the **Tutorials** plugin to be installed,
   in addition to domain packages (for instance, cheminformatics tutorials is in the **Chem** package)
-* Reach out to us - either to your support engineer, or info@datagrok.ai 
+* Reach out to us - either to your support engineer, or <info@datagrok.ai> 
 
 
 ## Install plugins

@@ -1,5 +1,12 @@
 ---
 title: "Publishing enrichments with Datagrok plugins"
+description: Bundle JSON enrichment definitions with a plugin so users can join extra database fields to a table with one click.
+keywords:
+  - enrichments folder
+  - enrichment JSON
+  - join database fields
+  - PowerPack enrichments
+  - column context panel join
 ---
 
 ## Overview

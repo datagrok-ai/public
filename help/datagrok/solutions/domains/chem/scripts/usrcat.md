@@ -1,5 +1,13 @@
 ---
 title: "USRCAT"
+description: Screen large compound libraries by molecular shape and pharmacophore using the USRCAT algorithm.
+keywords:
+  - ligand-based virtual screening
+  - molecular shape similarity
+  - ultrafast shape recognition
+  - pharmacophore features
+  - ultrafast shape recognition with credo atom types
+  - conformer screening
 ---
 
 Ligand-based virtual screening using molecular shape is an important tool for researchers who wish to find novel

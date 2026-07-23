@@ -1,6 +1,16 @@
 ---
 title: "Acknowledgments"
 sidebar position: 4
+description: Lists the open-source projects and libraries that Datagrok uses across data science, cheminformatics, and platform infrastructure.
+keywords:
+  - open-source acknowledgements
+  - third-party projects
+  - open source credits
+  - rdkit
+  - jupyter
+  - opencpu
+  - scikit-learn
+  - dock spawn
 ---
 
 We are using a number of great open-source projects in our platform. Here they are, in no particular order:

@@ -1,5 +1,12 @@
 ---
 title: "Select duplicates"
+description: Select rows with duplicate values based on chosen key columns, and optionally remove extras.
+keywords:
+  - remove duplicates
+  - find duplicate rows
+  - deduplicate table
+  - select duplicate rows
+  - duplicate key detection
 ---
 
 Selects rows with duplicate values, comparing them by the selected key columns.

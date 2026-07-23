@@ -1,5 +1,12 @@
 ---
 title: "Heatmap"
+description: Display a color-coded grid where cell shading represents numeric or categorical values across the dataset.
+keywords:
+  - heat map
+  - color-coded grid
+  - multivariate comparison
+  - intensity map
+  - qualitative palette
 ---
 
 A heatmap is a spreadsheet (grid) that displays colors instead of numbers and

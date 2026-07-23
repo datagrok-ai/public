@@ -1,5 +1,15 @@
 ---
 title: "Register identifier patterns"
+description: Register custom identifier patterns and handlers, or use the DB-explorer library, to detect and display database-linked IDs.
+keywords:
+  - semantic type pattern
+  - regex identifier
+  - ObjectHandler
+  - CHEMBL ID
+  - DB-explorer library
+  - db-explorer editor
+  - drill-down exploration
+  - foreign key join
 ---
 
 Datagrok allows you to easily register identifier patterns, attach handlers to them and detect them in text everywhere on the platform. For example, you can register a pattern for CHEMBL identifiers (`CHEMBL` followed by numbers), attach a handler to it that queries the database for the compound and retrieves its structure to display it in the tooltip or context panel.
@@ -157,11 +167,11 @@ This is the most important section. It defines the "Entry Points"—the semantic
 * **Semantic Type**: The specific name used by Datagrok to tag this data (e.g., `CHEMBL_ID`). If you use an existing semantic type, Datagrok will use your configuration to display info panels for it.
 * **Schema, Table & Column**: The specific database table and column where this identifier can be found.
 * **Match Regexp**: (Optional) A JavaScript regular expression to automatically detect this semantic type in imported data (e.g., `^CHEMBL\d+$`).
-    * **Test Regexp**: Click the "test" link to verify your regex against sample data.
+  * **Test Regexp**: Click the "test" link to verify your regex against sample data.
 * **Regexp Example**: (Optional) Provides metadata for the detector, helping with autodetection performance and showing user-friendly examples in the search UI.
-    * **Example**: A valid ID (e.g., `CHEMBL1234`).
-    * **Non-Variable Part**: The constant prefix (e.g., `CHEMBL`).
-    * **Regexp Markup**: A display-friendly pattern (e.g., `CHEMBL[0-9]+`).
+  * **Example**: A valid ID (e.g., `CHEMBL1234`).
+  * **Non-Variable Part**: The constant prefix (e.g., `CHEMBL`).
+  * **Regexp Markup**: A display-friendly pattern (e.g., `CHEMBL[0-9]+`).
 
 ![DB Explorer Identifiers](add-identifier.png)
 
@@ -172,8 +182,8 @@ Joins allow you to pull in data from related tables when an identifier is clicke
 * **From Schema/Table/Column**: The starting table (usually the one containing the identifier).
 * **To Schema/Table/Column**: The related table to join.
 * **Select Columns**: The most powerful part of the join configuration. You select which columns from the related table to include.
-    * You can **alias** columns (e.g., select `canonical_smiles` and rename it to `structure`) to make the output friendlier.
-    * These selected columns become available for display in the context panel and tooltips.
+  * You can **alias** columns (e.g., select `canonical_smiles` and rename it to `structure`) to make the output friendlier.
+  * These selected columns become available for display in the context panel and tooltips.
 
 ![DB Explorer Joins](configure-joins.png)
 
@@ -192,10 +202,10 @@ These sections refine how data is displayed:
 * **Unique Columns**: If a table has no Primary Key defined in the database, DB Explorer might struggle to identify unique rows. Specify a unique column here to fix row selection and linking.
 * **Custom Selected Columns**: By default, DB Explorer shows all columns from the main table plus joined columns. Use this to maintain a cleaner view by explicitly selecting exactly which columns to display for a specific table.
 * **Renderers**: Tell Datagrok how to render specific columns.
-    * `molecule`: Renders chemical structures (SMILES/Molfile).
-    * `helm`: Renders macromolecule sequences.
-    * `imageURL`: Renders an image from a URL string.
-    * `rawImage`: Renders binary image data.
+  * `molecule`: Renders chemical structures (SMILES/Molfile).
+  * `helm`: Renders macromolecule sequences.
+  * `imageURL`: Renders an image from a URL string.
+  * `rawImage`: Renders binary image data.
 
 ![Configured editor](configured-editor.png)
 

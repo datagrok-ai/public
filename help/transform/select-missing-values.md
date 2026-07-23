@@ -1,5 +1,12 @@
 ---
 title: "Select missing values"
+description: Select rows with missing (null) values in the specified columns.
+keywords:
+  - select missing values
+  - find null values
+  - missing data selection
+  - empty cell detection
+  - select rows with nulls
 ---
 
 Selects missing values in the specified columns.

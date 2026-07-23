@@ -10,8 +10,10 @@ import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
+import {listDbCatalogs, listDbSchemas, listDbTables, getDbTableDetails, listDbJoins, getSqlTestResult} from './ai/db-view-functions';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
+import {runBenchmark as runBenchmarkImpl, compareBenchmarks as compareBenchmarksImpl} from './ai/benchmark/benchmark';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
@@ -154,6 +156,24 @@ export class PackageFunctions {
     return await askWiki(prompt, sessionId);
   }
 
+  @grok.decorators.func({name: 'runBenchmark',
+    description: 'Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.'})
+  static async runBenchmark(
+    @grok.decorators.param({type: 'string', options: {description: 'Config label for this run, e.g. baseline / medium-effort'}}) label: string,
+    @grok.decorators.param({type: 'int', options: {optional: true, description: 'Repetitions per prompt (default 3)'}}) reps?: number,
+  ): Promise<string> {
+    return runBenchmarkImpl(label, reps ?? 3);
+  }
+
+  @grok.decorators.func({name: 'compareBenchmarks',
+    description: 'Diff two saved benchmark runs (by label) into a Markdown delta report and download it.'})
+  static async compareBenchmarks(
+    @grok.decorators.param({type: 'string', options: {description: 'Baseline run label'}}) labelA: string,
+    @grok.decorators.param({type: 'string', options: {description: 'Comparison run label'}}) labelB: string,
+  ): Promise<string> {
+    return compareBenchmarksImpl(labelA, labelB);
+  }
+
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
     useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function',
@@ -192,6 +212,57 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  // Functions applicable to the database query editor (surfaced via View.getFunctions()
+  // by their meta.viewType). Each takes the view; the AI assistant injects it automatically.
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List the catalogs available on this connection'})
+  static async listDbCatalogs(@grok.decorators.param({type: 'view'}) view: any): Promise<string> {
+    return listDbCatalogs(view);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List schemas of a catalog (defaults to the connection default catalog)'})
+  static async listDbSchemas(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbSchemas(view, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List tables of a schema with row counts'})
+  static async listDbTables(
+    @grok.decorators.param({type: 'view'}) view: any,
+    schemaName: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbTables(view, schemaName, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table'})
+  static async getDbTableDetails(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references to describe'}}) tables: string): Promise<string> {
+    return getDbTableDetails(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Foreign-key relationships involving the given tables — use to build correct JOINs'})
+  static async listDbJoins(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references'}}) tables: string): Promise<string> {
+    return listDbJoins(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run'})
+  static async getSqlTestResult(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'The SQL to test'}}) sql: string,
+    @grok.decorators.param({type: 'string', options: {description: 'One line describing what the query does'}}) description: string): Promise<string> {
+    return getSqlTestResult(view, sql, description);
   }
 
   @grok.decorators.func({})

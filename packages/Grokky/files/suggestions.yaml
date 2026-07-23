@@ -1,4 +1,20 @@
-# Power-search entries (surfaced in the global search bar — no view filter)
+# =====================================================================================
+# Grokky prompt suggestions
+#
+# context: powerSearch  -> global search bar (no view filter)
+#          panel        -> AI panel empty state + wand-icon menu (filtered by current view)
+# scope:   global       -> always applies
+#          view         -> applies when the current view's `type` == match.type (e.g. TableView)
+#          column       -> applies when the current table has a column with match.semType
+#
+# Slots: {name.filter} picks a live column where `filter` is truthy — isNumerical,
+#   isCategorical, semType, isDateTime — and biases the pick with `prefer` regexes.
+#   Extra path segments read column props, e.g. {x.stats.med}. A suggestion whose slot
+#   finds no matching column is dropped (and its block hides if all its suggestions drop),
+#   so type-specific blocks appear only when the data supports them.
+# =====================================================================================
+
+# ---------------------------------------------------------------------------- powerSearch
 - context: powerSearch
   scope: global
   key: function-chaining
@@ -31,51 +47,262 @@
       prompt: How to perform UMAP on sequences and what parameters are available to tune?
     - prompt: How to use lasso selection on a scatter plot?
 
-# Context-panel entries (surfaced via the wand icon — filtered by current view)
+# ==================================================================== panel :: by column
+# --- Small molecules ---------------------------------------------------------------------
 - context: panel
   scope: column
   key: molecule
   match: { semType: Molecule }
-  label: Molecule column
+  label: Molecules
   icon: atom
   suggestions:
-    - prompt: Show chemical space
-    - prompt: Calculate Lipinski descriptors
-    - prompt: Find molecules containing a pyridine ring
-    - prompt: Identify structural alerts and toxicity risks
+    - label: Explore the chemical space
+      prompt: Show the chemical space of {mol.semType} — reduce structures to 2D and plot them with structure previews
+    - label: Calculate molecular descriptors
+      prompt: Calculate physicochemical and Lipinski descriptors for {mol.semType} and add them as columns
+    - label: Cluster by similarity
+      prompt: Cluster {mol.semType} by structural similarity and show a representative of each cluster
+    - label: Find a substructure
+      immediateResponse: What substructure should I look for? Give me a SMILES/SMARTS pattern or a name like "pyridine".
+      prompt: Find and highlight the molecules in {mol.semType} that contain the substructure the user specifies.
+    - label: Flag structural alerts
+      prompt: Screen {mol.semType} for PAINS and structural toxicity alerts and flag the hits
+    - label: R-group analysis
+      prompt: Run R-group analysis on {mol.semType} around the common scaffold and summarize the R-groups
+    - label: Most diverse subset
+      prompt: Select the 24 most structurally diverse molecules from {mol.semType}
+    - label: Similarity to a reference
+      immediateResponse: Which reference molecule should I compare against? Give me a SMILES or a compound name.
+      prompt: Rank {mol.semType} by structural similarity to the reference the user specifies and highlight the closest matches.
+    - label: Standardize & deduplicate
+      prompt: Detect duplicates, salts and tautomers in {mol.semType}, then standardize the structures
+    - label: Murcko scaffolds
+      prompt: Extract Murcko scaffolds from {mol.semType} and show the most common ones
+
+# --- Biomolecules / sequences ------------------------------------------------------------
+- context: panel
+  scope: column
+  key: macromolecule
+  match: { semType: Macromolecule }
+  label: Sequences
+  icon: dna
+  suggestions:
+    - label: Explore the sequence space
+      prompt: Show the sequence space of {seq.semType} with clustering and previews
+    - label: Multiple sequence alignment
+      prompt: Run a multiple sequence alignment on {seq.semType}
+    - label: Composition & WebLogo
+      prompt: Show the monomer composition and a WebLogo for {seq.semType}
+    - label: Cluster sequences
+      prompt: Cluster {seq.semType} by similarity and show the clusters
+    - label: Find a motif
+      immediateResponse: What motif should I look for in the sequences?
+      prompt: Find and highlight the sequences in {seq.semType} that contain the motif the user specifies.
+    - label: Detect modified monomers
+      prompt: Detect non-natural or modified monomers and gaps in {seq.semType}
 
 - context: panel
-  scope: view
-  key: view
-  match: { type: TableView }
-  label: This view
-  icon: table
+  scope: column
+  key: molecule3d
+  match: { semType: Molecule3D }
+  label: 3D structures
+  icon: cube
   suggestions:
-    - label: Color rows by {risk.isNumerical}
-      prompt: Color rows by {risk.isNumerical} (red ≥ {risk.stats.med}, green < {risk.stats.med})
-      prefer: { risk: 'name~="risk|herg|tox"' }
+    - label: Show 3D structures
+      prompt: Render the 3D structures in {mol.semType}
+    - label: Compare poses
+      prompt: Overlay and compare the binding poses in {mol.semType}
 
-    - label: Select top 10 rows by {metric.isNumerical}
-      prompt: Select top 10 rows by {metric.isNumerical}
-      prefer: { metric: 'name~="affinity|ic50|ec50|potency"' }
+# --- Potency / assay readouts (semantic) -------------------------------------------------
+- context: panel
+  scope: column
+  key: ic50
+  match: { semType: IC50 }
+  label: Potency (IC50)
+  icon: flask
+  suggestions:
+    - label: Convert to pIC50
+      prompt: Convert {act.semType} to pIC50 and show the distribution
+    - label: Flag potent compounds
+      prompt: Flag the most potent compounds by {act.semType} and select them
+    - label: Potency vs size
+      prompt: Plot potency ({act.semType}) against molecular weight and look for a size trend
 
-    - label: Hide rows flagged for {flag.isCategorical}
-      prompt: Hide rows flagged for {flag.isCategorical}
-      prefer: { flag: 'name~="mutagen|tumor|alert|flag"' }
+- context: panel
+  scope: column
+  key: ec50
+  match: { semType: EC50 }
+  label: Potency (EC50)
+  icon: flask
+  suggestions:
+    - label: Convert to pEC50
+      prompt: Convert {act.semType} to pEC50 and show the distribution
+    - label: Rank by potency
+      prompt: Sort the table by {act.semType} and highlight the most active compounds
 
-    - label: Pin the {mol.semType} column
-      prompt: Pin the {mol.semType} column
+- context: panel
+  scope: column
+  key: concentration
+  match: { semType: Concentration }
+  label: Concentration
+  icon: flask
+  suggestions:
+    - label: Distribution
+      prompt: Show the distribution of {conc.semType} and flag out-of-range values
+    - label: Dose–response
+      prompt: Fit a dose–response curve using {conc.semType} as the dose
 
-    - label: Scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
+# --- Geospatial --------------------------------------------------------------------------
+- context: panel
+  scope: column
+  key: latlong
+  match: { semType: Latitude }
+  label: Geospatial
+  icon: map-marker
+  suggestions:
+    - label: Plot on a map
+      prompt: Plot the rows on a map using the latitude and longitude columns
+    - label: Density heatmap
+      prompt: Show a geographic density heatmap of the points
+
+- context: panel
+  scope: column
+  key: country
+  match: { semType: Country }
+  label: Countries
+  icon: globe
+  suggestions:
+    - label: Choropleth map
+      immediateResponse: Which numeric column should color the map (e.g. a count, average or total per {country.semType})?
+      prompt: Build a choropleth map aggregated per {country.semType}, colored by the numeric column the user specifies.
+    - label: Aggregate by country
+      prompt: Group the rows by {country.semType} and summarize the numeric columns
+
+# --- Money / financial -------------------------------------------------------------------
+- context: panel
+  scope: column
+  key: money
+  match: { semType: Money }
+  label: Money
+  icon: dollar-sign
+  suggestions:
+    - label: Summarize totals
+      prompt: Summarize the total, average and median of {money.semType}
+    - label: Outliers & trend
+      prompt: Find outliers in {money.semType} and show how it trends across categories
+
+# --- Free text ---------------------------------------------------------------------------
+- context: panel
+  scope: column
+  key: text
+  match: { semType: Text }
+  label: Text
+  icon: align-left
+  suggestions:
+    - label: Summarize themes
+      prompt: Summarize the recurring themes across the values in {text.semType}
+    - label: Cluster by topic
+      prompt: Cluster the rows by the topic of {text.semType} and label each cluster
+    - label: Extract entities
+      prompt: Extract named entities (people, organizations, places) from {text.semType}
+    - label: Sentiment
+      prompt: Run sentiment analysis on {text.semType} and add a sentiment column
+
+# ================================================================= panel :: whole table view
+# --- Visualize ---------------------------------------------------------------------------
+- context: panel
+  scope: view
+  key: visualize
+  match: { type: TableView }
+  label: Visualize
+  icon: chart-line
+  suggestions:
+    - label: Scatter plot of {x.isNumerical} vs {y.isNumerical}
       prompt: Add a scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
       prefer:
-        x: 'name~="lipo|logp|logd"'
-        y: 'name~="affinity|ic50|potency"'
-        c: 'name~="stage|class|status"'
+        x: 'name~="lipo|logp|logd|mw|weight"'
+        y: 'name~="affinity|ic50|ec50|ki|potency|activity"'
+        c: 'name~="stage|class|status|group|type|series"'
+    - label: Histogram of {n.isNumerical}
+      prompt: Show a histogram of {n.isNumerical}
+    - label: Box plot of {n.isNumerical} by {c.isCategorical}
+      prompt: Add a box plot of {n.isNumerical} grouped by {c.isCategorical}
+    - label: Bar chart of counts by {c.isCategorical}
+      prompt: Add a bar chart of row counts per {c.isCategorical}
+    - label: Correlation matrix
+      prompt: Show a correlation matrix across the numerical columns
+    - label: Trellis of {n.isNumerical} by {c.isCategorical}
+      prompt: Add a trellis plot of {n.isNumerical} split by {c.isCategorical}
 
-    - label: 'Show correlation matrix ({x.isNumerical}, …)'
-      prompt: Show correlation matrix across numerical columns
+# --- Analyze & model ---------------------------------------------------------------------
+- context: panel
+  scope: view
+  key: analyze
+  match: { type: TableView }
+  label: Analyze & model
+  icon: calculator
+  suggestions:
+    - label: Descriptive statistics
+      prompt: Give me a descriptive statistics summary (count, mean, median, std, min/max) for every numerical column
+    - label: Detect outliers in {n.isNumerical}
+      prompt: Detect outliers in {n.isNumerical} and select those rows
+    - label: Cluster the rows
+      prompt: Cluster the rows into groups using the numerical columns and add a cluster column
+    - label: Dimensionality reduction
+      prompt: Reduce the numerical columns to 2D with PCA (or UMAP) and plot the result
+    - label: Predict {y.isNumerical}
+      prompt: Build a model to predict {y.isNumerical} from the other columns and report the important features
+      prefer:
+        y: 'name~="affinity|ic50|ec50|ki|potency|activity|yield|target|label"'
+    - label: What correlates with {y.isNumerical}?
+      prompt: Find which columns most strongly correlate with {y.isNumerical}
+      prefer:
+        y: 'name~="affinity|ic50|ec50|ki|potency|activity|yield|target"'
 
+# --- Time trends (only shown when a datetime column exists) -------------------------------
+- context: panel
+  scope: view
+  key: time-trends
+  match: { type: TableView }
+  label: Time trends
+  icon: clock
+  suggestions:
+    - label: Trend of {y.isNumerical} over time
+      prompt: Plot {y.isNumerical} over {d.isDateTime} as a line chart
+    - label: Moving average over time
+      prompt: Show the moving average of {y.isNumerical} over {d.isDateTime}
+    - label: Aggregate by period
+      prompt: Aggregate {y.isNumerical} by month of {d.isDateTime} and chart it
+
+# --- Clean & transform -------------------------------------------------------------------
+- context: panel
+  scope: view
+  key: clean
+  match: { type: TableView }
+  label: Clean & transform
+  icon: broom
+  suggestions:
+    - label: Missing-data report
+      prompt: Summarize missing values per column and suggest how to handle them
+    - label: Remove duplicate rows
+      prompt: Find and remove duplicate rows
+    - label: Normalize numerical columns
+      prompt: Normalize (standardize) the numerical columns into new columns
+    - label: Pivot by {c.isCategorical}
+      prompt: Pivot the table — group by {c.isCategorical} and aggregate {n.isNumerical}
+    - label: Select top 20 by {m.isNumerical}
+      prompt: Select the top 20 rows by {m.isNumerical}
+      prefer:
+        m: 'name~="affinity|ic50|ec50|ki|potency|activity|score|rank"'
+    - label: Color rows by {risk.isNumerical}
+      prompt: Color rows by {risk.isNumerical} (red high, green low, split at {risk.stats.med})
+      prefer:
+        risk: 'name~="risk|herg|tox|alert|liability"'
+    - label: Add a calculated column
+      immediateResponse: 'What formula should the new column use? You can reference existing columns, e.g. ${Weight} / (${Height} * ${Height}).'
+      prompt: Add a calculated column using the formula the user provides. If they reference a column that doesn't exist, tell them which columns are available.
+
+# ---------------------------------------------------------------------- panel :: global
 - context: panel
   scope: global
   key: anywhere
@@ -83,7 +310,12 @@
   icon: globe
   suggestions:
     - label: Show recent projects
-      prompt: show recent projects
+      prompt: Show my recent projects
+    - label: Search my data
+      immediateResponse: What topic or kind of dataset are you looking for? I'll search your connections and files.
+      prompt: Search the user's connections and files for the dataset they describe and show the best matches.
+    - label: Open a demo dataset
+      action: openDemoDataset
 
 - context: panel
   scope: global
@@ -95,3 +327,6 @@
       prompt: 'JS: Add a view with the sketcher on the left, and the molecule properties on the right. As user sketches the molecule, the right part should update interactively'
     - label: 'Python: render Gasteiger partial charges'
       prompt: 'Python: write a script that accepts a molecule and renders Gasteiger partial charges as a result'
+    - label: 'JS: build a custom viewer'
+      immediateResponse: What kind of viewer do you want (e.g. scatter, line, bar, or a custom HTML/canvas render), and which columns should it use? If you've selected columns in the grid, I'll use those.
+      prompt: 'JS: Write and run a script that builds the custom viewer the user describes. Use the currently selected columns if any are selected; otherwise use the columns the user names.'

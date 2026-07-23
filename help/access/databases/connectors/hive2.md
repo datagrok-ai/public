@@ -1,5 +1,14 @@
 ---
 title: "Hive2"
+description: Connect Datagrok to Apache Hive via the HiveServer2 JDBC driver, with schema browsing and connection testing.
+keywords:
+  - apache hive
+  - hiveserver2
+  - hive2 jdbc driver
+  - connect to hive
+  - schema browsing
+  - connection test
+  - hadoop data warehouse
 ---
 
 Provides access to [Apache Hive](https://hive.apache.org/) NoSQL database using

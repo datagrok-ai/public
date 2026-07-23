@@ -28,6 +28,7 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
   }));
 
   const annotations = flow.getAnnotations().map((a) => a.toDoc());
+  const groups = flow.getGroups().map((g) => g.toDoc());
 
   let author = 'unknown';
   try {author = grok.shell.user?.login ?? 'unknown';} catch { /* no shell */ }
@@ -42,6 +43,7 @@ export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlo
     nodes,
     connections,
     annotations,
+    groups,
     metadata: {settings},
   };
 }
@@ -94,6 +96,23 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
 
   if (doc.annotations) {
     for (const a of doc.annotations) flow.addAnnotation(a);
+  }
+
+  if (doc.groups) {
+    for (const gd of doc.groups) {
+      // Node ids remap on load — resolve members through idMap; a group whose
+      // nodes all vanished (unknown types skipped above) is dropped.
+      const memberIds = gd.memberIds
+        .map((mid) => idMap.get(mid))
+        .filter((mid): mid is string => mid !== undefined);
+      if (memberIds.length === 0) continue;
+      flow.createGroup(memberIds, {
+        title: gd.title,
+        description: gd.description,
+        minimized: gd.minimized,
+        pos: gd.pos,
+      });
+    }
   }
 }
 

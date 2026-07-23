@@ -2,6 +2,14 @@
 
 title: Contribute docs
 pagination_prev: null
+description: How Datagrok's documentation is organized and written, and the checklist to follow before committing changes.
+keywords:
+  - contribute documentation
+  - writing style guide
+  - every page is page one
+  - how-to pages
+  - pre-commit checklist
+  - technical writing
 ---
 
 ## Markdown and GitActions

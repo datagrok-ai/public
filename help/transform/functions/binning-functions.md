@@ -1,5 +1,12 @@
 ---
 title: "Binning functions"
+description: Reference for functions that group continuous values into a smaller number of bins or ranges.
+keywords:
+  - binning functions reference
+  - bindatetime function
+  - bin numerical values
+  - group values into ranges
+  - date hierarchy binning
 ---
 
 Binning is a way to group a number of more or less continuous values into a smaller number of "bins"

@@ -28,9 +28,14 @@ import './tests/entity-tests';
 import './tests/editor-bridge-tests';
 import './tests/invalidation-tests';
 import './tests/selection-tests';
+import './tests/clipboard-tests';
+import './tests/annotation-tests';
+import './tests/group-tests';
 import './tests/suggestion-tests';
 import './tests/output-strip-tests';
 import './tests/output-views-tests';
+import './tests/uploaded-file-tests';
+import './tests/toolbox-tabs-tests';
 
 export let _package = new DG.Package();
 export { tests };

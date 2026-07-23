@@ -1,5 +1,13 @@
 ---
 title: "Plugin Postgres databases"
+description: Create a custom PostgreSQL-backed data storage for a package, with forward migrations and query access.
+keywords:
+  - CRUD application
+  - package database
+  - SQL migrations
+  - compound registration
+  - databases folder
+  - forward migration
 ---
 
 Datagrok allows you to create custom data storage for your package. The data is stored server-side 

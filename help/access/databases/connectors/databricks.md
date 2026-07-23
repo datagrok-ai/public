@@ -1,5 +1,15 @@
 ---
 title: "Databricks"
+description: Connect Datagrok to a Databricks lakehouse via JDBC using personal access tokens or OAuth.
+keywords:
+  - databricks lakehouse
+  - data warehouse connector
+  - data lake connector
+  - jdbc driver
+  - personal access token
+  - oauth client credentials
+  - service principal authentication
+  - azure ad identity
 ---
 
 Enables direct access to [Databricks](https://www.databricks.com/)

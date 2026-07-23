@@ -5,7 +5,7 @@ import * as v from '../helpers/viewers';
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
-const spgiPath = 'System:DemoFiles/SPGI.csv';
+const spgiPath = 'System:DemoFiles/chem/SPGI.csv';
 
 test('Histogram tests', async ({page}) => {
   test.setTimeout(600_000);
@@ -314,7 +314,7 @@ test('Histogram tests', async ({page}) => {
       await new Promise(r => setTimeout(r, 500));
 
       // Open SPGI dataset
-      const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const dfSpgi = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       dfSpgi.name = 'SPGI';
       const tv = grok.shell.addTableView(dfSpgi);
       await new Promise(resolve => {

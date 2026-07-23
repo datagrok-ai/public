@@ -1,6 +1,14 @@
 ---
 title: "Access"
 sidebar_position: 0
+description: Overview of how Datagrok connects to files, databases, and webservices, with access control and caching.
+keywords:
+  - data connection
+  - data source
+  - data query
+  - connect to data
+  - data access overview
+  - connectors
 ---
 
 Datagrok unifies data access across your organization, simplifying retrieving data from multiple sources. You can easily visualize, explore, and learn from your data, and use the insights gained to take action. Additionally, the platform provides access controls, security features, caching, and automatic monitoring of connection health.

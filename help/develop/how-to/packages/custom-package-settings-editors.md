@@ -1,5 +1,11 @@
 ---
 title: "Custom package settings editors"
+description: Provide a custom widget UI for editing package settings instead of the auto-generated settings form.
+keywords:
+  - packageSettingsEditor role
+  - package settings UI
+  - custom settings widget
+  - Settings pane
 ---
 
 Datagrok provides a convenient way to define [package settings](../../develop.md#package-settings). You only need to define

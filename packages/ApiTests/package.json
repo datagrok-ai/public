@@ -67,7 +67,7 @@
     "debug-js-api-tests-localhost": "grok publish localhost",
     "release-js-api-tests-localhost": "npm run build-js-api-tests && grok publish localhost --release",
     "start-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin",
-    "stress-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --concurrencyRange=10-100 --step=5"
+    "stress-node": "node --import tsx --import ./node-test-loader/register.mjs src/package-test-node.ts --apiUrl=http://localhost:8888/api --devKey=admin --mode=stress --concurrencyRange=10-100 --step=5"
   },
   "canEdit": [
     "Administrators"

@@ -1,5 +1,16 @@
 ---
 title: "JavaScript API"
+description: Tour of the grok, ui, and DG entry points of the Datagrok JS API, covering data manipulation, views, events, and registering functions.
+keywords:
+  - grok namespace
+  - ui namespace
+  - DG namespace
+  - data manipulation
+  - registering functions
+  - dockable views
+  - rest api via dapi
+  - machine learning api
+  - cheminformatics api
 
 ---
 
