@@ -14,6 +14,7 @@ import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
 import {FlowNode, isExecKey, nodeMissingRequirements} from '../rete/scheme';
+import {resolveInputValue, inputBlockReason} from '../utils/input-values';
 
 /** Grow a dirty node set upstream until every connection crossing into it
  *  comes from a node whose output value is already captured (`hasLive`) — the
@@ -352,11 +353,14 @@ export class ExecutionController {
     // nodes from a would-be full run; otherwise a plain full run (no filter).
     const useSlice = slice !== null || excluded.size > 0 ? runSet : null;
 
-    // A run touching an input node would emit `//input:` headers → a dialog on
-    // every keystroke. Skip; the user runs parameterized flows explicitly.
-    // (A slice whose boundary covers the input nodes still autoruns fine.)
+    // A run touching an input node emits `//input:` headers → a dialog on
+    // every keystroke — UNLESS the node carries a resolvable configured value,
+    // which `executeInstrumented` feeds to the prepared call silently. Skip
+    // only for unconfigured/unresolvable ones; the bolt's blocked badge says
+    // why. (A slice whose boundary covers the input nodes still autoruns.)
     const runsNode = (id: string): boolean => useSlice === null || useSlice.has(id);
-    if (this.flow.getNodes().some((n) => n.dgNodeType === 'input' && runsNode(n.id))) return 'skipped';
+    if (this.flow.getNodes().some((n) =>
+      n.dgNodeType === 'input' && runsNode(n.id) && inputBlockReason(n) != null)) return 'skipped';
 
     const restorePreviewId = this.autorunPreviewNodeId;
     this.autorunPreviewNodeId = null;
@@ -379,6 +383,44 @@ export class ExecutionController {
       },
     });
     return 'started';
+  }
+
+  /** Resolve each of the emitted script's parameters from the input node that
+   *  declared it (matched by `paramName`). `values` feeds `func.prepare`;
+   *  `missing` lists params with no resolvable configured value — non-empty
+   *  means an explicit run still needs the parameter dialog. */
+  private configuredInputValues(func: DG.Func): {values: Record<string, unknown>; missing: string[]} {
+    const byParam = new Map<string, FlowNode>();
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType === 'input')
+        byParam.set(String(n.properties['paramName'] ?? ''), n);
+    }
+    const values: Record<string, unknown> = {};
+    const missing: string[] = [];
+    for (const p of func.inputs) {
+      const node = byParam.get(p.name);
+      const r = node ? resolveInputValue(node) : {ok: false as const};
+      if (r.ok && 'value' in r) values[p.name] = r.value;
+      else missing.push(p.name);
+    }
+    return {values, missing};
+  }
+
+  /** Why autorun cannot currently run what's pending — validation errors plus
+   *  input nodes without a resolvable configured value. Empty when nothing is
+   *  pending (autorun has nothing to do, so nothing blocks it). Drives the
+   *  ribbon bolt's blocked badge and tooltip. */
+  autorunBlockers(): string[] {
+    const pending = this.pendingNodes();
+    if (pending.size === 0) return [];
+    const reasons = validateGraph(this.flow)
+      .filter((e) => e.severity === 'error').map((e) => e.message);
+    for (const n of this.flow.getNodes()) {
+      if (n.dgNodeType !== 'input' || !pending.has(n.id)) continue;
+      const r = inputBlockReason(n);
+      if (r) reasons.push(r);
+    }
+    return reasons;
   }
 
   private executeInstrumented(
@@ -437,10 +479,14 @@ export class ExecutionController {
     try {
       const script = emitScript(this.flow, settings, options);
       const func = DG.Script.create(script);
-      const fc = func.prepare();
+      // Values configured on the input nodes feed the prepared call directly —
+      // the parameter dialog only appears for params still missing one, and
+      // then comes prefilled with everything that was configured.
+      const {values, missing} = this.configuredInputValues(func);
+      const fc = func.prepare(values);
       // No auto-dock at completion — the user opens the panel by clicking a
       // completed node (see `showOutputsForNode`).
-      if (func.inputs.length === 0)
+      if (func.inputs.length === 0 || missing.length === 0)
         void fc.call(undefined, undefined, {processed: true});
       else {
         fc.getEditor(false).then((e: HTMLElement) => {

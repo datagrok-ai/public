@@ -1161,13 +1161,6 @@
   width: 100%;
 }
 
-/* Ensure inputs/textareas inside accordion panes fill available width */
-.funcflow-accordion-content .funcflow-prop-input,
-.funcflow-accordion-content .funcflow-prop-textarea,
-.funcflow-accordion-content select {
-  width: 100%;
-  box-sizing: border-box;
-}
 
 .funcflow-prop-section {
   margin-bottom: 12px;
@@ -1194,11 +1187,6 @@
   padding: 0 !important;
 }
 
-.funcflow-col-table-select {
-  border: none !important;
-  outline: none !important;
-  min-width: 55px;
-}
 
 .funcflow-accordion-content.ui-form.ui-div label.ui-label {
   width: 25%;
@@ -1210,44 +1198,42 @@
   font-size: 11px;
 }
 
-.funcflow-prop-input {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid var(--grey-2, #ddd);
-  border-radius: 3px;
-  font-size: 12px;
-  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
-  box-sizing: border-box;
-}
-
-.funcflow-prop-textarea {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid var(--grey-2, #ddd);
-  border-radius: 3px;
-  font-size: 12px;
-  font-family: 'Roboto', 'Roboto Local', Arial, sans-serif;
-  box-sizing: border-box;
-  resize: vertical;
-  min-height: 24px;
-  overflow: hidden;
-}
-
-.funcflow-prop-textarea:focus,
-.funcflow-prop-input:focus {
-  border-color: var(--blue-1, #2185d0);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(33, 133, 208, 0.12);
-}
-
-/* Native Datagrok inputs embedded in the context panel (built via
-   ui.input.forProperty / ui.input.string): fill the pane width and tighten the
-   default spacing so they sit flush with the surrounding rows. */
-.funcflow-accordion-content .ui-input-root {
+/* Native Datagrok inputs embedded in the context panel (every editor row —
+   built via ui.input.forProperty / ui.input.string / ui.input.*): fill the
+   pane width and tighten the default spacing so they sit flush with the
+   surrounding rows. */
+.funcflow-accordion-content .ui-input-root,
+.funcflow-panel-header .ui-input-root {
   width: 100%;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Rows are standalone DG inputs (not one ui.form), so give the panel a shared
+   label column and one editor edge — otherwise every editor starts wherever
+   its label happens to end and the pane reads ragged. The compact table
+   chooser inside a column row opts out (its label is hidden). */
+.funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select) > label.ui-input-label {
+  flex: 0 0 90px;
+  width: 90px;
+  min-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select) > .ui-input-editor {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.funcflow-property-panel .ui-input-root > .ui-input-editor textarea,
+.funcflow-property-panel textarea.ui-input-editor {
+  width: 100%;
+  min-height: 2.4em;
+  resize: vertical;
 }
 
 .funcflow-dg-row {
@@ -1255,12 +1241,17 @@
 }
 
 /* Trailing controls appended inside a column input via addOptions: the per-row
-   table chooser (multi-table funcs) and the column-picker icon. */
-.funcflow-col-table-select {
-  max-width: 90px;
-  font-size: 12px;
-  border-radius: 3px;
-  padding: 2px 4px;
+   table chooser (a caption-less DG choice input, multi-table funcs) and the
+   column-picker icon. The chooser must stay compact and NOT stretch to the
+   pane width like regular rows. */
+.funcflow-col-table-select.ui-input-root {
+  width: auto !important;
+  min-width: 55px;
+  max-width: 100px;
+}
+
+.funcflow-col-table-select label {
+  display: none;
 }
 
 .funcflow-col-pick {
@@ -1290,18 +1281,6 @@
 
 .funcflow-func-editor-btn:hover {
   background: var(--blue-3, #bbdefb);
-}
-
-.funcflow-prop-toggle-row {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 6px !important;
-}
-
-.funcflow-prop-checkbox {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
 }
 
 /* Connection summary rows */
@@ -1879,6 +1858,60 @@
   border-color: #1976d2;
   outline: none;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12);
+}
+
+/* Inline value editor on input-node bodies: a real DG input, full width,
+   label hidden (the node title already names the input — showing it would
+   duplicate the output socket's "Value" row), compact so nodes stay small.
+   Empty host (blob — no inline value) renders nothing. */
+.ff-node-value-input {
+  width: 100%;
+}
+
+.ff-node-value-input:empty {
+  display: none;
+}
+
+.ff-node-value-input .ui-input-root {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.ff-node-value-input label.ui-input-label,
+.ff-node-value-input .ui-input-label {
+  /* Core input chrome pins the label with higher specificity — override. */
+  display: none !important;
+}
+
+.ff-node-value-input .ui-input-editor {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  font-size: 12px;
+}
+
+/* The secondary option icons (open-file folder, add-query, …) are dialog-grade
+   chrome — on a small canvas node they read as icon soup and invite mis-clicks
+   while dragging. Reveal them on node hover / while editing. */
+.ff-node-value-input .ui-input-options {
+  visibility: hidden;
+}
+
+.ff-node:hover .ff-node-value-input .ui-input-options,
+.ff-node-value-input .ui-input-root:focus-within .ui-input-options {
+  visibility: visible;
+}
+
+/* Missing/unresolvable value: the same amber as the bolt's blocked badge, so
+   "autorun is waiting" and "type it here" read as one cue. Applies in the
+   context panel too (the editor builder is shared). */
+.ff-value-missing input,
+.ff-value-missing select,
+.ff-value-missing textarea {
+  border-bottom: 1px solid #ffb300 !important;
 }
 
 /* Connection paths */
@@ -2617,6 +2650,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 .ff-autorun-toggle {
   /* opacity: 0.8; */
   padding-right: 1px;
+  /* Anchor for the blocked badge. */
+  position: relative;
 }
 
 .ff-autorun-toggle.ff-autorun-on {
@@ -2627,6 +2662,35 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 .ff-autorun-toggle.ff-autorun-on:hover {
   background: #2083D570;
   border-radius: 25%;
+}
+
+/* Autorun is on but waiting (an input node without a value, validation
+   errors): the bolt's pad turns amber and a corner dot appears — same amber
+   as a stale output-view tab — and the dynamic tooltip lists the blockers. */
+.ff-autorun-toggle.ff-autorun-blocked::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffb300;
+  border: 1px solid #fff;
+}
+
+.ff-autorun-toggle.ff-autorun-on.ff-autorun-blocked {
+  background: #ffb30040;
+}
+
+.ff-autorun-toggle.ff-autorun-on.ff-autorun-blocked:hover {
+  background: #ffb30060;
+}
+
+.ff-autorun-tooltip-hint {
+  color: var(--grey-4);
+  margin-top: 4px;
+  max-width: 320px;
 }
 
 /* ---------- Outputs strip ----------

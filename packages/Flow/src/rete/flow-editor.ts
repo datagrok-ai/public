@@ -26,7 +26,8 @@ import {
   EXEC_IN_KEY, EXEC_OUT_KEY,
 } from './scheme';
 import {TypedSocket} from './sockets';
-import {FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
+import {DgControlComponent, FlowConnectionComponent, FlowNodeComponent, FlowSocketComponent} from './node-component';
+import {InputValueControl} from './nodes/input-value-control';
 import {getSlotColor, getSlotLetter} from '../types/type-map';
 import {tid, setTid} from '../utils/test-ids';
 import {FlowAnnotation, AnnotationDoc, ANNOTATION_COLORS} from './annotation';
@@ -272,6 +273,10 @@ export class FlowEditor {
         node: () => FlowNodeComponent as never,
         socket: () => FlowSocketComponent as never,
         connection: () => FlowConnectionComponent as never,
+        // Input-node value editors mount a real DG input; anything else (the
+        // ConstString text control) keeps the preset's default component.
+        control: (data) => (data.payload instanceof InputValueControl ?
+          DgControlComponent : ReactPresets.classic.Control) as never,
       },
     }));
 
@@ -321,6 +326,7 @@ export class FlowEditor {
   private readonly bridge: FlowEditorBridge = {
     toggleCollapsed: (id) => void this.toggleCollapsed(id),
     isSocketConnected: (nodeId, side, key) => this.isSocketConnected(nodeId, side, key),
+    notifyParamsChanged: (nodeId) => this.notifyNodeParamsChanged(nodeId),
   };
 
   /** Configure ClassicFlow to reject incompatible socket connections at pick
@@ -516,6 +522,10 @@ export class FlowEditor {
    *  reported. */
   notifyNodeParamsChanged(nodeId: string): void {
     this.callbacks.onGraphEdited?.({kind: 'params-changed', nodeId});
+    // Keep the on-node value editor in step with edits made elsewhere (the
+    // context panel). Programmatic — the control's sync never re-reports.
+    const ctl = this.getNodeById(nodeId)?.controls['value'];
+    if (ctl instanceof InputValueControl) ctl.sync();
   }
 
   /** Update the canvas dot-grid background to track the AreaPlugin transform.

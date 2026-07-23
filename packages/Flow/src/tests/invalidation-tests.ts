@@ -257,11 +257,12 @@ category('Flow: invalidation', () => {
       await sleepMs(30);
       rec.edits.length = 0;
 
-      const textarea = panel.root.querySelector('[data-param="tableName"] textarea') as HTMLTextAreaElement;
-      expect(textarea !== null, true, 'the tableName editor is rendered');
+      // Every panel editor is a DG input now (ui.input.string here).
+      const field = panel.root.querySelector('[data-param="tableName"] input, [data-param="tableName"] textarea') as HTMLInputElement;
+      expect(field !== null, true, 'the tableName editor is rendered');
       const type = (v: string): void => {
-        textarea.value = v;
-        textarea.dispatchEvent(new Event('input', {bubbles: true}));
+        field.value = v;
+        field.dispatchEvent(new Event('input', {bubbles: true}));
       };
 
       type('demog');
@@ -672,8 +673,10 @@ category('Flow: autorun', () => {
       const output = await addNode(e.flow, 'Outputs/Table Output');
       await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
       const ctrl = new ExecutionController(e.flow);
+      // A Table Input with no configured value — a CONFIGURED one no longer
+      // blocks (covered in input-value-tests).
       expect(ctrl.runAutorun(new Set([output.id]), SETTINGS), 'skipped',
-        'an input node in the run set would open a dialog — autorun must not');
+        'an unconfigured input node in the run set would open a dialog — autorun must not');
     } finally {
       destroyEditor(e);
     }

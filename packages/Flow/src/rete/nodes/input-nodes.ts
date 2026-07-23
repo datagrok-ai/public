@@ -4,12 +4,16 @@
  * Per-type qualifiers (nullable, min/max, semType, choices, …) live in
  * `node.properties` and are rendered into the annotation line by the emitter.
  *
- * No inline widgets — all property editing happens in the side panel. */
+ * Every input node carries an inline value editor on its body (the `value`
+ * control → `InputValueControl`), mirrored in the side panel: a configured
+ * value is fed straight into the prepared run, so neither Run nor autorun
+ * needs the parameter dialog (see `utils/input-values.ts`). */
 
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
 import {categoricalColor, CAT} from '../../types/type-map';
+import {InputValueControl} from './input-value-control';
 
 const COLOR_INPUT = categoricalColor(CAT.green);
 
@@ -21,6 +25,9 @@ abstract class InputBase extends FlowNode {
     this.properties = {paramName, defaultValue: '', ...extraProps};
     (this as unknown as {color: string}).color = COLOR_INPUT;
     this.addOutput(slotName, new ClassicPreset.Output(getSocket(dgType), slotName));
+    // Inline value editor — built lazily on first render (reads the FINAL
+    // dgOutputType, so subclass overrides like Blob's apply).
+    this.addControl('value', new InputValueControl(this));
   }
 }
 

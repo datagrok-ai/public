@@ -8,6 +8,7 @@
 import {FlowEditor} from '../rete/flow-editor';
 import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
+import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
 
 export interface ScriptSettings {
   name: string;
@@ -64,7 +65,12 @@ export function emitScript(
 
   for (const step of steps) {
     if (step.nodeType === 'input') {
-      stash(step); // param values are in body scope (declared by //input headers)
+      // Param values are in body scope (declared by //input headers). With a
+      // configured value the node genuinely runs (no dialog) — report a
+      // node-complete with the value summary so the node shows Done, its wire
+      // clears, and clicking it previews the parameter like any other output.
+      if (inst) lines.push(emitInputStepComplete(step, flow));
+      stash(step);
       continue;
     }
 
@@ -225,8 +231,13 @@ function buildInputLine(step: CompiledStep, node: FlowNode): string | null {
   let line = `//input: ${outputType} ${paramName}`;
   const qualifiers: string[] = [];
 
+  // A configured table name / file path / JSON blob is not a valid script
+  // default literal — those values feed the prepared call at run time instead
+  // (`ExecutionController.configuredInputValues`); scalars keep the classic
+  // `= <value>` emission.
   const defaultVal = step.properties['defaultValue'];
-  if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null)
+  if (defaultVal !== undefined && defaultVal !== '' && defaultVal !== null &&
+      !NON_HEADER_DEFAULT_TYPES.has(outputType))
     line = `//input: ${outputType} ${paramName} = ${formatHeaderDefault(defaultVal, outputType)}`;
 
   if (step.properties['typeFilter']) qualifiers.push(`type: ${step.properties['typeFilter']}`);
@@ -752,6 +763,20 @@ function emitDetectSemanticTypes(step: CompiledStep, flow: FlowEditor): string[]
       lines.push(`if (${varName} != null) await ${varName}.meta.detectSemanticTypes();`);
   }
   return lines;
+}
+
+/** Input steps have no body statement (the `//input:` header declares the
+ *  param in scope) — this reports their completion with a slot-keyed value
+ *  summary, matching `wrapInstrumented`'s shape. */
+function emitInputStepComplete(step: CompiledStep, flow: FlowEditor): string {
+  const node = flow.getNodeById(step.nodeId);
+  const entries: string[] = [];
+  for (const [key, expr] of step.outputs) {
+    if (isExecKey(key)) continue;
+    const typeArg = node?.dgOutputType ? `, ${JSON.stringify(node.dgOutputType)}` : '';
+    entries.push(`${JSON.stringify(key)}: __ff_summarize(${expr}${typeArg})`);
+  }
+  return `__ff_emit('node-complete', '${step.nodeId}', {outputs: {${entries.join(', ')}}});`;
 }
 
 function emitBreakpointCode(step: CompiledStep): string[] {
