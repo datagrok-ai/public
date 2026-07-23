@@ -1276,7 +1276,7 @@
   display: none;
 }
 
-.chem-enumerator .d4-tab-content > * {
+.chem-enumerator .d4-accordion-pane-content > * {
   padding: 0 !important;
   gap: 0 !important;
 }

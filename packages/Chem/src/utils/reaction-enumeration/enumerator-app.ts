@@ -1123,50 +1123,33 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let bbsPane: DG.TabPane | undefined;
   let reagentsPane: DG.TabPane | undefined;
 
-  // Target pane resolved lazily via a thunk: Reactions pane is added first, so its factory runs
+  // Target pane resolved lazily via a thunk: Reactions pane is added expanded, so its factory runs
   // synchronously inside addPane, before later panes exist — capturing directly would hit the TDZ.
-  const mkNavBtn = (kind: 'next' | 'back', getTarget: () => DG.TabPane, label: string): HTMLElement => {
+  const mkNavBtn = (kind: 'next' | 'back', getTarget: () => DG.AccordionPane, label: string): HTMLElement => {
     const btn = ui.button(`${kind === 'next' ? 'Next' : 'Back'}: ${label}`, () => openAccPaneAndSyncTab(getTarget()));
     btn.classList.add(`chem-enum-${kind}-btn`);
     return btn;
   };
-  const mkNextBtn = (getTarget: () => DG.TabPane, label: string): HTMLElement =>
+  const mkNextBtn = (getTarget: () => DG.AccordionPane, label: string): HTMLElement =>
     mkNavBtn('next', getTarget, label);
-  const mkBackBtn = (getTarget: () => DG.TabPane, label: string): HTMLElement =>
+  const mkBackBtn = (getTarget: () => DG.AccordionPane, label: string): HTMLElement =>
     mkNavBtn('back', getTarget, label);
   // Back (if any) on the left, Next/action (if any) on the right — one consistent row per pane.
   const navRow = (back: HTMLElement | null, next: HTMLElement | null): HTMLElement =>
     ui.divH([back ?? ui.div([]), next ?? ui.div([])], {classes: 'chem-enum-nav-row'});
 
-  // A TabControl (not Accordion) with its native tab strip hidden — only one section is ever
-  // shown, navigated exclusively via the ribbon chips below. Accordion has no "always exactly one
-  // pane open" mode (its own header click always toggles collapse), which previously needed a
-  // DOM-level hack to suppress; TabControl's `currentPane` is inherently exclusive, so none is
-  // needed here. Same pattern as DiffStudio's step UI (`DiffStudio/src/app.ts`).
-  const accordion = ui.tabControl();
-  accordion.header.hidden = true;
+  const accordion = ui.accordion();
   accordion.root.classList.add('chem-enum-accordion');
-  // Visible pane title + live subtitle — replaces the (now-hidden) native tab header.
-  const paneTitle = (name: string): {row: HTMLElement; sub: HTMLElement} => {
-    const sub = document.createElement('span');
-    sub.className = 'chem-enum-pane-subtitle';
-    const row = ui.divH([ui.divText(name, {style: {fontWeight: 'bold', fontSize: '13px'}}), sub],
-      {style: {alignItems: 'baseline'}});
-    return {row, sub};
-  };
-  const titleReactions = paneTitle('Reactions');
   const accReactionsPane = accordion.addPane('Reactions', () =>
-    ui.divV([titleReactions.row, ui.form([templatesInput, smartsColInput]), mapColsToggle,
-      navRow(mkBackBtn(() => accCombinePane, 'How to combine'), mkNextBtn(() => accBbsPane, 'Building blocks'))]));
-  const titleBbs = paneTitle('Building blocks');
+    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsToggle,
+      navRow(mkBackBtn(() => accCombinePane, 'How to combine'), mkNextBtn(() => accBbsPane, 'Building blocks'))]), true);
   const accBbsPane = accordion.addPane('Building blocks', () =>
-    ui.divV([titleBbs.row, ui.form([bbsInput, bbColInput]),
-      navRow(mkBackBtn(() => accReactionsPane, 'Reactions'), mkNextBtn(() => accExtrasPane, 'Extras'))]));
-  const titleExtras = paneTitle('Extras');
+    ui.divV([ui.form([bbsInput, bbColInput]),
+      navRow(mkBackBtn(() => accReactionsPane, 'Reactions'), mkNextBtn(() => accExtrasPane, 'Extras'))]), false);
   const extrasForm = ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]);
   const accExtrasPane = accordion.addPane('Extras', () =>
-    ui.divV([titleExtras.row, extrasForm,
-      navRow(mkBackBtn(() => accBbsPane, 'Building blocks'), mkNextBtn(() => accPreviewPane, 'Preview'))]));
+    ui.divV([extrasForm,
+      navRow(mkBackBtn(() => accBbsPane, 'Building blocks'), mkNextBtn(() => accPreviewPane, 'Preview'))]), false);
   // Flags "differs from platform defaults" without expanding the toggle.
   const mkChangedDot = (tooltip: string): HTMLElement => {
     const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, display: 'none'}});
@@ -1181,9 +1164,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     undefined, productFiltersDot);
   // Combination limits and product filters both live here, next to num_rounds/maxComponents/
   // maxRoutes — every quantitative constraint on the run's output stays in one place.
-  const titleCombine = paneTitle('How to combine');
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
-    titleCombine.row,
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
       configInfoIcon,
@@ -1194,7 +1175,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     productFilterToggle,
     // First pane in the chain — no Back target.
     navRow(null, mkNextBtn(() => accReactionsPane, 'Reactions')),
-  ], {style: {gap: '8px'}}));
+  ], {style: {gap: '8px'}}), false);
   // Left panel for Preview.
   const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
   function renderPreviewRecap(): void {
@@ -1231,9 +1212,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     addComponentRows('Building blocks', bDf, 'buildingBlocks');
   }
 
-  const titlePreview = paneTitle('Preview');
   const accPreviewPane = accordion.addPane('Preview', () => ui.divV([
-    titlePreview.row,
     ui.divText('Runs a reduced-budget sample (≤ 2 rounds, ≤ 3 combinations / template) using the ' +
     'global reactions, building blocks, and reagents — per-round subsets are not applied here.',
     {style: {fontSize: '12px', color: 'var(--grey-6)', lineHeight: '1.4'}}),
@@ -1241,12 +1220,27 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // Last pane in the chain — no Next target; the run action lives here too.
     navRow(mkBackBtn(() => accExtrasPane, 'Extras'), null),
     previewEnumerateBtn,
-  ], {style: {gap: '10px'}}));
+  ], {style: {gap: '10px'}}), false);
+  const accPanes = [accReactionsPane, accBbsPane, accExtrasPane, accCombinePane, accPreviewPane];
 
+  // Subtitle spans injected into each pane's native header — updated by refreshCfgRibbon().
+  const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
+    const header = pane.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    const sub = document.createElement('span');
+    sub.className = 'chem-enum-pane-subtitle';
+    header?.appendChild(sub);
+    return sub;
+  };
+  const subReactions = injectPaneSub(accReactionsPane);
+  const subBbs = injectPaneSub(accBbsPane);
+  const subExtras = injectPaneSub(accExtrasPane);
+  const subCombine = injectPaneSub(accCombinePane);
 
-  // Left pane scrolls vertically if it overflows so the action bar stays visible.
+  // Left pane scrolls vertically if it overflows so the action bar stays visible. minWidth must
+  // fit the widest row (250px fixed label + input + accordion/pane padding) — 320px clipped the
+  // input off the right edge under overflow-x:hidden; measured the actual need at ~338px.
   const leftPane = ui.divV([accordion.root],
-    {style: {minWidth: '320px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
+    {style: {minWidth: '360px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
 
   // === Config-summary ribbon (shown above the right-pane tabs) ===
   // Each chip's dot flags "customized": Reactions/Building blocks/Reagents show it when any round
@@ -1304,14 +1298,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // Pass the values just computed above instead of having renderStrategySummary re-derive them.
     if (tabs.currentPane === strategyPane) renderStrategySummary(combChanged, prodChangedCount);
     if (tabs.currentPane === previewPane) renderPreviewRecap();
-    titleReactions.sub.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
-    titleBbs.sub.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
-    titleExtras.sub.textContent = rDf ? `${rDf.rowCount} reagents` : 'Optional';
-    titleCombine.sub.textContent = combineText;
+    subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
+    subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
+    subExtras.textContent = rDf ? `${rDf.rowCount} reagents` : 'Optional';
+    subCombine.textContent = combineText;
   }
   // === Exclusive accordion — only the selected section is shown, on either side ===
 
-  function switchTabForAccPane(pane: DG.TabPane): void {
+  function switchTabForAccPane(pane: DG.AccordionPane): void {
     if (pane === accReactionsPane && templatesPane) {
       tabs.currentPane = templatesPane;
     } else if (pane === accBbsPane && bbsPane) {
@@ -1330,7 +1324,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // Maps a left-navigator pane to its ribbon chip, so the chip for the currently shown section can
   // be marked active — same `--<state>` modifier convention as chem-enum-chip--err.
-  const chipForPane = (pane: DG.TabPane): HTMLElement | undefined => {
+  const chipForPane = (pane: DG.AccordionPane): HTMLElement | undefined => {
     if (pane === accReactionsPane) return chipReactionsC.root;
     if (pane === accBbsPane) return chipBbsC.root;
     if (pane === accExtrasPane) return chipExtrasC.root;
@@ -1339,10 +1333,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return undefined;
   };
 
-  // Shows `pane` (TabControl already guarantees exactly one at a time) and syncs the right-side
-  // tab to match — the ribbon chips are the only navigator.
-  function openAccPaneAndSyncTab(pane: DG.TabPane): void {
-    accordion.currentPane = pane;
+  // Expands `pane` and hides every other section's header entirely (not just collapsed), syncing
+  // the right-side tab to match — the ribbon chips are the only navigator now.
+  function openAccPaneAndSyncTab(pane: DG.AccordionPane): void {
+    accPanes.forEach((p) => {
+      p.expanded = (p === pane);
+      const header = p.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+      if (header) header.style.display = (p === pane) ? '' : 'none';
+    });
     const activeChip = chipForPane(pane);
     [chipReactionsC.root, chipBbsC.root, chipExtrasC.root, chipCombineC.root, cfgEstEl].forEach((c) =>
       c.classList.toggle('chem-enum-chip--active', c === activeChip));
