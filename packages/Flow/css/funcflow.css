@@ -349,7 +349,7 @@
 /* The platform tab host defaults to a fixed 400×300 footprint — inside the
    ~250px-wide toolbox that clips content on the right and reserves dead
    vertical space, so neutralize it and let the content drive the size. */
-.funcflow-top-tabs > .d4-tab-host {
+.funcflow-top-tabs>.d4-tab-host {
   width: 100% !important;
   min-width: 0 !important;
   height: auto !important;
@@ -450,7 +450,7 @@
 /* Sticky folder rows carry a background so they cover content while stuck —
    core hardcodes white, which paints a patchwork on the grey tray. Match the
    tray instead. */
-.funcflow-tab-content .d4-tree-view-root.d4-tree-view-sticky .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node:not(.d4-tree-view-node-selected):not(:hover) {
+.funcflow-tab-content .d4-tree-view-root.d4-tree-view-sticky .d4-tree-view-group-host>.d4-tree-view-group>.d4-tree-view-node:not(.d4-tree-view-node-selected):not(:hover) {
   background-color: var(--grey-1, #f7f8fa);
 }
 
@@ -486,7 +486,8 @@
 }
 
 .funcflow-tab-hint-text {
-  flex: 1 1 auto !important; /* core CSS forces flex-shrink: 0 on spans */
+  flex: 1 1 auto !important;
+  /* core CSS forces flex-shrink: 0 on spans */
   min-width: 0;
 }
 
@@ -1046,8 +1047,13 @@
   box-sizing: border-box;
 }
 
-.ff-group-dots-in .ff-group-dot { left: -4.5px; }
-.ff-group-dots-out .ff-group-dot { right: -4.5px; }
+.ff-group-dots-in .ff-group-dot {
+  left: -4.5px;
+}
+
+.ff-group-dots-out .ff-group-dot {
+  right: -4.5px;
+}
 
 /* Hidden members / internal wires of a minimized group. */
 .ff-group-hidden {
@@ -1214,7 +1220,7 @@
    label column and one editor edge — otherwise every editor starts wherever
    its label happens to end and the pane reads ragged. The compact table
    chooser inside a column row opts out (its label is hidden). */
-.funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select) > label.ui-input-label {
+.funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select)>label.ui-input-label {
   flex: 0 0 90px;
   width: 90px;
   min-width: 90px;
@@ -1223,13 +1229,13 @@
   white-space: nowrap;
 }
 
-.funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select) > .ui-input-editor {
+.funcflow-property-panel .ui-input-root:not(.funcflow-col-table-select)>.ui-input-editor {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
 }
 
-.funcflow-property-panel .ui-input-root > .ui-input-editor textarea,
+.funcflow-property-panel .ui-input-root>.ui-input-editor textarea,
 .funcflow-property-panel textarea.ui-input-editor {
   width: 100%;
   min-height: 2.4em;
@@ -1245,9 +1251,9 @@
    column-picker icon. The chooser must stay compact and NOT stretch to the
    pane width like regular rows. */
 .funcflow-col-table-select.ui-input-root {
-  width: auto !important;
-  min-width: 55px;
-  max-width: 100px;
+  width: 65px !important;
+  min-width: 55px !important;
+  max-width: 100px !important;
 }
 
 .funcflow-col-table-select label {
@@ -1705,6 +1711,11 @@
   white-space: pre-wrap;
   word-break: break-word;
   border-bottom: 1px solid #f0f0f0;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  max-height: 30px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 /* Auto-generated plain-language caption (U12) — lighter than a user-written
