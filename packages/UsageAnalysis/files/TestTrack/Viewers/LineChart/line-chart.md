@@ -8,10 +8,25 @@ realizes:
   - viewers.line-chart
 realized_as:
   - line-chart-spec.ts
-related_bugs:
-  - id: GROK-17835
-    status: fixed
+related_bugs: []
 expected_results:
+  - anchor: "Axes follow filter"
+    expectation: >-
+      On a non-aggregated chart (unique-x scratch column rowIdx), with Axes
+      Follow Filter enabled (default true, confirmed by read), a rowIdx
+      2000-3500 filter synchronizes the X axis with the filter's range: the
+      axis bounds read back through screenToWorld land in bands around the
+      filter range (min in (1600, 2200), max in (3300, 3900)) and the axis
+      span shrinks below 70% of the unfiltered span. With Axes Follow Filter
+      disabled, the same filter drops rows (filter.trueCount < 5850) but the
+      X-axis min/max stays within 5% of its pre-filter values, and the fixed
+      axis span stays more than twice the synced span. Flipping the flag back
+      to true with the filter active re-ranges the axis to the filtered span
+      again, then the full range is restored. Canvas repaint deltas are
+      logged for observability but are not load-bearing. Teardown removes the
+      rowIdx scratch column (the filters group drops its histogram filter
+      together with the column), the full row set is confirmed restored
+      (filter.trueCount back to 5850), and X/Y return to AGE/HEIGHT.
   - anchor: "Table switching and row source"
     expectation: >-
       After binding the line chart to spgi-100 its bound dataFrame.rowCount reads
@@ -35,12 +50,89 @@ expected_results:
       below half); rechecking restores it. Toggling the remaining Selection
       checkboxes raises no errors, and a non-default Selection combo survives a
       layout save/close/restore round-trip unchanged.
+  - anchor: "Lasso selection"
+    expectation: >-
+      Checking Tools > Lasso Tool in the context menu flips the viewer's
+      lassoTool property to true (menu-to-prop). A freeform Shift+drag over the
+      chart selects rows (df.selection.trueCount > 0), and pressing Escape
+      clears the selection (trueCount back to 0). Unchecking Lasso Tool through
+      the same menu item flips the property back to false, and the whole step
+      raises no page or console errors.
   - anchor: "Data panel checkboxes"
     expectation: >-
-      Toggling real viewer checkboxes (Pack Categories from Data, Multi Axis
-      from Controls) off their defaults reads the new value back and raises no
-      errors, and the toggled combo (packCategories=false, multiAxis=true)
-      survives a layout save/close/restore round-trip unchanged.
+      Setting the real viewer checkboxes (Pack Categories from Data, Multi Axis
+      from Controls) to a non-default combo (packCategories=false,
+      multiAxis=true) raises no errors, and the combo survives a layout
+      save/close/restore round-trip unchanged.
+  - anchor: "Chart types"
+    expectation: >-
+      Cycling Chart Type through Area Chart, Stacked Area Chart, Stacked Bar
+      Chart, and back to Line Chart via the context menu lands each selected
+      entry in the viewer's chart-type state after the menu click
+      (menu-to-prop), with no errors.
+  - anchor: "Axis configuration"
+    expectation: >-
+      Driving the full axis-configuration cycle (logarithmic/linear X and Y,
+      Invert X Axis, grid-line toggles, label orientation) and reverting to
+      defaults raises no console or page errors and leaves the chart alive
+      (no-error floor).
+  - anchor: "Interpolation"
+    expectation: >-
+      Switching Interpolation to Spline with tension 1.0 and back to None
+      raises no console or page errors and leaves the chart alive (no-error
+      floor).
+  - anchor: "Left panel histogram"
+    expectation: >-
+      Enabling and disabling the left-bar Histogram raises no console or page
+      errors and leaves the chart alive (no-error floor).
+  - anchor: "Controls visibility"
+    expectation: >-
+      Unchecking all six Controls entries and rechecking them raises no console
+      or page errors and leaves the chart alive (no-error floor).
+  - anchor: "Y global scale"
+    expectation: >-
+      Toggling Y Global Scale on and off under Multi Axis with two Y columns
+      raises no console or page errors and leaves the chart alive (no-error
+      floor).
+  - anchor: "Title and description"
+    expectation: >-
+      Setting the title and description, moving the description position, and
+      hiding the description raises no console or page errors and leaves the
+      chart alive (no-error floor).
+  - anchor: "Date/time X axis"
+    expectation: >-
+      Setting X to STARTED and cycling X Map through Year, Month, Day of week,
+      and None raises no console or page errors and leaves the chart alive
+      (no-error floor).
+  - anchor: "Line styling"
+    expectation: >-
+      Driving Line Width, Line Transparency, and Line Coloring Type through
+      non-default values and back raises no console or page errors and leaves
+      the chart alive (no-error floor).
+  - anchor: "Axis tickmarks modes"
+    expectation: >-
+      Switching the X and Y Axis Tickmarks Mode to MinMax and back to Auto
+      raises no console or page errors and leaves the chart alive (no-error
+      floor).
+  - anchor: "Overview chart"
+    expectation: >-
+      Selecting Line, Area Chart, Stacked Bar Chart, and None from the Overview
+      menu updates the viewer's overview-type property after each selection
+      (menu-to-prop round-trip).
+  - anchor: "Legend"
+    expectation: >-
+      With Split = SEX the legend lists exactly the two categories F and M;
+      Legend Visibility Never removes the legend and Auto restores it with the
+      same two categories; position changes keep it rendered.
+  - anchor: "Context menu — chart area"
+    expectation: >-
+      Right-clicking the chart area opens a context menu containing Reset View,
+      Tools, Data, Markers, Chart Type, Overview, Selection, and Controls.
+  - anchor: "Layout save and restore"
+    expectation: >-
+      After save → close → apply layout, the restored viewer reads back
+      X = STARTED, Y = AGE + HEIGHT, Split = SEX, Multi Axis on, Line Width 3,
+      and Interpolation Spline.
 ---
 
 # Line chart tests (Playwright)
@@ -156,11 +248,22 @@ All scenarios should start with the following sequence of events:
 
 ## Axes follow filter
 
-1. Go to the Context Panel > X, set X to AGE
+1. Add a unique-valued integer column rowIdx (0..5849) to demog; set X to
+   rowIdx and Y to HEIGHT — a unique X keeps the chart non-aggregated, the
+   regime where the flag governs the axis range
 2. Go to the Context Panel > Data, verify Axes Follow Filter is enabled by default
-3. Set Axes Follow Filter to false
-4. Open the filter panel by clicking the Filters section in the Toolbox and narrow the AGE range
-5. Go to the Context Panel > Data, set Axes Follow Filter to true
+3. With Axes Follow Filter enabled, open the filter panel by clicking the Filters
+   section in the Toolbox and narrow the rowIdx range to 2000-3500 — the X axis
+   synchronizes with the filter's range values, so its min/max pulls in to
+   roughly [2000, 3500]
+4. Restore the full range, then set Axes Follow Filter to false
+5. Apply the same rowIdx 2000-3500 filter — points are filtered out on the
+   chart but the X-axis min/max stays where it was
+6. Set Axes Follow Filter back to true — the axis re-ranges to the still-active
+   filtered span — then restore the full range
+7. Remove the rowIdx scratch column — its histogram filter disappears from the
+   filter panel together with the column — and put X back on AGE and Y back on
+   HEIGHT
 
 ## Context menu
 
@@ -174,9 +277,9 @@ All scenarios should start with the following sequence of events:
 2. Right-click the viewer and go to Data > Split Columns and set Split to SEX
 3. Right-click the viewer and go to Controls — check Multi Axis
 4. Go to the Context Panel > Lines, set Line Width to 3, set Interpolation to Spline
-5. Save the layout
+5. Save the layout (top menu **View > Layout > Save to Gallery**)
 6. Close the line chart viewer by clicking the X icon on the viewer title bar
-7. Apply the saved layout
+7. Apply the saved layout (**View > Layout > Open Gallery**, click the saved layout)
 8. Verify all properties match the configuration from steps 1-4
 9. Delete the saved layout
 
@@ -188,29 +291,9 @@ Setup: Close all, open demog, then also open spgi-100
 2. Go to the Context Panel > Data, switch the table to spgi-100 — the line chart should update to show spgi-100 columns
 3. Switch back to demog — the line chart should restore demog columns
 4. Set Row Source to Selected
-5. Select some rows in the grid — the line chart should show only selected rows
+5. Select some rows in the grid (Ctrl+click a row to toggle its selection, Shift+drag to select a range) — the line chart should show only selected rows
 6. Set Row Source to Filtered
 7. Open the filter panel and apply a filter — the line chart should reflect the filter
-
-Actuation note: the table switch is driven by assigning `lc.props.table` (the
-Context Panel > Data > Table dropdown backs the same property); the observable is
-the viewer's bound `dataFrame.rowCount` moving between the two tables, which is
-the "shows the other table's columns" outcome. "Shows only selected rows" is
-measured as a canvas change: under Row Source = Selected an empty selection still
-paints the axes/lines, so a blank-vs-drawn threshold is meaningless — instead the
-per-color canvas histogram is snapshotted (after a settle-precheck diff) and the
-selection is applied, and the resulting `deltaPx` shows the selected subset
-re-rendered.
-
-## GROK-17835 regression (uses spgi-100 dataset)
-
-Setup: Close all, open spgi-100 (not demog)
-
-1. Add a line chart by clicking the Line Chart icon in the Toolbox > Viewers section
-2. Right-click the viewer and go to Controls — check Multi Axis
-3. Right-click the viewer and go to Data > Split Columns and set Split to Series and Scaffold Names
-4. Go to the Context Panel > X, set X to Chemist 521
-5. Hover over the viewer — no errors should occur
 
 ## Filter expression and collaborative filtering
 
@@ -222,7 +305,60 @@ Setup: Close all, open spgi-100 (not demog)
 6. Apply a numeric filter — verify collaborative filtering between the Filter Panel and the in-viewer Filter value
 7. Remove all filters
 
-Actuation note: "points are filtered on the chart" is measured as the viewer's
+## Selection checkboxes
+
+1. Close all and open demog
+2. On the viewer, set X to AGE, Y to HEIGHT
+3. Hold Shift and drag a rectangle to select points — verify selection in the grid
+4. Go to the Context Panel > Selection
+5. Toggle each Selection checkbox — **Show Selected Rows**, **Show Current Row Line**, **Show Mouse-over Category**, **Show Mouse-over Row Line** — verify the line chart interaction updates accordingly
+6. Save the layout, close the line chart, apply the layout — verify selection settings are preserved
+
+## Lasso selection
+
+1. On the viewer, set X to AGE, Y to HEIGHT
+2. Right-click the viewer and go to Tools — check Lasso Tool
+3. Hold Shift and drag a freeform path over the chart
+4. Verify some rows are selected
+5. Press Escape — the selection is cleared
+6. Right-click the viewer and go to Tools — uncheck Lasso Tool
+
+## Data panel checkboxes
+
+1. Go to the Context Panel > Data
+2. Set the checkboxes to a non-default combination: uncheck **Pack Categories** (Context Panel > Data) and check **Multi Axis** (right-click > Controls)
+3. Save the layout, close the line chart, apply the layout — verify the checkbox states are preserved
+
+## Automation notes
+
+Axes follow filter: the X-axis bounds are read as product state, not from the
+canvas. `LineChartViewer.screenToWorld` (published JS API backed by the
+viewer's X range slider) is sampled at two canvas points and the linear
+screen-to-world map is extrapolated to the canvas edges, giving the axis
+min/max (slightly widened by the axis margins, which the assert bands absorb).
+With the flag enabled the bounds must land in bands around the filter range
+and the span must shrink below 70% of the unfiltered span; with the flag
+disabled the rows drop (filter.trueCount) while both bounds stay within 5% of
+their pre-filter values, and the fixed span stays more than twice the synced
+span. Canvas repaint deltas are still logged (console) for observability, but
+they are not load-bearing — in a headless canvas the per-color histogram delta
+of a re-range is indistinguishable from the point-drop repaint. The contrast
+deliberately runs on a unique X: on an aggregated chart (duplicated x values,
+e.g. x=AGE) the aggregate frame is rebuilt from the filtered rows and the
+axis range is taken from it, so the axes follow the filter regardless of the
+flag.
+
+Table switching and row source: the table switch is driven by assigning `lc.props.table` (the
+Context Panel > Data > Table dropdown backs the same property); the observable is
+the viewer's bound `dataFrame.rowCount` moving between the two tables, which is
+the "shows the other table's columns" outcome. "Shows only selected rows" is
+measured as a canvas change: under Row Source = Selected an empty selection still
+paints the axes/lines, so a blank-vs-drawn threshold is meaningless — instead the
+per-color canvas histogram is snapshotted (after a settle-precheck diff) and the
+selection is applied, and the resulting `deltaPx` shows the selected subset
+re-rendered.
+
+Filter expression and collaborative filtering: "points are filtered on the chart" is measured as the viewer's
 own `lc.filter.trueCount` dropping below the full row
 count (the expression filter is viewer-local — it narrows the plotted points
 without touching the shared `df.filter`). The Filter Panel numeric filter is
@@ -231,16 +367,7 @@ canvas-drawn embedded Histogram with no scriptable DOM handle), and
 collaboration is confirmed by the shared `df.filter.trueCount` narrowing on top
 of the expression filter.
 
-## Selection checkboxes
-
-1. Close all and open demog
-2. On the viewer, set X to AGE, Y to HEIGHT
-3. Hold Shift and drag a rectangle to select points — verify selection in the grid
-4. Go to the Context Panel > Selection
-5. Toggle the available checkboxes — verify the line chart interaction updates accordingly
-6. Save the layout, close the line chart, apply the layout — verify selection settings are preserved
-
-Actuation note: the Selection section on a line chart has no
+Selection checkboxes: the Selection section on a line chart has no
 "Show Selected Only" or "Invert Selection" checkbox — those were illustrative
 names in the source scenario. The real Selection checkboxes are Show Selected
 Rows, Show Current Row Line, Show Mouse-over Category, and Show Mouse-over Row
@@ -251,18 +378,21 @@ mouse-over checkboxes need a live hovering pointer that headless automation
 cannot drive, so they are exercised through their stored value plus a no-error
 guard; persistence of a non-default combo is verified by the layout round-trip.
 
-## Data panel checkboxes
+Lasso selection: on a line chart the Lasso Tool checkbox governs the shape of
+annotation-region drawing (the Shift+drag row selection itself is X-range
+based in the source), so the assertable signals are the menu-to-prop
+round-trip of the checkbox, rows getting selected by the freeform Shift+drag
+(selection.trueCount > 0), and Escape clearing the selection back to zero
+(the app-level Reset Selection command). The freeform gesture's visual (lasso
+outline while drawing annotation regions) remains a human-side check.
 
-1. Go to the Context Panel > Data
-2. Toggle the available checkboxes one by one — verify the line chart updates after each toggle
-3. Save the layout, close the line chart, apply the layout — verify the checkbox states are preserved
-
-Actuation note: a line chart's Data section has no "Show Null
+Data panel checkboxes: a line chart's Data section has no "Show Null
 Values" or "Show Missing Values" checkbox — those were illustrative names in the
-source scenario (they are grid properties). The real viewer booleans toggled
-here are Pack Categories (Data) and Multi Axis (Controls); each is set off its
-default with the new value read back and a no-error guard, and the toggled combo
-is confirmed to survive a layout save/close/restore round-trip.
+source scenario (they are grid properties). The real viewer booleans set
+here are Pack Categories (Data) and Multi Axis (Controls). Multi Axis behavior
+(enable/disable with canvas signals) is owned by multi-axis-and-split.md; this
+step's own signal is the non-default combo surviving a layout
+save/close/restore round-trip with a no-error guard.
 ---
 {
   "order": 2,

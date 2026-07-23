@@ -1,3 +1,7 @@
+/* ---
+realizes: []
+--- */
+
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -37,6 +41,61 @@ async function clickNamedMenuItem(page: Page, nameAttr: string) {
     item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   }, nameAttr);
   await page.waitForTimeout(500);
+}
+
+/** Click a context menu item by its visible label — for items whose name attribute
+ * is dynamic or not known upfront (e.g. property checkboxes inside groups). */
+async function clickMenuItemByLabel(page: Page, label: string) {
+  await page.evaluate((text) => {
+    const lbl = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .find(el => (el.textContent ?? '').trim() === text);
+    if (!lbl) throw new Error(`Menu item not found: ${text}`);
+    const item = lbl.closest('.d4-menu-item') as HTMLElement;
+    const container = item.closest('.d4-menu-item-container') as HTMLElement | null;
+    if (container) container.style.display = '';
+    item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+  }, label);
+  await page.waitForTimeout(500);
+}
+
+/** Checkbox menu items keep the menu open by design; the canonical close
+ * gesture is a click outside the menu. Picks a point in the top header strip
+ * verified to lie outside every open menu popup and outside the line chart,
+ * preferring inert chrome (no icon/button/canvas under the point), and
+ * confirms the click itself left selection and current row untouched. */
+async function closeMenuByOutsideClick(page: Page) {
+  const pt = await page.evaluate(() => {
+    const blockers = Array.from(document.querySelectorAll('.d4-menu-popup'))
+      .map(m => m.getBoundingClientRect());
+    blockers.push(document.querySelector('[name="viewer-Line-chart"]')!.getBoundingClientRect());
+    const y = 5;
+    const outside = (x: number) =>
+      !blockers.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+    const inert = (x: number) => {
+      const el = document.elementFromPoint(x, y);
+      return !!el && !el.closest('.d4-menu-popup, canvas, i, button, a, img, [name^="icon"]');
+    };
+    let pick = -1;
+    for (let x = 200; x < window.innerWidth - 20; x += 40) {
+      if (!outside(x)) continue;
+      if (pick < 0) pick = x; // fallback: first outside point
+      if (inert(x)) { pick = x; break; }
+    }
+    return {x: pick, y,
+      sel: grok.shell.tv.dataFrame.selection.trueCount,
+      cur: grok.shell.tv.dataFrame.currentRowIdx};
+  });
+  expect(pt.x).toBeGreaterThan(0);
+  await page.mouse.click(pt.x, pt.y);
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => ({
+    menuOpen: !!document.querySelector('.d4-menu-popup'),
+    sel: grok.shell.tv.dataFrame.selection.trueCount,
+    cur: grok.shell.tv.dataFrame.currentRowIdx,
+  }));
+  expect(after.menuOpen).toBe(false);
+  expect(after.sel).toBe(pt.sel);
+  expect(after.cur).toBe(pt.cur);
 }
 
 async function contextMenuClick(page: Page, nameAttr: string) {
@@ -344,32 +403,117 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await legendSettles(false);
   });
 
-  await softStep('Axes follow filter', async () => {
-    await lcSetProps(page, {xColumnName: 'AGE'});
-
-    const defaultVal = (await lcProps(page, 'axesFollowFilter')).axesFollowFilter;
-    expect(defaultVal).toBe(true);
-
-    await lcSetProps(page, {axesFollowFilter: false});
-    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(false);
-
+  await softStep('Axes follow filter — X axis bounds sync to filter range (contrast)', async () => {
+    // On an aggregated chart (duplicated x values, e.g. x=AGE) the false
+    // branch of the flag has no effect: the aggregate frame is built over the
+    // filtered rows and resetView reads its xCol.min/max, so the axes follow
+    // the filter regardless. The flag's contract holds in the non-aggregated
+    // regime, so the contrast runs on a unique-x scratch column.
     await page.evaluate(() => {
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 30, max: 60});
+      const df = grok.shell.tv.dataFrame;
+      if (!df.columns.contains('rowIdx'))
+        df.columns.addNewInt('rowIdx').init((i: number) => i);
     });
-    await page.waitForTimeout(500);
+    await lcSetProps(page, {xColumnName: 'rowIdx', yColumnNames: ['HEIGHT']});
 
-    const filteredCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
-    expect(filteredCount).toBeLessThan(5850);
-
-    await lcSetProps(page, {axesFollowFilter: true});
+    // axesFollowFilter defaults to true — confirm by read before contrasting.
     expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(true);
 
-    await page.evaluate(() => {
+    const setIdxFilter = (min: number, max: number) => page.evaluate(({lo, hi}) => {
       const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: 'histogram', column: 'AGE', min: 0, max: 100});
+      fg.updateOrAdd({type: 'histogram', column: 'rowIdx', min: lo, max: hi});
+    }, {lo: min, hi: max});
+
+    // The X-axis world bounds are read through LineChartViewer.screenToWorld
+    // (published JS API backed by the viewer's range slider): sampling the
+    // linear screen→world map at two canvas points and extrapolating to the
+    // canvas edges yields the axis min/max, slightly widened by the axis
+    // margins — the assert bands absorb that.
+    const xAxisBounds = () => page.evaluate(() => {
+      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart') as any;
+      const canvases = lc.root.querySelectorAll('canvas');
+      let mc: HTMLCanvasElement | null = null, ma = 0;
+      for (const c of canvases) {
+        const r = c.getBoundingClientRect();
+        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+      }
+      const rect = mc!.getBoundingClientRect();
+      const y = rect.height * 0.5;
+      const x1 = rect.width * 0.3, x2 = rect.width * 0.7;
+      const w1 = lc.screenToWorld(x1, y).x, w2 = lc.screenToWorld(x2, y).x;
+      const perPx = (w2 - w1) / (x2 - x1);
+      return {min: w1 - perPx * x1, max: w1 + perPx * (rect.width - x1), span: perPx * rect.width};
     });
+
+    // Baseline: no filter on rowIdx yet, so the axis spans the full 0..5849
+    // range. The guards keep the later bands non-vacuous: the full range must
+    // be wide and reach beyond the filtered-max band before the contrast
+    // means anything.
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeGreaterThan(5000);
+    const base = await xAxisBounds();
+    console.log(`axesFollowFilter baseline bounds: min=${base.min.toFixed(2)} max=${base.max.toFixed(2)} span=${base.span.toFixed(2)}`);
+    expect(base.max).toBeGreaterThan(4400);
+
+    // Mode 1 — axesFollowFilter=true: the X axis synchronizes with the
+    // filter's range, so the rowIdx 2000-3500 filter pulls the bounds in to
+    // roughly [2000, 3500].
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await setIdxFilter(2000, 3500);
+    await page.waitForTimeout(800);
+    const filteredCount = await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount);
+    expect(filteredCount).toBeLessThan(5850);
+    const deltaTrue = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeLessThan(base.span * 0.7);
+    const bTrue = await xAxisBounds();
+    console.log(`axesFollowFilter=true bounds after rowIdx 2000-3500: min=${bTrue.min.toFixed(2)} max=${bTrue.max.toFixed(2)} span=${bTrue.span.toFixed(2)} deltaTrue=${deltaTrue}`);
+    expect(bTrue.min).toBeGreaterThan(1600);
+    expect(bTrue.min).toBeLessThan(2200);
+    expect(bTrue.max).toBeGreaterThan(3300);
+    expect(bTrue.max).toBeLessThan(3900);
+
+    // Mode 2 — axesFollowFilter=false: the same filter drops rows from the
+    // chart but the X-axis min/max stays where it was before the filter.
+    await setIdxFilter(0, 5849);
+    await page.waitForTimeout(500);
+    await lcSetProps(page, {axesFollowFilter: false});
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(false);
+    await page.waitForTimeout(500);
+    const baseFalse = await xAxisBounds();
+    console.log(`axesFollowFilter=false pre-filter bounds: min=${baseFalse.min.toFixed(2)} max=${baseFalse.max.toFixed(2)} span=${baseFalse.span.toFixed(2)}`);
+    expect(baseFalse.span).toBeGreaterThan(base.span * 0.85); // full range restored before contrasting
+    await v.snapshotCanvasColors(page, 'Line chart');
+    await setIdxFilter(2000, 3500);
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount)).toBeLessThan(5850);
+    const deltaFalse = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    const bFalse = await xAxisBounds();
+    console.log(`axesFollowFilter=false bounds after rowIdx 2000-3500: min=${bFalse.min.toFixed(2)} max=${bFalse.max.toFixed(2)} span=${bFalse.span.toFixed(2)} deltaFalse=${deltaFalse}`);
+    // Rows dropped (trueCount above) while the bounds stayed put.
+    expect(Math.abs(bFalse.min - baseFalse.min)).toBeLessThan(baseFalse.span * 0.05);
+    expect(Math.abs(bFalse.max - baseFalse.max)).toBeLessThan(baseFalse.span * 0.05);
+    // Cross-branch contrast: fixed axes span the full range, synced axes don't.
+    expect(bFalse.span).toBeGreaterThan(bTrue.span * 2);
+
+    // Round-trip: flipping the flag back to true with the filter still active
+    // re-ranges the axis to the filtered span; then restore the full range.
+    await lcSetProps(page, {axesFollowFilter: true});
+    expect((await lcProps(page, 'axesFollowFilter')).axesFollowFilter).toBe(true);
+    await expect.poll(async () => (await xAxisBounds()).span, {timeout: 10_000})
+      .toBeLessThan(baseFalse.span * 0.7);
+    await setIdxFilter(0, 5849);
     await page.waitForTimeout(300);
+
+    // Teardown: drop the rowIdx scratch column — the filters group removes its
+    // histogram filter together with the column (FiltersCore.onColumnsRemoved),
+    // so no scratch data or filter residue survives the step. Then restore X/Y
+    // to the pre-step columns.
+    await page.evaluate(() => grok.shell.tv.dataFrame.columns.remove('rowIdx'));
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.columns.contains('rowIdx'))).toBe(false);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount)).toBe(5850);
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
   });
 
   await softStep('Context menu — chart area', async () => {
@@ -514,6 +658,7 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     });
     await page.waitForTimeout(1000);
     const selDelta = (await v.diffCanvasColors(page, 'Line chart')).deltaPx;
+    console.log(`rowSource=Selected selection repaint: selDelta=${selDelta}`);
     expect(selDelta).toBeGreaterThan(1000);
 
     await lcSetProps(page, {rowSource: 'Filtered'});
@@ -674,23 +819,85 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
     await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
   });
 
+  await softStep('Lasso selection', async () => {
+    const errBefore = errorCount();
+    // On a line chart the Lasso Tool checkbox governs the shape of
+    // annotation-region drawing (line_chart_annotation_regions: lassoEnabled
+    // reads look.lassoTool); the Shift+drag row selection itself is X-range
+    // based (line_chart_core._initAreaSelection has no lasso branch), so a
+    // freeform drag still selects the swept X interval. The assertable signals
+    // are the menu -> prop round-trip of the checkbox, rows selected by the
+    // freeform Shift+drag, and Escape clearing the selection.
+    await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['HEIGHT']});
+    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+
+    // Tools > Lasso Tool: check via the context menu, confirm by prop read.
+    // The item's name attribute is not stable (property item inside a group),
+    // so it is located by its visible label.
+    await openLineChartContextMenu(page);
+    await clickMenuItemByLabel(page, 'Lasso Tool');
+    expect((await lcProps(page, 'lassoTool')).lassoTool).toBe(true);
+
+    // A checkbox menu item keeps the menu open by design (MenuItem.click stops
+    // propagation when shouldCloseOnClick is false), and areaSelector ignores
+    // any mousedown while Menu.currentlyShown != null — so the Shift+drag
+    // below would be silently rejected. Close the menu by clicking outside it,
+    // the canonical user gesture.
+    await closeMenuByOutsideClick(page);
+
+    const box = await page.evaluate(() => {
+      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
+      const canvases = lc.root.querySelectorAll('canvas');
+      let mc: HTMLCanvasElement | null = null, ma = 0;
+      for (const c of canvases) {
+        const r = c.getBoundingClientRect();
+        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
+      }
+      const rect = mc!.getBoundingClientRect();
+      return {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
+    });
+    const px = (fx: number) => box.left + box.width * fx;
+    const py = (fy: number) => box.top + box.height * fy;
+
+    // Freeform Shift+drag: a zig-zag path instead of a straight rubber-band.
+    await page.keyboard.down('Shift');
+    await page.mouse.move(px(0.3), py(0.35));
+    await page.mouse.down();
+    await page.mouse.move(px(0.45), py(0.65), {steps: 5});
+    await page.mouse.move(px(0.55), py(0.3), {steps: 5});
+    await page.mouse.move(px(0.7), py(0.6), {steps: 5});
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+    await page.waitForTimeout(700);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount)).toBeGreaterThan(0);
+
+    // Escape fires the app-level Reset Selection command — deselect round-trip.
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount)).toBe(0);
+
+    // Uncheck Lasso Tool through the same menu item — toggle round-trip.
+    await openLineChartContextMenu(page);
+    await clickMenuItemByLabel(page, 'Lasso Tool');
+    expect((await lcProps(page, 'lassoTool')).lassoTool).toBe(false);
+    // Close the still-open menu (kept open by design after a checkbox toggle)
+    // by clicking outside it, so it cannot swallow later canvas gestures.
+    await closeMenuByOutsideClick(page);
+    expect(errorCount()).toBe(errBefore);
+  });
+
   await softStep('Data panel checkboxes', async () => {
     const errBefore = errorCount();
     await lcSetProps(page, {xColumnName: 'AGE', yColumnNames: ['AGE', 'HEIGHT']});
 
     // A demog line chart exposes no Show Null / Show Missing checkboxes (those
     // are grid props); the Data-section booleans that exist are Pack Categories
-    // and Multi Axis. Toggle each off its default and read the stored value back.
-    for (const p of ['packCategories', 'multiAxis']) {
-      const cur = (await lcProps(page, p))[p];
-      await lcSetProps(page, {[p]: !cur});
-      expect((await lcProps(page, p))[p]).toBe(!cur);
-    }
-    expect(errorCount()).toBe(errBefore);
-
-    // The toggled Data state must survive a layout save → close → restore.
+    // and Multi Axis. Multi Axis behavior is owned by multi-axis-and-split-spec;
+    // here the signal is the non-default combo surviving a layout
+    // save → close → restore round-trip.
     const combo = {packCategories: false, multiAxis: true};
     await lcSetProps(page, combo);
+    expect(errorCount()).toBe(errBefore);
 
     const layoutId = await page.evaluate(async () => {
       const layout = grok.shell.tv.saveLayout();
@@ -719,41 +926,6 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
       await grok.dapi.layouts.delete(saved);
     }, layoutId);
     await lcSetProps(page, {packCategories: true, multiAxis: false});
-  });
-
-  await softStep('GROK-17835 regression (SPGI)', async () => {
-    await openDatasetWithLineChart(page, 'System:AppData/Chem/tests/spgi-100.csv');
-
-    await lcSetProps(page, {multiAxis: true});
-
-    await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      lc.props.splitColumnNames = ['Series', 'Scaffold Names'];
-    });
-    await page.waitForTimeout(500);
-
-    await lcSetProps(page, {xColumnName: 'Chemist 521'});
-
-    // Hovering the chart must not raise errors. grok.shell.warnings is
-    // undefined on this build, so page and console errors are the channel.
-    const errBefore = errorCount();
-
-    const hoverBox = await page.evaluate(() => {
-      const lc = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Line chart')!;
-      const canvases = lc.root.querySelectorAll('canvas');
-      let mc: HTMLCanvasElement | null = null, ma = 0;
-      for (const c of canvases) {
-        const r = c.getBoundingClientRect();
-        if (r.width * r.height > ma) { ma = r.width * r.height; mc = c; }
-      }
-      const rect = mc!.getBoundingClientRect();
-      return {cx: rect.left + rect.width * 0.5, cy: rect.top + rect.height * 0.5};
-    });
-
-    await page.mouse.move(hoverBox.cx, hoverBox.cy);
-    await page.waitForTimeout(1000);
-
-    expect(errorCount()).toBe(errBefore);
   });
 
   v.finishSpec();

@@ -85,7 +85,7 @@ test('Line Chart — SPC Monitoring and Zoom', async ({page}) => {
     // would hang this evaluate until the test timeout.
     const alive = await page.evaluate(() => true);
     expect(alive).toBe(true);
-    // grok.shell.warnings is undefined on this build, so page and console errors
+    // grok.shell.warnings is not exposed to JS here, so page and console errors
     // are the error channel.
     expect(realErrors().length).toBe(before);
   });

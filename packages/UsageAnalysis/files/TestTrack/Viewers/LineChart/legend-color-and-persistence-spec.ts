@@ -161,10 +161,7 @@ test('Line Chart — legend filter-color and layout persistence', async ({page})
     const before = realErrors().length;
     const projName = 'zz-linechart-color-persist-' + Date.now();
     // Set the category color, then save the project through the real SAVE
-    // ribbon button: only the UI Save captures the VIEW LAYOUT (a JS-API
-    // Project.create().addChild(saveLayout()) throws "Unable to add entity to
-    // the project"; addChild(df) alone restores the table but not the viewer).
-    // So the reopened project restores the Line chart + its legend.
+    // ribbon button; the reopened project restores the Line chart + its legend.
     const expected = await page.evaluate(async (col) => {
       const cat = grok.shell.tv.dataFrame.col(col);
       cat.meta.colors.setCategorical({R_ONE: 0xFF00AAFF});

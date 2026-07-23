@@ -1,6 +1,5 @@
 /* ---
 realizes: [linechart.cp.analytical-overlays]
-realizes_atlas: [linechart.cp.analytical-overlays]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';

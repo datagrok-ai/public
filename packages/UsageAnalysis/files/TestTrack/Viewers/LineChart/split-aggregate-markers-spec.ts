@@ -3,7 +3,7 @@ realizes: [linechart.cp.setup-split-aggregate-markers]
 --- */
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
-import {countCanvasPixels} from '../../helpers/viewers';
+import {countCanvasPixels, snapshotCanvasColors, diffCanvasColors} from '../../helpers/viewers';
 
 declare const grok: any;
 
@@ -41,6 +41,18 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
 // render; -1 (no canvas / getImageData fault) fails the threshold too.
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
   return (await countCanvasPixels(page, 'Line chart')).total > 28000;
+}
+
+// Settle-gated canvas baseline: snapshot the per-color histogram, let any
+// pending repaint drain, and prove the frame is stable (settle-precheck diff)
+// so the next measured diff isolates the setter's own repaint. diffCanvasColors
+// REPLACES the snapshot, so the settled frame becomes the diff baseline.
+async function settleCanvasBaseline(page: Page) {
+  expect(await snapshotCanvasColors(page, 'Line chart')).toBe(true);
+  await page.waitForTimeout(600);
+  const settle = await diffCanvasColors(page, 'Line chart');
+  expect(settle.deltaPx).toBeGreaterThanOrEqual(0);
+  expect(settle.deltaPx).toBeLessThan(200);
 }
 
 async function hoverChart(page: Page) {
@@ -115,15 +127,25 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
 
   await softStep('S1: split by Stereo Category', async () => {
     const before = realErrors().length;
+    await settleCanvasBaseline(page);
     await setProps(page, {splitColumnName: 'Stereo Category'});
-    expect((await getProps(page, 'splitColumnName')).splitColumnName).toBe('Stereo Category');
+    await page.waitForTimeout(600);
+    // Splitting repaints the plot from one line to per-category lines — a
+    // large share of the plot ink changes color/position.
+    const {deltaPx} = await diffCanvasColors(page, 'Line chart');
+    expect(deltaPx).toBeGreaterThan(1000);    expect((await getProps(page, 'splitColumnName')).splitColumnName).toBe('Stereo Category');
     expect(realErrors().length).toBe(before);
   });
 
   await softStep('S1: aggregation avg + whiskers std err', async () => {
     const before = realErrors().length;
+    await settleCanvasBaseline(page);
     await setProps(page, {aggrType: 'avg', whiskersType: 'Avg | ±StError'});
-    const props = await getProps(page, 'aggrType', 'whiskersType');
+    await page.waitForTimeout(600);
+    // Aggregation collapses duplicate X values and the whiskers mode adds
+    // error-bar ink on top of the averaged lines.
+    const {deltaPx} = await diffCanvasColors(page, 'Line chart');
+    expect(deltaPx).toBeGreaterThan(300);    const props = await getProps(page, 'aggrType', 'whiskersType');
     expect(props.aggrType).toBe('avg');
     expect(props.whiskersType).toBe('Avg | ±StError');
     expect(realErrors().length).toBe(before);
@@ -132,8 +154,12 @@ test('Line Chart — Setup, Split, Aggregate, Markers', async ({page}) => {
   // GROK-19883: marker type together with a size-coding column.
   await softStep('S1: marker type + size-coding column', async () => {
     const before = realErrors().length;
+    await settleCanvasBaseline(page);
     await setProps(page, {markerType: 'circle', markersSizeColumnName: 'Chemical Space Y'});
-    const props = await getProps(page, 'markerType', 'markersSizeColumnName');
+    await page.waitForTimeout(600);
+    // Size-coded circle markers add ink at every data point.
+    const {deltaPx} = await diffCanvasColors(page, 'Line chart');
+    expect(deltaPx).toBeGreaterThan(300);    const props = await getProps(page, 'markerType', 'markersSizeColumnName');
     expect(props.markerType).toBe('circle');
     expect(props.markersSizeColumnName).toBe('Chemical Space Y');
     expect(realErrors().length).toBe(before);

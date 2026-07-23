@@ -35,6 +35,44 @@ async function getProps(page: Page, ...names: string[]): Promise<Record<string, 
   }, names);
 }
 
+/** Center of the largest canvas of the line chart, in page coordinates. */
+async function chartCanvasCenter(page: Page): Promise<{x: number, y: number}> {
+  return page.evaluate(() => {
+    const lc = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Line chart') as any;
+    const canvases = lc.root.querySelectorAll('canvas');
+    let mc: HTMLCanvasElement | null = null; let ma = 0;
+    for (const c of canvases) {
+      const r = (c as HTMLCanvasElement).getBoundingClientRect();
+      if (r.width * r.height > ma) { ma = r.width * r.height; mc = c as HTMLCanvasElement; }
+    }
+    const rect = mc!.getBoundingClientRect();
+    return {x: rect.left + rect.width * 0.5, y: rect.top + rect.height * 0.5};
+  });
+}
+
+/** Right-click the chart area, then click a context menu item by its visible
+ * label (the per-chart group is named after a Y column, so name attributes
+ * are dynamic). */
+async function chartContextMenuClickByLabel(page: Page, label: string) {
+  await page.evaluate(() => {
+    document.querySelectorAll('.d4-menu-popup').forEach((m) => m.remove());
+  });
+  await page.waitForTimeout(200);
+  const center = await chartCanvasCenter(page);
+  await page.mouse.click(center.x, center.y, {button: 'right'});
+  await page.waitForTimeout(500);
+  await page.evaluate((text) => {
+    const lbl = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .find((el) => (el.textContent ?? '').trim() === text);
+    if (!lbl) throw new Error(`Menu item not found: ${text}`);
+    const item = lbl.closest('.d4-menu-item') as HTMLElement;
+    const container = item.closest('.d4-menu-item-container') as HTMLElement | null;
+    if (container) container.style.display = '';
+    item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+  }, label);
+  await page.waitForTimeout(500);
+}
+
 async function chartCanvasNonEmpty(page: Page): Promise<boolean> {
   // Content-level check (github-2904): a blank chart still has a non-zero
   // bounding rect, so measure drawn pixels instead of geometry. The threshold
@@ -113,6 +151,12 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
     expect(await chartCanvasNonEmpty(page)).toBe(true);
     const followup = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount === 100);
     expect(followup).toBe(true);
+    // GROK-17835 literal repro gesture: the regression surfaced on HOVER over
+    // the multi-axis + two-splits chart, so move a real pointer into the chart
+    // and hold the no-error floor across the hover handling.
+    const hover = await chartCanvasCenter(page);
+    await page.mouse.move(hover.x, hover.y, {steps: 5});
+    await page.waitForTimeout(600);
     expect(realErrors().length).toBe(before);
   });
 
@@ -213,6 +257,27 @@ test('Line Chart — Multi-Axis and Split', async ({page}) => {
       expect(result.contained).toBe(true); // GROK-20033 invariant
     else
       expect(realErrors().length).toBe(before); // no-error floor fallback (search input absent)
+  });
+
+  // Per-chart context menu: right-clicking the chart area appends a group named
+  // after the chart's Y column (line_chart_context_menu.dart adds it whenever
+  // getChartIndexByScreenY resolves, which it always does with non-empty yCols);
+  // its 'Hide other charts' item collapses yColumnNames / yAggrTypes / chartTypes
+  // to that single column — a menu -> prop signal.
+  await softStep('S2b: Hide other charts — per-chart menu reduces Y columns to one', async () => {
+    const before = realErrors().length;
+    expect((await getProps(page, 'multiAxis')).multiAxis).toBe(true);
+    const yBefore = (await getProps(page, 'yColumnNames')).yColumnNames as string[];
+    expect(yBefore).toHaveLength(3);
+    await chartContextMenuClickByLabel(page, 'Hide other charts');
+    const yAfter = (await getProps(page, 'yColumnNames')).yColumnNames as string[];
+    expect(yAfter).toHaveLength(1);
+    expect(yBefore).toContain(yAfter[0]);
+    expect(realErrors().length).toBe(before);
+    // Round-trip: restore the 3-column Y set so Scenario 3 starts from the
+    // documented "multi-axis on, Y columns set" state.
+    await setProps(page, {yColumnNames: yBefore});
+    expect((await getProps(page, 'yColumnNames')).yColumnNames).toEqual(yBefore);
   });
 
   await softStep('S3: disable Multi Axis', async () => {

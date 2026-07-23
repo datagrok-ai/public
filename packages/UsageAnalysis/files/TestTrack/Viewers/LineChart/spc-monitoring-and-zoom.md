@@ -13,16 +13,16 @@ related_bugs:
 realized_as:
   - spc-monitoring-and-zoom-spec.ts
 expected_results:
-  - anchor: "Scenario 1 Step 5"
+  - anchor: "S1: enable SPC — page stays responsive, no freeze (GROK-20126)"
     expectation: >-
       After enabling Statistical Process Control, a follow-up page.evaluate
       resolves within timeout (the page has not frozen) and the page/console
       error count is unchanged since baseline.
-  - anchor: "Scenario 1 Step 6"
+  - anchor: "S1: disable SPC — no-error teardown"
     expectation: >-
       Reverting the SPC toggle restores the prior state with no new page/console
       error (teardown is asserted, not left unchecked).
-  - anchor: "Scenario 2 Step 6"
+  - anchor: "S2: Reset View clears the wheel-zoom but keeps explicit X Min/Max"
     expectation: >-
       Reset View resets the wheel-zoom (the zoomed and reset-view events fire)
       but the explicit X Min/Max stay at the values set in Step 3 — Reset View
@@ -41,8 +41,7 @@ expected_results:
 4. In the Line Chart property panel, set **X column** to `CAST Idea ID` and
    **Y columns** to `Chemical Space X` (single Y column — required precondition
    for SPC: no split, no multi-axis).
-5. Record the current `grok.shell.warnings` count and page error count as the
-   baseline before Scenario 1.
+5. Record the current console/page error baseline before Scenario 1.
 
 ## Scenarios
 
@@ -53,18 +52,18 @@ Steps:
    (the SPC gating precondition: single Y, no split, no multi-axis).
 2. In the property panel, navigate to the **SPC** section.
 3. Enable **Statistical Process Control** (toggle SPC on).
-4. Immediately after the toggle, issue a `page.evaluate(() => true)` call
-   (a lightweight JS roundtrip to verify the page is still responsive).
-5. Assert: the evaluate resolves within the configured timeout AND
-   `grok.shell.warnings` / page error count is unchanged since baseline
+4. Immediately after the toggle, run a lightweight scripted check that the page
+   still responds.
+5. Verify the responsiveness check completes within the configured timeout AND
+   no new console or page error has been raised since baseline
    (GROK-20126 repro: the no-freeze guard — Step 5).
-6. Disable SPC (revert to off) and assert the no-error teardown: SPC reads back
+6. Disable SPC (revert to off) and verify the no-error teardown: SPC reads back
    off and no new console/page error was raised since the previous checkpoint.
 
 Expected:
-- After enabling SPC, the page remains responsive: page.evaluate resolves
-  and no new console or page error is raised (Step 5 — GROK-20126 no-freeze
-  guard).
+- After enabling SPC, the page remains responsive: the responsiveness check
+  completes and no new console or page error is raised (Step 5 — GROK-20126
+  no-freeze guard).
 - Disabling SPC reverts cleanly: SPC reads back off and no new console or page
   error is raised (Step 6 — no-error teardown).
 
@@ -97,3 +96,12 @@ Expected:
 - After Reset View, X Min and X Max still equal the Step 3 values — Reset View
   clears the interactive zoom, not the configured axis bounds.
 - No new console or page error is raised during the zoom and reset.
+
+## Automation notes
+
+- The console/page error baseline is the `grok.shell.warnings` count plus the
+  page-error count; the Scenario 1 responsiveness check is a
+  `page.evaluate(() => true)` round-trip that must resolve within timeout.
+- Scenario 2: Reset View is triggered via the context menu or the
+  `pcmdResetView` command; the zoom and reset are confirmed through the
+  viewer's zoomed / reset-view events.

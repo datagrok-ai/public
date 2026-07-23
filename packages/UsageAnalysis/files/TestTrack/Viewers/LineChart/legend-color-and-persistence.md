@@ -17,31 +17,32 @@ related_bugs:
   - id: GROK-19825
     status: fixed
 expected_results:
-  - anchor: "Scenario 1 Step 5"
+  - anchor: "S1: legend click filters + preserves remaining line colors"
     expectation: >-
-      df.filter.trueCount is strictly less than the full row count — filtering
-      by a legend category reduces visible rows.
-  - anchor: "Scenario 1 Step 6"
+      lc.filter.trueCount (the Line chart's viewer-local filter) is strictly
+      less than the full row count — the legend click narrows the rows the
+      viewer displays.
+  - anchor: "legend click filters + preserves remaining line colors"
     expectation: >-
       The color assigned to the remaining category's line is unchanged from its
       pre-filter value (does not turn blue or shift; canvas render is not
       directly assertable, so assert via the persisted color property value).
-  - anchor: "Scenario 1 Step 8"
+  - anchor: "S1: re-click legend category resets filter to full count"
     expectation: >-
-      After resetting the legend filter, df.filter.trueCount is restored to the
-      full row count (all categories visible again).
-  - anchor: "Scenario 2 Step 8"
+      After resetting the legend filter, lc.filter.trueCount (the viewer-local
+      filter) is restored to the full row count (all categories visible again).
+  - anchor: "S2: category color persists through layout round-trip (GROK-17278)"
     expectation: >-
       After saving the layout and reopening from it, the per-category color
       property reads back the same value that was set before saving —
       persistence round-trip for layout (GROK-17278 regression guard).
-  - anchor: "Scenario 2 Step 12"
+  - anchor: "S2 Steps 9-13: color AND markers legend survive a project save/close/reopen via the SAVE button (GROK-17278, GROK-19825)"
     expectation: >-
       After saving the project via the SAVE button, closing all, and reopening
       the project, the Line chart viewer is restored and the per-category color
       reads back the value set before saving (GROK-17278 — project
       serialization preserves per-category color).
-  - anchor: "Scenario 2 Step 13"
+  - anchor: "markers legend survive a project save/close/reopen"
     expectation: >-
       The markers legend is present in the reopened project's Line chart viewer
       (GROK-19825 — the legend must not disappear on project reopen).
@@ -67,25 +68,28 @@ expected_results:
 ### Scenario 1: Legend click-to-filter preserves original line colors
 
 Steps:
-1. Record the initial `df.filter.trueCount` (full dataset, all categories visible).
+1. Record the full row count (full dataset, all categories visible — the
+   baseline for the viewer-local filter checks below).
 2. Note the color assigned to one category in the legend (read from the viewer's
    `colorColumnName`-related property, or a property-panel color swatch; this is
    the baseline for the color guard).
 3. Click a **different** legend category entry to filter — only rows for that one
    category should remain visible.
 4. Wait for the chart to re-render (no page error expected).
-5. Assert: `df.filter.trueCount` is strictly less than the value recorded in Step 1.
-6. Assert: the color property for the **remaining** category line is unchanged from
+5. Verify the viewer's own displayed-row count (its viewer-local filter) is
+   strictly less than the value recorded in Step 1 — the legend click narrows
+   the viewer's own filter, not the table's global filter.
+6. Verify the color property for the **remaining** category line is unchanged from
    Step 2 — it has NOT changed to blue or any other default color (github-1498
    regression guard).
 7. Click the active legend category again (or use Reset View / reset legend filter)
    to restore all categories.
-8. Assert: `df.filter.trueCount` equals the value recorded in Step 1.
-9. Assert: no console errors or page errors occurred during Steps 3–8.
+8. Verify the viewer-local filter count equals the value recorded in Step 1.
+9. Verify no console errors or page errors occurred during Steps 3–8.
 
 Expected:
-- Filtering via a legend click reduces df.filter.trueCount to only the rows
-  belonging to the clicked category.
+- Filtering via a legend click narrows the viewer-local filter count
+  to only the rows belonging to the clicked category.
 - The remaining visible line's color property is identical to its pre-filter value —
   legend click-to-filter must not silently overwrite the color assignment.
 - Resetting the filter restores the full row count with no errors.
@@ -94,13 +98,16 @@ Expected:
 
 Steps:
 1. With the split line chart from Setup still active, change the color of one
-   category in the legend (right-click the legend entry → Change Color, or use the
-   property panel color picker).
+   category in the legend (right-click the legend entry → Change Color).
 2. Record the new color value (hex or name) as the expected persisted value.
-3. Open **Save Layout** (via the viewer or table view toolbar).
-4. Save the layout with a distinct name (e.g. `linechart-color-persist-test`).
-5. Close all open tables and views.
-6. Apply the saved layout (File → Layouts → open saved layout).
+3. Save the layout: top menu **View > Layout > Save to Gallery**.
+4. Confirm the layout was saved (a balloon reports it; the layout appears on the
+   context panel).
+5. Close the Line Chart viewer (the table view stays open — a layout needs an
+   open table view to apply to).
+6. Apply the saved layout (**View > Layout > Open Gallery**, click the saved
+   layout) — the layout restores the closed viewer with the settings it had
+   before closing.
 7. Wait for the chart to render.
 8. Assert: the per-category color property reads back the same value recorded in
    Step 2 — color is restored from the layout round-trip (GROK-17278 regression
@@ -108,9 +115,6 @@ Steps:
 9. With the split Line Chart still active and the category color set, click the
    **SAVE** ribbon button, name the project distinctly, and confirm (**OK**).
    A "Share …" dialog appears after the save — dismiss it (**Cancel**).
-   (Only the SAVE button captures the viewer layout — a JS-API
-   `Project.create().addChild(saveLayout())` throws "Unable to add entity to the
-   project", and `addChild(df)` alone restores the table but not the viewer.)
 10. Close all. Reopen the saved project.
 11. Locate the Line Chart viewer in the reopened project layout.
 12. Assert: the Line chart viewer is restored and the per-category color property
@@ -128,3 +132,16 @@ Expected:
 - After saving the project, closing all, and reopening, the same color is present
   and the markers legend is visible — project serialization preserves both color
   customizations and the legend itself.
+
+## Automation notes
+
+Scenario 1: the "viewer-local filter" counts are read as `lc.filter.trueCount`
+on the Line chart's own filter (distinct from the dataframe's global
+`df.filter`); the dataset is opened via the `readDataframe` helper and the
+viewer handle obtained via the `findViewer` helper.
+
+Scenario 2, steps 5-6: the spec does not close the viewer — it clears the
+per-category color (`colors.setCategorical({})`) as the stand-in perturbation,
+then re-applies the saved layout onto the open table view and asserts the color
+is restored. Closing the viewer by hand (step 5) exercises the same
+restore-from-layout signal.
