@@ -1298,61 +1298,6 @@
   min-width: 0;
 }
 
-/* A form built while its pane is still hidden (0-width) gets permanently marked "condensed" by
-   the platform, which then forces every editor's width to 0 via a tag-qualified `!important` rule
-   more specific than the plain-class one above. Match its specificity to cancel the forced zero,
-   regardless of whether the form ever becomes wide enough to un-condense on its own. Excludes
-   checkboxes, handled by their own rule below. */
-.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root:not(.ui-input-bool) > input.ui-input-editor,
-.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root:not(.ui-input-bool) > select.ui-input-editor,
-.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root:not(.ui-input-bool) > div.ui-input-editor {
-  width: auto !important;
-  max-width: none !important;
-  flex-grow: 1 !important;
-}
-
-/* Numeric fields (narrowed by +/- steppers) and the plain string field share flex-grow, so the
-   string field renders wider than the rest. Cap every editor here to one width instead. Matches
-   the specificity of (and is declared after) the condensed-form override above, so it wins for
-   these fields specifically even when their form is marked condensed. Only ever `input` elements
-   here (int/string fields) — no select or non-bool div editors occur in these two forms. */
-.chem-enumerator .d4-accordion-pane-content .chem-enum-filter-form .ui-input-root:not(.ui-input-bool) > input.ui-input-editor {
-  flex-grow: 0 !important;
-  width: 140px !important;
-  max-width: 140px !important;
-}
-
-/* Checkboxes share the .ui-input-editor class with text/number inputs, but shouldn't stretch to
-   fill the row — that grows them into an oversized empty box as the panel narrows. */
-.chem-enumerator .d4-accordion-pane-content .ui-input-bool .ui-input-editor {
-  flex-grow: 0;
-  width: auto;
-}
-
-/* Same condensed-form fight as above, but for checkboxes — their editor is a `div` (not `input`),
-   which the platform's `flex-grow: 10000; width: 0` rule also matches, growing it oversized. */
-.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root.ui-input-bool > div.ui-input-editor {
-  width: auto !important;
-  max-width: none !important;
-  flex-grow: 0 !important;
-}
-
-/* Forms built before their pane is attached get marked "condensed" by the platform, wrapping the
-   label onto its own line above the input instead of beside it. Force the normal row layout. */
-.chem-enumerator .d4-accordion-pane-content .ui-form-condensed .ui-input-root {
-  flex-wrap: nowrap;
-}
-
-/* Each ui.form() sizes its label column to its own widest label, so separate forms in the same
-   pane land on different widths. Share one value, sized to the widest label in the app. Direct
-   child only — a `.d4-column-selector` editor has its own internal caption that reuses the
-   `.ui-input-label` class for an unrelated purpose; matching it squeezes the value to 0 width. */
-.chem-enumerator .d4-accordion-pane-content .ui-input-root > .ui-input-label {
-  min-width: 250px !important;
-  max-width: 250px !important;
-  width: 250px !important;
-}
-
 /* The platform marks a null column-selector `.d4-invalid` regardless of `nullable` — not an error
    here. Its own rule uses `!important`, so the override needs one too. */
 .chem-enum-optional-col .d4-invalid {
@@ -1363,6 +1308,63 @@
 .chem-enum-accordion {
   width: 100%;
   min-width: 0;
+}
+
+/* Checkboxes share the .ui-input-editor class (a div, not input) with text/number fields, which
+   default to flex-grow — that stretches the checkbox into an oversized box as the panel is resized. */
+.chem-enumerator .ui-input-bool .ui-input-editor {
+  flex-grow: 0;
+  width: auto;
+}
+
+/* "How to combine" has three separate ui.form() calls (main fields + two nested, independently
+   collapsible panes), so unlike other panes it doesn't get its label column aligned for free — and
+   the nested ones get marked .ui-form-condensed by the platform on first expand, which changes label/
+   row sizing on its own. The rules below share one label width across all three forms and reset every
+   condensed-only property back to what a normal (never-condensed) row already renders as. */
+
+/* Accordion.addPane's pane-content is a row-flex container, so a plain block child doesn't stretch to
+   fill it by default — grow it like a normal block child would. */
+.chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content > .ui-div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Cancels the platform's default chevron indent so nested rows start flush with the main fields. */
+.chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content {
+  margin-left: -6px !important;
+}
+
+/* Shared label column + reset of everything .ui-form-condensed changes on a label besides width. */
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > label.ui-input-label:not(:empty) {
+  width: 220px !important;
+  max-width: 220px !important;
+  font-size: 13px !important;
+  text-align: right !important;
+  top: auto !important;
+  left: auto !important;
+  height: 28px !important;
+  order: 0 !important;
+}
+
+/* Condensed also flips the row to flex-wrap:wrap and adds row padding-top — reset both so a condensed
+   row lays out identically to a non-condensed one. */
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root {
+  flex-wrap: nowrap !important;
+  padding-top: 4px !important;
+}
+
+/* Condensed zeroes the checkbox label's margin-right; restore the normal label-to-checkbox gap. */
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root.ui-input-bool > label.ui-input-label {
+  margin-right: 8px !important;
+}
+
+/* Editors stay their natural width (not flex-grow) to match every other pane's own non-growing
+   default, regardless of condensed state. */
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > .ui-input-editor {
+  flex-grow: 0 !important;
+  width: auto !important;
+  max-width: none !important;
 }
 
 .chem-enum-pane-subtitle {

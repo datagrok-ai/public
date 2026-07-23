@@ -285,13 +285,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const smartsColInput = makeColInput('Reaction SMARTS column', templatesDf, config.enumeration.smarts_col, isStringCol,
     'Column in the reaction templates file that contains the reaction SMARTS strings.', false);
 
-  const blockingColInput = makeColInput('Blocking SMARTS column (Optional)', templatesDf,
+  const blockingColInput = makeColInput('Blocking SMARTS (optional)', templatesDf,
     config.enumeration.reactant_blocking_groups_per_template_column, isStringCol,
     'Optional column whose values are SMARTS patterns (separated by ";" or "|"). Excludes building ' +
     'blocks with functional groups incompatible with this template — a building block matching any ' +
     'of them is skipped for this template only and stays available to all others.', true);
 
-  const rxnNameColInput = makeColInput('Reaction name column (Optional)', templatesDf,
+  const rxnNameColInput = makeColInput('Reaction name (optional)', templatesDf,
     config.enumeration.reaction_name_col, isStringCol,
     'Optional column with a friendly name for each reaction template. Surfaces in the output ' +
     '"reaction_name" column.', true);
@@ -300,10 +300,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     value: bbsDf ?? undefined, nullable: false,
     tooltipText: 'Table with the building-block library (SMILES). Pick a workspace table or upload a CSV.',
   });
-  const bbColInput = makeColInput('Building blocks SMILES column', bbsDf, config.enumeration.bb_smiles_column, isStringCol,
+  const bbColInput = makeColInput('SMILES column', bbsDf, config.enumeration.bb_smiles_column, isStringCol,
     'Column in the building blocks file that contains SMILES.', false);
 
-  const reagentsInput = ui.input.table('Reagents file (Optional)', {
+  const reagentsInput = ui.input.table('Reagents file (optional)', {
     value: undefined, nullable: true,
     tooltipText: 'Optional table of reagent SMILES. When set, switches to reagents mode: every ' +
       'round uses exactly one building block (or product of an earlier round) and fills every ' +
@@ -316,11 +316,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // value" red underline reads as an error, which it isn't here.
   reagentsColInput.root.classList.add('chem-enum-optional-col');
 
-  const exclusionInput = ui.input.table('Exclusion substructures file (Optional)', {
+  const exclusionInput = ui.input.table('Exclusion SMARTS file (optional)', {
     value: exclusionDf ?? undefined, nullable: true,
     tooltipText: 'Optional table of SMARTS patterns. Any product matching one of these is rejected.',
   });
-  const exclusionColInput = makeColInput('Exclusion substructures column', exclusionDf,
+  const exclusionColInput = makeColInput('Exclusion SMARTS column', exclusionDf,
     config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol,
     'Column in the exclusion substructures file that contains the SMARTS strings.', true);
 
@@ -946,7 +946,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // gets its own run action too.
   const previewEnumerateBtn = ui.button('Enumerate', () => runWithUi(runEnumeration));
   previewEnumerateBtn.classList.add('ui-btn-ok');
-  previewEnumerateBtn.style.alignSelf = 'flex-end';
   // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind the
   // tooltip to the ribbon-item ancestor instead (must stay its direct, unwrapped child).
   let runBtnRibbonItem: HTMLElement | null = null;
@@ -1091,35 +1090,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     setAndFire(depthFirstInput, false);
   };
 
-  // Shared reveal-on-demand affordance for optional/advanced content (Map columns, Combination
-  // limits, Product filters). `dot` (if passed) is shown next to the label — the caller owns and
-  // toggles its visibility, e.g. to flag "differs from defaults" without expanding the toggle.
-  function makeChevronToggle(
-    label: string, body: HTMLElement, onToggle?: (open: boolean) => void, dot?: HTMLElement,
-  ): HTMLElement {
-    body.style.display = 'none';
-    const chevron = ui.iconFA('chevron-right');
-    chevron.style.transition = 'transform 0.15s';
-    const labelChildren = [chevron, ui.span([` ${label}`])];
-    if (dot) labelChildren.push(dot);
-    // Neutral color — a disclosure toggle, not a call to action like the blue Next/Back buttons.
-    const link = ui.divH(labelChildren,
-      {style: {fontSize: '12px', color: 'var(--grey-6)', cursor: 'pointer', marginTop: '2px',
-        gap: '2px', alignItems: 'center'}});
-    let open = false;
-    link.onclick = (): void => {
-      open = !open;
-      body.style.display = open ? '' : 'none';
-      chevron.style.transform = open ? 'rotate(90deg)' : '';
-      onToggle?.(open);
-    };
-    return ui.divV([link, body]);
-  }
-
-  // "Map columns" hides the optional template columns (blocking + reaction name) until needed.
-  const mapColsBody = ui.form([blockingColInput, rxnNameColInput]);
-  const mapColsToggle = makeChevronToggle('Map columns (optional)', mapColsBody);
-
   // Right-pane tab references — assigned when tabs are built; used by section-open handlers for
   // context-sensitive tab switching. Declared here so openAccPaneAndSyncTab can close over them.
   let templatesPane: DG.TabPane | undefined;
@@ -1143,30 +1113,43 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   const accordion = ui.accordion();
   accordion.root.classList.add('chem-enum-accordion');
+  // allowDragOut (5th arg) defaults to true; panes shouldn't be draggable out of this panel.
+  // One shared form so all four fields' labels align (two forms would size independently).
   const accReactionsPane = accordion.addPane('Reactions', () =>
-    ui.divV([ui.form([templatesInput, smartsColInput]), mapColsToggle,
-      navRow(mkBackBtn(() => accCombinePane, 'How to combine'), mkNextBtn(() => accBbsPane, 'Building blocks'))]), true);
+    ui.divV([ui.form([templatesInput, smartsColInput, blockingColInput, rxnNameColInput]),
+      navRow(mkBackBtn(() => accCombinePane, 'How to combine'), mkNextBtn(() => accBbsPane, 'Building blocks'))]),
+  true, null, false);
   const accBbsPane = accordion.addPane('Building blocks', () =>
     ui.divV([ui.form([bbsInput, bbColInput]),
-      navRow(mkBackBtn(() => accReactionsPane, 'Reactions'), mkNextBtn(() => accExtrasPane, 'Extras'))]), false);
+      navRow(mkBackBtn(() => accReactionsPane, 'Reactions'), mkNextBtn(() => accExtrasPane, 'Extras'))]),
+  false, null, false);
   const extrasForm = ui.form([reagentsInput, reagentsColInput, exclusionInput, exclusionColInput]);
   const accExtrasPane = accordion.addPane('Extras', () =>
     ui.divV([extrasForm,
-      navRow(mkBackBtn(() => accBbsPane, 'Building blocks'), mkNextBtn(() => accPreviewPane, 'Preview'))]), false);
+      navRow(mkBackBtn(() => accBbsPane, 'Building blocks'), mkNextBtn(() => accPreviewPane, 'Preview'))]),
+  false, null, false);
   // Flags "differs from platform defaults" without expanding the toggle.
   const mkChangedDot = (tooltip: string): HTMLElement => {
     const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, display: 'none'}});
     ui.tooltip.bind(dot, tooltip);
     return dot;
   };
-  const combinationLimitsDot = mkChangedDot('Changed from platform defaults.');
-  const combinationLimitToggle = makeChevronToggle('Combination limits (optional)', combinationLimitFieldsHost,
-    undefined, combinationLimitsDot);
-  const productFiltersDot = mkChangedDot('Changed from platform defaults.');
-  const productFilterToggle = makeChevronToggle('Product filters (optional)', productFilterFieldsHost,
-    undefined, productFiltersDot);
-  // Combination limits and product filters both live here, next to num_rounds/maxComponents/
-  // maxRoutes — every quantitative constraint on the run's output stays in one place.
+  // Attaches a changed-dot to a pane's own header, spaced off the label text.
+  const attachChangedDot = (pane: DG.AccordionPane, tooltip: string): HTMLElement => {
+    const dot = mkChangedDot(tooltip);
+    dot.style.marginLeft = '6px';
+    pane.root.querySelector('.d4-accordion-pane-header')?.appendChild(dot);
+    return dot;
+  };
+  // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
+  // the outer wizard-navigation accordion).
+  const limitsAccordion = ui.accordion();
+  const combinationLimitsPane = limitsAccordion.addPane('Combination limits (optional)',
+    () => combinationLimitFieldsHost, false, null, false);
+  const productFilterPane = limitsAccordion.addPane('Product filters (optional)',
+    () => productFilterFieldsHost, false, null, false);
+  const combinationLimitsDot = attachChangedDot(combinationLimitsPane, 'Changed from platform defaults.');
+  const productFiltersDot = attachChangedDot(productFilterPane, 'Changed from platform defaults.');
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
     ui.divH([
       ui.divText('Strategy', {style: {fontSize: '11px', color: 'var(--grey-6)', marginBottom: '2px'}}),
@@ -1174,11 +1157,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ], {style: {alignItems: 'center', gap: '4px'}}),
     ui.divV([stratDepthCard.root, stratBreadthCard.root, reagentsModeNote], {style: {gap: '6px'}}),
     ui.form([numRoundsInput, maxComponentsInput, maxRoutesInput]),
-    combinationLimitToggle,
-    productFilterToggle,
+    limitsAccordion.root,
     // First pane in the chain — no Back target.
     navRow(null, mkNextBtn(() => accReactionsPane, 'Reactions')),
-  ], {style: {gap: '8px'}}), false);
+  ], {style: {gap: '8px'}}), false, null, false);
+  // Scopes the shared-label-width CSS in chem.css across this pane's three separate forms.
+  accCombinePane.root.classList.add('chem-enum-combine-pane');
   // Left panel for Preview.
   const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
   function renderPreviewRecap(): void {
@@ -1198,8 +1182,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
     addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`);
 
-    // Per-round amounts, not just totals — same override data (and the same breadth-first BB
-    // exclusion) the Strategy summary and the round tabs' own orange dot already reflect.
+    // Per-round breakdown only for rounds that actually have a custom subset — every round shows
+    // "all N" identically otherwise, which just repeats the total for no benefit.
     const overrides = tDf && bDf ? buildPerRoundOverrides(config) : undefined;
     const addComponentRows = (
       label: string, df: DG.DataFrame | null, key: 'templates' | 'buildingBlocks',
@@ -1208,7 +1192,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       addRow(label, `${df.rowCount}`);
       for (let r = 1; r <= rounds; r++) {
         const oc = overrideCountFor(overrides, mode, r, key);
-        addRow(`Round ${r}`, oc != null ? `${oc} of ${df.rowCount} (custom subset)` : `all ${df.rowCount}`, true);
+        if (oc != null) addRow(`Round ${r}`, `${oc} of ${df.rowCount} (custom subset)`, true);
       }
     };
     addComponentRows('Reactions', tDf, 'templates');
@@ -1216,15 +1200,23 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   const accPreviewPane = accordion.addPane('Preview', () => ui.divV([
-    ui.divText('Runs a reduced-budget sample (≤ 2 rounds, ≤ 3 combinations / template) using the ' +
-    'global reactions, building blocks, and reagents — per-round subsets are not applied here.',
-    {style: {fontSize: '12px', color: 'var(--grey-6)', lineHeight: '1.4'}}),
+    ui.divText('Samples a small subset of products.',
+      {style: {fontSize: '12px', color: 'var(--grey-6)'}}),
     previewRecapHost,
-    // Last pane in the chain — no Next target; the run action lives here too.
-    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), null),
-    previewEnumerateBtn,
-  ], {style: {gap: '10px'}}), false);
+    // Last pane in the chain — the run action takes the Next slot instead of a target pane.
+    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), previewEnumerateBtn),
+  ], {style: {gap: '10px'}}), false, null, false);
   const accPanes = [accReactionsPane, accBbsPane, accExtrasPane, accCombinePane, accPreviewPane];
+
+  // Navigation is chip/button-driven; native click-to-collapse on the header would just empty the
+  // panel, so it's disabled at the source.
+  for (const p of accPanes) {
+    const header = p.root.querySelector('.d4-accordion-pane-header') as HTMLElement | null;
+    if (header) {
+      header.style.pointerEvents = 'none';
+      header.style.cursor = 'default';
+    }
+  }
 
   // Subtitle spans injected into each pane's native header — updated by refreshCfgRibbon().
   const injectPaneSub = (pane: DG.AccordionPane): HTMLElement => {
@@ -1239,11 +1231,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const subExtras = injectPaneSub(accExtrasPane);
   const subCombine = injectPaneSub(accCombinePane);
 
-  // Left pane scrolls vertically if it overflows so the action bar stays visible. minWidth must
-  // fit the widest row (250px fixed label + input + accordion/pane padding) — 320px clipped the
-  // input off the right edge under overflow-x:hidden; measured the actual need at ~338px.
+  // minWidth fits "How to combine"'s widest row (220px label + input + padding).
   const leftPane = ui.divV([accordion.root],
-    {style: {minWidth: '360px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
+    {style: {minWidth: '420px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
 
   // === Config-summary ribbon (shown above the right-pane tabs) ===
   // Each chip's dot flags "customized": Reactions/Building blocks/Reagents show it when any round
@@ -1892,8 +1882,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const previewStatus = ui.divText('',
     {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
   const previewHeader = panelHeader(
-    'Quick preview — runs a small subset (≤ 2 rounds, ≤ 3 combos / template) to give a flavour of ' +
-    'products. Uses the global reactions / building blocks / reagents; per-round subsets are not applied here.',
+    'Quick preview of a small product sample.',
     undefined,
     previewStatus);
   const previewPanel = tabPanel(
@@ -2047,12 +2036,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Resizable horizontal split — drag the divider to rebalance inputs vs side grids.
   const mainRow = ui.splitH([leftPane, rightPane],
     {style: {flex: '1 1 0', minHeight: '0', width: '100%'}}, true);
-  // Initial split ~35/65 (right pane gets more room for the grids) — set via the split's wrapper
-  // boxes, which is what its own drag-resize logic reads.
-  const splitLeft = mainRow.children[0] as HTMLElement;
-  const splitRight = mainRow.children[2] as HTMLElement;
-  if (splitLeft && splitRight)
-    sizeSplitOnceLaidOut(splitLeft, splitRight, (total) => Math.round(total * 0.35));
 
   // Redundant with the ribbon title and the app-info icon's tooltip — dropped rather than moved.
   const root = ui.divV([
