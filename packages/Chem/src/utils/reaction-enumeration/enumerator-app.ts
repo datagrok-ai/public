@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package, PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
-import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
+import {buildCombinationLimitFields, buildProductFilterFields} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput, tryGetRxn} from './enumerate';
 
@@ -371,7 +371,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     nullable: true, showPlusMinus: true,
   });
   maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
-  fixNullableIntStepper(maxRoutesInput);
+  // Decrementing the stepper past 0 floors through to -1 instead of blank.
+  maxRoutesInput.onChanged.subscribe(() => {
+    if (maxRoutesInput.value === -1) maxRoutesInput.value = null;
+  });
 
   // True while pushing config → inputs (syncConfigToQuickInputs). Each setAndFire fires onChanged,
   // which triggers a read-back (syncQuickInputsToConfig) mid-loop — before all inputs are updated —
