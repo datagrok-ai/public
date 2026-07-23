@@ -8,17 +8,19 @@ import {expectNoThrow} from '../helpers';
 // ui.makeDroppable (ui.ts:723,776), and DG.DragDropArgs.handled (events.ts:303-336).
 category('AI: App: Routing and DragDrop JS API', () => {
   test('shell.route returns a View', async () => {
+    // route() returns the current view while URL navigation resolves asynchronously,
+    // so pin the current view first: tests that ran earlier in the suite may leave
+    // no view at all as current (then route() returns null and instanceof fails).
     const prior = grok.shell.v;
-    let routed: any = null;
+    const v = grok.shell.newView('api-tests-shell-route');
+    v.path = '/api-tests-shell-route';
     try {
-      routed = grok.shell.route('/');
+      const routed = grok.shell.route(v.path);
       expect(routed instanceof DG.View, true);
     } finally {
-      // route() may navigate; restore the previously-current view if it still exists.
+      expectNoThrow(() => v.close());
       if (prior != null && grok.shell.v !== prior)
         expectNoThrow(() => grok.shell.v = prior);
-      if (routed != null && routed !== prior && routed.close != null)
-        expectNoThrow(() => routed.close());
     }
   });
 

@@ -2,6 +2,7 @@
 
 ## 1.10.3 (WIP)
 
+* Tests: fixed flaky `shell.route returns a View` — `shell.route` returns the current view, which is null when earlier tests close all views; the test now opens its own view and routes to it
 * Tests: annotated UI-independent categories (dapi, dataframe, functions, bitset, valuematcher, property, stats, shell) with `node: true` — `grok test` now runs them headless in Node before the browser pass; view/dialog/grid tests keep `node: false`
 * Tests: adopted DBTests' browser-bound tests as `DB: Data sync` / `DB: Client cache` / `DB: Benchmarks` (streaming into a table view, IndexedDB client cache, cached benchmarks) so DBTests runs fully headless
 
