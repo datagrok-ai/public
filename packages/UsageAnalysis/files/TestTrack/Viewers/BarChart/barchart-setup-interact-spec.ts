@@ -14,6 +14,53 @@ const datasetPath = 'System:AppData/Chem/tests/spgi-100.csv';
 const splitCol = 'Primary Series Name';
 const dominantCategory = 'Triazoles';
 
+// Bar-band probe (horizontal orientation): contiguous y-runs of default
+// bar-fill pixels (#96d794 ± tolerance — the same color isolation as
+// barTopThirds in barchart-sort-orient-spec.ts) — one band per rendered bar.
+// Returns per-band click fractions of the canvas plus the CSS rect, so callers
+// can target distinct bars without hardcoded offsets.
+function barBands(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+    const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
+    const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+    const rows: {count: number, minX: number, maxX: number}[] = [];
+    for (let y = 0; y < cv.height; y++) {
+      let count = 0, minX = cv.width, maxX = 0;
+      for (let x = 0; x < cv.width; x++) {
+        const i = (y * cv.width + x) * 4;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        if (r >= 120 && r <= 180 && g >= 190 && g <= 240 && b >= 120 && b <= 180) {
+          count++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+        }
+      }
+      rows.push({count, minX, maxX});
+    }
+    const minRun = 10; // bar-fill pixels in a row to count as inside a bar
+    const bands: {yTopFrac: number, yBottomFrac: number, yMidFrac: number, xMinFrac: number, xMidFrac: number}[] = [];
+    let start = -1;
+    for (let y = 0; y <= cv.height; y++) {
+      const inBar = y < cv.height && rows[y].count >= minRun;
+      if (inBar && start < 0) start = y;
+      else if (!inBar && start >= 0) {
+        const mid = Math.floor((start + y - 1) / 2);
+        bands.push({
+          yTopFrac: start / cv.height,
+          yBottomFrac: (y - 1) / cv.height,
+          yMidFrac: mid / cv.height,
+          xMinFrac: rows[mid].minX / cv.width,
+          xMidFrac: (rows[mid].minX + rows[mid].maxX) / 2 / cv.width,
+        });
+        start = -1;
+      }
+    }
+    const rect = cv.getBoundingClientRect();
+    return {bands, rect: {x: rect.x, y: rect.y, w: rect.width, h: rect.height}};
+  });
+}
+
 test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', async ({page}) => {
   test.setTimeout(300_000);
 
@@ -223,14 +270,113 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
   });
 
   await softStep('Scenario 2 Step 5: pressing Esc clears the selection', async () => {
-    const selBefore = await page.evaluate(({split, cat}) => {
+    // Asserts against the selection the Step 3 bar click left behind — no
+    // JS-API re-seed, so a click that silently selected nothing fails here.
+    const selBefore = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
+    expect(selBefore).toBeGreaterThan(0);
+
+    await page.evaluate(() => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      const cv = bc.root.querySelector('canvas') as HTMLElement;
+      cv?.focus?.();
+    });
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(600);
+    const selAfter = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
+    expect(selAfter).toBe(0);
+  });
+
+  // Selection probe shared by the gesture steps: distinct selected categories,
+  // and the full row total of those categories (whole-category selection check).
+  const selState = () => page.evaluate(({split}) => {
+    const df = grok.shell.tv.dataFrame;
+    const col = df.col(split);
+    const cats = new Set<string>();
+    for (let i = 0; i < df.rowCount; i++) if (df.selection.get(i)) cats.add(col.get(i));
+    let catTotal = 0;
+    for (let i = 0; i < df.rowCount; i++) if (cats.has(col.get(i))) catTotal++;
+    return {sel: df.selection.trueCount, distinctCats: cats.size, catTotal, filt: df.filter.trueCount, rowCount: df.rowCount};
+  }, {split: splitCol});
+
+  await softStep('Scenario 2 Step 6: Ctrl+click adds a second category to the selection (additive, not replacement)', async () => {
+    // The Step 3 click leaves the pointer parked over a bar; the hover tooltip
+    // publishes a mouse-over row group (dataFrame highlight), and the chart
+    // then washes every non-hovered bar to ~8% opacity — the default-fill scan
+    // would see a single band. Park the pointer off the canvas and clear the
+    // highlight group before scanning.
+    await page.mouse.move(5, 5);
+    await page.evaluate(async () => {
+      const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+      bc.props.onClick = 'Select';
       const df = grok.shell.tv.dataFrame;
-      if (df.selection.trueCount === 0) {
-        const col = df.col(split);
-        for (let i = 0; i < df.rowCount; i++) if (col.get(i) === cat) df.selection.set(i, true);
-      }
-      return df.selection.trueCount;
-    }, {split: splitCol, cat: dominantCategory});
+      df.rows.highlight(null);
+      df.filter.setAll(true);
+      df.selection.setAll(false);
+      await new Promise((r) => setTimeout(r, 500));
+    });
+    const {bands, rect} = await barBands(page);
+    expect(bands.length).toBeGreaterThanOrEqual(2);
+
+    const ctrlClickBand = async (band: {yMidFrac: number, xMidFrac: number}) => {
+      await page.keyboard.down('Control');
+      await page.mouse.click(rect.x + band.xMidFrac * rect.w, rect.y + band.yMidFrac * rect.h);
+      await page.keyboard.up('Control');
+      await page.waitForTimeout(600);
+    };
+
+    await ctrlClickBand(bands[0]);
+    const s1 = await selState();
+    expect(s1.sel).toBeGreaterThan(0);
+    expect(s1.distinctCats).toBe(1);
+    expect(s1.sel).toBe(s1.catTotal);
+    expect(s1.filt).toBe(s1.rowCount);
+
+    await ctrlClickBand(bands[1]);
+    const s2 = await selState();
+    expect(s2.sel).toBeGreaterThan(s1.sel);
+    expect(s2.distinctCats).toBe(2);
+    expect(s2.sel).toBe(s2.catTotal);
+    expect(s2.filt).toBe(s2.rowCount);
+  });
+
+  await softStep('Scenario 2 Step 8: Shift+drag rubber-band over two bars selects the covered categories', async () => {
+    // Same normalization as Step 6: the Ctrl+click gestures left the pointer
+    // hovering a bar, so clear the mouse-over row group before the scan.
+    await page.mouse.move(5, 5);
+    await page.evaluate(async () => {
+      grok.shell.tv.dataFrame.rows.highlight(null);
+      grok.shell.tv.dataFrame.selection.setAll(false);
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    const {bands, rect} = await barBands(page);
+    expect(bands.length).toBeGreaterThanOrEqual(2);
+
+    // Diagonal drag: a rectangle spanning from just inside the top of the first
+    // band to just inside the bottom of the second, horizontally inside both
+    // bars' fill (bars share the left edge in horizontal orientation).
+    const xStart = rect.x + Math.max(bands[0].xMinFrac, bands[1].xMinFrac) * rect.w + 3;
+    const xEnd = xStart + 24;
+    const yStart = rect.y + bands[0].yTopFrac * rect.h + 1;
+    const yEnd = rect.y + bands[1].yBottomFrac * rect.h - 1;
+    await page.mouse.move(xStart, yStart);
+    await page.keyboard.down('Shift');
+    await page.mouse.down();
+    await page.mouse.move(xEnd, yEnd, {steps: 8});
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+    await page.waitForTimeout(700);
+
+    const s = await selState();
+    expect(s.sel).toBeGreaterThan(0);
+    expect(s.distinctCats).toBeGreaterThanOrEqual(2);
+    expect(s.sel).toBe(s.catTotal);
+    expect(s.filt).toBe(s.rowCount);
+  });
+
+  await softStep('Scenario 2 Step 9: Esc clears the gesture-built selection (round-trip to zero)', async () => {
+    // Asserts against the selection the Step 8 rubber-band gesture left behind —
+    // no JS-API re-seed, so a gesture that silently selected nothing fails here.
+    const selBefore = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
     expect(selBefore).toBeGreaterThan(0);
 
     await page.evaluate(() => {
@@ -306,6 +452,7 @@ test('Bar Chart — Setup and core interaction (On Click Filter vs Select)', asy
       return {clearedKeys: Object.keys(cleared).length, restored, reopened: !!bc2};
     }, {split: splitCol});
 
+    expect(precheck).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(precheck).toBeLessThan(CEIL);
     expect(colorDelta).toBeGreaterThan(FLOOR);
     expect(rt.clearedKeys).toBe(0);

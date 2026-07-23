@@ -18,16 +18,19 @@ expected_results:
   - anchor: "Scenario 1 Step 3"
     expectation: >-
       With Orientation Vertical and Bar Sort (barSortType `by value`)
-      Descending, bars render vertically by aggregated value. The exact
-      left-to-right ordering is a documented reduction (axis tick labels are
-      canvas-rendered, no DOM handles); the sort is verified as a render signal
-      at Step 7.
+      Descending, the actuation repaints the chart: after a settle precheck on
+      the horizontal baseline, the canvas color delta exceeds the floor, and
+      the descending order is verified positionally — the bar-fill top edge in
+      the left third of the canvas sits above the right third's (tallest bars
+      on the left).
   - anchor: "Scenario 1 Step 7"
     expectation: >-
-      Flipping Bar Sort from Descending to Ascending applies (barSortOrder echo)
-      and the chart renders error-free. The rendered reorder is a documented
-      reduction — flipping barSortOrder produces zero canvas delta headless,
-      so the visual reorder is not observable.
+      Flipping Bar Sort from Descending to Ascending applies and re-renders the
+      reorder: the tall-bar side swaps — before the flip the left third's
+      bar-fill top edge sits above the right third's, after it the right
+      third's sits above the left's. The color-histogram canvas diff serves as
+      a fault guard only, since a pure reorder of equal-width bars keeps the
+      color histogram unchanged.
   - anchor: "Scenario 1 Step 4"
     expectation: >-
       With stacking enabled on the negative-sum value column, the stacked bars
@@ -48,6 +51,11 @@ expected_results:
       within the top 40% of the canvas, so no excess whitespace appears above
       the tallest bar. The bar-fill green bbox
       isolates bar content from the axis chrome that spans the full height.
+  - anchor: "Scenario 2 Step 4"
+    expectation: >-
+      The intermediate revert to Horizontal renders error-free: the chart
+      repaints as horizontal bars with a non-blank canvas and no new console or
+      page errors.
   - anchor: "Scenario 2 Step 5"
     expectation: >-
       Resetting Orientation to Auto returns the chart to the default layout with
@@ -64,11 +72,6 @@ expected_results:
 4. In the in-chart **Category** selector, set the Split column to **Primary Series Name**.
 5. In the Context Panel > Data section, set **Value** to **Chemical Space X** and **Value Aggr Type** to **sum**.
 
-> Actuation note: the in-chart **Category** / **Value** / **Stack** selectors are
-> driven through the viewer `props` (`splitColumnName`, `valueColumnName`,
-> `barSortType`, `barSortOrder`, `orientation`) rather than by typing into the
-> canvas-rendered selector widgets.
-
 ## Scenarios
 
 ### Scenario 1: Vertical orientation with Descending sort, stacking on negative sums, and negative values
@@ -78,10 +81,10 @@ Steps:
 2. In the Context Panel > Style section, set **Bar Sort** to **Descending** — the Bar Sort type is
    `by value` (barSortType) with order Descending (barSortOrder `desc`; non-default, default is Ascending).
 3. Verify that bars render vertically under the descending by-value sort of aggregated
-   **Chemical Space X** sum. (The exact left-to-right bar order is a documented reduction — axis
-   category tick labels are canvas-rendered with no DOM handles, and flipping barSortOrder produces
-   zero canvas delta headless, so the visual reorder is not observable; the reachable assertion is
-   the prop echo plus an error-free render.)
+   **Chemical Space X** sum: the actuation repaints the chart (canvas color delta above the floor,
+   after a settle precheck on the horizontal baseline), and the descending order shows
+   positionally — the bar-fill top edge in the left third of the canvas sits above the right
+   third's (tallest bars on the left).
 4. In the Context Panel > Style section, set **Legend Visibility** to **Always** and enable stacking
    (set **Stack** to **Stereo Category**). Verify that stacking holds on the negative-sum
    **Chemical Space X** aggregation: the stack legend, absent before, appears in the viewer area (GROK-19480
@@ -91,20 +94,27 @@ Steps:
    Verify that the chart renders correctly with negative-value bars displayed below the zero baseline
    without breaking the layout or producing a JavaScript error (GROK-19480 regression guard).
 6. In the Context Panel > Style section, set **Bar Sort** to **Ascending** (revert sort).
-7. Verify that bars are now in ascending order from left to right under vertical orientation.
+7. Verify that bars are now in ascending order from left to right under vertical orientation:
+   the tall-bar side swaps — the bar-fill top edge in the right third of the canvas now sits
+   above the left third's, inverting the descending layout from Step 3. (A pure reorder of
+   equal-width bars keeps the canvas color histogram unchanged, so the histogram diff is a fault
+   guard only; the positional swap is the reorder signal.)
 8. In the Context Panel > Style section, set **Orientation** to **Horizontal** (revert orientation).
    Verify that bars render horizontally in ascending order; the layout returns to the expected
    horizontal baseline.
 
 Expected:
 - After Step 3: bars are vertical with decreasing heights left-to-right; values and colors are
-  rendered correctly for all displayed categories.
+  rendered correctly for all displayed categories. The repaint is measured as a canvas color
+  delta, and the decreasing layout as the left-third bar tops sitting above the right-third's.
 - After Step 4: enabling the Stack column on the negative-sum Chemical Space X aggregation keeps
   stacking functional — the stack legend appears as a result of the stack action (it is absent
   before it) and no errors are raised (GROK-19480); clearing the Stack column restores the
   un-stacked baseline.
 - After Step 5: chart remains functional with no errors despite negative Chemical Space X sums;
   negative bars appear below the baseline.
+- After Step 7: the ascending order renders — the tall-bar side swaps from the left third to the
+  right third of the canvas.
 - After Step 8: chart reverts to horizontal bars in ascending order; no residual style artifact
   from vertical orientation remains.
 
@@ -133,3 +143,10 @@ Expected:
 - After Step 4: horizontal bars render correctly; layout is clean.
 - After Step 5: orientation is back to the Auto (default) state; chart layout is indistinguishable
   from the initial state.
+
+## Automation notes
+
+Setup: the in-chart **Category** / **Value** / **Stack** selectors are
+driven through the viewer `props` (`splitColumnName`, `valueColumnName`,
+`barSortType`, `barSortOrder`, `orientation`) rather than by typing into the
+canvas-rendered selector widgets.

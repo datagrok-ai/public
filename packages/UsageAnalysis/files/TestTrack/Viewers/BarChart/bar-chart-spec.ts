@@ -1,3 +1,7 @@
+/* ---
+realizes: []
+--- */
+
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
 import * as v from '../../helpers/viewers';
@@ -106,8 +110,10 @@ test('Bar chart tests', async ({page}) => {
 
     expect(setColor.colorColumnName).toBe('HEIGHT');
     expect(aggrReads).toEqual(['min', 'max', 'med']);
+    expect(preColor).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preColor).toBeLessThan(PRECHECK_CEIL);
     expect(colorDelta).toBeGreaterThan(T.colorColumn);
+    expect(preInvert).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preInvert).toBeLessThan(PRECHECK_CEIL);
     expect(invertDelta).toBeGreaterThan(T.invertScheme);
     expect(colColRead).toBe('');
@@ -145,8 +151,10 @@ test('Bar chart tests', async ({page}) => {
 
     expect(offRead).toBe(false);
     expect(onRead).toBe(true);
+    expect(preOff).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preOff).toBeLessThan(PRECHECK_CEIL);
     expect(offDelta).toBeGreaterThan(T.includeNulls);
+    expect(preOn).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preOn).toBeLessThan(PRECHECK_CEIL);
     expect(onDelta).toBeGreaterThan(T.includeNulls);
   });
@@ -201,8 +209,10 @@ test('Bar chart tests', async ({page}) => {
     expect(borderRead).toBe(2);
     expect(heightRead).toBe(20);
     expect(styleReads).toEqual([10, 'Top', 'Bottom', 'Center', false]);
+    expect(preBorder).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preBorder).toBeLessThan(PRECHECK_CEIL);
     expect(borderDelta).toBeGreaterThan(T.barBorder);
+    expect(preHeight).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preHeight).toBeLessThan(PRECHECK_CEIL);
     expect(heightDelta).toBeGreaterThan(T.maxBarHeight);
   });
@@ -235,6 +245,7 @@ test('Bar chart tests', async ({page}) => {
 
     expect(neverRead).toBe('never');
     expect(labelReads).toEqual(['outside', 'auto']);
+    expect(preLabels).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preLabels).toBeLessThan(PRECHECK_CEIL);
     expect(labelsDelta).toBeGreaterThan(T.labels);
   });
@@ -302,8 +313,10 @@ test('Bar chart tests', async ({page}) => {
 
     expect(aggrRead).toBe('max');
     expect(valueRead).toBe('WEIGHT');
+    expect(preAggr).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preAggr).toBeLessThan(PRECHECK_CEIL);
     expect(aggrDelta).toBeGreaterThan(T.aggrType);
+    expect(preSwitch).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preSwitch).toBeLessThan(PRECHECK_CEIL);
     expect(switchDelta).toBeGreaterThan(T.valueSwitch);
   });
@@ -435,6 +448,7 @@ test('Bar chart tests', async ({page}) => {
 
     expect(onRead).toBe(true);
     expect(offRead).toBe(false);
+    expect(preShow).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(preShow).toBeLessThan(PRECHECK_CEIL);
     expect(showDelta).toBeGreaterThan(T.showValues);
   });

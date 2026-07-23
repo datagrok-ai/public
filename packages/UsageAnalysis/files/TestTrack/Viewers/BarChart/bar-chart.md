@@ -68,6 +68,10 @@ expected_results:
       spgi-100 table, the filter and color-column apply, and after save → close →
       reload the layout restores both the color column and the filter (honest
       layout round-trip).
+  - anchor: "No page errors"
+    expectation: >-
+      Across the whole run, no uncaught page errors and no console errors were
+      collected — the spec-wide no-error floor.
 ---
 
 # Bar chart tests (Playwright)
@@ -78,12 +82,6 @@ All scenarios should start with the following sequence of events:
 3. Add Bar chart
 
 ## Color coding
-
-Actuation note: the recolor is asserted through the **Color Column** = HEIGHT
-and **Invert Color Scheme** canvas repaints. The **Color Aggr Type** min/max/med
-cycle is left read-back-only — each aggregation does recolor the bars, but the
-per-aggr canvas delta is not separately asserted; the two anchored repaints carry
-the visual proof.
 
 1. Set Split to RACE, Value to AGE
 2. Open Context Panel > **Color > Color Column** > set to HEIGHT — bars should be color-coded by average height
@@ -102,17 +100,6 @@ the visual proof.
 
 ## Bar style
 
-Actuation note: exact bar width/thickness is not
-pixel-measurable headless, so the **Max Bar Height** and **Bar Border Line
-Width** changes are asserted through the per-color canvas repaint delta
-(`snapshotCanvasColors` + `diffCanvasColors`, with a settle-precheck to drain
-the late render before measuring) rather than a geometric width read — the
-delta is the drivable proxy for "the bars visibly changed". A precise width
-check stays a human-side variation. **Bar Corner Radius**, **Vertical Align**
-(Top/Bottom/Center), and **Show Category Zero Baseline** off are left
-read-back-only: their on-canvas effect is a human-side variation, so the spec
-covers them by property read-back rather than a canvas delta.
-
 1. Open Context Panel > **Style**
 2. Set **Bar Border Line Width** to 2 — bars should get visible borders
 3. Set **Bar Corner Radius** to 10 — bar corners should become rounded
@@ -122,10 +109,6 @@ covers them by property read-back rather than a canvas delta.
 
 ## Labels
 
-Actuation note: the **inside → never** transition is asserted through the canvas
-repaint (the in-bar label glyphs vanish). The **outside** and **auto** modes are
-left read-back-only — the never transition carries the visual proof.
-
 1. Set Split to RACE, Value to AGE
 2. Open Context Panel > **Style**
 3. Set **Show Labels** to **inside** — value labels appear inside bars
@@ -134,14 +117,6 @@ left read-back-only — the never transition carries the visual proof.
 6. Set to **auto** — labels appear where they fit
 
 ## Controls visibility
-
-Actuation note: the value/category/stack in-chart selectors
-are DOM nodes whose computed `display` toggles (flex ↔ none) with the
-show*Selector props — asserted by counting the laid-out selector nodes (3 when
-on, 0 when off). **Show Value Axis** and **Show Category
-Values** are canvas-drawn — they toggle no DOM node, so they
-stay covered by the property read-back; their on-canvas appearance is a
-human-side variation.
 
 1. Open Context Panel
 2. Toggle **Show Value Selector** off — value dropdown disappears from viewer
@@ -179,16 +154,6 @@ human-side variation.
 
 ## Context menu
 
-Actuation note: right-clicking the bar chart canvas opens its context menu, whose
-entire tree (top-level groups and their children) is materialized into the DOM as
-`.d4-menu-item-label` nodes at once — so the composition is asserted by reading the
-flat label list rather than expanding each submenu. The manual scenario's
-**value-axis** right-click (Axis Type / Include Nulls / Axis Font) and **legend**
-right-click (Legend Visibility / Legend Position) are reduced to the same labels
-surfaced in the main-area menu: a positional right-click on those zones is not
-reliable headless, and the labels the zone menus expose (Axis Type, Include Nulls,
-Legend Visibility, Legend Position) are already present in the main menu.
-
 1. Set Split to RACE, Value to AGE, Stack to SEX
 2. Right-click the chart area — the full context menu appears with the bar-chart
    groups (Reset View, Orientation, On Click, Order, Controls, Selection) and the
@@ -210,6 +175,47 @@ Setup: Close all, open both demog and full spgi-100 (System:AppData/Chem/tests/s
 8. Close viewer
 9. Apply the saved layout — filter, color coding, and all settings should restore
 10. Delete the saved layout
+
+## Automation notes
+
+Color coding: the recolor is asserted through the **Color Column** = HEIGHT
+and **Invert Color Scheme** canvas repaints. The **Color Aggr Type** min/max/med
+cycle is left read-back-only — each aggregation does recolor the bars, but the
+per-aggr canvas delta is not separately asserted; the two anchored repaints carry
+the visual proof.
+
+Bar style: exact bar width/thickness is not
+pixel-measurable headless, so the **Max Bar Height** and **Bar Border Line
+Width** changes are asserted through the per-color canvas repaint delta
+(`snapshotCanvasColors` + `diffCanvasColors`, with a settle-precheck to drain
+the late render before measuring) rather than a geometric width read — the
+delta is the drivable proxy for "the bars visibly changed". A precise width
+check stays a human-side variation. **Bar Corner Radius**, **Vertical Align**
+(Top/Bottom/Center), and **Show Category Zero Baseline** off are left
+read-back-only: their on-canvas effect is a human-side variation, so the spec
+covers them by property read-back rather than a canvas delta.
+
+Labels: the **inside → never** transition is asserted through the canvas
+repaint (the in-bar label glyphs vanish). The **outside** and **auto** modes are
+left read-back-only — the never transition carries the visual proof.
+
+Controls visibility: the value/category/stack in-chart selectors
+are DOM nodes whose computed `display` toggles (flex ↔ none) with the
+show*Selector props — asserted by counting the laid-out selector nodes (3 when
+on, 0 when off). **Show Value Axis** and **Show Category
+Values** are canvas-drawn — they toggle no DOM node, so they
+stay covered by the property read-back; their on-canvas appearance is a
+human-side variation.
+
+Context menu: right-clicking the bar chart canvas opens its context menu, whose
+entire tree (top-level groups and their children) is materialized into the DOM as
+`.d4-menu-item-label` nodes at once — so the composition is asserted by reading the
+flat label list rather than expanding each submenu. The manual scenario's
+**value-axis** right-click (Axis Type / Include Nulls / Axis Font) and **legend**
+right-click (Legend Visibility / Legend Position) are reduced to the same labels
+surfaced in the main-area menu: a positional right-click on those zones is not
+reliable headless, and the labels the zone menus expose (Axis Type, Include Nulls,
+Legend Visibility, Legend Position) are already present in the main menu.
 
 ---
 {

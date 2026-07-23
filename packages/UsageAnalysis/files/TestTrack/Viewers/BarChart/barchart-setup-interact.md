@@ -40,6 +40,18 @@ expected_results:
   - anchor: "Scenario 2 Step 5"
     expectation: >-
       Pressing Esc clears the selection (no rows highlighted).
+  - anchor: "Scenario 2 Step 6"
+    expectation: >-
+      Ctrl+clicking a bar selects that category's rows in full; Ctrl+clicking a
+      different bar grows the selection to both categories (additive, not
+      replacement), with the filter untouched.
+  - anchor: "Scenario 2 Step 8"
+    expectation: >-
+      Shift+dragging a rubber-band rectangle over two bars selects the covered
+      categories' rows in full, without filtering.
+  - anchor: "Scenario 2 Step 9"
+    expectation: >-
+      Pressing Esc after the gesture-built selection clears it back to zero.
   - anchor: "Scenario 3 Step 1"
     expectation: >-
       Setting categorical color coding on the Split column through the grid
@@ -57,14 +69,6 @@ expected_results:
 3. Add a Bar Chart viewer to the current table view.
 4. In the Context Panel > Data section, set **Split** to **Primary Series Name**.
 5. Set **Value** to **CAST Idea ID** and **Value Aggr Type** to **Count**.
-
-> Actuation note: the bar clicks target the dominant **Triazoles** category by
-> fixed canvas fractions (x ≈ 0.55·w, y ≈ 0.392·h). Only that dominant bar is
-> hit-testable headless; other bar positions register no hit. Switching the
-> filter to a second bar (md Scenario 1 Steps 6-7)
-> and Alt+drag zoom (md Scenario 1 Step 8) are documented reductions —
-> headless-unreachable — so Reset View (Step 9) is exercised directly without a
-> preceding zoom.
 
 ## Scenarios
 
@@ -102,11 +106,24 @@ Steps:
    the total row count in the grid does NOT change (no filter is applied).
 4. Press **Esc**.
 5. Verify that the selection is cleared; no rows remain highlighted in the grid.
+6. **Ctrl+click** a bar — its category's rows become selected. Then **Ctrl+click** a
+   different bar — the selection grows to include the second category as well
+   (additive selection, not replacement); the filter stays untouched.
+7. Verify both clicked categories are fully selected (every row of each category is
+   highlighted) and the grid still shows the full row range.
+8. Clear the selection, then **Shift+drag** a rubber-band rectangle over two bars —
+   the covered categories' rows become selected in full, without filtering.
+9. Press **Esc** — the gesture-built selection clears back to zero.
 
 Expected:
 - After Step 3: selected rows in the grid are highlighted, but the total visible row count
   equals the full dataset row count (On Click = Select does not filter).
 - After Step 5: no grid rows are highlighted; selection count shows 0.
+- After Steps 6-7: two distinct categories are selected, the selection count equals the
+  combined row count of those categories, and the filter count equals the full dataset.
+- After Step 8: the rubber-band selects at least the two covered categories in full;
+  no filter is applied.
+- After Step 9: the selection count returns to 0.
 
 ### Scenario 3: grid color coding on the Split column drives bar colors and persists across a layout round-trip
 
@@ -121,3 +138,16 @@ Expected:
   (a large canvas repaint versus the uncolored baseline).
 - After the layout round-trip: the Split column's categorical color scheme is restored
   (the color-coding tag matches the applied scheme) and the bar chart reopens intact.
+
+## Automation notes
+
+Scenarios 1-2: the bar clicks target the dominant **Triazoles** category by
+fixed canvas fractions (x ≈ 0.55·w, y ≈ 0.392·h). Only that dominant bar is
+hit-testable headless; other bar positions register no hit. Switching the
+filter to a second bar (md Scenario 1 Steps 6-7)
+and Alt+drag zoom (md Scenario 1 Step 8) are documented reductions —
+headless-unreachable — so Reset View (Step 9) is exercised directly without a
+preceding zoom. The additive-gesture steps (Scenario 2 Steps 6-9) do not use
+fixed fractions: they locate individual bars by scanning the canvas for the
+default bar-fill color (contiguous bands of #96d794 pixels), so two distinct
+bars are clickable there.

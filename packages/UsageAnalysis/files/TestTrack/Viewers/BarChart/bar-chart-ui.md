@@ -1,22 +1,12 @@
 # Bar chart tests (manual)
 
-Human-only visual/gesture checks. The automatable steps (basic click-to-select,
-stacked-segment filtering, On Click modes, Show Selected Rows, double-click Reset View,
-grid color-coding driving the bar colors with a layout round-trip, and context-menu
-composition) have moved into the spec(s); what remains here needs a human eye —
-modifier-key gestures, zoom/pan by mouse, hover tooltips, and eyeballing exact
-color-scheme edits on the canvas.
+Automated coverage lives in the paired spec(s) of this section; this file lists
+only checks that need a human eye.
 
 All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog
 3. Add Bar chart
-
-## Additive selection gestures
-
-1. Set **On Click** to **Select**
-2. **Ctrl + click** a bar — selection adds that category
-3. **Shift + drag** a rectangle over multiple bars — all covered categories are selected
 
 ## Zoom and pan
 

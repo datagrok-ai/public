@@ -195,6 +195,7 @@ test('Bar Chart — Stack Aggregation Precondition and DateTime Split Map', asyn
     // below the map-change signal floor 5000, so a residual repaint tail cannot
     // masquerade as the re-categorization.
     const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(settle.deltaPx).toBeLessThan(300);
     const monthMap = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;

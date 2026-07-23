@@ -82,6 +82,7 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     // Settle-precheck: the indicators-off frame is quiescent. Ceiling 30 sits
     // well below the glyph signal floor 150.
     const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(settle.deltaPx).toBeLessThan(30);
     await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
@@ -138,6 +139,7 @@ test('Bar Chart — Value-Axis Range, Scale, and Scroll', async ({page}) => {
     // Settle-precheck: the indicators-off frame is quiescent. Ceiling 30 sits
     // well below the glyph signal floor 150.
     const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
     expect(settle.deltaPx).toBeLessThan(30);
     await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;

@@ -39,7 +39,21 @@ expected_results:
   - anchor: "Scenario 2 Step 3"
     expectation: >-
       With no Stack column, enabling Relative Values has no effect — bars keep
-      absolute widths (not normalized).
+      absolute widths (not normalized), no legend, no error.
+  - anchor: "Scenario 2 Step 5-6"
+    expectation: >-
+      Setting a Stack column while Relative Values is already on activates the
+      normalized stacked view immediately — bars normalize to equal width and
+      split into stacked segments (large canvas color delta), legend renders.
+  - anchor: "Scenario 2 Step 7-8"
+    expectation: >-
+      Removing the Stack column reverts bars to absolute single-segment widths
+      (Relative Values inert again, legend gone); re-adding the Stack column
+      re-activates the normalized stacked view — the toggle is repeatable.
+  - anchor: "Scenario 2 Step 9-10"
+    expectation: >-
+      Disabling Relative Values with no Stack column restores the baseline
+      single-segment absolute-width bars, no error or blank chart.
 ---
 
 # Bar Chart — Stacking, Relative Values, and Negative Aggregates
@@ -85,15 +99,32 @@ Expected:
 - After Step 9: bars show absolute heights with no normalization; Relative Values is off.
 - After Step 11: single-segment bars, no legend column, standard layout.
 
-### Scenario 2: Relative Values without a Stack column has no effect
+### Scenario 2: Relative Values requires a Stack column — inert alone, activates when Stack is added
 
 Steps:
 1. Confirm the Stack column is **None** (from the end state of Scenario 1).
 2. In the Context Panel > Data section, enable **Relative Values**.
 3. Verify that bars remain at absolute widths — Relative Values has no visual effect when
-   no Stack column is set.
-4. Disable **Relative Values** to restore baseline.
+   no Stack column is set: no stacked segments, no legend, no error. The option is accepted
+   but resolves to a no-op because the stacking precondition is unmet.
+4. Confirm **Stack** is still **None**.
+5. With **Relative Values** still enabled, set the Stack column to **Scaffold Names**.
+6. Verify the chart immediately switches to the normalized stacked view — each outer bar
+   normalizes to equal width and splits into stacked segments, and the legend renders.
+7. Remove the Stack column (set to **None**). Verify bars revert to single-segment
+   absolute-width rendering — Relative Values is still on but inert again, and the
+   legend disappears.
+8. Re-add the Stack column (**Scaffold Names**). Verify bars again normalize to equal
+   width with a legend — the activation is repeatable, not a one-time event.
+9. Remove the Stack column and disable **Relative Values** (back to defaults).
+10. Verify the chart shows single-segment absolute-width bars — the baseline state,
+    with no error or blank chart at any point of the toggle sequence.
 
 Expected:
-- After Step 3: no stacked segments appear; bars are indistinguishable from the non-Relative-Values
-  state — the viewer is not blank and does not error.
+- After Step 3: no stacked segments appear; bars are indistinguishable from the
+  non-Relative-Values state — the viewer is not blank and does not error.
+- After Step 6: bars normalize to equal width and split into stacked segments
+  (a large repaint delta on the canvas); the legend lists the Stack categories.
+- After Steps 7-8: removing the Stack column deactivates the normalized view and
+  re-adding it re-activates it — the behavior round-trips repeatably.
+- After Step 10: baseline single-segment bars at absolute widths, no error.

@@ -31,6 +31,33 @@ function categorySums(page: import('@playwright/test').Page, split: string, valu
   }, {split, value});
 }
 
+// Positional bar probe (vertical orientation): topmost bar-fill pixel row in
+// the left and right thirds of the canvas, as fractions of the canvas height.
+// The default bar fill (#96d794 ± tolerance) isolates bars from axis chrome.
+// A smaller fraction = a taller bar in that third; a by-value sort puts the
+// tallest bars on one side, and flipping the sort order swaps sides — the
+// render signal for a reorder, which the color-histogram canvas diff cannot
+// see (a pure permutation of equal-width bars keeps the histogram unchanged).
+function barTopThirds(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
+    const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
+    const data = cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data;
+    const third = cv.width / 3;
+    let leftTopY = cv.height, rightTopY = cv.height, leftCount = 0, rightCount = 0;
+    for (let y = 0; y < cv.height; y++)
+      for (let x = 0; x < cv.width; x++) {
+        const i = (y * cv.width + x) * 4;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        if (r >= 120 && r <= 180 && g >= 190 && g <= 240 && b >= 120 && b <= 180) {
+          if (x < third) { leftCount++; if (y < leftTopY) leftTopY = y; }
+          else if (x >= cv.width - third) { rightCount++; if (y < rightTopY) rightTopY = y; }
+        }
+      }
+    return {leftTopFrac: leftTopY / cv.height, rightTopFrac: rightTopY / cv.height, leftCount, rightCount};
+  });
+}
+
 test('Bar Chart — Sorting and Orientation', async ({page}) => {
   test.setTimeout(300_000);
 
@@ -63,8 +90,16 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
     await new Promise((r) => setTimeout(r, 1000));
   }, {split: splitCol, value: valueCol});
 
-  await softStep('Scenario 1 Step 3: vertical + descending by-value config took, error-free render', async () => {
+  await softStep('Scenario 1 Step 3: vertical + descending by-value sort repaints the chart (canvas delta); tallest bars on the left', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
+    // Snapshot the horizontal default-sort baseline; the settle precheck proves
+    // the setup repaint has drained, so the delta below measures the
+    // orientation + sort actuation, not a late setup tail.
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(settle.deltaPx).toBeLessThan(500);
     const info = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.orientation = 'vertical';
@@ -79,10 +114,18 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
         hasCanvas: !!cv && cv.getBoundingClientRect().width > 0,
       };
     });
+    const {deltaPx} = await v.diffCanvasColors(page, 'Bar chart');
+    // Positional sort signal: descending by-value under vertical orientation
+    // puts the tallest bar on the left — the left third's bar-fill top edge
+    // sits above the right third's.
+    const bars = await barTopThirds(page);
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.orientation).toBe('vertical');
     expect(info.barSortType).toBe('by value');
     expect(info.barSortOrder).toBe('desc');
+    expect(deltaPx).toBeGreaterThan(1000);    expect(bars.leftCount).toBeGreaterThan(0);
+    expect(bars.rightCount).toBeGreaterThan(0);
+    expect(bars.leftTopFrac).toBeLessThan(bars.rightTopFrac);
     expect(info.hasCanvas).toBe(true);
     expect(errAfter).toBe(errBefore);
   });
@@ -148,22 +191,32 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
     expect(errAfter).toBe(errBefore);
   });
 
-  await softStep('Scenario 1 Step 7: revert Bar Sort to Ascending; config took, error-free render', async () => {
+  await softStep('Scenario 1 Step 7: revert Bar Sort to Ascending re-renders the reorder — the tall-bar side swaps', async () => {
     const errBefore = pageErrors.length + consoleErrors.length;
-    // Documented reduction: the rendered bar order is not observable headless.
-    // Axis category tick labels are canvas-rendered with no DOM handles, and
-    // flipping barSortOrder desc→asc produces zero canvas delta — the reorder
-    // does not repaint the frame under headless, so a canvas-diff render signal
-    // is unavailable. The reachable assertion is the prop echo plus an
-    // error-free render.
+    // A pure reorder permutes equal-width bars, which the color-histogram
+    // canvas diff cannot see, so the settle diff here is a fault guard only;
+    // the reorder signal is positional: under descending the tallest bars sit
+    // in the left third (asserted at Step 3), and flipping to ascending must
+    // swap the tall-bar side to the right third.
+    expect(await v.snapshotCanvasColors(page, 'Bar chart')).toBe(true);
+    await page.waitForTimeout(400);
+    const settle = await v.diffCanvasColors(page, 'Bar chart');
+    expect(settle.deltaPx).toBeGreaterThanOrEqual(0); // -1 = canvas fault
+    expect(settle.deltaPx).toBeLessThan(500);
+    const before = await barTopThirds(page);
     const order = await page.evaluate(async () => {
       const bc = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Bar chart') as any;
       bc.props.barSortOrder = 'asc';
       await new Promise((r) => setTimeout(r, 900));
       return bc.props.barSortOrder;
     });
+    const after = await barTopThirds(page);
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(order).toBe('asc');
+    expect(before.leftTopFrac).toBeLessThan(before.rightTopFrac);
+    expect(after.leftCount).toBeGreaterThan(0);
+    expect(after.rightCount).toBeGreaterThan(0);
+    expect(after.rightTopFrac).toBeLessThan(after.leftTopFrac);
     expect(errAfter).toBe(errBefore);
   });
 
@@ -197,7 +250,6 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
       const cv = bc.root.querySelector('canvas') as HTMLCanvasElement;
       return {
         splitColumnName: bc.props.splitColumnName,
-        barSortType: bc.props.barSortType,
         hasCanvas: !!cv && cv.getBoundingClientRect().width > 0,
       };
     }, {value: countCol});
@@ -226,7 +278,6 @@ test('Bar Chart — Sorting and Orientation', async ({page}) => {
     });
     const errAfter = pageErrors.length + consoleErrors.length;
     expect(info.splitColumnName).toBe(splitCol);
-    expect(info.barSortType).toBe('by value');
     expect(info.hasCanvas).toBe(true);
     expect(bars.gCount).toBeGreaterThan(1000);
     expect(bars.gTopFrac).toBeLessThan(0.40);

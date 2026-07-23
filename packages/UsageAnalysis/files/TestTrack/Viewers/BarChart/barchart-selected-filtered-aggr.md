@@ -45,11 +45,9 @@ expected_results:
 
 ## Setup
 
-1. Close all open tables and viewers (use the platform's Close All action or
-   `grok.shell.closeAll()`).
-2. Open the demog dataset: `readDataframe('demog.csv')` → a TableView appears.
-3. Add a Bar Chart viewer to the TableView:
-   `findViewer('Bar Chart', view)` — the viewer appears in the layout.
+1. Close all open tables and viewers (use the platform's Close All action).
+2. Open the demog dataset — a table view appears.
+3. Add a Bar Chart viewer to the table view — the viewer appears in the layout.
 4. In the Bar Chart property panel (Context Panel), set **Split** (category column)
    to `race`.
 5. Set the **Value** column to `age`.
@@ -64,7 +62,8 @@ Steps:
 2. Enable **Show Selected Rows** in the Bar Chart property panel.
 3. Enable **Show Filtered Rows** in the Bar Chart property panel.
 4. In the TableView grid, select a subset of rows belonging to one category
-   (e.g. click rows where `race = 'Asian'`).
+   (e.g. Ctrl+click rows where `race = 'Asian'` — Ctrl+click toggles a row's
+   selection; Shift+drag selects a range).
    Verify: the Selected Rows bar segment (lighter overlay) appears inside the
    corresponding bar on the chart.
 5. Open the Filter panel and add a filter on `sex` to restrict visible rows.
@@ -96,10 +95,10 @@ Steps:
 1. In the Bar Chart property panel, set **Value Aggr Type** to `value-count`
    (the `values` property literal; cumulative — counts non-null values).
 2. Enable **Show Selected Rows** in the property panel.
-3. Select several rows across different categories in the grid.
+3. Select several rows across different categories in the grid (Ctrl+click each row).
 4. Verify: the Selected Rows overlay segment appears inside bars for categories
    that contain selected rows.
-5. Enable **Show Filtered Rows**; add a filter to reduce visible rows to a subset.
+5. Enable **Show Filtered Rows**; in the Filter panel, add a filter to reduce visible rows to a subset.
 6. Change the filter subset while **Value Aggr Type** is `values` (value-count).
    Verify: the Filtered Rows overlay re-renders inside the bars (the bar segments
    recolor in place) reflecting the new filtered-row counts under the `values`
@@ -115,3 +114,9 @@ Expected:
 - value-count is cumulative: overlays appear.
 - avg is non-cumulative: overlays disappear, confirming the guard applies to all
   non-additive aggregation types, not only min.
+
+## Automation notes
+
+Setup: views are closed via `grok.shell.closeAll()`; the demog dataset is opened
+via `readDataframe('demog.csv')`; the viewer handle is obtained via
+`findViewer('Bar Chart', view)`.
