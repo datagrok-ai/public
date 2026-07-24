@@ -33,7 +33,10 @@ const nodeTestDirs = ['dapi', 'dataframe', 'functions', 'bitset', 'valuematcher'
 
 // 'functional': run every loaded test (UI-dependent ones self-skip via skipReason);
 // 'stress': only stressTest-marked tests — the concurrency-sweep baseline.
-let mode: 'functional' | 'stress' = 'functional';
+// Defaults to 'stress': `grok stresstest` (the nightly Stress-Tests baseline) invokes
+// this runner without a mode flag, and the curated stress set must not silently widen.
+// Functional runs opt in explicitly (npm run start-node passes --mode=functional).
+let mode: 'functional' | 'stress' = 'stress';
 
 async function main(): Promise<void> {
     const { apiUrl, devKey, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
@@ -138,7 +141,7 @@ function parseArgs() {
         .option('mode', {
             type: 'string',
             choices: ['functional', 'stress'] as const,
-            default: 'functional',
+            default: 'stress',
             describe: 'functional: run all loaded tests once; stress: only stressTest-marked tests (concurrency baseline)',
         })
         .option('step', {
