@@ -14,6 +14,7 @@ import {FuncFlowView} from '../funcflow-view';
 import {FuncFlowDocument, FlowSettings} from '../serialization/flow-schema';
 import {_package} from '../package';
 import {makeEditor, destroyEditor, addNode, TestEditor} from './test-utils';
+import {SpacePicker, spaceEntityName} from '../ui/space-picker';
 
 const SETTINGS = {scriptName: 'EntityFlow', scriptDescription: 'entity test', tags: ['funcflow']};
 
@@ -356,6 +357,72 @@ category('Flow: space binding', () => {
       expect(result, 4);
     } finally {
       destroyEditor(e);
+      if (saved != null)
+        await grok.dapi.scripts.delete(saved).catch(() => {});
+      if (sub != null)
+        await grok.dapi.spaces.delete(sub).catch(() => {});
+      if (root != null)
+        await grok.dapi.spaces.delete(root).catch(() => {});
+    }
+  }, {timeout: 120000});
+
+  test('SpacePicker content mode lists subspaces + entities and activates on dblclick', async () => {
+    const poll = async <T>(probe: () => T | null | undefined, timeoutMs = 20000): Promise<T> => {
+      const start = Date.now();
+      for (;;) {
+        const v = probe();
+        if (v != null) return v;
+        if (Date.now() - start > timeoutMs) throw new Error('poll: timed out');
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    };
+    const stamp = Math.floor(Math.random() * 1e6);
+    let root: DG.Project | null = null;
+    let sub: DG.Project | null = null;
+    let saved: DG.Script | null = null;
+    let picker: SpacePicker | null = null;
+    const e = makeEditor();
+    try {
+      await buildPassThroughFlow(e);
+      root = await grok.dapi.spaces.createRootSpace(`FFPick${stamp}`);
+      sub = await grok.dapi.spaces.id(root!.id).addSubspace(`Sub${stamp}`);
+      saved = await grok.dapi.scripts.save(DG.Script.create(
+        flowScriptText(e.flow, {...SETTINGS, scriptName: `FFPickFlow${stamp}`})));
+      await grok.dapi.spaces.id(root!.id).addEntity(saved!.id, false);
+
+      const activated: string[] = [];
+      picker = await SpacePicker.create({showContent: true,
+        onEntityActivated: (ent) => activated.push(ent.id)});
+      document.body.appendChild(picker.root);
+
+      // Content mode is a browsing surface — no "New subspace…" button.
+      expect(picker.root.textContent!.includes('New subspace'), false, 'no create button in content mode');
+      expect(!!picker.root.querySelector(`[data-testid="ff-space-ffpick${stamp}"]`),
+        true, 'root space listed with a name-based test-id');
+
+      // Expanding lazily loads subspaces AND content entities.
+      const grp = picker.tree.children.find((c) =>
+        (c.value as DG.Project | null)?.id === root!.id) as DG.TreeViewGroup;
+      expect(!!grp, true, 'root space group resolvable in the tree');
+      grp.expanded = true;
+      await poll(() => picker!.root.querySelector(`[data-testid="ff-space-sub${stamp}"]`));
+      const flowRow = await poll(() => {
+        for (const row of Array.from(picker!.root.querySelectorAll<HTMLElement>('[data-testid^="ff-space-item-"]'))) {
+          if ((row.textContent ?? '').toLowerCase().includes(`ffpickflow${stamp}`)) return row;
+        }
+        return null;
+      });
+
+      // Double-click on the flow row hands the entity to the host callback.
+      flowRow.dispatchEvent(new MouseEvent('dblclick', {bubbles: true, cancelable: true}));
+      await poll(() => activated.length > 0 ? true : null);
+      expect(activated[0], saved!.id, 'the saved flow entity was activated');
+
+      // The display-name helper the rows/test-ids are keyed by.
+      expect(spaceEntityName(sub!), `Sub${stamp}`);
+    } finally {
+      destroyEditor(e);
+      picker?.root.remove();
       if (saved != null)
         await grok.dapi.scripts.delete(saved).catch(() => {});
       if (sub != null)

@@ -1,9 +1,10 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncInfo, getRegisteredFuncs, isWorkflowFunc, VIEWER_NODE_TYPES} from '../rete/node-factory';
+import {FuncInfo, getRegisteredFuncs, isWorkflowFunc, ensureFuncNodeType, VIEWER_NODE_TYPES} from '../rete/node-factory';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
+import {SpacePicker} from '../ui/space-picker';
 import {categorizeBySignature, domainCategory} from '../types/type-map';
 import {getFavorites, isFavorite, toggleFavorite, onFavoritesChanged} from './favorites';
 import {supportedUploadExtensions} from '../utils/uploaded-files';
@@ -150,11 +151,24 @@ const LS_KEY = 'funcflow.browser.v1';
 /** Persistence key of the toolbox accordion; the nested per-connection
  *  accordion inside the Queries pane uses `<key>.queries`. */
 export const TOOLBOX_ACCORDION_KEY = 'funcflow.toolbox';
-/** Persistence key of the top tab strip (Files / Queries / Workflows /
+/** Persistence key of the top tab strip (Files / Spaces / Queries / Workflows /
  *  Favorites) — DG.TabControl remembers the selected tab itself. */
 export const TOOLBOX_TABS_KEY = 'funcflow.toolbox.tab';
 /** The top-strip tab names, in order. */
-export const TOOLBOX_TABS = ['Files', 'Queries', 'Workflows', 'Favorites'] as const;
+export const TOOLBOX_TABS = ['Files', 'Spaces', 'Queries', 'Workflows', 'Favorites'] as const;
+
+/** FA5 icon per top tab — the SAME glyphs the platform's Browse tree uses for
+ *  these concepts (Files/Databases/Flows/Favorites/Spaces in
+ *  browse_panel_tree.dart), so the vocabulary carries over. Headers are
+ *  icon-only (the tooltip names the tab); this is what frees the strip up for
+ *  five tabs in the ~250px toolbox. */
+export const TOOLBOX_TAB_ICONS: Record<(typeof TOOLBOX_TABS)[number], string> = {
+  'Files': 'folder',
+  'Spaces': 'brackets-curly',
+  'Queries': 'database',
+  'Workflows': 'sitemap',
+  'Favorites': 'star',
+};
 const VALID_MODES: GroupByMode[] = ['category', 'role', 'tags', 'package'];
 
 /** Case- AND whitespace-insensitive substring match — so "openfile" matches
@@ -239,11 +253,15 @@ export class FunctionBrowser {
   /** The Files tree (KNIME-style file browser). Built lazily once and reused
    *  across renders so its expanded state and scroll position survive a search. */
   private filesTreeRoot?: HTMLElement;
-  /** The top tab strip (Files / Queries / Workflows / Favorites). Exposed for tests. */
+  /** The top tab strip (Files / Spaces / Queries / Workflows / Favorites). Exposed for tests. */
   topTabs: DG.TabControl | null = null;
   private queriesTabContent!: HTMLElement;
   private workflowsTabContent!: HTMLElement;
   private favoritesTabContent!: HTMLElement;
+  private spacesTabContent!: HTMLElement;
+  /** The Spaces browser (SpacePicker in content mode). Built lazily once and
+   *  reused across renders so expanded spaces survive a search keystroke. */
+  spacePicker: SpacePicker | null = null;
   private favoritesUnsub: (() => void) | null = null;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
@@ -357,19 +375,22 @@ export class FunctionBrowser {
   }
 
   /** The top strip: a platform tab control with the item *collections* — Files,
-   *  Queries, Workflows (saved flows), and Favorites (starred nodes) — leaving
-   *  the accordion below to the function categories. The selected tab persists
-   *  via the TabControl key; the Files tree builds lazily on first show. */
+   *  Spaces, Queries, Workflows (saved flows), and Favorites (starred nodes) —
+   *  leaving the accordion below to the function categories. Headers are
+   *  icon-only (the Browse tree's glyphs; tooltips carry the names) so five
+   *  tabs fit the ~250px toolbox. The selected tab persists via the TabControl
+   *  key; the Files tree and the Spaces browser build lazily on first show. */
   private buildTopTabs(): HTMLElement {
     const tabs = DG.TabControl.create(false, TOOLBOX_TABS_KEY);
     this.topTabs = tabs;
     this.queriesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-queries');
     this.workflowsTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-workflows');
     this.favoritesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-favorites');
+    this.spacesTabContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-spaces');
     const filesContent = setTid(ui.div([], 'funcflow-tab-content'), 'browser-files');
 
-    const panes: Array<{name: string; content: () => HTMLElement; tip: string}> = [
-      {name: 'Files', tip: 'Browse data files. Double-click or drag a file onto the canvas to load it.',
+    const panes: Array<{name: (typeof TOOLBOX_TABS)[number]; content: () => HTMLElement; tip: string}> = [
+      {name: 'Files', tip: 'Files — browse data files. Double-click or drag a file onto the canvas to load it.',
         content: () => {
           if (filesContent.childElementCount === 0) {
             const text = document.createElement('span');
@@ -383,29 +404,74 @@ export class FunctionBrowser {
           filesContent.appendChild(this.getFilesTreeRoot());
           return filesContent;
         }},
-      {name: 'Queries', tip: 'Database queries, grouped by data connection. Double-click or drag to add.',
+      {name: 'Spaces', tip: 'Spaces — shared hierarchical folders. Double-click a flow, query, or file inside ' +
+        'a space to use it here.',
+        content: () => this.getSpacesTabContent()},
+      {name: 'Queries', tip: 'Queries — database queries, grouped by data connection. Double-click or drag to add.',
         content: () => this.queriesTabContent},
-      {name: 'Workflows', tip: 'Saved flows — reuse them as nodes in this flow. Double-click or drag to add.',
+      {name: 'Workflows', tip: 'Workflows — saved flows, reusable as nodes in this flow. Double-click or drag to add.',
         content: () => this.workflowsTabContent},
-      {name: 'Favorites', tip: 'Nodes you starred. Hover any node in the toolbox and click its ★ to pin it here.',
+      {name: 'Favorites', tip: 'Favorites — nodes you starred. Hover any node in the toolbox and click its ★ ' +
+        'to pin it here.',
         content: () => this.favoritesTabContent},
     ];
     for (const p of panes) {
       const pane = tabs.addPane(p.name, p.content);
       setTid(pane.header, 'browser-tab', p.name);
       pane.header.dataset.tab = p.name;
-      // Wrap the header text so a squeezed tab truncates its LABEL with an
-      // ellipsis instead of clipping the search badge appended after it
-      // (narrow toolbox / zoomed-in screens).
+      // Icon-only header: the Browse-tree glyph replaces the text (which stays
+      // available as the pane name / aria-label / tooltip). The label span is
+      // kept so the search badge appended after it never clips.
       const label = document.createElement('span');
       label.className = 'funcflow-tab-label';
-      while (pane.header.firstChild) label.appendChild(pane.header.firstChild);
+      while (pane.header.firstChild) pane.header.firstChild.remove();
+      const icon = document.createElement('i');
+      icon.className = `grok-icon fal fa-${TOOLBOX_TAB_ICONS[p.name]} funcflow-tab-icon`;
+      label.appendChild(icon);
       pane.header.appendChild(label);
+      pane.header.setAttribute('aria-label', p.name);
       ui.tooltip.bind(pane.header, p.tip);
     }
 
     const host = ui.div([tabs.root], 'funcflow-top-tabs');
     return setTid(host, 'browser-tabs');
+  }
+
+  /** The Spaces tab: a SpacePicker in content mode — spaces + their content
+   *  (flows, scripts, queries, files), built once on first activation. */
+  private getSpacesTabContent(): HTMLElement {
+    if (this.spacesTabContent.childElementCount === 0) {
+      const hint = ui.div([], 'funcflow-tab-hint');
+      hint.textContent = 'Browse spaces — double-click or drag a flow, query, or file to add it.';
+      this.spacesTabContent.appendChild(hint);
+      const host = ui.div([ui.loader()]);
+      this.spacesTabContent.appendChild(host);
+      void SpacePicker.create({
+        showContent: true,
+        onEntityActivated: (e) => this.activateSpaceEntity(e),
+      }).then((picker) => {
+        this.spacePicker = picker;
+        host.replaceChildren(picker.root);
+      });
+    }
+    return this.spacesTabContent;
+  }
+
+  /** Routes a double-clicked space content row onto the canvas: files become
+   *  Open File nodes; functions (flows, queries, scripts) become their node —
+   *  registered on the fly when the catalog doesn't carry them (content the
+   *  user filed into a space is explicit intent, like an imported script). */
+  private activateSpaceEntity(e: DG.Entity): void {
+    if (e instanceof DG.FileInfo) {
+      if (e.isFile) this.callbacks.onFileDoubleClick(e);
+      return;
+    }
+    if (!(e instanceof DG.Func)) return;
+    const info = getRegisteredFuncs().find((f) => f.func.id === e.id);
+    if (info)
+      this.callbacks.onFunctionDoubleClick(info);
+    else
+      this.callbacks.onBuiltinNodeDoubleClick(ensureFuncNodeType(e));
   }
 
   /** Programmatically activates one of the top tabs (used by the guide). */

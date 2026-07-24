@@ -20,8 +20,8 @@ export interface GuideHost {
   getFlow(): FlowEditor | undefined;
   /** Ensure the function browser (toolbox) is visible. */
   showFunctionBrowser(): void;
-  /** Activate one of the toolbox top tabs (Files / Queries / Workflows / Favorites). */
-  showToolboxTab(name: 'Files' | 'Queries' | 'Workflows' | 'Favorites'): void;
+  /** Activate one of the toolbox top tabs (Files / Spaces / Queries / Workflows / Favorites). */
+  showToolboxTab(name: 'Files' | 'Spaces' | 'Queries' | 'Workflows' | 'Favorites'): void;
   /** Hide the "Start a flow" overlay while a guide runs — it competes with the
    *  instruction cards and covers the canvas the steps point at. Optional so
    *  bare test hosts don't need it. */
