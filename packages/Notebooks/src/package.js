@@ -251,7 +251,10 @@ class NotebookView extends DG.ViewBase {
     // to reload it to a blank document. The notebook model lives in memory, so we rebuild the
     // iframe document and re-attach the existing widget on every load to preserve all cell data.
     const mountNotebook = () => {
-      const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+      const iframeDocument = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      // No browsing context yet (root not attached to the live DOM). The 'load' handler
+      // re-invokes mountNotebook once the iframe has a real document, so bail for now.
+      if (!iframeDocument) return;
       iframeDocument.open();
       iframeDocument.write('<html><head></head><body></body></html>');
       iframeDocument.close();
