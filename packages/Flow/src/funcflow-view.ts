@@ -23,7 +23,7 @@ import {ColumnPicker} from './panel/column-picker';
 import {FuncEditorLauncher} from './panel/func-editor-launcher';
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs,
-  createNode, FuncInfo,
+  createNode, ensureFuncNodeType, FuncInfo,
 } from './rete/node-factory';
 import {validateGraph} from './compiler/validator';
 import {emitScript} from './compiler/script-emitter';
@@ -988,12 +988,18 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private async addFuncNode(func: DG.Func, dropEvent?: MouseEvent): Promise<void> {
+    // Dropping a function is explicit intent — one the catalog allowlist
+    // doesn't carry (e.g. a script filed into a space) registers on the fly,
+    // exactly like the creation-script importer does.
     const info = getRegisteredFuncs().find((f) => f.func.name === func.name);
-    if (!info) {
+    let typeName: string;
+    try {
+      typeName = info?.nodeTypeName ?? ensureFuncNodeType(func);
+    } catch {
       grok.shell.warning(`Function "${func.name}" is not available as a node`);
       return;
     }
-    if (await this.addNodeByTypeAtDrop(info.nodeTypeName, dropEvent))
+    if (await this.addNodeByTypeAtDrop(typeName, dropEvent))
       grok.shell.info(`Added node: ${func.name}`);
   }
 

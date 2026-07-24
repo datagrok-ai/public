@@ -300,7 +300,7 @@
   color: #f0ab00;
 }
 
-/* ---------- Top tabs (Files / Queries / Workflows / Favorites) ---------- */
+/* ---------- Top tabs (Files / Spaces / Queries / Workflows / Favorites) ---------- */
 /* The collections strip above the search box: a platform tab control whose
    pane content scrolls internally. Height is content-driven (a 2-row Files
    tree doesn't reserve a third of the panel) but capped at 32%, after which
@@ -322,21 +322,22 @@
   container-type: inline-size;
 }
 
-/* Very narrow dock: compact the headers unconditionally. */
+/* Very narrow dock: compact the icon headers unconditionally. */
 @container (max-width: 240px) {
   .funcflow-top-tabs .d4-tab-header {
-    padding: 4px 4px;
-    font-size: 11px;
+    padding: 4px 2px;
+  }
+
+  .funcflow-top-tabs .funcflow-tab-icon {
+    font-size: 12px;
   }
 }
 
-/* While search chips are visible the strip needs the compaction much earlier
-   (zoomed-in screens, narrow docks) — four labels + count chips must fit
-   without clipping; labels ellipsize before a chip ever clips. */
+/* While search chips are visible the strip needs compaction earlier (zoomed-in
+   screens, narrow docks) — five icons + count chips must fit without clipping. */
 @container (max-width: 330px) {
   .funcflow-browser[data-searching="true"] .d4-tab-header {
-    padding: 4px 4px;
-    font-size: 11px;
+    padding: 4px 2px;
   }
 
   .funcflow-browser[data-searching="true"] .funcflow-tab-badge {
@@ -365,8 +366,9 @@
   overflow: hidden;
 }
 
-/* Compact headers so Files / Queries / Workflows / Favorites all fit the
-   ~250px toolbox width without a horizontal scroll. */
+/* Icon-only headers (the Browse tree's glyphs; tooltips carry the names) —
+   five tabs share the strip evenly, so they always fit the ~250px toolbox
+   without a horizontal scroll. */
 .funcflow-top-tabs .d4-tab-header-stripe {
   flex: 0 0 auto;
   display: flex;
@@ -375,25 +377,70 @@
 }
 
 .funcflow-top-tabs .d4-tab-header {
-  padding: 4px 6px;
+  padding: 5px 4px;
   font-size: 12px;
   white-space: nowrap;
-  flex: 0 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
-  /* Inactive tabs read as options, not four active tabs: grey until selected. */
+  justify-content: center;
+  /* Inactive tabs read as options, not five active tabs: grey until selected. */
   color: var(--grey-5, #666);
 }
 
-/* The label shrinks and ellipsizes; the badge after it never clips. */
+/* The label wraps the icon; the badge after it never clips. */
 .funcflow-top-tabs .d4-tab-header .funcflow-tab-label {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.funcflow-top-tabs .funcflow-tab-icon {
+  font-size: 14px;
+  /* Follows the header state colors (grey → hover dark → selected blue). */
+  color: inherit;
+}
+
+/* The platform tab control's built-in scroll chevrons — five evenly-shared
+   icon tabs never overflow, so the affordance is noise (and it stretched to
+   a sixth "tab" under the flex: 1 header rule). */
+.funcflow-top-tabs .d4-tab-header[name="HighlightBack"],
+.funcflow-top-tabs .d4-tab-header[name="HighlightForward"] {
+  display: none;
+}
+
+/* Align the tab cells with the search box above them — without the inset the
+   first/last tab's active underline juts past the input's edge and reads
+   off-grid (three left edges within 12px). */
+.funcflow-top-tabs .d4-tab-header-stripe {
+  padding: 0 8px;
+}
+
+/* ---------- Spaces tab (SpacePicker in content mode) ---------- */
+
+/* Entity/file rows sit in the chevron gutter so rows at the same depth share
+   a left edge — the platform's default 20px item indent made a space's
+   content read as children of a COLLAPSED sibling subspace. */
+.funcflow-tab-content .funcflow-space-picker-tree .d4-tree-view-item {
+  margin-left: 0;
+  padding-left: 4px;
+}
+
+/* The toolbox (a d4-toolbar surface) compresses nested tree levels to 6px —
+   too shallow to carry space hierarchy. Give subspace levels a readable step. */
+.funcflow-tab-content .funcflow-space-picker-tree .d4-tree-view-group-host .d4-tree-view-group-host {
+  margin-left: 14px;
+}
+
+/* The space glyph on space rows — muted like the section icons. */
+.funcflow-space-icon {
+  font-size: 11px;
+  color: var(--grey-4, #7d8b99);
+  flex: 0 0 auto;
 }
 
 .funcflow-top-tabs .d4-tab-header:hover {
