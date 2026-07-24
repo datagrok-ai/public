@@ -8,6 +8,7 @@ import {ensureFunctionsRegistered, getRegisteredFuncs, getRegisteredTypeNames,
   findNodeTypesAcceptingInput, findNodeTypesProducingOutput} from './rete/node-factory';
 import {areTypesCompatible} from './types/type-map';
 import {validateGraph} from './compiler/validator';
+import {inputBlockReason} from './utils/input-values';
 import type {Guide} from './guide/guide-model';
 import {TUTORIALS, QUESTIONS} from './guide/guide-content';
 
@@ -107,6 +108,12 @@ export function getFlowNodeDetails(view: any, nodeId: string) {
     inputs: portMap((node as any).inputs),
     outputs: portMap((node as any).outputs), // keys ending in __pt are pass-throughs of the same-named input
     inputValues: node.inputValues ?? {},
+    ...(node.dgNodeType === 'input' ? {
+      // The configured parameter value (set on the node / context panel);
+      // when unresolvable, `valueBlocks` says why runs would need a dialog.
+      value: node.properties['defaultValue'] ?? '',
+      ...(inputBlockReason(node) ? {valueBlocks: inputBlockReason(node)} : {}),
+    } : {}),
     missingRequired: missingRequiredInputs(node, connected),
     ...(state ? {
       status: state.status,
@@ -201,10 +208,18 @@ export async function connectFlowNodes(view: any, sourceNodeId: string, sourceOu
 export async function setFlowNodeInputs(view: any, nodeId: string, values: object) {
   const ctx = flowCtx(view);
   const node = nodeRef(ctx, nodeId);
-  Object.assign(node.inputValues, values ?? {});
+  // On an input node, `value` means the configured parameter value (the same
+  // store the on-node editor writes) — with it set, runs need no dialog.
+  const vals: Record<string, unknown> = {...(values ?? {})};
+  if (node.dgNodeType === 'input' && 'value' in vals) {
+    node.properties['defaultValue'] = vals['value'];
+    delete vals['value'];
+  }
+  Object.assign(node.inputValues, vals);
   ctx.flow().notifyNodeParamsChanged(node.id);
   await ctx.flow().updateNode(node.id);
-  return {success: true, inputValues: node.inputValues};
+  return {success: true, inputValues: node.inputValues,
+    ...(node.dgNodeType === 'input' ? {value: node.properties['defaultValue'] ?? ''} : {})};
 }
 
 export async function selectFlowNode(view: any, nodeId: string) {

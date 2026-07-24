@@ -14,6 +14,9 @@ export type DgNodeType = 'input' | 'output' | 'utility' | 'func';
 export interface FlowEditorBridge {
   toggleCollapsed(id: string): void;
   isSocketConnected(nodeId: string, side: 'input' | 'output', key: string): boolean;
+  /** Report a parameter edit made through an on-node control (the input-node
+   *  value editor) — same contract as the property panel's `paramsChanged`. */
+  notifyParamsChanged(nodeId: string): void;
 }
 
 /** Base class for every node we put on the canvas.
@@ -116,6 +119,13 @@ export class FlowNode extends ClassicPreset.Node<
    *  `FlowEditor` when the node enters its data layer. Runtime-only — the
    *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
   editorBridge?: FlowEditorBridge;
+
+  /** Runtime-only companion to `properties['defaultValue']` for values a
+   *  string can't rebuild — the DataFrame a Table Input picked (possibly
+   *  opened from a local file, existing nowhere else), a File Input's
+   *  FileInfo. Never serialized; after a reload the serialized name is
+   *  re-resolved from the workspace instead (see `resolveInputValue`). */
+  transientValue?: unknown;
 
   /** Human-friendly title — `label` from the Rete superclass is what we
    *  render, so this is just an alias for symmetry with the LiteGraph world. */

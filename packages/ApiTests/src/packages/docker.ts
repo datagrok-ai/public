@@ -12,7 +12,7 @@ category('Packages: Docker', () => {
     if (container.status !== 'started' && container.status !== 'checking')
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     await testResponse(container.id);
-  }, {timeout: 5000});
+  }, {timeout: 300000 /* may cold-start the container: image pull on a fresh CI agent takes minutes */});
 
   test('Get build logs', async () => {
     const image = await grok.dapi.docker.dockerImages.filter(`name = "${containerName}"`).first();
@@ -26,7 +26,7 @@ category('Packages: Docker', () => {
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
     expect(!logs || logs.length === 0, false);
-  });
+  }, {timeout: 300000 /* may cold-start the container */});
 }, { owner: 'ppolovyi@datagrok.ai', timeout: 5000});
 
 async function testResponse(containerId: string): Promise<void> {

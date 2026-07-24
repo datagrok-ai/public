@@ -47,7 +47,7 @@ category('Docker connection', () => {
 
   test('Connection test', async () => {
     await testConnection!.test();
-  }, {timeout: 120000 /* on demand start */});
+  }, {timeout: 300000 /* on-demand start: image pull on a fresh CI agent takes minutes */});
 
   test('Connection getSchemas', async () => {
     const schemas: string[] = await grok.dapi.connections.getSchemas(testConnection!);

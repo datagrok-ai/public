@@ -16,6 +16,7 @@ import {classicConnectionPath} from 'rete-render-utils';
 
 const {RefSocket, RefControl} = Presets.classic;
 import {FlowNode, FlowScheme, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE, isExecKey, nodeMissingRequirements} from './scheme';
+import {InputValueControl} from './nodes/input-value-control';
 import {TypedSocket} from './sockets';
 import {getSlotColor, getSlotLetter, pastelize} from '../types/type-map';
 import {tid} from '../utils/test-ids';
@@ -280,6 +281,30 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
         </div>
       )}
     </div>
+  );
+}
+
+/** Hosts a real Datagrok input inside a node body (the input-node value
+ *  editor). The DG element is built once and cached on the control
+ *  (`InputValueControl.element()`); every (re)mount just re-attaches the SAME
+ *  element, so React re-renders during runs/invalidation never rebuild the
+ *  editor or drop its focus. Pointer/keyboard events stay inside — a click in
+ *  the editor must not start a node drag, a dblclick must not zoom-to-fit. */
+export function DgControlComponent(props: {data: InputValueControl}): React.JSX.Element {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = props.data.element();
+    if (el && ref.current && el.parentElement !== ref.current)
+      ref.current.appendChild(el);
+  });
+  return (
+    <div
+      className="ff-node-value-input"
+      data-testid={tid('node-value-input')}
+      ref={ref}
+      onPointerDown={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    />
   );
 }
 

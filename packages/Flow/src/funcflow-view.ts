@@ -564,6 +564,7 @@ export class FuncFlowView extends DG.ViewBase {
         // A new/removed wire changes the shown node's Connections pane —
         // stale "MISSING — required" rows read as "you did it wrong".
         this.propertyPanel.refreshShownNode();
+        this.updateAutorunIndicator();
       },
       // Classified edits: invalidate exactly the affected downstream cone, and
       // feed the same set to the autorun scheduler (a rerun of just that slice).
@@ -579,6 +580,12 @@ export class FuncFlowView extends DG.ViewBase {
         // paramName renames arrive as params-changed (no onGraphChanged) —
         // the tab set / labels must track them here too.
         this.outputViews?.syncTabs(this.tableOutputs());
+        if (edit.kind === 'params-changed') {
+          // A value edited on the node body must show up in the open context
+          // panel too (refresh skips itself while focus is inside the panel).
+          this.propertyPanel.refreshShownNode();
+        }
+        this.updateAutorunIndicator();
       },
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
@@ -594,6 +601,8 @@ export class FuncFlowView extends DG.ViewBase {
     this.executionController.onNodeStateChanged = (nodeId) => {
       this.suggestionPane?.refresh();
       this.updateOutputViewValue(nodeId);
+      // Completed/stale transitions change what's pending → what blocks autorun.
+      this.updateAutorunIndicator();
     };
     // Empty-canvas-click deselects happen inside rete with no callback — any
     // release on the canvas re-reads the selection. (Marquee releases never
@@ -1386,10 +1395,21 @@ export class FuncFlowView extends DG.ViewBase {
     // The tooltip is dynamic so it always names the current state.
     const autorunIcon = setTid(ui.iconFA('bolt', () => this.toggleAutorun()), 'ribbon', 'autorun');
     autorunIcon.classList.add('ff-autorun-toggle');
-    ui.tooltip.bind(autorunIcon, () => this.autorunScheduler?.enabled ?
-      'Autorun is on — the flow reruns the affected nodes after every change. Click to turn off.' :
-      'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change. ' +
-      'Live nodes (Open File, Add New Column, viewers) still rerun on change.');
+    ui.tooltip.bind(autorunIcon, () => {
+      if (!this.autorunScheduler?.enabled) {
+        return 'Autorun is off — click to rerun the flow (only the affected nodes) automatically after every change. ' +
+          'Live nodes (Open File, Add New Column, viewers) still rerun on change.';
+      }
+      const blockers = this.executionController?.autorunBlockers() ?? [];
+      if (blockers.length === 0)
+        return 'Autorun is on — the flow reruns the affected nodes after every change. Click to turn off.';
+      return ui.divV([
+        ui.divText('Autorun is on, but waiting for:'),
+        ...blockers.map((b) => ui.divText('• ' + b)),
+        ui.divText('Set the values on the nodes (or in the context panel), or press Run to be asked for them.',
+          'ff-autorun-tooltip-hint'),
+      ]);
+    });
     this.autorunIcon = autorunIcon;
 
     // Saving leads the ribbon; saveFlow routes to the right target (entity
@@ -1469,6 +1489,17 @@ export class FuncFlowView extends DG.ViewBase {
       const pending = this.executionController?.pendingNodes() ?? new Set<string>();
       if (pending.size > 0) this.autorunScheduler.kick(pending);
     }
+    this.updateAutorunIndicator();
+  }
+
+  /** Amber "waiting" badge on the bolt while autorun is on but can't run what's
+   *  pending (an input node without a value, validation errors) — the dynamic
+   *  tooltip names the exact blockers. Cleared the moment nothing blocks. */
+  private updateAutorunIndicator(): void {
+    if (!this.autorunIcon) return;
+    const blocked = (this.autorunScheduler?.enabled ?? false) &&
+      (this.executionController?.autorunBlockers() ?? []).length > 0;
+    this.autorunIcon.classList.toggle('ff-autorun-blocked', blocked);
   }
 
   // ---------- Save button state ----------
