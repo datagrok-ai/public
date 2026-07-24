@@ -563,6 +563,15 @@ export class RdKitService {
     (data: string[][]): string[] => ([] as string[]).concat(...data)));
   }
 
+  /** Generalizes `mmpLinkFragments` to K parallel fragment arrays (one per R-group position),
+   *  reusing the same worker striping so multi-position joins parallelize the same way. */
+  async linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: number[]): Promise<string[]> {
+    return withChemCriticalSection(() => this._initParallelWorkersArray([cores, ...fragmentColumns],
+      (i: number, segment: string[][]) =>
+        this.parallelWorkers[i].linkRGroupFragments(segment[0], segment.slice(1), attachIdx),
+      (data: string[][]): string[] => ([] as string[]).concat(...data)));
+  }
+
   async mmpGetMcs(molecules: [string, string][]): Promise<string[]> {
     return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: [string, string][]) =>
       this.parallelWorkers[i].mmpGetMcs(segment),

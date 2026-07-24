@@ -9,6 +9,7 @@ export enum WORKER_CALL {
   SET_TERMINATE_FLAG = 'setTerminateFlag',
   MMP_GET_FRAGMENTS = 'mmpGetFragments',
   MMP_LINK_FRAGMENTS = 'mmpLinkFragments',
+  LINK_R_GROUP_FRAGMENTS = 'linkRGroupFragments',
   MMP_GET_MCS = 'mmpGetMcs',
   MOST_COMMON_STRUCTURE = 'mostCommonStructure',
   R_GROUP_ANALYSIS = 'rGroupAnalysis',

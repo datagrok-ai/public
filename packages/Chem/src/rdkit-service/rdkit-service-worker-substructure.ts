@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {MolList, RDModule, RDMol, RDReaction, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
@@ -622,6 +622,82 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
 
+    return smiles;
+  }
+
+  /**
+   * Joins a multi-attachment-point core SMILES (bearing `[*:1]`, `[*:2]`, ... dummy atoms) with
+   * one fragment SMILES per attachment point, producing each assembled molecule's SMILES.
+   *
+   * Uses the RDKit reaction engine (RDKit's own `molzip` is not exposed in this build): the R-group
+   * map labels are rewritten as isotopes (`[*:2]` -> `[2*]`) so a reaction SMARTS can target a
+   * specific position, then each position is zipped with a reaction that bonds the two dummy
+   * neighbours and drops both dummies. An empty fragment (reference is H) just removes that
+   * attachment point. Robust to a dummy appearing anywhere in the SMILES, unlike a ring-closure
+   * substitution — a dummy at the start of the string has no atom to attach a ring-closure digit to.
+   *
+   * `attachIdx[p]` is the R-group position number for fragment column `p` (R7 -> 7), an arbitrary
+   * subset (e.g. R1 and R7), not the array order.
+   */
+  linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: number[]): string[] {
+    const size = cores.length;
+    const smiles = new Array<string>(size);
+    const toIso = (s: string): string => s.replace(/\[\*:(\d+)\]/g, (_m, n) => `[${n}*]`);
+    const rxnCache = new Map<string, RDReaction>();
+    const getRxn = (smarts: string): RDReaction => {
+      let rxn = rxnCache.get(smarts);
+      if (!rxn) {
+        rxn = this._rdKitModule.get_rxn(smarts);
+        rxnCache.set(smarts, rxn);
+      }
+      return rxn;
+    };
+    // Run a reaction over the given reactant SMILES and return the first product's SMILES, or ''.
+    const runRxn = (smarts: string, reactants: string[]): string => {
+      const rxn = getRxn(smarts);
+      const list = new this._rdKitModule.MolList();
+      const mols = reactants.map((s) => getMolSafe(s, {}, this._rdKitModule).mol);
+      let out = '';
+      try {
+        if (mols.every((m) => m !== null)) {
+          mols.forEach((m) => list.append(m!));
+          const res = rxn.run_reactants(list, 10);
+          if (res.size() > 0) {
+            const prods = res.get(0);
+            if (prods.size() > 0) {
+              const p = prods.at(0);
+              out = p.get_smiles();
+              p.delete();
+            }
+            prods.delete();
+          }
+          res.delete();
+        }
+      } catch (e: any) {
+        out = '';
+      } finally {
+        mols.forEach((m) => m?.delete());
+        list.delete();
+      }
+      return out;
+    };
+
+    try {
+      for (let i = 0; i < size; i++) {
+        let running: string | null = toIso(cores[i]);
+        for (let p = 0; p < fragmentColumns.length && running; p++) {
+          const iso = attachIdx[p];
+          const fragment = fragmentColumns[p][i];
+          running = fragment ?
+            (runRxn(`[${iso}#0:1]-[*:2].[${iso}#0:3]-[*:4]>>[*:2]-[*:4]`, [running, toIso(fragment)]) || null) :
+            (runRxn(`[${iso}#0:1]-[*:2]>>[*:2]`, [running]) || null);
+        }
+        smiles[i] = running ?? '';
+      }
+    } finally {
+      for (const rxn of rxnCache.values())
+        rxn.delete();
+    }
     return smiles;
   }
 

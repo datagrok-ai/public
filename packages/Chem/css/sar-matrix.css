@@ -1,0 +1,661 @@
+.chem-sar-matrix {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-height: 0;
+}
+
+.chem-sar-nav {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 260px;
+  min-width: 260px;
+  border-right: 1px solid var(--grey-2);
+  overflow: hidden;
+}
+
+.chem-sar-nav-header {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-nav-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--grey-6);
+}
+
+.chem-sar-nav-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--green-2, #1a8a3a);
+  background: var(--green-light, #e7f5ec);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+.chem-sar-nav-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--grey-5);
+}
+
+/* Units / scaling note in the navigator header, so the card and cell numbers aren't ambiguous. */
+.chem-sar-nav-units {
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.chem-sar-nav-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.chem-sar-nav-section {
+  padding: 10px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--grey-5);
+}
+
+.chem-sar-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.chem-sar-card:hover {
+  background: var(--grey-1);
+}
+
+.chem-sar-card.selected {
+  background: var(--blue-light, #eaf3fb);
+  border-left-color: var(--blue-1, #2083D5);
+}
+
+.chem-sar-card-visual {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+}
+
+.chem-sar-xfer-arrow {
+  font-size: 13px;
+  color: var(--grey-5);
+  padding: 0 1px;
+}
+
+.chem-sar-card-core {
+  border: 1px solid var(--grey-2);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.chem-sar-thumb {
+  display: grid;
+  gap: 1px;
+  flex: 0 0 auto;
+}
+
+.chem-sar-thumb > div {
+  width: 11px;
+  height: 11px;
+  border-radius: 1px;
+}
+
+.chem-sar-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chem-sar-card-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-items: center;
+  gap: 6px;
+}
+
+.chem-sar-card-desc {
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--grey-5);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chem-sar-card-arrow {
+  color: var(--grey-4);
+  flex-shrink: 0;
+}
+
+.chem-sar-card-target-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chem-sar-card-score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 56px;
+  cursor: help;
+}
+
+/* One "value label" line in a card's score box (best / mean / transfer). */
+.chem-sar-card-score-line {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.chem-sar-card-score {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--blue-1, #2083D5);
+}
+
+.chem-sar-card-score-cap {
+  font-size: 9px;
+  color: var(--grey-5);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chem-sar-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.chem-sar-main-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px 2px;
+}
+
+/* Controls row (Vary / Sort), kept off the info row so neither crowds the other. */
+.chem-sar-control-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 2px 10px 6px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
+.chem-sar-control-bar .ui-input-root {
+  margin: 0;
+  min-width: 0;
+}
+
+.chem-sar-control-bar .ui-input-label {
+  font-size: 11px;
+  min-width: 0;
+  width: auto;
+  padding-right: 4px;
+}
+
+.chem-sar-main-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--grey-6);
+}
+
+/* Summary chips in the matrix pane bar. */
+.chem-sar-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.chem-sar-chip-badge {
+  font-size: 10.5px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-2);
+  border-radius: 9px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.chem-sar-chip-transfer {
+  color: #1a5c96;
+  background: #eaf2fb;
+  border-color: #c9def5;
+  font-weight: 600;
+}
+
+/* Transfer statistics block under the trend table. */
+.chem-sar-xfer-stats {
+  margin: 10px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  max-width: 340px;
+}
+
+.chem-sar-xfer-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+  margin-bottom: 4px;
+}
+
+.chem-sar-xfer-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.chem-sar-xfer-stat-l {
+  font-size: 11.5px;
+  color: var(--grey-5);
+}
+
+.chem-sar-xfer-stat-v {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--grey-6);
+}
+
+.chem-sar-xfer-ben {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Hint text above the "Add to make-list" button in the virtual-cell panel. */
+.chem-sar-cp-hint {
+  font-size: 11.5px;
+  color: var(--grey-5);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.chem-sar-main-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
+/* matrix table.
+   Auto layout (not table-layout:fixed) is required: fixed derives every column width from the
+   first row, which breaks the rowSpan/colSpan model and shifts the substituent header row a
+   column left of the body cells. */
+.chem-sar-table {
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+
+.chem-sar-table td,
+.chem-sar-table th {
+  padding: 0;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.chem-sar-corner {
+  width: 140px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: transparent;
+  padding: 4px;
+}
+
+.chem-sar-corner-label {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--grey-5);
+  margin-bottom: 2px;
+}
+
+.chem-sar-cgroup {
+  border-bottom: 2px solid var(--blue-1, #2083D5);
+}
+
+.chem-sar-cgroup-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+}
+
+.chem-sar-cgroup-cap {
+  font-size: 10px;
+  color: var(--grey-5);
+  margin-bottom: 3px;
+}
+
+/* width is set inline: cells are fitted to the pane width at render time */
+.chem-sar-chd {
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: var(--grey-1);
+}
+
+.chem-sar-rhd {
+  width: 140px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  background: transparent;
+  padding: 3px;
+}
+
+.chem-sar-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--grey-6);
+  margin-top: 2px;
+}
+
+.chem-sar-cell {
+  position: relative;
+  height: 82px;
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Structure canvas sits over the tinted cell — block removes the inline baseline gap; the tint
+   (set on the td) fills any remaining space, so no white shows. */
+.chem-sar-cell canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+.chem-sar-cell-empty {
+  background:
+    repeating-linear-gradient(45deg, var(--grey-1), var(--grey-1) 5px, transparent 5px, transparent 10px);
+  cursor: default;
+}
+
+.chem-sar-cell-virtual {
+  border-style: dashed;
+  border-color: var(--grey-4);
+}
+
+/* SAR transfer trend row */
+.chem-sar-chd-label {
+  font-size: 10px;
+  color: var(--grey-5);
+  margin-bottom: 2px;
+}
+
+.chem-sar-trend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 2px 7px;
+}
+
+.chem-sar-trend-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grey-6);
+  flex: 1;
+  text-align: center;
+}
+
+.chem-sar-trend-virtual {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--grey-5);
+}
+
+.chem-sar-trend-best {
+  color: var(--green-2, #1a8a3a);
+}
+
+.chem-sar-trend-empty {
+  flex: 1;
+  text-align: center;
+  color: var(--grey-3);
+}
+
+.chem-sar-trend-arrow {
+  font-size: 11px;
+  color: var(--grey-4);
+}
+
+.chem-sar-transfer-note {
+  max-width: 640px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--grey-6);
+  background: var(--blue-light, #eaf3fb);
+  border-radius: 4px;
+}
+
+.chem-sar-cell-nostruct {
+  height: 76px;
+}
+
+.chem-sar-chip {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--grey-6);
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 3px;
+  padding: 0 3px;
+  pointer-events: none;
+}
+
+.chem-sar-cell-virtual .chem-sar-chip {
+  color: var(--grey-5);
+  font-style: italic;
+}
+
+/* A virtual prediction backed by a single observation — flagged as low-confidence. */
+.chem-sar-chip-weak {
+  opacity: 0.65;
+  border: 1px dashed var(--grey-4);
+}
+
+/* Host-grid link: a selected row's cells get a blue ring; the current row's cell a stronger ring.
+   Inset box-shadow rings the cell without covering the drawn structure. Current wins when both. */
+.chem-sar-cell-selected {
+  box-shadow: inset 0 0 0 2px #2f7ed8;
+}
+
+.chem-sar-cell-current {
+  box-shadow: inset 0 0 0 3px #14497a;
+}
+
+/* Sort-key caption under a substituent header (mean potency or MW) when columns are sorted. */
+.chem-sar-chd-sort {
+  font-size: 10px;
+  color: var(--grey-5);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* An observed cell whose potency departs from the additive-model fit — a non-additive / cliff-like
+   cell. A small amber corner dot (top-right, opposite the value chip) marks it; the tooltip carries
+   the residual. Cells with no marker match the Free-Wilson fit. */
+.chem-sar-cell-deviant::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e0912f;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+/* Free-Wilson fit-quality readout in the matrix pane bar. */
+.chem-sar-matrix-cp {
+  padding: 8px;
+  font-size: 12px;
+}
+
+.chem-sar-cp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chem-sar-cp-notsynth {
+  font-size: 10px;
+  color: var(--grey-6);
+  background: var(--grey-1);
+  border: 1px solid var(--grey-3);
+  border-radius: 9px;
+  padding: 1px 7px;
+}
+
+.chem-sar-cp-structbox {
+  border: 1px solid var(--grey-2);
+  border-radius: 6px;
+  padding: 6px;
+  margin: 6px 0;
+  display: flex;
+  justify-content: center;
+  background: var(--white);
+}
+
+.chem-sar-cp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+
+.chem-sar-cp-rl {
+  color: var(--grey-5);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.chem-sar-cp-rv,
+.chem-sar-cp-fit {
+  text-align: right;
+}
+
+.chem-sar-cp-smiles {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--blue-2);
+  word-break: break-all;
+  text-align: right;
+}
+
+.chem-sar-cp-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--grey-2);
+}
+
+.chem-sar-cp-section-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-6);
+}
+
+.chem-sar-cp-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--blue-3);
+  background: #eaf2fb;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.chem-sar-cp-value {
+  font-weight: 700;
+}
+
+.chem-sar-cp-fit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.chem-sar-cp-matches {
+  font-size: 10px;
+  color: #1f7a34;
+  background: #e7f5ea;
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+.chem-sar-cp-mismatch {
+  font-size: 10px;
+  color: #b26a00;
+  background: #fbefd9;
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+.chem-sar-cp-decomp {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chem-sar-cp-frag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.chem-sar-cp-frag-box {
+  border: 1px solid var(--grey-2);
+  border-radius: 5px;
+  padding: 3px;
+  background: var(--white);
+}
+
+.chem-sar-cp-frag-label {
+  font-size: 10px;
+  color: var(--grey-5);
+}
+
+.chem-sar-cp-generate {
+  width: 100%;
+  margin-top: 6px;
+}
