@@ -52,9 +52,9 @@ function csvInput(label: string, items: string[], tooltip?: string) {
   };
 }
 
-// `syncToConfig` writes the current field values into the given config object.
+// `syncToConfig` writes the current field values into the given config object. Doesn't build a
+// ui.form() itself — the caller does that lazily (see enumerator-app.ts's lazyFilterForm).
 export function buildCombinationLimitFields(initial: EnumeratorConfig): {
-  root: HTMLElement;
   inputs: DG.InputBase<unknown>[];
   syncToConfig: (target: EnumeratorConfig) => void;
 } {
@@ -64,20 +64,16 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
     'Per template per round: cap on the number of reactant combinations actually run. If the ' +
     'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.');
 
-  const root = ui.form([keepBBs.input, maxCombos.input]);
-  root.classList.add('chem-enum-filter-form');
-
   const syncToConfig = (target: EnumeratorConfig): void => {
     target.keep_building_blocks_in_final_output = keepBBs.get();
     target.max_num_combinations_per_template = maxCombos.get();
   };
 
-  return {root, inputs: [keepBBs.input, maxCombos.input], syncToConfig};
+  return {inputs: [keepBBs.input, maxCombos.input], syncToConfig};
 }
 
 // Product-level filters: atom counts, charge/radical/isotope rejection.
 export function buildProductFilterFields(initial: EnumeratorConfig): {
-  root: HTMLElement;
   inputs: DG.InputBase<unknown>[];
   syncToConfig: (target: EnumeratorConfig) => void;
 } {
@@ -105,8 +101,6 @@ export function buildProductFilterFields(initial: EnumeratorConfig): {
   };
 
   const inputs = Object.values(products).map((p) => p.input);
-  const root = ui.form(inputs);
-  root.classList.add('chem-enum-filter-form');
 
   const syncToConfig = (target: EnumeratorConfig): void => {
     Object.assign(target.products_specs, {
@@ -128,5 +122,5 @@ export function buildProductFilterFields(initial: EnumeratorConfig): {
     });
   };
 
-  return {root, inputs, syncToConfig};
+  return {inputs, syncToConfig};
 }

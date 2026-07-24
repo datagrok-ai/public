@@ -1317,50 +1317,26 @@
   width: auto;
 }
 
-/* "How to combine" has three separate ui.form() calls (main fields + two nested, independently
-   collapsible panes), so unlike other panes it doesn't get its label column aligned for free — and
-   the nested ones get marked .ui-form-condensed by the platform on first expand, which changes label/
-   row sizing on its own. The rules below share one label width across all three forms and reset every
-   condensed-only property back to what a normal (never-condensed) row already renders as. */
+/* "How to combine" has three separate ui.form() calls, so unlike other panes it doesn't get its label
+   column aligned for free. .ui-form-condensed and the nested accordion's chevron indent are both
+   handled in JS (stripCondensedClass/flushIndent in enumerator-app.ts), not mirrored here. */
 
-/* Accordion.addPane's pane-content is a row-flex container, so a plain block child doesn't stretch to
-   fill it by default — grow it like a normal block child would. */
+/* Accordion.addPane's pane-content is a row-flex container — grow the form into it like a normal
+   block child would, since it doesn't stretch to fill by default. */
 .chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content > .ui-div {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-/* Cancels the platform's default chevron indent so nested rows start flush with the main fields. */
-.chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content {
-  margin-left: -6px !important;
-}
-
-/* Shared label column + reset of everything .ui-form-condensed changes on a label besides width. */
+/* Shared label column (--chem-enum-label-width, set in enumerator-app.ts) — !important needed to
+   beat the platform's own per-form inline width style. */
 .chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > label.ui-input-label:not(:empty) {
-  width: 220px !important;
-  max-width: 220px !important;
-  font-size: 13px !important;
-  text-align: right !important;
-  top: auto !important;
-  left: auto !important;
-  height: 28px !important;
-  order: 0 !important;
+  width: var(--chem-enum-label-width) !important;
+  max-width: var(--chem-enum-label-width) !important;
 }
 
-/* Condensed also flips the row to flex-wrap:wrap and adds row padding-top — reset both so a condensed
-   row lays out identically to a non-condensed one. */
-.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root {
-  flex-wrap: nowrap !important;
-  padding-top: 4px !important;
-}
-
-/* Condensed zeroes the checkbox label's margin-right; restore the normal label-to-checkbox gap. */
-.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root.ui-input-bool > label.ui-input-label {
-  margin-right: 8px !important;
-}
-
-/* Editors stay their natural width (not flex-grow) to match every other pane's own non-growing
-   default, regardless of condensed state. */
+/* Editors default to flex-grow:1 — pin them to their natural width instead, to match every other
+   pane's own non-growing look. */
 .chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > .ui-input-editor {
   flex-grow: 0 !important;
   width: auto !important;

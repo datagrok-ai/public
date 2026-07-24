@@ -267,11 +267,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   let config: EnumeratorConfig = cloneConfig(DEFAULT_CONFIG);
 
-  // Declared early since syncQuickInputsToConfig() reads these hosts before the accordion is built.
+  // Fields are built eagerly (syncQuickInputsToConfig needs .inputs before the accordion exists);
+  // their ui.form() wrapper is built lazily instead (see lazyFilterForm below).
   let combinationLimitFields = buildCombinationLimitFields(config);
-  const combinationLimitFieldsHost = ui.div([combinationLimitFields.root]);
   let productFilterFields = buildProductFilterFields(config);
-  const productFilterFieldsHost = ui.div([productFilterFields.root]);
 
   const templatesDf = await loadBundledCsv(BUNDLED_TEMPLATES);
   const bbsDf = await loadBundledCsv(BUNDLED_BBS);
@@ -566,16 +565,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         const c = xDf.col(config.products_specs.exclusion_smarts_products_file_smarts_col);
         if (c) setAndFire(exclusionColInput, c);
       }
-      // Neither field group has a "set value" hook — rebuild from the loaded config and swap each
-      // wrapper's contents (keep the host nodes themselves so the toggles stay wired to them).
-      // The rebuilt inputs are brand new objects, so they need their own revalidation wiring too.
+      // Neither field group has a "set value" hook — rebuild from the loaded config; the rebuilt
+      // inputs are brand new objects, so they need their own revalidation wiring too.
       combinationLimitFields = buildCombinationLimitFields(config);
-      ui.empty(combinationLimitFieldsHost);
-      combinationLimitFieldsHost.appendChild(combinationLimitFields.root);
+      combinationLimitsForm.invalidate();
       combinationLimitFields.inputs.forEach((inp) => wireValidation(inp));
       productFilterFields = buildProductFilterFields(config);
-      ui.empty(productFilterFieldsHost);
-      productFilterFieldsHost.appendChild(productFilterFields.root);
+      productFilterForm.invalidate();
       productFilterFields.inputs.forEach((inp) => wireValidation(inp));
     } finally {
       pushingConfigToInputs = false;
@@ -1141,13 +1137,77 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     pane.root.querySelector('.d4-accordion-pane-header')?.appendChild(dot);
     return dot;
   };
+  // A form measured while too narrow gets permanently marked .ui-form-condensed by the platform,
+  // which applies its own compact styling. Strip the class back off instead of mirroring what it
+  // changes — stays correct even if the platform's condensed styling changes.
+  const stripCondensedClass = (form: HTMLElement): MutationObserver => {
+    const observer = new MutationObserver(() => {
+      if (form.classList.contains('ui-form-condensed')) form.classList.remove('ui-form-condensed');
+    });
+    observer.observe(form, {attributes: true, attributeFilter: ['class']});
+    return observer;
+  };
+  // Cancels the nested accordion's own chevron indent so its rows start flush with the main fields —
+  // measured against the real gap (setTimeout, since RAF doesn't fire in a backgrounded tab) instead
+  // of a hand-picked constant.
+  const flushIndent = (el: HTMLElement, reference: HTMLElement): void => {
+    setTimeout(() => {
+      const extra = el.getBoundingClientRect().left - reference.getBoundingClientRect().left;
+      if (extra === 0) return;
+      const current = parseFloat(getComputedStyle(el).marginLeft) || 0;
+      el.style.setProperty('margin-left', `${current - extra}px`, 'important');
+    }, 0);
+  };
+  // Builds ui.form() lazily, only once the pane's content factory first runs (i.e. actually attached
+  // with real width) — building it eagerly would get it condensed before stripCondensedClass even
+  // attaches. invalidate() rebuilds in place after a config reload swaps in fresh inputs.
+  const lazyFilterForm = (getInputs: () => DG.InputBase<unknown>[]):
+  {getRoot: () => HTMLElement; invalidate: () => void} => {
+    let root: HTMLElement | null = null;
+    let observer: MutationObserver | null = null;
+    const build = (): HTMLElement => {
+      const form = ui.form(getInputs());
+      observer = stripCondensedClass(form);
+      flushIndent(form, numRoundsInput.root);
+      return form;
+    };
+    return {
+      getRoot: (): HTMLElement => root ??= build(),
+      invalidate: (): void => {
+        if (!root) return;
+        observer?.disconnect();
+        const fresh = build();
+        root.replaceWith(fresh);
+        root = fresh;
+      },
+    };
+  };
+  // Shares one label-column width across all three forms, computed from the widest actual caption
+  // (not a hand-picked constant). Clones a real label so it inherits the platform's own font/padding.
+  const sharedLabelWidth = ((): number => {
+    const captions = [numRoundsInput, maxComponentsInput, maxRoutesInput,
+      ...combinationLimitFields.inputs, ...productFilterFields.inputs].map((inp) => inp.caption);
+    const probe = numRoundsInput.captionLabel.cloneNode(false) as HTMLElement;
+    Object.assign(probe.style,
+      {position: 'absolute', visibility: 'hidden', width: 'auto', maxWidth: 'none', whiteSpace: 'nowrap'});
+    document.body.appendChild(probe);
+    let max = 0;
+    for (const caption of captions) {
+      probe.textContent = caption;
+      max = Math.max(max, probe.getBoundingClientRect().width);
+    }
+    probe.remove();
+    return Math.ceil(max);
+  })();
   // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
   // the outer wizard-navigation accordion).
   const limitsAccordion = ui.accordion();
+  const combinationLimitsForm = lazyFilterForm(() => combinationLimitFields.inputs);
+  const productFilterForm = lazyFilterForm(() => productFilterFields.inputs);
   const combinationLimitsPane = limitsAccordion.addPane('Combination limits (optional)',
-    () => combinationLimitFieldsHost, false, null, false);
+    () => combinationLimitsForm.getRoot(), false, null, false);
   const productFilterPane = limitsAccordion.addPane('Product filters (optional)',
-    () => productFilterFieldsHost, false, null, false);
+    () => productFilterForm.getRoot(), false, null, false);
   const combinationLimitsDot = attachChangedDot(combinationLimitsPane, 'Changed from platform defaults.');
   const productFiltersDot = attachChangedDot(productFilterPane, 'Changed from platform defaults.');
   const accCombinePane = accordion.addPane('How to combine', () => ui.divV([
@@ -1161,8 +1221,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // First pane in the chain — no Back target.
     navRow(null, mkNextBtn(() => accReactionsPane, 'Reactions')),
   ], {style: {gap: '8px'}}), false, null, false);
-  // Scopes the shared-label-width CSS in chem.css across this pane's three separate forms.
+  // Scopes the shared-label-width CSS in chem.css across this pane's three separate forms; the
+  // width itself is set via a custom property so the CSS doesn't hard-code it.
   accCombinePane.root.classList.add('chem-enum-combine-pane');
+  accCombinePane.root.style.setProperty('--chem-enum-label-width', `${sharedLabelWidth}px`);
   // Left panel for Preview.
   const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
   function renderPreviewRecap(): void {
