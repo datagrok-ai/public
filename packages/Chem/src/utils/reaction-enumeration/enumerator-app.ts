@@ -1070,6 +1070,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ui.span([' Reagents mode active — set via a reagents file in Extras.'])],
   {style: {fontSize: '11px', color: 'var(--grey-6)', gap: '6px', alignItems: 'center',
     padding: '6px 10px', display: 'none'}});
+  ui.tooltip.bind(reagentsModeNote, 'Every round uses exactly one building block or earlier-round product, ' +
+    'with reagents filling the remaining slots. Automatically selected as soon as a reagents file is loaded ' +
+    'in the Extras tab — to go back to Depth-first/Breadth-first, clear the reagents file there.');
 
   function refreshStrategyCards(): void {
     const cur = currentMode();
@@ -1328,21 +1331,22 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value; const rDf = reagentsInput.value;
     const mode = currentMode();
-    const combineText = `${MODE_LABEL[mode]} · ${roundsLabel(currentRounds())}`;
+    const roundsText = roundsLabel(currentRounds());
+    const combineText = `${MODE_LABEL[mode]} · ${roundsText}`;
     const setChip = (chip: {root: HTMLElement; textEl: HTMLElement}, text: string, err: boolean): void => {
       chip.textEl.textContent = text;
       chip.root.classList.toggle('chem-enum-chip--err', err);
     };
-    setChip(chipReactionsC, tDf ? 'Reactions' : 'No reaction table',
+    setChip(chipReactionsC, tDf ? `${tDf.rowCount} reactions` : 'No reaction table',
       !tDf || !smartsColInput.value);
-    setChip(chipBbsC, bDf ? 'BBs' : 'No BBs table',
+    setChip(chipBbsC, bDf ? `${bDf.rowCount} BBs` : 'No BBs table',
       !bDf || !bbColInput.value);
     // Extras is fully optional — never flagged as an error state.
-    chipExtrasC.textEl.textContent = rDf ? 'Reagents' : 'Reagents (None)';
+    chipExtrasC.textEl.textContent = rDf ? `${rDf.rowCount} reagents` : 'Reagents (None)';
     // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
-    chipCombineC.textEl.textContent = `Strategy: ${MODE_ABBR[mode]}`;
+    chipCombineC.textEl.textContent = `Strategy: ${MODE_ABBR[mode]} · ${roundsText}`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
-    cfgEstEl.textContent = n > 0 ? 'Products' : '';
+    cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString('en-US')} products` : '';
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);
     combinationLimitsDot.style.display = combChanged ? '' : 'none';
@@ -2139,6 +2143,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         g.style.boxShadow = 'none';
         g.style.border = 'none';
       });
+      // The row that lays ribbon panels out side by side doesn't shrink, so it clips past the last
+      // chip at narrow widths — scroll instead. Climb to whichever ancestor is actually overflowing
+      // rather than a hardcoded hop count, since the platform's ribbon nesting isn't this repo's
+      // contract. Overlay scrollbars are invisible until actively scrolled, hence the visible class.
+      let panelsRow: HTMLElement | null = chipCombineC.root.parentElement;
+      while (panelsRow && ribbon.contains(panelsRow) && panelsRow.scrollWidth <= panelsRow.clientWidth)
+        panelsRow = panelsRow.parentElement;
+      if (panelsRow && ribbon.contains(panelsRow)) {
+        panelsRow.style.overflowX = 'auto';
+        panelsRow.classList.add('chem-enum-ribbon-scroll');
+      }
     }
     if (attempt < 200) setTimeout(() => applyRibbonFixup(attempt + 1), 50);
   }
