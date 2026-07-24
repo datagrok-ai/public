@@ -3,14 +3,82 @@ feature: piechart
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: []
+realizes_atlas:
+  - piechart.in-viewer-column-selector-reconfigures-pie
+  - piechart.mouseover-row-group-cross-highlight
 realizes: []
 realized_as:
   - pie-chart-spec.ts
 related_bugs: []
+expected_results:
+  - anchor: "In-viewer column selector re-pick"
+    expectation: "Picking SEX through the selector shown on the pie itself
+      rebinds the category column to SEX and the legend lists exactly the SEX
+      categories; picking RACE back restores the RACE split with exactly the
+      RACE categories in the legend (round-trip through the real selector UI,
+      no substitution)"
+  - anchor: "Mouse-over row group cross-highlight"
+    expectation: "With Show Mouse Over Row Group off, highlighting one
+      category's rows leaves the pie canvas unchanged (per-color histogram
+      delta below 2000 between settled frames); with the option on, the same
+      highlight repaints the matching arc (delta above 20000); clearing the
+      highlight returns the settled frame to the baseline (delta below 2000,
+      round-trip)"
+  - anchor: "Sorting"
+    expectation: "With Category set to RACE, Pie Sort Type and Pie Sort Order
+      read back each value in the driven sequence: by value, desc, asc,
+      by category, asc, desc"
+  - anchor: "Appearance"
+    expectation: "Start Angle 90/180/0, Max Radius 100/150 and Shift 10/0 each
+      read back the value just set"
+  - anchor: "Labels"
+    expectation: "Label Position Inside/Outside/Auto and the Show Label, Show
+      Percentage and Show Value toggles read back the values just set
+      (Inside, Outside, Auto, false, false, true)"
+  - anchor: "Outline"
+    expectation: "Outline Line Width 5/0/1 reads back each value in sequence"
+  - anchor: "Column selector"
+    expectation: "Show Column Selector reads back false then true across the
+      off/on toggle"
+  - anchor: "Legend"
+    expectation: "Legend Visibility Always/Never/Auto and Legend Position
+      LeftTop/RightBottom read back each value in the driven sequence"
+  - anchor: "Row source"
+    expectation: "With the first 50 rows selected, Row Source reads back
+      Selected, Filtered and All in sequence"
+  - anchor: "Title and description"
+    expectation: "showTitle true, title 'Demographics', description 'By race',
+      descriptionPosition Top and descriptionVisibilityMode Never each read
+      back the value just set"
+  - anchor: "Layout persistence"
+    expectation: "After saving the layout, closing the pie chart and
+      re-applying the saved layout, the restored viewer carries the same
+      configuration — categoryColumnName RACE, segmentAngleColumnName AGE,
+      startAngle 45, shift 5; the saved layout is deleted afterwards"
+  - anchor: "Selection and interaction"
+    expectation: "Show Selected Rows and Show Mouse Over Row Group each read
+      back false then true across their off/on toggles"
+  - anchor: "Auto layout"
+    expectation: "Auto Layout off, Margin Left 50, Margin Top 50 and Auto
+      Layout back on each read back the value just set"
+  - anchor: "Table switching and row source (SPGI)"
+    expectation: "Setting the Table property to SPGI rebinds the viewer's
+      dataframe to SPGI and back to demog on the reverse switch; Row Source
+      reads back Selected with 100 rows selected, and Filtered with
+      df.filter.trueCount above zero after a RACE = Asian categorical filter"
 ---
 
-# Pie chart tests (Playwright)
+# Pie chart tests
+
+## Purpose
+
+Verifies the Pie chart's settings surface — sorting, appearance, labels,
+outline, legend, row source, title and description, auto layout — plus layout
+persistence, re-picking the category column through the selector shown on the
+pie itself, the cross-highlight of a hovered row group, and switching the
+bound table. Most settings render to canvas only, so they are verified by
+reading each setting back after the change; the two focused scenarios add
+real-control and repaint checks on top.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -26,16 +94,6 @@ All scenarios should start with the following sequence of events:
 5. Set Pie Sort Type to by category — slices ordered alphabetically
 6. Set Pie Sort Order to asc — A-Z order
 7. Set Pie Sort Order to desc — Z-A order
-
-## Segment angle and length
-
-1. Set Category to RACE
-2. Set Segment Angle Column to AGE — slice angles proportional to average AGE per race
-3. Set Segment Angle Aggr Type to sum — angles change based on sum
-4. Set Segment Angle Aggr Type to count — angles based on row count
-5. Set Segment Length Column to WEIGHT — slice lengths vary by weight
-6. Set Segment Length Aggr Type to max — lengths change
-7. Clear Segment Angle Column and Segment Length Column — standard pie chart restored
 
 ## Appearance
 
@@ -63,16 +121,22 @@ All scenarios should start with the following sequence of events:
 2. Set Outline Line Width to 0 — no outlines
 3. Set Outline Line Width to 1
 
-## Include nulls
-
-1. Set Category to a column with missing values
-2. Toggle Include Nulls on — a slice for missing values appears
-3. Toggle Include Nulls off — the missing values slice disappears
-
 ## Column selector
 
 1. Toggle Show Column Selector off — category dropdown disappears
 2. Toggle Show Column Selector on — dropdown reappears
+
+## In-viewer column selector re-pick
+
+Steps:
+1. Set Category to RACE, turn Show Column Selector on, and make the legend always visible.
+2. Using the column selector shown on the pie itself, pick the SEX column.
+3. Using the same selector, pick RACE again.
+4. Restore Legend Visibility to Auto.
+
+Expected:
+- Picking SEX re-splits the pie by SEX: the category is now SEX and the legend lists exactly the SEX categories
+- Picking RACE back restores the RACE split: the category is RACE and the legend lists exactly the RACE categories (round-trip)
 
 ## Legend
 
@@ -82,30 +146,12 @@ All scenarios should start with the following sequence of events:
 4. Set Legend Visibility to Never — legend disappears
 5. Set Legend Visibility to Auto — legend shown based on available space
 
-## Category map (dates)
-
-1. Set Category to STARTED
-2. Verify Category Map dropdown appears — default is year
-3. Set Category Map to month — slices regroup by month
-4. Set Category Map to quarter — slices regroup by quarter
-
 ## Row source
 
 1. Select first 50 rows in the grid
 2. Set Row Source to Selected — pie shows only selected rows
 3. Set Row Source to Filtered — pie shows filtered rows
 4. Set Row Source to All — pie shows all rows
-
-## Aggregation functions
-
-1. Set Segment Angle Column to AGE
-2. Set Segment Angle Aggr Type to avg
-3. Set Segment Angle Aggr Type to min
-4. Set Segment Angle Aggr Type to max
-5. Set Segment Angle Aggr Type to sum
-6. Set Segment Angle Aggr Type to med
-7. Set Segment Angle Aggr Type to stdev
-8. Set Segment Angle Aggr Type to count
 
 ## Title and description
 
@@ -131,30 +177,23 @@ All scenarios should start with the following sequence of events:
 ## Selection and interaction
 
 1. Set Category to RACE
-2. Click on a slice — corresponding rows should be selected in the grid
-3. Click on another slice — selection should update
-4. Toggle Show Selected Rows off
-5. Toggle Show Selected Rows on
-6. Toggle Show Mouse Over Row Group off
-7. Toggle Show Mouse Over Row Group on
+2. Toggle Show Selected Rows off
+3. Toggle Show Selected Rows on
+4. Toggle Show Mouse Over Row Group off
+5. Toggle Show Mouse Over Row Group on
 
-## On Click modes
+## Mouse-over row group cross-highlight
 
-1. Set Category to RACE
-2. Set On Click to Select
-3. Click on a slice — verify selection count is greater than 0
-4. Set On Click to Filter
-5. Click on a slice — verify filter count is less than total row count
-6. Ctrl+click another slice — verify filter count changes
-7. Click on empty area outside the pie — filter clears, all rows visible
-8. Set On Click to Select
+Steps:
+1. Set Category to RACE.
+2. With Show Mouse Over Row Group off, highlight the rows of one category (for example Asian) — the pie does not change.
+3. Turn Show Mouse Over Row Group on and highlight the same rows — the matching arc lights up with the highlight color.
+4. Clear the highlight — the pie returns to its previous look.
 
-## Selection between grid and pie chart
-
-1. Set Category to RACE
-2. Select first 50 rows in the grid — selection should be reflected on the pie chart
-3. Click on a pie chart slice — verify selection count in grid is greater than 0
-4. Clear selection
+Expected:
+- With the option off, highlighting a category's rows repaints nothing on the pie
+- With the option on, the same highlight visibly repaints the pie (the matching arc lights up)
+- Clearing the highlight returns the pie to its previous look (round-trip)
 
 ## Auto layout
 
@@ -177,8 +216,35 @@ Setup: Close all, open demog, then also open SPGI
 6. Set Row Source to Filtered
 7. Open the filter panel and apply a filter — the pie chart should reflect the filter
 
+## Automation notes
+
+The settings sections (Sorting through Auto layout, Layout persistence,
+Selection and interaction, and the Table/Row Source switches) are driven
+through the matching viewer properties — the same values the Context Panel
+controls write — and each value is read back after the set. The two focused
+scenarios below are driven through the real UI as described.
+
+In-viewer column selector re-pick: the pie's own column combo is a DOM control
+(`[name="div-column-combobox-category"]`), driven through the shared
+type-and-search selector helper with no JS-API substitution. The read-back is
+the category property plus the legend labels compared to the column's own
+category list, so a pick that did not re-split the pie fails instead of echoing
+the prop.
+
+Mouse-over row group cross-highlight: the pie highlights the mouse-over ROW
+GROUP, not the single mouse-over row — hovering one grid row leaves the pie
+unchanged — so "highlight the rows" in the manual steps is driven through the
+dataframe row-highlight channel (`df.rows.highlight`), the same channel other
+viewers write when an aggregate element is hovered. The repaint is measured as
+a per-color canvas histogram delta between settled frames; the thresholds
+(off below 2000, on above 20000, cleared below 2000) are conservative margins
+far below the delta a real arc highlight produces, and every measured delta is
+logged for threshold audits. The reverse direction — hovering a pie slice
+highlights the contributing rows in the grid — has no readable headless signal
+(the grid is canvas-rendered) and stays in pie-chart-ui.md.
+
 ---
 {
   "order": 4,
-  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/SPGI.csv"]
 }

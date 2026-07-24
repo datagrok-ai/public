@@ -1,5 +1,8 @@
 # Pie chart tests (manual)
 
+Automated coverage lives in the other scenarios in this folder; this file
+lists only checks needing a human eye.
+
 All scenarios should start with the following sequence of events:
 1. Close all
 2. Open demog
@@ -7,10 +10,13 @@ All scenarios should start with the following sequence of events:
 
 ## Tooltips
 
-1. Hover over a slice — tooltip appears showing category name, row count, and column statistics
-2. Set Segment Angle Column to AGE — hover over a slice, tooltip should include AGE aggregation
-3. Set Segment Length Column to WEIGHT — tooltip should also show WEIGHT aggregation
-4. Move mouse away from pie — tooltip disappears
+1. Hover over a slice — the slice is highlighted with the hover color, and the
+   tooltip identifies that slice's category with its values
+
+## Mouse-over cross-highlight
+
+1. Set Category to RACE and turn on **Show Mouse Over Row Group**; add a Bar chart on the same table and hover one of its bars — the pie arc of the matching category is highlighted
+2. Hover a pie slice — the rows contributing to that slice are highlighted in the grid and other viewers
 
 ## Filtering (exploratory)
 
@@ -20,11 +26,6 @@ All scenarios should start with the following sequence of events:
 ## Check all data properties
 
 1. Go to the Context Panel > Data section and check all the properties
-
-## Range slider
-
-1. Add a title and a description
-2. Check the range slider functionality
 
 ---
 {
