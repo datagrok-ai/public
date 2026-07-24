@@ -200,15 +200,21 @@ export async function _demoMMPA(): Promise<void> {
       await awaitCheck(() => {
         for (const v of tv.viewers) {
           console.log(v.type);
-          if (v.type === 'Matched Molecular Pairs Analysis') {
-            mmpViewer = v as MatchedMolecularPairsViewer;
+          if (v.type === 'Matched Molecular Pairs Analysis')
             return true;
-          }
         }
         return false;
       }, '', 20000);
     } catch (e) {};
-    mmpViewer!.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+    for (const v of tv.viewers) {
+      if (v.type === 'Matched Molecular Pairs Analysis') {
+        mmpViewer = v as MatchedMolecularPairsViewer;
+        break;
+      }
+    }
+    if (mmpViewer == null)
+      return;
+    mmpViewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
     setTimeout(()=> {
       grok.shell.windows.showHelp = true;
       grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#matched-molecular-pairs');
