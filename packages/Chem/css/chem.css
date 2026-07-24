@@ -1276,7 +1276,7 @@
   display: none;
 }
 
-.chem-enumerator .d4-tab-content > * {
+.chem-enumerator .d4-accordion-pane-content > * {
   padding: 0 !important;
   gap: 0 !important;
 }
@@ -1298,10 +1298,49 @@
   min-width: 0;
 }
 
+/* The platform marks a null column-selector `.d4-invalid` regardless of `nullable` — not an error
+   here. Its own rule uses `!important`, so the override needs one too. */
+.chem-enum-optional-col .d4-invalid {
+  border-color: var(--grey-2) !important;
+  color: inherit !important;
+}
 
 .chem-enum-accordion {
   width: 100%;
   min-width: 0;
+}
+
+/* Checkboxes share the .ui-input-editor class (a div, not input) with text/number fields, which
+   default to flex-grow — that stretches the checkbox into an oversized box as the panel is resized. */
+.chem-enumerator .ui-input-bool .ui-input-editor {
+  flex-grow: 0;
+  width: auto;
+}
+
+/* "How to combine" has three separate ui.form() calls, so unlike other panes it doesn't get its label
+   column aligned for free. .ui-form-condensed and the nested accordion's chevron indent are both
+   handled in JS (stripCondensedClass/flushIndent in enumerator-app.ts), not mirrored here. */
+
+/* Accordion.addPane's pane-content is a row-flex container — grow the form into it like a normal
+   block child would, since it doesn't stretch to fill by default. */
+.chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content > .ui-div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Shared label column (--chem-enum-label-width, set in enumerator-app.ts) — !important needed to
+   beat the platform's own per-form inline width style. */
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > label.ui-input-label:not(:empty) {
+  width: var(--chem-enum-label-width) !important;
+  max-width: var(--chem-enum-label-width) !important;
+}
+
+/* Editors default to flex-grow:1 — pin them to their natural width instead, to match every other
+   pane's own non-growing look. */
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > .ui-input-editor {
+  flex-grow: 0 !important;
+  width: auto !important;
+  max-width: none !important;
 }
 
 .chem-enum-pane-subtitle {
@@ -1316,9 +1355,23 @@
   pointer-events: none;
 }
 
-.chem-enum-next-btn {
-  align-self: flex-end;
+.chem-enum-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   margin-top: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.chem-enum-next-btn,
+.chem-enum-back-btn {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chem-enum-chip {
@@ -1328,6 +1381,10 @@
   color: var(--grey-6);
   cursor: pointer;
   font-size: 11px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Override platform's .d4-ribbon .d4-ribbon-item > * { height: 28px } */
@@ -1341,20 +1398,31 @@
   border-color: var(--blue-2);
 }
 
+/* Platform's own `.d4-ribbon-item > :hover:not(.d4-ribbon-wrapper)` rule (background: var(--grey-1);
+   border-radius: 4px) has the SAME specificity (0,3,0) as this rule, so without !important the
+   winner depends on stylesheet load order — !important on the two properties it actually sets
+   (background, border-radius) makes this deterministic. border-color isn't touched by that platform
+   rule, so it doesn't need !important here. */
+.d4-ribbon-item > .chem-enum-chip:hover {
+  border-radius: 10px !important;
+  background: #e9f3fb !important;
+  border-color: var(--blue-2);
+}
+
 .chem-enum-chip--err {
   background: var(--red-1);
   border-color: var(--red-3);
 }
 
+.chem-enum-chip--active {
+  background: #e9f3fb;
+  border-color: var(--blue-1);
+  color: var(--blue-1);
+}
+
 .chem-enum-ribbon-arrow {
   color: var(--grey-4);
   font-size: 10px;
-  pointer-events: none;
-}
-
-.chem-enum-cfg-est {
-  font-size: 11px;
-  color: var(--grey-5);
   pointer-events: none;
 }
 
