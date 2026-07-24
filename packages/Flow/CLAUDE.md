@@ -270,7 +270,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `files-tree-tests.ts` | Flow: files tree | name-based test-ids on connection/folder/file rows; lazy expand loads + stamps a connection's files (Demo → demog.csv) |
 | `uploaded-file-tests.ts` | Flow: uploaded files | pending registry (add/read/remove, 100 MB cap asserted without allocating), csv parse + table naming, `readUploadedFile` from memory (no server round-trip), actionable lost-pending error, catalog registration via `meta.includeInFlow: true`, server blob round-trip (persist → `readAsBytes` → node function → entity cleanup), creation-script import/emit round-trip |
 | `input-value-tests.ts` | Flow: input values | `resolveInputValue` per type (scalars/lists/map/dataframe by name + `transientValue` priority), `inputBlockReason` wording, header emission guard (table names stay out, scalar defaults stay), `runAutorun` unconfigured-skips / configured-runs-silently (no dialog), explicit Run with configured scalar needs no dialog, `autorunBlockers`, the node-body DG editor renders + panel→node sync, editor edits report `params-changed` exactly once (guarded) |
-| `toolbox-tabs-tests.ts` | Flow: toolbox tabs | the four top tabs (Files/Queries/Workflows/Favorites) + header test-ids, Workflows tab lists saved flows (and they're out of the accordion), favorites store toggle/persistence/notifications, row-star → Favorites tab round-trip (star, list, dblclick-create, unstar in place), search badges (>0 count pill, 0-match dim, cleared with the query), group-by catalog-header button (label + persistence), DG-func favorite resolves back to its FuncInfo |
+| `toolbox-tabs-tests.ts` | Flow: toolbox tabs | the five top tabs (Files/Spaces/Queries/Workflows/Favorites) with icon-only headers (Browse-tree glyphs, no text, aria-label keeps the name), the Spaces tab lazily mounts the content-mode SpacePicker, Workflows tab lists saved flows (and they're out of the accordion), favorites store toggle/persistence/notifications, row-star → Favorites tab round-trip (star, list, dblclick-create, unstar in place), search badges (>0 count pill, 0-match dim, cleared with the query), group-by catalog-header button (label + persistence), DG-func favorite resolves back to its FuncInfo |
 | `execution-preview-tests.ts` | Flow: execution preview | widget/viewer outputs render their live `.root` and are renderable; context-panel meta names the kind (not `[object Object]`); a rootless widget is not renderable; panel state machine (hidden → expanded on first renderable output; minimize remembered — content updates never pop it up; `clear()` hides but keeps the preference; caret click toggles + fires `onStateChanged`, header body does not; disabled panels never show); same node + same state → no preview rebuild (new state / other node → rebuild); **pin**: pinning gates `showForNode` to the pinned node (others ignored), the pinned node still updates in place, the pin survives `clear()`, `unpin()` releases, user-unpin fires `onUnpinned`, `markUpdating`/`clearUpdating` overlay/release the recalculating indicator over kept content; the panel is a pane of the view splitter, disabled in embedded views; **opening the panel minimizes the overview minimap** (one-shot, hidden → visible edge) |
 | `viewer-tests.ts` | Flow: viewers | core viewer node types registered; a viewer node's table input / viewer output / type+specs; emits `plot.fromType` + `setOptions` (clean + instrumented); no table → no emission |
 | `column-picker-tests.ts` | Flow: column picker | `column`/`column_list` inputs render a `ff-prop-pick-columns-<param>` icon; the request resolves the right dataframe input per column (JoinTables `keys1`→`table1`, `keys2`→`table2`); **viewer** axis options and **Select Column(s)** utilities get the picker too (resolving their `table` input); the request carries the icon as its menu `anchor`; `buildColumnMatchFilter` gates by `semType` / `columnTypeFilter`; no icon without an `onPickColumns` handler |
@@ -924,14 +924,20 @@ match-count badge (`funcflow-tab-badge`, only when >0) and a 0-match tab dims (`
 `updateTabBadges()`; Files isn't searched and stays neutral.
 
 - **Top tab strip** (`ff-browser-tabs`, a platform `DG.TabControl` keyed `TOOLBOX_TABS_KEY =
-  'funcflow.toolbox.tab'` so the selected tab persists): the item *collections* — **Files / Queries /
-  Workflows / Favorites** (`TOOLBOX_TABS`). Tab headers carry `ff-browser-tab-<name>` + `data-tab`;
+  'funcflow.toolbox.tab'` so the selected tab persists): the item *collections* — **Files / Spaces /
+  Queries / Workflows / Favorites** (`TOOLBOX_TABS`). Headers are **icon-only** — the SAME FA glyphs
+  the platform Browse tree uses for these concepts (`TOOLBOX_TAB_ICONS`: folder / brackets-curly /
+  database / sitemap / star, from core's `browse_panel_tree.dart`) — which is what frees the strip
+  for five tabs; the name survives as the pane name, `aria-label`, and the tooltip (which leads with
+  it: "Workflows — saved flows…"). Tab headers carry `ff-browser-tab-<name>` + `data-tab`;
   `showTab(name)` activates one programmatically (the guide host's `showToolboxTab`). CSS neutralizes
   the platform tab host's fixed 400×300 default (`min-width/min-height` → 0, width 100%) **and its
   `flex-shrink: 0`** (`flex: 0 1 auto !important` — without shrink the host keeps its full content
   height inside the clamped strip and the pane can never scroll); height is content-driven, capped at
-  32% with the pane content scrolling, headers are compacted so all four tabs fit the ~250px toolbox
-  (inactive grey, active blue + underline), and the accordion keeps a `min-height: 40%` floor.
+  32% with the pane content scrolling, headers share the strip evenly (`flex: 1 1 0`, centered icon;
+  inactive grey, active blue + underline; the TabControl's built-in `HighlightBack`/`HighlightForward`
+  scroll chevrons are hidden — nothing ever overflows), and the accordion keeps a `min-height: 40%`
+  floor.
 - **Files tab** (`ff-browser-files`): a hint line (`funcflow-tab-hint`, "double-click or drag a file
   to load it — or open a local one:") sharing its row with the **open-local-file button**
   (`ff-browser-upload`, `buildUploadButton`; icon-only `fa-folder-open` — the platform's "Open local
@@ -948,7 +954,26 @@ match-count badge (`funcflow-tab-badge`, only when >0) and a 0-match tab dims (`
   `DG.FileInfo` droppable). Every row carries a name-based `data-testid` (`ff-files-conn-<name>` /
   `ff-files-folder-<name>` / `ff-files-file-<name>`) plus raw `data-conn`/`data-folder`/`data-file`/
   `data-file-path` attributes.
-- **Queries tab** (`ff-browser-queries`): every `DG.DataQuery` from the registry, **excluded from the
+- **Spaces tab** (`ff-browser-spaces`): the [SpacePicker](src/ui/space-picker.ts) in **content mode**
+  (`showContent: true`), built lazily on first activation and reused across renders. One SpacePicker
+  class serves two modes: the **Save dialog** browses spaces only (a save-target chooser, with the
+  "New subspace…" button), while content mode also lists each space's content — entities (flows,
+  scripts, queries) and stored files — as rows with `ObjectHandler` entity icons, and hides the
+  create button. One lazy `children.filter('', true).list()` per expand returns subspaces + entities
+  + the space's stored files (empty `types` = everything, linked included); `DataConnection` rows are
+  skipped (every space carries its own "<name> Files" storage connection — plumbing, and not
+  actionable on a canvas). Rows: subspaces first, then entities, files last, each alphabetical;
+  test-ids `ff-space-<name>` (groups) / `ff-space-item-<name>` (content). Double-click / Enter fires
+  `onEntityActivated` → `FunctionBrowser.activateSpaceEntity`: files → `onFileDoubleClick` (OpenFile
+  node), functions → the registered `FuncInfo` (matched by id) or `ensureFuncNodeType` on the fly (a
+  script filed into a space is explicit intent, like an imported creation script — the canvas
+  `addFuncNode` drop path uses the same fallback). Rows are `ui.makeDraggable` with the entity as
+  the drag object, so the existing canvas droppable (`DG.FileInfo` / `DG.Func`) accepts them.
+  Judge-driven CSS (funcflow.css, Spaces-tab section): item rows drop the platform's 20px item
+  indent so content rows share their sibling subspace's left edge (otherwise they read as children
+  of a COLLAPSED sibling), nested space levels get a 14px step (the d4-toolbar surface compresses
+  tree indent to an illegible 6px), and space rows carry the brackets-curly glyph
+  (`funcflow-space-icon`) like every other row type.
   category list** and grouped into one sub-accordion **per connection** (`queryConnectionName` =
   `connection.friendlyName ?? connection.name`; `ff-browser-query-conn-<name>` + `data-query-conn`),
   **regardless of the group-by mode**.

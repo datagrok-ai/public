@@ -1,14 +1,26 @@
-/** Toolbox top tabs (Files / Queries / Workflows / Favorites) and the
- *  star-driven favorites store: tab structure, workflow listing, star toggling
- *  from a catalog row, localStorage persistence, and the Favorites tab
- *  round-trip (star → listed → create node → unstar → gone). */
+/** Toolbox top tabs (Files / Spaces / Queries / Workflows / Favorites) and the
+ *  star-driven favorites store: tab structure (icon-only headers), workflow
+ *  listing, the lazy Spaces browser, star toggling from a catalog row,
+ *  localStorage persistence, and the Favorites tab round-trip (star → listed →
+ *  create node → unstar → gone). */
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before, after} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc} from '../rete/node-factory';
-import {FunctionBrowser, TOOLBOX_TABS} from '../panel/function-browser';
+import {FunctionBrowser, TOOLBOX_TABS, TOOLBOX_TAB_ICONS} from '../panel/function-browser';
 import {getFavorites, isFavorite, toggleFavorite, clearFavorites, onFavoritesChanged} from '../panel/favorites';
 import {supportedUploadExtensions} from '../utils/uploaded-files';
+
+/** Polls until `probe` returns a non-null value (the async tab builds). */
+async function waitFor<T>(probe: () => T | null | undefined, timeoutMs = 15000): Promise<T> {
+  const start = Date.now();
+  for (;;) {
+    const v = probe();
+    if (v != null) return v;
+    if (Date.now() - start > timeoutMs) throw new Error('waitFor: timed out');
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
 
 function makeBrowser(onAdd?: (type: string) => void, onFiles?: (files: File[]) => void): FunctionBrowser {
   return new FunctionBrowser({
@@ -30,18 +42,43 @@ category('Flow: toolbox tabs', () => {
     clearFavorites();
   });
 
-  test('the top strip has the four collection tabs', async () => {
+  test('the top strip has the five collection tabs with Browse-tree icons', async () => {
     const browser = makeBrowser();
     document.body.appendChild(browser.root);
     try {
       browser.render();
       expect(!!browser.topTabs, true, 'tab control created');
       const names = browser.topTabs!.panes.map((p) => p.name);
-      expect(names.join(','), TOOLBOX_TABS.join(','), 'Files, Queries, Workflows, Favorites in order');
+      expect(names.join(','), TOOLBOX_TABS.join(','), 'Files, Spaces, Queries, Workflows, Favorites in order');
       for (const name of TOOLBOX_TABS) {
-        expect(!!browser.root.querySelector(`[data-testid="ff-browser-tab-${name.toLowerCase()}"]`),
-          true, `${name} tab header carries its test id`);
+        const header = browser.root.querySelector(
+          `[data-testid="ff-browser-tab-${name.toLowerCase()}"]`) as HTMLElement | null;
+        expect(!!header, true, `${name} tab header carries its test id`);
+        // Icon-only headers: the Browse tree's glyph, no visible text; the
+        // name survives as the aria-label (and the tooltip).
+        const icon = header!.querySelector(`i.funcflow-tab-icon.fa-${TOOLBOX_TAB_ICONS[name]}`);
+        expect(!!icon, true, `${name} header shows the fa-${TOOLBOX_TAB_ICONS[name]} icon`);
+        expect((header!.textContent ?? '').trim(), '', `${name} header carries no text`);
+        expect(header!.getAttribute('aria-label'), name, `${name} header keeps its name as aria-label`);
       }
+    } finally {
+      browser.root.remove();
+      browser.destroy();
+    }
+  });
+
+  test('the Spaces tab lazily builds the content-mode space browser', async () => {
+    const browser = makeBrowser();
+    document.body.appendChild(browser.root);
+    try {
+      browser.render();
+      expect(browser.spacePicker == null, true, 'not built before the tab is shown');
+      browser.showTab('Spaces');
+      const tab = browser.root.querySelector('[data-testid="ff-browser-spaces"]') as HTMLElement;
+      expect(!!tab, true, 'Spaces tab content present');
+      expect(!!tab.querySelector('.funcflow-tab-hint'), true, 'hint line present');
+      await waitFor(() => browser.spacePicker);
+      expect(!!tab.querySelector('.funcflow-space-picker'), true, 'space browser mounted in the tab');
     } finally {
       browser.root.remove();
       browser.destroy();
