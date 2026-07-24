@@ -424,6 +424,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return reagentsInput.value != null ? 'reagents' : (depthFirstInput.value ? 'depth' : 'breadth');
   }
   const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
+  const MODE_ABBR = {depth: 'DF', breadth: 'BF', reagents: 'RM'} as const; // ribbon chip only, MODE_LABEL elsewhere
   // The raw round count as currently displayed/edited (not the defensively-clamped one makeDataPanel's
   // roundCount() uses for building round tabs) — shared by the ribbon chip, the Strategy summary, and
   // the Preview recap so they can't drift out of sync (e.g. one saying "2 rounds", another "1 rounds").
@@ -1326,21 +1327,22 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value; const rDf = reagentsInput.value;
-    const combineText = `${MODE_LABEL[currentMode()]} · ${roundsLabel(currentRounds())}`;
+    const mode = currentMode();
+    const combineText = `${MODE_LABEL[mode]} · ${roundsLabel(currentRounds())}`;
     const setChip = (chip: {root: HTMLElement; textEl: HTMLElement}, text: string, err: boolean): void => {
       chip.textEl.textContent = text;
       chip.root.classList.toggle('chem-enum-chip--err', err);
     };
-    setChip(chipReactionsC, tDf ? `${tDf.rowCount} reactions` : 'No reaction table',
+    setChip(chipReactionsC, tDf ? 'Reactions' : 'No reaction table',
       !tDf || !smartsColInput.value);
-    setChip(chipBbsC, bDf ? `${bDf.rowCount} building blocks` : 'No building blocks table',
+    setChip(chipBbsC, bDf ? 'BBs' : 'No BBs table',
       !bDf || !bbColInput.value);
     // Extras is fully optional — never flagged as an error state.
-    chipExtrasC.textEl.textContent = rDf ? `${rDf.rowCount} reagents` : 'No reagents (optional)';
+    chipExtrasC.textEl.textContent = rDf ? 'Reagents' : 'Reagents (None)';
     // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
-    chipCombineC.textEl.textContent = `Strategy: ${combineText}`;
+    chipCombineC.textEl.textContent = `Strategy: ${MODE_ABBR[mode]}`;
     const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
-    cfgEstEl.textContent = n > 0 ? `≈ ${n.toLocaleString('en-US')} products` : '';
+    cfgEstEl.textContent = n > 0 ? 'Products' : '';
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);
     combinationLimitsDot.style.display = combChanged ? '' : 'none';
