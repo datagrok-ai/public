@@ -1,10 +1,9 @@
 # PC plot manual checklist
 
-Human-only visual/gesture checks. The automatable steps (area selection, current-row line
-highlight, the Show Current Line / Show Mouse Over Line / Show All Lines toggles, legend
-add and positioning) are now covered automatically in the spec(s); what remains here needs
-a human eye — hover colors and tooltips, "only selected lines visible" checks, window
-operations, and context-menu consistency.
+Human-only visual and gesture checks for the PC Plot; automated coverage lives
+in the other scenarios in this folder. What remains here needs a human eye or
+trusted mouse input: hover colors and tooltips, window operations,
+context-menu consistency, and the grid-to-plot column drag.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -15,12 +14,6 @@ All scenarios should start with the following sequence of events:
 
 1. Hover over a line in the plot -- the line should be highlighted with the mouse-over color, and a tooltip should appear
 2. Enable **Selection > Show Mouse Over Row Group** -- hovering over a row highlights all rows sharing the same row group
-
-## Show all lines with grid selection
-
-1. Disable **Selection > Show All Lines**
-2. Select some rows in the grid -- only selected lines should be shown on PC plot
-3. Re-enable **Show All Lines** -- all lines visible again
 
 ## Viewer basics
 
@@ -36,7 +29,7 @@ All scenarios should start with the following sequence of events:
 1. Right-click > **General** -- check all items
 2. Right-click > **Tooltip** -- check all items
 3. Open the Context Panel
-4. Right-click > **Columns** -- verify that changes are consistent between the Context Panel and the context menu
+4. Right-click > **Columns** -- verify the column set shown matches Context Panel > Value > Column Names
 
 ---
 {

@@ -213,7 +213,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
       const pc = tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
       // The transformation property is a JSON list of GroupAggregations (parsed by
       // GroupAggregation.fromJsonList); a non-JSON string throws a FormatException.
-      pc.props.transformation = JSON.stringify([{aggType: 'avg', colName: 'AGE'}]);
+      pc.props.transformation = JSON.stringify([{'#type': 'GroupAggregation', aggType: 'avg', colName: 'AGE'}]);
       await new Promise((r) => setTimeout(r, 800));
       // Close the Filter Panel via its close (X) icon.
       const fp = document.querySelector('[name="viewer-Filters"]')!;
@@ -228,7 +228,7 @@ test('PC Plot — Transformation and Filter/Selection Integrity', async ({page})
         !!document.querySelector('[name="viewer-PC-Plot"]');
       return {rowCount: df.rowCount, pcStillPresent, transformationApplied: pc.props.transformation};
     });
-    // grok.shell.warnings is undefined on this build, so pageerror/console is the
+    // grok.shell.warnings is not exposed to JS here, so pageerror/console is the
     // error channel.
     const bugErrsAfter =
       pageErrors.filter(isBugRelevantError).length + consoleErrors.filter(isBugRelevantError).length;

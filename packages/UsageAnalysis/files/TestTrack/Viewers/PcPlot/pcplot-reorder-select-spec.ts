@@ -1,5 +1,5 @@
 /* ---
-realizes: [pcplot.cp.reorder-and-select]
+realizes: [pcplot.cp.reorder-and-select, pcplot-area-select-cross-viewer, pcplot-current-row-sync]
 --- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
@@ -160,7 +160,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
   await softStep('Scenario 2 Step 5 — drag a column label reorders the axes (columnNames order changes, still 3)', async () => {
     const result = await page.evaluate(async () => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot')!;
-      const before = pc.getOptions().look.columnNames.slice();
+      const before = pc.props.columnNames.slice();
       const overlay = document.querySelector('[name="viewer-PC-Plot"] canvas[name="overlay"]')!;
       const r0 = overlay.getBoundingClientRect();
       const mk = (x: number, y: number) =>
@@ -183,7 +183,7 @@ test('PC Plot — Axis Reorder, Polyline Selection, and Current-Row Sync', async
       overlay.dispatchEvent(new MouseEvent('mouseup', mk(leftX, labelY)));
       document.dispatchEvent(new MouseEvent('mouseup', mk(leftX, labelY)));
       await new Promise((r) => setTimeout(r, 500));
-      const after = pc.getOptions().look.columnNames.slice();
+      const after = pc.props.columnNames.slice();
       return {before, after};
     });
     expect(result.before).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);

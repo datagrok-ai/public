@@ -21,34 +21,19 @@ expected_results:
   - anchor: "Selection & line display"
     expectation: "Driving the current/mouse-over/all line props raises no error and
       the viewer stays alive; the context-menu Selection > Show Current Line and
-      Show All Lines items flip the matching prop and restore it on a second click."
+      Show All Lines items flip the matching prop and restore it on a second click.
+      With Show All Lines off and an empty selection the canvas ink drops far below
+      the all-lines count; selecting grid rows paints only the selected lines (ink
+      rises off the hidden floor yet stays below the all-lines total); re-enabling
+      Show All Lines brings the ink back up (settle-gated pixel-count deltas)."
   - anchor: "Style & layout"
     expectation: "Driving line widths, label/min-max orientation, margins and Auto
       Layout raises no error; the axis sliders are still present after the layout
       pass. The Lines > Line Width menu slider writes the same lineWidth prop
       (documented reduction — the menu slider is a canvas control)."
-  - anchor: "Reset and filter visibility from the context menu"
-    expectation: "Narrowing two axis range sliders drops df.filter.trueCount
-      progressively; Reset View restores it to the full count. Show Filters in the
-      Filter submenu round-trips the showFilters prop (true -> false -> true)."
-  - anchor: "Filter panel interaction"
-    expectation: "A Filter Panel histogram filter and an in-chart range slider
-      combine (AND): df.filter.trueCount drops below full, then below that.
-      Reset View clears ONLY the in-chart part (count returns to the Filter-Panel
-      value, the panel filter survives); the Filter Panel Reset filters button
-      clears everything back to the full count."
-  - anchor: "Column reordering from the Context Panel list"
-    expectation: "Setting columnNames reorders the axis sliders; the rendered
-      slider name order matches the requested column order."
-  - anchor: "Density component toggles"
-    expectation: "densityStyle defaults to 'circles'; driving every box-plot /
-      violin component toggle raises no error and the viewer stays alive."
-  - anchor: "Color coding, legend & grid coloring"
-    expectation: "Categorical coloring renders a legend listing the column
-      categories; Legend Visibility Never hides it and Auto restores the same
-      categories. Conditional grid color-coding surfaces its bins ('20-150',
-      '150-250') in the plot legend; switching to a linear/numeric scheme drops the
-      DOM legend (the gradient is canvas)."
+  - anchor: "Show Filters from the context menu"
+    expectation: "Show Filters in the context-menu Filter submenu round-trips the
+      showFilters prop (true -> false -> true)."
   - anchor: "Title and description"
     expectation: "The title renders in the panel titlebar (.panel-titlebar-text) and
       the description inside the viewer element; clearing both removes them."
@@ -57,12 +42,6 @@ expected_results:
       log-scale columns, color column, legend position and title. Changing the
       first plot's axes afterwards does not affect the second; a range slider on
       the second plot filters the shared DataFrame (df.filter.trueCount drops)."
-  - anchor: "Layout round-trip"
-    expectation: "A saved layout, reloaded after adding a scatterplot, restores only
-      the original viewers (PC plot present, scatterplot absent)."
-  - anchor: "Project save / Close All / reopen"
-    expectation: "Saving the view as a project through the ribbon Save button, then
-      Close All and reopening the project, restores the PC plot and its title."
   - anchor: "Table switching and transformation"
     expectation: "The PC plot bound to spgi renders the raw numeric axes; applying a
       GroupAggregation pivot on Series replaces them with the Series categories
@@ -70,7 +49,18 @@ expected_results:
       the original set."
 ---
 
-# PC plot tests (Playwright)
+# PC plot tests
+
+## Purpose
+
+Verifies the PC Plot's core surface: adding the viewer and generating a script
+from it, axis normalization from the context menu, selection and line-display
+toggles, style and layout settings, filter visibility, title and description,
+copying settings between two plots (Pick Up / Apply), and binding the plot to
+another table with an aggregation transformation. Painting details that have no
+readable outcome (which exact lines are drawn, how thick they look) are checked
+only as far as the plot keeps working and its ink visibly changes; the
+picture's correctness is not judged.
 
 All scenarios should start with the following sequence of events:
 1. Close all
@@ -82,11 +72,6 @@ All scenarios should start with the following sequence of events:
 1. On the Menu Ribbon, click the **Add viewer** icon and select **PC plot** -- viewer should open
 2. Right-click the plot > **To Script** > **To JavaScript** -- a balloon with the generated script should appear
 3. Close the viewer, then add PC plot via **Toolbox** -- viewer opens again
-
-**Actuation note:** the spec adds the viewer through the Toolbox icon
-(`[name="icon-pc-plot"]`) for both adds. The Menu Ribbon **Add viewer** gallery is
-a canvas-rendered dialog with no headless handles, so it is not exercised; the
-Toolbox path produces the same viewer.
 
 ## Axis scale via the context menu
 
@@ -103,12 +88,12 @@ Toolbox path produces the same viewer.
 6. Enable **Show Mouse Over Row Group**
 7. Disable **Show All Lines** -- only current, mouse-over, and selected lines should be visible
 8. Re-enable **Show All Lines** -- all lines visible again
-9. Right-click > **Selection** > toggle **Show Current Line** -- same effect as Context Panel (the showCurrentLine prop flips)
-10. Right-click > **Selection** > toggle **Show All Lines** -- same effect as Context Panel (the showAllLines prop flips)
-
-**Actuation note:** which lines get painted is a canvas outcome with no DOM
-counterpart, so steps 2-8 are a no-error floor over the prop surface. Steps 9-10
-assert the menu -> prop round-trip, the same state the Context Panel toggles write.
+9. Right-click > **Selection** > toggle **Show Current Line** -- same effect as the Context Panel toggle
+10. Right-click > **Selection** > toggle **Show All Lines** -- same effect as the Context Panel toggle
+11. Disable **Show All Lines** with an empty selection -- almost all ink disappears from the plot (only axes/labels remain)
+12. Select some rows in the grid -- only the selected lines are painted (ink rises off the hidden floor but stays well below the all-lines total)
+13. Re-enable **Show All Lines** -- all lines are painted again (ink returns toward the all-lines total)
+14. Clear the selection -- round-trip back to the default state
 
 ## Style & layout
 
@@ -117,83 +102,14 @@ assert the menu -> prop round-trip, the same state the Context Panel toggles wri
 3. Change **Current Line Width** to 5 -- current row line becomes prominent
 4. Change **Mouse Over Line Width** to 5 -- hover line becomes thicker
 5. Right-click > **Lines** > adjust **Line Width** slider -- line thickness changes
-
-   **Reduction:** the Lines menu **Line Width** slider writes the same `lineWidth`
-   property exercised in step 2 (it is a canvas-drawn slider control with no
-   headless handle), so it is covered by the step-2 assertion, not driven separately.
 6. Change **Labels Orientation** to Vert -- axis labels rotate
 7. Change **Min Max Orientation** to Vert -- min/max values rotate
 8. Adjust **Horz Margin** -- spacing between axes changes
 9. Toggle **Auto Layout** off -- manual control over labels, min/max, and margins
 
-**Actuation note:** line widths, orientation and margins are pure painting, so this
-is a no-error floor; the axis sliders are read afterwards to confirm the layout
-pass rebuilt the plot.
+## Show Filters from the context menu
 
-## Reset and filter visibility from the context menu
-
-1. Narrow range sliders on two axes (AGE, HEIGHT) -- df.filter.trueCount drops progressively
-2. Right-click > **Reset View** -- the in-chart range filter resets and df.filter.trueCount returns to the full count
-3. Right-click > **Filter** > toggle **Show Filters** -- the showFilters state round-trips (true -> false -> true)
-
-**Actuation note:** the axis-slider DOM elements persist regardless of Show Filters
-(the range-handle visuals are canvas-drawn), so the assertable signal for Show
-Filters is the `showFilters` prop the menu item flips, not a DOM count.
-
-## Filter panel interaction
-
-Precondition: the PC plot shows AGE, HEIGHT, WEIGHT (axes carry range sliders).
-
-1. Open the Filter Panel and apply a histogram filter (AGE 30-50) -- df.filter.trueCount drops below the full count
-2. Narrow the HEIGHT range slider on the PC plot -- df.filter.trueCount drops further (the Filter Panel and in-chart filters combine with AND)
-3. Right-click > **Reset View** -- only the PC plot filtering resets; df.filter.trueCount returns to the Filter-Panel value (the panel filter survives)
-4. Narrow the HEIGHT range slider again -- df.filter.trueCount drops below the Filter-Panel value once more
-5. On the Filter Panel click **Reset filters** -- all filters reset and df.filter.trueCount returns to the full count (the PC plot range sliders return to default)
-
-## Column reordering from the Context Panel list
-
-1. Open Context Panel > **Value > Column Names** -- verify AGE, HEIGHT, WEIGHT are shown
-2. Reorder columns in the list -- axes should reorder on the plot (the axis-slider name order matches the requested order)
-
-## Density component toggles
-
-1. Open Context Panel > **Box Plot > Density Style** -- default is **circles** (Show Density defaults on)
-2. Switch to **box plot** -- box plot overlays should appear on each axis
-3. Toggle **Show Interquartile Range** off and on
-4. Toggle **Show Upper Dash** off and on
-5. Toggle **Show Lower Dash** off and on
-6. Toggle **Show Mean Cross** off and on
-7. Toggle **Show Median** off and on
-8. Enable **Show Circles** -- data point circles appear alongside the box plot
-9. Switch to **violin plot** -- violin shape overlays should appear
-10. Adjust **Bins** slider -- violin resolution should change
-11. Adjust **Whisker Line Width** -- whisker thickness changes
-12. Switch back to **circles**
-
-**Actuation note:** every density component is a canvas overlay, so the default
-(densityStyle == 'circles') is asserted and the rest is a no-error floor.
-
-## Color coding, legend & grid coloring
-
-**Color column basics:**
-
-1. Open Context Panel > **Color > Color Column** > set to AGE -- lines should be color-coded by age
-2. Change **Color Axis Type** to **log** -- color mapping changes
-3. Toggle **Invert Color Scheme** -- gradient reverses
-4. Set custom **Color Min** and **Color Max** values -- color range narrows
-
-**Legend position and visibility:**
-
-5. Set Color Column to RACE -- the legend lists the RACE categories
-6. Change **Legend Position** to Left, Right, Top, Bottom -- legend moves accordingly
-7. Set **Legend Visibility** to Never -- legend disappears
-8. Set **Legend Visibility** to Auto -- legend reappears with the same categories
-
-**Color coding from grid:**
-
-9. Open Context Panel > **Color > Color Column** > set to HEIGHT
-10. In the grid, for the HEIGHT column set conditional color coding (use js-api) -- the PC plot legend surfaces the conditional bins ('20-150', '150-250')
-11. In the grid, for the HEIGHT column set linear color coding (use js-api) -- the DOM legend disappears (a linear/numeric gradient has no DOM legend; it is canvas-drawn)
+1. Right-click > **Filter** > toggle **Show Filters** twice -- the filter visibility setting flips and then returns to its original state
 
 ## Title and description
 
@@ -205,26 +121,14 @@ Precondition: the PC plot shows AGE, HEIGHT, WEIGHT (axes carry range sliders).
 ## Pick Up / Apply
 
 1. Add a second PC plot
-2. On the first PC plot, change the set of axes (e.g. remove HEIGHT)
-3. Switch AGE axis to log scale
-4. Set color column to RACE and move legend to the left
+2. On the first PC plot, change the set of axes in Context Panel > Value > **Column Names** (e.g. remove HEIGHT)
+3. Switch the AGE axis to log scale: in Context Panel > Value, mark AGE in the **Log Columns** selector (grouped with Column Names)
+4. Set **Color** (Context Panel > Color) to RACE and set **Legend Position** to **Left**
 5. Set title to "Source Plot"
 6. Right-click the first PC plot > **Pick up/Apply > Pick up**
 7. Right-click the second PC plot > **Pick up/Apply > Apply** -- second plot should match the first (axes, log scale, color, legend position, title)
 8. Change the axes on the first PC plot -- the second plot should not be affected
-9. Adjust the range slider on the second PC plot -- it filters the shared DataFrame (df.filter.trueCount drops), so the first plot updates to show the filtered lines while the second plot keeps its own axes
-
-## Layout round-trip
-
-1. Save the layout
-2. Open a scatterplot
-3. Apply the saved layout -- verify only the original viewers are displayed (PC plot present, scatterplot absent)
-
-## Project save / Close All / reopen
-
-1. Save the project through the ribbon **Save** button (only the UI Save button captures the view layout)
-2. Close All
-3. Open the saved project -- verify the PC plot and its title are restored
+9. Adjust the range slider on the second PC plot -- it filters the shared table (the filtered row count drops), so the first plot updates to show the filtered lines while the second plot keeps its own axes
 
 ## Table switching and transformation
 
@@ -235,9 +139,43 @@ Precondition: the PC plot shows AGE, HEIGHT, WEIGHT (axes carry range sliders).
 5. Clear the Transformation -- the axes revert to the original spgi columns
 6. Close All
 
-**Note:** the pivot replaces the raw numeric axes with one generated column per
-Series value, so the slider names are the signal that the aggregation was applied
-and then reverted.
+## Automation notes
+
+Menu Ribbon and To Script: the spec adds the viewer through the Toolbox icon
+(`[name="icon-pc-plot"]`) for both adds. The Menu Ribbon **Add viewer** gallery is
+a canvas-rendered dialog with no headless handles, so it is not exercised; the
+Toolbox path produces the same viewer.
+
+Style & layout, step 5: the Lines menu **Line Width** slider writes the same
+`lineWidth` property exercised in step 2 (it is a canvas-drawn slider control with
+no headless handle), so automation covers it via the step-2 assertion and does not
+drive the slider separately; the manual step remains valid by hand.
+
+Selection & line display: which lines get painted is a canvas outcome with no DOM
+counterpart, so steps 2-8 are a no-error floor over the prop surface. Steps 9-10
+assert the menu -> prop round-trip, the same state the Context Panel toggles write.
+Steps 11-14 DO carry a canvas signal — fewer painted lines means less ink — so
+they are asserted as settle-gated pixel-count deltas (baseline precheck with a
+>= 0 guard and a ceiling against the all-lines count, then deltas in both
+directions: selection-only paints fewer lines, re-enable brings them all back).
+
+Style & layout: line widths, orientation and margins are pure painting, so this
+is a no-error floor; the axis sliders are read afterwards to confirm the layout
+pass rebuilt the plot.
+
+Show Filters from the context menu: the axis-slider DOM elements persist regardless of Show Filters
+(the range-handle visuals are canvas-drawn), so the assertable signal for Show
+Filters is the `showFilters` prop the menu item flips, not a DOM count. The
+in-chart range-filter narrowing and Reset View restore are owned by
+pcplot-setup-color-filter.md (its in-chart range-filter drop + Reset View
+restore scenario).
+
+Pick Up / Apply: "the filtered row count" is read as `df.filter.trueCount` on
+the shared dataframe.
+
+Table switching and transformation: the pivot replaces the raw numeric axes
+with one generated column per Series value, so the axis-slider names are the
+signal that the aggregation was applied and then reverted.
 
 ---
 {
