@@ -1148,15 +1148,27 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return dot;
   };
   // Cancels the nested accordion's own chevron indent so its rows start flush with the main fields —
-  // measured against the real gap (setTimeout, since RAF doesn't fire in a backgrounded tab) instead
-  // of a hand-picked constant.
+  // measured against the real gap instead of a hand-picked constant. A single setTimeout(0) snapshot
+  // can bake in a wrong margin if it fires while a sibling reflow is still in flight (e.g. dragging
+  // "Number of rounds" tears down and rebuilds the right-side round-tab strips in the same tick a
+  // pane first expands in) — the wrong value then never gets corrected since build() only runs this
+  // once per pane. Re-measuring on every real size change (ui.onSizeChanged, ResizeObserver-backed,
+  // already used the same way elsewhere in this file) instead of trusting one snapshot keeps the
+  // correction accurate regardless of what else is mid-reflow when the pane opens. Observes a stable
+  // ancestor, not el itself — el's own margin-left change would otherwise perturb its resolved width
+  // and could re-trigger a ResizeObserver watching el directly.
   const flushIndent = (el: HTMLElement, reference: HTMLElement): void => {
-    setTimeout(() => {
+    const apply = (): void => {
       const extra = el.getBoundingClientRect().left - reference.getBoundingClientRect().left;
-      if (extra === 0) return;
       const current = parseFloat(getComputedStyle(el).marginLeft) || 0;
-      el.style.setProperty('margin-left', `${current - extra}px`, 'important');
-    }, 0);
+      const next = current - extra;
+      if (next === current) return;
+      if (next === 0) el.style.removeProperty('margin-left');
+      else el.style.setProperty('margin-left', `${next}px`, 'important');
+    };
+    view.subs.push(ui.onSizeChanged(reference).subscribe(apply));
+    view.subs.push(ui.onSizeChanged(accCombinePane.root).subscribe(apply));
+    setTimeout(apply, 0);
   };
   // Builds ui.form() lazily, only once the pane's content factory first runs — building it while
   // still detached would measure it at 0 width and get it marked .ui-form-condensed regardless of
@@ -1165,19 +1177,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   {getRoot: () => HTMLElement; invalidate: () => void} => {
     let root: HTMLElement | null = null;
     const build = (): HTMLElement => {
-      const inputs = getInputs();
-      // Cap each label BEFORE ui.form() measures it for its own condense decision — Product filters'
-      // longer captions were still flagging that one form as condensed at the same width Combination
-      // limits fit fine at, because the platform decides from each label's natural (uncapped) width
-      // during construction, before the shared-width CSS rule even applies. Capping the input the
-      // platform reads (not stripping the class it later outputs) is what actually prevents it.
-      // !important, not a plain assignment — the platform's own per-form label auto-sizing runs
-      // again asynchronously after mount and would otherwise silently revert a plain inline cap back
-      // to the caption's natural width, which then fails a LATER re-check and condenses after all
-      // (confirmed live: a plain assignment here passed the initial decision but not this one).
-      for (const inp of inputs)
-        inp.captionLabel.style.setProperty('max-width', `${sharedLabelWidth}px`, 'important');
-      const form = ui.form(inputs);
+      const form = ui.form(getInputs());
       flushIndent(form, numRoundsInput.root);
       return form;
     };
@@ -1191,16 +1191,39 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       },
     };
   };
-  // Shares one label-column width across all three forms, computed from the widest actual caption
-  // (not the widest-caption-across-all-forms value this used to compute) — Product filters' longer
-  // captions were dragging the shared column out to 217px, wider than the other two forms actually
-  // need. Set via a CSS custom property + stylesheet !important rule, not a plain inline style — the
-  // platform's own per-form label auto-sizing runs asynchronously after initial layout and overwrites
-  // a plain inline style outright (last write to the same element's same inline property always wins,
-  // !important or not, since it's the same declaration being replaced). Only a stylesheet rule marked
-  // !important reliably beats it, since the cascade re-evaluates on every render and !important
-  // stylesheet always outranks non-important inline, regardless of what wrote the inline value or when.
-  const sharedLabelWidth = 187;
+  // Shared label-column width across all three forms in this section (rounds, combination limits,
+  // product filters) — so Product filters renders with the exact same column Combination limits
+  // does, not its own wider one. Measured from the actual widest caption across all three forms
+  // (via a hidden offscreen probe in the label's own font) rather than a hardcoded constant, so it
+  // never goes stale if a caption is added, removed, or reworded later. Set via a CSS custom
+  // property + stylesheet !important rule, not a plain inline style: the platform's own per-form
+  // label auto-sizing runs asynchronously after mount and would silently overwrite a plain inline
+  // style outright.
+  const measureLabelWidth = (label: HTMLElement): number => {
+    const probe = document.createElement('span');
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.whiteSpace = 'nowrap';
+    probe.style.left = '-9999px';
+    probe.style.font = getComputedStyle(label).font;
+    probe.textContent = label.textContent;
+    document.body.appendChild(probe);
+    const width = probe.getBoundingClientRect().width;
+    probe.remove();
+    return width;
+  };
+  const sectionInputs = [
+    numRoundsInput, maxComponentsInput, maxRoutesInput,
+    ...combinationLimitFields.inputs, ...productFilterFields.inputs,
+  ];
+  const sharedLabelWidth = Math.ceil(Math.max(...sectionInputs.map((inp) => measureLabelWidth(inp.captionLabel))));
+  // Editors need pinning too, not just labels: the platform widens an editor from its normal ~150px
+  // to ~176px on whichever of the three forms it currently considers .ui-form-condensed (confirmed
+  // live — label position stays put, only the editor's own width changes), so without this the
+  // Product filters column can end up visibly wider than Combination limits' even with labels
+  // aligned. 150px matches the platform's own un-condensed default (empirically the width every
+  // editor in this section already renders at whenever its form isn't condensed).
+  const sharedEditorWidth = 150;
   // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
   // the outer wizard-navigation accordion).
   const limitsAccordion = ui.accordion();
@@ -1223,10 +1246,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // First pane in the chain — no Back target.
     navRow(null, mkNextBtn(() => accReactionsPane, 'Reactions')),
   ], {style: {gap: '8px'}}), false, null, false);
-  // Scopes the shared-label-width CSS in chem.css across this pane's three separate forms; the
-  // width itself is set via a custom property so the CSS doesn't hard-code it.
   accCombinePane.root.classList.add('chem-enum-combine-pane');
   accCombinePane.root.style.setProperty('--chem-enum-label-width', `${sharedLabelWidth}px`);
+  accCombinePane.root.style.setProperty('--chem-enum-editor-width', `${sharedEditorWidth}px`);
   // Left panel for Preview.
   const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
   function renderPreviewRecap(): void {
