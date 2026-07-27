@@ -689,10 +689,10 @@ export class SubstructureFilter extends DG.Filter {
   // `this.column` can end up null here even after attach() ran, if applyState() fired with
   // `this.dataFrame` not yet set (a mount-timing race — live-observed: sketching a query silently
   // no-oped instead of filtering, with `this.column!.temp` throwing under the hood). Re-resolve by
-  // name (or by semtype as a last resort) instead of trusting the cached, possibly-stale reference.
+  // name instead of trusting the cached, possibly-stale reference — null (not some other molecule
+  // column found by semtype) is the correct result when the configured column no longer exists.
   private resolveColumn(): DG.Column | null {
     this.column ??= this.dataFrame && this.columnName ? this.dataFrame.col(this.columnName) : null;
-    this.column ??= this.dataFrame?.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? null;
     return this.column;
   }
 

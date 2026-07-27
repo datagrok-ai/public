@@ -1298,13 +1298,6 @@
   min-width: 0;
 }
 
-/* The platform marks a null column-selector `.d4-invalid` regardless of `nullable` — not an error
-   here. Its own rule uses `!important`, so the override needs one too. */
-.chem-enum-optional-col .d4-invalid {
-  border-color: var(--grey-2) !important;
-  color: inherit !important;
-}
-
 .chem-enum-accordion {
   width: 100%;
   min-width: 0;
@@ -1329,9 +1322,16 @@
 }
 
 /* Shared label column (--chem-enum-label-width, set in enumerator-app.ts) — !important needed to
-   beat the platform's own per-form inline width style. */
+   beat the platform's own per-form inline width style, which is asserted asynchronously after
+   initial layout and would otherwise silently overwrite a plain (non-important) width. min-width
+   must be pinned too, not just width/max-width: the platform sets its own inline min-width (from
+   that same async per-form measurement) on any row whose caption naturally needs more than our
+   shared column — e.g. Product filters' longer captions — and per the CSS spec min-width wins over
+   max-width when the two conflict, so an unopposed platform min-width silently overrides our
+   max-width !important back up to the platform's own wider value. */
 .chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > label.ui-input-label:not(:empty) {
   width: var(--chem-enum-label-width) !important;
+  min-width: var(--chem-enum-label-width) !important;
   max-width: var(--chem-enum-label-width) !important;
 }
 
@@ -1426,17 +1426,51 @@
   pointer-events: none;
 }
 
-.chem-enum-ribbon-scroll {
-  scrollbar-width: thin;
+/* Scoped via :has() since .grok-view-container markup is shared by every Datagrok view — this only
+   matches when our own chips are actually inside it, so it can't leak onto another view's ribbon
+   and never needs JS to reassert it against the platform's own re-renders. */
+.grok-view-container:has(.chem-enum-chip) .d4-ribbon-group,
+.grok-view-container:has(.chem-enum-chip) .d4-ribbon-item {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
-.chem-enum-ribbon-scroll::-webkit-scrollbar {
-  height: 4px;
+/* Only the panel holding the chips scrolls — not the whole ribbon, which would drag the Enumerate/
+   Cancel/YAML buttons out of view with it. Fully native — no ::-webkit-scrollbar override — so it
+   renders identically to the left "How to combine" pane's own scroll, which is native too. */
+.d4-ribbon-panel:has(.chem-enum-chip) {
+  min-width: 0;
+  overflow-x: auto;
 }
 
-.chem-enum-ribbon-scroll::-webkit-scrollbar-thumb {
-  background: var(--grey-3);
-  border-radius: 2px;
+/* The row of panels itself (app icon / Enumerate-Cancel / chips / YAML) is a flex item one level up,
+   inside the outer .d4-ribbon — its default min-width:auto refuses to shrink below its own content
+   width, so at a narrow window the whole row overflows the outer ribbon (which the platform then
+   clips silently via overflow-x:hidden further up, with no scrollbar at all) instead of ever asking
+   the chips panel above to shrink. min-width:0 here lets the row itself shrink to fit, which is what
+   actually triggers the chips-panel-only scroll. */
+.d4-ribbon:has(.chem-enum-chip) {
+  min-width: 0;
+}
+
+/* The other panels in this same ribbon row (app icon, Enumerate/Cancel, YAML buttons) get
+   flex-shrink:1 set as an inline style by the platform — !important is needed to outrank that
+   inline value. Without it they'd get squeezed alongside the chips panel instead of staying
+   full-size, so a narrow window shrinks their buttons illegibly before the chips panel (which has
+   nothing below min-content to protect) absorbs the space and scrolls. */
+.d4-ribbon:has(.chem-enum-chip) > .d4-ribbon-panel:not(:has(.chem-enum-chip)) {
+  flex-shrink: 0 !important;
+}
+
+/* Same shrink-refusal shape as the ribbon row above, on the right pane's vertical axis: the
+   platform's own .d4-tab-content (the tab-control's content wrapper) is a flex child with the
+   default min-height:auto, so it won't shrink below its tallest pane's natural height — at a short
+   window the whole thing overflows and gets clipped further up with no scrollbar, instead of ever
+   asking the active pane (and its own overflow:auto content, e.g. the Strategy summary) to shrink
+   and scroll. Scoped to our own app so it can't affect .d4-tab-content elsewhere in Datagrok. */
+.chem-enumerator .d4-tab-content {
+  min-height: 0;
 }
 
 .chem-enum-tab-badge {

@@ -308,12 +308,17 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       'round uses exactly one building block (or product of an earlier round) and fills every ' +
       'remaining slot with reagents from this file — produces derivatives of each BB across rounds.',
   });
+  const REAGENTS_COL_TOOLTIP = 'Column in the reagents file that contains the reagent SMILES.';
   const reagentsColInput = makeColInput('Reagent SMILES column', null,
-    config.enumeration.reagent_smiles_column, isStringCol,
-    'Column in the reagents file that contains the reagent SMILES.', true);
-  // Genuinely optional (no reagents file means no reagents mode) — the platform's own "missing
-  // value" red underline reads as an error, which it isn't here.
-  reagentsColInput.root.classList.add('chem-enum-optional-col');
+    config.enumeration.reagent_smiles_column, isStringCol, REAGENTS_COL_TOOLTIP, true);
+  // The platform marks this invalid because it has no table to pick a column from yet, not because
+  // it's empty (nullable is true) — disable it and say why, instead of fighting the invalid style.
+  const syncReagentsColEnabled = (): void => {
+    const hasTable = reagentsInput.value != null;
+    reagentsColInput.enabled = hasTable;
+    reagentsColInput.setTooltip(hasTable ? REAGENTS_COL_TOOLTIP : 'Select a reagents file first.');
+  };
+  syncReagentsColEnabled();
 
   const exclusionInput = ui.input.table('Exclusion SMARTS file (optional)', {
     value: exclusionDf ?? undefined, nullable: true,
@@ -334,6 +339,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       () => config.enumeration.reagent_smiles_column, isStringCol),
     bindColToTable(exclusionColInput, exclusionInput,
       () => config.products_specs.exclusion_smarts_products_file_smarts_col, isStringCol),
+    reagentsInput.onChanged.subscribe(syncReagentsColEnabled),
   );
 
   // ---- CONFIG inputs ----
@@ -1141,16 +1147,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     pane.root.querySelector('.d4-accordion-pane-header')?.appendChild(dot);
     return dot;
   };
-  // A form measured while too narrow gets permanently marked .ui-form-condensed by the platform,
-  // which applies its own compact styling. Strip the class back off instead of mirroring what it
-  // changes — stays correct even if the platform's condensed styling changes.
-  const stripCondensedClass = (form: HTMLElement): MutationObserver => {
-    const observer = new MutationObserver(() => {
-      if (form.classList.contains('ui-form-condensed')) form.classList.remove('ui-form-condensed');
-    });
-    observer.observe(form, {attributes: true, attributeFilter: ['class']});
-    return observer;
-  };
   // Cancels the nested accordion's own chevron indent so its rows start flush with the main fields —
   // measured against the real gap (setTimeout, since RAF doesn't fire in a backgrounded tab) instead
   // of a hand-picked constant.
@@ -1162,16 +1158,26 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       el.style.setProperty('margin-left', `${current - extra}px`, 'important');
     }, 0);
   };
-  // Builds ui.form() lazily, only once the pane's content factory first runs (i.e. actually attached
-  // with real width) — building it eagerly would get it condensed before stripCondensedClass even
-  // attaches. invalidate() rebuilds in place after a config reload swaps in fresh inputs.
+  // Builds ui.form() lazily, only once the pane's content factory first runs — building it while
+  // still detached would measure it at 0 width and get it marked .ui-form-condensed regardless of
+  // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs.
   const lazyFilterForm = (getInputs: () => DG.InputBase<unknown>[]):
   {getRoot: () => HTMLElement; invalidate: () => void} => {
     let root: HTMLElement | null = null;
-    let observer: MutationObserver | null = null;
     const build = (): HTMLElement => {
-      const form = ui.form(getInputs());
-      observer = stripCondensedClass(form);
+      const inputs = getInputs();
+      // Cap each label BEFORE ui.form() measures it for its own condense decision — Product filters'
+      // longer captions were still flagging that one form as condensed at the same width Combination
+      // limits fit fine at, because the platform decides from each label's natural (uncapped) width
+      // during construction, before the shared-width CSS rule even applies. Capping the input the
+      // platform reads (not stripping the class it later outputs) is what actually prevents it.
+      // !important, not a plain assignment — the platform's own per-form label auto-sizing runs
+      // again asynchronously after mount and would otherwise silently revert a plain inline cap back
+      // to the caption's natural width, which then fails a LATER re-check and condenses after all
+      // (confirmed live: a plain assignment here passed the initial decision but not this one).
+      for (const inp of inputs)
+        inp.captionLabel.style.setProperty('max-width', `${sharedLabelWidth}px`, 'important');
+      const form = ui.form(inputs);
       flushIndent(form, numRoundsInput.root);
       return form;
     };
@@ -1179,7 +1185,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       getRoot: (): HTMLElement => root ??= build(),
       invalidate: (): void => {
         if (!root) return;
-        observer?.disconnect();
         const fresh = build();
         root.replaceWith(fresh);
         root = fresh;
@@ -1187,22 +1192,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     };
   };
   // Shares one label-column width across all three forms, computed from the widest actual caption
-  // (not a hand-picked constant). Clones a real label so it inherits the platform's own font/padding.
-  const sharedLabelWidth = ((): number => {
-    const captions = [numRoundsInput, maxComponentsInput, maxRoutesInput,
-      ...combinationLimitFields.inputs, ...productFilterFields.inputs].map((inp) => inp.caption);
-    const probe = numRoundsInput.captionLabel.cloneNode(false) as HTMLElement;
-    Object.assign(probe.style,
-      {position: 'absolute', visibility: 'hidden', width: 'auto', maxWidth: 'none', whiteSpace: 'nowrap'});
-    document.body.appendChild(probe);
-    let max = 0;
-    for (const caption of captions) {
-      probe.textContent = caption;
-      max = Math.max(max, probe.getBoundingClientRect().width);
-    }
-    probe.remove();
-    return Math.ceil(max);
-  })();
+  // (not the widest-caption-across-all-forms value this used to compute) — Product filters' longer
+  // captions were dragging the shared column out to 217px, wider than the other two forms actually
+  // need. Set via a CSS custom property + stylesheet !important rule, not a plain inline style — the
+  // platform's own per-form label auto-sizing runs asynchronously after initial layout and overwrites
+  // a plain inline style outright (last write to the same element's same inline property always wins,
+  // !important or not, since it's the same declaration being replaced). Only a stylesheet rule marked
+  // !important reliably beats it, since the cascade re-evaluates on every render and !important
+  // stylesheet always outranks non-important inline, regardless of what wrote the inline value or when.
+  const sharedLabelWidth = 187;
   // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
   // the outer wizard-navigation accordion).
   const limitsAccordion = ui.accordion();
@@ -1430,22 +1428,35 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // Per-component "Subset by selection" now lives inside each tab's step bar (see makeDataPanel).
 
-  const tabPanel = (header: HTMLElement, gridHost: HTMLElement): HTMLElement => {
+  // `scrollable` is for plain content hosts (e.g. the Strategy summary card) that can outgrow a
+  // short window — unlike a grid, which manages its own internal scroll, so its host stays
+  // overflow:hidden with the bottom fade. min-height:0 is unconditional: without it this wrapper
+  // (a flex child of the platform's own .d4-tab-content, itself fixed up to min-height:0 in
+  // chem.css) refuses to shrink below its content's natural height, so a narrow window makes
+  // .d4-tab-content overflow and get silently clipped further up instead of ever asking this pane
+  // — or gridHost's own overflow below — to actually engage.
+  const tabPanel = (header: HTMLElement, gridHost: HTMLElement, scrollable = false): HTMLElement => {
     // display:flex on the host turns the grid's inline-flex outer display into a block-level
     // flex item, eliminating the 12px baseline-alignment gap that block+inline-flex produces.
-    gridHost.style.position = 'relative';
     gridHost.style.display = 'flex';
     gridHost.style.flexDirection = 'column';
     gridHost.style.flex = '1 1 0';
     gridHost.style.minHeight = '0';
-    gridHost.style.overflow = 'hidden';
-    const fade = ui.div([], {style: {
-      position: 'absolute', bottom: '0', left: '0', right: '0', height: '48px',
-      background: 'linear-gradient(to bottom,transparent,var(--white))', pointerEvents: 'none', zIndex: '1',
-    }});
-    gridHost.appendChild(fade);
+    if (scrollable) {
+      // Vertical only, matching the left "How to combine" pane — fully native scroll.
+      gridHost.style.overflowY = 'auto';
+      gridHost.style.overflowX = 'hidden';
+    } else {
+      gridHost.style.position = 'relative';
+      gridHost.style.overflow = 'hidden';
+      const fade = ui.div([], {style: {
+        position: 'absolute', bottom: '0', left: '0', right: '0', height: '48px',
+        background: 'linear-gradient(to bottom,transparent,var(--white))', pointerEvents: 'none', zIndex: '1',
+      }});
+      gridHost.appendChild(fade);
+    }
     return ui.div([header, gridHost], {style: {
-      height: '100%', display: 'flex', flexDirection: 'column',
+      height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0',
       background: 'var(--white)', boxSizing: 'border-box', overflow: 'hidden',
     }});
   };
@@ -1719,8 +1730,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         // succession) that cascades badly enough to crash the tab's renderer.
         closeMountedViewers(gridHost);
         gridHost.innerHTML = '';
-        gridHost.appendChild(ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
-          {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
+        // gridHost itself stays overflow:hidden (correct once a real grid — which scrolls itself —
+        // is mounted there); this empty-state text gets its own scrollable wrapper instead, since it
+        // can outgrow a short window on its own.
+        gridHost.appendChild(ui.div(
+          [ui.divText(o.emptyMsg ?? `No ${o.noun} table selected.`,
+            {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}})],
+          {style: {overflowY: 'auto', overflowX: 'hidden', height: '100%'}}));
         if (selStep === 0) o.badge?.refresh(null);
         return;
       }
@@ -1768,8 +1784,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       return true;
     };
 
+    // min-height:0 — same reason as tabPanel()'s wrapper: this is a flex child of the platform's
+    // own .d4-tab-content, which without it refuses to shrink below content height.
     const panel = ui.div([stepTabsHost], {style: {
-      height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--white)', overflow: 'hidden'}});
+      height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0',
+      background: 'var(--white)', overflow: 'hidden'}});
     buildStepTabs(0); // also mounts the grid once hosts are in the DOM
     return {panel, render, onTableChanged, onRoundsChanged, refreshDisplay, applyOverrideForRound, hasAnyOverride};
   }
@@ -1848,10 +1867,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Gives Strategy its own relevant right-side content — mode, round-by-round chain, product
   // estimate — instead of leaving whatever data grid was last shown. Refreshed from refreshCfgRibbon(),
   // same trigger as the ribbon chips and accordion subtitles.
-  const strategyHost = ui.div([], {style: {padding: '16px', overflow: 'auto'}});
+  const strategyHost = ui.div([], {style: {padding: '16px'}});
   const strategyPanel = tabPanel(
     panelHeader('How the current strategy and round count combine the reaction templates and building blocks.'),
-    strategyHost);
+    strategyHost, true);
 
   // Optional params let refreshCfgRibbon() pass in already-computed values; falls back to
   // computing fresh otherwise.
@@ -2125,39 +2144,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ]);
   view.append(root);
 
-  // Strips the platform's default ribbon-group shadow/background. Walk up from `runBtn`, not down
-  // from `.d4-root` — that's the grid viewer's own wrapper class, not a ribbon ancestor. Style gets
-  // wiped by platform startup, so reassert on every tick rather than stopping at first find;
-  // click-listener attach lives in bindRunTooltip.
-  function applyRibbonFixup(attempt = 0): void {
-    const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
-    // Scope to this view's own container, not the whole document — Datagrok keeps other open views'
-    // ribbon DOM alive (hidden) for fast tab switching, so an unscoped query here would permanently
-    // restyle every other open view's ribbon too whenever the user switched views mid-loop.
-    // `.grok-view-container` (not `.d4-view-ribbon`, which isn't consistently present) is the
-    // narrowest ancestor that's reliably scoped to exactly one view.
-    const ribbon = el?.closest<HTMLElement>('.grok-view-container');
-    if (ribbon) {
-      ribbon.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item').forEach((g) => {
-        g.style.background = 'transparent';
-        g.style.boxShadow = 'none';
-        g.style.border = 'none';
-      });
-      // The row that lays ribbon panels out side by side doesn't shrink, so it clips past the last
-      // chip at narrow widths — scroll instead. Climb to whichever ancestor is actually overflowing
-      // rather than a hardcoded hop count, since the platform's ribbon nesting isn't this repo's
-      // contract. Overlay scrollbars are invisible until actively scrolled, hence the visible class.
-      let panelsRow: HTMLElement | null = chipCombineC.root.parentElement;
-      while (panelsRow && ribbon.contains(panelsRow) && panelsRow.scrollWidth <= panelsRow.clientWidth)
-        panelsRow = panelsRow.parentElement;
-      if (panelsRow && ribbon.contains(panelsRow)) {
-        panelsRow.style.overflowX = 'auto';
-        panelsRow.classList.add('chem-enum-ribbon-scroll');
-      }
-    }
-    if (attempt < 200) setTimeout(() => applyRibbonFixup(attempt + 1), 50);
-  }
-  applyRibbonFixup();
+  // The ribbon's own group/item shadow-background and the chips panel's scroll are both handled
+  // declaratively in chem.css via :has(.chem-enum-chip) — no JS reacting to the platform's ribbon
+  // re-renders (that pattern leaked onto other views' ribbons and had to keep "winning a race"
+  // against re-renders; a plain CSS rule matches by class name regardless of how many times the
+  // platform recreates the DOM, and never needs reasserting).
   bindRunTooltip(validate());
 
   // Looks redundant with buildStepTabs(0)'s own render, but isn't: removing it left the
