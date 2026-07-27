@@ -47,17 +47,19 @@ const MATCH_FRACTION = 0.25;
 /** Name of the running make-list table single-analog "Generate" appends to. */
 const MAKELIST_NAME = 'SAR virtual analogs';
 
-/** Per-SMILES builders for the gated "SAR analysis" info panel (added to the accordion by the
- *  `onAccordionConstructed` hook in package.ts), so a clicked analog shows its SAR context —
- *  prediction, support, decomposition, "Add to make-list" — alongside the native Molecule panels.
- *  Registered on click; cleared on recompute so entries can't leak or go stale. */
 type AnalogPanelBuilder = () => HTMLElement;
-export const sarAnalogPanels = new Map<string, AnalogPanelBuilder>();
 /** Column-annotation modes offered in the matrix pane — they label the columns, never reorder them. */
 const COLSORT_FREQUENCY = 'None';
 const COLSORT_POTENCY = 'Potency';
 const COLSORT_MW = 'Molecular weight';
 const COLUMN_SORTS = [COLSORT_FREQUENCY, COLSORT_POTENCY, COLSORT_MW];
+
+/** Which end of the activity scale is "more potent". Auto derives it from scaling (only −lg is
+ *  higher-is-better); the explicit options cover pre-computed pIC50/pKi/%-inhibition left on `none`. */
+const DIR_AUTO = 'Auto (from scaling)';
+const DIR_HIGHER = 'Higher is better';
+const DIR_LOWER = 'Lower is better';
+const ACTIVITY_DIRECTIONS = [DIR_AUTO, DIR_HIGHER, DIR_LOWER];
 
 /** Average molecular weight of a substituent, capping its `[*:n]` attachment points with H so the
  *  weight is that of the capped fragment. Cached (alignment is deterministic); Infinity on failure so
@@ -102,6 +104,7 @@ const ALIGN_CACHE_MAX = 4000;
  *  (selection, resize) reuse it instead of re-parsing the core in RDKit — and it keeps the alignCache
  *  keys stable. `null` (RDKit couldn't build a template) is cached too, so failures aren't retried. */
 const templateCache = new Map<string, string | null>();
+const TEMPLATE_CACHE_MAX = 4000;
 
 function argbToRgba(argb: number): [number, number, number, number] {
   return [DG.Color.r(argb) / 255, DG.Color.g(argb) / 255, DG.Color.b(argb) / 255, DG.Color.a(argb) / 255];
@@ -130,6 +133,8 @@ function buildAlignmentTemplate(coreSmiles: string): string | null {
   } finally {
     mol?.delete();
   }
+  if (templateCache.size >= TEMPLATE_CACHE_MAX)
+    templateCache.clear();
   templateCache.set(coreSmiles, template);
   return template;
 }
@@ -231,6 +236,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   moleculesColumnName: string;
   activityColumnName: string;
   scaling: string;
+  activityDirection: string;
   fragmentCutoff: number;
   threshold: number;
   predictVirtual: boolean;
@@ -251,6 +257,11 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** The virtual-analog cell under the last right-click, so the context menu can offer a per-cell
    *  make-list add. Null when the right-click wasn't on an assembled virtual cell. */
   private contextCell: {matrix: SarMatrix, ri: number, ci: number} | null = null;
+  /** Per-SMILES builders for this viewer's gated "SAR analysis" info panel, so a clicked analog shows
+   *  its SAR context (prediction, support, decomposition, "Add to make-list") alongside the native
+   *  Molecule panels. Registered on click; cleared on recompute and detach. Per-instance so one
+   *  viewer closing can't wipe another's panels. */
+  private readonly analogPanels = new Map<string, AnalogPanelBuilder>();
   /** Real cells of the currently-rendered matrix, keyed by parent-df molecule index, so host-grid
    *  selection / current-row changes can highlight the matching cells without a full re-render. */
   private cellByMolIdx = new Map<number, HTMLElement>();
@@ -272,6 +283,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.moleculesColumnName = this.string('moleculesColumnName', '', {userEditable: false});
     this.activityColumnName = this.string('activityColumnName', '', {userEditable: false});
     this.scaling = this.string('scaling', SCALING_METHODS.MINUS_LG, {choices: Object.values(SCALING_METHODS)});
+    this.activityDirection = this.string('activityDirection', DIR_AUTO, {choices: ACTIVITY_DIRECTIONS});
     this.fragmentCutoff = this.float('fragmentCutoff', 0.4);
     this.threshold = this.float('threshold', 0.5);
     this.predictVirtual = this.bool('predictVirtual', true);
@@ -296,7 +308,26 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Capture-phase reset runs before a cell's own bubbling handler, so contextCell reflects only a
     // right-click that actually landed on a virtual cell (stale otherwise).
     this.host.addEventListener('contextmenu', () => this.contextCell = null, true);
+    // Surface a clicked analog's SAR context at the top of its context panel. Scoped to this viewer
+    // (this.subs, cleared on detach) so it can't inject panes platform-wide after the viewer closes.
+    this.subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+      const context = acc.context;
+      const smiles = context instanceof DG.SemanticValue ? String(context.value) :
+        (typeof context === 'string' ? context : null);
+      if (!smiles || !this.analogPanels.has(smiles) || acc.getPane('SAR analysis'))
+        return;
+      const build = this.analogPanels.get(smiles)!;
+      acc.addPane('SAR analysis', () => build(), true, acc.panes.length ? acc.panes[0] : null);
+    }));
     this.scheduleCompute();
+  }
+
+  /** Base `detach` unsubscribes `this.subs`; also stop a pending compute and drop the analog-panel
+   *  builders so a closed viewer leaves no timer firing or stale entries injecting panes. */
+  detach(): void {
+    window.clearTimeout(this.computeTimer);
+    this.analogPanels.clear();
+    super.detach();
   }
 
   /** Move the single "current" ring to `td` (real or virtual), clearing it from the previous cell. */
@@ -454,7 +485,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
 
     this.computing = true;
-    sarAnalogPanels.clear(); // drop stale analog-panel closures from the previous matrices
+    this.analogPanels.clear(); // drop stale analog-panel closures from the previous matrices
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
     const progress = DG.TaskBarProgressIndicator.create('Building SAR matrices...');
@@ -486,9 +517,15 @@ export class SarMatrixViewer extends DG.JsViewer {
     }
   }
 
-  /** True only for `-lg` (which turns a lower-is-better IC50 into a higher-is-better value); raw
-   *  (`none`) and `lg` keep the assay's native "lower is more potent" direction. */
+  /** Whether a higher scaled activity means a more potent compound — drives coloring, ranking, the
+   *  best-trend, and the transfer benefiting cell. The explicit Activity direction wins; on Auto only
+   *  `-lg` (which turns a lower-is-better IC50 into a higher-is-better value) is higher-is-better,
+   *  while raw (`none`) and `lg` keep the assay's native "lower is more potent" direction. */
   private get higherIsBetter(): boolean {
+    if (this.activityDirection === DIR_HIGHER)
+      return true;
+    if (this.activityDirection === DIR_LOWER)
+      return false;
     return this.scaling === SCALING_METHODS.MINUS_LG;
   }
 
@@ -680,7 +717,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       ui.divH(desc, 'chem-sar-card-desc'),
     ], 'chem-sar-card-body');
     const scoreBox = ui.divV([ui.divH([
-      ui.divText(`ρ ${shown.correlation.toFixed(2)}`, 'chem-sar-card-score'),
+      ui.divText(`r ${shown.correlation.toFixed(2)}`, 'chem-sar-card-score'),
       ui.divText('transfer', 'chem-sar-card-score-cap'),
     ], 'chem-sar-card-score-line')], 'chem-sar-card-score-box');
     ui.tooltip.bind(scoreBox, () => shown.crossMatrix ?
@@ -858,7 +895,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       // action) so the gated `SAR analysis` info panel shows it alongside the native panels. Only an
       // unassembled virtual (no structure) falls back to the standalone SAR panel.
       if (cell.smiles) {
-        sarAnalogPanels.set(cell.smiles, () => this.buildCellPanel(matrix, ri, ci));
+        this.analogPanels.set(cell.smiles, () => this.buildCellPanel(matrix, ri, ci));
         grok.shell.o = DG.SemanticValue.fromValueType(cell.smiles, DG.SEMTYPE.MOLECULE);
       } else
         grok.shell.o = this.buildCellPanel(matrix, ri, ci);
@@ -1103,7 +1140,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const bar = ui.divH([
       ui.divText(transfer.crossMatrix ? 'Cross-series SAR transfer' : `${matrixA.label} · SAR transfer`,
         'chem-sar-main-title'),
-      ui.divText(`${from} → ${to} · across ${transfer.a.position} · ρ = ${transfer.correlation.toFixed(2)}`),
+      ui.divText(`${from} → ${to} · across ${transfer.a.position} · r = ${transfer.correlation.toFixed(2)}`),
     ], 'chem-sar-main-bar');
 
     // When this source core transfers to more than one target, offer a dropdown to switch between them.
@@ -1173,7 +1210,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const text = (s: string): HTMLElement => ui.divText(s, 'chem-sar-xfer-stat-v');
 
     const rows = [
-      row('Rank correlation', text(`ρ = ${stats.correlation.toFixed(2)}`)),
+      row('Correlation (Pearson r)', text(`r = ${stats.correlation.toFixed(2)}`)),
       row('Fold-change match', text(stats.foldMatch === null ? '—' : `${Math.round(stats.foldMatch * 100)}%`)),
     ];
     if (stats.benefiting) {
@@ -1188,7 +1225,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** Compact summary chips for the current matrix — short labels, full detail on hover: compound
-   *  count, cores×substituents, potency range, virtual count, Free-Wilson fit R², and transfer ρ. */
+   *  count, cores×substituents, potency range, virtual count, Free-Wilson fit R², and transfer r. */
   private buildChips(matrix: SarMatrix): HTMLElement {
     const chip = (text: string, tip: string, cls = ''): HTMLElement => {
       const el = ui.divText(text, `chem-sar-chip-badge ${cls}`.trim());
@@ -1209,7 +1246,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (matrix.virtualCount) {
       const conf = matrix.confidence;
       items.push(chip(conf ? `R² ${formatR2(conf.r2)}` : 'R² —',
-        conf ? `Free-Wilson leave-one-out fit — R² ${conf.r2.toFixed(2)}, RMSE ${conf.rmse.toFixed(2)}, n=${conf.n}` :
+        conf ? `Free-Wilson leave-one-out fit — R² ${conf.r2.toFixed(2)}, RMSE ${conf.rmse.toFixed(2)}; ` +
+          `${conf.n} of ${conf.total} observed cells cross-validated` :
           'Too few observations to cross-validate the Free-Wilson fit'));
     }
     const idx = this.matrices.indexOf(matrix);
@@ -1218,7 +1256,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (involving.length) {
       const best = involving[0];
       const crossing = involving.some((t) => t.crossMatrix);
-      items.push(chip(`ρ ${best.correlation.toFixed(2)}`,
+      items.push(chip(`r ${best.correlation.toFixed(2)}`,
         crossing ? 'Strongest SAR-transfer correlation for this series, incl. cross-series pairs' :
           'Best row-to-row potency-trend correlation (SAR transfer)', 'chem-sar-chip-transfer'));
     }

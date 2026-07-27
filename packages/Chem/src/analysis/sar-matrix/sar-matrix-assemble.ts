@@ -149,7 +149,9 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
   // its reference value — the "vary one position, hold the rest at reference" slice.
   let minActivity = Infinity;
   let maxActivity = -Infinity;
-  let realCount = 0;
+  // A compound sitting at the reference substituent for every position populates the reference cell of
+  // each position group, so count distinct molecules — not cells — to avoid double-counting it.
+  const realMols = new Set<number>();
   rowGroups.forEach((group, ri) => {
     for (const record of group.members) {
       const activity = activities[record.molIdx];
@@ -165,7 +167,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
           continue; // value fell outside the top-N columns kept for this position
         cells[ri][ci] = {kind: 'real', value: activity, molIdx: record.molIdx, smiles: molecules[record.molIdx]};
         columns[ci].count++;
-        realCount++;
+        realMols.add(record.molIdx);
         if (activity < minActivity)
           minActivity = activity;
         if (activity > maxActivity)
@@ -173,6 +175,7 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
       }
     }
   });
+  const realCount = realMols.size;
 
   // Free-Wilson prediction runs independently per position group — each group is its own
   // rows × values 2-D slice.
@@ -195,8 +198,9 @@ export async function assembleMultiPositionMatrix(cluster: CoreCluster, molecule
             cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
               molIdx: null, smiles: null, support: predicted.support};
             virtualCount++;
-          } else if (existing.kind === 'real')
-            existing.fit = predicted.value; // model's fitted value for an observed cell
+          }
+          // Real cells get their fitted value from the leave-one-out pass in computeMatrixConfidence,
+          // not from this in-sample fit — an in-sample residual would let a cliff cell hide.
         }
       }
     }
@@ -307,8 +311,8 @@ export function assembleSinglePositionMatrix(cluster: CoreCluster, molecules: st
           cells[ri][ci] = {kind: 'virtual' as SarMatrixCellKind, value: predicted.value,
             molIdx: null, smiles: null, support: predicted.support};
           virtualCount++;
-        } else if (existing.kind === 'real')
-          existing.fit = predicted.value; // model's fitted value for an observed cell
+        }
+        // Real cells' fitted value comes from the leave-one-out pass, not this in-sample fit.
       }
     }
   }

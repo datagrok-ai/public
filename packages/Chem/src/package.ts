@@ -65,7 +65,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
-import {SarMatrixViewer, sarAnalogPanels} from './analysis/sar-matrix/sar-matrix-viewer';
+import {SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -230,22 +230,6 @@ export class PackageFunctions {
       _initChemPromise = initChemInt();
     await _initChemPromise;
     DG.ObjectHandler.register(new MpoProfileHandler());
-  }
-
-  @grok.decorators.autostart()
-  static async initChemAutostart(): Promise<void> {
-    // Surface the SAR Matrix analysis for a clicked matrix cell at the very top of its context panel,
-    // expanded and outside any group. The viewer registers the analog's panel builder in
-    // sarAnalogPanels on click; here we add it to the accordion (native molecule panels stay below).
-    grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
-      const context = acc.context;
-      const smiles = context instanceof DG.SemanticValue ? String(context.value) :
-        (typeof context === 'string' ? context : null);
-      if (!smiles || !sarAnalogPanels.has(smiles) || acc.getPane('SAR analysis'))
-        return;
-      const build = sarAnalogPanels.get(smiles)!;
-      acc.addPane('SAR analysis', () => build(), true, acc.panes.length ? acc.panes[0] : null);
-    });
   }
 
   @grok.decorators.func({
@@ -2426,6 +2410,12 @@ export class PackageFunctions {
       options: {choices: ['none', 'lg', '-lg'], initialValue: '-lg', description: 'Activity scaling before assembly'},
     }) scaling: string = '-lg',
     @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
+        initialValue: 'Auto (from scaling)',
+        description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
+    }) activityDirection: string = 'Auto (from scaling)',
+    @grok.decorators.param({
       type: 'double',
       options: {initialValue: '0.4', description: 'Maximum fragment size relative to core'},
     }) fragmentCutoff: number = 0.4,
@@ -2441,7 +2431,7 @@ export class PackageFunctions {
     viewer.setOptions({
       moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
-      scaling, fragmentCutoff, threshold, predictVirtual,
+      scaling, activityDirection, fragmentCutoff, threshold, predictVirtual,
     });
     viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
   }

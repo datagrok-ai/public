@@ -215,6 +215,31 @@ category('SAR Matrix', () => {
     expect(conf!.r2 < 0, true, `expected a negative r2 for a non-additive matrix, got ${conf!.r2}`);
   });
 
+  test('computeMatrixConfidence: reports the cross-validatable fraction and stores a LOO fit', async () => {
+    const matrix = additiveMatrix([0, 1, 2, 3], [0, 10, 20, 30]);
+    const conf = computeMatrixConfidence(matrix);
+    expect(conf !== null, true);
+    expect(conf!.total, 16, 'total counts every observed cell');
+    expect(conf!.n, 16, 'all 16 cells are cross-validatable here');
+    // The LOO pass stores an out-of-sample fitted value on every observed cell (drives the flag).
+    expect(typeof matrix.cells[0][0].fit, 'number', 'observed cells get a leave-one-out fit');
+  });
+
+  test('computeMatrixConfidence: validates each R-position slice independently', async () => {
+    // Two position groups (R1 = cols 0-2, R2 = cols 3-5), each additive on its own.
+    const cells: SarMatrixCell[][] = [
+      [realCell(1), realCell(2), realCell(3), realCell(10), realCell(20), realCell(30)],
+      [realCell(2), realCell(3), realCell(4), realCell(20), realCell(30), realCell(40)],
+    ];
+    const mat = makeMatrix(cells, ['R1', 'R2']);
+    mat.columns.forEach((c, i) => c.position = i < 3 ? 'R1' : 'R2');
+    const conf = computeMatrixConfidence(mat);
+    expect(conf !== null, true);
+    expect(conf!.total, 12, 'all 12 observed cells across both position slices are counted');
+    expect(conf!.n, 12, 'every cell is cross-validatable within its own slice');
+    expect(conf!.r2 > 0.85, true, `both slices are additive, so r2 should be high, got ${conf!.r2}`);
+  });
+
   test('rankMatrices scores every scheme and sorts by the chosen one', async () => {
     const cluster: CoreCluster = {
       id: 'c0',

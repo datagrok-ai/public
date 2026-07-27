@@ -96,6 +96,6 @@ export interface SarMatrix {
   refValues: {[position: string]: string};
   /** Leave-one-out cross-validated quality of the Free-Wilson fit over this matrix's observed cells;
    *  null when there are too few observations to cross-validate. Tells the user how far to trust the
-   *  virtual predictions. */
-  confidence?: {r2: number, rmse: number, n: number} | null;
+   *  virtual predictions. `n` is how many observed cells were cross-validatable out of `total`. */
+  confidence?: {r2: number, rmse: number, n: number, total: number} | null;
 }
