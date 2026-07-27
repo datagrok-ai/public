@@ -19,7 +19,7 @@ import {stepErrors, StepError} from '../spec-login';
 // ---------------------------------------------------------------------------
 
 export interface OpenTableOptions {
-  /** Demo file path. Defaults to SPGI (the standard fixture for Legend specs). */
+  /** Demo file path. Defaults to spgi-100 (the standard fixture for Legend specs). */
   path?: string;
   /** When true, prime the Filter Panel (Filters viewer) after open. */
   withFilterPanel?: boolean;
@@ -46,7 +46,7 @@ export interface OpenTableOptions {
  * spec behavior is unchanged.
  */
 export async function openTable(page: Page, options?: OpenTableOptions): Promise<void> {
-  const p = options?.path ?? 'System:DemoFiles/SPGI.csv';
+  const p = options?.path ?? 'System:AppData/Chem/tests/spgi-100.csv';
   const useOpenFile = options?.sdf === true || /\.(sdf|nwk|pdb)$/i.test(p);
   const semTypeTimeoutMs = options?.semTypeTimeoutMs ?? 5000;
   await page.evaluate(async ({path, openFile, semTypeTimeoutMs}) => {

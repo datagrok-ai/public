@@ -157,9 +157,9 @@ export async function shareWithSecondUserAndVerify(
  * PascalCase (e.g. `c1a-helpers-save` → `C1aHelpersSave`), which breaks
  * downstream `dapi.projects.filter('name = "X"')` lookups. The JS API path
  * preserves names verbatim and is the canonical path for fixture-helper
- * usage. Tests that need to exercise the Save-Project-dialog UI flow
- * specifically should use a future `saveProjectViaUI` helper instead (not
- * yet implemented; deferred to C1b cycle).
+ * usage. Tests that need the saved project to capture the current VIEW
+ * LAYOUT (viewers + their settings) must use `saveProjectViaUI` instead —
+ * only the ribbon Save flow does that (see its doc).
  *
  * Note: the JS API path creates an empty project entity (no view linkage).
  * `addLink(view)` returns a Dart-side `NoSuchMethodError` per Session B
@@ -1162,6 +1162,65 @@ export async function reopenAndAssertProvenance(
     );
   }
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// 12b. saveProjectViaUI — ribbon Save button flow (captures the view layout).
+// ---------------------------------------------------------------------------
+
+/**
+ * Save the current workspace as a project via the ribbon Save button.
+ *
+ * Use this — NOT `saveProjectWithProvenance` — when the test must verify that
+ * viewers and their settings survive a project close/reopen. Verified live
+ * against dev: a project assembled via the JS API (`Project.create()` +
+ * `addChild(tableInfo)` + `addChild(saveLayout())`) reopens with the table
+ * re-materialized but only a default Grid view — the attached ViewLayout child
+ * is never auto-applied, so viewers and their props do not come back. The
+ * ribbon Save flow captures the workspace views into the project, and reopen
+ * restores every viewer with its props, legend state, and column color tags.
+ *
+ * Flow (proven-green pattern from pcplot-setup-color-filter-spec.ts):
+ * click `[name="button-Save"]` → fill the project-name input → OK → dismiss
+ * the follow-up Share dialog (CANCEL) → poll `dapi.projects.filter(name)`.
+ *
+ * Use a lowercase name (e.g. `zz-my-probe-` + Date.now()). The server stores
+ * a PascalCased `name` (returned as `resolvedName`), but
+ * `dapi.projects.filter('name = "<typed>"')` still matches the typed form
+ * (friendlyName) — verified live, so lookup/cleanup by the typed name works.
+ *
+ * @param page - Playwright Page (login complete; active TableView present).
+ * @param name - Project name typed into the Save dialog.
+ * @returns server-assigned project id + persisted name (for cleanup/reopen).
+ */
+export async function saveProjectViaUI(
+  page: Page,
+  name: string,
+): Promise<{projectId: string; resolvedName: string}> {
+  await page.locator('[name="button-Save"]:visible').first().click();
+  await page.locator('.d4-dialog input[type="text"]').first().waitFor({timeout: 8000});
+  await page.locator('.d4-dialog input[type="text"]').first().fill(name);
+  await page.locator('.d4-dialog .ui-btn-ok, .d4-dialog-footer button').filter({hasText: /^OK$/i}).first().click({force: true});
+  await page.waitForTimeout(3000);
+  // A "Share <project>" dialog pops up after a successful save — dismiss it.
+  const cancel = page.locator('.d4-dialog .ui-btn, .d4-dialog button').filter({hasText: /^CANCEL$/i}).first();
+  if (await cancel.count() > 0)
+    await cancel.click({force: true});
+  await page.waitForTimeout(800);
+  const found = await page.evaluate(async (n) => {
+    const grok = (window as any).grok;
+    for (let a = 0; a < 10; a++) {
+      try {
+        const p = await grok.dapi.projects.filter(`name = "${n}"`).first();
+        if (p) return {id: String(p.id), name: String(p.name)};
+      } catch (_) { /* transient — retry */ }
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+    return null;
+  }, name);
+  if (!found)
+    throw new Error(`saveProjectViaUI: project "${name}" not visible server-side after ribbon save`);
+  return {projectId: found.id, resolvedName: found.name};
 }
 
 // ---------------------------------------------------------------------------
