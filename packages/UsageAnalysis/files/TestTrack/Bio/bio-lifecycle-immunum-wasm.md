@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [save_project_with_analysis]
-realizes: []
+realizes: [bio.annotate.apply-numbering-scheme]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [align_sequences]
-realizes: []
+realizes: [bio.analyze.msa]
 produced_from: atlas-driven
 related_bugs: []
 realized_as:
