@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [GROK-17485]
-realizes: []
+realizes: [biostructureviewer.biostructure]
 produced_from: atlas-driven
 related_bugs:
   - GROK-17485
