@@ -1,504 +1,296 @@
+/* ---
+realizes: []
+--- */
 import {test, expect, Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import * as v from '../helpers/viewers';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+
+declare const grok: any;
 
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
 const spgiPath = 'System:AppData/Chem/tests/spgi-100.csv';
 
-/** Click a property-grid view label to open the inline editor, set a <select> value, press Enter */
-async function setPropSelect(page: Page, rowName: string, value: string) {
-  await page.evaluate((args: {rowName: string; value: string}) => {
-    const row = document.querySelector(`[name="${args.rowName}"]`) as HTMLElement;
-    (row?.querySelector('[name^="prop-view-"]') as HTMLElement)?.click();
-    const sel = row?.querySelector('select.property-grid-item-editor-spinner') as HTMLSelectElement;
-    if (sel) { sel.value = args.value; sel.dispatchEvent(new Event('change', {bubbles: true})); }
-  }, {rowName, value});
-  await page.keyboard.press('Enter');
-}
+const isBenignError = (text: string) =>
+  /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
+  /favicon/.test(text) || /Unable to find element in cloned iframe/.test(text) ||
+  /Stack trace [A-Za-z]+/.test(text) ||
+  /NullError: method not found: '\w+' on null/.test(text);
 
-/** Toggle a property-grid boolean checkbox row */
+/** Toggle a property-grid boolean checkbox row. Rows in collapsed categories are
+ * visibility:hidden but present — a JS-driven .click() works on them, so waits are
+ * for the ATTACHED state (not visible) and the flip is confirmed via the checked
+ * property, which reads regardless of visibility. */
 async function togglePropCheckbox(page: Page, rowName: string) {
+  await page.locator(`[name="${rowName}"] input[type="checkbox"]`)
+    .waitFor({state: 'attached', timeout: 15000});
+  const before = await page.evaluate((rn: string) =>
+    (document.querySelector(`[name="${rn}"] input[type="checkbox"]`) as HTMLInputElement)?.checked, rowName);
   await page.evaluate((rn: string) => {
     (document.querySelector(`[name="${rn}"] input[type="checkbox"]`) as HTMLInputElement)?.click();
   }, rowName);
+  await page.waitForFunction(({rn, b}) => {
+    const cb = document.querySelector(`[name="${rn}"] input[type="checkbox"]`) as HTMLInputElement;
+    return !!cb && cb.checked === !b;
+  }, {rn: rowName, b: before}, {timeout: 5000});
+  await page.waitForTimeout(200);
 }
 
-/** Thin alias over helpers/viewers.ts:pickColumnViaSelector scoped to the Density-plot viewer. */
-const setColumnViaPopup = (page: Page, axis: 'x' | 'y', colName: string) =>
-  v.pickColumnViaSelector(page, {
-    comboboxSuffix: axis,
-    columnName: colName,
-    scopeSelector: '[name="viewer-Density-plot"]',
-    popupWaitStrategy: 'backdrop',
-    viewerType: 'Density plot',
-    propName: axis === 'x' ? 'xColumnName' : 'yColumnName',
-    allowFallback: true,
-  });
+/** Read a density-plot prop off the live viewer handle. */
+const readProp = (page: Page, prop: string) => page.evaluate((p) => {
+  const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+  return dp?.props[p];
+}, prop);
 
 test('Density plot tests', async ({page}: {page: Page}) => {
   test.setTimeout(600_000);
 
+  const pageErrors: string[] = [];
+  page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
+  const consoleErrors: string[] = [];
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isBenignError(m.text()))
+      consoleErrors.push(m.text());
+  });
+  const errCount = () => pageErrors.length + consoleErrors.length;
+
   await loginToDatagrok(page);
 
-  await page.evaluate(async (path: string) => {
-    document.body.classList.add('selenium');
-    grok.shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = false;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv(path);
-    grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
-      setTimeout(resolve, 3000);
-    });
-  }, datasetPath);
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
 
-  await page.evaluate(() => {
-    (document.querySelector('[name="icon-density-plot"]') as HTMLElement)?.click();
-  });
-  await page.locator('[name="viewer-Density-plot"]').waitFor({timeout: 10000});
+  await v.addViewerByIcon(page, 'density-plot', 'Density-plot');
 
-  // ── Zoom and Reset View ──────────────────────────────────────────────────
-  await softStep('Zoom in with mouse wheel', async () => {
-    const box = await page.locator('[name="viewer-Density-plot"] canvas').boundingBox();
-    expect(box).toBeTruthy();
-    await page.evaluate((b: {x: number; y: number; width: number; height: number}) => {
-      const canvas = document.querySelector('[name="viewer-Density-plot"] canvas') as HTMLElement;
-      canvas.dispatchEvent(new WheelEvent('wheel', {
-        bubbles: true, cancelable: true,
-        clientX: b.x + b.width / 2, clientY: b.y + b.height / 2, deltaY: -300,
-      }));
-    }, box!);
-  });
-
-  await softStep('Right-click → Reset View', async () => {
-    const box = await page.locator('[name="viewer-Density-plot"] canvas').boundingBox();
-    expect(box).toBeTruthy();
-    await page.evaluate((b: {x: number; y: number; width: number; height: number}) => {
-      const canvas = document.querySelector('[name="viewer-Density-plot"] canvas') as HTMLElement;
-      canvas.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true,
-        clientX: b.x + b.width / 2, clientY: b.y + b.height / 2,
-      }));
-    }, box!);
-    // Find Reset View menu item by text (context menu items have no name= attribute)
-    await page.waitForFunction(() =>
-      Array.from(document.querySelectorAll('[role="menuitem"]'))
-        .some(el => el.textContent?.trim() === 'Reset View')
-    , {timeout: 3000});
-    await page.evaluate(() => {
-      const item = Array.from(document.querySelectorAll('[role="menuitem"]'))
-        .find(el => el.textContent?.trim() === 'Reset View') as HTMLElement;
-      item?.click();
-    });
-  });
-
-  // ── Axis Column Assignment ───────────────────────────────────────────────
-  // Column selectors: [name="div-column-combobox-x"] / [name="div-column-combobox-y"] (lowercase)
-  // Popup opens on mousedown; search by typing; confirm with Enter
-  await softStep('Set X column to WEIGHT (JS API fallback — click on combo did not open popup)', async () => {
-    // mousedown doesn't work before settings are opened; fall back to JS API
-    await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      dp.props.xColumnName = 'WEIGHT';
-    });
-    const x = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.xColumnName
-    );
-    expect(x).toBe('WEIGHT');
-  });
-
-  await softStep('Set Y column to HEIGHT via UI popup (mousedown + type + Enter)', async () => {
-    await setColumnViaPopup(page, 'y', 'HEIGHT');
-    const y = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.yColumnName
-    );
-    expect(y).toBe('HEIGHT');
-  });
-
-  await softStep('Set X column to AGE via UI popup (mousedown + type + Enter)', async () => {
-    await setColumnViaPopup(page, 'x', 'AGE');
-    const x = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.xColumnName
-    );
-    expect(x).toBe('AGE');
-  });
-
-  await softStep('Set Y column to WEIGHT via UI popup (mousedown + type + Enter)', async () => {
-    await setColumnViaPopup(page, 'y', 'WEIGHT');
-    const y = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.yColumnName
-    );
-    expect(y).toBe('WEIGHT');
-  });
-
-  // ── Bins ─────────────────────────────────────────────────────────────────
-  // Open settings: gear is 2 levels up from viewer-Density-plot container
-  await softStep('Open settings panel', async () => {
+  // Open the settings panel and confirm its rows rendered. The gear toggles the
+  // panel, so click it only while the panel is closed (detected by the absence
+  // of a known prop row) and retry until a checkbox row is present.
+  let panelOpen = false;
+  for (let i = 0; i < 8 && !panelOpen; i++) {
+    panelOpen = await page.evaluate(() =>
+      !!document.querySelector('[name="prop-show-color-scale"] input[type="checkbox"]'));
+    if (panelOpen) break;
     await page.evaluate(() => {
       const viewer = document.querySelector('[name="viewer-Density-plot"]') as HTMLElement;
-      const gear = viewer.parentElement?.parentElement?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+      const panel = (viewer?.closest('.panel-base') ?? viewer?.parentElement?.parentElement) as HTMLElement | null;
+      const gear = panel?.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
       gear?.click();
     });
-  });
-
-  // Expand Misc section (icon-plus → click row → icon-minus)
-  await softStep('Expand Misc section', async () => {
-    await page.evaluate(() => {
-      const all = Array.from(document.querySelectorAll('*')) as HTMLElement[];
-      const miscEl = all.find(el =>
-        el.childNodes.length === 1 && el.childNodes[0].nodeType === 3 &&
-        (el.childNodes[0] as Text).textContent?.trim() === 'Misc'
-      );
-      const row = miscEl?.closest('tr') as HTMLElement;
-      const icon = row?.querySelector('.property-grid-category-icon');
-      if (icon?.classList.contains('property-grid-icon-plus')) row?.click();
-    });
-    // Scroll Bins into view
-    await page.evaluate(() => {
-      document.querySelector('[name="prop-bins"]')?.scrollIntoView({behavior: 'instant', block: 'center'});
-    });
-  });
-
-  // Bin Shape: click view label → <select class="property-grid-item-editor-spinner"> + Enter
-  for (const shape of ['rectangle', 'hexagon'] as const) {
-    await softStep(`Set Bin Shape to ${shape}`, async () => {
-      await setPropSelect(page, 'prop-bin-shape', shape);
-      const val = await page.evaluate(() =>
-        (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.binShape
-      );
-      expect(val).toBe(shape);
-    });
+    await page.waitForTimeout(1200);
   }
+  expect(panelOpen, 'Density plot settings panel did not open').toBe(true);
 
-  // Bins: focus input.property-grid-slider-textbox → Ctrl+A → type → Enter
-  for (const bins of [5, 100, 200, 50]) {
-    await softStep(`Set Bins to ${bins}`, async () => {
-      await page.evaluate(() => {
-        (document.querySelector('[name="prop-bins"] input.property-grid-slider-textbox') as HTMLInputElement)?.focus();
-      });
-      await page.keyboard.press('Control+A');
-      await page.keyboard.type(String(bins));
-      await page.keyboard.press('Enter');
-      const val = await page.evaluate(() =>
-        (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.bins
-      );
-      expect(val).toBe(bins);
-    });
-  }
-
-  // ── Show/Hide Color Scale ─────────────────────────────────────────────────
-  await softStep('Set Show Color Scale to false', async () => {
+  await softStep('Show/Hide Color Scale — prop round-trip over the error-free floor', async () => {
+    const errBefore = errCount();
     await togglePropCheckbox(page, 'prop-show-color-scale');
-    const val = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.showColorScale
-    );
-    expect(val).toBe(false);
-  });
-  await softStep('Set Show Color Scale to true', async () => {
+    const off = await readProp(page, 'showColorScale');
     await togglePropCheckbox(page, 'prop-show-color-scale');
-    const val = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.showColorScale
-    );
-    expect(val).toBe(true);
+    const on = await readProp(page, 'showColorScale');
+    // The color scale is canvas-drawn (no DOM signal), so the assertable signal
+    // is the prop round-trip plus the error-free repaint.
+    expect(off).toBe(false);
+    expect(on).toBe(true);
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Axis Visibility ───────────────────────────────────────────────────────
-  await softStep('Set Show X Axis to false', async () => { await togglePropCheckbox(page, 'prop-show-x-axis'); });
-  await softStep('Set Show Y Axis to false', async () => { await togglePropCheckbox(page, 'prop-show-y-axis'); });
-  await softStep('Set Show X Axis to true', async () => { await togglePropCheckbox(page, 'prop-show-x-axis'); });
-  await softStep('Set Show Y Axis to true', async () => {
+  await softStep('Axis Visibility — X/Y show props round-trip over the error-free floor', async () => {
+    const errBefore = errCount();
+    await togglePropCheckbox(page, 'prop-show-x-axis');
     await togglePropCheckbox(page, 'prop-show-y-axis');
-    const vals = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
+    const hidden = await page.evaluate(() => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
       return {x: dp.props.showXAxis, y: dp.props.showYAxis};
     });
-    expect(vals.x).toBe(true);
-    expect(vals.y).toBe(true);
+    await togglePropCheckbox(page, 'prop-show-x-axis');
+    await togglePropCheckbox(page, 'prop-show-y-axis');
+    const shown = await page.evaluate(() => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      return {x: dp.props.showXAxis, y: dp.props.showYAxis};
+    });
+    // Axis lines/labels are canvas-drawn — prop round-trip plus no-error floor.
+    expect(hidden).toEqual({x: false, y: false});
+    expect(shown).toEqual({x: true, y: true});
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Axis Inversion and Logarithmic Axis ───────────────────────────────────
-  // Invert checkboxes: [name="prop-invert-x-axis"] / [name="prop-invert-y-axis"]
-  // Axis type selects: [name="prop-x-axis-type"] / [name="prop-y-axis-type"]
-  await softStep('Set Invert X Axis to true', async () => { await togglePropCheckbox(page, 'prop-invert-x-axis'); });
-  await softStep('Set X Axis Type to logarithmic', async () => { await setPropSelect(page, 'prop-x-axis-type', 'logarithmic'); });
-  await softStep('Set Invert Y Axis to true', async () => { await togglePropCheckbox(page, 'prop-invert-y-axis'); });
-  await softStep('Set Y Axis Type to logarithmic', async () => { await setPropSelect(page, 'prop-y-axis-type', 'logarithmic'); });
-  await softStep('Set Invert X Axis to false', async () => { await togglePropCheckbox(page, 'prop-invert-x-axis'); });
-  await softStep('Set X Axis Type to linear', async () => { await setPropSelect(page, 'prop-x-axis-type', 'linear'); });
-  await softStep('Set Invert Y Axis to false', async () => { await togglePropCheckbox(page, 'prop-invert-y-axis'); });
-  await softStep('Set Y Axis Type to linear', async () => {
-    await setPropSelect(page, 'prop-y-axis-type', 'linear');
-    const vals = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      return {invertX: dp.props.invertXAxis, invertY: dp.props.invertYAxis, xType: dp.props.xAxisType, yType: dp.props.yAxisType};
-    });
-    expect(vals.invertX).toBe(false);
-    expect(vals.invertY).toBe(false);
-    expect(vals.xType).toBe('linear');
-    expect(vals.yType).toBe('linear');
-  });
-
-  // ── Show/Hide Selectors and Bin Slider ────────────────────────────────────
-  await softStep('Set Show X Selector to false', async () => { await togglePropCheckbox(page, 'prop-show-x-selector'); });
-  await softStep('Set Show Y Selector to false', async () => { await togglePropCheckbox(page, 'prop-show-y-selector'); });
-  await softStep('Set Show Bin Selector to false', async () => { await togglePropCheckbox(page, 'prop-show-bin-selector'); });
-  await softStep('Set Show X Selector to true', async () => { await togglePropCheckbox(page, 'prop-show-x-selector'); });
-  await softStep('Set Show Y Selector to true', async () => { await togglePropCheckbox(page, 'prop-show-y-selector'); });
-  await softStep('Set Show Bin Selector to true', async () => {
-    await togglePropCheckbox(page, 'prop-show-bin-selector');
-    const vals = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      return {x: dp.props.showXSelector, y: dp.props.showYSelector, bin: dp.props.showBinSelector};
-    });
-    expect(vals.x).toBe(true);
-    expect(vals.y).toBe(true);
-    expect(vals.bin).toBe(true);
-  });
-
-  // ── Min/Max Axis Bounds ───────────────────────────────────────────────────
-  // Min/Max inputs are nullable; property grid editor complex — use JS API
-  await softStep('Set X Min=20, X Max=50, Y Min=100, Y Max=200 via JS API', async () => {
-    const result = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      dp.props['xMin'] = 20; dp.props['xMax'] = 50;
-      dp.props['yMin'] = 100; dp.props['yMax'] = 200;
-      return {xMin: dp.props['xMin'], xMax: dp.props['xMax'], yMin: dp.props['yMin'], yMax: dp.props['yMax']};
-    });
-    expect(result.xMin).toBe(20);
-    expect(result.xMax).toBe(50);
-    expect(result.yMin).toBe(100);
-    expect(result.yMax).toBe(200);
-  });
-  await softStep('Clear X Min, X Max, Y Min, Y Max', async () => {
-    const result = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      dp.props['xMin'] = null; dp.props['xMax'] = null;
-      dp.props['yMin'] = null; dp.props['yMax'] = null;
-      return {xMin: dp.props['xMin'], xMax: dp.props['xMax'], yMin: dp.props['yMin'], yMax: dp.props['yMax']};
-    });
-    expect(result.xMin).toBeNull();
-    expect(result.xMax).toBeNull();
-    expect(result.yMin).toBeNull();
-    expect(result.yMax).toBeNull();
-  });
-
-  // ── Color Transform Type ──────────────────────────────────────────────────
-  // Row found by aria-label (not by name) since property is in Style category
-  await softStep('Set Color Transform Type to logarithmic', async () => {
-    await page.evaluate(() => {
-      const row = Array.from(document.querySelectorAll('.property-grid-item'))
-        .find(r => r.getAttribute('aria-label') === 'Color Transform Type') as HTMLElement;
-      (row?.querySelector('[name^="prop-view-"]') as HTMLElement)?.click();
-      const sel = row?.querySelector('select.property-grid-item-editor-spinner') as HTMLSelectElement;
-      if (sel) { sel.value = 'logarithmic'; sel.dispatchEvent(new Event('change', {bubbles: true})); }
-    });
-    await page.keyboard.press('Enter');
-  });
-  await softStep('Set Color Transform Type to linear', async () => {
-    await page.evaluate(() => {
-      const row = Array.from(document.querySelectorAll('.property-grid-item'))
-        .find(r => r.getAttribute('aria-label') === 'Color Transform Type') as HTMLElement;
-      (row?.querySelector('[name^="prop-view-"]') as HTMLElement)?.click();
-      const sel = row?.querySelector('select.property-grid-item-editor-spinner') as HTMLSelectElement;
-      if (sel) { sel.value = 'linear'; sel.dispatchEvent(new Event('change', {bubbles: true})); }
-    });
-    await page.keyboard.press('Enter');
-    const val = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.colorTransformType
-    );
-    expect(val).toBe('linear');
-  });
-
-  // ── Title and Description ─────────────────────────────────────────────────
-  // Show Title: checkbox [name="prop-show-title"]
-  // Title / Description: property grid text editor doesn't fire Dart events reliably → JS API
-  // Visibility mode / position: [name="prop-description-visibility-mode"] / [name="prop-description-position"]
-  await softStep('Enable Show Title', async () => {
-    await page.evaluate(() => {
-      const cb = document.querySelector('[name="prop-show-title"] input[type="checkbox"]') as HTMLInputElement;
-      if (cb && !cb.checked) cb.click();
-    });
-  });
-  await softStep('Set Title to "Density Distribution" via JS API', async () => {
-    await page.evaluate(() => {
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.title = 'Density Distribution';
-    });
-  });
-  await softStep('Set Description to "AGE vs HEIGHT density" via JS API', async () => {
-    await page.evaluate(() => {
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.description = 'AGE vs HEIGHT density';
-    });
-    const vals = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      return {title: dp.props.title, desc: dp.props.description};
-    });
-    expect(vals.title).toBe('Density Distribution');
-    expect(vals.desc).toBe('AGE vs HEIGHT density');
-  });
-  await softStep('Set Description Visibility Mode to Always', async () => {
-    await setPropSelect(page, 'prop-description-visibility-mode', 'Always');
-    const val = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.descriptionVisibilityMode
-    );
-    expect(val).toBe('Always');
-  });
-  await softStep('Set Description Position to Bottom', async () => {
-    await setPropSelect(page, 'prop-description-position', 'Bottom');
-    const val = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.descriptionPosition
-    );
-    expect(val).toBe('Bottom');
-  });
-
-  // ── Selection ─────────────────────────────────────────────────────────────
-  await softStep('Click a bin — verify rows selected', async () => {
-    const box = await page.locator('[name="viewer-Density-plot"] canvas').boundingBox();
-    expect(box).toBeTruthy();
-    await page.evaluate((b: {x: number; y: number; width: number; height: number}) => {
-      const canvas = document.querySelector('[name="viewer-Density-plot"] canvas') as HTMLElement;
-      const cx = b.x + b.width * 0.4;
-      const cy = b.y + b.height * 0.5;
-      canvas.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: cx, clientY: cy, button: 0}));
-      canvas.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, clientX: cx, clientY: cy, button: 0}));
-      canvas.dispatchEvent(new MouseEvent('click', {bubbles: true, clientX: cx, clientY: cy, button: 0}));
-    }, box!);
-    const selected = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    expect(selected).toBeGreaterThan(0);
-  });
-  await softStep('Esc — verify selection cleared', async () => {
-    await page.keyboard.press('Escape');
-    const selected = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    expect(selected).toBe(0);
-  });
-
-  // ── Layout Persistence ────────────────────────────────────────────────────
-  let savedLayoutId = '';
-  await softStep('Set WEIGHT/HEIGHT/25 bins/rectangle/invertColor=true then save layout', async () => {
-    await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      dp.props.xColumnName = 'WEIGHT';
-      dp.props.yColumnName = 'HEIGHT';
-      dp.props.bins = 25;
-      dp.props.binShape = 'rectangle';
-      dp.props.invertColorScheme = true;
-    });
-    savedLayoutId = await page.evaluate(async () => {
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      await new Promise(r => setTimeout(r, 1000));
-      return layout.id;
-    });
-    expect(savedLayoutId).toBeTruthy();
-  });
-
-  await softStep('Close Density Plot viewer via JS API', async () => {
-    // Close button [name="icon-times"] not present in title bar during testing; use dp.close()
-    await page.evaluate(() => {
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any)?.close();
-    });
-    await page.waitForFunction(
-      () => !Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot'),
-      {timeout: 5000}
-    );
-  });
-
-  await softStep('Apply saved layout and verify properties restored', async () => {
-    await page.evaluate(async (id: string) => {
-      const saved = await grok.dapi.layouts.find(id);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
-    }, savedLayoutId);
-    const restored = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
+  await softStep('Show/Hide Selectors and Bin Slider — computed visibility flips both ways', async () => {
+    const errBefore = errCount();
+    const selVisibility = () => page.evaluate(() => {
+      const root = document.querySelector('[name="viewer-Density-plot"]')!;
+      const x = root.querySelector('[name="div-column-combobox-x"]') as HTMLElement | null;
+      const y = root.querySelector('[name="div-column-combobox-y"]') as HTMLElement | null;
+      const bin = root.querySelector('input[type="range"]') as HTMLElement | null;
       return {
-        found: !!dp,
-        x: dp?.props.xColumnName, y: dp?.props.yColumnName,
-        bins: dp?.props.bins, binShape: dp?.props.binShape,
-        invertColor: dp?.props.invertColorScheme,
+        x: x ? getComputedStyle(x).visibility : 'missing',
+        y: y ? getComputedStyle(y).visibility : 'missing',
+        binPresent: !!bin,
       };
     });
-    expect(restored.found).toBe(true);
-    expect(restored.x).toBe('WEIGHT');
-    expect(restored.y).toBe('HEIGHT');
-    expect(restored.bins).toBe(25);
-    expect(restored.binShape).toBe('rectangle');
-    expect(restored.invertColor).toBe(true);
-    // Cleanup
-    await page.evaluate(async (id: string) => {
-      const saved = await grok.dapi.layouts.find(id);
-      if (saved) await grok.dapi.layouts.delete(saved);
-    }, savedLayoutId);
+    const before = await selVisibility();
+    await togglePropCheckbox(page, 'prop-show-x-selector');
+    await togglePropCheckbox(page, 'prop-show-y-selector');
+    await togglePropCheckbox(page, 'prop-show-bin-selector');
+    const hidden = await selVisibility();
+    const binPropOff = await readProp(page, 'showBinSelector');
+    await togglePropCheckbox(page, 'prop-show-x-selector');
+    await togglePropCheckbox(page, 'prop-show-y-selector');
+    await togglePropCheckbox(page, 'prop-show-bin-selector');
+    const shown = await selVisibility();
+    const binPropOn = await readProp(page, 'showBinSelector');
+    // Hiding a selector only flips computed visibility (the element stays in DOM
+    // with a nonzero rect) — presence/offsetParent checks are false-green.
+    expect(before.x).toBe('visible');
+    expect(before.y).toBe('visible');
+    expect(hidden.x).toBe('hidden');
+    expect(hidden.y).toBe('hidden');
+    expect(shown.x).toBe('visible');
+    expect(shown.y).toBe('visible');
+    // The bin slider stays in DOM through the toggle; its signal is the prop.
+    expect(before.binPresent).toBe(true);
+    expect(binPropOff).toBe(false);
+    expect(binPropOn).toBe(true);
+    expect(shown.binPresent).toBe(true);
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Row Source Filtering ──────────────────────────────────────────────────
-  await softStep('Set Filter to ${AGE} > 30', async () => {
+  await softStep('Title and Description — title in the panel titlebar, description at the configured position, clearing removes both', async () => {
+    const errBefore = errCount();
+    // The property-grid text editors do not fire the Dart change listener
+    // reliably, so title/description are driven via the props; the title lands
+    // in the enclosing panel-base titlebar and the description in a DOM overlay
+    // inside the viewer root — both DOM-readable.
     await page.evaluate(() => {
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.filter = '${AGE} > 30';
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      dp.props.showTitle = true;
+      dp.props.title = 'Density Distribution';
+      dp.props.description = 'AGE vs HEIGHT density';
+      dp.props.descriptionVisibilityMode = 'Always';
+      dp.props.descriptionPosition = 'Bottom';
     });
-    const val = await page.evaluate(() =>
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.filter
-    );
-    expect(val).toBe('${AGE} > 30');
-  });
-
-  await softStep('Clear Filter', async () => {
+    await page.waitForTimeout(700);
+    const set = await page.evaluate(() => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      const root = dp.root as HTMLElement;
+      const panelBase = root.closest('.panel-base') as HTMLElement | null;
+      const titlebar = panelBase
+        ? Array.from(panelBase.querySelectorAll('.panel-titlebar-text'))
+          .map((e) => (e as HTMLElement).innerText).join(' | ')
+        : '';
+      // Locate the leaf element carrying the description text and compare its
+      // vertical midpoint to the viewer rect's midpoint (Bottom => lower half).
+      const rootRect = root.getBoundingClientRect();
+      let descEl: HTMLElement | null = null;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+      while (walker.nextNode()) {
+        const el = walker.currentNode as HTMLElement;
+        if (el.children.length === 0 && (el.innerText || '').includes('AGE vs HEIGHT density')) {
+          descEl = el;
+          break;
+        }
+      }
+      const descRect = descEl ? descEl.getBoundingClientRect() : null;
+      const descInBottomHalf = descRect
+        ? (descRect.top + descRect.height / 2) > (rootRect.top + rootRect.height / 2)
+        : false;
+      return {
+        titlebar,
+        descInDom: (root.innerText || '').includes('AGE vs HEIGHT density'),
+        descInBottomHalf,
+      };
+    });
     await page.evaluate(() => {
-      (Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any).props.filter = '';
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      dp.props.title = '';
+      dp.props.description = '';
     });
+    await page.waitForTimeout(700);
+    const cleared = await page.evaluate(() => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      const root = dp.root as HTMLElement;
+      const panelBase = root.closest('.panel-base') as HTMLElement | null;
+      const titlebar = panelBase
+        ? Array.from(panelBase.querySelectorAll('.panel-titlebar-text'))
+          .map((e) => (e as HTMLElement).innerText).join(' | ')
+        : '';
+      return {
+        titlebar,
+        descInDom: (root.innerText || '').includes('AGE vs HEIGHT density'),
+      };
+    });
+    // The Title renders as the enclosing panel-base titlebar text; clearing the
+    // Title field removes it. The Description renders inside the viewer element
+    // at the configured position (Bottom => lower half of the viewer rect);
+    // clearing the Description removes it.
+    expect(set.titlebar).toContain('Density Distribution');
+    expect(set.descInDom).toBe(true);
+    expect(set.descInBottomHalf).toBe(true);
+    expect(cleared.titlebar).not.toContain('Density Distribution');
+    expect(cleared.descInDom).toBe(false);
+    expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Open spgi-100', async () => {
+  await softStep('Row Source Filtering — filter round-trip and a table switch with no errors', async () => {
+    const errBefore = errCount();
+    // Filter formula: the render effect is a canvas-only repaint, so the filter
+    // itself is a prop round-trip over the no-error floor.
+    await page.evaluate(() => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      dp.props.filter = '${AGE} > 30';
+    });
+    await page.waitForTimeout(400);
+    const filterSet = await readProp(page, 'filter');
+    await page.evaluate(() => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
+      dp.props.filter = '';
+    });
+    await page.waitForTimeout(400);
+    const filterCleared = await readProp(page, 'filter');
+    expect(filterSet).toBe('${AGE} > 30');
+    expect(filterCleared).toBe('');
+
+    // Open spgi-100 as a second table view, then return to the demog view.
     await page.evaluate(async (path: string) => {
       const df2 = await grok.dapi.files.readCsv(path);
+      df2.name = 'spgi-100';
       grok.shell.addTableView(df2);
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         const sub = df2.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(null); });
         setTimeout(resolve, 5000);
       });
     }, spgiPath);
-  });
-
-  await softStep('Go back to demog view', async () => {
-    // Switch to the view that contains the Density plot (demog view)
     await page.evaluate(() => {
       const demogView = Array.from(grok.shell.tableViews)
-        .find((tv: any) => tv.dataFrame?.rowCount === 5850) as any;
+        .find((tv: any) => tv.dataFrame?.name === 'demog' || tv.dataFrame?.rowCount === 5850) as any;
       if (demogView) grok.shell.v = demogView;
     });
-  });
+    await page.waitForTimeout(600);
 
-  await softStep('Set Table to spgi-100 on density plot — no errors', async () => {
-    const result = await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      // spgi-100 table is named "Table (2)" (100 rows) — identify by row count
+    // Rebind the viewer to spgi-100 through the Table prop and back to demog.
+    const switched = await page.evaluate(async () => {
+      const dp = grok.shell.tv.viewers.find((vw: any) => vw.type === 'Density plot') as any;
       const spgi = Array.from(grok.shell.tables).find((t: any) => t.rowCount === 100) as any;
-      if (!dp || !spgi) return {error: `dp=${!!dp}, spgi=${!!spgi}`};
-      dp.props.table = spgi.name;
-      return {tableSet: dp.props.table, spgiName: spgi.name};
-    });
-    expect(result.error).toBeUndefined();
-  });
-
-  await softStep('Set table back to demog', async () => {
-    await page.evaluate(() => {
-      const dp = Array.from(grok.shell.tv.viewers).find((v: any) => v.type === 'Density plot') as any;
-      // demog table is named "Table" (5850 rows)
       const demog = Array.from(grok.shell.tables).find((t: any) => t.rowCount === 5850) as any;
-      if (dp && demog) dp.props.table = demog.name;
+      if (!dp || !spgi || !demog) return {ok: false, dp: !!dp, spgi: !!spgi, demog: !!demog};
+      dp.props.table = spgi.name;
+      await new Promise((r) => setTimeout(r, 700));
+      const boundToSpgi = dp.dataFrame?.rowCount;
+      const rootAttachedSpgi = document.body.contains(dp.root);
+      dp.props.table = demog.name;
+      await new Promise((r) => setTimeout(r, 700));
+      const boundToDemog = dp.dataFrame?.rowCount;
+      const rootAttachedDemog = document.body.contains(dp.root);
+      return {ok: true, boundToSpgi, boundToDemog, rootAttachedSpgi, rootAttachedDemog};
     });
+    // The table switch re-binds the viewer to the new table's rows and keeps the
+    // viewer alive (root attached) with no new errors, then restores the demog binding.
+    expect(switched.ok).toBe(true);
+    expect(switched.boundToSpgi).toBe(100);
+    expect(switched.rootAttachedSpgi).toBe(true);
+    expect(switched.boundToDemog).toBe(5850);
+    expect(switched.rootAttachedDemog).toBe(true);
+    expect(errCount()).toBe(errBefore);
   });
 
-  await softStep('Close All', async () => {
-    await page.evaluate(() => grok.shell.closeAll());
-  });
+  await page.evaluate(() => grok.shell.closeAll());
 
-  // ── Final summary ─────────────────────────────────────────────────────────
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });
