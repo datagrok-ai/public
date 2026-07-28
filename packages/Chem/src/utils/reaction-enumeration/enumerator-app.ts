@@ -1454,8 +1454,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // exist (switchTabForAccPane reads them) — calling it earlier crashes with a TDZ error.
 
   const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
+    // flex:0 0 auto (not 1 1 auto) so hint and status sit side by side, both left-aligned, instead
+    // of hint growing to push status to the far right of the row.
     const hintEl = ui.divText(hint, {style: {
-      fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px',
+      fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto', marginRight: '4px',
     }});
     const children: HTMLElement[] = [hintEl];
     if (status) children.push(status);
