@@ -9,7 +9,8 @@ export const ClaudeModel = {
 export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
 
 export type ChunkEvent = {sessionId: string, content: string};
-export type ToolActivityEvent = {sessionId: string, summary: string};
+/** `name` is the bare tool name (mcp prefix stripped); absent for progress-only activity. */
+export type ToolActivityEvent = {sessionId: string, summary: string, name?: string};
 /** A runtime gate blocked the turn's Stop — a revision is being generated behind the visible
  * answer; `FinalEvent.revision` will say whether it replaces the original or the original stands. */
 export type RevisionStartEvent = {sessionId: string};
@@ -111,7 +112,8 @@ export class ClaudeRuntimeClient {
         this.onChunk.next({sessionId: data.sessionId, content: data.content});
         break;
       case 'tool_activity':
-        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary});
+        this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary,
+          ...(data.name ? {name: data.name} : {})});
         break;
       case 'revision_start':
         this.onRevisionStart.next({sessionId: data.sessionId});

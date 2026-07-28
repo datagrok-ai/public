@@ -1,19 +1,33 @@
 import {randomUUID} from 'node:crypto';
 import {query} from '@anthropic-ai/claude-agent-sdk';
 import type {SDKMessage} from '@anthropic-ai/claude-agent-sdk';
-import type {UserMessage, AbortMessage, InputResponseMessage, OutgoingMessage, ImageAttachment} from './types';
+import type {UserMessage, AbortMessage, InputResponseMessage, ImageAttachment} from './types';
+import {raceIdle, IDLE, killStrayChildren, startOrphanReaper} from './watchdog';
+import {emit, emitFiltered, flushFenceState, clearFenceState,
+  isRevising, beginRevision, endRevision} from './stream-filter';
+import type {WsSender} from './stream-filter';
 import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
-import {Verifier} from './verify';
+import {Verifier, bareToolName} from './verify';
 import {GroundingGate} from './grounding';
 import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
+
+// Re-exported so server.ts keeps importing the transport surface from one place.
+export {emit} from './stream-filter';
+export type {WsSender} from './stream-filter';
 
 // ---------------------------------------------------------------------------
 // Session registry — SDK session ids and resume/fork points, LRU-capped
 // ---------------------------------------------------------------------------
 
 const MAX_SESSIONS = 200;
+
+// Longest a turn may emit *nothing* before it is treated as wedged. Generous on purpose: a real
+// turn streams partial messages continuously, so silence this long is not slow work, it is a dead
+// turn. Bounds silence between events, not total turn length — a legitimately long turn is fine.
+const TURN_IDLE_TIMEOUT_MS = 90000;
+const KILL_GRACE_MS = 2000;
 
 // forkNext is set on abort: the next turn forks off lastCleanUuid, dropping the aborted turn.
 interface SessionRecord {sdkId: string; lastCleanUuid?: string; forkNext?: boolean}
@@ -39,83 +53,7 @@ function getSession(clientId: string): SessionRecord | undefined {
   return rec;
 }
 
-// ---------------------------------------------------------------------------
-// Client streaming — emit plus the fence-aware text-delta filter
-// ---------------------------------------------------------------------------
-
-export interface WsSender {
-  send(data: string): void;
-}
-
-export function emit(ws: WsSender, msg: OutgoingMessage): void {
-  ws.send(JSON.stringify(msg));
-}
-
-function emitChunk(ws: WsSender, sid: string, content: string): void {
-  emit(ws, {type: 'chunk', sessionId: sid, content});
-}
-
-type FenceMode = 'prose' | 'other';
-interface FenceState { mode: FenceMode; carry: string; lineInProgress: boolean; }
-const fenceStates = new Map<string, FenceState>();
-const FENCE_RE = /^```([\w-]*)\s*$/;
-
-// Sessions whose turn is in a gate-demanded revision: the already-streamed answer stays visible in
-// the browser, the revision text is NOT streamed, and the `result` decides kept vs replaced.
-const revisingSids = new Set<string>();
 const NO_REVISION_RE = /^`?NO_REVISION`?\.?$/;
-
-// Streams text from a Claude text_delta. Holds only the partial trailing line when it could
-// still become a fence marker (starts with `` ` `` at line start); everything else is emitted
-// immediately under the current mode. Complete lines are batched per same-mode group so a
-// 50-line delta yields ~3 emits, not 50.
-function emitFiltered(ws: WsSender, sid: string, text: string): void {
-  if (revisingSids.has(sid))
-    return;
-  const st = fenceStates.get(sid) ?? {mode: 'prose' as FenceMode, carry: '', lineInProgress: false};
-  fenceStates.set(sid, st);
-
-  const buf = st.carry + text;
-  st.carry = '';
-  const lastNl = buf.lastIndexOf('\n');
-
-  if (lastNl >= 0) {
-    const lines = buf.slice(0, lastNl).split('\n');
-    let groupStart = 0;
-    for (let i = 0; i < lines.length; i++) {
-      const couldBeFence = i > 0 || !st.lineInProgress;
-      const fence = couldBeFence ? FENCE_RE.exec(lines[i]) : null;
-      if (!fence) continue;
-
-      if (i > groupStart)
-        emitChunk(ws, sid, lines.slice(groupStart, i).join('\n') + '\n');
-
-      emitChunk(ws, sid, lines[i] + '\n');
-      st.mode = st.mode === 'prose' ? 'other' : 'prose';
-      groupStart = i + 1;
-    }
-    if (groupStart < lines.length)
-      emitChunk(ws, sid, lines.slice(groupStart).join('\n') + '\n');
-    st.lineInProgress = false;
-  }
-
-  const partial = lastNl < 0 ? buf : buf.slice(lastNl + 1);
-  if (partial.length === 0) return;
-
-  if (!st.lineInProgress && partial.startsWith('`'))
-    st.carry = partial;
-  else {
-    emitChunk(ws, sid, partial);
-    st.lineInProgress = true;
-  }
-}
-
-function flushFenceState(ws: WsSender, sid: string): void {
-  const st = fenceStates.get(sid);
-  if (st?.carry)
-    emitChunk(ws, sid, st.carry);
-  fenceStates.delete(sid);
-}
 
 // ---------------------------------------------------------------------------
 // SDK event forwarding — translates SDK stream events into the client protocol
@@ -128,8 +66,10 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
     if (e.uuid)
       pendingUuid.set(sid, e.uuid);
     for (const block of e.message?.content ?? []) {
-      if (block.type === 'tool_use')
-        emit(ws, {type: 'tool_activity', sessionId: sid, summary: toolSummary(block.name, block.input ?? {})});
+      if (block.type === 'tool_use') {
+        emit(ws, {type: 'tool_activity', sessionId: sid, name: bareToolName(block.name),
+          summary: toolSummary(block.name, block.input ?? {})});
+      }
     }
     break;
   case 'stream_event':
@@ -143,7 +83,7 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: e.summary ?? ''});
     break;
   case 'result': {
-    const revising = revisingSids.delete(sid);
+    const revising = endRevision(sid);
     flushFenceState(ws, sid);
     if (e.subtype === 'success') {
       // Commit the resume point only on clean completion — aborted turns never reach here.
@@ -214,6 +154,10 @@ function awaitBrowserInput(ws: WsSender, sid: string, active: ActiveQuery, toolN
 }
 
 const activeQueries = new Map<string, ActiveQuery>();
+
+// Reclaims agent processes orphaned by a finished turn — see startOrphanReaper. Interlocked on
+// "no query in flight", so it can never touch a turn that is legitimately running.
+startOrphanReaper(() => activeQueries.size);
 
 function registerActiveQuery(sid: string, q: ActiveQuery): void {
   activeQueries.set(sid, q);
@@ -308,6 +252,8 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
   registerActiveQuery(sid, active);
 
   let gotResult = false;
+  // Set by the watchdog so the catch block does not also report the abort it deliberately caused.
+  let timedOut = false;
   let verifier: Verifier | undefined;
   let groundingGate: GroundingGate | undefined;
   try {
@@ -329,9 +275,9 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     // then stream the revision hidden — the browser keeps showing the original until `final`
     // says whether the revision replaces it (see revisingSids / the NO_REVISION protocol).
     const onGateBlock = () => {
-      if (!revisingSids.has(sid)) {
+      if (!isRevising(sid)) {
         flushFenceState(ws, sid);
-        revisingSids.add(sid);
+        beginRevision(sid);
         emit(ws, {type: 'revision_start', sessionId: sid});
       }
     };
@@ -351,15 +297,37 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     const outputFormat = data.outputSchema ? {type: 'json_schema' as const, schema: data.outputSchema as Record<string, unknown>} : undefined;
     const q = query({prompt: promptStream(message, images), options: {...opts, canUseTool, abortController, ...(outputFormat ? {outputFormat} : {})}});
     active.queryHandle = q;
-    for await (const event of q) {
-      if (abortController.signal.aborted)
+    // Iterate by hand rather than `for await`, so a turn that goes silent is bounded. A wedged
+    // CLI emits no events at all, which `for await` would wait on forever (see watchdog.ts).
+    const it = q[Symbol.asyncIterator]();
+    for (;;) {
+      const step = await raceIdle(it.next(), TURN_IDLE_TIMEOUT_MS);
+      if (step === IDLE) {
+        timedOut = true;
+        console.warn(`watchdog[${sid}]: no SDK event for ${TURN_IDLE_TIMEOUT_MS / 1000}s — killing turn`);
+        emit(ws, {type: 'error', sessionId: sid,
+          message: 'The assistant stopped responding and the turn was cancelled. Please try again.'});
+        try {
+          q.close();
+        } catch { /* already closed */ }
+        abortController.abort();
+        // The abort is the polite path; a spun-out CLI never reads it, and on a 1-CPU container
+        // leaving it running starves every other session. Give it a moment, then take it out.
+        await new Promise((r) => setTimeout(r, KILL_GRACE_MS));
+        killStrayChildren(`turn ${sid} went silent`);
         break;
-      if (event.type === 'result')
+      }
+      if (step.done || abortController.signal.aborted)
+        break;
+      if (step.value.type === 'result')
         gotResult = true;
-      forwardEvent(ws, sid, event, verifier);
+      forwardEvent(ws, sid, step.value, verifier);
     }
   } catch (e: any) {
-    if (!abortController.signal.aborted && (!gotResult || !/exited with code/i.test(String(e.message))))
+    // A watchdog kill surfaces as an SDK error too; it already told the browser, so don't
+    // follow its clear message with a confusing "exited with code SIGKILL".
+    if (!timedOut && !abortController.signal.aborted &&
+        (!gotResult || !/exited with code/i.test(String(e.message))))
       emit(ws, {type: 'error', sessionId: sid, message: String(e.message || e)});
   } finally {
     if (verifier?.hadActions)
@@ -367,8 +335,8 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     if (groundingGate)
       console.log(`grounding[${sid}]: ${groundingGate.summary()}`);
     if (activeQueries.get(sid) === active) {
-      fenceStates.delete(sid);
-      revisingSids.delete(sid);
+      clearFenceState(sid);
+      endRevision(sid);
     }
     unregisterActiveQuery(sid, active);
   }
@@ -389,11 +357,11 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
   if (rec)
     rec.forkNext = true;
   pendingUuid.delete(sid);
-  revisingSids.delete(sid);
+  endRevision(sid);
   if (ws)
     flushFenceState(ws, sid);
   else
-    fenceStates.delete(sid);
+    clearFenceState(sid);
   return true;
 }
 

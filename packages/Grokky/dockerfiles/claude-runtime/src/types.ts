@@ -98,7 +98,9 @@ export interface TurnMetrics {
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
-  | {type: 'tool_activity'; sessionId: string; summary: string}
+  // `name` is the bare tool name (mcp prefix stripped) — lets harnesses assert on which path a
+  // turn actually took, not just how many tools it used. Absent for progress-only activity.
+  | {type: 'tool_activity'; sessionId: string; summary: string; name?: string}
   // A gate (verifier / grounding) blocked the turn's Stop and a revision is being generated.
   // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
   // replaces the original ('replaced') or the original stands ('kept').

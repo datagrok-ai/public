@@ -1,6 +1,11 @@
 # Developer keys
 upload.keys.json
 
+# Local dev-loop harness — never part of a published package. dev/.claude/ holds a copy of the
+# developer's Claude subscription credentials; .gitignore alone does NOT keep it out of a publish,
+# because ignore-walk skips .gitignore in any directory that has an .npmignore (this one).
+dev/
+
 # Dependency directories
 node_modules/
 

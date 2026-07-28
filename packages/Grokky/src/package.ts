@@ -161,17 +161,20 @@ export class PackageFunctions {
   static async runBenchmark(
     @grok.decorators.param({type: 'string', options: {description: 'Config label for this run, e.g. baseline / medium-effort'}}) label: string,
     @grok.decorators.param({type: 'int', options: {optional: true, description: 'Repetitions per prompt (default 3)'}}) reps?: number,
+    @grok.decorators.param({type: 'string', options: {optional: true, choices: ['haiku', 'sonnet', 'opus'],
+      description: 'Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.'}}) model?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true,
+      description: 'Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.'}}) only?: string,
   ): Promise<string> {
-    return runBenchmarkImpl(label, reps ?? 3);
+    return runBenchmarkImpl(label, reps ?? 3, model, only);
   }
 
   @grok.decorators.func({name: 'compareBenchmarks',
-    description: 'Diff two saved benchmark runs (by label) into a Markdown delta report and download it.'})
+    description: 'Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.'})
   static async compareBenchmarks(
-    @grok.decorators.param({type: 'string', options: {description: 'Baseline run label'}}) labelA: string,
-    @grok.decorators.param({type: 'string', options: {description: 'Comparison run label'}}) labelB: string,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated run labels, the first being the reference arm'}}) labels: string,
   ): Promise<string> {
-    return compareBenchmarksImpl(labelA, labelB);
+    return compareBenchmarksImpl(labels);
   }
 
   @grok.decorators.func({meta: {

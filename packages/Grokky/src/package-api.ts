@@ -30,15 +30,15 @@ export namespace funcs {
   /**
   Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
   */
-  export async function runBenchmark(label: string , reps?: number ): Promise<string> {
-    return await grok.functions.call('Grokky:RunBenchmark', { label, reps });
+  export async function runBenchmark(label: string , reps?: number , model?: string , only?: string ): Promise<string> {
+    return await grok.functions.call('Grokky:RunBenchmark', { label, reps, model, only });
   }
 
   /**
-  Diff two saved benchmark runs (by label) into a Markdown delta report and download it.
+  Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
   */
-  export async function compareBenchmarks(labelA: string , labelB: string ): Promise<string> {
-    return await grok.functions.call('Grokky:CompareBenchmarks', { labelA, labelB });
+  export async function compareBenchmarks(labels: string ): Promise<string> {
+    return await grok.functions.call('Grokky:CompareBenchmarks', { labels });
   }
 
   /**

@@ -1,0 +1,12 @@
+{
+  "name": "grokky-dev-harness",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless drivers for the claude-runtime dev loop — see dev/README.md",
+  "dependencies": {
+    "playwright": "^1.62.0",
+    "ws": "^8.21.0",
+    "yaml": "^2.9.0"
+  }
+}

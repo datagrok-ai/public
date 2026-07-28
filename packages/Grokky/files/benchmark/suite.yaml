@@ -2,20 +2,100 @@
 #
 # Each entry is one prompt sent through the real runtime pipeline (workspace context +
 # view tools, exactly like the panel). Fields:
-#   category : grouping for the report (help | visualization | analysis | codegen | multitool | query)
-#   prompt   : the user message
-#   table    : optional demo table opened as the workspace before the turn
-#              (demog | randomWalk — add SPGI/curves/beer if available on your server)
-#   assert   : optional deterministic check, run AFTER the turn. A JS expression evaluated
-#              with (grok, DG, view, t, before, opened) in scope; truthy = pass.
-#                view   — the TableView the turn ran against
-#                t      — view.dataFrame
-#                before — {cols:[names], viewers:n, tableViews:n} snapshot taken pre-turn
-#                opened — how many new table views appeared during the turn
-#   rubric   : optional grading rubric for a Haiku judge (used for free-text answers)
+#   category   : grouping for the report (help | visualization | analysis | codegen | multitool | query)
+#   difficulty : trivial | standard | hard  (default standard) — drives the per-difficulty rollup.
+#                Lets a model comparison be read per tier rather than as one blended number,
+#                which is what showed the cheap tier losing on latency, not just accuracy.
+#   prompt     : the user message
+#   table      : demo table opened as the workspace before the turn. Resolves to
+#                System:DemoFiles/<table>.csv — so nested paths are written `chem/SPGI`.
+#                `randomWalk` is special-cased to grok.data.demo.randomWalk().
+#   assert     : deterministic check, run AFTER the turn (following a settle delay). A single JS
+#                expression; truthy = pass. `await` is allowed. In scope:
+#                  view        — the TableView the turn ran against
+#                  t           — view.dataFrame
+#                  before      — {cols:[names], viewers:n, tableViews:n} snapshot taken pre-turn
+#                                (note: `viewers` counts the grid, so a fresh view is 1)
+#                  opened      — how many new table views appeared during the turn
+#                  openedViews — those TableViews themselves
+#                  tools       — bare tool names the turn called, in order
+#   rubric     : grading rubric for a judge (used for free-text answers)
 # A prompt may have assert, rubric, or both. Prompts with neither are latency-only.
+#
+# ASSERTION POLICY. Assert what was ASKED FOR, not that something happened. An existence check
+# ("a scatter plot exists") passes on a half-right answer, which flattens the accuracy axis and
+# makes a cheap-vs-strong comparison meaningless. Bind the columns: `v.props.xColumnName`
+# reads the live look including defaults, so it is safe to read even when unset.
+# Prefer self-referential ground truth (recompute the expected count from `t`) over hardcoded
+# numbers, so the suite survives a demo-file refresh.
+#
+# Chem prompts need the Chem package installed. Ones marked SLOW may exceed the 120s turn cap.
 
-# ---- Help / documentation Q&A (judge-scored) -------------------------------------------
+# ======================================================================== trivial
+# A cheap model should hold every one of these. 0-2 tool round-trips, no ambiguity.
+
+- category: analysis
+  difficulty: trivial
+  prompt: How many rows and columns does this table have?
+  table: demog
+  rubric: >
+    Pass if it states both counts and they match 5850 rows and 11 columns. Fail on either
+    number wrong, or if it gives no numbers.
+
+- category: analysis
+  difficulty: trivial
+  prompt: Select every row.
+  table: demog
+  assert: t.selection.trueCount === t.rowCount
+
+- category: analysis
+  difficulty: trivial
+  prompt: Rename the AGE column to "Age (years)".
+  table: demog
+  assert: t.columns.contains('Age (years)') && !t.columns.contains('AGE')
+
+- category: visualization
+  difficulty: trivial
+  prompt: Add a histogram of the AGE column.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM && v.props.valueColumnName === 'AGE')
+
+- category: visualization
+  difficulty: trivial
+  prompt: Add a scatter plot of HEIGHT versus WEIGHT.
+  table: demog
+  # Either axis assignment is a fair reading of "HEIGHT versus WEIGHT".
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT && [v.props.xColumnName, v.props.yColumnName].sort().join() === 'HEIGHT,WEIGHT')
+
+- category: visualization
+  difficulty: trivial
+  prompt: Add a box plot of WEIGHT split by SEX.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.BOX_PLOT && v.props.valueColumnName === 'WEIGHT' && (v.props.categoryColumnNames || []).indexOf('SEX') >= 0)
+
+- category: visualization
+  difficulty: trivial
+  prompt: Sort the grid by AGE, largest first.
+  table: demog
+  # `grid.sortByColumns = [...]` is a read-only getter — assigning to it is a silent no-op,
+  # so this also catches the model reaching for the wrong API.
+  assert: view.grid.sortByColumns.length === 1 && view.grid.sortByColumns[0].name === 'AGE' && view.grid.sortTypes[0] === false
+
+- category: visualization
+  difficulty: trivial
+  prompt: Hide the RACE column.
+  table: demog
+  # Hide, not drop: the column must still exist in the dataframe.
+  assert: view.grid.col('RACE').visible === false && t.columns.contains('RACE')
+
+- category: analysis
+  difficulty: trivial
+  prompt: Color-code the WEIGHT column with a linear colour scheme.
+  table: demog
+  assert: t.getCol('WEIGHT').meta.colors.getType() === DG.COLOR_CODING_TYPE.LINEAR
+
+# ======================================================================== standard
+
 - category: help
   prompt: What semantic types can Datagrok automatically detect in a column?
   rubric: >
@@ -38,47 +118,32 @@
   rubric: >
     Pass if it references semantic-type detection / SMILES/molblock parsing. Fail if empty or wrong.
 
-# ---- Visualization (deterministic: a viewer of the right type must exist) ---------------
 - category: visualization
-  prompt: Add a histogram of the AGE column.
+  prompt: Add a bar chart of the average WEIGHT for each RACE.
   table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM)
-
-- category: visualization
-  prompt: Add a scatter plot of HEIGHT versus WEIGHT.
-  table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT)
-
-- category: visualization
-  prompt: Add a bar chart grouped by RACE.
-  table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.BAR_CHART)
-
-- category: visualization
-  prompt: Add a box plot of WEIGHT split by SEX.
-  table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.BOX_PLOT)
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.BAR_CHART && v.props.splitColumnName === 'RACE' && v.props.valueColumnName === 'WEIGHT' && String(v.props.valueAggrType).toLowerCase() === 'avg')
 
 - category: visualization
   prompt: Add a pie chart of the SEX column.
   table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.PIE_CHART)
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.PIE_CHART && v.props.categoryColumnName === 'SEX')
 
-# ---- Analysis (deterministic on dataframe state) ---------------------------------------
 - category: analysis
   prompt: Add a calculated column equal to WEIGHT divided by HEIGHT squared.
   table: demog
-  assert: t.columns.length > before.cols.length
+  # Must be a real formula column, not a hand-filled loop, and the values must be right.
+  assert: t.columns.names().filter(n => !before.cols.includes(n)).some(n => t.getCol(n).meta.formula != null && Math.abs(t.getCol(n).get(0) - t.getCol('WEIGHT').get(0) / Math.pow(t.getCol('HEIGHT').get(0), 2)) < 1e-6)
 
 - category: analysis
   prompt: Select all rows where AGE is greater than 50.
   table: demog
-  assert: t.selection.trueCount > 0 && t.selection.trueCount < t.rowCount
+  # Exact count, recomputed from the data — "some rows are selected" passed on almost anything.
+  assert: t.selection.trueCount === t.getCol('AGE').toList().filter(v => v > 50).length
 
 - category: analysis
   prompt: Filter the table to show only female patients.
   table: demog
-  assert: t.filter.trueCount < t.rowCount
+  assert: t.filter.trueCount === t.getCol('SEX').toList().filter(v => v === 'F').length
 
 - category: analysis
   prompt: What is the average WEIGHT across all patients?
@@ -87,36 +152,171 @@
     Pass if the answer states a single average weight as a number (demog weights are ~60-90).
     Fail if it gives no number or an obviously wrong magnitude.
 
-# ---- Code generation & execution (deterministic via real datagrok-exec) ----------------
+- category: analysis
+  prompt: How many patients are missing a HEIGHT value? Add a boolean column flagging them.
+  table: demog
+  assert: t.columns.names().filter(n => !before.cols.includes(n)).some(n => t.getCol(n).type === DG.COLUMN_TYPE.BOOL && t.getCol(n).toList().filter(Boolean).length === t.getCol('HEIGHT').stats.missingValueCount)
+
 - category: codegen
   prompt: Write and run code to add a column with the natural log of WEIGHT.
   table: demog
-  assert: t.columns.length > before.cols.length
+  assert: t.columns.names().filter(n => !before.cols.includes(n)).some(n => Math.abs(t.getCol(n).get(0) - Math.log(t.getCol('WEIGHT').get(0))) < 1e-6)
 
 - category: codegen
   prompt: Generate and run JavaScript that builds a small table with columns x and y (5 rows) and opens it.
-  assert: opened >= 1
+  assert: openedViews.some(v => v.dataFrame.rowCount === 5 && v.dataFrame.columns.contains('x') && v.dataFrame.columns.contains('y'))
 
 - category: codegen
   prompt: Using code, count how many patients are older than 60 and tell me the number.
   table: demog
   rubric: >
-    Pass if it reports a specific integer count of patients older than 60. Fail if no number.
+    Pass ONLY if the answer reports a single integer count and it equals 878. Fail if it gives
+    no number, gives a range, or reports two different numbers in the same answer.
 
-# ---- Multi-tool workflows (deterministic, two effects) ---------------------------------
 - category: multitool
   prompt: Add a histogram of AGE, then select the patients older than 60.
   table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM) && t.selection.trueCount > 0
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM && v.props.valueColumnName === 'AGE') && t.selection.trueCount === t.getCol('AGE').toList().filter(v => v > 60).length
 
 - category: multitool
   prompt: Add a scatter plot of HEIGHT versus WEIGHT and color the points by SEX.
   table: demog
-  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT)
+  # The colour half was previously unverified, making this a duplicate of the plain scatter prompt.
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT && [v.props.xColumnName, v.props.yColumnName].sort().join() === 'HEIGHT,WEIGHT' && v.props.colorColumnName === 'SEX')
 
-# ---- Query / connections (judge-scored; add real SQL prompts once a connection exists) --
+- category: analysis
+  prompt: Rename the three walk columns to X, Y and Z, then plot Y against X coloured by Z.
+  table: randomWalk
+  # The source columns are named `#0`, `#1`, `#2` — a stress test for name quoting.
+  assert: "['X','Y','Z'].every(n => t.columns.contains(n)) && Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT && v.props.xColumnName === 'X' && v.props.yColumnName === 'Y' && v.props.colorColumnName === 'Z')"
+
 - category: query
   prompt: What database connections do I have access to, and what kind of data can I query?
   rubric: >
     Pass if it describes the user's available connections or explains how to browse them.
     Fail if it hallucinates specific databases it cannot know or is empty.
+
+# ======================================================================== hard
+# Multi-step, or targeting a documented trap where skipping the skill produces a
+# DETECTABLY wrong state rather than a plausible one.
+
+- category: multitool
+  difficulty: hard
+  prompt: Add a scatter plot of HEIGHT vs WEIGHT coloured by SEX, sort the grid by AGE descending, then select the patients over 60.
+  table: demog
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT && v.props.colorColumnName === 'SEX') && view.grid.sortByColumns[0] && view.grid.sortByColumns[0].name === 'AGE' && view.grid.sortTypes[0] === false && t.selection.trueCount === t.getCol('AGE').toList().filter(v => v > 60).length
+
+- category: analysis
+  difficulty: hard
+  prompt: Clear the filter and deselect everything.
+  table: demog
+  # Opposite polarities in one turn: a filter clears with setAll(TRUE), a selection with setAll(FALSE).
+  # Getting them the same way round is the single most common failure in this area.
+  assert: t.filter.trueCount === t.rowCount && t.selection.trueCount === 0
+
+- category: analysis
+  difficulty: hard
+  prompt: Hide the rows where AGE is over 70 — don't delete them, just hide them.
+  table: demog
+  # Two traps: non-destructive (no row removal), and inverted polarity (KEEP where age <= 70).
+  # Missing numerics are `undefined` from toList() and a 2.68e-34 sentinel from get() — only
+  # isNone() identifies them. A row with unknown AGE is not "over 70", so it stays visible.
+  assert: t.rowCount === before.rowCount && t.filter.trueCount === (() => { const c = t.getCol('AGE'); let n = 0; for (let i = 0; i < t.rowCount; i++) if (c.isNone(i) || c.get(i) <= 70) n++; return n; })()
+
+- category: analysis
+  difficulty: hard
+  prompt: Select the 10 heaviest patients.
+  table: demog
+  # get() on a missing numeric returns a 2.68e-34 sentinel, not null — filter with isNone().
+  assert: t.selection.trueCount === 10 && (() => { const c = t.getCol('WEIGHT'); const vals = []; for (let i = 0; i < t.rowCount; i++) if (!c.isNone(i)) vals.push(c.get(i)); vals.sort((a,b) => b-a); return t.selection.getSelectedIndexes().every(i => !c.isNone(i) && c.get(i) >= vals[9]); })()
+
+- category: analysis
+  difficulty: hard
+  prompt: Select every patient older than 60, then open just those rows as a new table.
+  table: demog
+  assert: t.selection.trueCount > 0 && openedViews.some(v => v.dataFrame.rowCount === t.selection.trueCount)
+
+- category: analysis
+  difficulty: hard
+  prompt: Work out the average HEIGHT and WEIGHT and the patient count for every RACE and SEX combination, and open the result as a new table.
+  table: demog
+  # 4 races x 2 sexes = 8 groups, recomputed rather than hardcoded.
+  assert: openedViews.some(v => v.dataFrame.rowCount === new Set(t.getCol('RACE').toList().map((r,i) => r + '|' + t.getCol('SEX').get(i))).size && v.dataFrame.columns.length >= 4)
+
+- category: analysis
+  difficulty: hard
+  prompt: Pivot the demographics so there is one row per RACE, one column per SEX, showing the average AGE. Open it as a new table.
+  table: demog
+  assert: openedViews.some(v => v.dataFrame.rowCount === t.getCol('RACE').stats.uniqueCount && v.dataFrame.columns.length >= 3)
+
+- category: multitool
+  difficulty: hard
+  prompt: Add a BMI column computed as WEIGHT divided by height in metres squared, colour-code it linearly, and show me a histogram of it.
+  table: demog
+  assert: t.columns.names().filter(n => !before.cols.includes(n)).some(n => t.getCol(n).meta.colors.getType() === DG.COLOR_CODING_TYPE.LINEAR && Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM && v.props.valueColumnName === n))
+
+- category: multitool
+  difficulty: hard
+  prompt: Eighteen beers have no ABV recorded. Tell me how many there are, delete those rows, then show a histogram of ABV.
+  table: beer
+  # Here "delete" really is destructive — the mirror image of the hide-don't-delete prompt above.
+  assert: t.getCol('ABV').stats.missingValueCount === 0 && t.rowCount === before.rowCount - 18 && Array.from(view.viewers).some(v => v.type === DG.VIEWER.HISTOGRAM && v.props.valueColumnName === 'ABV')
+
+- category: multitool
+  difficulty: hard
+  prompt: Filter the beers down to Pale Ales, then add a scatter plot of IBU vs ABV that keeps showing all styles for comparison.
+  table: beer
+  # rowSource defaults to 'Filtered', so 'All' is a real, non-default state change.
+  assert: t.filter.trueCount < t.rowCount && Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT && String(v.props.rowSource) === 'All')
+
+- category: multitool
+  difficulty: hard
+  prompt: Select the 20 most bitter beers, then add a bar chart of average ABV by Style Family that only uses the selected rows.
+  table: beer
+  assert: t.selection.trueCount === 20 && Array.from(view.viewers).some(v => v.type === DG.VIEWER.BAR_CHART && String(v.props.rowSource) === 'Selected' && v.props.splitColumnName === 'Style Family')
+
+- category: analysis
+  difficulty: hard
+  prompt: Open the Filters panel with filters on Style Family, Origin and ABV, and narrow ABV to between 5 and 8.
+  table: beer
+  # A histogram filter needs BOTH min and max — supplying one silently does nothing.
+  # Judged per row over KNOWN values only: whether a range filter also keeps missing-ABV rows is
+  # platform policy, not something the prompt asked about, and asserting a total count silently
+  # made that policy the pass/fail criterion (the model's 75 was exactly the 57 in range plus the
+  # 18 rows with no ABV). This demands the range be applied correctly and stays out of that.
+  assert: Array.from(view.viewers).some(v => v.type === DG.VIEWER.FILTERS) && t.filter.trueCount > 0 && (() => { const c = t.getCol('ABV'); for (let i = 0; i < t.rowCount; i++) { if (c.isNone(i)) continue; const inRange = c.get(i) >= 5 && c.get(i) <= 8; if (t.filter.get(i) !== inRange) return false; } return true; })()
+
+- category: visualization
+  difficulty: hard
+  prompt: Freeze the first two columns, hide DEMOG and CONTROL, and make the rows 40 pixels tall.
+  table: demog
+  # Deliberately "freeze" rather than "pin": GridColumn has pin()/unpin() but no isPinned getter,
+  # so pinning cannot be asserted.
+  assert: view.grid.col('DEMOG').visible === false && view.grid.col('CONTROL').visible === false && view.grid.props.frozenColumns === 2 && view.grid.props.rowHeight === 40
+
+- category: query
+  difficulty: hard
+  prompt: List my database connections.
+  # Entities must be rendered as cards, never prose-listed — assert on the path taken.
+  assert: tools.includes('datagrok_show_entities')
+
+- category: multitool
+  difficulty: hard
+  prompt: Calculate molecular weight, cLogP and hydrogen-bond donors for the structures, then plot LogP against MW coloured by HBD.
+  table: chem/SPGI
+  # SPGI has no MW/LogP/HBD columns of its own, so these names are collision-free.
+  assert: "['MW','LogP','HBD'].every(n => t.col(n) != null) && Array.from(view.viewers).some(v => v.type === DG.VIEWER.SCATTER_PLOT && v.props.colorColumnName === 'HBD')"
+
+- category: multitool
+  difficulty: hard
+  prompt: Flag any compound that trips a PAINS structural alert, select those, and pull them out into their own table.
+  table: chem/SPGI
+  assert: t.columns.names().some(n => n.indexOf('PAINS') === 0) && t.selection.trueCount > 0 && openedViews.some(v => v.dataFrame.rowCount === t.selection.trueCount)
+
+- category: analysis
+  difficulty: hard
+  prompt: How many of these compounds contain a piperidine ring (C1CCNCC1)? Filter to them and open the hits as a separate table.
+  table: chem/SPGI
+  # The substructure filter reads a molblock — passing raw SMILES silently matches ZERO rows,
+  # so the rowCount > 0 clause is load-bearing.
+  assert: openedViews.some(v => v.dataFrame.rowCount > 0 && v.dataFrame.rowCount < t.rowCount)
