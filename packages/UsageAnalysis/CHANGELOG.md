@@ -1,5 +1,9 @@
 # Usage Analysis changelog
 
+## v.next
+
+* GROK-20479: Set the Reports DataFrame name so it is not listed as "null" in the Table selector
+
 ## 2.7.1 (2026-07-23)
 
 * Restored the npm release channel: `datagrok-api` local path dependency replaced with the published `^1.27.7` (path deps block CI publishing, so 2.5.2–2.7.0 never reached npm and environments tracking `latest` kept downgrading to 2.5.1)
