@@ -6,6 +6,7 @@
 #meta.domain: chem
 #input: dataframe data [Input data table]
 #input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+#meta.role: transform
 #output: dataframe scaffolds {action:join(data); semType: Molecule} [Murcko scaffolds, in SMILES format]
 
 import numpy as np
