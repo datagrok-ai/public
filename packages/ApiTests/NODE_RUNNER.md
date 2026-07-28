@@ -37,7 +37,7 @@ npm run stress-node
 
 | Script | What it does | Server? |
 |--------|--------------|---------|
-| `start-node` | Run all UI-independent suites once (`--mode functional`, the default) | yes |
+| `start-node` | Run all UI-independent suites once (`--mode functional`) | yes |
 | `stress-node` | Run the stressTest-marked suite repeatedly at increasing concurrency (`--mode stress --concurrencyRange=10-100 --step=5`) | yes |
 
 The runner loads the UI-independent category folders (`nodeTestDirs` in
@@ -47,7 +47,9 @@ browser-only. A test file that fails to load is reported and skipped — it does
 abort the run (but fails the exit code).
 
 CLI flags (see `parseArgs` in `package-test-node.ts`): `--apiUrl`, `--devKey` (required),
-`--mode functional|stress` (default `functional`; `stress` = only stressTest-marked tests),
+`--mode functional|stress` (default `stress` — only stressTest-marked tests; the default
+protects the nightly `grok stresstest` baseline, which passes no mode flag; functional
+runs opt in via `--mode functional`),
 `-c/--categories`, `--concurrentRuns`, `--concurrencyRange "1-10"`, `--step`, `-l/--loop`.
 
 Results are written to `test-report.csv` (gitignored), **overwritten on every run**.

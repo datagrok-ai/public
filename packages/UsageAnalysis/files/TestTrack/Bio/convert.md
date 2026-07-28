@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.cp.convert-notation-roundtrip]
-realizes: [bio.transform.convert-sequence-notation]
+realizes: [bio.transform.convert-sequence-notation, bio.calculate.extract-region, bio.polytool.convert, bio.transform.to-atomic-level, bio.transform.split-to-monomers]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/convert.md
 migration_date: 2026-05-31

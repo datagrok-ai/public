@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [CLAUDE-33]
-realizes: []
+realizes: [biostructureviewer.biostructure]
 produced_from: atlas-driven
 related_bugs:
   - CLAUDE-33

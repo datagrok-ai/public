@@ -304,11 +304,19 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
     },
   });
 
+  const subs: rxjs.Subscription[] = [];
+  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
+
   const openLink = ui.link('Open authorization page', () => {
+    if (openLink.getAttribute('href'))
+      return;
     const sub = client.onAuthUrl.subscribe((evt) => {
+      openLink.setAttribute('href', evt.url);
+      openLink.setAttribute('target', '_blank');
       window.open(evt.url, '_blank');
       sub.unsubscribe();
     });
+    subs.push(sub);
     client.startAuth();
   });
 
@@ -326,9 +334,6 @@ function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
   const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
 
   const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
-
-  const subs: {unsubscribe: () => void}[] = [];
-  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
 
   subs.push(
     client.onAuthDone.subscribe(() => {

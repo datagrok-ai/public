@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [GROK-12164]
-realizes: []
+realizes: [bio.transform.convert-sequence-notation, bio.transform.split-to-monomers]
 produced_from: atlas-driven
 realized_as:
   - bio-renderer-dispatch-spec.ts

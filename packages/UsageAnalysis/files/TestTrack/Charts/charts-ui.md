@@ -1,5 +1,6 @@
 ---
 feature: charts
+realizes: [charts.sunburst, charts.tree]
 target_layer: manual
 coverage_type: manual
 pyramid_layer: ui-only

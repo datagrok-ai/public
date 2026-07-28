@@ -1,5 +1,9 @@
 # Power Grid changelog
 
+## v.next
+
+* [#3765](https://github.com/datagrok-ai/public/issues/3765): Forms viewer: Added the ability to pin rows via the context menu; pinned forms stay in place when scrolling
+
 ## 1.8.3 (2026-07-09)
 
 * [#3781](https://github.com/datagrok-ai/public/issues/3781): Forms viewer: Added font size control

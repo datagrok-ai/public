@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [detect_macromolecule_on_open, convert_notation]
-realizes: []
+realizes: [bio.analyze.sequence-space]
 produced_from: atlas-driven
 related_bugs:
   - GROK-12164

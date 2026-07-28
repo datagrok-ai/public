@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.cp.identity-scoring]
-realizes: [bio.calculate.identity]
+realizes: [bio.calculate.identity, bio.calculate.similarity, bio.calculate.extract-region]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []
