@@ -1321,66 +1321,35 @@
   min-width: 0;
 }
 
+/* Sized wide enough (--chem-enum-form-min-width, set in enumerator-app.ts from the same per-input-
+   type minimums the platform itself uses) that .ui-form-condensed never gets added to these forms —
+   mirrors how the platform sizes its own dialog forms, instead of overriding what condensed changes
+   after the fact. */
+.chem-enumerator .chem-enum-combine-pane .ui-form {
+  min-width: var(--chem-enum-form-min-width);
+}
+
 /* Shared label/editor columns (--chem-enum-label-width / --chem-enum-editor-width, set in
    enumerator-app.ts) across all three forms in this section, so Product filters renders with the
-   exact same columns Combination limits does. !important needed to beat the platform's own per-form
-   inline width style, asserted asynchronously after initial layout.
-
-   A hard width/min-width/max-width pin (not a shrinkable flex-basis) — this needs to render
-   identically every time regardless of which order panes were expanded in or where the splitter
-   was, and a value that's allowed to shrink renders differently depending on how much space its
-   form happened to have at the moment the platform last measured it. The margin-left correction in
-   flushIndent above (persistent via ui.onSizeChanged, not a one-shot snapshot) is what keeps the
-   forms' start position aligned regardless of timing; this pin is what keeps their column widths
-   aligned regardless of timing too.
-
-   Whichever of the three forms the platform currently considers .ui-form-condensed also gets
-   flex-wrap: wrap on the ROW itself (confirmed live via getComputedStyle) and widens its editor
-   from ~150px to ~176px, while the "Number of rounds" row (never condensed) keeps nowrap and its
-   normal width — pinning nowrap here matches that already-consistent baseline rather than letting
-   per-form condense state decide it.
-
-   font-size is pinned too: confirmed live (DevTools) that a condensed form's label also drops from
-   13px to 12px, on top of everything above — evidently the platform ties more to this class than
-   just layout. 13px matches the non-condensed baseline every label in this section otherwise uses.
-
-   align-items and padding-top pinned too — a full computed-style diff between a condensed and
-   plain row (toggling the class directly and comparing getComputedStyle) turned up exactly these
-   two as the only remaining real differences: align-items flips normal → flex-end, and padding-top
-   goes 4px → 10px (the resulting height/block-size and perspective/transform-origin diffs are pure
-   consequences of that, not separate properties to pin). Diffing the whole computed style rather
-   than checking one more property at a time is what finally closed this out. */
-.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root {
-  flex-wrap: nowrap !important;
-  align-items: normal !important;
-  padding-top: 4px !important;
-}
+   exact same columns Combination limits does — each form's own natural label width otherwise
+   differs, even un-condensed. !important needed to beat the platform's own per-form inline width
+   style, asserted asynchronously after initial layout. A hard width pin, not a shrinkable
+   flex-basis, so it renders identically regardless of pane-expansion order or splitter position.
+   The min-width rule above keeps every form here out of .ui-form-condensed entirely, so only the
+   column-width properties need pinning — condensed's other layout changes (row wrap, font-size,
+   alignment) never apply in the first place. */
 .chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > label.ui-input-label:not(:empty) {
   width: var(--chem-enum-label-width) !important;
   min-width: var(--chem-enum-label-width) !important;
   max-width: var(--chem-enum-label-width) !important;
-  font-size: 13px !important;
   text-align: right !important;
-  align-self: stretch !important;
-  height: 28px !important;
   margin-right: 8px !important;
-}
-/* The label's inner <span> (the actual text node) needs the same pin — confirmed live that a
-   condensed form's span also flips text-align from right to left, independent of the label's own
-   text-align above (the span doesn't inherit it here). Toggling .ui-form-condensed directly on a
-   form and re-reading getComputedStyle is what surfaced this one — labelW/editorW/flex-wrap/
-   font-size/padding-top/align-items all matched already, but text-align was still silently
-   flipping per form, pulling every Product filters caption flush left against the label's own left
-   edge (far from its editor) while Combination limits/Rounds stayed flush right (hugging theirs). */
-.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > label.ui-input-label > span {
-  text-align: right !important;
 }
 .chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > .ui-input-editor {
   flex-grow: 0 !important;
   width: var(--chem-enum-editor-width) !important;
   min-width: var(--chem-enum-editor-width) !important;
   max-width: var(--chem-enum-editor-width) !important;
-  justify-content: normal !important;
 }
 
 .chem-enum-pane-subtitle {
@@ -1427,10 +1396,15 @@
   white-space: nowrap;
 }
 
-/* Override platform's .d4-ribbon .d4-ribbon-item > * { height: 28px } */
+/* Override platform's .d4-ribbon .d4-ribbon-item > * { height: 28px }. A fixed top offset instead
+   of align-items:center, since centering ties the chip's position to the panel's available
+   cross-size — which shifts whenever the scrollbar below reserves space. !important on margin-top:
+   the platform's own .d4-ribbon-item > :not(.grok-icon):not(.d4-ribbon-wrapper) sets margin:2px at
+   higher specificity (three :not()-embedded classes beat our two). */
 .d4-ribbon-item > .chem-enum-chip {
   height: auto !important;
-  align-self: center;
+  align-self: flex-start;
+  margin-top: 5px !important;
 }
 
 .chem-enum-chip:hover {
@@ -1477,11 +1451,14 @@
 }
 
 /* Only the panel holding the chips scrolls — not the whole ribbon, which would drag the Enumerate/
-   Cancel/YAML buttons out of view with it. Fully native — no ::-webkit-scrollbar override — so it
-   renders identically to the left "How to combine" pane's own scroll, which is native too. */
+   Cancel/YAML buttons out of view with it. Fully native, no ::-webkit-scrollbar override.
+   overflow-x:scroll, not auto: auto only reserves the scrollbar's space while content actually
+   overflows, so the row's available height for align-items:center centering shifts as scrolling
+   toggles on and off, visibly nudging the chips. scroll reserves that space unconditionally, so the
+   centering baseline never changes. */
 .d4-ribbon-panel:has(.chem-enum-chip) {
   min-width: 0;
-  overflow-x: auto;
+  overflow-x: scroll;
 }
 
 /* The row of panels itself (app icon / Enumerate-Cancel / chips / YAML) is a flex item one level up,

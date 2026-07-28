@@ -736,9 +736,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         // A numeric column with zero variance (every value equal — common right after subsetting to
         // the exact value it was filtered on) makes the histogram filter widget clobber the whole
         // dataframe's .filter to all-false, both on construction and again if the user later toggles
-        // it histogram<->categorical (live-verified — unrelated to and not fixed by the subset-clone
-        // filter reset above). A categorical filter has no degenerate-range code path, so route
-        // zero-variance numeric columns there instead of ever constructing the buggy histogram widget.
+        // it histogram<->categorical — a separate bug from, and not fixed by, the subset-clone filter
+        // reset above. A categorical filter has no degenerate-range code path, so route zero-variance
+        // numeric columns there instead of ever constructing the buggy histogram widget.
         type: col.isNumerical ? (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
           col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
         column: col.name,
@@ -751,7 +751,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const gridBox = ui.div([grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
     // width must track the wrapper sizeSplitOnceLaidOut resizes below (split.children[0]), not a fixed
     // px value — a fixed width here left a dead gap between this box and the divider whenever the
-    // wrapper's computed width (total * 0.25, capped 260) exceeded it (live-verified).
+    // wrapper's computed width (total * 0.25, capped 260) exceeded it.
     const filtersBox = ui.div([filtersViewer.root], {style: {flex: '0 0 auto', width: '100%', height: '100%',
       overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
     const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
@@ -798,23 +798,21 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const subset = df.clone(mask);
     subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
     detectChemSemTypes(subset);
-    // df.clone(mask) leaves the SOURCE df's own .selection set to `mask` as a side effect
-    // (confirmed live) — left uncleared, a later filter-only "Subset by selection" on the restored
-    // original table picks up this stale selection instead of the new filter, since selection is
-    // checked first above.
+    // df.clone(mask) leaves the SOURCE df's own .selection set to `mask` as a side effect — left
+    // uncleared, a later filter-only "Subset by selection" on the restored original table picks up
+    // this stale selection instead of the new filter, since selection is checked first above.
     df.selection.setAll(false, false);
     // Same clone-carries-BitSet-state issue on the other side: the new subset's OWN .filter comes
-    // back all-false (confirmed live) when cloning off a filtered source — reset it so the subset
-    // isn't born with every row hidden.
+    // back all-false when cloning off a filtered source — reset it so the subset isn't born with
+    // every row hidden.
     subset.filter.setAll(true, false);
     return subset;
   }
 
-  // NOTE: assignTableInput's null-then-real two-step assignment does NOT reliably re-render via the
-  // input's own onChanged -> onTableChanged reaction alone — live-verified: relying solely on that
-  // path left the grid empty after "Subset by selection" (reproduced with filters off too, so it
-  // isn't a filters-panel issue). The explicit calls below are intentionally redundant with
-  // onTableChanged's own re-render — correctness over the extra render.
+  // assignTableInput's null-then-real two-step assignment does NOT reliably re-render via the
+  // input's own onChanged -> onTableChanged reaction alone — relying on that path alone left the
+  // grid empty after "Subset by selection". The explicit calls below are intentionally redundant
+  // with onTableChanged's own re-render — correctness over the extra render.
   function subsetBySelection(
     input: DG.InputBase<DG.DataFrame | null>, state: SubsetState,
     mountFn: () => void, gridLabel: string, noTableMsg?: string,
@@ -829,7 +827,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (!subset) return;
     // `input` is a ChoiceInput whose `.value` getter re-wraps the underlying table on every read, so
     // `df` is never reference-equal to `state.prev` even when it's the same table — compare by name
-    // instead (live-verified via diagnostic logging: same `.name`, but `!==` by reference).
+    // instead.
     if (df.name !== state.prev?.name) state.original = df; // remember the user's own table for "Use all"
     const prev = state.prev;
     const prevFresh = state.freshClone;
@@ -868,10 +866,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // "Use all" swaps in a fresh, distinctly-named clone of `orig` rather than reusing it directly.
     // Reusing `orig` carries forward per-column tags (e.g. chem's CHEM_APPLY_FILTER_SYNC) that can hang
     // a re-run substructure search — and even a tag-free clone NAMED the same as `orig` still gets the
-    // platform's own remembered filter/sketch state (keyed by table+column name) reapplied to it
-    // (live-verified: both the sketch and the hang persisted with a same-named clone). clone(null) plus
-    // a distinct name sidesteps both. `orig` stays untouched so repeated clicks keep deriving from the
-    // same known-good source.
+    // platform's own remembered filter/sketch state (keyed by table+column name) reapplied to it.
+    // clone(null) plus a distinct name sidesteps both. `orig` stays untouched so repeated clicks keep
+    // deriving from the same known-good source.
     const fresh = orig.clone(null);
     // Strip a prior "(full)" suffix instead of appending blindly — `orig` can itself be an earlier
     // "Use all" clone (subsetting from it re-points state.original at it), and re-suffixing every cycle
@@ -904,11 +901,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // `syncConfigToQuickInputs()` sets values on the quick inputs (rounds, depth-first, etc.), whose
   // own onChanged listeners cascade into a full remount of the Reactions/BBs/Reagents grids — and
   // each freshly-mounted Filters viewer can silently reapply a stale, much-earlier categorical
-  // selection instead of the table's actual current filter (live-verified via mount-order tracing:
-  // two full remounts fire per call, each seeing the correct filter at mount time, so the reapply
-  // happens in the filter widget's own async post-construction step, same root cause fixed elsewhere
-  // in this file for subsetBySelection/restoreFullTable). Snapshot each table's filter before the
-  // cascade and restore it after, once that async reapply has had time to fire.
+  // selection instead of the table's actual current filter, since the reapply happens in the filter
+  // widget's own async post-construction step (same root cause fixed elsewhere in this file for
+  // subsetBySelection/restoreFullTable). Snapshot each table's filter before the cascade and restore
+  // it after, once that async reapply has had time to fire.
   function withPreservedFilters(fn: () => void): void {
     const saved = [templatesInput.value, bbsInput.value, reagentsInput.value]
       .filter((d): d is DG.DataFrame => d != null)
@@ -1148,16 +1144,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     return dot;
   };
   // Cancels the nested accordion's own chevron indent so its rows start flush with the main fields —
-  // measured against the real gap instead of a hand-picked constant. A single setTimeout(0) snapshot
-  // can bake in a wrong margin if it fires while a sibling reflow is still in flight (e.g. dragging
-  // "Number of rounds" tears down and rebuilds the right-side round-tab strips in the same tick a
-  // pane first expands in) — the wrong value then never gets corrected since build() only runs this
-  // once per pane. Re-measuring on every real size change (ui.onSizeChanged, ResizeObserver-backed,
-  // already used the same way elsewhere in this file) instead of trusting one snapshot keeps the
-  // correction accurate regardless of what else is mid-reflow when the pane opens. Observes a stable
-  // ancestor, not el itself — el's own margin-left change would otherwise perturb its resolved width
-  // and could re-trigger a ResizeObserver watching el directly.
-  const flushIndent = (el: HTMLElement, reference: HTMLElement): void => {
+  // measured against the real gap instead of a hand-picked constant, and re-measured on every real
+  // size change (not just once at mount) since a sibling reflow can still be in flight when the pane
+  // first expands. Observes a stable ancestor, not el itself, since el's own margin-left change would
+  // otherwise perturb its resolved width and could re-trigger a ResizeObserver watching el directly.
+  const flushIndent = (el: HTMLElement, reference: HTMLElement): Subscription => {
     const apply = (): void => {
       const extra = el.getBoundingClientRect().left - reference.getBoundingClientRect().left;
       const current = parseFloat(getComputedStyle(el).marginLeft) || 0;
@@ -1166,25 +1157,32 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       if (next === 0) el.style.removeProperty('margin-left');
       else el.style.setProperty('margin-left', `${next}px`, 'important');
     };
-    view.subs.push(ui.onSizeChanged(reference).subscribe(apply));
-    view.subs.push(ui.onSizeChanged(accCombinePane.root).subscribe(apply));
+    const sub = new Subscription();
+    sub.add(ui.onSizeChanged(reference).subscribe(apply));
+    sub.add(ui.onSizeChanged(accCombinePane.root).subscribe(apply));
     setTimeout(apply, 0);
+    view.subs.push(sub);
+    return sub;
   };
   // Builds ui.form() lazily, only once the pane's content factory first runs — building it while
   // still detached would measure it at 0 width and get it marked .ui-form-condensed regardless of
-  // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs.
+  // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs — the
+  // stale build's flushIndent subscriptions are disposed first, or they'd keep firing against a
+  // detached form on every future resize.
   const lazyFilterForm = (getInputs: () => DG.InputBase<unknown>[]):
   {getRoot: () => HTMLElement; invalidate: () => void} => {
     let root: HTMLElement | null = null;
+    let indentSub: Subscription | null = null;
     const build = (): HTMLElement => {
       const form = ui.form(getInputs());
-      flushIndent(form, numRoundsInput.root);
+      indentSub = flushIndent(form, numRoundsInput.root);
       return form;
     };
     return {
       getRoot: (): HTMLElement => root ??= build(),
       invalidate: (): void => {
         if (!root) return;
+        indentSub?.unsubscribe();
         const fresh = build();
         root.replaceWith(fresh);
         root = fresh;
@@ -1199,31 +1197,43 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // property + stylesheet !important rule, not a plain inline style: the platform's own per-form
   // label auto-sizing runs asynchronously after mount and would silently overwrite a plain inline
   // style outright.
-  const measureLabelWidth = (label: HTMLElement): number => {
+  const measureLabelWidths = (labels: HTMLElement[]): number[] => {
     const probe = document.createElement('span');
     probe.style.position = 'absolute';
     probe.style.visibility = 'hidden';
     probe.style.whiteSpace = 'nowrap';
     probe.style.left = '-9999px';
-    probe.style.font = getComputedStyle(label).font;
-    probe.textContent = label.textContent;
     document.body.appendChild(probe);
-    const width = probe.getBoundingClientRect().width;
+    const widths = labels.map((label) => {
+      probe.style.font = getComputedStyle(label).font;
+      probe.textContent = label.textContent;
+      return probe.getBoundingClientRect().width;
+    });
     probe.remove();
-    return width;
+    return widths;
   };
   const sectionInputs = [
     numRoundsInput, maxComponentsInput, maxRoutesInput,
     ...combinationLimitFields.inputs, ...productFilterFields.inputs,
   ];
-  const sharedLabelWidth = Math.ceil(Math.max(...sectionInputs.map((inp) => measureLabelWidth(inp.captionLabel))));
+  const sharedLabelWidth = Math.ceil(Math.max(...measureLabelWidths(sectionInputs.map((inp) => inp.captionLabel))));
   // Editors need pinning too, not just labels: the platform widens an editor from its normal ~150px
-  // to ~176px on whichever of the three forms it currently considers .ui-form-condensed (confirmed
-  // live — label position stays put, only the editor's own width changes), so without this the
-  // Product filters column can end up visibly wider than Combination limits' even with labels
-  // aligned. 150px matches the platform's own un-condensed default (empirically the width every
-  // editor in this section already renders at whenever its form isn't condensed).
+  // to ~176px on whichever of the three forms it currently considers .ui-form-condensed, so without
+  // this the Product filters column can end up visibly wider than Combination limits' even with
+  // labels aligned. 150px matches the platform's own un-condensed default.
   const sharedEditorWidth = 150;
+  // Mirrors the per-input-type minimum widths the platform itself uses to decide .ui-form-condensed
+  // (js-api ui.ts's getInputsMinWidths — text/table inputs need 200px, float/date 140px, everything
+  // else 100px). Sizing the form to fit the widest one up front, the same way the platform already
+  // does for its own dialog forms (a min-width computed from label + input minimums instead of
+  // reacting to condensed after the fact), means these forms never need condensed layout at all.
+  const platformInputMinWidth = (input: DG.InputBase<unknown>): number => {
+    const el = input.root;
+    if (el.classList.contains('ui-input-text') || el.classList.contains('ui-input-table')) return 200;
+    if (el.classList.contains('ui-input-float') || el.classList.contains('ui-input-date')) return 140;
+    return 100;
+  };
+  const formMinInputWidth = Math.ceil(Math.max(...sectionInputs.map(platformInputMinWidth)));
   // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
   // the outer wizard-navigation accordion).
   const limitsAccordion = ui.accordion();
@@ -1249,6 +1259,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   accCombinePane.root.classList.add('chem-enum-combine-pane');
   accCombinePane.root.style.setProperty('--chem-enum-label-width', `${sharedLabelWidth}px`);
   accCombinePane.root.style.setProperty('--chem-enum-editor-width', `${sharedEditorWidth}px`);
+  // +40 matches the buffer the platform's own d4-dialog-contents branch adds on top of
+  // label + input minimums (js-api ui.ts handleFormResize).
+  accCombinePane.root.style.setProperty('--chem-enum-form-min-width', `${sharedLabelWidth + formMinInputWidth + 40}px`);
   // Left panel for Preview.
   const previewRecapHost = ui.div([], {style: {fontSize: '12px'}});
   function renderPreviewRecap(): void {
@@ -1317,9 +1330,14 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const subExtras = injectPaneSub(accExtrasPane);
   const subCombine = injectPaneSub(accCombinePane);
 
-  // minWidth fits "How to combine"'s widest row (220px label + input + padding).
+  // Must fit --chem-enum-form-min-width (the "How to combine" forms' own min-width, computed above)
+  // plus the padding/accordion chrome between this pane and those forms — otherwise this pane's
+  // content overflows it on every load, not just at a narrow splitter, since the forms now refuse to
+  // shrink below their own minimum. The +80 buffer covers this pane's own padding-right plus the
+  // nested accordion/pane padding.
   const leftPane = ui.divV([accordion.root],
-    {style: {minWidth: '420px', overflowY: 'auto', overflowX: 'hidden', paddingRight: '8px'}});
+    {style: {minWidth: `${sharedLabelWidth + formMinInputWidth + 80}px`, overflowY: 'auto', overflowX: 'hidden',
+      paddingRight: '8px'}});
 
   // === Config-summary ribbon (shown above the right-pane tabs) ===
   // Each chip's dot flags "customized": Reactions/Building blocks/Reagents show it when any round
@@ -1514,11 +1532,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     let currentDf: DG.DataFrame | null = null;
     // host -> last (table name, filtersOn) successfully mounted there. "Subset by selection"/"Use all"
     // both trigger a render twice — once via assignTableInput's onChanged -> onTableChanged ->
-    // buildStepTabs cascade, once via the caller's own explicit follow-up render — a real double DOM
-    // rebuild per review feedback. Rather than risk dropping either render call (the explicit one is a
-    // documented safety net for cases where the cascade alone was live-verified unreliable), renderGrid
-    // itself now no-ops the second call once it sees nothing actually changed. Compared by name, not
-    // reference — `o.input.value`'s ChoiceInput getter re-wraps a new object on every read.
+    // buildStepTabs cascade, once via the caller's own explicit follow-up render, since the cascade
+    // alone is unreliable (see the comment above assignTableInput). Rather than risk dropping either
+    // render call, renderGrid itself no-ops the second call once it sees nothing actually changed.
+    // Compared by name, not reference — `o.input.value`'s ChoiceInput getter re-wraps a new object on
+    // every read.
     const lastMounted = new Map<HTMLElement, {name: string; filtersOn: boolean}>();
     // Per-round state (index k-1 = round k) — one array instead of parallel ones, so df/sub/committed
     // can't drift out of sync. `committed` is an explicit flag, NOT inferred from row-count: a step's
@@ -1655,9 +1673,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       for (let k = 1; k <= roundCount(); k++) {
         const pane = tc.addPane(`Round ${k}`, makePaneContent(k));
         // Position dot absolutely (header stacks children vertically, so marginLeft lands below the
-        // label). Positive left offset only — a negative one bleeds into the adjacent tab (tabs sit
-        // flush, live-verified). Fixed top offset, not top:50% — the header's box shrinks ~7px when
-        // selected (underline indicator), so a percentage-based center drifts on selection.
+        // label). Positive left offset only — a negative one bleeds into the adjacent tab, since tabs
+        // sit flush. Fixed top offset, not top:50% — the header's box shrinks ~7px when selected
+        // (underline indicator), so a percentage-based center drifts on selection.
         const dot = ui.div([], {style: {position: 'absolute', left: '5px', top: '12px',
           width: '6px', height: '6px', borderRadius: '50%',
           background: OVERRIDE_DOT_COLOR, display: 'none'}});
@@ -1777,17 +1795,19 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     function refreshDisplay(): void { renderBar(); updateDots(); }
 
     const onTableChanged = (): void => {
-      if (o.input.value) detectChemSemTypes(o.input.value);
-      // `state.original` is deliberately NOT touched here. onChanged's exact timing relative to
-      // subsetBySelection's own synchronous assignment isn't reliable enough to gate a reset on
-      // (two earlier attempts — a suppress flag, then a direct o.state.prev comparison here — were
-      // both live-verified to occasionally wipe `original` mid-chain, making "Use all" undo only the
-      // last "Subset by selection" instead of the whole chain back to the true original). Ownership
-      // of `original`'s lifecycle lives entirely in subsetBySelection/restoreFullTable's own
-      // synchronous, user-triggered logic instead — see subsetBySelection's `df.name !== state.prev?.name`
-      // check, which self-corrects even after an unrelated file swap. Trade-off: if the user swaps
-      // to a different file WITHOUT ever subsetting it, then clicks "Use all", it restores the
-      // previous file's original instead of a no-op — an edge case outside "Use all"'s intended use.
+      const df = o.input.value;
+      if (df) detectChemSemTypes(df);
+      // subsetBySelection/restoreFullTable always leave the table they just assigned matching
+      // `state.prev` or `state.freshClone` by name at the moment this fires (they set it right
+      // before calling assignTableInput). A match against neither means the input changed from
+      // outside either of them — e.g. the user picked a different file — so the old subset
+      // bookkeeping no longer applies to it and must be cleared. Otherwise a later "Use all"
+      // would restore the PREVIOUS file's `original` onto this unrelated one.
+      if (df && df.name !== o.state.prev?.name && df.name !== o.state.freshClone?.name) {
+        o.state.original = null;
+        o.state.prev = null;
+        o.state.freshClone = null;
+      }
       for (const s of stepState) s?.sub?.unsubscribe();
       stepState.length = 0;
       buildStepTabs(0);
@@ -2140,7 +2160,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ui.tooltip.bind(cfgEstEl, 'Open Preview to sample products before running the full enumeration.');
 
   // Right pane: a single component-tab control (each tab has its own step strip + one grid).
-  const rightPane = ui.divV([tabs.root], {style: {height: '100%', overflow: 'hidden'}});
+  // min-width matches the left pane's approach: below it, the grid+filters split squishes into an
+  // unreadable sliver rather than shrinking usefully, so it holds a floor and scrolls instead.
+  const rightPane = ui.divV([tabs.root], {style: {height: '100%', minWidth: '400px', overflow: 'hidden'}});
 
   // Resizable horizontal split — drag the divider to rebalance inputs vs side grids.
   const mainRow = ui.splitH([leftPane, rightPane],
