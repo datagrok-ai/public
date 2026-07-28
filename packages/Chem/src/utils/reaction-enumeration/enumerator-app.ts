@@ -647,6 +647,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // "Subset by selection" clones by the selection mask and registers the clone with the workspace,
   // since the table input's choice widget silently rejects unregistered values. `original` restores
   // the user's own table for "Use all"; `freshClone` is the last "Use all" copy (see restoreFullTable).
+  //
+  // Table names aren't unique in a workspace, so `.name` can't tell "same table" from "same-named
+  // table" — compare `.id` instead, which the platform assigns once a table is registered.
+  function isSameTrackedTable(a: DG.DataFrame | null | undefined, b: DG.DataFrame | null | undefined): boolean {
+    return a?.id != null && a.id === b?.id;
+  }
   type SubsetState = {prev: DG.DataFrame | null; original: DG.DataFrame | null; freshClone: DG.DataFrame | null};
   const templatesState: SubsetState = {prev: null, original: null, freshClone: null};
   const bbsState: SubsetState = {prev: null, original: null, freshClone: null};
@@ -825,10 +831,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const subset = cloneSubsetByRows(df,
       `Select rows in the ${gridLabel} (Ctrl/Shift+click) or apply a filter first.`);
     if (!subset) return;
-    // `input` is a ChoiceInput whose `.value` getter re-wraps the underlying table on every read, so
-    // `df` is never reference-equal to `state.prev` even when it's the same table — compare by name
-    // instead.
-    if (df.name !== state.prev?.name) state.original = df; // remember the user's own table for "Use all"
+    if (!isSameTrackedTable(df, state.prev)) state.original = df; // remember the user's own table for "Use all"
     const prev = state.prev;
     const prevFresh = state.freshClone;
     state.prev = subset;
@@ -840,9 +843,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     deferredFilterReset(subset);
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
-    if (prev && prev.name !== subset.name && prev.name !== df.name)
+    if (prev && !isSameTrackedTable(prev, df))
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
-    if (prevFresh && prevFresh.name !== subset.name && prevFresh.name !== df.name)
+    if (prevFresh && !isSameTrackedTable(prevFresh, df))
       try {grok.shell.closeTable(prevFresh);} catch (e) {console.warn(`Could not close prev fresh clone: ${e}`);}
   }
 
@@ -858,7 +861,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     };
     const orig = state.original;
     if (!orig) return clearOrInform(input.value); // no subset was ever taken from this table
-    if (state.freshClone && input.value?.name === state.freshClone.name)
+    if (state.freshClone && isSameTrackedTable(input.value, state.freshClone))
       return clearOrInform(state.freshClone); // already showing a "Use all" copy — no need to re-clone
     const prev = state.prev;
     const prevFresh = state.freshClone;
@@ -880,9 +883,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     // `fresh` can still inherit a stale filter bitset from `orig` — reset it once the mount settles.
     deferredFilterReset(fresh);
     refreshValidation();
-    if (prev && prev.name !== orig.name)
+    if (prev)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
-    if (prevFresh && prevFresh.name !== fresh.name)
+    if (prevFresh)
       try {grok.shell.closeTable(prevFresh);} catch (e) {console.warn(`Could not close prev fresh clone: ${e}`);}
   }
 
@@ -1532,14 +1535,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     let selStep = 0; // 0 = All steps (full library); 1..rounds = that round's subset
     let filtersOn = false; // funnel toggle: show the standard Datagrok filters panel next to the grid
     let currentDf: DG.DataFrame | null = null;
-    // host -> last (table name, filtersOn) successfully mounted there. "Subset by selection"/"Use all"
-    // both trigger a render twice — once via assignTableInput's onChanged -> onTableChanged ->
-    // buildStepTabs cascade, once via the caller's own explicit follow-up render, since the cascade
-    // alone is unreliable (see the comment above assignTableInput). Rather than risk dropping either
-    // render call, renderGrid itself no-ops the second call once it sees nothing actually changed.
-    // Compared by name, not reference — `o.input.value`'s ChoiceInput getter re-wraps a new object on
-    // every read.
-    const lastMounted = new Map<HTMLElement, {name: string; filtersOn: boolean}>();
+    // host -> last (table identity, filtersOn) successfully mounted there. "Subset by selection"/"Use
+    // all" both trigger a render twice (see the comment above assignTableInput) — renderGrid no-ops
+    // the second call once it sees nothing actually changed, comparing by `.id`, not reference.
+    const lastMounted = new Map<HTMLElement, {id: string; filtersOn: boolean}>();
     // Per-round state (index k-1 = round k) — one array instead of parallel ones, so df/sub/committed
     // can't drift out of sync. `committed` is an explicit flag, NOT inferred from row-count: a step's
     // clone can silently drift from the global table if rows are added/removed in place (no onChanged
@@ -1782,9 +1781,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         if (selStep === 0) o.badge?.refresh(null);
         return;
       }
-      const key = {name: currentDf.name, filtersOn};
+      // Step override clones (selStep != 0) never get a registered `.id` — they're tracked by
+      // stepState, not SubsetState — so skip that lookup and fall back to name for those.
+      const key = {id: (selStep === 0 ? currentDf.id : null) ?? currentDf.name, filtersOn};
       const prevMounted = lastMounted.get(gridHost);
-      if (prevMounted && prevMounted.name === key.name && prevMounted.filtersOn === key.filtersOn) {
+      if (prevMounted && prevMounted.id === key.id && prevMounted.filtersOn === key.filtersOn) {
         if (selStep === 0) o.badge?.refresh(currentDf.rowCount);
         return;
       }
@@ -1799,13 +1800,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const onTableChanged = (): void => {
       const df = o.input.value;
       if (df) detectChemSemTypes(df);
-      // subsetBySelection/restoreFullTable always leave the table they just assigned matching
-      // `state.prev` or `state.freshClone` by name at the moment this fires (they set it right
-      // before calling assignTableInput). A match against neither means the input changed from
-      // outside either of them — e.g. the user picked a different file — so the old subset
-      // bookkeeping no longer applies to it and must be cleared. Otherwise a later "Use all"
-      // would restore the PREVIOUS file's `original` onto this unrelated one.
-      if (df && df.name !== o.state.prev?.name && df.name !== o.state.freshClone?.name) {
+      // A match against neither prev nor freshClone means the input changed from outside either of
+      // them — e.g. a different file — so the old subset bookkeeping no longer applies and must be
+      // cleared, or a later "Use all" would restore the wrong table's `original`.
+      if (df && !isSameTrackedTable(df, o.state.prev) && !isSameTrackedTable(df, o.state.freshClone)) {
         o.state.original = null;
         o.state.prev = null;
         o.state.freshClone = null;
