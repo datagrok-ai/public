@@ -1,0 +1,8 @@
+
+```datagrok-exec
+const mw = t.getCol('MW');
+const logP = t.getCol('LogP');
+t.filter.init((i) => mw.get(i) < 500 && logP.get(i) < 5);
+```
+
+Done! Rows are now filtered to show only those with **MW < 500** and **LogP < 5**. You can see the updated row count in the status bar.

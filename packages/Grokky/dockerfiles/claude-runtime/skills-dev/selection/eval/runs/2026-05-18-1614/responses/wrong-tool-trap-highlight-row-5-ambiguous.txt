@@ -1,0 +1,7 @@
+
+```datagrok-exec
+if (5 >= 0 && 5 < t.rowCount)
+  t.currentRowIdx = 5;
+```
+
+Row 5 is now focused (set as the current row). The grid will scroll to it and highlight it.

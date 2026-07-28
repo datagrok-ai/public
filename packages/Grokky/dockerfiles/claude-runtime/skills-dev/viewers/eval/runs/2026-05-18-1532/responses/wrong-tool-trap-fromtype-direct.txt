@@ -1,0 +1,14 @@
+I'll keep that in mind. When creating standalone or detached viewers, I'll use `DG.Viewer.fromType(type, df, opts)` instead of `view.addViewer(...)`.
+
+For example:
+
+```javascript
+// Standalone viewer embedded in custom UI
+const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {
+  xColumnName: 'mw',
+  yColumnName: 'logp',
+});
+return sp.root;
+```
+
+Is there a specific viewer you'd like me to create, or are you setting a preference for how I generate viewer code going forward?

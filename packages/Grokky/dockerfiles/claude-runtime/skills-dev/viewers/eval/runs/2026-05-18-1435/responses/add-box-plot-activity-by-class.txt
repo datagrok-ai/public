@@ -1,0 +1,8 @@
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'class',
+});
+```
+
+A box plot has been added showing **activity** distribution grouped by **class**. Each box displays the median, IQR, and whiskers for the corresponding class. Let me know if you'd like to adjust any settings!

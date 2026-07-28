@@ -1,0 +1,12 @@
+
+```datagrok-exec
+// Close all scatter plots
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+  .forEach((v) => { try { v.close(); } catch {} });
+
+// Add a histogram
+view.addViewer(DG.VIEWER.HISTOGRAM);
+```
+
+Done! I've closed the scatter plot and added a histogram to the view.

@@ -1,0 +1,14 @@
+I'll add a **box plot** (the most natural choice for "distribution per category") showing `activity` per `compound_class`:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'compound_class',
+});
+```
+
+This adds a box plot to your current view with:
+- **Y-axis** — `activity` values (median, IQR, whiskers, and outliers)
+- **X-axis** — each `compound_class` category as a separate group
+
+If you'd prefer a different chart type (histogram split by class, bar chart with aggregated values, etc.), just let me know!

@@ -1,0 +1,27 @@
+
+```datagrok-exec
+// Pin SMILES on the left
+view.grid.col('SMILES').pin();
+
+// Hide the index column (row header is index 0, but also handle named index columns)
+const cols = view.grid.columns;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc && (gc.name === 'index' || gc.name === 'Index' || gc.name === '#' || gc.name === 'idx')) {
+    gc.visible = false;
+  }
+}
+
+// Color 'activity' column red → green
+t.col('activity').meta.colors.setLinear(['#FF0000', '#00FF00']);
+
+// Sort by activity descending
+view.grid.sort(['activity'], [false]);
+```
+
+Done! Here's what was applied:
+
+- **SMILES pinned** to the left side of the grid
+- **Index column hidden** (if present)
+- **Activity** color-coded **red → green** (low → high)
+- **Sorted by activity descending** (highest first)

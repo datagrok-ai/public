@@ -1,0 +1,50 @@
+I'll compute molecular descriptors for CHEMBL1234 in two steps:
+1. First, look up the SMILES for CHEMBL1234 using the ChEMBL name lookup
+2. Then compute RDKit descriptors on it
+
+**Step 1 — Resolve CHEMBL1234 → SMILES**
+
+```datagrok-exec
+// Build a one-row table with the ChEMBL ID, then map it to SMILES
+const idDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('chembl_id', ['CHEMBL1234'])
+]);
+grok.shell.addTableView(idDf);
+
+// Map ChEMBL ID → SMILES via mapIdentifiersTransform
+const result = await grok.functions.call('Chem:mapIdentifiersTransform', {
+  table: idDf,
+  molecules: idDf.col('chembl_id'),
+  fromSource: 'chembl',
+  toSource: 'smiles'
+});
+
+return ui.tableFromMap({ status: 'SMILES lookup complete — see table' });
+```
+
+**Step 2 — Compute descriptors on the resolved SMILES**
+
+```datagrok-exec
+// Grab the SMILES column added in step 1
+const smilesCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? t.col('smiles');
+
+if (!smilesCol) {
+  return ui.divText('⚠️ No molecule column found. The ChEMBL ID may not have resolved.');
+}
+
+const descDf = await grok.functions.call('Chem:getDescriptors', {
+  molecules: smilesCol
+});
+
+grok.shell.addTableView(descDf);
+return DG.Viewer.grid(descDf).root;
+```
+
+---
+
+**What this does:**
+
+1. **`Chem:mapIdentifiersTransform`** — translates `CHEMBL1234` (a ChEMBL accession) to its canonical SMILES via the UniChem identifier mapping service.
+2. **`Chem:getDescriptors`** — computes the full **RDKit descriptor set** (200+ descriptors: MW, LogP, TPSA, ring counts, rotatable bonds, graph invariants, etc.) for the resolved structure.
+
+The descriptor table will open as a new grid view. If you'd prefer a **specific subset** of descriptors, or want **chemical properties** (MW, HBA, HBD, LogP, PSA) instead of the full RDKit set, just let me know!

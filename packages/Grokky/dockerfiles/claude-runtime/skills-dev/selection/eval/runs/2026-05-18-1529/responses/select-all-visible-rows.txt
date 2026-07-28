@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.selection.copyFrom(t.filter);
+```
+
+Done! All currently-visible rows (those passing the active filter) are now selected. The selection mirrors the filter — `t.selection.copyFrom(t.filter)` copies the filter BitSet directly into the selection BitSet.

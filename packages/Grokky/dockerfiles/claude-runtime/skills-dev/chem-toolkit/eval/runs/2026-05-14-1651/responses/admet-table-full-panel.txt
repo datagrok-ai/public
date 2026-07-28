@@ -1,0 +1,19 @@
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No Molecule column found in the current table.');
+await grok.functions.call('Admetica:getAdmeProperties', {
+  table: t,
+  molecules: mol
+});
+```
+
+The full ADMET panel has been calculated and appended to your table. The new columns cover all five categories:
+
+- **Absorption** — Caco-2 permeability, solubility, bioavailability, etc.
+- **Distribution** — VDss, plasma protein binding, BBB penetration, etc.
+- **Metabolism** — CYP inhibition/substrate predictions (CYP1A2, CYP2C9, CYP2C19, CYP2D6, CYP3A4, etc.)
+- **Excretion** — Half-life, clearance
+- **Toxicity** — hERG inhibition, hepatotoxicity, AMES mutagenicity, etc.
+
+Scroll right in the grid to see all the newly added columns. You can click any column header to sort, or use **Chem → Admetica → Calculate** from the top menu to re-run with a custom model selection.

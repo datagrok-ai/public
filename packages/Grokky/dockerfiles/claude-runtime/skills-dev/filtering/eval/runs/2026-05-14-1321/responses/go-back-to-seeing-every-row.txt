@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.clearFilter(view);
+```
+
+Done — all rows are now visible and any active filters have been disabled.

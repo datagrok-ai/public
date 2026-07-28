@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.configureGrid(view, {widths: {molecule: 300}});
+```
+
+Done! The **molecule** column has been set to **300 pixels** wide. Let me know if you'd like to adjust any other columns.

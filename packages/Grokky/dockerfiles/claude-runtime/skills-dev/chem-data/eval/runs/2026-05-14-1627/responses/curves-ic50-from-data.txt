@@ -1,0 +1,11 @@
+I'd be happy to help compute IC50 values from your dose-response dataset! However, I don't see any dataset attached to your message.
+
+Could you please share your data? You can:
+
+1. **Upload a file** (CSV, Excel, etc.) with your dose-response data
+2. **Paste the data** directly in the chat
+
+Also, to set up the analysis correctly, please let me know:
+- Which column contains the **concentration** values?
+- Which column contains the **readout/response** values?
+- Which columns identify **compound**, **assay**, and **run** (if applicable)?

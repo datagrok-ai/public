@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.grid.col('SMILES').unpin();
+```
+
+The **SMILES** column has been unpinned.

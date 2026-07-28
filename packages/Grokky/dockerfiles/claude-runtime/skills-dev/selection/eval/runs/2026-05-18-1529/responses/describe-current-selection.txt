@@ -1,0 +1,38 @@
+
+```datagrok-exec
+// Describe the current selection.
+const sel = t.selection;
+const all = sel.getSelectedIndexes();
+const MAX_INDEXES = 50;
+const MAX_SAMPLE_COLS = 12;
+const indexes = Array.from(all.slice(0, MAX_INDEXES));
+
+const out = {
+  count: sel.trueCount,
+  total: t.rowCount,
+  indexes,
+  currentRowIdx: t.currentRowIdx,
+  sample: undefined,
+};
+
+if (all.length > 0) {
+  const firstIdx = all[0];
+  const cols = t.columns;
+  const sample = {};
+  const colCap = Math.min(cols.length, MAX_SAMPLE_COLS);
+  for (let c = 0; c < colCap; c++) {
+    const col = cols.byIndex(c);
+    sample[col.name] = col.get(firstIdx);
+  }
+  out.sample = sample;
+}
+return out;
+```
+
+Here's what the result means:
+
+- **count** — number of rows currently selected
+- **total** — total rows in the table
+- **indexes** — row indices that are selected (up to 50 shown)
+- **currentRowIdx** — the focused/current row (independent of selection; `-1` = none)
+- **sample** — values from the **first selected row** across up to 12 columns, so you can see what kind of data is selected

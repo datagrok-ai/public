@@ -1,0 +1,29 @@
+Based on the `chem-toolkit` skill, I'll use `Reinvent4:reinvent` to generate 10 molecular variations of the seed SMILES `CCN(CC)CC` optimized for the **BACE1** target.
+
+```datagrok-exec
+const result = await grok.functions.call('Reinvent4:reinvent', {
+  ligand: 'CCN(CC)CC',
+  optimize: 'BACE1'
+});
+
+// Show top 10 rows
+const top10 = result.rows.match(Array.from({length: Math.min(10, result.rowCount)}, (_, i) => i));
+const df10 = result.clone(top10);
+
+return DG.Viewer.grid(df10).root;
+```
+
+Here's what's happening:
+
+- **Seed molecule**: `CCN(CC)CC` (triethylamine scaffold)
+- **Target**: BACE1 (Beta-secretase 1, an Alzheimer's disease-relevant protease)
+- **Method**: REINVENT4 generative model — it explores chemical space around the seed ligand while optimizing for predicted BACE1 activity/score
+
+The result table shows:
+| Column | Description |
+|---|---|
+| `Input_SMILES` | The seed molecule used |
+| `SMILES` | Generated analog |
+| `Score` | REINVENT4 predicted score for BACE1 (higher = better) |
+
+The top 10 generated variations are displayed above, ranked by score. You can further analyze any hit using substructure search, similarity clustering, or ADMET predictions!

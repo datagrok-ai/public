@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.setCurrentRow(t, 5);
+```
+
+Row 5 is now focused (current row highlighted in the grid).

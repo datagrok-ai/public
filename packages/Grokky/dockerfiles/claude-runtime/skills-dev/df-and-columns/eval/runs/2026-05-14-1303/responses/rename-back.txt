@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.renameColumn(t, 'pIC50_old', 'pIC50');
+```
+
+Done! The column has been renamed from **pIC50_old** back to **pIC50**.

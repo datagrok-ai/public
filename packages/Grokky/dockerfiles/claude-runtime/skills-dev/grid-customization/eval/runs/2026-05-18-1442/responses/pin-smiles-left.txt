@@ -1,0 +1,5 @@
+```datagrok-exec
+view.grid.col('SMILES').pin();
+```
+
+The **SMILES** column has been pinned to the left of the grid.

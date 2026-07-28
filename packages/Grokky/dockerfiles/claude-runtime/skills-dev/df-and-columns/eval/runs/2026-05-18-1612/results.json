@@ -1,0 +1,1004 @@
+{
+  "meta": {
+    "skillName": "df-and-columns",
+    "skillDir": "/Users/aleksashka/Desktop/datagrok/reddata/public/packages/Grokky/dockerfiles/claude-runtime/skills-dev/df-and-columns",
+    "inlinedSkillNames": [
+      "datagrok-exec",
+      "df-and-columns"
+    ],
+    "model": "sonnet",
+    "systemPromptChars": 30074,
+    "totalDurationMs": 37015,
+    "startedAt": "2026-05-18T13:12:11.293Z"
+  },
+  "results": [
+    {
+      "id": "find-molecule-col",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "t\\.columns\\.bySemType(All)?\\(DG\\.SEMTYPE\\.MOLECULE\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.SEMTYPE\\.MOLECULE",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "t\\.col\\(['\"]molecule['\"]\\)",
+            "matched": false
+          },
+          {
+            "pattern": "df\\.copy",
+            "matched": false
+          },
+          {
+            "pattern": "t\\.copy",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "describe-activity-col",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "col\\.stats|getCol\\(['\"]activity|t\\.col\\(['\"]activity",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "col\\.stats|stats\\.avg|stats\\.min|stats\\.max|stats\\.uniqueCount|stats\\.missingValueCount",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "col\\.toList\\(\\)\\.length",
+            "matched": false
+          },
+          {
+            "pattern": "new Set\\(col\\.toList",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-logmw-from-mw",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "addNewCalculated\\([^)]*logMW|addNewFloat\\([^)]*\\)[\\s\\S]{0,200}\\.init\\([\\s\\S]*?Math\\.log10|addNewCalculated\\([^)]*\\$\\{MW",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Log10|Log\\(|log10|Math\\.log10",
+            "matched": true
+          },
+          {
+            "pattern": "\\$\\{MW\\}|\\$\\{mw\\}|['\"]MW['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "for \\(.*rowCount.*set\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-empty-float-with-units",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "addNewFloat\\(['\"]Ki['\"]|t\\.columns\\.addNew\\(['\"]Ki['\"], *DG\\.COLUMN_TYPE\\.FLOAT",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.COLUMN_TYPE\\.FLOAT|addNewFloat",
+            "matched": true
+          },
+          {
+            "pattern": "DG\\.SEMTYPE\\.Ki",
+            "matched": true
+          },
+          {
+            "pattern": "meta\\.units|\\.units *= *['\"]nM",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "['\"]float['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]semType",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]quality",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]units",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "set-friendly-name",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName *= *['\"]Potency",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName",
+            "matched": true
+          },
+          {
+            "pattern": "Potency",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]friendlyName",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]\\.friendlyName",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "color-coding-linear",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.setLinear\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.setLinear",
+            "matched": true
+          },
+          {
+            "pattern": "#ff0000|#FF0000",
+            "matched": true
+          },
+          {
+            "pattern": "min",
+            "matched": true
+          },
+          {
+            "pattern": "max",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]\\.color-coding",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]color-coding",
+            "matched": false
+          },
+          {
+            "pattern": "tags\\[['\"]\\.color-coding",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "remove-just-added",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "t\\.columns\\.remove\\(['\"]_tmp1|for \\(.*_tmp1.*_tmp2|\\['\"]_tmp1['\"], *['\"]_tmp2['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "_tmp1",
+            "matched": true
+          },
+          {
+            "pattern": "_tmp2",
+            "matched": true
+          },
+          {
+            "pattern": "t\\.columns\\.remove",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "clear-friendly-name",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName *= *null",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName",
+            "matched": true
+          },
+          {
+            "pattern": "null",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "meta\\.friendlyName *= *['\"]['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]friendlyName",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "rename-back",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.name *= *['\"]pIC50['\"]|getCol\\(['\"]pIC50_old['\"]\\)\\.name",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "pIC50_old",
+            "matched": true
+          },
+          {
+            "pattern": "pIC50",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "color-coding-off",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.setDisabled\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.setDisabled",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]\\.color-coding",
+            "matched": false
+          },
+          {
+            "pattern": "tags\\.delete\\(['\"]\\.color-coding",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "describe-and-add",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "bySemType\\(DG\\.SEMTYPE\\.MOLECULE\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.SEMTYPE\\.MOLECULE",
+            "matched": true
+          },
+          {
+            "pattern": "DG\\.SEMTYPE\\.Ki",
+            "matched": true
+          },
+          {
+            "pattern": "addNewFloat\\(|addNew\\([\\s\\S]*COLUMN_TYPE\\.FLOAT",
+            "matched": true
+          },
+          {
+            "pattern": "['\"]Ki['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "stats|\\.length",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "['\"]float['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 2
+    },
+    {
+      "id": "clone-filtered-subset",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "t\\.clone\\(t\\.filter,",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "t\\.clone",
+            "matched": true
+          },
+          {
+            "pattern": "t\\.filter",
+            "matched": true
+          },
+          {
+            "pattern": "smiles|SMILES",
+            "matched": true
+          },
+          {
+            "pattern": "activity",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "df\\.copy",
+            "matched": false
+          },
+          {
+            "pattern": "t\\.copy",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "find-and-describe-numeric",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "t\\.columns\\.numerical",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "t\\.columns\\.numerical",
+            "matched": true
+          },
+          {
+            "pattern": "stats|col\\.stats",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "for \\(.*rows",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-semtype",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.semType *= *DG\\.SEMTYPE\\.MOLECULE",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.SEMTYPE\\.MOLECULE",
+            "matched": true
+          },
+          {
+            "pattern": "\\.semType",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]semType",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]quality",
+            "matched": false
+          },
+          {
+            "pattern": "tags\\[['\"]semType",
+            "matched": false
+          },
+          {
+            "pattern": "tags\\[['\"]quality",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-float-literal",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "addNewFloat\\(['\"]score['\"]\\)|addNew\\(['\"]score['\"], *DG\\.COLUMN_TYPE\\.FLOAT",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "addNewFloat|DG\\.COLUMN_TYPE\\.FLOAT",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "['\"]float['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "addNew\\(['\"]\\w+['\"], *['\"]float",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-color-tag",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.(setConditional|setLinear)\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.(setConditional|setLinear)",
+            "matched": true
+          },
+          {
+            "pattern": "20-170|20.*170",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]\\.color-coding",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]color-coding",
+            "matched": false
+          },
+          {
+            "pattern": "tags\\[['\"]\\.color-coding",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "reset-all-meta",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName *= *null",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName *= *null",
+            "matched": true
+          },
+          {
+            "pattern": "meta\\.units *= *null",
+            "matched": true
+          },
+          {
+            "pattern": "meta\\.format *= *null",
+            "matched": true
+          },
+          {
+            "pattern": "meta\\.description *= *null",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "tags\\.clear\\(\\)",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "remove-session-calculated",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.formula|getTag\\(['\"]formula['\"]\\)|tags\\[['\"]formula",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.formula|formula",
+            "matched": true
+          },
+          {
+            "pattern": "t\\.columns\\.remove",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    }
+  ]
+}

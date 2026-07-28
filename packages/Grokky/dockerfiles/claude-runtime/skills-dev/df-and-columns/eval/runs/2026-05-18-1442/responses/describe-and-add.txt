@@ -1,0 +1,46 @@
+```datagrok-exec
+// Describe the molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+
+let descResult;
+if (!molCol) {
+  descResult = ui.divText('No molecule column found in the current table.');
+} else {
+  const s = molCol.stats;
+  descResult = ui.tableFromMap({
+    'Name': molCol.name,
+    'Type': molCol.type,
+    'Semantic Type': molCol.semType ?? '(none)',
+    'Length': molCol.length,
+    'Missing Values': s.missingValueCount,
+    'Unique Values': s.uniqueCount,
+    'Units': molCol.meta.units ?? '(none)',
+    'Description': molCol.meta.description ?? '(none)',
+  });
+}
+
+// Add a Ki column with semType Ki
+const kiName = t.columns.getUnusedName('Ki');
+const kiCol = t.columns.addNewFloat(kiName);
+kiCol.semType = DG.SEMTYPE.Ki;
+kiCol.meta.units = 'nM';
+
+return ui.divV([
+  ui.h2(molCol ? `Molecule column: "${molCol.name}"` : 'Molecule Column'),
+  descResult,
+  ui.divText(`✓ Added column "${kiName}" with semType Ki (units: nM)`),
+]);
+```
+
+Here's what was done:
+
+### 🔬 Molecule Column Description
+The block finds the molecule column (by semantic type `MOLECULE`) and displays a summary including its name, type, length, missing/unique value counts, and metadata.
+
+### ➕ Ki Column Added
+- **Name:** `Ki` (or `Ki (1)` etc. if a column named `Ki` already exists)
+- **Type:** `float` (`double` internally)
+- **Semantic Type:** `DG.SEMTYPE.Ki`
+- **Units:** `nM`
+
+The column is initialized empty — you can populate it with values as needed.

@@ -1,0 +1,35 @@
+```datagrok-exec
+const rows = Array.from(t.columns.numerical, (c) => {
+  const s = c.stats;
+  return {
+    Name: c.name,
+    Type: c.type,
+    Count: s.valueCount,
+    Missing: s.missingValueCount,
+    Unique: s.uniqueCount,
+    Min: s.min,
+    Max: s.max,
+    Avg: parseFloat(s.avg.toFixed(4)),
+    Stdev: parseFloat(s.stdev.toFixed(4)),
+    Median: s.med,
+    Q1: s.q1,
+    Q3: s.q3,
+    Sum: s.sum,
+  };
+});
+
+if (rows.length === 0)
+  return ui.divText('No numeric columns found in the current table.');
+
+return DG.Viewer.grid(DG.DataFrame.fromObjects(rows)).root;
+```This will display a summary table for every numeric column in the current dataset, including:
+
+| Stat | Description |
+|---|---|
+| **Count** | Non-null value count |
+| **Missing** | Number of missing values |
+| **Unique** | Distinct value count |
+| **Min / Max** | Range extremes |
+| **Avg / Stdev** | Mean and standard deviation |
+| **Median / Q1 / Q3** | Median and quartiles |
+| **Sum** | Total sum |

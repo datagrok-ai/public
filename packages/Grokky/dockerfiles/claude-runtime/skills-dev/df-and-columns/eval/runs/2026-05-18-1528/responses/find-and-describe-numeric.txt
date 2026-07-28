@@ -1,0 +1,38 @@
+Here's the summary of all numeric columns in the current table:
+
+```datagrok-exec
+const rows = Array.from(t.columns.numerical, (col) => {
+  const s = col.stats;
+  return {
+    Name: col.name,
+    Type: col.type,
+    Count: s.valueCount,
+    Missing: s.missingValueCount,
+    Min: s.min,
+    Max: s.max,
+    Avg: s.avg,
+    StDev: s.stdev,
+    Median: s.med,
+    Q1: s.q1,
+    Q3: s.q3,
+  };
+});
+
+if (rows.length === 0)
+  return ui.divText('No numeric columns found in the current table.');
+
+const summary = DG.DataFrame.fromObjects(rows);
+return DG.Viewer.grid(summary).root;
+```
+
+This displays a summary grid with the following stats for **every numeric column**:
+
+| Stat | Description |
+|------|-------------|
+| **Count** | Non-null value count |
+| **Missing** | Number of missing values |
+| **Min / Max** | Minimum and maximum values |
+| **Avg** | Mean |
+| **StDev** | Standard deviation |
+| **Median** | 50th percentile |
+| **Q1 / Q3** | 25th and 75th percentiles |

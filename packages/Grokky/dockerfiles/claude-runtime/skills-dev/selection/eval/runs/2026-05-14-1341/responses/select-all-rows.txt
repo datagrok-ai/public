@@ -1,0 +1,4 @@
+```datagrok-exec
+grokky.selectAll(t);
+return ui.divText(`Selected all ${t.selection.trueCount} rows.`);
+```All rows in the current table have been selected.

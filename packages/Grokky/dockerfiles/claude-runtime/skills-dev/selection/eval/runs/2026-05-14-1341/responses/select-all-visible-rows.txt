@@ -1,0 +1,7 @@
+
+```datagrok-exec
+grokky.selectionFromFilter(t);
+return {selected: t.selection.trueCount};
+```
+
+Done! All currently-visible (filtered) rows have been selected. The result above shows how many rows were selected.

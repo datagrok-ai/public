@@ -1,0 +1,13 @@
+I need to point out that `view.scatterPlot()` is a **deprecated shorthand**. The correct, current API is `view.addViewer(DG.VIEWER.SCATTER_PLOT, opts)`.
+
+Let me add a scatter plot using the proper API:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.SCATTER_PLOT);
+```
+
+> **Note:** `view.scatterPlot(opts)` is a deprecated per-type shorthand and should be avoided. The canonical way to add any viewer — including scatter plots — is:
+> ```javascript
+> view.addViewer(DG.VIEWER.SCATTER_PLOT, { xColumnName: 'col1', yColumnName: 'col2' });
+> ```
+> This works consistently across all viewer types and is the supported long-term API.

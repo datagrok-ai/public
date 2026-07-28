@@ -1,0 +1,5 @@
+
+```datagrok-exec
+const n = grokky.closeAllViewers(view);
+return ui.divText(`Closed ${n} viewer${n !== 1 ? 's' : ''}. Grid preserved.`);
+```

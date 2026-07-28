@@ -1,0 +1,21 @@
+```datagrok-exec
+// Get the 'activity' column
+const actCol = t.col('activity');
+if (!actCol) throw new Error("Column 'activity' not found in the current table.");
+
+// Build array of {index, value} pairs, sort descending, take top 5
+const rows = [];
+for (let i = 0; i < t.rowCount; i++) {
+  rows.push({ idx: i, val: actCol.get(i) });
+}
+rows.sort((a, b) => b.val - a.val);
+const top5 = rows.slice(0, 5).map(r => r.idx);
+
+// Select those rows (replace any existing selection)
+grokky.selectRows(t, top5);
+
+return ui.tableFromMap({
+  'Selected rows': top5.length,
+  'Top activity values': rows.slice(0, 5).map(r => r.val).join(', ')
+});
+```The top 5 rows with the highest **activity** values are now selected in your table. The selection replaces any previous selection. You can see the highlighted rows in the grid — or use **Edit → Copy Selected Rows** to extract them.

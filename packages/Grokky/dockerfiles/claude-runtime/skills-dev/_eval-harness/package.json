@@ -1,0 +1,20 @@
+{
+  "name": "grokky-eval-harness",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "run": "tsx run.ts",
+    "start": "node dist/run.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.2.52",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.1.3"
+  }
+}

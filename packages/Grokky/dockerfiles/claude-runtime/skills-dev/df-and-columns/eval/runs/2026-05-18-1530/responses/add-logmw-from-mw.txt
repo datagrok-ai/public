@@ -1,0 +1,28 @@
+I'll add a calculated `logMW` column derived from the `MW` column using `Math.log10`.I'll create the `logMW` column by reading values from `MW` and computing `Math.log10`:
+
+```datagrok-exec
+// Find the MW column (case-insensitive fallback)
+let mwCol = t.col('MW');
+if (!mwCol) {
+  const lc = 'mw';
+  mwCol = t.columns.firstWhere((c) => c.name.toLowerCase() === lc);
+}
+if (!mwCol) throw new Error('No column named "MW" found in the table.');
+
+const name = t.columns.getUnusedName('logMW');
+const logCol = t.columns.addNewFloat(name);
+logCol.init((i) => {
+  const v = mwCol.get(i);
+  return (v == null || v <= 0) ? null : Math.log10(v);
+});
+logCol.meta.format = '0.000';
+logCol.meta.description = 'log10(MW)';
+
+return ui.divText(`Added column "${logCol.name}" (log10 of "${mwCol.name}")`);
+```
+
+This will:
+- Find the `MW` column (exact match, case-insensitive)
+- Add a new `logMW` float column with `log10(MW)` values
+- Set null for any zero or negative `MW` values
+- Apply a 3-decimal format and a description

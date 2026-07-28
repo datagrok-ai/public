@@ -1,0 +1,21 @@
+I'll use the ChEMBL database to pull compounds active against thrombin targets. Thrombin is a human protein, so I'll query by organism.
+
+```datagrok-exec
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 1000,
+  organism: 'Homo sapiens'
+});
+grok.shell.addTableView(df);
+```
+
+> **Note:** The `getChemblCompoundsByOrganism` function filters by the *organism* of the target, not by target name directly. Since thrombin (F2 / coagulation factor II) is a human protein, the query above pulls active compounds against human targets broadly.
+>
+> For a more targeted thrombin-specific search, I recommend using **substructure or similarity search** via the ChEMBL panels, or I can run a SQL query filtering by the ChEMBL target ID for thrombin (`CHEMBL204`). Would you like me to do that instead?
+
+Here are your options to refine further:
+
+1. **Filter by ChEMBL target ID** — query only `CHEMBL204` (human thrombin) directly
+2. **Similarity search** — provide a known thrombin inhibitor SMILES (e.g. dabigatran) and find similar compounds
+3. **Substructure search** — search by a pharmacophoric scaffold common in thrombin inhibitors
+
+Which approach would you prefer?

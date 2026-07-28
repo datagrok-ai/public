@@ -1,0 +1,18 @@
+```datagrok-exec
+// Find the molecule/SMILES column and set its width to 300px
+const molCol = t.columns.toList().find(c =>
+  c.semType === 'Molecule' ||
+  c.name.toLowerCase().includes('smiles') ||
+  c.name.toLowerCase().includes('mol')
+);
+
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+const gridCol = view.grid.col(molCol.name);
+if (!gridCol) throw new Error(`Grid column "${molCol.name}" not found.`);
+
+gridCol.width = 300;
+return ui.divText(`Column "${molCol.name}" width set to 300 px.`);
+```
+
+This sets the molecule column's width to **300 pixels**. The code detects the molecule column by semantic type (`Molecule`) or by name containing "smiles"/"mol". If your molecule column has a different name, let me know and I'll target it directly.

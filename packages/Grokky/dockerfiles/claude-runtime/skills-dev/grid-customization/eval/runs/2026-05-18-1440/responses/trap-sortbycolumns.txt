@@ -1,0 +1,11 @@
+The grid has been sorted by **activity** in **descending** order.
+
+> **Note:** `grid.sortByColumns = [...]` is a getter-only property — assigning to it is a silent no-op. The correct API is always:
+> ```js
+> view.grid.sort(['activity'], [false]);
+> ```
+> where `false` = descending and `true` = ascending.
+
+```datagrok-exec
+view.grid.sort(['activity'], [false]);
+```

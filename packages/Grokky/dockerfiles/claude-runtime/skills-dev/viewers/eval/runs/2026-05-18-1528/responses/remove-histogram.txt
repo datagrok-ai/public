@@ -1,0 +1,7 @@
+```datagrok-exec
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.HISTOGRAM)
+  .forEach((v) => { try { v.close(); } catch {} });
+```
+
+Done! The histogram has been removed from the view.

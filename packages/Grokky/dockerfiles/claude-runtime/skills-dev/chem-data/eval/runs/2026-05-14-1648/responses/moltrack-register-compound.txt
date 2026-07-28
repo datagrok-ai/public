@@ -1,0 +1,19 @@
+
+```datagrok-exec
+await grok.functions.call('MolTrack:registerMolTrackProperties', {
+  jsonPayload: JSON.stringify({
+    smiles: "CCO",
+    name: "ethanol"
+  })
+});
+```
+
+The code above calls `MolTrack:registerMolTrackProperties` with a placeholder JSON payload for **ethanol** (`CCO`). Here's what you may want to customize before running in production:
+
+| Field | Current value | Notes |
+|---|---|---|
+| `smiles` | `"CCO"` | Replace with your compound's SMILES string |
+| `name` | `"ethanol"` | Replace with the compound name |
+| Additional fields | — | Add `value_type`, `entity_type`, `nullable`, etc. as required by your MolTrack schema |
+
+You can also use `MolTrack:registerBulk` if you need to register multiple compounds at once from a CSV file with a column mapping. Let me know if you'd like help with that!

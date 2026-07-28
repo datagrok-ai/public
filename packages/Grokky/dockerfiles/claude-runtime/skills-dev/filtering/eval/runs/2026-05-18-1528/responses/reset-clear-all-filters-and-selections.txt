@@ -1,0 +1,8 @@
+
+```datagrok-exec
+t.filter.setAll(true);
+t.selection.setAll(false);
+view.getFiltersGroup({createDefaultFilters: false}).setActive(false);
+```
+
+Done! All filters have been cleared (all rows are now visible) and all row selections have been removed.

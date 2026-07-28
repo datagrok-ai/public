@@ -1,0 +1,9 @@
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'class',
+});
+```
+
+I've added a box plot with **activity** on the value axis, grouped by **class**. The plot will show the distribution (median, quartiles, and outliers) of activity for each class category.

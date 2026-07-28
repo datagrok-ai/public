@@ -1,0 +1,5 @@
+```datagrok-exec
+t.selection.setAll(false);
+```
+
+Done! The selection has been cleared — no rows are selected now.

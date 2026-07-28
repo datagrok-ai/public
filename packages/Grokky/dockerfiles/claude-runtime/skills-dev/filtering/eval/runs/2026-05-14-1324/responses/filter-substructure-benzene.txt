@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterSubstructure(view, 'molecule', 'c1ccccc1');
+```
+
+The benzene ring substructure filter (`c1ccccc1`) has been applied to the molecule column. Only rows where the molecule contains a benzene ring are now visible.

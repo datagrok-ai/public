@@ -1,0 +1,8 @@
+
+```datagrok-exec
+// Find all numeric column names
+const numericCols = t.columns.numerical.toList().map(c => c.name);
+view.addViewer(DG.VIEWER.CORR_PLOT, { columnNames: numericCols });
+```
+
+I've added a Correlation Plot using all **numeric columns** in your table. The plot shows pairwise correlation coefficients, helping you spot relationships between variables at a glance.

@@ -1,0 +1,18 @@
+I'll use the `Admetica:getAdmePropertiesSingle` function to predict ADME properties for aspirin directly.
+
+```datagrok-exec
+const result = await grok.functions.call('Admetica:getAdmePropertiesSingle', {
+  molecule: 'CC(=O)Oc1ccccc1C(=O)O'
+});
+return DG.Viewer.grid(result).root;
+```
+
+This will run the full ADMET prediction panel for **aspirin** (`CC(=O)Oc1ccccc1C(=O)O`) and display the results in a grid, covering:
+
+- **Absorption** — e.g. Caco-2 permeability, HIA, bioavailability
+- **Distribution** — e.g. VDss, BBB penetration, plasma protein binding
+- **Metabolism** — e.g. CYP inhibition/substrate predictions
+- **Excretion** — e.g. half-life, clearance
+- **Toxicity** — e.g. hERG, AMES mutagenicity, hepatotoxicity
+
+The results will appear in the table above. Each row corresponds to one ADMET endpoint with its predicted value.

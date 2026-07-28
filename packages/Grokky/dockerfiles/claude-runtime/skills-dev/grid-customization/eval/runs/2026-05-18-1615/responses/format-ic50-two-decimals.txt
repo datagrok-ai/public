@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.col('IC50').meta.format = '0.00';
+```
+
+Done! The **IC50** column is now formatted to **2 decimal places**.

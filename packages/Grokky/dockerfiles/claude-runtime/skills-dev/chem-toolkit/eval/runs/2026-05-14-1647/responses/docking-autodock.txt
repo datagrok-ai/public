@@ -1,0 +1,26 @@
+Based on the chem-toolkit skill, I'll dock the ligand using `Docking:getAutodockResults`. First, let me create a small table with the ligand SMILES and run the docking.
+
+```datagrok-exec
+// Create a DataFrame with the ligand
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('smiles', ['CC(=O)Nc1ccc(O)cc1'])
+]);
+df.columns.byName('smiles').semType = DG.SEMTYPE.MOLECULE;
+
+// Run AutoDock Vina into the 1aki target with 5 poses
+const result = await grok.functions.call('Docking:getAutodockResults', {
+  table: df,
+  ligands: df.col('smiles'),
+  target: '1aki',
+  poses: 5
+});
+
+grok.shell.addTableView(result ?? df);
+```
+
+This will:
+1. **Create a table** with the ligand `CC(=O)Nc1ccc(O)cc1` (acetaminophen / paracetamol)
+2. **Dock it into the `1aki` target** using AutoDock Vina via the Docking container
+3. **Generate 5 poses**, returning binding energies and 3D conformations
+
+The results (binding energies, poses, and docked structures) will be added as new columns and displayed in a table view. You can then click on individual poses to visualize them in 3D with the NGL viewer.

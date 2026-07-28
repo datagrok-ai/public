@@ -1,0 +1,23 @@
+```datagrok-exec
+// Find best matching columns for "date" (x) and "total" (y)
+const dateCol = Array.from(t.columns).find(c =>
+  c.type === DG.COLUMN_TYPE.DATE_TIME || c.name.toLowerCase().includes('date')
+);
+const totalCol = Array.from(t.columns).find(c =>
+  c.name.toLowerCase().includes('total')
+);
+
+if (!dateCol) throw new Error('No date column found in the table.');
+if (!totalCol) throw new Error('No "total" column found in the table.');
+
+grokky.addViewer(view, 'Line chart', {
+  xColumnName: dateCol.name,
+  yColumnNames: [totalCol.name],
+});
+```
+
+This adds a **Line chart** with:
+- **X axis** → the detected date column
+- **Y axis** → the detected "total" column
+
+If the column names weren't matched correctly (e.g. your columns have different names), let me know the exact column names and I'll update the chart!

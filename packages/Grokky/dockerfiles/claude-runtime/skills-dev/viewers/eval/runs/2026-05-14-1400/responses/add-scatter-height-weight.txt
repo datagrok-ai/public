@@ -1,0 +1,8 @@
+```datagrok-exec
+grokky.addViewer(view, 'Scatter plot', {
+  xColumnName: 'height',
+  yColumnName: 'weight',
+});
+```
+
+A scatter plot of **height** (x-axis) vs **weight** (y-axis) has been added to your view. You can click points to select rows, or brush to select a range — all other viewers will sync automatically.

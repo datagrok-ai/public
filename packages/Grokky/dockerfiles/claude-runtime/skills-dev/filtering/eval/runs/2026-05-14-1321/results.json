@@ -1,0 +1,843 @@
+{
+  "meta": {
+    "skillName": "filtering",
+    "skillDir": "/Users/aleksashka/Desktop/datagrok/reddata/public/packages/Grokky/dockerfiles/claude-runtime/skills-dev/filtering",
+    "inlinedSkillNames": [
+      "datagrok-exec",
+      "filtering"
+    ],
+    "model": "sonnet",
+    "systemPromptChars": 34406,
+    "totalDurationMs": 40384,
+    "startedAt": "2026-05-14T10:21:59.817Z"
+  },
+  "results": [
+    {
+      "id": "filter-age-gt-40",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterByPredicate|grokky.filterRows",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "age",
+            "matched": true
+          },
+          {
+            "pattern": "40",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "df\\.rows\\.removeWhere",
+            "matched": false
+          },
+          {
+            "pattern": "removeWhereIdx",
+            "matched": false
+          },
+          {
+            "pattern": "setAll\\(false",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filter-mw-lt-500",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterRows|grokky.filterByPredicate",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "MW",
+            "matched": true
+          },
+          {
+            "pattern": "500",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          },
+          {
+            "pattern": "setAll\\(false",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filter-substructure-benzene",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterSubstructure|grokky.filterRows",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "c1ccccc1|benzene",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molBlock: ['\"]c1ccccc1",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filter-categorical-in-set",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterRows|grokky.filterByPredicate",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "values",
+            "matched": true
+          },
+          {
+            "pattern": "['\"]A['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "['\"]B['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "['\"]C['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filter-name-contains",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterRows|grokky.filterByPredicate",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "acid",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filter-smarts-pattern",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterSubstructure|grokky.filterRows",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\[#6\\]\\[!#1\\]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molBlock: ['\"]\\[#6\\]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "clear-filter",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setAll\\(true\\)|clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setAll\\(false\\)",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "show-all-rows",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setAll\\(true\\)|clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setAll\\(false\\)",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "remove-substructure-only",
+      "category": "atomic-undo",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "grokky.filterSubstructure",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "filterSubstructure.*['\"]['\"]|molBlock: ['\"]['\"]|getStates",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "clearFilter\\(view\\)",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "invert-filter",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.invertFilter",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "invert",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": []
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filter-mw-and-logp",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterByPredicate|grokky.combineFilters",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "MW",
+            "matched": true
+          },
+          {
+            "pattern": "500",
+            "matched": true
+          },
+          {
+            "pattern": "LogP|logP|cLogP",
+            "matched": true
+          },
+          {
+            "pattern": "5",
+            "matched": true
+          },
+          {
+            "pattern": "&&|and",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "filtered-as-new-table",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filteredDf",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "filteredDf|clone\\(.*filter",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          },
+          {
+            "pattern": "df\\.copy",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "cross-skill-selected-then-describe",
+      "category": "combine",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "grokky.filterByPredicate|grokky.filteredDf",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "selection",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-remove-as-delete",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.dropRows",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "dropRows|removeWhereIdx|removeWhere",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "filterByPredicate",
+            "matched": false
+          },
+          {
+            "pattern": "filterRows",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-smiles-as-molblock",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.filterSubstructure|grokky.filterRows",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "CCO",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molBlock: ['\"]CCO['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "molBlock:['\"]CCO",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-hide-vs-drop",
+      "category": "wrong-tool-trap",
+      "overall": false,
+      "path": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": false
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "grokky.filterByPredicate|grokky.filterRows",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "activity",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          },
+          {
+            "pattern": "removeWhereIdx",
+            "matched": false
+          },
+          {
+            "pattern": "dropRows",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 0
+    },
+    {
+      "id": "reset-clear-all-filters-and-selections",
+      "category": "reset-or-cleanup",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "clearFilter|setAll\\(true\\)",
+            "matched": true
+          },
+          {
+            "pattern": "selection",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "setAll\\(false\\)",
+            "matched": true
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "go-back-to-seeing-every-row",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky.clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setAll\\(true\\)|clearFilter",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setAll\\(false\\)",
+            "matched": false
+          },
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    }
+  ]
+}

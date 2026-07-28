@@ -1,0 +1,7 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+await grok.functions.call('Chem:addInchisKeysTopMenu', { table: t, molecules: molCol });
+```
+
+Done! The InChI keys have been computed from your SMILES column and appended as a new column to the table.

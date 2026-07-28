@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const subset = grokky.selectedDf(t);
+grok.shell.addTableView(subset);
+```
+
+The selected rows have been extracted into a new table view. If no rows were selected, the new table will be empty.

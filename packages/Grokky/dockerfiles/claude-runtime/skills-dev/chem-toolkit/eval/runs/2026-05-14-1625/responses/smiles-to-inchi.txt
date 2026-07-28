@@ -1,0 +1,13 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule/SMILES column found in the current table.');
+
+const inchiKeyCol = await grok.functions.call('Chem:getInchiKeys', { molecules: molCol });
+inchiKeyCol.name = t.columns.getUnusedName('InChIKey');
+t.columns.add(inchiKeyCol);
+```
+
+This will:
+1. Find the **SMILES/Molecule column** in your table automatically.
+2. Compute **InChI keys** for all rows using RDKit.
+3. Append the results as a new **`InChIKey`** column to your table.

@@ -1,0 +1,22 @@
+I need to find the right function for logS computation. Let me check what's available.Based on the chem-toolkit skill, `LogS` is a supported property in `Chem:getProperties` (and `Chem:addChemPropertiesColumns`). I'll use `addChemPropertiesColumns` to append a LogS column directly to your table — requesting only LogS so the result stays clean.
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No molecule column found in the current table.');
+
+await grok.functions.call('Chem:addChemPropertiesColumns', {
+  table: t,
+  molecules: mol,
+  MW: false,
+  HBA: false,
+  HBD: false,
+  logP: false,
+  logS: true,
+  PSA: false,
+  rotatableBonds: false,
+  stereoCenters: false,
+  moleculeCharge: false
+});
+```
+
+This appends a **LogS** column (OCL-based aqueous solubility estimate) to your table. The values are log₁₀(mol/L) — more negative = less soluble. Let me know if you'd like additional properties (e.g. LogP, MW, PSA) computed alongside!

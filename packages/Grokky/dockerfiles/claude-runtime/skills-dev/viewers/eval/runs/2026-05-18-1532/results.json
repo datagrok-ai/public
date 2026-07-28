@@ -1,0 +1,1198 @@
+{
+  "meta": {
+    "skillName": "viewers",
+    "skillDir": "/Users/aleksashka/Desktop/datagrok/reddata/public/packages/Grokky/dockerfiles/claude-runtime/skills-dev/viewers",
+    "inlinedSkillNames": [
+      "datagrok-exec",
+      "viewers"
+    ],
+    "model": "sonnet",
+    "systemPromptChars": 26770,
+    "totalDurationMs": 41079,
+    "startedAt": "2026-05-18T12:32:49.170Z"
+  },
+  "results": [
+    {
+      "id": "add-scatter-height-weight",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "xColumnName\\s*:\\s*['\"]height['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "yColumnName\\s*:\\s*['\"]weight['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.scatterPlot\\(",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "['\"]scatter plot['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*x\\s*:\\s*['\"]height['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*y\\s*:\\s*['\"]weight['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "color\\s*:\\s*['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-histogram-age",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.HISTOGRAM",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.HISTOGRAM",
+            "matched": true
+          },
+          {
+            "pattern": "valueColumnName\\s*:\\s*['\"]age['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.histogram\\(",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*value\\s*:\\s*['\"]age['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-line-chart-date-total",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.LINE_CHART",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.LINE_CHART",
+            "matched": true
+          },
+          {
+            "pattern": "xColumnName\\s*:\\s*['\"]date['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "yColumnNames?\\s*:",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.lineChart\\(",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*x\\s*:\\s*['\"]date['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*y\\s*:\\s*['\"]total['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-histogram-split-by-class",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.(HISTOGRAM|BOX_PLOT)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.(HISTOGRAM|BOX_PLOT)",
+            "matched": true
+          },
+          {
+            "pattern": "(value|category)ColumnName",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "DG\\.VIEWER\\.BAR_CHART",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*value\\s*:",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*split\\s*:",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*category\\s*:",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-bar-chart-count-by-category",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.BAR_CHART",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.BAR_CHART",
+            "matched": true
+          },
+          {
+            "pattern": "valueAggrType\\s*:\\s*['\"]count['\"]|splitColumnName",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.barChart\\(",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*split\\s*:\\s*['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-box-plot-activity-by-class",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.BOX_PLOT",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.BOX_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "valueColumnName\\s*:\\s*['\"]activity['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "categoryColumnName\\s*:\\s*['\"]class['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.boxPlot\\(",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*value\\s*:",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*category\\s*:",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-correlation-plot-numeric",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.CORR_PLOT",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.CORR_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "columnNames\\s*:|xs\\s*:|ys\\s*:",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "['\"]correlation plot['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "close-scatter-plot",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          },
+          {
+            "pattern": "slice\\(1\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.viewers\\[0\\]\\.close",
+            "matched": false
+          },
+          {
+            "pattern": "viewers\\[0\\]\\.close",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "close-all-except-grid",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "slice\\(1\\)",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "viewers\\[0\\]\\.close",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.viewers\\.forEach\\(\\s*\\(?v\\)?\\s*=>\\s*v\\.close",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "remove-histogram",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.HISTOGRAM",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          },
+          {
+            "pattern": "dropRows",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "close-every-chart",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "slice\\(1\\)",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "viewers\\[0\\]\\.close",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "scatter-mw-logp-colored-regression",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "xColumnName\\s*:\\s*['\"]MW['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "yColumnName\\s*:\\s*['\"](LogP|cLogP)['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "colorColumnName\\s*:\\s*['\"]activity['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "showRegressionLine\\s*:\\s*true",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "regressionLine\\s*:\\s*true",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*x\\s*:",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*color\\s*:\\s*['\"]activity['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "add-then-close-sequenced",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.HISTOGRAM",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.HISTOGRAM",
+            "matched": true
+          },
+          {
+            "pattern": "DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "replace-scatter-with-heatmap",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer\\(\\s*DG\\.VIEWER\\.(HEAT_MAP|CORR_PLOT)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.SCATTER_PLOT",
+            "matched": true
+          },
+          {
+            "pattern": "DG\\.VIEWER\\.(HEAT_MAP|CORR_PLOT)",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "new DG\\.Viewer\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-chem-space",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grok\\.functions\\.call",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:chemSpaceTopMenu|chemSpace",
+            "matched": true
+          },
+          {
+            "pattern": "molecules|smiles",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.addViewer\\([^,]*,\\s*['\"]Chem[ -]?[Ss]pace['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.addViewer\\([^,]*,\\s*['\"]Chemical [Ss]pace['\"]",
+            "matched": false
+          },
+          {
+            "pattern": "DG\\.VIEWER\\.CHEM",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-deprecated-shorthand",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.addViewer",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "DG\\.VIEWER\\.SCATTER_PLOT|['\"]Scatter plot['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.scatterPlot\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-trap-fromtype-direct",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 optional block",
+            "matched": false
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": []
+      },
+      "symbols": {
+        "passed": true,
+        "details": []
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "DG\\.Viewer\\.fromType\\([^)]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 0
+    },
+    {
+      "id": "reset-to-just-grid",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "slice\\(1\\)",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "viewers\\[0\\]\\.close",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.viewers\\.forEach\\(\\s*\\(?v\\)?\\s*=>\\s*v\\.close",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "remove-every-chart-fresh-start",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          },
+          {
+            "pattern": "slice\\(1\\)",
+            "matched": true
+          },
+          {
+            "pattern": "\\.close\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "viewers\\[0\\]\\.close",
+            "matched": false
+          },
+          {
+            "pattern": "removeWhere",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "change-color-column",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "setOptions\\(\\s*\\{[^}]*colorColumnName",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "colorColumnName\\s*:\\s*['\"]activity['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "view\\.viewers",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "\\{\\s*color\\s*:\\s*['\"]activity['\"]",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'compound_class',
+});
+```
+
+I've added a **Box Plot** showing the distribution of `activity` values broken down by `compound_class`. Each box displays:
+
+- **Median** (center line)
+- **Interquartile range** (box: Q1–Q3)
+- **Whiskers** (min/max or 1.5×IQR)
+- **Outliers** (individual dots beyond the whiskers)
+
+This gives you a clear view of the spread, central tendency, and outliers for each compound class. Let me know if you'd prefer a different chart type (e.g., histogram with split, or violin-style via trellis plot)!

@@ -1,0 +1,28 @@
+I'll compute the Lipinski properties (MW, HBA, HBD, LogP) for the molecule column using the Chem package's `addChemPropertiesColumns` function.
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No molecule column found in the current table.');
+
+await grok.functions.call('Chem:addChemPropertiesColumns', {
+  table: t,
+  molecules: mol,
+  MW: true,
+  HBA: true,
+  HBD: true,
+  logP: true,
+  logS: false,
+  PSA: false,
+  rotatableBonds: false,
+  stereoCenters: false,
+  moleculeCharge: false
+});
+```
+
+This will:
+- **MW** — Molecular Weight
+- **HBA** — Hydrogen Bond Acceptor count
+- **HBD** — Hydrogen Bond Donor count
+- **LogP** — Lipophilicity (octanol/water partition coefficient)
+
+The four columns will be appended directly to your table. These are the core **Lipinski Rule of Five** properties used to assess drug-likeness (MW ≤ 500, HBA ≤ 10, HBD ≤ 5, LogP ≤ 5).

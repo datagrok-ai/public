@@ -1,0 +1,6 @@
+```datagrok-exec
+t.filter.init((i) => t.getCol('age').get(i) > 40);
+return {visible: t.filter.trueCount, total: t.rowCount};
+```
+
+Filtered the table to rows where **age > 40**. The result above shows how many rows are now visible.

@@ -1,0 +1,18 @@
+I'll add a chemical space viewer using the Chem package function. This will compute UMAP embeddings and plot the molecules in chemical space:
+
+```datagrok-exec
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: t.col(t.columns.bySemType('Molecule')?.name ?? t.columns.names().find(n => n.toLowerCase().includes('smiles') || n.toLowerCase().includes('mol'))),
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+- **Compute UMAP embeddings** based on Tanimoto similarity between molecules
+- **Add embedding columns** (UMAP_0, UMAP_1) to your table
+- **Open a scatter plot** showing the chemical space — structurally similar compounds will appear close together
+
+If your molecule column isn't auto-detected, let me know the column name and I'll update the call!

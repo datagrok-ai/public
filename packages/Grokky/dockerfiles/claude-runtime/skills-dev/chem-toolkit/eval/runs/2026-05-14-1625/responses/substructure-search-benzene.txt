@@ -1,0 +1,25 @@
+I'll run a substructure search for benzene (`c1ccccc1`) on the `structures` column:
+
+```datagrok-exec
+const molCol = t.col('structures');
+if (!molCol) throw new Error('Column "structures" not found in the current table.');
+
+// Benzene SMILES (aromatic)
+const benzene = 'c1ccccc1';
+
+const matchesBitSet = await grok.functions.call('Chem:searchSubstructure', {
+  molStringsColumn: molCol,
+  molString: benzene,
+  molBlockFailover: benzene
+});
+
+// Apply the result as a filter
+t.filter.copyFrom(matchesBitSet.get(0));
+t.filter.fireChanged();
+```
+
+This will:
+1. **Search** the `structures` column for any molecule containing a **benzene ring** (`c1ccccc1`) as a substructure.
+2. **Filter** the table so only matching rows are shown.
+
+The row count in the bottom of the grid will update to reflect how many molecules contain a benzene ring. You can clear the filter anytime via **Filter → Clear All**.

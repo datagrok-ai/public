@@ -1,0 +1,9 @@
+I need to sort the grid by the 'activity' column descending. Note that `grid.sortByColumns` is a read-only getter — the correct API is `grid.sort()`.
+
+```datagrok-exec
+view.grid.sort(['activity'], [false]);
+```
+
+The grid is now sorted by **activity** in descending order. 
+
+> **Note:** `sortByColumns` is a getter-only property — assigning to it is a silent no-op. The correct way to sort is always `grid.sort(columnNames, ascendingBooleans)`, where `false` means descending.

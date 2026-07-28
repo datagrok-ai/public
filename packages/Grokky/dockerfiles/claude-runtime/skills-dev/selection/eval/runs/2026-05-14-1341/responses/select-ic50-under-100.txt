@@ -1,0 +1,7 @@
+
+```datagrok-exec
+grokky.selectRows(t, (i) => t.getCol('IC50').get(i) < 100);
+return {selected: t.selection.trueCount, total: t.rowCount};
+```
+
+Selected **rows where IC50 < 100**. The result above shows how many rows matched out of the total.

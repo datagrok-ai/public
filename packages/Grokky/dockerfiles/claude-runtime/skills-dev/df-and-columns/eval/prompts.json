@@ -1,0 +1,185 @@
+[
+  {
+    "id": "find-molecule-col",
+    "prompt": "find the molecule column",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.columns\\.bySemType(All)?\\(DG\\.SEMTYPE\\.MOLECULE\\)"],
+    "expected_symbols": ["DG\\.SEMTYPE\\.MOLECULE"],
+    "forbidden_symbols": ["grokky\\.", "t\\.col\\(['\"]molecule['\"]\\)", "df\\.copy", "t\\.copy"],
+    "intent": "Claude uses t.columns.bySemType(DG.SEMTYPE.MOLECULE) (or bySemTypeAll). Do NOT hard-code 'molecule' as a column name. Do NOT use the (removed) grokky.* namespace."
+  },
+  {
+    "id": "describe-activity-col",
+    "prompt": "describe the activity column",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["col\\.stats|getCol\\(['\"]activity|t\\.col\\(['\"]activity"],
+    "expected_symbols": ["col\\.stats|stats\\.avg|stats\\.min|stats\\.max|stats\\.uniqueCount|stats\\.missingValueCount"],
+    "forbidden_symbols": ["grokky\\.", "col\\.toList\\(\\)\\.length", "new Set\\(col\\.toList"],
+    "intent": "Claude locates the activity column (via t.getCol / t.col) then reads col.stats fields. Should not compute stats by hand via toList()."
+  },
+  {
+    "id": "add-logmw-from-mw",
+    "prompt": "add a column 'logMW' computed from MW",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["addNewCalculated\\([^)]*logMW|addNewFloat\\([^)]*\\)[\\s\\S]{0,200}\\.init\\([\\s\\S]*?Math\\.log10|addNewCalculated\\([^)]*\\$\\{MW"],
+    "expected_symbols": ["Log10|Log\\(|log10|Math\\.log10", "\\$\\{MW\\}|\\$\\{mw\\}|['\"]MW['\"]"],
+    "forbidden_symbols": ["grokky\\.", "for \\(.*rowCount.*set\\("],
+    "intent": "Calculated column. Preferred path is the formula DSL via addNewCalculated('logMW', '${MW}...') (datagrok-calc-column owns formulas). In isolated eval the static fallback (addNewFloat('logMW') + col.init(i => Math.log10(...))) is also accepted. Reject the per-row imperative for-loop."
+  },
+  {
+    "id": "add-empty-float-with-units",
+    "prompt": "add an empty float column called Ki with units nM and semantic type Ki",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["addNewFloat\\(['\"]Ki['\"]|t\\.columns\\.addNew\\(['\"]Ki['\"], *DG\\.COLUMN_TYPE\\.FLOAT"],
+    "expected_symbols": ["DG\\.COLUMN_TYPE\\.FLOAT|addNewFloat", "DG\\.SEMTYPE\\.Ki", "meta\\.units|\\.units *= *['\"]nM"],
+    "forbidden_symbols": ["grokky\\.", "['\"]float['\"]", "setTag\\(['\"]semType", "setTag\\(['\"]quality", "setTag\\(['\"]units"],
+    "intent": "Typed-empty column via t.columns.addNewFloat('Ki') or addNew with DG.COLUMN_TYPE.FLOAT. Set semType via col.semType =, units via col.meta.units =. Never literal 'float' (the constant is the string 'double'). Never setTag for these."
+  },
+  {
+    "id": "set-friendly-name",
+    "prompt": "set the friendly name of the 'pIC50' column to 'Potency'",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.friendlyName *= *['\"]Potency"],
+    "expected_symbols": ["meta\\.friendlyName", "Potency"],
+    "forbidden_symbols": ["grokky\\.", "setTag\\(['\"]friendlyName", "setTag\\(['\"]\\.friendlyName"],
+    "intent": "col.meta.friendlyName = 'Potency'. Not setTag — friendlyName is a meta accessor that fires the right event."
+  },
+  {
+    "id": "color-coding-linear",
+    "prompt": "color-code the age column with a red-yellow-green linear scheme from 19 to 70",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.colors\\.setLinear\\("],
+    "expected_symbols": ["meta\\.colors\\.setLinear", "#ff0000|#FF0000", "min", "max"],
+    "forbidden_symbols": ["grokky\\.", "setTag\\(['\"]\\.color-coding", "setTag\\(['\"]color-coding", "tags\\[['\"]\\.color-coding"],
+    "intent": "col.meta.colors.setLinear([colors], {min, max}). Never setTag for color coding — bypasses companion tag writes."
+  },
+  {
+    "id": "remove-just-added",
+    "prompt": "remove the columns we just added: _tmp1 and _tmp2",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.columns\\.remove\\(['\"]_tmp1|for \\(.*_tmp1.*_tmp2|\\['\"]_tmp1['\"], *['\"]_tmp2['\"]"],
+    "expected_symbols": ["_tmp1", "_tmp2", "t\\.columns\\.remove"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "Remove both columns via t.columns.remove. Either two calls or a small for-loop over the names. Guard with t.columns.contains is fine."
+  },
+  {
+    "id": "clear-friendly-name",
+    "prompt": "clear the friendly name on the activity column",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.friendlyName *= *null"],
+    "expected_symbols": ["meta\\.friendlyName", "null"],
+    "forbidden_symbols": ["grokky\\.", "meta\\.friendlyName *= *['\"]['\"]", "setTag\\(['\"]friendlyName"],
+    "intent": "col.meta.friendlyName = null. Null is the documented clear value (removes the underlying tag). Empty string is wrong."
+  },
+  {
+    "id": "rename-back",
+    "prompt": "rename pIC50_old back to pIC50",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.name *= *['\"]pIC50['\"]|getCol\\(['\"]pIC50_old['\"]\\)\\.name"],
+    "expected_symbols": ["pIC50_old", "pIC50"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "Assign col.name = 'pIC50' on the column fetched via t.getCol('pIC50_old')."
+  },
+  {
+    "id": "color-coding-off",
+    "prompt": "turn off color coding on the activity column",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.colors\\.setDisabled\\(\\)"],
+    "expected_symbols": ["meta\\.colors\\.setDisabled"],
+    "forbidden_symbols": ["grokky\\.", "setTag\\(['\"]\\.color-coding", "tags\\.delete\\(['\"]\\.color-coding"],
+    "intent": "col.meta.colors.setDisabled() — the canonical way. Do not poke the .color-coding-type tag directly."
+  },
+  {
+    "id": "describe-and-add",
+    "prompt": "describe the molecule column and also add a Ki column with semType Ki",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["bySemType\\(DG\\.SEMTYPE\\.MOLECULE\\)"],
+    "expected_symbols": ["DG\\.SEMTYPE\\.MOLECULE", "DG\\.SEMTYPE\\.Ki", "addNewFloat\\(|addNew\\([\\s\\S]*COLUMN_TYPE\\.FLOAT", "['\"]Ki['\"]", "stats|\\.length"],
+    "forbidden_symbols": ["grokky\\.", "['\"]float['\"]"],
+    "intent": "Two operations in one exec block: find molecule column via bySemType, read its stats; addNewFloat('Ki') and set col.semType = DG.SEMTYPE.Ki."
+  },
+  {
+    "id": "clone-filtered-subset",
+    "prompt": "make a copy of the filtered rows with only the SMILES and activity columns",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.clone\\(t\\.filter,"],
+    "expected_symbols": ["t\\.clone", "t\\.filter", "smiles|SMILES", "activity"],
+    "forbidden_symbols": ["grokky\\.", "df\\.copy", "t\\.copy"],
+    "intent": "t.clone(t.filter, ['smiles', 'activity']). t.copy() does not exist."
+  },
+  {
+    "id": "find-and-describe-numeric",
+    "prompt": "summarize all numeric columns",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.columns\\.numerical"],
+    "expected_symbols": ["t\\.columns\\.numerical", "stats|col\\.stats"],
+    "forbidden_symbols": ["grokky\\.", "for \\(.*rows"],
+    "intent": "Iterate t.columns.numerical (which is Iterable<Column>) and pull col.stats fields. Array.from(t.columns.numerical, fn) is the idiomatic shape."
+  },
+  {
+    "id": "wrong-tool-trap-semtype",
+    "prompt": "set the semantic type of the smiles column to molecule",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.semType *= *DG\\.SEMTYPE\\.MOLECULE"],
+    "expected_symbols": ["DG\\.SEMTYPE\\.MOLECULE", "\\.semType"],
+    "forbidden_symbols": ["grokky\\.", "setTag\\(['\"]semType", "setTag\\(['\"]quality", "tags\\[['\"]semType", "tags\\[['\"]quality"],
+    "intent": "Trap: Claude must NOT use setTag('semType', ...) or setTag('quality', ...). The right path is col.semType = DG.SEMTYPE.MOLECULE.",
+    "trap": "Tag key for semType is 'quality' under the hood — Claude often tries setTag('semType', ...) which silently does nothing useful."
+  },
+  {
+    "id": "wrong-tool-trap-float-literal",
+    "prompt": "add a new float-type column named 'score' to the current table",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["addNewFloat\\(['\"]score['\"]\\)|addNew\\(['\"]score['\"], *DG\\.COLUMN_TYPE\\.FLOAT"],
+    "expected_symbols": ["addNewFloat|DG\\.COLUMN_TYPE\\.FLOAT"],
+    "forbidden_symbols": ["grokky\\.", "['\"]float['\"]", "addNew\\(['\"]\\w+['\"], *['\"]float"],
+    "intent": "Trap: Claude must NOT use the literal 'float'. The float type constant is the string 'double' — always use DG.COLUMN_TYPE.FLOAT or the typed shorthand addNewFloat.",
+    "trap": "DG.COLUMN_TYPE.FLOAT === 'double'. The string 'float' is not a valid column type."
+  },
+  {
+    "id": "wrong-tool-trap-color-tag",
+    "prompt": "color the height column green between 20 and 170",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.colors\\.(setConditional|setLinear)\\("],
+    "expected_symbols": ["meta\\.colors\\.(setConditional|setLinear)", "20-170|20.*170"],
+    "forbidden_symbols": ["grokky\\.", "setTag\\(['\"]\\.color-coding", "setTag\\(['\"]color-coding", "tags\\[['\"]\\.color-coding"],
+    "intent": "Trap: Claude must NOT setTag('.color-coding-type', ...). The right path is col.meta.colors.setConditional or setLinear.",
+    "trap": "Color coding has dedicated meta.colors helpers; setting the system tag directly bypasses companion tag writes."
+  },
+  {
+    "id": "reset-all-meta",
+    "prompt": "clear all custom metadata (friendly name, units, format, description) on the activity column",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.friendlyName *= *null"],
+    "expected_symbols": ["meta\\.friendlyName *= *null", "meta\\.units *= *null", "meta\\.format *= *null", "meta\\.description *= *null"],
+    "forbidden_symbols": ["grokky\\.", "tags\\.clear\\(\\)"],
+    "intent": "Assign null to each meta.* field individually. Do NOT call col.tags.clear() — that nukes system tags (color coding, choices, etc) too. There is no bulk-clear by design."
+  },
+  {
+    "id": "remove-session-calculated",
+    "prompt": "remove all calculated columns we added this session",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.formula|getTag\\(['\"]formula['\"]\\)|tags\\[['\"]formula"],
+    "expected_symbols": ["meta\\.formula|formula", "t\\.columns\\.remove"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "There is no session log. Detect calculated columns via col.meta.formula != null (or the 'formula' tag), build a list, then t.columns.remove each."
+  }
+]

@@ -1,0 +1,23 @@
+I need to correct a misconception here. `view.scatterPlot()` is **deprecated** in the Datagrok JS API — the source code explicitly marks it as such.
+
+The correct way to add a scatter plot is via `grokky.addViewer()` or `view.addViewer()` directly:
+
+```datagrok-exec
+grokky.addViewer(view, 'Scatter plot');
+```
+
+This uses the canonical, non-deprecated path (`view.addViewer('Scatter plot', opts)`) under the hood, with fuzzy type matching and schema-validated options.
+
+**Why not `view.scatterPlot()`?**
+- It is explicitly marked **deprecated** in `view.ts`
+- It bypasses type canonicalization and property-name validation
+- It may be removed in a future Datagrok version
+
+If you need to bind specific columns, just pass options:
+
+```datagrok-exec
+grokky.addViewer(view, 'Scatter plot', {
+  xColumnName: 'columnA',
+  yColumnName: 'columnB',
+});
+```

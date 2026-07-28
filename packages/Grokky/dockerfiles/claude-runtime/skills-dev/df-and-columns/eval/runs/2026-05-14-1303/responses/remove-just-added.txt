@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.removeColumns(t, ['_tmp1', '_tmp2']);
+```
+
+Done! Columns `_tmp1` and `_tmp2` have been removed from the table.

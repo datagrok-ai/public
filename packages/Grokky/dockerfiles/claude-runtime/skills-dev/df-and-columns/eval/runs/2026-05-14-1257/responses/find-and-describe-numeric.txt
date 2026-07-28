@@ -1,0 +1,27 @@
+
+```datagrok-exec
+const results = {};
+for (const col of t.columns.numerical) {
+  const s = col.stats;
+  results[col.name] = {
+    type: col.type,
+    count: s.valueCount,
+    missing: s.missingValueCount,
+    min: +s.min.toFixed(4),
+    max: +s.max.toFixed(4),
+    avg: +s.avg.toFixed(4),
+    stdev: +s.stdev.toFixed(4),
+    median: +s.med.toFixed(4),
+  };
+}
+return ui.tableFromMap(results);
+```
+
+Here's a summary of all numeric columns in your table. Each column shows:
+
+- **count** — non-null value count
+- **missing** — missing value count
+- **min / max** — range
+- **avg** — mean
+- **stdev** — standard deviation
+- **median** — middle value (Q2)

@@ -1,0 +1,11 @@
+
+```datagrok-exec
+t.col('activity').meta.colors.setLinear(['#FF0000', '#FFFF00', '#00FF00']);
+```
+
+Done! The **activity** column is now color-coded with a red → yellow → green gradient, where:
+- 🔴 **Red** = low values
+- 🟡 **Yellow** = mid-range values
+- 🟢 **Green** = high values
+
+This coloring will propagate to all viewers (scatter plots, histograms, etc.) that use the activity column.

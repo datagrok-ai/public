@@ -1,0 +1,11 @@
+I need to find the available docking targets and the molecule column in the current table. Let me do both at once.
+
+```datagrok-exec
+// Find the molecule column and list docking targets in parallel
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+const targets = await grok.functions.call('Docking:getConfigFiles', {});
+return ui.tableFromMap({
+  'Molecule column': molCol ? molCol.name : 'NOT FOUND',
+  'Available targets': targets.length > 0 ? targets.join(', ') : 'NONE'
+});
+```

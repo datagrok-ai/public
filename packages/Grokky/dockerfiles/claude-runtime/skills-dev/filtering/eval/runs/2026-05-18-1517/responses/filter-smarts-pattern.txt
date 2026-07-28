@@ -1,0 +1,13 @@
+```datagrok-exec
+const query = '[#6][!#1]';
+const molBlock = DG.chem.convert(query, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.SUBSTRUCTURE,
+  column: 'smiles',
+  columnName: 'smiles',
+  molBlock,
+  molBlockFailover: query,
+});
+```
+
+I've applied a substructure filter using the SMARTS pattern `[#6][!#1]` (any carbon bonded to any non-hydrogen atom) on the `smiles` column. Only rows with compounds matching this pattern are now visible. The filter widget is also visible in the filter panel on the side.

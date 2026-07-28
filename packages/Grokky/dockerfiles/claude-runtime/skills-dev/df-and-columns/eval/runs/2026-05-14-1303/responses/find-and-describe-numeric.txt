@@ -1,0 +1,4 @@
+
+```datagrok-exec
+return t.columns.numerical.map(grokky.describeColumn);
+```

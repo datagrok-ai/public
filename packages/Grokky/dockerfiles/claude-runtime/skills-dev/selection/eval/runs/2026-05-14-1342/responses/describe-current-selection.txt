@@ -1,0 +1,10 @@
+```datagrok-exec
+return grokky.describeSelection(t);
+```
+
+This will show you a summary of the current selection including:
+- **count** — number of selected rows
+- **total** — total rows in the table
+- **indexes** — which rows are selected
+- **currentRowIdx** — the focused/current row
+- **sample** — a preview of selected values (if available)

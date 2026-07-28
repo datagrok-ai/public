@@ -1,0 +1,30 @@
+```datagrok-exec
+if (!(view instanceof DG.TableView)) return;
+
+// 1. Restore visibility of all columns (skip index 0 = row header)
+const cols = view.grid.columns;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+
+// 2. Reset column width policy to Optimal
+view.grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+
+// 3. Clear sort
+view.grid.sort([], []);
+
+// 4. Disable color coding on all columns
+for (const c of t.columns.toList())
+  c.meta.colors.setDisabled();
+
+// 5. Reset frozen columns and row height to defaults
+view.grid.setOptions({ frozenColumns: 0, rowHeight: 28 });
+```All grid customizations have been reset to default:
+
+- **Column visibility** — all hidden columns are now visible again
+- **Column widths** — set to *Optimal* (fit to content)
+- **Sort** — cleared, rows return to original order
+- **Color coding** — disabled on all columns
+- **Frozen columns** — unfrozen
+- **Row height** — reset to default (28 px)

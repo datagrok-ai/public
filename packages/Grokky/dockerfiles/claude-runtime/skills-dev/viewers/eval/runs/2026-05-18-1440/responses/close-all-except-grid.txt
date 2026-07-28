@@ -1,0 +1,3 @@
+```datagrok-exec
+Array.from(view.viewers).slice(1).forEach((v) => { try { v.close(); } catch {} });
+```

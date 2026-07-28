@@ -1,0 +1,1 @@
+I need to know which molecule you'd like to generate analogs for. Could you please provide the lead molecule?Please provide the SMILES string for your lead molecule, or select the molecule in the grid and let me know — I'll then use Reinvent4 to generate 20 analogs optimized for your target.

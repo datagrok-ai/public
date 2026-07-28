@@ -1,0 +1,6 @@
+I need a couple of details to apply the filter correctly:
+
+1. **Which column** holds the activity values? (e.g. `activity`, `IC50`, `% inhibition`, …)
+2. **What threshold** defines "high"? (e.g. > 7, > 100, top 10%, …)
+
+Please share those and I'll filter the rows right away!

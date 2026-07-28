@@ -1,0 +1,4 @@
+
+```datagrok-exec
+await grokky.filterSubstructure(view, t.columns.bySemType('Molecule').name, 'c1ccccc1');
+```

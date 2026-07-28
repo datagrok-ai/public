@@ -1,0 +1,7 @@
+
+```datagrok-exec
+if (5 >= 0 && 5 < t.rowCount)
+  t.currentRowIdx = 5;
+```
+
+Row 5 is now the current (focused) row — it will be highlighted in the grid and any linked viewers.

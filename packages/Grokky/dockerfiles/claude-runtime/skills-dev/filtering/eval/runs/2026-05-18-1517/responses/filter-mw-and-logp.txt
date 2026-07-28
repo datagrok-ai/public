@@ -1,0 +1,13 @@
+
+```datagrok-exec
+const mw = t.getCol('MW');
+const logP = t.getCol('LogP');
+t.filter.init((i) => mw.get(i) < 500 && logP.get(i) < 5);
+return ui.tableFromMap({
+  'Visible rows': t.filter.trueCount,
+  'Hidden rows': t.filter.falseCount,
+  'Total rows': t.rowCount
+});
+```
+
+Done! Filtered to rows where **MW < 500** AND **LogP < 5**. The result summary is shown above.

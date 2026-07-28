@@ -1,0 +1,192 @@
+[
+  {
+    "id": "filter-age-gt-40",
+    "prompt": "filter to rows where age > 40",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.init|df\\.filter\\.init|filter\\.init\\("],
+    "expected_symbols": ["['\"]age['\"]", "40"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere", "removeWhereIdx", "setAll\\(false"],
+    "intent": "Predicate filter via t.filter.init. Non-destructive — must NOT use removeWhere/removeWhereIdx. setAll(false) would hide everything (polarity trap). grokky.* is a forbidden ghost namespace."
+  },
+  {
+    "id": "filter-mw-lt-500",
+    "prompt": "filter to compounds with MW under 500",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.init|filter\\.init\\(|FILTER_TYPE\\.HISTOGRAM"],
+    "expected_symbols": ["MW", "500"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere", "setAll\\(false"],
+    "intent": "Range filter on MW. Either predicate via filter.init or a HISTOGRAM filter via getFiltersGroup is acceptable."
+  },
+  {
+    "id": "filter-substructure-benzene",
+    "prompt": "filter the molecule column to those containing the benzene ring substructure",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["FILTER_TYPE\\.SUBSTRUCTURE|grok\\.chem\\.searchSubstructure"],
+    "expected_symbols": ["c1ccccc1|benzene|C1=CC=CC=C1|molBlock"],
+    "forbidden_symbols": ["grokky\\.", "molBlock\\s*:\\s*['\"]c1ccccc1"],
+    "intent": "Substructure filter via SUBSTRUCTURE FilterGroup state (with conversion) or the BitSet path grok.chem.searchSubstructure. Claude must NOT shove raw SMILES into a molBlock field.",
+    "notes": "Critical: passing SMILES directly as molBlock to FILTER_TYPE.SUBSTRUCTURE silently matches zero rows."
+  },
+  {
+    "id": "filter-categorical-in-set",
+    "prompt": "filter to category in ['A','B','C']",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["FILTER_TYPE\\.CATEGORICAL|t\\.filter\\.init|filter\\.init\\("],
+    "expected_symbols": ["['\"]A['\"]", "['\"]B['\"]", "['\"]C['\"]"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere"],
+    "intent": "Categorical in-set filter. CATEGORICAL state with selected:['A','B','C'] is most natural; predicate via filter.init also acceptable."
+  },
+  {
+    "id": "filter-name-contains",
+    "prompt": "filter to rows where name contains 'acid'",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["FILTER_TYPE\\.FREE_TEXT|t\\.filter\\.init|filter\\.init\\(|\\.includes\\("],
+    "expected_symbols": ["acid"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere"],
+    "intent": "Substring filter on a string column. FREE_TEXT via getFiltersGroup or a predicate using String#includes."
+  },
+  {
+    "id": "filter-smarts-pattern",
+    "prompt": "filter to compounds matching the SMARTS pattern [#6][!#1]",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["FILTER_TYPE\\.SUBSTRUCTURE|grok\\.chem\\.searchSubstructure"],
+    "expected_symbols": ["\\[#6\\]\\[!#1\\]"],
+    "forbidden_symbols": ["grokky\\.", "molBlock\\s*:\\s*['\"]\\[#6\\]"],
+    "intent": "SMARTS substructure filter. Either convert via DG.chem.convert with Notation.Smarts -> Notation.MolBlock before SUBSTRUCTURE state, or use grok.chem.searchSubstructure BitSet path. NOT raw SMARTS as molBlock.",
+    "notes": "Failure mode: molBlock: '<smarts>' with no conversion silently matches zero rows."
+  },
+  {
+    "id": "clear-filter",
+    "prompt": "clear the filter",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.setAll\\(true\\)|df\\.filter\\.setAll\\(true\\)|filter\\.setAll\\(true\\)"],
+    "expected_symbols": ["setAll\\(true\\)"],
+    "forbidden_symbols": ["grokky\\.", "setAll\\(false\\)"],
+    "intent": "filter.setAll(true) — polarity correct. setAll(false) would hide every row (polarity trap)."
+  },
+  {
+    "id": "show-all-rows",
+    "prompt": "show all rows again",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.setAll\\(true\\)|df\\.filter\\.setAll\\(true\\)|filter\\.setAll\\(true\\)"],
+    "expected_symbols": ["setAll\\(true\\)"],
+    "forbidden_symbols": ["grokky\\.", "setAll\\(false\\)"],
+    "intent": "Same as clear-filter — different phrasing. Polarity trap remains."
+  },
+  {
+    "id": "remove-substructure-only",
+    "prompt": "remove the substructure filter only",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["FILTER_TYPE\\.SUBSTRUCTURE|fg\\.remove|getStates|\\.filters"],
+    "expected_symbols": ["SUBSTRUCTURE|substructureFilter|molBlock"],
+    "forbidden_symbols": ["grokky\\.", "filter\\.setAll\\(true\\)\\s*;\\s*view\\.getFiltersGroup[^.]*\\.setActive\\(false\\)"],
+    "intent": "Only the substructure filter goes away — other filters stay. Acceptable: iterate fg.filters and remove() the SUBSTRUCTURE one, or updateOrAdd with an empty molBlock to clear that one filter. NOT a blanket clear of every filter.",
+    "notes": "This is genuinely ambiguous; if Claude wipes everything, that's a fail."
+  },
+  {
+    "id": "invert-filter",
+    "prompt": "invert the current filter",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.invert|df\\.filter\\.invert|filter\\.invert\\("],
+    "expected_symbols": ["invert"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "filter.invert() — in-place mutation."
+  },
+  {
+    "id": "filter-mw-and-logp",
+    "prompt": "filter to MW < 500 AND LogP < 5",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.init|filter\\.init\\(|FILTER_TYPE\\.HISTOGRAM"],
+    "expected_symbols": ["MW", "500", "LogP|logP|cLogP", "5"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere"],
+    "intent": "Lipinski-style multi-column AND. Predicate filter.init is the canonical single-pass form. Stacking two HISTOGRAM updateOrAdd calls also acceptable (they AND via onRowsFiltering).",
+    "notes": "If Claude stacks two updateOrAdd HISTOGRAM filters, pass — they collaborate."
+  },
+  {
+    "id": "filtered-as-new-table",
+    "prompt": "show only the rows currently passing the filter as a new table",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.clone\\(.*filter|df\\.clone\\(.*filter|\\.clone\\(.*\\.filter"],
+    "expected_symbols": ["clone\\(.*filter"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere", "df\\.copy"],
+    "intent": "Non-destructive: t.clone(t.filter). Must NOT mutate t via removeWhere/removeWhereIdx."
+  },
+  {
+    "id": "cross-skill-selected-then-describe",
+    "prompt": "filter to selected molecules then describe them",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.init|filter\\.init\\(|filter\\.copyFrom|t\\.clone\\(.*selection"],
+    "expected_symbols": ["selection"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere"],
+    "intent": "Cross-skill: bridge selection (other skill) and filter (this skill). Acceptable paths: filter.init(i => t.selection.get(i)), t.filter.copyFrom(t.selection), or t.clone(t.selection).",
+    "notes": "If Claude tries removeWhere on selection, FAIL (destructive)."
+  },
+  {
+    "id": "wrong-tool-trap-remove-as-delete",
+    "prompt": "remove all rows where category is X",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.rows\\.removeWhereIdx|t\\.rows\\.removeWhere|removeWhereIdx|removeWhere\\("],
+    "expected_symbols": ["removeWhereIdx|removeWhere"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter\\.init|filter\\.init\\("],
+    "intent": "Trap: 'remove' means destructive delete. Claude should reach for t.rows.removeWhereIdx, not filter.init (wrong polarity AND non-destructive).",
+    "trap": "'remove' / 'delete' = destructive. 'filter' / 'hide' / 'show only' = non-destructive."
+  },
+  {
+    "id": "wrong-tool-trap-smiles-as-molblock",
+    "prompt": "filter the molecule column by substructure CCO",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["DG\\.chem\\.convert|grok\\.chem\\.searchSubstructure"],
+    "expected_symbols": ["CCO"],
+    "forbidden_symbols": ["grokky\\.", "molBlock\\s*:\\s*['\"]CCO['\"]"],
+    "intent": "Trap: Claude must NOT pass 'CCO' (SMILES) as raw molBlock in a SUBSTRUCTURE filter state. Convert via DG.chem.convert(query, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) or use the BitSet path.",
+    "trap": "Chem:substructureFilter reads state.molBlock; raw SMILES silently matches zero rows."
+  },
+  {
+    "id": "wrong-tool-trap-hide-vs-drop",
+    "prompt": "hide rows where activity > 7 (do not delete them, just hide)",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.init|filter\\.init\\(|FILTER_TYPE\\.HISTOGRAM"],
+    "expected_symbols": ["activity"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere", "removeWhereIdx"],
+    "intent": "Trap: 'hide' is non-destructive — must use filter, not drop. Polarity: 'hide where activity > 7' means KEEP rows where activity <= 7. Pass if Claude filters non-destructively with inverted polarity (or asks for clarification on threshold).",
+    "trap": "'hide' = filter, not removeWhere. Polarity must invert: hide_where_X is equivalent to keep_where_not_X.",
+    "notes": "Watch for polarity error: filter.init(i => activity > 7) is BACKWARDS — that keeps the rows the user wanted hidden."
+  },
+  {
+    "id": "reset-clear-all-filters-and-selections",
+    "prompt": "clear all filters and selections",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["filter\\.setAll\\(true\\)"],
+    "expected_symbols": ["setAll\\(true\\)", "selection"],
+    "forbidden_symbols": ["grokky\\.", "filter\\.setAll\\(false\\)"],
+    "intent": "Cross-skill: filter clearing is this skill (setAll(true)); selection clearing is the next skill. Pass if Claude clears the filter correctly. Bonus if Claude also clears selection via selection.setAll(false) — note opposite polarity (filter.setAll(false) would be WRONG).",
+    "notes": "Subtle polarity gotcha: 'clear filter' = setAll(true); 'clear selection' = setAll(false)."
+  },
+  {
+    "id": "go-back-to-seeing-every-row",
+    "prompt": "go back to seeing every row",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.filter\\.setAll\\(true\\)|df\\.filter\\.setAll\\(true\\)|filter\\.setAll\\(true\\)"],
+    "expected_symbols": ["setAll\\(true\\)"],
+    "forbidden_symbols": ["grokky\\.", "setAll\\(false\\)", "removeWhere"],
+    "intent": "Natural-language clear-filter. setAll(true). setAll(false) would hide everything."
+  }
+]

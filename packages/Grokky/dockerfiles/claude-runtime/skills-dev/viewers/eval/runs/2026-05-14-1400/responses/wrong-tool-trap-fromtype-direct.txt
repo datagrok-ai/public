@@ -1,0 +1,32 @@
+I'll correct that — `DG.Viewer.fromType` creates a **detached** viewer that is not docked into the view. For adding viewers to a TableView, the correct approach is `view.addViewer(type, opts)` (or `grokky.addViewer(view, type, opts)` which wraps it).
+
+Here's the distinction:
+
+| Method | Result | When to use |
+|--------|--------|-------------|
+| `grokky.addViewer(view, type, opts)` | Attached + docked in the view | ✅ Adding viewers the user will see |
+| `view.addViewer(type, opts)` | Same — canonical underlying call | ✅ Fine directly too |
+| `DG.Viewer.fromType(type, df, opts)` | **Detached** — not shown in any view | ⚠️ Off-screen rendering, thumbnails, serialization only |
+| `view.scatterPlot(opts)` etc. | Deprecated shorthands | ❌ Never use |
+| `new DG.Viewer(...)` | Internal Dart handle constructor | ❌ Never use |
+
+**Example — correct way to add a scatter plot:**
+
+```datagrok-exec
+// Attached and docked — user sees it immediately.
+grokky.addViewer(view, 'Scatter plot', {
+  xColumnName: 'height',
+  yColumnName: 'weight',
+});
+```
+
+**When `DG.Viewer.fromType` is appropriate:**
+
+```javascript
+// Off-screen rendering only — e.g. generating a thumbnail.
+const sp = DG.Viewer.fromType('Scatter plot', df, { xColumnName: 'x', yColumnName: 'y' });
+const img = await sp.toImage(400, 300);
+sp.detach(); // Must manually clean up
+```
+
+If you'd like to add a specific viewer to the current view, just let me know what type and columns to use!

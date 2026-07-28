@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.applySort(view, ['class', 'activity'], ['asc', 'desc']);
+```
+
+Done! The grid is now sorted by **class** (ascending) and then by **activity** (descending) within each class.

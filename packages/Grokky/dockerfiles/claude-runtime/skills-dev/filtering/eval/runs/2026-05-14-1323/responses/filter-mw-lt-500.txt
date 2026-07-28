@@ -1,0 +1,5 @@
+```datagrok-exec
+await grokky.filterRows(view, 'MW', { min: 0, max: 500 });
+```
+
+This filters the table to show only compounds with **MW < 500**. The filter will appear in the side panel as a histogram filter you can adjust interactively.

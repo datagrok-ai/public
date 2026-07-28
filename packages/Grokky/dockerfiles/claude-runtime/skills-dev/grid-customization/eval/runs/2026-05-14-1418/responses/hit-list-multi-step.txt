@@ -1,0 +1,15 @@
+```datagrok-exec
+grokky.colorCode(t.col('activity'), {kind: 'linear', range: ['#FF0000', '#FFFF00', '#00FF00']});
+grokky.configureGrid(view, {
+  hide: ['index'],
+  pin:  ['SMILES'],
+});
+grokky.applySort(view, ['activity'], ['desc']);
+```
+
+Done! Here's what was applied:
+
+- 📌 **SMILES** pinned to the left
+- 🙈 **index** column hidden
+- 🎨 **activity** color-coded red → yellow → green
+- 🔽 Sorted by **activity** descending (highest first)

@@ -1,0 +1,136 @@
+I'll search ChEMBL for compounds active against thrombin (a common drug target). Let me query for compounds by organism/target:
+
+```datagrok-exec
+// Search ChEMBL for compounds active against thrombin targets
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 500,
+  organism: 'Homo sapiens'
+});
+
+// Now filter/search for thrombin specifically via similarity or substructure isn't directly available,
+// so let's use a direct SQL query approach via the ChEMBL queries
+// Try a direct query for thrombin compounds
+const result = await grok.data.query('Chembl:patternSubstructureSearch', { pattern: 'C' });
+return DG.Viewer.grid(df).root;
+```
+
+Let me use the correct ChEMBL query approach:
+
+```datagrok-exec
+// Query ChEMBL for compounds active against thrombin (F2 gene / coagulation factor II)
+const df = await grok.data.query('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 1000,
+  organism: 'Homo sapiens'
+});
+
+grok.shell.addTableView(df);
+```
+
+Let me find the right query by checking the available ChEMBL queries:I'll search ChEMBL directly for thrombin-active compounds using the available ChEMBL functions:
+
+```datagrok-exec
+// Thrombin is encoded by the F2 gene in Homo sapiens
+// Use getChemblCompoundsByOrganism as a starting point, then we'll try a direct target query
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 1000,
+  organism: 'Homo sapiens'
+});
+
+// Filter rows where target name contains 'thrombin'
+const targetCol = df.columns.byName('target_pref_name') 
+  ?? df.columns.byName('target') 
+  ?? df.columns.byName('pref_name');
+
+if (targetCol) {
+  const filtered = df.rows.match(r => targetCol.get(r.idx)?.toLowerCase().includes('thrombin')).toDataFrame();
+  if (filtered.rowCount > 0) {
+    grok.shell.addTableView(filtered);
+    return ui.divText(`Found ${filtered.rowCount} compounds active against thrombin.`);
+  }
+}
+
+// If no target column, show all and inform user
+grok.shell.addTableView(df);
+return ui.divText(`Loaded ${df.rowCount} compounds — target column not found for filtering. Showing all Homo sapiens compounds.`);
+```
+
+The `getChemblCompoundsByOrganism` query may not filter by specific target name. Let me try using the underlying SQL query capability more directly:
+
+```datagrok-exec
+// Try querying via grok.data.query with a thrombin-specific ChEMBL query
+// ChEMBL target for human thrombin is CHEMBL204
+try {
+  const df = await grok.data.query('Chembl:getChemblCompoundsByTarget', { target_chembl_id: 'CHEMBL204' });
+  grok.shell.addTableView(df);
+  return ui.divText(`Found ${df.rowCount} compounds active against Thrombin (CHEMBL204).`);
+} catch(e) {
+  // Fallback: load compounds and filter
+  return ui.divText('Direct target query not available. Error: ' + e.message);
+}
+```
+
+```datagrok-exec
+// Final approach: use getChemblCompoundsByOrganism and surface the data
+// Thrombin (F2) is a human protein — pull Homo sapiens compounds and open in table view
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 1000,
+  organism: 'Homo sapiens'
+});
+
+// Show column names for inspection
+const cols = df.columns.names();
+return ui.tableFromMap({ 'Row count': df.rowCount, 'Columns': cols.join(', ') });
+```
+
+Here's the result of what's available. Based on the ChEMBL package's registered functions, the best approach to find compounds specifically active against **thrombin** is:
+
+1. **Via ChEMBL substructure/similarity search** — if you have a known thrombin inhibitor scaffold (e.g., argatroban, dabigatran), you can search for analogs.
+2. **Via `getChemblCompoundsByOrganism`** — this returns compounds active against Homo sapiens targets, which includes thrombin hits, but isn't filtered to thrombin specifically.
+
+Since thrombin's ChEMBL target ID is **CHEMBL204**, let me try the most direct route:
+
+```datagrok-exec
+// Query ChEMBL compounds active against Thrombin (CHEMBL204 - Coagulation factor II)
+// Using the organism query as the available entry point
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 1000,
+  organism: 'Homo sapiens'
+});
+
+grok.shell.addTableView(df);
+
+const rowCount = df.rowCount;
+const colNames = df.columns.names();
+
+// Try to filter for thrombin if a target column exists
+let thrombinDf = null;
+for (const colName of colNames) {
+  const col = df.col(colName);
+  if (col && col.type === DG.TYPE.STRING) {
+    const sample = col.get(0);
+    if (typeof sample === 'string' && (colName.toLowerCase().includes('target') || colName.toLowerCase().includes('pref'))) {
+      // Filter for thrombin
+      const mask = DG.BitSet.create(df.rowCount);
+      for (let i = 0; i < df.rowCount; i++) {
+        const val = col.get(i);
+        if (val && val.toLowerCase().includes('thrombin')) mask.set(i, true);
+      }
+      if (mask.trueCount > 0) {
+        thrombinDf = df.clone(mask);
+        grok.shell.addTableView(thrombinDf);
+        break;
+      }
+    }
+  }
+}
+
+return ui.tableFromMap({
+  'Total compounds loaded': rowCount,
+  'Thrombin-specific hits': thrombinDf ? thrombinDf.rowCount : 'Target column not found for filtering',
+  'Columns available': colNames.join(', ')
+});
+```
+
+This will load ChEMBL compounds active against Homo sapiens targets and attempt to filter for **thrombin** specifically. The table will open in a new view. 
+
+> **Note:** If you'd like a more targeted query (e.g., by ChEMBL target ID `CHEMBL204`), that would require a custom SQL query against the ChEMBL database. I can help write that if your instance has direct ChEMBL DB access via `grok.data.query`.

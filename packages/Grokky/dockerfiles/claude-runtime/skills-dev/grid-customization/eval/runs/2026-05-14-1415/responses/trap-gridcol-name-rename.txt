@@ -1,0 +1,8 @@
+
+```datagrok-exec
+const col = t.col('activity');
+if (!col) throw new Error("Column 'activity' not found in the current table.");
+col.meta.friendlyName = 'Potency';
+```
+
+Done! The **activity** column is now displayed as **Potency** in the grid (and all other viewers). The underlying column name remains `activity`, so any existing formulas or scripts referencing it will continue to work.

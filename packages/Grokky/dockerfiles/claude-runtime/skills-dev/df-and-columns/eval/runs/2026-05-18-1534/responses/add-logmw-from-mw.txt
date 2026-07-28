@@ -1,0 +1,15 @@
+```datagrok-exec
+const mwCol = t.col('MW') ?? t.columns.firstWhere(c => c.name.toLowerCase().includes('mw'));
+if (!mwCol) throw new Error('No MW column found');
+
+const name = t.columns.getUnusedName('logMW');
+const logCol = t.columns.addNewFloat(name);
+logCol.init(i => {
+  const v = mwCol.get(i);
+  return (v != null && v > 0) ? Math.log10(v) : null;
+});
+logCol.meta.description = `log10(${mwCol.name})`;
+return ui.divText(`Added column "${name}" = log10(${mwCol.name})`);
+```
+
+This adds a new float column **logMW** where each value is `log10(MW)`. Rows with null or non-positive MW values are set to `null`. Let me know if you'd like natural log (`Math.log`) instead, or any other adjustments!

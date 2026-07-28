@@ -1,0 +1,22 @@
+No problem — I have the function signature from the built-in skill. I'll call `Chem:chemSpaceTopMenu` with UMAP and Tanimoto similarity, which will project the molecules and open the scatter plot automatically.
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No Molecule column found in the current table.');
+
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: mol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+1. **Find the molecule column** in your current table (by semantic type `Molecule`).
+2. **Compute Morgan fingerprints** for each molecule.
+3. **Run UMAP** using Tanimoto similarity to project them into 2D.
+4. **Open a Scatter Plot** with the UMAP embeddings — structurally similar molecules will cluster together.
+
+You can color the points by any column (e.g. activity, MW) using the scatter plot's color-coding options in the right-side panel.

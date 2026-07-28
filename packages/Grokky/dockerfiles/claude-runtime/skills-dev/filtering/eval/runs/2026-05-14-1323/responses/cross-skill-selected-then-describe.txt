@@ -1,0 +1,65 @@
+Let me check the current table columns first to find the molecule column automatically.
+
+```datagrok-exec
+// Inspect current table: columns, selection state, and row counts
+const cols = [];
+for (let i = 0; i < t.columns.length; i++) {
+  const c = t.columns.byIndex(i);
+  cols.push({ name: c.name, type: c.type });
+}
+return ui.tableFromMap({
+  'Row count': t.rowCount,
+  'Selected rows': t.selection.trueCount,
+  'Columns': cols.map(c => `${c.name} (${c.type})`).join(', ')
+});
+```
+
+Once I see the column names and confirm there are selected rows, I'll filter to the selection and describe the molecules. Could you also share the output, or let me know which column holds the molecules if it's not obvious from the list?
+
+---
+
+Once you confirm, here's what I'll do:
+
+1. **Filter to selected rows** — copy `df.selection` into `df.filter` so only the selected molecules remain visible.
+2. **Describe them** — compute summary stats (row count, numeric column distributions, categorical breakdowns) on the filtered set.
+
+Run this when ready (replace `'smiles'` with your actual molecule column name):
+
+```datagrok-exec
+// Step 1: filter to currently-selected rows
+const selMask = t.selection.clone();
+t.filter.copyFrom(selMask);
+
+const visCount = t.filter.trueCount;
+
+// Step 2: describe the filtered rows
+const stats = {};
+stats['Filtered rows (selected)'] = visCount;
+
+for (let i = 0; i < t.columns.length; i++) {
+  const col = t.columns.byIndex(i);
+  if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT) {
+    const vals = [];
+    for (let r = 0; r < t.rowCount; r++) {
+      if (t.filter.get(r)) vals.push(col.get(r));
+    }
+    vals.sort((a, b) => a - b);
+    const sum = vals.reduce((a, b) => a + b, 0);
+    stats[`${col.name} — min`] = vals[0]?.toFixed(2);
+    stats[`${col.name} — max`] = vals[vals.length - 1]?.toFixed(2);
+    stats[`${col.name} — mean`] = (sum / vals.length).toFixed(2);
+    stats[`${col.name} — median`] = vals[Math.floor(vals.length / 2)]?.toFixed(2);
+  } else if (col.type === DG.COLUMN_TYPE.STRING && col.name.toLowerCase() !== 'smiles' && col.name.toLowerCase() !== 'molecule' && col.name.toLowerCase() !== 'structure') {
+    const freq = {};
+    for (let r = 0; r < t.rowCount; r++) {
+      if (t.filter.get(r)) { const v = col.get(r); freq[v] = (freq[v] || 0) + 1; }
+    }
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(', ');
+    stats[`${col.name} — top values`] = top;
+  }
+}
+
+return ui.tableFromMap(stats);
+```
+
+This will filter the view to your selected molecules and display a statistical summary. Let me know the molecule column name if you'd like me to also render the structures!

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.grid.col('index').visible = false;
+```
+
+Done! The **index** column is now hidden from the grid.

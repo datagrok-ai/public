@@ -1,0 +1,17 @@
+Based on the skill documentation, I'll call `MolTrack:getCompoundByCorporateId` with the corporate ID `DG-12345`.
+
+```datagrok-exec
+const result = await grok.functions.call('MolTrack:getCompoundByCorporateId', {
+  corporateValue: 'DG-12345'
+});
+
+if (result == null) {
+  return ui.divText('No compound found with corporate ID DG-12345.');
+}
+
+// Result is JSON — render as a key-value table
+const obj = typeof result === 'string' ? JSON.parse(result) : result;
+return ui.tableFromMap(obj);
+```
+
+This will query MolTrack for the compound registered under corporate ID **DG-12345** and display its properties. If the compound exists, you'll see a table of its fields (e.g., SMILES, name, registration date, and any custom properties). If it's not found, you'll see a "not found" message.

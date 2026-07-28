@@ -1,0 +1,14 @@
+Based on the chem-toolkit skill, `Chem:getInchiKeys` is the right function for this. It takes a `column<Molecule>` and appends InChI keys as a new column.
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule/SMILES column found in the current table.');
+const inchiKeyCol = await grok.functions.call('Chem:getInchiKeys', { molecules: molCol });
+inchiKeyCol.name = t.columns.getUnusedName('InChIKey');
+t.columns.add(inchiKeyCol);
+```
+
+This will:
+1. Detect the SMILES/Molecule column automatically
+2. Compute InChI keys for every row using RDKit
+3. Append the result as a new **InChIKey** column in your table

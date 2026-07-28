@@ -1,0 +1,6 @@
+```datagrok-exec
+const smiles = await grok.functions.call('Chembl:chemblIdToSmilesTs', { id: 'CHEMBL301' });
+return ui.tableFromMap({ 'CHEMBL ID': 'CHEMBL301', 'SMILES': smiles });
+```
+
+This will look up **CHEMBL301** in the local ChEMBL database and return its canonical SMILES. The result will be displayed in the chat once executed.

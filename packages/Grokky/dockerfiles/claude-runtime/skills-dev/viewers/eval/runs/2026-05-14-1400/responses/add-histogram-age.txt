@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.addViewer(view, 'Histogram', { valueColumnName: 'age' });
+```
+
+A histogram of the **age** column has been added to your view!

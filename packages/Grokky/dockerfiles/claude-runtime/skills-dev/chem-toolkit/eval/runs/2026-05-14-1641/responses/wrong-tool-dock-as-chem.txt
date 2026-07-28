@@ -1,0 +1,40 @@
+I'll dock the ligands into the protein target. Let me first check the available docking targets and the current table's molecule column.Let me look up the correct function names directly from FUNCTIONS.md:I'll proceed using the verified function signatures from the chem-toolkit skill. I'll first retrieve the available targets and molecule column, then run the docking.
+
+```datagrok-exec
+// Step 1: discover available targets and molecule column
+const targets = await grok.functions.call('Docking:getConfigFiles', {});
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+return {
+  targets: targets,
+  molColumnName: molCol ? molCol.name : null
+};
+```
+
+Once I receive the available targets and molecule column from the result above, I'll kick off the docking. Based on the result:
+
+```datagrok-exec
+// Step 2: run AutoDock docking
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+const targets = await grok.functions.call('Docking:getConfigFiles', {});
+const target = Array.isArray(targets) ? targets[0] : targets;
+
+if (!molCol) throw new Error('No Molecule column found in the current table.');
+if (!target) throw new Error('No docking targets configured. Please upload a target to System:AppData/Docking/targets.');
+
+await grok.functions.call('Docking:runAutodock', {
+  table: t,
+  ligands: molCol,
+  target: target,
+  poses: 10
+});
+```
+
+This will:
+1. **Detect the molecule column** automatically from the current table (by semantic type `Molecule`).
+2. **Pick the first available docking target** from your configured targets.
+3. **Run AutoDock Vina** with 10 poses per ligand via the `Docking:runAutodock` function, which will:
+   - Dock all ligands into the target
+   - Append binding energy and pose columns to the table
+   - Apply color coding and sort by binding energy in the grid
+
+> **Note:** If you have multiple targets or want to specify a particular one, let me know the target name and I'll adjust the call. You can also change the number of poses (default: 10).

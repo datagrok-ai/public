@@ -1,0 +1,8 @@
+
+```datagrok-exec
+const age = t.getCol('age');
+t.selection.init(i => age.get(i) > 40);
+return { selected: t.selection.trueCount, total: t.rowCount };
+```
+
+Selected **all rows where `age > 40`**. The result above shows how many rows matched out of the total.

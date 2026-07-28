@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterRows(view, 'category', {values: ['A', 'B', 'C']});
+```
+
+The filter has been applied — only rows where **category** is `A`, `B`, or `C` are now visible.

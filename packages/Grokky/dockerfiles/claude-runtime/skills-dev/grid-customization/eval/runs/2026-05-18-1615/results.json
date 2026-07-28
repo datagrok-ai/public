@@ -1,0 +1,978 @@
+{
+  "meta": {
+    "skillName": "grid-customization",
+    "skillDir": "/Users/aleksashka/Desktop/datagrok/reddata/public/packages/Grokky/dockerfiles/claude-runtime/skills-dev/grid-customization",
+    "inlinedSkillNames": [
+      "datagrok-exec",
+      "grid-customization"
+    ],
+    "model": "sonnet",
+    "systemPromptChars": 22721,
+    "totalDurationMs": 47965,
+    "startedAt": "2026-05-18T13:15:23.182Z"
+  },
+  "results": [
+    {
+      "id": "sort-activity-desc",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "['\"]activity['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "false",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "sortByColumns\\s*=",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "hide-index-column",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.visible\\s*=\\s*false|columns\\.setVisible\\(|grid\\.col\\(|byIndex\\(0\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.visible\\s*=\\s*false|columns\\.setVisible|byIndex\\(0\\)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "columns\\.remove\\(",
+            "matched": false
+          },
+          {
+            "pattern": "removeColumn",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "pin-smiles-left",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.pin\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "SMILES",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "PowerGrid:addPinnedColumn",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "widen-molecule-column",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.width\\s*=\\s*300",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecule",
+            "matched": true
+          },
+          {
+            "pattern": "300",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "color-activity-red-green",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "col\\(['\"]activity['\"]\\)\\.meta\\.colors\\.setLinear|meta\\.colors\\.setLinear",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "activity",
+            "matched": true
+          },
+          {
+            "pattern": "#FF0000|#ff0000",
+            "matched": true
+          },
+          {
+            "pattern": "#00FF00|#00ff00",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "gridCol\\.backColor",
+            "matched": false
+          },
+          {
+            "pattern": "gridCol\\.categoryColors",
+            "matched": false
+          },
+          {
+            "pattern": "setTag\\(['\"]\\.color-coding",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "format-ic50-two-decimals",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.format\\s*=|\\.format\\s*=\\s*['\"]0\\.00['\"]",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "IC50",
+            "matched": true
+          },
+          {
+            "pattern": "0\\.00",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "show-only-five-columns",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "columns\\.setVisible\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "SMILES",
+            "matched": true
+          },
+          {
+            "pattern": "MW",
+            "matched": true
+          },
+          {
+            "pattern": "LogP",
+            "matched": true
+          },
+          {
+            "pattern": "activity",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "clear-sort",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(\\s*\\[\\s*\\]",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "sort",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.resetLayout\\(",
+            "matched": false
+          },
+          {
+            "pattern": "sortByColumns\\s*=",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "show-all-hidden",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.visible\\s*=\\s*true|columns\\.setVisible\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "visible|setVisible",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.resetLayout\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "unpin-smiles",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.unpin\\(\\)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "SMILES",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "color-off-activity",
+      "category": "atomic-undo",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.colors\\.setDisabled\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "activity",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "hit-list-multi-step",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "\\.pin\\(\\)",
+            "matched": true
+          },
+          {
+            "pattern": "\\.visible\\s*=\\s*false|columns\\.setVisible\\(",
+            "matched": true
+          },
+          {
+            "pattern": "meta\\.colors\\.setLinear",
+            "matched": true
+          },
+          {
+            "pattern": "view\\.grid\\.sort\\(",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "SMILES",
+            "matched": true
+          },
+          {
+            "pattern": "index",
+            "matched": true
+          },
+          {
+            "pattern": "activity",
+            "matched": true
+          },
+          {
+            "pattern": "false",
+            "matched": true
+          },
+          {
+            "pattern": "#FF0000|#ff0000",
+            "matched": true
+          },
+          {
+            "pattern": "#00FF00|#00ff00",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "sortByColumns\\s*=",
+            "matched": false
+          },
+          {
+            "pattern": "gridCol\\.name\\s*=",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "reset-grid-keep-viewers",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|setDisabled|\\.visible\\s*=\\s*true",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grid",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.resetLayout\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "sort-class-then-activity",
+      "category": "combine",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "['\"]class['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "['\"]activity['\"]",
+            "matched": true
+          },
+          {
+            "pattern": "true",
+            "matched": true
+          },
+          {
+            "pattern": "false",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "sortByColumns\\s*=",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "trap-sortbycolumns",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "activity",
+            "matched": true
+          },
+          {
+            "pattern": "false",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "sortByColumns\\s*=",
+            "matched": false
+          },
+          {
+            "pattern": "\\.sortByColumns\\s*=\\s*\\[",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "trap-gridcol-name-rename",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "meta\\.friendlyName",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "friendlyName",
+            "matched": true
+          },
+          {
+            "pattern": "Potency",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "gridCol\\.name\\s*=",
+            "matched": false
+          },
+          {
+            "pattern": "\\.col\\(['\"]activity['\"]\\)\\.name\\s*=",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "trap-reset-layout-ambiguous",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.resetLayout|view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|\\.visible\\s*=\\s*true",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grid|viewer|resetLayout|sort",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "reset-all-customization",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|setDisabled|\\.visible\\s*=\\s*true",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grid|sort|visible|setDisabled",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "view\\.resetLayout\\(",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "clear-everything-fresh-start",
+      "category": "reset-or-cleanup",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|setDisabled|\\.visible\\s*=\\s*true|view\\.resetLayout",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "sort|reset|visible|setDisabled",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "grokky\\.",
+            "matched": false
+          },
+          {
+            "pattern": "grok\\.shell\\.closeAll",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    }
+  ]
+}

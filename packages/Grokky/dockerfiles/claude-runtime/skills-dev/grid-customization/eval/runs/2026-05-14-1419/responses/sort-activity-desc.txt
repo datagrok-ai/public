@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.applySort(view, ['activity'], ['desc']);
+```
+
+Sorted by **activity** in descending order.

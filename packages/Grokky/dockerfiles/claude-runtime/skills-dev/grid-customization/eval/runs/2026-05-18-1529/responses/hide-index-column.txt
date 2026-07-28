@@ -1,0 +1,5 @@
+```datagrok-exec
+view.grid.col('#').visible = false;
+```
+
+The index column (`#`) is now hidden from the grid.

@@ -1,0 +1,10 @@
+
+```datagrok-exec
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.FREE_TEXT,
+  column: 'name',
+  value: 'acid',
+});
+```
+
+Done! The table is now filtered to show only rows where the **name** column contains `'acid'`. The filter widget has been added to the filter panel — you can adjust or remove it there.

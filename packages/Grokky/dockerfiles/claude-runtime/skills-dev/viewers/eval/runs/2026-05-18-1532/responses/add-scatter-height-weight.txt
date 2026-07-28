@@ -1,0 +1,8 @@
+```datagrok-exec
+view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  xColumnName: 'height',
+  yColumnName: 'weight',
+});
+```
+
+A scatter plot of **height** (x-axis) vs **weight** (y-axis) has been added to your view!

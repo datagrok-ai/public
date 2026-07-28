@@ -1,0 +1,12 @@
+```datagrok-exec
+const cols = view.grid.columns;
+let count = 0;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc && !gc.visible) {
+    gc.visible = true;
+    count++;
+  }
+}
+return ui.divText(count > 0 ? `Made ${count} hidden column(s) visible.` : 'No hidden columns found — all columns were already visible.');
+```This scans all grid columns (skipping the row header at index 0) and sets `visible = true` on any that were hidden. The result message tells you how many columns were revealed.

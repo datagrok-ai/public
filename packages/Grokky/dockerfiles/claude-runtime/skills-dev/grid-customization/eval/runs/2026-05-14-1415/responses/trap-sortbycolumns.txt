@@ -1,0 +1,7 @@
+```datagrok-exec
+grokky.applySort(view, ['activity'], ['desc']);
+```
+
+The grid is now sorted by **activity** in descending order.
+
+> **Note:** `view.grid.sortByColumns = [...]` is a getter-only property — assigning to it is a silent no-op. I used `grokky.applySort` instead, which calls the correct underlying `view.grid.sort()` method.

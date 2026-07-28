@@ -1,0 +1,4 @@
+```datagrok-exec
+const subset = t.clone(t.selection);
+grok.shell.addTableView(subset);
+```

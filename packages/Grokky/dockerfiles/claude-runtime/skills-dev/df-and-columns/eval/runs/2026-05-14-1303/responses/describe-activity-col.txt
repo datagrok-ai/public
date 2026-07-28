@@ -1,0 +1,28 @@
+```datagrok-exec
+const hits = grokky.findColumns(t, {name: 'activity', fuzzy: true, limit: 3});
+if (!hits.length) return ui.divText('No column matching "activity" was found.');
+const col = hits[0].column;
+const desc = grokky.describeColumn(col);
+return ui.tableFromMap({
+  'Column name': desc.name,
+  'Type': desc.type,
+  'Semantic type': desc.semType ?? '—',
+  'Units': desc.meta?.units ?? '—',
+  'Format': desc.meta?.format ?? '—',
+  'Row count': desc.length,
+  'Non-null values': desc.valueCount,
+  'Missing values': desc.missingValueCount,
+  'Unique values': desc.uniqueCount,
+  'Min': desc.numerical?.min ?? '—',
+  'Max': desc.numerical?.max ?? '—',
+  'Mean': desc.numerical?.avg != null ? desc.numerical.avg.toFixed(4) : '—',
+  'Std dev': desc.numerical?.stdev != null ? desc.numerical.stdev.toFixed(4) : '—',
+  'Median': desc.numerical?.med ?? '—',
+});
+```The block above finds the best-matching column to "activity" (using fuzzy name search) and displays a full summary including:
+
+- **Type & semantic type** — so you know if it's, say, a plain float or tagged as IC50/Ki/etc.
+- **Row/null/unique counts** — data quality at a glance.
+- **Min, max, mean, std dev, median** — key distribution statistics (shown only for numeric columns).
+
+If there are multiple candidates, it picks the highest-scored match. Let me know if you'd like to inspect a different column or go deeper into the distribution!

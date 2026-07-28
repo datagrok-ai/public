@@ -1,0 +1,13 @@
+I'll predict ADME properties for all compounds in the current table using the Admetica package.
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+await grok.functions.call('Admetica:getAdmeProperties', {
+  table: t,
+  molecules: molCol,
+});
+```
+
+This will run the full ADMET prediction panel (Absorption, Distribution, Metabolism, Excretion, and Toxicity) on all compounds and append the predicted property columns directly to your table. Once complete, you'll see the new ADME columns in the grid — you can scroll right to explore them or use the column manager to show/hide specific endpoints.

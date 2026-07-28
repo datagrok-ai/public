@@ -1,0 +1,61 @@
+I'll first filter the table to show only the selected rows, then describe the molecules in those rows.
+
+**Step 1: Filter to selected rows**
+
+```datagrok-exec
+// Filter the table to show only currently-selected rows
+const sel = t.selection;
+if (sel.trueCount === 0) {
+  return ui.divText('No rows are selected. Please select some molecules first.');
+}
+t.filter.init((i) => sel.get(i));
+return ui.divText(`Filtered to ${sel.trueCount} selected molecule(s).`);
+```
+
+**Step 2: Describe the filtered molecules**
+
+```datagrok-exec
+// Summarize the visible (filtered) molecules
+const rows = t.filter.getSelectedIndexes();
+if (rows.length === 0) {
+  return ui.divText('No visible rows to describe.');
+}
+
+// Find the molecule column (semType = Molecule)
+let molCol = null;
+for (const col of t.columns) {
+  if (col.semType === 'Molecule') { molCol = col; break; }
+}
+
+// Build a summary map
+const info = { 'Molecule count': rows.length };
+
+// For each non-molecule numeric column, compute mean of visible rows
+for (const col of t.columns) {
+  if (col === molCol) continue;
+  if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT) {
+    let sum = 0, n = 0;
+    for (const i of rows) { const v = col.get(i); if (v != null && !isNaN(v)) { sum += v; n++; } }
+    if (n > 0) info[`${col.name} (mean)`] = (sum / n).toFixed(3);
+  }
+}
+
+if (molCol) {
+  // List SMILES of first 10
+  const smiles = rows.slice(0, 10).map(i => molCol.get(i)).filter(Boolean);
+  info['Molecule column'] = molCol.name;
+  info['Sample SMILES (up to 10)'] = smiles.join(', ');
+}
+
+return ui.tableFromMap(info);
+```
+
+Here's what the two steps do:
+
+1. **Filter to selected** — reads `t.selection` (the highlighted rows) and uses `t.filter.init(...)` to show only those rows in the grid.
+2. **Describe** — inspects the now-visible rows to report:
+   - Total molecule count
+   - Mean values for all numeric columns (MW, cLogP, etc.)
+   - The molecule column name and a sample of SMILES strings (up to 10)
+
+> **Tip:** If no rows are selected yet, click rows in the grid (or use Shift+click / lasso in a scatter plot) to select molecules first, then re-run.

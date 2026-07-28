@@ -1,0 +1,18 @@
+Based on the chem-toolkit skill, I'll use `Chem:convertNotation` to convert the SMILES column to V3000 molblocks and append the result.
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No Molecule column found in the current table.');
+await grok.functions.call('Chem:convertNotation', {
+  data: t,
+  molecules: molCol,
+  targetNotation: 'v3Kmolblock',
+  overwrite: false,
+  join: true,
+});
+```
+
+This will:
+1. **Detect** the SMILES/Molecule column automatically.
+2. **Convert** each molecule to V3000 molblock format using RDKit.
+3. **Append** a new column with the V3K molblocks to your table (leaving the original SMILES column intact).

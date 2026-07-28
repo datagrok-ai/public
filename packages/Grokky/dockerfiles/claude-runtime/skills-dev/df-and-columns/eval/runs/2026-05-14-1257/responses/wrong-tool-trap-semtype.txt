@@ -1,0 +1,8 @@
+
+```datagrok-exec
+const col = t.col('smiles') ?? t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!col) throw new Error('No "smiles" column found in the current table.');
+col.semType = DG.SEMTYPE.MOLECULE;
+```
+
+Done! The semantic type of the **smiles** column has been set to `Molecule`.

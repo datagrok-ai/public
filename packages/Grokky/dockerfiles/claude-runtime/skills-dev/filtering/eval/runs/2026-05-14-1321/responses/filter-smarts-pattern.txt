@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterSubstructure(view, 'smiles', '[#6][!#1]');
+```
+
+The substructure filter has been applied using the SMARTS pattern `[#6][!#1]` (carbon atom bonded to any non-hydrogen atom). The table now shows only the matching compounds.

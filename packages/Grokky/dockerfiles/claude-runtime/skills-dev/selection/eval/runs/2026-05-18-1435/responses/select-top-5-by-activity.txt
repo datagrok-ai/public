@@ -1,0 +1,12 @@
+```datagrok-exec
+const idx = Array.from(t.getSortedOrder(['activity'], [false])).slice(0, 5);
+t.selection.setAll(false, false);
+for (const i of idx) t.selection.set(i, true, false);
+t.selection.fireChanged();
+```
+
+This selects the top 5 rows with the highest **activity** values. Here's what it does:
+
+1. **`getSortedOrder(['activity'], [false])`** — gets row indices sorted by `activity` descending (`false` = descending).
+2. **`.slice(0, 5)`** — takes the first 5 indices (highest activity).
+3. **Clears the current selection**, then sets those 5 rows as selected, firing a single change event at the end.

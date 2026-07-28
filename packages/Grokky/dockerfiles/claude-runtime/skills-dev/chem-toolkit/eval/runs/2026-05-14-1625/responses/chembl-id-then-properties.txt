@@ -1,0 +1,49 @@
+I'll proceed using the known Chem API. The workflow is:
+1. Look up CHEMBL1234 → SMILES via `namesToSmiles`
+2. Compute descriptors on that molecule
+
+```datagrok-exec
+// Step 1: resolve CHEMBL1234 to SMILES
+const namesDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('name', ['CHEMBL1234'])
+]);
+const namesCol = namesDf.col('name');
+
+const smilesDf = await grok.functions.call('Chem:namesToSmiles', {
+  data: namesDf,
+  names: namesCol
+});
+
+const smiles = smilesDf.columns.byIndex(0).get(0);
+if (!smiles) return ui.divText('Could not resolve CHEMBL1234 to a SMILES string.');
+
+// Step 2: create a one-row DataFrame with the molecule
+const molDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', [smiles])
+]);
+const molCol = molDf.col('molecule');
+molCol.semType = DG.SEMTYPE.MOLECULE;
+
+// Step 3: compute RDKit descriptors
+const descDf = await grok.functions.call('Chem:getDescriptors', {
+  molecules: molCol
+});
+
+// Transpose for readability: descriptor name → value
+const names = [];
+const values = [];
+for (const col of descDf.columns) {
+  names.push(col.name);
+  values.push(String(col.get(0)));
+}
+
+const map = {};
+names.forEach((n, i) => map[n] = values[i]);
+
+return ui.tableFromMap({ 'SMILES (resolved)': smiles, ...map });
+```
+
+This code will:
+1. **Resolve** `CHEMBL1234` to its canonical SMILES via ChEMBL lookup.
+2. **Compute** the full RDKit descriptor set (MW, LogP, HBA, HBD, TPSA, rings, rotatable bonds, and many more).
+3. **Display** the results as a key-value table in the chat.

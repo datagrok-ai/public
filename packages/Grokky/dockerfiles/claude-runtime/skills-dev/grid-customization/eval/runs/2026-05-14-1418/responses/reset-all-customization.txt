@@ -1,0 +1,10 @@
+
+```datagrok-exec
+grokky.resetGrid(view);
+```
+
+Done! All grid customizations have been reset to defaults:
+- **Visibility** — all hidden columns are shown again
+- **Widths** — columns resized to optimal width based on content
+- **Sort** — any applied sort has been cleared
+- **Colors** — all color coding has been removed

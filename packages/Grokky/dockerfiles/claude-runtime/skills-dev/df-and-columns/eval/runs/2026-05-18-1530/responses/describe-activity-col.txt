@@ -1,0 +1,46 @@
+```datagrok-exec
+let col = t.col('activity');
+if (!col) {
+  const lc = 'activity';
+  col = t.columns.firstWhere(c => c.name.toLowerCase() === lc);
+}
+
+if (!col) {
+  return ui.divText('No column named "activity" found in the current table.');
+}
+
+const s = col.stats;
+const isNumeric = col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT;
+
+const info = {
+  'Name': col.name,
+  'Type': col.type,
+  'Semantic type': col.semType || '(none)',
+  'Length': col.length,
+  'Missing values': s.missingValueCount,
+  'Unique values': s.uniqueCount,
+};
+
+if (isNumeric) {
+  info['Min'] = s.min;
+  info['Max'] = s.max;
+  info['Average'] = s.avg?.toFixed(4);
+  info['Std dev'] = s.stdev?.toFixed(4);
+  info['Median'] = s.med?.toFixed(4);
+  info['Q1'] = s.q1?.toFixed(4);
+  info['Q3'] = s.q3?.toFixed(4);
+  info['Sum'] = s.sum;
+} else {
+  const sample = col.categories.slice(0, 5).join(', ');
+  info['Sample categories'] = sample + (col.categories.length > 5 ? ', ...' : '');
+}
+
+return ui.tableFromMap(info);
+```
+
+The block above will locate the **activity** column (case-insensitive) and display a full summary:
+
+- **Name, type, semantic type**
+- **Row count, missing values, unique value count**
+- For **numeric** columns: min, max, average, std dev, median, Q1/Q3, and sum
+- For **string/categorical** columns: a sample of up to 5 distinct category values

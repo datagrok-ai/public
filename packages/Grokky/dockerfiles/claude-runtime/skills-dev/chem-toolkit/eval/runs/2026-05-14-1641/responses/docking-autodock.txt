@@ -1,0 +1,27 @@
+Based on your request, I'll dock the ligand **acetaminophen** (`CC(=O)Nc1ccc(O)cc1`) into the `1aki` target with 5 poses using AutoDock Vina.
+
+```datagrok-exec
+// Create a single-row DataFrame with the ligand SMILES
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('smiles', ['CC(=O)Nc1ccc(O)cc1'])
+]);
+df.columns.byIndex(0).semType = DG.SEMTYPE.MOLECULE;
+
+const ligands = df.col('smiles');
+
+const result = await grok.functions.call('Docking:getAutodockResults', {
+  table: df,
+  ligands: ligands,
+  target: '1aki',
+  poses: 5
+});
+
+grok.shell.addTableView(result);
+```
+
+This will:
+- **Ligand**: Acetaminophen (`CC(=O)Nc1ccc(O)cc1`)
+- **Target**: `1aki` (hen egg-white lysozyme)
+- **Poses**: 5 conformations
+
+The results will include binding energies for each pose. Let me know if the target name differs from what's configured, or if you'd like to adjust any parameters!

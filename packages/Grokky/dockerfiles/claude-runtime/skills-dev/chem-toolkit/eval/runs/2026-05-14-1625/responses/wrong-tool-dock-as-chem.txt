@@ -1,0 +1,15 @@
+I'd be happy to help dock ligands into a protein target! To proceed, I need a few clarifications.I need a couple of details to set up the docking run:
+
+1. **Docking engine** — AutoDock Vina (classic, fast) or Boltz-1 (deep learning)?
+2. **Protein target** — Which target should the ligands be docked into? I can list the available configured targets if you'd like.
+3. **Ligand column** — Which column in the current table contains the ligand molecules?
+4. **Number of poses** — How many docking poses per ligand would you like (default is usually 1–3)?
+
+Let me fetch the available targets so you can choose:
+
+```datagrok-exec
+const targets = await grok.functions.call('Docking:getConfigFiles');
+return ui.tableFromMap({ 'Available targets': targets.join('\n') });
+```
+
+Please share these details and I'll kick off the docking run right away!

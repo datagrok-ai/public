@@ -1,0 +1,8 @@
+The SMILES of aspirin (acetylsalicylic acid) is:
+
+**`CC(=O)Oc1ccccc1C(=O)O`**
+
+This represents:
+- `CC(=O)O` — the acetyl ester group
+- `c1ccccc1` — the benzene ring
+- `C(=O)O` — the carboxylic acid group

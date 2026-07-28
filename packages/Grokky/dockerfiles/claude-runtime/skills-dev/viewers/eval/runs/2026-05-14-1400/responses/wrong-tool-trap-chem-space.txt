@@ -1,0 +1,28 @@
+I'll add a chemical space viewer using the `Chem:chemSpaceTopMenu` function. This will look for a molecules column in your current table:
+
+```datagrok-exec
+// Find a column likely containing molecules (SMILES)
+const molCol = t.columns.toList().find(c =>
+  c.semType === 'Molecule' || 
+  ['smiles', 'molecule', 'mol', 'structure'].includes(c.name.toLowerCase())
+);
+
+if (!molCol) {
+  return ui.divText('⚠️ No molecule column found. Please ensure your table has a column with SMILES or molecule structures (semType: Molecule).');
+}
+
+const sp = await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: molCol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+- **Auto-detect** your molecule/SMILES column
+- **Compute UMAP embeddings** using Tanimoto similarity
+- **Display a scatter plot** where structurally similar compounds cluster together
+
+If you have multiple molecule columns or want to use a different method (e.g. t-SNE), let me know!

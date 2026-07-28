@@ -1,0 +1,28 @@
+I'll add a chemical space viewer using the `Chem:chemSpaceTopMenu` function. This requires a SMILES column in your current table.
+
+```datagrok-exec
+// Find the SMILES column (looks for common names)
+const smilesCol = t.columns.toList().find(c =>
+  ['smiles', 'structure', 'mol', 'molecule', 'canonical_smiles', 'smi']
+    .includes(c.name.toLowerCase())
+);
+
+if (!smilesCol) {
+  return ui.divText('⚠️ No SMILES column found. Please ensure your table has a column named "smiles", "structure", or similar.');
+}
+
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: smilesCol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+- **Detect** the SMILES column automatically
+- **Compute** UMAP embeddings using Tanimoto similarity
+- **Display** an interactive scatter plot where similar molecules cluster together
+
+You can click on points to inspect individual molecules, and the viewer stays in sync with filters/selections on the main grid.

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.filterByPredicate(t, (i) => t.getCol('activity').get(i) <= 7);
+```
+
+Done! Rows where **activity > 7** are now hidden. The data is unchanged — only the view is filtered. To restore all rows, you can clear the filter anytime.

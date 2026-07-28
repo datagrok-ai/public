@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.getCol('activity').meta.colors.setDisabled();
+```
+
+Color coding has been disabled on the **activity** column.

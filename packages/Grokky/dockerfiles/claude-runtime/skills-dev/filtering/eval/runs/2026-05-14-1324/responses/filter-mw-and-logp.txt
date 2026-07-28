@@ -1,0 +1,11 @@
+
+```datagrok-exec
+const mw = t.getCol('MW');
+const logP = t.getCol('LogP');
+grokky.filterByPredicate(t, (i) => mw.get(i) < 500 && logP.get(i) < 5);
+return ui.tableFromMap({ 'Visible rows': t.filter.trueCount, 'Hidden rows': t.filter.falseCount });
+```
+
+Applied a combined filter in a single pass:
+- **MW < 500**
+- **LogP < 5**

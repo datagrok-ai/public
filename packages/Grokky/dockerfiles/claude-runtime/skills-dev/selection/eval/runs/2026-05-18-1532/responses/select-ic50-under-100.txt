@@ -1,0 +1,7 @@
+```datagrok-exec
+const ic50 = t.getCol('IC50');
+t.selection.init(i => ic50.get(i) < 100);
+return { selected: t.selection.trueCount, total: t.rowCount };
+```
+
+This selects all rows where **IC50 < 100**. The result shows how many rows matched out of the total. Let me know if you'd like to adjust the threshold or do anything with the selection (e.g., filter to it, open as a new table, etc.).

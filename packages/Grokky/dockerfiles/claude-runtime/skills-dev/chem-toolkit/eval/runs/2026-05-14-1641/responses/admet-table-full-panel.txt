@@ -1,0 +1,11 @@
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No Molecule column found in the current table.');
+await grok.functions.call('Admetica:getAdmeProperties', {
+  table: t,
+  molecules: mol
+});
+```
+
+The full ADMET panel has been calculated and appended to your table. The new columns cover all available **Absorption, Distribution, Metabolism, Excretion, and Toxicity** endpoints for every compound. You can scroll right in the grid to see all the predicted properties.

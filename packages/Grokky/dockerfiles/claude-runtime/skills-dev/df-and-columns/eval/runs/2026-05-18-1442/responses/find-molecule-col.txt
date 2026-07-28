@@ -1,0 +1,15 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (molCol) {
+  return ui.tableFromMap({
+    name: molCol.name,
+    type: molCol.type,
+    semType: molCol.semType,
+    length: molCol.length,
+  });
+} else {
+  return ui.divText('No molecule column found in the current table.');
+}
+```
+
+This will search for the first column with the `Molecule` semantic type in the current table and display its name, type, semType, and row count. If none is found, it'll say so.

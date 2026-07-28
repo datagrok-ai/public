@@ -1,0 +1,213 @@
+[
+  {
+    "id": "add-scatter-height-weight",
+    "prompt": "Add a scatter plot of height vs weight",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.SCATTER_PLOT"],
+    "expected_symbols": ["DG\\.VIEWER\\.SCATTER_PLOT", "xColumnName\\s*:\\s*['\"]height['\"]", "yColumnName\\s*:\\s*['\"]weight['\"]"],
+    "forbidden_symbols": ["grokky\\.", "view\\.scatterPlot\\(", "new DG\\.Viewer\\(", "['\"]scatter plot['\"]", "\\{\\s*x\\s*:\\s*['\"]height['\"]", "\\{\\s*y\\s*:\\s*['\"]weight['\"]", "color\\s*:\\s*['\"]"],
+    "intent": "Plain scatter plot creation. Helper should be view.addViewer(DG.VIEWER.SCATTER_PLOT, {xColumnName: 'height', yColumnName: 'weight'}). Must not use the deprecated view.scatterPlot shorthand, new DG.Viewer constructor, literal type strings, the grokky wrapper, or bare-x/y/color property names."
+  },
+  {
+    "id": "add-histogram-age",
+    "prompt": "Add a histogram of age",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.HISTOGRAM"],
+    "expected_symbols": ["DG\\.VIEWER\\.HISTOGRAM", "valueColumnName\\s*:\\s*['\"]age['\"]"],
+    "forbidden_symbols": ["grokky\\.", "view\\.histogram\\(", "new DG\\.Viewer\\(", "\\{\\s*value\\s*:\\s*['\"]age['\"]"],
+    "intent": "Single-column histogram. valueColumnName: 'age' is the canonical shape. Deprecated view.histogram() must not appear. Bare-`value` property name fails silently."
+  },
+  {
+    "id": "add-line-chart-date-total",
+    "prompt": "Add a line chart with date on x and total on y",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.LINE_CHART"],
+    "expected_symbols": ["DG\\.VIEWER\\.LINE_CHART", "xColumnName\\s*:\\s*['\"]date['\"]", "yColumnNames?\\s*:"],
+    "forbidden_symbols": ["grokky\\.", "view\\.lineChart\\(", "new DG\\.Viewer\\(", "\\{\\s*x\\s*:\\s*['\"]date['\"]", "\\{\\s*y\\s*:\\s*['\"]total['\"]"],
+    "intent": "Line chart with explicit x and y. xColumnName is singular, yColumnNames is plural (array of series). Bare x/y silently fails."
+  },
+  {
+    "id": "add-histogram-split-by-class",
+    "prompt": "Show me the distribution of `activity` values per `compound_class`",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.(HISTOGRAM|BOX_PLOT)"],
+    "expected_symbols": ["DG\\.VIEWER\\.(HISTOGRAM|BOX_PLOT)", "(value|category)ColumnName"],
+    "forbidden_symbols": ["grokky\\.", "DG\\.VIEWER\\.BAR_CHART", "\\{\\s*value\\s*:", "\\{\\s*split\\s*:", "\\{\\s*category\\s*:"],
+    "intent": "Distribution per category. Histogram with split column is canonical; box plot is also valid (shows distribution per group). Accept either. Reject bar chart and bare property names.",
+    "notes": "Accepts both HISTOGRAM (with splitColumnName + valueColumnName) and BOX_PLOT (with categoryColumnName + valueColumnName)."
+  },
+  {
+    "id": "add-bar-chart-count-by-category",
+    "prompt": "Add a bar chart of count by category",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.BAR_CHART"],
+    "expected_symbols": ["DG\\.VIEWER\\.BAR_CHART", "valueAggrType\\s*:\\s*['\"]count['\"]|splitColumnName"],
+    "forbidden_symbols": ["grokky\\.", "view\\.barChart\\(", "new DG\\.Viewer\\(", "\\{\\s*split\\s*:\\s*['\"]"],
+    "intent": "Bar chart aggregating count by a category column. valueAggrType: 'count' is the count aggregator. splitColumnName is optional — if 'category' is treated as the literal column name, set it; if treated generically, letting Datagrok auto-pick is also acceptable."
+  },
+  {
+    "id": "add-box-plot-activity-by-class",
+    "prompt": "Add a box plot of activity grouped by class",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.BOX_PLOT"],
+    "expected_symbols": ["DG\\.VIEWER\\.BOX_PLOT", "valueColumnName\\s*:\\s*['\"]activity['\"]", "categoryColumnName\\s*:\\s*['\"]class['\"]"],
+    "forbidden_symbols": ["grokky\\.", "view\\.boxPlot\\(", "new DG\\.Viewer\\(", "\\{\\s*value\\s*:", "\\{\\s*category\\s*:"],
+    "intent": "Box plot, valueColumnName: 'activity', categoryColumnName: 'class'."
+  },
+  {
+    "id": "add-correlation-plot-numeric",
+    "prompt": "Add a correlation plot for the numeric columns",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.CORR_PLOT"],
+    "expected_symbols": ["DG\\.VIEWER\\.CORR_PLOT", "columnNames\\s*:|xs\\s*:|ys\\s*:"],
+    "forbidden_symbols": ["grokky\\.", "new DG\\.Viewer\\(", "['\"]correlation plot['\"]"],
+    "intent": "Correlation plot with columnNames or xs/ys filtered to numeric. Claude likely uses t.columns.numerical or filters by DG.COLUMN_TYPE — either is acceptable. The columnNames option drives the matrix."
+  },
+  {
+    "id": "close-scatter-plot",
+    "prompt": "Close the scatter plot",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.viewers", "\\.close\\(\\)"],
+    "expected_symbols": ["DG\\.VIEWER\\.SCATTER_PLOT", "view\\.viewers", "\\.close\\(\\)", "slice\\(1\\)"],
+    "forbidden_symbols": ["grokky\\.", "view\\.viewers\\[0\\]\\.close", "viewers\\[0\\]\\.close"],
+    "intent": "Close one or more scatter plots by iterating view.viewers.slice(1) and filtering by v.type === DG.VIEWER.SCATTER_PLOT. Must not close viewers[0] (the grid)."
+  },
+  {
+    "id": "close-all-except-grid",
+    "prompt": "Close all viewers except the grid",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.viewers", "\\.close\\(\\)"],
+    "expected_symbols": ["view\\.viewers", "slice\\(1\\)", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "viewers\\[0\\]\\.close", "view\\.viewers\\.forEach\\(\\s*\\(?v\\)?\\s*=>\\s*v\\.close"],
+    "intent": "Iterate Array.from(view.viewers).slice(1) and call .close() on each (with try/catch since never-attached viewers throw). Must skip [0] (the grid).",
+    "notes": "Watch for view.viewers.forEach(v => v.close()) without slice — that closes the grid. Hard fail."
+  },
+  {
+    "id": "remove-histogram",
+    "prompt": "Remove the histogram",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.viewers", "\\.close\\(\\)"],
+    "expected_symbols": ["DG\\.VIEWER\\.HISTOGRAM", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "new DG\\.Viewer\\(", "removeWhere", "dropRows"],
+    "intent": "Close every histogram by filtering view.viewers.slice(1) and calling .close(). 'Remove' here means viewer removal — NOT row removal.",
+    "notes": "If Claude reaches for removeWhereIdx or dropRows (cross-skill mistake — confusing this with row deletion), hard fail."
+  },
+  {
+    "id": "close-every-chart",
+    "prompt": "Close every chart",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.viewers", "\\.close\\(\\)"],
+    "expected_symbols": ["view\\.viewers", "slice\\(1\\)", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "viewers\\[0\\]\\.close"],
+    "intent": "Same as close-all-except-grid with looser phrasing. 'Every chart' should still preserve the grid."
+  },
+  {
+    "id": "scatter-mw-logp-colored-regression",
+    "prompt": "Add a scatter plot of MW vs LogP, color by activity, show regression line",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.SCATTER_PLOT"],
+    "expected_symbols": ["DG\\.VIEWER\\.SCATTER_PLOT", "xColumnName\\s*:\\s*['\"]MW['\"]", "yColumnName\\s*:\\s*['\"](LogP|cLogP)['\"]", "colorColumnName\\s*:\\s*['\"]activity['\"]", "showRegressionLine\\s*:\\s*true"],
+    "forbidden_symbols": ["grokky\\.", "regressionLine\\s*:\\s*true", "new DG\\.Viewer\\(", "\\{\\s*x\\s*:", "\\{\\s*color\\s*:\\s*['\"]activity['\"]"],
+    "intent": "Multi-option scatter plot. Must use showRegressionLine (not 'regressionLine') — the schema name. Must use colorColumnName (not bare 'color').",
+    "notes": "There is no auto-fix layer anymore. Silent typos ('regressionLine', 'color') mean the option is dropped. Hard fail on either."
+  },
+  {
+    "id": "add-then-close-sequenced",
+    "prompt": "Add a histogram, then close the scatter plot",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.HISTOGRAM"],
+    "expected_symbols": ["DG\\.VIEWER\\.HISTOGRAM", "DG\\.VIEWER\\.SCATTER_PLOT", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "new DG\\.Viewer\\("],
+    "intent": "Two operations in one block: view.addViewer(DG.VIEWER.HISTOGRAM, ...) then close all scatter plots via Array.from(view.viewers).slice(1).filter(...).forEach(v => v.close()). Order is irrelevant."
+  },
+  {
+    "id": "replace-scatter-with-heatmap",
+    "prompt": "Replace the scatter plot with a heat map of correlations",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer\\(\\s*DG\\.VIEWER\\.(HEAT_MAP|CORR_PLOT)"],
+    "expected_symbols": ["DG\\.VIEWER\\.SCATTER_PLOT", "DG\\.VIEWER\\.(HEAT_MAP|CORR_PLOT)", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "new DG\\.Viewer\\("],
+    "intent": "Close scatter + add heat map / correlation plot. 'Heat map of correlations' is ambiguous: Heat map shows the raw DF as a colored grid; Correlation plot shows a pairwise correlation matrix. Either is acceptable.",
+    "notes": "If Claude picks Correlation plot (more intent-correct for 'of correlations'), gold star. Heat map also passes."
+  },
+  {
+    "id": "wrong-tool-trap-chem-space",
+    "prompt": "Add a chemical space viewer",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["grok\\.functions\\.call"],
+    "expected_symbols": ["Chem:chemSpaceTopMenu|chemSpace", "molecules|smiles"],
+    "forbidden_symbols": ["grokky\\.", "view\\.addViewer\\([^,]*,\\s*['\"]Chem[ -]?[Ss]pace['\"]", "view\\.addViewer\\([^,]*,\\s*['\"]Chemical [Ss]pace['\"]", "DG\\.VIEWER\\.CHEM"],
+    "intent": "Trap: 'chemical space' is NOT a viewer type — it's a registered function (Chem:chemSpaceTopMenu). Must use grok.functions.call, not view.addViewer.",
+    "trap": "Plugin viewers (Chem space, sequence space, activity cliffs) are functions, not viewer types. DG.VIEWER has no 'Chem space' entry."
+  },
+  {
+    "id": "wrong-tool-trap-deprecated-shorthand",
+    "prompt": "Use view.scatterPlot to add a scatter plot",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.addViewer"],
+    "expected_symbols": ["DG\\.VIEWER\\.SCATTER_PLOT|['\"]Scatter plot['\"]"],
+    "forbidden_symbols": ["grokky\\.", "view\\.scatterPlot\\("],
+    "intent": "Trap: user is suggesting the deprecated path. Claude should refuse and use view.addViewer(DG.VIEWER.SCATTER_PLOT, ...).",
+    "trap": "view.scatterPlot/histogram/barChart shorthands are explicitly deprecated in js-api source. Use view.addViewer(type, opts) instead.",
+    "notes": "Counter-suggestion is the right move here. If Claude obediently uses view.scatterPlot, hard fail."
+  },
+  {
+    "id": "wrong-tool-trap-fromtype-direct",
+    "prompt": "Use DG.Viewer.fromType for new viewers",
+    "category": "wrong-tool-trap",
+    "expected_path": "optional",
+    "expected_helpers": [],
+    "expected_symbols": [],
+    "forbidden_symbols": ["grokky\\.", "DG\\.Viewer\\.fromType\\([^)]"],
+    "intent": "Trap: the user's instruction is wrong on a TableView. Acceptable responses: (1) push back / clarify and emit no block, or (2) emit view.addViewer(...) anyway. Hard fail only if Claude uses DG.Viewer.fromType to add a viewer to the current view (it produces an undocked, invisible viewer).",
+    "trap": "DG.Viewer.fromType is only correct for off-view rendering. On a TableView, use view.addViewer(type, opts).",
+    "notes": "expected_path 'optional' = no block required (Claude pushing back to clarify is correct). Forbidden: any actual DG.Viewer.fromType(...) call."
+  },
+  {
+    "id": "reset-to-just-grid",
+    "prompt": "Reset the view — close all viewers, keep just the grid",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.viewers", "\\.close\\(\\)"],
+    "expected_symbols": ["view\\.viewers", "slice\\(1\\)", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "viewers\\[0\\]\\.close", "view\\.viewers\\.forEach\\(\\s*\\(?v\\)?\\s*=>\\s*v\\.close"],
+    "intent": "Array.from(view.viewers).slice(1).forEach(v => { try { v.close(); } catch {} }) preserves the grid. Explicit 'keep just the grid' phrasing should NOT be interpreted as closing index 0."
+  },
+  {
+    "id": "remove-every-chart-fresh-start",
+    "prompt": "Remove every chart and start fresh",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.viewers", "\\.close\\(\\)"],
+    "expected_symbols": ["view\\.viewers", "slice\\(1\\)", "\\.close\\(\\)"],
+    "forbidden_symbols": ["grokky\\.", "viewers\\[0\\]\\.close", "removeWhere"],
+    "intent": "Same as reset-to-just-grid with looser phrasing. 'Start fresh' should NOT pull Claude toward destructive row operations — they want viewer cleanup.",
+    "notes": "Watch for cross-skill confusion: 'remove'/'fresh' might lure Claude to dropRows / removeWhereIdx. Hard fail if so."
+  },
+  {
+    "id": "change-color-column",
+    "prompt": "Change the color column to activity",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["setOptions\\(\\s*\\{[^}]*colorColumnName"],
+    "expected_symbols": ["colorColumnName\\s*:\\s*['\"]activity['\"]", "view\\.viewers"],
+    "forbidden_symbols": ["grokky\\.", "\\{\\s*color\\s*:\\s*['\"]activity['\"]"],
+    "intent": "Find an existing viewer on view.viewers (slicing off the grid), then call setOptions({colorColumnName: 'activity'}). Bare-`color` property fails silently."
+  }
+]

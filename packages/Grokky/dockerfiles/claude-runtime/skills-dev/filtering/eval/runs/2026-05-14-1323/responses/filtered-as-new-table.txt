@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const subset = grokky.filteredDf(t);
+grok.shell.addTableView(subset);
+```
+
+This creates a new table view containing only the rows that currently pass your active filter. The original table remains unchanged.

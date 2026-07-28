@@ -1,0 +1,22 @@
+I'll run the R-group decomposition using the `Chem:rGroupDecomposition` function with the pyridine scaffold `c1ccncc1`:
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+await grok.functions.call('Chem:rGroupDecomposition', {
+  df: t,
+  molColName: molCol.name,
+  core: 'c1ccncc1',
+  rGroupName: 'R',
+  rGroupMatchingStrategy: 'Greedy',
+  onlyMatchAtRGroups: false
+});
+```
+
+This runs **R-group decomposition** on your molecules column using:
+- **Scaffold (core):** `c1ccncc1` (pyridine)
+- **R-group label prefix:** `R`
+- **Matching strategy:** `Greedy`
+
+The results will be appended to your table as new columns (e.g., `Core`, `R1`, `R2`, etc.), showing how each molecule fragments around the pyridine scaffold. Molecules that don't match the scaffold will have empty R-group cells.

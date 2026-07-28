@@ -1,0 +1,17 @@
+I'll find the molecule column in the current table and set its width to 300 pixels.
+
+```datagrok-exec
+// Find the molecule column (semType === 'Molecule' or common name patterns)
+const molCol = t.columns.toList().find(c =>
+  c.semType === 'Molecule' ||
+  c.name.toLowerCase().includes('smiles') ||
+  c.name.toLowerCase().includes('mol') ||
+  c.name.toLowerCase().includes('structure')
+);
+
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+view.grid.col(molCol.name).width = 300;
+```
+
+The molecule column has been set to **300 pixels** wide. If there are multiple molecule-like columns or the column wasn't detected correctly, let me know the exact column name and I'll target it directly.

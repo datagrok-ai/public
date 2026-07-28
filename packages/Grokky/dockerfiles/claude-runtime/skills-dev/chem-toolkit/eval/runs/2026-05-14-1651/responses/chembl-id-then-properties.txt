@@ -1,0 +1,54 @@
+I'll look up the SMILES for CHEMBL1234 and then compute its molecular descriptors. Here's the plan:
+
+1. Convert the ChEMBL ID to SMILES
+2. Compute RDKit descriptors from the SMILES
+
+```datagrok-exec
+// Step 1: Create a small DataFrame with the ChEMBL ID and look up its SMILES
+const idDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('chembl_id', ['CHEMBL1234'])
+]);
+
+// Map ChEMBL ID → SMILES
+const smilesDF = await grok.functions.call('Chem:mapIdentifiersTransform', {
+  table: idDf,
+  molecules: idDf.col('chembl_id'),
+  fromSource: 'chembl',
+  toSource: 'smiles'
+});
+
+// Get the SMILES value
+const smilesCol = idDf.columns.toList().find(c => c.name.toLowerCase().includes('smiles'));
+const smiles = smilesCol ? smilesCol.get(0) : null;
+
+if (!smiles) {
+  return ui.divText('Could not resolve SMILES for CHEMBL1234. Please check the ChEMBL ID.');
+}
+
+// Step 2: Build a molecule DataFrame and compute descriptors
+const molDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', [smiles])
+]);
+molDf.columns.byIndex(0).semType = DG.SEMTYPE.MOLECULE;
+
+const descDf = await grok.functions.call('Chem:getDescriptors', {
+  molecules: molDf.col('molecule')
+});
+
+// Show a summary card first
+const card = ui.tableFromMap({ 'ChEMBL ID': 'CHEMBL1234', 'SMILES': smiles });
+
+return ui.divV([
+  ui.h2('CHEMBL1234 — Molecular Descriptors'),
+  card,
+  ui.h3('RDKit Descriptors'),
+  DG.Viewer.grid(descDf).root
+]);
+```
+
+This will:
+1. **Resolve** CHEMBL1234 → SMILES via UniChem/ChEMBL identifier mapping
+2. **Compute** the full RDKit descriptor set (200+ descriptors: MW, LogP, TPSA, ring counts, etc.)
+3. **Display** the results as a grid
+
+If the identifier mapping step fails (e.g. the ChEMBL package/DB isn't connected on this instance), let me know and I can try an alternative route using `Chem:freeTextToSmiles` or you can paste the SMILES directly.

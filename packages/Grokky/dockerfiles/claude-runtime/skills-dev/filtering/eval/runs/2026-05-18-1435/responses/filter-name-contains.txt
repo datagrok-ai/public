@@ -1,0 +1,9 @@
+```datagrok-exec
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.FREE_TEXT,
+  column: 'name',
+  value: 'acid',
+});
+```
+
+Done! A free-text filter has been applied to the **name** column, showing only rows where the name contains **"acid"** (case-insensitive).

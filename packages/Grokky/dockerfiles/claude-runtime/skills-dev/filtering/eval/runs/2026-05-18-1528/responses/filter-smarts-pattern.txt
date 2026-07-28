@@ -1,0 +1,18 @@
+I'll apply a substructure filter using the SMARTS pattern `[#6][!#1]`. Since SMARTS needs to go through the BitSet path for reliable matching, I'll use `grok.chem.searchSubstructure`:
+
+```datagrok-exec
+// Find the molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+// Search using SMARTS pattern — BitSet path handles SMARTS correctly
+const bs = await grok.chem.searchSubstructure(molCol, '[#6][!#1]', {substructLibrary: false});
+t.filter.copyFrom(bs);
+
+return ui.divText(`Showing ${t.filter.trueCount} of ${t.rowCount} rows matching SMARTS [#6][!#1]`);
+```
+
+This will:
+1. **Locate the molecule column** by its semantic type.
+2. **Run a SMARTS substructure search** for `[#6][!#1]` (any carbon bonded to any non-hydrogen atom) across all rows.
+3. **Copy the resulting BitSet** directly to `t.filter`, showing only the matching compounds.

@@ -1,0 +1,5 @@
+```datagrok-exec
+t.filter.invert();
+```
+
+The current filter has been inverted — rows that were visible are now hidden, and previously hidden rows are now visible.

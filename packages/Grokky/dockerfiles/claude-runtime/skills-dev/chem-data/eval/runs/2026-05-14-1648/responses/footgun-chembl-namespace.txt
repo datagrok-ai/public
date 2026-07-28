@@ -1,0 +1,10 @@
+Based on the skill documentation, `Chembl:chemblIdToSmilesTs` is the function for looking up a ChEMBL ID and retrieving its canonical SMILES. Let me call it for **CHEMBL25**:
+
+```datagrok-exec
+const smiles = await grok.functions.call('Chembl:chemblIdToSmilesTs', { id: 'CHEMBL25' });
+return ui.tableFromMap({ 'ChEMBL ID': 'CHEMBL25', 'Canonical SMILES': smiles });
+```
+
+This will query your local ChEMBL database for **CHEMBL25** and return its canonical SMILES string. The result will be displayed as a key-value table in the chat.
+
+> **Note:** CHEMBL25 corresponds to **Aspirin** (acetylsalicylic acid). The expected SMILES is `CC(=O)Oc1ccccc1C(=O)O`. If the query returns no result, ensure the ChEMBL PostgreSQL connection is configured and the database is populated.

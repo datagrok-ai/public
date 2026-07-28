@@ -1,0 +1,10 @@
+I'll add a box plot with `activity` as the value column and `class` as the category column.
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'class',
+});
+```
+
+This adds a box plot to your current view showing the distribution of **activity** grouped by **class**. Each box displays the median, interquartile range, and whiskers for each class category. Let me know if you'd like to adjust the columns or styling!

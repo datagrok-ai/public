@@ -1,0 +1,28 @@
+```datagrok-exec
+const col = t.col('activity');
+if (!col) return ui.divText('No column named "activity" found in the current table.');
+
+const s = col.stats;
+return ui.tableFromMap({
+  'Name': col.name,
+  'Type': col.type,
+  'Semantic Type': col.semType ?? '(none)',
+  'Units': col.meta.units ?? '(none)',
+  'Format': col.meta.format ?? '(none)',
+  'Description': col.meta.description ?? '(none)',
+  'Row Count': col.length,
+  'Non-null Values': s.valueCount,
+  'Missing Values': s.missingValueCount,
+  'Unique Values': s.uniqueCount,
+  'Min': s.min,
+  'Max': s.max,
+  'Avg': s.avg,
+  'Std Dev': s.stdev,
+  'Median': s.med,
+  'Q1': s.q1,
+  'Q3': s.q3,
+  'Sum': s.sum,
+});
+```
+
+This will display a full summary of the **activity** column, including its type, semantic type, metadata, and descriptive statistics (min, max, mean, std dev, median, quartiles, missing values, etc.).

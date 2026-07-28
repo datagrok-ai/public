@@ -1,0 +1,13 @@
+I'll inspect the current table to find the relevant columns automatically.
+
+```datagrok-exec
+// Inspect available columns
+const cols = t.columns.toList().map(c => `${c.name} (${c.type})`);
+return ui.divText(cols.join('\n'));
+```
+
+Could you tell me the names of the **activity** column and the **compound class** column in your table? Once I know those, I'll add a box plot (distribution of activity per class) and optionally a histogram split by class.
+
+Alternatively, share the column names directly and I'll build it right away! For example:
+- Activity column: `activity`, `IC50`, `pIC50`, `potency`, etc.
+- Compound class column: `class`, `series`, `category`, `compound_class`, etc.

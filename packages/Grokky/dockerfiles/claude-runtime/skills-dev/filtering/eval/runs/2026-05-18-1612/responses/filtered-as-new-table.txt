@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const filtered = t.clone(t.filter);
+grok.shell.addTableView(filtered);
+```
+
+Done! A new table view has been opened containing only the **rows currently passing the filter** (`t.filter.trueCount` visible rows). The original table is unchanged.

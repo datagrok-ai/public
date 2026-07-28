@@ -1,0 +1,8 @@
+
+```datagrok-exec
+grokky.setColumnMeta(t.getCol('age'), {
+  colorCoding: {kind: 'linear', range: ['#ff0000', '#ffff00', '#00ff00'], min: 19, max: 70},
+});
+```
+
+Done! The **age** column is now color-coded with a **red → yellow → green** linear gradient from **19** (red) to **70** (green).

@@ -1,0 +1,13 @@
+
+```datagrok-exec
+const col = await grokky.addColumn(t, {
+  name: 'Ki',
+  type: DG.COLUMN_TYPE.FLOAT,
+  meta: {
+    semType: DG.SEMTYPE.Ki,
+    units: 'nM',
+  },
+});
+```
+
+Done! Added an empty float column **Ki** with units `nM` and semantic type `Ki` to your table.

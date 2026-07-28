@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.setColumnMeta(t.getCol('pIC50'), { friendlyName: 'Potency' });
+```
+
+Done! The friendly name of the **pIC50** column has been set to **Potency**.

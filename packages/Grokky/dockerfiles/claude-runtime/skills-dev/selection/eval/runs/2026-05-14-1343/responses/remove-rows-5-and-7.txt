@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.selectRows(t, [5, 7], {mode: 'remove'});
+```
+
+Rows 5 and 7 have been removed from the current selection.

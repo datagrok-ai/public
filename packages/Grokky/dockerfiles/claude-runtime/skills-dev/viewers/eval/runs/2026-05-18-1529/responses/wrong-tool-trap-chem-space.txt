@@ -1,0 +1,24 @@
+I'll add a chemical space viewer using the `Chem:chemSpaceTopMenu` function. This will use UMAP with Tanimoto similarity to project your molecules into 2D space.
+
+```datagrok-exec
+// Find the molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: molCol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+- **Detect** the molecule column automatically
+- **Compute** UMAP embeddings using Tanimoto (fingerprint) similarity
+- **Add a scatter plot** showing each molecule as a point in chemical space — similar structures will cluster together
+
+Once it renders, you can color the scatter plot by any activity or property column to spot structure–activity trends visually.

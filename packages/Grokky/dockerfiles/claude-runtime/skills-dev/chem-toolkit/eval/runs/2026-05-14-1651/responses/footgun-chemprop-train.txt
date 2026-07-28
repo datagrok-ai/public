@@ -1,0 +1,37 @@
+I'll train a Chemprop regression model on the current table, using the molecule column to predict `activity`.
+
+```datagrok-exec
+// Find the molecule column and train Chemprop
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the table.');
+
+const activityCol = t.col('activity');
+if (!activityCol) throw new Error("No 'activity' column found in the table.");
+
+grok.shell.info(`Training Chemprop model: molecules from '${molCol.name}', predicting '${activityCol.name}'...`);
+
+const model = await grok.functions.call('Chem:trainChemprop', {
+  df: t,
+  predictColumn: activityCol,
+  dataset_type: 'regression',
+  epochs: 50,
+});
+
+grok.shell.info('Chemprop model trained successfully!');
+
+// Apply the model back to the table
+const resultDf = await grok.functions.call('Chem:applyChemprop', {
+  df: t,
+  model: model,
+});
+
+return DG.Viewer.grid(resultDf).root;
+```
+
+Here's what this does:
+
+1. **Finds the molecule column** (by semantic type `Molecule`) and the `activity` column in the current table.
+2. **Trains a Chemprop regression model** (`dataset_type: 'regression'`) for 50 epochs using the Chemprop message-passing neural network (MPNN).
+3. **Applies the trained model** back to the dataset and displays the predictions.
+
+> **Note:** Training runs in the `chem-chemprop` Docker container — it may take a minute or two depending on dataset size. You'll see a notification when it completes. If you'd like to adjust hyperparameters (e.g., more `epochs`, custom `dropout`, `depth`, etc.), just let me know!

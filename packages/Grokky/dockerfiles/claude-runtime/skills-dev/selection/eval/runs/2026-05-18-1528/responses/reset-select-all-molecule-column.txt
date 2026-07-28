@@ -1,0 +1,19 @@
+```datagrok-exec
+// Find the molecule column (semType === 'Molecule') and select all its rows
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+// Select all rows (every row has a value in this column)
+t.selection.setAll(true);
+
+return ui.tableFromMap({
+  'Column': molCol.name,
+  'Selected rows': t.selection.trueCount,
+  'Total rows': t.rowCount,
+});
+```
+
+This selects **all rows** in the table based on the molecule column (identified by `semType === 'Molecule'`). If no molecule column is found, it will notify you. The result shows which column was detected and how many rows were selected.

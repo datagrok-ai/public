@@ -1,0 +1,31 @@
+I'll add a chemical space viewer using the `Chem:chemSpaceTopMenu` function, which performs dimensionality reduction (UMAP) on molecular fingerprints and plots the result as a scatter plot.
+
+First, I need to know which column contains the molecules. Let me add the viewer using the current table:
+
+```datagrok-exec
+// Find the molecule column (SMILES / molblock / smiles semantic type)
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE)
+  ?? t.columns.toList().find(c => /smiles|mol|structure/i.test(c.name));
+
+if (!molCol) {
+  return ui.divText('❌ No molecule column found. Please ensure the table has a column with semantic type "Molecule" (SMILES or molblock).');
+}
+
+const sp = await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: molCol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+
+if (sp)
+  sp.setOptions({ colorColumnName: molCol.name });
+```
+
+This will:
+1. **Detect** the molecule column automatically (by semantic type or name pattern).
+2. **Run UMAP** with Tanimoto similarity to embed molecules into 2D chemical space.
+3. **Plot** the resulting scatter plot — similar molecules will appear close together.
+
+If your molecule column wasn't picked up automatically, let me know its name and I'll re-run with it explicitly.

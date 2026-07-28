@@ -1,0 +1,13 @@
+```datagrok-exec
+// Remove only the substructure filter from the filter group
+const fg = view.getFiltersGroup({createDefaultFilters: false});
+const filters = fg.filters;
+for (const f of filters) {
+  if (f.filterType === DG.FILTER_TYPE.SUBSTRUCTURE) {
+    fg.removeFilter(f);
+    break;
+  }
+}
+```
+
+This removes only the substructure filter from the filter panel, leaving all other active filters (range, categorical, free-text, etc.) intact.

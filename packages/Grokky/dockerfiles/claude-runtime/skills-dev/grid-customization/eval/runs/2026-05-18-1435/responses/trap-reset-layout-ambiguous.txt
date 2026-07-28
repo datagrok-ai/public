@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.resetLayout();
+```
+
+The layout has been reset to just the grid — all additional viewers (scatter plots, histograms, filter panels, etc.) have been removed.

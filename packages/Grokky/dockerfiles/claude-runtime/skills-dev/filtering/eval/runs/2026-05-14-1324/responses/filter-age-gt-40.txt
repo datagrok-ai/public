@@ -1,0 +1,7 @@
+
+```datagrok-exec
+grokky.filterByPredicate(t, (i) => t.getCol('age').get(i) > 40);
+return {visible: t.filter.trueCount, total: t.rowCount};
+```
+
+The filter has been applied — showing only rows where **age > 40**.

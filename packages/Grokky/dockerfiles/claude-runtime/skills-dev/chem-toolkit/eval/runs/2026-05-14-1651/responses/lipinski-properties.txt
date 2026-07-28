@@ -1,0 +1,26 @@
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+await grok.functions.call('Chem:addChemPropertiesColumns', {
+  table: t,
+  molecules: mol,
+  MW: true,
+  HBA: true,
+  HBD: true,
+  logP: true,
+  logS: false,
+  PSA: false,
+  rotatableBonds: false,
+  stereoCenters: false,
+  moleculeCharge: false
+});
+```
+
+Done! The following Lipinski property columns have been appended to your table:
+
+- **MW** — Molecular Weight
+- **HBA** — Hydrogen Bond Acceptors
+- **HBD** — Hydrogen Bond Donors
+- **LogP** — Lipophilicity (octanol-water partition coefficient)
+
+These are computed via OpenChemLib (OCL). You can now use them for Lipinski's Rule of Five filtering (MW ≤ 500, HBA ≤ 10, HBD ≤ 5, LogP ≤ 5).

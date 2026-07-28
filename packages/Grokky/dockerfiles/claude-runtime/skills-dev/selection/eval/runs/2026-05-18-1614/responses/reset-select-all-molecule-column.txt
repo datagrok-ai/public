@@ -1,0 +1,19 @@
+I'll select all rows by finding the molecule column (semType = `Molecule`) and selecting all rows — or if you mean selecting the column itself in the grid, I'll handle that too. Most likely you want to **select all rows** that have data in the molecule column.
+
+```datagrok-exec
+// Find the molecule column by semantic type
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+// Select all rows (select all rows that have a non-null molecule value)
+t.selection.init(i => molCol.get(i) != null && molCol.get(i) !== '');
+return ui.tableFromMap({
+  'Molecule column': molCol.name,
+  'Rows selected': t.selection.trueCount,
+  'Total rows': t.rowCount
+});
+```
+
+This finds the molecule column by its semantic type (`Molecule`) and selects all rows that have a non-empty molecule value. If you meant something different (e.g., highlight the column in the grid, or select the column header), let me know!

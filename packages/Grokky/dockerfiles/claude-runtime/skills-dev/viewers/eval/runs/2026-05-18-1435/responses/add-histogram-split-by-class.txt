@@ -1,0 +1,20 @@
+I'll inspect the current table to find the right columns automatically.
+
+```datagrok-exec
+// Return column names and types to identify activity and class columns
+const cols = Array.from(t.columns).map(c => ({name: c.name, type: c.type}));
+return ui.tableFromMap(Object.fromEntries(cols.map(c => [c.name, c.type])));
+```
+
+Could you let me know which columns represent **activity** and **compound class** in your table? Once I have those, I'll add a Box Plot (best for showing distributions per category) to visualize the activity distribution per compound class.
+
+Alternatively, if you can share the column names, I can add the viewer right away — for example:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',      // ← replace with your activity column
+  categoryColumnName: 'class',      // ← replace with your compound class column
+});
+```
+
+Please confirm the column names and I'll render it immediately!

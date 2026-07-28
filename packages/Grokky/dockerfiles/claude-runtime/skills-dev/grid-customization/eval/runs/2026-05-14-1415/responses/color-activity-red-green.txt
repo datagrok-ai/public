@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.colorCode(t.col('activity'), {kind: 'linear', range: ['#FF0000', '#FFFF00', '#00FF00']});
+```
+
+The **activity** column is now color-coded with a red → yellow → green gradient across its value range — low values appear red, mid-range yellow, and high values green. This applies data-side, so all viewers (scatter plots, etc.) will reflect the same coloring.

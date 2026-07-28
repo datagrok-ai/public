@@ -1,0 +1,22 @@
+
+```datagrok-exec
+// Restore visibility (skip index 0 = row header), reset width policy, clear sort, drop color codings.
+const cols = view.grid.columns;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+view.grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+view.grid.sort([], []);
+for (const c of t.columns.toList())
+  c.meta.colors.setDisabled();
+```
+
+Done! Here's what was reset:
+
+- **Visibility** — all hidden columns are now visible again
+- **Column widths** — set to *Optimal* (fits the widest visible value)
+- **Sort** — cleared (back to original row order)
+- **Color coding** — disabled on all columns
+
+Your viewers (scatter plots, histograms, filter panels, etc.) are untouched.

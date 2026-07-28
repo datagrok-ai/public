@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const result = await grok.functions.call('MolTrack:getCompoundByCorporateId', { corporateValue: 'DG-12345' });
+return ui.tableFromMap(typeof result === 'object' && result !== null ? result : { result: String(result) });
+```
+
+I've queried MolTrack for the compound with corporate ID **DG-12345**. The result is displayed above. If the compound exists in MolTrack, you'll see its properties in the table. If no data appears or you get an error, the compound may not be registered yet.

@@ -1,0 +1,12 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+await grok.functions.call('Chem:convertNotation', {
+  data: t,
+  molecules: molCol,
+  targetNotation: 'v3Kmolblock',
+  overwrite: false,
+  join: true
+});
+```
+
+This will append a new column to your table with the V3000 molblock representation of each molecule from the SMILES column. The original SMILES column is preserved (`overwrite: false`).

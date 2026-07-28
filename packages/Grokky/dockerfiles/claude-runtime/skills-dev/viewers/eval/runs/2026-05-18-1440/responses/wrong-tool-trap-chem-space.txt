@@ -1,0 +1,31 @@
+I'll add a chemical space viewer using the Chem package function. I need to know which column contains the molecules — let me check the current table first.
+
+```datagrok-exec
+// Find the molecule/SMILES column
+const molCols = t.columns.toList().filter(c => 
+  c.semType === 'Molecule' || 
+  c.name.toLowerCase().includes('smil') || 
+  c.name.toLowerCase().includes('mol') ||
+  c.name.toLowerCase().includes('struct')
+);
+return ui.tableFromMap({
+  'Molecule columns found': molCols.map(c => c.name).join(', ') || '(none detected)',
+  'All columns': t.columns.names().join(', ')
+});
+```
+
+Could you tell me which column contains the molecules/SMILES, and optionally which column to use for coloring? Or if the detection above found the right column, I'll proceed with it.
+
+Once confirmed, I'll run:
+
+```datagrok-exec
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: t.col('smiles'),   // replace with actual column name
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+Please share the column name(s) and I'll launch the chemical space viewer right away!

@@ -1,0 +1,37 @@
+To create viewers in Datagrok, you should use `view.addViewer()` instead of `DG.Viewer.fromType()` in most cases. Here's the distinction:
+
+## When to use each
+
+### `view.addViewer()` — for attaching to the current view (preferred)
+```javascript
+view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  xColumnName: 'MW',
+  yColumnName: 'LogP',
+});
+```
+This attaches the viewer directly to the table view and displays it to the user.
+
+---
+
+### `DG.Viewer.fromType()` — only for embedding in custom UI
+```javascript
+const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {
+  xColumnName: 'mw',
+  yColumnName: 'logp',
+});
+return sp.root; // embed in chat or a custom widget
+```
+Use this **only** when you need to embed the viewer's DOM node (`.root`) inside a custom UI element you're constructing manually — for example, returning it to the chat or placing it inside a `ui.div(...)`.
+
+---
+
+## Anti-patterns to avoid
+
+| ❌ Avoid | ✅ Use instead |
+|---|---|
+| `DG.Viewer.fromType(...)` to add to the view | `view.addViewer(DG.VIEWER.*, opts)` |
+| `new DG.Viewer(...)` | `view.addViewer(...)` or `DG.Viewer.fromType(...)` |
+| `view.scatterPlot(opts)` (deprecated shorthand) | `view.addViewer(DG.VIEWER.SCATTER_PLOT, opts)` |
+| `grok.shell.addViewer(...)` (doesn't exist) | `view.addViewer(...)` |
+
+In short: **`DG.Viewer.fromType` is for detached/embedded viewers only** — whenever the goal is to show a viewer on the table view, `view.addViewer()` is the right call.

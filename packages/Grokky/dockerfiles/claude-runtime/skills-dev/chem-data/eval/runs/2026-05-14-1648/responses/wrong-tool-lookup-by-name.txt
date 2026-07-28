@@ -1,0 +1,14 @@
+I'll look up acetylsalicylic acid (aspirin) in the ChEMBL database by first resolving its name to a SMILES structure, then performing a search.
+
+```datagrok-exec
+// Look up acetylsalicylic acid by name using ChEMBL namesToSmiles query
+const df = await grok.functions.call('Chembl:namesToSmiles', { names: ['acetylsalicylic acid'] });
+return DG.Viewer.grid(df).root;
+```
+
+This queries the ChEMBL database to resolve "acetylsalicylic acid" to its canonical SMILES. Once we have the SMILES, we can do further lookups (similarity search, substructure search, get the ChEMBL ID, etc.).
+
+Would you also like me to:
+- **Search ChEMBL** for compounds similar to aspirin?
+- **Look it up by ChEMBL ID** (CHEMBL25) to get its full record?
+- **Search MolTrack** if it's registered in your internal compound registry?

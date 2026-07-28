@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.col('activity').meta.colors.setLinear(['#FF0000', '#00FF00']);
+```
+
+Done! The **activity** column is now color-coded from **red** (low values) to **green** (high values).

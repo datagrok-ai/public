@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.filter.init((i) => t.getCol('activity').get(i) <= 7);
+```
+
+Done! Rows where **activity > 7** are now hidden (filtered out). Only rows with activity ≤ 7 are visible. No data was deleted — you can clear the filter anytime to restore all rows.

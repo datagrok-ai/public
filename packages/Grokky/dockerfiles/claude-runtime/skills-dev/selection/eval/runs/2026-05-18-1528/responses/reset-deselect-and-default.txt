@@ -1,0 +1,5 @@
+```datagrok-exec
+t.selection.setAll(false);
+```
+
+Done! All rows have been deselected — the selection is back to its default state.

@@ -1,0 +1,5 @@
+```datagrok-exec
+await grokky.filterRows(view, 'MW', { max: 500 });
+```
+
+This applies a range filter on the **MW** column, keeping only rows where MW < 500. The filter widget will appear in the side panel so you can adjust the range interactively.

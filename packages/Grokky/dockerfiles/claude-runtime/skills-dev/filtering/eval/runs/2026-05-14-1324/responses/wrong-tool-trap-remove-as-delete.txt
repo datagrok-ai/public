@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.dropRows(t, (i) => t.getCol('category').get(i) === 'X');
+```
+
+Done! All rows where **category = 'X'** have been permanently removed from the table.

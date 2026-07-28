@@ -1,0 +1,37 @@
+```datagrok-exec
+// Find the activity column (case-insensitive)
+const col = t.col('activity');
+if (!col) return ui.divText('No column named "activity" found in the current table.');
+
+const s = col.stats;
+const info = {
+  'Name': col.name,
+  'Type': col.type,
+  'Semantic Type': col.semType || '(none)',
+  'Friendly Name': col.meta.friendlyName || '(none)',
+  'Units': col.meta.units || '(none)',
+  'Format': col.meta.format || '(none)',
+  'Description': col.meta.description || '(none)',
+  'Row Count': col.length,
+  'Missing Values': s.missingValueCount,
+  'Non-null Values': s.valueCount,
+  'Unique Values': s.uniqueCount,
+};
+
+if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT || col.type === 'double') {
+  info['Min'] = s.min;
+  info['Max'] = s.max;
+  info['Mean'] = s.avg?.toFixed(4);
+  info['Std Dev'] = s.stdev?.toFixed(4);
+  info['Median'] = s.med?.toFixed(4);
+  info['Q1'] = s.q1?.toFixed(4);
+  info['Q3'] = s.q3?.toFixed(4);
+  info['Sum'] = s.sum;
+}
+
+if (col.type === DG.COLUMN_TYPE.STRING) {
+  info['Categories'] = col.categories.slice(0, 10).join(', ') + (col.categories.length > 10 ? '...' : '');
+}
+
+return ui.tableFromMap(info);
+```

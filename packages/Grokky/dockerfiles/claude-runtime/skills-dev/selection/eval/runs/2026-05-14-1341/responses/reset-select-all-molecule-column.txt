@@ -1,0 +1,14 @@
+```datagrok-exec
+// Find the first molecule column (semantic type = Molecule) and select all its rows
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+// Select all rows (every row has a molecule value in that column)
+grokky.selectAll(t);
+
+return ui.divText(`Selected all ${t.selection.trueCount} rows based on molecule column "${molCol.name}".`);
+```
+
+This selects all rows in the table using the molecule column. If you'd like to select only rows where the molecule column is **non-empty** (not null/missing), let me know and I can refine that!

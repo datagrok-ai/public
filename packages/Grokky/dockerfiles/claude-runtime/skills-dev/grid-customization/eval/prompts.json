@@ -1,0 +1,202 @@
+[
+  {
+    "id": "sort-activity-desc",
+    "prompt": "Sort by activity descending",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\("],
+    "expected_symbols": ["['\"]activity['\"]", "false"],
+    "forbidden_symbols": ["grokky\\.", "sortByColumns\\s*="],
+    "intent": "Canonical sort. Must call view.grid.sort(['activity'], [false]). Must NOT assign to view.grid.sortByColumns (getter-only, silent no-op). Must NOT reference a `grokky` global (does not exist in datagrok-exec)."
+  },
+  {
+    "id": "hide-index-column",
+    "prompt": "Hide the index column",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.visible\\s*=\\s*false|columns\\.setVisible\\(|grid\\.col\\(|byIndex\\(0\\)"],
+    "expected_symbols": ["\\.visible\\s*=\\s*false|columns\\.setVisible|byIndex\\(0\\)"],
+    "forbidden_symbols": ["grokky\\.", "columns\\.remove\\(", "removeColumn"],
+    "intent": "Display-only hide. The row-header column in Datagrok has an empty-string name (''), is at grid index 0, and may also be referenced as '#' or 'index' in user vocabulary. Any of: grid.col('').visible=false, grid.columns.byIndex(0).visible=false, grid.col('index'/'#').visible=false, or grid.columns.setVisible([...]) is acceptable. Must NOT remove the column from the DataFrame."
+  },
+  {
+    "id": "pin-smiles-left",
+    "prompt": "Pin the SMILES column to the left",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.pin\\(\\)"],
+    "expected_symbols": ["SMILES"],
+    "forbidden_symbols": ["grokky\\.", "PowerGrid:addPinnedColumn"],
+    "intent": "Built-in pin via gridCol.pin() (left-only). view.grid.col('SMILES').pin() is canonical. PowerGrid plugin path is heavier than needed.",
+    "notes": "Plain gridCol.pin() acceptable."
+  },
+  {
+    "id": "widen-molecule-column",
+    "prompt": "Make the molecule column 300 pixels wide",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.width\\s*=\\s*300"],
+    "expected_symbols": ["molecule", "300"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "view.grid.col('molecule').width = 300. Single-column pixel width; the width policy APIs cover all columns at once and would be wrong here."
+  },
+  {
+    "id": "color-activity-red-green",
+    "prompt": "Color-code the activity column from red to green",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["col\\(['\"]activity['\"]\\)\\.meta\\.colors\\.setLinear|meta\\.colors\\.setLinear"],
+    "expected_symbols": ["activity", "#FF0000|#ff0000", "#00FF00|#00ff00"],
+    "forbidden_symbols": ["grokky\\.", "gridCol\\.backColor", "gridCol\\.categoryColors", "setTag\\(['\"]\\.color-coding"],
+    "intent": "Data-side linear color coding via col.meta.colors.setLinear([...]). Grid-only color paths (gridCol.backColor, categoryColors) would NOT propagate to other viewers and are wrong for 'color-code the column'. Manually setting color-coding tags via setTag is also wrong — use the meta.colors helpers."
+  },
+  {
+    "id": "format-ic50-two-decimals",
+    "prompt": "Set the format of IC50 to 2 decimal places",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.format\\s*=|\\.format\\s*=\\s*['\"]0\\.00['\"]"],
+    "expected_symbols": ["IC50", "0\\.00"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "col.meta.format = '0.00' is canonical. gridCol.format = '0.00' is the grid-only override and also passes; either path is acceptable.",
+    "notes": "Data-side preferred for cross-viewer consistency."
+  },
+  {
+    "id": "show-only-five-columns",
+    "prompt": "Show only these columns: SMILES, MW, LogP, activity",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["columns\\.setVisible\\("],
+    "expected_symbols": ["SMILES", "MW", "LogP", "activity"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "Bulk show-only via grid.columns.setVisible(['SMILES', 'MW', 'LogP', 'activity']). Toggling each gridCol.visible per name plus per-name hides is acceptable but verbose."
+  },
+
+  {
+    "id": "clear-sort",
+    "prompt": "Clear the sort",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\(\\s*\\[\\s*\\]"],
+    "expected_symbols": ["sort"],
+    "forbidden_symbols": ["grokky\\.", "view\\.resetLayout\\(", "sortByColumns\\s*="],
+    "intent": "view.grid.sort([], []) clears the grid sort without touching anything else. Must NOT call view.resetLayout() (which closes every viewer the user added)."
+  },
+  {
+    "id": "show-all-hidden",
+    "prompt": "Show all hidden columns",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.visible\\s*=\\s*true|columns\\.setVisible\\("],
+    "expected_symbols": ["visible|setVisible"],
+    "forbidden_symbols": ["grokky\\.", "view\\.resetLayout\\("],
+    "intent": "Restore visibility for every column. A for-loop over grid.columns from index 1 setting visible=true is canonical (index 0 is the row header). resetLayout is too blunt — closes viewers."
+  },
+  {
+    "id": "unpin-smiles",
+    "prompt": "Unpin the SMILES column",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.unpin\\(\\)"],
+    "expected_symbols": ["SMILES"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "view.grid.col('SMILES').unpin() — direct gridCol.unpin() call."
+  },
+  {
+    "id": "color-off-activity",
+    "prompt": "Turn off color coding on the activity column",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.colors\\.setDisabled\\("],
+    "expected_symbols": ["activity"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "col.meta.colors.setDisabled(). Must target the activity column specifically, not all columns (that's a full reset)."
+  },
+
+  {
+    "id": "hit-list-multi-step",
+    "prompt": "Pin SMILES on the left, hide the index column, color activity red-to-green, sort by activity desc",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.pin\\(\\)", "\\.visible\\s*=\\s*false|columns\\.setVisible\\(", "meta\\.colors\\.setLinear", "view\\.grid\\.sort\\("],
+    "expected_symbols": ["SMILES", "index", "activity", "false", "#FF0000|#ff0000", "#00FF00|#00ff00"],
+    "forbidden_symbols": ["grokky\\.", "sortByColumns\\s*=", "gridCol\\.name\\s*="],
+    "intent": "Headline multi-step recipe. Four operations in one block: pin SMILES, hide index, linear color on activity (red->green), sort activity desc. Order is flexible — coloring is data-side and independent of grid-side."
+  },
+  {
+    "id": "reset-grid-keep-viewers",
+    "prompt": "Reset the grid customization but keep my viewers",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|setDisabled|\\.visible\\s*=\\s*true"],
+    "expected_symbols": ["grid"],
+    "forbidden_symbols": ["grokky\\.", "view\\.resetLayout\\("],
+    "intent": "Composed reset: restore visibility, reset width policy (Optimal), clear sort, disable per-column color coding. Must NOT call view.resetLayout() — that closes scatter plots / histograms / filter panels the user added."
+  },
+  {
+    "id": "sort-class-then-activity",
+    "prompt": "Sort by class ascending, then activity descending",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\("],
+    "expected_symbols": ["['\"]class['\"]", "['\"]activity['\"]", "true", "false"],
+    "forbidden_symbols": ["grokky\\.", "sortByColumns\\s*="],
+    "intent": "Multi-column sort with parallel booleans: grid.sort(['class', 'activity'], [true, false]). Single call."
+  },
+
+  {
+    "id": "trap-sortbycolumns",
+    "prompt": "Sort by activity descending (use sortByColumns)",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\("],
+    "expected_symbols": ["activity", "false"],
+    "forbidden_symbols": ["grokky\\.", "sortByColumns\\s*=", "\\.sortByColumns\\s*=\\s*\\["],
+    "intent": "User suggests the wrong API. Claude must NOT comply — sortByColumns is getter-only and assignment is a silent no-op. Correct path: view.grid.sort(['activity'], [false]). Pass if Claude ignores the framing or explicitly explains why sortByColumns is wrong.",
+    "notes": "The forbidden_symbols check is the primary gate. Bonus if Claude calls out the trap in prose."
+  },
+  {
+    "id": "trap-gridcol-name-rename",
+    "prompt": "Rename the activity column in the grid display to 'Potency'",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["meta\\.friendlyName"],
+    "expected_symbols": ["friendlyName", "Potency"],
+    "forbidden_symbols": ["grokky\\.", "gridCol\\.name\\s*=", "\\.col\\(['\"]activity['\"]\\)\\.name\\s*="],
+    "intent": "User asks for grid-display rename. gridCol.name = 'Potency' would rename the underlying DF column (destructive — breaks every reference). Correct: col.meta.friendlyName = 'Potency'. The skill explicitly traps this.",
+    "notes": "friendlyName lives in df-and-columns conceptually but the col.meta.friendlyName setter is part of the raw API."
+  },
+  {
+    "id": "trap-reset-layout-ambiguous",
+    "prompt": "Reset the layout to just the grid",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.resetLayout|view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|\\.visible\\s*=\\s*true"],
+    "expected_symbols": ["grid|viewer|resetLayout|sort"],
+    "forbidden_symbols": ["grokky\\."],
+    "intent": "Ambiguous: 'reset the layout to just the grid' literally maps to view.resetLayout() (closes viewers AND resets the grid), but a user might mean reset the grid alone. Pass if Claude (a) picks view.resetLayout() as the natural interpretation, (b) composes a manual reset, or (c) surfaces the distinction in prose before picking.",
+    "notes": "Intentionally hard. Any reasonable resolution passes; only a silent no-op or unrelated tool fails."
+  },
+
+  {
+    "id": "reset-all-customization",
+    "prompt": "Reset all grid customization back to default",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|setDisabled|\\.visible\\s*=\\s*true"],
+    "expected_symbols": ["grid|sort|visible|setDisabled"],
+    "forbidden_symbols": ["grokky\\.", "view\\.resetLayout\\("],
+    "intent": "Composed reset: clear sort, restore visibility, set width policy back to Optimal, disable per-column color coding. resetLayout is wrong — it ALSO closes viewers."
+  },
+  {
+    "id": "clear-everything-fresh-start",
+    "prompt": "Reset all grid customization — clear the sort, restore all hidden columns, reset widths, and turn off color coding",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["view\\.grid\\.sort\\(\\s*\\[\\s*\\]|setColumnsWidthType|setDisabled|\\.visible\\s*=\\s*true|view\\.resetLayout"],
+    "expected_symbols": ["sort|reset|visible|setDisabled"],
+    "forbidden_symbols": ["grokky\\.", "grok\\.shell\\.closeAll"],
+    "intent": "Composed reset across all four dimensions, OR view.resetLayout(). Forbidden: closing views / tables — the user wants the grid presentation reset, not the workspace blown away.",
+    "notes": "Sharpened from earlier ambiguous 'clear everything' — that wording let Claude reach for grok.shell.closeAll."
+  }
+]

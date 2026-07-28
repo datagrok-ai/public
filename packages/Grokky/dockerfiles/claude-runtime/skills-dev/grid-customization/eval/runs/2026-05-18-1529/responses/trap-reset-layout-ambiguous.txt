@@ -1,0 +1,24 @@
+
+```datagrok-exec
+if (!(view instanceof DG.TableView)) return;
+
+// Close all viewers except the grid
+for (const viewer of [...view.viewers]) {
+  if (viewer.type !== DG.VIEWER.GRID) {
+    viewer.close();
+  }
+}
+
+// Reset grid customizations
+const cols = view.grid.columns;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+view.grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+view.grid.sort([], []);
+for (const c of t.columns.toList())
+  c.meta.colors.setDisabled();
+```
+
+Done! The layout has been reset to just the grid — all other viewers have been closed, columns restored to visible, sort cleared, and color codings removed.

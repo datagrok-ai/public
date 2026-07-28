@@ -1,0 +1,11 @@
+```datagrok-exec
+const col = t.col('smiles') ?? t.col('SMILES') ?? t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+
+if (!col) throw new Error('No "smiles" column found in the current table.');
+
+grokky.setColumnMeta(col, { semType: DG.SEMTYPE.MOLECULE });
+
+return ui.divText(`Semantic type of column "${col.name}" set to Molecule.`);
+```
+
+The semantic type of the **smiles** column has been set to `Molecule`. This enables structure-aware features in Datagrok (e.g., structure rendering, chemical search, and cheminformatics viewers) for that column.

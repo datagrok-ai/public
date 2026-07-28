@@ -1,0 +1,14 @@
+
+```datagrok-exec
+t.col('activity').meta.colors.setLinear(['#FF0000', '#FFFF00', '#00FF00']);
+view.grid.col('index').visible = false;
+view.grid.col('SMILES').pin();
+view.grid.sort(['activity'], [false]);
+```
+
+Done! Here's what was applied to your table:
+
+- **SMILES** pinned to the left
+- **index** column hidden
+- **activity** colored with a red → yellow → green gradient
+- **activity** sorted descending (highest values first)

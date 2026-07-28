@@ -1,0 +1,6 @@
+```datagrok-exec
+const mw = t.getCol('MW');
+t.filter.init((i) => mw.get(i) < 500);
+```
+
+Done! The table is now filtered to show only compounds with **MW < 500**. Hidden rows are not deleted — clear the filter anytime to restore all rows.

@@ -1,0 +1,15 @@
+```datagrok-exec
+const col = grokky.findColumns(t, {name: 'activity', fuzzy: true})[0]?.column;
+if (!col) throw new Error('Could not find an "activity" column');
+
+grokky.setColumnMeta(col, {
+  friendlyName: null,
+  units: null,
+  format: null,
+  description: null,
+});
+
+return ui.divText(`Cleared metadata on column "${col.name}"`);
+```
+
+This clears `friendlyName`, `units`, `format`, and `description` on the activity column by setting each to `null` (which removes the underlying tags). The column name and type are left untouched.

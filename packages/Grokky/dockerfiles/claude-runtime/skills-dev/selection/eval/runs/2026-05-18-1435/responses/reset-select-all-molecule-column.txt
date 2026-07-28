@@ -1,0 +1,29 @@
+```datagrok-exec
+// Find columns with semantic type 'Molecule' and select all rows where those columns have data
+const molCols = t.columns.toList().filter(c => c.semType === 'Molecule' || c.semType === DG.SEMTYPE.MOLECULE);
+
+if (molCols.length === 0) {
+  return ui.divText('No molecule columns found in the current table.');
+}
+
+// Select all rows that have a non-empty value in any molecule column
+t.selection.init(i => {
+  return molCols.some(col => {
+    const val = col.get(i);
+    return val !== null && val !== undefined && val !== '';
+  });
+});
+
+return ui.tableFromMap({
+  'Molecule columns found': molCols.map(c => c.name).join(', '),
+  'Rows selected': t.selection.trueCount,
+  'Total rows': t.rowCount,
+});
+```
+
+This code:
+1. **Finds all molecule columns** (columns with semantic type `Molecule`) in the current table.
+2. **Selects all rows** that have a non-empty value in any of those molecule columns.
+3. Returns a summary showing which columns were found and how many rows were selected.
+
+If no molecule columns are detected, it will show a message. Let me know if you'd like to refine the selection criteria!

@@ -1,0 +1,14 @@
+```datagrok-exec
+// Add a histogram (auto-picks first numeric column if none specified)
+const numCol = t.columns.numerical[0];
+view.addViewer(DG.VIEWER.HISTOGRAM, {
+  valueColumnName: numCol ? numCol.name : undefined,
+});
+
+// Close all scatter plots
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+  .forEach((v) => { try { v.close(); } catch {} });
+```
+
+Done! A **histogram** has been added (using the first numeric column) and all **scatter plots** have been closed. Let me know if you'd like to change the column or adjust any settings.

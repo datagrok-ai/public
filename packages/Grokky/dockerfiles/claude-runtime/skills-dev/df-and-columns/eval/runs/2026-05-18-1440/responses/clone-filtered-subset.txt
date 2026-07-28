@@ -1,0 +1,5 @@
+
+```datagrok-exec
+const small = t.clone(t.filter, ['SMILES', 'activity']);
+grok.shell.addTableView(small);
+```

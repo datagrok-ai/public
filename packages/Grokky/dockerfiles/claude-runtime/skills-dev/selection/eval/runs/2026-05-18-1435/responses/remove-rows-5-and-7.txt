@@ -1,0 +1,6 @@
+```datagrok-exec
+for (const i of [5, 7]) t.selection.set(i, false, false);
+t.selection.fireChanged();
+```
+
+Rows 5 and 7 have been removed from the selection.

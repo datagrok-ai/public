@@ -1,0 +1,26 @@
+```datagrok-exec
+const hits = grokky.findColumns(t, {name: 'activity', fuzzy: true, limit: 3});
+if (!hits || hits.length === 0) return ui.divText('No column matching "activity" was found.');
+const col = hits[0].column;
+const desc = grokky.describeColumn(col);
+return ui.tableFromMap({
+  'Name': col.name,
+  'Type': desc.type,
+  'Semantic Type': desc.semType ?? '—',
+  'Units': desc.units ?? '—',
+  'Format': desc.format ?? '—',
+  'Row Count': desc.length,
+  'Non-null Values': desc.valueCount,
+  'Missing Values': desc.missingValueCount,
+  'Unique Values': desc.uniqueCount,
+  ...(desc.numerical ? {
+    'Min': desc.numerical.min,
+    'Max': desc.numerical.max,
+    'Mean': desc.numerical.avg?.toFixed(4),
+    'Std Dev': desc.numerical.stdev?.toFixed(4),
+    'Median': desc.numerical.med?.toFixed(4),
+  } : {}),
+  ...(desc.topCategories ? {'Top Categories': desc.topCategories.map(c => `${c.value} (${c.count})`).join(', ')} : {}),
+  'Match Reason': hits[0].reason,
+});
+```

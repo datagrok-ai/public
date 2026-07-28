@@ -1,0 +1,9 @@
+```datagrok-exec
+const col = t.getCol('activity');
+col.meta.friendlyName = null;
+col.meta.units = null;
+col.meta.format = null;
+col.meta.description = null;
+```
+
+Done — all four custom metadata fields (friendly name, units, format, and description) have been cleared from the **activity** column.

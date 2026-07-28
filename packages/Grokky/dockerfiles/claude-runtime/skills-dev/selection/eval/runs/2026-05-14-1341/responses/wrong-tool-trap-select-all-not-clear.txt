@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.selectAll(t);
+```
+
+Every row in the DataFrame has been selected.

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterSubstructure(view, t.columns.bySemType('Molecule')?.name ?? t.columns.toList().find(c => c.semType === 'Molecule' || c.name.toLowerCase().includes('smiles') || c.name.toLowerCase().includes('mol'))?.name, 'c1ccccc1');
+```
+
+This filters the molecule column to show only rows containing the benzene ring substructure (`c1ccccc1`).

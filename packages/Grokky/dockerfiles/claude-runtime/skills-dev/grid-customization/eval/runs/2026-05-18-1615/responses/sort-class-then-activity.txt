@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.grid.sort(['class', 'activity'], [true, false]);
+```
+
+Done! The grid is now sorted by **class** ascending, then **activity** descending.

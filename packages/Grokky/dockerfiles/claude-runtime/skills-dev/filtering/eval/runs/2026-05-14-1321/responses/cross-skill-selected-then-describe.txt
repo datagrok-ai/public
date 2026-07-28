@@ -1,0 +1,76 @@
+Here's the plan:
+1. Filter the table to show only the currently **selected** rows
+2. Describe the visible molecules (summary statistics or structure info)
+
+Let me first filter to selected rows, then describe them:
+
+```datagrok-exec
+// Step 1: Copy selection into the filter
+const sel = t.selection;
+if (sel.trueCount === 0) {
+  return ui.divText('⚠️ No molecules are selected. Please select some rows first (e.g. via lasso or Shift+click), then run this again.');
+}
+
+// Apply the selection mask as the filter
+t.filter.copyFrom(sel);
+
+// Step 2: Find the molecule column
+const molCol = t.columns.toList().find(c =>
+  c.semType === DG.SEMTYPE.MOLECULE || c.semType === 'Molecule'
+);
+
+// Step 3: Build a summary
+const n = t.filter.trueCount;
+const total = t.rowCount;
+
+const lines = [`**${n} of ${total} rows** now visible (filtered to your selection).`];
+
+// Numeric column stats on filtered rows
+const numCols = t.columns.toList().filter(c => c.type === DG.TYPE.FLOAT || c.type === DG.TYPE.INT);
+const indices = [...t.filter.getSelectedIndexes()];
+
+const statRows = numCols.slice(0, 8).map(col => {
+  const vals = indices.map(i => col.get(i)).filter(v => v !== null && !isNaN(v));
+  if (!vals.length) return null;
+  const min = Math.min(...vals).toFixed(2);
+  const max = Math.max(...vals).toFixed(2);
+  const mean = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+  return { Column: col.name, Min: min, Mean: mean, Max: max, Count: vals.length };
+}).filter(Boolean);
+
+const catCols = t.columns.toList().filter(c => c.type === DG.TYPE.STRING && c !== molCol);
+const catSummary = catCols.slice(0, 3).map(col => {
+  const freq = {};
+  indices.forEach(i => { const v = col.get(i) ?? '(null)'; freq[v] = (freq[v] || 0) + 1; });
+  const top = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 3).map(([k,v]) => `${k} (${v})`).join(', ');
+  return `**${col.name}:** ${top}`;
+});
+
+const container = ui.divV([
+  ui.h2(`Selection Summary — ${n} molecule${n !== 1 ? 's' : ''}`),
+  molCol ? ui.divText(`🔬 Molecule column: ${molCol.name}`) : ui.divText('⚠️ No molecule column detected'),
+  ui.divText(''),
+]);
+
+if (statRows.length) {
+  const tbl = ui.tableFromMap(Object.fromEntries(statRows.map(r =>
+    [r.Column, `min ${r.Min}  |  mean ${r.Mean}  |  max ${r.Max}`]
+  )));
+  container.append(ui.h3('Numeric columns'));
+  container.append(tbl);
+}
+
+if (catSummary.length) {
+  container.append(ui.h3('Categorical columns (top values)'));
+  catSummary.forEach(s => container.append(ui.markdown(s)));
+}
+
+return container;
+```
+
+This will:
+- **Filter** the table to show only your selected molecules
+- **Report** numeric stats (min/mean/max) for each numeric column across the selection
+- **Summarize** top categories for string columns
+
+If nothing is selected yet, it will tell you — just select some rows first (lasso in a scatter plot, or Shift+click rows) and run again!The code above is already correct and ready to run — the `df.selection` BitSet and `DG.SEMTYPE.MOLECULE` patterns are standard Datagrok JS API. The block above will execute as-is. Just make sure you have some rows selected in your table view first!

@@ -1,0 +1,37 @@
+I'll use the `Chembl:chemblIdToSmilesTs` function to convert each ChEMBL ID to SMILES. This function is registered as a **converter** and works on individual IDs, so I'll apply it across all rows of your ChEMBL ID column and append the results as a new `SMILES` column.
+
+```datagrok-exec
+// Find the ChEMBL ID column (look for a column whose values match CHEMBL\d+)
+const chemblCol = Array.from(t.columns).find(c =>
+  c.type === 'string' && /CHEMBL\d+/i.test(String(c.get(0)))
+);
+
+if (!chemblCol) throw new Error('No ChEMBL ID column found. Make sure a column contains values like CHEMBL1185.');
+
+const n = t.rowCount;
+const smiles = new Array(n).fill('');
+
+for (let i = 0; i < n; i++) {
+  const id = chemblCol.get(i);
+  if (id) {
+    try {
+      smiles[i] = await grok.functions.call('Chembl:chemblIdToSmilesTs', { id });
+    } catch (e) {
+      smiles[i] = '';
+    }
+  }
+}
+
+// Add or replace SMILES column
+const existing = t.col('SMILES');
+if (existing) t.columns.remove(existing);
+const smilesCol = t.columns.addNewString('SMILES');
+for (let i = 0; i < n; i++) smilesCol.set(i, smiles[i]);
+```
+
+This will:
+1. **Auto-detect** the column containing ChEMBL IDs (e.g. `CHEMBL1185`).
+2. Call `Chembl:chemblIdToSmilesTs` for each ID against the local ChEMBL database.
+3. Append a new **`SMILES`** column to your table.
+
+> **Note:** If your ChEMBL ID column has a specific name or isn't auto-detected, let me know and I'll target it directly. Also, for large tables this may take a moment since it queries per row — let me know if you'd like a batched approach.

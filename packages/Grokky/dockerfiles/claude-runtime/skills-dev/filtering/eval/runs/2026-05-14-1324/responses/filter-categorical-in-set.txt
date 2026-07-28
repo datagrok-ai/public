@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterRows(view, 'category', {values: ['A', 'B', 'C']});
+```
+
+Filtered the table to rows where **category** is one of `A`, `B`, or `C`. The filter is now active in the side panel.

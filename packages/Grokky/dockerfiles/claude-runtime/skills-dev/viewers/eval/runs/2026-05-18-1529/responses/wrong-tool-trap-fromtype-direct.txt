@@ -1,0 +1,40 @@
+When creating new viewers, use `DG.Viewer.fromType(type, dataframe, options)` instead of `view.addViewer(...)`.
+
+Note that `DG.Viewer.fromType` creates a **standalone (detached)** viewer — it is not automatically attached to the view. You'll need to either:
+
+- **Return it from a `datagrok-exec` block** to embed it in the chat UI
+- **Manually attach it** to a container element in your custom UI
+
+Here's the correct usage:
+
+```javascript
+// Create a standalone scatter plot
+const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {
+  xColumnName: 'mw',
+  yColumnName: 'logp',
+  colorColumnName: 'activity',
+});
+
+// Return its DOM root to display in chat
+return sp.root;
+```
+
+Compare with `view.addViewer`, which attaches directly to the current table view:
+
+```javascript
+// This attaches the viewer to the layout — prefer this for normal use
+view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  xColumnName: 'mw',
+  yColumnName: 'logp',
+});
+```
+
+**When to use `DG.Viewer.fromType`:**
+- Embedding a viewer inside a custom UI panel or dialog
+- Returning a viewer as a chat result
+- Building a detached preview before attaching it elsewhere
+
+**When to prefer `view.addViewer`:**
+- Adding a viewer to the current table view layout (the normal, everyday case)
+
+I've noted your preference — I'll use `DG.Viewer.fromType` when creating new viewers going forward.

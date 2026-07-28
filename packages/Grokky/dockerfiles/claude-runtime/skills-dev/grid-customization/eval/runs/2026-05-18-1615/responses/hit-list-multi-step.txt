@@ -1,0 +1,37 @@
+```datagrok-exec
+if (!(view instanceof DG.TableView)) return;
+
+const grid = view.grid;
+
+// 1. Pin SMILES column on the left
+const smilesGridCol = grid.col('SMILES') ?? grid.col('smiles') ?? grid.col('Smiles');
+if (smilesGridCol) smilesGridCol.pin();
+
+// 2. Hide the index column (row header / '#' column is index 0; also hide any
+//    column literally named 'index', 'Index', or '#')
+const rowHeader = grid.columns.byIndex(0);
+if (rowHeader) rowHeader.visible = false;
+for (const name of ['index', 'Index', '#', 'idx', 'Idx', 'ID', 'id']) {
+  const gc = grid.col(name);
+  if (gc) gc.visible = false;
+}
+
+// 3. Color activity red → green (low = bad = red, high = good = green)
+const activityCol = t.col('activity') ?? t.col('Activity');
+if (activityCol) {
+  activityCol.meta.colors.setLinear(['#FF0000', '#00FF00']);
+}
+
+// 4. Sort by activity descending
+const activityName = (t.col('activity') ?? t.col('Activity'))?.name;
+if (activityName) grid.sort([activityName], [false]);
+```Here's what was applied:
+
+| Step | Action |
+|---|---|
+| 📌 **Pin SMILES** | `SMILES` column pinned to the left edge of the grid |
+| 🙈 **Hide index** | Row header (column 0) hidden; also hides any column named `index`, `#`, `idx`, or `id` |
+| 🎨 **Color activity** | Linear gradient **red → green** applied data-side (visible in all viewers) |
+| 🔽 **Sort** | Grid sorted by `activity` **descending** |
+
+The color coding is applied at the column level so scatter plots and other viewers referencing `activity` will also reflect the red-to-green scale. Let me know if you'd like to adjust the gradient midpoints or threshold values!

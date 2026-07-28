@@ -1,0 +1,24 @@
+Let me inspect the current table to identify the right columns for you.
+
+```datagrok-exec
+// Return column names and types to identify activity and class columns
+const cols = [];
+for (let i = 0; i < t.columns.length; i++) {
+  const c = t.columns.byIndex(i);
+  cols.push(`${c.name} [${c.type}]`);
+}
+return ui.divV(cols.map(x => ui.divText(x)));
+```
+
+Could you let me know:
+1. **Which column holds the activity values?** (a numeric column like IC50, potency, % inhibition, etc.)
+2. **Which column holds the compound class/category?** (a string/categorical column)
+
+Once you share the column names, I'll add a histogram split by compound class right away! For example:
+
+```datagrok-exec
+grokky.addViewer(view, 'Histogram', {
+  valueColumnName: 'activity',      // ← replace with your activity column
+  splitColumnName: 'compound_class', // ← replace with your class column
+});
+```

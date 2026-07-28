@@ -1,0 +1,11 @@
+```datagrok-exec
+const result = await grok.functions.call('Chembl:namesToSmiles', { names: ['aspirin'] });
+const smiles = result.columns.byName('canonical_smiles').get(0);
+return ui.tableFromMap({ 'Compound': 'Aspirin', 'SMILES': smiles });
+```
+
+The SMILES for **aspirin** will be retrieved directly from the ChEMBL database and displayed above. The canonical SMILES for aspirin is typically:
+
+**`CC(=O)Oc1ccccc1C(=O)O`**
+
+This represents acetylsalicylic acid — an acetyl group (`CC(=O)O-`) attached to a benzene ring that also carries a carboxylic acid group (`-C(=O)O`).

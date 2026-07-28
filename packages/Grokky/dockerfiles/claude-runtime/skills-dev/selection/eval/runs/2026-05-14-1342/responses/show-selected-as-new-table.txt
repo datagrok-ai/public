@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const subset = grokky.selectedDf(t);
+grok.shell.addTableView(subset);
+```
+
+This creates a new table view containing only the currently selected rows. The original table remains unchanged.

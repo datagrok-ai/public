@@ -1,0 +1,21 @@
+I'll check the current table columns to find the right names.
+
+```datagrok-exec
+// List all column names so we can identify the right ones
+return ui.divText(t.columns.names().join(', '));
+```
+
+Actually, let me just add the box plot using the column names you specified — `activity` as the value and `class` as the category:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'class',
+});
+```
+
+This adds a **Box Plot** with:
+- **Y-axis (value):** `activity`
+- **X-axis (groups):** `class`
+
+If your columns have different names (e.g., `Activity`, `compound_class`, etc.), let me know and I'll update it!

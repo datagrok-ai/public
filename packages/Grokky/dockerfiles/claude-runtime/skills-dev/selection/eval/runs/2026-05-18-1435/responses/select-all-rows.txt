@@ -1,0 +1,4 @@
+```datagrok-exec
+t.selection.setAll(true);
+return ui.tableFromMap({ 'Selected rows': t.selection.trueCount, 'Total rows': t.rowCount });
+```All rows in the current table have been selected. The result shows how many rows were selected out of the total.

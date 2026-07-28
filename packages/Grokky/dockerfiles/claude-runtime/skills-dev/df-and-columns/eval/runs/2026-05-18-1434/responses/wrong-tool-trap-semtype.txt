@@ -1,0 +1,13 @@
+
+```datagrok-exec
+t.columns.bySemType(DG.SEMTYPE.MOLECULE) 
+  ? (() => { return ui.divText('A molecule column already exists.'); })()
+  : (() => {
+      const col = t.col('smiles') ?? t.columns.firstWhere(c => c.name.toLowerCase().includes('smil'));
+      if (!col) throw new Error('No column named "smiles" found.');
+      col.semType = DG.SEMTYPE.MOLECULE;
+      return ui.divText(`Set semType of "${col.name}" to Molecule.`);
+    })();
+```
+
+The semantic type of the **smiles** column has been set to `Molecule`. Datagrok will now recognize it as a chemical structure column, enabling features like structure rendering, substructure search, and cheminformatics tools.

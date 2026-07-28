@@ -1,0 +1,9 @@
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BAR_CHART, {
+  splitColumnName: 'category',
+  valueAggrType: 'count',
+});
+```
+
+I've added a **Bar Chart** to your view, showing the count of rows grouped by the `category` column. Let me know if you'd like to adjust the column, aggregation type, or any other settings!

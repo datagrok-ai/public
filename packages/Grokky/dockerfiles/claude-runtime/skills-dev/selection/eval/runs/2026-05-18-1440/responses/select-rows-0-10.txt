@@ -1,0 +1,8 @@
+
+```datagrok-exec
+t.selection.setAll(false, false);
+for (let i = 0; i <= 10; i++) t.selection.set(i, true, false);
+t.selection.fireChanged();
+```
+
+Rows 0 through 10 (11 rows total) have been selected.

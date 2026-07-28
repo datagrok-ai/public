@@ -1,0 +1,5 @@
+```datagrok-exec
+t.columns.addNewFloat('score');
+```
+
+A new float column named **'score'** has been added to your table. All values are initialized to `0` by default — you can now populate it as needed.

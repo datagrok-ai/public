@@ -1,0 +1,36 @@
+First, let me find the SMILES and activity columns in your table.
+
+```datagrok-exec
+const smilesHits = grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE, fuzzy: true});
+const activityHits = grokky.findColumns(t, {name: 'activity', fuzzy: true});
+return ui.tableFromMap({
+  'SMILES candidates': smilesHits.map(h => `${h.column.name} (${h.reason})`).join(', ') || 'none',
+  'Activity candidates': activityHits.map(h => `${h.column.name} (${h.reason})`).join(', ') || 'none',
+  'Filtered row count': t.filter.trueCount,
+});
+```
+
+Let me now create the filtered copy with those columns and open it:
+
+```datagrok-exec
+// Resolve columns
+const smilesCols = grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE, fuzzy: true});
+const activityCols = grokky.findColumns(t, {name: 'activity', fuzzy: true});
+
+if (!smilesCols.length) throw new Error('No SMILES/molecule column found.');
+if (!activityCols.length) throw new Error('No activity column found.');
+
+const smilesName = smilesCols[0].column.name;
+const activityName = activityCols[0].column.name;
+
+const copy = grokky.cloneDf(t, {cols: [smilesName, activityName], rows: 'filtered'});
+copy.name = `${t.name}_filtered_copy`;
+
+grok.shell.addTableView(copy);
+```This will:
+1. **Auto-detect** your SMILES/molecule column (by semantic type) and activity column (by name)
+2. **Clone only the filtered rows** using `df.filter`
+3. **Keep only those two columns**
+4. **Open the result** as a new table view named `<original>_filtered_copy`
+
+If the wrong columns were picked (e.g. there are multiple candidates), let me know the exact column names and I'll redo it with those.

@@ -1,0 +1,11 @@
+I'll add a bar chart using the default categorical column for grouping. Datagrok will automatically pick the first suitable column.
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BAR_CHART, {
+  valueAggrType: 'count',
+});
+```
+
+A **Bar Chart** has been added to your view, showing **count by category**. Datagrok will automatically use the first categorical column as the split (category) axis.
+
+If you'd like to change which column is used for grouping, just let me know the column name and I'll update it!

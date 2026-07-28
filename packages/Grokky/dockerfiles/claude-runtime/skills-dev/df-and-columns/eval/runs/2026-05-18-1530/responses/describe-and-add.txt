@@ -1,0 +1,34 @@
+Here are the two operations — describing the molecule column, then adding the Ki column:
+
+```datagrok-exec
+// Describe the molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) return ui.divText('No molecule column found.');
+
+const s = molCol.stats;
+return ui.tableFromMap({
+  'Name':          molCol.name,
+  'Type':          molCol.type,
+  'Sem Type':      molCol.semType ?? '(none)',
+  'Units':         molCol.meta.units ?? '(none)',
+  'Format':        molCol.meta.format ?? '(none)',
+  'Row Count':     molCol.length,
+  'Non-null':      s.valueCount,
+  'Missing':       s.missingValueCount,
+  'Unique':        s.uniqueCount,
+});
+```
+
+```datagrok-exec
+// Add a Ki column with the Ki semantic type
+const col = t.columns.addNewFloat(t.columns.getUnusedName('Ki'));
+col.semType = DG.SEMTYPE.Ki;
+col.meta.units = 'nM';
+return ui.divText(`Added column "${col.name}" (type: ${col.type}, semType: ${col.semType})`);
+```
+
+Here's what each block does:
+
+1. **Molecule column description** — finds the molecule column via `bySemType`, then displays its name, type, semantic type, format, units, and stats (row count, non-null, missing, unique values).
+
+2. **Ki column** — adds a new `double` column with a collision-safe name, sets `semType = DG.SEMTYPE.Ki`, and default units of `nM`. The column is initialized with `null` values — you can populate it later.

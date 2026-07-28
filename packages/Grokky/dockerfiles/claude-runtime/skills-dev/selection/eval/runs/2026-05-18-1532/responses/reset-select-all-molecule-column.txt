@@ -1,0 +1,15 @@
+Let me find the molecule column and select all rows based on it.```datagrok-exec
+// Find the molecule column (semType 'Molecule') and select all rows
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+// Select all rows (they all have the molecule column)
+t.selection.setAll(true);
+
+return ui.divText(`Selected all ${t.selection.trueCount} rows based on molecule column: "${molCol.name}"`);
+```
+
+This selects all rows in the table using the molecule column (`"${molCol.name}"`). Since every row either has or doesn't have a molecule value, I've selected **all rows** in the table. If you'd like to select only rows where the molecule column is **not empty**, let me know and I can refine the selection!

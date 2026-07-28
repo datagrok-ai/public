@@ -1,0 +1,12 @@
+The `addStatisticsColumn` function extracts a fit statistic from an existing curve column. IC50 corresponds to the `interceptX` statistic. Here's the call:
+
+```datagrok-exec
+await grok.functions.call('Curves:addStatisticsColumn', {
+  table: t,
+  colName: 'IC50',
+  propName: 'interceptX',
+  seriesNumber: 0
+});
+```
+
+This will add an **IC50** column to your current table by reading the `interceptX` value (the 50% inhibition intercept) from series 0 of the fit curves in your `fit` column. If your curves have multiple series, change `seriesNumber` accordingly (0-based index).

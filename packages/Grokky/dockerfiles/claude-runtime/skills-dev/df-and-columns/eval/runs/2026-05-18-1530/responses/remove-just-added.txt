@@ -1,0 +1,7 @@
+```datagrok-exec
+for (const name of ['_tmp1', '_tmp2'])
+  if (t.columns.contains(name))
+    t.columns.remove(name);
+```
+
+Done! Columns `_tmp1` and `_tmp2` have been removed from the table.

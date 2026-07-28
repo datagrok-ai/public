@@ -1,0 +1,23 @@
+I'll convert your long-format plate readouts into dose-response fit curves using the `Curves:dataToCurves` function. Let me check the current table for the relevant columns and run the fitting.
+
+```datagrok-exec
+await grok.functions.call('Curves:dataToCurves', {
+  df: t,
+  concentrationCol: t.col('conc'),
+  readoutCol: t.col('response'),
+  batchIDCol: t.col('compound_id'),
+  assayCol: t.col('compound_id'),
+  runIDCol: t.col('compound_id'),
+  compoundIDCol: t.col('compound_id'),
+  targetEntityCol: t.col('compound_id'),
+});
+```
+
+This will:
+1. **Group** your rows by `compound_id`
+2. **Fit** a sigmoidal dose-response curve to each compound's `conc` vs `response` data
+3. **Produce** a wide-format table with one row per compound, containing an interactive fit-curve cell
+
+> **Note:** Several grouping columns (`assayCol`, `runIDCol`, `targetEntityCol`) were mapped to `compound_id` since only one ID column was specified. If your table has dedicated assay, run, or target columns, let me know and I'll update the call to use them — this affects how curves are grouped and labeled.
+
+Once the result table appears, you can also extract IC50 values by calling `Curves:addStatisticsColumn` on it. Just say the word!

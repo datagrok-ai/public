@@ -1,0 +1,10 @@
+
+```datagrok-exec
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.CATEGORICAL,
+  column: 'category',
+  selected: ['A', 'B', 'C'],
+});
+```
+
+Done! A categorical filter has been applied to the **category** column, showing only rows where the value is **A**, **B**, or **C**.

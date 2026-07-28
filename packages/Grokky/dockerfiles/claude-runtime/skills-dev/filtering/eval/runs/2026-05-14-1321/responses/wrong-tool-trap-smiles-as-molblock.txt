@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterSubstructure(view, 'smiles', 'CCO');
+```
+
+Filtering the table by substructure **CCO** (ethanol / ethoxy group). Rows not containing this substructure will be hidden.

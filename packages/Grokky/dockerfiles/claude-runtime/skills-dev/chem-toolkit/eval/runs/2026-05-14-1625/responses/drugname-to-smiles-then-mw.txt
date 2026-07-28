@@ -1,0 +1,27 @@
+I'll use the Chem package to compute MW and LogP for ibuprofen (SMILES: `CC(C)Cc1ccc(cc1)C(C)C(=O)O`) directly:
+
+```datagrok-exec
+const smiles = 'CC(C)Cc1ccc(cc1)C(C)C(=O)O'; // Ibuprofen
+
+// Create a small dataframe with one molecule
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', [smiles])
+]);
+df.col('molecule').semType = DG.SEMTYPE.MOLECULE;
+
+// Calculate properties
+const resDf = await grok.functions.call('Chem:getProperties', {
+  molecules: df.col('molecule'),
+  selected: ['MW', 'LogP']
+});
+
+// Build a display map
+const map = { 'Molecule': smiles };
+for (const col of resDf.columns.toList()) {
+  map[col.name] = col.get(0);
+}
+
+return ui.tableFromMap(map);
+```
+
+This will compute **MW** (molecular weight) and **LogP** for ibuprofen using the RDKit/OCL-backed `Chem:getProperties` function and display the results inline.

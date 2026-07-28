@@ -1,0 +1,17 @@
+```datagrok-exec
+const mwCol = t.col('MW') ?? t.columns.firstWhere(c => c.name.toLowerCase() === 'mw');
+if (!mwCol) throw new Error('Column "MW" not found in the table.');
+
+const logMW = t.columns.addNewFloat(t.columns.getUnusedName('logMW'));
+logMW.init(i => {
+  const v = mwCol.get(i);
+  return (v == null || v <= 0) ? null : Math.log10(v);
+});
+logMW.meta.description = 'log10(MW)';
+return ui.divText(`Added column "${logMW.name}" (log10 of "${mwCol.name}")`);
+```
+
+This adds a new `logMW` column computed as **log₁₀(MW)**:
+- Rows where MW is missing or ≤ 0 are set to `null`.
+- The column type is `float`.
+- The name is collision-safe (e.g. `logMW (1)` if `logMW` already exists).

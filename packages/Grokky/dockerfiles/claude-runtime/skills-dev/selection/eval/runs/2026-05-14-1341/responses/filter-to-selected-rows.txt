@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.filterFromSelection(t);
+```
+
+Done! The filter has been updated to show only the previously selected rows.

@@ -1,0 +1,26 @@
+I'll detect the molecule column automatically and apply the substructure filter for `CCO`.
+
+```datagrok-exec
+// Find molecule column by semantic type
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+const colName = molCol.name;
+
+// Convert SMILES to molBlock (required for the substructure filter widget)
+const query = 'CCO';
+const molBlock = DG.chem.convert(query, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.SUBSTRUCTURE,
+  column: colName,
+  columnName: colName,
+  molBlock,
+  molBlockFailover: query,
+});
+```
+
+This will:
+- **Auto-detect** the molecule column by its semantic type
+- **Convert** the SMILES `CCO` (ethanol / hydroxyl group) to a molblock format that the substructure filter requires
+- **Apply** the substructure filter via the filter panel — only rows containing the `CCO` substructure will be shown

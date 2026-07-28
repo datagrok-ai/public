@@ -1,0 +1,18 @@
+I'll find the molecule column in the current table and set its width to 300px.
+
+```datagrok-exec
+// Find the molecule/SMILES column
+const molCol = t.columns.toList().find(c =>
+  c.semType === DG.SEMTYPE.MOLECULE ||
+  c.semType === 'Molecule' ||
+  c.name.toLowerCase().includes('smiles') ||
+  c.name.toLowerCase().includes('mol') ||
+  c.name.toLowerCase().includes('structure')
+);
+
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+view.grid.col(molCol.name).width = 300;
+```
+
+The molecule column has been set to **300 pixels** wide. If your molecule column has an unusual name and wasn't detected, let me know the column name and I'll apply it directly.

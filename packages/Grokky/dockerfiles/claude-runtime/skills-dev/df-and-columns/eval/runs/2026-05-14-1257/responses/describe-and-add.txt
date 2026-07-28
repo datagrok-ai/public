@@ -1,0 +1,21 @@
+Here's what I'll do: first describe the molecule column, then add the Ki column.
+
+**Step 1 — Describe the molecule column:**
+
+```datagrok-exec
+let col = t.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE})[0]?.column;
+const desc = grokky.describeColumn(col);
+return ui.tableFromMap(desc);
+```
+
+**Step 2 — Add the Ki column with semType `Ki`, units `nM`, format `0.00`:**
+
+```datagrok-exec
+await grokky.addColumn(t, {
+  name: 'Ki',
+  type: DG.COLUMN_TYPE.FLOAT,
+  meta: { semType: DG.SEMTYPE.Ki, units: 'nM', format: '0.00' },
+});
+```
+
+The first block will show you a summary of the molecule column (type, semType, stats, unique count, missing values, etc.). The second block appends a new empty float column named **Ki** with semantic type `Ki`, units `nM`, and display format `0.00`.

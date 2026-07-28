@@ -1,0 +1,13 @@
+
+```datagrok-exec
+await grok.functions.call('HitTriage:hitTriageApp', {});
+```
+
+The **Hit Triage** app is now open! 🎯
+
+This workflow allows you to:
+- **Ingest molecules** from various data sources (including ChEMBL or your own datasets)
+- **Score and triage hits** through a multi-step campaign pipeline
+- **Collaborate** by saving and sharing campaigns with your team
+
+You can load demo data to get started quickly, or import your own compound library to begin triaging hits.

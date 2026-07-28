@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.closeViewer('Histogram', view);
+```
+
+Done — the histogram has been removed from the view.

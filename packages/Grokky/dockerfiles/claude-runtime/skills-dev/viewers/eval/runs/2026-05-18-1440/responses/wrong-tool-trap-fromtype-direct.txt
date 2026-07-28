@@ -1,0 +1,8 @@
+Got it! I'll use `DG.Viewer.fromType` instead of `view.addViewer` when creating new viewers going forward.
+
+To clarify the distinction:
+
+- **`DG.Viewer.fromType(type, df, opts?)`** — creates a standalone viewer not automatically docked to the TableView. You control placement (e.g. `return sp.root` to embed in chat, or `view.dockManager.dock(...)` to place it manually).
+- **`view.addViewer(type, opts)`** — creates **and** docks the viewer on the TableView in one step.
+
+Is there a specific viewer you'd like me to create, or was this a general preference you wanted me to keep in mind?

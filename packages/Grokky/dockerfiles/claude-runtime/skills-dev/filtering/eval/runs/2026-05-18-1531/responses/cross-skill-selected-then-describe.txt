@@ -1,0 +1,57 @@
+I'll filter the table to the selected rows first, then describe the molecules.**Step 1 — Filter to selected rows:**
+
+```datagrok-exec
+// Move selection → filter (show only selected rows)
+const sel = t.selection;
+if (sel.trueCount === 0) {
+  return ui.divText('No rows are selected. Please select some molecules first.');
+}
+t.filter.copyFrom(sel);
+```
+
+**Step 2 — Describe the visible (selected) molecules:**
+
+```datagrok-exec
+// Find a molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) {
+  return ui.divText('No molecule column found in this table.');
+}
+
+const visibleIdxs = t.filter.getSelectedIndexes(); // indices of filtered-in rows
+const count = visibleIdxs.length;
+
+// Collect basic stats
+const rows = [];
+for (let i = 0; i < count; i++) {
+  rows.push(molCol.get(visibleIdxs[i]));
+}
+
+// Try to get MW and other descriptors if available
+const mwCol = t.columns.names().find(n => /^(mw|mol.?weight|molecular.?weight)$/i.test(n));
+const nameCol = t.columns.names().find(n => /^(name|id|compound)$/i.test(n));
+
+const summary = { 'Filtered molecule count': count };
+if (nameCol) {
+  const names = visibleIdxs.map(i => t.get(nameCol, i)).filter(Boolean);
+  summary['Sample names'] = names.slice(0, 5).join(', ') + (names.length > 5 ? '…' : '');
+}
+if (mwCol) {
+  const mws = visibleIdxs.map(i => t.get(mwCol, i)).filter(v => v != null && !isNaN(v));
+  if (mws.length) {
+    summary['MW min'] = Math.min(...mws).toFixed(1);
+    summary['MW max'] = Math.max(...mws).toFixed(1);
+    summary['MW mean'] = (mws.reduce((a, b) => a + b, 0) / mws.length).toFixed(1);
+  }
+}
+summary['Molecule column'] = molCol.name;
+
+return ui.tableFromMap(summary);
+```
+
+Here's what these blocks do:
+
+1. **Filter to selection** — copies the current selection BitSet into `t.filter`, so only selected molecules are visible in the grid.
+2. **Describe** — finds the molecule column (by semantic type `MOLECULE`), counts the visible rows, and surfaces key stats: count, name samples, and MW range/mean (if those columns exist).
+
+If you'd like **cheminformatics descriptors** (RDKit-computed MW, LogP, HBD/HBA, etc.) calculated for the filtered set, just let me know!

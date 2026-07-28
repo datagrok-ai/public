@@ -1,0 +1,8 @@
+
+```datagrok-exec
+t.selection.set(5, false, false);
+t.selection.set(7, false, false);
+t.selection.fireChanged();
+```
+
+Rows 5 and 7 have been removed from the current selection.

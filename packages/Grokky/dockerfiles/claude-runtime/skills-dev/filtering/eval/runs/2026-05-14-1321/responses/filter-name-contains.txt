@@ -1,0 +1,3 @@
+```datagrok-exec
+await grokky.filterRows(view, 'name', {contains: 'acid'});
+```

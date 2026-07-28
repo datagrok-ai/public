@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.getCol('pIC50_old').name = 'pIC50';
+```
+
+Done — the column has been renamed back to **pIC50**.

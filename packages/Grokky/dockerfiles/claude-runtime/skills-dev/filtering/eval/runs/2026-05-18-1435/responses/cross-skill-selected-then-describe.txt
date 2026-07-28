@@ -1,0 +1,20 @@
+I'll filter the table to selected rows first, then describe the molecules.
+
+**Step 1: Filter to selected rows**
+
+```datagrok-exec
+// Filter to currently selected rows
+t.filter.copyFrom(t.selection);
+return { visible: t.filter.trueCount, total: t.rowCount };
+```
+
+**Step 2: Describe the filtered molecules**
+
+Once the filter is applied, could you clarify what kind of description you'd like? For example:
+
+- **Summary statistics** (MW, cLogP, HBD/HBA distributions)
+- **Structural diversity** (scaffold analysis, similarity)
+- **Physicochemical properties** (Lipinski rule-of-five compliance)
+- **A specific cheminformatics analysis**
+
+Also, please let me know which column contains the molecule structures (SMILES or molblock) so I can run the right analysis. If you'd like, I can also auto-detect it from the current table.

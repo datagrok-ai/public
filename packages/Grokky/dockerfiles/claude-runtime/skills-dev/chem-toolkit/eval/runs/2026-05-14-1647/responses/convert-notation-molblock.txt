@@ -1,0 +1,14 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+await grok.functions.call('Chem:convertNotation', {
+  data: t,
+  molecules: molCol,
+  targetNotation: 'v3Kmolblock',
+  overwrite: false,
+  join: true
+});
+```
+
+This converts your SMILES column to **V3000 molblocks** and appends the result as a new column in your table. The original SMILES column is left untouched.

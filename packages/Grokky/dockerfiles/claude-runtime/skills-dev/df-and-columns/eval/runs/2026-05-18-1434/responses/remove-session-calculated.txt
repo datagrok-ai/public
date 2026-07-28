@@ -1,0 +1,7 @@
+```datagrok-exec
+const names = t.columns.toList().filter(c => c.meta.formula != null).map(c => c.name);
+for (const n of names) t.columns.remove(n);
+return ui.divText(names.length ? `Removed: ${names.join(', ')}` : 'No calculated columns found.');
+```
+
+This removes every column that has a formula attached (i.e. all calculated columns), regardless of when they were added. The result message will list what was removed.

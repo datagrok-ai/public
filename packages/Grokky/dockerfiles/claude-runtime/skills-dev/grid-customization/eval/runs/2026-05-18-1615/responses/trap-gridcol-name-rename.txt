@@ -1,0 +1,7 @@
+I'll rename the `activity` column's display name to **Potency** using `col.meta.friendlyName` — this is a display-only rename that affects all viewers without touching the underlying column name.
+
+```datagrok-exec
+t.col('activity').meta.friendlyName = 'Potency';
+```
+
+This sets the friendly (display) name to **Potency** across all viewers — the grid header, scatter plots, histograms, etc. — while keeping the underlying column name `activity` intact so any existing formulas or code that reference it continue to work.

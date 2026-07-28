@@ -1,0 +1,39 @@
+I'll train a Chemprop regression model on your dataset to predict the `activity` column. Let me first inspect the current table, then kick off the training.
+
+```datagrok-exec
+if (view.type !== 'TableView') return ui.divText('Error: current view is not a TableView.');
+const molCol = t.columns.toList().find(c => c.semType === DG.SEMTYPE.MOLECULE);
+const actCol = t.col('activity');
+if (!molCol) return ui.divText('Error: no Molecule column found in the table.');
+if (!actCol) return ui.divText('Error: no column named "activity" found in the table.');
+return ui.tableFromMap({
+  'Table': t.name,
+  'Rows': String(t.rowCount),
+  'Molecule column': molCol.name,
+  'Activity column': actCol.name,
+  'Activity type': actCol.type,
+});
+```
+
+Now launching the Chemprop regression training:
+
+```datagrok-exec
+const molCol = t.columns.toList().find(c => c.semType === DG.SEMTYPE.MOLECULE);
+const actCol = t.col('activity');
+const model = await grok.functions.call('Chem:trainChemprop', {
+  df: t,
+  predictColumn: actCol,
+  dataset_type: 'regression',
+  epochs: 50,
+});
+grok.shell.info('Chemprop model training complete!');
+return ui.tableFromMap({ 'Status': 'Training complete', 'Model type': 'Chemprop regression' });
+```
+
+Here's what's happening:
+
+- **`Chem:trainChemprop`** trains a message-passing neural network (MPNN) model via the `chem-chemprop` Docker container.
+- **`dataset_type: 'regression'`** — since `activity` is a continuous numeric target.
+- **`epochs: 50`** — default training duration (adjust if needed for better accuracy or speed).
+
+Once training finishes, you'll see a confirmation. The returned model object can then be passed to **`Chem:applyChemprop`** to generate predictions on new molecules. Let me know if you'd like to do that, or if you want to tune hyperparameters (e.g., more epochs, dropout, learning rate).

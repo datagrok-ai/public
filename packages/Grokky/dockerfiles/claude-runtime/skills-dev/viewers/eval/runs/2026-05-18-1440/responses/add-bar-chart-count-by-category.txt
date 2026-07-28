@@ -1,0 +1,9 @@
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BAR_CHART, {
+  splitColumnName: 'category',
+  valueAggrType: 'count',
+});
+```
+
+Done! I've added a **Bar Chart** split by `category` with count aggregation. The chart will sync with any filters or selections you make on the table.

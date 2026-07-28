@@ -1,0 +1,32 @@
+First, let me retrieve the available Reinvent4 optimization targets, then call `reinvent`:
+
+```datagrok-exec
+// Step 1: list available optimize folders
+const folders = await grok.functions.call('Reinvent4:getFolders', {});
+return ui.tableFromMap({ 'Available targets': folders.toString() });
+```
+
+```datagrok-exec
+// Step 2: call reinvent with the first available folder as the optimize target
+const folders = await grok.functions.call('Reinvent4:getFolders', {});
+const optimize = Array.isArray(folders) ? folders[0] : String(folders).split(',')[0].trim();
+
+const resultDf = await grok.functions.call('Reinvent4:reinvent', {
+  ligand: 'CCN(CC)CC',
+  optimize: optimize
+});
+
+// Slice to 10 variations
+const top10 = resultDf.clone(DG.BitSet.create(resultDf.rowCount, i => i < 10));
+return DG.Viewer.grid(top10).root;
+```
+
+Here's what this does:
+
+1. **`Reinvent4:getFolders()`** — queries the server for all configured optimization targets and picks the first one (since no specific config was requested).
+2. **`Reinvent4:reinvent(ligand, optimize)`** — runs REINVENT4 generative chemistry with:
+   - **Seed SMILES**: `CCN(CC)CC` (triethylamine / N,N-diethylethanamine)
+   - **Optimize target**: first available folder on this instance
+3. The result DataFrame is cloned to **10 rows**, giving 10 generated analog SMILES with their scores.
+
+> ⚠️ **Note:** If no targets are configured on this Datagrok instance (empty `getFolders()` result), the call will fail. In that case, you'll need to place a valid REINVENT4 config folder under `System:AppData/Reinvent4/` on the server. The seed molecule and all logic are ready to go once a target is available.

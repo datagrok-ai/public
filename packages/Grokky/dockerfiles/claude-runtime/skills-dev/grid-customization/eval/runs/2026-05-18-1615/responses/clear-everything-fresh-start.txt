@@ -1,0 +1,31 @@
+
+```datagrok-exec
+// Guard: only works on a TableView
+if (!(view instanceof DG.TableView)) return ui.divText('No active table view.');
+
+const grid = view.grid;
+
+// 1. Clear sort
+grid.sort([], []);
+
+// 2. Restore all hidden columns (index 0 is the row header, skip it)
+const gridCols = grid.columns;
+for (let i = 1; i < gridCols.length; i++) {
+  const gc = gridCols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+
+// 3. Reset column widths to Optimal
+grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+
+// 4. Turn off color coding on all DataFrame columns
+for (const col of t.columns.toList())
+  col.meta.colors.setDisabled();
+```
+
+Done! Here's what was reset:
+
+- **Sort** — cleared, rows are back to their original order
+- **Hidden columns** — all columns restored to visible
+- **Column widths** — reset to **Optimal** (sized to widest visible value)
+- **Color coding** — disabled on all columns

@@ -1,0 +1,10 @@
+
+```datagrok-exec
+if (5 >= 0 && 5 < t.rowCount) {
+  t.currentRowIdx = 5;
+} else {
+  return ui.divText(`Row 5 does not exist (table has ${t.rowCount} rows).`);
+}
+```
+
+Row 5 is now focused (current row). If you'd like to **select** it instead (add it to the selection set), just let me know!

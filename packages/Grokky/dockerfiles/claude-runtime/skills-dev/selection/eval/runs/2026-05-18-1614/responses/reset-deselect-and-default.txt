@@ -1,0 +1,5 @@
+```datagrok-exec
+t.selection.setAll(false);
+```
+
+Done! The selection has been cleared — all rows are back to the default unselected state.

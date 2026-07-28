@@ -1,0 +1,11 @@
+Based on the skill documentation, I'll use `Chembl:chemblIdToSmilesTs` to look up CHEMBL25 and retrieve its canonical SMILES.
+
+```datagrok-exec
+const smiles = await grok.functions.call('Chembl:chemblIdToSmilesTs', { id: 'CHEMBL25' });
+return ui.tableFromMap({
+  'ChEMBL ID': 'CHEMBL25',
+  'SMILES': smiles,
+});
+```
+
+This will look up **CHEMBL25** (which is **Aspirin**) in the local ChEMBL database and return its canonical SMILES string. The result will be displayed as a key-value table showing the ChEMBL ID and the corresponding SMILES structure.

@@ -1,0 +1,27 @@
+No registered function is available for drug name → SMILES conversion, but this is a well-known mapping I can resolve directly using standard SMILES notation. I'll create a DataFrame with the drug names and their corresponding SMILES, then display it.
+
+```datagrok-exec
+const drugs = [
+  { name: 'aspirin',    smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
+  { name: 'ibuprofen',  smiles: 'CC(C)Cc1ccc(cc1)C(C)C(=O)O' },
+  { name: 'caffeine',   smiles: 'Cn1cnc2c1c(=O)n(c(=O)n2C)C' },
+];
+
+const df = DG.DataFrame.fromObjects(drugs);
+df.name = 'Drug SMILES';
+
+// Mark the smiles column with the correct semantic type so structures render
+df.col('smiles').semType = DG.SEMTYPE.MOLECULE;
+
+grok.shell.addTableView(df);
+```
+
+Here are the SMILES strings for your three compounds:
+
+| Drug | SMILES |
+|---|---|
+| **Aspirin** | `CC(=O)Oc1ccccc1C(=O)O` |
+| **Ibuprofen** | `CC(C)Cc1ccc(cc1)C(C)C(=O)O` |
+| **Caffeine** | `Cn1cnc2c1c(=O)n(c(=O)n2C)C` |
+
+The table has been opened in Datagrok with the `smiles` column tagged as `Molecule` semantic type, so structures will render as 2D depictions in the grid. Let me know if you'd like to run any cheminformatics analyses on these compounds!

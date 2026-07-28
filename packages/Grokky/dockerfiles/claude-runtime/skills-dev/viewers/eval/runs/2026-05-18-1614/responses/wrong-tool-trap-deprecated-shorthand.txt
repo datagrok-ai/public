@@ -1,0 +1,7 @@
+I need to let you know that `view.scatterPlot()` is a **deprecated shorthand**. The correct API is `view.addViewer(DG.VIEWER.SCATTER_PLOT, opts)`.
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.SCATTER_PLOT);
+```
+
+This adds a scatter plot to the current view using the modern, supported API. If you'd like to configure specific axes or other properties, just let me know which columns to use for X, Y, color, etc.

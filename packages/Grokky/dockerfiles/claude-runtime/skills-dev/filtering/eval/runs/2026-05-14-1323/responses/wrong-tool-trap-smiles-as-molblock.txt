@@ -1,0 +1,10 @@
+Let me check the current table's columns to find the molecule column.
+
+```datagrok-exec
+// Find molecule columns in the current table
+const cols = [];
+for (const col of t.columns) {
+  cols.push(`${col.name} [${col.type}] semType=${col.semType}`);
+}
+return ui.divV(cols.map(c => ui.divText(c)));
+```

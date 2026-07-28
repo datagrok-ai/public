@@ -1,0 +1,4 @@
+```datagrok-exec
+t.selection.setAll(true);
+return ui.divText(`Selected all ${t.selection.trueCount} rows.`);
+```All rows in the current table have been selected using `t.selection.setAll(true)`.

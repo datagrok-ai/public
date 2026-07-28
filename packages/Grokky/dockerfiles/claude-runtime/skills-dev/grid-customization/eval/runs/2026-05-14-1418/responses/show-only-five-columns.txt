@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.configureGrid(view, {show: ['SMILES', 'MW', 'LogP', 'activity']});
+```
+
+Done! The grid now shows only **SMILES**, **MW**, **LogP**, and **activity** — all other columns are hidden but still present in the DataFrame.

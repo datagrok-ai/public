@@ -1,0 +1,43 @@
+```datagrok-exec
+// Find the activity column (case-insensitive, partial match fallback)
+let col = t.col('activity');
+if (!col) {
+  col = t.columns.firstWhere(c => c.name.toLowerCase().includes('activity'));
+}
+if (!col) return ui.divText('No column named "activity" found.');
+
+const s = col.stats;
+const info = {
+  'Name': col.name,
+  'Type': col.type,
+  'Semantic Type': col.semType || '(none)',
+  'Units': col.meta.units || '(none)',
+  'Format': col.meta.format || '(none)',
+  'Description': col.meta.description || '(none)',
+  'Friendly Name': col.meta.friendlyName || '(none)',
+  'Row Count': col.length,
+  'Non-null Values': s.valueCount,
+  'Missing Values': s.missingValueCount,
+  'Unique Values': s.uniqueCount,
+};
+
+if (col.type === DG.COLUMN_TYPE.STRING) {
+  info['Categories (first 5)'] = col.categories.slice(0, 5).join(', ') || '(none)';
+} else {
+  info['Min'] = s.min;
+  info['Max'] = s.max;
+  info['Mean'] = s.avg?.toFixed(4);
+  info['Std Dev'] = s.stdev?.toFixed(4);
+  info['Median'] = s.med?.toFixed(4);
+  info['Q1'] = s.q1?.toFixed(4);
+  info['Q3'] = s.q3?.toFixed(4);
+  info['Sum'] = s.sum;
+}
+
+return ui.tableFromMap(info);
+```This will display a full summary of the **activity** column, including:
+
+- **Metadata**: type, semantic type, units, format, friendly name, description
+- **Coverage**: total rows, non-null values, missing values, unique count
+- **Statistics** (if numeric): min, max, mean, std dev, median, quartiles (Q1/Q3), and sum
+- **Categories** (if string): first 5 distinct values

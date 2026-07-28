@@ -1,0 +1,11 @@
+I need to find the ligand to dock. Let me check the current table for a molecule column.
+
+```datagrok-exec
+// Check what columns are available
+const cols = [...t.columns].map(c => `${c.name} (${c.type}, semType: ${c.semType})`);
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+return ui.tableFromMap({
+  'Columns': cols.join('\n'),
+  'Molecule column': molCol ? molCol.name : 'None found'
+});
+```

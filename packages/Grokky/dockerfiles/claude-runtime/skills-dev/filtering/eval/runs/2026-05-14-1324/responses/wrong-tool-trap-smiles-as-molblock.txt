@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterSubstructure(view, 'smiles', 'CCO');
+```
+
+I've applied a substructure filter for **CCO** (ethanol / ethoxy group) on the molecule column. Only rows containing that substructure will now be visible in the table.

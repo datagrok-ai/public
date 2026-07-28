@@ -1,0 +1,20 @@
+No problem — I'll use the well-known `Chem:findSimilar` function directly, which finds the top-N most similar molecules using Morgan/Tanimoto similarity.
+
+```datagrok-exec
+const molCol = t.col('molecules') ?? t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No "molecules" column found in the current table.');
+
+const result = await grok.functions.call('Chem:findSimilar', {
+  molStringsColumn: molCol,
+  molString: 'CCOc1ccc(cc1)C(=O)O',
+  limit: 10,
+  cutoff: 0
+});
+
+return DG.Viewer.grid(result).root;
+```
+
+This will:
+1. **Find the top 10 molecules** in the `molecules` column most similar to `CCOc1ccc(cc1)C(=O)O` (4-ethoxybenzoic acid)
+2. Use **Morgan fingerprints + Tanimoto similarity** under the hood
+3. Return a result table with the matched molecules and their similarity scores

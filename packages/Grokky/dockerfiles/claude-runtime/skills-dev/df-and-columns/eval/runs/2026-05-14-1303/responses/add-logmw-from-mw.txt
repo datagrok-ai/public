@@ -1,0 +1,6 @@
+```datagrok-exec
+const col = await grokky.addCalculatedColumn(t, 'logMW', 'Log(${MW})');
+return col;
+```
+
+A calculated column **logMW** has been added, computed as `Log(MW)`. It will automatically recompute if the **MW** values change.

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.HISTOGRAM, { valueColumnName: 'age' });
+```
+
+Done! A histogram of the **age** column has been added to your view.

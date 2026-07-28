@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.closeViewer('Scatter plot', view);
+```
+
+The scatter plot has been closed.

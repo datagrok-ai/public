@@ -1,0 +1,5 @@
+```datagrok-exec
+t.selection.setAll(true);
+```
+
+All rows in the DataFrame have been selected.

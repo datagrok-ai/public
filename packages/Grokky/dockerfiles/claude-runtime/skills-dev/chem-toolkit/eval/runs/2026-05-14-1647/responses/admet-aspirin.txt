@@ -1,0 +1,27 @@
+
+```datagrok-exec
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', ['CC(=O)Oc1ccccc1C(=O)O'])
+]);
+const molCol = df.columns.byIndex(0);
+molCol.semType = DG.SEMTYPE.MOLECULE;
+
+const result = await grok.functions.call('Admetica:getAdmePropertiesSingle', {
+  molecule: 'CC(=O)Oc1ccccc1C(=O)O'
+});
+
+return DG.Viewer.grid(result).root;
+```
+
+Here are the predicted ADME properties for **aspirin** (CC(=O)Oc1ccccc1C(=O)O) shown in the table above.
+
+The Admetica panel covers the following endpoints across four categories:
+
+| Category | Example Properties |
+|---|---|
+| **Absorption** | Caco-2 permeability, HIA, Pgp substrate/inhibitor, bioavailability |
+| **Distribution** | BBB penetration, VD, plasma protein binding |
+| **Metabolism** | CYP enzyme inhibition/substrate profiles |
+| **Excretion** | Half-life, clearance, renal clearance |
+
+Aspirin is a well-known small molecule drug (MW ~180 Da, LogP ~1.2), and is generally expected to show **high oral absorption**, **low BBB penetration**, and moderate **plasma protein binding** — the model results above reflect the predicted values for this specific compound.

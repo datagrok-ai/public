@@ -1,0 +1,4 @@
+```datagrok-exec
+t.selection.copyFrom(t.filter);
+return ui.divText(`Selected ${t.selection.trueCount} visible row(s) out of ${t.rowCount} total.`);
+```

@@ -1,0 +1,5 @@
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+return ui.divText(molCol ? `Molecule column: ${molCol.name}` : 'No molecule column found.');
+```

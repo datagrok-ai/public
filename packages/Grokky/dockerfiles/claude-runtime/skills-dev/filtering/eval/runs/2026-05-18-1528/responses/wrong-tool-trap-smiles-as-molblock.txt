@@ -1,0 +1,18 @@
+
+```datagrok-exec
+const smilesCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!smilesCol) throw new Error('No molecule column found in the current table.');
+
+const query = 'CCO';
+const molBlock = DG.chem.convert(query, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.SUBSTRUCTURE,
+  column: smilesCol.name,
+  columnName: smilesCol.name,
+  molBlock,
+  molBlockFailover: query,
+});
+```
+
+I've applied a **substructure filter** for `CCO` (ethanol / hydroxyl-ethyl fragment) on the molecule column. Only rows containing this substructure will now be visible in the table. The filter widget has been added to the filter panel on the side — you can remove or adjust it there.

@@ -1,0 +1,21 @@
+I'll call `Curves:dataToCurves` using the columns you specified. The function requires a few mandatory column parameters — I'll map your columns and leave the optional ones unset.
+
+```datagrok-exec
+await grok.functions.call('Curves:dataToCurves', {
+  df: t,
+  concentrationCol: t.col('conc'),
+  readoutCol: t.col('response'),
+  compoundIDCol: t.col('compound_id'),
+  batchIDCol: null,
+  assayCol: null,
+  runIDCol: null,
+  targetEntityCol: null,
+});
+```
+
+This will:
+1. **Group** your rows by `compound_id`
+2. **Fit** a dose-response curve (4-parameter logistic by default) for each compound using the `conc` vs `response` values
+3. **Produce a wide-format table** with one row per compound and a fit-curve cell column — rendered as an interactive curve chart
+
+> **Note:** If your table also has batch, assay, run, or target columns, let me know their names and I can include them for richer grouping and annotation. Optional columns like `excludeOutliers`, `reportedIC50`, or additional metadata columns can also be added.

@@ -1,0 +1,11 @@
+I need a bit more information to register the compound correctly.It looks like the question prompt wasn't answered. To register a compound into MolTrack, I need:
+
+1. **Structure** — the SMILES (or InChI / molblock) of the compound you want to register.
+2. **Properties** *(optional)* — any additional fields you want to store, for example:
+   - `name` / `corporate_id`
+   - `purity`, `molecular_weight`
+   - `project`, `scientist`, etc.
+
+Please share those details and I'll emit the registration call right away. For example:
+
+> *"Register aspirin (`CC(=O)Oc1ccccc1C(=O)O`) with project = 'Analgesics' and purity = 99.5"*

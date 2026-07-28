@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.configureGrid(view, {formats: {IC50: '0.00'}});
+```
+
+Done! The **IC50** column is now formatted to 2 decimal places.

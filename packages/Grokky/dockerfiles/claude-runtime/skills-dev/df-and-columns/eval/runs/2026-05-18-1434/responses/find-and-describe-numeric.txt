@@ -1,0 +1,22 @@
+
+```datagrok-exec
+const rows = Array.from(t.columns.numerical, (c) => ({
+  Name: c.name,
+  Min: c.stats.min,
+  Max: c.stats.max,
+  Avg: Number(c.stats.avg.toFixed(4)),
+  StDev: Number(c.stats.stdev.toFixed(4)),
+  Missing: c.stats.missingValueCount,
+  Unique: c.stats.uniqueCount,
+}));
+if (rows.length === 0) return ui.divText('No numeric columns found.');
+return DG.Viewer.grid(DG.DataFrame.fromObjects(rows)).root;
+```
+
+Here's a summary of all numeric columns in your table. Each row shows:
+
+- **Min / Max** — value range
+- **Avg** — arithmetic mean
+- **StDev** — standard deviation
+- **Missing** — count of null/missing values
+- **Unique** — count of distinct values

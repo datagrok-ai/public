@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.filter.init((i) => t.getCol('activity').get(i) <= 7);
+```
+
+Done! Rows where **activity > 7** are now hidden. The filter is non-destructive — you can clear it anytime with `t.filter.setAll(true)`.

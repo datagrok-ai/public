@@ -1,0 +1,10 @@
+```datagrok-exec
+const ic50 = t.col('IC50');
+if (!ic50) {
+  return ui.divText('Column "IC50" not found in the current table.');
+}
+t.selection.init(i => ic50.get(i) < 100);
+return ui.tableFromMap({ 'Rows selected': t.selection.trueCount, 'Total rows': t.rowCount });
+```
+
+This selects all rows where **IC50 < 100**. The result shows how many rows matched out of the total.

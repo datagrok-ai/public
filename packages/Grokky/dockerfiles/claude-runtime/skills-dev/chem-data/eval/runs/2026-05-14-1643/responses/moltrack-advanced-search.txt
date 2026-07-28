@@ -1,0 +1,42 @@
+I'll use `MolTrack:advancedSearch` with a combined filter for MW range and project name. Here's the query:
+
+```datagrok-exec
+const df = await grok.functions.call('MolTrack:advancedSearch', {
+  outputFields: [
+    'compounds.canonical_smiles',
+    'compounds.corporate_compound_id',
+    'compounds.details.mw',
+    'compounds.details.project'
+  ],
+  filter: {
+    operator: 'AND',
+    conditions: [
+      {
+        field: 'compounds.details.mw',
+        operator: '>=',
+        value: 200
+      },
+      {
+        field: 'compounds.details.mw',
+        operator: '<=',
+        value: 500
+      },
+      {
+        field: 'compounds.details.project',
+        operator: '=',
+        value: 'Kinase'
+      }
+    ]
+  }
+});
+
+return DG.Viewer.grid(df).root;
+```
+
+This query searches MolTrack for all compounds matching **all three criteria**:
+- **MW ≥ 200** and **MW ≤ 500** (molecular weight range filter)
+- **Project = 'Kinase'**
+
+The results are displayed as a grid with SMILES, corporate compound ID, MW, and project columns.
+
+> **Note:** If your MolTrack instance uses a different property name for molecular weight (e.g. `molecular_weight`, `mol_wt`) or project (e.g. `project_name`), you may need to adjust the field names. You can check available property names with `MolTrack:fetchCompoundProperties()`.

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.grid.sort([], []);
+```
+
+The sort has been cleared from the grid.

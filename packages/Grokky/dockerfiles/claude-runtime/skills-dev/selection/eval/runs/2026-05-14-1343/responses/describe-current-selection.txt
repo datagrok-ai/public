@@ -1,0 +1,4 @@
+
+```datagrok-exec
+return grokky.describeSelection(t);
+```

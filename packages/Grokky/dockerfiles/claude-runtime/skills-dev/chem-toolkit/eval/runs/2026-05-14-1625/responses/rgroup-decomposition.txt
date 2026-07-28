@@ -1,0 +1,30 @@
+I'll run the R-group decomposition on the molecules column using the scaffold `c1ccncc1` (pyridine):
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+const result = await grok.functions.call('Chem:rGroupDecomposition', {
+  df: t,
+  molColName: molCol.name,
+  core: 'c1ccncc1',
+  rGroupName: 'R',
+  rGroupMatchingStrategy: 'Greedy',
+  onlyMatchAtRGroups: false
+});
+
+// Append core and R-group columns to the table
+if (result.coreCol) t.columns.add(result.coreCol);
+if (result.rgroupCols) {
+  for (const col of result.rgroupCols) {
+    t.columns.add(col);
+  }
+}
+```
+
+This runs R-group decomposition with:
+- **Scaffold**: `c1ccncc1` (pyridine ring)
+- **Strategy**: `Greedy` matching
+- **Output**: A `Core` column plus `R1`, `R2`, ... columns appended to your table, each containing the substituent fragment for each molecule at that position.
+
+Rows where the scaffold doesn't match will have empty cells in the R-group columns.

@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.configureGrid(view, {hide: ['#']});
+```
+
+The index column (row numbers, `#`) is now hidden from the grid.

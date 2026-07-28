@@ -1,0 +1,7 @@
+I need to point out that `view.scatterPlot()` is **deprecated** in the Datagrok JS API. The correct way to add a scatter plot is via `view.addViewer(DG.VIEWER.SCATTER_PLOT, options)`.
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.SCATTER_PLOT);
+```
+
+This adds a scatter plot to your current table view. If you'd like to bind specific columns (e.g. x, y, color), just let me know the column names and I'll configure it!

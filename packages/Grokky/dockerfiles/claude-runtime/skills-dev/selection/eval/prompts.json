@@ -1,0 +1,195 @@
+[
+  {
+    "id": "select-age-gt-40",
+    "prompt": "select rows where age > 40",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.init\\(|selection\\.or\\(.*DG\\.BitSet\\.create"],
+    "expected_symbols": ["selection", "age", "40"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter", "removeWhere", "selection\\.setAll\\(true\\)"],
+    "intent": "Predicate-based selection. selection.init(pred) is the canonical replace path. Must NOT touch t.filter, call setAll(true) (wrong polarity), or reach for the non-existent grokky.* helpers."
+  },
+  {
+    "id": "select-rows-0-10",
+    "prompt": "select rows 0 through 10",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.set\\(|selection\\.init\\("],
+    "expected_symbols": ["selection", "10"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter", "removeWhere"],
+    "intent": "Index-list selection. Acceptable: zero buffer + per-bit set in a loop with notify=false + fireChanged; OR init with predicate i => i <= 10.",
+    "notes": "Inclusive range 0..10 = 11 rows. Either inclusive or exclusive interpretation is acceptable — the eval cares that selection is mutated correctly via raw API."
+  },
+  {
+    "id": "select-top-5-by-activity",
+    "prompt": "select the top 5 rows by activity (highest activity first)",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.set\\(|selection\\.init\\("],
+    "expected_symbols": ["selection", "activity", "5", "getSortedOrder|sort"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter"],
+    "intent": "Sort then select top N indices. Acceptable: t.getSortedOrder(['activity'], [false]).slice(0, 5), then zero-buffer + set loop + fireChanged."
+  },
+  {
+    "id": "select-ic50-under-100",
+    "prompt": "select rows where IC50 < 100",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.init\\(|selection\\.or\\(.*DG\\.BitSet\\.create"],
+    "expected_symbols": ["selection", "IC50", "100"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter", "removeWhere", "selection\\.setAll\\(true\\)"],
+    "intent": "Predicate-based selection on a numeric column. Same shape as select-age-gt-40. Must NOT route through t.filter."
+  },
+  {
+    "id": "select-all-rows",
+    "prompt": "select all rows",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(true\\)"],
+    "expected_symbols": ["selection", "setAll\\(true\\)"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(false\\)", "t\\.filter"],
+    "intent": "t.selection.setAll(true). Must NOT call setAll(false) (that deselects). Must NOT touch t.filter.",
+    "notes": "Subtle: 'select all rows' in selection-land = setAll(true). In filter-land 'show all rows' is also setAll(true). The two coincide here because both want every-row-positive."
+  },
+  {
+    "id": "clear-the-selection",
+    "prompt": "clear the selection",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(false\\)"],
+    "expected_symbols": ["selection", "setAll\\(false\\)"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(true\\)", "t\\.filter"],
+    "intent": "t.selection.setAll(false). POLARITY TRAP: setAll(true) selects every row — wrong direction.",
+    "trap": "Selection clears with setAll(FALSE). Filter clears with setAll(TRUE). Opposite polarity."
+  },
+  {
+    "id": "deselect-everything",
+    "prompt": "deselect everything",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(false\\)"],
+    "expected_symbols": ["selection", "setAll\\(false\\)"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(true\\)", "t\\.filter\\.setAll"],
+    "intent": "Same as clear-the-selection — different phrasing. Polarity trap remains."
+  },
+  {
+    "id": "invert-selection",
+    "prompt": "invert the current selection",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.invert\\("],
+    "expected_symbols": ["selection", "invert"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter\\.invert"],
+    "intent": "t.selection.invert(). Must NOT invert t.filter — wrong mask."
+  },
+  {
+    "id": "remove-rows-5-and-7",
+    "prompt": "remove rows 5 and 7 from the selection",
+    "category": "atomic-undo",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.set\\([^,]+,\\s*false|selection\\.andNot\\("],
+    "expected_symbols": ["selection", "5", "7"],
+    "forbidden_symbols": ["grokky\\.", "removeWhereIdx", "t\\.filter"],
+    "intent": "Narrow the selection. Acceptable: per-bit set(i, false, false) in a loop + fireChanged, OR andNot against a BitSet of {5,7}. 'Remove' means narrow the selection, NOT delete rows from the DF.",
+    "notes": "If Claude reaches for t.rows.removeWhereIdx, FAIL — that would delete rows 5 and 7 from the DF entirely."
+  },
+  {
+    "id": "show-selected-as-new-table",
+    "prompt": "show only the selected rows as a new table",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["t\\.clone\\([^)]*selection|\\bclone\\(t\\.selection"],
+    "expected_symbols": ["clone", "selection"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere", "t\\.filter\\.copyFrom"],
+    "intent": "Non-destructive new DF from selection. t.clone(t.selection). Should NOT mutate the source via filter.copyFrom (that hides rows but doesn't make a new table).",
+    "notes": "If Claude additionally calls grok.shell.addTableView(subset), bonus — but the eval only requires the clone."
+  },
+  {
+    "id": "select-all-visible-rows",
+    "prompt": "select all the currently-visible rows (the ones passing the filter)",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.copyFrom\\(.*filter"],
+    "expected_symbols": ["selection", "copyFrom", "filter"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(true\\)"],
+    "intent": "Cross-skill bridge: copy t.filter into t.selection. setAll(true) is WRONG here — that selects every row in the DF, including filtered-out rows.",
+    "trap": "'select all visible' != setAll(true). setAll(true) ignores the filter; copyFrom(filter) respects it."
+  },
+  {
+    "id": "filter-to-selected-rows",
+    "prompt": "make the selected rows the new filter (show only the selected rows)",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["filter\\.copyFrom\\(.*selection"],
+    "expected_symbols": ["filter", "copyFrom", "selection"],
+    "forbidden_symbols": ["grokky\\.", "removeWhere", "t\\.clone\\([^)]*selection"],
+    "intent": "Cross-skill bridge: copy t.selection into t.filter. t.clone(t.selection) would create a new table — wrong shape. removeWhere would be destructive."
+  },
+  {
+    "id": "wrong-tool-trap-clear-via-setall-true",
+    "prompt": "clear all selections so nothing is selected anymore",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(false\\)"],
+    "expected_symbols": ["selection", "setAll\\(false\\)"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(true\\)"],
+    "intent": "POLARITY TRAP: setAll(FALSE). setAll(true) would select every row — opposite of intent. The headline footgun.",
+    "trap": "Selection clears with setAll(FALSE), not setAll(TRUE). Opposite of filter."
+  },
+  {
+    "id": "wrong-tool-trap-select-all-not-clear",
+    "prompt": "select every row in the dataframe",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(true\\)"],
+    "expected_symbols": ["selection", "setAll\\(true\\)"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(false\\)", "t\\.filter\\.setAll"],
+    "intent": "POLARITY TRAP, inverse direction: setAll(TRUE), NOT setAll(false). Must not confuse with the clear case. Also must NOT touch t.filter.",
+    "trap": "select-all uses setAll(TRUE). clear-selection uses setAll(FALSE). Confusing them flips the behaviour."
+  },
+  {
+    "id": "wrong-tool-trap-highlight-row-5-ambiguous",
+    "prompt": "highlight row 5",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.set\\(5|currentRowIdx\\s*="],
+    "expected_symbols": ["5"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter"],
+    "intent": "AMBIGUOUS INTENT: 'highlight' could mean set as current row (focus) OR add to selection. Pass if Claude either (a) sets currentRowIdx, OR (b) selects row 5 AND mentions the distinction between current-row and selection. Fail if Claude does both silently or reaches for t.filter.",
+    "notes": "Tests whether Claude has internalised the selection-vs-current-row distinction. A good answer surfaces the ambiguity. A great answer asks. An acceptable answer picks one path and notes the alternative."
+  },
+  {
+    "id": "reset-deselect-and-default",
+    "prompt": "deselect everything and go back to the default state",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(false\\)"],
+    "expected_symbols": ["selection", "setAll\\(false\\)"],
+    "forbidden_symbols": ["grokky\\.", "selection\\.setAll\\(true\\)"],
+    "intent": "Primary requirement: selection cleared via setAll(false). Bonus: currentRowIdx reset to -1. Pass if selection is correctly cleared even if currentRowIdx isn't touched.",
+    "notes": "'Default state' is fuzzy. The minimum bar is the selection clear. If Claude additionally resets currentRowIdx or the filter, fine — but neither is required."
+  },
+  {
+    "id": "reset-select-all-molecule-column",
+    "prompt": "select all the molecule column",
+    "category": "reset-or-cleanup",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["selection\\.setAll\\(true\\)|selection\\.init\\("],
+    "expected_symbols": ["selection"],
+    "forbidden_symbols": ["grokky\\.", "selectColumn", "currentCol\\s*="],
+    "intent": "TEACHING PROMPT: columns don't have selection state — selection is per-row. The right answer is to select all rows (because every row has a molecule cell). Pass if Claude selects all rows. Bonus if Claude clarifies that selection is a row concept.",
+    "trap": "Selection is row-shaped, not column-shaped. 'Select all the X column' must map to 'select all rows' — there is no column selection BitSet.",
+    "notes": "If Claude reaches for t.currentCol = t.col('molecule') instead, that's a different concept (focused column) — partial pass, note the misunderstanding."
+  },
+  {
+    "id": "describe-current-selection",
+    "prompt": "describe what's currently selected",
+    "category": "combine",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["\\.trueCount|\\.getSelectedIndexes"],
+    "expected_symbols": ["selection", "trueCount|getSelectedIndexes"],
+    "forbidden_symbols": ["grokky\\.", "t\\.filter"],
+    "intent": "Hand-roll a report: count, capped list of indices, optional sample row from the first selected index. Must NOT read t.filter — wrong mask.",
+    "notes": "Reading the count, the indexes, and optionally a sample row is the right shape."
+  }
+]

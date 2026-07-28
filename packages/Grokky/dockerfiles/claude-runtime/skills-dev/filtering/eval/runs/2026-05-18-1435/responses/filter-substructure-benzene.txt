@@ -1,0 +1,22 @@
+I'll first check the current table to find the molecule column, then apply the benzene substructure filter.
+
+```datagrok-exec
+// Find the molecule column
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+if (!molCol) throw new Error('No molecule column (semType=Molecule) found in the current table.');
+return ui.divText(`Found molecule column: "${molCol.name}"`);
+```
+
+```datagrok-exec
+// Apply benzene substructure filter using BitSet path (robust, works at any scale)
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+if (!molCol) throw new Error('No molecule column found.');
+
+const benzeneSmiles = 'c1ccccc1';
+const bs = await grok.chem.searchSubstructure(molCol, benzeneSmiles);
+t.filter.copyFrom(bs);
+
+return ui.divText(`Showing ${t.filter.trueCount} of ${t.rowCount} rows containing benzene ring.`);
+```
+
+This filters the table to show only rows where the molecule contains a **benzene ring** (substructure `c1ccccc1`). The filter uses a BitSet approach via `grok.chem.searchSubstructure`, which is efficient at any table size. To clear the filter later, you can run `t.filter.setAll(true)`.

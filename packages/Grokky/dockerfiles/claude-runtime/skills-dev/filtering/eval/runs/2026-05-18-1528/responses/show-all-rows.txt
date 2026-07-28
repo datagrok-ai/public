@@ -1,0 +1,7 @@
+
+```datagrok-exec
+t.filter.setAll(true);
+view.getFiltersGroup({createDefaultFilters: false}).setActive(false);
+```
+
+All rows are now visible — the filter has been cleared.

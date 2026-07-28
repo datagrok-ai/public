@@ -1,0 +1,8 @@
+I'll select rows where IC50 < 100 using the current table:
+
+```datagrok-exec
+grokky.selectRows(t, (i) => t.getCol('IC50').get(i) < 100);
+return { selected: t.selection.trueCount, total: t.rowCount };
+```
+
+This selects all rows where **IC50 < 100** and replaces any previous selection. The result shows how many rows matched.

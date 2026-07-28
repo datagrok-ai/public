@@ -1,0 +1,6 @@
+```datagrok-exec
+const subset = t.clone(t.filter);
+grok.shell.addTableView(subset);
+```
+
+This clones only the currently-visible (filter-passing) rows into a new DataFrame and opens it in a new table view. Your original table and its filters are untouched.

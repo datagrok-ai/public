@@ -1,0 +1,10 @@
+I'll add a **Box plot** (a great default for comparing distributions across categories) with `activity` as the value and `compound_class` as the category:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'compound_class',
+});
+```
+
+This will show the median, interquartile range, and outliers of `activity` for each `compound_class`. Let me know if you'd prefer a different chart type (e.g., histogram split by class, or a bar chart of mean activity).

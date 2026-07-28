@@ -1,0 +1,57 @@
+Let me filter to selected rows first, then describe the molecules.```datagrok-exec
+// Step 1: Filter to selected rows
+const selCount = t.selection.trueCount;
+if (selCount === 0) {
+  return ui.divText('No rows are currently selected. Please select some molecules first.');
+}
+// Copy selection into the filter (keep only selected rows visible)
+t.filter.copyFrom(t.selection);
+return ui.divText(`Filtered to ${selCount} selected row(s).`);
+```
+
+```datagrok-exec
+// Step 2: Describe the visible (filtered) molecules
+const rows = t.filter.trueCount;
+const cols = t.columns.toList();
+
+// Find molecule column (semType = Molecule, or common name patterns)
+const molCol = cols.find(c => c.semType === 'Molecule' || /smiles|mol|structure/i.test(c.name));
+
+// Build a summary
+const summary = {};
+summary['Visible rows (filtered)'] = rows;
+summary['Total columns'] = cols.length;
+
+if (molCol) {
+  summary['Molecule column'] = molCol.name;
+}
+
+// Summarize numeric columns
+for (const col of cols) {
+  if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT) {
+    const stats = col.stats;
+    summary[`${col.name} (min)`] = stats.min?.toFixed(2) ?? 'N/A';
+    summary[`${col.name} (max)`] = stats.max?.toFixed(2) ?? 'N/A';
+    summary[`${col.name} (avg)`] = stats.avg?.toFixed(2) ?? 'N/A';
+  }
+}
+
+// Summarize categorical columns
+for (const col of cols) {
+  if (col.type === DG.COLUMN_TYPE.STRING && col.categories.length <= 20) {
+    summary[`${col.name} (unique values)`] = col.categories.length;
+  }
+}
+
+return ui.tableFromMap(summary);
+```
+
+Here's what happened:
+
+1. **Filter applied** — the view is now narrowed to only your selected molecules.
+2. **Description** — the table above summarizes the filtered set, including:
+   - Row count
+   - Numeric column ranges (min / max / avg)
+   - Categorical column diversity (unique value counts)
+
+If you'd like a deeper analysis (e.g. property distributions, scaffold breakdown, or a specific column), just let me know!

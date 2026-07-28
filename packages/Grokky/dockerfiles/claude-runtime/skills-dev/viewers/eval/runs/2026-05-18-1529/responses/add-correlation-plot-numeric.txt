@@ -1,0 +1,8 @@
+
+```datagrok-exec
+// Find all numeric columns
+const numericCols = t.columns.toList().filter(c => c.isNumerical).map(c => c.name);
+view.addViewer(DG.VIEWER.CORR_PLOT, { columnNames: numericCols });
+```
+
+Added a **Correlation Plot** using all **${numericCols?.length ?? 'numeric'}** numeric columns in your table. Each cell shows the pairwise correlation between two columns — darker colors indicate stronger correlations.

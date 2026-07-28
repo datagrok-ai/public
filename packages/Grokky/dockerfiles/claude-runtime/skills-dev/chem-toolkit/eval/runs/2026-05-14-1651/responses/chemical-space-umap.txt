@@ -1,0 +1,18 @@
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: mol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+1. **Take the molecule column** from your current table (detected by semantic type).
+2. **Compute Morgan fingerprints** for each molecule and build a **Tanimoto similarity matrix**.
+3. **Run UMAP** to project all molecules into 2D space.
+4. **Open a Scatter Plot** with the UMAP embeddings, where each point represents a molecule — hover over points to see the structure.
+
+The two UMAP coordinate columns (`UMAP_0`, `UMAP_1`) will also be appended to your table so you can style or filter the plot further.

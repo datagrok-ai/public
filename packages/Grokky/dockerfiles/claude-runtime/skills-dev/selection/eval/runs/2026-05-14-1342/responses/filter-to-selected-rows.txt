@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.filterFromSelection(t);
+```
+
+Done! The filter has been updated to show only the rows that were selected. All other rows are now hidden from the current view.

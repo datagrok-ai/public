@@ -1,0 +1,31 @@
+I'll use the MolTrack `advancedSearch` function to find compounds with MW between 200–500 and project 'Kinase'.I'll proceed using the known MolTrack `advancedSearch` API based on the built-in skill knowledge.
+
+```datagrok-exec
+const outputFields = [
+  'compounds.corporate_compound_id',
+  'compounds.canonical_smiles',
+  'compounds.details.mw',
+  'compounds.details.project'
+];
+
+const filter = {
+  AND: [
+    { field: 'compounds.details.mw', op: '>', value: 200 },
+    { field: 'compounds.details.mw', op: '<', value: 500 },
+    { field: 'compounds.details.project', op: '=', value: 'Kinase' }
+  ]
+};
+
+const df = await grok.functions.call('MolTrack:advancedSearch', {
+  outputFields: JSON.stringify(outputFields),
+  filter: JSON.stringify(filter)
+});
+
+return DG.Viewer.grid(df).root;
+```
+
+This query searches MolTrack for compounds where:
+- **MW** is between **200 and 500** (exclusive bounds — adjust to `>=` / `<=` if needed)
+- **Project** equals **'Kinase'**
+
+The results are displayed as a grid with the corporate compound ID, SMILES, MW, and project columns. If the `mw` or `project` field names differ in your MolTrack schema (e.g. `molecular_weight`, `project_name`), let me know and I can adjust accordingly — you can check exact field names via `MolTrack:fetchCompoundProperties`.

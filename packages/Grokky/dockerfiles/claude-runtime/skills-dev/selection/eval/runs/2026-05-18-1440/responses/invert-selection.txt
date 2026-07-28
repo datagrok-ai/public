@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.selection.invert();
+```
+
+Done — the selection has been inverted. Rows that were selected are now deselected, and vice versa.

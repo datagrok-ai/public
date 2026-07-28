@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.grid.columns.setVisible(['SMILES', 'MW', 'LogP', 'activity']);
+```
+
+Done! The grid now shows only the **SMILES**, **MW**, **LogP**, and **activity** columns. All other columns are hidden but still present in the underlying DataFrame.

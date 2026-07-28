@@ -1,0 +1,21 @@
+```datagrok-exec
+const col = grokky.findColumns(t, {name: 'activity', fuzzy: true})[0]?.column;
+if (!col) throw new Error('No activity column found');
+
+grokky.setColumnMeta(col, {
+  friendlyName: null,
+  units: null,
+  format: null,
+  description: null,
+});
+
+return ui.tableFromMap({
+  column: col.name,
+  friendlyName: col.meta.friendlyName ?? '(cleared)',
+  units: col.meta.units ?? '(cleared)',
+  format: col.meta.format ?? '(cleared)',
+  description: col.meta.description ?? '(cleared)',
+});
+```
+
+This clears `friendlyName`, `units`, `format`, and `description` on the **activity** column by setting each to `null` (which removes the underlying tags). The table above confirms the cleared state.

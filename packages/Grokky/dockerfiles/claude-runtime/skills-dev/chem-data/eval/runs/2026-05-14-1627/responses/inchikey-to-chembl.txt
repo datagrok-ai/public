@@ -1,0 +1,34 @@
+The InChI key `BSYNRYMUTXBXSQ-UHFFFAOYSA-N` corresponds to **Aspirin (acetylsalicylic acid)**. Let me look it up via the ChEMBL database using the UniChem/ChEMBL web service.Let me query this directly within the Datagrok platform using the ChEMBL database:
+
+```datagrok-exec
+const df = await grok.data.query('Chembl:patternSubstructureSearch', { pattern: 'BSYNRYMUTXBXSQ-UHFFFAOYSA-N' });
+return DG.Viewer.grid(df).root;
+```
+
+Let me try a more appropriate query using the ChEMBL SQL queries available:The Datagrok workspace isn't accessible from this evaluation harness directory. However, based on well-known chemical databases:
+
+**The ChEMBL ID for InChI key `BSYNRYMUTXBXSQ-UHFFFAOYSA-N` is `CHEMBL25`.**
+
+This corresponds to **Aspirin (acetylsalicylic acid)**, one of the most well-known drugs, which is compound #25 in ChEMBL.
+
+To look this up programmatically within Datagrok, you can run the following against the local ChEMBL PostgreSQL connection:
+
+```datagrok-exec
+const df = await grok.data.query('Chembl:patternSubstructureSearch', { pattern: 'CC(=O)Oc1ccccc1C(=O)O' });
+return DG.Viewer.grid(df).root;
+```
+
+Or, for a direct InChI key lookup via SQL:
+
+```datagrok-exec
+const df = await grok.data.query('System:ExecuteQuery', {
+  connection: 'Chembl:Chembl',
+  query: `SELECT cs.chembl_id, md.standard_inchi_key 
+          FROM compound_structures cs 
+          JOIN molecule_dictionary md ON cs.molregno = md.molregno 
+          WHERE cs.standard_inchi_key = 'BSYNRYMUTXBXSQ-UHFFFAOYSA-N'`
+});
+return DG.Viewer.grid(df).root;
+```
+
+**Answer: `CHEMBL25` (Aspirin / Acetylsalicylic acid)**

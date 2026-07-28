@@ -1,0 +1,5 @@
+```datagrok-exec
+await grokky.filterRows(view, 'MW', { max: 500 });
+```
+
+This applies a range filter on the **MW** column, keeping only compounds with molecular weight under 500. The filter will appear in the side panel as a histogram slider.

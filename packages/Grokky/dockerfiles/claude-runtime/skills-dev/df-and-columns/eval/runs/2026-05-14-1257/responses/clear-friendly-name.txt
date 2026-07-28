@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.setColumnMeta(t.getCol('activity'), { friendlyName: null });
+```
+
+Done — the friendly name on the `activity` column has been cleared.

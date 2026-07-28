@@ -1,0 +1,14 @@
+I'll go ahead and add a bar chart using the first categorical column automatically detected from the table.
+
+```datagrok-exec
+// Find the first string/categorical column to use as the category axis
+const catCol = t.columns.toList().find(c => c.type === DG.COLUMN_TYPE.STRING);
+if (!catCol)
+  throw new Error('No string/categorical column found in the table.');
+
+grokky.addViewer(view, 'Bar chart', {
+  splitColumnName: catCol.name,
+});
+```
+
+This adds a **Bar chart** showing **count by category**, using the first string column in your table as the category axis. If you'd like to use a different column or aggregate (e.g. sum/avg of a numeric column), just let me know!

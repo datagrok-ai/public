@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.rows.removeWhereIdx((i) => t.getCol('category').get(i) === 'X');
+```
+
+All rows where **category = "X"** have been permanently removed from the table. Note this action is **destructive** — those rows cannot be recovered. If you meant to just hide them instead, let me know and I can apply a filter rather than deleting them.

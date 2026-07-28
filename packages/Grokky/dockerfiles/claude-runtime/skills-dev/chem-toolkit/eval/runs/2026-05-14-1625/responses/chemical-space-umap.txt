@@ -1,0 +1,19 @@
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No molecule column found in the current table.');
+
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: mol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+1. **Compute UMAP embeddings** for each molecule using Tanimoto similarity on Morgan fingerprints.
+2. **Add two new columns** (`UMAP_0` and `UMAP_1`) to your table with the 2D coordinates.
+3. **Open a Scatter Plot** with the chemical space visualization — similar molecules will cluster together.
+
+You can hover over points to see the molecule structures in the tooltip.

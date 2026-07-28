@@ -1,0 +1,126 @@
+Let me filter to the selected rows first, then describe the molecules.I'll filter to selected rows first and then describe the molecules found.
+
+```datagrok-exec
+// Step 1: Filter to selected rows
+const selCount = t.selection.trueCount;
+if (selCount === 0) {
+  return ui.divText('No rows are currently selected. Please select some molecules first.');
+}
+
+// Apply filter: keep only selected rows
+t.filter.copyFrom(t.selection);
+
+// Step 2: Find the molecule column
+const molCol = t.columns.bySemType('Molecule') 
+  || t.columns.toList().find(c => 
+    ['smiles','mol','molecule','structure','smi'].includes(c.name.toLowerCase()));
+
+if (!molCol) {
+  return ui.divText(`Filtered to ${selCount} selected rows. No molecule column detected for further description.`);
+}
+
+// Step 3: Collect SMILES of filtered molecules
+const smiles = [];
+for (let i = 0; i < t.rowCount; i++) {
+  if (t.filter.get(i)) {
+    const v = molCol.get(i);
+    if (v) smiles.push(v);
+  }
+}
+
+// Step 4: Compute basic descriptors using available API
+let info;
+try {
+  // Try to get basic properties
+  const props = await grok.functions.call('Chem:GetRGroups', { molecules: smiles.slice(0, 5) });
+  info = props;
+} catch(e) {
+  info = null;
+}
+
+// Render summary
+const stats = ui.tableFromMap({
+  'Filtered rows': selCount,
+  'Molecule column': molCol.name,
+  'Sample SMILES (first 3)': smiles.slice(0, 3).join(' | '),
+});
+
+return ui.divV([
+  ui.h2(`${selCount} selected molecule(s) — filtered`),
+  stats,
+]);
+```
+
+Hmm, let me do this more cleanly — filter to selection and describe the molecules:
+
+```datagrok-exec
+// Filter to selected rows
+const selCount = t.selection.trueCount;
+
+if (selCount === 0) {
+  return ui.divText('⚠️ No rows selected. Please select some molecules first, then re-run.');
+}
+
+// Copy selection → filter (show only selected rows)
+t.filter.copyFrom(t.selection);
+
+// Find molecule column (by semantic type first, then by name heuristic)
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE)
+  ?? t.columns.toList().find(c =>
+      ['smiles','mol','molecule','structure','smi','canonical_smiles']
+        .includes(c.name.toLowerCase().trim()));
+
+const summary = { 'Selected (now filtered)': selCount };
+
+if (molCol) {
+  // Collect SMILES for visible rows
+  const mols = [];
+  const idx = t.filter.getSelectedIndexes(); // indices of true bits
+  for (const i of idx) {
+    const v = molCol.get(i);
+    if (v) mols.push(v);
+  }
+  summary['Molecule column'] = molCol.name;
+  summary['Non-empty structures'] = mols.length;
+
+  // Describe using Chem descriptors if available
+  try {
+    const descDf = await grok.functions.call('Chem:descriptors', {
+      molecules: grok.data.testData('smiles', 1), // placeholder check
+    });
+  } catch(_) {}
+
+  // Draw first molecule as preview
+  const previewSMILES = mols[0];
+  const molImg = previewSMILES
+    ? await grok.chem.drawMolecule(previewSMILES, 250, 180)
+    : null;
+
+  const rows = [
+    ui.h2(`Filtered to ${selCount} selected molecule(s)`),
+    ui.tableFromMap(summary),
+  ];
+  if (molImg) {
+    rows.push(ui.divText('First molecule preview:'));
+    rows.push(molImg);
+  }
+  return ui.divV(rows);
+} else {
+  return ui.divV([
+    ui.h2(`Filtered to ${selCount} selected row(s)`),
+    ui.divText('No molecule column detected — filter applied, but no structural description available.'),
+  ]);
+}
+```
+
+Here's what's happening:
+
+1. **Filter applied** — `t.filter.copyFrom(t.selection)` makes only your selected rows visible.
+2. **Molecule column detected** — the code searches by semantic type `Molecule`, then by common column name patterns (smiles, mol, structure, etc.).
+3. **Description rendered** — you'll see:
+   - Count of filtered/selected molecules
+   - Which column was used
+   - How many have non-empty structures
+   - A structural preview of the first molecule
+
+If you'd like a richer description (e.g. **MW, logP, HBA/HBD**, scaffold breakdown, or a diversity plot), just let me know and I'll add those!

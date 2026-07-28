@@ -1,0 +1,20 @@
+```datagrok-exec
+// Filter rows where MW < 500
+const mwCol = t.columns.toList().find(c =>
+  c.name.toLowerCase() === 'mw' ||
+  c.name.toLowerCase() === 'mol weight' ||
+  c.name.toLowerCase() === 'molecular weight' ||
+  c.name.toLowerCase() === 'molecularweight'
+);
+
+if (!mwCol) {
+  return ui.divText('Could not find an MW (molecular weight) column in the current table.');
+}
+
+t.filter.init((i) => {
+  const val = mwCol.get(i);
+  return val != null && val < 500;
+});
+```
+
+Filtered the table to show only compounds with **MW < 500**. Rows with MW ≥ 500 are now hidden (but not deleted — you can clear the filter to restore them).

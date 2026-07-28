@@ -1,0 +1,5 @@
+I need to see the current table to understand the context. Could you clarify which column you'd like to convert to a float column named "score"? Or if you'd like me to look at the current table first:
+
+```datagrok-exec
+return ui.tableFromMap(Object.fromEntries(t.columns.toList().map(c => [c.name, c.type])));
+```

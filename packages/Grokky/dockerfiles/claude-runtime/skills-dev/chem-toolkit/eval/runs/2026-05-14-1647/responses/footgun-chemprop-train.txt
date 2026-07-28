@@ -1,0 +1,35 @@
+I'll train a Chemprop regression model on the `activity` column using the molecule column auto-detected from your dataset.
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found. Please ensure a column has the Molecule semantic type.');
+
+const activityCol = t.col('activity');
+if (!activityCol) throw new Error("Column 'activity' not found in the table.");
+
+grok.shell.info(`Training Chemprop regression model: molecules from '${molCol.name}', predicting '${activityCol.name}'...`);
+
+const model = await grok.functions.call('Chem:trainChemprop', {
+  df: t,
+  predictColumn: activityCol,
+  dataset_type: 'regression',
+  epochs: 50,
+  batch_size: 64,
+});
+
+grok.shell.info('Chemprop model trained successfully!');
+return ui.tableFromMap({
+  'Molecule column': molCol.name,
+  'Target column': activityCol.name,
+  'Model type': 'Regression',
+  'Epochs': 50,
+  'Status': '✅ Trained successfully',
+});
+```
+
+This will:
+1. **Auto-detect** the molecule column (by semantic type) and use the `activity` column as the regression target.
+2. **Train** a Chemprop message-passing neural network (MPNN) for regression with 50 epochs.
+3. **Return** a summary of the training configuration.
+
+Once training completes, you can apply the model to new molecules using `Chem:applyChemprop`. Let me know if you'd like to adjust any parameters (epochs, batch size, split type, etc.) or run predictions!

@@ -1,0 +1,10 @@
+
+```datagrok-exec
+const cols = view.grid.columns;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+```
+
+All hidden columns are now visible in the grid.

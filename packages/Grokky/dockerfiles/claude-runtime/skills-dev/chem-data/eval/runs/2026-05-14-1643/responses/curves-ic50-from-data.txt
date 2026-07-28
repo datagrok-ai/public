@@ -1,0 +1,8 @@
+I'll help you compute IC50 values from your dose-response dataset. First, let me check the current table columns to identify the right columns for concentration, readout, and compound IDs.
+
+```datagrok-exec
+// Inspect available columns
+return ui.tableFromMap(
+  Object.fromEntries(t.columns.toList().map(c => [c.name, c.type]))
+);
+```

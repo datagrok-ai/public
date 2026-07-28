@@ -1,0 +1,35 @@
+I'll find the molecule column in your table and set its width to 300 pixels.
+
+```datagrok-exec
+// Find the molecule/SMILES column and set width to 300px
+const grid = view.grid;
+let molCol = null;
+
+// Check by semantic type first, then by name pattern
+for (const col of t.columns.toList()) {
+  if (col.semType === 'Molecule' || col.semType === 'molecule') {
+    molCol = grid.col(col.name);
+    break;
+  }
+}
+
+// Fallback: look by name pattern
+if (!molCol) {
+  for (const col of t.columns.toList()) {
+    const name = col.name.toLowerCase();
+    if (name.includes('smiles') || name.includes('mol') || name.includes('structure')) {
+      molCol = grid.col(col.name);
+      break;
+    }
+  }
+}
+
+if (molCol) {
+  molCol.width = 300;
+  return ui.divText(`Set column "${molCol.name}" width to 300 px.`);
+} else {
+  return ui.divText('No molecule column found in the current table.');
+}
+```
+
+This will locate the molecule/SMILES column (by semantic type first, then by name pattern) and set its width to 300 pixels. Let me know if you'd like to target a specific column by name instead!

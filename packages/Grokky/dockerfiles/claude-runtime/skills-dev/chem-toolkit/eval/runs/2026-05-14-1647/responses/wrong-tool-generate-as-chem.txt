@@ -1,0 +1,7 @@
+I'll first check the available Reinvent4 optimization targets, then generate the analogs.
+
+```datagrok-exec
+// Step 1: List available Reinvent4 folders/targets
+const folders = await grok.functions.call('Reinvent4:getFolders', {});
+return ui.tableFromMap({ 'Available targets': folders.join(', ') });
+```

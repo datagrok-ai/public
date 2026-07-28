@@ -1,0 +1,28 @@
+First, let me find the exact column names for SMILES and activity in your table:
+
+```datagrok-exec
+// Find SMILES column (by semType) and activity column (by name/semType)
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+const actCol = t.columns.firstWhere(c =>
+  c.name.toLowerCase().includes('activity') ||
+  c.semType === DG.SEMTYPE.IC50 ||
+  c.semType === DG.SEMTYPE.EC50 ||
+  c.semType === DG.SEMTYPE.Ki
+);
+
+if (!molCol) return ui.divText('❌ No SMILES/molecule column found.');
+if (!actCol) return ui.divText('❌ No activity column found. Please check column names.');
+
+// Clone filtered rows, keeping only those two columns
+const small = t.clone(t.filter, [molCol.name, actCol.name]);
+
+// Open in a new table view
+const newView = grok.shell.addTableView(small);
+return ui.divText(`✅ Created table "${small.name}" with ${small.rowCount} filtered rows and columns: [${molCol.name}, ${actCol.name}]`);
+```This will:
+1. **Auto-detect** the molecule column (by semantic type) and the activity column (by name or semantic type — IC50, EC50, Ki)
+2. **Clone only the filtered rows** using `t.filter`
+3. **Keep only those two columns**
+4. **Open the result** in a new table view
+
+If your activity column has a different name and isn't detected, let me know the exact column name and I'll adjust!

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.currentRowIdx = 5;
+```
+
+Row 5 is now focused (set as the current row).

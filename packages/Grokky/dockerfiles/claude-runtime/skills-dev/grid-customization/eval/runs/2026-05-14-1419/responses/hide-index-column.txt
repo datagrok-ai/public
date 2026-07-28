@@ -1,0 +1,3 @@
+```datagrok-exec
+grokky.configureGrid(view, {hide: ['#']});
+```

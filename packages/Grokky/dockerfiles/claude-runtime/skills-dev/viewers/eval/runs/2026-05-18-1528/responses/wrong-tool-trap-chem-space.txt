@@ -1,0 +1,26 @@
+I'll add a chemical space viewer using the Chem package function. I need to know which column contains the molecules — let me add the viewer and it will use the molecules column from your current table.
+
+```datagrok-exec
+// Find the molecule/SMILES column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE) 
+  ?? t.columns.toList().find(c => c.name.toLowerCase().includes('smiles') || c.name.toLowerCase().includes('mol'));
+
+if (!molCol) {
+  return ui.divText('No molecule column found. Please ensure your table has a column with semantic type "Molecule" or a SMILES/mol column.');
+}
+
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: molCol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true,
+});
+```
+
+This will:
+- **Auto-detect** your molecule/SMILES column
+- **Compute UMAP embeddings** using Tanimoto similarity
+- **Display a scatter plot** where similar molecules cluster together
+
+Once loaded, you can color the points by any column (e.g., activity, logP) using the viewer's color settings.

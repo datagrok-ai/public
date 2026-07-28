@@ -1,0 +1,22 @@
+I'll select the top 5 rows by the highest activity values. This works by sorting the row indices by the `activity` column descending and selecting the top 5:
+
+```datagrok-exec
+// Find the activity column (case-insensitive)
+const actCol = t.columns.toList().find(c => c.name.toLowerCase() === 'activity');
+if (!actCol) throw new Error('No column named "activity" found. Available: ' + t.columns.toList().map(c => c.name).join(', '));
+
+// Build array of [rowIndex, value], sort descending, take top 5
+const rows = [];
+for (let i = 0; i < t.rowCount; i++) rows.push([i, actCol.get(i)]);
+rows.sort((a, b) => b[1] - a[1]);
+const top5 = rows.slice(0, 5).map(r => r[0]);
+
+// Select those rows
+grokky.selectRows(t, top5);
+return ui.tableFromMap({
+  'Selected rows': top5.length,
+  'Top activity values': rows.slice(0, 5).map(r => r[1].toFixed(3)).join(', ')
+});
+```
+
+This sorts all rows by **activity** (highest first) and selects the top 5. The previously selected rows are replaced with this new selection.

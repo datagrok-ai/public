@@ -1,0 +1,34 @@
+I'll find the molecule column and select all rows where that column has a value.
+
+```datagrok-exec
+// Find the molecule column (by semantic type or name), then select all non-empty rows
+const molCol = t.columns.toList().find(c => 
+  c.semType === 'Molecule' || 
+  c.name.toLowerCase().includes('mol') || 
+  c.name.toLowerCase().includes('smiles') ||
+  c.name.toLowerCase().includes('structure')
+);
+
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+// Select all rows where the molecule column is non-empty
+grokky.selectRows(t, (i) => {
+  const val = molCol.get(i);
+  return val !== null && val !== undefined && val !== '';
+});
+
+return ui.tableFromMap({
+  'Column': molCol.name,
+  'Selected rows': t.selection.trueCount,
+  'Total rows': t.rowCount
+});
+```
+
+This will:
+1. **Find** the molecule column (by semantic type `Molecule`, or column names containing "mol", "smiles", or "structure")
+2. **Select** all rows with a non-empty molecule value
+3. **Report** how many rows were selected
+
+If the column isn't detected automatically, let me know the exact column name and I'll target it directly.

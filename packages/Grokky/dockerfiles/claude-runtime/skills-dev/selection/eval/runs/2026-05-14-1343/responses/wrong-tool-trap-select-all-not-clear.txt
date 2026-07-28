@@ -1,0 +1,4 @@
+```datagrok-exec
+grokky.selectAll(t);
+return { selected: t.selection.trueCount, total: t.rowCount };
+```

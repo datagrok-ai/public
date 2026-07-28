@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.filterFromSelection(t);
+```
+
+Done! The table now shows only the selected rows — the filter has been set to match your selection.

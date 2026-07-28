@@ -1,0 +1,40 @@
+```datagrok-exec
+const col = t.col('activity') ?? t.columns.firstWhere(c => c.name.toLowerCase().includes('activity'));
+if (!col) return ui.divText('No activity column found in the current table.');
+
+const s = col.stats;
+const info = {
+  'Name': col.name,
+  'Type': col.type,
+  'Semantic Type': col.semType || '(none)',
+  'Length': col.length,
+  'Missing Values': s.missingValueCount,
+  'Non-null Values': s.valueCount,
+  'Unique Values': s.uniqueCount,
+};
+
+if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT) {
+  info['Min'] = s.min;
+  info['Max'] = s.max;
+  info['Mean'] = s.avg?.toFixed(4);
+  info['Std Dev'] = s.stdev?.toFixed(4);
+  info['Median'] = s.med?.toFixed(4);
+  info['Q1'] = s.q1?.toFixed(4);
+  info['Q3'] = s.q3?.toFixed(4);
+  info['Sum'] = s.sum;
+}
+
+if (col.meta.units) info['Units'] = col.meta.units;
+if (col.meta.friendlyName) info['Friendly Name'] = col.meta.friendlyName;
+if (col.meta.description) info['Description'] = col.meta.description;
+if (col.meta.format) info['Format'] = col.meta.format;
+
+return ui.tableFromMap(info);
+```
+
+This block will locate the **activity** column (case-insensitive) and return a full description including:
+
+- **Data type** and **semantic type**
+- **Row counts** (total, non-null, missing, unique)
+- **Descriptive statistics** (min, max, mean, std dev, median, quartiles, sum) — for numeric columns
+- **Metadata** (units, friendly name, description, format) if set

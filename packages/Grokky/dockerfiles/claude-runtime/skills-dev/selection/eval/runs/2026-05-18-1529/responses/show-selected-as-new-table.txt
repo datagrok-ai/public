@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const subset = t.clone(t.selection);
+grok.shell.addTableView(subset);
+```
+
+Done! The selected rows have been opened as a new table view. If the selection was empty, the new table will have zero rows.

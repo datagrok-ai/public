@@ -1,0 +1,15 @@
+```datagrok-exec
+const hits = grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE});
+if (hits.length === 0) {
+  // fallback: fuzzy name search
+  const byName = grokky.findColumns(t, {name: 'molecule', fuzzy: true, limit: 5});
+  return ui.tableFromMap(Object.fromEntries(
+    byName.map(h => [h.column.name, `score: ${h.score.toFixed(2)}, reason: ${h.reason}`])
+  ));
+}
+return ui.tableFromMap(Object.fromEntries(
+  hits.map(h => [h.column.name, `score: ${h.score.toFixed(2)}, reason: ${h.reason}`])
+));
+```
+
+This searches for a molecule column in the current table — first by semantic type (`MOLECULE`), then falls back to a fuzzy name match if none is found. The results will show the column name(s), match score, and reason for the match.

@@ -1,0 +1,8 @@
+I'll look up acetylsalicylic acid (aspirin) by resolving its name to a SMILES string via the ChEMBL name-to-SMILES lookup:
+
+```datagrok-exec
+const result = await grok.functions.call('Chembl:namesToSmiles', { names: ['acetylsalicylic acid'] });
+return DG.Viewer.grid(result).root;
+```
+
+This queries the local ChEMBL database to resolve **acetylsalicylic acid** (aspirin) to its canonical SMILES. The result table will show the matched SMILES string from ChEMBL. If you'd like to go further — such as running a similarity/substructure search or pulling bioactivity data — just let me know!

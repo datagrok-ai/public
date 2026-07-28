@@ -1,0 +1,1046 @@
+{
+  "meta": {
+    "skillName": "chem-toolkit",
+    "skillDir": "/Users/aleksashka/Desktop/datagrok/reddata/public/packages/Grokky/dockerfiles/claude-runtime/skills-dev/chem-toolkit",
+    "inlinedSkillNames": [
+      "datagrok-exec",
+      "chem-toolkit"
+    ],
+    "model": "sonnet",
+    "systemPromptChars": 37251,
+    "totalDurationMs": 96053,
+    "startedAt": "2026-05-14T13:25:58.064Z"
+  },
+  "results": [
+    {
+      "id": "lipinski-properties",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:addChemPropertiesColumns|Chem:getProperties|call_function.*Chem:(addChemPropertiesColumns|getProperties)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecules",
+            "matched": true
+          },
+          {
+            "pattern": "MW",
+            "matched": true
+          },
+          {
+            "pattern": "HBA",
+            "matched": true
+          },
+          {
+            "pattern": "HBD",
+            "matched": true
+          },
+          {
+            "pattern": "logP|LogP",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getDescriptors",
+            "matched": false
+          },
+          {
+            "pattern": "Admetica:getAdmeProperties",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:CalculateLogP",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "smiles-to-inchi",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getInchiKeys|Chem:addInchisKeysTopMenu|call_function.*Chem:(getInchiKeys|addInchisKeysTopMenu)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecules|smiles|InchI|Inchi",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getInchis\\b",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:convertMolNotation.*inchi",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "convert-notation-molblock",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:convertMoleculeNotation|Chem:convertNotation|call_function.*Chem:(convertMoleculeNotation|convertNotation)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "v3Kmolblock|V3K|v3K",
+            "matched": true
+          },
+          {
+            "pattern": "targetNotation|target_notation",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getMolFileHandler",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:beautifyMols",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "chemical-space-umap",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:chemSpaceTopMenu|Chem:getChemSpaceEmbeddings|call_function.*Chem:(chemSpaceTopMenu|getChemSpaceEmbeddings)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "UMAP",
+            "matched": true
+          },
+          {
+            "pattern": "molecules",
+            "matched": true
+          },
+          {
+            "pattern": "methodName|method_name",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:activityCliffs",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:bitbirchClusteringTopMenu",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "similarity-search",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:findSimilar|Chem:callChemSimilaritySearch|call_function.*Chem:(findSimilar|callChemSimilaritySearch)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "CCOc1ccc\\(cc1\\)C\\(=O\\)O",
+            "matched": true
+          },
+          {
+            "pattern": "limit",
+            "matched": true
+          },
+          {
+            "pattern": "10",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:searchSubstructure",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:similarityMatrixTopMenu",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "substructure-search-benzene",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:searchSubstructure|Chem:SubstructureSearchTopMenu|call_function.*Chem:(searchSubstructure|SubstructureSearchTopMenu)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "c1ccccc1|benzene",
+            "matched": true
+          },
+          {
+            "pattern": "molStringsColumn|molecules",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:findSimilar",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:chemSpaceTopMenu",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "rgroup-decomposition",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:rGroupDecomposition|Chem:rGroupsAnalysisMenu|call_function.*Chem:(rGroupDecomposition|rGroupsAnalysisMenu)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "core",
+            "matched": true
+          },
+          {
+            "pattern": "c1ccncc1",
+            "matched": true
+          },
+          {
+            "pattern": "molColName|molecules",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:mmpAnalysis",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getScaffoldTree",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "admet-aspirin",
+      "category": "cross-package",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Admetica:getAdmePropertiesSingle|Admetica:getAdmeProperties|call_function.*Admetica:(getAdmePropertiesSingle|getAdmeProperties)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "CC\\(=O\\)Oc1ccccc1C\\(=O\\)O|aspirin",
+            "matched": true
+          },
+          {
+            "pattern": "molecule|molecules",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getProperties",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:addChemPropertiesColumns",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getDescriptors",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "admet-table-full-panel",
+      "category": "cross-package",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Admetica:getAdmeProperties|call_function.*Admetica:getAdmeProperties",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecules",
+            "matched": true
+          },
+          {
+            "pattern": "table",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:addChemPropertiesColumns",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getProperties",
+            "matched": false
+          },
+          {
+            "pattern": "Admetica:getAdmePropertiesSingle",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "reinvent-analogs",
+      "category": "cross-package",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Reinvent4:reinvent|Reinvent4:reinventTopMenu|call_function.*Reinvent4:(reinvent|reinventTopMenu)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "ligand",
+            "matched": true
+          },
+          {
+            "pattern": "optimize",
+            "matched": true
+          },
+          {
+            "pattern": "CCN\\(CC\\)CC",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:mmpAnalysis",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:transformationReactionsTopMenu",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:twoComponentReactionTopMenu",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "docking-autodock",
+      "category": "cross-package",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Docking:getAutodockResults|Docking:runAutodock|call_function.*Docking:(getAutodockResults|runAutodock)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "target",
+            "matched": true
+          },
+          {
+            "pattern": "1aki",
+            "matched": true
+          },
+          {
+            "pattern": "poses",
+            "matched": true
+          },
+          {
+            "pattern": "5",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:searchSubstructure",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:findSimilar",
+            "matched": false
+          },
+          {
+            "pattern": "Boltz1:folding",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "boltz1-docking",
+      "category": "cross-package",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Boltz1:docking|call_function.*Boltz1:docking",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "ligands|ligand",
+            "matched": false
+          },
+          {
+            "pattern": "config",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Boltz1:folding",
+            "matched": false
+          },
+          {
+            "pattern": "Docking:getAutodockResults",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "chembl-id-then-properties",
+      "category": "identifier-resolution",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblIdToSmilesTs|Chem:getDescriptors|call_function.*(Chembl:chemblIdToSmilesTs|Chem:(getDescriptors|chemDescriptors))",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "CHEMBL1234",
+            "matched": true
+          },
+          {
+            "pattern": "molecules|smiles",
+            "matched": true
+          },
+          {
+            "pattern": "(getDescriptors|chemDescriptors|chemblIdToSmilesTs)",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "drugname-to-smiles-then-mw",
+      "category": "identifier-resolution",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Chem:namesToSmiles|call_function.*Chem:namesToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "ibuprofen",
+            "matched": false
+          },
+          {
+            "pattern": "MW|molecules",
+            "matched": true
+          },
+          {
+            "pattern": "logP|LogP",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-admet-as-chem",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Admetica:getAdmeProperties|call_function.*Admetica:getAdmeProperties",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecules",
+            "matched": true
+          },
+          {
+            "pattern": "table",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getProperties",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:addChemPropertiesColumns",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getDescriptors",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getToxicityRisks",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-generate-as-chem",
+      "category": "wrong-tool-trap",
+      "overall": false,
+      "path": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": false
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Reinvent4:reinvent|Reinvent4:reinventTopMenu|call_function.*Reinvent4:(reinvent|reinventTopMenu)",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "ligand",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:transformationReactionsTopMenu",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:twoComponentReactionTopMenu",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:mmpAnalysis",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:rGroupDecomposition",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 0
+    },
+    {
+      "id": "wrong-tool-dock-as-chem",
+      "category": "wrong-tool-trap",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Docking:getAutodockResults|Docking:runAutodock|Boltz1:docking|call_function.*(Docking:(getAutodockResults|runAutodock)|Boltz1:docking)",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "target|config",
+            "matched": true
+          },
+          {
+            "pattern": "ligands",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:searchSubstructure",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:findSimilar",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getProperties",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "footgun-logs-property",
+      "category": "footgun",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:addChemPropertiesColumns|Chem:getProperties|call_function.*Chem:(addChemPropertiesColumns|getProperties)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "logS",
+            "matched": true
+          },
+          {
+            "pattern": "molecules",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:CalculateLogS",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:calculateLogS",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getCLogP",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "footgun-chemprop-train",
+      "category": "footgun",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:trainChemprop|call_function.*Chem:trainChemprop",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "predictColumn|predict_column",
+            "matched": true
+          },
+          {
+            "pattern": "dataset_type",
+            "matched": true
+          },
+          {
+            "pattern": "regression",
+            "matched": true
+          },
+          {
+            "pattern": "epochs",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:applyChemprop\\b",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:isApplicableNN",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    }
+  ]
+}

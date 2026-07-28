@@ -1,0 +1,9 @@
+
+```datagrok-exec
+t.getCol('age').meta.colors.setLinear(
+  ['#ff0000', '#ffff00', '#00ff00'],
+  { min: 19, max: 70 }
+);
+```
+
+Done! The **age** column is now color-coded with a red → yellow → green linear gradient from **19** (red) to **70** (green).

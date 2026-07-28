@@ -1,0 +1,15 @@
+Noted! I'll use `DG.Viewer.fromType(type, df, opts?)` instead of `view.addViewer(...)` when creating new viewers in `datagrok-exec` blocks.
+
+Just to confirm the distinction:
+
+- **`DG.Viewer.fromType(type, df, opts?)`** — creates a standalone (detached) viewer; you get back the viewer object and are responsible for placing/returning its `.root`.
+- **`view.addViewer(type, opts?)`** — creates **and docks** the viewer on the current `TableView` in one call; no placement needed.
+
+Which should I use by default depends on the goal:
+
+| Goal | Preferred call |
+|---|---|
+| Add a viewer to the current view (most common) | `view.addViewer(type, opts)` |
+| Embed a viewer in a custom UI / return it to chat | `DG.Viewer.fromType(type, df, opts)` → return `viewer.root` |
+
+Do you want me to **always** use `DG.Viewer.fromType` (even when docking to the view), or only when creating standalone/embedded viewers?

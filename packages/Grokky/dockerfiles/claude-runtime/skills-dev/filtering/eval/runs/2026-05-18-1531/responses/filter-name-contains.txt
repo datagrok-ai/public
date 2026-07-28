@@ -1,0 +1,7 @@
+```datagrok-exec
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.FREE_TEXT, column: 'name', value: 'acid',
+});
+```
+
+Done! The table is now filtered to rows where the **name** column contains `'acid'`.

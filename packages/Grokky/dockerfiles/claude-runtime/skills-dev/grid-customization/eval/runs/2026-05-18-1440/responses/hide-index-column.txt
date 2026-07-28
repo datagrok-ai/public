@@ -1,0 +1,6 @@
+
+```datagrok-exec
+view.grid.col('').visible = false;
+```
+
+The row-index column (the unlabeled first column) is now hidden.

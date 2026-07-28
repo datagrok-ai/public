@@ -1,0 +1,30 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) return ui.divText('No molecule column found.');
+const s = molCol.stats;
+return ui.tableFromMap({
+  'Name': molCol.name,
+  'Type': molCol.type,
+  'Semantic Type': molCol.semType ?? '(none)',
+  'Length': molCol.length,
+  'Missing Values': s.missingValueCount,
+  'Unique Values': s.uniqueCount,
+  'Units': molCol.meta.units ?? '(none)',
+  'Format': molCol.meta.format ?? '(none)',
+  'Description': molCol.meta.description ?? '(none)',
+});
+```
+
+```datagrok-exec
+const name = t.columns.getUnusedName('Ki');
+const col = t.columns.addNewFloat(name);
+col.semType = DG.SEMTYPE.Ki;
+col.meta.units = 'nM';
+return ui.divText(`Added column "${col.name}" (type: ${col.type}, semType: ${col.semType})`);
+```Here's what was done:
+
+1. **Molecule column description** — The first block finds the column with `DG.SEMTYPE.MOLECULE` and returns a summary table with its name, type, semantic type, length, missing/unique value counts, units, format, and description.
+
+2. **Ki column added** — A new `float` column named `Ki` (collision-safe) was added with:
+   - `semType = DG.SEMTYPE.Ki`
+   - `meta.units = 'nM'` (standard Ki unit)

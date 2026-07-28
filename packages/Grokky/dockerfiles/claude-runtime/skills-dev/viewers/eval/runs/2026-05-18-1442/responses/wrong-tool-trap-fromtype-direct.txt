@@ -1,0 +1,8 @@
+Noted! I'll use `DG.Viewer.fromType(type, df, opts?)` instead of `view.addViewer(...)` when creating new viewers going forward.
+
+Just to confirm the distinction:
+
+- **`DG.Viewer.fromType(type, df, opts?)`** — creates a standalone (detached) viewer; you're responsible for placing/docking it yourself.
+- **`view.addViewer(type, opts)`** — creates **and** docks the viewer on the TableView in one call.
+
+Is there a specific reason you prefer `DG.Viewer.fromType`? For example, are you embedding viewers in a custom UI? That context will help me give you the most useful code. Or if it's simply a blanket preference, I'll follow it throughout our session.

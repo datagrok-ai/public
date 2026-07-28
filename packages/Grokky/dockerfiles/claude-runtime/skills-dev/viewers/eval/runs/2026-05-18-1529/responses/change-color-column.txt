@@ -1,0 +1,13 @@
+I'll update the color column to `activity` on the scatter plot viewer.
+
+```datagrok-exec
+const sp = Array.from(view.viewers).slice(1)
+  .find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
+if (sp) {
+  sp.setOptions({ colorColumnName: 'activity' });
+} else {
+  return ui.divText('No scatter plot viewer found on this view.');
+}
+```
+
+This finds the existing scatter plot and sets its color column to **activity**. If you meant a different viewer, let me know!

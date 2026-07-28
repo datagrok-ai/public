@@ -1,0 +1,11 @@
+I need to point out an important caveat: `view.scatterPlot()` is **deprecated** in the Datagrok JS API. The correct method is `view.addViewer(DG.VIEWER.SCATTER_PLOT, ...)`.
+
+That said, if you'd like a scatter plot added, I can do that right now using the proper API. Which columns should I use for the axes?
+
+Alternatively, if you want me to proceed with just the defaults:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.SCATTER_PLOT);
+```
+
+This adds a scatter plot with default column assignments. Let me know if you'd like to specify **x**, **y**, **color**, or **size** columns!

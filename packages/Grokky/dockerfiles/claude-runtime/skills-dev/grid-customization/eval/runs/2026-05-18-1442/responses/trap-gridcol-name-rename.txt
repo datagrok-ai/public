@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.col('activity').meta.friendlyName = 'Potency';
+```
+
+Done! The **activity** column will now display as **Potency** in the grid and all other viewers, while the underlying column name remains `activity` in the DataFrame.

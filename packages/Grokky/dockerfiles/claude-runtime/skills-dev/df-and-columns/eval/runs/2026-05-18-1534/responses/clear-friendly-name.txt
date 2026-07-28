@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.getCol('activity').meta.friendlyName = null;
+```
+
+Done — the friendly name on the **activity** column has been cleared.

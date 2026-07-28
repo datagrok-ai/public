@@ -1,0 +1,7 @@
+I'll rename the `activity` column display name to `Potency` using the `friendlyName` metadata — this is a data-side rename that propagates across all viewers without breaking any column references.
+
+```datagrok-exec
+t.col('activity').meta.friendlyName = 'Potency';
+```
+
+Done! The `activity` column will now display as **Potency** across the grid and all other viewers, while the underlying column name remains `activity` (so no code or references will break).

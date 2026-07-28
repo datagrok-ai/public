@@ -1,0 +1,19 @@
+```datagrok-exec
+const smiles = grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE, fuzzy: false});
+const smilesName = smiles.length > 0 ? smiles[0].column.name : 'SMILES';
+
+const activity = grokky.findColumns(t, {name: 'activity', fuzzy: true});
+const activityName = activity.length > 0 ? activity[0].column.name : null;
+
+if (!activityName) throw new Error('Could not find an activity column. Please rename it or clarify.');
+
+const copy = grokky.cloneDf(t, { cols: [smilesName, activityName], rows: 'filtered' });
+grok.shell.addTableView(copy);
+```
+
+This will:
+1. **Auto-detect** the SMILES/molecule column by semantic type and the activity column by name (fuzzy match).
+2. **Clone only the filtered rows**, keeping just those two columns.
+3. **Open the copy** as a new table view.
+
+If your columns have different names (e.g. `smiles`, `IC50`, `pActivity`), let me know and I'll adjust!

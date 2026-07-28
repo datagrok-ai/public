@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.selection.setAll(true);
+```
+
+All rows have been selected.

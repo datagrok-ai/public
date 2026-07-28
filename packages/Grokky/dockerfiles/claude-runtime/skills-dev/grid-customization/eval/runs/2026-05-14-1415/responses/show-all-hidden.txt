@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.resetGrid(view, {visibility: true, widths: false, sort: false, colors: false});
+```
+
+All hidden columns are now visible again.

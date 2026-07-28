@@ -1,0 +1,9 @@
+```datagrok-exec
+// Close all scatter plots
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+  .forEach((v) => { try { v.close(); } catch {} });
+
+// Add a correlation plot (heat map of correlations)
+view.addViewer(DG.VIEWER.CORR_PLOT);
+```Done! I've replaced the scatter plot with a **Correlation Plot** — Datagrok's heat map that shows pairwise correlations between all numeric columns. Each cell is color-coded by correlation strength, making it easy to spot highly correlated or anti-correlated column pairs.

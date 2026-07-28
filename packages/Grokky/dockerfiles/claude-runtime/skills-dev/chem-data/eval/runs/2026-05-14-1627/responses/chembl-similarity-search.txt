@@ -1,0 +1,14 @@
+Based on the skill documentation, I'll call the ChEMBL similarity search function directly with your query molecule.
+
+```datagrok-exec
+const df = await grok.functions.call('Chembl:chemblSimilaritySearch', {
+  molecule: 'CCOc1ccc(cc1)C(=O)O'
+});
+grok.shell.addTableView(df);
+```
+
+This will:
+1. **Search ChEMBL** for compounds similar to **CCOc1ccc(cc1)C(=O)O** (4-ethoxybenzoic acid)
+2. **Open the results** in a new table view with columns: `smiles`, `chembl_id`, and `similarity` score
+
+The results are ranked by similarity score (Tanimoto coefficient). You can further explore the hits — right-click any structure for substructure search, context panels, or to launch a Hit Triage campaign.

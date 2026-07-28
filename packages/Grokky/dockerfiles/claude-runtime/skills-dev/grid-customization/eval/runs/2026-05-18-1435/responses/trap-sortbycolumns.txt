@@ -1,0 +1,9 @@
+> **Note:** `grid.sortByColumns = [...]` is a **getter-only** property — assigning to it is a silent no-op. The only correct way to sort is `grid.sort(columnNames, ascendingBooleans)`.
+
+Here's the correct approach:
+
+```datagrok-exec
+view.grid.sort(['activity'], [false]);
+```
+
+`false` means **descending**. This will sort the grid by the `activity` column from highest to lowest.

@@ -1,0 +1,5 @@
+```datagrok-exec
+t.selection.copyFrom(t.filter);
+```
+
+Done! All currently-visible rows (those passing the active filter) are now selected. Hidden/filtered-out rows remain unselected.

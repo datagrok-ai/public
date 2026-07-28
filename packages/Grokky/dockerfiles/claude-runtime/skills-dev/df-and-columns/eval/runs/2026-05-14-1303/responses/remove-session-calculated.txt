@@ -1,0 +1,8 @@
+
+```datagrok-exec
+const names = [...t.columns].filter(c => c.isCalculated).map(c => c.name);
+const removed = grokky.removeColumns(t, names);
+return ui.divText(removed.length > 0
+  ? `Removed ${removed.length} calculated column(s): ${removed.join(', ')}`
+  : 'No calculated columns found to remove.');
+```

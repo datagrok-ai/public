@@ -1,0 +1,7 @@
+
+```datagrok-exec
+grokky.invertSelection(t);
+return {selected: t.selection.trueCount, total: t.rowCount};
+```
+
+The selection has been inverted. Previously selected rows are now deselected, and previously unselected rows are now selected.

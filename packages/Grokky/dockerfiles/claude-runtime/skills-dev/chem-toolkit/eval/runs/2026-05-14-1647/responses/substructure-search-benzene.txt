@@ -1,0 +1,27 @@
+I'll run a substructure search using benzene (`c1ccccc1`) as the query on your `structures` column.
+
+```datagrok-exec
+const molCol = t.col('structures');
+if (!molCol) throw new Error('Column "structures" not found in the current table.');
+
+// Search for benzene substructure (aromatic SMILES)
+const matches = await grok.functions.call('Chem:searchSubstructure', {
+  molStringsColumn: molCol,
+  molString: 'c1ccccc1',
+  molBlockFailover: ''
+});
+
+// matches is a Column wrapping a BitSet — apply it as a filter
+const bs = matches.get(0);  // BitSet of matching row indices
+t.filter.copyFrom(bs);
+t.filter.fireChanged();
+
+return ui.divText(`Found ${bs.trueCount} molecule(s) containing a benzene ring.`);
+```
+
+This will:
+1. **Search** the `structures` column for any molecule containing a benzene ring using the SMARTS `c1ccccc1`.
+2. **Filter** the table to show only the matching rows.
+3. **Report** the count of matches.
+
+The benzene ring is matched aromatically, so fused rings (e.g. naphthalene, anthracene) and substituted benzenes (e.g. toluene, aniline) will all be included. Let me know if you'd like to narrow or broaden the query!

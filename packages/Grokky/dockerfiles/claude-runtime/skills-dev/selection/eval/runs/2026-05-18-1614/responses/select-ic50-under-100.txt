@@ -1,0 +1,7 @@
+```datagrok-exec
+const ic50 = t.getCol('IC50');
+t.selection.init(i => ic50.get(i) < 100);
+return ui.divText(`Selected ${t.selection.trueCount} of ${t.rowCount} rows where IC50 < 100`);
+```
+
+This selects all rows where the **IC50** column value is less than 100, replacing any previous selection. The result shows how many rows matched.

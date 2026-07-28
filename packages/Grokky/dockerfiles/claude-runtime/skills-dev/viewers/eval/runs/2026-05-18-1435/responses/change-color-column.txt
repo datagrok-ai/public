@@ -1,0 +1,8 @@
+```datagrok-exec
+const sp = Array.from(view.viewers).slice(1)
+  .find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
+if (sp)
+  sp.setOptions({colorColumnName: 'activity'});
+```
+
+Done! The scatter plot's color column has been set to **activity**.

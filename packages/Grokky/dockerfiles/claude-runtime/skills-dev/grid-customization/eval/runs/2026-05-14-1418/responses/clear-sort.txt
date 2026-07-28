@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.clearSort(view);
+```
+
+The sort has been cleared from the grid.

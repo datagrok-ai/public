@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.setCurrentRow(t, 5);
+```
+
+Row 5 is now focused (set as the current row) in the table view.

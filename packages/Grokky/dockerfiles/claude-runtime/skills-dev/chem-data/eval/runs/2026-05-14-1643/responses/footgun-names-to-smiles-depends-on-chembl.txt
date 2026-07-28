@@ -1,0 +1,12 @@
+Based on the skill documentation, I can use `Chembl:namesToSmiles` — a SQL query that converts drug names to SMILES. Let me call it now:
+
+```datagrok-exec
+const df = await grok.functions.call('Chembl:namesToSmiles', {
+  names: ['aspirin', 'ibuprofen', 'caffeine']
+});
+return DG.Viewer.grid(df).root;
+```
+
+This calls the `Chembl:namesToSmiles` query, which looks up each name in the local ChEMBL database and returns a DataFrame with the corresponding `canonical_smiles`. The result is displayed as a grid above.
+
+If any name isn't found, it will appear with a null/empty SMILES — in that case, double-check the spelling or try alternate names (e.g. `"acetylsalicylic acid"` for aspirin).

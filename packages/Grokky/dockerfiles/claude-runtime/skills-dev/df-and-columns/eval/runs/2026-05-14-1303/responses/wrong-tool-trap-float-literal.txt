@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.addColumn(t, { name: 'score', type: DG.COLUMN_TYPE.FLOAT });
+```
+
+A new float column named **`score`** has been added to the current table. All values are initialized to `null` — you can populate them manually or ask me to fill them using a formula or expression.

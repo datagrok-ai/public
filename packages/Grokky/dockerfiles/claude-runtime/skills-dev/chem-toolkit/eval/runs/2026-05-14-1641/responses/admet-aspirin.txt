@@ -1,0 +1,24 @@
+
+```datagrok-exec
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('smiles', ['CC(=O)Oc1ccccc1C(=O)O'])
+]);
+const molCol = df.columns.byIndex(0);
+molCol.semType = DG.SEMTYPE.MOLECULE;
+
+const result = await grok.functions.call('Admetica:getAdmePropertiesSingle', {
+  molecule: 'CC(=O)Oc1ccccc1C(=O)O'
+});
+
+return DG.Viewer.grid(result).root;
+```
+
+Here are the predicted ADME properties for **aspirin** (`CC(=O)Oc1ccccc1C(=O)O`) using the Admetica package. The table above shows predictions across all available endpoints, including:
+
+- **Absorption** – e.g. oral bioavailability, Caco-2 permeability, solubility
+- **Distribution** – e.g. blood-brain barrier penetration, volume of distribution, plasma protein binding
+- **Metabolism** – e.g. CYP enzyme inhibition/substrate flags
+- **Excretion** – e.g. half-life, clearance
+- **Toxicity** – e.g. hERG inhibition, hepatotoxicity, AMES mutagenicity
+
+Let me know if you'd like to dig deeper into any specific endpoint or run predictions on a full dataset!

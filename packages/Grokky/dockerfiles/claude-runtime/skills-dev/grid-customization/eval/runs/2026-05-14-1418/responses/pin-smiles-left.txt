@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.pinColumn(view, 'SMILES');
+```
+
+The **SMILES** column has been pinned to the left side of the grid.

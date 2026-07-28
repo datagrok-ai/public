@@ -1,0 +1,11 @@
+
+```datagrok-exec
+const smilesCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!smilesCol) throw new Error('No molecule column found in the current table.');
+
+const query = 'c1ccccc1';
+const bs = await grok.chem.searchSubstructure(smilesCol, query);
+t.filter.copyFrom(bs);
+```
+
+Filtered the table to rows containing the benzene ring substructure (`c1ccccc1`). The filter has been applied to the **`${smilesCol?.name}`** column.

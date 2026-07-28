@@ -1,0 +1,9 @@
+
+```datagrok-exec
+const mw = t.getCol('MW');
+const logP = t.getCol('LogP');
+grokky.filterByPredicate(t, (i) => mw.get(i) < 500 && logP.get(i) < 5);
+return ui.divText(`Showing ${t.filter.trueCount} of ${t.rowCount} rows (MW < 500 AND LogP < 5)`);
+```
+
+Applied a combined filter: **MW < 500** AND **LogP < 5** in a single pass. The result count is shown above.

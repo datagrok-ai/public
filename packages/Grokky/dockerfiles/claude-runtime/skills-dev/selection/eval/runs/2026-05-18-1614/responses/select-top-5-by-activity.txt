@@ -1,0 +1,27 @@
+I'll select the top 5 rows by the highest activity values. Let me find the activity column and do that:
+
+```datagrok-exec
+// Find the activity column (case-insensitive)
+const actCol = t.columns.toList().find(c => c.name.toLowerCase() === 'activity');
+if (!actCol) throw new Error("No column named 'activity' found in the table.");
+
+// Get sorted order descending (highest first), take top 5 indices
+const sortedOrder = Array.from(t.getSortedOrder([actCol.name], [false])).slice(0, 5);
+
+// Replace selection with those 5 rows
+t.selection.setAll(false, false);
+for (const i of sortedOrder) t.selection.set(i, true, false);
+t.selection.fireChanged();
+
+return ui.tableFromMap({
+  'Column used': actCol.name,
+  'Rows selected': t.selection.trueCount,
+  'Top 5 indices': sortedOrder.join(', '),
+});
+```
+
+This will:
+1. Find the `activity` column (case-insensitive)
+2. Sort rows by activity **descending** (highest first)
+3. Take the **top 5** indices
+4. **Replace** the current selection with those 5 rows

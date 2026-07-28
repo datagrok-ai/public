@@ -1,0 +1,39 @@
+I'll use the known Chem package functions to:
+1. Convert ibuprofen's name to SMILES
+2. Compute MW and LogP from that SMILES
+
+```datagrok-exec
+// Ibuprofen SMILES (well-known structure)
+const ibuprofenSmiles = 'CC(C)Cc1ccc(cc1)C(C)C(=O)O';
+
+// Create a small DataFrame with one molecule
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', [ibuprofenSmiles])
+]);
+df.columns.byName('molecule').semType = DG.SEMTYPE.MOLECULE;
+
+// Get MW and LogP
+const mol = df.col('molecule');
+const propsDf = await grok.functions.call('Chem:getProperties', {
+  molecules: mol,
+  selected: ['MW', 'LogP']
+});
+
+// Build result map
+const mw = propsDf.col('MW').get(0);
+const logp = propsDf.col('LogP').get(0);
+
+return ui.tableFromMap({
+  'Compound': 'Ibuprofen',
+  'SMILES': ibuprofenSmiles,
+  'MW (Da)': mw?.toFixed(4),
+  'LogP': logp?.toFixed(4)
+});
+```
+
+This computes **MW** and **LogP** for ibuprofen using RDKit via `Chem:getProperties`. The expected values are approximately:
+
+| Property | Value |
+|---|---|
+| **MW** | ~206.28 Da |
+| **LogP** | ~3.5 |

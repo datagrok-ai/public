@@ -1,0 +1,9 @@
+```datagrok-exec
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 500,
+  organism: 'Shigella'
+});
+grok.shell.addTableView(df);
+```
+
+This will fetch up to 500 ChEMBL compounds active against **Shigella** targets and open them in a new table view. The results will include compound structures (SMILES) and ChEMBL IDs.

@@ -1,0 +1,14 @@
+
+```datagrok-exec
+const df = await grok.functions.call('Chembl:chemblSimilaritySearch', { molecule: 'CCOc1ccc(cc1)C(=O)O' });
+grok.shell.addTableView(df);
+return DG.Viewer.grid(df).root;
+```
+
+Here are the ChEMBL compounds similar to **CCOc1ccc(cc1)C(=O)O** (4-ethoxybenzoic acid). The results include:
+
+- **`smiles`** — the canonical SMILES of each similar compound
+- **`chembl_id`** — the ChEMBL identifier
+- **`similarity`** — the Tanimoto similarity score (higher = more similar)
+
+The table has been added as a new table view so you can explore the results interactively. You can click on any molecule in the grid to inspect it further, or use the ChEMBL panels for substructure/similarity drill-down.

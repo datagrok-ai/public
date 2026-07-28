@@ -1,0 +1,39 @@
+```datagrok-exec
+// Find column named 'activity' (case-insensitive)
+const col = t.col('activity');
+if (!col) return ui.divText('No column named "activity" found in the current table.');
+
+const s = col.stats;
+const info = {
+  name: col.name,
+  type: col.type,
+  'semantic type': col.semType || '(none)',
+  'friendly name': col.meta.friendlyName || '(none)',
+  units: col.meta.units || '(none)',
+  format: col.meta.format || '(none)',
+  description: col.meta.description || '(none)',
+  length: col.length,
+  'missing values': s.missingValueCount,
+  'non-null values': s.valueCount,
+  'unique values': s.uniqueCount,
+};
+
+if (col.type === DG.COLUMN_TYPE.STRING) {
+  info['categories'] = col.categories.slice(0, 10).join(', ') + (col.categories.length > 10 ? '...' : '');
+} else {
+  info['min'] = s.min;
+  info['max'] = s.max;
+  info['avg'] = s.avg?.toFixed(4);
+  info['stdev'] = s.stdev?.toFixed(4);
+  info['median'] = s.med;
+  info['q1'] = s.q1;
+  info['q3'] = s.q3;
+}
+
+return ui.tableFromMap(info);
+```The block above will display a summary of the **activity** column, including:
+
+- **Basic info**: name, type, semantic type, friendly name, units, format, description
+- **Row counts**: total length, missing values, non-null values, unique values
+- **For numeric columns**: min, max, avg, stdev, median, Q1, Q3
+- **For string columns**: a preview of the first 10 distinct categories

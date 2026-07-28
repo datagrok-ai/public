@@ -1,0 +1,14 @@
+
+```datagrok-exec
+const smiles = 'CC(=O)Oc1ccccc1C(=O)O';
+const result = await grok.functions.call('Admetica:getAdmePropertiesSingle', { molecule: smiles });
+return DG.Viewer.grid(result).root;
+```
+
+Here are the predicted ADME properties for **aspirin** (`CC(=O)Oc1ccccc1C(=O)O`). The table above shows the full panel of Admetica predictions, covering:
+
+- **Absorption** – e.g. intestinal permeability, bioavailability
+- **Distribution** – e.g. volume of distribution, BBB penetration, plasma protein binding
+- **Metabolism** – e.g. CYP enzyme interactions
+- **Excretion** – e.g. half-life, clearance
+- **Toxicity** – e.g. hERG inhibition, hepatotoxicity risk

@@ -1,0 +1,7 @@
+```datagrok-exec
+const mw = t.getCol('MW');
+const logP = t.getCol('LogP');
+t.filter.init((i) => mw.get(i) < 500 && logP.get(i) < 5);
+```
+
+Applied a combined filter showing only rows where **MW < 500** and **LogP < 5**. Both conditions are evaluated in a single pass for efficiency.

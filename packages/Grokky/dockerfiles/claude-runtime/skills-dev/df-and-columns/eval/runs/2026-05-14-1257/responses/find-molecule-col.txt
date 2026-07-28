@@ -1,0 +1,13 @@
+```datagrok-exec
+const hits = grokky.findColumns(t, {semType: DG.SEMTYPE.MOLECULE});
+if (hits.length === 0) {
+  // Fallback: fuzzy search by common names
+  const fallback = grokky.findColumns(t, {name: 'smiles', fuzzy: true, limit: 3});
+  return ui.tableFromMap({result: fallback.length ? `Possible molecule column: ${fallback[0].column.name} (score: ${fallback[0].score}, reason: ${fallback[0].reason})` : 'No molecule column found'});
+}
+return ui.tableFromMap(Object.fromEntries(hits.map((h, i) => [`Hit ${i+1}`, `${h.column.name} (score: ${h.score}, reason: ${h.reason})`])));
+```This searches for the molecule column by:
+1. **Semantic type** — looking for columns tagged as `MOLECULE` (SMILES, Molblock, etc.)
+2. **Fuzzy name fallback** — if no semType match, tries common names like `smiles`
+
+The result will show the column name, match score, and the reason it was identified as a molecule column.

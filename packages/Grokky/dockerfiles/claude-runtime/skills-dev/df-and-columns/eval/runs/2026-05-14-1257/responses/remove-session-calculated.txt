@@ -1,0 +1,14 @@
+```datagrok-exec
+// Find and remove all calculated columns added this session
+const calcCols = [...t.columns].filter(col => col.isCalculated);
+const names = calcCols.map(c => c.name);
+
+if (names.length === 0) {
+  return ui.divText('No calculated columns found.');
+}
+
+grokky.removeColumns(t, names);
+return ui.divText(`Removed ${names.length} calculated column(s): ${names.join(', ')}`);
+```
+
+This will find all calculated (formula-driven) columns in the current table and remove them. I'll let you know how many were found and removed.

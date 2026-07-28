@@ -1,0 +1,14 @@
+
+```datagrok-exec
+await grok.functions.call('HitTriage:hitTriageApp', {});
+```
+
+The **Hit Triage** app is now launching! 🎯
+
+This workflow will guide you through:
+1. **Data Ingestion** — load your compound dataset (or use demo data)
+2. **Filtering & Scoring** — apply activity cutoffs and property filters
+3. **Triage** — review and rank hits interactively
+4. **Export** — save your triaged hit list
+
+If you'd like to use demo data to explore the workflow, just let me know and I can load a sample dataset for you.

@@ -1,0 +1,8 @@
+
+```datagrok-exec
+const col = t.columns.addNewFloat('Ki');
+col.semType = DG.SEMTYPE.Ki;
+col.meta.units = 'nM';
+```
+
+Done! Added a float column **Ki** with semantic type `Ki` and units `nM`.

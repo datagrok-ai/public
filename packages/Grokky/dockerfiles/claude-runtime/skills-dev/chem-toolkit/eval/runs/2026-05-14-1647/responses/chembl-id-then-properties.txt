@@ -1,0 +1,43 @@
+Here's the plan to compute molecular descriptors for CHEMBL1234:
+
+1. **Look up CHEMBL1234 → SMILES** using `Chem:namesToSmiles` (ChEMBL-backed lookup)
+2. **Create a DataFrame** from that SMILES and compute descriptors via `Chem:chemDescriptors`
+
+```datagrok-exec
+// Step 1: Resolve CHEMBL1234 to SMILES via ChEMBL ID mapping
+const idDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('id', ['CHEMBL1234'])
+]);
+
+// Map ChEMBL ID → SMILES
+const mappedDf = await grok.functions.call('Chem:mapIdentifiersTransform', {
+  table: idDf,
+  molecules: idDf.col('id'),
+  fromSource: 'chembl',
+  toSource: 'smiles'
+});
+
+const smiles = mappedDf.col('smiles')?.get(0) ?? idDf.col('id').get(0);
+if (!smiles || smiles === '') throw new Error('Could not resolve CHEMBL1234 to SMILES');
+
+// Step 2: Build a molecule DataFrame
+const molDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', [smiles])
+]);
+molDf.col('molecule').semType = DG.SEMTYPE.MOLECULE;
+
+// Step 3: Compute all RDKit descriptors
+const descDf = await grok.functions.call('Chem:getDescriptors', {
+  molecules: molDf.col('molecule')
+});
+
+// Render result as a grid
+return DG.Viewer.grid(descDf).root;
+```
+
+This will:
+1. **Resolve CHEMBL1234** to its SMILES string via the ChEMBL identifier mapping service.
+2. **Compute all RDKit molecular descriptors** (200+ descriptors including MW, LogP, TPSA, ring counts, etc.) for that molecule.
+3. **Display the results** as a table in chat.
+
+> **Note:** This requires the **Chembl** package to be installed on your Datagrok instance for the ChEMBL ID → SMILES lookup. If it's not available, you can provide the SMILES directly and I'll compute the descriptors from that.

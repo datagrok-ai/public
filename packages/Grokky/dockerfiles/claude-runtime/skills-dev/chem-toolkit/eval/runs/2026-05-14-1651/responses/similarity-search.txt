@@ -1,0 +1,12 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE) ?? t.col('molecules');
+const results = await grok.functions.call('Chem:findSimilar', {
+  molStringsColumn: molCol,
+  molString: 'CCOc1ccc(cc1)C(=O)O',
+  limit: 10,
+  cutoff: 0.0
+});
+return DG.Viewer.grid(results).root;
+```
+
+This will search the `molecules` column for the **top 10 molecules most similar** to `CCOc1ccc(cc1)C(=O)O` (4-ethoxybenzoic acid) using **Morgan fingerprints + Tanimoto similarity**, and display the results with their similarity scores.

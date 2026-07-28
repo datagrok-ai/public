@@ -1,0 +1,9 @@
+```datagrok-exec
+// Get all numeric column names
+const numericCols = t.columns.numerical.names();
+grokky.addViewer(view, 'Correlation plot', {
+  columnNames: numericCols,
+});
+```
+
+I've added a **Correlation plot** showing pairwise correlations across all numeric columns in your table. Each cell displays the correlation coefficient between two columns, color-coded by strength and direction.

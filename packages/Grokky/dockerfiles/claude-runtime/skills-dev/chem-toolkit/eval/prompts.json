@@ -1,0 +1,273 @@
+[
+  {
+    "id": "lipinski-properties",
+    "prompt": "Compute Lipinski properties (MW, HBA, HBD, LogP) for the molecule column.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:addChemPropertiesColumns|Chem:getProperties|call_function.*Chem:(addChemPropertiesColumns|getProperties)"
+    ],
+    "expected_symbols": [
+      "molecules",
+      "MW",
+      "HBA",
+      "HBD",
+      "logP|LogP"
+    ],
+    "forbidden_symbols": [
+      "Chem:getDescriptors",
+      "Admetica:getAdmeProperties",
+      "Chem:CalculateLogP"
+    ],
+    "intent": "Standard Lipinski properties. Either addChemPropertiesColumns (top-menu, joins to table) or getProperties (vector form). Must NOT reach for RDKit getDescriptors for this basic set, and must NOT invent Chem:CalculateLogP."
+  },
+  {
+    "id": "smiles-to-inchi",
+    "prompt": "Convert the SMILES column to InChI keys.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:getInchiKeys|Chem:addInchisKeysTopMenu|call_function.*Chem:(getInchiKeys|addInchisKeysTopMenu)"
+    ],
+    "expected_symbols": [
+      "molecules|smiles|InchI|Inchi"
+    ],
+    "forbidden_symbols": [
+      "Chem:getInchis\\b",
+      "Chem:convertMolNotation.*inchi"
+    ],
+    "intent": "Vector InChI-key computation. getInchiKeys is the vector form; addInchisKeysTopMenu joins to the table. Must NOT call getInchis (returns InChI strings, not keys) or try to (mis)route via convertMolNotation which does not accept inchi as a target."
+  },
+  {
+    "id": "convert-notation-molblock",
+    "prompt": "Convert the SMILES column into V3000 molblocks.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:convertMoleculeNotation|Chem:convertNotation|call_function.*Chem:(convertMoleculeNotation|convertNotation)"
+    ],
+    "expected_symbols": [
+      "v3Kmolblock|V3K|v3K",
+      "targetNotation|target_notation"
+    ],
+    "forbidden_symbols": [
+      "Chem:getMolFileHandler",
+      "Chem:beautifyMols"
+    ],
+    "intent": "Notation conversion via convertMoleculeNotation (vector) or convertNotation (top-menu). targetNotation: 'v3Kmolblock'. Must NOT route through low-level molfile handler or beautifyMols."
+  },
+  {
+    "id": "chemical-space-umap",
+    "prompt": "Project the molecules onto a 2D chemical space using UMAP and show the scatter plot.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:chemSpaceTopMenu|Chem:getChemSpaceEmbeddings|call_function.*Chem:(chemSpaceTopMenu|getChemSpaceEmbeddings)"
+    ],
+    "expected_symbols": [
+      "UMAP",
+      "molecules",
+      "methodName|method_name"
+    ],
+    "forbidden_symbols": [
+      "Chem:activityCliffs",
+      "Chem:bitbirchClusteringTopMenu"
+    ],
+    "intent": "Chemical space projection. chemSpaceTopMenu auto-renders the scatter; getChemSpaceEmbeddings returns the raw embedding. Must NOT confuse with activity cliffs or BitBIRCH clustering."
+  },
+  {
+    "id": "similarity-search",
+    "prompt": "Find the top 10 molecules most similar to CCOc1ccc(cc1)C(=O)O in the molecules column.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:findSimilar|Chem:callChemSimilaritySearch|call_function.*Chem:(findSimilar|callChemSimilaritySearch)"
+    ],
+    "expected_symbols": [
+      "CCOc1ccc\\(cc1\\)C\\(=O\\)O",
+      "limit",
+      "10"
+    ],
+    "forbidden_symbols": [
+      "Chem:searchSubstructure",
+      "Chem:similarityMatrixTopMenu"
+    ],
+    "intent": "Top-K similarity search. findSimilar(col, query, limit) is canonical. Must NOT pick substructure search or compute a full pairwise matrix."
+  },
+  {
+    "id": "substructure-search-benzene",
+    "prompt": "Find all molecules containing a benzene ring in the structures column.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:searchSubstructure|Chem:SubstructureSearchTopMenu|call_function.*Chem:(searchSubstructure|SubstructureSearchTopMenu)"
+    ],
+    "expected_symbols": [
+      "c1ccccc1|benzene",
+      "molStringsColumn|molecules"
+    ],
+    "forbidden_symbols": [
+      "Chem:findSimilar",
+      "Chem:chemSpaceTopMenu"
+    ],
+    "intent": "Substructure search via searchSubstructure (programmatic; returns BitSet column) or the top-menu wrapper. Must NOT confuse with similarity or chemical space."
+  },
+  {
+    "id": "rgroup-decomposition",
+    "prompt": "Run R-group decomposition on the molecules column with scaffold c1ccncc1.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:rGroupDecomposition|Chem:rGroupsAnalysisMenu|call_function.*Chem:(rGroupDecomposition|rGroupsAnalysisMenu)"
+    ],
+    "expected_symbols": [
+      "core",
+      "c1ccncc1",
+      "molColName|molecules"
+    ],
+    "forbidden_symbols": [
+      "Chem:mmpAnalysis",
+      "Chem:getScaffoldTree"
+    ],
+    "intent": "R-group decomposition. rGroupDecomposition is the programmatic entry (needs core SMILES). Must NOT confuse with MMP or scaffold tree."
+  },
+  {
+    "id": "admet-aspirin",
+    "prompt": "Predict ADME properties for aspirin (CC(=O)Oc1ccccc1C(=O)O).",
+    "category": "cross-package",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Admetica:getAdmePropertiesSingle|Admetica:getAdmeProperties|call_function.*Admetica:(getAdmePropertiesSingle|getAdmeProperties)"
+    ],
+    "expected_symbols": [
+      "CC\\(=O\\)Oc1ccccc1C\\(=O\\)O|aspirin",
+      "molecule|molecules"
+    ],
+    "forbidden_symbols": [
+      "Chem:getProperties",
+      "Chem:addChemPropertiesColumns",
+      "Chem:getDescriptors"
+    ],
+    "intent": "ADME routing must go to Admetica, not Chem. getAdmePropertiesSingle for one molecule; getAdmeProperties if user has a column.",
+    "trap": "'ADME' is the routing keyword. Chem:getProperties returns physchem (MW/LogP/HBA), not ADMET."
+  },
+  {
+    "id": "admet-table-full-panel",
+    "prompt": "Calculate the full ADMET panel for every compound in this table.",
+    "category": "cross-package",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Admetica:getAdmeProperties|call_function.*Admetica:getAdmeProperties"
+    ],
+    "expected_symbols": [
+      "molecules",
+      "table"
+    ],
+    "forbidden_symbols": [
+      "Chem:addChemPropertiesColumns",
+      "Chem:getProperties",
+      "Admetica:getAdmePropertiesSingle"
+    ],
+    "intent": "Whole-column ADMET panel \u2192 Admetica:getAdmeProperties (joins to table). NOT the single-molecule variant, and definitely NOT Chem property calcs."
+  },
+  {
+    "id": "chembl-id-then-properties",
+    "prompt": "Compute molecular descriptors for CHEMBL1234.",
+    "category": "identifier-resolution",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chembl:chemblIdToSmilesTs|Chem:getDescriptors|call_function.*(Chembl:chemblIdToSmilesTs|Chem:(getDescriptors|chemDescriptors))"
+    ],
+    "expected_symbols": [
+      "CHEMBL1234",
+      "molecules|smiles",
+      "(getDescriptors|chemDescriptors|chemblIdToSmilesTs)"
+    ],
+    "forbidden_symbols": [
+      "Chem:freeTextToSmiles"
+    ],
+    "intent": "Two-step identifier resolution: CHEMBL id \u2192 SMILES (Chembl:chemblIdToSmilesTs OR auto-converter), then Chem:getDescriptors / chemDescriptors. Must NOT route through freeTextToSmiles (LLM) for a structured CHEMBL ID."
+  },
+  {
+    "id": "drugname-to-smiles-then-mw",
+    "prompt": "Compute MW and LogP for ibuprofen.",
+    "category": "identifier-resolution",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "(Chem|Chembl):namesToSmiles|call_function.*(Chem|Chembl):namesToSmiles"
+    ],
+    "expected_symbols": [
+      "ibuprofen",
+      "MW|molecules",
+      "logP|LogP"
+    ],
+    "forbidden_symbols": [
+      "Chem:freeTextToSmiles"
+    ],
+    "intent": "Drug name \u2192 SMILES via Chem:namesToSmiles (ChEMBL-backed), then properties. namesToSmiles is preferred over freeTextToSmiles (LLM fallback) for clean named compounds.",
+    "notes": "freeTextToSmiles is an acceptable LLM fallback but namesToSmiles is the structured path; both could pass but we lock to namesToSmiles which is in the catalog table."
+  },
+  {
+    "id": "wrong-tool-admet-as-chem",
+    "prompt": "Predict ADME for the compounds in this table.",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Admetica:getAdmeProperties|call_function.*Admetica:getAdmeProperties"
+    ],
+    "expected_symbols": [
+      "molecules",
+      "table"
+    ],
+    "forbidden_symbols": [
+      "Chem:getProperties",
+      "Chem:addChemPropertiesColumns",
+      "Chem:getDescriptors",
+      "Chem:getToxicityRisks"
+    ],
+    "intent": "Trap: 'ADME' must route to Admetica. Chem:getProperties returns physchem only; Chem:getDescriptors returns RDKit descriptors; neither is ADMET.",
+    "trap": "ADME keyword \u2192 Admetica. Physchem != ADMET."
+  },
+  {
+    "id": "footgun-logs-property",
+    "prompt": "Compute logS (solubility) for these molecules.",
+    "category": "footgun",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:addChemPropertiesColumns|Chem:getProperties|call_function.*Chem:(addChemPropertiesColumns|getProperties)"
+    ],
+    "expected_symbols": [
+      "logS",
+      "molecules"
+    ],
+    "forbidden_symbols": [
+      "Chem:CalculateLogS",
+      "Chem:calculateLogS",
+      "Chem:getCLogP"
+    ],
+    "intent": "logS is a parameter of addChemPropertiesColumns / getProperties, not a standalone function. Must NOT invent Chem:CalculateLogS (the catalog only exposes the property flag) and must NOT confuse with cLogP.",
+    "trap": "logS lives inside addChemPropertiesColumns({logS:true}) / getProperties(['logS']); there is no Chem:CalculateLogS."
+  },
+  {
+    "id": "footgun-chemprop-train",
+    "prompt": "Train a Chemprop regression model on this dataset to predict the 'activity' column.",
+    "category": "footgun",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": [
+      "Chem:trainChemprop|call_function.*Chem:trainChemprop"
+    ],
+    "expected_symbols": [
+      "predictColumn|predict_column",
+      "dataset_type",
+      "regression",
+      "epochs"
+    ],
+    "forbidden_symbols": [
+      "Chem:applyChemprop\\b",
+      "Chem:isApplicableNN"
+    ],
+    "intent": "Chemprop training has a 25-arg snake_case signature. predictColumn + dataset_type='regression' + a sensible epochs value should appear. Must NOT confuse with applyChemprop (inference) or isApplicableNN (framework hook).",
+    "trap": "trainChemprop's signature is unusually long and snake_case; Claude often forgets dataset_type or mistakes apply for train.",
+    "notes": "Catalog inconsistency: signature lists snake_case params but other Chem fns use camelCase. Either matches the spirit of the prompt \u2014 accept both via regex."
+  }
+]

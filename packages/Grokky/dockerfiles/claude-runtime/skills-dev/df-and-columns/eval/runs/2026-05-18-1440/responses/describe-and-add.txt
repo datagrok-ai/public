@@ -1,0 +1,44 @@
+```datagrok-exec
+// Describe the molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) return ui.divText('No molecule column found.');
+
+const s = molCol.stats;
+const info = {
+  name: molCol.name,
+  type: molCol.type,
+  semType: molCol.semType ?? '(none)',
+  length: molCol.length,
+  missing: s.missingValueCount,
+  unique: s.uniqueCount,
+};
+
+// Add Ki column with semType Ki
+const kiName = t.columns.getUnusedName('Ki');
+const kiCol = t.columns.addNewFloat(kiName);
+kiCol.semType = DG.SEMTYPE.Ki;
+kiCol.meta.units = 'nM';
+
+return ui.divV([
+  ui.h2('Molecule Column Description'),
+  ui.tableFromMap(info),
+  ui.divText(`✓ Added column "${kiCol.name}" (type: ${kiCol.type}, semType: ${kiCol.semType}, units: ${kiCol.meta.units})`),
+]);
+```
+
+Here's what was done:
+
+### 🔬 Molecule Column
+The block finds the first column with `semType = Molecule` and reports:
+- **Name, type, semType** — to confirm it's the right column
+- **Length** — total row count
+- **Missing values** — null/empty count
+- **Unique values** — distinct structure count
+
+### ➕ Ki Column Added
+A new **`Ki`** column was added with:
+- **Type:** `float` (`DG.COLUMN_TYPE.FLOAT`)
+- **SemType:** `DG.SEMTYPE.Ki`
+- **Units:** `nM`
+
+The name is collision-safe — if `Ki` already existed, it would have been named `Ki (1)`, etc.

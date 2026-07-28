@@ -1,0 +1,16 @@
+Based on the skill documentation, `Chembl:getChemblCompoundsByOrganism` is the right function here. Let me call it with 500 compounds and `'Shigella'` as the organism.
+
+```datagrok-exec
+const df = await grok.functions.call('Chembl:getChemblCompoundsByOrganism', {
+  maxNumberOfMolecules: 500,
+  organism: 'Shigella'
+});
+grok.shell.addTableView(df);
+```
+
+This will:
+1. **Query** the local ChEMBL database for compounds active against **Shigella** targets.
+2. **Limit** the result to **500 compounds**.
+3. **Open** the resulting table in a new table view so you can explore the structures, ChEMBL IDs, and activity data.
+
+The table will include columns like SMILES, ChEMBL compound ID, and associated target/activity information. You can then use Datagrok's cheminformatics tools (substructure search, similarity clustering, SAR analysis, etc.) to dig deeper into the results.

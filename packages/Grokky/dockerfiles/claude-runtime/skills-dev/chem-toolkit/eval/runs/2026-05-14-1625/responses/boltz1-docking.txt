@@ -1,0 +1,17 @@
+I need to know which ligand you'd like to dock. Could you clarify?Let me first check what Boltz-1 config folders are available and what's in the current table.```datagrok-exec
+// Get available Boltz configs and current table info
+const configs = await grok.functions.call('Boltz1:getBoltzConfigFolders', {});
+const hasMolCol = (view.type === 'TableView') 
+  ? t.columns.toList().filter(c => c.semType === DG.SEMTYPE.MOLECULE) 
+  : [];
+
+return ui.tableFromMap({
+  'Available Boltz configs': configs?.toString() ?? '(none)',
+  'Molecule columns in table': hasMolCol.map(c => c.name).join(', ') || '(none / no table open)',
+});
+```
+
+Once I see what configs and molecule columns are available, I can proceed with the docking. Could you also let me know:
+
+1. **Which ligand** to use — the molecule column in the current table, or a specific SMILES string?
+2. **Which Boltz-1 config** (target) to dock against (I'll show the available ones above)?

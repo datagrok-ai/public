@@ -1,0 +1,20 @@
+No problem — I'll use the `Chem:convertMoleculeNotation` function (vector form) to convert the SMILES column to V3000 molblocks and append the result as a new column.
+
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+const v3kCol = await grok.functions.call('Chem:convertMoleculeNotation', {
+  molecule: molCol,
+  targetNotation: 'v3Kmolblock',
+  kekulize: false,
+});
+
+v3kCol.name = molCol.name + '_V3000';
+t.columns.add(v3kCol);
+```
+
+This will:
+1. Find the first **Molecule** (SMILES) column in the current table.
+2. Convert each molecule to a **V3000 molblock** using RDKit.
+3. Append the result as a new column named `<original>_V3000`.

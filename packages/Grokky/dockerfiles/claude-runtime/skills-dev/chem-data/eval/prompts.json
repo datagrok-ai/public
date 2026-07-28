@@ -1,0 +1,183 @@
+[
+  {
+    "id": "chembl-substructure-search",
+    "prompt": "Find ChEMBL compounds containing the c1ccncc1 pyridine substructure.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:chemblSubstructureSearch|Chembl:chemblSubstructureSearchPanel|call_function.*Chembl:(chemblSubstructureSearch|chemblSubstructureSearchPanel)"],
+    "expected_symbols": ["molecule", "c1ccncc1"],
+    "forbidden_symbols": ["Chem:searchSubstructure", "Chem:SubstructureSearchTopMenu"],
+    "intent": "Substructure search in the ChEMBL DB must use Chembl, NOT Chem. Chem:searchSubstructure operates on an in-memory column; Chembl hits the DB."
+  },
+  {
+    "id": "chembl-similarity-search",
+    "prompt": "Find ChEMBL compounds similar to CCOc1ccc(cc1)C(=O)O.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:chemblSimilaritySearch|Chembl:chemblSimilaritySearchPanel|call_function.*Chembl:(chemblSimilaritySearch|chemblSimilaritySearchPanel)"],
+    "expected_symbols": ["molecule", "CCOc1ccc\\(cc1\\)C\\(=O\\)O"],
+    "forbidden_symbols": ["Chem:findSimilar", "Chem:callChemSimilaritySearch"],
+    "intent": "ChEMBL similarity search must route to Chembl, not to in-memory Chem similarity (which needs a column, not a database)."
+  },
+  {
+    "id": "chembl-compounds-by-organism",
+    "prompt": "Get up to 500 ChEMBL compounds active against Shigella targets.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:getChemblCompoundsByOrganism|call_function.*Chembl:getChemblCompoundsByOrganism"],
+    "expected_symbols": ["organism", "Shigella", "maxNumberOfMolecules|max_number_of_molecules", "500"],
+    "forbidden_symbols": ["Chembl:getChemblCompounds\\b"],
+    "intent": "Organism-filtered ChEMBL pull. Must use getChemblCompoundsByOrganism with organism + maxNumberOfMolecules. Generic getChemblCompounds doesn't filter by organism."
+  },
+  {
+    "id": "moltrack-register-compound",
+    "prompt": "Register a compound into MolTrack. Use a placeholder JSON payload like {\"smiles\":\"CCO\",\"name\":\"ethanol\"}.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["MolTrack:registerMolTrackProperties|MolTrack:registerBulk|call_function.*MolTrack:(registerMolTrackProperties|registerBulk)"],
+    "expected_symbols": ["jsonPayload|payload|csvFile"],
+    "forbidden_symbols": ["MolTrack:getCompoundByCorporateId", "MolTrack:advancedSearch"],
+    "intent": "Registration entry points: registerMolTrackProperties for property defs, registerBulk for CSV. Must NOT confuse with lookup or search functions."
+  },
+  {
+    "id": "moltrack-lookup-corporate-id",
+    "prompt": "Look up the compound with corporate ID DG-12345 in MolTrack.",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["MolTrack:getCompoundByCorporateId|call_function.*MolTrack:getCompoundByCorporateId"],
+    "expected_symbols": ["corporateValue|corporate_value", "DG-12345"],
+    "forbidden_symbols": ["MolTrack:getBatchByCorporateId", "MolTrack:advancedSearch", "MolTrack:search\\b"],
+    "intent": "Corporate compound ID → getCompoundByCorporateId. Must NOT use the batch variant or the structured search path."
+  },
+  {
+    "id": "curves-fit",
+    "prompt": "Convert these long-format plate readouts into dose-response fit curves (concentration column 'conc', readout column 'response', compound column 'compound_id').",
+    "category": "atomic-do",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Curves:dataToCurves|Curves:dataToCurvesTopMenu|call_function.*Curves:(dataToCurves|dataToCurvesTopMenu)"],
+    "expected_symbols": ["concentrationCol|concentration_col", "readoutCol|readout_col", "compoundIDCol|compound_id_col"],
+    "forbidden_symbols": ["Curves:addStatisticsColumn", "Curves:previewPzfx"],
+    "intent": "Long-format → curves. dataToCurves is the programmatic entry. Must NOT confuse with addStatisticsColumn (post-fit stat extraction) or previewPzfx (Prism file viewer)."
+  },
+  {
+    "id": "chemblid-to-smiles",
+    "prompt": "What's the SMILES for CHEMBL301?",
+    "category": "identifier-resolution",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:chemblIdToSmilesTs|call_function.*Chembl:chemblIdToSmilesTs"],
+    "expected_symbols": ["CHEMBL301", "id"],
+    "forbidden_symbols": ["Chem:freeTextToSmiles", "Chem:namesToSmiles"],
+    "intent": "Structured CHEMBL ID resolution → Chembl:chemblIdToSmilesTs. Must NOT route through freeTextToSmiles (LLM) or namesToSmiles (drug names)."
+  },
+  {
+    "id": "drugname-to-smiles",
+    "prompt": "What is the SMILES of aspirin?",
+    "category": "identifier-resolution",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["(Chem|Chembl):namesToSmiles|call_function.*(Chem|Chembl):namesToSmiles"],
+    "expected_symbols": ["aspirin", "names"],
+    "forbidden_symbols": ["Chembl:chemblIdToSmilesTs", "Chem:freeTextToSmiles"],
+    "intent": "Free-text drug name → SMILES. Chem:namesToSmiles is ChEMBL-backed lookup for clean names. Must NOT use chemblIdToSmilesTs (only accepts CHEMBL[0-9]+).",
+    "trap": "namesToSmiles is a Chem function but backed by ChEMBL DB — depends on Chembl install."
+  },
+  {
+    "id": "inchikey-to-chembl",
+    "prompt": "Get the ChEMBL ID for InChI key BSYNRYMUTXBXSQ-UHFFFAOYSA-N.",
+    "category": "identifier-resolution",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chem:getMapIdentifiers|Chem:mapIdentifiersTransform|call_function.*Chem:(getMapIdentifiers|mapIdentifiersTransform)"],
+    "expected_symbols": ["fromSource|from_source|InChI|inchi|fromIdentifier", "toSource|to_source|CHEMBL|chembl|ChEMBL|toIdentifier"],
+    "forbidden_symbols": ["Chembl:chemblIdToSmilesTs"],
+    "intent": "Cross-ID mapping → Chem:getMapIdentifiers / mapIdentifiersTransform (the catalog's ID-mapping entry). chemblIdToSmilesTs only goes ID→SMILES, not the reverse, so it's wrong here.",
+    "notes": "Catalog ambiguity: getMapIdentifiers is described as 'opens the dialog' — there's no documented vector-form for InChI-key → ChEMBL ID. Claude may legitimately surface this limitation; mark partial pass if it does."
+  },
+  {
+    "id": "batch-chembl-ids-to-smiles",
+    "prompt": "I have a column of ChEMBL IDs — convert all of them to SMILES.",
+    "category": "identifier-resolution",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:chemblIdToSmilesTs|Chem:mapIdentifiersTransform|call_function.*(Chembl:chemblIdToSmilesTs|Chem:mapIdentifiersTransform)"],
+    "expected_symbols": ["CHEMBL|chembl", "smiles|SMILES"],
+    "forbidden_symbols": ["Chem:freeTextToSmiles", "Chem:namesToSmiles"],
+    "intent": "Batch CHEMBL→SMILES. Either map by iterating chemblIdToSmilesTs per cell, or use Chem:mapIdentifiersTransform with fromSource='chembl', toSource='smiles'. Must NOT use free-text or names routes."
+  },
+  {
+    "id": "curves-ic50-from-data",
+    "prompt": "I already have fit curves in column 'fit' on the current table — compute IC50 values from them and add as a column.",
+    "category": "cross-package",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Curves:dataToCurves|Curves:addStatisticsColumn|call_function.*Curves:(dataToCurves|addStatisticsColumn)"],
+    "expected_symbols": ["IC50|ic50"],
+    "forbidden_symbols": ["Admetica:getAdmeProperties", "Chem:getProperties"],
+    "intent": "IC50 lives in Curves. Two-step: dataToCurves to fit, then addStatisticsColumn(table, 'IC50', 'IC50', 0). Pass if Claude reaches either function with IC50 mentioned.",
+    "notes": "If the user already has fit cells, addStatisticsColumn alone is enough; if raw data, both steps. Both flows acceptable."
+  },
+  {
+    "id": "hittriage-start-campaign",
+    "prompt": "Start a hit triage workflow.",
+    "category": "cross-package",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["HitTriage:hitTriageApp|call_function.*HitTriage:hitTriageApp"],
+    "expected_symbols": ["hitTriageApp"],
+    "forbidden_symbols": ["HitTriage:hitDesignApp", "HitTriage:peptiHitApp", "HitTriage:pepTriageApp"],
+    "intent": "Hit Triage app entry. Must NOT confuse with Hit Design (de-novo design) or PeptiHit / PepTriage (peptide variants).",
+    "trap": "Four HitTriage apps with similar names; user's 'hit triage' is the plain hitTriageApp."
+  },
+  {
+    "id": "moltrack-advanced-search",
+    "prompt": "Find all MolTrack compounds with MW between 200 and 500 and project 'Kinase'.",
+    "category": "cross-package",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["MolTrack:advancedSearch|MolTrack:search|call_function.*MolTrack:(advancedSearch|search)"],
+    "expected_symbols": ["filter", "outputFields|output_fields|level", "Kinase"],
+    "forbidden_symbols": ["Chembl:chemblSubstructureSearch", "MolTrack:retrieveEntity"],
+    "intent": "Structured MolTrack search → advancedSearch (preferred) or generic search. retrieveEntity dumps all entities — wrong for a filtered query.",
+    "notes": "advancedSearch filter DSL is verbose; Claude may stub it. Pass as long as 'filter' and a recognizable structured shape appear."
+  },
+  {
+    "id": "wrong-tool-thrombin-compounds",
+    "prompt": "Find compounds known to be active against thrombin.",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:getChemblCompoundsByOrganism|Chembl:chemblSubstructureSearch|MolTrack:advancedSearch|call_function.*(Chembl:|MolTrack:)"],
+    "expected_symbols": ["thrombin|target|organism"],
+    "forbidden_symbols": ["Chem:findSimilar", "Chem:searchSubstructure", "Chem:namesToSmiles"],
+    "intent": "Bioactivity question must route to a data package (Chembl / MolTrack), NOT to in-memory Chem similarity/substructure functions (which need a column of molecules to compare against).",
+    "trap": "'Active against target' is a database query, not an in-memory chem similarity calc."
+  },
+  {
+    "id": "wrong-tool-lookup-by-name",
+    "prompt": "Look up acetylsalicylic acid in the database.",
+    "category": "wrong-tool-trap",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["(Chem|Chembl):namesToSmiles|Chembl:chemblSimilaritySearch|call_function.*(Chem:namesToSmiles|Chembl:)"],
+    "expected_symbols": ["acetylsalicylic"],
+    "forbidden_symbols": ["Chem:freeTextToSmiles", "Chem:isSmiles"],
+    "intent": "Drug-name DB lookup → Chem:namesToSmiles (ChEMBL-backed). Must NOT freeform LLM-parse or treat as a SMILES validation problem.",
+    "trap": "'acetylsalicylic acid' is a chemical name — needs name lookup, not validation/parsing."
+  },
+  {
+    "id": "footgun-chembl-namespace",
+    "prompt": "Use ChEMBL to look up CHEMBL25.",
+    "category": "footgun",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["Chembl:chemblIdToSmilesTs|call_function.*Chembl:chemblIdToSmilesTs"],
+    "expected_symbols": ["Chembl:", "CHEMBL25"],
+    "forbidden_symbols": ["ChEMBL:chembl", "ChEMBL:CHEMBL"],
+    "intent": "Package namespace is 'Chembl:' (case-sensitive), NOT 'ChEMBL:'. The user-facing name and the package id differ.",
+    "trap": "User uses 'ChEMBL' branding; package namespace is 'Chembl' — Claude must use the package id for grok.functions.call.",
+    "notes": "If runtime actually accepts case-insensitive namespaces, this trap is moot. Confirm with maintainer — should we allow ChEMBL: as well?"
+  },
+  {
+    "id": "footgun-names-to-smiles-depends-on-chembl",
+    "prompt": "Convert this list of drug names ['aspirin', 'ibuprofen', 'caffeine'] to SMILES.",
+    "category": "footgun",
+    "expected_path": "datagrok-exec",
+    "expected_helpers": ["(Chem|Chembl):namesToSmiles|call_function.*(Chem|Chembl):namesToSmiles"],
+    "expected_symbols": ["names", "aspirin", "ibuprofen"],
+    "forbidden_symbols": ["Chem:freeTextToSmiles"],
+    "intent": "namesToSmiles needs the Chembl DB installed — Claude should pick it (catalog says so) without surfacing infra concerns unprompted, but must NOT fall back to freeTextToSmiles which is the LLM path.",
+    "trap": "namesToSmiles is exposed via Chem but backed by ChEMBL. Catalog doesn't make the dependency explicit — borderline ambiguous wording.",
+    "notes": "Catalog could clarify the Chembl dependency more explicitly. Flag for SKILL.md tightening if Claude consistently misroutes."
+  }
+]

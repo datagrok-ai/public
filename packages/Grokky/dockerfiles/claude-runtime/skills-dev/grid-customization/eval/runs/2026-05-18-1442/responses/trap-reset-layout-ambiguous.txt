@@ -1,0 +1,18 @@
+
+```datagrok-exec
+view.grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+view.grid.sort([], []);
+
+const cols = view.grid.columns;
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+
+for (const c of t.columns.toList())
+  c.meta.colors.setDisabled();
+
+view.resetLayout();
+```
+
+The layout has been reset to just the grid. All viewers have been removed, columns are fully visible, sorting is cleared, column widths are set to optimal, and color codings have been disabled.

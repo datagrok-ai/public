@@ -1,0 +1,41 @@
+```datagrok-exec
+const col = t.col('activity');
+if (!col) return ui.divText('No column named "activity" found in the current table.');
+
+const s = col.stats;
+const info = {
+  name: col.name,
+  type: col.type,
+  'semantic type': col.semType || '(none)',
+  units: col.meta.units || '(none)',
+  format: col.meta.format || '(default)',
+  description: col.meta.description || '(none)',
+  'friendly name': col.meta.friendlyName || '(none)',
+  length: col.length,
+  'non-null values': s.valueCount,
+  'missing values': s.missingValueCount,
+  'unique values': s.uniqueCount,
+};
+
+if (col.type === DG.COLUMN_TYPE.STRING || col.type === 'string') {
+  info['categories (sample)'] = col.categories.slice(0, 5).join(', ');
+} else {
+  info.min = s.min;
+  info.max = s.max;
+  info.avg = s.avg?.toFixed(4);
+  info.stdev = s.stdev?.toFixed(4);
+  info.median = s.med;
+  info.q1 = s.q1;
+  info.q3 = s.q3;
+}
+
+return ui.tableFromMap(info);
+```The code above will look up the **activity** column in your current table and display a full summary including:
+
+- **Type & semantic type** — e.g. `double`, `Molecule`, etc.
+- **Metadata** — units, format, friendly name, description
+- **Row counts** — total length, non-null values, missing values, unique values
+- **Statistics** (if numeric) — min, max, avg, stdev, median, Q1, Q3
+- **Sample categories** (if string) — first 5 distinct values
+
+If no column named `activity` exists, you'll see a message saying so.

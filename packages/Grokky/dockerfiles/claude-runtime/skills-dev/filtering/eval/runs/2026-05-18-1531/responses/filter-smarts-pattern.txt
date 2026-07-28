@@ -1,0 +1,18 @@
+
+```datagrok-exec
+const query = '[#6][!#1]';
+const smilesCol = t.columns.bySemType('Molecule');
+if (!smilesCol) throw new Error('No molecule column found in the current table.');
+
+const molBlock = DG.chem.convert(query, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
+
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.SUBSTRUCTURE,
+  column: smilesCol.name,
+  columnName: smilesCol.name,
+  molBlock,
+  molBlockFailover: query,
+});
+```
+
+I've applied a **substructure filter** using the SMARTS pattern `[#6][!#1]` (any carbon atom bonded to a non-hydrogen heavy atom). The filter panel now shows the substructure widget, and only matching compounds are visible in the grid.

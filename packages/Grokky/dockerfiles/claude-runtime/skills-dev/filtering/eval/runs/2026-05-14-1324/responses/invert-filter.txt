@@ -1,0 +1,6 @@
+
+```datagrok-exec
+grokky.invertFilter(t);
+```
+
+The current filter has been inverted — rows that were visible are now hidden, and rows that were hidden are now visible.

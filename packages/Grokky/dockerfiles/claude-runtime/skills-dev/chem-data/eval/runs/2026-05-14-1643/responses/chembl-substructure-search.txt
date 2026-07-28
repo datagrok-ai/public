@@ -1,0 +1,14 @@
+I'll search ChEMBL for compounds containing the pyridine substructure `c1ccncc1` using the ChEMBL substructure search function.
+
+```datagrok-exec
+const df = await grok.functions.call('Chembl:chemblSubstructureSearch', {
+  molecule: 'c1ccncc1'
+});
+grok.shell.addTableView(df);
+```
+
+This will:
+1. **Query ChEMBL** for all compounds whose structure contains the **pyridine ring** (`c1ccncc1`)
+2. **Open the results** as a table view with columns including `smiles` and `chembl_id`
+
+The results (up to 100 hits) will appear as a new table. You can then browse, filter, or use the molecules for further analysis such as similarity searches or property calculations.

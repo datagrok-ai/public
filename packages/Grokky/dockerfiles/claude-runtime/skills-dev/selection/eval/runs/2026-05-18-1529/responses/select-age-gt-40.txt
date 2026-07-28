@@ -1,0 +1,6 @@
+
+```datagrok-exec
+const age = t.getCol('age');
+t.selection.init(i => age.get(i) > 40);
+return ui.divText(`Selected ${t.selection.trueCount} of ${t.rowCount} rows where age > 40`);
+```

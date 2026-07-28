@@ -1,0 +1,5 @@
+```datagrok-exec
+t.filter.init((i) => t.getCol('activity').get(i) <= 7);
+```
+
+Rows where **activity > 7** are now hidden — they're still in the dataset and can be revealed anytime by clearing the filter. Only rows with activity ≤ 7 are visible (`t.filter.trueCount` rows shown).

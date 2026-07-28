@@ -1,0 +1,10 @@
+```datagrok-exec
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.HISTOGRAM,
+  column: 'MW',
+  min: 0,
+  max: 500,
+});
+```
+
+This applies a range filter on the **MW** column, keeping only rows where MW < 500. The filter widget will appear in the filter panel on the right. You can adjust the range there interactively as needed.

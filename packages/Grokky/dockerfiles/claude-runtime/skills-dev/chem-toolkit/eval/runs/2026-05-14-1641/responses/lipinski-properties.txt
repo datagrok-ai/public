@@ -1,0 +1,29 @@
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No molecule column found in the current table.');
+await grok.functions.call('Chem:addChemPropertiesColumns', {
+  table: t,
+  molecules: mol,
+  MW: true,
+  HBA: true,
+  HBD: true,
+  logP: true,
+  logS: false,
+  PSA: false,
+  rotatableBonds: false,
+  stereoCenters: false,
+  moleculeCharge: false
+});
+```
+
+Done! The following Lipinski properties have been computed and appended as new columns to your table:
+
+| Column | Description |
+|--------|-------------|
+| **MW** | Molecular Weight |
+| **HBA** | Hydrogen Bond Acceptors |
+| **HBD** | Hydrogen Bond Donors |
+| **LogP** | Lipophilicity (octanol-water partition coefficient) |
+
+These are the four core **Lipinski Rule of Five** descriptors. A drug-like molecule typically satisfies: MW ≤ 500, HBA ≤ 10, HBD ≤ 5, and LogP ≤ 5.

@@ -1,0 +1,5 @@
+```datagrok-exec
+view.resetLayout();
+```
+
+The layout has been reset — all additional viewers have been closed and the view now shows just the grid.

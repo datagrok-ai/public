@@ -1,0 +1,23 @@
+
+```datagrok-exec
+// Find the molecule/SMILES column and set its width to 300px
+const grid = view.grid;
+let found = false;
+
+for (let i = 1; i < grid.columns.length; i++) {
+  const gc = grid.columns.byIndex(i);
+  if (!gc) continue;
+  const col = t.col(gc.name);
+  if (col && (col.semType === 'Molecule' || col.name.toLowerCase().includes('smiles') || col.name.toLowerCase().includes('mol'))) {
+    gc.width = 300;
+    found = true;
+    break;
+  }
+}
+
+if (!found) {
+  return ui.divText('No molecule column found. Please specify the column name.');
+}
+```
+
+The molecule column has been resized to **300 pixels** wide. If the wrong column was targeted, let me know the exact column name and I'll update it.

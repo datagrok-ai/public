@@ -1,0 +1,6 @@
+```datagrok-exec
+const small = t.clone(t.filter, ['smiles', 'activity']);
+grok.shell.addTableView(small);
+```
+
+This clones only the **filtered rows** keeping just the **SMILES** and **activity** columns, then opens the result as a new table view. Let me know if the column names differ in your table!

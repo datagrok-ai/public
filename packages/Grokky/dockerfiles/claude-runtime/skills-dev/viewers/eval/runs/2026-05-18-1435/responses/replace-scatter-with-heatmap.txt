@@ -1,0 +1,12 @@
+```datagrok-exec
+// Close all scatter plots, then add a correlation plot
+Array.from(view.viewers).slice(1)
+  .filter((v) => v.type === DG.VIEWER.SCATTER_PLOT)
+  .forEach((v) => { try { v.close(); } catch {} });
+
+view.addViewer(DG.VIEWER.CORR_PLOT);
+```
+
+Done! I've closed the scatter plot and replaced it with a **Correlation Plot** (heat map of correlations between numeric columns). It shows pairwise correlations across all numeric columns in your table — darker colors indicate stronger correlation.
+
+If you'd like to limit it to specific columns, just let me know which ones!

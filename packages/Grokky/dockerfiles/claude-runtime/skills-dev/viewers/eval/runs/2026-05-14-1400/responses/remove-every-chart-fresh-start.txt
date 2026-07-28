@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const n = grokky.closeAllViewers(view);
+return ui.divText(`Closed ${n} viewer${n !== 1 ? 's' : ''}. View is now reset to the grid.`);
+```
+
+All charts have been removed — the view is now back to just the grid. Let me know what you'd like to add!

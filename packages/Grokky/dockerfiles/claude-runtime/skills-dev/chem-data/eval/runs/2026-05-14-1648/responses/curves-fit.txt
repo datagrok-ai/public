@@ -1,0 +1,26 @@
+I'll call `Curves:dataToCurves` using your specified columns. Since batch, assay, run, and target columns weren't specified, I'll use `compound_id` as the compound column and leave the optional grouping columns pointing to `compound_id` as a fallback where required.
+
+```datagrok-exec
+await grok.functions.call('Curves:dataToCurves', {
+  df: t,
+  concentrationCol: t.col('conc'),
+  readoutCol: t.col('response'),
+  batchIDCol: t.col('compound_id'),
+  assayCol: t.col('compound_id'),
+  runIDCol: t.col('compound_id'),
+  compoundIDCol: t.col('compound_id'),
+  targetEntityCol: t.col('compound_id'),
+});
+```
+
+Here's what this does:
+
+- **`conc`** → concentration axis
+- **`response`** → readout / signal axis
+- **`compound_id`** → used as the compound identifier (and as a stand-in for batch, assay, run, and target grouping since those columns weren't provided)
+
+The result will be a **wide-format table** with one row per compound and a fit-curve cell column containing the sigmoid fit (Hill equation). You'll see IC50 / Hill slope / Top / Bottom per compound rendered as interactive dose-response curves.
+
+**Next steps you might want:**
+- **Extract IC50 values** — I can call `Curves:addStatisticsColumn` to pull `interceptX` (IC50) from the fit cells into a plain numeric column.
+- **Provide separate batch/assay/run columns** — if your table has them, let me know the column names and I'll re-run with proper grouping.

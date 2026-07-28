@@ -1,0 +1,9 @@
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BAR_CHART, {
+  splitColumnName: 'category',
+  valueAggrType: 'count',
+});
+```
+
+A bar chart has been added, showing count by **category**. If your column is named differently, let me know and I'll update it!

@@ -1,0 +1,32 @@
+```datagrok-exec
+if (!(view instanceof DG.TableView)) return ui.divText('No active table view.');
+
+const grid = view.grid;
+const cols = grid.columns;
+
+// 1. Restore all hidden columns (skip index 0 = row header)
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+
+// 2. Reset column widths to optimal
+grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+
+// 3. Clear sort
+grid.sort([], []);
+
+// 4. Turn off color coding on all data columns
+for (const col of t.columns.toList()) {
+  col.meta.colors.setDisabled();
+}
+```Here's what was reset:
+
+| Step | Action |
+|------|--------|
+| **Hidden columns** | All hidden columns restored to visible |
+| **Column widths** | Reset to **Optimal** (sized to widest visible value) |
+| **Sort** | All sort orders cleared |
+| **Color coding** | Disabled on every column (linear, categorical, and conditional) |
+
+> **Note:** Viewer layouts (scatter plots, histograms, etc.) and filters are intentionally left untouched — only the grid's visual customizations were reset.

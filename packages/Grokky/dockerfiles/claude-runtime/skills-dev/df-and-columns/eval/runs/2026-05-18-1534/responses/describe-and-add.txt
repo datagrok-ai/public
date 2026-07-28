@@ -1,0 +1,41 @@
+```datagrok-exec
+// Describe the molecule column
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) return ui.divText('No molecule column found in the current table.');
+
+const s = molCol.stats;
+return ui.tableFromMap({
+  'Name': molCol.name,
+  'Type': molCol.type,
+  'Semantic Type': molCol.semType ?? '(none)',
+  'Length': molCol.length,
+  'Non-null values': s.valueCount,
+  'Missing values': s.missingValueCount,
+  'Unique values': s.uniqueCount,
+  'Units': molCol.meta.units ?? '(none)',
+  'Format': molCol.meta.format ?? '(none)',
+  'Friendly Name': molCol.meta.friendlyName ?? '(none)',
+  'Description': molCol.meta.description ?? '(none)',
+});
+```
+
+```datagrok-exec
+// Add a Ki column with semType Ki
+const name = t.columns.getUnusedName('Ki');
+const kiCol = t.columns.addNewFloat(name);
+kiCol.semType = DG.SEMTYPE.Ki;
+kiCol.meta.units = 'nM';
+return ui.divText(`Added column "${kiCol.name}" (type: ${kiCol.type}, semType: ${kiCol.semType}, units: ${kiCol.meta.units})`);
+```Here's what was done:
+
+1. **Molecule column description** — The first block finds the molecule column by its semantic type (`DG.SEMTYPE.MOLECULE`) and returns a summary table with:
+   - Basic info: name, type, semType
+   - Row stats: length, non-null values, missing values, unique values
+   - Metadata: units, format, friendly name, description
+
+2. **Ki column added** — The second block:
+   - Creates a new `float` column with a collision-safe name (`Ki` or `Ki (1)` etc.)
+   - Sets `semType = DG.SEMTYPE.Ki`
+   - Sets `units = 'nM'` (standard for Ki values)
+
+The Ki column is now visible in the grid, ready to be populated with values.

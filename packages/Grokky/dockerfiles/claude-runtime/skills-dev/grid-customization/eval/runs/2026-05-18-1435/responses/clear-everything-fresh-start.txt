@@ -1,0 +1,5 @@
+```datagrok-exec
+grok.shell.closeAll();
+```
+
+Done! All views and tables have been closed. You're starting with a clean slate.

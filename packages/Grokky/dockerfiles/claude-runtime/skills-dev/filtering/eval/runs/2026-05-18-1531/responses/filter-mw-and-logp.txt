@@ -1,0 +1,12 @@
+
+```datagrok-exec
+const mw = t.getCol('MW');
+const logP = t.getCol('LogP');
+t.filter.init((i) => mw.get(i) < 500 && logP.get(i) < 5);
+```
+
+Applied a combined filter:
+- **MW < 500**
+- **LogP < 5**
+
+Rows matching both conditions are now visible. Let me know if you'd like to adjust the thresholds or add more conditions!

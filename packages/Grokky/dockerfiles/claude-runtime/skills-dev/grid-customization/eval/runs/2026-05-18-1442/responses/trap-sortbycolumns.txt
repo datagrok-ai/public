@@ -1,0 +1,5 @@
+The `sortByColumns` property is a **getter-only** — assigning to it is a silent no-op. The correct way to sort is `grid.sort(columnNames, ascendingBooleans)`:
+
+```datagrok-exec
+view.grid.sort(['activity'], [false]);
+```

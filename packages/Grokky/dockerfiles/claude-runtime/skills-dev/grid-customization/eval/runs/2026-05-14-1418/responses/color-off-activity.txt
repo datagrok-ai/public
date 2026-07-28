@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.colorCode(t.col('activity'), {kind: 'off'});
+```
+
+Done — color coding has been disabled on the **activity** column.

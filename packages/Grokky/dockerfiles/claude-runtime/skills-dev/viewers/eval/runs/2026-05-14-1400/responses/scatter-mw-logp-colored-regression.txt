@@ -1,0 +1,15 @@
+
+```datagrok-exec
+grokky.addViewer(view, 'Scatter plot', {
+  xColumnName: 'MW',
+  yColumnName: 'LogP',
+  colorColumnName: 'activity',
+  showRegressionLine: true,
+});
+```
+
+I've added a scatter plot with:
+- **X axis**: MW (molecular weight)
+- **Y axis**: LogP
+- **Color**: activity
+- **Regression line**: enabled

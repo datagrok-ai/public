@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.clearSelection(t);
+```
+
+Selection cleared — all rows are now deselected.

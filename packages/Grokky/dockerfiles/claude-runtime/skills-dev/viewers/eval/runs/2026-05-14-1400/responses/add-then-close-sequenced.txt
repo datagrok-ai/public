@@ -1,0 +1,10 @@
+```datagrok-exec
+// Add a histogram (first numeric column), then close the scatter plot
+const numericCol = t.columns.numerical.toList()[0];
+if (!numericCol) throw new Error('No numeric columns found in the table.');
+
+grokky.addViewer(view, 'Histogram', { valueColumnName: numericCol.name });
+grokky.closeViewer('Scatter plot', view);
+```
+
+I've added a **Histogram** (using the first numeric column) and closed the **Scatter plot**. Let me know if you'd like to use a different column or make any adjustments!

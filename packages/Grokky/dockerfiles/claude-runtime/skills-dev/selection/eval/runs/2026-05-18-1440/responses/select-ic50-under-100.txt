@@ -1,0 +1,10 @@
+I'll select rows where `IC50 < 100` using the selection BitSet:
+
+```datagrok-exec
+const ic50 = t.col('IC50');
+if (!ic50) throw new Error('Column "IC50" not found in the current table.');
+t.selection.init(i => ic50.get(i) < 100);
+return ui.tableFromMap({ 'Selected rows': t.selection.trueCount, 'Total rows': t.rowCount });
+```
+
+This replaces the current selection with all rows where **IC50 < 100** and shows a summary of how many rows were selected.

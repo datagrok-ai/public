@@ -1,0 +1,22 @@
+Here are the two operations:
+
+**1. Describe the molecule column:**
+
+```datagrok-exec
+const col = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+const result = grokky.describeColumn(col);
+return result;
+```
+
+**2. Add a Ki column with semType `Ki`:**
+
+```datagrok-exec
+const col = await grokky.addColumn(t, {
+  name: 'Ki',
+  type: DG.COLUMN_TYPE.FLOAT,
+  meta: { semType: DG.SEMTYPE.Ki },
+});
+return col;
+```
+
+The first block will return a JSON snapshot of the molecule column (type, semType, stats, missing values, unique count, etc.). The second block adds a new empty `float` column named **Ki** with semantic type `Ki` to your table.

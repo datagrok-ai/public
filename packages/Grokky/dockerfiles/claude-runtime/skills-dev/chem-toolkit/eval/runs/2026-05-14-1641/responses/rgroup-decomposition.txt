@@ -1,0 +1,24 @@
+```datagrok-exec
+const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+const result = await grok.functions.call('Chem:rGroupDecomposition', {
+  df: t,
+  molColName: molCol.name,
+  core: 'c1ccncc1',
+  rGroupName: 'R',
+  rGroupMatchingStrategy: 'Greedy',
+  onlyMatchAtRGroups: false
+});
+
+// result is an RGroupDecompRes — open as a new table view
+const resDf = result.df ?? result;
+grok.shell.addTableView(resDf);
+```
+
+This runs **R-group decomposition** on your molecules column using the scaffold **c1ccncc1** (pyridine) with the **Greedy** matching strategy. The result will open as a new table with:
+
+- A **Core** column showing the matched scaffold
+- **R1, R2, …** columns for each substituent position found around the pyridine ring
+
+If you'd like to change the matching strategy (e.g. `Exhaustive`, `GA`) or restrict matches to R-group attachment points only (`onlyMatchAtRGroups: true`), just let me know!

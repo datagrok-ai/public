@@ -1,0 +1,7 @@
+```datagrok-exec
+grokky.setColumnMeta(t.getCol('height'), {
+  colorCoding: {kind: 'conditional', rules: {'20-170': '#00FF00'}},
+});
+```
+
+Done! The **height** column is now colored green for values between 20 and 170.

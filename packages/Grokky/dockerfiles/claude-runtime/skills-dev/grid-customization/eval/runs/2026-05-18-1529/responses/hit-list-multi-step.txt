@@ -1,0 +1,27 @@
+```datagrok-exec
+// 1. Pin SMILES column on the left
+const smilesGridCol = view.grid.columns.toList().find(gc => gc.column?.semType === 'Molecule' || gc.name?.toLowerCase().includes('smiles'));
+if (smilesGridCol) smilesGridCol.pin();
+
+// 2. Hide the index column (row number / first column at index 0 is the row header; index column is often named '#' or 'idx')
+const indexGridCol = view.grid.columns.toList().find(gc =>
+  gc.name === '#' || gc.name?.toLowerCase() === 'index' || gc.name?.toLowerCase() === 'idx'
+);
+if (indexGridCol) indexGridCol.visible = false;
+
+// 3. Color activity red → green
+const activityCol = t.columns.toList().find(c => c.name.toLowerCase().includes('activity'));
+if (activityCol) activityCol.meta.colors.setLinear(['#FF0000', '#FFFF00', '#00FF00']);
+
+// 4. Sort by activity descending
+if (activityCol) view.grid.sort([activityCol.name], [false]);
+```Here's what was applied to your grid:
+
+| Step | Action |
+|------|--------|
+| 📌 **Pin** | SMILES column (detected by semantic type `Molecule` or name) pinned to the left |
+| 🙈 **Hide** | Index/row-number column (`#`, `index`, or `idx`) hidden |
+| 🎨 **Color** | Activity column colored **red → yellow → green** (low → mid → high) |
+| 🔽 **Sort** | Grid sorted by activity **descending** (highest first) |
+
+> **Note:** Column detection is name/semType-based. If your columns have non-standard names and something wasn't applied, let me know the exact column names and I'll re-run with them.

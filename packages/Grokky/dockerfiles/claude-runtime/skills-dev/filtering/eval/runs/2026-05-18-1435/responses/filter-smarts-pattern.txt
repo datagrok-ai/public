@@ -1,0 +1,18 @@
+```datagrok-exec
+const query = '[#6][!#1]';
+const molBlock = DG.chem.convert(query, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
+
+// Find the molecule column
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+if (!molCol) throw new Error('No molecule column found in the current table.');
+
+view.getFiltersGroup({createDefaultFilters: false}).updateOrAdd({
+  type: DG.FILTER_TYPE.SUBSTRUCTURE,
+  column: molCol.name,
+  columnName: molCol.name,
+  molBlock,
+  molBlockFailover: query,
+});
+```
+
+I've applied a **SMARTS substructure filter** (`[#6][!#1]` — any carbon bonded to a non-hydrogen atom) to the molecule column in your table. The filter panel will show the widget, and only matching compounds will be visible.

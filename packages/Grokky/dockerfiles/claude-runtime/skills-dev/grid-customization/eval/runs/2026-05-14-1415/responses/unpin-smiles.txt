@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.unpinColumn(view, 'SMILES');
+```
+
+The **SMILES** column has been unpinned.

@@ -1,0 +1,6 @@
+
+```datagrok-exec
+t.filter.copyFrom(t.selection);
+```
+
+Done! The filter has been updated to show only the rows that were selected — all other rows are now hidden.

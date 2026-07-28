@@ -1,0 +1,11 @@
+
+```datagrok-exec
+// Find all numeric columns
+const numericCols = t.columns.numerical.toList().map(c => c.name);
+
+view.addViewer(DG.VIEWER.CORR_PLOT, {
+  columnNames: numericCols,
+});
+```
+
+Added a **Correlation plot** with all **${numericCols.length} numeric columns**: ${numericCols.join(', ')}.

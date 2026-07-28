@@ -1,0 +1,9 @@
+```datagrok-exec
+// Sort by activity descending, select top 5 rows
+grokky.sortRows(t, ['activity'], [false]);
+grokky.selectRows(t, [0, 1, 2, 3, 4]);
+```
+
+This will:
+1. **Sort** the table by `activity` in descending order (highest first)
+2. **Select** the top 5 rows (indices 0–4 after sorting)

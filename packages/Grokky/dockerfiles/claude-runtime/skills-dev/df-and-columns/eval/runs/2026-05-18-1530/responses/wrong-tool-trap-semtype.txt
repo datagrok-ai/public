@@ -1,0 +1,8 @@
+```datagrok-exec
+const col = t.columns.firstWhere(c => c.name.toLowerCase() === 'smiles');
+if (!col) throw new Error('No column named "smiles" found.');
+col.semType = DG.SEMTYPE.MOLECULE;
+return ui.divText(`Set semType of "${col.name}" to Molecule.`);
+```
+
+This sets the semantic type of the `smiles` column to `Molecule`, which tells Datagrok to treat its values as chemical structures (enabling structure rendering, cheminformatics functions, substructure search, etc.).

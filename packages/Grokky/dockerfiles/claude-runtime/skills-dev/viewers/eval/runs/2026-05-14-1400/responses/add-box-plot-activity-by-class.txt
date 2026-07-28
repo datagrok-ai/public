@@ -1,0 +1,13 @@
+```datagrok-exec
+// Add a Box plot with activity as the value column and class as the category
+grokky.addViewer(view, 'Box plot', {
+  valueColumnName: 'activity',
+  categoryColumnName: 'class',
+});
+```
+
+I've added a **Box plot** with:
+- **Value axis**: `activity`
+- **Category axis**: `class`
+
+The box plot will show the distribution of activity values grouped by each class. If the column names in your table differ, let me know and I'll adjust them!

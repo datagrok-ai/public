@@ -1,0 +1,14 @@
+```datagrok-exec
+view.addViewer(DG.VIEWER.SCATTER_PLOT, {
+  xColumnName: 'MW',
+  yColumnName: 'LogP',
+  colorColumnName: 'activity',
+  showRegressionLine: true,
+});
+```
+
+Done! A scatter plot has been added with:
+- **X axis** → `MW`
+- **Y axis** → `LogP`
+- **Color** → `activity`
+- **Regression line** enabled

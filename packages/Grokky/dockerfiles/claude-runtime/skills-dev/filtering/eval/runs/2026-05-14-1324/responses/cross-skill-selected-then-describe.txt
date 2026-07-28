@@ -1,0 +1,17 @@
+I'll first filter the table to the selected rows, then describe those molecules.
+
+**Step 1: Filter to selected rows**
+
+```datagrok-exec
+// Copy the selection BitSet into the filter (keep only selected rows)
+t.filter.copyFrom(t.selection);
+return { visible: t.filter.trueCount, total: t.rowCount };
+```
+
+**Step 2: Describe the filtered molecules**
+
+Once the filter is applied, tell me:
+- Which column contains the molecule structures (SMILES/molblock)?
+- What kind of description do you'd like — physicochemical properties (MW, logP, HBD/HBA…), a structural summary, diversity analysis, or something else?
+
+Or if you already have those details handy, share them and I'll run the analysis right away!

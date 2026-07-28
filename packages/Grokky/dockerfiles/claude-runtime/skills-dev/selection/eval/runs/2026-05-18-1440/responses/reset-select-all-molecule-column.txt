@@ -1,0 +1,23 @@
+```datagrok-exec
+// Find columns with semantic type 'Molecule' and select all rows — or just highlight the column
+const molCols = t.columns.toList().filter(c => c.semType === 'Molecule');
+
+if (molCols.length === 0) {
+  return ui.divText('No molecule columns found in the current table.');
+}
+
+// Select all rows (so all molecules in those columns are selected)
+t.selection.setAll(true);
+
+return ui.tableFromMap({
+  'Molecule columns found': molCols.map(c => c.name).join(', '),
+  'Rows selected': t.selection.trueCount,
+});
+```
+
+All rows in the molecule column(s) have been selected. Here's what happened:
+
+- **Found** all columns with semantic type `Molecule`
+- **Selected all rows** so every molecule entry is highlighted
+
+If you'd like to do something more specific — like select only certain rows, or select rows where the molecule matches a substructure — just let me know!

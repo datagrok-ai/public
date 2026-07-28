@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.resetGrid(view);
+```
+
+Done! The grid has been reset — column visibility, widths, sort, and color coding are all back to defaults. Your other viewers (scatter plots, histograms, etc.) are untouched.

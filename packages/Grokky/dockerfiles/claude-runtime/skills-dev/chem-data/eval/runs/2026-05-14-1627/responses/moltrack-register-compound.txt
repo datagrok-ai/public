@@ -1,0 +1,15 @@
+I need to ask you for the details before registering the compound.It looks like the question prompt was dismissed. To register your compound into MolTrack, I need a few details:
+
+1. **Structure** — Please provide the **SMILES string** (or molblock) of the compound you want to register.
+2. **Properties payload** — Provide the JSON properties you want to attach. For example:
+   ```json
+   {
+     "canonical_smiles": "CCO",
+     "name": "Ethanol",
+     "purity": 99.5,
+     "source": "Sigma-Aldrich"
+   }
+   ```
+3. **Scope** — Should this be registered as a **compound**, a **batch**, or both?
+
+Once you share these details, I'll call `MolTrack:registerMolTrackProperties` (for property definitions) or `MolTrack:registerBulk` (for bulk/single-row CSV registration) right away.

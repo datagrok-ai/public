@@ -1,0 +1,23 @@
+I'll select all rows where the molecule column contains data by finding the molecule column (semantic type `Molecule`) and selecting all its non-empty rows.
+
+```datagrok-exec
+// Find the molecule column by semantic type
+const molCol = t.columns.toList().find(c => c.semType === 'Molecule');
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+// Select all rows that have a non-null/non-empty molecule value
+t.selection.init(i => {
+  const val = molCol.get(i);
+  return val !== null && val !== '' && val !== undefined;
+});
+
+return ui.tableFromMap({
+  'Molecule column': molCol.name,
+  'Selected rows': t.selection.trueCount,
+  'Total rows': t.rowCount,
+});
+```
+
+This finds the column with semantic type **Molecule** and selects all rows that have a non-empty molecule value. The result shows how many rows were selected. Let me know if you'd like to refine the selection further!

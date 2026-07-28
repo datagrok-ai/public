@@ -1,0 +1,29 @@
+I'll use the `Chembl:chemblIdToSmilesTs` converter to map each ChEMBL ID in your column to SMILES. First, let me check what column contains the ChEMBL IDs:
+
+```datagrok-exec
+// Inspect column names to find the ChEMBL ID column
+return ui.divV(t.columns.names().map(name => ui.divText(name)));
+```
+
+Could you tell me the **name of the column** containing your ChEMBL IDs? Once I know that, I'll run the conversion across all rows and add a `SMILES` column to your table.
+
+Alternatively, if you can see the column name in the table, just share it and I'll proceed right away. Here's what the conversion will look like once we have the column name:
+
+```datagrok-exec
+const chemblCol = t.col('YOUR_CHEMBL_ID_COLUMN'); // replace with actual name
+const smiles = [];
+
+for (let i = 0; i < t.rowCount; i++) {
+  const id = chemblCol.get(i);
+  try {
+    const s = await grok.functions.call('Chembl:chemblIdToSmilesTs', { id });
+    smiles.push(s ?? '');
+  } catch {
+    smiles.push('');
+  }
+}
+
+t.columns.addNewString('SMILES').init(i => smiles[i]);
+```
+
+**What's the name of your ChEMBL ID column?**

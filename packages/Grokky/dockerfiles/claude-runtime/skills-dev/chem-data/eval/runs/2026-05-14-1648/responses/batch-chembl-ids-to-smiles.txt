@@ -1,0 +1,40 @@
+I'll use the built-in `chemblIdToSmilesTs` converter to map every ChEMBL ID in your column to SMILES. This function is registered as a **converter** and will process each ID automatically.
+
+```datagrok-exec
+// Find the column containing ChEMBL IDs
+const chemblCol = t.columns.toList().find(c =>
+  c.name.toLowerCase().includes('chembl') ||
+  (c.type === 'string' && c.get(0) && String(c.get(0)).match(/^CHEMBL\d+$/i))
+);
+
+if (!chemblCol) {
+  return ui.divText('❌ Could not find a ChEMBL ID column. Please rename your column to include "chembl" in the name.');
+}
+
+// Build result column
+const smilesData = [];
+const rowCount = t.rowCount;
+
+for (let i = 0; i < rowCount; i++) {
+  const id = chemblCol.get(i);
+  if (!id) { smilesData.push(null); continue; }
+  try {
+    const smiles = await grok.functions.call('Chembl:chemblIdToSmilesTs', { id: String(id).trim() });
+    smilesData.push(smiles ?? null);
+  } catch (e) {
+    smilesData.push(null);
+  }
+}
+
+// Add SMILES column to the table
+const smilesCol = DG.Column.fromList('string', 'SMILES', smilesData);
+smilesCol.semType = DG.SEMTYPE.MOLECULE;
+t.columns.add(smilesCol);
+```
+
+This will:
+1. **Auto-detect** your ChEMBL ID column (by name or by value pattern like `CHEMBL1185`).
+2. **Look up each ID** against the local ChEMBL database.
+3. **Append a `SMILES` column** with canonical SMILES, tagged with the `Molecule` semantic type so structure renderers activate automatically.
+
+> **Note:** Rows where the ID is missing or not found in the local ChEMBL DB will have `null` in the SMILES column. If your column isn't detected, rename it to include "chembl" in the column header and re-run.

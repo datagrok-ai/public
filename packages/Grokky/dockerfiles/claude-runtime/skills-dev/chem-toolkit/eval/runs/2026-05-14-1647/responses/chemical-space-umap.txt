@@ -1,0 +1,21 @@
+No worries — the function is well-known from the built-in catalog. I'll call `Chem:chemSpaceTopMenu` with UMAP on the molecule column in your current table.
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No Molecule column found in the current table.');
+
+await grok.functions.call('Chem:chemSpaceTopMenu', {
+  table: t,
+  molecules: mol,
+  methodName: 'UMAP',
+  similarityMetric: 'Tanimoto',
+  plotEmbeddings: true
+});
+```
+
+This will:
+1. **Compute Morgan fingerprints** for each molecule in your table.
+2. **Run UMAP** to project them into 2D space using Tanimoto similarity as the metric.
+3. **Open a Scatter Plot** with the UMAP embeddings — each point is a molecule, and structurally similar compounds will cluster together.
+
+You can hover over points to see the molecule structures, and use the scatter plot's selection/zoom tools to explore clusters interactively.

@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const ageCol = t.getCol('age');
+t.filter.init((i) => ageCol.get(i) > 40);
+```
+
+Done! The table is now filtered to show only rows where **age > 40** — `${t.filter.trueCount}` rows visible out of `${t.rowCount}` total.

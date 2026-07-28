@@ -1,0 +1,7 @@
+
+```datagrok-exec
+const subset = grokky.filteredDf(t);
+return DG.Viewer.grid(subset).root;
+```
+
+This creates a new in-memory table containing only the rows that currently pass the active filter, and displays it in the chat. Your original table `t` is untouched.

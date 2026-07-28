@@ -1,0 +1,9 @@
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.LINE_CHART, {
+  xColumnName: 'date',
+  yColumnNames: ['total'],
+});
+```
+
+A line chart has been added with **date** on the x-axis and **total** on the y-axis.

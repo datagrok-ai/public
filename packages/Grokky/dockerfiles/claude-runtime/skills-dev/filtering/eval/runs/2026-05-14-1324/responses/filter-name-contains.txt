@@ -1,0 +1,6 @@
+
+```datagrok-exec
+await grokky.filterRows(view, 'name', {contains: 'acid'});
+```
+
+Done! The table is now filtered to show only rows where the **name** column contains `'acid'`.

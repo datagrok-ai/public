@@ -1,0 +1,43 @@
+I'll compute MW and LogP for ibuprofen in two steps: first convert the name to SMILES, then calculate the properties.
+
+```datagrok-exec
+// Step 1: Get SMILES for ibuprofen via name lookup, then compute MW and LogP
+const nameCol = DG.Column.fromStrings('names', ['ibuprofen']);
+const namesDf = DG.DataFrame.fromColumns([nameCol]);
+
+// namesToSmiles requires a dataframe + column
+const smilesDf = await grok.functions.call('Chem:namesToSmiles', {
+  data: namesDf,
+  names: nameCol
+});
+
+// Extract the SMILES string
+const smilesCol = smilesDf.columns.byIndex(0);
+const smiles = smilesCol.get(0);
+
+// Step 2: Compute MW and LogP
+const molCol = DG.Column.fromStrings('molecule', [smiles]);
+molCol.semType = DG.SEMTYPE.MOLECULE;
+const molDf = DG.DataFrame.fromColumns([molCol]);
+
+const propsDf = await grok.functions.call('Chem:getProperties', {
+  molecules: molCol,
+  selected: ['MW', 'LogP']
+});
+
+const mw = propsDf.col('MW') ? propsDf.col('MW').get(0) : propsDf.columns.byIndex(0).get(0);
+const logp = propsDf.col('LogP') ? propsDf.col('LogP').get(0) : propsDf.columns.byIndex(1).get(0);
+
+return ui.tableFromMap({
+  'Compound': 'Ibuprofen',
+  'SMILES': smiles,
+  'MW': mw?.toFixed ? mw.toFixed(3) : mw,
+  'LogP': logp?.toFixed ? logp.toFixed(3) : logp,
+});
+```
+
+This will:
+1. **Name → SMILES** via `Chem:namesToSmiles` (ChEMBL-backed lookup)
+2. **MW & LogP** via `Chem:getProperties` on the resulting SMILES
+
+The result will be displayed as a summary table with ibuprofen's molecular weight and lipophilicity. Note: `namesToSmiles` requires the **Chembl** package to be installed on this instance. If it isn't available, the SMILES for ibuprofen is `CC(C)Cc1ccc(cc1)C(C)C(=O)O` — let me know and I can run the property calculation directly.

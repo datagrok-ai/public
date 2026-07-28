@@ -1,0 +1,6 @@
+I'll first get the available optimization targets to find the BACE1 folder, then generate the molecules.
+
+```datagrok-exec
+const folders = await grok.functions.call('Reinvent4:getFolders');
+return ui.divV(folders.map(f => ui.divText(f)));
+```

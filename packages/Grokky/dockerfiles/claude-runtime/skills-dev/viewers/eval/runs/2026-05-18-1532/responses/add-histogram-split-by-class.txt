@@ -1,0 +1,10 @@
+I'll go ahead and add a **Box plot** — the most informative view for comparing distributions across categories — showing `activity` per `compound_class`:
+
+```datagrok-exec
+view.addViewer(DG.VIEWER.BOX_PLOT, {
+  valueColumnName: 'activity',
+  categoryColumnName: 'compound_class',
+});
+```
+
+This adds a Box plot displaying the distribution of `activity` values (median, quartiles, whiskers, and outliers) for each `compound_class`. Let me know if you'd prefer a different chart type, such as a **Histogram** (split by class) or a **Trellis plot**!

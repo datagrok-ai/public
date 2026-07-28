@@ -1,0 +1,16 @@
+Since acetylsalicylic acid (aspirin) is a well-known compound, the best approach is to search for it in ChEMBL by similarity or substructure. Its SMILES is `CC(=O)Oc1ccccc1C(=O)O`. Let me perform a similarity search in the ChEMBL database:
+
+```datagrok-exec
+const smiles = 'CC(=O)Oc1ccccc1C(=O)O'; // acetylsalicylic acid (aspirin)
+const df = await grok.functions.call('Chembl:chemblSimilaritySearch', { molecule: smiles });
+grok.shell.addTableView(df);
+```
+
+This searches the local ChEMBL database for compounds **similar to acetylsalicylic acid** (aspirin, SMILES: `CC(=O)Oc1ccccc1C(=O)O`) and opens the results as a table view.
+
+The results will include:
+- **smiles** — canonical SMILES of each hit
+- **chembl_id** — the ChEMBL identifier
+- **similarity** — similarity score to aspirin
+
+Would you like me to also run a **substructure search**, look up its **ChEMBL ID directly**, or open a **similarity/substructure search panel** for interactive exploration?

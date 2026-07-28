@@ -1,0 +1,5 @@
+```datagrok-exec
+Array.from(view.viewers).slice(1).forEach((v) => { try { v.close(); } catch {} });
+```
+
+Done — all charts have been removed. The view now shows only the grid.

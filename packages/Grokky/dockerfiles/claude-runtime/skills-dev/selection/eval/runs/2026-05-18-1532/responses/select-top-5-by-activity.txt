@@ -1,0 +1,12 @@
+
+```datagrok-exec
+const actCol = t.getCol('activity');
+const sortedOrder = t.getSortedOrder(['activity'], [false]);
+const top5 = Array.from(sortedOrder).slice(0, 5);
+t.selection.setAll(false, false);
+for (const i of top5) t.selection.set(i, true, false);
+t.selection.fireChanged();
+return ui.tableFromMap({ 'Selected rows': t.selection.trueCount, 'Total rows': t.rowCount });
+```
+
+The top 5 rows by **activity** (highest first) are now selected. You should see them highlighted in the grid.

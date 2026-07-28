@@ -1,0 +1,5 @@
+```datagrok-exec
+grokky.clearSort(view);
+```
+
+Sort cleared!

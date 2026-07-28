@@ -1,0 +1,25 @@
+When creating standalone (detached) viewers — for example to embed them in a custom UI element you return from a `datagrok-exec` block — you should use `DG.Viewer.fromType`.
+
+Here's a quick example:
+
+```javascript
+// Standalone scatter plot embedded in chat output
+const sp = DG.Viewer.fromType(DG.VIEWER.SCATTER_PLOT, t, {
+  xColumnName: 'mw',
+  yColumnName: 'logp',
+});
+return sp.root;
+```
+
+**When to use `DG.Viewer.fromType` vs `view.addViewer`:**
+
+| Situation | Use |
+|-----------|-----|
+| Embedding a viewer in custom UI / returning from exec block | `DG.Viewer.fromType(type, df, opts)` |
+| Adding a viewer to the current table view layout | `view.addViewer(type, opts)` |
+
+**Key points:**
+- `DG.Viewer.fromType(viewerType, dataFrame, options?)` — all three args; the DataFrame is explicit since there's no attached view to infer it from.
+- The returned viewer is **not** attached to any view — you own its `.root` element.
+- Same property-naming rules apply: column bindings always end in `ColumnName` / `ColumnNames`, never bare `x`/`y`/`color`.
+- Do **not** use `new DG.Viewer(...)` — that's an internal constructor over a Dart handle and is not a public API.

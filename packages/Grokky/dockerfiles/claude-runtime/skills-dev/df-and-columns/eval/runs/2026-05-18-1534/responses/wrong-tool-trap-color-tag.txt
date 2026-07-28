@@ -1,0 +1,8 @@
+
+```datagrok-exec
+t.getCol('height').meta.colors.setConditional({
+  '20-170': '#00FF00',
+});
+```
+
+Done! The **height** column is now colored green for values between 20 and 170.

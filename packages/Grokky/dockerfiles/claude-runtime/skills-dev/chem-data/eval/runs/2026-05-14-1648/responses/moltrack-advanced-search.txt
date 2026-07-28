@@ -1,0 +1,40 @@
+I'll use `MolTrack:advancedSearch` with an `AND` filter combining MW range and project name:
+
+```datagrok-exec
+const df = await grok.functions.call('MolTrack:advancedSearch', {
+  outputFields: [
+    'compounds.canonical_smiles',
+    'compounds.corporate_compound_id',
+    'compounds.details.MW',
+    'compounds.details.project'
+  ],
+  filter: {
+    operator: 'AND',
+    conditions: [
+      {
+        field: 'compounds.details.MW',
+        operator: 'RANGE',
+        value: [200, 500]
+      },
+      {
+        field: 'compounds.details.project',
+        operator: '=',
+        value: 'Kinase'
+      }
+    ]
+  }
+});
+
+if (!df || df.rowCount === 0)
+  return ui.divText('No compounds found matching MW 200–500 and project "Kinase".');
+
+grok.shell.addTableView(df);
+return DG.Viewer.grid(df).root;
+```
+
+This query:
+- **MW RANGE [200, 500]** — filters compounds with molecular weight between 200 and 500 Da
+- **project = 'Kinase'** — restricts to the `Kinase` project
+- Returns key fields: SMILES, corporate ID, MW, and project, then opens the results as a table view
+
+If the MW or project field path differs in your MolTrack schema (e.g. `compounds.details.molecular_weight`), let me know and I'll adjust the field names accordingly.

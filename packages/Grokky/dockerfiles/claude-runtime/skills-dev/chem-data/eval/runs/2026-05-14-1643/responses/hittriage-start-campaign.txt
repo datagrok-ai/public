@@ -1,0 +1,12 @@
+```datagrok-exec
+await grok.functions.call('HitTriage:hitTriageApp', {});
+```
+
+The **Hit Triage** app is now open! This workflow allows you to:
+
+- **Ingest** a compound dataset (use demo data or upload your own)
+- **Triage** hits by scoring and filtering molecules
+- **Review** and annotate candidates
+- **Submit** selected hits for further progression
+
+You can load demo data (100 or 5000 molecules) from the data source options, or bring in your own compound list with a structure column.

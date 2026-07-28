@@ -1,0 +1,20 @@
+I'll select all rows where the molecule column has a value. Let me first identify the molecule column in the current table.
+
+```datagrok-exec
+// Find the molecule column (semantic type 'Molecule') and select all rows that have a value in it
+const molCol = Array.from(t.columns).find(c => c.semType === 'Molecule' || c.semType === DG.SEMTYPE.MOLECULE);
+
+if (!molCol) {
+  return ui.divText('No molecule column found in the current table.');
+}
+
+grokky.selectRows(t, (i) => molCol.get(i) != null && molCol.get(i) !== '');
+
+return ui.tableFromMap({
+  'Molecule column': molCol.name,
+  'Rows selected': t.selection.trueCount,
+  'Total rows': t.rowCount
+});
+```
+
+This selects all rows in the molecule column (any row with a non-null, non-empty molecule value). The result summary shows which column was found and how many rows were selected.

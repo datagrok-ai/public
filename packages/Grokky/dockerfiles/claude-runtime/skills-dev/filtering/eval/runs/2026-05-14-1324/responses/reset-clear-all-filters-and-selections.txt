@@ -1,0 +1,7 @@
+
+```datagrok-exec
+grokky.clearFilter(view);
+t.selection.setAll(false);
+```
+
+Done — all filters cleared and all row selections deselected.

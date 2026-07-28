@@ -1,0 +1,27 @@
+
+```datagrok-exec
+// Reset all grid customization to default
+const cols = view.grid.columns;
+
+// 1. Restore all column visibility (skip index 0 = row header)
+for (let i = 1; i < cols.length; i++) {
+  const gc = cols.byIndex(i);
+  if (gc) gc.visible = true;
+}
+
+// 2. Reset column widths to optimal
+view.grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
+
+// 3. Clear sort
+view.grid.sort([], []);
+
+// 4. Disable all color codings
+for (const c of t.columns.toList())
+  c.meta.colors.setDisabled();
+```
+
+All grid customizations have been reset to default:
+- **Visibility** — all hidden columns are now visible
+- **Widths** — reset to *Optimal* (auto-fit to content)
+- **Sort** — cleared, back to original row order
+- **Color coding** — disabled for all columns

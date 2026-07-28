@@ -1,0 +1,5 @@
+```datagrok-exec
+Array.from(view.viewers).slice(1).forEach((v) => { try { v.close(); } catch {} });
+```
+
+Done — all non-grid viewers have been closed. The view now shows just the grid.

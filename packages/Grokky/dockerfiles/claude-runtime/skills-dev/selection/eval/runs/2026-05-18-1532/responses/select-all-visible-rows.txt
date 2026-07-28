@@ -1,0 +1,5 @@
+```datagrok-exec
+t.selection.copyFrom(t.filter);
+```
+
+This copies the current filter's BitSet directly into the selection — so every row that's currently **visible** (passing the filter) becomes **selected**. Rows hidden by the filter remain unselected.

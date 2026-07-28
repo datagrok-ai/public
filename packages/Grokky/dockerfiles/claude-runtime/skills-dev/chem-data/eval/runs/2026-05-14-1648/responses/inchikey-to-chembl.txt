@@ -1,0 +1,21 @@
+Based on the skill documentation, the `Chem:mapIdentifiersTransform` function handles InChI key → ChEMBL ID lookups. Let me run this using the ChEMBL name lookup via the `Chembl:namesToSmiles` query path, or better — use `Chem:mapIdentifiersTransform`:
+
+```datagrok-exec
+// Map InChI key to ChEMBL ID using the identifier mapping function
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('InChIKey', ['BSYNRYMUTXBXSQ-UHFFFAOYSA-N'])
+]);
+
+const result = await grok.functions.call('Chem:mapIdentifiersTransform', {
+  table: df,
+  molecules: df.col('InChIKey'),
+  inputType: 'InChIKey',
+  outputType: 'ChEMBL ID'
+});
+
+return DG.Viewer.grid(result ?? df).root;
+```
+
+This will map the InChI key **BSYNRYMUTXBXSQ-UHFFFAOYSA-N** to its corresponding ChEMBL ID. 
+
+> **Note:** `BSYNRYMUTXBXSQ-UHFFFAOYSA-N` is the InChI key for **Aspirin (acetylsalicylic acid)**, whose ChEMBL ID is **CHEMBL25**. The result grid above will confirm this from the live database.

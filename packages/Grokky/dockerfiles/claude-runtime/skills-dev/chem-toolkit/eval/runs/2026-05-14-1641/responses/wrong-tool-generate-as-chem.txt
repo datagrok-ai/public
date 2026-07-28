@@ -1,0 +1,8 @@
+I need to find a molecule to use as the seed. Let me check what's in the current table.
+
+```datagrok-exec
+const mol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+if (!mol) throw new Error('No molecule column found in the current table.');
+const seed = mol.get(t.currentRowIdx >= 0 ? t.currentRowIdx : 0);
+return ui.divText(`Seed molecule (row ${t.currentRowIdx >= 0 ? t.currentRowIdx : 0}): ${seed}`);
+```

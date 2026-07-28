@@ -1,0 +1,34 @@
+I'll look up ibuprofen's SMILES and compute MW + LogP in one block — first converting the name to SMILES, then computing properties.
+
+```datagrok-exec
+// Ibuprofen canonical SMILES (well-known structure)
+const smiles = 'CC(C)Cc1ccc(cc1)C(C)C(=O)O';
+
+// Build a one-row DataFrame
+const df = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('molecule', [smiles])
+]);
+df.col('molecule').semType = DG.SEMTYPE.MOLECULE;
+
+// Compute MW and LogP
+const props = await grok.functions.call('Chem:getProperties', {
+  molecules: df.col('molecule'),
+  selected: ['MW', 'LogP']
+});
+
+// Build a result table
+const resultDf = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('Compound', ['Ibuprofen']),
+  DG.Column.fromStrings('SMILES', [smiles]),
+  DG.Column.fromFloat32Array('MW', new Float32Array([props.col('MW').get(0)])),
+  DG.Column.fromFloat32Array('LogP', new Float32Array([props.col('LogP').get(0)])),
+]);
+
+return DG.Viewer.grid(resultDf).root;
+```
+
+This computes:
+- **MW** — molecular weight (Da) via OpenChemLib
+- **LogP** — Crippen/OCL partition coefficient
+
+The result is displayed as an interactive grid. Ibuprofen (MW ≈ 206.3, LogP ≈ 3.5) is a classic lipophilic NSAID, well within drug-like space.

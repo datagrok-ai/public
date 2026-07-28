@@ -1,0 +1,866 @@
+{
+  "meta": {
+    "skillName": "chem-data",
+    "skillDir": "/Users/aleksashka/Desktop/datagrok/reddata/public/packages/Grokky/dockerfiles/claude-runtime/skills-dev/chem-data",
+    "inlinedSkillNames": [
+      "datagrok-exec",
+      "chem-data"
+    ],
+    "model": "sonnet",
+    "systemPromptChars": 28817,
+    "totalDurationMs": 49276,
+    "startedAt": "2026-05-14T13:43:40.240Z"
+  },
+  "results": [
+    {
+      "id": "chembl-substructure-search",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblSubstructureSearch|Chembl:chemblSubstructureSearchPanel|call_function.*Chembl:(chemblSubstructureSearch|chemblSubstructureSearchPanel)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecule",
+            "matched": true
+          },
+          {
+            "pattern": "c1ccncc1",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:searchSubstructure",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:SubstructureSearchTopMenu",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "chembl-similarity-search",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblSimilaritySearch|Chembl:chemblSimilaritySearchPanel|call_function.*Chembl:(chemblSimilaritySearch|chemblSimilaritySearchPanel)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "molecule",
+            "matched": true
+          },
+          {
+            "pattern": "CCOc1ccc\\(cc1\\)C\\(=O\\)O",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:findSimilar",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:callChemSimilaritySearch",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "chembl-compounds-by-organism",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:getChemblCompoundsByOrganism|call_function.*Chembl:getChemblCompoundsByOrganism",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "organism",
+            "matched": true
+          },
+          {
+            "pattern": "Shigella",
+            "matched": true
+          },
+          {
+            "pattern": "maxNumberOfMolecules|max_number_of_molecules",
+            "matched": true
+          },
+          {
+            "pattern": "500",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:getChemblCompounds\\b",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "moltrack-register-compound",
+      "category": "atomic-do",
+      "overall": false,
+      "path": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": false
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "MolTrack:registerMolTrackProperties|MolTrack:registerBulk|call_function.*MolTrack:(registerMolTrackProperties|registerBulk)",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "jsonPayload|payload|csvFile",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "MolTrack:getCompoundByCorporateId",
+            "matched": false
+          },
+          {
+            "pattern": "MolTrack:advancedSearch",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 0
+    },
+    {
+      "id": "moltrack-lookup-corporate-id",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "MolTrack:getCompoundByCorporateId|call_function.*MolTrack:getCompoundByCorporateId",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "corporateValue|corporate_value",
+            "matched": true
+          },
+          {
+            "pattern": "DG-12345",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "MolTrack:getBatchByCorporateId",
+            "matched": false
+          },
+          {
+            "pattern": "MolTrack:advancedSearch",
+            "matched": false
+          },
+          {
+            "pattern": "MolTrack:search\\b",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "curves-fit",
+      "category": "atomic-do",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Curves:dataToCurves|Curves:dataToCurvesTopMenu|call_function.*Curves:(dataToCurves|dataToCurvesTopMenu)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "concentrationCol|concentration_col",
+            "matched": true
+          },
+          {
+            "pattern": "readoutCol|readout_col",
+            "matched": true
+          },
+          {
+            "pattern": "compoundIDCol|compound_id_col",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Curves:addStatisticsColumn",
+            "matched": false
+          },
+          {
+            "pattern": "Curves:previewPzfx",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "chemblid-to-smiles",
+      "category": "identifier-resolution",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblIdToSmilesTs|call_function.*Chembl:chemblIdToSmilesTs",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "CHEMBL301",
+            "matched": true
+          },
+          {
+            "pattern": "id",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:namesToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "drugname-to-smiles",
+      "category": "identifier-resolution",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Chem:namesToSmiles|call_function.*Chem:namesToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "aspirin",
+            "matched": true
+          },
+          {
+            "pattern": "names",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblIdToSmilesTs",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "inchikey-to-chembl",
+      "category": "identifier-resolution",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:getMapIdentifiers|Chem:mapIdentifiersTransform|call_function.*Chem:(getMapIdentifiers|mapIdentifiersTransform)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "fromSource|from_source|InChI|inchi",
+            "matched": true
+          },
+          {
+            "pattern": "toSource|to_source|CHEMBL|chembl",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblIdToSmilesTs",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "batch-chembl-ids-to-smiles",
+      "category": "identifier-resolution",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblIdToSmilesTs|Chem:mapIdentifiersTransform|call_function.*(Chembl:chemblIdToSmilesTs|Chem:mapIdentifiersTransform)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "CHEMBL|chembl",
+            "matched": true
+          },
+          {
+            "pattern": "smiles|SMILES",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:namesToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "curves-ic50-from-data",
+      "category": "cross-package",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Curves:dataToCurves|Curves:addStatisticsColumn|call_function.*Curves:(dataToCurves|addStatisticsColumn)",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "IC50|ic50",
+            "matched": false
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Admetica:getAdmeProperties",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:getProperties",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "hittriage-start-campaign",
+      "category": "cross-package",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "HitTriage:hitTriageApp|call_function.*HitTriage:hitTriageApp",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "hitTriageApp",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "HitTriage:hitDesignApp",
+            "matched": false
+          },
+          {
+            "pattern": "HitTriage:peptiHitApp",
+            "matched": false
+          },
+          {
+            "pattern": "HitTriage:pepTriageApp",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "moltrack-advanced-search",
+      "category": "cross-package",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "MolTrack:advancedSearch|MolTrack:search|call_function.*MolTrack:(advancedSearch|search)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "filter",
+            "matched": true
+          },
+          {
+            "pattern": "outputFields|output_fields|level",
+            "matched": true
+          },
+          {
+            "pattern": "Kinase",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblSubstructureSearch",
+            "matched": false
+          },
+          {
+            "pattern": "MolTrack:retrieveEntity",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-thrombin-compounds",
+      "category": "wrong-tool-trap",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:getChemblCompoundsByOrganism|Chembl:chemblSubstructureSearch|MolTrack:advancedSearch|call_function.*(Chembl:|MolTrack:)",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "thrombin|target|organism",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:findSimilar",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:searchSubstructure",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:namesToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "wrong-tool-lookup-by-name",
+      "category": "wrong-tool-trap",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Chem:namesToSmiles|Chembl:chemblSimilaritySearch|call_function.*(Chem:namesToSmiles|Chembl:)",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "acetylsalicylic",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          },
+          {
+            "pattern": "Chem:isSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "footgun-chembl-namespace",
+      "category": "footgun",
+      "overall": true,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:chemblIdToSmilesTs|call_function.*Chembl:chemblIdToSmilesTs",
+            "matched": true
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chembl:",
+            "matched": true
+          },
+          {
+            "pattern": "CHEMBL25",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "ChEMBL:chembl",
+            "matched": false
+          },
+          {
+            "pattern": "ChEMBL:CHEMBL",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    },
+    {
+      "id": "footgun-names-to-smiles-depends-on-chembl",
+      "category": "footgun",
+      "overall": false,
+      "path": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": ">=1 datagrok-exec block",
+            "matched": true
+          }
+        ]
+      },
+      "helpers": {
+        "passed": false,
+        "details": [
+          {
+            "pattern": "Chem:namesToSmiles|call_function.*Chem:namesToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "symbols": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "names",
+            "matched": true
+          },
+          {
+            "pattern": "aspirin",
+            "matched": true
+          },
+          {
+            "pattern": "ibuprofen",
+            "matched": true
+          }
+        ]
+      },
+      "forbidden": {
+        "passed": true,
+        "details": [
+          {
+            "pattern": "Chem:freeTextToSmiles",
+            "matched": false
+          }
+        ]
+      },
+      "execBlockCount": 1
+    }
+  ]
+}
