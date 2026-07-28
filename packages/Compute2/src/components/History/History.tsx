@@ -59,6 +59,7 @@ export const History = Vue.defineComponent({
   emits: {
     runChosen: (_chosenCall: DG.FuncCall) => true,
     compare: (_ids: string[]) => true,
+    selectionChanged: (_selectedCalls: DG.FuncCall[]) => true,
     afterRunEdited: (_editedCall: DG.FuncCall) => true,
     afterRunDeleted: (_deletedCall: DG.FuncCall) => true,
   },
@@ -231,6 +232,7 @@ export const History = Vue.defineComponent({
       for (const call of selectedCalls)
         currentSelection.add(call);
       hasSelected.value = selectedCalls.length > 0;
+      emit('selectionChanged', selectedCalls);
     });
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);

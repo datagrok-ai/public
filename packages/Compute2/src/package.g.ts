@@ -71,6 +71,12 @@ export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
 }
 
+//name: Compare Runs
+//description: Compare data across model runs: scalars or a single table column
+export async function CompareRuns() : Promise<void> {
+  await PackageFunctions.CompareRuns();
+}
+
 //name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
