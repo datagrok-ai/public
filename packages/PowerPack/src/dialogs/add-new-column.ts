@@ -984,12 +984,14 @@ export class AddNewColumnDialog {
     if (start == pos && side < 0 || end == pos && side > 0)
       return null;
     const funcName = text.slice(start - from, end - from);
-    if (!packageFunctionsParams[funcName] && !coreFunctionsParams[funcName])
+    const hasPackageParams = Object.prototype.hasOwnProperty.call(packageFunctionsParams, funcName);
+    const hasCoreParams = Object.prototype.hasOwnProperty.call(coreFunctionsParams, funcName);
+    if (!hasPackageParams && !hasCoreParams)
       return {funcName: funcName, start: start, end: end};
     if (withoutSignature)
       return {funcName: funcName, start: start, end: end};
     const funcParams = funcName.includes(':') ? packageFunctionsParams[funcName] : coreFunctionsParams[funcName];
-    if (!funcParams)
+    if (!funcParams || !funcParams.params)
       return {funcName: funcName, start: start, end: end};
     const funcInputs = funcParams.params.filter((it) => it.propName !== FUNC_OUTPUT_TYPE);
     const funcOutputs = funcParams.params.filter((it) => it.propName === FUNC_OUTPUT_TYPE);

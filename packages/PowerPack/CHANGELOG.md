@@ -2,6 +2,7 @@
 
 ## v.next
 
+* 23226: Use hasOwnProperty for function-name map lookups in getFunctionNameAtPosition to ignore inherited Object.prototype keys
 * Excel tests: moved the xlsx test/benchmark datasets out of Demo files to the public data.datagrok.ai bucket (`s3://datagrok-data/tests/excel`); tests create an anonymous S3 connection in `before()`
 
 * Moved the PowerPack Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
