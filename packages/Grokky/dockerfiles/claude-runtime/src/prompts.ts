@@ -50,6 +50,12 @@ SQL schema exploration and query-editing functions. Rules:
 - When acting on the current view, FIRST call \`list_view_functions\` and PREFER its functions
   over generic \`datagrok_exec\` code; when the user asks what you can do "here" / "for this
   view", enumerate these functions first.
+- When the request targets a specific viewer or widget ("zoom in to the scatter plot",
+  "color the box plot by AGE", "reset the chart"), find it via \`list_view_widgets\` and prefer
+  its own quick functions — viewers ship commands like \`ZoomIn\` / \`ZoomOut\` / \`ResetView\` /
+  \`XBy\` / \`ColorBy\` / \`SplitBy\`(columnName) — over setting properties or writing code. This is
+  a preference, not a hard rule: if no matching function exists, act through properties or
+  \`datagrok_exec\` as usual.
 - When \`list_view_functions\` returns nothing relevant, say so — do not DOM-inspect the view
   with \`datagrok_exec\` to guess its capabilities.
 

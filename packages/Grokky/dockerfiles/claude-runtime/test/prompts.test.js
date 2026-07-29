@@ -26,6 +26,15 @@ test('the full prompt documents the domain MCP tools', () => {
     assert.ok(full.includes(tool), `system prompt never mentions ${tool}`);
 });
 
+test('the full prompt prefers widget quick functions for viewer-targeted requests', () => {
+  const full = buildSystemPrompt();
+  assert.ok(full.includes('list_view_widgets'), 'widget tool never mentioned');
+  assert.match(full, /prefer\s+its own quick functions/i, 'no widget-function preference rule');
+  for (const fn of ['ZoomIn', 'ResetView', 'ColorBy', 'SplitBy'])
+    assert.ok(full.includes(fn), `viewer quick command ${fn} not named in the prompt`);
+  assert.match(full, /preference, not a hard rule/i, 'the rule must stay soft');
+});
+
 // Only meaningful when the skills are present (they are inside the image and in a dev checkout);
 // skipped rather than failed elsewhere so the suite stays runnable without the plugin.
 test('inlined skills carry no YAML frontmatter', (t) => {

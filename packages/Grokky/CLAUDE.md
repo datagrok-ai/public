@@ -147,7 +147,15 @@ users, groups, roles, projects, connections, queries, dockers, packages, files, 
 Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
 always briefed with their title) expose `get_dialog_info` / `set_input` / `click_button` plus the
 legacy per-button funcs, **tab controls** `list_tabs` / `select_tab`, **accordions** `list_panes` /
-`expand_pane`. Open dialogs live outside the view's DOM subtree, so `collectWidgets()` adds them as
+`expand_pane`. **Dart viewers** ship quick commands via the `TextInterpreter` mixin (d4
+`text_interpreter.dart`): no-param `reg()` commands matched by name/synonyms (`ZoomIn`, `ZoomOut`,
+`ResetView`) and parameterized funcs with anchored `searchPattern` regexes (`XBy`/`YBy`/`ColorBy`/
+`SizeBy`/`SplitBy`/`StackBy`/`ValueBy`/`CategoryBy`(columnName), `AggregationType`, `ChartType`,
+`Bins`) across scatter plot, line chart, bar chart, histogram, pie chart, box plot, density plot,
+PC plot, tree map, and 3D scatter plot. The same funcs serve the sync interpreter
+(`Prompt.process` matches `searchPattern` before the generic property interpreter) and the
+assistant (system prompt prefers a targeted widget's quick functions — soft rule, see
+`prompts.ts` "View functions"). Open dialogs live outside the view's DOM subtree, so `collectWidgets()` adds them as
 extra roots with `dlg<N>` refs — this is how the assistant fills and confirms a dialog that an
 entity command opened.
 
