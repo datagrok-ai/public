@@ -84,6 +84,30 @@ category('Add new column', () => {
     }
   });
 
+  test('rename during preview refresh', async () => {
+    const call = DG.Func.find({ name: 'AddNewColumn' })[0]
+      .prepare({'table': df, 'name': 'My new column', 'expression': '${age}*2', 'type': 'auto'});
+    const dlg = new AddNewColumnDialog(call);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
+    // pre-filled expression triggers the initial preview via a 1s debounce
+    await awaitCheck(() => dlg.gridPreview?.dataFrame.col('My new column') != null,
+      'initial preview has not been computed', 10000);
+    // start a preview refresh and rename while it is still computing
+    const refresh = dlg.updatePreview('${age}*2', false);
+    dlg.inputName!.value = 'first rename';
+    await dlg.updatePreview('${age}*2', true);
+    await refresh;
+    expect(dlg.gridPreview!.dataFrame.col('first rename') != null, true,
+      `preview grid shows '${dlg.gridPreview!.dataFrame.columns.names().join(', ')}' instead of renamed column`);
+    // subsequent renames must keep working
+    dlg.inputName!.value = 'second rename';
+    await dlg.updatePreview('${age}*2', true);
+    expect(dlg.gridPreview!.dataFrame.col('second rename') != null, true,
+      'rename after a preview refresh has no effect');
+    dlg.uiDialog!.close();
+  });
+
   test('insert function on click', async () => {
     const clear = async () => {
       dlg.codeMirror!.dispatch({

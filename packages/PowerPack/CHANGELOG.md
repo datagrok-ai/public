@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Add New Column: Fixed the preview grid ignoring column-name changes after a rename raced with a preview computation (e.g. when the dialog opens with a pre-filled expression and the name is edited right away) — the tracked preview column name could go stale, silently disabling all subsequent renames until the dialog was reopened
+
 * Excel tests: moved the xlsx test/benchmark datasets out of Demo files to the public data.datagrok.ai bucket (`s3://datagrok-data/tests/excel`); tests create an anonymous S3 connection in `before()`
 
 * Moved the PowerPack Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright

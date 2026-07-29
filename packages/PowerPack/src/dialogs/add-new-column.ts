@@ -1209,12 +1209,11 @@ export class AddNewColumnDialog {
       if (gridPreviewCol) {
         gridPreviewCol.name = colName;
         this.gridPreview!.invalidate();
+        this.currentCalculatedColName = colName;
       }
-      this.currentCalculatedColName = colName;
       return;
     }
 
-    this.currentCalculatedColName = colName;
     // Making the Column List for the Preview dataframe:
     const columnIds = this.findUniqueColumnNamesInExpression(expression);
 
@@ -1249,6 +1248,7 @@ export class AddNewColumnDialog {
     for (const colName of potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(potentialColIds[0])!.type;
+    this.currentCalculatedColName = potentialColIds[0];
 
     for (const colName of potentialColIds)
       this.previwDf!.columns.remove(colName);
@@ -1260,6 +1260,10 @@ export class AddNewColumnDialog {
     }
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
+
+    // the name input may have changed while the preview was being computed
+    if (this.getResultColumnName().colName !== colName && (!this.error || this.error === SYNTAX_ERROR))
+      await this.updatePreview(expression, true);
   }
 
   async getPreviewResults(colName: string, colType: string, expression: string, potentialColIds: string[]):
