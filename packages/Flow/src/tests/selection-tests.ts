@@ -116,6 +116,43 @@ category('Flow: selection', () => {
     }
   });
 
+  test('isNodeContextCurrent veto: a stale host context re-fires on re-click', async () => {
+    // The dedupe must ask the host whether its panels still show the node:
+    // staying selected does not mean the context panel / preview do (tab
+    // switches and autoruns change both without touching the selection).
+    const container = ui.div([], {style: {width: '1000px', height: '700px', position: 'absolute', left: '-10000px'}});
+    document.body.appendChild(container);
+    let fires = 0;
+    let contextCurrent = true;
+    const flow = new FlowEditor(container, {
+      onNodeSelected: () => fires++,
+      isNodeContextCurrent: () => contextCurrent,
+    });
+    const e: TestEditor = {flow, container};
+    try {
+      const a = await addNode(flow, 'Inputs/String Input', 0, 0);
+      await until(() => !!container.querySelector(`.ff-node[data-node-id="${a.id}"]`));
+
+      await clickNode(e, a);
+      expect(await until(() => isSelected(e, a)), true, 'first click selects');
+      expect(fires, 1, 'first click fires once');
+
+      await clickNode(e, a);
+      expect(fires, 1, 'context current → re-click stays deduped');
+
+      contextCurrent = false; // the host's panels no longer show the node
+      await clickNode(e, a);
+      expect(fires, 2, 'context stale → re-click re-fires');
+
+      contextCurrent = true;
+      await clickNode(e, a);
+      expect(fires, 2, 'context current again → deduped again');
+    } finally {
+      flow.destroy();
+      container.remove();
+    }
+  });
+
   test('shift+drag marquee adds the covered nodes to the selection', async () => {
     const e = makeEditor();
     try {

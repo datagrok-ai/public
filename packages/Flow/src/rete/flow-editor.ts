@@ -52,6 +52,14 @@ export type GraphEdit =
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
+  /** Host-state check behind the re-pick dedupe: clicking a node that is
+   *  already selected re-fires `onNodeSelected` unless this returns true —
+   *  i.e. the host's panels (context panel as the shell's current object, the
+   *  output preview) still reflect this node. Selection alone is a bad proxy:
+   *  switching tabs replaces the current object and an autorun can produce a
+   *  preview the panel never showed, both while the node stays selected.
+   *  Omitted → same-pick never re-fires (headless/test editors). */
+  isNodeContextCurrent?: (node: FlowNode) => boolean;
   /** Fired after selection changes that never go through `nodepicked` — the
    *  marquee (whose release is swallowed before it can bubble, see
    *  `installRectSelect`), Ctrl+A / Ctrl+Shift+A, the pointerup modifier
@@ -445,8 +453,12 @@ export class FlowEditor {
           // again, grab it to drag) changes nothing — don't make the host
           // rebuild its panels. `lastPointerDownWasSelected` is the state
           // snapshot from BEFORE rete's add-only pick, so a click that
-          // re-selects after a deselect-all still fires.
-          const samePick = node.id === this.lastPickedId && this.lastPointerDownWasSelected;
+          // re-selects after a deselect-all still fires. The host's
+          // `isNodeContextCurrent` can veto the dedupe: staying selected does
+          // not mean the context panel / preview still show this node (tab
+          // switches and autoruns change both without touching the selection).
+          const samePick = node.id === this.lastPickedId && this.lastPointerDownWasSelected &&
+            (this.callbacks.isNodeContextCurrent?.(node) ?? true);
           if (this.lastPickedId && this.lastPickedId !== node.id) {
             const prev = this.editor.getNode(this.lastPickedId);
             if (prev) this.callbacks.onNodeDeselected?.(prev);
@@ -895,10 +907,14 @@ export class FlowEditor {
       if (!id) return;
       // Re-clicking the chip that is already the sole-selected current object
       // changes nothing — don't re-fire the host callbacks (panel rebuilds).
+      // Same host veto as `nodepicked`: a stale context panel / preview means
+      // the re-click must go through.
       const accumulate = ev.ctrlKey || ev.metaKey;
-      const node = this.editor.getNode(id) as {selected?: boolean} | undefined;
-      if (node?.selected && this.lastPickedId === id &&
-          (accumulate || this.getSelectedNodeIds().length === 1)) return;
+      const node = this.editor.getNode(id);
+      if (node && (node as unknown as {selected?: boolean}).selected === true &&
+          this.lastPickedId === id &&
+          (accumulate || this.getSelectedNodeIds().length === 1) &&
+          (this.callbacks.isNodeContextCurrent?.(node) ?? true)) return;
       void this.selectNode(id, accumulate);
     });
     strip.addEventListener('contextmenu', (ev) => {

@@ -40,7 +40,7 @@ import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execu
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary, NodeExecStatus} from './execution/execution-state';
 import {OutputViewsManager, OutputTab, OutputTabInfo} from './views/output-views-manager';
-import {buildPreview, setPreviewCellFocusHandler} from './execution/value-inspector';
+import {buildPreview, setPreviewCellFocusHandler, hasRenderablePreview} from './execution/value-inspector';
 import {SuggestionPane, FF_SUGGEST_MIME} from './panel/suggestion-pane';
 import {
   collectSuggestContext, computeSuggestions, Suggestion, CellSignal,
@@ -549,6 +549,24 @@ export class FuncFlowView extends DG.ViewBase {
         grok.shell.o = this.propertyPanel.root;
         this.suggestionPane?.refresh();
       },
+      // Clicking the already-selected node is a no-op ONLY while the panels
+      // still show it: switching tabs replaces the shell's current object, and
+      // a run can leave a renderable output the preview never got to show —
+      // in both cases the re-click must restore the context, so return false.
+      isNodeContextCurrent: (node: FlowNode) => {
+        if (this.propertyPanel.shownNodeId !== node.id) return false;
+        try {
+          if (grok.shell.o !== this.propertyPanel.root) return false;
+        } catch {/* current-object read failed — treat as stale and re-show */
+          return false;
+        }
+        const preview = this.outputPreview;
+        if (preview.isEnabled && preview.pinnedNodeId == null && preview.currentNodeId !== node.id) {
+          const state = this.executionController?.state.getNodeState(node.id);
+          if (state != null && hasRenderablePreview(state)) return false;
+        }
+        return true;
+      },
       // Selection changes that bypass `nodepicked` — the marquee (its release
       // is swallowed before it can bubble to any container listener), Ctrl+A,
       // modifier-click removals, programmatic selects.
@@ -603,6 +621,9 @@ export class FuncFlowView extends DG.ViewBase {
       this.updateOutputViewValue(nodeId);
       // Completed/stale transitions change what's pending → what blocks autorun.
       this.updateAutorunIndicator();
+      // The open panel's Execution section tracks the run live — otherwise a
+      // node that completes while selected keeps showing the pre-run state.
+      this.propertyPanel.updateExecState(nodeId, this.executionController?.state.getNodeState(nodeId));
     };
     // Empty-canvas-click deselects happen inside rete with no callback — any
     // release on the canvas re-reads the selection. (Marquee releases never

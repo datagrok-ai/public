@@ -51,6 +51,7 @@ export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> 
 //input: string fileName
 //output: dataframe result
 //meta.includeInFlow: true
+//meta.autorun: true
 export async function readUploadedFile(fileId: string, fileName: string): Promise<DG.DataFrame> {
   const bytes = await readUploadedFileBytes(fileId, fileName);
   return parseFileToDataFrame(fileName, bytes);

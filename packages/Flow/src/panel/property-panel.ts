@@ -200,6 +200,21 @@ export class PropertyPanel {
     this.contentDiv.appendChild(ui.divText('Select a node to view its properties'));
   }
 
+  /** The node the panel currently renders, or null when empty/cleared. */
+  get shownNodeId(): string | null {
+    return this.currentNode?.id ?? null;
+  }
+
+  /** A run advanced the shown node's execution state under the open panel —
+   *  swap the state in and rebuild, so the Execution section (status,
+   *  duration, dims) never goes stale while the node stays selected.
+   *  Focus-guarded like {@link refreshShownNode}. */
+  updateExecState(nodeId: string, execState?: NodeExecState): void {
+    if (this.currentNode?.id !== nodeId || this.currentExecState === execState) return;
+    this.currentExecState = execState;
+    this.refreshShownNode();
+  }
+
   /** Rebuild the panel for the node it currently shows — the graph changed
    *  under it (a wire added/removed), and the Connections pane's "MISSING —
    *  required" rows must not go stale while the node reads Done. Skipped when

@@ -539,6 +539,16 @@ export class ExecutionController {
       if (this.outputPreview.pinnedNodeId === event.nodeId) {
         const pinned = this.flow.getNodeById(event.nodeId);
         if (pinned) this.showOutputsForNode(pinned);
+      } else if (this.outputPreview.pinnedNodeId == null) {
+        // A fresh result for the node the user is looking at (the sole
+        // selection) opens/updates its preview, exactly as clicking it would —
+        // an autorun of an already-selected node must not require an
+        // unselect/select round-trip to see its output.
+        const sel = this.flow.getSelectedNodeIds();
+        if (sel.length === 1 && sel[0] === event.nodeId) {
+          const node = this.flow.getNodeById(event.nodeId);
+          if (node) this.showOutputsForNode(node);
+        }
       }
       break;
     case 'node-error':
