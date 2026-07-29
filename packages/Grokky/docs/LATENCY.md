@@ -107,13 +107,35 @@ cap the **ScriptView full-source** inline, `src/claude/exec-blocks.ts:58-63`); u
 no network; WS double-hop through Datlas is pure passthrough (~ms per leg, only matters × 4 legs ×
 many hops); IndexedDB save is post-final jank only.
 
-### Tier 4 — context diet (per-hop multiplier; prefix ≈ 20–24 k static tokens)
+### Tier 4 — context diet — LANDED 2026-07-28 (27,977 → 17,637 tok/call)
 
-- **34** datagrok MCP tool schemas attach to every turn (the old "~46" figure was stale) — filter to
-  the used handful via `allowedTools`.
-- `list_functions` & friends are **unpaged and pretty-printed**
-  ([mcp-server/src/api-client.ts:6](../dockerfiles/mcp-server/src/api-client.ts#L6)) — one naive
-  discovery call injects hundreds of KB mid-turn, taxing every later hop. Cap + compact.
+**Measured end to end on the suite** (`benchmark-diet-full` vs `benchmark-sonnet-clean`, 44 shared
+prompts): median turn **26.6 s → 17.9 s (−33%)**, TTFT 17.9 s → 14.4 s, median cache-read per turn
+92 k → 56 k, accuracy **39/44 in both arms** — the whole saving was free. This also re-tests the
+Tier-1 model: cutting the per-hop prefix cuts every hop, so it moves the intercept *and* the slope.
+
+
+Measured with `dev/harness/context-probe.mjs` (see BENCHMARK.md "Context probe"), which
+attributes the prefix by ablation. Three levers landed the same day: restricting the *declared*
+built-in tool set (`tools:` — `allowedTools` only pre-approves, so Task/TodoWrite/NotebookEdit
+schemas shipped unused, 7,572 tok/call), consolidating the MCP surface (below), and exempting
+small talk from the grounding gate's second API call.
+
+- ~~**34** datagrok MCP tool schemas attach to every turn — filter via `allowedTools`~~ — **DONE**,
+  differently: filtering by `allowedTools` would have made operations undiscoverable. Instead the 34
+  tools became **five domain tools** dispatching on an `op`, whose descriptions carry only operation
+  names; a call with no `op` returns the full parameter schema. **3,847 → 1,061 tok/call.**
+- ~~`list_functions` & friends are unpaged and pretty-printed~~ — **DONE**: results are compact JSON,
+  arrays paged at 50 with `offset`/`limit`, everything capped
+  ([mcp-server/src/format.ts](../dockerfiles/mcp-server/src/format.ts)).
+- **Still open — the plugin + system-prompt block is 6,363 tok/call**, the largest Datagrok-specific
+  contributor, bigger than all tool definitions combined. Trimming skill descriptions is worth
+  ~400 tok; the rest is plugin machinery and needs investigation before cutting.
+- **Partly done — full mode costs a SECOND API call** (`numTurns` 2 vs 1), because the GroundingGate
+  blocks the Stop once on every turn that neither grounded nor acted, and the model burns a whole
+  call replying `NO_REVISION`. Small talk is now exempt (gate not armed at all — measured on
+  "hello": 2 calls → 1, 9.3 s → 6.0 s). The remaining case — real answers that made no tool call —
+  still pays the extra call; that is an accuracy feature and needs a `help`-category A/B (Tier 1a).
 - Staged user workspace symlinks the repo's `CLAUDE.md`, `.claude/`, **`.kg/`** into the model's cwd
   ([staged-workspace.ts:22](../dockerfiles/claude-runtime/src/user/staged-workspace.ts#L22)). The
   repo CLAUDE.md instructs a `.kg/scripts/qq.py` query first (self-installs a venv, ~30 s) — a live

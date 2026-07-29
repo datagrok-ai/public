@@ -28,14 +28,32 @@ test('isReadonlyTool recognises the read-only name prefixes', () => {
     assert.ok(!isReadonlyTool(n), `${n} should not be read-only`);
 });
 
+// Domain tools are one tool name covering both reads and mutations, so the gate has to read the
+// op. Getting this wrong is silent: a mutating call classified read-only skips verification.
+test('isReadonlyTool reads the op for domain tools, not the tool name', () => {
+  for (const op of ['list', 'get', 'list_children', 'read_file', 'search', 'whoami'])
+    assert.ok(isReadonlyTool('datagrok_spaces', {op}), `op ${op} should be read-only`);
+  for (const op of ['create', 'delete', 'write_file', 'add_entity', 'remove_entity', 'share'])
+    assert.ok(!isReadonlyTool('datagrok_spaces', {op}), `op ${op} should count as an action`);
+  assert.ok(isReadonlyTool('datagrok_spaces', {}), 'no op = asking for the catalog');
+  assert.ok(isReadonlyTool('datagrok_projects', {op: 'list', args: {filter: 'x'}}));
+  assert.ok(!isReadonlyTool('datagrok_projects', {op: 'create', args: {name: 'x'}}));
+});
+
 test('isActionTool: exec and mutating mcp tools count, reads and plain tools do not', () => {
   assert.ok(isActionTool(EXEC));
-  assert.ok(isActionTool('mcp__datagrok__call_function'));
-  assert.ok(isActionTool('mcp__datagrok__create_script'));
-  assert.ok(!isActionTool('mcp__datagrok__list_functions'));
-  assert.ok(!isActionTool('mcp__datagrok__whoami'));
+  assert.ok(isActionTool('mcp__datagrok__datagrok_functions', {op: 'call', args: {name: 'X:y'}}));
+  assert.ok(isActionTool('mcp__datagrok__datagrok_functions', {op: 'create_script', args: {script: 'x'}}));
+  assert.ok(!isActionTool('mcp__datagrok__datagrok_functions', {op: 'list'}));
+  assert.ok(!isActionTool('mcp__datagrok__datagrok_platform', {op: 'whoami'}));
   assert.ok(!isActionTool('Read'), 'non-mcp built-ins are never actions');
   assert.ok(!isActionTool('Bash'));
+});
+
+// Fail-closed: a domain tool whose op we do not recognise must count as an action so the verify
+// gate over-asks, rather than letting an unverified mutation through.
+test('isActionTool treats an unrecognised domain op as an action', () => {
+  assert.ok(isActionTool('mcp__datagrok__datagrok_spaces', {op: 'reticulate'}));
 });
 
 test('an unverified action blocks the Stop', async () => {

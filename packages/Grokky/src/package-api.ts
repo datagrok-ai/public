@@ -21,36 +21,42 @@ export namespace funcs {
   }
 
   /**
-  Get answers from AI assistant based on Datagrok documentation and public code.
-  */
+   * Get answers from AI assistant based on Datagrok documentation and public code.
+   */
   export async function askHelpLLMProvider(prompt: string , sessionId?: string ): Promise<any> {
     return await grok.functions.call('Grokky:AskHelpLLMProvider', { prompt, sessionId });
   }
 
   /**
-  Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
-  */
+   * Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
+   * @param {string} label - Config label for this run, e.g. baseline / medium-effort
+   * @param {number} reps - Repetitions per prompt (default 3)
+   * @param {string} model - Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.
+   *   choices: ["haiku","sonnet","opus"]
+   * @param {string} only - Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.
+   */
   export async function runBenchmark(label: string , reps?: number , model?: string , only?: string ): Promise<string> {
     return await grok.functions.call('Grokky:RunBenchmark', { label, reps, model, only });
   }
 
   /**
-  Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
-  */
+   * Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
+   * @param {string} labels - Comma-separated run labels, the first being the reference arm
+   */
   export async function compareBenchmarks(labels: string ): Promise<string> {
     return await grok.functions.call('Grokky:CompareBenchmarks', { labels });
   }
 
   /**
-  Plans and executes function steps to achieve needed results
-  */
+   * Plans and executes function steps to achieve needed results
+   */
   export async function smartChainExecutionProvider(prompt: string , sessionId?: string ): Promise<any> {
     return await grok.functions.call('Grokky:SmartChainExecutionProvider', { prompt, sessionId });
   }
 
   /**
-  Tries to find a query which has the similar pattern as the prompt user entered and executes it
-  */
+   * Tries to find a query which has the similar pattern as the prompt user entered and executes it
+   */
   export async function llmSearchQueryProvider(prompt: string , sessionId?: string ): Promise<any> {
     return await grok.functions.call('Grokky:LlmSearchQueryProvider', { prompt, sessionId });
   }
@@ -64,47 +70,55 @@ export namespace funcs {
   }
 
   /**
-  List the catalogs available on this connection
-  */
+   * List the catalogs available on this connection
+   */
   export async function listDbCatalogs(view: DG.View ): Promise<string> {
     return await grok.functions.call('Grokky:ListDbCatalogs', { view });
   }
 
   /**
-  List schemas of a catalog (defaults to the connection default catalog)
-  */
+   * List schemas of a catalog (defaults to the connection default catalog)
+   */
   export async function listDbSchemas(view: DG.View , catalogName?: string ): Promise<string> {
     return await grok.functions.call('Grokky:ListDbSchemas', { view, catalogName });
   }
 
   /**
-  List tables of a schema with row counts
-  */
+   * List tables of a schema with row counts
+   */
   export async function listDbTables(view: DG.View , schemaName: string , catalogName?: string ): Promise<string> {
     return await grok.functions.call('Grokky:ListDbTables', { view, schemaName, catalogName });
   }
 
   /**
-  Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table
-  */
+   * Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table
+   * @param {string} tables - Comma-separated table references to describe
+   */
   export async function getDbTableDetails(view: DG.View , tables: string ): Promise<string> {
     return await grok.functions.call('Grokky:GetDbTableDetails', { view, tables });
   }
 
   /**
-  Foreign-key relationships involving the given tables — use to build correct JOINs
-  */
+   * Foreign-key relationships involving the given tables — use to build correct JOINs
+   * @param {string} tables - Comma-separated table references
+   */
   export async function listDbJoins(view: DG.View , tables: string ): Promise<string> {
     return await grok.functions.call('Grokky:ListDbJoins', { view, tables });
   }
 
   /**
-  Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
-  */
+   * Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
+   * @param {string} sql - The SQL to test
+   * @param {string} description - One line describing what the query does
+   */
   export async function getSqlTestResult(view: DG.View , sql: string , description: string ): Promise<string> {
     return await grok.functions.call('Grokky:GetSqlTestResult', { view, sql, description });
   }
 
+  /**
+   * @param {string} dbName
+   *   choices: ["biologics","chembl"]
+   */
   export async function moveMetaToDB(dbName: string ): Promise<void> {
     return await grok.functions.call('Grokky:MoveMetaToDB', { dbName });
   }

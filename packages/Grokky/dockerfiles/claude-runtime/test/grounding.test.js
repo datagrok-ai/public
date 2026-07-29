@@ -4,7 +4,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const {GroundingGate} = require('../dist/grounding.js');
+const {GroundingGate, isSmallTalk} = require('../dist/grounding.js');
 
 const post = (toolName, input) => ({hook_event_name: 'PostToolUse', tool_name: toolName, tool_input: input});
 const stop = () => ({hook_event_name: 'Stop'});
@@ -85,4 +85,33 @@ test('grep and glob over help count, over other paths do not', async () => {
   const no = new GroundingGate();
   await no.postToolUse(post('Glob', {pattern: '**/*.ts', path: 'workspace/packages/'}));
   assert.ok(blocked(await no.stop(stop())));
+});
+
+// isSmallTalk decides whether the gate is armed AT ALL (session.ts), so both failure directions
+// are real: a greeting that matches nothing costs a hidden revision call and a "Revising…" flash;
+// a question that matches by accident answers ungrounded with no safety net.
+test('isSmallTalk accepts pure greetings and acknowledgements', () => {
+  for (const m of ['hello', 'Hi!', 'hey', 'HELLO', 'thanks', 'Thank you!', 'ok', 'cool',
+    'good morning', 'got it', 'hello there', 'hi grokky', 'thanks again', 'bye', 'how are you?'])
+    assert.ok(isSmallTalk(m), `"${m}" should be small talk`);
+});
+
+test('isSmallTalk rejects anything with actual content', () => {
+  for (const m of ['hello, how do I add a scatter plot?', 'hi — can you filter this table?',
+    'what is a project?', 'help', 'select all rows', 'thanks, now add a histogram',
+    'ok now delete the AGE column', 'hello world program in python', ''])
+    assert.ok(!isSmallTalk(m), `"${m}" must NOT be small talk`);
+});
+
+test('isSmallTalk sees through the prepended workspace context', () => {
+  // The panel sends '<workspace context>\n---\n\nhello' when a view is open (panel.ts
+  // prependViewContext) — the dashboard-open case that made the regression visible. Stripping is
+  // anchored on the context block's fixed header, not on '---' alone.
+  const ctx = 'Workspace state (live, changes as the user navigates):\n' +
+    'Current view: "Dashboard" (TableView)\nTable: demog, 5850 rows';
+  assert.ok(isSmallTalk(ctx + '\n---\n\nhello'), 'context + greeting is still small talk');
+  assert.ok(!isSmallTalk(ctx + '\n---\n\nhow many rows are selected?'),
+    'context + real question keeps the gate');
+  // A user message that merely contains a --- separator is never split — fail-closed.
+  assert.ok(!isSmallTalk('explain this:\n---\n\nok'), 'user-typed --- must not discard the head');
 });

@@ -310,7 +310,7 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 - `split_type`: `'random' | 'scaffold_balanced' | 'cv' | 'cv_no_val' | 'kennard_stone' | 'kmeans' | 'random_with_repeated_smiles'` (default `'random'`)
 - `activation`: `'ReLU' | 'LeakyReLU' | 'PReLU' | 'tanh' | 'SELU' | 'ELU'` (default `'ReLU'`)
 
-For the full numeric-default schema, use the MCP `get_function('Chem:trainChemprop')`
+For the full numeric-default schema, use the MCP `datagrok_functions(op:"get", args:{id:'Chem:trainChemprop'})`
 call before invoking — don't guess param names.
 
 ### Panels (context-panel widgets — show in the right-side panel when a molecule cell is selected)

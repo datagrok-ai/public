@@ -49,7 +49,18 @@ SQL schema exploration and query-editing functions. Rules:
 
 NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
 
-For a Datagrok function in a package not covered by an inlined skill, call \`list_functions(keyword)\` (MCP) to discover it; use \`get_function(name)\` only when you need full parameter details.
+## Server-side entities (MCP)
+
+Datagrok's server-side objects are reached through one MCP tool per domain, each taking an
+\`op\` and its \`args\`: \`datagrok_functions\`, \`datagrok_files\`, \`datagrok_projects\`,
+\`datagrok_spaces\`, \`datagrok_platform\`. The tool description lists that domain's operations;
+calling it with **no \`op\`** returns every operation's parameters, so look them up there instead
+of guessing argument names. Reach for these when the request concerns stored server-side objects
+— not for anything in the current view, which the view functions cover.
+
+For a Datagrok function in a package not covered by an inlined skill, call
+\`datagrok_functions(op:"list", args:{filter})\` to discover it; use \`op:"get"\` only when you
+need full parameter details.
 
 ## Ground answers in sources, not memory
 
@@ -101,7 +112,9 @@ function loadInlinedSkills(): string {
     const skillPath = `/app/plugin/skills/${name}/SKILL.md`;
     try {
       const raw = fs.readFileSync(skillPath, 'utf8');
-      const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '').trim();
+      // CRLF-tolerant: the repo checks these in with Windows line endings, so an LF-only pattern
+      // silently matches nothing and inlines each skill's YAML frontmatter into the system prompt.
+      const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, '').trim();
       sections.push(`### ${name}\n\n${body}`);
     } catch {
     }

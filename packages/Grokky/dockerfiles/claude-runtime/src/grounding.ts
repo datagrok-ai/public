@@ -8,6 +8,37 @@ import {bareToolName, isActionTool} from './verify';
 // The revision streams hidden — session.ts suppresses chunks after the block and the `final`
 // event carries kept/replaced — so the user never sees drafts vanish or duplicate.
 
+// Pure small talk never needs grounding, and the gate is not free: a Stop-block costs a full
+// hidden revision call (~28k-token prefix re-read) that ends in NO_REVISION, and past 1.2s the
+// panel shows "Revising…" over a greeting. So the gate is not armed at all for messages that are
+// only a greeting/thanks/acknowledgement. The check runs on the USER'S OWN text: the panel
+// prepends a workspace-context block terminated by '\n---\n\n' (see panel.ts
+// prependViewContext), so with a dashboard open the message is '<context>\n---\n\nhello' —
+// strip the context first or nothing ever matches. Conservative on purpose: anything beyond
+// small talk ("hi, how do I add a scatter plot?") must keep the gate.
+const SMALL_TALK_RE = new RegExp(
+  '^(?:hi|hii+|hello|hey|yo|good\\s+(?:morning|afternoon|evening)|how\\s+are\\s+you|' +
+  'thanks?|thank\\s+you|thx|ty|ok(?:ay)?|cool|nice|great|awesome|perfect|got\\s+it|' +
+  'bye|goodbye|see\\s+you|good\\s+night)' +
+  '(?:\\s+(?:there|again|grokky|claude))?[\\s.!?,]*$', 'i');
+
+// The context block always opens with this exact header (exec-blocks.ts buildWorkspaceContext),
+// so stripping is anchored on it — a user message that merely contains '---' is never split,
+// which keeps misclassification fail-closed (gate stays armed).
+const CONTEXT_HEADER = 'Workspace state (live, changes as the user navigates):';
+
+export function isSmallTalk(message: string): boolean {
+  let text = message;
+  if (text.startsWith(CONTEXT_HEADER)) {
+    const sep = text.indexOf('\n---\n\n');
+    if (sep < 0)
+      return false;
+    text = text.slice(sep + 6);
+  }
+  text = text.trim();
+  return text.length <= 60 && SMALL_TALK_RE.test(text);
+}
+
 function openedDocs(toolName: string, input: any): boolean {
   const bare = bareToolName(toolName);
   // Web lookups are legitimate grounding — re-blocking a WebFetch-sourced answer just forces
@@ -32,7 +63,7 @@ export class GroundingGate {
 
   postToolUse: HookCallback = async (input) => {
     if (input.hook_event_name === 'PostToolUse' &&
-        (openedDocs(input.tool_name, input.tool_input) || isActionTool(input.tool_name)))
+        (openedDocs(input.tool_name, input.tool_input) || isActionTool(input.tool_name, input.tool_input)))
       this.grounded = true;
     return {continue: true};
   };

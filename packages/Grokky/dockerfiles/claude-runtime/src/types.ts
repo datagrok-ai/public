@@ -10,13 +10,19 @@ export interface ToolInputs {
   AskUserQuestion: {questions?: {question?: string}[]};
 }
 
+/** The datagrok MCP server exposes one tool per domain, each dispatching on `op` — see
+ * mcp-server/src/ops.ts. */
+export interface DomainToolInput {
+  op?: string;
+  args?: Record<string, any>;
+}
+
 export interface McpInputs {
-  call_function: {name?: string};
-  list_functions: {filter?: string};
-  get_function: {id?: string};
-  list_files: {path?: string};
-  download_file: {path?: string};
-  upload_file: {path?: string};
+  datagrok_functions: DomainToolInput;
+  datagrok_files: DomainToolInput;
+  datagrok_projects: DomainToolInput;
+  datagrok_spaces: DomainToolInput;
+  datagrok_platform: DomainToolInput;
   datagrok_exec: {code?: string};
   datagrok_verify: {assertion?: string; description?: string};
   datagrok_show_entities: {entities?: any[]};

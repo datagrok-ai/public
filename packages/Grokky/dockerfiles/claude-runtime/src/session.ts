@@ -10,7 +10,7 @@ import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
 import {Verifier, bareToolName} from './verify';
-import {GroundingGate} from './grounding';
+import {GroundingGate, isSmallTalk} from './grounding';
 import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 
 // Re-exported so server.ts keeps importing the transport surface from one place.
@@ -282,7 +282,10 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       }
     };
     verifier = fullPromptTurn ? new Verifier(onGateBlock) : undefined;
-    groundingGate = fullPromptTurn && !data.outputSchema ? new GroundingGate(onGateBlock) : undefined;
+    // Small talk skips the gate entirely — the block would cost a full hidden revision call just
+    // to hear NO_REVISION, and the panel would show "Revising…" over a greeting (see grounding.ts).
+    groundingGate = fullPromptTurn && !data.outputSchema && !isSmallTalk(data.message ?? '') ?
+      new GroundingGate(onGateBlock) : undefined;
 
     const rec = getSession(sid);
     const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,

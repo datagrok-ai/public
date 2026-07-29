@@ -282,8 +282,15 @@ export function buildOptions(
     ...(verifier ? [verifier.stop] : []),
     ...(groundingGate ? [groundingGate.stop] : []),
   ];
+  // `tools` sets which built-in tools are DECLARED (schemas in the prompt prefix);
+  // `allowedTools` only pre-approves them. Without `tools`, every built-in schema — Task,
+  // TodoWrite, NotebookEdit, plan-mode tools — ships in the prefix of every turn unused.
+  // Skill stays: the datagrok-* plugin skills are invoked through it.
+  const BUILTIN_TOOLS = ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch',
+    'AskUserQuestion', 'Skill'];
   return {
     systemPrompt,
+    tools: BUILTIN_TOOLS,
     allowedTools: ['Read', 'Glob', 'Grep', 'Edit', 'Write', 'Bash', 'WebSearch', 'WebFetch', 'AskUserQuestion'],
     ...(fullMode ? {plugins: [{type: 'local' as const, path: '/app/plugin'}]} : {}),
     ...(mcpServers ? {mcpServers} : {}),
@@ -320,13 +327,21 @@ const toolFormatters: {[K in ToolName]: (i: ToolInputs[K]) => string} = {
   AskUserQuestion: (i) => `Asking: ${i.questions?.[0]?.question ?? 'a question'}`,
 };
 
+// Domain tools dispatch on `op`, so the summary has to read the op to stay informative — a bare
+// "datagrok_spaces" would tell the user nothing about what is happening.
+const domainSummary = (domain: string) => (i: {op?: string; args?: Record<string, any>}) => {
+  if (!i.op)
+    return `List ${domain} operations`;
+  const subject = i.args?.name ?? i.args?.id ?? i.args?.path ?? i.args?.filter ?? '';
+  return `${domain}: ${i.op.replace(/_/g, ' ')}${subject ? ' ' + subject : ''}`;
+};
+
 const mcpFormatters: {[K in McpName]: (i: McpInputs[K]) => string} = {
-  call_function: (i) => `Call ${i.name ?? 'function'}`,
-  list_functions: (i) => `List functions${i.filter ? ': ' + i.filter : ''}`,
-  get_function: (i) => `Get function ${i.id ?? ''}`,
-  list_files: (i) => `list files ${i.path ?? ''}`.trim(),
-  download_file: (i) => `download file ${i.path ?? ''}`.trim(),
-  upload_file: (i) => `upload file ${i.path ?? ''}`.trim(),
+  datagrok_functions: domainSummary('functions'),
+  datagrok_files: domainSummary('files'),
+  datagrok_projects: domainSummary('projects'),
+  datagrok_spaces: domainSummary('spaces'),
+  datagrok_platform: domainSummary('platform'),
   datagrok_exec: (_i) => 'Execute in browser',
   datagrok_verify: (i) => `Verify: ${i.description ?? 'action outcome'}`,
   datagrok_show_entities: (i) => `Show ${(i.entities ?? []).length} entit${(i.entities ?? []).length === 1 ? 'y' : 'ies'}`,

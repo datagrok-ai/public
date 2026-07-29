@@ -2,7 +2,8 @@
 #
 # Each entry is one prompt sent through the real runtime pipeline (workspace context +
 # view tools, exactly like the panel). Fields:
-#   category   : grouping for the report (help | visualization | analysis | codegen | multitool | query)
+#   category   : grouping for the report
+#                (help | visualization | analysis | codegen | multitool | query | entities)
 #   difficulty : trivial | standard | hard  (default standard) — drives the per-difficulty rollup.
 #                Lets a model comparison be read per tier rather than as one blended number,
 #                which is what showed the cheap tier losing on latency, not just accuracy.
@@ -320,3 +321,84 @@
   # The substructure filter reads a molblock — passing raw SMILES silently matches ZERO rows,
   # so the rowCount > 0 clause is load-bearing.
   assert: openedViews.some(v => v.dataFrame.rowCount > 0 && v.dataFrame.rowCount < t.rowCount)
+
+# ======================================================================== entities (server-side)
+# Coverage for the datagrok MCP surface — the five domain tools (datagrok_functions,
+# datagrok_files, datagrok_projects, datagrok_spaces, datagrok_platform), each dispatching on an
+# `op`. The suite had NO coverage here, so the 32-tool -> 5-tool consolidation would have been
+# unmeasurable: a prefix saving that quietly broke server-side work would still have scored 39/44.
+#
+# These asserts read the SERVER (grok.dapi), not the view, and anything they create they delete —
+# a benchmark arm runs these 3x and must not litter the instance.
+
+- category: entities
+  difficulty: trivial
+  prompt: Which user account am I signed in as on this Datagrok server?
+  rubric: >
+    Pass if it names the signed-in account — a login, email, or full name that it got from the
+    server this turn. Fail if it says it cannot tell, describes how one would find out, or
+    invents a placeholder name.
+
+- category: entities
+  difficulty: trivial
+  prompt: List the data connections on this server and show them as cards.
+  # Entities are rendered as interactive cards, never prose-listed — assert on the path taken.
+  assert: tools.includes('datagrok_show_entities')
+
+- category: entities
+  difficulty: standard
+  prompt: What files are in the System:DemoFiles connector? Show them.
+  assert: tools.includes('datagrok_show_entities')
+
+- category: entities
+  difficulty: standard
+  prompt: Read the file System:DemoFiles/demog.csv from the server and tell me its column headers.
+  # Ground truth checked against the live server; demog.csv is a fixed demo file.
+  rubric: >
+    Pass if it lists the real headers — USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG,
+    CONTROL, STARTED, SEVERITY. Allow a subset only if it says it is showing part of the list.
+    Fail on invented column names.
+
+- category: entities
+  difficulty: standard
+  prompt: Search the server for functions whose name mentions "molecularWeight" and tell me which package each comes from.
+  # Verified against the live instance: OligoBatchCalculator:molecularWeight exists, and there is
+  # NO Chem:molecularWeight — inventing the obvious-sounding Chem one is the failure to catch.
+  rubric: >
+    Pass if it names OligoBatchCalculator:molecularWeight (or clearly attributes molecularWeight
+    to the OligoBatchCalculator package). Fail if it invents a function such as
+    Chem:molecularWeight, or answers without naming any concrete function.
+
+- category: entities
+  difficulty: standard
+  prompt: What spaces exist on this server?
+  rubric: >
+    Pass if it reports the spaces it found by name, or clearly states that there are none.
+    Fail if it invents space names, or explains what spaces are instead of listing them.
+
+- category: entities
+  difficulty: standard
+  prompt: What operations can you perform on spaces here?
+  # Progressive disclosure: the tool description lists only op NAMES, so a real answer requires
+  # calling datagrok_spaces with no `op` to get the catalog. Answering from the menu alone is
+  # fine too — what must not happen is a generic essay about spaces.
+  rubric: >
+    Pass if it enumerates concrete operations on spaces — at least three of: list, get, create,
+    delete, create a subspace, list children, add/remove an entity, read/write/delete a file in
+    space storage. Fail if it only describes what spaces are, or lists operations it cannot do.
+
+- category: entities
+  difficulty: hard
+  prompt: Create a project named "Grokky Bench Project" with the description "temporary benchmark artifact".
+  # Creates real server state, so the assert is also the cleanup — an arm runs this 3x.
+  assert: >
+    (await (async () => {
+      const hits = await grok.dapi.projects.filter('Grokky Bench Project').list();
+      const mine = hits.filter((p) => p.name === 'Grokky Bench Project');
+      for (const p of mine) {
+        try {
+          await grok.dapi.projects.delete(p);
+        } catch (e) { /* leave it for the next run rather than fail the assert */ }
+      }
+      return mine.length > 0;
+    })())

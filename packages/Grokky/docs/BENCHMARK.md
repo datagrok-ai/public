@@ -114,6 +114,29 @@ Grokky:compareBenchmarks("baseline,pin-haiku")           // 2+ comma-separated l
 
 Reports are written to `System:AppData/Grokky/benchmarks/` (JSON + Markdown) and downloaded.
 
+## Second result: the context diet, end to end
+
+`benchmark-sonnet-clean` (before) vs `benchmark-diet-full` + `benchmark-diet-fixup` (after), on
+the 44 prompts the two arms share:
+
+| | before | after |
+|---|---:|---:|
+| Accuracy (44 shared) | 39/44 | **39/44** — parity |
+| Median turn | 26.6 s | **17.9 s** (−33%) |
+| Median TTFT | 17.9 s | **14.4 s** (−20%) |
+| Median cache-read/turn | 92,009 | **55,781** (−39%) |
+| Prefix (probe, tok/call) | 27,977 | **17,637** (−37%) |
+| `entities` (new, 8 prompts) | — | **8/8** |
+
+A third of the wall clock came off with no accuracy cost, and the five remaining failures are the
+*same kinds* the baseline had — the box plot and the piperidine filter fail in both arms.
+
+**Read the run log before trusting a red cell.** The first pass of this arm scored 41/52, and four
+of the eleven failures were `judge failed: Claude Code process terminated by SIGKILL` — the judge
+container was being recreated underneath the run while a publish churned images. The prompts
+themselves were fine; rerunning the affected slice (`--only`) scored 7/9 and moved the arm to
+47/52. Never publish, rebuild an image, or recreate a container while an arm is in flight.
+
 ## First result: model tier is not the latency lever
 
 The first thing this instrument was built to answer was whether a cheap-model-first dispatcher
@@ -145,12 +168,63 @@ TTFT (context diet, prompt-cache stability, thinking budget) and at eliminating 
 at model choice. Use `--model` to re-check that conclusion when models change; it is a property of
 this architecture, not a permanent law.
 
+## Context probe — attributing the prompt prefix
+
+`dev/harness/context-probe.mjs` answers a different question from the suite: not "how good/fast is
+a turn" but **"what is the model re-reading before it can emit a token"**. It runs the same trivial
+prompt under configurations that switch one contributor on at a time (MCP server, view tools,
+Datagrok prompt + plugin) and reports the prefix each one adds.
+
+```bash
+cd dev/harness
+node context-probe.mjs --label before                       # full ablation
+node context-probe.mjs --label after --only base,mcp,full   # re-check one contributor
+node context-probe.mjs --mcp http://localhost:33003/mcp     # against `node dev/mcp.mjs up`
+```
+
+Two measurement rules make the numbers trustworthy, and both were wrong in the first version:
+
+- **Prefix = input + cacheRead + cacheCreation.** Reading `cacheRead` alone measures how the cache
+  happened to break, not how much context there was.
+- **Divide by `numTurns`.** SDK usage on the `result` message is *cumulative over every API call the
+  turn made*. Before normalizing, enabling thinking looked like a 2× context regression when it was
+  really a second API call — a completely different problem with a completely different fix.
+
+Ablation (`context-probe-*.md`), Sonnet, per API call — with the diet each finding produced:
+
+| Contributor | before | after | lever |
+|---|---:|---:|---|
+| SDK floor — built-in tools, CLAUDE.md, base prompt | 17,493 | **9,921** | `tools:` restricts the *declared* built-ins; `allowedTools` only pre-approves them, so Task/TodoWrite/NotebookEdit/plan-mode schemas shipped unused — 7,572 tok/call |
+| Datagrok system prompt + inlined skills + plugin | +6,363 | ≈ | CRLF frontmatter leak fixed; body is deliberate content |
+| datagrok MCP server | +3,847 | **+1,061** | 34 tools → 5 domain tools dispatching on `op` |
+| view meta-tools (3) | +274 | +274 | already the meta-tool pattern — the model to copy |
+| **production total** | **27,977** | **17,637** | **−37%** |
+
+The findings worth carrying forward:
+
+1. **Declared ≠ allowed.** The biggest single cut was not Datagrok's own surface at all but the
+   SDK's default built-in tool set, which `allowedTools` does not remove from the prompt.
+2. **Tool defs were never the main course.** All 34 MCP tools cost less than the plugin and prompt
+   block, and the three view meta-tools cost 274 tokens. Consolidating to five domain tools was
+   still worth it (−2,786 tok/call, 72% of that block).
+3. **Full mode costs a second API call** on any turn that neither grounded nor acted: the
+   `GroundingGate` blocks the Stop and the model burns a whole call replying `NO_REVISION`.
+   Small talk is now exempt (measured on "hello": 2 calls → 1, 9.3 s → 6.0 s, no "Revising…"
+   flash), but the block still fires on real ungrounded answers — that part is an accuracy
+   feature and needs an A/B on the `help` category, not a unilateral removal.
+
 ## The suite
 
-`files/benchmark/suite.yaml` — 44 prompts across `help`, `visualization`, `analysis`, `codegen`,
-`multitool`, `query`. Fields: `category`, `prompt`, optional `difficulty`, `table`, `assert`,
-`rubric`. Edit freely — it's plain YAML, no rebuild needed for suite-only changes (it's a static
-package file; re-publish to pick it up).
+`files/benchmark/suite.yaml` — 52 prompts across `help`, `visualization`, `analysis`, `codegen`,
+`multitool`, `query`, `entities`. Fields: `category`, `prompt`, optional `difficulty`, `table`,
+`assert`, `rubric`. Edit freely — it's plain YAML, no rebuild needed for suite-only changes (it's a
+static package file; re-publish to pick it up).
+
+**`entities`** covers the server-side MCP surface (the five domain tools). It exists because the
+suite previously had none: the 34-tool → 5-tool consolidation could have broken every server-side
+operation and the arm would still have reported 39/44. These prompts carry no `table`, their asserts
+read the **server** through `grok.dapi` rather than the view, and anything they create they delete in
+the assert itself — an arm runs each prompt `reps` times and must not litter the instance.
 
 **Assert scope:** `grok, DG, view, t, before, opened, openedViews, tools`, where `before` is
 `{cols, rowCount, viewers, tableViews}` (note `viewers` counts the grid, so a fresh view is 1),

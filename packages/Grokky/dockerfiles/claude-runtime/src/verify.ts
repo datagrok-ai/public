@@ -2,20 +2,36 @@ import type {HookCallback} from '@anthropic-ai/claude-agent-sdk';
 
 const MAX_VERIFY_BLOCKS = 3;
 
-const READONLY_NAME_RE = /^(whoami$|list_|get_|search_|read_|download_)/;
+const READONLY_NAME_RE = /^(whoami$|list|get|search|read|download|find)/;
 const READONLY_EXTRAS = new Set(['datagrok_show_entities']);
 
-export function isReadonlyTool(bare: string): boolean {
-  return READONLY_NAME_RE.test(bare) || READONLY_EXTRAS.has(bare);
+// The datagrok MCP server dispatches on an `op` argument (one tool per domain), so the tool name
+// alone no longer says whether a call mutates anything — `datagrok_spaces` is both `list` and
+// `delete`. Read the op when there is one and fall back to the name otherwise. Fail-closed: an
+// unrecognised call counts as an action, so the verify gate over-asks rather than letting an
+// unverified mutation through.
+const DOMAIN_TOOLS = new Set([
+  'datagrok_functions', 'datagrok_files', 'datagrok_projects', 'datagrok_spaces', 'datagrok_platform',
+]);
+
+export function isReadonlyTool(bare: string, input?: unknown): boolean {
+  if (READONLY_EXTRAS.has(bare))
+    return true;
+  if (DOMAIN_TOOLS.has(bare)) {
+    const op = (input as {op?: unknown} | undefined)?.op;
+    // No op is a catalog request — pure discovery, nothing to verify.
+    return typeof op === 'string' ? READONLY_NAME_RE.test(op) : true;
+  }
+  return READONLY_NAME_RE.test(bare);
 }
 
 export function bareToolName(name: string): string {
   return name.replace(/^mcp__.+?__/, '');
 }
 
-export function isActionTool(toolName: string): boolean {
+export function isActionTool(toolName: string, input?: unknown): boolean {
   const bare = bareToolName(toolName);
-  return bare === 'datagrok_exec' || (toolName.startsWith('mcp__') && !isReadonlyTool(bare));
+  return bare === 'datagrok_exec' || (toolName.startsWith('mcp__') && !isReadonlyTool(bare, input));
 }
 
 function parseMcpToolResponse(resp: unknown): any {
@@ -70,7 +86,7 @@ export class Verifier {
         this.verifyFailures = 0;
       } else
         this.verifyFailures++;
-    } else if (isActionTool(input.tool_name)) {
+    } else if (isActionTool(input.tool_name, input.tool_input)) {
       this.stats.actions++;
       // datagrok_exec can self-verify: the browser runs the provided verify.assertion right after
       // the action code (same round-trip) and returns it as `verified` — a passing one is exactly
