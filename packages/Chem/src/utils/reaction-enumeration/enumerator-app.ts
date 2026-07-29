@@ -17,6 +17,7 @@ import {
   buildPerRoundOverrides as buildPerRoundOverridesForPanels, DataPanel, DataPanelDeps, makeTabBadge,
   overrideCountFor,
 } from './data-panel';
+import {RunControls} from './run-controls';
 
 const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
@@ -702,9 +703,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     refreshStrategyCards();
     const err = validate();
     validationDiv.textContent = err ?? '';
-    runBtn.disabled = err != null;
-    previewEnumerateBtn.disabled = err != null;
-    bindRunTooltip(err);
+    runControls.setValidation(err);
   }
   syncQuickInputsToConfig();
 
@@ -751,117 +750,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }, 'Download the current config as a YAML file.');
 
   // ---- Run / Cancel ----
-  const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
-  let cancelled = false;
-  let running = false;
-  const RUN_TOOLTIP_DEFAULT = 'Run enumeration with the current config and add the result to the workspace.';
-  const RUN_TOOLTIP_RUNNING = 'An enumeration is already running.';
-  const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
-  // Mirrors the ribbon's Enumerate button — Preview is the end of the Next-button chain, so it
-  // gets its own run action too.
-  const previewEnumerateBtn = ui.button('Enumerate', () => runWithUi(runEnumeration));
-  previewEnumerateBtn.classList.add('ui-btn-ok');
-  // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind tooltips to a
-  // live ancestor instead. runBtn has the ribbon's own '.d4-ribbon-item'; previewEnumerateBtn gets
-  // its own wrapper div for the same purpose.
-  const previewEnumerateBtnWrap = ui.div([previewEnumerateBtn]);
-  let runBtnRibbonItem: HTMLElement | null = null;
-  let lastValidationMsg: string | null = null;
-  // WeakSet survives the platform replacing the ribbon-item node mid-session (e.g. after
-  // "Subset by selection") — re-attaches on a new node, no-ops on an unchanged one.
-  const ancestorsWithClickListener = new WeakSet<HTMLElement>();
-  const armDisabledTooltip = (btn: HTMLButtonElement, ancestor: HTMLElement): void => {
-    if (ancestorsWithClickListener.has(ancestor)) return;
-    ancestorsWithClickListener.add(ancestor);
-    ancestor.addEventListener('click', (e) => {
-      if (btn.disabled && lastValidationMsg)
-        ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
-    });
-  };
-  armDisabledTooltip(previewEnumerateBtn, previewEnumerateBtnWrap);
-  const bindRunTooltip = (msg: string | null): void => {
-    lastValidationMsg = msg;
-    const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
-    if (el) {
-      runBtnRibbonItem = el;
-      armDisabledTooltip(runBtn, el);
-    }
-    ui.tooltip.bind(runBtnRibbonItem ?? runBtn, msg ?? RUN_TOOLTIP_DEFAULT);
-    ui.tooltip.bind(previewEnumerateBtnWrap, msg ?? RUN_TOOLTIP_DEFAULT);
-  };
-
-  const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
-  cancelBtn.style.display = 'none';
-
-  // Shared run chrome: validate, disable both Run buttons, show Cancel + progress, restore on finish.
-  // `running` blocks a second concurrent run — previewEnumerateBtn isn't otherwise disabled while one is in progress.
-  async function runWithUi(fn: () => Promise<void>): Promise<void> {
-    if (running || validate() != null) return;
-    syncQuickInputsToConfig();
-    running = true;
-    cancelled = false;
-    runBtn.disabled = true;
-    previewEnumerateBtn.disabled = true;
-    bindRunTooltip(RUN_TOOLTIP_RUNNING);
-    cancelBtn.style.display = '';
-    progressLabel.textContent = 'Initializing…';
-    try {
-      await fn();
-    } catch (e) {
-      grok.shell.error(`Enumeration failed: ${e instanceof Error ? e.message : String(e)}`);
-      console.error(e);
-    } finally {
-      running = false;
-      cancelBtn.style.display = 'none';
-      progressLabel.textContent = '';
-      refreshValidation(); // restores both buttons' disabled state + tooltip
-    }
-  }
-
-  async function runEnumeration(): Promise<void> {
-    progressLabel.textContent = 'Loading RDKit…';
-    const rdkit = await getRdKitModule();
-    const tDf = templatesInput.value!;
-    const bDf = bbsInput.value!;
-    const xDf = exclusionInput.value;
-    const rDf = reagentsInput.value;
-    const inputs = buildInputs(config, tDf, bDf, xDf, rDf);
-
-    const reagentsPart = inputs.reagents.length > 0 ? ` × ${inputs.reagents.length} reagents` : '';
-    progressLabel.textContent =
-      `Running: ${inputs.templates.length} templates × ${inputs.buildingBlocks.length} BBs${reagentsPart} × ${config.enumeration.num_rounds} round(s)`;
-    const onProgress = (p: EnumerationProgress) => {
-      const combo = p.combosTotal && p.combosTotal > 0 ?
-        `, combos ${p.combosDone}/${p.combosTotal}` : '';
-      progressLabel.textContent =
-        `Round ${p.round}/${p.numRounds}, template ${p.templateIndex + 1}/${p.numTemplates}${combo}, products: ${p.productsSoFar}`;
-    };
-
-    const perRoundOverrides = buildPerRoundOverrides(config);
-    if (perRoundOverrides)
-      progressLabel.textContent += ' · per-round subsets active';
-
-    const start = performance.now();
-    const {rows, warnings} = await enumerate({
-      rdkit, config, ...inputs, perRoundOverrides, onProgress, isCancelled: () => cancelled,
-    });
-    const elapsed = ((performance.now() - start) / 1000).toFixed(1);
-
-    if (cancelled) {
-      grok.shell.warning(`Enumeration cancelled. Partial results: ${rows.length} rows.`);
-    } else {
-      grok.shell.info(`Enumeration done in ${elapsed}s — ${rows.length} rows.`);
-    }
-    if (warnings.length > 0) {
-      console.warn('Enumeration warnings:', warnings);
-      // Surface the actual warning TEXT, not just a count — e.g. a per-step override silently not
-      // applying is only visible this way, not as a bare count.
-      const preview = warnings.slice(0, 3).join(' | ');
-      const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
-      grok.shell.warning(`${preview}${more}`);
-    }
-    if (rows.length > 0) grok.shell.addTableView(buildResultDataFrame(rows));
-  }
+  const runControls = new RunControls({
+    getConfig: () => config,
+    templatesInput, bbsInput, reagentsInput, exclusionInput,
+    validate, syncQuickInputsToConfig, buildPerRoundOverrides, refreshValidation,
+  });
 
   // ---- Layout ----
   // Top-level: cfgRibbon (chips + run, auto), main content (fills), validation (auto).
@@ -1096,7 +989,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       {style: {fontSize: '12px', color: 'var(--grey-6)'}}),
     previewPanel.buildRecapCard(),
     // Last pane in the chain — the run action takes the Next slot instead of a target pane.
-    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), previewEnumerateBtnWrap),
+    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), runControls.previewEnumerateBtnWrap),
   ], {style: {gap: '10px'}}), false, null, false);
   const accPanes = [accReactionsPane, accBbsPane, accExtrasPane, accCombinePane, accPreviewPane];
 
@@ -1157,7 +1050,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
   // No custom wrapping div and no manual gap/margin — passed straight into their own ribbon group
   // (see setRibbonPanels below); the native ribbon group's own flex layout handles spacing between
-  // runBtn/cancelBtn/progressLabel.
+  // runControls.runBtn/cancelBtn/progressLabel.
 
   function refreshCfgRibbon(): void {
     const tDf = templatesInput.value; const bDf = bbsInput.value; const rDf = reagentsInput.value;
@@ -1366,7 +1259,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // group-level background/shadow oddly.
   view.setRibbonPanels([
     [appInfoIcon],
-    [runBtn, cancelBtn, progressLabel],
+    [runControls.runBtn, runControls.cancelBtn, runControls.progressLabel],
     // Strategy first (the "how"), then reactions/BBs/extras (the "what"), then the resulting estimate.
     [chipCombineC.root, mkRibbonArrow(), chipReactionsC.root, mkRibbonArrow(), chipBbsC.root, mkRibbonArrow(),
       chipExtrasC.root, mkRibbonArrow(), cfgEstEl],
@@ -1379,7 +1272,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // re-renders (that pattern leaked onto other views' ribbons and had to keep "winning a race"
   // against re-renders; a plain CSS rule matches by class name regardless of how many times the
   // platform recreates the DOM, and never needs reasserting).
-  bindRunTooltip(validate());
+  runControls.setValidation(validate());
 
   // Looks redundant with buildStepTabs(0)'s own render, but isn't: removing it left the
   // initial grid rendered into a not-yet-sized host and empty on some loads.
