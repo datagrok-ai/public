@@ -29,6 +29,16 @@ export type CodeConfig = {
   placeholder?: string;
 };
 
+/** See {@link TabControl.create} and `ui.tabControl` */
+export interface ITabControlOptions {
+
+  /** Whether the tab header is rendered vertically, on the left side */
+  vertical?: boolean;
+
+  /** When provided, the currently selected pane is persisted across sessions in localStorage */
+  key?: string;
+}
+
 /** See {@link Menu.items} */
 export interface IMenuItemsOptions<T = any> {
 

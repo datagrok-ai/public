@@ -1030,6 +1030,13 @@ ui.tabControl({
   })
 ```
 
+Pass an options object to render the header vertically, or to remember the selected tab across
+sessions under the given `key`:
+
+```javascript
+ui.tabControl(pages, {vertical: true, key: 'my-widget'})
+```
+
 ### Tag editor
 
 Tag editor is a control that displays small tag items, mainly to visualize selected items. You can add and remove tags.
