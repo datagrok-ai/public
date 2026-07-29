@@ -10,24 +10,81 @@ import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorCon
 import {buildCombinationLimitFields, buildProductFilterFields} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {enumerate, EnumerationProgress, OutputRow, PerRoundOverride, TemplateInput, tryGetRxn} from './enumerate';
+import {MountedViewerRegistry} from './viewer-mount';
+import {StrategySummary} from './strategy-summary';
 
 const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
 const BUNDLED_EXCLUSION = 'enumerations/ex_smarts.csv';
 
 // Shared "custom subset" indicator color — round tabs' dot and the Strategy summary's dot.
-const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
+export const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
 // Shared look for the small "changed/custom" dots; call sites add their own display mode and spacing.
-const CHANGED_DOT_STYLE = {width: '6px', height: '6px', borderRadius: '50%', background: OVERRIDE_DOT_COLOR};
+export const CHANGED_DOT_STYLE = {width: '6px', height: '6px', borderRadius: '50%', background: OVERRIDE_DOT_COLOR};
+
+// Shared mode label/rounds text — used by the ribbon chip, the Strategy summary, and the Preview
+// recap so they can't drift out of sync (e.g. one saying "2 rounds", another "1 rounds").
+export const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
+export const roundsLabel = (n: number): string => `${n} round${n === 1 ? '' : 's'}`;
 
 // Shared "differs from platform defaults" checks — drive both the Combination limits/Product
 // filters toggle dots and the Strategy summary's "changed from defaults" caveat.
-function combinationLimitsChanged(cfg: EnumeratorConfig): boolean {
+export function combinationLimitsChanged(cfg: EnumeratorConfig): boolean {
   return cfg.max_num_combinations_per_template !== DEFAULT_CONFIG.max_num_combinations_per_template ||
     cfg.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output;
 }
 
-function productFiltersChangedCount(cfg: EnumeratorConfig): number {
+// Shared panel chrome — a hint/status header bar plus a content host — used by every right-pane
+// tab (data grids, Strategy summary, Preview).
+export const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
+  // flex:0 0 auto (not 1 1 auto) so hint and status sit side by side, both left-aligned, instead
+  // of hint growing to push status to the far right of the row.
+  const hintEl = ui.divText(hint, {style: {
+    fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto', marginRight: '4px',
+  }});
+  const children: HTMLElement[] = [hintEl];
+  if (status) children.push(status);
+  if (subsetBtn) children.push(subsetBtn);
+  return ui.div(children, {style: {
+    display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
+    padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)',
+  }});
+};
+
+// `scrollable` is for plain content hosts (e.g. the Strategy summary card) that can outgrow a
+// short window — unlike a grid, which manages its own internal scroll, so its host stays
+// overflow:hidden with the bottom fade. min-height:0 is unconditional: without it this wrapper
+// (a flex child of the platform's own .d4-tab-content, itself fixed up to min-height:0 in
+// chem.css) refuses to shrink below its content's natural height, so a narrow window makes
+// .d4-tab-content overflow and get silently clipped further up instead of ever asking this pane
+// — or gridHost's own overflow below — to actually engage.
+export const tabPanel = (header: HTMLElement, gridHost: HTMLElement, scrollable = false): HTMLElement => {
+  // display:flex on the host turns the grid's inline-flex outer display into a block-level
+  // flex item, eliminating the 12px baseline-alignment gap that block+inline-flex produces.
+  gridHost.style.display = 'flex';
+  gridHost.style.flexDirection = 'column';
+  gridHost.style.flex = '1 1 0';
+  gridHost.style.minHeight = '0';
+  if (scrollable) {
+    // Vertical only, matching the left "How to combine" pane — fully native scroll.
+    gridHost.style.overflowY = 'auto';
+    gridHost.style.overflowX = 'hidden';
+  } else {
+    gridHost.style.position = 'relative';
+    gridHost.style.overflow = 'hidden';
+    const fade = ui.div([], {style: {
+      position: 'absolute', bottom: '0', left: '0', right: '0', height: '48px',
+      background: 'linear-gradient(to bottom,transparent,var(--white))', pointerEvents: 'none', zIndex: '1',
+    }});
+    gridHost.appendChild(fade);
+  }
+  return ui.div([header, gridHost], {style: {
+    height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0',
+    background: 'var(--white)', boxSizing: 'border-box', overflow: 'hidden',
+  }});
+};
+
+export function productFiltersChangedCount(cfg: EnumeratorConfig): number {
   const ps = cfg.products_specs;
   const dps = DEFAULT_CONFIG.products_specs;
   return [
@@ -49,24 +106,8 @@ function productFiltersChangedCount(cfg: EnumeratorConfig): number {
   ].filter(Boolean).length;
 }
 
-// A freshly-(re)mounted Filters viewer can asynchronously reapply a stale per-column categorical
-// selection over a DataFrame's .filter BitSet shortly after construction (a Datagrok platform
-// behavior, not something this app triggers) — this is how long every reset-after-remount in this
-// file waits before re-asserting the intended filter state, past that clobber window.
-const FILTER_REMOUNT_SETTLE_MS = 200;
 // Dart int inputs fire onChanged per keystroke — debounce the expensive step-tab rebuild.
 const ROUNDS_INPUT_DEBOUNCE_MS = 300;
-
-// Shared by every "this table should show every row" reset after a mount: subsetBySelection,
-// restoreFullTable, subsetStepBySelection, useAllForStep. Tracked in `pending` so a closing view
-// can cancel it before it fires against an already-closed DataFrame.
-function deferredFilterReset(df: DG.DataFrame, pending: Set<ReturnType<typeof setTimeout>>): void {
-  const id = setTimeout(() => {
-    pending.delete(id);
-    df.filter.setAll(true, true);
-  }, FILTER_REMOUNT_SETTLE_MS);
-  pending.add(id);
-}
 
 // Sniff string columns and set semType so the grid renders reactions and molecules: presence of
 // `>>` in sampled values wins as ChemicalReaction, else auto-detection handles Molecule etc.
@@ -450,7 +491,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function currentMode(): 'depth' | 'breadth' | 'reagents' {
     return reagentsInput.value != null ? 'reagents' : (depthFirstInput.value ? 'depth' : 'breadth');
   }
-  const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
   const MODE_ABBR = {depth: 'DF', breadth: 'BF', reagents: 'RM'} as const; // ribbon chip only, MODE_LABEL elsewhere
   // The raw round count as currently displayed/edited (not the defensively-clamped one makeDataPanel's
   // roundCount() uses for building round tabs) — shared by the ribbon chip, the Strategy summary, and
@@ -458,7 +498,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   function currentRounds(): number {
     return numRoundsInput.value ?? config.enumeration.num_rounds;
   }
-  const roundsLabel = (n: number): string => `${n} round${n === 1 ? '' : 's'}`;
 
   function buildConfigCard(): HTMLElement {
     const en = config.enumeration;
@@ -697,111 +736,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   };
   const reagentsBadge = makeTabBadge();
 
-  const GRID_ROW_HEIGHT = 75;
-
-  function applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
-    try {
-      grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
-      if (extendLast) grid.props.extendLastColumn = true;
-    } catch { /* setColumnsWidthType not available on older Dart builds */ }
-  }
-
-  // A single RAF after appending a resizable ui.splitH isn't reliably enough for a real clientWidth
-  // yet — ui.onSizeChanged (ResizeObserver-backed) fires once real layout completes; size once,
-  // then unsubscribe. Tracked in view.subs in case the view closes before that first size arrives.
-  function sizeSplitOnceLaidOut(a: HTMLElement, b: HTMLElement, computeAWidth: (total: number) => number): void {
-    const sub = ui.onSizeChanged(a).subscribe(() => {
-      const total = a.clientWidth + b.clientWidth;
-      if (total === 0) return;
-      const aWidth = computeAWidth(total);
-      a.style.width = aWidth + 'px';
-      a.style.flexGrow = String(aWidth / total);
-      b.style.width = (total - aWidth) + 'px';
-      b.style.flexGrow = String((total - aWidth) / total);
-      sub.unsubscribe();
-    });
-    view.subs.push(sub);
-  }
-
-  // Plain viewers (grid, filters) leak (host.innerHTML='' only drops the DOM node) unless closed
-  // explicitly — track the live ones per host and close them before mounting a replacement.
-  const mountedViewers = new Map<HTMLElement, DG.Viewer[]>();
-  function closeMountedViewers(host: HTMLElement): void {
-    const prev = mountedViewers.get(host);
-    if (!prev) return;
-    mountedViewers.delete(host);
-    for (const v of prev) {
-      // close() no-ops for standalone viewers (see /ui skill) — detach() + root.remove() instead.
-      try {v.detach(); v.root.remove();} catch (e) {
-        if (!(e instanceof TypeError)) console.warn('Could not close previous viewer:', e);
-      }
-    }
-  }
-  // Pending deferredFilterReset/withPreservedFilters timeouts — cancelled on view close below,
-  // or they'd fire against an already-closed DataFrame.
-  const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
-  // view.subs doesn't unsubscribe for this view — use onViewRemoved instead.
-  let closeSub: Subscription;
-  closeSub = grok.events.onViewRemoved.subscribe((closedView) => {
-    if (closedView.id !== view.id) return;
-    for (const host of mountedViewers.keys()) closeMountedViewers(host);
-    for (const id of pendingTimers) clearTimeout(id);
-    pendingTimers.clear();
-    closeSub.unsubscribe();
-  });
-
-  // ChemicalReaction has no meaningful substructure-filter semantics for a whole reaction template,
-  // so it's simply left out of the filters below (not a workaround for anything — DG.Viewer.filters
-  // only builds filters for the columns it's explicitly given).
-  function mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean): void {
-    closeMountedViewers(host);
-    host.innerHTML = '';
-    const grid = DG.Viewer.grid(df);
-    grid.props.rowHeight = GRID_ROW_HEIGHT;
-    grid.root.style.width = '100%';
-    grid.root.style.height = '100%';
-    if (!withFilters) {
-      mountedViewers.set(host, [grid]);
-      host.appendChild(grid.root);
-      applyGridColumnSizing(grid);
-      return;
-    }
-    const filterStates = df.columns.toList()
-      // `~`-prefixed columns are internal/technical (e.g. `~SMILES.Pattern`, added by the
-      // substructure filter's own fingerprint cache) — never surface a filter for those.
-      .filter((col) => col.semType !== 'ChemicalReaction' && !col.name.startsWith('~'))
-      .map((col) => ({
-        // A numeric column with zero variance (every value equal — common right after subsetting to
-        // the exact value it was filtered on) makes the histogram filter widget clobber the whole
-        // dataframe's .filter to all-false, both on construction and again if the user later toggles
-        // it histogram<->categorical — a separate bug from, and not fixed by, the subset-clone filter
-        // reset above. A categorical filter has no degenerate-range code path, so route zero-variance
-        // numeric columns there instead of ever constructing the buggy histogram widget.
-        type: col.isNumerical ? (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
-          col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
-        column: col.name,
-      }));
-    const filtersViewer = DG.Viewer.filters(df, {filters: filterStates});
-    mountedViewers.set(host, [grid, filtersViewer]);
-    filtersViewer.root.style.width = '100%';
-    filtersViewer.root.style.height = '100%';
-    filtersViewer.root.style.overflow = 'auto';
-    const gridBox = ui.div([grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
-    // width must track the wrapper sizeSplitOnceLaidOut resizes below (split.children[0]), not a fixed
-    // px value — a fixed width here left a dead gap between this box and the divider whenever the
-    // wrapper's computed width (total * 0.25, capped 260) exceeded it.
-    const filtersBox = ui.div([filtersViewer.root], {style: {flex: '0 0 auto', width: '100%', height: '100%',
-      overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
-    const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
-    host.appendChild(split);
-    applyGridColumnSizing(grid);
-    // ui.splitH ignores child width/flex style on first layout; its resize handler reads flexGrow
-    // off the wrapper boxes it creates (children[0]/[2], skipping the divider at [1]) — set size there.
-    const filtersWrap = split.children[0] as HTMLElement;
-    const gridWrap = split.children[2] as HTMLElement;
-    if (gridWrap && filtersWrap)
-      sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
-  }
+  const viewerHost = new MountedViewerRegistry(view);
 
   // ui.input.table is a ChoiceInput over the workspace tables list; setting .value to a DataFrame
   // not in that list is silently rejected. Register via grok.shell.addTable first, and dip through
@@ -872,7 +807,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     mountFn();
     // The just-mounted Filters viewer can clobber subset.filter to all-false (e.g. zero-variance
     // column after subsetting) — reset it once that settles.
-    deferredFilterReset(subset, pendingTimers);
+    viewerHost.deferredFilterReset(subset);
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && !isSameTrackedTable(prev, df))
@@ -913,7 +848,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     assignTableInput(input, fresh);
     mountFn();
     // `fresh` can still inherit a stale filter bitset from `orig` — reset it once the mount settles.
-    deferredFilterReset(fresh, pendingTimers);
+    viewerHost.deferredFilterReset(fresh);
     refreshValidation();
     if (prev)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
@@ -933,25 +868,6 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     ...combinationLimitFields.inputs, ...productFilterFields.inputs,
   ].forEach((inp) => wireValidation(inp));
 
-  // `syncConfigToQuickInputs()` sets values on the quick inputs (rounds, depth-first, etc.), whose
-  // own onChanged listeners cascade into a full remount of the Reactions/BBs/Reagents grids — and
-  // each freshly-mounted Filters viewer can silently reapply a stale, much-earlier categorical
-  // selection instead of the table's actual current filter, since the reapply happens in the filter
-  // widget's own async post-construction step (same root cause fixed elsewhere in this file for
-  // subsetBySelection/restoreFullTable). Snapshot each table's filter before the cascade and restore
-  // it after, once that async reapply has had time to fire.
-  function withPreservedFilters(fn: () => void): void {
-    const saved = [templatesInput.value, bbsInput.value, reagentsInput.value]
-      .filter((d): d is DG.DataFrame => d != null)
-      .map((d) => ({df: d, mask: d.filter.clone()}));
-    fn();
-    const id = setTimeout(() => {
-      pendingTimers.delete(id);
-      for (const {df, mask} of saved) df.filter.copyFrom(mask, true);
-    }, FILTER_REMOUNT_SETTLE_MS);
-    pendingTimers.add(id);
-  }
-
   // ---- Buttons ----
   // Icon buttons in the ribbon: 'folder-open' for import, 'arrow-to-bottom' for export.
   const loadYamlBtn = ui.iconFA('folder-open', async () => {
@@ -960,7 +876,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     try {
       const text = await f.text();
       config = configFromYaml(text);
-      withPreservedFilters(() => syncConfigToQuickInputs());
+      viewerHost.withPreservedFilters(
+        [templatesInput.value, bbsInput.value, reagentsInput.value].filter((d): d is DG.DataFrame => d != null),
+        () => syncConfigToQuickInputs());
       refreshValidation();
       grok.shell.info(`Loaded config from ${f.name}.`);
     } catch (e) {
@@ -1444,8 +1362,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     chipBbsC.dot.style.display = bbsCtl.hasAnyOverride() ? '' : 'none';
     chipExtrasC.dot.style.display = reagentsCtl.hasAnyOverride() ? '' : 'none';
     // Re-render Strategy/Preview even when already the visible tab, so in-tab edits stay current.
-    // Pass the values just computed above instead of having renderStrategySummary re-derive them.
-    if (tabs.currentPane === strategyPane) renderStrategySummary(combChanged, prodChangedCount);
+    // Pass the values just computed above instead of having strategySummary.render() re-derive them.
+    if (tabs.currentPane === strategyPane) strategySummary.render(combChanged, prodChangedCount);
     if (tabs.currentPane === previewPane) renderPreviewRecap();
     subReactions.textContent = tDf ? `${tDf.rowCount} reactions` : 'No table selected';
     subBbs.textContent = bDf ? `${bDf.rowCount} building blocks` : 'No table selected';
@@ -1463,7 +1381,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       tabs.currentPane = reagentsPane;
     } else if (pane === accCombinePane) {
       tabs.currentPane = strategyPane;
-      renderStrategySummary();
+      strategySummary.render();
     } else if (pane === accPreviewPane) {
       tabs.currentPane = previewPane;
       renderPreviewRecap();
@@ -1503,55 +1421,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Initial pane selection must happen near the end of this function, after `tabs`/`strategyPane`
   // exist (switchTabForAccPane reads them) — calling it earlier crashes with a TDZ error.
 
-  const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
-    // flex:0 0 auto (not 1 1 auto) so hint and status sit side by side, both left-aligned, instead
-    // of hint growing to push status to the far right of the row.
-    const hintEl = ui.divText(hint, {style: {
-      fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto', marginRight: '4px',
-    }});
-    const children: HTMLElement[] = [hintEl];
-    if (status) children.push(status);
-    if (subsetBtn) children.push(subsetBtn);
-    return ui.div(children, {style: {
-      display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
-      padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)',
-    }});
-  };
-
   // Per-component "Subset by selection" now lives inside each tab's step bar (see makeDataPanel).
-
-  // `scrollable` is for plain content hosts (e.g. the Strategy summary card) that can outgrow a
-  // short window — unlike a grid, which manages its own internal scroll, so its host stays
-  // overflow:hidden with the bottom fade. min-height:0 is unconditional: without it this wrapper
-  // (a flex child of the platform's own .d4-tab-content, itself fixed up to min-height:0 in
-  // chem.css) refuses to shrink below its content's natural height, so a narrow window makes
-  // .d4-tab-content overflow and get silently clipped further up instead of ever asking this pane
-  // — or gridHost's own overflow below — to actually engage.
-  const tabPanel = (header: HTMLElement, gridHost: HTMLElement, scrollable = false): HTMLElement => {
-    // display:flex on the host turns the grid's inline-flex outer display into a block-level
-    // flex item, eliminating the 12px baseline-alignment gap that block+inline-flex produces.
-    gridHost.style.display = 'flex';
-    gridHost.style.flexDirection = 'column';
-    gridHost.style.flex = '1 1 0';
-    gridHost.style.minHeight = '0';
-    if (scrollable) {
-      // Vertical only, matching the left "How to combine" pane — fully native scroll.
-      gridHost.style.overflowY = 'auto';
-      gridHost.style.overflowX = 'hidden';
-    } else {
-      gridHost.style.position = 'relative';
-      gridHost.style.overflow = 'hidden';
-      const fade = ui.div([], {style: {
-        position: 'absolute', bottom: '0', left: '0', right: '0', height: '48px',
-        background: 'linear-gradient(to bottom,transparent,var(--white))', pointerEvents: 'none', zIndex: '1',
-      }});
-      gridHost.appendChild(fade);
-    }
-    return ui.div([header, gridHost], {style: {
-      height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0',
-      background: 'var(--white)', boxSizing: 'border-box', overflow: 'hidden',
-    }});
-  };
 
   // ---- Single-grid per-component panel with a per-step strip ----
   // Each data tab shows ONE grid plus a horizontal step strip: "All steps" shows the full library
@@ -1664,7 +1534,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       stepState[k - 1].committed = true;
       renderGrid(); renderBar(); updateDots();
       refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
-      deferredFilterReset(subset, pendingTimers);
+      viewerHost.deferredFilterReset(subset);
     };
 
     // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
@@ -1675,7 +1545,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
       // stepClone(k) can inherit the global table's active filter — reset it.
       const w = stepState[k - 1]?.df;
-      if (w) deferredFilterReset(w, pendingTimers);
+      if (w) viewerHost.deferredFilterReset(w);
     };
 
     // (Re)build the step tab strip, landing on `initialStep` (clamped). TabControl has no
@@ -1685,7 +1555,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       // Close each pane's mounted viewer(s) BEFORE wiping stepTabsHost — otherwise their gridHost
       // divs are dropped from the DOM while still registered in `mountedViewers`, orphaning the
       // Viewer instances (never closed) instead of releasing their Dart-side resources.
-      for (const ph of paneHosts) if (ph) closeMountedViewers(ph.gridHost);
+      for (const ph of paneHosts) if (ph) viewerHost.close(ph.gridHost);
       // Every gridHost below is about to be discarded and rebuilt from scratch — drop renderGrid's
       // per-host dedup entries too, or they'd hold the old (now-detached) elements alive forever.
       lastMounted.clear();
@@ -1816,7 +1686,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         // a detached container, which throws ("Cannot read properties of null") deep in the Dart-side
         // close path. Under rapid re-triggering (e.g. the filter icon clicked several times in quick
         // succession) that cascades badly enough to crash the tab's renderer.
-        closeMountedViewers(gridHost);
+        viewerHost.close(gridHost);
         gridHost.innerHTML = '';
         // gridHost itself stays overflow:hidden (correct once a real grid — which scrolls itself —
         // is mounted there); this empty-state text gets its own scrollable wrapper instead, since it
@@ -1836,7 +1706,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
         if (selStep === 0) o.badge?.refresh(currentDf.rowCount);
         return;
       }
-      mountDf(gridHost, currentDf, filtersOn); // mountDf itself closes-then-clears the host
+      viewerHost.mountDf(gridHost, currentDf, filtersOn); // mountDf itself closes-then-clears the host
       lastMounted.set(gridHost, key);
       if (selStep === 0) o.badge?.refresh(currentDf.rowCount);
     }
@@ -1953,99 +1823,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   // ---- Strategy summary (right-pane view when "How to combine" is the active left section) ----
-  // Gives Strategy its own relevant right-side content — mode, round-by-round chain, product
-  // estimate — instead of leaving whatever data grid was last shown. Refreshed from refreshCfgRibbon(),
-  // same trigger as the ribbon chips and accordion subtitles.
-  const strategyHost = ui.div([], {style: {padding: '16px'}});
-  const strategyPanel = tabPanel(
-    panelHeader('How the current strategy and round count combine the reaction templates and building blocks.'),
-    strategyHost, true);
-
-  // Optional params let refreshCfgRibbon() pass in already-computed values; falls back to
-  // computing fresh otherwise.
-  function renderStrategySummary(
-    combChanged: boolean = combinationLimitsChanged(config),
-    prodChangedCount: number = productFiltersChangedCount(config),
-  ): void {
-    strategyHost.innerHTML = '';
-    const tDf = templatesInput.value;
-    const bDf = bbsInput.value;
-    const mode = currentMode();
-    const rounds = currentRounds();
-    const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
-
-    // Per-round subset overrides, computed once for both the round diagram and the per-component
-    // sections below.
-    const overrides = buildPerRoundOverrides(config);
-    const overrideCount = (r: number, key: 'templates' | 'buildingBlocks' | 'reagents'): number | null =>
-      overrideCountFor(overrides, mode, r, key);
-
-    const card = ui.div([], {style: {maxWidth: '480px'}});
-    card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`,
-      {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '10px'}}));
-
-    if (tDf && bDf) {
-      // One section per component, each listing what every round uses.
-      const componentSection = (
-        title: string, total: number, key: 'templates' | 'buildingBlocks' | 'reagents',
-      ): HTMLElement => {
-        const section = ui.div([], {style: {marginTop: '10px'}});
-        section.appendChild(ui.divText(title,
-          {style: {fontWeight: 'bold', fontSize: '12px', marginBottom: '4px'}}));
-        for (let r = 1; r <= rounds; r++) {
-          const oc = overrideCount(r, key);
-          const rowChildren: HTMLElement[] = [
-            ui.divText(`Round ${r}`, {style: {color: 'var(--grey-6)', width: '64px', flex: '0 0 auto'}}),
-            ui.divText(oc != null ? `${oc} of ${total} (custom subset)` : `all ${total}`,
-              oc != null ? {style: {fontWeight: '600'}} : undefined),
-          ];
-          if (oc != null) {
-            rowChildren.push(ui.div([], {style: {width: '6px', height: '6px', borderRadius: '50%',
-              background: OVERRIDE_DOT_COLOR, flex: '0 0 auto'}}));
-          }
-          section.appendChild(ui.divH(rowChildren, {style: {gap: '8px', alignItems: 'center', padding: '2px 0'}}));
-        }
-        return section;
-      };
-
-      card.appendChild(componentSection('Reactions', tDf.rowCount, 'templates'));
-      card.appendChild(componentSection('Building blocks', bDf.rowCount, 'buildingBlocks'));
-
-      // Reagents mode has a third data source just as central to the round math — show it too.
-      const rDf = reagentsInput.value;
-      if (mode === 'reagents' && rDf)
-        card.appendChild(componentSection('Reagents', rDf.rowCount, 'reagents'));
-    } else {
-      card.appendChild(ui.divText('Pick reaction templates and building blocks to see round-by-round details.',
-        {style: {color: 'var(--grey-5)', fontSize: '12px', marginTop: '4px'}}));
-    }
-
-    if (n > 0) {
-      card.appendChild(ui.divText(`≈ ${n.toLocaleString('en-US')} estimated products`,
-        {style: {marginTop: '12px', fontWeight: 'bold', fontSize: '13px', color: 'var(--blue-2)'}}));
-
-      // The estimate above is a naive multiplication — flag when active filters/limits (vs.
-      // platform defaults) would actually shrink the real output.
-      const changedFilters = (combChanged ? 1 : 0) + prodChangedCount;
-      const xDf = exclusionInput.value;
-      const hasExclusion = !!xDf && xDf.rowCount > 0;
-      if (changedFilters > 0 || hasExclusion) {
-        const bits: string[] = [];
-        if (changedFilters > 0) bits.push(`${changedFilters} limit${changedFilters > 1 ? 's' : ''} changed from defaults`);
-        if (hasExclusion) bits.push('exclusion substructures active');
-        const caveatEl = ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
-          {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}});
-        if (changedFilters > 0) {
-          // inline-block so the dot flows with the text instead of centering against the wrapped block.
-          const dot = ui.span([], {style: {...CHANGED_DOT_STYLE, display: 'inline-block', marginRight: '6px'}});
-          caveatEl.prepend(dot);
-        }
-        card.appendChild(caveatEl);
-      }
-    }
-
-    strategyHost.appendChild(card);
-  }
+  const strategySummary = new StrategySummary({
+    getConfig: () => config,
+    currentMode, currentRounds,
+    templatesInput, bbsInput, reagentsInput, exclusionInput,
+    buildPerRoundOverrides, overrideCountFor,
+  });
 
   // ---- Preview tab (lazy) ----
   // Same idea as the old persistent preview: build inputs, run a budgeted enumerate, show the
@@ -2067,7 +1850,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   let previewRunId = 0;
   function showInPreview(content: HTMLElement | null): void {
-    closeMountedViewers(previewHost);
+    viewerHost.close(previewHost);
     previewHost.innerHTML = '';
     if (content) previewHost.appendChild(content);
   }
@@ -2171,8 +1954,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       console.warn('Preview grid styling failed:', e);
     }
     showInPreview(grid.root);
-    mountedViewers.set(previewHost, [grid]);
-    applyGridColumnSizing(grid, false); // route is not the last column — skip extendLastColumn
+    viewerHost.registerRaw(previewHost, [grid]);
+    viewerHost.applyGridColumnSizing(grid, false); // route is not the last column — skip extendLastColumn
     previewStatus.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} rounds, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
   }
@@ -2188,7 +1971,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   templatesPane = tabs.addPane('Reaction templates', () => templatesPanel);
   bbsPane = tabs.addPane('Building blocks', () => bbsPanel);
   reagentsPane = tabs.addPane('Reagents', () => reagentsPanel);
-  const strategyPane = tabs.addPane('Strategy', () => strategyPanel);
+  const strategyPane = tabs.addPane('Strategy', () => strategySummary.panel);
   const previewPane = tabs.addPane('Preview', () => previewPanel);
   view.subs.push(tabs.onTabChanged.subscribe(() => {
     if (tabs.currentPane?.name === 'Preview') refreshPreview();

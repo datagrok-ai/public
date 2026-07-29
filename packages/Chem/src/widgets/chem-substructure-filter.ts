@@ -501,6 +501,13 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Override to load filter state. */
   applyState(state: any): void {
+    // The platform calls applyState() twice per mount for a filter constructed with a pre-specified
+    // column — once with the legacy `columnName` field populated, again with the "canonical" `column`
+    // field (js-api's own convention: column is canonical, columnName is a backwards-compat alias) but
+    // no `columnName`. Base Filter.applyState() only reads `state.columnName`, so the second call
+    // silently overwrites a correctly-resolved column back to undefined — live-observed via a console
+    // diagnostic as the root cause of "sketching a substructure query does nothing, no error shown".
+    state.columnName ??= state.column;
     super.applyState(state);
     _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
 
