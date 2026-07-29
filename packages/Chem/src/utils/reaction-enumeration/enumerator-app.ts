@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 import {Subscription} from 'rxjs';
+import {debounceTime} from 'rxjs/operators';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -53,6 +54,8 @@ function productFiltersChangedCount(cfg: EnumeratorConfig): number {
 // behavior, not something this app triggers) — this is how long every reset-after-remount in this
 // file waits before re-asserting the intended filter state, past that clobber window.
 const FILTER_REMOUNT_SETTLE_MS = 200;
+// Dart int inputs fire onChanged per keystroke — debounce the expensive step-tab rebuild.
+const ROUNDS_INPUT_DEBOUNCE_MS = 300;
 
 // Shared by every "this table should show every row" reset after a mount: subsetBySelection,
 // restoreFullTable, subsetStepBySelection, useAllForStep. Tracked in `pending` so a closing view
@@ -1900,8 +1903,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   //
   // `max` on an int input only shows a tooltip, it doesn't clamp — an over-max value is instead
   // caught by validate(); roundCount() separately caps at MAX_ROUNDS so tab count can't blow up.
-  view.subs.push(numRoundsInput.onChanged.subscribe(() => {
-    refreshValidation();
+  view.subs.push(numRoundsInput.onChanged.subscribe(() => refreshValidation()));
+  view.subs.push(numRoundsInput.onChanged.pipe(debounceTime(ROUNDS_INPUT_DEBOUNCE_MS)).subscribe(() => {
     dataCtls.forEach((c) => c.onRoundsChanged());
   }));
   view.subs.push(templatesInput.onChanged.subscribe(() => templatesCtl.onTableChanged()));
