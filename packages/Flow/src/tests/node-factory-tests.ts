@@ -36,6 +36,31 @@ category('Flow: node-factory', () => {
     expect(createNode('Nope/Does Not Exist'), null);
   });
 
+  test('a leading (table, column) input pair is required even when annotated nullable', async () => {
+    // Mis-annotation is rampant: e.g. Chem:bitbirchClusteringTopMenu declares
+    // both `table` and `molecules` nullable, but the call is meaningless
+    // without them. A function whose first two inputs are a dataframe and a
+    // column operates on exactly that data — both are enforced.
+    const func = DG.Func.find({package: 'Chem', name: 'bitbirchClusteringTopMenu'})[0];
+    if (!func) return; // Chem not on this stand
+    const typeName = ensureFuncNodeType(func);
+    const node = createNode(typeName)!;
+    expect(node.requiredInputs.includes('table'), true, 'nullable leading table is forced required');
+    expect(node.requiredInputs.includes('molecules'), true, 'nullable leading column is forced required');
+    // The override is scoped to the leading pair — a declared-default param
+    // after it stays non-required.
+    expect(node.requiredInputs.includes('threshold'), false, 'defaulted param stays optional');
+
+    // No leading (table, column) pair → nothing forced (OpenFile: string
+    // first, so its optional sheetName must stay optional).
+    const open = getRegisteredFuncs().find((f) => f.func.name === 'OpenFile');
+    if (open) {
+      const of = createNode(open.nodeTypeName)!;
+      expect(of.requiredInputs.includes('fullPath'), true, 'genuinely required stays required');
+      expect(of.requiredInputs.includes('sheetName'), false, 'heuristic off without the pair');
+    }
+  });
+
   test('built-in registry includes the expected core types', async () => {
     const names = new Set(getRegisteredTypeNames());
     for (const t of ['Inputs/Table Input', 'Outputs/Table Output', 'Outputs/Value Output',

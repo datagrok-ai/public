@@ -164,8 +164,18 @@ export class FuncNode extends FlowNode {
     // "Needs input" hint and every run gate (runnable set, live runs, rerun).
     // Exempt: bool (a checkbox always holds a value) and list-likes (an empty
     // list is a value).
+    // Annotation override: a leading (dataframe, column) pair is de-facto
+    // required even when declared nullable — mis-annotation is rampant (e.g.
+    // Chem:bitbirchClusteringTopMenu marks both `table` and `molecules`
+    // nullable, but the call is meaningless without them), and a function
+    // taking a table and its column first is a data operation on exactly that
+    // data.
+    const leadingTableColumn = funcInputs.length >= 2 &&
+      String(funcInputs[0].propertyType) === 'dataframe' &&
+      String(funcInputs[1].propertyType) === 'column';
     this.requiredInputs = funcInputs
-      .filter((p) => {
+      .filter((p, i) => {
+        if (leadingTableColumn && i < 2) return true;
         if (isInputOptional(p)) return false;
         const t = String(p.propertyType);
         if (t === 'bool' || t === 'list' || isStringListType(p.propertyType)) return false;
