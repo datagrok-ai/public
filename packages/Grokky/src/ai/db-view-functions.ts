@@ -4,7 +4,7 @@ import {SQLGenerationContext} from '../db/sql-tools';
 
 // Implementations of the `meta.viewType: DataQueryView` package functions (package.ts).
 // They complement the Dart-native functions the query view returns from getFunctions()
-// (get_query_info / set_query_and_run) with SQL schema exploration and test execution.
+// (getQueryInfo / setQueryAndRun) with SQL schema exploration and test execution.
 // Each takes the generic `view` (the current DataQueryView) as its first argument.
 
 const sqlContexts = new Map<string, Promise<SQLGenerationContext>>();
@@ -20,9 +20,9 @@ async function getSqlContext(connectionId: string): Promise<SQLGenerationContext
   return sqlContexts.get(connectionId)!;
 }
 
-/** The connection is discovered through the view's own Dart-native get_query_info function. */
+/** The connection is discovered through the view's own Dart-native getQueryInfo function. */
 async function queryViewContext(view: any): Promise<SQLGenerationContext> {
-  const info = (view?.getFunctions?.() as DG.Func[] | undefined)?.find((f) => f.name === 'get_query_info');
+  const info = (view?.getFunctions?.() as DG.Func[] | undefined)?.find((f) => f.name === 'getQueryInfo');
   const connectionId = info ? ((await info.apply({})) ?? {})['connectionId'] : null;
   if (!connectionId)
     throw new Error('This view has no database connection');

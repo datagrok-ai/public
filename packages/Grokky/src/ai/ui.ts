@@ -231,8 +231,8 @@ export async function aiCombinedSearch(prompt: string) {
 }
 
 // Called by the core query editor to decide whether to show its AI toggle icon.
-// The query view needs no dedicated panel anymore: its functions (get_query_info,
-// set_query_and_run + the meta.viewType-registered SQL schema functions) are reached
+// The query view needs no dedicated panel anymore: its functions (getQueryInfo,
+// setQueryAndRun + the meta.viewType-registered SQL schema functions) are reached
 // by the singleton panel through the view-function meta-tools.
 export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)

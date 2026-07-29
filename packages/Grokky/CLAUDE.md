@@ -111,8 +111,8 @@ The assistant reaches a view's operations through the platform's `getFunctions()
 
 1. **Dart `View.getFunctions()`** (core) — the base returns registered functions declaring
    `meta.viewType: <viewType>`; subclasses add view-specific `CustomFunc`s on top
-   (`DataQueryView`: `get_query_info` / `set_query_and_run`; `ScriptView`: `get_script_code` /
-   `set_script_code`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
+   (`DataQueryView`: `getQueryInfo` / `setQueryAndRun`; `ScriptView`: `getScriptCode` /
+   `setScriptCode`; `TableView` merges its commands). `JsViewHost` forwards to the JS view.
 2. **JS `ViewBase.getFunctions()`** (js-api) — a JS-defined view overrides it to return its
    registered package functions; e.g. Flow's `FuncFlowView` returns the `flowViewFunction`-tagged
    Flow functions (`listFlowNodes`, `findFlowNodeTypes`, `addFlowNode`, `connectFlowNodes`,
@@ -121,7 +121,7 @@ The assistant reaches a view's operations through the platform's `getFunctions()
 3. **`meta.viewType` package functions** — any package can register a function with
    `meta: {viewType: '<viewType>'}` taking the view; Grokky registers the DataQueryView SQL set
    (`listDbCatalogs/Schemas/Tables`, `getDbTableDetails`, `listDbJoins`, `getSqlTestResult` — in
-   `db-view-functions.ts`, discovering the connection through the view's native `get_query_info`).
+   `db-view-functions.ts`, discovering the connection through the view's native `getQueryInfo`).
 
 Because a view can have hundreds of functions (TableView commands), Grokky never declares them all
 to Claude. Instead `viewFunctionTools()` declares four STATIC meta-tools every full-mode turn
@@ -141,17 +141,25 @@ Defs go to the runtime as `clientTools`; the runtime exposes them via an in-proc
 prepends the current view's briefing ("About this view") plus the briefings of sub-widgets that
 carry one ("Widgets here"). Entity gallery views (Dart `DataSourceCardView` subclasses:
 users, groups, roles, projects, connections, queries, dockers, packages, files, ...) all inherit
-`list_items` / `search_items` / `select_item` / `list_item_commands` / `run_item_command` /
-`refresh_items` from the base class, plus per-view extras.
+`listItems` / `searchItems` / `selectItem` / `listItemCommands` / `runItemCommand` /
+`refreshItems` from the base class, plus per-view extras.
 
 Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
-always briefed with their title) expose `get_dialog_info` / `set_input` / `click_button` plus the
-legacy per-button funcs, **tab controls** `list_tabs` / `select_tab`, **accordions** `list_panes` /
-`expand_pane`. **Dart viewers** ship quick commands via the `TextInterpreter` mixin (d4
-`text_interpreter.dart`): no-param `reg()` commands matched by name/synonyms (`ZoomIn`, `ZoomOut`,
-`ResetView`) and parameterized funcs with anchored `searchPattern` regexes (`XBy`/`YBy`/`ColorBy`/
-`SizeBy`/`SplitBy`/`StackBy`/`ValueBy`/`CategoryBy`(columnName), `AggregationType`, `ChartType`,
-`Bins`) across scatter plot, line chart, bar chart, histogram, pie chart, box plot, density plot,
+always briefed with their title) expose `getDialogInfo` / `setInput` / `clickButton` plus the
+legacy per-button funcs, **tab controls** `listTabs` / `selectTab`, **accordions** `listPanes` /
+`expandPane`, **column selectors** (`ColumnComboBox`) `setColumn`, **range sliders** `getRange` /
+`setRange`, **viewer legends** `listCategories` / `selectCategory`, **property grids** (`PropGrid`)
+`getProperties` / `setProperty`, **per-column filters** (`GridFilterBase`) `resetFilter`,
+**membership editors** `listMembers` / `addMember` / `removeMember`, and xamgle surfaces —
+**Browse panel** `listNodes` / `expandNode` / `selectNode` (projecting its non-Widget tree),
+**chemical sketcher** `getMolecule` / `setMolecule` / `clearMolecule`, **console**, **favorites**,
+**functions widget** `searchFunctions`. Controls that are NOT `Widget` subclasses (inputs, tree
+nodes, tag editors, popups) are invisible to the widget tree and must be projected through their
+host's `getFunctions()` — see d4 `CLAUDE.md` "AI Integration" for the full conventions. **Dart viewers** ship quick commands via the `TextInterpreter` mixin (d4
+`text_interpreter.dart`): no-param `reg()` commands matched by name/synonyms (`zoomIn`, `zoomOut`,
+`resetView`) and parameterized funcs with anchored `searchPattern` regexes (`xBy`/`yBy`/`colorBy`/
+`sizeBy`/`splitBy`/`stackBy`/`valueBy`/`categoryBy`(columnName), `aggregationType`, `chartType`,
+`bins`) across scatter plot, line chart, bar chart, histogram, pie chart, box plot, density plot,
 PC plot, tree map, and 3D scatter plot. The same funcs serve the sync interpreter
 (`Prompt.process` matches `searchPattern` before the generic property interpreter) and the
 assistant (system prompt prefers a targeted widget's quick functions — soft rule, see

@@ -35,12 +35,16 @@ functions through the \`mcp__datagrok-view__*\` tools:
   hundreds (a table view's commands, the query editor's SQL tools, Flow's graph tools); pass one
   or two broad words (matching is OR-ranked), or no query to see the first ~10. Entity gallery
   views (users, groups, roles, projects, connections, dockers, ...) all support
-  \`list_items\` / \`search_items\` / \`select_item\` / \`list_item_commands\` / \`run_item_command\`.
+  \`listItems\` / \`searchItems\` / \`selectItem\` / \`listItemCommands\` / \`runItemCommand\`.
 - \`list_view_widgets()\` — the view's widget tree plus any OPEN DIALOGS (refs \`dlg0\`, ...):
   each widget's ref, type, AI briefing, and function count. Pass a ref as \`widget\` to the other
   three tools to target that widget. Standard widgets ship functions: dialogs expose
-  \`get_dialog_info\` / \`set_input\` / \`click_button\` (fill and confirm a dialog a command opened),
-  tab controls \`list_tabs\` / \`select_tab\`, accordions \`list_panes\` / \`expand_pane\`.
+  \`getDialogInfo\` / \`setInput\` / \`clickButton\` (fill and confirm a dialog a command opened),
+  tab controls \`listTabs\` / \`selectTab\`, accordions \`listPanes\` / \`expandPane\`, column
+  selectors on viewers \`setColumn\`, range sliders \`getRange\` / \`setRange\`, viewer legends
+  \`listCategories\` / \`selectCategory\`, property grids \`getProperties\` / \`setProperty\`,
+  per-column filters \`resetFilter\`, the Browse tree \`listNodes\` / \`expandNode\` /
+  \`selectNode\`, the chemical sketcher \`getMolecule\` / \`setMolecule\`.
 - \`get_view_function_result(name, parameters, widget?)\` — invoke a read-only function (inspect state).
 - \`call_view_function(name, parameters, widget?)\` — invoke a state-changing function.
 Custom plugin views (type \`js-view-base\`) commonly ship rich function sets: e.g. **Flow**,
@@ -52,8 +56,8 @@ SQL schema exploration and query-editing functions. Rules:
   view", enumerate these functions first.
 - When the request targets a specific viewer or widget ("zoom in to the scatter plot",
   "color the box plot by AGE", "reset the chart"), find it via \`list_view_widgets\` and prefer
-  its own quick functions — viewers ship commands like \`ZoomIn\` / \`ZoomOut\` / \`ResetView\` /
-  \`XBy\` / \`ColorBy\` / \`SplitBy\`(columnName) — over setting properties or writing code. This is
+  its own quick functions — viewers ship commands like \`zoomIn\` / \`zoomOut\` / \`resetView\` /
+  \`xBy\` / \`colorBy\` / \`splitBy\`(columnName) — over setting properties or writing code. This is
   a preference, not a hard rule: if no matching function exists, act through properties or
   \`datagrok_exec\` as usual.
 - When \`list_view_functions\` returns nothing relevant, say so — do not DOM-inspect the view

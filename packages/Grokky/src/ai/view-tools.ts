@@ -266,21 +266,21 @@ const VIEW_TOOL_DEFS: ViewToolDef[] = [
       'plus any OPEN DIALOGS (refs dlg0, dlg0.1, ...), each with its ref, type, AI briefing ' +
       '(aiDescription), and function count. Use a ref as the `widget` argument of list_view_functions / ' +
       'get_view_function_result / call_view_function to inspect or drive that specific widget — e.g. a ' +
-      'dialog exposes get_dialog_info / set_input / click_button. Call it when the view-level functions ' +
+      'dialog exposes getDialogInfo / setInput / clickButton. Call it when the view-level functions ' +
       'are not enough, or whenever a dialog is open.',
     inputSchema: {type: 'object', properties: {}},
   },
   {
     name: 'get_view_function_result',
     description: 'Invoke a READ-ONLY function of the current view or one of its widgets (one that inspects ' +
-      'state without changing anything, e.g. get_query_info, list_flow_nodes) and return its result. ' +
+      'state without changing anything, e.g. getQueryInfo, listFlowNodes) and return its result. ' +
       'For functions that change state, use call_view_function instead.',
     inputSchema: invocationSchema,
   },
   {
     name: 'call_view_function',
     description: 'Invoke a state-changing function of the current view or one of its widgets ' +
-      '(e.g. set_query_and_run, add_flow_node). Function name and parameters come from list_view_functions.',
+      '(e.g. setQueryAndRun, addFlowNode). Function name and parameters come from list_view_functions.',
     inputSchema: invocationSchema,
   },
 ];

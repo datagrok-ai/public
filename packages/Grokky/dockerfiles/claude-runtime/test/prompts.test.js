@@ -30,8 +30,11 @@ test('the full prompt prefers widget quick functions for viewer-targeted request
   const full = buildSystemPrompt();
   assert.ok(full.includes('list_view_widgets'), 'widget tool never mentioned');
   assert.match(full, /prefer\s+its own quick functions/i, 'no widget-function preference rule');
-  for (const fn of ['ZoomIn', 'ResetView', 'ColorBy', 'SplitBy'])
+  for (const fn of ['zoomIn', 'resetView', 'colorBy', 'splitBy'])
     assert.ok(full.includes(fn), `viewer quick command ${fn} not named in the prompt`);
+  // Function names are camelCase across the board; snake_case in the widget list is a regression.
+  for (const stale of ['get_dialog_info', 'list_panes', 'set_column', 'list_items'])
+    assert.ok(!full.includes(stale), `stale snake_case name ${stale} in the prompt`);
   assert.match(full, /preference, not a hard rule/i, 'the rule must stay soft');
 });
 
