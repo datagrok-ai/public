@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20510: Chem: Fixed removing a colored scaffold breaking the scatterplot with structure-colors legend
 * Docker (chem/chemprop): Cleared reported CVEs — pinned Flask/Werkzeug/gunicorn to fixed releases, upgraded pip/setuptools/wheel (build + runtime tooling), pinned urllib3/idna in chemprop, and added `apt upgrade` to patch base-image OS packages
 * Docker (chem/chemprop): Raised security floors (VEX) — torch/torchvision/torchaudio to 2.6.0+cu118 via PyPI wheels (CVE-2025-32434) and removed padelpy's bundled PaDEL-Descriptor jars (log4j 1.2.15, guava 17.0)
 * Moved the Chem Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright

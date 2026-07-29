@@ -621,7 +621,15 @@ M  END
     cellStyle: DG.GridCellStyle, colTemp: any, molString: string, highlightScaffolds?: IColoredScaffold[], renderOpts?: Record<string, any>): void {
     let molRegenerateCoords = getSyncTag(gridCell.cell.column, REGENERATE_COORDS_SYNC, REGENERATE_COORDS) === 'true';
     let scaffoldRegenerateCoords = false;
-    const df = gridCell.cell.dataFrame;
+    // legend/tooltip cells can be created from a column detached from its dataframe
+    // (e.g. the scaffold tree colors column after the last colored scaffold is removed) —
+    // cell.dataFrame would crash on the null handle, so draw without scaffold-col highlighting
+    const df = gridCell.cell.column.dataFrame;
+    if (df == null) {
+      this._drawMolecule(x, y, w, h, g.canvas, molString, highlightScaffolds ?? [],
+        molRegenerateCoords, false, cellStyle, false, {}, undefined, renderOpts);
+      return;
+    }
     let rowScaffoldCol = null;
     let haveParentMol = false;
     let parentMolScaffoldMolString;
