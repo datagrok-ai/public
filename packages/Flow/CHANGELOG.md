@@ -11,6 +11,7 @@
 * Files: unified on the `.flow` extension everywhere — export/import, the file viewer, and the bundled demo files (formerly `.ffjson`)
 * Overview minimap: fixed clicking a spot panning the canvas far below/right of it — the click-to-canvas mapping double-counted the graph origin
 * Canvas: an Open File node created by dropping a file now carries the file name in its title
+* Context panel: inputs that require the function's own editor (Add New Column's expression, descriptors' selection) now carry an inline pencil that opens it — same action as the pane's "Open editor" button, easier to spot
 
 * Input nodes: values are now configurable **directly on the node** (and as the Value row in the context panel, both built from the node's qualifiers via `ui.input.forProperty`; a Table Input uses the platform table picker — open tables plus its open-local-file folder icon) — a configured value feeds the run directly, so Run needs no parameter dialog (it still opens, prefilled, for anything left unset) and autorun is no longer blocked by input nodes that have a value; a configured input completes like any node ("Done · 200 × 11", wire count, click-to-preview the parameter)
 * Autorun: when the bolt is on but can't run — an input node without a value, validation errors — it shows an amber pad + corner dot, its tooltip lists the exact blockers, and the empty value editors get a matching amber underline; scalar defaults still emit into the script header (`//input: int n = 5`) while table/file/map values stay runtime-only

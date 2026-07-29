@@ -336,6 +336,42 @@ category('Flow: property panel', () => {
     }
   });
 
+  test('editor-shortcut inputs render a pencil that opens the function editor', async () => {
+    // AddNewColumn's expression practically requires the expression builder —
+    // the input carries an inline pencil doing exactly what the pane's
+    // "Open editor" header button does (same handler, same gating).
+    const typeName = funcTypeName('AddNewColumn');
+    if (!typeName) return;
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const node = await addNode(e.flow, typeName);
+
+      // Without the view wiring onEditFuncParams there is no pencil.
+      panel.showNode(node);
+      const pencilSel = `[data-testid="${tid('prop-input-editor-expression')}"]`;
+      expect(panel.root.querySelector(pencilSel) == null, true,
+        'no pencil when the editor launcher is not wired');
+
+      let openedFor: string | null = null;
+      panel.onEditFuncParams = (n): void => {openedFor = n.id;};
+      panel.showNode(node);
+      const pencil = panel.root.querySelector(pencilSel) as HTMLElement | null;
+      expect(!!pencil, true, 'expression input carries the pencil');
+      expect(!!pencil!.closest('[data-param="expression"]'), true, 'pencil sits inside the expression row');
+      pencil!.click();
+      expect(openedFor, node.id, 'the pencil opens the editor for the shown node');
+
+      // Off-list inputs of the same function stay pencil-less.
+      expect(panel.root.querySelector(`[data-testid="${tid('prop-input-editor-name')}"]`) == null, true,
+        'off-list inputs get no pencil');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
   test('OpenFile fullPath renders the file picker; a path round-trips through it', async () => {
     const typeName = funcTypeName('OpenFile');
     if (!typeName) return;

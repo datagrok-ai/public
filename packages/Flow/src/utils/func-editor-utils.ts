@@ -23,6 +23,28 @@ export function shouldUseFunctionEditor(func: DG.Func) {
   return true;
 }
 
+/** Inputs that practically REQUIRE the function's own editor (an expression
+ *  builder, a descriptor picker): the property panel renders a pencil option
+ *  inside these inputs that opens the editor — the exact behavior of the
+ *  parameters-pane "Open editor" header button, just visible where the user
+ *  is looking. Keyed `nqName:inputName`, case-insensitive. Grows over time. */
+const EDITOR_SHORTCUT_INPUTS = new Set([
+  'core:AddNewColumn:expression',
+  'Chem:descriptorsDocker:selected',
+].map((s) => s.toLowerCase()));
+
+/** Whether this function input should carry the inline open-editor pencil.
+ *  Implies {@link shouldUseFunctionEditor} — never true for a function whose
+ *  editor the launcher would refuse to open. */
+export function hasEditorShortcut(func: DG.Func, inputName: string): boolean {
+  try {
+    if (!shouldUseFunctionEditor(func)) return false;
+    return EDITOR_SHORTCUT_INPUTS.has(`${func.nqName}:${inputName}`.toLowerCase());
+  } catch {
+    return false; // Dart proxy access can throw — treat as no shortcut
+  }
+}
+
 export async function pollDialogCreation(timeout = 30_000): Promise<DG.Dialog | null> {
   return new Promise((res) => {
     let timeoutNum: any = null;
