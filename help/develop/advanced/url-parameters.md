@@ -8,6 +8,8 @@ keywords:
   - includePackages
   - excludePackages
   - cmd parameter
+  - run parameter
+  - function as an app
   - debug settings
   - dapiUrl
   - iframe embedding
@@ -60,6 +62,39 @@ Parameterized commands use the `command(param)` syntax:
 | `layout`  | name or GUID        |         | Apply a saved layout to the current view           |
 | `v`       | viewer ID           |         | Show a single viewer (used with `mode=embed`)      |
 | `q`       | search text         |         | Pre-fill the search filter in the functions browser|
+
+## Functions
+
+Any function - a script, a query, or a package function - can be opened by URL, with its
+parameters passed as query parameters. The function name uses dots instead of colons
+(`Chem:mutateMolecule` becomes `Chem.mutateMolecule`):
+
+```
+/func/Chem.mutateMolecule?molecule=CCO&steps=2
+```
+
+| Parameter | Values            | Default | Description                                                     |
+| --------- | ----------------- | ------- | --------------------------------------------------------------- |
+| `run`     | `true` \| `false` | `false` | Run the function on open and show only its results               |
+
+By default the URL opens the parameter form with a **Run** button. Add `run=true` to run
+the function immediately and show only the resulting view - this exposes any function as
+an app-like shareable link:
+
+```
+/func/Chem.mutateMolecule?molecule=CCO&steps=2&run=true
+```
+
+To copy such a link for the parameters you currently see, click the **copy** icon next to
+the **Run** button.
+
+Notes:
+
+* All required parameters must be in the URL. Otherwise the parameter form opens with the
+  values the URL did provide, and a warning names what is missing.
+* For functions that return a single table, the parameters stay editable in the **Source**
+  pane of the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel).
+* `run` is ignored if the function itself declares a parameter with that name.
 
 ## Presentation
 
