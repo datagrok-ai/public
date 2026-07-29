@@ -637,9 +637,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     const err = validate();
     validationDiv.textContent = err ?? '';
     runBtn.disabled = err != null;
-    bindRunTooltip(err);
     previewEnumerateBtn.disabled = err != null;
-    ui.tooltip.bind(previewEnumerateBtn, err ?? RUN_TOOLTIP_DEFAULT);
+    bindRunTooltip(err);
   }
   syncQuickInputsToConfig();
 
@@ -951,32 +950,39 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   let cancelled = false;
   let running = false;
   const RUN_TOOLTIP_DEFAULT = 'Run enumeration with the current config and add the result to the workspace.';
+  const RUN_TOOLTIP_RUNNING = 'An enumeration is already running.';
   const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
   // Mirrors the ribbon's Enumerate button — Preview is the end of the Next-button chain, so it
   // gets its own run action too.
   const previewEnumerateBtn = ui.button('Enumerate', () => runWithUi(runEnumeration));
   previewEnumerateBtn.classList.add('ui-btn-ok');
-  // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind the
-  // tooltip to the ribbon-item ancestor instead (must stay its direct, unwrapped child).
+  // Disabled buttons get pointer-events:none, so hover/click never reaches them — bind tooltips to a
+  // live ancestor instead. runBtn has the ribbon's own '.d4-ribbon-item'; previewEnumerateBtn gets
+  // its own wrapper div for the same purpose.
+  const previewEnumerateBtnWrap = ui.div([previewEnumerateBtn]);
   let runBtnRibbonItem: HTMLElement | null = null;
   let lastValidationMsg: string | null = null;
   // WeakSet survives the platform replacing the ribbon-item node mid-session (e.g. after
   // "Subset by selection") — re-attaches on a new node, no-ops on an unchanged one.
-  const ribbonItemsWithClickListener = new WeakSet<HTMLElement>();
+  const ancestorsWithClickListener = new WeakSet<HTMLElement>();
+  const armDisabledTooltip = (btn: HTMLButtonElement, ancestor: HTMLElement): void => {
+    if (ancestorsWithClickListener.has(ancestor)) return;
+    ancestorsWithClickListener.add(ancestor);
+    ancestor.addEventListener('click', (e) => {
+      if (btn.disabled && lastValidationMsg)
+        ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
+    });
+  };
+  armDisabledTooltip(previewEnumerateBtn, previewEnumerateBtnWrap);
   const bindRunTooltip = (msg: string | null): void => {
     lastValidationMsg = msg;
     const el = runBtn.closest<HTMLElement>('.d4-ribbon-item');
     if (el) {
       runBtnRibbonItem = el;
-      if (!ribbonItemsWithClickListener.has(el)) {
-        ribbonItemsWithClickListener.add(el);
-        el.addEventListener('click', (e) => {
-          if (runBtn.disabled && lastValidationMsg)
-            ui.tooltip.show(lastValidationMsg, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
-        });
-      }
+      armDisabledTooltip(runBtn, el);
     }
     ui.tooltip.bind(runBtnRibbonItem ?? runBtn, msg ?? RUN_TOOLTIP_DEFAULT);
+    ui.tooltip.bind(previewEnumerateBtnWrap, msg ?? RUN_TOOLTIP_DEFAULT);
   };
 
   const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
@@ -991,6 +997,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     cancelled = false;
     runBtn.disabled = true;
     previewEnumerateBtn.disabled = true;
+    bindRunTooltip(RUN_TOOLTIP_RUNNING);
     cancelBtn.style.display = '';
     progressLabel.textContent = 'Initializing…';
     try {
@@ -1002,7 +1009,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       running = false;
       cancelBtn.style.display = 'none';
       progressLabel.textContent = '';
-      refreshValidation(); // restores both buttons' disabled state
+      refreshValidation(); // restores both buttons' disabled state + tooltip
     }
   }
 
@@ -1318,7 +1325,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       {style: {fontSize: '12px', color: 'var(--grey-6)'}}),
     previewRecapHost,
     // Last pane in the chain — the run action takes the Next slot instead of a target pane.
-    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), previewEnumerateBtn),
+    navRow(mkBackBtn(() => accExtrasPane, 'Extras'), previewEnumerateBtnWrap),
   ], {style: {gap: '10px'}}), false, null, false);
   const accPanes = [accReactionsPane, accBbsPane, accExtrasPane, accCombinePane, accPreviewPane];
 
@@ -2100,10 +2107,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     previewConfig.max_num_routes_per_compound = 1;
     previewConfig.keep_building_blocks_in_final_output = false;
 
+    const perRoundOverrides = buildPerRoundOverrides(config);
     let rows: OutputRow[] = [];
     try {
       const result = await enumerate({
-        rdkit, config: previewConfig, ...inputs,
+        rdkit, config: previewConfig, ...inputs, perRoundOverrides,
         isCancelled: () => myRunId !== previewRunId,
       });
       rows = result.rows;
