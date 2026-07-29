@@ -717,10 +717,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       }
     }
   }
-  // Close every mounted viewer when the view itself closes.
-  view.subs.push(new Subscription(() => {
+  // view.subs doesn't unsubscribe for this view — use onViewRemoved instead.
+  let closeSub: Subscription;
+  closeSub = grok.events.onViewRemoved.subscribe((closedView) => {
+    if (closedView.id !== view.id) return;
     for (const host of mountedViewers.keys()) closeMountedViewers(host);
-  }));
+    closeSub.unsubscribe();
+  });
 
   // ChemicalReaction has no meaningful substructure-filter semantics for a whole reaction template,
   // so it's simply left out of the filters below (not a workaround for anything — DG.Viewer.filters
