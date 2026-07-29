@@ -298,6 +298,14 @@ export class Widget<TSettings = any> {
     Used in the UI to display context actions, and for the AI integrations. */
   getFunctions(): Func[] { return this._functions;  }
 
+  private _aiDescription: string | null = null;
+
+  /** A short AI-facing briefing: what this widget is, what its functions do, and how the
+   * assistant should approach it (e.g. which {@link getFunctions} entries to call first).
+   * Shown to the AI assistant as part of the workspace context. */
+  get aiDescription(): string | null { return this._aiDescription; }
+  set aiDescription(x: string | null) { this._aiDescription = x; }
+
   /** Gets called when viewer's property is changed.
    * @param {Property} property - or null, if multiple properties were changed. */
   onPropertyChanged(property: Property | null): void {}
@@ -399,6 +407,18 @@ export class DartWidget extends Widget {
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
   getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
+
+  /** AI briefing of the underlying Dart widget. */
+  get aiDescription(): string | null {
+    const f = (api as any).grok_Widget_Get_AIDescription;
+    return f ? (f(this.dart) ?? null) : null;
+  }
+
+  set aiDescription(x: string | null) {
+    const f = (api as any).grok_Widget_Set_AIDescription;
+    if (f)
+      f(this.dart, x);
+  }
 
   onEvent(eventId: string | null = null): rxjs.Observable<any> {
     if (eventId === null)
