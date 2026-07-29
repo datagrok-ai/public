@@ -949,6 +949,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // ---- Run / Cancel ----
   const progressLabel = ui.divText('', {style: {fontSize: '12px', color: 'var(--grey-5)'}});
   let cancelled = false;
+  let running = false;
   const RUN_TOOLTIP_DEFAULT = 'Run enumeration with the current config and add the result to the workspace.';
   const runBtn = ui.bigButton('Enumerate', () => runWithUi(runEnumeration));
   // Mirrors the ribbon's Enumerate button — Preview is the end of the Next-button chain, so it
@@ -981,12 +982,15 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const cancelBtn = ui.button('Cancel', () => {cancelled = true;});
   cancelBtn.style.display = 'none';
 
-  // Shared run chrome: validate, disable the Run button, show Cancel + progress, restore on finish.
+  // Shared run chrome: validate, disable both Run buttons, show Cancel + progress, restore on finish.
+  // `running` blocks a second concurrent run — previewEnumerateBtn isn't otherwise disabled while one is in progress.
   async function runWithUi(fn: () => Promise<void>): Promise<void> {
-    if (validate() != null) return;
+    if (running || validate() != null) return;
     syncQuickInputsToConfig();
+    running = true;
     cancelled = false;
     runBtn.disabled = true;
+    previewEnumerateBtn.disabled = true;
     cancelBtn.style.display = '';
     progressLabel.textContent = 'Initializing…';
     try {
@@ -995,9 +999,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       grok.shell.error(`Enumeration failed: ${e instanceof Error ? e.message : String(e)}`);
       console.error(e);
     } finally {
-      runBtn.disabled = false;
+      running = false;
       cancelBtn.style.display = 'none';
       progressLabel.textContent = '';
+      refreshValidation(); // restores both buttons' disabled state
     }
   }
 
