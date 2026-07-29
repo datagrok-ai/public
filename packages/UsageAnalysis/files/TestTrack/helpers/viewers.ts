@@ -345,6 +345,143 @@ export async function pickColumnViaSelector(
   return {usedFallback};
 }
 
+export interface TrustedPickColumnOptions {
+  /**
+   * Suffix of the on-viewer column-combobox name attribute, lowercase — the
+   * selector matched is `[name="div-column-combobox-<role>"]`. Scatter plot
+   * exposes `x`, `y`, `color` and `size`.
+   */
+  role: string;
+  /** Column name to commit through the popup. */
+  columnName: string;
+  /**
+   * Which element of the selector receives the click:
+   *   - `'auto'` (default) — the column-name label, falling back to the caption
+   *     and then to the selector box. An unassigned selector shows only its
+   *     caption, and its column label has a zero-sized box.
+   *   - `'column'` — the column-name label only. Use this to express a guard
+   *     that the label text itself is a hit target for the popup.
+   */
+  target?: 'auto' | 'column';
+  /**
+   * Viewer whose on-viewer selectors are driven. Defaults to `'Scatter plot'`;
+   * the root is resolved on the instance that is NOT inside a dialog, because a
+   * dialog can embed its own preview copy of the same viewer.
+   */
+  viewerType?: string;
+  /** Property read back after the commit. Defaults to `<role>ColumnName`. */
+  propName?: string;
+  /** How long to wait for the popup after the click. Defaults to 6000 ms. */
+  backdropTimeoutMs?: number;
+  /** Settle after the commit before the property is read back. Defaults to 900 ms. */
+  commitSettleMs?: number;
+  /**
+   * When true (default), a popup that never opens is an error. Pass false to
+   * make the caller responsible for asserting `popupOpened` — the shape a
+   * hit-target guard needs.
+   */
+  requirePopup?: boolean;
+}
+
+/**
+ * Drive a viewer's on-viewer column selector with trusted input only: move the
+ * real pointer over the plot, real-click the selector's text, type the column
+ * name with real keys and commit with Enter, then read the resulting property
+ * back.
+ *
+ * Preferred over `pickColumnViaSelector` for viewer-hosted selectors. That
+ * helper drives the popup with a synthetic mousedown and commits with
+ * ArrowDown + Enter; both are weaker here — a selector that carries
+ * `visibility: hidden` until the pointer is over the viewer cannot take focus,
+ * so a synthetic open leaves the keystrokes routed to whatever was focused
+ * before and the pick silently drops, and ArrowDown moves off the exact match
+ * when the typed text matches more than one column. It also does not substitute
+ * the property assignment for a failed UI flow: a broken selector raises here
+ * instead of being masked.
+ *
+ * Throws when the selector exposes no clickable text, when the popup does not
+ * open (unless `requirePopup: false`), and when the property does not hold the
+ * requested column after the commit — the message names the role, the expected
+ * and the observed value.
+ *
+ * Reference: `.claude/skills/grok-browser/references/viewers/scatterplot.md`
+ * "On-viewer column selectors".
+ */
+export async function pickColumnViaSelectorTrusted(
+  page: Page, opts: TrustedPickColumnOptions,
+): Promise<{popupOpened: boolean}> {
+  const viewerType = opts.viewerType ?? 'Scatter plot';
+  const rootName = `viewer-${viewerType.replace(/\s+/g, '-')}`;
+  const target = opts.target ?? 'auto';
+  const propName = opts.propName ?? `${opts.role}ColumnName`;
+
+  // Move the pointer over the plot: Color and Size carry `visibility: hidden`
+  // until the viewer is hovered, and a hidden selector takes neither a click
+  // nor focus.
+  const canvas = await page.evaluate((rn: string) => {
+    const root = [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
+    const el = root?.querySelector('canvas[name="canvas"]') ?? root;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+  }, rootName);
+  if (!canvas) throw new Error(`pickColumnViaSelectorTrusted: no ${viewerType} root on the page`);
+  await page.mouse.move(canvas.x, canvas.y);
+  await page.waitForTimeout(400);
+
+  const point = await page.evaluate(({rn, r, t}: {rn: string; r: string; t: string}) => {
+    const root = [...document.querySelectorAll(`[name="${rn}"]`)].find((e) => !e.closest('.d4-dialog'));
+    const sel = root?.querySelector(`[name="div-column-combobox-${r}"]`) as HTMLElement | null;
+    if (!sel) return null;
+    const candidates: Element[] = [];
+    const queries = t === 'column'
+      ? ['.d4-column-selector-column']
+      : ['.d4-column-selector-column', '.d4-column-selector-caption'];
+    for (const q of queries) {
+      const el = sel.querySelector(q);
+      if (el) candidates.push(el);
+    }
+    if (t !== 'column') candidates.push(sel);
+    for (const el of candidates) {
+      const b = el.getBoundingClientRect();
+      if (b.width > 0 && b.height > 0) return {x: b.x + b.width / 2, y: b.y + b.height / 2};
+    }
+    return null;
+  }, {rn: rootName, r: opts.role, t: target});
+  if (!point)
+    throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} selector exposes no clickable text`);
+
+  await page.mouse.click(point.x, point.y);
+  const popupOpened = await page.waitForFunction(
+    () => !!document.querySelector('.d4-column-selector-backdrop'),
+    null, {timeout: opts.backdropTimeoutMs ?? 6000}).then(() => true).catch(() => false);
+  if (!popupOpened) {
+    if (opts.requirePopup === false) return {popupOpened: false};
+    throw new Error(`pickColumnViaSelectorTrusted: the ${opts.role} column popup did not open`);
+  }
+
+  // The popup grid is canvas-rendered, so the name goes in as real keystrokes.
+  // The first key is separated from the rest because the popup focuses its
+  // search input a tick later; Enter alone commits the match.
+  const text = opts.columnName.toLowerCase();
+  await page.keyboard.press(text[0]);
+  await page.waitForTimeout(150);
+  if (text.length > 1) await page.keyboard.type(text.slice(1));
+  await page.waitForTimeout(200);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(opts.commitSettleMs ?? 900);
+
+  const applied = await page.evaluate(({vt, prop}: {vt: string; prop: string}) => {
+    const view = (window as any).grok.shell.tv?.viewers?.find((x: any) => x.type === vt);
+    return view ? ((view.props as any)[prop] ?? null) : null;
+  }, {vt: viewerType, prop: propName});
+  if (applied !== opts.columnName) {
+    throw new Error(`pickColumnViaSelectorTrusted: ${opts.role} did not take — ` +
+      `${propName} expected "${opts.columnName}", got "${applied}"`);
+  }
+  return {popupOpened: true};
+}
+
 /**
  * Open a viewer's properties Context Panel by clicking the gear icon. The
  * gear is scoped to the viewer's panel-titlebar to disambiguate across

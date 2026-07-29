@@ -1,711 +1,610 @@
-import {test, expect, type Page} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
-import * as v from '../helpers/viewers';
+/* ---
+realizes: []
+--- */
+import {test, expect, Page} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+
+declare const grok: any;
 
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
+const SETUP_X = 'WEIGHT';
+const SETUP_Y = 'HEIGHT';
+const WHISKER_X_MIN = 'AGE';
+const WHISKER_X_MAX = 'WEIGHT';
+const WHISKER_Y_MIN = 'HEIGHT';
+const WHISKER_Y_MAX = 'WEIGHT';
+const HISTOGRAM_BINS = 20;
+const DEFAULT_HISTOGRAM_BINS = 10;
+const TITLE_TEXT = 'Test Plot';
+const DESCRIPTION_TEXT = 'Test description';
+const LINES_ORDER_COLUMN = 'AGE';
+const COLOR_COLUMN = 'RACE';
+const LINES_BY_COLUMN = 'SEX';
 
-// -- UI Helpers --
+// Canvas readings scale with viewer size and dpr, so only these bounds are
+// asserted, never a reading. Their ordering is what keeps the asserts honest:
+// settle < restore-ceiling < change-floor. The restore ceiling also bounds
+// "the rendering did not change" (the connecting-lines split rules).
+const CANVAS_SETTLE_TOLERANCE = 400;
+const CANVAS_CHANGE_MIN = 2000;
+const CANVAS_RESTORE_MAX = 1500;
 
-/** Set a Scatter plot column via the column-combobox UI flow (pickColumnViaSelector alias). */
-const setCol = (page: Page, comboboxSuffix: string, columnName: string, propName: string) =>
-  v.pickColumnViaSelector(page, {comboboxSuffix, columnName, viewerType: 'Scatter plot', propName, allowFallback: true});
+const isAmbientError = (text: string) =>
+  /WebSocket/.test(text) || /Failed to load resource/.test(text) || /404 \(\)/.test(text) ||
+  /favicon/.test(text) || /Failed to connect to Claude runtime/.test(text) ||
+  /powerPreference option is currently ignored/.test(text) ||
+  /willReadFrequently/.test(text);
 
-/** Right-click center of scatter plot canvas to open context menu using real Playwright mouse */
-async function openScatterContextMenu(page: Page) {
-  await page.evaluate(() => {
-    document.querySelectorAll('.d4-menu-popup').forEach(m => m.remove());
-  });
+// Nothing beyond the shared server's ambient noise is whitelisted here: a Dart
+// NullError or a "Stack trace" line while a visibility setting is toggled, a
+// whisker column is bound or the context menu is opened is the regression signal.
+const isBenignError = (text: string) => isAmbientError(text);
+
+interface Rect {x: number; y: number; width: number; height: number}
+
+/** Viewer root is disambiguated: a dialog carrying its own preview plot matches
+ * the same name. */
+const canvasRect = (page: Page): Promise<Rect> => page.evaluate(() => {
+  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+    .find((e) => !e.closest('.d4-dialog'))!;
+  const r = root.querySelector('canvas[name="canvas"]')!.getBoundingClientRect();
+  return {x: r.x, y: r.y, width: r.width, height: r.height};
+});
+
+/** Poll `cond` until it holds. The caller keeps its own assert, so a poll that
+ * runs out of time leaves the observed state to be graded as it is. */
+async function waitUntil(cond: () => Promise<boolean>, timeoutMs: number, stepMs = 100): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await cond()) return true;
+    if (Date.now() >= deadline) return false;
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+}
+
+/** The plot repaints its mouse-over indication as the pointer crosses it, so
+ * every rendering reading is taken from the same parked pointer position. The
+ * longer settle serves the readings that have no known frame to leave. */
+async function parkPointer(page: Page, settleMs = 300): Promise<void> {
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(settleMs);
+}
+
+/** Store a per-color histogram of the data canvas under `key`. False means the
+ * canvas could not be read — a fault, not an equal reading. */
+const captureCanvas = (page: Page, key: string) => page.evaluate((k: string) => {
+  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+    .find((e) => !e.closest('.d4-dialog'));
+  const c = root?.querySelector('canvas[name="canvas"]') as HTMLCanvasElement | null;
+  const ctx = c?.getContext('2d');
+  if (!c || !ctx) return false;
+  let data: Uint8ClampedArray;
+  try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { return false; }
+  const colors = new Map<number, number>();
+  for (let i = 0; i < data.length; i += 4) {
+    const rgb = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+    colors.set(rgb, (colors.get(rgb) ?? 0) + 1);
+  }
+  const w = window as any;
+  w.__spCanvasSnap = w.__spCanvasSnap || {};
+  w.__spCanvasSnap[k] = colors;
+  return true;
+}, key);
+
+/** Summed absolute per-color pixel delta against the reading stored under
+ * `key`. -1 signals a fault. */
+const diffCanvas = (page: Page, key: string) => page.evaluate((k: string) => {
+  const w = window as any;
+  const prev = w.__spCanvasSnap?.[k] as Map<number, number> | undefined;
+  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+    .find((e) => !e.closest('.d4-dialog'));
+  const c = root?.querySelector('canvas[name="canvas"]') as HTMLCanvasElement | null;
+  const ctx = c?.getContext('2d');
+  if (!prev || !c || !ctx) return -1;
+  let data: Uint8ClampedArray;
+  try { data = ctx.getImageData(0, 0, c.width, c.height).data; } catch (_) { return -1; }
+  const colors = new Map<number, number>();
+  for (let i = 0; i < data.length; i += 4) {
+    const rgb = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+    colors.set(rgb, (colors.get(rgb) ?? 0) + 1);
+  }
+  let delta = 0;
+  for (const [rgb, n] of colors) delta += Math.abs(n - (prev.get(rgb) ?? 0));
+  for (const [rgb, n] of prev) if (!colors.has(rgb)) delta += n;
+  return delta;
+}, key);
+
+/** Wait for the data canvas to stop repainting, then return its delta against
+ * the reading stored under `key`. The settle gate compares two consecutive
+ * readings of the current frame, so it stays independent of what the step
+ * changed.
+ *
+ * `expectChange` is passed by the steps that claim the rendering moved: the poll
+ * then starts at once and first waits for the delta against `key` to leave the
+ * settle drift. The steps claiming the rendering did NOT move leave it off and
+ * keep the blind settle, because an unchanged frame and one that has not
+ * repainted yet read alike. */
+async function settledCanvasDiff(page: Page, key: string, expectChange = false): Promise<number> {
+  await parkPointer(page, expectChange ? 150 : 300);
+  expect(await captureCanvas(page, '__settle')).toBe(true);
+  if (expectChange) {
+    for (let i = 0; i < 24; i++) {
+      const moved = await diffCanvas(page, key);
+      if (moved > CANVAS_SETTLE_TOLERANCE) break;
+      await page.waitForTimeout(200);
+    }
+    await captureCanvas(page, '__settle');
+  }
+  for (let i = 0; i < 12; i++) {
+    await page.waitForTimeout(expectChange ? 250 : 400);
+    const drift = await diffCanvas(page, '__settle');
+    await captureCanvas(page, '__settle');
+    if (drift >= 0 && drift <= CANVAS_SETTLE_TOLERANCE) break;
+  }
+  const delta = await diffCanvas(page, key);
+  expect(delta).toBeGreaterThanOrEqual(0);
+  return delta;
+}
+
+async function captureBaseline(page: Page, key: string): Promise<void> {
+  await settledCanvasDiff(page, '__settle');
+  expect(await captureCanvas(page, key)).toBe(true);
+}
+
+/** Assign a column through the on-viewer selector. The shared helper verifies
+ * the property itself, so the short commit settle is retried through a poll on
+ * that property before the pick is repeated at the helper's own pace. */
+async function pickOnViewer(page: Page, role: string, column: string): Promise<void> {
+  try {
+    await v.pickColumnViaSelectorTrusted(page, {role, columnName: column, commitSettleMs: 250});
+    return;
+  } catch (_) { /* fall through to the poll, then to a full retry */ }
+  if (await waitUntil(async () => await readProp(page, `${role}ColumnName`) === column, 2500)) return;
+  await v.pickColumnViaSelectorTrusted(page, {role, columnName: column});
+}
+
+// The helpers below serve PROPERTY-PANEL column rows only (whiskers, connecting
+// lines). The shared pickColumnViaSelectorTrusted covers on-viewer selectors: it
+// hovers the plot to reveal them and clicks their text. A panel row has neither
+// — it is scrolled into view inside the settings panel and its popup opens from
+// a mousedown on the nested combobox — so these paths stay local.
+async function waitBackdrop(page: Page, timeout = 6000): Promise<boolean> {
+  return await page.waitForFunction(() => !!document.querySelector('.d4-column-selector-backdrop'),
+    null, {timeout}).then(() => true).catch(() => false);
+}
+
+/** The popup grid is canvas-rendered, so the name goes in with real keys; the
+ * first key is separated because the popup focuses its search input a tick
+ * later. */
+async function commitColumn(page: Page, column: string): Promise<void> {
+  const text = column.toLowerCase();
+  await page.keyboard.press(text[0]);
+  await page.waitForTimeout(150);
+  if (text.length > 1) await page.keyboard.type(text.slice(1));
   await page.waitForTimeout(200);
-  const box = await page.evaluate(() => {
-    const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-    const canvas = sp!.root.querySelector('canvas')!;
-    const rect = canvas.getBoundingClientRect();
-    return {cx: rect.left + rect.width * 0.5, cy: rect.top + rect.height * 0.5};
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+}
+
+const settingsBuilt = (page: Page) =>
+  page.evaluate(() => !!document.querySelector('[name="prop-category-axes"]'));
+
+async function openSettings(page: Page): Promise<void> {
+  for (let i = 0; i < 4; i++) {
+    if (await settingsBuilt(page)) return;
+    await v.openViewerGear(page, 'Scatter plot');
+    await waitUntil(() => settingsBuilt(page), 2000);
+  }
+  throw new Error('the scatter plot settings panel did not build');
+}
+
+/** A row inside a collapsed category keeps its DOM node with an empty box, so
+ * readiness is the editor's own rectangle, not the row's presence. The category
+ * header is a toggle, hence the retry. */
+async function revealPropEditor(page: Page, editorSelector: string, category: string): Promise<void> {
+  const ready = () => page.evaluate((sel: string) => {
+    const el = document.querySelector(sel) as HTMLElement | null;
+    if (!el || !el.offsetParent) return false;
+    const b = el.getBoundingClientRect();
+    return b.width > 0 && b.height > 0;
+  }, editorSelector);
+  for (let i = 0; i < 8; i++) {
+    if (await ready()) return;
+    const header = page.locator(`[name="prop-category-${category}"]`);
+    if (await header.count() > 0 && await header.isVisible()) await header.click();
+    if (await waitUntil(ready, 1000)) return;
+  }
+  throw new Error(`property editor ${editorSelector} never became reachable`);
+}
+
+const readProp = (page: Page, name: string) => page.evaluate((n: string) => {
+  const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
+  return sp.props[n];
+}, name);
+
+/** Inline row opacity — the property grid's only greyed-out signal. */
+const rowOpacity = (page: Page, rowName: string) => page.evaluate((n: string) =>
+  (document.querySelector(`[name="${n}"]`) as HTMLElement | null)?.style.opacity ?? null, rowName);
+
+const categoryCount = (page: Page, column: string) => page.evaluate((c: string) =>
+  grok.shell.tv.dataFrame.col(c).categories.length as number, column);
+
+const propIs = (page: Page, propName: string, value: unknown, timeoutMs: number) =>
+  waitUntil(async () => await readProp(page, propName) === value, timeoutMs);
+
+/** The row is the actuation; the viewer's own property confirms the click
+ * landed before any rendering is read. */
+async function setCheckboxProp(
+  page: Page, rowName: string, category: string, propName: string, value: boolean,
+): Promise<void> {
+  await openSettings(page);
+  const box = `[name="${rowName}"] input.property-grid-item-editor-checkbox`;
+  await revealPropEditor(page, box, category);
+  for (let i = 0; i < 3; i++) {
+    if (await readProp(page, propName) === value) return;
+    const locator = page.locator(box);
+    await locator.scrollIntoViewIfNeeded();
+    await locator.click();
+    await propIs(page, propName, value, 2000);
+  }
+  if (await readProp(page, propName) !== value)
+    throw new Error(`${propName} did not reach ${value} from the ${rowName} row`);
+}
+
+async function setNumericProp(
+  page: Page, rowName: string, category: string, propName: string, value: number,
+): Promise<void> {
+  await openSettings(page);
+  const selector = `[name="${rowName}"] input.property-grid-slider-textbox`;
+  await revealPropEditor(page, selector, category);
+  const locator = page.locator(selector).first();
+  await locator.scrollIntoViewIfNeeded();
+  await locator.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type(String(value));
+  await page.keyboard.press('Enter');
+  await propIs(page, propName, value, 2500);
+  if (await readProp(page, propName) !== value)
+    throw new Error(`${propName} did not reach ${value} from the ${rowName} row`);
+}
+
+/** The popup of a property-panel column row opens on a mousedown, never on a
+ * plain click. */
+async function openPanelColumnPopup(
+  page: Page, rowName: string, comboName: string, category: string,
+): Promise<void> {
+  await openSettings(page);
+  const combo = `[name="${rowName}"] [name="${comboName}"]`;
+  await revealPropEditor(page, combo, category);
+  await page.locator(combo).scrollIntoViewIfNeeded();
+  await page.evaluate(({row, name}: {row: string; name: string}) => {
+    const sel = document.querySelector(`[name="${row}"] [name="${name}"]`) as HTMLElement;
+    const target = (sel.querySelector('.d4-column-selector-column') as HTMLElement) || sel;
+    target.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0}));
+  }, {row: rowName, name: comboName});
+  if (!await waitBackdrop(page)) throw new Error(`${comboName} popup did not open`);
+}
+
+async function pickPanelColumn(
+  page: Page, rowName: string, comboName: string, category: string, propName: string, column: string,
+): Promise<void> {
+  await openPanelColumnPopup(page, rowName, comboName, category);
+  await commitColumn(page, column);
+  await propIs(page, propName, column, 2500);
+  if (await readProp(page, propName) !== column)
+    throw new Error(`${propName} did not reach ${column} from the ${rowName} row`);
+}
+
+/** The popup's first data row is the empty entry, one row height below the
+ * popup's own header; picking it sets the property to the empty string. */
+async function clearPanelColumn(
+  page: Page, rowName: string, comboName: string, category: string, propName: string,
+): Promise<void> {
+  await openPanelColumnPopup(page, rowName, comboName, category);
+  const row = await page.evaluate(() => {
+    const b = document.querySelector('.d4-column-selector-backdrop')!.getBoundingClientRect();
+    return {x: b.x + b.width / 2, y: b.y + 30};
   });
-  await page.mouse.click(box.cx, box.cy, {button: 'right'});
-  await page.waitForTimeout(500);
+  await page.mouse.click(row.x, row.y);
+  await waitUntil(async () => {
+    const p = await readProp(page, propName);
+    return p === '' || p === null;
+  }, 2500);
+  const left = await readProp(page, propName);
+  if (left !== '' && left !== null)
+    throw new Error(`${propName} was left as ${left} by the ${rowName} row`);
 }
 
-/** Click a context menu item by exact text */
-async function clickMenuItem(page: Page, itemText: string) {
-  await page.evaluate((text) => {
-    const labels = document.querySelectorAll('.d4-menu-item-label');
-    const label = Array.from(labels).find(el => el.textContent!.trim() === text);
-    if (label) label.closest('.d4-menu-item')!.click();
-  }, itemText);
-  await page.waitForTimeout(300);
+/** The value cell turns into a text editor only once clicked. */
+async function setTextProp(
+  page: Page, rowName: string, viewCell: string, propName: string, value: string,
+): Promise<void> {
+  await openSettings(page);
+  await revealPropEditor(page, `[name="${viewCell}"]`, 'description');
+  const cell = page.locator(`[name="${viewCell}"]`);
+  await cell.scrollIntoViewIfNeeded();
+  await cell.click();
+  const editor = page.locator(
+    `[name="${rowName}"] input.property-grid-item-editor-textbox, ` +
+    `[name="${rowName}"] input.property-grid-ellipsis-editor-input`).first();
+  await waitUntil(async () => await editor.count() > 0 && await editor.isVisible(), 2000);
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  if (value === '') await page.keyboard.press('Delete');
+  else await page.keyboard.type(value);
+  await page.keyboard.press('Enter');
+  await propIs(page, propName, value, 2500);
+  if (await readProp(page, propName) !== value)
+    throw new Error(`${propName} did not reach "${value}" from the ${rowName} row`);
 }
 
-/** Click a context menu item that is a child of a specific parent group */
-async function clickMenuItemUnderParent(page: Page, parentText: string, itemText: string) {
-  await page.evaluate(({parentText, itemText}) => {
-    const labels = document.querySelectorAll('.d4-menu-item-label');
-    const parentLabel = Array.from(labels).find(el => el.textContent!.trim() === parentText);
-    if (!parentLabel) return;
-    const parent = parentLabel.closest('.d4-menu-item')!.parentElement!;
-    const child = Array.from(parent.querySelectorAll('.d4-menu-item-label'))
-      .find(el => el.textContent!.trim() === itemText);
-    if (child) child.closest('.d4-menu-item')!.click();
-  }, {parentText, itemText});
-  await page.waitForTimeout(300);
-}
+/** State of the two on-viewer axis column selectors. The GROK-13533 guard turns
+ * on the computed visibility: DOM presence, a live offsetParent and a non-zero
+ * box all survive the setting being turned off, so each alone passes either way. */
+const axisSelectorState = (page: Page) => page.evaluate(() => {
+  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+    .find((e) => !e.closest('.d4-dialog'))!;
+  const read = (role: string) => {
+    const el = root.querySelector(`[name="div-column-combobox-${role}"]`) as HTMLElement | null;
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    return {
+      visibility: getComputedStyle(el).visibility,
+      inDom: true,
+      hasOffsetParent: !!el.offsetParent,
+      width: b.width,
+      height: b.height,
+    };
+  };
+  return {x: read('x'), y: read('y')};
+});
 
-// -- Test --
+/** Scoped to `.d4-menu-popup` — a bare `.d4-menu-item` query also matches the
+ * application menubar. */
+const menuEntryNames = (page: Page) => page.evaluate(() =>
+  [...document.querySelectorAll('.d4-menu-popup [name]')]
+    .map((e) => e.getAttribute('name')!).filter((n) => !!n));
 
-test('Scatter plot tests (Playwright) — UI-first', async ({page}) => {
-  test.setTimeout(600_000);
-  stepErrors.length = 0;
+const viewerAlive = (page: Page) => page.evaluate(() => {
+  const sp = grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot') as any;
+  const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+    .find((e) => !e.closest('.d4-dialog'));
+  return !!sp && !!root && document.body.contains(sp.root);
+});
+
+test('Scatter Plot — Secondary Settings Surface', async ({page}: {page: Page}) => {
+  test.setTimeout(900_000);
+
+  const pageErrors: string[] = [];
+  page.on('pageerror', (e) => { if (!isBenignError(String(e))) pageErrors.push(String(e)); });
+  const consoleErrors: string[] = [];
+  page.on('console', (m) => {
+    if (m.type() === 'error' && !isBenignError(m.text())) consoleErrors.push(m.text());
+  });
+  const errCount = () => pageErrors.length + consoleErrors.length;
 
   await loginToDatagrok(page);
+  await v.openTable(page, {path: datasetPath, semTypeTimeoutMs: 3000});
+  await v.addViewerByIcon(page, 'scatter-plot', 'Scatter-plot');
+  await waitUntil(() => page.evaluate(() => {
+    const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+      .find((e) => !e.closest('.d4-dialog'));
+    const c = root?.querySelector('canvas[name="canvas"]') as HTMLCanvasElement | null;
+    return !!c && c.getBoundingClientRect().width > 0;
+  }), 15000);
 
-  await v.openTable(page, {path: datasetPath});
+  await pickOnViewer(page, 'x', SETUP_X);
+  await pickOnViewer(page, 'y', SETUP_Y);
+  await openSettings(page);
 
-  await page.evaluate(() => {
-    document.querySelector('[name="icon-scatter-plot"]')!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-  });
-  await page.locator('[name="viewer-Scatter-plot"]').waitFor({timeout: 10000});
+  await softStep('Scenario 1 — Axis histograms', async () => {
+    const errBefore = errCount();
+    await captureBaseline(page, 'hist-base');
 
-  // ── Changing axes ──────────────────────────────────────────────────────
-  await softStep('Changing axes', async () => {
-    await setCol(page, 'x', 'AGE', 'xColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
-    )).toBe('AGE');
+    await setCheckboxProp(page, 'prop-show-x-histogram', 'axes', 'showXHistogram', true);
+    expect(await settledCanvasDiff(page, 'hist-base', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
-    await setCol(page, 'y', 'WEIGHT', 'yColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.yColumnName
-    )).toBe('WEIGHT');
+    expect(await captureCanvas(page, 'hist-x')).toBe(true);
+    await setCheckboxProp(page, 'prop-show-y-histogram', 'axes', 'showYHistogram', true);
+    expect(await settledCanvasDiff(page, 'hist-x', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
-    await setCol(page, 'x', 'RACE', 'xColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
-    )).toBe('RACE');
+    expect(await captureCanvas(page, 'hist-xy')).toBe(true);
+    await setNumericProp(page, 'prop-histogram-bins', 'axes', 'histogramBins', HISTOGRAM_BINS);
+    expect(await settledCanvasDiff(page, 'hist-xy', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
 
-    await setCol(page, 'x', 'STARTED', 'xColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
-    )).toBe('STARTED');
+    await setCheckboxProp(page, 'prop-show-x-histogram', 'axes', 'showXHistogram', false);
+    await setCheckboxProp(page, 'prop-show-y-histogram', 'axes', 'showYHistogram', false);
+    await setNumericProp(page, 'prop-histogram-bins', 'axes', 'histogramBins', DEFAULT_HISTOGRAM_BINS);
+    expect(await settledCanvasDiff(page, 'hist-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
-    await setCol(page, 'x', 'HEIGHT', 'xColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
-    )).toBe('HEIGHT');
-  });
-
-  // ── Axis types and inversion ───────────────────────────────────────────
-  await softStep('Axis types and inversion', async () => {
-    await setCol(page, 'x', 'AGE', 'xColumnName');
-    await setCol(page, 'y', 'WEIGHT', 'yColumnName');
-
-    // Set X Axis Type to logarithmic via context menu
-    await openScatterContextMenu(page);
-    await clickMenuItemUnderParent(page, 'X Axis Type', 'Logarithmic');
-
-    // Invert X Axis via context menu
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Invert X Axis');
-
-    // Set Y Axis Type to logarithmic via context menu
-    await openScatterContextMenu(page);
-    await clickMenuItemUnderParent(page, 'Y Axis Type', 'Logarithmic');
-
-    // Invert Y Axis via context menu
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Invert Y Axis');
-
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {xType: sp.props.xAxisType, yType: sp.props.yAxisType,
-        invX: sp.props.invertXAxis, invY: sp.props.invertYAxis};
-    });
-    expect(r.xType).toBe('logarithmic');
-    expect(r.yType).toBe('logarithmic');
-    expect(r.invX).toBe(true);
-    expect(r.invY).toBe(true);
-
-    // Reset via Context Panel: click settings gear, then use checkboxes
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      const gear = sp.root.closest('.panel-content')?.parentElement?.querySelector('[name="icon-font-icon-settings"]');
-      if (gear) (gear as HTMLElement).click();
-    });
-    await page.waitForTimeout(500);
-
-    // Uncheck Invert X Axis checkbox in Context Panel
-    await page.evaluate(() => {
-      const labels = document.querySelectorAll('td');
-      for (const td of labels) {
-        if (td.textContent?.trim() === 'Invert X Axis') {
-          const row = td.closest('tr');
-          const cb = row?.querySelector('input[type="checkbox"]');
-          if (cb) (cb as HTMLElement).click();
-          break;
-        }
-      }
-    });
-    await page.waitForTimeout(200);
-
-    // Set axis types to linear and uncheck Invert Y via JS API fallback
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xAxisType = 'linear';
-      sp.props.yAxisType = 'linear';
-      sp.props.invertXAxis = false;
-      sp.props.invertYAxis = false;
-    });
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Axis min/max ──────────────────────────────────────────────────────
-  await softStep('Axis min/max', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xColumnName = 'AGE';
-      sp.props.yColumnName = 'HEIGHT';
-      sp.props.xMin = 30; sp.props.xMax = 50;
-      sp.props.yMin = 150; sp.props.yMax = 180;
-    });
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {xMin: sp.props.xMin, xMax: sp.props.xMax, yMin: sp.props.yMin, yMax: sp.props.yMax};
-    });
-    expect(r.xMin).toBe(30);
-    expect(r.xMax).toBe(50);
-    expect(r.yMin).toBe(150);
-    expect(r.yMax).toBe(180);
+  await softStep('Scenario 2 — Grid lines, axes and selector visibility (GROK-13533)', async () => {
+    const errBefore = errCount();
+    await captureBaseline(page, 'vis-base');
+    const before = await axisSelectorState(page);
+    expect(before.x?.visibility).toBe('visible');
+    expect(before.y?.visibility).toBe('visible');
 
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xMin = null; sp.props.xMax = null;
-      sp.props.yMin = null; sp.props.yMax = null;
-    });
+    await setCheckboxProp(page, 'prop-show-vertical-grid-lines', 'x', 'showVerticalGridLines', false);
+    await setCheckboxProp(page, 'prop-show-horizontal-grid-lines', 'y', 'showHorizontalGridLines', false);
+    expect(await settledCanvasDiff(page, 'vis-base', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
+
+    expect(await captureCanvas(page, 'vis-nogrid')).toBe(true);
+    await setCheckboxProp(page, 'prop-show-x-axis', 'x', 'showXAxis', false);
+    await setCheckboxProp(page, 'prop-show-y-axis', 'y', 'showYAxis', false);
+    expect(await settledCanvasDiff(page, 'vis-nogrid', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
+
+    await setCheckboxProp(page, 'prop-show-x-selector', 'x', 'showXSelector', false);
+    await setCheckboxProp(page, 'prop-show-y-selector', 'y', 'showYSelector', false);
+    await parkPointer(page);
+    const hidden = await axisSelectorState(page);
+    // The setting hides the selectors without removing them: computed
+    // visibility is the only reading that separates the two states — the three
+    // a presence-style check would use are asserted unchanged next to it.
+    expect(hidden.x?.visibility).toBe('hidden');
+    expect(hidden.y?.visibility).toBe('hidden');
+    expect(hidden.x?.inDom).toBe(true);
+    expect(hidden.y?.inDom).toBe(true);
+    expect(hidden.x?.hasOffsetParent).toBe(true);
+    expect(hidden.y?.hasOffsetParent).toBe(true);
+    expect(hidden.x!.width).toBeGreaterThan(0);
+    expect(hidden.x!.height).toBeGreaterThan(0);
+    expect(hidden.y!.width).toBeGreaterThan(0);
+    expect(hidden.y!.height).toBeGreaterThan(0);
+
+    await setCheckboxProp(page, 'prop-show-x-selector', 'x', 'showXSelector', true);
+    await setCheckboxProp(page, 'prop-show-y-selector', 'y', 'showYSelector', true);
+    await setCheckboxProp(page, 'prop-show-x-axis', 'x', 'showXAxis', true);
+    await setCheckboxProp(page, 'prop-show-y-axis', 'y', 'showYAxis', true);
+    await setCheckboxProp(page, 'prop-show-vertical-grid-lines', 'x', 'showVerticalGridLines', true);
+    await setCheckboxProp(page, 'prop-show-horizontal-grid-lines', 'y', 'showHorizontalGridLines', true);
+    await parkPointer(page);
+    const restored = await axisSelectorState(page);
+    expect(restored.x?.visibility).toBe('visible');
+    expect(restored.y?.visibility).toBe('visible');
+    expect(await settledCanvasDiff(page, 'vis-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
+
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Color coding ──────────────────────────────────────────────────────
-  await softStep('Color coding', async () => {
-    await setCol(page, 'color', 'SEX', 'colorColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.colorColumnName
-    )).toBe('SEX');
+  await softStep('Scenario 3 — Whiskers', async () => {
+    const errBefore = errCount();
+    await captureBaseline(page, 'whisker-base');
 
-    await setCol(page, 'color', 'AGE', 'colorColumnName');
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.colorColumnName
-    )).toBe('AGE');
+    await pickPanelColumn(page, 'prop-x-whisker-min', 'div-column-combobox-x--whisker--min',
+      'x', 'xWhiskerMinColumnName', WHISKER_X_MIN);
+    await pickPanelColumn(page, 'prop-x-whisker-max', 'div-column-combobox-x--whisker--max',
+      'x', 'xWhiskerMaxColumnName', WHISKER_X_MAX);
+    await pickPanelColumn(page, 'prop-y-whisker-min', 'div-column-combobox-y--whisker--min',
+      'y', 'yWhiskerMinColumnName', WHISKER_Y_MIN);
+    await pickPanelColumn(page, 'prop-y-whisker-max', 'div-column-combobox-y--whisker--max',
+      'y', 'yWhiskerMaxColumnName', WHISKER_Y_MAX);
+    expect(await settledCanvasDiff(page, 'whisker-base', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
+    expect(errCount()).toBe(errBefore);
 
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.invertColorScheme = true;
-    });
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.invertColorScheme
-    )).toBe(true);
+    await clearPanelColumn(page, 'prop-x-whisker-min', 'div-column-combobox-x--whisker--min',
+      'x', 'xWhiskerMinColumnName');
+    await clearPanelColumn(page, 'prop-x-whisker-max', 'div-column-combobox-x--whisker--max',
+      'x', 'xWhiskerMaxColumnName');
+    await clearPanelColumn(page, 'prop-y-whisker-min', 'div-column-combobox-y--whisker--min',
+      'y', 'yWhiskerMinColumnName');
+    await clearPanelColumn(page, 'prop-y-whisker-max', 'div-column-combobox-y--whisker--max',
+      'y', 'yWhiskerMaxColumnName');
+    expect(await settledCanvasDiff(page, 'whisker-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.invertColorScheme = false;
-      sp.props.colorColumnName = '';
-    });
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Size coding ──────────────────────────────────────────────────────
-  await softStep('Size coding', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.sizeColumnName = 'WEIGHT';
-      sp.props.markerMinSize = 2;
-      sp.props.markerMaxSize = 40;
-    });
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {size: sp.props.sizeColumnName, min: sp.props.markerMinSize, max: sp.props.markerMaxSize};
-    });
-    expect(r.size).toBe('WEIGHT');
-    expect(r.min).toBe(2);
-    expect(r.max).toBe(40);
+  await softStep('Scenario 4 — Context menu', async () => {
+    const errBefore = errCount();
+    const r = await canvasRect(page);
+    await page.mouse.click(r.x + r.width / 2, r.y + r.height / 2, {button: 'right'});
+    await page.locator('.d4-menu-popup').last().waitFor({timeout: 10000});
+    await waitUntil(async () => (await menuEntryNames(page)).includes('div-Properties...'), 3000);
 
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.sizeColumnName = '';
-      sp.props.markerMinSize = 5;
-      sp.props.markerMaxSize = 30;
-    });
-  });
+    const entries = await menuEntryNames(page);
+    expect(entries).toContain('div-Reset-View');
+    expect(entries).toContain('div-Lasso-Tool');
+    expect(entries).toContain('div-Tools');
+    expect(entries).toContain('div-Properties...');
 
-  // ── Markers and jitter ───────────────────────────────────────────────
-  await softStep('Markers and jitter', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.markersColumnName = 'RACE';
-      sp.props.jitterSize = 20;
-      sp.props.jitterSizeY = 15;
-    });
-    const r1 = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {m: sp.props.markersColumnName, j: sp.props.jitterSize, jy: sp.props.jitterSizeY};
-    });
-    expect(r1.m).toBe('RACE');
-    expect(r1.j).toBe(20);
-    expect(r1.jy).toBe(15);
-
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.markersColumnName = '';
-      sp.props.markerType = 'square';
-    });
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.markerType
-    )).toBe('square');
-
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.markerType = 'circle';
-      sp.props.jitterSize = 0;
-      sp.props.jitterSizeY = 0;
-    });
-  });
-
-  // ── Labels ───────────────────────────────────────────────────────────
-  await softStep('Labels', async () => {
-    // Labels > check SEX via context menu (Label Columns is canvas — JS API fallback)
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.labelColumnNames = ['SEX'];
-      sp.props.showLabelsFor = 'Selected';
-    });
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.showLabelsFor
-    )).toBe('Selected');
-
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.showLabelsFor = 'All';
-      sp.props.useLabelAsMarker = true;
-    });
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.useLabelAsMarker
-    )).toBe(true);
-
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.useLabelAsMarker = false;
-      sp.props.labelColumnNames = [];
-    });
-  });
-
-  // ── Regression line ────────────────────────────────────────────────────
-  await softStep('Regression line', async () => {
-    // Show Regression Line via context menu
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Regression Line');
-
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.colorColumnName = 'RACE';
-      sp.props.regressionPerCategory = true;
-      sp.props.showSpearmanCorrelation = true;
-      sp.props.showPearsonCorrelation = true;
-      sp.props.showRegressionLineEquation = false;
-    });
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {rl: sp.props.showRegressionLine, rpc: sp.props.regressionPerCategory,
-        sc: sp.props.showSpearmanCorrelation, pc: sp.props.showPearsonCorrelation,
-        eq: sp.props.showRegressionLineEquation};
-    });
-    expect(r.rl).toBe(true);
-    expect(r.sc).toBe(true);
-    expect(r.pc).toBe(true);
-    expect(r.eq).toBe(false);
-
-    // Toggle off via R key (JS API fallback — viewer focus unreliable)
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.showRegressionLine = false;
-      sp.props.showSpearmanCorrelation = false;
-      sp.props.showPearsonCorrelation = false;
-      sp.props.showRegressionLineEquation = true;
-      sp.props.colorColumnName = '';
-    });
-  });
-
-  // ── Legend ──────────────────────────────────────────────────────────────
-  await softStep('Legend', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.colorColumnName = 'RACE';
-    });
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.legendVisibility = 'Never';
-      const v1 = sp.props.legendVisibility;
-      sp.props.legendVisibility = 'Always';
-      const v2 = sp.props.legendVisibility;
-      sp.props.legendPosition = 'Top';
-      const p1 = sp.props.legendPosition;
-      sp.props.legendPosition = 'Left';
-      const p2 = sp.props.legendPosition;
-      sp.props.legendPosition = 'Right';
-      const p3 = sp.props.legendPosition;
-      sp.props.colorColumnName = '';
-      return {v1, v2, p1, p2, p3};
-    });
-    expect(r.v1).toBe('Never');
-    expect(r.v2).toBe('Always');
-    expect(r.p1).toBe('Top');
-    expect(r.p2).toBe('Left');
-    expect(r.p3).toBe('Right');
-  });
-
-  // ── Filter panel interaction ───────────────────────────────────────────
-  await softStep('Filter panel interaction', async () => {
-    const r = await page.evaluate(async () => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      const df = grok.shell.tv.dataFrame;
-      const fg = grok.shell.tv.getFiltersGroup();
-      await new Promise(r => setTimeout(r, 1500));
-
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Caucasian']});
-      await new Promise(r => setTimeout(r, 500));
-      const f1 = df.filter.trueCount;
-
-      sp.props.zoomAndFilter = 'zoom by filter';
-      const zf1 = sp.props.zoomAndFilter;
-
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Asian']});
-      await new Promise(r => setTimeout(r, 500));
-
-      sp.props.zoomAndFilter = 'no action';
-      const zf2 = sp.props.zoomAndFilter;
-
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: ['Black']});
-      await new Promise(r => setTimeout(r, 500));
-
-      sp.props.zoomAndFilter = 'filter by zoom';
-      const zf3 = sp.props.zoomAndFilter;
-
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'RACE', selected: df.col('RACE').categories});
-      await new Promise(r => setTimeout(r, 500));
-      return {f1, total: df.rowCount, zf1, zf2, zf3};
-    });
-    expect(r.f1).toBeLessThan(r.total);
-    expect(r.zf1).toBe('zoom by filter');
-    expect(r.zf2).toBe('no action');
-    expect(r.zf3).toBe('filter by zoom');
-  });
-
-  // ── Filtered out points ────────────────────────────────────────────────
-  await softStep('Filtered out points', async () => {
-    const r = await page.evaluate(async () => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      const df = grok.shell.tv.dataFrame;
-      const fg = grok.shell.tv.getFiltersGroup();
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: ['M']});
-      await new Promise(r => setTimeout(r, 500));
-
-      sp.props.showFilteredOutPoints = true;
-      const show = sp.props.showFilteredOutPoints;
-      sp.props.showFilteredOutPoints = false;
-      const hide = sp.props.showFilteredOutPoints;
-
-      fg.updateOrAdd({type: DG.FILTER_TYPE.CATEGORICAL, column: 'SEX', selected: df.col('SEX').categories});
-      await new Promise(r => setTimeout(r, 500));
-      return {show, hide};
-    });
-    expect(r.show).toBe(true);
-    expect(r.hide).toBe(false);
-  });
-
-  // ── Axis histograms ────────────────────────────────────────────────────
-  await softStep('Axis histograms', async () => {
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.showXHistogram = true;
-      sp.props.showYHistogram = true;
-      sp.props.histogramBins = 20;
-      const bins = sp.props.histogramBins;
-      sp.props.showXHistogram = false;
-      sp.props.showYHistogram = false;
-      sp.props.histogramBins = 10;
-      return {bins};
-    });
-    expect(r.bins).toBe(20);
-  });
-
-  // ── Grid lines and axes visibility ─────────────────────────────────────
-  await softStep('Grid lines and axes visibility', async () => {
-    // Toggle off via context menu
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Vertical Grid Lines');
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show X Axis');
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Horizontal Grid Lines');
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Y Axis');
-
-    const off = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {vgl: sp.props.showVerticalGridLines, hgl: sp.props.showHorizontalGridLines,
-        xa: sp.props.showXAxis, ya: sp.props.showYAxis};
-    });
-    expect(off.vgl).toBe(false);
-    expect(off.xa).toBe(false);
-
-    // Toggle back on
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Vertical Grid Lines');
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show X Axis');
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Horizontal Grid Lines');
-    await openScatterContextMenu(page);
-    await clickMenuItem(page, 'Show Y Axis');
-
-    const on = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      return {vgl: sp.props.showVerticalGridLines, hgl: sp.props.showHorizontalGridLines,
-        xa: sp.props.showXAxis, ya: sp.props.showYAxis};
-    });
-    expect(on.vgl).toBe(true);
-  });
-
-  // ── Mouse drag mode ───────────────────────────────────────────────────
-  await softStep('Mouse drag mode', async () => {
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.mouseDrag = 'Select';
-      const md1 = sp.props.mouseDrag;
-      sp.props.mouseDrag = 'Pan';
-      const md2 = sp.props.mouseDrag;
-      return {md1, md2};
-    });
-    expect(r.md1).toBe('Select');
-    expect(r.md2).toBe('Pan');
-  });
-
-  // ── Whiskers (error bars) ──────────────────────────────────────────────
-  await softStep('Whiskers (error bars)', async () => {
-    const r = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xWhiskerMinColumnName = 'AGE';
-      sp.props.xWhiskerMaxColumnName = 'WEIGHT';
-      sp.props.yWhiskerMinColumnName = 'HEIGHT';
-      sp.props.yWhiskerMaxColumnName = 'WEIGHT';
-      const set = {xMin: sp.props.xWhiskerMinColumnName, xMax: sp.props.xWhiskerMaxColumnName,
-        yMin: sp.props.yWhiskerMinColumnName, yMax: sp.props.yWhiskerMaxColumnName};
-      sp.props.xWhiskerMinColumnName = '';
-      sp.props.xWhiskerMaxColumnName = '';
-      sp.props.yWhiskerMinColumnName = '';
-      sp.props.yWhiskerMaxColumnName = '';
-      return set;
-    });
-    expect(r.xMin).toBe('AGE');
-    expect(r.xMax).toBe('WEIGHT');
-  });
-
-  // ── Rectangular selection ──────────────────────────────────────────────
-  await softStep('Rectangular selection', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xColumnName = 'AGE';
-      sp.props.yColumnName = 'HEIGHT';
-    });
-    await page.waitForTimeout(300);
-    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
-
-    // Get scatter plot canvas center — use the viewer root for coordinates (accounts for filter panel)
-    const box = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      const canvas = sp.root.querySelector('canvas')!;
-      const rect = canvas.getBoundingClientRect();
-      return {cx: rect.left + rect.width * 0.5, cy: rect.top + rect.height * 0.5,
-        w: rect.width * 0.15, h: rect.height * 0.15};
-    });
-
-    // Click canvas first to give it focus
-    await page.mouse.click(box.cx, box.cy);
-    await page.waitForTimeout(200);
-    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
-
-    // Shift+drag rectangle over center area
-    await page.keyboard.down('Shift');
-    await page.mouse.move(box.cx - box.w, box.cy - box.h);
-    await page.mouse.down();
-    await page.mouse.move(box.cx + box.w, box.cy + box.h, {steps: 10});
-    await page.mouse.up();
-    await page.keyboard.up('Shift');
-    await page.waitForTimeout(500);
-    const sel1 = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    expect(sel1).toBeGreaterThan(0);
-
-    // Deselect
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
-
-    // Second rectangle in a different area
-    await page.keyboard.down('Shift');
-    await page.mouse.move(box.cx + box.w, box.cy - box.h * 2);
-    await page.mouse.down();
-    await page.mouse.move(box.cx + box.w * 2, box.cy, {steps: 10});
-    await page.mouse.up();
-    await page.keyboard.up('Shift');
-    await page.waitForTimeout(500);
-    const sel2 = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    expect(sel2).toBeGreaterThan(0);
-
-    // Deselect
-    await page.keyboard.press('Escape');
+    await page.locator('.d4-menu-popup').first().waitFor({state: 'detached', timeout: 8000});
+    expect(await page.locator('.d4-menu-popup').count()).toBe(0);
+    expect(await viewerAlive(page)).toBe(true);
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Lasso selection ────────────────────────────────────────────────────
-  await softStep('Lasso selection', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.lassoTool = true;
-      grok.shell.tv.dataFrame.selection.setAll(false);
+  await softStep('Scenario 5 — Title and description', async () => {
+    const errBefore = errCount();
+    // The title renders on the viewer's title bar, the description inside the
+    // viewer element, so the two texts are read from their own scopes.
+    const viewerText = () => page.evaluate(() => {
+      const root = [...document.querySelectorAll('[name="viewer-Scatter-plot"]')]
+        .find((e) => !e.closest('.d4-dialog'))! as HTMLElement;
+      const panel = root.closest('.panel-base') as HTMLElement;
+      return {
+        inViewer: (root.innerText ?? '').replace(/\s+/g, ' ').trim(),
+        onViewer: (panel.innerText ?? '').replace(/\s+/g, ' ').trim(),
+      };
     });
-    const box = await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      const canvas = sp.root.querySelector('canvas')!;
-      const rect = canvas.getBoundingClientRect();
-      return {cx: rect.left + rect.width * 0.5, cy: rect.top + rect.height * 0.5,
-        radius: Math.min(rect.width, rect.height) * 0.15};
-    });
-    // Click canvas to focus
-    await page.mouse.click(box.cx, box.cy);
-    await page.waitForTimeout(200);
-    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
 
-    // Real Playwright mouse: Shift+drag circular lasso
-    await page.keyboard.down('Shift');
-    await page.mouse.move(box.cx + box.radius, box.cy);
-    await page.mouse.down();
-    for (let a = 0; a <= Math.PI * 2; a += Math.PI / 8) {
-      await page.mouse.move(
-        box.cx + box.radius * Math.cos(a),
-        box.cy + box.radius * Math.sin(a));
-    }
-    await page.mouse.up();
-    await page.keyboard.up('Shift');
-    await page.waitForTimeout(500);
-    const sel = await page.evaluate(() => grok.shell.tv.dataFrame.selection.trueCount);
-    expect(sel).toBeGreaterThan(0);
+    const before = await viewerText();
+    expect(before.onViewer).not.toContain(TITLE_TEXT);
+    expect(before.inViewer).not.toContain(DESCRIPTION_TEXT);
 
-    // Cleanup
-    await page.keyboard.press('Escape');
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.lassoTool = false;
-      grok.shell.tv.dataFrame.selection.setAll(false);
-    });
+    await setTextProp(page, 'prop-title', 'prop-view-title', 'title', TITLE_TEXT);
+    expect((await viewerText()).onViewer).toContain(TITLE_TEXT);
+
+    await setTextProp(page, 'prop-description', 'prop-view-description', 'description', DESCRIPTION_TEXT);
+    const withBoth = await viewerText();
+    expect(withBoth.onViewer).toContain(TITLE_TEXT);
+    expect(withBoth.inViewer).toContain(DESCRIPTION_TEXT);
+
+    await setTextProp(page, 'prop-title', 'prop-view-title', 'title', '');
+    await setTextProp(page, 'prop-description', 'prop-view-description', 'description', '');
+    const cleared = await viewerText();
+    expect(cleared.onViewer).not.toContain(TITLE_TEXT);
+    expect(cleared.inViewer).not.toContain(DESCRIPTION_TEXT);
+
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Layout save and restore ────────────────────────────────────────────
-  await softStep('Layout save and restore', async () => {
-    const r = await page.evaluate(async () => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xColumnName = 'AGE';
-      sp.props.yColumnName = 'WEIGHT';
-      sp.props.colorColumnName = 'RACE';
-      sp.props.sizeColumnName = 'HEIGHT';
-      sp.props.showRegressionLine = true;
-      sp.props.jitterSize = 10;
-      sp.props.legendVisibility = 'Always';
-      sp.props.invertXAxis = true;
+  await softStep('Lines By overrides the color column when splitting connecting lines', async () => {
+    const errBefore = errCount();
+    // Lines By stays inert until a Lines Order column gives the lines an order.
+    expect(await rowOpacity(page, 'prop-lines-by')).toBe('0.5');
+    await captureBaseline(page, 'lines-base');
 
-      const layout = grok.shell.tv.saveLayout();
-      await grok.dapi.layouts.save(layout);
-      const layoutId = layout.id;
-      await new Promise(r => setTimeout(r, 1500));
+    await pickPanelColumn(page, 'prop-color', 'div-column-combobox-color',
+      'color', 'colorColumnName', COLOR_COLUMN);
+    // The two candidate split columns must really differ in how many series
+    // they produce.
+    const colorCategories = await categoryCount(page, COLOR_COLUMN);
+    const linesByCategories = await categoryCount(page, LINES_BY_COLUMN);
+    expect(linesByCategories).toBeGreaterThan(1);
+    expect(colorCategories).toBeGreaterThan(linesByCategories);
+    expect(await captureCanvas(page, 'lines-nolines')).toBe(true);
 
-      // Close scatter plot via title bar X
-      const closeBtn = sp.root.closest('.panel-content')?.parentElement?.querySelector('[name="icon-times"]');
-      if (closeBtn) (closeBtn as HTMLElement).click();
-      await new Promise(r => setTimeout(r, 500));
+    await pickPanelColumn(page, 'prop-lines-order', 'div-column-combobox-lines--order',
+      'data', 'linesOrderColumnName', LINES_ORDER_COLUMN);
+    expect(await rowOpacity(page, 'prop-lines-by')).toBe('1');
+    expect(await settledCanvasDiff(page, 'lines-nolines', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
+    // Lines split by the color column — the reading both Lines By settings are
+    // judged against.
+    expect(await captureCanvas(page, 'lines-color-split')).toBe(true);
 
-      const saved = await grok.dapi.layouts.find(layoutId);
-      grok.shell.tv.loadLayout(saved);
-      await new Promise(r => setTimeout(r, 3000));
+    // Pointing Lines By at the color column keeps the split key the same, so the
+    // picture must not move — this separates a changed split key from the mere
+    // act of setting a property.
+    await pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by',
+      'data', 'linesByColumnName', COLOR_COLUMN);
+    expect(await settledCanvasDiff(page, 'lines-color-split')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
 
-      const sp2 = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot');
-      const props = sp2 ? {
-        x: sp2.props.xColumnName, y: sp2.props.yColumnName,
-        color: sp2.props.colorColumnName, size: sp2.props.sizeColumnName,
-        regLine: sp2.props.showRegressionLine, jitter: sp2.props.jitterSize,
-        legend: sp2.props.legendVisibility, invertX: sp2.props.invertXAxis
-      } : null;
-      await grok.dapi.layouts.delete(saved);
-      return {props};
-    });
-    expect(r.props).not.toBeNull();
-    expect(r.props!.x).toBe('AGE');
-    expect(r.props!.y).toBe('WEIGHT');
-    expect(r.props!.color).toBe('RACE');
-    expect(r.props!.invertX).toBe(true);
+    // A column with fewer categories changes the split key, and the picture with
+    // it — Lines By has taken over from the color column.
+    await pickPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by',
+      'data', 'linesByColumnName', LINES_BY_COLUMN);
+    expect(await settledCanvasDiff(page, 'lines-color-split', true)).toBeGreaterThanOrEqual(CANVAS_CHANGE_MIN);
+
+    await clearPanelColumn(page, 'prop-lines-by', 'div-column-combobox-lines--by',
+      'data', 'linesByColumnName');
+    expect(await settledCanvasDiff(page, 'lines-color-split')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
+
+    await clearPanelColumn(page, 'prop-lines-order', 'div-column-combobox-lines--order',
+      'data', 'linesOrderColumnName');
+    await clearPanelColumn(page, 'prop-color', 'div-column-combobox-color',
+      'color', 'colorColumnName');
+    expect(await settledCanvasDiff(page, 'lines-base')).toBeLessThanOrEqual(CANVAS_RESTORE_MAX);
+
+    expect(errCount()).toBe(errBefore);
   });
 
-  // ── Context menu ──────────────────────────────────────────────────────
-  await softStep('Context menu', async () => {
-    await openScatterContextMenu(page);
-    const r = await page.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .map(el => el.textContent!.trim()).filter(t => t.length > 0);
-      document.querySelectorAll('.d4-menu-popup').forEach(m => m.remove());
-      return {hasMenu: items.length > 0, hasResetView: items.includes('Reset View'),
-        hasLasso: items.includes('Lasso Tool'), hasTools: items.includes('Tools')};
-    });
-    expect(r.hasMenu).toBe(true);
-    expect(r.hasResetView).toBe(true);
-  });
-
-  // ── Log scale with categorical ────────────────────────────────────────
-  await softStep('Log scale with categorical', async () => {
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xColumnName = 'AGE';
-      sp.props.xAxisType = 'logarithmic';
-      sp.props.xColumnName = 'RACE';
-    });
-    expect(await page.evaluate(() =>
-      Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!.props.xColumnName
-    )).toBe('RACE');
-    await page.evaluate(() => {
-      const sp = Array.from(grok.shell.tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xAxisType = 'linear';
-      sp.props.xColumnName = 'HEIGHT';
-    });
-  });
-
-  // ── Empty column on log scale ─────────────────────────────────────────
-  await softStep('Empty column on log scale', async () => {
-    const r = await page.evaluate(async () => {
-      grok.shell.closeAll();
-      await new Promise(r => setTimeout(r, 500));
-      const df = DG.DataFrame.fromColumns([
-        DG.Column.fromList('string', 'Fruit', ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry']),
-        DG.Column.fromList('double', 'Price', [1.5, 0.5, 3.0, 2.0, 4.0]),
-        DG.Column.fromType('double', 'EmptyCol', 5)
-      ]);
-      const tv = grok.shell.addTableView(df);
-      await new Promise(r => setTimeout(r, 1000));
-      document.querySelector('[name="icon-scatter-plot"]')!.dispatchEvent(
-        new MouseEvent('click', {bubbles: true}));
-      await new Promise(r => setTimeout(r, 500));
-      const sp = Array.from(tv.viewers).find(v => v.type === 'Scatter plot')!;
-      sp.props.xColumnName = 'EmptyCol';
-      sp.props.xAxisType = 'logarithmic';
-      await new Promise(r => setTimeout(r, 500));
-      return {unfiltered: df.filter.trueCount === df.rowCount};
-    });
-    expect(r.unfiltered).toBe(true);
-  });
-
-  // ── Final summary ─────────────────────────────────────────────────────
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  await page.evaluate(() => grok.shell.closeAll());
+  v.finishSpec();
 });

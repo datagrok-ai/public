@@ -3,193 +3,255 @@ feature: scatterplot
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: []
+realizes_atlas:
+  - scatterplot-lines-by-overrides-color-split
 realizes: []
 realized_as:
   - scatter-plot-spec.ts
-related_bugs: []
+related_bugs:
+  - id: GROK-13533
+    status: fixed
+expected_results:
+  - anchor: "Axis histograms"
+    expectation: "Turning Show X Histogram on, then Show Y Histogram on, then
+      changing Histogram Bins each changes the data canvas rendering, and
+      turning both histograms back off restores the rendering toward the
+      baseline"
+  - anchor: "Grid lines, axes and selector visibility"
+    expectation: "Turning Show Vertical Grid Lines and Show Horizontal Grid Lines
+      off changes the data canvas rendering, and turning Show X Axis and Show Y
+      Axis off changes it again — the axes and grid lines are drawn on the
+      canvas"
+  - anchor: "Grid lines, axes and selector visibility"
+    expectation: "Turning Show X Selector and Show Y Selector off makes the
+      on-viewer X and Y column selectors invisible while the elements stay in
+      place — the check reads the computed visibility, not element presence,
+      because a presence check would pass regardless (GROK-13533)"
+  - anchor: "Grid lines, axes and selector visibility"
+    expectation: "Turning all four visibility settings and both grid-line settings
+      back on restores the selectors to visible and the data canvas rendering
+      toward the baseline"
+  - anchor: "Whiskers"
+    expectation: "Setting X Whisker Min and Max, then Y Whisker Min and Max, changes
+      the data canvas rendering and raises no console or page error; clearing
+      all four whisker columns restores the rendering toward the baseline"
+  - anchor: "Context menu"
+    expectation: "A right-click on the plot area opens the context menu and it
+      carries the Reset View, Lasso Tool, Tools and Properties entries;
+      dismissing the menu closes it and leaves the viewer alive with no console
+      or page error"
+  - anchor: "Title and description"
+    expectation: "Setting the Title renders that text on the viewer and setting the
+      Description renders that text inside the viewer element; clearing both
+      removes the rendered texts"
+  - anchor: "Lines By overrides the color column when splitting connecting lines"
+    expectation: "The Lines By row is greyed out while no Lines Order column is set
+      and becomes enabled once one is"
+  - anchor: "Lines By overrides the color column when splitting connecting lines"
+    expectation: "With Lines Order set and Color set to RACE, pointing Lines By at
+      RACE leaves the data canvas rendering unchanged while pointing it at SEX,
+      which has fewer categories, changes the rendering"
+  - anchor: "Lines By overrides the color column when splitting connecting lines"
+    expectation: "Clearing Lines By returns the rendering to the color-split
+      rendering, and clearing Lines Order and Color returns it toward the
+      baseline"
 ---
+# Scatter plot tests
 
-# Scatter plot tests (Playwright)
+## Purpose
 
-All scenarios should start with the following sequence of events:
-1. Close all
-2. Open demog
-3. Add a scatter plot by clicking the Scatter Plot icon in the Toolbox > Viewers section
+Verifies the Scatter plot's secondary settings surface on the demog dataset:
+the axis histograms, grid lines and the visibility toggles of the axes and the
+on-viewer column selectors, whiskers, the context menu, the title and
+description, and the way connecting lines are split into series. The focused
+scenarios in this folder own the primary workflows
+(axes and encoding, selection and zoom, zoom-driven filtering, the legend,
+regression and formula lines, labels and tooltip); nothing here duplicates
+them.
 
-## Changing axes
+Most of what this file touches is painted on the plot canvas, so those
+settings are checked as a settle-gated rendering change plus an error-free
+floor rather than judged by appearance. The one exception is the pair of
+selector-visibility toggles, which have a readable computed-visibility signal.
 
-1. On the viewer, click the X column selector and set X to AGE
-2. On the viewer, click the Y column selector and set Y to WEIGHT
-3. On the viewer, click the X column selector and set X to RACE
-4. On the viewer, click the X column selector and set X to STARTED
-5. On the viewer, click the X column selector and set X back to HEIGHT
+## Setup
 
-## Axis types and inversion
+1. Close all open views.
+2. Open the demog dataset: `System:DemoFiles/demog.csv` — wait for the table view to load.
+3. Add a Scatter plot to the current table view via the Toolbox viewer icon.
+4. Using the on-viewer column selectors, set X to WEIGHT and Y to HEIGHT.
 
-1. On the viewer, click the X column selector and set X to AGE
-2. On the viewer, click the Y column selector and set Y to WEIGHT
-3. On the viewer, right-click the X Axis and select from the context menu X Axis Type > logarithmic
-4. From the context menu check the Invert X Axis checkbox
-5. On the viewer, right-click the Y Axis and select from the context menu Y Axis Type > logarithmic
-6. From the context menu check the Invert Y Axis checkbox
-7. Go to the Context Panel > X, uncheck Invert X Axis checkbox and set X Axis Type to linear
-8. Go to the Context Panel > Y, uncheck Invert Y Axis checkbox and set Y Axis Type to linear
+## Scenarios
 
-## Axis min/max
+### Scenario 1: Axis histograms
 
-1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
-2. Go to the Context Panel > X, set Min to 30, Max to 50
-3. Go to the Context Panel > Y, set Min to 150, Max to 180
-4. Clear all min/max values
+Steps:
+1. Measure the plot's data canvas rendering — the baseline.
+2. Open the viewer settings and, in the **Axes** section, turn
+   **Show X Histogram** on; verify the rendering changed.
+3. Turn **Show Y Histogram** on; verify the rendering changed again.
+4. Set **Histogram Bins** to 20; verify the rendering changed again.
+5. Revert: turn both histograms off and restore **Histogram Bins**; verify the
+   rendering moved back toward the baseline.
 
-## Color coding
+Expected:
+- Each histogram step changes the data canvas rendering
+- Turning both histograms back off restores the rendering toward the baseline
 
-1. Hover over the viewer — the Color selector appears — click it and set Color to SEX
-2. Click the Color selector and set Color to AGE
-3. Go to the Context Panel > Color, check Invert Color Scheme
-4. Uncheck Invert Color Scheme
-5. Click the Color selector on the viewer and select the empty first row to clear Color
+### Scenario 2: Grid lines, axes and selector visibility
 
-## Size coding
+Steps:
+1. Measure the plot's data canvas rendering — the baseline.
+2. In the viewer settings **X** section turn **Show Vertical Grid Lines** off,
+   and in the **Y** section turn **Show Horizontal Grid Lines** off; verify the
+   rendering changed.
+3. Turn **Show X Axis** and **Show Y Axis** off; verify the rendering changed
+   again.
+4. Turn **Show X Selector** and **Show Y Selector** off.
+5. Verify the on-viewer X and Y column selectors became invisible while the
+   elements themselves stay in place — read the computed visibility of the
+   selectors, not their presence (GROK-13533 guard; a presence check would
+   pass either way and would be false green).
+6. Revert: turn **Show X Selector**, **Show Y Selector**, **Show X Axis**,
+   **Show Y Axis** and both grid-line settings back on.
+7. Verify the selectors are visible again and the rendering moved back toward
+   the baseline.
 
-1. Hover over the viewer — the Size selector appears — click it and set Size to WEIGHT
-2. Go to the Context Panel > Marker, set Marker Min Size to 2, set Marker Max Size to 40
-3. Click the Size selector on the viewer and select the empty first row to clear Size
+Expected:
+- Turning the grid lines off changes the data canvas rendering, and turning the axes off changes it again
+- Turning the selector visibility settings off makes the on-viewer X and Y selectors invisible while their elements remain in place
+- Turning every setting back on restores the selectors to visible and the rendering toward the baseline
 
-## Markers and jitter
+### Scenario 3: Whiskers
 
-1. Go to the Context Panel > Marker and set Markers column to RACE
-2. Set Jitter Size to 20
-3. Set Jitter Size Y to 15
-4. Select the empty first row in the Markers column picker to clear it
-5. Set Marker Type to square
-6. Set Marker Type back to circle
-7. Set Jitter Size and Jitter Size Y back to 0
+Steps:
+1. Note the current browser console-error and page-error counts, and measure
+   the plot's data canvas rendering — the baseline.
+2. In the viewer settings **X** section set **X Whisker Min** to AGE and
+   **X Whisker Max** to WEIGHT.
+3. In the **Y** section set **Y Whisker Min** to HEIGHT and **Y Whisker Max**
+   to WEIGHT.
+4. Verify the rendering changed against the baseline and no new console or
+   page error appeared.
+5. Revert: clear all four whisker columns and verify the rendering moved back
+   toward the baseline.
 
-## Labels
+Expected:
+- Configuring the X and Y whisker columns changes the data canvas rendering and raises no console or page error
+- Clearing all four whisker columns restores the rendering toward the baseline
 
-1. Right-click the viewer and go to Labels — check SEX in the column list
-2. From the Labels submenu, set Show Labels For to Selected
-3. Set Show Labels For to All
-4. Check Use Label as Marker
-5. Uncheck Use Label as Marker
-6. Uncheck SEX in the Labels column list to clear labels
+### Scenario 4: Context menu
 
-## Regression line
+Steps:
+1. Right-click the plot area — the context menu opens.
+2. Verify the menu carries the **Reset View**, **Lasso Tool**, **Tools** and
+   **Properties...** entries.
+3. Dismiss the menu.
+4. Verify the menu closed, the viewer is still alive, and no console or page
+   error appeared.
 
-1.Right-click the viewer and go to Tools > Show Regression Line
-2. Hover over the viewer — click the Color selector and set Color to RACE
-3. Go to the Context Panel > Lines, check Regression Per Category
-4. Check Show Spearman Correlation
-5. Check Show Pearson Correlation
-6. Uncheck Show Regression Line Equation
-7. Press the R key to toggle regression line off
+Expected:
+- The context menu opens with the Reset View, Lasso Tool, Tools and Properties entries
+- Dismissing the menu closes it and leaves the viewer alive with no console or page error
 
-## Legend
+### Scenario 5: Title and description
 
-1. Hover over the viewer — click the Color selector and set Color to RACE
-2. On the viewer, right-click the legend area and set Legend Visibility to Never
-3. Set Legend Visibility to Always
-4. Set Legend Position to Top
-5. Set Legend Position to Left
-6. Set Legend Position back to Right
+Steps:
+1. Open the viewer settings and set **Title** to "Test Plot"; verify that text
+   renders on the viewer.
+2. Set **Description** to "Test description"; verify that text renders inside
+   the viewer element.
+3. Revert: clear both the **Title** and the **Description**; verify both
+   rendered texts disappear.
 
-## Filter panel interaction
+Expected:
+- Setting the Title renders that text on the viewer and setting the Description renders that text inside the viewer element
+- Clearing both removes the rendered texts
 
-1. Open the filter panel by clicking the Filters section in the Toolbox
-2. On the Filter Panel, in the RACE filter click 'Caucasian'
-3. Go to the Context Panel > Data, set Zoom and Filter to 'zoom by filter'
-4. On the Filter Panel, in the RACE filter click 'Asian'
-5. Go to the Context Panel > Data, set Zoom and Filter to 'no action'
-6. On the Filter Panel, in the RACE filter click 'Black'
-7. Go to the Context Panel > Data, set Zoom and Filter to 'filter by zoom'
+### Scenario 6: Lines By overrides the color column when splitting connecting lines
 
-## Filtered out points
+Connecting lines are drawn in the order given by the **Lines Order** column and
+split into series by the **Lines By** column when one is set, and by the color
+column when it is not — so **Lines By** takes over from the color column. Both
+renderings are painted on the canvas, so the two split rules are told apart by
+comparing them against each other rather than by inspecting a line.
 
-1. Open the filter panel and on the Filter Panel, in the SEX filter click 'M' to filter some rows
-2. Right-click the viewer and go to Filter > Show Filtered Out Points
-3. Right-click again and go to Filter > uncheck Show Filtered Out Points
+Steps:
+1. In the viewer settings **Data** section, verify the **Lines By** row is greyed
+   out while no **Lines Order** column is set.
+2. Measure the plot's data canvas rendering — the baseline.
+3. In the **Color** section set the color column to RACE, and read the number of
+   categories of RACE and of SEX from the data — SEX must have fewer.
+4. Set **Lines Order** to AGE; verify the **Lines By** row is no longer greyed
+   out and the rendering changed — the connecting lines are now drawn, split by
+   the color column.
+5. Measure the rendering — the color-split reading.
+6. Set **Lines By** to RACE, the same column the color uses; verify the
+   rendering is unchanged against the color-split reading.
+7. Set **Lines By** to SEX; verify the rendering changed against the color-split
+   reading.
+8. Revert: clear **Lines By** and verify the rendering returned to the
+   color-split reading; then clear **Lines Order** and the color column and
+   verify the rendering moved back toward the baseline.
 
-## Axis histograms
+Expected:
+- The Lines By row is greyed out until a Lines Order column is set
+- With Lines Order set, pointing Lines By at the color column leaves the rendering unchanged, and pointing it at a column with fewer categories changes it
+- Clearing Lines By restores the color-split rendering, and clearing Lines Order and the color column restores the rendering toward the baseline
 
-1. Go to the Context Panel > Axes, check Show X Histogram
-2. Check Show Y Histogram
-3. Set Histogram Bins to 20
-4. Uncheck both Show X Histogram and Show Y Histogram
+## Automation notes
 
-## Grid lines and axes visibility
-
-1. On the viewer, right-click the X Axis and uncheck Show Vertical Grid Lines
-2. From the context menu uncheck Show X Axis
-3. On the viewer, right-click the Y Axis and uncheck Show Horizontal Grid Lines
-4. From the context menu uncheck Show Y Axis
-5. Right-click the X Axis and recheck Show Vertical Grid Lines and Show X Axis
-6. Right-click the Y Axis and recheck Show Horizontal Grid Lines and Show Y Axis
-
-## Mouse drag mode
-
-1. Go to the Context Panel > Misc, set Mouse Drag to Select
-2. Set Mouse Drag to Pan
-
-## Whiskers (error bars)
-
-1. Go to the Context Panel > X, set X Whisker Min to AGE, X Whisker Max to WEIGHT
-2. Go to the Context Panel > Y, set Y Whisker Min to HEIGHT, Y Whisker Max to WEIGHT
-3. Clear all whisker columns by selecting the empty first row in each picker
-
-## Rectangular selection
-
-1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
-2. Hold Shift and drag a rectangle over the center area of the plot
-3. Verify some points are selected
-4. Press Escape to deselect
-5. Hold Shift and drag a rectangle over a different area
-6. Verify some points are selected
-7. Press Escape to deselect
-
-## Lasso selection
-
-1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
-2. Right-click the viewer and check Lasso Tool
-3. Hold Shift and drag a freeform lasso area over the plot
-4. Verify some points are selected
-5. Press Escape to deselect
-6. Right-click the viewer and uncheck Lasso Tool
-
-## Layout save and restore
-
-1. On the viewer, set X to AGE, Y to WEIGHT via column selectors
-2. Set Color to RACE and Size to HEIGHT via the viewer selectors
-3. Right-click the viewer > Tools > Show Regression Line; go to Context Panel > Marker, set Jitter Size to 10
-4. Right-click the legend, set Legend Visibility to Always; go to Context Panel > X, check Invert X Axis
-5. Save the layout
-6. Close the scatter plot viewer by clicking the X icon on the viewer title bar
-7. Apply the saved layout
-8. Verify all properties match the configuration from steps 1-4
-9. Delete the saved layout
-
-## Context menu
-
-1. Right-click the center of the scatter plot viewer — a context menu should appear
-2. Verify the menu contains items: Reset View, Lasso Tool, Tools
-3. Close the menu by pressing Escape
-
-## Log scale with negative and zero values
-
-1. On the viewer, click the X column selector and set X to AGE, click the Y column selector and set Y to HEIGHT
-2. Right-click the X Axis and set X Axis Type to logarithmic
-3. Right-click the Y Axis and set Y Axis Type to logarithmic
-4. On the viewer, click the X column selector and set X to RACE (categorical)
-5. Verify the scatter plot handles the categorical column on a logarithmic axis gracefully
-
-## Empty column on log scale
-
-1. Close all and open a dataset that contains an empty numerical column (or create a DataFrame with one)
-2. Add a scatter plot by clicking the Scatter Plot icon in the Toolbox
-3. On the viewer, click the X column selector and set it to the empty numerical column
-4. Right-click the X Axis and set X Axis Type to logarithmic
-5. Verify the table remains unfiltered
+- The viewer handle is
+  `grok.shell.tv.viewers.find(v => v.type === 'Scatter plot')`; the viewer is
+  added via the Toolbox icon `[name="icon-scatter-plot"]` (synthetic `.click()`
+  works). Resolve the viewer root as the `[name="viewer-Scatter-plot"]` element
+  not inside a `.d4-dialog`. The settings panel opens from the gear icon found
+  through `root.closest('.panel-base')`, never a fixed parent-hop count.
+- Rendering readings are settle-gated non-white pixel fractions over
+  `canvas[name="canvas"]` (the data canvas — markers, axes, grid lines,
+  histograms, whiskers). Thresholds are calibrated live at spec-authoring time,
+  never carried over as settled constants: they depend on the viewer size and
+  the device pixel ratio. The pixel sampling itself triggers the browser's
+  `willReadFrequently` console advisory — whitelist it in the console guards.
+- Scenario 2, GROK-13533: `showXSelector` / `showYSelector` set to false only
+  flip the selector element's computed `visibility` to `hidden` — the element
+  stays in the DOM with a non-zero rect and a live `offsetParent`, so presence
+  and `offsetParent` are both false-green signals. Assert
+  `getComputedStyle(el).visibility` on
+  `[name="div-column-combobox-x"]` / `-y` inside the viewer root. Note the same
+  selector names are reused by the property-panel column editors, so scope to
+  the viewer root. The axis and grid-line rows are
+  `[name="prop-show-x-axis"]`, `[name="prop-show-y-axis"]`,
+  `[name="prop-show-vertical-grid-lines"]`,
+  `[name="prop-show-horizontal-grid-lines"]`, with the mirrored menu leaves
+  `div-Controls---Show-X-Axis` / `Show-Y-Axis`.
+- The property panel duplicates `prop-min` / `prop-max` across X and Y — scope
+  every axis-scoped row through the unique `prop-view-*` cells and
+  `.closest('.property-grid-item')`. Column-valued rows (whiskers, label
+  columns) embed a `div-column-combobox-<role>` that opens on a synthetic
+  `mousedown` and commits on real typing plus `Enter`.
+- The context menu opens from a synthetic `contextmenu` MouseEvent on
+  `canvas[name="canvas"]`; scope the assertions to the `.d4-menu-popup`
+  container, because a bare `.d4-menu-item` query also matches the application
+  menubar. Every leaf carries a `name="div-<Path---With---Separators>"`
+  attribute, so the entries are checked by name
+  (`div-Reset-View`, `div-Lasso-Tool`, `div-Tools`, `div-Properties...`).
+- Scenario 6: the connecting-line rows live in the **Data** category, not in
+  Lines, and their column comboboxes carry a double-dash role token —
+  `[name="prop-lines-order"]` embeds `div-column-combobox-lines--order` and
+  `[name="prop-lines-by"]` embeds `div-column-combobox-lines--by`. The greyed
+  state of the Lines By row is the same inline `opacity: 0.5` regime the rest of
+  the property grid uses. Pointing Lines By at the color column is what makes
+  the check discriminating: it isolates the change of the split key from the
+  mere act of setting a property, because the same split key must produce the
+  same picture.
+- Title and description are DOM text reads scoped to the viewer element and its
+  title bar. Note the scatter-plot title bar carries no close icon — close the
+  viewer through the hamburger menu or the JS API if a scenario ever needs it.
+- Console guards subtract a baseline and whitelist infra noise unrelated to the
+  viewer (the shared dev server's WebSocket reconnect errors, the Claude
+  runtime container timeout, the WebGPU `powerPreference` advisory and the
+  `willReadFrequently` advisory caused by the pixel sampling).
 
 ---
 {
