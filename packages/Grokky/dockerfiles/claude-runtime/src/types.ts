@@ -63,6 +63,10 @@ export interface UserMessage {
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
   model?: ClaudeModel;
   clientTools?: ClientToolDef[];
+  /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
+   * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
+   * own off. */
+  gates?: {grounding?: boolean; verify?: boolean};
 }
 
 export interface AbortMessage {

@@ -137,6 +137,34 @@ container was being recreated underneath the run while a publish churned images.
 themselves were fine; rerunning the affected slice (`--only`) scored 7/9 and moved the arm to
 47/52. Never publish, rebuild an image, or recreate a container while an arm is in flight.
 
+## Third result: the grounding gate's Stop-block never changed an answer
+
+The question (raised by the context probe's "full mode costs a second API call" finding): does the
+`GroundingGate`'s post-answer Stop-block actually protect help accuracy, or is it a tax? A/B on the
+dev runtime (T2 driver, `files/benchmarks/grounding-ab-raw.txt`): 4 help prompts + 2 contextual
+data prompts × 3 reps × {gate on, gate off} via the new per-turn `gates` override.
+
+| | gated | ungated |
+|---|---:|---:|
+| help median turn | 64.8 s | 57.4 s |
+| help docs-reads per turn | the model reads the docs **in both arms** (3–21 reads) | same |
+| data-question turn | 7.6 s / **2 calls** | 3.5 s / 1 call |
+| blocks that *changed* an answer | **0 of 14** | — |
+
+Every single Stop-block across the sample ended in `NO_REVISION`. The system prompt's grounding
+rule does the real work — the model opens `help/INDEX.md` and reads pages whether or not the gate
+exists — while the block doubled the cost of trivial contextual answers and flashed "Revising…"
+at users.
+
+**Consequences (all landed):** small talk never arms the gate; a `Skill` invocation counts as
+grounding (the prompt names skills a source of truth, yet skill-grounded answers were paying a
+block); and the block itself is now **content-aware** — it fires only when the visible answer
+makes platform *UI-instruction* claims (`makesPlatformClaims` in grounding.ts: click/menu/dialog/
+"go to"-style text) without a source opened this turn. That is the one case the gate was built
+for: an ungrounded answer that looks authoritative. A data answer ("5,850 rows and 11 columns")
+ends the turn in one API call. Measured post-change: data question 2 calls → 1, 7.6 s → 3.6 s,
+gate still armed.
+
 ## First result: model tier is not the latency lever
 
 The first thing this instrument was built to answer was whether a cheap-model-first dispatcher

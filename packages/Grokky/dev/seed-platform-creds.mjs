@@ -24,6 +24,10 @@ import * as path from 'node:path';
 const SRC = path.join(import.meta.dirname, '.claude', '.credentials.json');
 const DEST = '/home/grok/.claude/.credentials.json';
 const checkOnly = process.argv.includes('--check');
+// --force overwrites containers that already hold credentials. Needed when the stored copy's
+// refresh token has been rotated dead (e.g. the containers holding the live session were deleted):
+// "has credentials" then just means "has a corpse", and the default skip becomes a dead end.
+const force = process.argv.includes('--force');
 
 const sh = (args) => execFileSync('docker', args, {encoding: 'utf8'}).trim();
 const fail = (msg) => {
@@ -59,15 +63,15 @@ for (const c of containers) {
     console.log(`${c}: ${seeded ? 'has credentials' : 'EMPTY — needs seeding'} (${bytes} bytes)`);
     continue;
   }
-  if (seeded) {
-    console.log(`${c}: already has credentials (${bytes} bytes), leaving it alone`);
+  if (seeded && !force) {
+    console.log(`${c}: already has credentials (${bytes} bytes), leaving it alone (--force to overwrite)`);
     continue;
   }
   // Write via stdin rather than `docker cp` so the plaintext never lands in a host temp file.
   execFileSync('docker', ['exec', '-i', '-u', 'root', c, 'sh', '-c',
     `cat > ${DEST} && chown grok:grok ${DEST} && chmod 600 ${DEST}`],
   {input: JSON.stringify({claudeAiOauth: oauth}), encoding: 'utf8'});
-  console.log(`${c}: seeded`);
+  console.log(`${c}: ${seeded ? 'overwritten (--force)' : 'seeded'}`);
 }
 
 if (!checkOnly)

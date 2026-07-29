@@ -49,9 +49,13 @@ grep chain). The prompt sends it grepping `workspace/help/` — **536 md files /
 so it iterates Grep→Read→Grep, a full round-trip each. WebSearch/WebFetch and `js-api/src/` reads
 do **not** count as grounded (a trap: legitimate grounding gets re-blocked). This mechanically
 produced the 8–33-hop help turns and all the 120 s timeouts.
-- Ship a generated **index/TOC of `help/`** into the workspace so grounding is 1 Read, not N greps.
-- Count WebFetch/WebSearch/js-api reads as grounded.
-- Nudge pre-answer (PreToolUse-era) instead of post-answer Stop-block.
+- ~~Ship a generated **index/TOC of `help/`**~~ — DONE (`help-index.ts`, 405 pages).
+- ~~Count WebFetch/WebSearch/js-api reads as grounded~~ — DONE; `Skill` invocations too (2026-07-29).
+- ~~Blunt post-answer Stop-block~~ — **narrowed 2026-07-29** after a 36-turn A/B showed 0 of 14
+  blocks ever changed an answer (BENCHMARK.md "Third result"): small talk never arms the gate,
+  and the block fires only when the visible answer makes ungrounded platform *UI-instruction*
+  claims (`makesPlatformClaims`). Contextual data answers end in one API call (measured: 2 → 1
+  calls, 7.6 → 3.6 s). Per-turn `gates: {grounding, verify}` overrides exist for future A/Bs.
 
 **1b. Verifier scope-down** ([verify.ts](../dockerfiles/claude-runtime/src/verify.ts)).
 Today: **every** `datagrok_exec` arms the verify gate — the exec's own result is never parsed, so

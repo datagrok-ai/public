@@ -37,6 +37,10 @@ const sessions = new Map<string, SessionRecord>();
 // Last assistant uuid of the in-flight turn; committed to the record on a clean result.
 const pendingUuid = new Map<string, string>();
 
+// Visible streamed text of the in-flight turn, per session — the grounding gate reads it at Stop
+// to decide whether the answer makes platform how-to claims (grounding.ts makesPlatformClaims).
+const turnText = new Map<string, string>();
+
 function storeSession(clientId: string, sdkId: string, lastCleanUuid?: string): void {
   sessions.delete(clientId);
   sessions.set(clientId, {sdkId, lastCleanUuid});
@@ -73,8 +77,14 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
     }
     break;
   case 'stream_event':
-    if (e.event?.delta?.type === 'text_delta' && e.event.delta.text)
+    if (e.event?.delta?.type === 'text_delta' && e.event.delta.text) {
+      // The grounding gate reads this at Stop to decide whether the answer makes platform
+      // how-to claims — only the pre-revision visible answer counts, so stop accumulating
+      // once a revision is underway.
+      if (!isRevising(sid))
+        turnText.set(sid, (turnText.get(sid) ?? '') + e.event.delta.text);
       emitFiltered(ws, sid, e.event.delta.text);
+    }
     break;
   case 'tool_progress':
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
@@ -281,11 +291,14 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         emit(ws, {type: 'revision_start', sessionId: sid});
       }
     };
-    verifier = fullPromptTurn ? new Verifier(onGateBlock) : undefined;
+    const gates = data.gates ?? {};
+    verifier = fullPromptTurn && gates.verify !== false ? new Verifier(onGateBlock) : undefined;
     // Small talk skips the gate entirely — the block would cost a full hidden revision call just
     // to hear NO_REVISION, and the panel would show "Revising…" over a greeting (see grounding.ts).
-    groundingGate = fullPromptTurn && !data.outputSchema && !isSmallTalk(data.message ?? '') ?
-      new GroundingGate(onGateBlock) : undefined;
+    turnText.delete(sid); // fresh answer buffer — the gate must judge THIS turn's text only
+    groundingGate = fullPromptTurn && gates.grounding !== false && !data.outputSchema &&
+      !isSmallTalk(data.message ?? '') ?
+      new GroundingGate(onGateBlock, () => turnText.get(sid) ?? '') : undefined;
 
     const rec = getSession(sid);
     const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,
@@ -340,6 +353,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     if (activeQueries.get(sid) === active) {
       clearFenceState(sid);
       endRevision(sid);
+      turnText.delete(sid);
     }
     unregisterActiveQuery(sid, active);
   }

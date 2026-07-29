@@ -45,17 +45,40 @@ function openedDocs(toolName: string, input: any): boolean {
   // wasted re-search round-trips.
   if (bare === 'WebFetch' || bare === 'WebSearch')
     return true;
+  // The system prompt names skills as the source of truth for code/API answers, yet the gate
+  // never counted the Skill tool — a skill-grounded answer was blocked and paid a revision call
+  // just to reply NO_REVISION.
+  if (bare === 'Skill')
+    return true;
   if (bare !== 'Read' && bare !== 'Grep' && bare !== 'Glob' && bare !== 'Bash')
     return false;
   const source = JSON.stringify(input ?? '');
   return source.includes('help/') || source.includes('js-api/');
 }
 
+// A Stop-block is only worth its hidden revision call when the answer actually makes platform
+// how-to claims. Measured (36-turn A/B, docs/BENCHMARK.md "Grounding gate A/B"): every single
+// block ended in NO_REVISION — the model grounds itself because the system prompt tells it to —
+// while trivial contextual answers ("5,850 rows and 11 columns") paid 2× latency for the block.
+// So the gate now fires only when the visible answer contains UI-instruction markers: those are
+// the answers where an ungrounded claim ("click Tools | X") is both likely wrong and looks
+// authoritative. False positive = one wasted call (the old behavior everywhere); false negative
+// = a non-instructional answer, where a hallucinated claim has far less surface to hide in.
+const PLATFORM_CLAIM_RE = new RegExp(
+  '\\b(?:click|right-click|double-click|menu|submenu|dialog|button|ribbon|toolbar|sidebar|' +
+  'dropdown|drop-down|checkbox|wizard|icon|drag|shortcut|hotkey|context panel|property panel|' +
+  'top menu|go to|navigate to|select .{1,40} from|open the)\\b|Ctrl\\s*\\+|\\|\\s*\\w+\\s*\\|', 'i');
+
+export function makesPlatformClaims(answer: string): boolean {
+  return PLATFORM_CLAIM_RE.test(answer);
+}
+
 export class GroundingGate {
   private grounded = false;
   private blocked = false;
 
-  constructor(private onBlock?: () => void) {}
+  /** @param answerText returns the turn's visible streamed text so far (session.ts accumulates it). */
+  constructor(private onBlock?: () => void, private answerText?: () => string) {}
 
   summary(): string {
     return `grounded=${this.grounded} blocked=${this.blocked}`;
@@ -70,6 +93,9 @@ export class GroundingGate {
 
   stop: HookCallback = async (input) => {
     if (input.hook_event_name !== 'Stop' || this.grounded || this.blocked)
+      return {continue: true};
+    // No UI-instruction content in the answer → nothing the gate protects against; let it end.
+    if (this.answerText && !makesPlatformClaims(this.answerText()))
       return {continue: true};
     this.blocked = true;
     this.onBlock?.();

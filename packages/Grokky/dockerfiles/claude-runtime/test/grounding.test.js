@@ -115,3 +115,59 @@ test('isSmallTalk sees through the prepended workspace context', () => {
   // A user message that merely contains a --- separator is never split — fail-closed.
   assert.ok(!isSmallTalk('explain this:\n---\n\nok'), 'user-typed --- must not discard the head');
 });
+
+test('a Skill invocation counts as grounding', async () => {
+  // The system prompt names skills as the source of truth for code/API answers; blocking a
+  // skill-grounded turn costs a revision call that always ends NO_REVISION.
+  const g = new GroundingGate();
+  await g.postToolUse(post('Skill', {skill: 'datagrok-viewers'}));
+  assert.ok(!blocked(await g.stop(stop())));
+});
+
+// Content-aware gating (from the 36-turn A/B: every Stop-block ended NO_REVISION, so the block
+// is only worth its revision call when the answer actually makes platform how-to claims).
+const {makesPlatformClaims} = require('../dist/grounding.js');
+
+test('makesPlatformClaims: UI-instruction answers are claims', () => {
+  for (const a of [
+    'Click Tools | Data Science | Cluster, then pick the columns.',
+    'Right-click the column header and choose Rename.',
+    'Open the Add viewer dialog from the toolbar.',
+    'Go to File > Open and select your CSV.',
+    'Use the context panel to edit properties.',
+    'Press Ctrl+F to open the search.',
+  ])
+    assert.ok(makesPlatformClaims(a), `should be a claim: "${a}"`);
+});
+
+test('makesPlatformClaims: data answers are not claims', () => {
+  for (const a of [
+    'The **demog** table has **5,850 rows** and **11 columns**: USUBJID, AGE, SEX, RACE.',
+    'The average WEIGHT across all patients is 78.4 kg.',
+    'There are 878 patients older than 65.',
+    'Correlation between HEIGHT and WEIGHT is 0.71 — moderately strong.',
+  ])
+    assert.ok(!makesPlatformClaims(a), `should NOT be a claim: "${a}"`);
+});
+
+test('an ungrounded answer WITHOUT platform claims is not blocked', async () => {
+  const g = new GroundingGate(undefined, () => 'The table has 5,850 rows and 11 columns.');
+  assert.ok(!blocked(await g.stop(stop())));
+});
+
+test('an ungrounded answer WITH platform claims is blocked once', async () => {
+  const g = new GroundingGate(undefined, () => 'Click Tools | X | Y to do that.');
+  assert.ok(blocked(await g.stop(stop())));
+  assert.ok(!blocked(await g.stop(stop())), 'still at most one block per turn');
+});
+
+test('a grounded claimy answer is not blocked', async () => {
+  const g = new GroundingGate(undefined, () => 'Click Add | Scatter plot (from the docs).');
+  await g.postToolUse(post('Read', {file_path: 'workspace/help/visualize/viewers/scatter-plot.md'}));
+  assert.ok(!blocked(await g.stop(stop())));
+});
+
+test('without an answerText getter the gate keeps the old always-block behavior', async () => {
+  const g = new GroundingGate();
+  assert.ok(blocked(await g.stop(stop())), 'fail-closed when no text is available');
+});

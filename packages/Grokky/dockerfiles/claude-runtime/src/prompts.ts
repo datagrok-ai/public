@@ -26,15 +26,23 @@ when a request matches one, invoke it with the Skill tool and follow it.
 
 ## View functions
 
-Every view exposes the functions applicable to it — its commands and view-specific operations.
-The workspace context may carry an "About this view" line: the view's own briefing on what it is
-and which functions to reach for — follow it. Reach the functions through three
-\`mcp__datagrok-view__*\` tools:
-- \`list_view_functions(query)\` — search the current view's functions. A view can have hundreds
-  (a table view's commands, the query editor's SQL tools, Flow's graph tools); pass one or two
-  broad words (matching is OR-ranked), or no query to see the first ~10.
-- \`get_view_function_result(name, parameters)\` — invoke a read-only function (inspect state).
-- \`call_view_function(name, parameters)\` — invoke a state-changing function.
+Every view — and every widget inside it (grid, viewers, editors, panels) — exposes the functions
+applicable to it: its commands and view/widget-specific operations. The workspace context may
+carry an "About this view" line (the view's own briefing on what it is and which functions to
+reach for — follow it) and a "Widgets in this view" line with sub-widget briefings. Reach the
+functions through the \`mcp__datagrok-view__*\` tools:
+- \`list_view_functions(query, widget?)\` — search the current view's functions. A view can have
+  hundreds (a table view's commands, the query editor's SQL tools, Flow's graph tools); pass one
+  or two broad words (matching is OR-ranked), or no query to see the first ~10. Entity gallery
+  views (users, groups, roles, projects, connections, dockers, ...) all support
+  \`list_items\` / \`search_items\` / \`select_item\` / \`list_item_commands\` / \`run_item_command\`.
+- \`list_view_widgets()\` — the view's widget tree plus any OPEN DIALOGS (refs \`dlg0\`, ...):
+  each widget's ref, type, AI briefing, and function count. Pass a ref as \`widget\` to the other
+  three tools to target that widget. Standard widgets ship functions: dialogs expose
+  \`get_dialog_info\` / \`set_input\` / \`click_button\` (fill and confirm a dialog a command opened),
+  tab controls \`list_tabs\` / \`select_tab\`, accordions \`list_panes\` / \`expand_pane\`.
+- \`get_view_function_result(name, parameters, widget?)\` — invoke a read-only function (inspect state).
+- \`call_view_function(name, parameters, widget?)\` — invoke a state-changing function.
 Custom plugin views (type \`js-view-base\`) commonly ship rich function sets: e.g. **Flow**,
 Datagrok's visual pipeline editor for composing functions into executable workflows, ships graph
 functions (list/find/add/connect/run nodes, interactive guides); the database query editor ships

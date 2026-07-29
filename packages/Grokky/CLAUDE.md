@@ -124,13 +124,32 @@ The assistant reaches a view's operations through the platform's `getFunctions()
    `db-view-functions.ts`, discovering the connection through the view's native `get_query_info`).
 
 Because a view can have hundreds of functions (TableView commands), Grokky never declares them all
-to Claude. Instead `viewFunctionTools()` declares three STATIC meta-tools every full-mode turn
-(stable defs — prompt-cache friendly): `list_view_functions(query)` (search, ≤10 results),
-`get_view_function_result(name, parameters)` (read-only invoke), and `call_view_function` (
-state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
+to Claude. Instead `viewFunctionTools()` declares four STATIC meta-tools every full-mode turn
+(stable defs — prompt-cache friendly): `list_view_functions(query, widget?)` (search, ≤10 results),
+`list_view_widgets()` (the view's widget tree: per-widget ref/type/aiDescription/function count),
+`get_view_function_result(name, parameters, widget?)` (read-only invoke), and `call_view_function`
+(state-changing invoke — the verifier demands `datagrok_verify` after it). Runners resolve the live
 `grok.shell.v` at call time, inject the `view` argument, run `func.apply()`, and serialize the
-result. Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
+result. The optional `widget` argument (a ref like `"0.2"` from `list_view_widgets`, an index path
+through `Widget.children`) retargets listing/invocation at a sub-widget's own `getFunctions()`.
+Defs go to the runtime as `clientTools`; the runtime exposes them via an in-process
 `datagrok-view` MCP server whose calls round-trip to the browser as `input_request`.
+
+`aiDescription` and `getFunctions()` are WIDGET-level concepts (Dart `Widget` in d4, js-api
+`Widget`/`DartWidget`/`Viewer`/`ViewBase`) — views inherit them; the interop surface is
+`grok_Widget_Get/Set_AIDescription` (the old `grok_View_*` pair is removed). `buildWorkspaceContext()`
+prepends the current view's briefing ("About this view") plus the briefings of sub-widgets that
+carry one ("Widgets here"). Entity gallery views (Dart `DataSourceCardView` subclasses:
+users, groups, roles, projects, connections, queries, dockers, packages, files, ...) all inherit
+`list_items` / `search_items` / `select_item` / `list_item_commands` / `run_item_command` /
+`refresh_items` from the base class, plus per-view extras.
+
+Standard core widgets ship their own functions and default briefings: **dialogs** (Dart `Modal`;
+always briefed with their title) expose `get_dialog_info` / `set_input` / `click_button` plus the
+legacy per-button funcs, **tab controls** `list_tabs` / `select_tab`, **accordions** `list_panes` /
+`expand_pane`. Open dialogs live outside the view's DOM subtree, so `collectWidgets()` adds them as
+extra roots with `dlg<N>` refs — this is how the assistant fills and confirms a dialog that an
+entity command opened.
 
 #### AI window visibility (sync with core)
 
