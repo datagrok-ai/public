@@ -377,6 +377,17 @@ async function processDockerImages(
           color.log(`  Tagged as ${canonicalTag}`);
         }
         result = pushImage(img.imageName, registryTag, registry);
+        if (!result) {
+          const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
+          if (fallback.serverError)
+            color.error(`Cannot resolve fallback: ${fallback.serverError}`);
+          else if (fallback.image)
+            color.warn(`Falling back to ${fallback.image}` +
+              `${fallback.hashMatch === false ? ' (hash mismatch — container will run older code)' : ''}`);
+          else
+            color.error(`No published image available for ${img.imageName}. No container will be available.`);
+          result = fallback;
+        }
       }
       else {
         color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
@@ -394,7 +405,7 @@ async function processDockerImages(
           color.warn(`Dockerfile folder has changed. Rebuilding image...`);
           result = buildAndPush() ?? {image: fallback.image, fallback: true, requestedVersion: registryTag};
           if (!result || result.fallback)
-            color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
+            color.warn(`Could not publish a new image. Falling back to ${fallback.image} (hash mismatch)`);
         }
         else {
           // The server has no compatible record, but the image may already be
@@ -417,7 +428,7 @@ async function processDockerImages(
               result = built;
             else {
               result = {image: null, fallback: true, requestedVersion: registryTag};
-              color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+              color.error(`Failed to publish ${img.fullLocalName}. No container will be available.`);
             }
           }
         }
@@ -431,15 +442,20 @@ async function processDockerImages(
   }
 }
 
-function pushImage(imageName: string, tag: string, registry: string | undefined): DockerImageResult {
+// Returns null when the push failed. Never claim a tag that was not published: the server
+// records it as the container's image and the spawner then fails validation forever
+// ("not found in any registry") with no way back except another publish.
+// With no registry configured the local tag is all there is — dev stacks share the host
+// docker daemon and the spawner resolves local images, so that stays a warning.
+function pushImage(imageName: string, tag: string, registry: string | undefined): DockerImageResult | null {
   const canonicalImage = `datagrok/${imageName}:${tag}`;
   if (registry) {
     const remoteTag = `${registry}/${canonicalImage}`;
     // Image should already be tagged from build or retag step
     if (dockerPush(remoteTag))
       return {image: canonicalImage, fallback: false};
-    color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
-    return {image: canonicalImage, fallback: false};
+    color.error(`${remoteTag} was not published — check \`docker login ${registry}\` and your developer key.`);
+    return null;
   }
   color.warn(`No registry configured. Image tagged locally only. Run \`grok config --registry\` to configure.`);
   return {image: canonicalImage, fallback: false};
