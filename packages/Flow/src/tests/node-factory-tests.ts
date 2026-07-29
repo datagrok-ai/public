@@ -70,7 +70,7 @@ category('Flow: node-factory', () => {
 
   test('SetVar and GetVar are always registered — saved flows depend on them', async () => {
     // Both fall to the primitive-only catalog exclusion, but every imported
-    // creation script terminates in SetVar nodes: a saved .ffjson with them
+    // creation script terminates in SetVar nodes: a saved .flow with them
     // must deserialize without a prior import having registered them.
     if (DG.Func.find({name: 'SetVar'}).length === 0) {
       expect(true, true); // no live backend — nothing to check

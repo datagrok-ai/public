@@ -117,7 +117,7 @@ export class FlowNode extends ClassicPreset.Node<
 
   /** Back-reference to the owning editor's callback surface, stamped by
    *  `FlowEditor` when the node enters its data layer. Runtime-only — the
-   *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
+   *  serializer picks fields explicitly, so this never reaches `.flow`. */
   editorBridge?: FlowEditorBridge;
 
   /** Runtime-only companion to `properties['defaultValue']` for values a

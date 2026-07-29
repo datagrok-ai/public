@@ -456,7 +456,7 @@ const reuseScript: Guide = {
     {
       title: 'Save your flow',
       text: 'Click Save (highlighted) and give your flow a name — it\'s stored on the platform so ' +
-        'you can reopen it from anywhere. (To hand someone a file instead: Flow → Export .ffjson.)',
+        'you can reopen it from anywhere. (To hand someone a file instead: Flow → Export .flow.)',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
@@ -1182,7 +1182,7 @@ export const QUESTIONS: Guide[] = [
       title: 'Save / share',
       text: 'Click Save (highlighted) and give your flow a name — it\'s stored on the platform so ' +
         'you can reopen it from anywhere, and it appears in the toolbox\'s Workflows tab for reuse. ' +
-        '(To hand a colleague a file instead: Flow → Export .ffjson.)',
+        '(To hand a colleague a file instead: Flow → Export .flow.)',
       target: byTid('ribbon', 'save'),
       position: 'bottom',
       until: untilClick(byTid('ribbon', 'save')),
@@ -1214,7 +1214,7 @@ export const QUESTIONS: Guide[] = [
   q('how-open', 'How do I open a saved flow?', {
     title: 'Open a flow',
     text: 'Click the Open (folder) icon (highlighted) in the ribbon and pick one of your saved flows ' +
-      'from the platform. (A .ffjson file from a colleague? Use Flow → Import .ffjson… instead.)',
+      'from the platform. (A .flow file from a colleague? Use Flow → Import .flow… instead.)',
     target: byTid('ribbon', 'open'),
     position: 'bottom',
     until: untilClick(byTid('ribbon', 'open')),

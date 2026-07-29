@@ -1,6 +1,6 @@
 /** The `.flow` script-entity body format: a standard Datagrok annotation
  *  header (`//name:` / `//language: flow` / `//input:` …) followed by the
- *  lossless .ffjson document.
+ *  lossless .flow document.
  *
  *  The header lets core parse the entity's name and params even when the Flow
  *  package is not installed; the JSON is the single source of truth for the
@@ -42,7 +42,7 @@ export function flowScriptText(flow: FlowEditor, settings: FlowSettings,
   return header.join('\n') + '\n' + JSON.stringify(doc, null, 2) + '\n';
 }
 
-/** Split a `.flow` entity body back into its header and ffjson document.
+/** Split a `.flow` entity body back into its header and flow JSON document.
  *  Tolerant of blank lines between the two; throws on a missing or
  *  wrong-version JSON payload. */
 export function parseFlowBody(text: string): ParsedFlowBody {

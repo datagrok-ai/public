@@ -5,7 +5,7 @@
  *  lazily on activation (`_onAdded` against a live, laid-out pane); a re-run
  *  refreshes the SAME TableView in place; ribbon/toolbox swap to the active
  *  tab's (MultiView pattern) and restore on Canvas; layouts persist in the
- *  `.ffjson` keyed by paramName and survive node-id remapping across a
+ *  `.flow` keyed by paramName and survive node-id remapping across a
  *  save → load round-trip. */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -386,7 +386,7 @@ category('Flow: output views', () => {
       // dirty tracking (`serializeFlow`) does not.
       const body = (h.view as unknown as {entityBodyText(): string}).entityBodyText();
       const doc: FuncFlowDocument = parseFlowBody(body).doc;
-      expect(!!doc.outputViews?.['result']?.layout, true, 'the .ffjson carries outputViews');
+      expect(!!doc.outputViews?.['result']?.layout, true, 'the .flow carries outputViews');
 
       // Fresh view + load: node ids remap, the layout still finds its tab.
       h2 = await makeView();

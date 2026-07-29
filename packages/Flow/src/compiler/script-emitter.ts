@@ -198,7 +198,7 @@ function buildHeaderLines(
 }
 
 /** Header-only emission for a live editor — used by the `.flow` entity body,
- *  where the payload after the header is the ffjson document, not JS. */
+ *  where the payload after the header is the flow JSON document, not JS. */
 export function emitHeaderLines(flow: FlowEditor, settings: ScriptSettings, language: string): string[] {
   return buildHeaderLines(compileGraph(flow), flow, settings, language);
 }

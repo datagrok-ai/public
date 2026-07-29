@@ -1,4 +1,5 @@
-/** Saves and loads FuncFlow documents. .ffjson v2 — Rete-native. */
+/** Saves and loads FuncFlow documents (the `.flow` JSON payload, v2 —
+ *  Rete-native). */
 
 import * as grok from 'datagrok-api/grok';
 
@@ -122,14 +123,21 @@ export function downloadFlow(doc: FuncFlowDocument): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${doc.name || 'flow'}.ffjson`;
+  a.download = `${doc.name || 'flow'}.flow`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
+/** Read a `.flow` file: either the bare JSON document or the annotated script
+ *  body (header + JSON) — leading `//` lines are skipped. (Inlined rather than
+ *  parseFlowBody: flow-script-format imports this module.) */
 export async function loadFlowFromFile(file: File): Promise<FuncFlowDocument> {
   const text = await file.text();
-  const doc = JSON.parse(text) as FuncFlowDocument;
+  const lines = text.split('\n');
+  let i = 0;
+  while (i < lines.length && (lines[i].trimStart().startsWith('//') || lines[i].trim() === ''))
+    i++;
+  const doc = JSON.parse(lines.slice(i).join('\n')) as FuncFlowDocument;
   if (doc.version !== '2.0')
     throw new Error(`Unsupported flow file version "${doc.version}"; expected 2.0`);
   return doc;

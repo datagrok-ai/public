@@ -88,9 +88,11 @@ export class PackageFunctions {
     return new FuncFlowView();
   }
 
-  @grok.decorators.fileViewer({fileViewer: 'ffjson'})
+  @grok.decorators.fileViewer({fileViewer: 'flow'})
   static viewFuncFlow(file: DG.FileInfo): DG.ViewBase {
     const view = new FuncFlowView();
+    // A .flow file is either the annotated script body (header + JSON) or the
+    // bare JSON document — loadFromJson handles both.
     file.readAsString().then((json) => view.loadFromJson(json));
     return view;
   }
