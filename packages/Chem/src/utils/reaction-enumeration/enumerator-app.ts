@@ -55,9 +55,14 @@ function productFiltersChangedCount(cfg: EnumeratorConfig): number {
 const FILTER_REMOUNT_SETTLE_MS = 200;
 
 // Shared by every "this table should show every row" reset after a mount: subsetBySelection,
-// restoreFullTable, subsetStepBySelection, useAllForStep.
-function deferredFilterReset(df: DG.DataFrame): void {
-  setTimeout(() => df.filter.setAll(true, true), FILTER_REMOUNT_SETTLE_MS);
+// restoreFullTable, subsetStepBySelection, useAllForStep. Tracked in `pending` so a closing view
+// can cancel it before it fires against an already-closed DataFrame.
+function deferredFilterReset(df: DG.DataFrame, pending: Set<ReturnType<typeof setTimeout>>): void {
+  const id = setTimeout(() => {
+    pending.delete(id);
+    df.filter.setAll(true, true);
+  }, FILTER_REMOUNT_SETTLE_MS);
+  pending.add(id);
 }
 
 // Sniff string columns and set semType so the grid renders reactions and molecules: presence of
@@ -729,11 +734,16 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       }
     }
   }
+  // Pending deferredFilterReset/withPreservedFilters timeouts — cancelled on view close below,
+  // or they'd fire against an already-closed DataFrame.
+  const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
   // view.subs doesn't unsubscribe for this view — use onViewRemoved instead.
   let closeSub: Subscription;
   closeSub = grok.events.onViewRemoved.subscribe((closedView) => {
     if (closedView.id !== view.id) return;
     for (const host of mountedViewers.keys()) closeMountedViewers(host);
+    for (const id of pendingTimers) clearTimeout(id);
+    pendingTimers.clear();
     closeSub.unsubscribe();
   });
 
@@ -859,7 +869,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     mountFn();
     // The just-mounted Filters viewer can clobber subset.filter to all-false (e.g. zero-variance
     // column after subsetting) — reset it once that settles.
-    deferredFilterReset(subset);
+    deferredFilterReset(subset, pendingTimers);
     refreshValidation();
     // Close the previous subset only after the input has switched away from it.
     if (prev && !isSameTrackedTable(prev, df))
@@ -900,7 +910,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     assignTableInput(input, fresh);
     mountFn();
     // `fresh` can still inherit a stale filter bitset from `orig` — reset it once the mount settles.
-    deferredFilterReset(fresh);
+    deferredFilterReset(fresh, pendingTimers);
     refreshValidation();
     if (prev)
       try {grok.shell.closeTable(prev);} catch (e) {console.warn(`Could not close prev subset: ${e}`);}
@@ -932,9 +942,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       .filter((d): d is DG.DataFrame => d != null)
       .map((d) => ({df: d, mask: d.filter.clone()}));
     fn();
-    setTimeout(() => {
+    const id = setTimeout(() => {
+      pendingTimers.delete(id);
       for (const {df, mask} of saved) df.filter.copyFrom(mask, true);
     }, FILTER_REMOUNT_SETTLE_MS);
+    pendingTimers.add(id);
   }
 
   // ---- Buttons ----
@@ -1649,7 +1661,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       stepState[k - 1].committed = true;
       renderGrid(); renderBar(); updateDots();
       refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
-      deferredFilterReset(subset);
+      deferredFilterReset(subset, pendingTimers);
     };
 
     // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
@@ -1660,7 +1672,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
       // stepClone(k) can inherit the global table's active filter — reset it.
       const w = stepState[k - 1]?.df;
-      if (w) deferredFilterReset(w);
+      if (w) deferredFilterReset(w, pendingTimers);
     };
 
     // (Re)build the step tab strip, landing on `initialStep` (clamped). TabControl has no
