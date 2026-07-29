@@ -44,12 +44,6 @@ export class MountedViewerRegistry {
     }
   }
 
-  /** Registers an already-constructed viewer for leak tracking without mounting it via `mountDf`
-   * (used where a caller builds its own grid, e.g. the Preview panel's sampled-row grid). */
-  registerRaw(host: HTMLElement, viewers: DG.Viewer[]): void {
-    this.mountedViewers.set(host, viewers);
-  }
-
   applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
     try {
       grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
