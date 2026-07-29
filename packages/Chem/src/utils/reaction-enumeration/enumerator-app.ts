@@ -133,11 +133,24 @@ function pickFile(accept: string): Promise<File | null> {
     input.accept = accept;
     input.style.display = 'none';
     document.body.appendChild(input);
-    input.onchange = () => {
-      const f = input.files?.[0] ?? null;
-      document.body.removeChild(input);
+    let done = false;
+    const cleanup = (f: File | null): void => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('focus', onFocus);
+      input.remove();
       resolve(f);
     };
+    // Cancelling the OS dialog never fires 'change' — only returns focus to the window. Give
+    // 'change' a moment to win the race if a file WAS picked, then resolve null otherwise.
+    const onFocus = (): void => {
+      setTimeout(() => cleanup(input.files?.[0] ?? null), 300);
+    };
+    window.addEventListener('focus', onFocus);
+    input.onchange = () => cleanup(input.files?.[0] ?? null);
+    // Newer browsers fire 'cancel' directly on an actual dismiss, no timing guesswork needed.
+    // Older browsers simply never dispatch it, leaving the focus fallback above as the only path.
+    input.addEventListener('cancel', () => cleanup(null));
     input.click();
   });
 }
