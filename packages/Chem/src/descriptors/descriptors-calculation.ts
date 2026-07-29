@@ -331,7 +331,7 @@ function buildDescriptorsTreeControl(selected: string[], onChanged?: () => void)
     //in case there are no descriptors in the group - do not create tree group
     if (!descriptors[groupName] || !descriptors[groupName]['descriptors'])
       continue;
-    const group = tree.group(groupName, null, false);
+    const group = tree.group(descriptors[groupName]['name'] ?? groupName, null, false);
     group.enableCheckBox();
     groups[groupName] = group;
 

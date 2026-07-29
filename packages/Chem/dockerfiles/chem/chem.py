@@ -3,12 +3,36 @@ from rdkit.Chem import Descriptors3D
 from rdkit.Chem import AllChem
 import rdkit.Chem as Chem
 import numpy as np
+import sys
 
-from chem_utils import get_3d_descriptors_names, get_descriptor_description, get_descriptor_tags, get_descriptor_type, \
-    get_module_description, get_module_name
 from utils import np_none, set_type
 
 _descriptors_tree = None
+_descriptors_list = None
+_descriptor_types = {}
+
+_module_names = {'EState.EState_VSA': 'EState VSA', 'EState.EState': 'EState', 'Descriptors3D': 'Descriptors 3D'}
+
+
+def _is_3d(func):
+    return func.__module__ == 'rdkit.Chem.Descriptors3D'
+
+
+def _first_doc_line(obj):
+    for line in (obj.__doc__ or '').splitlines():
+        line = line.strip()
+        if line and ') -> ' not in line:
+            return line
+    return ''
+
+
+def get_3d_descriptors_names():
+    """
+    Gets names of the descriptors derived from a molecule's 3D structure.
+
+    :return: List of 3D descriptors names.
+    """
+    return [name for name, func in _get_descriptors_list() if _is_3d(func)]
 
 
 def get_descriptors_tree():
@@ -20,24 +44,20 @@ def get_descriptors_tree():
     global _descriptors_tree
     if _descriptors_tree is None:
         _descriptors_tree = {}
-        for desc in _get_descriptors_list():
-            func = desc[1]
-            name = desc[0]
+        for name, func in _get_descriptors_list():
             module_name = func.__module__.replace('rdkit.Chem.', '')
-            version = func.__dict__['version'] if ('version' in func.__dict__) else 'unknown'
             descriptor = {
                 'name': name,
-                'description': get_descriptor_description(name),
-                'type': get_descriptor_tags(name),
-                'tags': get_descriptor_tags(name)
+                'description': _first_doc_line(func),
+                'tags': ['3D'] if _is_3d(func) else ['2D']
             }
             if module_name in _descriptors_tree:
                 _descriptors_tree[module_name]['descriptors'].append(descriptor)
             else:
                 _descriptors_tree[module_name] = {
-                    'version': version,
-                    'name': get_module_name(module_name),
-                    'description': get_module_description(module_name),
+                    'version': func.__dict__.get('version', 'unknown'),
+                    'name': _module_names.get(module_name, module_name),
+                    'description': _first_doc_line(sys.modules[func.__module__]),
                     'descriptors': [descriptor]}
 
     return _descriptors_tree
@@ -49,22 +69,21 @@ def _get_descriptors_list():
 
     :return: Descriptors list: list(tuple(name, func)).
     """
-    descs = Descriptors._descList[:]
-    descs_extra = [
-        ("PMI1", Descriptors3D.PMI1),
-        ("PMI2", Descriptors3D.PMI2),
-        ("PMI3", Descriptors3D.PMI3),
-        ("NPR1", Descriptors3D.NPR1),
-        ("NPR2", Descriptors3D.NPR2),
-        ("RadiusOfGyration", Descriptors3D.RadiusOfGyration),
-        ("InertialShapeFactor", Descriptors3D.InertialShapeFactor),
-        ("Eccentricity", Descriptors3D.Eccentricity),
-        ("Asphericity", Descriptors3D.Asphericity),
-        ("SpherocityIndex", Descriptors3D.SpherocityIndex),
-    ]
-    for de in descs_extra:
-        descs.append(de)
-    return descs
+    global _descriptors_list
+    if _descriptors_list is None:
+        _descriptors_list = Descriptors._descList + [
+            ("PMI1", Descriptors3D.PMI1),
+            ("PMI2", Descriptors3D.PMI2),
+            ("PMI3", Descriptors3D.PMI3),
+            ("NPR1", Descriptors3D.NPR1),
+            ("NPR2", Descriptors3D.NPR2),
+            ("RadiusOfGyration", Descriptors3D.RadiusOfGyration),
+            ("InertialShapeFactor", Descriptors3D.InertialShapeFactor),
+            ("Eccentricity", Descriptors3D.Eccentricity),
+            ("Asphericity", Descriptors3D.Asphericity),
+            ("SpherocityIndex", Descriptors3D.SpherocityIndex),
+        ]
+    return _descriptors_list
 
 
 def _get_descriptors_funcs(descriptors):
@@ -90,43 +109,38 @@ def get_descriptors(molecules, descriptors):
     :param descriptors: Array of descriptors or groups names.
     :return: Dictionary of descriptors values for each molecule.
     """
-    _descriptors = list(descriptors)
     tree = get_descriptors_tree()
-    for group in tree:
-        if group in _descriptors:
-            descriptors.remove(group)
-            for descriptor in tree[group]['descriptors']:
-                descriptors.append(descriptor['name'])
+    expanded = []
+    for d in descriptors:
+        expanded.extend([descriptor['name'] for descriptor in tree[d]['descriptors']] if d in tree else [d])
+    descriptors = expanded
     length = len(molecules)
-    values = []
-    for _ in descriptors:
-        values.append(np_none(length))
-    descriptors_3d = get_3d_descriptors_names()
+    values = [np_none(length) for _ in descriptors]
     descriptors_funcs = _get_descriptors_funcs(descriptors)
+    needs_3d = not set(descriptors).isdisjoint(get_3d_descriptors_names())
     for n in range(0, length):
         try:
             mol = Chem.MolFromMolBlock(molecules[n]) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n])
         except:
-            mol = ''
-        try:
-            for d in descriptors:
-                if d in descriptors_3d and mol != '':
-                    try:
-                        mol = _add_3d_coordinates(mol)
-                    except:
-                        mol = ''
-                    break
-            for d in range(0, len(descriptors)):
-                value = descriptors_funcs[descriptors[d]](mol)
+            mol = None
+        if mol is not None and needs_3d:
+            try:
+                mol = _add_3d_coordinates(mol)
+            except:
+                mol = None
+        if mol is None:
+            continue
+        for i in range(0, len(descriptors)):
+            try:
+                value = descriptors_funcs[descriptors[i]](mol)
                 if not np.isnan(value) and not np.isinf(value):
-                    values[d][n] = value if get_descriptor_type(descriptors[d]) != "string" else str(value)
-        except:
-            values[d][n] = None
-    result = {}
-    for d in range(0, len(descriptors)):
-        result[descriptors[d]] = set_type(values[d], get_descriptor_type(descriptors[d]))
-
-    return result
+                    values[i][n] = value
+                    if descriptors[i] not in _descriptor_types:
+                        _descriptor_types[descriptors[i]] = "int" if isinstance(value, int) else "double"
+            except:
+                pass
+    return {descriptors[i]: set_type(values[i], _descriptor_types.get(descriptors[i], "double"))
+            for i in range(0, len(descriptors))}
 
 
 def _add_3d_coordinates(mol):
