@@ -26,6 +26,8 @@ export interface TableNodeInfo {
   path: string;
   name: string;
   friendlyPath?: string;
+  // nqName of the producing function; used to merge same-function tables in index selection
+  nqName?: string;
   columns: ColumnInfo[];
   rowCount: number;
 }

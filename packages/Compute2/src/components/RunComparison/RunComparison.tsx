@@ -49,6 +49,7 @@ export const RunComparison = Vue.defineComponent({
 
     const allowFloatIndex = Vue.ref(false);
     const allowDatetimeIndex = Vue.ref(false);
+    const mergeSameFuncs = Vue.ref(true);
 
     const historySelection = Vue.shallowRef<DG.FuncCall[]>([]);
     const entries = Vue.shallowRef<ComparisonEntry[]>([]);
@@ -129,11 +130,11 @@ export const RunComparison = Vue.defineComponent({
       }
     };
 
-    const setIndexColumn = (entryId: string, tablePath: string, columnName: string) => {
-      indexSelection.value = {
-        ...indexSelection.value,
-        [entryId]: {...indexSelection.value[entryId], [tablePath]: columnName},
-      };
+    const setIndexColumn = (members: {entryId: string, tablePath: string}[], columnName: string) => {
+      const next = {...indexSelection.value};
+      for (const {entryId, tablePath} of members)
+        next[entryId] = {...next[entryId], [tablePath]: columnName};
+      indexSelection.value = next;
     };
 
     // float/datetime indexes are edge cases prone to alignment noise, so they are opt-in
@@ -221,23 +222,91 @@ export const RunComparison = Vue.defineComponent({
       return target.displayName;
     });
 
-    // tables that could participate in column comparison and need an index choice
-    const indexTables = Vue.computed(() => entries.value.flatMap((entry) =>
-      entry.nodes.tables.map((table) => {
-        const candidates = table.columns.filter((col) => isAllowedIndexType(col.type));
-        const stored = indexSelection.value[entry.id]?.[table.path] ?? '';
-        return {
-          entryId: entry.id,
-          entryName: entry.name,
-          table,
-          candidates,
-          current: candidates.some((col) => col.name === stored) ? stored : '',
-        };
-      }),
-    ));
+    interface IndexRow {
+      key: string;
+      entryName?: string;
+      // merged rows show compare-style coverage instead of a run name
+      coverage?: {count: number, total: number};
+      label: string;
+      title: string;
+      members: {entryId: string, tablePath: string}[];
+      candidates: {name: string, type: string}[];
+      current: string;
+    }
 
-    const filteredIndexTables = Vue.computed(() => indexTables.value.filter((item) =>
-      matchesFilter(indexFilter.value, `${item.entryName} · ${item.table.friendlyPath ?? item.table.path}`)));
+    // tables that could participate in column comparison and need an index choice;
+    // with merging on, same-function outputs (by nqName) collapse into one row
+    const indexRows = Vue.computed<IndexRow[]>(() => {
+      const perTable = entries.value.flatMap((entry) =>
+        entry.nodes.tables.map((table) => ({entry, table})));
+
+      const validCurrent = (entryId: string, tablePath: string, candidates: {name: string}[]) => {
+        const stored = indexSelection.value[entryId]?.[tablePath] ?? '';
+        return candidates.some((col) => col.name === stored) ? stored : '';
+      };
+
+      const singleRow = ({entry, table}: typeof perTable[number]): IndexRow => {
+        const candidates = table.columns.filter((col) => isAllowedIndexType(col.type));
+        return {
+          key: `${entry.id}:${table.path}`,
+          entryName: entry.name,
+          label: table.friendlyPath ?? table.path,
+          title: `${entry.name} · ${table.path}`,
+          members: [{entryId: entry.id, tablePath: table.path}],
+          candidates,
+          current: validCurrent(entry.id, table.path, candidates),
+        };
+      };
+
+      if (!mergeSameFuncs.value)
+        return perTable.map(singleRow);
+
+      const groupKey = ({table}: typeof perTable[number]) =>
+        table.nqName ? `${table.nqName}|${table.path.split('/').pop()}` : null;
+      const groups = new Map<string, typeof perTable>();
+      for (const item of perTable) {
+        const key = groupKey(item);
+        if (key)
+          groups.set(key, [...groups.get(key) ?? [], item]);
+      }
+
+      const rows: IndexRow[] = [];
+      const emitted = new Set<string>();
+      for (const item of perTable) {
+        const key = groupKey(item);
+        const group = key ? groups.get(key)! : [item];
+        if (group.length < 2) {
+          rows.push(singleRow(item));
+          continue;
+        }
+        if (emitted.has(key!))
+          continue;
+        emitted.add(key!);
+        const candidates = group[0].table.columns
+          .filter((col) => group.every(({table}) =>
+            table.columns.some((c) => c.name === col.name && c.type === col.type)))
+          .filter((col) => isAllowedIndexType(col.type));
+        const paths = new Set(group.map(({table}) => table.path));
+        const label = paths.size === 1 ?
+          (group[0].table.friendlyPath ?? group[0].table.path) :
+          (group[0].table.name ?? group[0].table.nqName!);
+        const entryIds = new Set(group.map(({entry}) => entry.id));
+        const currents = new Set(group.map(({entry, table}) => validCurrent(entry.id, table.path, candidates)));
+        rows.push({
+          key: `merged:${key}`,
+          coverage: {count: entryIds.size, total: entries.value.length},
+          label,
+          title: group.map(({entry, table}) => `${entry.name} · ${table.path}`).join('\n'),
+          members: group.map(({entry, table}) => ({entryId: entry.id, tablePath: table.path})),
+          candidates,
+          current: currents.size === 1 ? [...currents][0] : '',
+        });
+      }
+      return rows;
+    });
+
+    const filteredIndexRows = Vue.computed(() => indexRows.value.filter((row) =>
+      matchesFilter(indexFilter.value, row.entryName ? `${row.entryName} · ${row.label}` : row.label)));
 
     const suggestedIndex = (columns: {name: string, type: string}[]) =>
       columns.find((col) => col.type === DG.COLUMN_TYPE.DATE_TIME)?.name ??
@@ -330,12 +399,17 @@ export const RunComparison = Vue.defineComponent({
     );
 
     const renderIndexPickers = () => (
-      indexTables.value.length > 0 &&
+      indexRows.value.length > 0 &&
       <div>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Index columns</div>
           <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
             { renderListFilter(indexFilter, 'Filter tables...') }
+            <ToggleInput
+              caption='Merge same functions'
+              value={mergeSameFuncs.value}
+              onUpdate:value={(val) => mergeSameFuncs.value = val}
+            />
             <ToggleInput
               caption='Datetime indexes'
               value={allowDatetimeIndex.value}
@@ -351,25 +425,29 @@ export const RunComparison = Vue.defineComponent({
         <div style={{color: 'var(--grey-4)', paddingBottom: '4px'}}>
           Pick the index (x / key) column for each table to enable column comparison
         </div>
-        { indexTables.value.length > 0 && filteredIndexTables.value.length === 0 &&
+        { filteredIndexRows.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>No tables match the filter</div> }
         <div class='c2-comparison-rows c2-comparison-table'
           style={{gridTemplateColumns: 'fit-content(480px) max-content 1fr'}}>
-          { filteredIndexTables.value.map(({entryId, entryName, table, candidates, current}) => {
-            const suggestion = suggestedIndex(candidates);
-            return <div key={`${entryId}:${table.path}`} class='c2-comparison-row'
-              style={{padding: '2px 6px'}}>
+          { filteredIndexRows.value.map((row) => {
+            const suggestion = suggestedIndex(row.candidates);
+            return <div key={row.key} class='c2-comparison-row' style={{padding: '2px 6px'}}>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-              title={`${entryName} · ${table.path}`}>
-              {entryName} · <span style={{color: 'var(--grey-5)'}}>{table.friendlyPath ?? table.path}</span>
+              title={row.title}>
+              { row.coverage ?
+                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>
+                  {row.coverage.count}/{row.coverage.total}
+                </span> :
+                row.entryName
+              } · <span style={{color: 'var(--grey-5)'}}>{row.label}</span>
             </span>
             <select
-              value={current}
-              onChange={(e: Event) => setIndexColumn(entryId, table.path, (e.target as HTMLSelectElement).value)}
+              value={row.current}
+              onChange={(e: Event) => setIndexColumn(row.members, (e.target as HTMLSelectElement).value)}
               style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px', maxWidth: '160px'}}
             >
               <option value=''>— index —</option>
-              { candidates.map((col) =>
+              { row.candidates.map((col) =>
                 <option key={col.name} value={col.name}>
                   {col.name}{col.name === suggestion ? ' (suggested)' : ''}
                 </option>,

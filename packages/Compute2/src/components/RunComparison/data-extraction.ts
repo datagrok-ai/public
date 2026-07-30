@@ -67,6 +67,7 @@ function extractCallNodes(
         path,
         name,
         friendlyPath,
+        nqName: call.func?.nqName,
         columns: [...df.columns].map((col) => ({
           name: col.name,
           type: col.type,
