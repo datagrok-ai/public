@@ -9,5 +9,6 @@ export * from './src/MarkDown/MarkDown';
 export * from './src/directives/ifOverlapping';
 export * from './src/directives/tooltip';
 export * from './src/ValidationIcon/ValidationIcon';
+export * from './src/ResizeHandle/ResizeHandle';
 export type {ValidationIconInput} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 export * from './src/composables/useUnwrappedCallMeta';
