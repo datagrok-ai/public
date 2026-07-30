@@ -9,6 +9,7 @@ import './tests/creation-script-import-tests';
 import './tests/panel-tests';
 import './tests/chem-phase-tests';
 import './tests/bio-curves-phase-tests';
+import './tests/data-ops-tests';
 import './tests/layout-tests';
 import './tests/order-edge-tests';
 import './tests/minimap-tests';

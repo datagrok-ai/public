@@ -135,9 +135,11 @@ export class PropertyPanel {
   }
 
   showNode(node: FlowNode, execState?: NodeExecState): void {
+    // Watchers and custom editors belong to the rendered DOM, which is about to
+    // be thrown away — release them BEFORE it goes, or a hosted widget's
+    // subscription outlives the element it was feeding.
+    this.disposeEditors();
     this.contentDiv.innerHTML = '';
-    // Watchers belong to the rendered editors — the old ones are about to be
-    // thrown away with the DOM.
     this.inputWatchers.clear();
     this.currentNode = node;
     this.currentExecState = execState;
@@ -199,6 +201,7 @@ export class PropertyPanel {
   }
 
   clear(): void {
+    this.disposeEditors();
     this.currentNode = null;
     this.currentExecState = undefined;
     this.contentDiv.innerHTML = '';
@@ -228,6 +231,11 @@ export class PropertyPanel {
   refreshShownNode(): void {
     if (!this.currentNode) return;
     if (this.root.contains(document.activeElement) && document.activeElement !== document.body) return;
+    // Never rebuild under an open modal. A dialog launched from this panel (the
+    // formula editor's "Edit in dialog", the function editor) holds live
+    // objects the rebuild destroys — the user then edits, presses OK, and their
+    // work goes into a FuncCall nothing is listening to anymore.
+    if (document.querySelector('.d4-dialog') !== null) return;
     if (!this.flow.getNodes().some((n) => n.id === this.currentNode!.id)) {
       this.clear();
       return;
@@ -859,12 +867,18 @@ export class PropertyPanel {
     const report = this.changeReporter(node.inputValues[param.name]);
     const ed = factory(param, {
       inputValue: (name) => node.inputValues[name],
-      // Captured columns only — resolving an uncomputed table would mean
+      // Captured columns/tables only — resolving an uncomputed table would mean
       // running the flow while a panel renders. An editor shows its
-      // "connect and run" state instead.
+      // "connect and run" state instead, and can offer `produceTable` behind an
+      // explicit click.
       columns: (tableParam) => this.upstreamColumns(node, tableParam),
+      table: (tableParam) => this.upstreamTable(node, tableParam),
+      isConnected: (tableParam) => this.flow.isInputConnected(node.id, tableParam),
+      produceTable: (tableParam) => this.produceUpstreamTable(node, tableParam),
       watch: (name, cb) => this.watchInput(name, cb),
+      node,
     });
+    this.editorDisposers.push(ed);
     ed.onChanged = (v): void => {
       if (ed.isValid && !ed.isValid()) return;
       node.inputValues[param.name] = v;
@@ -902,16 +916,47 @@ export class PropertyPanel {
     }
   }
 
-  /** Columns of the table feeding `tableParam`, from the upstream node's
-   *  CAPTURED result — null when the input isn't connected or hasn't run.
-   *  Wired by the view to `ExecutionController.cloneForNode`; unset in headless
-   *  editors, where every custom editor degrades to its no-columns state. */
-  getUpstreamColumns?: (sourceNodeId: string) => DG.Column[] | null;
+  /** The table feeding `tableParam`, from the upstream node's CAPTURED result —
+   *  null when the input isn't connected or hasn't run. Wired by the view to
+   *  `ExecutionController.cloneForNode`; unset in headless editors, where every
+   *  custom editor degrades to its no-table state. */
+  getUpstreamTable?: (sourceNodeId: string) => DG.DataFrame | null;
+
+  /** Materialize the table feeding `tableParam` by running the slice up to its
+   *  source (the column picker's ladder). Wired by the view to
+   *  `ExecutionController.produceTableForNode`; only ever called from an
+   *  explicit user action inside an editor, never from a render. */
+  runUpstreamNode?: (sourceNodeId: string) => Promise<DG.DataFrame | null>;
+
+  private upstreamTable(node: FlowNode, tableParam: string): DG.DataFrame | null {
+    if (!this.getUpstreamTable) return null;
+    const src = this.flow.getInputSource(node.id, tableParam);
+    return src ? this.getUpstreamTable(src.node.id) : null;
+  }
 
   private upstreamColumns(node: FlowNode, tableParam: string): DG.Column[] | null {
-    if (!this.getUpstreamColumns) return null;
+    const table = this.upstreamTable(node, tableParam);
+    return table ? Array.from(table.columns) : null;
+  }
+
+  private async produceUpstreamTable(node: FlowNode, tableParam: string): Promise<DG.DataFrame | null> {
     const src = this.flow.getInputSource(node.id, tableParam);
-    return src ? this.getUpstreamColumns(src.node.id) : null;
+    if (!src || !this.runUpstreamNode) return null;
+    return this.runUpstreamNode(src.node.id);
+  }
+
+  /** Custom editors rendered for the shown node, so their `detach` runs before
+   *  the DOM (and any subscription behind it) is thrown away. */
+  private readonly editorDisposers: Array<{detach?: () => void}> = [];
+
+  private disposeEditors(): void {
+    for (const ed of this.editorDisposers.splice(0)) {
+      try {
+        ed.detach?.();
+      } catch (e) {
+        console.error('Flow: custom editor cleanup failed', e);
+      }
+    }
   }
 
   /** A native Datagrok single-line string input (used where there's no

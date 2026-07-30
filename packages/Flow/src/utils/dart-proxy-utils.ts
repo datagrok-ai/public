@@ -143,10 +143,22 @@ export function getParamDisplayName(prop: DG.Property): string {
   return propertyNameToFriendly(prop.name);
 }
 
-/** Returns the display name for a function node header.
- * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
+/** Display name for a function node header: the declared `friendlyName`, split
+ *  by `|` (top-menu paths carry the whole trail) with the last segment taken.
+ *
+ *  When the friendlyName is just the raw name it is **humanized**, exactly as
+ *  {@link getParamDisplayName} does for parameters. Two reasons: the Dart
+ *  getter is `friendlyName ?? name`, so an equal value means "nothing was
+ *  declared"; and a `//friendlyName:` annotation does not reliably survive
+ *  package publishing (verified on a live stand — Flow's own `readUploadedFile`
+ *  registers as `readUploadedFile`), so a camelCase identifier is the common
+ *  case rather than the exception. `Filter Rows` beats `filterRows` on a
+ *  canvas, and core does the same for its own functions. Identity is
+ *  untouched — `func.name` / `nqName` still key everything. */
 export function getFuncDisplayName(func: DG.Func): string {
   const raw = func.friendlyName || func.name || '';
   const parts = raw.split('|');
-  return parts[parts.length - 1].trim();
+  const last = parts[parts.length - 1].trim();
+  const declared = raw.trim() !== (func.name ?? '').trim() || parts.length > 1;
+  return declared ? last : propertyNameToFriendly(last);
 }

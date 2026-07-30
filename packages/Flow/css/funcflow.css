@@ -3052,3 +3052,150 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   line-height: 1.4;
   white-space: normal;
 }
+
+/* ---------- Expression editor (Filter/Delete/Extract/Select Rows, Expression
+   To Column) ----------
+   Two states: `data-mode="plain"` is the ordinary string input shown until a
+   table is available; `data-mode="formula"` hosts PowerPack's formula editor
+   widget, which brings its own CodeMirror styling. */
+.ff-expression-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.ff-expression-editor-label {
+  color: var(--text-color-light, #666);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+/* Says what is missing (no table connected / not computed yet) — informational,
+   not an error, so it stays grey rather than borrowing the amber the
+   "MISSING - required" rows use. */
+.ff-expression-editor-hint {
+  color: var(--text-color-light, #666);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: normal;
+  margin-top: 2px;
+}
+
+.ff-expression-editor-load {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+/* The hosted widget caps itself at 400px for the context panel it was written
+   for; the Flow panel is narrower, so let it use whatever width it gets. */
+.ff-expression-editor[data-mode="formula"] .ui-div {
+  max-width: 100% !important;
+}
+
+/* The widget was built for a full context-panel pane and reserves a lot of
+   vertical space; a condition is usually one line, so cap it and let it scroll.
+   Growing to ~6 lines is enough for the long ones. */
+.ff-expression-editor[data-mode="formula"] .cm-editor {
+  max-height: 110px;
+}
+
+.ff-expression-editor[data-mode="formula"] .cm-scroller {
+  overflow-y: auto;
+}
+
+/* "Edit in dialog" is a secondary affordance - keep it on the same visual
+   weight as the panel's other inline links rather than a full-width button row. */
+.ff-expression-editor[data-mode="formula"] button {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+/* ---------- Aggregation editor (Flow:aggregate) ---------- */
+.ff-aggregation-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.ff-aggregation-editor-label {
+  color: var(--text-color-light, #666);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.ff-aggregation-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* One row is [aggregation][column][remove]; the two combos share the width and
+   the remove icon keeps its intrinsic size. */
+.ff-aggregation-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.ff-aggregation-row .ui-input-root {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ff-aggregation-row .ui-input-root > label.ui-input-label {
+  display: none; /* the row's shape is the label */
+}
+
+.ff-aggregation-remove {
+  color: var(--grey-4, #b0b0b0);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.ff-aggregation-remove:hover {
+  color: var(--red-3, #e74c3c);
+}
+
+.ff-aggregation-add {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* No table: same contract as the MPO mapper - a notice instead of a form that
+   cannot be filled, with whatever is already stored kept readable. */
+.ff-aggregation-editor-blocked {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px dashed var(--orange-2, #ff9800);
+  border-radius: 4px;
+  background: var(--orange-1, #fff4e5);
+}
+
+.ff-aggregation-editor-blocked-text {
+  color: var(--text-color-light, #666);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.ff-aggregation-editor-stored {
+  color: var(--text-color-light, #666);
+  font-size: 11px;
+  white-space: normal;
+}
+
+.ff-expression-editor .cm-errort-div {
+  min-height: unset;
+}
+
+/* The formula does not evaluate to what the parameter needs (a condition that
+   is not true/false, a missing column). The widget prints the reason under the
+   editor; this outlines the field it belongs to, since the panel scrolls and
+   the two can end up apart. The inline border the widget sets on its own
+   wrapper is what has to be overridden, hence the specificity. */
+.ff-expression-editor[data-invalid] .add-new-column-widget-cm-div {
+  border: solid 1px var(--red-3) !important;
+}

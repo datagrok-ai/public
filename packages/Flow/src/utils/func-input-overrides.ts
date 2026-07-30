@@ -25,6 +25,9 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getParamDisplayName} from './dart-proxy-utils';
 import {mpoColumnMappingEditor, mpoMappingRequirements} from '../panel/editors/mpo-mapping-editor';
+import {columnFormulaEditor, expressionRequirements, rowConditionEditor} from '../panel/editors/expression-editor';
+import {aggregationEditor} from '../panel/editors/aggregation-editor';
+import {aggregationProblems, parseAggregations} from '../ops/data-ops';
 // Type-only (erased at build time), so the scheme ↔ overrides pair stays free
 // of a runtime import cycle.
 import type {FlowNode} from '../rete/scheme';
@@ -83,6 +86,10 @@ export interface CustomInputEditor {
   /** When present and false, the pending value is not stored. */
   isValid?: () => boolean;
   onChanged?: (v: unknown) => void;
+  /** Release anything that outlives the DOM — a subscription, a hosted widget.
+   *  Called by the panel before it throws the editors away (a new node shown, a
+   *  re-render); an editor that only builds DOM needs no implementation. */
+  detach?: () => void;
 }
 
 /** What a custom editor is allowed to know about the node it edits.
@@ -98,10 +105,27 @@ export interface CustomEditorContext {
    *  connected or hasn't been computed. Never runs the flow — an editor must
    *  degrade gracefully rather than trigger work on a panel render. */
   columns: (tableParam: string) => DG.Column[] | null;
+  /** The captured table itself, under the same never-runs-the-flow rule as
+   *  {@link columns} — for editors that need the data, not just the schema
+   *  (the formula editor autocompletes and validates against a real table). */
+  table?: (tableParam: string) => DG.DataFrame | null;
+  /** Whether `tableParam` is wired at all. Distinguishes "connect a table"
+   *  from "run the flow up to here", which are different instructions. */
+  isConnected?: (tableParam: string) => boolean;
+  /** Materialize `tableParam` by running the slice up to its source. **Only
+   *  ever from an explicit user action** (a button) — never from a render, or
+   *  opening the panel would start computing. */
+  produceTable?: (tableParam: string) => Promise<DG.DataFrame | null>;
   /** Re-run `cb` whenever a sibling input is edited. Needed because the panel
    *  does NOT re-render while focus is inside it — which is exactly when a
    *  combo the editor depends on gets changed. */
   watch: (inputName: string, cb: (value: unknown) => void) => void;
+  /** The node being edited — for editors that produce something a
+   *  {@link FuncNodeValidator} has to read back later (a validity verdict only
+   *  the editor can compute). Cache such answers keyed by node IDENTITY, never
+   *  in `node.properties`: those serialize, and a background check landing
+   *  would dirty a flow nobody edited. */
+  node?: FlowNode;
 }
 
 export type CustomInputEditorFactory = (param: DG.Property, ctx: CustomEditorContext) => CustomInputEditor;
@@ -111,6 +135,14 @@ export type CustomInputEditorFactory = (param: DG.Property, ctx: CustomEditorCon
 export const CUSTOM_FUNC_INPUT_EDITORS: Record<string, Record<string, CustomInputEditorFactory>> = {
   'core:OpenFile': {fullPath: filePathEditor},
   'Chem:mpoScoreByProfile': {columnMapping: mpoColumnMappingEditor},
+  // Flow's own data operations: a row condition is a boolean formula and an
+  // aggregation list is a list — neither is a thing to type into a text box.
+  'Flow:filterRows': {condition: rowConditionEditor},
+  'Flow:deleteRows': {condition: rowConditionEditor},
+  'Flow:extractRows': {condition: rowConditionEditor},
+  'Flow:selectRows': {condition: rowConditionEditor},
+  'Flow:expressionToColumn': {expression: columnFormulaEditor},
+  'Flow:aggregate': {aggregations: aggregationEditor},
 };
 
 // ---------- per-function readiness ----------
@@ -127,7 +159,39 @@ export type FuncNodeValidator = (node: FlowNode) => string[];
 
 export const FUNC_NODE_VALIDATORS: Record<string, FuncNodeValidator> = {
   'Chem:mpoScoreByProfile': mpoMappingRequirements,
+  // `aggregations` is a non-empty string the moment the editor writes one entry,
+  // so the generic "is it blank" check passes while the list still reads
+  // `[{type: 'avg', column: ''}]` — an aggregation over nothing.
+  //
+  // Nothing similar is needed for the blank-is-enough cases (`unpivot`'s
+  // `mergeColumns`, `deleteColumns`' `columns`, `tagColumns`' `tag`): they are
+  // declared `nullable: false`, so `FuncNode.requiredInputs` covers them —
+  // and, unlike a validator, that check knows whether the slot is WIRED. A
+  // validator reading `inputValues` alone would flag a slot fed by a Column
+  // List Input node, which is why this one guards on the connection too.
+  'Flow:aggregate': aggregateRequirements,
+  // A condition that isn't a true/false expression, or names a column that
+  // isn't there, is a run-time failure the formula editor already caught while
+  // the user typed. Blocking here turns it into a hint instead of a red node.
+  // The check itself is asynchronous (deciding a formula's type means
+  // evaluating it) — see `expressionRequirements` for how the verdict reaches
+  // this synchronous gate, and why it fails open when it hasn't.
+  'Flow:filterRows': expressionRequirements('condition'),
+  'Flow:deleteRows': expressionRequirements('condition'),
+  'Flow:extractRows': expressionRequirements('condition'),
+  'Flow:selectRows': expressionRequirements('condition'),
+  'Flow:expressionToColumn': expressionRequirements('expression'),
 };
+
+/** Aggregate is ready when every aggregation names something to aggregate.
+ *  Group-by and pivot are legitimately empty (folding a whole table into one
+ *  row is a real thing to want), so only the list is checked. */
+function aggregateRequirements(node: FlowNode): string[] {
+  if (node.editorBridge?.isSocketConnected(node.id, 'input', 'aggregations'))
+    return []; // fed by a wire — its value isn't in `inputValues` to inspect
+  const problems = aggregationProblems(parseAggregations(node.inputValues['aggregations']));
+  return problems.length === 0 ? [] : [`Aggregations — needs ${problems.join(', ')}`];
+}
 
 /** The registered validator for a function, wrapped so it can never throw into
  *  a render, or undefined when the function has none. */

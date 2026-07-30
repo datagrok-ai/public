@@ -664,13 +664,20 @@ export class FuncFlowView extends DG.ViewBase {
       tags: this.flowSettings.tags,
     }));
     this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
-    // Captured columns for custom editors that map onto the upstream table
-    // (the MPO profile mapping). Deliberately does NOT run the flow — a panel
-    // render must never kick off work.
-    this.propertyPanel.getUpstreamColumns = (sourceNodeId) => {
-      const table = this.executionController?.cloneForNode(sourceNodeId);
-      return table ? Array.from(table.columns) : null;
-    };
+    // The captured upstream table for custom editors that are written against
+    // it (the MPO profile mapping, the row-condition formula editor, the
+    // aggregation list). Deliberately does NOT run the flow — a panel render
+    // must never kick off work.
+    this.propertyPanel.getUpstreamTable = (sourceNodeId) =>
+      this.executionController?.cloneForNode(sourceNodeId) ?? null;
+    // …and the explicit-action counterpart, same slice run the column picker
+    // uses, so an editor can offer "load it" instead of a dead end.
+    this.propertyPanel.runUpstreamNode = (sourceNodeId) =>
+      this.executionController.produceTableForNode(sourceNodeId, {
+        name: this.flowSettings.scriptName,
+        description: this.flowSettings.scriptDescription,
+        tags: this.flowSettings.tags,
+      });
 
     // Functions with their own custom editor (an `editor:` meta or the explicit
     // allowlist) get an icon in the parameters pane header that opens that

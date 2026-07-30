@@ -141,6 +141,83 @@ export namespace funcs {
     return await grok.functions.call('Flow:RunFlow', { view });
   }
 
+  /**
+  Keeps the rows matching a condition, as a new table
+  */
+  export async function filterRows(table: DG.DataFrame , condition: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:FilterRows', { table, condition });
+  }
+
+  /**
+  Removes the rows matching a condition, as a new table
+  */
+  export async function deleteRows(table: DG.DataFrame , condition: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:DeleteRows', { table, condition });
+  }
+
+  /**
+  Rows matching a condition, keeping only the chosen columns
+  */
+  export async function extractRows(table: DG.DataFrame , condition: string , columns: string[] | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:ExtractRows', { table, condition, columns });
+  }
+
+  /**
+  Selects the rows matching a condition and passes the table on
+  */
+  export async function selectRows(table: DG.DataFrame , condition: string , clearSelection: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:SelectRows', { table, condition, clearSelection });
+  }
+
+  /**
+  A reproducible random sample of rows, as a new table
+  */
+  export async function filterRandomRows(table: DG.DataFrame , count: number , seed: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:FilterRandomRows', { table, count, seed });
+  }
+
+  /**
+  Selects a reproducible random sample of rows and passes the table on
+  */
+  export async function selectRandomRows(table: DG.DataFrame , count: number , seed: number , clearSelection: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:SelectRandomRows', { table, count, seed, clearSelection });
+  }
+
+  /**
+  A copy of the table without the chosen columns
+  */
+  export async function deleteColumns(table: DG.DataFrame , columns: string[] ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:DeleteColumns', { table, columns });
+  }
+
+  /**
+  Sets a tag on the chosen columns and passes the table on
+  */
+  export async function tagColumns(table: DG.DataFrame , columns: string[] , tag: string , value: string | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:TagColumns', { table, columns, tag, value });
+  }
+
+  /**
+  Computes an expression into a new column of the table
+  */
+  export async function expressionToColumn(table: DG.DataFrame , expression: string , name: string , type: string ): Promise<DG.Column> {
+    return await grok.functions.call('Flow:ExpressionToColumn', { table, expression, name, type });
+  }
+
+  /**
+  Groups rows and aggregates columns. Add a pivot column to build a pivot table
+  */
+  export async function aggregate(table: DG.DataFrame , groupByColumns: string[] | null, aggregations: string , pivotColumns: string[] | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:Aggregate', { table, groupByColumns, aggregations, pivotColumns });
+  }
+
+  /**
+  Wide to long. Each merged column becomes a category and value row pair
+  */
+  export async function unpivot(table: DG.DataFrame , copyColumns: string[] | null, mergeColumns: string[] , categoryColumnName: string , valueColumnName: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Flow:Unpivot', { table, copyColumns, mergeColumns, categoryColumnName, valueColumnName });
+  }
+
   export async function viewFlowFile(file: DG.FileInfo ): Promise<DG.View> {
     return await grok.functions.call('Flow:ViewFlowFile', { file });
   }

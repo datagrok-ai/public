@@ -67,6 +67,8 @@ src/
 │   └── flow-serializer.ts        # serialize / deserialize / download
 ├── import/
 │   └── creation-script-importer.ts  # Table-creation script → flow graph (reverse of the compiler)
+├── ops/
+│   └── data-ops.ts               # Flow's own row/column/aggregation verbs (see below)
 ├── types/
 │   └── type-map.ts               # DG type → slot color, role color, type compatibility
 └── utils/
@@ -266,6 +268,7 @@ synchronously) and `BuiltGraph` query helpers (`nodesByFunc`, `sourceOf`, …).
 | `layout-tests.ts` | Flow: layout | `computeLayers` (chain/diamond longest-path), `FlowEditor.autoLayout` (edges-point-right, no-overlap, producer-above-consumer in the editor) |
 | `chem-phase-tests.ts` | Flow: choices from a function / choice defaults / mpo column mapping / func wrapper parity / hidden outputs / sketcher input / chem nodes | `choices: Pkg:func(args)` parsing against core's first-char-and-`)` truncation (`parseChoiceFuncRef`/`resolveChoiceFunc`/`choiceValuesFrom`) + a live input ending up with real items; a wrapped node's sockets and panel form describe the SAME parameters (`effectiveFuncInputs`) and no wrapper invents an input that never reaches the call; `impliedChoiceDefault` seeds a required choice input with the value its combo shows (never a reference), so no fresh node reports it missing; the MPO mapping heuristic (`guessColumnFor` exact → normalized → containment, `autoMap` fills blanks only, `pruneMapping` drops the previous profile's entries, `mappableColumns` keeps numeric only), its JSON round-trip, the blocked (no profile / no table) state rendering a notice and ZERO combos, a profile change rebuilding the rows through `ctx.watch` without a panel re-render, and completeness enforcement (`unmappedProperties` + `FUNC_NODE_VALIDATORS` → `nodeMissingRequirements`: a partial mapping makes the node unready and names what's unmapped, an unknown property list fails open, and the editor caches the list on the node so the check survives a reload); `HIDDEN_FUNC_OUTPUTS` keeps the slot but drops the socket row; Sketcher Input is a `semType: Molecule` string input, `inputValueProperty` carries the qualifier, and a bare string drag still leads with String Input; each chem (table, column) twin has a semType-filtered column bound to its table with a working picker, and `filterBySubstructure` / `similarityTo` actually run |
 | `bio-curves-phase-tests.ts` | Flow: bio nodes / helm input / bio functions / curves nodes | the void / same-frame bio entries are off the allowlist and their column-returning twins on it; every twin leads with a table its column resolves against (`columnTables`), is semType-filtered, and both are required; Tag as Macromolecule is the one that must NOT be semType-filtered; `targetNotation` / `scheme` / `statistic` / `aggregation` are literal choice lists rather than free text; the panel renders a working column picker; Helm Input is a `semType: Macromolecule` string input whose qualifier survives into `inputValueProperty`, and a bare string drag still leads with String Input; the curve twins take a real `column {semType: fit}` slot while the name-addressed originals stay out; Fit Dose-Response Curves binds all seven mandatory columns; and Convert Sequence Notation / Motif Search / Tag as Macromolecule / Split to Monomers actually run. The Add Curve Statistic run is skipped — with a warning naming the cause — when the stand serves a Curves bundle older than the registered metadata (the catalog knows the function and the package executes, but the export is absent) |
+| `data-ops-tests.ts` | Flow: data ops / data op nodes / data op editors | the row/column/aggregation verbs compute what they claim against a live backend (condition masks, the complement, subsetting, reproducible sampling, group-by, pivot, unpivot) and refuse rather than guess — a non-boolean condition, a blank one, deleting every column, an aggregation over no column, an unpivot with nothing to merge; every offered aggregation actually runs (incl. `concat unique`, a `STR_AGG` the TS signature does not admit); the nodes lead with a non-nullable table, expose real `column_list` slots bound to it, mark exactly the mandatory lists required, title themselves in words, and carry the registered editor on every expression parameter; the `FuncCall`-typed originals they replace stay out of the catalog; and the editors degrade correctly — the aggregation editor blocks with a notice instead of unfillable combos (distinguishing unconnected from uncomputed, keeping the stored list readable), rows add/remove, a column-less aggregation drops its column combo, blank-column rows survive pruning while stale ones do not, and the expression editor falls back to an editable string input, mounts the real CodeMirror formula editor once a table exists, and releases its subscription on detach |
 | `panel-tests.ts` | Flow: property panel | `stringChoiceOptions` (choices/nullable/current-preservation) + `propertyChoices` reading live func-input choices; input overrides: hidden inputs stay data-carrying but render nowhere, a registered custom editor replaces the default input (storage/`isValid` routing), OpenFile's `fullPath` file picker round-trips a path, editor-shortcut inputs carry the inline open-editor pencil (gated on `onEditFuncParams`, off-list inputs stay bare) |
 | `creation-script-import-tests.ts` | Flow: creation script import | exact `BuiltGraph` checks incl. the chem-properties example (column arg → Select Column wired to the table, pass-through ordering, output wiring), inferred order edges (friendly-name match, no-match, live-editor sort) + editor integration (emits `table.col(...)`, no `ResolveColumn`) |
 | `function-browser-tests.ts` | Flow: function browser | allowlist-based inclusion (**known funcs on the list are in, dev/test pkgs and denylist-era helpers stay out; `shouldIncludeFunc` precedence: `includeInFlow:false` > `true` opt-in > workflow > `INCLUDED_FUNC_NQNAMES`; widgets KEPT**), `categorizeFunc` placement (JoinTables→Combine, OpenFile→Data Sources, **Chem/Bio operations→domain sections, chem/bio sources stay out, flow scripts→Workflows in every mode**), Cheminformatics section rendered, category order, `statusLabel`, queries grouped per-connection + kept out of the categories |
@@ -507,6 +510,8 @@ Learned the hard way while building the phase catalogs; every one of these fails
 - **`initialValue`, not the TypeScript default,** is what the generator emits as `= <value>`.
 - **A `column_list` output has no detached form** — returning `DG.Column[]` makes the result handler throw on `ColumnList.iterator`. Return a `dataframe` of the created columns instead.
 - **A column parameter defaults to nullable**, which reads as optional and lets a half-configured node run. Say `nullable: false` on every one the implementation actually dereferences.
+- **A `dataframe` parameter is nullable by default too.** The `leadingTableColumn` override in `FuncNode` only force-requires a leading (dataframe, **column**) pair — a (dataframe, **string**) function like a row filter falls through, and its table lands outside `requiredInputs`, so an unwired node reads as runnable. Say `nullable: false` on it.
+- **`//friendlyName:` does not survive publishing.** Verified against a live stand: Flow's own `readUploadedFile` registers with `friendlyName == name`, and so does every function declared here. Don't count on it for the node title — `getFuncDisplayName` humanizes a camelCase name instead (`filterRows` → `Filter Rows`), the same treatment `getParamDisplayName` gives parameters.
 - **A script's name falls back to its filename**, so a `foo.py` with `#name: Foo` and a sibling `foo.md` collide, and the server silently renames one to `Foo_1`. Verify an nqName against the live catalog before allowlisting it.
 
 #### Pass-Through Outputs
@@ -538,6 +543,153 @@ The catalog is **allowlist-based** (`shouldIncludeFunc`): a function enters only
 `registerBuiltinNodes()` populates the `FACTORIES` map with all built-in types. `registerAllFunctions()` discovers DG functions via `DG.Func.find({})` and registers a per-func factory under name `DG Functions/<role>/<funcName>` (or `DG Functions/<role>/<pkg>:<funcName>` on collision). It ends with `registerVariableFuncs()`: **SetVar / GetVar are force-registered** (via `ensureFuncNodeType`) even though the primitive-only rule excludes them from the catalog scan — every imported creation script terminates in SetVar nodes and Flow treats SetVar as an output, so a saved `.flow` containing them must deserialize without a prior import having registered them as a side effect.
 
 `createNode(typeName)` looks up the factory and stamps `dgTypeName` on the new instance — this is what the serializer persists.
+
+## Flow-native data operations ([ops/data-ops.ts](src/ops/data-ops.ts))
+
+The row/column/aggregation verbs a pipeline needs, written because the platform
+originals cannot be wired on a canvas.
+
+**Why they exist.** `core:FilterRows`, `SelectRows`, `DeleteRows`, `ExtractRows`,
+`Subset`, `DeleteColumns`, `TagColumns` and `selectCols` all take a
+**`TableRowFilterCall` / `ColFilterCall`** — a nested *function call* describing the
+predicate (`ddt/lib/src/functions/rows_predicates.dart`). That type has no editor, no
+socket anything can produce, and no useful default, which is why the whole family sits
+commented out in [included-funcs.ts](src/rete/included-funcs.ts). `core:Aggregate` is
+the same problem one level up (`List<GroupAggregation>` / `List<TableJoin>` /
+`List<FieldPredicate>`), and `core:Unpivot` takes bare `string_list`s where a column
+picker belongs.
+
+The replacements take **primitives only**: a table, real `column`/`column_list` slots
+(which get the column picker for free), literal `choices`, and a condition as a plain
+string edited with the platform's own formula editor. Nothing here reimplements an
+engine — conditions are evaluated by `core:AddNewColumn`, aggregation is
+`DataFrame.groupBy`, unpivot delegates to `core:Unpivot`.
+
+| Node | Signature | Notes |
+|---|---|---|
+| Filter Rows | `(table, condition) → dataframe` | rows matching the condition (core's `Subset`, row half) |
+| Delete Rows | `(table, condition) → dataframe` | the exact complement |
+| Extract Rows | `(table, condition, columns?) → dataframe` | rows **and** columns — core's `Subset` in full; blank `columns` keeps them all |
+| Select Rows | `(table, condition, clearSelection) → dataframe` | sets `table.selection`, passes the table on |
+| Filter Random Rows | `(table, count, seed) → dataframe` | reproducible sample as a new table |
+| Select Random Rows | `(table, count, seed, clearSelection) → dataframe` | the selection counterpart |
+| Delete Columns | `(table, columns) → dataframe` | refuses to leave the table with none |
+| Tag Columns | `(table, columns, tag, value) → dataframe` | tags are column metadata — the mutation IS the result |
+| Expression To Column | `(table, expression, name, type) → column` | `AddNewColumn` with the inline formula editor and no reactivity plumbing |
+| Aggregate | `(table, groupByColumns, aggregations, pivotColumns?) → dataframe` | a pivot column turns the group-by into a pivot table — also findable as "pivot" |
+| Unpivot | `(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName) → dataframe` | wide → long |
+
+Design rules these follow, all of them learned from the originals:
+
+- **Everything returns a NEW table.** Core's are in-place because they drive a grid;
+  a pipeline step whose result is "the input, but different now" gives the canvas
+  nothing to wire onward and makes a re-run non-idempotent. The two exceptions are
+  Select Rows / Select Random Rows (selection is table state) and Tag Columns (so is a
+  tag) — they hand the same table back.
+- **Conditions run through `core:AddNewColumn` with `aux.addColumn = false`** — the
+  flag its own `applyFormula` path uses to compute a formula column without appending
+  it (`ColumnFunctionsUtils.AddColumnAuxParam`). The user's table is never touched and
+  the expression grammar is exactly what the editor autocompletes. The column is
+  computed as **`auto`, never `bool`**: asking for `bool` *coerces*, so `${score} + 1`
+  would come back as a column of nulls and silently match nothing; inferring the type
+  is what lets the type check refuse a non-condition.
+- **Sampling is seeded** (mulberry32, `randomIndices`). `Math.random` would make a node
+  return different rows on every re-run, which breaks invalidation — a node re-runs and
+  its downstream no longer agrees with it.
+- **Declared in `src/package.ts` as one-line delegates.** The server scans a fixed file
+  list for annotations (`src/package.ts`, `detectors.ts`, `package-test.ts`,
+  `package.g.ts` — `packages_service.dart`), so a separate module registers nothing.
+  Bodies live in `ops/data-ops.ts`.
+- `meta.includeInFlow: true` on each, so no allowlist entry is needed, and their
+  signatures route them to the right browser category on their own.
+
+### Expression editor ([panel/editors/expression-editor.ts](src/panel/editors/expression-editor.ts))
+
+The `condition` / `expression` parameters above are edited with the **Add New Column
+editor**, mounted inline. Core already reuses it as a *property* editor — every Dart
+viewer's `filter` property opens it through `PropertyViewFormulaEditor`
+(`xamgle/property_grid/editors`), flagged `aux.filterFormulaEditor` so it drops the
+name/type inputs, validates as `bool` and never appends a column. This is the same
+mechanism, reactive instead of behind an ellipsis button.
+
+- PowerPack exposes it as **`PowerPack:expressionEditorWidget(call)`**: an
+  `AddNewColumn` `FuncCall` in, a `DG.Widget` out. Two aux flags drive it —
+  `expressionEditorOnly` (no Apply button, no preview, publish the debounced text back
+  onto `call.expression`) and `filterFormulaEditor` (constrain to a boolean formula).
+  The host reads edits through `call.inputParams['expression'].onChanged`.
+- **The table gates it.** Until one is available the parameter is an ordinary, still
+  *editable* string input with the reason spelled out — a flow loaded from disk must be
+  readable and fixable without running anything. Unconnected and
+  connected-but-uncomputed are different messages; the second offers a **Load it**
+  action running the same slice the column picker uses. The table is only ever *read*
+  from what was already captured; computing on a panel render is never allowed.
+- Absent PowerPack → the plain input. That is the only dependency, and it degrades to a
+  state the editor already has.
+- **Validity is asynchronous, and the editor is where it is decided.** Whether a formula
+  is a *condition* can only be answered by EVALUATING it (the platform infers a formula's
+  type from its result), so PowerPack computes it on its preview frame and publishes each
+  verdict on the widget's own root — `data-expression-error` plus an
+  `expression-validated` event. That DOM channel is the only one that survives the
+  package crossing: a widget arrives here as a fresh JS wrapper around the same Dart
+  handle, so a field set on the PowerPack side is simply not there. The host caches the
+  verdict per node (a `WeakMap`, never `node.properties` — those serialize) and
+  `expressionRequirements(param)` turns it into a `FUNC_NODE_VALIDATORS` entry, so an
+  arithmetic condition blocks the node instead of failing mid-run.
+  - It **fails open** on anything it hasn't verified — no verdict, or a verdict for text
+    the user has since edited. A verdict needs the upstream table, which only an open
+    panel has; failing closed would make a flow loaded from disk permanently unrunnable.
+    (The opposite choice from the MPO mapper, which fails closed — there, running with an
+    unverified mapping produces a wrong NUMBER rather than a clear error.)
+  - A verdict that matches the previous one must NOT report a parameter edit. Every mount
+    validates, so treating the first clean answer as a change made merely opening the
+    panel an edit — which invalidated downstream results and rebuilt the panel, and that
+    rebuild is what destroyed the `FuncCall` behind an open "Edit in dialog".
+
+**Never rebuild the context panel under an open modal** (`PropertyPanel.refreshShownNode`
+skips while any `.d4-dialog` exists). A dialog launched from the panel — this editor's
+"Edit in dialog", the function editor — holds live objects the rebuild throws away; the
+user then edits, presses OK, and their work lands in a call nothing is listening to. Same
+family as the `d4-before-run-action` race the func-editor launcher holds autorun for.
+
+The "Edit in dialog" child shares the **same FuncCall**, so it sees `expressionEditorOnly`
+too — but a dialog HAS a preview grid and must build it (`isWidgetExpressionEditor` in
+PowerPack draws that line). Its OK publishes the formula back onto the call rather than
+appending a column. The whole round-trip is driven end-to-end by the scratchpad harness
+`flow-dialog-scenarios.js` (focus survives typing, the preview follows the formula, OK
+reaches the node, a non-boolean condition is refused and clears when fixed).
+
+### Aggregation editor ([panel/editors/aggregation-editor.ts](src/panel/editors/aggregation-editor.ts))
+
+"Which columns, aggregated how" is a **list**, the one shape a function signature cannot
+express with primitives — which is exactly why `core:Aggregate` takes
+`List<GroupAggregation>`. Stored as a JSON string, edited as rows of two combos: an
+aggregation and a column, both picked, never typed. The column choices are filtered by
+what the aggregation can consume (no averaging a string column), and `count` drops the
+column combo entirely because it counts rows. Same blocked-state contract as the MPO
+column mapper: with no table it renders a notice, not a row of empty combos, and keeps
+the stored list readable as text. A row whose column is still blank survives pruning
+— that is an unfinished row, not a stale reference, and dropping it made the Add
+button look broken.
+
+Readiness is a `FUNC_NODE_VALIDATORS` entry (`Flow:aggregate`): the generic
+required-input check only sees whether the string is blank, and
+`[{type:'avg',column:''}]` is not blank while still saying nothing. It **guards on the
+connection first** — a validator reading `inputValues` alone would flag a slot fed by a
+wire. Nothing similar is needed for `unpivot` / `deleteColumns` / `tagColumns`:
+`nullable: false` puts those in `FuncNode.requiredInputs`, which already knows about
+wiring.
+
+### Custom editor context
+
+`CustomEditorContext` (in [utils/func-input-overrides.ts](src/utils/func-input-overrides.ts))
+gained `table(param)`, `isConnected(param)` and `produceTable(param)` alongside the
+existing `columns` / `inputValue` / `watch`. `table` and `columns` are **captured-only**
+reads (`ExecutionController.cloneForNode`) under the standing rule that a panel render
+never starts work; `produceTable` is the explicit-action counterpart
+(`produceTableForNode`, the column picker's slice run) and may only be called from a
+user gesture. `CustomInputEditor` gained an optional `detach()`, run by the panel
+before it throws the editors away (`showNode` / `clear`) — without it a hosted widget's
+subscription outlives the element it was feeding.
 
 ## Uploaded Files — local file → node ([utils/uploaded-files.ts](src/utils/uploaded-files.ts))
 
