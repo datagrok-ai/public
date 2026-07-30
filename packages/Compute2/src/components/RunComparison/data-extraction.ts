@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
   ComparisonEntryNodes, ScalarNodeInfo, TableNodeInfo, ColumnTarget, ScalarTarget,
@@ -24,14 +25,11 @@ export interface ComparisonEntry {
 
 const SCALAR_PROPERTY_TYPES = new Set<string>([DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BIG_INT]);
 
-function getRunDisplayName(call: DG.FuncCall): string {
-  const title = call.options?.['title'];
-  if (title)
-    return title;
-  const funcName = call.func?.friendlyName ?? call.func?.name ?? 'Run';
-  const started = (call.started as any)?.format?.('MMM D, HH:mm');
-  return started ? `${funcName} — ${started}` : funcName;
-}
+const columnInfos = (df: DG.DataFrame) => [...df.columns].map((col) => ({
+  name: col.name,
+  type: col.type,
+  units: col.meta?.units || undefined,
+}));
 
 function extractCallNodes(
   call: DG.FuncCall,
@@ -66,11 +64,7 @@ function extractCallNodes(
         name,
         friendlyPath,
         nqName: call.func?.nqName,
-        columns: [...df.columns].map((col) => ({
-          name: col.name,
-          type: col.type,
-          units: col.meta?.units || undefined,
-        })),
+        columns: columnInfos(df),
         rowCount: df.rowCount,
       });
       dataFrames.set(path, df);
@@ -134,23 +128,17 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
         console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, e);
       }
     }
-    return {
-      id: call.id,
-      name: getRunDisplayName(call),
-      sourceKind: 'workflow',
-      modelName,
-      nodes: {entryId: call.id, entryName: getRunDisplayName(call), scalars, tables},
-      dataFrames,
-    };
+  } else {
+    extractCallNodes(call, '', '', scalars, tables, dataFrames);
   }
 
-  extractCallNodes(call, '', '', scalars, tables, dataFrames);
+  const name = getRunTitle(call);
   return {
     id: call.id,
-    name: getRunDisplayName(call),
-    sourceKind: 'function',
+    name,
+    sourceKind: serializedConfig ? 'workflow' : 'function',
     modelName,
-    nodes: {entryId: call.id, entryName: getRunDisplayName(call), scalars, tables},
+    nodes: {entryId: call.id, entryName: name, scalars, tables},
     dataFrames,
   };
 }
@@ -162,11 +150,7 @@ export function entryFromDataFrame(df: DG.DataFrame): ComparisonEntry {
     path: df.name,
     name: df.name,
     friendlyPath: df.name,
-    columns: [...df.columns].map((col) => ({
-      name: col.name,
-      type: col.type,
-      units: col.meta?.units || undefined,
-    })),
+    columns: columnInfos(df),
     rowCount: df.rowCount,
   };
   return {
@@ -255,40 +239,13 @@ export function buildColumnComparison(
   target: ColumnTarget,
   entries: ComparisonEntry[],
 ): ColumnComparisonResult | null {
-  const participating = getParticipating(target, entries);
-  if (participating.length < 2)
+  const multi = buildMultiColumnComparison([target], entries);
+  if (!multi)
     return null;
-  const {isDatetimeIndex, isKeyIndex} = getIndexKind(participating);
-  const indexColumnName = participating[0].binding.indexColumnName;
-  const splitColumnName = getSplitName(participating);
-
-  const longIndex: any[] = [];
-  const longSplits: string[] = [];
-  const longValues: (number | null)[] = [];
-  const longRuns: string[] = [];
-  for (const {entry, binding} of participating) {
-    const df = entry.dataFrames.get(binding.tablePath)!;
-    const index = df.getCol(binding.indexColumnName).toList();
-    const values = df.getCol(binding.columnName).toList();
-    const splits = binding.splitColumnName ?
-      df.col(binding.splitColumnName)?.toList() : undefined;
-    for (let i = 0; i < index.length; i++) {
-      longIndex.push(isKeyIndex ? `${index[i]}` : index[i]);
-      longValues.push(values[i]);
-      longRuns.push(entry.name);
-      if (splitColumnName)
-        longSplits.push(splits?.[i] == null ? '' : `${splits[i]}`);
-    }
-  }
-
-  const chartDf = DG.DataFrame.fromColumns([
-    makeIndexColumn(indexColumnName, longIndex, isKeyIndex, isDatetimeIndex),
-    ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, longValues),
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
-  ]);
-  chartDf.name = `Comparison: ${target.displayName}`;
-  return {chartDf, indexColumnName, splitColumnName, isKeyIndex};
+  // the presence of valueColumnNames is what marks a multi-value result downstream
+  const {valueColumnNames: _valueColumnNames, ...single} = multi;
+  single.chartDf.name = `Comparison: ${target.displayName}`;
+  return single;
 }
 
 /**

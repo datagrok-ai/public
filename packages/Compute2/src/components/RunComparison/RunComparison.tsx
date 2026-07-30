@@ -12,7 +12,7 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 import {History} from '../History/History';
 import {
   ComparisonTarget, ColumnTarget, MatchConfidence, matchScalarTargets, matchColumnTargets, getEntryStatuses,
-  normalizeName, nameSimilarity, isNumericType, FUZZY_NAME_THRESHOLD,
+  matchesFilter, compatibleTargetsFor, isSplitCandidate, selectionToMap, computeIndexRows,
 } from './comparison-core';
 import {
   ComparisonEntry, EntrySourceKind, RUN_COLUMN,
@@ -109,8 +109,10 @@ export const RunComparison = Vue.defineComponent({
 
     const removeEntry = (id: string) => {
       entries.value = entries.value.filter((entry) => entry.id !== id);
-      const {[id]: _removed, ...rest} = indexSelection.value;
-      indexSelection.value = rest;
+      const {[id]: _removedIndex, ...restIndex} = indexSelection.value;
+      indexSelection.value = restIndex;
+      const {[id]: _removedSplit, ...restSplit} = splitSelection.value;
+      splitSelection.value = restSplit;
     };
 
     const addSelectedRuns = async () => {
@@ -167,33 +169,13 @@ export const RunComparison = Vue.defineComponent({
       return table?.columns.find((col) => col.name === columnName)?.type;
     };
 
-    const indexColumnsMap = Vue.computed(() => {
-      const map = new Map<string, Map<string, string>>();
-      for (const [entryId, tables] of Object.entries(indexSelection.value)) {
-        const tableMap = new Map<string, string>();
-        for (const [tablePath, columnName] of Object.entries(tables)) {
-          if (columnName && isAllowedIndexType(indexColumnType(entryId, tablePath, columnName)))
-            tableMap.set(tablePath, columnName);
-        }
-        map.set(entryId, tableMap);
-      }
-      return map;
-    });
+    const indexColumnsMap = Vue.computed(() => selectionToMap(indexSelection.value,
+      (entryId, tablePath, columnName) => isAllowedIndexType(indexColumnType(entryId, tablePath, columnName))));
 
-    const splitColumnsMap = Vue.computed(() => {
-      const map = new Map<string, Map<string, string>>();
-      for (const [entryId, tables] of Object.entries(splitSelection.value)) {
-        const tableMap = new Map<string, string>();
-        for (const [tablePath, columnName] of Object.entries(tables)) {
-          if (columnName &&
-            indexColumnType(entryId, tablePath, columnName) === DG.COLUMN_TYPE.STRING &&
-            indexColumnsMap.value.get(entryId)?.get(tablePath) !== columnName)
-            tableMap.set(tablePath, columnName);
-        }
-        map.set(entryId, tableMap);
-      }
-      return map;
-    });
+    const splitColumnsMap = Vue.computed(() => selectionToMap(splitSelection.value,
+      (entryId, tablePath, columnName) => isSplitCandidate(
+        {name: columnName, type: indexColumnType(entryId, tablePath, columnName) ?? ''},
+        indexColumnsMap.value.get(entryId)?.get(tablePath) ?? '')));
 
     const targets = Vue.computed<ComparisonTarget[]>(() => {
       const nodes = entries.value.map((entry) => entry.nodes);
@@ -206,15 +188,6 @@ export const RunComparison = Vue.defineComponent({
     const indexFilter = Vue.ref('');
     const targetFilter = Vue.ref('');
 
-    // substring match on the displayed text, with fuzzy per-token fallback for typos
-    const matchesFilter = (query: string, text: string) => {
-      const q = normalizeName(query);
-      if (!q)
-        return true;
-      const t = normalizeName(text);
-      return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
-    };
-
     const filteredTargets = Vue.computed(() => {
       const listed: ComparisonTarget[] = multiMode.value ? compatibleTargets.value : targets.value;
       return listed.filter((target) => matchesFilter(targetFilter.value, target.displayName));
@@ -226,27 +199,8 @@ export const RunComparison = Vue.defineComponent({
     const multiMode = Vue.ref(false);
     const multiKeys = Vue.ref<string[]>([]);
 
-    const bindingSignature = (target: ColumnTarget) =>
-      target.bindings
-        .map((b) => `${b.entryId}|${b.tablePath}|${b.indexColumnName}|${b.splitColumnName ?? ''}`)
-        .sort().join(';');
-
-    // column targets sharing the selected target's bindings; identical aligned grids by construction
-    const compatibleWith = (anchor: ComparisonTarget | null): ColumnTarget[] => {
-      if (!anchor || anchor.kind !== 'column')
-        return [];
-      const lineIndexed = anchor.bindings.every((b) => {
-        const type = indexColumnType(b.entryId, b.tablePath, b.indexColumnName);
-        return type != null && (isNumericType(type) || type === DG.COLUMN_TYPE.DATE_TIME);
-      });
-      if (!lineIndexed)
-        return [];
-      const signature = bindingSignature(anchor);
-      return targets.value.filter((target): target is ColumnTarget =>
-        target.kind === 'column' && bindingSignature(target) === signature);
-    };
-
-    const compatibleTargets = Vue.computed<ColumnTarget[]>(() => compatibleWith(selectedTarget.value));
+    const compatibleTargets = Vue.computed<ColumnTarget[]>(() =>
+      compatibleTargetsFor(selectedTarget.value, targets.value, indexColumnType));
 
     Vue.watch(compatibleTargets, (list) => {
       if (multiMode.value && list.length <= 1)
@@ -314,107 +268,15 @@ export const RunComparison = Vue.defineComponent({
       return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
     });
 
-    interface IndexRow {
-      key: string;
-      entryName?: string;
-      // merged rows show compare-style coverage instead of a run name
-      coverage?: {count: number, total: number};
-      label: string;
-      title: string;
-      members: {entryId: string, tablePath: string}[];
-      candidates: {name: string, type: string}[];
-      current: string;
-      splitCandidates: {name: string, type: string}[];
-      currentSplit: string;
-    }
-
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
-    const indexRows = Vue.computed<IndexRow[]>(() => {
-      const perTable = entries.value.flatMap((entry) =>
-        entry.nodes.tables.map((table) => ({entry, table})));
-
-      const validCurrent = (
-        selection: Record<string, Record<string, string>>,
-        entryId: string, tablePath: string, candidates: {name: string}[],
-      ) => {
-        const stored = selection[entryId]?.[tablePath] ?? '';
-        return candidates.some((col) => col.name === stored) ? stored : '';
-      };
-
-      const splitCandidatesOf = (columns: {name: string, type: string}[], currentIndex: string) =>
-        columns.filter((col) => col.type === DG.COLUMN_TYPE.STRING && col.name !== currentIndex);
-
-      const singleRow = ({entry, table}: typeof perTable[number]): IndexRow => {
-        const candidates = table.columns.filter((col) => isAllowedIndexType(col.type));
-        const current = validCurrent(indexSelection.value, entry.id, table.path, candidates);
-        const splitCandidates = splitCandidatesOf(table.columns, current);
-        return {
-          key: `${entry.id}:${table.path}`,
-          entryName: entry.name,
-          label: table.friendlyPath ?? table.path,
-          title: `${entry.name} · ${table.path}`,
-          members: [{entryId: entry.id, tablePath: table.path}],
-          candidates,
-          current,
-          splitCandidates,
-          currentSplit: validCurrent(splitSelection.value, entry.id, table.path, splitCandidates),
-        };
-      };
-
-      if (!mergeSameFuncs.value)
-        return perTable.map(singleRow);
-
-      const groupKey = ({table}: typeof perTable[number]) =>
-        table.nqName ? `${table.nqName}|${table.path.split('/').pop()}` : null;
-      const groups = new Map<string, typeof perTable>();
-      for (const item of perTable) {
-        const key = groupKey(item);
-        if (key)
-          groups.set(key, [...groups.get(key) ?? [], item]);
-      }
-
-      const rows: IndexRow[] = [];
-      const emitted = new Set<string>();
-      for (const item of perTable) {
-        const key = groupKey(item);
-        const group = key ? groups.get(key)! : [item];
-        if (group.length < 2) {
-          rows.push(singleRow(item));
-          continue;
-        }
-        if (emitted.has(key!))
-          continue;
-        emitted.add(key!);
-        const sharedColumns = group[0].table.columns
-          .filter((col) => group.every(({table}) =>
-            table.columns.some((c) => c.name === col.name && c.type === col.type)));
-        const candidates = sharedColumns.filter((col) => isAllowedIndexType(col.type));
-        const paths = new Set(group.map(({table}) => table.path));
-        const label = paths.size === 1 ?
-          (group[0].table.friendlyPath ?? group[0].table.path) :
-          (group[0].table.name ?? group[0].table.nqName!);
-        const entryIds = new Set(group.map(({entry}) => entry.id));
-        const currents = new Set(group.map(({entry, table}) =>
-          validCurrent(indexSelection.value, entry.id, table.path, candidates)));
-        const current = currents.size === 1 ? [...currents][0] : '';
-        const splitCandidates = splitCandidatesOf(sharedColumns, current);
-        const currentSplits = new Set(group.map(({entry, table}) =>
-          validCurrent(splitSelection.value, entry.id, table.path, splitCandidates)));
-        rows.push({
-          key: `merged:${key}`,
-          coverage: {count: entryIds.size, total: entries.value.length},
-          label,
-          title: group.map(({entry, table}) => `${entry.name} · ${table.path}`).join('\n'),
-          members: group.map(({entry, table}) => ({entryId: entry.id, tablePath: table.path})),
-          candidates,
-          current,
-          splitCandidates,
-          currentSplit: currentSplits.size === 1 ? [...currentSplits][0] : '',
-        });
-      }
-      return rows;
-    });
+    const indexRows = Vue.computed(() => computeIndexRows(
+      entries.value.map((entry) => entry.nodes),
+      indexSelection.value,
+      splitSelection.value,
+      mergeSameFuncs.value,
+      isAllowedIndexType,
+    ));
 
     const filteredIndexRows = Vue.computed(() => indexRows.value.filter((row) =>
       matchesFilter(indexFilter.value, row.entryName ? `${row.entryName} · ${row.label}` : row.label)));
@@ -423,6 +285,27 @@ export const RunComparison = Vue.defineComponent({
       columns.find((col) => col.type === DG.COLUMN_TYPE.DATE_TIME)?.name ??
       columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT ||
         col.type === DG.COLUMN_TYPE.BIG_INT)?.name;
+
+    const renderColumnSelect = (
+      current: string,
+      candidates: {name: string}[],
+      placeholder: string,
+      onSelect: (columnName: string) => void,
+      suggestion?: string,
+    ) => (
+      <select
+        value={current}
+        onChange={(e: Event) => onSelect((e.target as HTMLSelectElement).value)}
+        style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px', maxWidth: '160px'}}
+      >
+        <option value=''>{placeholder}</option>
+        { candidates.map((col) =>
+          <option key={col.name} value={col.name}>
+            {col.name}{col.name === suggestion ? ' (suggested)' : ''}
+          </option>,
+        )}
+      </select>
+    );
 
     const renderListFilter = (value: Vue.Ref<string>, placeholder: string) => (
       <input
@@ -545,29 +428,11 @@ export const RunComparison = Vue.defineComponent({
                 row.entryName
               } · <span style={{color: 'var(--grey-5)'}}>{row.label}</span>
             </span>
-            <select
-              value={row.current}
-              onChange={(e: Event) => setIndexColumn(row.members, (e.target as HTMLSelectElement).value)}
-              style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px', maxWidth: '160px'}}
-            >
-              <option value=''>— index —</option>
-              { row.candidates.map((col) =>
-                <option key={col.name} value={col.name}>
-                  {col.name}{col.name === suggestion ? ' (suggested)' : ''}
-                </option>,
-              )}
-            </select>
+            { renderColumnSelect(row.current, row.candidates, '— index —',
+              (value) => setIndexColumn(row.members, value), suggestion) }
             { row.splitCandidates.length > 0 ?
-              <select
-                value={row.currentSplit}
-                onChange={(e: Event) => setSplitColumn(row.members, (e.target as HTMLSelectElement).value)}
-                style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px', maxWidth: '160px'}}
-              >
-                <option value=''>— split —</option>
-                { row.splitCandidates.map((col) =>
-                  <option key={col.name} value={col.name}>{col.name}</option>,
-                )}
-              </select> :
+              renderColumnSelect(row.currentSplit, row.splitCandidates, '— split —',
+                (value) => setSplitColumn(row.members, value)) :
               <span></span> }
           </div>;
           })}
@@ -606,7 +471,7 @@ export const RunComparison = Vue.defineComponent({
                     return;
                   }
                   selectedTargetKey.value = target.key;
-                  if (compatibleWith(target).length > 1) {
+                  if (compatibleTargetsFor(target, targets.value, indexColumnType).length > 1) {
                     multiKeys.value = [target.key];
                     multiMode.value = true;
                   }
@@ -735,22 +600,7 @@ export const RunComparison = Vue.defineComponent({
             splitColumnName: RUN_COLUMN,
           }}
         />;
-      } else if ('valueColumnNames' in currentComparison) {
-        const valueColumnNames = currentComparison.valueColumnNames as string[];
-        chart = <Viewer
-          type={DG.VIEWER.LINE_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            xColumnName: currentComparison.indexColumnName,
-            yColumnNames: valueColumnNames,
-            splitColumnNames: currentComparison.splitColumnName ?
-              [RUN_COLUMN, currentComparison.splitColumnName] : [RUN_COLUMN],
-            multiAxis: false,
-          }}
-        />;
-      } else if (currentComparison.isKeyIndex) {
+      } else if (currentComparison.isKeyIndex && !('valueColumnNames' in currentComparison)) {
         chart = <Viewer
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
@@ -764,6 +614,8 @@ export const RunComparison = Vue.defineComponent({
           }}
         />;
       } else {
+        const yColumnNames = 'valueColumnNames' in currentComparison ?
+          currentComparison.valueColumnNames as string[] : [currentComparison.target.displayName];
         chart = <Viewer
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
@@ -771,9 +623,10 @@ export const RunComparison = Vue.defineComponent({
           onViewerChanged={onChartViewerChanged}
           options={{
             xColumnName: currentComparison.indexColumnName,
-            yColumnNames: [currentComparison.target.displayName],
+            yColumnNames,
             splitColumnNames: currentComparison.splitColumnName ?
               [RUN_COLUMN, currentComparison.splitColumnName] : [RUN_COLUMN],
+            multiAxis: false,
           }}
         />;
       }
