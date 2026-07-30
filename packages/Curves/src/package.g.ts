@@ -42,15 +42,17 @@ export async function _initCurves() : Promise<void> {
   await PackageFunctions._initCurves();
 }
 
+//name: Fit Dose-Response Curves
+//description: Group well-level assay data by compound, assay, target, and run, then fit a dose-response curve per group.
 //input: dataframe df 
-//input: column concentrationCol 
-//input: column readoutCol 
-//input: column batchIDCol 
-//input: column assayCol 
-//input: column runIDCol 
-//input: column compoundIDCol 
-//input: column targetEntityCol 
-//input: column excludeOutliersCol { nullable: true }
+//input: column concentrationCol { description: Concentration (dose) column }
+//input: column readoutCol { description: Readout (response) column }
+//input: column batchIDCol { description: Batch identifier column }
+//input: column assayCol { description: Assay name column }
+//input: column runIDCol { description: Run identifier column }
+//input: column compoundIDCol { description: Compound identifier column }
+//input: column targetEntityCol { description: Target entity column }
+//input: column excludeOutliersCol { nullable: true; description: Boolean column marking points to exclude as outliers }
 //input: dataframe parentTable { nullable: true }
 //input: list<string> fitParamColumns { nullable: true }
 //input: string reportedIC50Column { nullable: true }
@@ -72,10 +74,12 @@ export async function dataToCurvesTopMenu() {
   return await PackageFunctions.dataToCurvesTopMenu();
 }
 
+//name: Add Curve Statistic Column
+//description: Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.
 //input: dataframe table 
-//input: string colName 
-//input: string propName 
-//input: int seriesNumber 
+//input: string colName { description: Name of the curve column to read }
+//input: string propName { description: Fit statistic to extract (e.g. IC50, AUC, R²) }
+//input: int seriesNumber { description: Zero-based index of the curve series }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform
@@ -83,10 +87,12 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
   return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
+//name: Add Aggregated Curve Statistic Column
+//description: Aggregate a fit statistic across all series of a curve into a new column.
 //input: dataframe table 
-//input: string colName 
-//input: string propName 
-//input: string aggrType 
+//input: string colName { description: Name of the curve column to read }
+//input: string propName { description: Fit statistic to aggregate (e.g. IC50, AUC, R²) }
+//input: string aggrType { description: Aggregation type applied across series (e.g. avg, min, max) }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform
@@ -126,7 +132,8 @@ export async function previewPzfx(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.previewPzfx(file);
 }
 
-//input: list bytes 
+//description: Open a GraphPad Prism (.pzfx) file as data tables, fitting XY curve tables.
+//input: list bytes { description: Raw bytes of the .pzfx file }
 //output: list<dataframe> result
 //meta.role: fileHandler
 //meta.ext: pzfx

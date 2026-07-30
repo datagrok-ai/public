@@ -27,7 +27,7 @@ import {
   FitConfidenceIntervals,
   getFittedCurve,
 } from './fit-curve';
-import {fitSeries, getDataPoints} from './fit-data';
+import {fitSeries, getDataPoints, LogOptions} from './fit-data';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 import {Extremum, OptimizationResult} from './fitting-algorithm/optimizer-misc';
@@ -39,7 +39,8 @@ import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
 export abstract class FitFunction<T = Fit> {
   abstract get name(): string;
   abstract get parameterNames(): string[];
-  abstract fillParams(fitCurve: FitCurve, data: FitSeries): T;
+  abstract get statisticsProperties(): DG.Property[];
+  abstract fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T;
   abstract y(params: Float32Array, x: number): number;
   abstract getInitialParameters(x: number[], y: number[]): Float32Array;
 }
@@ -55,61 +56,80 @@ export const FitFunctionTypes = {
 
 export type FitFunctionType = typeof FitFunctionTypes[keyof typeof FitFunctionTypes];
 
-interface IFit {
+export interface IFit {
   auc: number;
   rSquared: number;
 }
 
-interface ILinearFit extends IFit {
+export interface ILinearFit extends IFit {
   slope: number;
   intercept: number;
 }
 
-interface ILogLinearFit extends ILinearFit {}
+export interface ILogLinearFit extends ILinearFit {}
 
-interface ISigmoidFit extends IFit {
+export interface ISigmoidFit extends IFit {
   top: number;
   slope: number;
   ic50: number;
   bottom: number;
+  interceptY: number; // the fitted curve value at ic50
 }
 
-interface IExponentialFit extends IFit {
+export interface IExponentialFit extends IFit {
   mantissa: number;
   power: number;
 }
 
-interface IFourPLRegressionFit extends IFit {
+export interface IFourPLRegressionFit extends IFit {
   top: number;
   bottom: number;
   slope: number;
   ec50: number;
+  interceptY: number; // the fitted curve value at ec50
+}
+
+export interface IFourPLDoseResponseFit extends IFourPLRegressionFit {
+  ic50: number; // same parameter as ec50, named after the dose-response parameterization
 }
 
 export abstract class Fit implements IFit {
   auc: number;
   rSquared: number;
-  series: FitSeries;
+  series: IFitSeries;
+  parameters: Float32Array;
 
   abstract get name(): string;
 
-  protected constructor(values: IFit, data: FitSeries) {
+  protected constructor(values: IFit, data: IFitSeries, parameters: Float32Array) {
     this.auc = values.auc;
     this.rSquared = values.rSquared;
     this.series = data;
+    this.parameters = parameters;
   }
 }
 
+// declared parameter names that would shadow a Fit field are not exposed as named parameters
+const RESERVED_FIT_FIELDS = ['auc', 'rSquared', 'series', 'parameters', 'name'];
+
+/** Fit result of a user-defined JS function. Parameters are exposed under their declared names. */
 export class JSFunctionFit extends Fit {
-  constructor(values: IFit, data: FitSeries) {
-    super(values, data);
+  [key: string]: any;
+
+  constructor(values: IFit, data: IFitSeries, parameters: Float32Array, parameterNames: string[] = []) {
+    super(values, data, parameters);
+    for (let i = 0; i < parameterNames.length; i++) {
+      if (!RESERVED_FIT_FIELDS.includes(parameterNames[i]))
+        this[parameterNames[i]] = parameters[i];
+    }
   }
+
   get name(): string {
     return FIT_JS_FUNCTION;
   }
 }
 
-class LinearFit extends Fit implements ILinearFit {
+export class LinearFit extends Fit implements ILinearFit {
   slope: number;
   intercept: number;
 
@@ -117,39 +137,41 @@ class LinearFit extends Fit implements ILinearFit {
     return FIT_FUNCTION_LINEAR;
   }
 
-  constructor(values: ILinearFit, data: FitSeries) {
-    super(values, data);
+  constructor(values: ILinearFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
     this.slope = values.slope;
     this.intercept = values.intercept;
   }
 }
 
-class LogLinearFit extends LinearFit implements ILogLinearFit {
+export class LogLinearFit extends LinearFit implements ILogLinearFit {
   get name(): string {
     return FIT_FUNCTION_LOG_LINEAR;
   }
 }
 
-class SigmoidFit extends Fit implements ISigmoidFit {
+export class SigmoidFit extends Fit implements ISigmoidFit {
   top: number;
   slope: number;
   ic50: number;
   bottom: number;
+  interceptY: number;
 
   get name(): string {
     return FIT_FUNCTION_SIGMOID;
   }
 
-  constructor(values: ISigmoidFit, data: FitSeries) {
-    super(values, data);
+  constructor(values: ISigmoidFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
     this.top = values.top;
     this.slope = values.slope;
     this.ic50 = values.ic50;
     this.bottom = values.bottom;
+    this.interceptY = values.interceptY;
   }
 }
 
-class ExponentialFit extends Fit implements IExponentialFit {
+export class ExponentialFit extends Fit implements IExponentialFit {
   mantissa: number;
   power: number;
 
@@ -157,30 +179,81 @@ class ExponentialFit extends Fit implements IExponentialFit {
     return FIT_FUNCTION_EXPONENTIAL;
   }
 
-  constructor(values: IExponentialFit, data: FitSeries) {
-    super(values, data);
+  constructor(values: IExponentialFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
     this.mantissa = values.mantissa;
     this.power = values.power;
   }
 }
 
-class FourPLRegressionFit extends Fit implements IFourPLRegressionFit {
+export class FourPLRegressionFit extends Fit implements IFourPLRegressionFit {
   top: number;
   bottom: number;
   slope: number;
   ec50: number;
+  interceptY: number;
 
   get name(): string {
     return FIT_FUNCTION_4PL_REGRESSION;
   }
 
-  constructor(values: IFourPLRegressionFit, data: FitSeries) {
-    super(values, data);
+  constructor(values: IFourPLRegressionFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
     this.top = values.top;
     this.bottom = values.bottom;
     this.slope = values.slope;
     this.ec50 = values.ec50;
+    this.interceptY = values.interceptY;
   }
+}
+
+export class FourPLDoseResponseFit extends FourPLRegressionFit implements IFourPLDoseResponseFit {
+  ic50: number;
+
+  override get name(): string {
+    return FIT_FUNCTION_4PL_DOSE_RESPONSE;
+  }
+
+  constructor(values: IFourPLRegressionFit, data: IFitSeries, parameters: Float32Array) {
+    super(values, data, parameters);
+    this.ic50 = values.ec50;
+  }
+}
+
+function statisticsProperty(name: string, friendlyName: string): DG.Property {
+  return DG.Property.js(name, DG.TYPE.FLOAT, {userEditable: false, friendlyName: friendlyName});
+}
+
+/** Goodness-of-fit statistics produced for every fit function. */
+export const commonStatisticsProperties: DG.Property[] = [
+  statisticsProperty('rSquared', 'R²'),
+  statisticsProperty('auc', 'AUC'),
+];
+
+const linearStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
+  statisticsProperty('slope', 'Slope'), statisticsProperty('intercept', 'Intercept')];
+
+const sigmoidStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
+  statisticsProperty('top', 'Max Y'), statisticsProperty('slope', 'Slope'),
+  statisticsProperty('ic50', 'IC50'), statisticsProperty('bottom', 'Min Y'),
+  statisticsProperty('interceptY', 'Y at IC50')];
+
+const exponentialStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
+  statisticsProperty('mantissa', 'Mantissa'), statisticsProperty('power', 'Power')];
+
+const fourPLRegressionStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
+  statisticsProperty('top', 'Max Y'), statisticsProperty('slope', 'Slope'),
+  statisticsProperty('ec50', 'EC50'), statisticsProperty('bottom', 'Min Y'),
+  statisticsProperty('interceptY', 'Y at EC50')];
+
+const fourPLDoseResponseStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
+  statisticsProperty('top', 'Max'), statisticsProperty('slope', 'Hill'),
+  statisticsProperty('ic50', 'IC50'), statisticsProperty('bottom', 'Min'),
+  statisticsProperty('interceptY', 'Y at IC50')];
+
+function resolveDataPoints(data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions):
+  {x: number[], y: number[]} {
+  return dataPoints ?? getDataPoints(data, logOptions, false);
 }
 
 function getAucAndRsquared(fitCurve: (x: number) => number, data: {x: number[], y: number[]}): IFit {
@@ -200,12 +273,17 @@ export class LinearFunction extends FitFunction<LinearFit> {
     return ['Slope', 'Intercept'];
   }
 
-  fillParams(fitCurve: FitCurve, data: FitSeries): LinearFit {
+  get statisticsProperties(): DG.Property[] {
+    return linearStatisticsProperties;
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): LinearFit {
     return new LinearFit({
-      ...getAucAndRsquared(fitCurve.fittedCurve, getDataPoints(data)),
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
       slope: fitCurve.parameters[0],
       intercept: fitCurve.parameters[1],
-    }, data);
+    }, data, fitCurve.parameters);
   }
 
   y(params: Float32Array, x: number): number {
@@ -242,14 +320,20 @@ export class SigmoidFunction extends FitFunction<SigmoidFit> {
     return ['Top', 'Slope', 'IC50', 'Bottom'];
   }
 
-  fillParams(fitCurve: FitCurve, data: FitSeries): SigmoidFit {
+  get statisticsProperties(): DG.Property[] {
+    return sigmoidStatisticsProperties;
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): SigmoidFit {
     return new SigmoidFit({
-      ...getAucAndRsquared(fitCurve.fittedCurve, getDataPoints(data)),
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
       top: fitCurve.parameters[0],
       slope: fitCurve.parameters[1],
       ic50: fitCurve.parameters[2],
       bottom: fitCurve.parameters[3],
-    }, data);
+      interceptY: fitCurve.fittedCurve(fitCurve.parameters[2]),
+    }, data, fitCurve.parameters);
   }
 
   y(params: Float32Array, x: number): number {
@@ -288,12 +372,17 @@ export class LogLinearFunction extends FitFunction<LogLinearFit> {
     return ['Slope', 'Intercept'];
   }
 
-  fillParams(fitCurve: FitCurve, data: FitSeries): LogLinearFit {
+  get statisticsProperties(): DG.Property[] {
+    return linearStatisticsProperties;
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): LogLinearFit {
     return new LogLinearFit({
-      ...getAucAndRsquared(fitCurve.fittedCurve, getDataPoints(data)),
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
       slope: fitCurve.parameters[0],
       intercept: fitCurve.parameters[1],
-    }, data);
+    }, data, fitCurve.parameters);
   }
 
   y(params: Float32Array, x: number): number {
@@ -317,12 +406,17 @@ export class ExponentialFunction extends FitFunction<ExponentialFit> {
     return ['Mantissa', 'Power'];
   }
 
-  fillParams(fitCurve: FitCurve, data: FitSeries): ExponentialFit {
+  get statisticsProperties(): DG.Property[] {
+    return exponentialStatisticsProperties;
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): ExponentialFit {
     return new ExponentialFit({
-      ...getAucAndRsquared(fitCurve.fittedCurve, getDataPoints(data)),
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
       mantissa: fitCurve.parameters[0],
       power: fitCurve.parameters[1],
-    }, data);
+    }, data, fitCurve.parameters);
   }
 
   y(params: Float32Array, x: number): number {
@@ -346,14 +440,26 @@ export class FourPLRegressionFunction extends FitFunction<FourPLRegressionFit> {
     return ['Top', 'Slope', 'EC50', 'Bottom'];
   }
 
-  fillParams(fitCurve: FitCurve, data: FitSeries): FourPLRegressionFit {
-    return new FourPLRegressionFit({
-      ...getAucAndRsquared(fitCurve.fittedCurve, getDataPoints(data)),
+  get statisticsProperties(): DG.Property[] {
+    return fourPLRegressionStatisticsProperties;
+  }
+
+  // shared with the dose-response parameterization, which only differs in how the parameters are named
+  protected fitValues(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): IFourPLRegressionFit {
+    return {
+      ...getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
       top: fitCurve.parameters[0],
       slope: fitCurve.parameters[1],
       ec50: fitCurve.parameters[2],
       bottom: fitCurve.parameters[3],
-    }, data);
+      interceptY: fitCurve.fittedCurve(fitCurve.parameters[2]),
+    };
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): FourPLRegressionFit {
+    return new FourPLRegressionFit(this.fitValues(fitCurve, data, dataPoints, logOptions), data, fitCurve.parameters);
   }
 
   y(params: Float32Array, x: number): number {
@@ -390,6 +496,15 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
     return ['Max', 'Hill', 'IC50', 'Min'];
   }
 
+  override get statisticsProperties(): DG.Property[] {
+    return fourPLDoseResponseStatisticsProperties;
+  }
+
+  override fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): FourPLDoseResponseFit {
+    return new FourPLDoseResponseFit(this.fitValues(fitCurve, data, dataPoints, logOptions), data, fitCurve.parameters);
+  }
+
   override y(params: Float32Array, x: number): number {
     return fourPLDoseResponse(params, x);
   }
@@ -399,6 +514,7 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
 export class JsFunction extends FitFunction<Fit> {
   private _name: string;
   private _parameterNames: string[];
+  private _statisticsProperties?: DG.Property[];
 
   constructor(name: string, yFunc: (params: Float32Array, x: number) => number,
     getInitParamsFunc: (x: number[], y: number[]) => Float32Array, parameterNames: string[]) {
@@ -411,10 +527,17 @@ export class JsFunction extends FitFunction<Fit> {
     this.getInitialParameters = getInitParamsFunc;
   }
 
-  fillParams(fitCurve: FitCurve, data: FitSeries): Fit {
-    const params = new Float32Array(this._parameterNames.length);
-    params.set(fitCurve.parameters);
-    return new JSFunctionFit({...getAucAndRsquared(fitCurve.fittedCurve, getDataPoints(data))}, data);
+  get statisticsProperties(): DG.Property[] {
+    this._statisticsProperties ??= [...commonStatisticsProperties,
+      ...this._parameterNames.filter((name) => !RESERVED_FIT_FIELDS.includes(name))
+        .map((name) => statisticsProperty(name, name))];
+    return this._statisticsProperties;
+  }
+
+  fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
+    logOptions?: LogOptions): Fit {
+    return new JSFunctionFit(getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
+      data, fitCurve.parameters, this._parameterNames);
   }
 
   get name(): string {
@@ -476,7 +599,7 @@ class FitFunctions {
       .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_REGRESSION]), this.series);
   }
 
-  fourPLDoseResponse(): FourPLRegressionFit {
+  fourPLDoseResponse(): FourPLDoseResponseFit {
     return fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE].fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE]), this.series);
   }
 }

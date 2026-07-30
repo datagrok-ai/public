@@ -6,12 +6,23 @@ import {
   getSeriesConfidenceInterval,
   getSeriesStatistics,
   getPointsArrays,
+  getDataPoints,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {
+  fitFunctions,
+  SigmoidFit,
+  LinearFit,
+  LogLinearFit,
+  ExponentialFit,
+  FourPLDoseResponseFit,
+  JSFunctionFit,
+} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {
   sigmoid,
   FIT_FUNCTION_SIGMOID,
   IFitSeries,
-  FIT_FUNCTION_LINEAR, FIT_FUNCTION_LOG_LINEAR, FIT_FUNCTION_EXPONENTIAL, linear, logLinear, exponential
+  FIT_FUNCTION_LINEAR, FIT_FUNCTION_LOG_LINEAR, FIT_FUNCTION_EXPONENTIAL, FIT_FUNCTION_4PL_DOSE_RESPONSE,
+  linear, logLinear, exponential
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
@@ -165,6 +176,81 @@ category('fit', () => {
     expect(polynomialSeriesStatistics.auc, 36.525538394763096);
     expect(sigmoidSeriesStatistics.rSquared, 0.9781915962461156);
     expect(polynomialSeriesStatistics.rSquared, 0.846055768956569);
+  });
+
+  test('fillParams', async () => {
+    const sigmoidCurve = fitSeries(sigmoidSeries, sigmoidFitFunc);
+    const sigmoidFit = sigmoidFitFunc.fillParams(sigmoidCurve, sigmoidSeries) as SigmoidFit;
+    expect(sigmoidFit.name, FIT_FUNCTION_SIGMOID);
+    expect(sigmoidFit.top, sigmoidCurve.parameters[0]);
+    expect(sigmoidFit.slope, sigmoidCurve.parameters[1]);
+    expect(sigmoidFit.ic50, sigmoidCurve.parameters[2]);
+    expect(sigmoidFit.bottom, sigmoidCurve.parameters[3]);
+    expect(sigmoidFit.interceptY, sigmoidCurve.fittedCurve(sigmoidCurve.parameters[2]));
+
+    const linearCurve = fitSeries(linearSeries, linearFitFunc);
+    const linearFit = linearFitFunc.fillParams(linearCurve, linearSeries) as LinearFit;
+    expect(linearFit.slope, linearCurve.parameters[0]);
+    expect(linearFit.intercept, linearCurve.parameters[1]);
+
+    const logLinearCurve = fitSeries(logLinearSeries, logLinearFitFunc);
+    const logLinearFit = logLinearFitFunc.fillParams(logLinearCurve, logLinearSeries) as LogLinearFit;
+    expect(logLinearFit.name, FIT_FUNCTION_LOG_LINEAR);
+    expect(logLinearFit.slope, logLinearCurve.parameters[0]);
+    expect(logLinearFit.intercept, logLinearCurve.parameters[1]);
+
+    const exponentialCurve = fitSeries(exponentialSeries, exponentialFitFunc);
+    const exponentialFit = exponentialFitFunc.fillParams(exponentialCurve, exponentialSeries) as ExponentialFit;
+    expect(exponentialFit.mantissa, exponentialCurve.parameters[0]);
+    expect(exponentialFit.power, exponentialCurve.parameters[1]);
+  });
+
+  test('fillParams dose-response', async () => {
+    const fitFunc = fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE];
+    const curve = fitSeries(sigmoidSeries, fitFunc);
+    const fit = fitFunc.fillParams(curve, sigmoidSeries) as FourPLDoseResponseFit;
+
+    expect(fit.name, FIT_FUNCTION_4PL_DOSE_RESPONSE);
+    expect(fit.ic50, curve.parameters[2]);
+    expect(fit.ec50, curve.parameters[2]);
+    expect(fit.top, curve.parameters[0]);
+    expect(fit.bottom, curve.parameters[3]);
+  });
+
+  test('fillParams custom function', async () => {
+    const curve = fitSeries(polynomialSeries, polynomialFitFunc);
+    const fit = polynomialFitFunc.fillParams(curve, polynomialSeries) as JSFunctionFit;
+
+    expectArray(fit.parameters, curve.parameters);
+    for (let i = 0; i < polynomialFitFunc.parameterNames.length; i++)
+      expect(fit[polynomialFitFunc.parameterNames[i]], curve.parameters[i]);
+  });
+
+  test('fillParams data points', async () => {
+    const curve = fitSeries(sigmoidSeries, sigmoidFitFunc);
+    const defaultFit = sigmoidFitFunc.fillParams(curve, sigmoidSeries);
+    const explicitFit = sigmoidFitFunc.fillParams(curve, sigmoidSeries,
+      getDataPoints(sigmoidSeries, undefined, false));
+    const logFit = sigmoidFitFunc.fillParams(curve, sigmoidSeries, undefined, {logX: true, logY: false});
+
+    expect(explicitFit.rSquared, defaultFit.rSquared);
+    expect(explicitFit.auc, defaultFit.auc);
+    expect(logFit.rSquared === defaultFit.rSquared, false);
+  });
+
+  test('statisticsProperties', async () => {
+    expectArray(sigmoidFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'top', 'slope', 'ic50', 'bottom', 'interceptY']);
+    expectArray(linearFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'slope', 'intercept']);
+    expectArray(logLinearFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'slope', 'intercept']);
+    expectArray(exponentialFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'mantissa', 'power']);
+    expectArray(fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE].statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'top', 'slope', 'ic50', 'bottom', 'interceptY']);
+    expectArray(polynomialFitFunc.statisticsProperties.map((p) => p.name),
+      ['rSquared', 'auc', 'Slope', 'Intercept', 'Parameter3', 'Parameter4']);
   });
 
   test('calculateBoxPlotStatistics', async () => {

@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities.
-  */
+   * Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities.
+   */
   export async function calculateMSR(table: DG.DataFrame , ic50Column: DG.Column , compoundIdColumn: DG.Column , runDateColumn: DG.Column , assayNameColumn: DG.Column , targetEntityColumn: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Curves:CalculateMSR', { table, ic50Column, compoundIdColumn, runDateColumn, assayNameColumn, targetEntityColumn });
   }
@@ -22,22 +22,22 @@ export namespace funcs {
   }
 
   /**
-  A viewer that superimposes multiple in-cell curves on one chart
-  */
+   * A viewer that superimposes multiple in-cell curves on one chart
+   */
   export async function multiCurveViewer(): Promise<any> {
     return await grok.functions.call('Curves:MultiCurveViewer', {});
   }
 
   /**
-  Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
-  */
+   * Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
+   */
   export async function curveFitDemo(): Promise<void> {
     return await grok.functions.call('Curves:CurveFitDemo', {});
   }
 
   /**
-  Dashboard with curves for multiple compounds, assays and targets
-  */
+   * Dashboard with curves for multiple compounds, assays and targets
+   */
   export async function assayCurveFitDemo(): Promise<void> {
     return await grok.functions.call('Curves:AssayCurveFitDemo', {});
   }
@@ -63,22 +63,22 @@ export namespace funcs {
   }
 
   /**
-  Returns XML 3DX curve converter function
-  */
+   * Returns XML 3DX curve converter function
+   */
   export async function convertXmlCurveToJsonFunc(): Promise<any> {
     return await grok.functions.call('Curves:ConvertXmlCurveToJsonFunc', {});
   }
 
   /**
-  Returns compact dose-response JSON converter function
-  */
+   * Returns compact dose-response JSON converter function
+   */
   export async function convertCompactDrToJsonFunc(): Promise<any> {
     return await grok.functions.call('Curves:ConvertCompactDrToJsonFunc', {});
   }
 
   /**
-  Returns PZFX curve converter function
-  */
+   * Returns PZFX curve converter function
+   */
   export async function convertPzfxToJsonFunc(): Promise<any> {
     return await grok.functions.call('Curves:ConvertPzfxToJsonFunc', {});
   }

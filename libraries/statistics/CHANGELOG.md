@@ -1,5 +1,12 @@
 # statistics changelog
 
+## v.next
+
+* GROK-17637: Fit: Exported the typed fit results (`SigmoidFit`, `LinearFit`, `FourPLDoseResponseFit`, etc.), which expose named parameters instead of positional indices, plus `interceptY` and the raw `parameters`
+* GROK-17637: Fit: Added `FitFunction.statisticsProperties`, describing the statistics each fit function produces
+* GROK-17637: Fit: Added precomputed data points and log options to `fillParams`, and widened its series argument to `IFitSeries`
+* GROK-17637: Fit: Fixed custom JS fit functions losing their fitted parameters, and `4pl-dose-response` reporting `ec50` instead of `ic50`
+
 ## 1.12.9 (2026-07-16)
 
 * Compute functions dialog: Optional per-function "re-run on open" checkbox (`rerunOnOpenOption`), with the flag surfaced in the dialog result and template compute types.
