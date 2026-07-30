@@ -165,6 +165,22 @@ category('RunComparison: column matching', () => {
     expect(bindingA.indexColumnName, 'time');
     expect(bindingA.columnName, 'temperature');
   });
+
+  test('same-named clusters get unique keys', async () => {
+    const columns = [{name: 'time', type: 'int'}, {name: 'height'}];
+    const tables = [
+      {path: 'step1/df', name: 'Results', columns},
+      {path: 'step2/df', name: 'Results', columns},
+    ];
+    const entries = [makeEntry('a', [], tables), makeEntry('b', [], tables)];
+    const index = indexMap({
+      a: {'step1/df': 'time', 'step2/df': 'time'},
+      b: {'step1/df': 'time', 'step2/df': 'time'},
+    });
+    const targets = matchColumnTargets(entries, index);
+    expect(targets.length, 2);
+    expect(new Set(targets.map((t) => t.key)).size, 2);
+  });
 });
 
 category('RunComparison: alignment and deltas', () => {

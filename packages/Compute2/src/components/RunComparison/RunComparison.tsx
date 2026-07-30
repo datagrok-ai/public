@@ -10,6 +10,7 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 import {History} from '../History/History';
 import {
   ComparisonTarget, MatchConfidence, matchScalarTargets, matchColumnTargets, getEntryStatuses,
+  normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD,
 } from './comparison-core';
 import {
   ComparisonEntry, ComparisonMode, EntrySourceKind, RUN_COLUMN,
@@ -172,6 +173,21 @@ export const RunComparison = Vue.defineComponent({
       ].sort((a, b) => b.coverage - a.coverage);
     });
 
+    const indexFilter = Vue.ref('');
+    const targetFilter = Vue.ref('');
+
+    // substring match on the displayed text, with fuzzy per-token fallback for typos
+    const matchesFilter = (query: string, text: string) => {
+      const q = normalizeName(query);
+      if (!q)
+        return true;
+      const t = normalizeName(text);
+      return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
+    };
+
+    const filteredTargets = Vue.computed(() =>
+      targets.value.filter((target) => matchesFilter(targetFilter.value, target.displayName)));
+
     const selectedTarget = Vue.computed(() =>
       targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
 
@@ -219,10 +235,26 @@ export const RunComparison = Vue.defineComponent({
       }),
     ));
 
+    const filteredIndexTables = Vue.computed(() => indexTables.value.filter((item) =>
+      matchesFilter(indexFilter.value, `${item.entryName} · ${item.table.friendlyPath ?? item.table.path}`)));
+
     const suggestedIndex = (columns: {name: string, type: string}[]) =>
       columns.find((col) => col.type === DG.COLUMN_TYPE.DATE_TIME)?.name ??
       columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT ||
         col.type === DG.COLUMN_TYPE.BIG_INT)?.name;
+
+    const renderListFilter = (value: Vue.Ref<string>, placeholder: string) => (
+      <input
+        type='text'
+        placeholder={placeholder}
+        value={value.value}
+        onInput={(e: Event) => value.value = (e.target as HTMLInputElement).value}
+        style={{
+          border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 6px',
+          outline: 'none', width: '160px',
+        }}
+      />
+    );
 
     const renderModelSelector = () => (
       <div ref={modelDropdownRef} style={{position: 'relative'}}>
@@ -301,7 +333,8 @@ export const RunComparison = Vue.defineComponent({
       <div>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
           <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Index columns</div>
-          <div style={{display: 'flex', gap: '12px'}}>
+          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+            { renderListFilter(indexFilter, 'Filter tables...') }
             <ToggleInput
               caption='Datetime indexes'
               value={allowDatetimeIndex.value}
@@ -317,8 +350,10 @@ export const RunComparison = Vue.defineComponent({
         <div style={{color: 'var(--grey-4)', paddingBottom: '4px'}}>
           Pick the index (x / key) column for each table to enable column comparison
         </div>
+        { indexTables.value.length > 0 && filteredIndexTables.value.length === 0 &&
+          <div style={{color: 'var(--grey-4)'}}>No tables match the filter</div> }
         <div class='c2-comparison-rows'>
-          { indexTables.value.map(({entryId, entryName, table, candidates, current}) => {
+          { filteredIndexTables.value.map(({entryId, entryName, table, candidates, current}) => {
             const suggestion = suggestedIndex(candidates);
             return <div key={`${entryId}:${table.path}`} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
@@ -346,14 +381,19 @@ export const RunComparison = Vue.defineComponent({
 
     const renderTargets = () => (
       <div>
-        <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Compare</div>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Compare</div>
+          { renderListFilter(targetFilter, 'Filter values...') }
+        </div>
         { targets.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>
             No comparable data found across the selected runs.
             Add more runs, or set index columns to compare table columns.
           </div> }
+        { targets.value.length > 0 && filteredTargets.value.length === 0 &&
+          <div style={{color: 'var(--grey-4)'}}>No values match the filter</div> }
         <div class='c2-comparison-rows'>
-          { targets.value.map((target) => {
+          { filteredTargets.value.map((target) => {
             const isSelected = target.key === selectedTargetKey.value;
             return <div
               key={target.key}

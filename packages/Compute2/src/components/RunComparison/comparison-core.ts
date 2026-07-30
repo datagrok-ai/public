@@ -202,6 +202,19 @@ function clusterByName<P>(items: ClusterItem<P>[]): Cluster<P>[] {
   return clusters;
 }
 
+// distinct clusters can share a canonical name (a cluster takes at most one item per entry),
+// and duplicate keys corrupt keyed list rendering
+function dedupeTargetKeys<T extends TargetBase>(targets: T[]): T[] {
+  const seen = new Map<string, number>();
+  for (const target of targets) {
+    const count = seen.get(target.key) ?? 0;
+    seen.set(target.key, count + 1);
+    if (count > 0)
+      target.key = `${target.key}:${count + 1}`;
+  }
+  return targets;
+}
+
 /** Groups numeric scalars across entries into candidate targets (coverage >= 2). */
 export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarget[] {
   const items: ClusterItem<ScalarBinding>[] = [];
@@ -224,7 +237,7 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
       });
     }
   }
-  return clusterByName(items)
+  return dedupeTargetKeys(clusterByName(items)
     .filter((cluster) => cluster.entryIds.size >= 2)
     .map((cluster) => ({
       kind: 'scalar' as const,
@@ -235,7 +248,7 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
       bindings: cluster.items.map((item) => item.payload),
       coverage: cluster.entryIds.size,
       total: entries.length,
-    }));
+    })));
 }
 
 /**
@@ -274,7 +287,7 @@ export function matchColumnTargets(
       }
     }
   }
-  return clusterByName(items)
+  return dedupeTargetKeys(clusterByName(items)
     .filter((cluster) => cluster.entryIds.size >= 2)
     .map((cluster) => ({
       kind: 'column' as const,
@@ -285,7 +298,7 @@ export function matchColumnTargets(
       bindings: cluster.items.map((item) => item.payload),
       coverage: cluster.entryIds.size,
       total: entries.length,
-    }));
+    })));
 }
 
 const INDEX_EPSILON = 1e-9;
