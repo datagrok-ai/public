@@ -18,6 +18,7 @@ const FILTER_REMOUNT_SETTLE_MS = 200;
 export class MountedViewerRegistry {
   private readonly mountedViewers = new Map<HTMLElement, DG.Viewer[]>();
   private readonly pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly closeCallbacks: (() => void)[] = [];
   private closeSub: Subscription;
 
   constructor(private readonly view: DG.View) {
@@ -26,8 +27,16 @@ export class MountedViewerRegistry {
       for (const host of this.mountedViewers.keys()) this.close(host);
       for (const id of this.pendingTimers) clearTimeout(id);
       this.pendingTimers.clear();
+      for (const cb of this.closeCallbacks) cb();
       this.closeSub.unsubscribe();
     });
+  }
+
+  // Lets other classes react to this view closing, alongside the registry's own viewer/timer
+  // cleanup — e.g. an in-flight async computation cancels itself instead of mounting a viewer into
+  // an already-torn-down view once it finishes.
+  onClose(callback: () => void): void {
+    this.closeCallbacks.push(callback);
   }
 
   /** Plain viewers (grid, filters) leak (host.innerHTML='' only drops the DOM node) unless closed

@@ -6,8 +6,9 @@ import {EnumeratorConfig} from './config';
 const DISABLED_HINT = 'Leave blank to disable this filter.';
 
 // The platform's +/- steppers can't increment from blank and have no floor on decrement.
-// Override both: blank "+" -> 1, "0 -" -> blank, otherwise a normal ±1.
-export function fixNullableIntStepper(input: DG.InputBase<number | null>): void {
+// Override both: blank "+" -> 1, "floor -" -> blank, otherwise a normal ±1. `floor` (default 0) is
+// the last numeric stop before the stepper goes blank — pass 1 for fields where 0 is not a valid cap.
+export function fixNullableIntStepper(input: DG.InputBase<number | null>, floor = 0): void {
   const apply = (next: number | null): void => {
     input.value = next;
     const el = input.input as HTMLInputElement | undefined;
@@ -20,7 +21,7 @@ export function fixNullableIntStepper(input: DG.InputBase<number | null>): void 
       e.preventDefault();
       const cur = input.value;
       if (step > 0) apply(cur == null ? 1 : cur + 1);
-      else apply(cur != null && cur > 0 ? cur - 1 : null);
+      else apply(cur != null && cur > floor ? cur - 1 : null);
     }, true);
   };
   override('.ui-input-plus', 1);

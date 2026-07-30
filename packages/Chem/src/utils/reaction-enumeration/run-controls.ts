@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {EnumeratorConfig} from './config';
+import {cloneConfig, EnumeratorConfig} from './config';
 import {enumerate, EnumerationProgress, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {buildInputs, buildResultDataFrame} from './enumerator-app';
@@ -113,7 +113,11 @@ export class RunControls {
   private async runEnumeration(): Promise<void> {
     this.progressLabel.textContent = 'Loading RDKit…';
     const rdkit = await getRdKitModule();
-    const config = this.deps.getConfig();
+    // Snapshot the config for this run alone — getConfig() returns the same live object the quick-
+    // config inputs keep mutating, and enumerate() reads it for the whole (possibly long) run, not
+    // just at the start. Without cloning, editing "Number of rounds"/"Depth first"/a product filter
+    // while a run is in progress would change the in-flight run's behavior mid-execution.
+    const config = cloneConfig(this.deps.getConfig());
     const tDf = this.deps.templatesInput.value!;
     const bDf = this.deps.bbsInput.value!;
     const xDf = this.deps.exclusionInput.value;

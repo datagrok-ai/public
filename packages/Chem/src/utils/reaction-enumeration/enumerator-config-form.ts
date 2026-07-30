@@ -310,10 +310,12 @@ export class EnumeratorConfigForm {
     // detail, not a value a user would type. Blank means the same thing and is shown/read as such.
     this.maxRoutesInput = ui.input.int('Max routes per compound', {
       value: this.config.max_num_routes_per_compound < 0 ? undefined : this.config.max_num_routes_per_compound,
-      nullable: true, showPlusMinus: true,
+      nullable: true, min: 1, showPlusMinus: true,
     });
     this.maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
-    fixNullableIntStepper(this.maxRoutesInput);
+    // A cap of 0 means "record zero routes" — every product's route/template/reaction_name would
+    // come back blank with no error. Floor the stepper at 1; validate() below rejects a typed/loaded 0.
+    fixNullableIntStepper(this.maxRoutesInput, 1);
 
     // ---- Info icons ----
     // appInfoIcon: what this app is / how it works. configInfoIcon: full current config as a card.
@@ -551,6 +553,8 @@ export class EnumeratorConfigForm {
     if (rounds > MAX_ROUNDS) return `Number of rounds must be at most ${MAX_ROUNDS}.`;
 
     if (this.config.max_num_components < 1) return 'Max # components must be at least 1.';
+    if (this.config.max_num_routes_per_compound === 0)
+      return 'Max routes per compound must be at least 1, or blank for no cap.';
 
     return null;
   };

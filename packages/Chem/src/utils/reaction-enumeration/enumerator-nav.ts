@@ -1,5 +1,4 @@
 /* eslint-disable max-len */
-import {Subscription} from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {CHANGED_DOT_STYLE, Mode} from './enumerator-app';
@@ -167,46 +166,19 @@ export class EnumeratorNav {
       pane.root.querySelector('.d4-accordion-pane-header')?.appendChild(dot);
       return dot;
     };
-    // Cancels the nested accordion's own chevron indent so its rows start flush with the main fields —
-    // measured against the real gap instead of a hand-picked constant, and re-measured on every real
-    // size change (not just once at mount) since a sibling reflow can still be in flight when the pane
-    // first expands. Observes a stable ancestor, not el itself, since el's own margin-left change would
-    // otherwise perturb its resolved width and could re-trigger a ResizeObserver watching el directly.
-    const flushIndent = (el: HTMLElement, reference: HTMLElement): Subscription => {
-      const apply = (): void => {
-        const extra = el.getBoundingClientRect().left - reference.getBoundingClientRect().left;
-        const current = parseFloat(getComputedStyle(el).marginLeft) || 0;
-        const next = current - extra;
-        if (next === current) return;
-        if (next === 0) el.style.removeProperty('margin-left');
-        else el.style.setProperty('margin-left', `${next}px`, 'important');
-      };
-      const sub = new Subscription();
-      sub.add(ui.onSizeChanged(reference).subscribe(apply));
-      sub.add(ui.onSizeChanged(this.accCombinePane.root).subscribe(apply));
-      setTimeout(apply, 0);
-      this.deps.view.subs.push(sub);
-      return sub;
-    };
     // Builds ui.form() lazily, only once the pane's content factory first runs — building it while
     // still detached would measure it at 0 width and get it marked .ui-form-condensed regardless of
-    // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs — the
-    // stale build's flushIndent subscriptions are disposed first, or they'd keep firing against a
-    // detached form on every future resize.
+    // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs. The
+    // nested accordion's own chevron indent (so these rows start flush with the main fields above) is
+    // cancelled via the fixed .chem-enum-limits-accordion CSS rule, not measured here.
     const lazyFilterForm = (getInputs: () => DG.InputBase<unknown>[]):
     {getRoot: () => HTMLElement; invalidate: () => void} => {
       let root: HTMLElement | null = null;
-      let indentSub: Subscription | null = null;
-      const build = (): HTMLElement => {
-        const form = ui.form(getInputs());
-        indentSub = flushIndent(form, this.deps.numRoundsInput.root);
-        return form;
-      };
+      const build = (): HTMLElement => ui.form(getInputs());
       return {
         getRoot: (): HTMLElement => root ??= build(),
         invalidate: (): void => {
           if (!root) return;
-          indentSub?.unsubscribe();
           const fresh = build();
           root.replaceWith(fresh);
           root = fresh;
@@ -215,56 +187,29 @@ export class EnumeratorNav {
     };
     // Shared label-column width across all three forms in this section (rounds, combination limits,
     // product filters) — so Product filters renders with the exact same column Combination limits
-    // does, not its own wider one. Measured from the actual widest caption across all three forms
-    // (via a hidden offscreen probe in the label's own font) rather than a hardcoded constant, so it
-    // never goes stale if a caption is added, removed, or reworded later. Set via a CSS custom
-    // property + stylesheet !important rule, not a plain inline style: the platform's own per-form
-    // label auto-sizing runs asynchronously after mount and would silently overwrite a plain inline
-    // style outright.
-    const measureLabelWidths = (labels: HTMLElement[]): number[] => {
-      const probe = document.createElement('span');
-      probe.style.position = 'absolute';
-      probe.style.visibility = 'hidden';
-      probe.style.whiteSpace = 'nowrap';
-      probe.style.left = '-9999px';
-      document.body.appendChild(probe);
-      const widths = labels.map((label) => {
-        probe.style.font = getComputedStyle(label).font;
-        probe.textContent = label.textContent;
-        return probe.getBoundingClientRect().width;
-      });
-      probe.remove();
-      return widths;
-    };
-    const sectionInputs = [
-      this.deps.numRoundsInput, this.deps.maxComponentsInput, this.deps.maxRoutesInput,
-      ...this.deps.getCombinationLimitInputs(), ...this.deps.getProductFilterInputs(),
-    ];
-    const sharedLabelWidth = Math.ceil(Math.max(...measureLabelWidths(sectionInputs.map((inp) => inp.captionLabel))));
+    // does, not its own wider one. Fixed constant, comfortably wider than the longest current caption
+    // ("Max unsaturated non-aromatic bonds", ~200px in the platform's own label font) — these captions
+    // are static app text, not user data, so there's no need to measure them at runtime; widen this if
+    // a future caption ends up longer. Set via a CSS custom property + stylesheet !important rule, not
+    // a plain inline style: the platform's own per-form label auto-sizing runs asynchronously after
+    // mount and would silently overwrite a plain inline style outright.
+    const CHEM_ENUM_LABEL_WIDTH = 220;
     // Editors need pinning too, not just labels: the platform widens an editor from its normal ~150px
     // to ~176px on whichever of the three forms it currently considers .ui-form-condensed, so without
     // this the Product filters column can end up visibly wider than Combination limits' even with
     // labels aligned. 150px matches the platform's own un-condensed default.
     const sharedEditorWidth = 150;
-    // Mirrors the per-input-type minimum widths the platform itself uses to decide .ui-form-condensed
-    // (js-api ui.ts's getInputsMinWidths). Sizing the form to fit the widest one up front, the same
-    // way the platform already does for its own dialog forms (a min-width computed from label + input
-    // minimums instead of reacting to condensed after the fact), means these forms never need
-    // condensed layout at all. Named constants (not inlined) so a future change to those platform
-    // thresholds is easier to spot and re-sync here.
-    const PLATFORM_MIN_WIDTH_TEXT_TABLE = 200;
-    const PLATFORM_MIN_WIDTH_FLOAT_DATE = 140;
-    const PLATFORM_MIN_WIDTH_DEFAULT = 100;
-    const platformInputMinWidth = (input: DG.InputBase<unknown>): number => {
-      const el = input.root;
-      if (el.classList.contains('ui-input-text') || el.classList.contains('ui-input-table')) return PLATFORM_MIN_WIDTH_TEXT_TABLE;
-      if (el.classList.contains('ui-input-float') || el.classList.contains('ui-input-date')) return PLATFORM_MIN_WIDTH_FLOAT_DATE;
-      return PLATFORM_MIN_WIDTH_DEFAULT;
-    };
-    const formMinInputWidth = Math.ceil(Math.max(...sectionInputs.map(platformInputMinWidth)));
+    // Fixed floor for the whole form's width, comfortably above what the platform's own
+    // .ui-form-condensed decision (js-api ui.ts's getInputsMinWidths) would compute for the widest
+    // input here (a string input like "Only these atoms allowed", whose own minimum is ~200px) plus
+    // the label column above — reserving this much up front means these forms never cross that
+    // threshold and never condense, regardless of where the left/right splitter sits when a section
+    // is first expanded.
+    const CHEM_ENUM_FORM_MIN_WIDTH = 480;
     // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
     // the outer wizard-navigation accordion).
     const limitsAccordion = ui.accordion();
+    limitsAccordion.root.classList.add('chem-enum-limits-accordion');
     this.combinationLimitsForm = lazyFilterForm(() => this.deps.getCombinationLimitInputs());
     this.productFilterForm = lazyFilterForm(() => this.deps.getProductFilterInputs());
     const combinationLimitsPane = limitsAccordion.addPane('Combination limits (optional)',
@@ -285,11 +230,9 @@ export class EnumeratorNav {
       navRow(null, mkNextBtn(() => this.accReactionsPane, 'Reactions')),
     ], {style: {gap: '8px'}}), false, null, false);
     this.accCombinePane.root.classList.add('chem-enum-combine-pane');
-    this.accCombinePane.root.style.setProperty('--chem-enum-label-width', `${sharedLabelWidth}px`);
+    this.accCombinePane.root.style.setProperty('--chem-enum-label-width', `${CHEM_ENUM_LABEL_WIDTH}px`);
     this.accCombinePane.root.style.setProperty('--chem-enum-editor-width', `${sharedEditorWidth}px`);
-    // +40 matches the buffer the platform's own d4-dialog-contents branch adds on top of
-    // label + input minimums (js-api ui.ts handleFormResize).
-    this.accCombinePane.root.style.setProperty('--chem-enum-form-min-width', `${sharedLabelWidth + formMinInputWidth + 40}px`);
+    this.accCombinePane.root.style.setProperty('--chem-enum-form-min-width', `${CHEM_ENUM_FORM_MIN_WIDTH}px`);
     // Left panel for Preview — content built once previewPanel exists; this factory itself only runs
     // lazily when the user actually opens the pane, well after previewPanel/runControls are constructed.
     this.accPreviewPane = accordion.addPane('Preview', () => ui.divV([
@@ -324,13 +267,13 @@ export class EnumeratorNav {
     this.subExtras = injectPaneSub(this.accExtrasPane);
     this.subCombine = injectPaneSub(this.accCombinePane);
 
-    // Must fit --chem-enum-form-min-width (the "How to combine" forms' own min-width, computed above)
-    // plus the padding/accordion chrome between this pane and those forms — otherwise this pane's
-    // content overflows it on every load, not just at a narrow splitter, since the forms now refuse to
-    // shrink below their own minimum. The +80 buffer covers this pane's own padding-right plus the
-    // nested accordion/pane padding.
+    // Must fit CHEM_ENUM_FORM_MIN_WIDTH (the "How to combine" forms' own min-width, set above) plus
+    // the padding/accordion chrome between this pane and those forms — otherwise this pane's content
+    // overflows it on every load, not just at a narrow splitter, since the forms now refuse to shrink
+    // below their own minimum. The +80 buffer covers this pane's own padding-right plus the nested
+    // accordion/pane padding.
     this.leftPane = ui.divV([accordion.root],
-      {style: {minWidth: `${sharedLabelWidth + formMinInputWidth + 80}px`, overflowY: 'auto', overflowX: 'hidden',
+      {style: {minWidth: `${CHEM_ENUM_FORM_MIN_WIDTH + 80}px`, overflowY: 'auto', overflowX: 'hidden',
         paddingRight: '8px'}});
 
     // === Config-summary ribbon chips (shown above the right-pane tabs) ===

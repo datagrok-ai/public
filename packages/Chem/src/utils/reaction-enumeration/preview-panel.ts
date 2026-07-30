@@ -66,6 +66,10 @@ export class PreviewPanel {
     this.status = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
     const header = panelHeader('Quick preview of a small product sample.', this.status);
     this.panel = tabPanel(header, this.host);
+    // Closing the hosting view is otherwise not a cancellation signal at all (only switching tabs
+    // away from Preview bumps runId, via cancelPendingRun) — without this, an in-flight refresh()
+    // finishes after the view is gone and mounts a viewer nothing can ever close again.
+    this.deps.viewerHost.onClose(() => this.cancelPendingRun());
   }
 
   /** The left-nav recap card host — built once here, embedded by EnumeratorConfigForm's own
