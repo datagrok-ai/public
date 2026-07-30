@@ -7,6 +7,7 @@ import {
   IFitSeries,
   IFitPoint,
   FIT_FUNCTION_SIGMOID,
+  FitFunctionName,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 
@@ -47,7 +48,7 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
 
   const seriesOptions: IFitSeriesOptions = {
     name: seriesName,
-    fitFunction: funcType,
+    fitFunction: funcType as FitFunctionName,
     markerType: DG.MARKER_TYPE.CIRCLE,
     pointColor: markerColor,
     fitLineColor: lineColor,

@@ -34,15 +34,25 @@ export type FitConfidenceIntervals = {
   confidenceBottom: (x: number) => number;
 };
 
-export type FitStatistics = {
-  rSquared?: number,
-  auc?: number,
-  interceptX?: number, // parameters[2]
-  interceptY?: number, // fittedCurve[parameters[2]]
-  slope?: number, // parameters[1]
-  top?: number, // parameters[0]
-  bottom?: number, // parameters[3]
-};
+/** Legacy statistic names. Persisted in `showStatistics`, in the `.statistics` column tag and in
+ * recorded transform calls, so this list is append-only - never rename or remove an entry. */
+export const LEGACY_FIT_STATISTICS =
+  ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'] as const;
+
+export type LegacyFitStatisticName = typeof LEGACY_FIT_STATISTICS[number];
+
+export type FitStatistics = Partial<Record<LegacyFitStatisticName, number>>;
+
+/** Names of the built-in fit functions. Custom functions are supplied as {@link IFitFunctionDescription}. */
+export type FitFunctionName = typeof FIT_FUNCTION_LINEAR | typeof FIT_FUNCTION_SIGMOID |
+  typeof FIT_FUNCTION_LOG_LINEAR | typeof FIT_FUNCTION_EXPONENTIAL |
+  typeof FIT_FUNCTION_4PL_REGRESSION | typeof FIT_FUNCTION_4PL_DOSE_RESPONSE;
+
+// '' is the existing wire value for "render no points" - the renderer treats it as falsy
+export type FitPointsDisplayMode = 'points' | 'candlesticks' | 'both' | '';
+
+/** Droplines rendered on the plot. `string & {}` keeps autocompletion while allowing IC<n> later. */
+export type DroplineName = 'IC50' | (string & {});
 
 export type FitInvertedFunctions = {
   inverted: (y: number) => number,
@@ -152,9 +162,8 @@ export class FitChartData implements IFitChartData {
 
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
-  [key: string]: any;                   // allows getting data by key
   name?: string;                        // controls the series name
-  fitFunction?: string | IFitFunctionDescription; // controls the series fit function
+  fitFunction?: FitFunctionName | IFitFunctionDescription; // controls the series fit function
   parameters?: number[];                // controls the series parameters, auto-fitting when not defined
   parameterBounds?: FitParamBounds[];   // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
   markerType?: FitMarkerType;           // defines the series marker type
@@ -166,13 +175,13 @@ export interface IFitSeriesOptions {
   outlierColor?: string;                // overrides the standardized series outlier color
   connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean;                // defines whether to show the fit line or not
-  showPoints?: string;                  // defines the data display mode
+  showPoints?: FitPointsDisplayMode;    // defines the data display mode
   showOutliers?: boolean;               // defines whether to show the outliers or not
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
   errorModel?: FitErrorModelType;       // defines the series error model
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
-  droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
+  droplines?: DroplineName[];           // defines the droplines that would be shown on the plot (IC50)
   columnName?: string;                  // defines the column name where the series is stored
   auxLegendName?: string;               // defines the auxiliary legend name for the series
 }
@@ -232,7 +241,8 @@ export function getFittedCurve(curveFunction: (params: Float32Array, x: number) 
   };
 }
 
-// TODO: for linear - slope - A, interceptY - B
+// Deprecated: maps statistics onto positional parameter slots, which is only correct for the
+// 4-parameter families. Superseded by FitFunction.fillParams + getStatistic; kept for API compatibility.
 export function getStatistics(data: {x: number[], y: number[]}, paramValues: Float32Array,
   curveFunction: (params: Float32Array, x: number) => number, statistics: boolean = true): FitStatistics {
   const fittedCurve = getFittedCurve(curveFunction, paramValues);

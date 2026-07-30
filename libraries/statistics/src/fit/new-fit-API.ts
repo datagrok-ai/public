@@ -15,9 +15,6 @@ import {
   fourPLRegression,
   IFitFunctionDescription,
   FitParamBounds,
-  FitMarkerType,
-  FitOutlierMarkerType,
-  FitLineStyle,
   FitErrorModelType, FitCurve, getAuc, getDetCoeff,
   FIT_JS_FUNCTION,
   FIT_FUNCTION_4PL_DOSE_RESPONSE,
@@ -26,6 +23,9 @@ import {
   FitErrorModel,
   FitConfidenceIntervals,
   getFittedCurve,
+  FitFunctionName,
+  LegacyFitStatisticName,
+  IFitSeriesOptions,
 } from './fit-curve';
 import {fitSeries, getDataPoints, LogOptions} from './fit-data';
 //@ts-ignore: no types
@@ -37,6 +37,8 @@ import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
 
 /** Class for the fit functions */
 export abstract class FitFunction<T = Fit> {
+  protected _statisticsProperties?: DG.Property[];
+
   abstract get name(): string;
   abstract get parameterNames(): string[];
   abstract get statisticsProperties(): DG.Property[];
@@ -54,7 +56,7 @@ export const FitFunctionTypes = {
   FOUR_PL_DOSE_RESPONSE: '4pl-dose-response',
 } as const;
 
-export type FitFunctionType = typeof FitFunctionTypes[keyof typeof FitFunctionTypes];
+export type FitFunctionType = FitFunctionName;
 
 export interface IFit {
   auc: number;
@@ -156,6 +158,9 @@ export class SigmoidFit extends Fit implements ISigmoidFit {
   ic50: number;
   bottom: number;
   interceptY: number;
+  maxY: number;
+  minY: number;
+  pIC50?: number; // derived by toDataSpace, where the concentration units are known
 
   get name(): string {
     return FIT_FUNCTION_SIGMOID;
@@ -168,6 +173,9 @@ export class SigmoidFit extends Fit implements ISigmoidFit {
     this.ic50 = values.ic50;
     this.bottom = values.bottom;
     this.interceptY = values.interceptY;
+    // top and bottom are the two asymptotes; which one is larger depends on the sign of the slope
+    this.maxY = Math.max(values.top, values.bottom);
+    this.minY = Math.min(values.top, values.bottom);
   }
 }
 
@@ -192,6 +200,8 @@ export class FourPLRegressionFit extends Fit implements IFourPLRegressionFit {
   slope: number;
   ec50: number;
   interceptY: number;
+  maxY: number;
+  minY: number;
 
   get name(): string {
     return FIT_FUNCTION_4PL_REGRESSION;
@@ -204,11 +214,15 @@ export class FourPLRegressionFit extends Fit implements IFourPLRegressionFit {
     this.slope = values.slope;
     this.ec50 = values.ec50;
     this.interceptY = values.interceptY;
+    // top and bottom are the two asymptotes; which one is larger depends on the sign of the slope
+    this.maxY = Math.max(values.top, values.bottom);
+    this.minY = Math.min(values.top, values.bottom);
   }
 }
 
 export class FourPLDoseResponseFit extends FourPLRegressionFit implements IFourPLDoseResponseFit {
   ic50: number;
+  pIC50?: number; // derived by toDataSpace, where the concentration units are known
 
   override get name(): string {
     return FIT_FUNCTION_4PL_DOSE_RESPONSE;
@@ -230,26 +244,67 @@ export const commonStatisticsProperties: DG.Property[] = [
   statisticsProperty('auc', 'AUC'),
 ];
 
-const linearStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
-  statisticsProperty('slope', 'Slope'), statisticsProperty('intercept', 'Intercept')];
+// Statistics descriptors for a fit function: the goodness-of-fit pair, then one entry per fitted
+// parameter labelled with the function's own parameter name, then any derived statistics. Labels are
+// taken from parameterNames so they cannot drift from what the model calls its parameters.
+function fitStatisticsProperties(fieldNames: string[], parameterNames: string[],
+  derived: DG.Property[] = []): DG.Property[] {
+  return [...commonStatisticsProperties,
+    ...fieldNames.map((name, i) => statisticsProperty(name, parameterNames[i])),
+    ...derived];
+}
 
-const sigmoidStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
-  statisticsProperty('top', 'Max Y'), statisticsProperty('slope', 'Slope'),
-  statisticsProperty('ic50', 'IC50'), statisticsProperty('bottom', 'Min Y'),
-  statisticsProperty('interceptY', 'Y at IC50')];
+// Derived from the two asymptotes, so they stay truthful whichever sign the slope takes.
+function asymptoteStatisticsProperties(inflectionName: string): DG.Property[] {
+  return [statisticsProperty('interceptY', `Y at ${inflectionName}`),
+    statisticsProperty('maxY', 'Max Y'), statisticsProperty('minY', 'Min Y')];
+}
 
-const exponentialStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
-  statisticsProperty('mantissa', 'Mantissa'), statisticsProperty('power', 'Power')];
+// -log10 of the IC50 in molar. Only meaningful for the IC50-parameterized functions.
+const pIC50StatisticsProperty = statisticsProperty('pIC50', 'pIC50');
 
-const fourPLRegressionStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
-  statisticsProperty('top', 'Max Y'), statisticsProperty('slope', 'Slope'),
-  statisticsProperty('ec50', 'EC50'), statisticsProperty('bottom', 'Min Y'),
-  statisticsProperty('interceptY', 'Y at EC50')];
+// Legacy FitStatistics names that map to a differently named field of a typed fit. Names absent here
+// resolve directly; names a fit function does not produce resolve to undefined.
+const LEGACY_STATISTICS_ALIASES: {[fitFunctionName: string]: {[legacyName: string]: string}} = {
+  [FIT_FUNCTION_SIGMOID]: {interceptX: 'ic50'},
+  [FIT_FUNCTION_4PL_REGRESSION]: {interceptX: 'ec50'},
+  [FIT_FUNCTION_4PL_DOSE_RESPONSE]: {interceptX: 'ic50'},
+};
 
-const fourPLDoseResponseStatisticsProperties: DG.Property[] = [...commonStatisticsProperties,
-  statisticsProperty('top', 'Max'), statisticsProperty('slope', 'Hill'),
-  statisticsProperty('ic50', 'IC50'), statisticsProperty('bottom', 'Min'),
-  statisticsProperty('interceptY', 'Y at IC50')];
+/** Resolves a statistic name (legacy names included) to the descriptor of the fit function producing it.
+ * @param {FitFunction} fitFunc - fit function whose statistics are being described.
+ * @param {string} name - a statistic name, or a legacy FitStatistics name.
+ * @return {DG.Property | undefined} the descriptor, or undefined when this fit function has no such statistic. */
+export function getStatisticProperty(fitFunc: FitFunction<any>, name: string): DG.Property | undefined {
+  const field = LEGACY_STATISTICS_ALIASES[fitFunc.name]?.[name] ?? name;
+  return fitFunc.statisticsProperties.find((p) => p.name === field);
+}
+
+/** Names of the numeric statistics a fit produces. Derived from the fit class, so adding a field to a
+ * Fit subclass extends it automatically, and non-numeric fields (series, parameters, name) are excluded. */
+export type FitStatisticName<T extends Fit> =
+  Extract<{[K in keyof T]-?: T[K] extends number ? K : never}[keyof T], string>;
+
+/** Maps a built-in fit function name to the fit type it produces. */
+export interface FitTypeMap {
+  'linear': LinearFit;
+  'log-linear': LogLinearFit;
+  'sigmoid': SigmoidFit;
+  'exponential': ExponentialFit;
+  '4pl-regression': FourPLRegressionFit;
+  '4pl-dose-response': FourPLDoseResponseFit;
+}
+
+/** Reads a statistic off a fit by name, resolving legacy FitStatistics names.
+ * @param {Fit} fit - typed fit result to read from.
+ * @param {string} name - a field of the fit, or a legacy FitStatistics name.
+ * @return {number | undefined} the value, or undefined when this fit function does not produce it. */
+export function getStatistic<T extends Fit>(fit: T,
+  name: FitStatisticName<T> | LegacyFitStatisticName | (string & {})): number | undefined {
+  const field = LEGACY_STATISTICS_ALIASES[fit.name]?.[name] ?? name;
+  const value = (fit as {[key: string]: any})[field];
+  return typeof value === 'number' ? value : undefined;
+}
 
 function resolveDataPoints(data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions):
   {x: number[], y: number[]} {
@@ -274,7 +329,8 @@ export class LinearFunction extends FitFunction<LinearFit> {
   }
 
   get statisticsProperties(): DG.Property[] {
-    return linearStatisticsProperties;
+    this._statisticsProperties ??= fitStatisticsProperties(['slope', 'intercept'], this.parameterNames);
+    return this._statisticsProperties;
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -321,7 +377,10 @@ export class SigmoidFunction extends FitFunction<SigmoidFit> {
   }
 
   get statisticsProperties(): DG.Property[] {
-    return sigmoidStatisticsProperties;
+    this._statisticsProperties ??= fitStatisticsProperties(['top', 'slope', 'ic50', 'bottom'],
+      this.parameterNames,
+      [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty]);
+    return this._statisticsProperties;
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -373,7 +432,8 @@ export class LogLinearFunction extends FitFunction<LogLinearFit> {
   }
 
   get statisticsProperties(): DG.Property[] {
-    return linearStatisticsProperties;
+    this._statisticsProperties ??= fitStatisticsProperties(['slope', 'intercept'], this.parameterNames);
+    return this._statisticsProperties;
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -407,7 +467,8 @@ export class ExponentialFunction extends FitFunction<ExponentialFit> {
   }
 
   get statisticsProperties(): DG.Property[] {
-    return exponentialStatisticsProperties;
+    this._statisticsProperties ??= fitStatisticsProperties(['mantissa', 'power'], this.parameterNames);
+    return this._statisticsProperties;
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -441,7 +502,9 @@ export class FourPLRegressionFunction extends FitFunction<FourPLRegressionFit> {
   }
 
   get statisticsProperties(): DG.Property[] {
-    return fourPLRegressionStatisticsProperties;
+    this._statisticsProperties ??= fitStatisticsProperties(['top', 'slope', 'ec50', 'bottom'],
+      this.parameterNames, asymptoteStatisticsProperties(this.parameterNames[2]));
+    return this._statisticsProperties;
   }
 
   // shared with the dose-response parameterization, which only differs in how the parameters are named
@@ -497,7 +560,10 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
   }
 
   override get statisticsProperties(): DG.Property[] {
-    return fourPLDoseResponseStatisticsProperties;
+    this._statisticsProperties ??= fitStatisticsProperties(['top', 'slope', 'ic50', 'bottom'],
+      this.parameterNames,
+      [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty]);
+    return this._statisticsProperties;
   }
 
   override fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -514,7 +580,6 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
 export class JsFunction extends FitFunction<Fit> {
   private _name: string;
   private _parameterNames: string[];
-  private _statisticsProperties?: DG.Property[];
 
   constructor(name: string, yFunc: (params: Float32Array, x: number) => number,
     getInitParamsFunc: (x: number[], y: number[]) => Float32Array, parameterNames: string[]) {
@@ -528,9 +593,10 @@ export class JsFunction extends FitFunction<Fit> {
   }
 
   get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= [...commonStatisticsProperties,
-      ...this._parameterNames.filter((name) => !RESERVED_FIT_FIELDS.includes(name))
-        .map((name) => statisticsProperty(name, name))];
+    if (!this._statisticsProperties) {
+      const fieldNames = this._parameterNames.filter((name) => !RESERVED_FIT_FIELDS.includes(name));
+      this._statisticsProperties = fitStatisticsProperties(fieldNames, fieldNames);
+    }
     return this._statisticsProperties;
   }
 
@@ -605,38 +671,22 @@ class FitFunctions {
 }
 
 
-export class FitSeries implements IFitSeries {
-  [key: string]: any;
+// Declaration merging picks up every IFitSeriesOptions member with its real type, so the class
+// cannot drift from the interface the way the previous hand-copied field list had.
+export interface FitSeries extends IFitSeriesOptions {}
 
-  fit: FitFunctions;
+export class FitSeries implements IFitSeries {
   points: IFitPoint[];
 
   constructor(points: IFitPoint[]) {
     this.points = points;
-    this.fit = new FitFunctions(this);
   }
 
-  name?: string; // controls the series name
-  fitFunction?: string | IFitFunctionDescription; // controls the series fit function
-  parameters?: number[]; // controls the series parameters, auto-fitting when not defined
-  parameterBounds?: FitParamBounds[]; // defines the acceptable range of each parameter, which is taken into account during the fitting. See also `parameters`.
-  markerType?: FitMarkerType; // defines the series marker type
-  outlierMarkerType?: FitOutlierMarkerType; // defines the series outlier marker type
-  lineStyle?: FitLineStyle; // defines the series line style
-  pointColor?: string; // overrides the standardized series point color
-  fitLineColor?: string; // overrides the standardized series fit line color
-  confidenceIntervalColor?: string; // overrides the standardized series confidence interval color
-  outlierColor?: string; // overrides the standardized series outlier color
-  connectDots?: boolean; // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
-  showFitLine?: boolean; // defines whether to show the fit line or not
-  showPoints?: string; // defines the data display mode
-  showOutliers?: boolean; // defines whether to show the outliers or not
-  showCurveConfidenceInterval?: boolean; // defines whether to show the confidence intervals or not
-  errorModel?: FitErrorModelType; // defines the series error model
-  clickToToggle?: boolean; // if true, clicking on the point toggles its outlier status and causes curve refitting
-  labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
-  droplines?: string[]; // defines the droplines that would be shown on the plot (IC50)
-  columnName?: string; // defines the column name where the series is stored
+  /** Prototype getter on purpose: an own property here would be a circular reference back to the
+   * series, which makes JSON.stringify of a series throw. */
+  get fit(): FitFunctions {
+    return new FitFunctions(this);
+  }
 }
 
 
@@ -681,6 +731,21 @@ export const fitSeriesProperties: DG.Property[] = [
   DG.Property.js('columnName', DG.TYPE.STRING, {description: 'Column name where the series is stored', defaultValue: ''}),
 ];
 
+
+/** Typed lookup of a built-in fit function, so the fit it produces is known at compile time.
+ * @param {string} name - built-in fit function name.
+ * @return {FitFunction} the fit function, typed by the fit it produces. */
+export function getFitFunction<K extends keyof FitTypeMap>(name: K): FitFunction<FitTypeMap[K]> {
+  return fitFunctions[name];
+}
+
+/** Narrows a runtime-dispatched fit to a concrete fit type.
+ * @param {Fit} fit - fit to test.
+ * @param {string} name - built-in fit function name to narrow to.
+ * @return {boolean} true when the fit was produced by that fit function. */
+export function isFit<K extends keyof FitTypeMap>(fit: Fit, name: K): fit is FitTypeMap[K] {
+  return fit.name === name;
+}
 
 export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescription): FitFunction<Fit> {
   if (typeof seriesFitFunc === 'string')

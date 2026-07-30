@@ -3,6 +3,13 @@
 ## v.next
 
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
+* GROK-17637: Statistics: Plot and property panel now show the statistics the series' own fit function produces, labelled with its parameter names, instead of a fixed list that rendered NaN for non-sigmoid fits
+* GROK-17637: Statistics: IC50 is reported as a concentration everywhere; the plot and the panel no longer disagree, and `4pl-dose-response` and positive log-IC50 values are no longer skipped by the conversion
+* GROK-17637: Statistics: Aggregation now happens in fit space, so an averaged IC50 is a geometric mean
+* GROK-17637: Statistics: Added pIC50
+* GROK-17637: Options: A custom JS fit function is now named in the property panel instead of rendering a blank input
+* GROK-17637: Fixed confidence intervals discarding the cached data points and recomputing them on every frame
+* GROK-17637: Fixed the series colour type being widened to `string`, which disabled colour-option checking
 
 ## 1.12.0 (2026-04-02)
 

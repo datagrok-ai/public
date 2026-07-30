@@ -46,6 +46,17 @@ export namespace funcs {
     return await grok.functions.call('Curves:InitCurves', {});
   }
 
+  /**
+   * Group well-level assay data by compound, assay, target, and run, then fit a dose-response curve per group.
+   * @param {DG.Column} concentrationCol - Concentration (dose) column
+   * @param {DG.Column} readoutCol - Readout (response) column
+   * @param {DG.Column} batchIDCol - Batch identifier column
+   * @param {DG.Column} assayCol - Assay name column
+   * @param {DG.Column} runIDCol - Run identifier column
+   * @param {DG.Column} compoundIDCol - Compound identifier column
+   * @param {DG.Column} targetEntityCol - Target entity column
+   * @param {DG.Column} excludeOutliersCol - Boolean column marking points to exclude as outliers
+   */
   export async function dataToCurves(df: DG.DataFrame , concentrationCol: DG.Column , readoutCol: DG.Column , batchIDCol: DG.Column , assayCol: DG.Column , runIDCol: DG.Column , compoundIDCol: DG.Column , targetEntityCol: DG.Column , excludeOutliersCol: DG.Column | null, parentTable: DG.DataFrame | null, fitParamColumns: any | null, reportedIC50Column: string | null, reportedQualifiedIC50Column: string | null, experimentIDColumn: string | null, qualifierColumn: string | null, additionalColumns: any | null, wellLevelJoinCol: string | null, parentLevelJoinCol: string | null, wellLevelAdditionalColumns?: any | null): Promise<DG.DataFrame> {
     return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol, wellLevelAdditionalColumns });
   }
@@ -54,10 +65,22 @@ export namespace funcs {
     return await grok.functions.call('Curves:DataToCurvesTopMenu', {});
   }
 
+  /**
+   * Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.
+   * @param {string} colName - Name of the curve column to read
+   * @param {string} propName - Fit statistic to extract (e.g. IC50, AUC, R²)
+   * @param {number} seriesNumber - Zero-based index of the curve series
+   */
   export async function addStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , seriesNumber: number ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddStatisticsColumn', { table, colName, propName, seriesNumber });
   }
 
+  /**
+   * Aggregate a fit statistic across all series of a curve into a new column.
+   * @param {string} colName - Name of the curve column to read
+   * @param {string} propName - Fit statistic to aggregate (e.g. IC50, AUC, R²)
+   * @param {string} aggrType - Aggregation type applied across series (e.g. avg, min, max)
+   */
   export async function addAggrStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
@@ -87,6 +110,10 @@ export namespace funcs {
     return await grok.functions.call('Curves:PreviewPzfx', { file });
   }
 
+  /**
+   * Open a GraphPad Prism (.pzfx) file as data tables, fitting XY curve tables.
+   * @param {any} bytes - Raw bytes of the .pzfx file
+   */
   export async function pzfxFileHandler(bytes: any ): Promise<any> {
     return await grok.functions.call('Curves:PzfxFileHandler', { bytes });
   }

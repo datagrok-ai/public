@@ -4,8 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {
-  getSeriesStatistics,
+  getSeriesFit,
   getSeriesFitFunction,
+  toFitStatistics,
+  toDataSpace,
   LogOptions,
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
@@ -16,8 +18,8 @@ import {
   IFitSeries,
   IFitChartOptions,
   IFitSeriesOptions,
+  IFitFunctionDescription,
   FitStatistics,
-  FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
   getOrCreateParsedChartData,
@@ -29,8 +31,8 @@ import {
 } from './fit-renderer';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue, isNativeFormat} from './curve-converter';
-import {ColorType, getSeriesColor} from './render-utils';
-import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {ColorType, SeriesColorType, getSeriesColor} from './render-utils';
+import {Fit, fitFunctions, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -60,8 +62,9 @@ const AGGREGATION_TYPES: {[key: string]: string} = {
 };
 
 
-export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
-  tableCell: DG.Cell, useCache: boolean = true): FitStatistics {
+/** Returns the typed fit for a series, with the inflection point reported in data space. */
+export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
+  tableCell: DG.Cell, useCache: boolean = true, inDataSpace: boolean = true): Fit {
   const fitFunction = getSeriesFitFunction(series);
   if (series.parameters) {
     if (chartLogOptions.logX) {
@@ -73,11 +76,41 @@ export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, char
     series.parameters = [...params];
   }
 
-  const seriesStatistics = getSeriesStatistics(series, fitFunction,
+  const fit = getSeriesFit(series, fitFunction,
     getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell), chartLogOptions);
-  if ([FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID].includes(fitFunction.name) && chartLogOptions.logX && seriesStatistics.interceptX !== undefined && seriesStatistics.interceptX < 0)
-    seriesStatistics.interceptX = Math.pow(10, seriesStatistics.interceptX);
-  return seriesStatistics;
+  return inDataSpace ? toDataSpace(fit, chartLogOptions) : fit;
+}
+
+/** Returns series statistics in the legacy shape. Prefer {@link calculateSeriesFit}. */
+export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
+  tableCell: DG.Cell, useCache: boolean = true): FitStatistics {
+  return toFitStatistics(calculateSeriesFit(series, seriesIdx, chartLogOptions, tableCell, useCache));
+}
+
+/** Chart properties with `showStatistics` offering the statistics this cell's fit functions produce,
+ * rather than the fixed legacy list. */
+function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
+  const names: string[] = [];
+  for (const series of chartData.series ?? []) {
+    for (const prop of getSeriesFitFunction(series).statisticsProperties) {
+      if (!names.includes(prop.name))
+        names.push(prop.name);
+    }
+  }
+  if (names.length === 0)
+    return fitChartDataProperties;
+  return fitChartDataProperties.map((p) => p.name !== 'showStatistics' ? p :
+    DG.Property.js('showStatistics', DG.TYPE.STRING_LIST, {description: p.description, choices: names,
+      inputType: 'MultiChoice', friendlyName: 'Statistics'}));
+}
+
+/** Series properties with `fitFunction` able to name a custom JS function alongside the built-ins. */
+function seriesPropertiesFor(customFitFunction: IFitFunctionDescription | null): DG.Property[] {
+  if (!customFitFunction)
+    return fitSeriesProperties;
+  return fitSeriesProperties.map((p) => p.name !== 'fitFunction' ? p :
+    DG.Property.js('fitFunction', DG.TYPE.STRING, {category: 'Fitting',
+      choices: [customFitFunction.name, ...Object.keys(fitFunctions)], defaultValue: customFitFunction.name}));
 }
 
 export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string, tableCell: DG.Cell): FitStatistics {
@@ -87,7 +120,9 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
   for (let i = 0, j = 0; i < chartData.series?.length!; i++) {
     if (chartData.series![i].points.every((p) => p.outlier))
       continue;
-    const seriesStats = calculateSeriesStats(chartData.series![i], i, chartLogOptions, tableCell);
+    // aggregate in fit space and convert once at the end, so avg of IC50s is a geometric mean
+    const seriesStats = toFitStatistics(
+      calculateSeriesFit(chartData.series![i], i, chartLogOptions, tableCell, true, false));
     rSquaredValues[j] = seriesStats.rSquared!;
     aucValues[j] = seriesStats.auc!;
     interceptXValues[j] = seriesStats.interceptX!;
@@ -98,7 +133,7 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
     j++;
   }
 
-  return {
+  const aggregated: FitStatistics = {
     rSquared: rSquaredValues.some((elem) => elem === undefined || elem === null) ? undefined:
       DG.Stats.fromValues(rSquaredValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
     auc: aucValues.some((elem) => elem === undefined || elem === null) ? undefined :
@@ -114,6 +149,16 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
     bottom: bottomValues.some((elem) => elem === undefined || elem === null) ? undefined :
       DG.Stats.fromValues(bottomValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
   };
+
+  if (chartLogOptions.logX && aggregated.interceptX !== undefined)
+    aggregated.interceptX = Math.pow(10, aggregated.interceptX);
+  if (chartLogOptions.logY) {
+    for (const name of ['top', 'bottom', 'interceptY'] as const) {
+      if (aggregated[name] !== undefined)
+        aggregated[name] = Math.pow(10, aggregated[name]!);
+    }
+  }
+  return aggregated;
 }
 
 function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, options: string): void {
@@ -264,7 +309,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     const chartOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
-    const setValidColors = (colorFieldName: string) => {
+    const setValidColors = (colorFieldName: SeriesColorType) => {
       if (dfChartOptions.seriesOptions && !isColorValid(dfChartOptions.seriesOptions[colorFieldName]) &&
         columnChartOptions.seriesOptions && !isColorValid(columnChartOptions.seriesOptions[colorFieldName])) {
         if (chartData.seriesOptions) {
@@ -299,9 +344,16 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
       substituteZeroes(chartData);
 
     const form = ui.form([switchLevelInput]);
-    const fitSeriesChildren = fitSeriesProperties.map((p) => ui.input.forProperty(p, chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0], seriesOptionsRefresh));
+    const seriesSource = chartData.seriesOptions ? chartData.seriesOptions : chartData.series![0];
+    // a custom JS fit function is stored as a description object, which a choice input cannot display
+    const customFitFunction = seriesSource && typeof seriesSource.fitFunction === 'object' ?
+      seriesSource.fitFunction : null;
+    const fitSeriesChildren = seriesPropertiesFor(customFitFunction).map((p) =>
+      ui.input.forProperty(p, p.name === 'fitFunction' && customFitFunction ?
+        {...seriesSource, fitFunction: customFitFunction.name} : seriesSource, seriesOptionsRefresh));
     ui.forms.addGroup(form, 'Series options', fitSeriesChildren);
-    ui.forms.addGroup(form, 'Chart options', fitChartDataProperties.map((p) => ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
+    ui.forms.addGroup(form, 'Chart options', chartPropertiesFor(chartData).map((p) =>
+      ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
     acc.addPane('Options', () => form);
 
     const choices = (chartData.series?.length ?? 0) > 1 ? ['all', 'aggregated'] : ['all'];
@@ -330,13 +382,14 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
         for (let i = 0; i < chartData.series!.length; i++) {
           const series = chartData.series![i];
-          const seriesStatistics = calculateSeriesStats(series, i, chartLogOptions, tableCell);
+          const seriesFit = calculateSeriesFit(series, i, chartLogOptions, tableCell);
 
           const color = getSeriesColor(series, i, ColorType.FIT_LINE);
           const seriesName = series.name ?? 'series ' + i;
           host.appendChild(ui.panel([
             ui.h1(seriesName, {style: {color: color}}),
-            ui.input.form(seriesStatistics, statisticsProperties, {
+            // descriptors come from the series' own fit function, so only applicable statistics are listed
+            ui.input.form(seriesFit, getSeriesFitFunction(series).statisticsProperties, {
               onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
                 const funcParams = {table: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, seriesNumber: i};
                 await DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});

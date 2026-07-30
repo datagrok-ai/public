@@ -4,18 +4,18 @@ import {
   FitConfidenceIntervals,
   IFitChartData,
   IFitSeries,
-  statisticsProperties
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
   getSeriesConfidenceInterval,
-  getSeriesStatistics,
+  getSeriesFit,
+  toDataSpace,
   LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
-import {FitFunction} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitFunction, getStatistic, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 export enum ColorType {
@@ -23,7 +23,7 @@ export enum ColorType {
   OUTLIER = 'outlierColor',
   FIT_LINE = 'fitLineColor',
 }
-export type SeriesColorType = `${ColorType}` | string;
+export type SeriesColorType = `${ColorType}`;
 
 interface FitRenderOptions {
     viewport: Viewport;
@@ -131,7 +131,7 @@ export function renderPoints(g: CanvasRenderingContext2D, series: IFitSeries, op
       screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT ? '' : series.showPoints ?? 'points';
   if (showPoints) {
     g.strokeStyle = getSeriesColor(series, options.seriesIdx!, ColorType.POINT);
-    if ((series.connectDots && series.showPoints !== '') || series.showPoints === 'points')
+    if (series.connectDots || series.showPoints === 'points')
       drawPoints(g, series, options);
     else if (['candlesticks', 'both'].includes(series.showPoints!))
       drawCandles(g, series, options);
@@ -277,7 +277,7 @@ export function renderConfidenceIntervals(g: CanvasRenderingContext2D, series: I
     const logOptions = renderOptions.logOptions;
     const viewport = renderOptions.viewport;
     const screenBounds = renderOptions.screenBounds;
-    const dataPoints = series.dataPoints;
+    const dataPoints = renderOptions.dataPoints;
 
     const confidenceIntervals = getSeriesConfidenceInterval(series, renderOptions.fitFunc!, renderOptions.userParamsFlag!, dataPoints, logOptions);
     drawConfidenceInterval(g, {viewport: viewport, logOptions: logOptions, showAxes: showAxes, showAxesLabels: showAxesLabels,
@@ -375,6 +375,12 @@ function drawDropline(g: CanvasRenderingContext2D, renderOptions: FitDroplineRen
   g.lineTo(screenX, viewport.yToScreen(dataBounds.minY));
 }
 
+// formatNumber is fixed at 2 decimals, which renders a sub-micromolar IC50 as "0.00"
+function formatStatistic(value: number): string {
+  return value !== 0 && (Math.abs(value) < 0.001 || Math.abs(value) >= 1e6) ?
+    DG.format(value, 'scientific') : StringUtils.formatNumber(value);
+}
+
 export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries, renderOptions: FitStatisticsRenderOptions): void {
   const screenBounds = renderOptions.screenBounds!;
   const statistics = screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
@@ -382,17 +388,21 @@ export function renderStatistics(g: CanvasRenderingContext2D, series: IFitSeries
   if ((series.showFitLine ?? true) && statistics && statistics.length > 0) {
     const dataBox = renderOptions.dataBox;
     const dataPoints = renderOptions.dataPoints;
-    const seriesStatistics = getSeriesStatistics(series, renderOptions.fitFunc, dataPoints, renderOptions.logOptions);
+    const fitFunc = renderOptions.fitFunc!;
+    const fit = toDataSpace(getSeriesFit(series, fitFunc, dataPoints, renderOptions.logOptions),
+      renderOptions.logOptions);
     const color = getSeriesColor(series, renderOptions.seriesIdx!, ColorType.FIT_LINE);
-    for (let i = 0; i < statistics.length; i++) {
-      const statName = statistics[i];
-      const prop = statisticsProperties.find((p) => p.name === statName);
-      if (prop) {
-        const s = StringUtils.formatNumber(prop.get(seriesStatistics));
-        g.fillStyle = color;
-        g.textAlign = 'left';
-        g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * i);
-      }
+    let line = 0;
+    for (const statName of statistics) {
+      const value = getStatistic(fit, statName);
+      const prop = getStatisticProperty(fitFunc, statName);
+      // skip statistics this fit function does not produce instead of rendering NaN
+      if (value === undefined || !prop)
+        continue;
+      g.fillStyle = color;
+      g.textAlign = 'left';
+      g.fillText(`${prop.friendlyName}: ${formatStatistic(value)}`, dataBox.x + 5, dataBox.y + 20 + 20 * line);
+      line++;
     }
   }
 }

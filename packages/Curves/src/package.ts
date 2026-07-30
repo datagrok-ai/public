@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {FitGridCellHandler, calculateSeriesStats, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
+import {FitGridCellHandler, calculateSeriesFit, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
 import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
 import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
@@ -16,6 +16,7 @@ import {convertPzfxToJson} from './fit/converters/pzfx-converter';
 import {registerCurveConverter, initExternalConverters} from './fit/curve-converter';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {getStatistic} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 // import {PlateWidget} from './plate/plate-widget';
 
@@ -165,8 +166,9 @@ export class PackageFunctions {
           chartData.series?.some((series) => series.points.some((p) => p.x === 0)))
           substituteZeroes(chartData);
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-        const fitResult = calculateSeriesStats(chartData.series![seriesNumber], seriesNumber, chartLogOptions, cell, true);
-        return fitResult[propName as keyof FitStatistics];
+        // resolve by name so both current statistic names and legacy ones from saved projects work
+        const fitResult = calculateSeriesFit(chartData.series![seriesNumber], seriesNumber, chartLogOptions, cell, true);
+        return getStatistic(fitResult, propName) ?? null;
       });
 
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);

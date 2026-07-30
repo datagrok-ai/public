@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   FitErrorModel,
-  getStatistics,
   getFittedCurve,
   FitStatistics,
   FitConfidenceIntervals,
@@ -16,7 +15,7 @@ import {
   IFitChartOptions,
   FitErrorModelType,
 } from './fit-curve';
-import {fitData, FitFunction, fitSeriesProperties,
+import {Fit, fitData, FitFunction, fitSeriesProperties, getStatistic,
   getCurveConfidenceIntervals, getOrCreateFitFunction} from './new-fit-API';
 
 export type LogOptions = {
@@ -222,9 +221,10 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
     series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
 
-/** Returns series statistics */
-export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
-  logOptions?: LogOptions): FitStatistics {
+/** Returns the typed fit result of a series, fitting on the fly when parameters are not supplied.
+ * This is the single source of truth for fit statistics - {@link getSeriesStatistics} derives from it. */
+export function getSeriesFit<T extends Fit>(series: IFitSeries, fitFunc: FitFunction<T>,
+  dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T {
   dataPoints ??= getDataPoints(series, logOptions, false);
   if (!series.parameters) {
     const params = fitSeries(series, fitFunc, dataPoints).parameters;
@@ -232,5 +232,50 @@ export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, da
   }
   const params = new Float32Array(series.parameters?.length!);
   params.set(series.parameters!);
-  return getStatistics(dataPoints, params, fitFunc.y, true);
+  return fitFunc.fillParams({fittedCurve: getFittedCurve(fitFunc.y, params), parameters: params},
+    series, dataPoints, logOptions);
+}
+
+/** Returns series statistics in the legacy {@link FitStatistics} shape. Statistics that the series fit
+ * function does not produce come back undefined. Prefer {@link getSeriesFit}. */
+export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
+  logOptions?: LogOptions): FitStatistics {
+  return toFitStatistics(getSeriesFit(series, fitFunc, dataPoints, logOptions));
+}
+
+const X_SPACE_STATISTICS = ['ic50', 'ec50'];
+const Y_SPACE_STATISTICS = ['top', 'bottom', 'interceptY', 'maxY', 'minY'];
+
+/** Converts a fit from fit space back to data space. The optimizer runs on log10-transformed axes when
+ * logX/logY are set, so the raw parameters are logarithms. Everything shown to a user - plot, property
+ * panel, extracted columns - must pass through here exactly once, and aggregation must happen before it. */
+export function toDataSpace<T extends Fit>(fit: T, logOptions?: LogOptions): T {
+  const fields = fit as {[key: string]: any};
+  const unlog = (names: string[]) => {
+    for (const name of names) {
+      if (typeof fields[name] === 'number')
+        fields[name] = Math.pow(10, fields[name]);
+    }
+  };
+  if (logOptions?.logX)
+    unlog(X_SPACE_STATISTICS);
+  if (logOptions?.logY)
+    unlog(Y_SPACE_STATISTICS);
+  // pIC50 is defined off the molar concentration, so it can only be derived once ic50 is in data space
+  if (typeof fields.ic50 === 'number' && fields.ic50 > 0)
+    fields.pIC50 = -Math.log10(fields.ic50);
+  return fit;
+}
+
+/** Maps a typed fit onto the legacy {@link FitStatistics} shape. */
+export function toFitStatistics(fit: Fit): FitStatistics {
+  return {
+    rSquared: getStatistic(fit, 'rSquared'),
+    auc: getStatistic(fit, 'auc'),
+    interceptX: getStatistic(fit, 'interceptX'),
+    interceptY: getStatistic(fit, 'interceptY'),
+    slope: getStatistic(fit, 'slope'),
+    top: getStatistic(fit, 'top'),
+    bottom: getStatistic(fit, 'bottom'),
+  };
 }

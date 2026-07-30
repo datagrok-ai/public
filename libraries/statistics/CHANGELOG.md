@@ -6,6 +6,12 @@
 * GROK-17637: Fit: Added `FitFunction.statisticsProperties`, describing the statistics each fit function produces
 * GROK-17637: Fit: Added precomputed data points and log options to `fillParams`, and widened its series argument to `IFitSeries`
 * GROK-17637: Fit: Fixed custom JS fit functions losing their fitted parameters, and `4pl-dose-response` reporting `ec50` instead of `ic50`
+* GROK-17637: Fit: Added `getSeriesFit`, `getStatistic` and `getStatisticProperty` - statistics are now derived from the typed fit, with legacy `FitStatistics` names resolved through an alias table
+* GROK-17637: Fit: Added `toDataSpace`, converting log-fitted statistics back to data space in one place for both axes; `pIC50` is derived there
+* GROK-17637: Fit: Added typed `getFitFunction` and `isFit`, and derived the statistic-name unions from the fit classes
+* GROK-17637: Fit: Statistic labels now come from each fit function's `parameterNames`, and `maxY`/`minY` are derived from the asymptotes instead of mislabelling parameter slots
+* GROK-17637: Fit: Tightened `IFitSeriesOptions` - removed the catch-all index signature and typed `fitFunction`, `showPoints` and `droplines`
+* GROK-17637: Fit: Fixed `FitSeries.fit` being a circular own property that made `JSON.stringify` of a series throw
 
 ## 1.12.9 (2026-07-16)
 
