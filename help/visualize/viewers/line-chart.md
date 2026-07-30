@@ -128,6 +128,9 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Vertical Grid Lines | boolean |  |
 | X Axis Label Orientation | string |  |
 | X Axis Tickmarks Mode | axistickmarksmode |  |
+| X Sort By Column Name | string | Sorts the X categories by this column: numerical - by *X Sort By Aggr*, categorical - by its values. |
+| X Sort By Aggr | string | Aggregation used to compute the per-category sort key for the X axis. |
+| X Sort Order | string | Whether the X axis categories are sorted in ascending or descending order. |
 | **Y** | | |
 | Y Column Names | list | Numerical columns to be used on Y axes. Depending on the * |
 | Y Axis Type | string |  |

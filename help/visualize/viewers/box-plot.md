@@ -86,6 +86,9 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Show Category Selector | boolean |  |
 | Label Orientation | textorientation |  |
 | Show Minor Categories | boolean | Display subcategories - category combinations in the x axis table. |
+| Category Sort By Column Name | string | Sorts the categories by this column: numerical - by *Category Sort By Aggr*, categorical - by its values. |
+| Category Sort By Aggr | string | Aggregation used to compute the per-category sort key. |
+| Category Sort Order | string | Whether the categories are sorted in ascending or descending order. |
 | **Value** | | |
 | Value Column Name | string |  |
 | Axis Type | string |  |

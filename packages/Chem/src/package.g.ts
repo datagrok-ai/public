@@ -1023,6 +1023,15 @@ export async function getProperties(molecules: DG.Column, selected?: string[]) :
   return await PackageFunctions.getProperties(molecules, selected);
 }
 
+//name: Molecule Category Order
+//description: Orders the categories of a molecular column by Tanimoto similarity to its first molecule
+//input: column molecules { semType: Molecule }
+//output: column result
+//meta.role: categoryOrderer
+export async function orderMoleculeCategories(molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.orderMoleculeCategories(molecules);
+}
+
 //name: Toxicity Risks
 //description: Predicts toxicity risks (mutagenicity, tumorigenicity, irritating and reproductive effects) and adds them as columns.
 //input: dataframe table { description: Input data table }
