@@ -146,6 +146,10 @@ export interface EnumeratorConfigFormDeps {
   // and RunControls exist; both are constructed after this form since they depend on its inputs).
   getPreviewRecapCard: () => HTMLElement;
   getPreviewEnumerateBtnWrap: () => HTMLElement;
+  // Late-bound (see enumerator-app.ts's ctx pattern) — the real implementation needs the DataPanel
+  // instances, constructed after this form. Used only to decide whether Save YAML should warn that
+  // per-round subsets won't be included (they're tied to the currently loaded files, not the config).
+  hasAnyPerRoundOverride: () => boolean;
 }
 
 /** Owns `config` itself, every data/quick-config input, YAML load/save, and validation. Composes
@@ -356,6 +360,15 @@ export class EnumeratorConfigForm {
     this.saveYamlBtn = ui.iconFA('arrow-to-bottom', () => {
       this.syncQuickInputsToConfig();
       DG.Utils.download('enumerator-config.yaml', configToYaml(this.config), 'text/yaml');
+      // Neither the actual template/BB/reagent files nor any per-round subsets travel with the
+      // config — files are never auto-loaded from it (you always pick them yourself), and subsets
+      // are tied to specific rows of whichever files happen to be loaded, not to reusable settings.
+      let msg = 'Saved settings only — the template/building-block/reagent files aren\'t included; ' +
+        'select those again yourself when loading this config.';
+      if (this.deps.hasAnyPerRoundOverride()) {
+        msg += ' Per-round subsets ("Subset by selection") aren\'t included either, for the same reason.';
+      }
+      grok.shell.info(msg);
     }, 'Download the current config as a YAML file.');
 
     // ---- Layout: strategy cards, left-nav accordion, ribbon chips (see EnumeratorNav) ----

@@ -244,9 +244,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // onChanged inline) is now a harmless no-op instead of a "Cannot access 'X' before
   // initialization" crash. Reassigned to the real implementations once everything they coordinate
   // exists — see the bottom of this function.
-  const ctx: {refreshValidation: () => void; refreshCfgRibbon: () => void} = {
+  const ctx: {
+    refreshValidation: () => void; refreshCfgRibbon: () => void; hasAnyPerRoundOverride: () => boolean;
+  } = {
     refreshValidation: () => {},
     refreshCfgRibbon: () => {},
+    hasAnyPerRoundOverride: () => false,
   };
 
   // switchTabForAccPane/chipForPane/openAccPaneAndSyncTab stay plain hoisted function statements
@@ -307,6 +310,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     view, viewerHost, refreshValidation: () => ctx.refreshValidation(), openAccPaneAndSyncTab,
     getPreviewRecapCard: () => previewPanel.buildRecapCard(),
     getPreviewEnumerateBtnWrap: () => runControls.previewEnumerateBtnWrap,
+    hasAnyPerRoundOverride: () => ctx.hasAnyPerRoundOverride(),
   });
 
   configForm.chipReactionsC.root.onclick = () => openAccPaneAndSyncTab(configForm.accReactionsPane);
@@ -470,6 +474,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // Every class above received a `ctx.refreshValidation()`/`ctx.refreshCfgRibbon()` indirection
   // rather than a direct function reference — reassigning here (now that everything they coordinate
   // exists) takes effect immediately for all of them, with no need to re-thread anything.
+  ctx.hasAnyPerRoundOverride = () => dataCtls.some((p) => p.hasAnyOverride());
   ctx.refreshValidation = (): void => {
     // validate() syncs quick inputs into config as its own first step — call it before
     // refreshCfgRibbon()/refreshStrategyCards() so they read the just-updated config, instead of
