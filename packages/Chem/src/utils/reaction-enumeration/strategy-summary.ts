@@ -3,12 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {
-  CHANGED_DOT_STYLE, combinationLimitsChanged, MODE_LABEL, OVERRIDE_DOT_COLOR, panelHeader,
-  productFiltersChangedCount, roundsLabel, tabPanel,
+  CHANGED_DOT_STYLE, combinationLimitsChanged, DataKey, estimateProductCount, Mode, MODE_LABEL,
+  OVERRIDE_DOT_COLOR, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
 } from './enumerator-app';
-
-type Mode = 'depth' | 'breadth' | 'reagents';
-type DataKey = 'templates' | 'buildingBlocks' | 'reagents';
 
 export interface StrategySummaryDeps {
   getConfig: () => EnumeratorConfig;
@@ -49,7 +46,7 @@ export class StrategySummary {
     const bDf = this.deps.bbsInput.value;
     const mode = this.deps.currentMode();
     const rounds = this.deps.currentRounds();
-    const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
+    const n = estimateProductCount(tDf, bDf);
 
     // Per-round subset overrides, computed once for both the round diagram and the per-component
     // sections below.
@@ -108,7 +105,8 @@ export class StrategySummary {
       const hasExclusion = !!xDf && xDf.rowCount > 0;
       if (changedFilters > 0 || hasExclusion) {
         const bits: string[] = [];
-        if (changedFilters > 0) bits.push(`${changedFilters} limit${changedFilters > 1 ? 's' : ''} changed from defaults`);
+        if (changedFilters > 0)
+          bits.push(`${changedFilters} limit${changedFilters > 1 ? 's' : ''} changed from defaults`);
         if (hasExclusion) bits.push('exclusion substructures active');
         const caveatEl = ui.divText(`${bits.join(', ')} — actual output may be lower than this estimate.`,
           {style: {marginTop: '4px', fontSize: '11px', color: 'var(--grey-5)'}});

@@ -20,6 +20,11 @@ export const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
 // Shared look for the small "changed/custom" dots; call sites add their own display mode and spacing.
 export const CHANGED_DOT_STYLE = {width: '6px', height: '6px', borderRadius: '50%', background: OVERRIDE_DOT_COLOR};
 
+// Single source of truth for the enumeration-mode/data-key literal unions — every module that
+// needs them imports from here instead of redeclaring the same literals.
+export type Mode = 'depth' | 'breadth' | 'reagents';
+export type DataKey = 'templates' | 'buildingBlocks' | 'reagents';
+
 // Shared mode label/rounds text — used by the ribbon chip, the Strategy summary, and the Preview
 // recap so they can't drift out of sync (e.g. one saying "2 rounds", another "1 rounds").
 export const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
@@ -32,9 +37,15 @@ export function combinationLimitsChanged(cfg: EnumeratorConfig): boolean {
     cfg.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output;
 }
 
+// Shared naive product-count estimate — used by the ribbon chip and the Strategy summary so they
+// can't drift out of sync (e.g. one estimate rounding differently from the other).
+export function estimateProductCount(tDf: DG.DataFrame | null, bDf: DG.DataFrame | null): number {
+  return (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
+}
+
 // Shared panel chrome — a hint/status header bar plus a content host — used by every right-pane
 // tab (data grids, Strategy summary, Preview).
-export const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTMLElement): HTMLElement => {
+export const panelHeader = (hint: string, status?: HTMLElement): HTMLElement => {
   // flex:0 0 auto (not 1 1 auto) so hint and status sit side by side, both left-aligned, instead
   // of hint growing to push status to the far right of the row.
   const hintEl = ui.divText(hint, {style: {
@@ -42,7 +53,6 @@ export const panelHeader = (hint: string, subsetBtn?: HTMLElement, status?: HTML
   }});
   const children: HTMLElement[] = [hintEl];
   if (status) children.push(status);
-  if (subsetBtn) children.push(subsetBtn);
   return ui.div(children, {style: {
     display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
     padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)',
@@ -111,9 +121,11 @@ export const MAX_ROUNDS = 10;
 
 // Sniff string columns and set semType so the grid renders reactions and molecules: presence of
 // `>>` in sampled values wins as ChemicalReaction, else auto-detection handles Molecule etc.
-export function detectChemSemTypes(df: DG.DataFrame): void {
+export function detectChemSemTypes(df: DG.DataFrame): Promise<void> {
   // detectSemanticTypes() scans the WHOLE dataframe; calling it per-column made this O(columns²)
   // and it ran on every step-clone. Tag ChemicalReaction columns first, then auto-detect once.
+  // Returns the scan's own promise so a caller that needs to wait for it (e.g. loadBundledCsv) can
+  // await this call directly instead of triggering a second, redundant full-table scan.
   for (const col of df.columns.toList()) {
     if (col.type !== DG.COLUMN_TYPE.STRING) continue;
     if (col.semType) continue;
@@ -129,7 +141,7 @@ export function detectChemSemTypes(df: DG.DataFrame): void {
     if (samples.some((s) => s.includes('>>')))
       col.semType = 'ChemicalReaction';
   }
-  df.meta.detectSemanticTypes();
+  return df.meta.detectSemanticTypes();
 }
 
 function getStringColumn(df: DG.DataFrame, name: string): string[] {
@@ -311,10 +323,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
 
   // Per-component "Subset by selection" now lives inside each tab's step bar (see DataPanel).
 
-  // ---- Single-grid per-component panel with a per-step strip ----
-  // Each data tab shows ONE grid plus a horizontal step strip: "All steps" shows the full library
-  // (with the global "Subset by selection"); "Step k" shows a display-only clone whose row selection
-  // is that round's subset. Switching chips swaps what the single grid displays — no second grid.
+  // ---- Single-grid per-component panel with a per-step strip (see DataPanel's class doc) ----
   const dataPanelDeps: DataPanelDeps = {
     view, viewerHost, getConfig: configForm.getConfig, currentMode: configForm.currentMode,
     currentRounds: configForm.currentRounds,
@@ -462,12 +471,12 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // rather than a direct function reference — reassigning here (now that everything they coordinate
   // exists) takes effect immediately for all of them, with no need to re-thread anything.
   ctx.refreshValidation = (): void => {
-    // Sync before reading config below — validate() syncs too, but only after refreshCfgRibbon(),
-    // which would otherwise read one refresh behind.
-    configForm.syncQuickInputsToConfig();
+    // validate() syncs quick inputs into config as its own first step — call it before
+    // refreshCfgRibbon()/refreshStrategyCards() so they read the just-updated config, instead of
+    // syncing here too and reading one refresh behind.
+    const err = configForm.validate();
     ctx.refreshCfgRibbon();
     configForm.refreshStrategyCards();
-    const err = configForm.validate();
     validationDiv.textContent = err ?? '';
     runControls.setValidation(err);
   };

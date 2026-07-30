@@ -5,11 +5,9 @@ import {enumerate, OutputRow, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {MountedViewerRegistry} from './viewer-mount';
 import {
-  BuiltInputs, buildInputs, buildResultDataFrame, MODE_LABEL, panelHeader, roundsLabel, tabPanel,
+  BuiltInputs, buildInputs, buildResultDataFrame, DataKey, Mode, MODE_LABEL, panelHeader, roundsLabel,
+  tabPanel,
 } from './enumerator-app';
-
-type Mode = 'depth' | 'breadth' | 'reagents';
-type DataKey = 'templates' | 'buildingBlocks' | 'reagents';
 
 // Small enough to compute fast, large enough to show a representative mixed sample.
 const PREVIEW_TARGET_ROWS = 20;
@@ -66,7 +64,7 @@ export class PreviewPanel {
     this.recapHost = ui.div([], {style: {fontSize: '12px'}});
     this.host = ui.div([]);
     this.status = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
-    const header = panelHeader('Quick preview of a small product sample.', undefined, this.status);
+    const header = panelHeader('Quick preview of a small product sample.', this.status);
     this.panel = tabPanel(header, this.host);
   }
 
@@ -122,18 +120,20 @@ export class PreviewPanel {
     if (content) this.host.appendChild(content);
   }
 
+  private showMessage(text: string, color = 'var(--grey-5)'): void {
+    this.showInPreview(ui.divText(text, {style: {color, padding: '20px', textAlign: 'center'}}));
+  }
+
   async refresh(): Promise<void> {
     const myRunId = ++this.runId;
     const err = this.deps.validate();
     if (err) {
       this.status.textContent = '';
-      this.showInPreview(ui.divText(`Fix the validation error first: ${err}`,
-        {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
+      this.showMessage(`Fix the validation error first: ${err}`);
       return;
     }
     this.status.textContent = 'running preview…';
-    this.showInPreview(ui.divText('Computing preview…',
-      {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
+    this.showMessage('Computing preview…');
 
     const config = this.deps.getConfig();
     const tDf = this.deps.templatesInput.value!;
@@ -146,16 +146,14 @@ export class PreviewPanel {
       inputs = buildInputs(config, tDf, bDf, xDf, rDf);
     } catch (e) {
       this.status.textContent = '';
-      this.showInPreview(ui.divText(e instanceof Error ? e.message : String(e),
-        {style: {color: 'var(--red-3)', padding: '20px', textAlign: 'center'}}));
+      this.showMessage(e instanceof Error ? e.message : String(e), 'var(--red-3)');
       return;
     }
 
     let rdkit: ReturnType<typeof getRdKitModule>;
     try {rdkit = await getRdKitModule();} catch (e) {
       this.status.textContent = '';
-      this.showInPreview(ui.divText(`Could not load RDKit: ${e instanceof Error ? e.message : String(e)}`,
-        {style: {color: 'var(--red-3)', padding: '20px', textAlign: 'center'}}));
+      this.showMessage(`Could not load RDKit: ${e instanceof Error ? e.message : String(e)}`, 'var(--red-3)');
       return;
     }
     if (myRunId !== this.runId) return;
@@ -180,17 +178,15 @@ export class PreviewPanel {
     } catch (e) {
       if (myRunId !== this.runId) return;
       this.status.textContent = '';
-      this.showInPreview(ui.divText(`Preview failed: ${e instanceof Error ? e.message : String(e)}`,
-        {style: {color: 'var(--red-3)', padding: '20px', textAlign: 'center'}}));
+      this.showMessage(`Preview failed: ${e instanceof Error ? e.message : String(e)}`, 'var(--red-3)');
       return;
     }
     if (myRunId !== this.runId) return;
 
     if (rows.length === 0) {
       this.status.textContent = '';
-      this.showInPreview(ui.divText('No products produced within the preview budget. Try relaxing ' +
-        'filters or verifying that templates and building blocks are compatible.',
-      {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}}));
+      this.showMessage('No products produced within the preview budget. Try relaxing filters or ' +
+        'verifying that templates and building blocks are compatible.');
       return;
     }
 
@@ -200,6 +196,7 @@ export class PreviewPanel {
     // column, so skip extendLastColumn.
     this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110, extendLastColumn: false});
     this.status.textContent =
-      `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} rounds, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
+      `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} ` +
+      `rounds, ≤ ${PREVIEW_MAX_COMBOS_PER_TEMPLATE} combos / template)`;
   }
 }

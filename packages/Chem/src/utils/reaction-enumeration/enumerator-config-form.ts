@@ -4,16 +4,15 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package, PackageFunctions} from '../../package';
 import {cloneConfig, configFromYaml, configToYaml, DEFAULT_CONFIG, EnumeratorConfig} from './config';
-import {buildCombinationLimitFields, buildProductFilterFields} from './config-form';
+import {buildCombinationLimitFields, buildProductFilterFields, fixNullableIntStepper} from './config-form';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {tryGetRxn} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
 import {ChipEl, EnumeratorNav} from './enumerator-nav';
 import {
-  combinationLimitsChanged, detectChemSemTypes, MAX_ROUNDS, MODE_LABEL, productFiltersChangedCount, roundsLabel,
+  combinationLimitsChanged, detectChemSemTypes, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
+  productFiltersChangedCount, roundsLabel,
 } from './enumerator-app';
-
-type Mode = 'depth' | 'breadth' | 'reagents';
 
 const BUNDLED_TEMPLATES = 'enumerations/reactions.csv';
 const BUNDLED_BBS = 'enumerations/bb.csv';
@@ -24,8 +23,7 @@ async function loadBundledCsv(name: string): Promise<DG.DataFrame | null> {
     const text = await _package.files.readAsText(name);
     const df = DG.DataFrame.fromCsv(text);
     df.name = name.replace(/\.csv$/i, '');
-    detectChemSemTypes(df);
-    await df.meta.detectSemanticTypes();
+    await detectChemSemTypes(df);
     return df;
   } catch (e) {
     console.warn(`Could not load bundled file ${name}: ${e}`);
@@ -311,10 +309,7 @@ export class EnumeratorConfigForm {
       nullable: true, showPlusMinus: true,
     });
     this.maxRoutesInput.setTooltip('Cap on the number of routes saved per product. Leave blank for no cap.');
-    // Decrementing the stepper past 0 floors through to -1 instead of blank.
-    this.maxRoutesInput.onChanged.subscribe(() => {
-      if (this.maxRoutesInput.value === -1) this.maxRoutesInput.value = null;
-    });
+    fixNullableIntStepper(this.maxRoutesInput);
 
     // ---- Info icons ----
     // appInfoIcon: what this app is / how it works. configInfoIcon: full current config as a card.
@@ -334,16 +329,11 @@ export class EnumeratorConfigForm {
     this.syncQuickInputsToConfig();
 
     // Re-validate on every input change so the Run button stays accurate.
-    const wireValidation = (input: DG.InputBase<unknown>): void => {
-      this.deps.view.subs.push(input.onChanged.subscribe(() => {
-        this.deps.refreshValidation();
-      }));
-    };
     [this.smartsColInput, this.blockingColInput, this.rxnNameColInput, this.bbColInput, this.reagentsColInput,
       this.exclusionInput, this.exclusionColInput, this.numRoundsInput, this.depthFirstInput,
       this.maxComponentsInput, this.maxRoutesInput,
       ...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs,
-    ].forEach((inp) => wireValidation(inp));
+    ].forEach((inp) => this.wireValidationOne(inp));
 
     // ---- Buttons ----
     // Icon buttons in the ribbon: 'folder-open' for import, 'arrow-to-bottom' for export.
@@ -401,9 +391,10 @@ export class EnumeratorConfigForm {
   }
 
   static async create(deps: EnumeratorConfigFormDeps): Promise<EnumeratorConfigForm> {
-    const templatesDf = await loadBundledCsv(BUNDLED_TEMPLATES);
-    const bbsDf = await loadBundledCsv(BUNDLED_BBS);
-    const exclusionDf = await loadBundledCsv(BUNDLED_EXCLUSION);
+    // The three bundled files are unrelated (no data dependency) — load them in parallel.
+    const [templatesDf, bbsDf, exclusionDf] = await Promise.all([
+      loadBundledCsv(BUNDLED_TEMPLATES), loadBundledCsv(BUNDLED_BBS), loadBundledCsv(BUNDLED_EXCLUSION),
+    ]);
     return new EnumeratorConfigForm(deps, templatesDf, bbsDf, exclusionDf);
   }
 
@@ -652,7 +643,7 @@ export class EnumeratorConfigForm {
     const mode = this.currentMode();
     const MODE_ABBR = {depth: 'DF', breadth: 'BF', reagents: 'RM'} as const;
     const roundsText = roundsLabel(this.currentRounds());
-    const n = (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
+    const n = estimateProductCount(tDf, bDf);
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);
     this.nav.applyRibbonState({

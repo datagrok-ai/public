@@ -44,11 +44,11 @@ export class MountedViewerRegistry {
     }
   }
 
-  applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
+  private applyGridColumnSizing(grid: DG.Grid, extendLast = true): void {
     try {
       grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
       if (extendLast) grid.props.extendLastColumn = true;
-    } catch { /* setColumnsWidthType not available on older Dart builds */ }
+    } catch {/* setColumnsWidthType not available on older Dart builds */}
   }
 
   // A single RAF after appending a resizable ui.splitH isn't reliably enough for a real clientWidth
@@ -96,7 +96,8 @@ export class MountedViewerRegistry {
         // it histogram<->categorical — a separate bug from, and not fixed by, the subset-clone filter
         // reset above. A categorical filter has no degenerate-range code path, so route zero-variance
         // numeric columns there instead of ever constructing the buggy histogram widget.
-        type: col.isNumerical ? (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
+        type: col.isNumerical ?
+          (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
           col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
         column: col.name,
       }));
@@ -122,15 +123,21 @@ export class MountedViewerRegistry {
       this.sizeSplitOnceLaidOut(filtersWrap, gridWrap, (total) => Math.min(260, Math.round(total * 0.25)));
   }
 
-  // Shared by every "this table should show every row" reset after a mount: subsetBySelection,
-  // restoreFullTable, subsetStepBySelection, useAllForStep. Tracked in `pendingTimers` so a closing
-  // view can cancel it before it fires against an already-closed DataFrame.
-  deferredFilterReset(df: DG.DataFrame): void {
+  // Shared tracked-timer lifecycle behind both deferredFilterReset and withPreservedFilters — a
+  // closing view cancels every pending id via `pendingTimers` (see the constructor), so both callers
+  // route through this one bookkeeping path instead of repeating it.
+  private scheduleTimer(fn: () => void): void {
     const id = setTimeout(() => {
       this.pendingTimers.delete(id);
-      df.filter.setAll(true, true);
+      fn();
     }, FILTER_REMOUNT_SETTLE_MS);
     this.pendingTimers.add(id);
+  }
+
+  // Shared by every "this table should show every row" reset after a mount: doSubsetBySelection,
+  // doRestoreFullTable, subsetStepBySelection, useAllForStep.
+  deferredFilterReset(df: DG.DataFrame): void {
+    this.scheduleTimer(() => df.filter.setAll(true, true));
   }
 
   // Rebuilding the quick inputs from a loaded YAML config (see syncConfigToQuickInputs) cascades
@@ -142,10 +149,8 @@ export class MountedViewerRegistry {
   withPreservedFilters(dfs: DG.DataFrame[], fn: () => void): void {
     const saved = dfs.map((d) => ({df: d, mask: d.filter.clone()}));
     fn();
-    const id = setTimeout(() => {
-      this.pendingTimers.delete(id);
+    this.scheduleTimer(() => {
       for (const {df, mask} of saved) df.filter.copyFrom(mask, true);
-    }, FILTER_REMOUNT_SETTLE_MS);
-    this.pendingTimers.add(id);
+    });
   }
 }

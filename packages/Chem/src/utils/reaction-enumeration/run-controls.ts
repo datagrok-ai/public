@@ -141,11 +141,11 @@ export class RunControls {
     });
     const elapsed = ((performance.now() - start) / 1000).toFixed(1);
 
-    if (this.cancelled) {
+    if (this.cancelled)
       grok.shell.warning(`Enumeration cancelled. Partial results: ${rows.length} rows.`);
-    } else {
+    else
       grok.shell.info(`Enumeration done in ${elapsed}s — ${rows.length} rows.`);
-    }
+
     if (warnings.length > 0) {
       console.warn('Enumeration warnings:', warnings);
       // Surface the actual warning TEXT, not just a count — e.g. a per-step override silently not

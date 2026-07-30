@@ -2,9 +2,7 @@
 import {Subscription} from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {CHANGED_DOT_STYLE} from './enumerator-app';
-
-type Mode = 'depth' | 'breadth' | 'reagents';
+import {CHANGED_DOT_STYLE, Mode} from './enumerator-app';
 
 export type ChipEl = {root: HTMLElement; textEl: HTMLElement; dot: HTMLElement};
 type StratCard = {root: HTMLElement; icon: HTMLElement};
@@ -249,15 +247,19 @@ export class EnumeratorNav {
     // labels aligned. 150px matches the platform's own un-condensed default.
     const sharedEditorWidth = 150;
     // Mirrors the per-input-type minimum widths the platform itself uses to decide .ui-form-condensed
-    // (js-api ui.ts's getInputsMinWidths — text/table inputs need 200px, float/date 140px, everything
-    // else 100px). Sizing the form to fit the widest one up front, the same way the platform already
-    // does for its own dialog forms (a min-width computed from label + input minimums instead of
-    // reacting to condensed after the fact), means these forms never need condensed layout at all.
+    // (js-api ui.ts's getInputsMinWidths). Sizing the form to fit the widest one up front, the same
+    // way the platform already does for its own dialog forms (a min-width computed from label + input
+    // minimums instead of reacting to condensed after the fact), means these forms never need
+    // condensed layout at all. Named constants (not inlined) so a future change to those platform
+    // thresholds is easier to spot and re-sync here.
+    const PLATFORM_MIN_WIDTH_TEXT_TABLE = 200;
+    const PLATFORM_MIN_WIDTH_FLOAT_DATE = 140;
+    const PLATFORM_MIN_WIDTH_DEFAULT = 100;
     const platformInputMinWidth = (input: DG.InputBase<unknown>): number => {
       const el = input.root;
-      if (el.classList.contains('ui-input-text') || el.classList.contains('ui-input-table')) return 200;
-      if (el.classList.contains('ui-input-float') || el.classList.contains('ui-input-date')) return 140;
-      return 100;
+      if (el.classList.contains('ui-input-text') || el.classList.contains('ui-input-table')) return PLATFORM_MIN_WIDTH_TEXT_TABLE;
+      if (el.classList.contains('ui-input-float') || el.classList.contains('ui-input-date')) return PLATFORM_MIN_WIDTH_FLOAT_DATE;
+      return PLATFORM_MIN_WIDTH_DEFAULT;
     };
     const formMinInputWidth = Math.ceil(Math.max(...sectionInputs.map(platformInputMinWidth)));
     // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
