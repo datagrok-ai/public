@@ -14,3 +14,21 @@
 .c2-comparison-rows .c2-comparison-row.c2-comparison-row-selected {
     background-color: var(--grey-0, #f4f6f9);
 }
+
+/* table-like lists: columns are sized by content and shared across rows via subgrid,
+   so trailing cells sit right after the first column instead of the far row edge */
+.c2-comparison-table {
+    display: grid;
+    column-gap: 6px;
+}
+
+.c2-comparison-table .c2-comparison-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+}
+
+.c2-comparison-table .c2-comparison-row > * {
+    min-width: 0;
+}

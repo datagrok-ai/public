@@ -352,12 +352,13 @@ export const RunComparison = Vue.defineComponent({
         </div>
         { indexTables.value.length > 0 && filteredIndexTables.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>No tables match the filter</div> }
-        <div class='c2-comparison-rows'>
+        <div class='c2-comparison-rows c2-comparison-table'
+          style={{gridTemplateColumns: 'fit-content(480px) max-content 1fr'}}>
           { filteredIndexTables.value.map(({entryId, entryName, table, candidates, current}) => {
             const suggestion = suggestedIndex(candidates);
             return <div key={`${entryId}:${table.path}`} class='c2-comparison-row'
-              style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
-            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
+              style={{padding: '2px 6px'}}>
+            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
               title={`${entryName} · ${table.path}`}>
               {entryName} · <span style={{color: 'var(--grey-5)'}}>{table.friendlyPath ?? table.path}</span>
             </span>
@@ -392,24 +393,27 @@ export const RunComparison = Vue.defineComponent({
           </div> }
         { targets.value.length > 0 && filteredTargets.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>No values match the filter</div> }
-        <div class='c2-comparison-rows'>
+        <div class='c2-comparison-rows c2-comparison-table'
+          style={{gridTemplateColumns: 'max-content fit-content(400px) max-content max-content max-content 1fr'}}>
           { filteredTargets.value.map((target) => {
             const isSelected = target.key === selectedTargetKey.value;
             return <div
               key={target.key}
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 6px', cursor: 'pointer',
+                padding: '3px 6px', cursor: 'pointer',
                 border: `1px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
               }}
               onClick={() => selectedTargetKey.value = target.key}
             >
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
-            <span style={{flex: '1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+              title={target.displayName}>
               {target.displayName}
             </span>
-            { target.unitsWarning &&
-              <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> }
+            { target.unitsWarning ?
+              <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
+              <span></span> }
             <span style={{
               fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
               background: CONFIDENCE_COLORS[target.confidence], flexShrink: '0',
