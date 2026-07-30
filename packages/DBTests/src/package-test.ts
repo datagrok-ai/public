@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {runTests, tests, TestContext, test as _test, category, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 import './connections/queries-test';
 import './benchmarks/benchmark';
+import './benchmarks/clickhouse-streaming';
 import './cache/cache-test';
 import './connections/table-query-test';
 import './db-annotations/db-annotations';

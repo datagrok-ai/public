@@ -256,6 +256,30 @@ export namespace queries {
     return await grok.data.query('DBTests:ClickHousePatternsAllParams', { first_name, id, bool, email, some_number, country, date });
   }
 
+  export async function clickHouseStreamingInts(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseStreamingInts', {});
+  }
+
+  export async function clickHouseStreamingLowCardinality(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseStreamingLowCardinality', {});
+  }
+
+  export async function clickHouseStreamingMixed(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseStreamingMixed', {});
+  }
+
+  export async function clickHouseStreamingWideStrings(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseStreamingWideStrings', {});
+  }
+
+  export async function clickHouseStreamingUnsupportedTypes(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseStreamingUnsupportedTypes', {});
+  }
+
+  export async function clickHouseStreamingRows(rows: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:ClickHouseStreamingRows', { rows });
+  }
+
   export async function mariaDbDateTypes(): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:MariaDbDateTypes', {});
   }

@@ -1,0 +1,19 @@
+{
+  "#type": "DataConnection",
+  "name": "ClickHouseStreaming",
+  "friendlyName": "ClickHouse Streaming (ADBC)",
+  "parameters": {
+    "connectionType": "ADBC",
+    "server": "db.datagrok.ai",
+    "port": 18125,
+    "db": "test"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "kNjsC8q830WHUBNC8VndhojSR4GAdqryiZhY"
+    }
+  },
+  "dataSource": "ClickHouse",
+  "description": "ClickHouse 26.3 test instance (clickhouse-test, port 18125), routed through the ADBC/Arrow connector via connectionType. Multi-chunk streaming queries."
+}
