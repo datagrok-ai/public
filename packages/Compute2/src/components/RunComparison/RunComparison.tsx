@@ -541,7 +541,7 @@ export const RunComparison = Vue.defineComponent({
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
               style={{
                 padding: '3px 6px', cursor: 'pointer',
-                border: `1px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
+                borderLeft: `3px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
               }}
               onClick={onRowClick}
             >

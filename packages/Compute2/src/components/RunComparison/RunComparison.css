@@ -12,7 +12,7 @@
 }
 
 .c2-comparison-rows .c2-comparison-row.c2-comparison-row-selected {
-    background-color: var(--grey-0, #f4f6f9);
+    background-color: rgba(32, 131, 213, 0.12);
 }
 
 /* table-like lists: columns are sized by content and shared across rows via subgrid,
