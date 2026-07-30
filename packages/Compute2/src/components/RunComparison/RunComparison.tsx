@@ -586,33 +586,30 @@ export const RunComparison = Vue.defineComponent({
         return null;
       const excludedByBuild = new Map(
         (currentComparison?.excluded ?? []).map((item) => [item.entryId, item.reason]));
-      return <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '4px 0px'}}>
-        { entryStatuses.value.map((status) => {
+      // only runs that could not participate are flagged; matched runs are visible in the chart
+      const problems = entryStatuses.value
+        .map((status) => {
           const entry = entries.value.find((item) => item.id === status.entryId);
-          if (!entry)
-            return null;
           const buildReason = excludedByBuild.get(status.entryId);
-          const matched = status.matched && !buildReason;
-          const reason = buildReason ?? status.reason;
-          const binding = matched ?
-            (target.bindings as {
-              entryId: string, path?: string, friendlyPath?: string,
-              tablePath?: string, tableFriendlyPath?: string, columnName?: string,
-            }[]).find((b) => b.entryId === status.entryId) : undefined;
-          const pathText = binding ?
-            (binding.friendlyPath ?? binding.path ??
-              `${binding.tableFriendlyPath ?? binding.tablePath} · ${binding.columnName}`) : undefined;
-          return <span
-            key={status.entryId}
-            title={pathText ? `${entry.name} · ${pathText}` : entry.name}
+          if (!entry || (status.matched && !buildReason))
+            return null;
+          return {entry, reason: buildReason ?? status.reason};
+        })
+        .filter((item) => item != null);
+      if (problems.length === 0)
+        return null;
+      return <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '4px 0px'}}>
+        { problems.map(({entry, reason}) =>
+          <span
+            key={entry.id}
+            title={entry.name}
             style={{
               fontSize: '11px', borderRadius: '3px', padding: '1px 6px',
-              background: matched ? '#e4f3ea' : '#fbeaea',
-              color: matched ? '#2c7a4b' : '#a94442',
+              background: '#fbeaea', color: '#a94442',
             }}>
-            {entry.name}: {matched ? `matched (${pathText})` : reason}
-          </span>;
-        })}
+            {entry.name}: {reason}
+          </span>,
+        )}
       </div>;
     };
 
@@ -706,16 +703,6 @@ export const RunComparison = Vue.defineComponent({
           onUpdate:size={(size) => chartHeight.value = size}
         />
         { chart }
-        { !('valueColumnNames' in currentComparison) &&
-          <div style={{height: '220px', paddingTop: '6px'}}>
-            <Viewer
-              type='Grid'
-              dataFrame={currentComparison.gridDf}
-              style={{height: '100%', width: '100%'}}
-              options={{'allowEdit': false, 'showRowHeader': false}}
-            />
-          </div>
-        }
       </div>;
     };
 
