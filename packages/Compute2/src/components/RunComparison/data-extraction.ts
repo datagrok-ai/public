@@ -1,11 +1,9 @@
 import * as DG from 'datagrok-api/dg';
-import dayjs from 'dayjs';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
   ComparisonEntryNodes, ScalarNodeInfo, TableNodeInfo, ColumnTarget, ScalarTarget,
-  NumericSeries, KeyedSeries, ExclusionReason,
-  isNumericType, alignSeriesByIndex, alignSeriesByKey, computeDelta, computeDeltaPct,
+  isNumericType,
 } from './comparison-core';
 
 // mirrors CONFIG_PATH in reactive-tree-driver/src/runtime/funccall-utils.ts (not exported there)
@@ -181,68 +179,125 @@ export function entryFromDataFrame(df: DG.DataFrame): ComparisonEntry {
   };
 }
 
-export type ComparisonMode = 'values' | 'delta' | 'deltaPct';
-
-export interface ExcludedEntry {
-  entryId: string;
-  reason: ExclusionReason;
-}
-
 export interface ScalarComparisonResult {
-  gridDf: DG.DataFrame;
   chartDf: DG.DataFrame;
-  excluded: ExcludedEntry[];
 }
 
-/** One row per run: value plus Δ/Δ% against the baseline run. */
+/** One row per run: the scalar value with its source path. */
 export function buildScalarComparison(
   target: ScalarTarget,
   entries: ComparisonEntry[],
-  baselineEntryId: string,
 ): ScalarComparisonResult {
   const ordered = entries.filter((entry) => target.bindings.some((b) => b.entryId === entry.id));
   const bindings = ordered.map((entry) => target.bindings.find((b) => b.entryId === entry.id)!);
-  const values = bindings.map((b) => b.value);
-  const baselineIdx = Math.max(0, ordered.findIndex((entry) => entry.id === baselineEntryId));
-  const baseline = values.map(() => values[baselineIdx]);
-  const delta = computeDelta(values, baseline);
-  const deltaPct = computeDeltaPct(values, baseline);
 
   // fromList with an explicit string type: fromStrings infers the type from values,
   // so numeric-looking run names would produce a numeric column and break chart legends
-  const gridDf = DG.DataFrame.fromColumns([
+  const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, ordered.map((entry) => entry.name)),
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Path', bindings.map((b) => b.friendlyPath ?? b.path)),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, values),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Δ', delta),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Δ%', deltaPct),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, bindings.map((b) => b.value)),
   ]);
-  gridDf.name = `Comparison: ${target.displayName}`;
-  return {gridDf, chartDf: gridDf, excluded: []};
+  chartDf.name = `Comparison: ${target.displayName}`;
+  return {chartDf};
 }
 
 export interface ColumnComparisonResult {
-  gridDf: DG.DataFrame;
   chartDf: DG.DataFrame;
   indexColumnName: string;
+  // display name of the inner split column, when set on any participating table
+  splitColumnName?: string;
   isKeyIndex: boolean;
-  excluded: ExcludedEntry[];
 }
 
 export interface MultiColumnComparisonResult extends ColumnComparisonResult {
-  // chart y-columns, one per selected target x run (baseline excluded in delta modes)
+  // chart y-columns, one per selected target
   valueColumnNames: string[];
 }
 
+interface ParticipatingRun {
+  entry: ComparisonEntry;
+  binding: ColumnTarget['bindings'][number];
+}
+
+function getParticipating(target: ColumnTarget, entries: ComparisonEntry[]): ParticipatingRun[] {
+  return entries
+    .map((entry) => ({entry, binding: target.bindings.find((b) => b.entryId === entry.id)}))
+    .filter((item) => !!item.binding) as ParticipatingRun[];
+}
+
+function getIndexKind(participating: ParticipatingRun[]) {
+  const indexTypes = participating.map(({entry, binding}) =>
+    entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
+  const isDatetimeIndex = indexTypes.every((type) => type === DG.TYPE.DATE_TIME);
+  const isKeyIndex = !isDatetimeIndex && indexTypes.some((type) => type != null && !isNumericType(type));
+  return {isDatetimeIndex, isKeyIndex};
+}
+
+function getSplitName(participating: ParticipatingRun[]): string | undefined {
+  const rawName = participating.map(({binding}) => binding.splitColumnName).find((name) => !!name);
+  return rawName === RUN_COLUMN ? `${rawName} (split)` : rawName;
+}
+
+const makeIndexColumn = (name: string, list: any[], isKeyIndex: boolean, isDatetimeIndex: boolean) => {
+  if (isKeyIndex)
+    return DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, list);
+  if (isDatetimeIndex)
+    return DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, list);
+  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, list);
+};
+
 /**
- * Combines several column targets that share the same bindings (runs, tables, index columns)
- * into one wide comparison: `<target> · <run>` value columns over the shared index.
+ * Concatenates raw rows of all participating runs into one long dataframe;
+ * no row matching, the chart splits by run (and by the inner split column, if set).
+ */
+export function buildColumnComparison(
+  target: ColumnTarget,
+  entries: ComparisonEntry[],
+): ColumnComparisonResult | null {
+  const participating = getParticipating(target, entries);
+  if (participating.length < 2)
+    return null;
+  const {isDatetimeIndex, isKeyIndex} = getIndexKind(participating);
+  const indexColumnName = participating[0].binding.indexColumnName;
+  const splitColumnName = getSplitName(participating);
+
+  const longIndex: any[] = [];
+  const longSplits: string[] = [];
+  const longValues: (number | null)[] = [];
+  const longRuns: string[] = [];
+  for (const {entry, binding} of participating) {
+    const df = entry.dataFrames.get(binding.tablePath)!;
+    const index = df.getCol(binding.indexColumnName).toList();
+    const values = df.getCol(binding.columnName).toList();
+    const splits = binding.splitColumnName ?
+      df.col(binding.splitColumnName)?.toList() : undefined;
+    for (let i = 0; i < index.length; i++) {
+      longIndex.push(isKeyIndex ? `${index[i]}` : index[i]);
+      longValues.push(values[i]);
+      longRuns.push(entry.name);
+      if (splitColumnName)
+        longSplits.push(splits?.[i] == null ? '' : `${splits[i]}`);
+    }
+  }
+
+  const chartDf = DG.DataFrame.fromColumns([
+    makeIndexColumn(indexColumnName, longIndex, isKeyIndex, isDatetimeIndex),
+    ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, longValues),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
+  ]);
+  chartDf.name = `Comparison: ${target.displayName}`;
+  return {chartDf, indexColumnName, splitColumnName, isKeyIndex};
+}
+
+/**
+ * Same as buildColumnComparison for several targets sharing the bindings signature:
+ * one value column per target over the shared concatenated rows.
  */
 export function buildMultiColumnComparison(
   targets: ColumnTarget[],
   entries: ComparisonEntry[],
-  baselineEntryId: string,
-  mode: ComparisonMode,
 ): MultiColumnComparisonResult | null {
   const labels = new Map<string, string>();
   const seenNames = new Map<string, number>();
@@ -252,187 +307,43 @@ export function buildMultiColumnComparison(
     labels.set(target.key, count > 1 ? `${target.displayName} (${count})` : target.displayName);
   }
 
-  const results = targets
-    .map((target) => ({target, result: buildColumnComparison(target, entries, baselineEntryId, 'values')}))
-    .filter((item): item is {target: ColumnTarget, result: ColumnComparisonResult} => item.result != null);
-  if (results.length === 0)
+  const participating = getParticipating(targets[0], entries);
+  if (participating.length < 2)
     return null;
-  const first = results[0].result;
-  if (first.gridDf.rowCount === 0)
-    return {...first, valueColumnNames: []};
+  const {isDatetimeIndex, isKeyIndex} = getIndexKind(participating);
+  const indexColumnName = participating[0].binding.indexColumnName;
+  const splitColumnName = getSplitName(participating);
 
-  const participating = entries.filter((entry) =>
-    results[0].target.bindings.some((b) => b.entryId === entry.id));
-  const baselineIdx = Math.max(0, participating.findIndex((entry) => entry.id === baselineEntryId));
-  const srcIndex = first.gridDf.getCol(first.indexColumnName);
-  const makeIndex = () => DG.Column.fromList(srcIndex.type, first.indexColumnName, srcIndex.toList());
-
-  const usable = results.filter(({result}) => result.gridDf.rowCount === first.gridDf.rowCount);
-  const gridColumns: DG.Column[] = [makeIndex()];
-  for (const {target, result} of usable) {
-    const label = labels.get(target.key)!;
-    for (const entry of participating) {
-      const src = result.gridDf.col(entry.name);
-      if (src)
-        gridColumns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${label} · ${entry.name}`, src.toList()));
-    }
-  }
-
-  // long chart df: one value column per target (a stacked panel each), runs split within
-  const indexValues = srcIndex.toList();
-  const deltaPrefix = mode === 'delta' ? 'Δ ' : mode === 'deltaPct' ? 'Δ% ' : '';
-  const chartRuns = participating.filter((_, i) => mode === 'values' || i !== baselineIdx);
   const longIndex: any[] = [];
+  const longSplits: string[] = [];
   const longRuns: string[] = [];
-  const longValues = new Map<string, (number | null)[]>(usable.map(({target}) => [labels.get(target.key)!, []]));
-  for (const entry of chartRuns) {
-    longIndex.push(...indexValues);
-    longRuns.push(...indexValues.map(() => entry.name));
-    for (const {target, result} of usable) {
-      const src = result.gridDf.col(mode === 'values' ? entry.name : `${deltaPrefix}${entry.name}`);
-      longValues.get(labels.get(target.key)!)!.push(...src ? src.toList() : indexValues.map(() => null));
+  const longValues = new Map<string, (number | null)[]>(targets.map((target) => [labels.get(target.key)!, []]));
+  for (const {entry, binding} of participating) {
+    const df = entry.dataFrames.get(binding.tablePath)!;
+    const index = df.getCol(binding.indexColumnName).toList();
+    const splits = binding.splitColumnName ?
+      df.col(binding.splitColumnName)?.toList() : undefined;
+    for (let i = 0; i < index.length; i++) {
+      longIndex.push(isKeyIndex ? `${index[i]}` : index[i]);
+      longRuns.push(entry.name);
+      if (splitColumnName)
+        longSplits.push(splits?.[i] == null ? '' : `${splits[i]}`);
+    }
+    for (const target of targets) {
+      const targetBinding = target.bindings.find((b) => b.entryId === entry.id);
+      const values = targetBinding ? df.getCol(targetBinding.columnName).toList() : index.map(() => null);
+      longValues.get(labels.get(target.key)!)!.push(...values);
     }
   }
-  const valueColumnNames = usable.map(({target}) => labels.get(target.key)!);
-  const chartColumns = [
-    DG.Column.fromList(srcIndex.type, first.indexColumnName, longIndex),
+
+  const valueColumnNames = targets.map((target) => labels.get(target.key)!);
+  const chartDf = DG.DataFrame.fromColumns([
+    makeIndexColumn(indexColumnName, longIndex, isKeyIndex, isDatetimeIndex),
+    ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
     ...valueColumnNames.map((label) =>
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, longValues.get(label)!)),
-  ];
-
-  const gridDf = DG.DataFrame.fromColumns(gridColumns);
-  gridDf.name = 'Comparison: multiple values';
-  const chartDf = DG.DataFrame.fromColumns(chartColumns);
-  chartDf.name = gridDf.name;
-  return {
-    gridDf,
-    chartDf,
-    indexColumnName: first.indexColumnName,
-    isKeyIndex: first.isKeyIndex,
-    excluded: first.excluded,
-    valueColumnNames,
-  };
-}
-
-/**
- * Aligns the target column across runs on their user-defined index columns
- * (intersection join) and builds the wide grid df and the long chart df.
- */
-export function buildColumnComparison(
-  target: ColumnTarget,
-  entries: ComparisonEntry[],
-  baselineEntryId: string,
-  mode: ComparisonMode,
-): ColumnComparisonResult | null {
-  const participating = entries
-    .map((entry) => ({entry, binding: target.bindings.find((b) => b.entryId === entry.id)}))
-    .filter((item) => !!item.binding) as {entry: ComparisonEntry, binding: ColumnTarget['bindings'][number]}[];
-  if (participating.length < 2)
-    return null;
-
-  const indexTypes = participating.map(({entry, binding}) =>
-    entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
-  // datetime indexes are aligned numerically on unix timestamps (ms)
-  const isDatetimeIndex = indexTypes.every((type) => type === DG.TYPE.DATE_TIME);
-  const isKeyIndex = !isDatetimeIndex &&
-    indexTypes.some((type) => type != null && !isNumericType(type));
-
-  const baselineIdx = Math.max(0, participating.findIndex(({entry}) => entry.id === baselineEntryId));
-  const indexColumnName = participating[baselineIdx].binding.indexColumnName;
-  const excluded: ExcludedEntry[] = [];
-
-  let index: (number | string)[];
-  let values: (number | null)[][];
-  if (isKeyIndex) {
-    const seriesList: KeyedSeries[] = participating.map(({entry, binding}) => {
-      const df = entry.dataFrames.get(binding.tablePath)!;
-      return {
-        keys: df.getCol(binding.indexColumnName).toList().map((v: any) => `${v}`),
-        values: df.getCol(binding.columnName).toList(),
-      };
-    });
-    const aligned = alignSeriesByKey(seriesList, 'intersection');
-    index = aligned.keys;
-    values = aligned.values;
-  } else {
-    const seriesList: NumericSeries[] = participating.map(({entry, binding}) => {
-      const df = entry.dataFrames.get(binding.tablePath)!;
-      const rawIndex = df.getCol(binding.indexColumnName).toList();
-      return {
-        index: isDatetimeIndex ? rawIndex.map((v: any) => v?.valueOf() ?? null) : rawIndex,
-        values: df.getCol(binding.columnName).toList(),
-      };
-    });
-    const aligned = alignSeriesByIndex(seriesList, 'intersection');
-    index = aligned.index;
-    values = aligned.values;
-  }
-
-  if (index.length === 0) {
-    for (const {entry} of participating) {
-      if (entry.id !== participating[baselineIdx].entry.id)
-        excluded.push({entryId: entry.id, reason: isKeyIndex ? 'no matching rows' : 'index grids differ'});
-    }
-    return {
-      gridDf: DG.DataFrame.create(0),
-      chartDf: DG.DataFrame.create(0),
-      indexColumnName,
-      isKeyIndex,
-      excluded,
-    };
-  }
-
-  const baselineValues = values[baselineIdx];
-  const displayValues = values.map((series) => {
-    if (mode === 'delta')
-      return computeDelta(series, baselineValues);
-    if (mode === 'deltaPct')
-      return computeDeltaPct(series, baselineValues);
-    return series;
-  });
-
-  const makeIndexColumn = (name: string, list: (number | string)[]) => {
-    if (isKeyIndex)
-      return DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, list);
-    if (isDatetimeIndex)
-      return DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, list.map((v) => v == null ? null : dayjs(v as number)));
-    return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, list);
-  };
-
-  const indexColumn = makeIndexColumn(indexColumnName, index);
-
-  const gridColumns: DG.Column[] = [indexColumn];
-  participating.forEach(({entry}, i) => {
-    gridColumns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, entry.name, values[i]));
-  });
-  participating.forEach(({entry}, i) => {
-    if (i === baselineIdx)
-      return;
-    gridColumns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `Δ ${entry.name}`, computeDelta(values[i], baselineValues)));
-    gridColumns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `Δ% ${entry.name}`, computeDeltaPct(values[i], baselineValues)));
-  });
-  const gridDf = DG.DataFrame.fromColumns(gridColumns);
-  gridDf.name = `Comparison: ${target.displayName}`;
-
-  const longIndex: (number | string)[] = [];
-  const longValues: (number | null)[] = [];
-  const longRuns: string[] = [];
-  participating.forEach(({entry}, i) => {
-    if (mode !== 'values' && i === baselineIdx)
-      return;
-    for (let j = 0; j < index.length; j++) {
-      longIndex.push(index[j]);
-      longValues.push(displayValues[i][j]);
-      longRuns.push(entry.name);
-    }
-  });
-  const chartDf = DG.DataFrame.fromColumns([
-    makeIndexColumn(indexColumnName, longIndex),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, longValues),
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
   ]);
-  chartDf.name = gridDf.name;
-
-  return {gridDf, chartDf, indexColumnName, isKeyIndex, excluded};
+  chartDf.name = 'Comparison: multiple values';
+  return {chartDf, indexColumnName, splitColumnName, isKeyIndex, valueColumnNames};
 }

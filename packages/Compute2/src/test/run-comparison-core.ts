@@ -3,7 +3,6 @@ import {
   ComparisonEntryNodes,
   normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, isNumericType,
   matchScalarTargets, matchColumnTargets, getEntryStatuses,
-  sameIndexGrid, alignSeriesByIndex, alignSeriesByKey, computeDelta, computeDeltaPct,
   FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/comparison-core';
 
@@ -180,60 +179,6 @@ category('RunComparison: column matching', () => {
     const targets = matchColumnTargets(entries, index);
     expect(targets.length, 2);
     expect(new Set(targets.map((t) => t.key)).size, 2);
-  });
-});
-
-category('RunComparison: alignment and deltas', () => {
-  test('sameIndexGrid', async () => {
-    expect(sameIndexGrid([1, 2, 3], [1, 2, 3]), true);
-    expect(sameIndexGrid([1, 2, 3], [1, 2]), false);
-    expect(sameIndexGrid([1, 2, 3], [1, 2, 4]), false);
-  });
-
-  test('alignSeriesByIndex intersection keeps common points sorted', async () => {
-    const aligned = alignSeriesByIndex([
-      {index: [3, 1, 2], values: [30, 10, 20]},
-      {index: [2, 3, 4], values: [200, 300, 400]},
-    ], 'intersection');
-    expectArray(aligned.index, [2, 3]);
-    expectArray(aligned.values[0], [20, 30]);
-    expectArray(aligned.values[1], [200, 300]);
-  });
-
-  test('alignSeriesByIndex union fills missing with nulls', async () => {
-    const aligned = alignSeriesByIndex([
-      {index: [1, 2], values: [10, 20]},
-      {index: [2, 3], values: [200, 300]},
-    ], 'union');
-    expectArray(aligned.index, [1, 2, 3]);
-    expectArray(aligned.values[0], [10, 20, null]);
-    expectArray(aligned.values[1], [null, 200, 300]);
-  });
-
-  test('alignSeriesByKey matches normalized keys', async () => {
-    const aligned = alignSeriesByKey([
-      {keys: ['Row_A', 'Row_B'], values: [1, 2]},
-      {keys: ['row a', 'row c'], values: [10, 30]},
-    ], 'intersection');
-    expectArray(aligned.keys, ['Row_A']);
-    expectArray(aligned.values[0], [1]);
-    expectArray(aligned.values[1], [10]);
-  });
-
-  test('computeDelta and null propagation', async () => {
-    expectArray(computeDelta([5, null, 7], [1, 2, null]), [4, null, null]);
-  });
-
-  test('computeDeltaPct handles zero baseline as null', async () => {
-    const pct = computeDeltaPct([2, 5, 3], [1, 0, null]);
-    expectFloat(pct[0]!, 100);
-    expect(pct[1], null);
-    expect(pct[2], null);
-  });
-
-  test('computeDeltaPct uses absolute baseline', async () => {
-    const pct = computeDeltaPct([-3], [-2]);
-    expectFloat(pct[0]!, -50);
   });
 });
 

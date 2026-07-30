@@ -56,6 +56,7 @@ export interface ColumnBinding {
   columnName: string;
   units?: string;
   indexColumnName: string;
+  splitColumnName?: string;
 }
 
 export interface TargetBase {
@@ -255,12 +256,13 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
 
 /**
  * Groups numeric columns across entries into candidate targets.
- * Only tables with a user-defined index participate; the index column itself
- * is not a candidate. indexColumns: entryId -> (tablePath -> index column name).
+ * Only tables with a user-defined index participate; the index and split columns
+ * themselves are not candidates. Both maps: entryId -> (tablePath -> column name).
  */
 export function matchColumnTargets(
   entries: ComparisonEntryNodes[],
   indexColumns: Map<string, Map<string, string>>,
+  splitColumns?: Map<string, Map<string, string>>,
 ): ColumnTarget[] {
   const items: ClusterItem<ColumnBinding>[] = [];
   for (const entry of entries) {
@@ -268,8 +270,9 @@ export function matchColumnTargets(
       const indexColumnName = indexColumns.get(entry.entryId)?.get(table.path);
       if (!indexColumnName)
         continue;
+      const splitColumnName = splitColumns?.get(entry.entryId)?.get(table.path);
       for (const column of table.columns) {
-        if (column.name === indexColumnName || !isNumericType(column.type))
+        if (column.name === indexColumnName || column.name === splitColumnName || !isNumericType(column.type))
           continue;
         items.push({
           entryId: entry.entryId,
@@ -284,6 +287,7 @@ export function matchColumnTargets(
             columnName: column.name,
             units: column.units,
             indexColumnName,
+            splitColumnName,
           },
         });
       }
@@ -303,126 +307,10 @@ export function matchColumnTargets(
     })));
 }
 
-const INDEX_EPSILON = 1e-9;
-
-export interface NumericSeries {
-  index: number[];
-  values: (number | null)[];
-}
-
-export interface AlignedSeries {
-  index: number[];
-  // one array per input series, aligned to `index`; null = missing at that point
-  values: (number | null)[][];
-}
-
-function indexKey(value: number): number {
-  return Math.round(value / INDEX_EPSILON);
-}
-
-/** True iff both series have the same index grid (same length, same values). */
-export function sameIndexGrid(a: number[], b: number[]): boolean {
-  if (a.length !== b.length)
-    return false;
-  for (let i = 0; i < a.length; i++) {
-    if (indexKey(a[i]) !== indexKey(b[i]))
-      return false;
-  }
-  return true;
-}
-
-/**
- * Joins numeric-indexed series on index values.
- * 'intersection' keeps points present in every series; 'union' keeps all points
- * with nulls for missing values.
- */
-export function alignSeriesByIndex(
-  seriesList: NumericSeries[],
-  mode: 'intersection' | 'union' = 'intersection',
-): AlignedSeries {
-  const maps = seriesList.map((series) => {
-    const map = new Map<number, number | null>();
-    for (let i = 0; i < series.index.length; i++)
-      map.set(indexKey(series.index[i]), series.values[i]);
-    return map;
-  });
-  const keyToValue = new Map<number, number>();
-  for (const series of seriesList) {
-    for (const value of series.index)
-      keyToValue.set(indexKey(value), value);
-  }
-  const keys = [...keyToValue.keys()]
-    .filter((key) => mode === 'union' || maps.every((map) => map.has(key)))
-    .sort((a, b) => a - b);
-  return {
-    index: keys.map((key) => keyToValue.get(key)!),
-    values: maps.map((map) => keys.map((key) => map.get(key) ?? null)),
-  };
-}
-
-export interface KeyedSeries {
-  keys: string[];
-  values: (number | null)[];
-}
-
-export interface AlignedKeyedSeries {
-  keys: string[];
-  values: (number | null)[][];
-}
-
-/** Joins key-indexed series on exact-then-normalized key match. */
-export function alignSeriesByKey(
-  seriesList: KeyedSeries[],
-  mode: 'intersection' | 'union' = 'intersection',
-): AlignedKeyedSeries {
-  const maps = seriesList.map((series) => {
-    const map = new Map<string, number | null>();
-    for (let i = 0; i < series.keys.length; i++)
-      map.set(normalizeName(series.keys[i]), series.values[i]);
-    return map;
-  });
-  const keyToDisplay = new Map<string, string>();
-  for (const series of seriesList) {
-    for (const key of series.keys) {
-      const normalized = normalizeName(key);
-      if (!keyToDisplay.has(normalized))
-        keyToDisplay.set(normalized, key);
-    }
-  }
-  const keys = [...keyToDisplay.keys()]
-    .filter((key) => mode === 'union' || maps.every((map) => map.has(key)));
-  return {
-    keys: keys.map((key) => keyToDisplay.get(key)!),
-    values: maps.map((map) => keys.map((key) => map.get(key) ?? null)),
-  };
-}
-
-const BASELINE_ZERO_EPSILON = 1e-12;
-
-export function computeDelta(values: (number | null)[], baseline: (number | null)[]): (number | null)[] {
-  return values.map((value, i) => {
-    const base = baseline[i];
-    return (value == null || base == null) ? null : value - base;
-  });
-}
-
-/** Percent delta vs baseline; null where the baseline is missing or ~0. */
-export function computeDeltaPct(values: (number | null)[], baseline: (number | null)[]): (number | null)[] {
-  return values.map((value, i) => {
-    const base = baseline[i];
-    if (value == null || base == null || Math.abs(base) < BASELINE_ZERO_EPSILON)
-      return null;
-    return ((value - base) / Math.abs(base)) * 100;
-  });
-}
 
 export type ExclusionReason =
   | 'no similar data'
-  | 'not numeric'
-  | 'units differ'
-  | 'index not set'
-  | 'index grids differ'
-  | 'no matching rows';
+  | 'index not set';
 
 export interface EntryStatus {
   entryId: string;

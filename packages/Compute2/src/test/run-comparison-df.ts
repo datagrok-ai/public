@@ -41,9 +41,9 @@ category('RunComparison: comparison dataframes', () => {
         {entryId: 'b', path: 'x', name: 'x', value: 20},
       ],
     };
-    const {gridDf} = buildScalarComparison(target, entries, 'a');
-    expect(gridDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
-    expect(gridDf.getCol('Path').type, DG.COLUMN_TYPE.STRING);
+    const {chartDf} = buildScalarComparison(target, entries);
+    expect(chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
+    expect(chartDf.getCol('Path').type, DG.COLUMN_TYPE.STRING);
   });
 
   test('keyed index and run columns stay string in column comparison', async () => {
@@ -59,10 +59,9 @@ category('RunComparison: comparison dataframes', () => {
     const entries = [entryFromDataFrame(makeDf('1')), entryFromDataFrame(makeDf('2'))];
     const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'key']])]));
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
-    const result = buildColumnComparison(target, entries, entries[0].id, 'values')!;
+    const result = buildColumnComparison(target, entries)!;
     expect(result.isKeyIndex, true);
     expect(result.chartDf.getCol('key').type, DG.COLUMN_TYPE.STRING);
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
-    expect(result.gridDf.getCol('key').type, DG.COLUMN_TYPE.STRING);
   });
 });
