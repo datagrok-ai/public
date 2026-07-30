@@ -116,8 +116,8 @@ export class DataPanel {
   private filtersOn = false; // funnel toggle: show the standard Datagrok filters panel next to the grid
   // host -> last (table identity, filtersOn) successfully mounted there. "Subset by selection"/"Use
   // all" both trigger a render twice (see the comment above assignTableInput) — renderGrid no-ops
-  // the second call once it sees nothing actually changed, comparing by `.id`, not reference.
-  private readonly lastMounted = new Map<HTMLElement, {id: string; filtersOn: boolean}>();
+  // the second call once it sees nothing actually changed.
+  private readonly lastMounted = new Map<HTMLElement, {identity: string | DG.DataFrame; filtersOn: boolean}>();
   private readonly state: SubsetState = {prev: null, original: null, freshClone: null};
   // Per-round state (index k-1 = round k) — one array instead of parallel ones, so df/sub/committed
   // can't drift out of sync. `committed` is an explicit flag, NOT inferred from row-count: a step's
@@ -479,15 +479,18 @@ export class DataPanel {
       return;
     }
     // Step override clones (selStep != 0) never get a registered `.id` — they're tracked by
-    // stepState, not SubsetState — so skip that lookup and fall back to name for those.
-    const key = {id: (this.selStep === 0 ? currentDf.id : null) ?? currentDf.name, filtersOn: this.filtersOn};
+    // stepState, not SubsetState — and stepClone() always names a fresh "full" clone identically
+    // (`${global.name} · round ${k}`), so a name-based key can't tell a rebuilt clone apart from the
+    // one it replaced. stepClone() already guarantees reference stability for "nothing changed" (its
+    // cache-or-create branch returns the same object every call), so use the reference itself.
+    const identity = this.selStep === 0 ? currentDf.id : currentDf;
     const prevMounted = this.lastMounted.get(gridHost);
-    if (prevMounted && prevMounted.id === key.id && prevMounted.filtersOn === key.filtersOn) {
+    if (prevMounted && prevMounted.identity === identity && prevMounted.filtersOn === this.filtersOn) {
       if (this.selStep === 0) this.opts.badge?.refresh(currentDf.rowCount);
       return;
     }
     this.deps.viewerHost.mountDf(gridHost, currentDf, this.filtersOn); // mountDf itself closes-then-clears the host
-    this.lastMounted.set(gridHost, key);
+    this.lastMounted.set(gridHost, {identity, filtersOn: this.filtersOn});
     if (this.selStep === 0) this.opts.badge?.refresh(currentDf.rowCount);
   }
 }
