@@ -11,6 +11,13 @@ export interface TemplateInput {
   reactionName: string;
 }
 
+// Templates rows are authored to share one reaction SMARTS with different blocking-group variants
+// (reactant_blocking_groups_per_template_column exists specifically for this) — SMARTS text alone
+// can't tell two such rows apart, so a per-round override needs the full triple to identify a row.
+function templateOverrideKey(t: {smarts: string; blockingSmartsList: string[]; reactionName: string}): string {
+  return `${t.smarts} ${t.blockingSmartsList.join(' ')} ${t.reactionName}`;
+}
+
 export interface RouteStep {
   reactants: string[];
   product: string;
@@ -42,7 +49,9 @@ export interface EnumerationProgress {
 }
 
 // Per-round narrowing of the global pools, indexed by round-1. An undefined field falls back to the
-// global list for that round. `templates` is matched against the global list by SMARTS string.
+// global list for that round. `templates` is matched against the global list by the full
+// smarts+blockingSmartsList+reactionName triple (see templateOverrideKey) — two rows sharing one
+// SMARTS but differing in blocking group or name are authored as distinct template variants.
 export interface PerRoundOverride {
   templates?: TemplateInput[];
   buildingBlocks?: string[];
@@ -139,6 +148,9 @@ interface ParsedTemplate {
   // A BB matches a slot only if it matches every fragment.
   reactantQmols: RDMol[][];
   blockingQmols: RDMol[];
+  // Raw strings, not just the compiled blockingQmols above — needed to recompute templateOverrideKey()
+  // against a per-round override built from the same row's TemplateInput.
+  blockingSmartsList: string[];
   numReactants: number;
 }
 
@@ -190,7 +202,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
     if (q) blockingQmols.push(q);
   }
   return {
-    index: idx, smarts: t.smarts, reactionName: t.reactionName,
+    index: idx, smarts: t.smarts, reactionName: t.reactionName, blockingSmartsList: t.blockingSmartsList,
     rxn, reactantQmols, blockingQmols, numReactants: slotSmarts.length,
   };
 }
@@ -350,24 +362,24 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
 
   // Precompute per-round override sets, indexed by round-1. An empty/non-matching override falls
   // back to the global pool (rather than zeroing the round silently) and warns.
-  const roundAllowedSmarts: (Set<string> | null)[] = [];
+  const roundAllowedTemplateKeys: (Set<string> | null)[] = [];
   const roundBBs: (string[] | null)[] = [];
   const roundReagents: (string[] | null)[] = [];
   for (let r = 0; r < config.enumeration.num_rounds; r++) {
     const o = perRoundOverrides?.[r];
     if (o?.templates && o.templates.length > 0) {
-      const allowed = new Set(o.templates.map((t) => t.smarts));
-      const intersects = parsedTemplates.some((t) => allowed.has(t.smarts));
+      const allowed = new Set(o.templates.map(templateOverrideKey));
+      const intersects = parsedTemplates.some((t) => allowed.has(templateOverrideKey(t)));
       if (intersects)
-        roundAllowedSmarts.push(allowed);
+        roundAllowedTemplateKeys.push(allowed);
       else {
         warnings.push(`Round ${r + 1}: template override matches none of the global reaction templates; ` +
           `using the global template set instead.`);
-        roundAllowedSmarts.push(null);
+        roundAllowedTemplateKeys.push(null);
       }
     } else {
       if (o?.templates) warnings.push(`Round ${r + 1}: empty template override; using the global template set instead.`);
-      roundAllowedSmarts.push(null);
+      roundAllowedTemplateKeys.push(null);
     }
     const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'round BB') : null;
     if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
@@ -435,7 +447,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
 
       // Per-round narrowing; each falls back to the global list when this round has no override.
-      const allowedSmarts = roundAllowedSmarts[round - 1];
+      const allowedTemplateKeys = roundAllowedTemplateKeys[round - 1];
       const activeBBs = roundBBs[round - 1] ?? uniqueBBs;
       const activeReagents = roundReagents[round - 1] ?? uniqueReagents;
 
@@ -468,7 +480,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         const t = parsedTemplates[ti];
         if (t.numReactants > max_num_components) continue;
         // Per-step template subset: skip any global template not chosen for this round.
-        if (allowedSmarts && !allowedSmarts.has(t.smarts)) continue;
+        if (allowedTemplateKeys && !allowedTemplateKeys.has(templateOverrideKey(t))) continue;
 
         progressContext = {
           round, ti, total: parsedTemplates.length,

@@ -168,9 +168,7 @@ export class EnumeratorNav {
     };
     // Builds ui.form() lazily, only once the pane's content factory first runs — building it while
     // still detached would measure it at 0 width and get it marked .ui-form-condensed regardless of
-    // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs. The
-    // nested accordion's own chevron indent (so these rows start flush with the main fields above) is
-    // cancelled via the fixed .chem-enum-limits-accordion CSS rule, not measured here.
+    // label width. invalidate() rebuilds in place after a config reload swaps in fresh inputs.
     const lazyFilterForm = (getInputs: () => DG.InputBase<unknown>[]):
     {getRoot: () => HTMLElement; invalidate: () => void} => {
       let root: HTMLElement | null = null;
@@ -209,7 +207,6 @@ export class EnumeratorNav {
     // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
     // the outer wizard-navigation accordion).
     const limitsAccordion = ui.accordion();
-    limitsAccordion.root.classList.add('chem-enum-limits-accordion');
     this.combinationLimitsForm = lazyFilterForm(() => this.deps.getCombinationLimitInputs());
     this.productFilterForm = lazyFilterForm(() => this.deps.getProductFilterInputs());
     const combinationLimitsPane = limitsAccordion.addPane('Combination limits (optional)',
