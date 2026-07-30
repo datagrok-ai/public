@@ -1,0 +1,16 @@
+.c2-comparison-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.c2-comparison-rows .c2-comparison-row {
+    border-bottom: 1pt solid var(--grey-12);
+}
+
+.c2-comparison-rows .c2-comparison-row:nth-child(odd) {
+    background-color: var(--grey-1);
+}
+
+.c2-comparison-rows .c2-comparison-row.c2-comparison-row-selected {
+    background-color: var(--grey-0, #f4f6f9);
+}

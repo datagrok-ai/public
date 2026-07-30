@@ -15,6 +15,7 @@ import {
   ComparisonEntry, ComparisonMode, EntrySourceKind, RUN_COLUMN,
   entryFromFuncCall, entryFromDataFrame, buildScalarComparison, buildColumnComparison,
 } from './data-extraction';
+import './RunComparison.css';
 
 const SOURCE_BADGES: Record<EntrySourceKind, {label: string, color: string}> = {
   workflow: {label: 'workflow', color: '#7b6fb3'},
@@ -238,14 +239,16 @@ export const RunComparison = Vue.defineComponent({
     );
 
     const renderBasket = () => (
-      <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
+      <div style={{display: 'flex', flexDirection: 'column'}}>
         <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Comparison set</div>
         { entries.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>Select runs in the history and add them here</div> }
-        { entries.value.map((entry) => {
-          const badge = SOURCE_BADGES[entry.sourceKind];
-          const isBaseline = entry.id === baselineId.value;
-          return <div key={entry.id} style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0px'}}>
+        <div class='c2-comparison-rows'>
+          { entries.value.map((entry) => {
+            const badge = SOURCE_BADGES[entry.sourceKind];
+            const isBaseline = entry.id === baselineId.value;
+            return <div key={entry.id} class='c2-comparison-row'
+              style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
             <IconFA
               name='thumbtack'
               faStyle={isBaseline ? 'fas' : 'fal'}
@@ -262,7 +265,8 @@ export const RunComparison = Vue.defineComponent({
             </span>
             <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
           </div>;
-        })}
+          })}
+        </div>
       </div>
     );
 
@@ -273,10 +277,11 @@ export const RunComparison = Vue.defineComponent({
         <div style={{color: 'var(--grey-4)', paddingBottom: '4px'}}>
           Pick the index (x / key) column for each table to enable column comparison
         </div>
-        { indexTables.value.map(({entryId, entryName, table, current}) => {
-          const suggestion = suggestedIndex(table.columns);
-          return <div key={`${entryId}:${table.path}`}
-            style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '1px 0px'}}>
+        <div class='c2-comparison-rows'>
+          { indexTables.value.map(({entryId, entryName, table, current}) => {
+            const suggestion = suggestedIndex(table.columns);
+            return <div key={`${entryId}:${table.path}`} class='c2-comparison-row'
+              style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
               title={`${entryName} · ${table.path}`}>
               {entryName} · <span style={{color: 'var(--grey-5)'}}>{table.path}</span>
@@ -294,7 +299,8 @@ export const RunComparison = Vue.defineComponent({
               )}
             </select>
           </div>;
-        })}
+          })}
+        </div>
       </div>
     );
 
@@ -306,17 +312,18 @@ export const RunComparison = Vue.defineComponent({
             No comparable data found across the selected runs.
             Add more runs, or set index columns to compare table columns.
           </div> }
-        { targets.value.map((target) => {
-          const isSelected = target.key === selectedTargetKey.value;
-          return <div
-            key={target.key}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 6px', cursor: 'pointer',
-              borderRadius: '3px', border: `1px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
-              background: isSelected ? 'var(--grey-0, #f4f6f9)' : 'transparent',
-            }}
-            onClick={() => selectedTargetKey.value = target.key}
-          >
+        <div class='c2-comparison-rows'>
+          { targets.value.map((target) => {
+            const isSelected = target.key === selectedTargetKey.value;
+            return <div
+              key={target.key}
+              class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 6px', cursor: 'pointer',
+                border: `1px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
+              }}
+              onClick={() => selectedTargetKey.value = target.key}
+            >
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
             <span style={{flex: '1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
               {target.displayName}
@@ -331,7 +338,8 @@ export const RunComparison = Vue.defineComponent({
               {target.coverage}/{target.total}
             </span>
           </div>;
-        })}
+          })}
+        </div>
       </div>
     );
 
