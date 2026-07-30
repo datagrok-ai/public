@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {cloneConfig, EnumeratorConfig} from './config';
@@ -173,12 +174,14 @@ export class PreviewPanel {
 
     const perRoundOverrides = this.deps.buildPerRoundOverrides(config);
     let rows: OutputRow[] = [];
+    let warnings: string[] = [];
     try {
       const result = await enumerate({
         rdkit, config: previewConfig, ...inputs, perRoundOverrides,
         isCancelled: () => myRunId !== this.runId,
       });
       rows = result.rows;
+      warnings = result.warnings;
     } catch (e) {
       if (myRunId !== this.runId) return;
       this.status.textContent = '';
@@ -186,6 +189,16 @@ export class PreviewPanel {
       return;
     }
     if (myRunId !== this.runId) return;
+
+    // Same silent-failure risk as a full run (invalid exclusion/blocking SMARTS column, a per-round
+    // override with no effect, truncated combos) — without this, Preview is the one path that would
+    // never tell you why its output looks the way it does.
+    if (warnings.length > 0) {
+      console.warn('Preview warnings:', warnings);
+      const preview = warnings.slice(0, 3).join(' | ');
+      const more = warnings.length > 3 ? ` (+${warnings.length - 3} more; see console)` : '';
+      grok.shell.warning(`${preview}${more}`);
+    }
 
     if (rows.length === 0) {
       this.status.textContent = '';

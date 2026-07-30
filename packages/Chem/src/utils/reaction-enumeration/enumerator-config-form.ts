@@ -555,6 +555,16 @@ export class EnumeratorConfigForm {
     if (this.config.max_num_components < 1) return 'Max # components must be at least 1.';
     if (this.config.max_num_routes_per_compound === 0)
       return 'Max routes per compound must be at least 1, or blank for no cap.';
+    if (this.config.max_num_combinations_per_template === 0)
+      return 'Max combinations per template must be at least 1, or blank for no cap.';
+
+    // The only min+max pair in products_specs — every other numeric filter there is max-only.
+    // Both active (neither is the -1 "no cap" sentinel) and inverted means every product fails
+    // both checks at once: 0 rows, with nothing indicating the two thresholds contradict.
+    const ps = this.config.products_specs;
+    if (ps.min_num_carbon_atoms >= 0 && ps.max_num_carbon_atoms >= 0 &&
+      ps.min_num_carbon_atoms > ps.max_num_carbon_atoms)
+      return 'Min carbon atoms must not exceed Max carbon atoms.';
 
     return null;
   };

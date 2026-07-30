@@ -28,13 +28,15 @@ export function fixNullableIntStepper(input: DG.InputBase<number | null>, floor 
   override('.ui-input-minus', -1);
 }
 
-// -1 is each field's "no cap" sentinel — shown as blank rather than a literal -1.
+// -1 is each field's "no cap" sentinel — shown as blank rather than a literal -1. `floor` (default 0)
+// forwards to fixNullableIntStepper — pass 1 for fields where 0 is not a valid cap (it would zero
+// every result before any work runs, same failure mode as max_num_routes_per_compound === 0).
 function intInput(
-  label: string, value: number, tooltip?: string,
+  label: string, value: number, tooltip?: string, floor = 0,
 ): {input: DG.InputBase<number | null>; get: () => number} {
   const input = ui.input.int(label, {value: value < 0 ? undefined : value, nullable: true, showPlusMinus: true});
   if (tooltip) input.setTooltip(tooltip);
-  fixNullableIntStepper(input);
+  fixNullableIntStepper(input, floor);
   return {input, get: () => (input.value == null ? -1 : input.value)};
 }
 
@@ -63,7 +65,7 @@ export function buildCombinationLimitFields(initial: EnumeratorConfig): {
     'Include the original building blocks (round 0) in the final product list.');
   const maxCombos = intInput('Max combinations per template', initial.max_num_combinations_per_template,
     'Per template per round: cap on the number of reactant combinations actually run. If the ' +
-    'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.');
+    'cartesian product exceeds this, the enumerator runs the first N and stops. Leave blank for no cap.', 1);
 
   const syncToConfig = (target: EnumeratorConfig): void => {
     target.keep_building_blocks_in_final_output = keepBBs.get();

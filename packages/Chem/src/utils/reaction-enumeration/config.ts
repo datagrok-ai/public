@@ -84,10 +84,35 @@ export function configToYaml(c: EnumeratorConfig): string {
   return yaml.dump(dump, {lineWidth: 120, noRefs: true, sortKeys: false});
 }
 
+// Walks `partial` against `defaults`' own shape — DEFAULT_CONFIG already has every field with its
+// correct type, so this needs no separately-maintained schema. A field absent from `partial` is left
+// to mergeWithDefaults' own fallback, not flagged here. Catches the case a hand-edited or corrupted
+// YAML silently carries a wrong-typed value all the way into a numeric comparison at filter time
+// (e.g. a string in a product-filter field makes that filter's `>= 0` check permanently false,
+// disabling it with no indication anything's wrong).
+function validateShape(partial: any, defaults: any, path: string, errors: string[]): void {
+  for (const k of Object.keys(defaults)) {
+    if (!(k in partial)) continue;
+    const expected = defaults[k];
+    const actual = partial[k];
+    if (Array.isArray(expected)) {
+      if (!Array.isArray(actual) || !actual.every((x: unknown) => typeof x === 'string'))
+        errors.push(`'${path}${k}' must be a list of strings.`);
+    } else if (typeof expected === 'object') {
+      validateShape(actual ?? {}, expected, `${path}${k}.`, errors);
+    } else if (typeof actual !== typeof expected || (typeof expected === 'number' && !Number.isFinite(actual))) {
+      errors.push(`'${path}${k}' must be a ${typeof expected}.`);
+    }
+  }
+}
+
 export function configFromYaml(text: string): EnumeratorConfig {
   const raw = yaml.load(text);
   if (!raw || typeof raw !== 'object')
     throw new Error('YAML did not parse to an object.');
+  const errors: string[] = [];
+  validateShape(raw, DEFAULT_CONFIG, '', errors);
+  if (errors.length > 0) throw new Error(`Invalid config: ${errors.join('; ')}`);
   return mergeWithDefaults(raw as Partial<EnumeratorConfig>);
 }
 
