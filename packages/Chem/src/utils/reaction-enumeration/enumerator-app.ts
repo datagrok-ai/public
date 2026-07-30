@@ -220,37 +220,26 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   view.box = true;
 
   const viewerHost = new MountedViewerRegistry(view);
-
-  // ---- Validation / ribbon / nav mediators ----
-  // Declared as function statements (hoisted) so they can reference `configForm`/`templatesCtl`/
-  // `strategySummary`/`previewPanel`/`runControls`/`tabs`/`strategyPane`/`previewPane` — every one
-  // of them constructed further down — safely: none of these mediators is actually CALLED until
-  // well after the whole function has finished constructing everything (event callbacks, or the
-  // explicit setup calls at the very end).
   const validationDiv = ui.divText('', {style: {color: 'var(--red-3)', fontSize: '12px', flex: '0 0 auto'}});
 
-  function refreshValidation(): void {
-    // Sync before reading config below — validate() syncs too, but only after refreshCfgRibbon(),
-    // which would otherwise read one refresh behind.
-    configForm.syncQuickInputsToConfig();
-    refreshCfgRibbon();
-    configForm.refreshStrategyCards();
-    const err = configForm.validate();
-    validationDiv.textContent = err ?? '';
-    runControls.setValidation(err);
-  }
+  // ---- Late-bound refresh mediators ----
+  // refreshValidation/refreshCfgRibbon are threaded into every class below as a constructor dep, but
+  // their real implementations need templatesCtl/bbsCtl/reagentsCtl/strategySummary/previewPanel/
+  // runControls/tabs/strategyPane/previewPane — all constructed AFTER those deps are handed out.
+  // Every class calls `ctx.refreshValidation()`/`ctx.refreshCfgRibbon()` (never captures the
+  // function itself at construction time, or it would freeze on today's no-op) — so a premature
+  // synchronous call (e.g. a DG input auto-selecting a value during its own construction, firing
+  // onChanged inline) is now a harmless no-op instead of a "Cannot access 'X' before
+  // initialization" crash. Reassigned to the real implementations once everything they coordinate
+  // exists — see the bottom of this function.
+  const ctx: {refreshValidation: () => void; refreshCfgRibbon: () => void} = {
+    refreshValidation: () => {},
+    refreshCfgRibbon: () => {},
+  };
 
-  function refreshCfgRibbon(): void {
-    // Re-render Strategy/Preview even when already the visible tab, so in-tab edits stay current.
-    configForm.refreshRibbonChips({
-      templatesOverride: templatesCtl.hasAnyOverride(),
-      bbsOverride: bbsCtl.hasAnyOverride(),
-      reagentsOverride: reagentsCtl.hasAnyOverride(),
-    });
-    if (tabs.currentPane === strategyPane) strategySummary.render();
-    if (tabs.currentPane === previewPane) previewPanel.renderRecap();
-  }
-
+  // switchTabForAccPane/chipForPane/openAccPaneAndSyncTab stay plain hoisted function statements
+  // (not part of `ctx`): they're only ever invoked from explicit click handlers, never from a
+  // widget's own synchronous construction-time event, so they don't share refreshValidation's risk.
   // Right-pane tab references — assigned when tabs are built; used by section-open handlers for
   // context-sensitive tab switching. Declared here so openAccPaneAndSyncTab can close over them.
   let templatesPane: DG.TabPane | undefined;
@@ -303,7 +292,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // ---- Config form: config itself, data/quick-config inputs, YAML load/save, validation, the
   // strategy cards, and the left-nav accordion (5 panes) ----
   const configForm = await EnumeratorConfigForm.create({
-    view, viewerHost, refreshValidation, openAccPaneAndSyncTab,
+    view, viewerHost, refreshValidation: () => ctx.refreshValidation(), openAccPaneAndSyncTab,
     getPreviewRecapCard: () => previewPanel.buildRecapCard(),
     getPreviewEnumerateBtnWrap: () => runControls.previewEnumerateBtnWrap,
   });
@@ -328,7 +317,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   // is that round's subset. Switching chips swaps what the single grid displays — no second grid.
   const dataPanelDeps: DataPanelDeps = {
     view, viewerHost, getConfig: configForm.getConfig, currentMode: configForm.currentMode,
-    currentRounds: configForm.currentRounds, refreshValidation, refreshCfgRibbon,
+    currentRounds: configForm.currentRounds,
+    refreshValidation: () => ctx.refreshValidation(), refreshCfgRibbon: () => ctx.refreshCfgRibbon(),
   };
   const templatesCtl = new DataPanel({idx: 0, noun: 'reaction templates',
     input: configForm.templatesInput,
@@ -351,7 +341,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   //
   // `max` on an int input only shows a tooltip, it doesn't clamp — an over-max value is instead
   // caught by validate(); roundCount() separately caps at MAX_ROUNDS so tab count can't blow up.
-  view.subs.push(configForm.numRoundsInput.onChanged.subscribe(() => refreshValidation()));
+  view.subs.push(configForm.numRoundsInput.onChanged.subscribe(() => ctx.refreshValidation()));
   view.subs.push(configForm.numRoundsInput.onChanged.pipe(debounceTime(ROUNDS_INPUT_DEBOUNCE_MS)).subscribe(() => {
     dataCtls.forEach((c) => c.onRoundsChanged());
   }));
@@ -397,7 +387,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     templatesInput: configForm.templatesInput, bbsInput: configForm.bbsInput,
     reagentsInput: configForm.reagentsInput, exclusionInput: configForm.exclusionInput,
     validate: configForm.validate, syncQuickInputsToConfig: configForm.syncQuickInputsToConfig,
-    buildPerRoundOverrides, refreshValidation,
+    buildPerRoundOverrides, refreshValidation: () => ctx.refreshValidation(),
   });
 
   // ---- Right pane: TabControl with lazy panes ----
@@ -467,6 +457,31 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   ]);
   view.append(root);
 
+  // ---- Bind the real mediator implementations ----
+  // Every class above received a `ctx.refreshValidation()`/`ctx.refreshCfgRibbon()` indirection
+  // rather than a direct function reference — reassigning here (now that everything they coordinate
+  // exists) takes effect immediately for all of them, with no need to re-thread anything.
+  ctx.refreshValidation = (): void => {
+    // Sync before reading config below — validate() syncs too, but only after refreshCfgRibbon(),
+    // which would otherwise read one refresh behind.
+    configForm.syncQuickInputsToConfig();
+    ctx.refreshCfgRibbon();
+    configForm.refreshStrategyCards();
+    const err = configForm.validate();
+    validationDiv.textContent = err ?? '';
+    runControls.setValidation(err);
+  };
+  ctx.refreshCfgRibbon = (): void => {
+    // Re-render Strategy/Preview even when already the visible tab, so in-tab edits stay current.
+    configForm.refreshRibbonChips({
+      templatesOverride: templatesCtl.hasAnyOverride(),
+      bbsOverride: bbsCtl.hasAnyOverride(),
+      reagentsOverride: reagentsCtl.hasAnyOverride(),
+    });
+    if (tabs.currentPane === strategyPane) strategySummary.render();
+    if (tabs.currentPane === previewPane) previewPanel.renderRecap();
+  };
+
   // The ribbon's own group/item shadow-background and the chips panel's scroll are both handled
   // declaratively in chem.css via :has(.chem-enum-chip) — no JS reacting to the platform's ribbon
   // re-renders (that pattern leaked onto other views' ribbons and had to keep "winning a race"
@@ -479,7 +494,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   templatesCtl.render();
   bbsCtl.render();
   reagentsCtl.render();
-  refreshValidation();
+  ctx.refreshValidation();
   // Strategy opens first. Must run here, after `tabs`/`strategyPane` exist (see the TDZ note above).
   openAccPaneAndSyncTab(configForm.accCombinePane);
   return view;
