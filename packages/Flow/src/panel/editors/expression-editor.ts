@@ -212,7 +212,12 @@ function buildExpressionEditor(
 
     ui.empty(host);
     host.setAttribute('data-mode', 'formula');
-    host.appendChild(ui.divV([
+    // Label BESIDE the editor, not above it: the plain fallback is a real DG
+    // input and every neighbouring row uses the panel's 90px label column, so a
+    // stacked label made this the one row that broke the form grid. (The
+    // platform does the same for its own multi-line inputs — see the panel's
+    // Description textarea.)
+    host.appendChild(ui.divH([
       ui.divText(label, 'ff-expression-editor-label'),
       widget.root,
     ]));
@@ -231,8 +236,8 @@ function buildExpressionEditor(
       renderPlain(`Connect a table to “${options.tableParam}” to pick columns and validate as you type.`);
       return;
     }
-    renderPlain('The upstream table has not been computed yet.', {
-      label: 'Load it',
+    renderPlain('The upstream table is needed for formula editor.', {
+      label: 'Run to load',
       run: () => {
         if (!ctx.produceTable) return;
         void ctx.produceTable(options.tableParam)

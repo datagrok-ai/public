@@ -3064,10 +3064,31 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   width: 100%;
 }
 
+/* Formula mode puts the label in the panel's own 90px label column so the row
+   lines up with the plain-input fallback and with Name / Type beneath it. */
+.ff-expression-editor[data-mode="formula"] .ff-expression-editor-label {
+  flex: 0 0 90px;
+  width: 90px;
+  min-width: 90px;
+  /* 8px is the gap a DG input leaves between its label column and its editor —
+     without it this field sits 8px left of every input under it. */
+  margin: 3px 8px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ff-expression-editor[data-mode="formula"] .ff-expression-editor-label + * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .ff-expression-editor-label {
-  color: var(--text-color-light, #666);
   font-size: 12px;
   margin-bottom: 2px;
+  text-align: end;
+    color: var(--grey-4);
+    font-weight: 500;
 }
 
 /* Says what is missing (no table connected / not computed yet) — informational,

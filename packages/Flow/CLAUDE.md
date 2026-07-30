@@ -605,8 +605,8 @@ Design rules these follow, all of them learned from the originals:
 
 ### Expression editor ([panel/editors/expression-editor.ts](src/panel/editors/expression-editor.ts))
 
-The `condition` / `expression` parameters above are edited with the **Add New Column
-editor**, mounted inline. Core already reuses it as a *property* editor — every Dart
+The `condition` / `expression` parameters above — **and `core:AddNewColumn`'s own
+`expression`** — are edited with the **Add New Column editor**, mounted inline. Core already reuses it as a *property* editor — every Dart
 viewer's `filter` property opens it through `PropertyViewFormulaEditor`
 (`xamgle/property_grid/editors`), flagged `aux.filterFormulaEditor` so it drops the
 name/type inputs, validates as `bool` and never appends a column. This is the same
@@ -625,6 +625,16 @@ mechanism, reactive instead of behind an ellipsis button.
   from what was already captured; computing on a panel render is never allowed.
 - Absent PowerPack → the plain input. That is the only dependency, and it degrades to a
   state the editor already has.
+- **A custom editor beats the pencil.** `AddNewColumn:expression` used to be an
+  `EDITOR_SHORTCUT_INPUTS` entry (an inline pencil opening the function's dialog); the
+  panel branches to a custom editor *before* it builds the DG input those options hang
+  off, so the two cannot coexist — the entry was removed rather than left dead. The
+  affordance survives as the widget's own "Edit in dialog", and the pane's "Open editor"
+  header button is unaffected (`EXPLICITLY_SUPPORTED_EDITABLE_FUNCTIONS`).
+- **Formula mode uses the panel's 90px label column** (label beside the field, +8px gap —
+  what a DG input leaves between its label and editor), so the row lines up with the
+  plain-input fallback and with the ordinary inputs under it. Verified by measurement in
+  the harness, not by eye.
 - **Validity is asynchronous, and the editor is where it is decided.** Whether a formula
   is a *condition* can only be answered by EVALUATING it (the platform infers a formula's
   type from its result), so PowerPack computes it on its preview frame and publishes each

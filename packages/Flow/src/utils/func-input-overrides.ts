@@ -135,6 +135,12 @@ export type CustomInputEditorFactory = (param: DG.Property, ctx: CustomEditorCon
 export const CUSTOM_FUNC_INPUT_EDITORS: Record<string, Record<string, CustomInputEditorFactory>> = {
   'core:OpenFile': {fullPath: filePathEditor},
   'Chem:mpoScoreByProfile': {columnMapping: mpoColumnMappingEditor},
+  // The platform's own formula node gets the platform's own formula editor —
+  // inline, instead of a bare text box with a pencil that opened the same thing
+  // behind a dialog. Same editor Flow's `expressionToColumn` uses; it takes
+  // precedence over the `EDITOR_SHORTCUT_INPUTS` pencil (the panel branches to
+  // a custom editor before it ever builds a DG input to hang options on).
+  'core:AddNewColumn': {expression: columnFormulaEditor},
   // Flow's own data operations: a row condition is a boolean formula and an
   // aggregation list is a list — neither is a thing to type into a text box.
   'Flow:filterRows': {condition: rowConditionEditor},
@@ -181,6 +187,7 @@ export const FUNC_NODE_VALIDATORS: Record<string, FuncNodeValidator> = {
   'Flow:extractRows': expressionRequirements('condition'),
   'Flow:selectRows': expressionRequirements('condition'),
   'Flow:expressionToColumn': expressionRequirements('expression'),
+  'core:AddNewColumn': expressionRequirements('expression'),
 };
 
 /** Aggregate is ready when every aggregation names something to aggregate.

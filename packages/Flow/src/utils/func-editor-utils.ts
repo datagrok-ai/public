@@ -28,8 +28,11 @@ export function shouldUseFunctionEditor(func: DG.Func) {
  *  inside these inputs that opens the editor — the exact behavior of the
  *  parameters-pane "Open editor" header button, just visible where the user
  *  is looking. Keyed `nqName:inputName`, case-insensitive. Grows over time. */
-const EDITOR_SHORTCUT_INPUTS = new Set([
-  'core:AddNewColumn:expression',
+export const EDITOR_SHORTCUT_INPUTS = new Set([
+  // NOT AddNewColumn's `expression` anymore: it renders the formula editor
+  // inline (`CUSTOM_FUNC_INPUT_EDITORS`), which carries its own "Edit in
+  // dialog". A custom editor short-circuits the DG-input path this pencil is
+  // attached to, so an entry for it would never render.
   'Chem:descriptorsDocker:selected',
   // Deprotect's own dialog sketches the protecting group against the molecules
   // in the table, which a bare sketcher on the parameter can't do.
