@@ -602,8 +602,8 @@ export const RunComparison = Vue.defineComponent({
           { entries.value.length < 2 ?
             <div style={{color: 'var(--grey-4)'}}>Add at least two runs (or tables) to compare</div> :
             <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
-              { renderTargets() }
               { renderIndexPickers() }
+              { renderTargets() }
               { renderStatuses() }
               { renderComparison() }
             </div>
