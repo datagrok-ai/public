@@ -101,10 +101,28 @@ export const RunComparison = Vue.defineComponent({
       setTimeout(() => tableInput.value = null);
     });
 
+    // pre-fill pickers from {comparisonIndex}/{comparisonSplit} output annotations;
+    // stored (user) selections always win
+    const applyAnnotatedDefaults = (entry: ComparisonEntry) => {
+      for (const table of entry.nodes.tables) {
+        const member = [{entryId: entry.id, tablePath: table.path}];
+        const indexDefault = table.defaultIndexColumn;
+        if (indexDefault && !indexSelection.value[entry.id]?.[table.path] &&
+          table.columns.some((col) => col.name === indexDefault))
+          setIndexColumn(member, indexDefault);
+        const splitDefault = table.defaultSplitColumn;
+        const splitColumn = table.columns.find((col) => col.name === splitDefault);
+        if (splitDefault && !splitSelection.value[entry.id]?.[table.path] &&
+          splitColumn && isSplitCandidate(splitColumn, indexSelection.value[entry.id]?.[table.path] ?? ''))
+          setSplitColumn(member, splitDefault);
+      }
+    };
+
     const addEntry = (entry: ComparisonEntry) => {
       if (entries.value.some((existing) => existing.id === entry.id))
         return;
       entries.value = [...entries.value, Vue.markRaw(entry)];
+      applyAnnotatedDefaults(entry);
     };
 
     const removeEntry = (id: string) => {
@@ -169,8 +187,15 @@ export const RunComparison = Vue.defineComponent({
       return table?.columns.find((col) => col.name === columnName)?.type;
     };
 
+    const defaultIndexOf = (entryId: string, tablePath: string) => {
+      const entry = entries.value.find((item) => item.id === entryId);
+      return entry?.nodes.tables.find((item) => item.path === tablePath)?.defaultIndexColumn;
+    };
+
     const indexColumnsMap = Vue.computed(() => selectionToMap(indexSelection.value,
-      (entryId, tablePath, columnName) => isAllowedIndexType(indexColumnType(entryId, tablePath, columnName))));
+      (entryId, tablePath, columnName) =>
+        isAllowedIndexType(indexColumnType(entryId, tablePath, columnName)) ||
+        columnName === defaultIndexOf(entryId, tablePath)));
 
     const splitColumnsMap = Vue.computed(() => selectionToMap(splitSelection.value,
       (entryId, tablePath, columnName) => isSplitCandidate(

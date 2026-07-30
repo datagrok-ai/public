@@ -1,5 +1,5 @@
 // Pure comparison logic: no DG/platform dependencies, unit-testable.
-// See docs/run-comparison-tool.md for the rules implemented here.
+// User documentation: help/compute/run-comparison.md
 
 export type MatchConfidence = 'exact' | 'normalized' | 'fuzzy';
 export type UnitsCompatibility = 'match' | 'warn' | 'mismatch';
@@ -28,6 +28,9 @@ export interface TableNodeInfo {
   friendlyPath?: string;
   // nqName of the producing function; used to merge same-function tables in index selection
   nqName?: string;
+  // from the {comparisonIndex: ...} / {comparisonSplit: ...} output annotations
+  defaultIndexColumn?: string;
+  defaultSplitColumn?: string;
   columns: ColumnInfo[];
   rowCount: number;
 }
@@ -405,8 +408,12 @@ export function computeIndexRows(
   const splitCandidatesOf = (columns: ColumnInfo[], currentIndex: string) =>
     columns.filter((col) => isSplitCandidate(col, currentIndex));
 
+  // an explicitly annotated default index is always offered, even when its type is toggled off
+  const indexCandidatesOf = (columns: ColumnInfo[], defaultIndexColumn?: string) =>
+    columns.filter((col) => isAllowedIndexType(col.type) || col.name === defaultIndexColumn);
+
   const singleRow = ({entry, table}: typeof perTable[number]): IndexRow => {
-    const candidates = table.columns.filter((col) => isAllowedIndexType(col.type));
+    const candidates = indexCandidatesOf(table.columns, table.defaultIndexColumn);
     const current = validCurrent(indexSelection, entry.entryId, table.path, candidates);
     const splitCandidates = splitCandidatesOf(table.columns, current);
     return {
@@ -449,7 +456,7 @@ export function computeIndexRows(
     const sharedColumns = group[0].table.columns
       .filter((col) => group.every(({table}) =>
         table.columns.some((c) => c.name === col.name && c.type === col.type)));
-    const candidates = sharedColumns.filter((col) => isAllowedIndexType(col.type));
+    const candidates = indexCandidatesOf(sharedColumns, group[0].table.defaultIndexColumn);
     const paths = new Set(group.map(({table}) => table.path));
     const label = paths.size === 1 ?
       (group[0].table.friendlyPath ?? group[0].table.path) :

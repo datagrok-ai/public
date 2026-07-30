@@ -64,6 +64,8 @@ function extractCallNodes(
         name,
         friendlyPath,
         nqName: call.func?.nqName,
+        defaultIndexColumn: prop.options?.['comparisonIndex'] || undefined,
+        defaultSplitColumn: prop.options?.['comparisonSplit'] || undefined,
         columns: columnInfos(df),
         rowCount: df.rowCount,
       });

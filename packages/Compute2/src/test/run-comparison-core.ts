@@ -11,7 +11,7 @@ function makeEntry(
   entryId: string,
   scalars: {name: string, valueType?: string, units?: string, value?: number | null}[] = [],
   tables: {
-    path: string, name?: string, nqName?: string,
+    path: string, name?: string, nqName?: string, defaultIndexColumn?: string,
     columns: {name: string, type?: string, units?: string}[],
   }[] = [],
 ): ComparisonEntryNodes {
@@ -29,6 +29,7 @@ function makeEntry(
       path: t.path,
       name: t.name ?? t.path,
       nqName: t.nqName,
+      defaultIndexColumn: t.defaultIndexColumn,
       columns: t.columns.map((c) => ({name: c.name, type: c.type ?? 'double', units: c.units})),
       rowCount: 10,
     })),
@@ -378,6 +379,15 @@ category('RunComparison: index rows', () => {
       {a: {'s/df': 'species'}, b: {'s/df': 'species'}}, true, anyType);
     expectArray(rows[0].splitCandidates.map((c) => c.name), ['species']);
     expect(rows[0].currentSplit, 'species');
+  });
+
+  test('annotated default index is offered even when its type is toggled off', async () => {
+    const gated = (type?: string) => type === 'int';
+    const table = {path: 's/df', nqName: 'Pkg:Sim', defaultIndexColumn: 'time_f',
+      columns: [{name: 'time_f'}, {name: 'step', type: 'int'}, {name: 'height'}]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const rows = computeIndexRows(entries, {}, {}, true, gated);
+    expectArray(rows[0].candidates.map((c) => c.name), ['time_f', 'step']);
   });
 
   test('selectionToMap keeps only valid selections', async () => {
