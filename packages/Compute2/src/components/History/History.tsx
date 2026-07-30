@@ -414,7 +414,7 @@ export const History = Vue.defineComponent({
       const grid = <Viewer
         type='Grid'
         dataFrame={historicalRunsDf.value}
-        style={{height: '100%', width: '100%', minHeight: '300px'}}
+        style={{flex: '1', width: '100%', minHeight: '0px'}}
         onViewerChanged={(viewer) => handleGridRendering(viewer as DG.Grid | undefined)}
         options={{
           'showCurrentRowIndicator': true,
@@ -448,7 +448,7 @@ export const History = Vue.defineComponent({
             width: '100%',
             height: '100%',
           }}>
-            <div style={{display: 'flex', flexDirection: 'column', flex: '1'}}>
+            <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
               { controls }
               { grid }
             </div>
