@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {IconFA, Viewer, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
+import {IconFA, Viewer, ResizeHandle, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 
@@ -52,6 +52,9 @@ export const RunComparison = Vue.defineComponent({
     const indexSelection = Vue.ref<Record<string, Record<string, string>>>({});
     const selectedTargetKey = Vue.ref('');
     const mode = Vue.ref<ComparisonMode>('values');
+
+    const historyHeight = Vue.ref(320);
+    const sidebarWidth = Vue.ref(360);
 
     Vue.onMounted(async () => {
       try {
@@ -446,13 +449,16 @@ export const RunComparison = Vue.defineComponent({
     return () => Vue.withDirectives(
       <div style={{display: 'flex', height: '100%', width: '100%', overflow: 'hidden'}}>
         <div style={{
-          width: '360px', flexShrink: '0', display: 'flex', flexDirection: 'column',
-          gap: '8px', padding: '8px', borderRight: '1px solid var(--grey-2)', overflow: 'auto',
+          width: `${sidebarWidth.value}px`, flexShrink: '0', display: 'flex', flexDirection: 'column',
+          gap: '8px', padding: '8px', overflow: 'auto',
         }}>
           <div style={{fontWeight: 'bold'}}>Model</div>
           { renderModelSelector() }
           { selectedModel.value &&
-            <div style={{height: '320px', flexShrink: '0', border: '1px solid var(--grey-1)', borderRadius: '3px'}}>
+            <div style={{
+              height: `${historyHeight.value}px`, flexShrink: '0',
+              border: '1px solid var(--grey-1)', borderRadius: '3px',
+            }}>
               <History
                 func={selectedModel.value}
                 allowCompare={false}
@@ -461,6 +467,15 @@ export const RunComparison = Vue.defineComponent({
                 onSelectionChanged={(calls: DG.FuncCall[]) => historySelection.value = calls.map((c) => Vue.markRaw(c))}
               />
             </div>
+          }
+          { selectedModel.value &&
+            <ResizeHandle
+              axis='y'
+              size={historyHeight.value}
+              min={150}
+              max={800}
+              onUpdate:size={(size) => historyHeight.value = size}
+            />
           }
           { selectedModel.value &&
             <button
@@ -481,6 +496,13 @@ export const RunComparison = Vue.defineComponent({
           }}></div>
           { renderBasket() }
         </div>
+        <ResizeHandle
+          axis='x'
+          size={sidebarWidth.value}
+          min={240}
+          max={900}
+          onUpdate:size={(size) => sidebarWidth.value = size}
+        />
         <div style={{flex: '1', display: 'flex', flexDirection: 'column', padding: '8px', overflow: 'auto', minWidth: '0px'}}>
           { entries.value.length < 2 ?
             <div style={{color: 'var(--grey-4)'}}>Add at least two runs (or tables) to compare</div> :
