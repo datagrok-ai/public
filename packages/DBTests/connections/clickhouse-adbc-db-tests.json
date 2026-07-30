@@ -3,6 +3,7 @@
   "name": "ClickHouseADBCDBTests",
   "friendlyName": "ClickHouseADBCDBTests",
   "parameters": {
+    "connectionType": "ADBC",
     "server": "db.datagrok.ai",
     "port": 18125,
     "db": "test"
@@ -13,6 +14,6 @@
       "password": "kNjsC8q830WHUBNC8VndhojSR4GAdqryiZhY"
     }
   },
-  "dataSource": "ClickHouseADBC",
+  "dataSource": "ClickHouse",
   "description": "Test data (routed to the experimental ADBC/Arrow connector)"
 }
