@@ -401,9 +401,9 @@ export const RunComparison = Vue.defineComponent({
     const renderIndexPickers = () => (
       indexRows.value.length > 0 &&
       <div>
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
           <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Index columns</div>
-          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+          <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px'}}>
             { renderListFilter(indexFilter, 'Filter tables...') }
             <ToggleInput
               caption='Merge same functions'
@@ -461,7 +461,7 @@ export const RunComparison = Vue.defineComponent({
 
     const renderTargets = () => (
       <div>
-        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
           <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Compare</div>
           { renderListFilter(targetFilter, 'Filter values...') }
         </div>
@@ -680,7 +680,7 @@ export const RunComparison = Vue.defineComponent({
         <div style={{flex: '1', display: 'flex', flexDirection: 'column', padding: '8px', overflow: 'auto', minWidth: '0px'}}>
           { entries.value.length < 2 ?
             <div style={{color: 'var(--grey-4)'}}>Add at least two runs (or tables) to compare</div> :
-            <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
+            <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px', gap: '12px'}}>
               { renderIndexPickers() }
               { renderTargets() }
               { renderStatuses() }
