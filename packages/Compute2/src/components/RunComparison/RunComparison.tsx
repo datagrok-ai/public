@@ -207,8 +207,7 @@ export const RunComparison = Vue.defineComponent({
       target.bindings.map((b) => `${b.entryId}|${b.tablePath}|${b.indexColumnName}`).sort().join(';');
 
     // column targets sharing the selected target's bindings; identical aligned grids by construction
-    const compatibleTargets = Vue.computed<ColumnTarget[]>(() => {
-      const anchor = selectedTarget.value;
+    const compatibleWith = (anchor: ComparisonTarget | null): ColumnTarget[] => {
       if (!anchor || anchor.kind !== 'column')
         return [];
       const lineIndexed = anchor.bindings.every((b) => {
@@ -220,7 +219,9 @@ export const RunComparison = Vue.defineComponent({
       const signature = bindingSignature(anchor);
       return targets.value.filter((target): target is ColumnTarget =>
         target.kind === 'column' && bindingSignature(target) === signature);
-    });
+    };
+
+    const compatibleTargets = Vue.computed<ColumnTarget[]>(() => compatibleWith(selectedTarget.value));
 
     Vue.watch(compatibleTargets, (list) => {
       if (multiMode.value && list.length <= 1)
@@ -554,8 +555,25 @@ export const RunComparison = Vue.defineComponent({
           { filteredTargets.value.map((target) => {
             const isSelected = multiMode.value ?
               multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
-            const onRowClick = () => {
+            const onRowClick = (e: MouseEvent) => {
               if (!multiMode.value) {
+                // grid-like shift+click: select and enter multi-value mode when applicable.
+                // Compatible with the current selection -> keep it and add the clicked one;
+                // otherwise the clicked target becomes the selection (and the anchor).
+                if (e.shiftKey) {
+                  if (selectedTargetKey.value &&
+                    compatibleTargets.value.some((item) => item.key === target.key)) {
+                    multiKeys.value = [...new Set([selectedTargetKey.value, target.key])];
+                    multiMode.value = true;
+                    return;
+                  }
+                  selectedTargetKey.value = target.key;
+                  if (compatibleWith(target).length > 1) {
+                    multiKeys.value = [target.key];
+                    multiMode.value = true;
+                  }
+                  return;
+                }
                 selectedTargetKey.value = target.key;
                 return;
               }
@@ -570,6 +588,7 @@ export const RunComparison = Vue.defineComponent({
                 borderLeft: `3px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
               }}
               onClick={onRowClick}
+              onMousedown={(e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); }}
             >
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
