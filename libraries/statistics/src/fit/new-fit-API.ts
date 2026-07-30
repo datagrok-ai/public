@@ -27,7 +27,7 @@ import {
   LegacyFitStatisticName,
   IFitSeriesOptions,
 } from './fit-curve';
-import {fitSeries, getDataPoints, LogOptions} from './fit-data';
+import {getDataPoints, getMedianPoints, logIC50ParameterBounds, LogOptions} from './fit-points';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 import {Extremum, OptimizationResult} from './fitting-algorithm/optimizer-misc';
@@ -765,6 +765,17 @@ export function getOrCreateFitFunction(seriesFitFunc: string | IFitFunctionDescr
   }
 
   return fitFunctions[seriesFitFunc.name];
+}
+
+// Fits the series data according to the series fitting settings. Lives here rather than in fit-data
+// so that fit-data can depend on this module without a circular import.
+export function fitSeries(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
+  logOptions?: LogOptions): FitCurve {
+  dataPoints ??= getDataPoints(series, logOptions, false);
+  if (series.parameterBounds && logOptions?.logX)
+    series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
+  return fitData(getMedianPoints(dataPoints), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
+    series.parameterBounds);
 }
 
 export function fitData(data: {x: number[], y: number[]}, fitFunction: FitFunction<Fit>, errorModel?: FitErrorModelType,

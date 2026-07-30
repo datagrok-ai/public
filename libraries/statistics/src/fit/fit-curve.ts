@@ -54,12 +54,6 @@ export type FitPointsDisplayMode = 'points' | 'candlesticks' | 'both' | '';
 /** Droplines rendered on the plot. `string & {}` keeps autocompletion while allowing IC<n> later. */
 export type DroplineName = 'IC50' | (string & {});
 
-export type FitInvertedFunctions = {
-  inverted: (y: number) => number,
-  invertedTop: (y: number) => number,
-  invertedBottom: (y: number) => number,
-};
-
 /**
  *  Datagrok curve fitting
  *
@@ -258,48 +252,6 @@ export function getStatistics(data: {x: number[], y: number[]}, paramValues: Flo
   };
 }
 
-export function getInvertedFunctions(data: {x: number[], y: number[]}, paramValues: number[],
-  confidenceLevel: number = 0.05, statistics: boolean = true): FitInvertedFunctions | null {
-  const studentQ = jStat.studentt.inv(1 - confidenceLevel / 2, data.x.length - paramValues.length);
-
-  let inv: (y: number) => number = (y: number) => {
-    return 0;
-  };
-  let invTop: (y: number) => number = (y: number) => {
-    return 0;
-  };
-  let invBottom: (y: number) => number = (y: number) => {
-    return 0;
-  };
-
-  if (statistics) {
-    inv = (y: number) => {
-      //should check if more than bottom and less than top
-      return paramValues[2] / Math.pow((paramValues[0] - y) / (y - paramValues[3]), 1 / paramValues[1]);
-    };
-
-    const error = getInvError(inv, data);
-
-    invTop = (y: number) => {
-      const value = inv(y);
-      return value + studentQ * error / Math.sqrt(data.y.length);
-    };
-
-    invBottom = (y: number) => {
-      const value = inv(y);
-      return value - studentQ * error / Math.sqrt(data.y.length);
-    };
-
-    return {
-      inverted: inv,
-      invertedTop: invTop,
-      invertedBottom: invBottom,
-    };
-  }
-
-  return null;
-}
-
 export function sigmoid(params: Float32Array, x: number): number {
   const A = params[0];
   const B = params[1];
@@ -366,21 +318,4 @@ export function getDetCoeff(fittedCurve: (x: number) => number, data: {x: number
   return 1 - ssRes / ssTot;
 }
 
-function getInvError(targetFunc: (y: number) => number, data: {y: number[], x: number[]}): number {
-  let sigma = 0;
-  let sigmaSq = 0;
-  const residuesSquares = new Float32Array(data.y.length);
-  for (let i = 0; i < data.y.length; i++) {
-    const obs = data.x[i];
-    const pred = targetFunc(data.y[i]);
-    residuesSquares[i] = Math.pow(obs - pred, 2);
-  }
 
-  for (let i = 0; i < residuesSquares.length; i++)
-    sigmaSq += residuesSquares[i];
-
-  sigmaSq /= residuesSquares.length;
-  sigma = Math.sqrt(sigmaSq);
-
-  return sigma;
-}

@@ -10,6 +10,9 @@
 * GROK-17637: Options: A custom JS fit function is now named in the property panel instead of rendering a blank input
 * GROK-17637: Fixed confidence intervals discarding the cached data points and recomputing them on every frame
 * GROK-17637: Fixed the series colour type being widened to `string`, which disabled colour-option checking
+* GROK-17637: Statistics: Added `curveStatistic` and `curveAggrStatistic` - the property panel now adds a statistic as a calculated column that recalculates when its curve changes and is recorded in the table's creation script
+* GROK-17637: Statistics: Aggregation now covers every statistic the cell's fit functions produce rather than a fixed list, and the aggregated pane uses the same per-fit-function descriptors as the single-series one
+* GROK-17637: Fixed confidence intervals reading a non-existent `series.dataPoints`, which discarded the cached points and recomputed them on every frame
 
 ## 1.12.0 (2026-04-02)
 

@@ -5,24 +5,21 @@ import {
   FitErrorModel,
   getFittedCurve,
   FitStatistics,
-  FitConfidenceIntervals,
-  FitCurve,
+  FitConfidenceIntervals,
   IFitPoint,
   IFitChartData,
   IFitSeries,
-  fitChartDataProperties,
-  FitParamBounds,
+  fitChartDataProperties,
   IFitChartOptions,
   FitErrorModelType,
 } from './fit-curve';
-import {Fit, fitData, FitFunction, fitSeriesProperties, getStatistic,
+import {Fit, FitFunction, fitSeries, fitSeriesProperties, getStatistic,
   getCurveConfidenceIntervals, getOrCreateFitFunction} from './new-fit-API';
+import {getDataPoints, LogOptions} from './fit-points';
 
-export type LogOptions = {
-  logX: boolean | undefined,
-  logY: boolean | undefined
-};
-
+// re-exported so existing import paths keep resolving after the move that broke the fit-data <-> new-fit-API cycle
+export {getDataPoints, getMedian, getMedianPoints, logIC50ParameterBounds, LogOptions} from './fit-points';
+export {fitSeries} from './new-fit-API';
 
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: DG.Property[]): any {
@@ -52,50 +49,6 @@ export function getPointsArrays(points: IFitPoint[]): {xs: number[], ys: number[
     ys[i] = points[i].y;
   }
   return {xs: xs, ys: ys};
-}
-
-/** Returns median from within multiple points */
-function getMedian(points: {x: number[], y: number[]}): number {
-  const mid = Math.floor(points.y.length / 2);
-  const sortedPoints = points.y.sort((a, b) => a - b);
-  const median = sortedPoints.length % 2 === 0 ? (sortedPoints[mid - 1] + sortedPoints[mid]) / 2 : sortedPoints[mid];
-  return median;
-}
-
-/** Returns median points from within multiple points with the same x. */
-function getMedianPoints(data: {x: number[], y: number[]}): {x: number[], y: number[]} {
-  const medianPoints: {x: number[], y: number[]} = {x: [], y: []};
-  const currentPoints: {x: number[], y: number[]} = {x: [data.x[0]], y: [data.y[0]]};
-  for (let i = 1; i < data.x.length; i++) {
-    if (data.x[i] === currentPoints.x[0]) {
-      currentPoints.x[currentPoints.x.length] = data.x[i];
-      currentPoints.y[currentPoints.y.length] = data.y[i];
-      continue;
-    }
-    const median = getMedian(currentPoints);
-    medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
-    medianPoints.y[medianPoints.y.length] = median;
-    currentPoints.x = [data.x[i]];
-    currentPoints.y = [data.y[i]];
-  }
-  const median = getMedian(currentPoints);
-  medianPoints.x[medianPoints.x.length] = currentPoints.x[0];
-  medianPoints.y[medianPoints.y.length] = median;
-
-  return medianPoints;
-}
-
-/** Returns logarithmic IC50 parameter bounds. */
-function logIC50ParameterBounds(ic50Bounds: FitParamBounds): FitParamBounds {
-  if (ic50Bounds) {
-    if (ic50Bounds.max !== undefined)
-      ic50Bounds.max = Math.log10(ic50Bounds.max);
-    if (ic50Bounds.min !== undefined) {
-      ic50Bounds.min = ic50Bounds.min === 0 ?
-        -Number.MAX_VALUE : Math.log10(ic50Bounds.min);
-    }
-  }
-  return ic50Bounds;
 }
 
 function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect {
@@ -187,24 +140,6 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
   const params = new Float32Array(series.parameters?.length!);
   params.set(series.parameters!);
   return getFittedCurve(fitFunc.y, params);
-}
-
-/** Returns the data points of a series with filtered outliers and logarithmic data if needed */
-export function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFlag?: boolean):
-  {x: number[], y: number[]} {
-  const pointsToMap = userParamsFlag ? series.points : series.points.filter((p) => !p.outlier);
-  return {x: pointsToMap.map((p) => logOptions?.logX ? Math.log10(p.x) : p.x),
-    y: pointsToMap.map((p) => logOptions?.logY ? Math.log10(p.y) : p.y)};
-}
-
-/** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries, fitFunc: FitFunction, dataPoints?: {x: number[], y: number[]},
-  logOptions?: LogOptions): FitCurve {
-  dataPoints ??= getDataPoints(series, logOptions, false);
-  if (series.parameterBounds && logOptions?.logX)
-    series.parameterBounds[2] = logIC50ParameterBounds(series.parameterBounds[2]);
-  return fitData(getMedianPoints(dataPoints), fitFunc, series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType,
-    series.parameterBounds);
 }
 
 /** Returns series confidence interval functions */

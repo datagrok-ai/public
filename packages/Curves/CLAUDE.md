@@ -131,6 +131,24 @@ Key helper functions:
 - `setOutlier(gridCell, point, ...)` — toggles outlier, updates cell JSON, fires custom event
 - `layoutChart(rect, ...)` — computes viewport, xAxis, yAxis rectangles with margins
 
+### Fit statistics
+
+Statistics come from the typed fit, not positional parameter indices: `getSeriesFit()` → a `Fit`
+subclass, read by name with `getStatistic(fit, name)`. Each fit function advertises its own set via
+`statisticsProperties`, so a linear fit has no `ic50` and asking returns `undefined`, not `NaN`.
+`toDataSpace()` converts log-fitted statistics back to data space exactly once — **aggregate before
+calling it**, so an averaged IC50 stays a geometric mean.
+
+Legacy names (`interceptX`, `top`, …) are persisted in `showStatistics`, in the `.statistics` column
+tag and in recorded transforms; `LEGACY_FIT_STATISTICS` is append-only and resolved through an alias
+table. `addStatisticsColumn` and the `.sourceColumn` sweep in `setOutlier` are the legacy path, kept
+so existing projects keep working.
+
+`curveStatistic` / `curveAggrStatistic` add statistics as **calculated columns** (`meta.vectorFunc` +
+`action: join(table)`, called with `processed: false`). Three traps there fail silently — a parameter
+must not be named after the package module global, the result column name must be stable, and on
+recalculation the function gets a detached column. See `src/tests/calculated-columns-tests.ts`.
+
 ### Property Panel — `src/fit/fit-grid-cell-handler.ts`
 
 `FitGridCellHandler` (extends `DG.ObjectHandler`) — renders the context panel when a fit cell is selected:
@@ -248,6 +266,8 @@ detectors.js              — Semantic type detectors (all curve formats)
 | Multi-curve overlay viewer | `src/fit/multi-curve-viewer.ts` |
 | XML 3DX format parsing | `src/fit/fit-parser.ts` |
 | Fit data types (IFitChartData, etc.) | `@datagrok-libraries/statistics/src/fit/fit-curve.ts` |
+| Fit functions, typed fits, optimizer | `.../fit/new-fit-API.ts` |
+| Series-level API (getSeriesFit, toDataSpace) | `.../fit/fit-data.ts` |
 | Constants (tags, sizes, thresholds) | `@datagrok-libraries/statistics/src/fit/const.ts` |
 | Semantic type detection | `detectors.js` |
 | Test entry point | `src/package-test.ts` |
