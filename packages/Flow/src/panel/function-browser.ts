@@ -1,7 +1,9 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncInfo, getRegisteredFuncs, isWorkflowFunc, ensureFuncNodeType, VIEWER_NODE_TYPES} from '../rete/node-factory';
+import {
+  FuncInfo, getRegisteredFuncs, isWorkflowFunc, ensureFuncNodeType, loadQueryFuncs, VIEWER_NODE_TYPES,
+} from '../rete/node-factory';
 import {tid, setTid} from '../utils/test-ids';
 import {getFilesBrowser} from '../utils/files-browser-tree';
 import {SpacePicker} from '../ui/space-picker';
@@ -128,15 +130,17 @@ export interface FunctionBrowserCallbacks {
   onLocalFilesPicked: (files: File[]) => void;
 }
 
-/** Connection display name for a query func, used to group queries in the
- *  Queries pane (`friendlyName` falls back to `name`). */
+/** Connection display name for a query func — the Queries-pane grouping key.
+ *  The connection's `friendlyName` wins, falling back to its `name`. Empty
+ *  when the query carries no connection object — such queries are skipped
+ *  entirely (there is nothing to group them under). */
 export function queryConnectionName(f: FuncInfo): string {
   if (!(f.func instanceof DG.DataQuery)) return '';
   try {
     const conn = (f.func as DG.DataQuery).connection as DG.DataConnection | null;
-    return (conn?.friendlyName ?? conn?.name ?? 'Other') || 'Other';
+    return conn ? ((conn.friendlyName ?? conn.name) || '') : '';
   } catch {
-    return 'Other';
+    return '';
   }
 }
 
@@ -263,6 +267,10 @@ export class FunctionBrowser {
    *  reused across renders so expanded spaces survive a search keystroke. */
   spacePicker: SpacePicker | null = null;
   private favoritesUnsub: (() => void) | null = null;
+  /** The Queries-pane catalog — the authoritative server list
+   *  (`loadQueryFuncs`, async), null until the first load resolves. */
+  private queryFuncs: FuncInfo[] | null = null;
+  private queryFuncsRequested = false;
 
   constructor(callbacks: FunctionBrowserCallbacks) {
     this.callbacks = callbacks;
@@ -553,8 +561,8 @@ export class FunctionBrowser {
     if (!this.topTabs) return;
     const query = this.searchInput.value.toLowerCase();
     const counts: Record<string, number> = {
-      'Queries': getRegisteredFuncs()
-        .filter((f) => f.func instanceof DG.DataQuery && funcMatchesSearch(f, query)).length,
+      // Queries count from the server-loaded catalog (0 until it resolves).
+      'Queries': (this.queryFuncs ?? []).filter((f) => funcMatchesSearch(f, query)).length,
       'Workflows': getRegisteredFuncs()
         .filter((f) => isWorkflowFunc(f.func) && funcMatchesSearch(f, query)).length,
       'Favorites': getFavorites().filter((e) => nameMatchesQuery(e.label, query)).length,
@@ -672,10 +680,30 @@ export class FunctionBrowser {
   }
 
   private renderQueriesTab(): void {
-    // Group every registered query by its connection (friendlyName ?? name).
-    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+    // The query list comes from the server (`loadQueryFuncs` →
+    // grok.dapi.queries.list — the registry's DG.Func.find scan misses
+    // queries): kicked off on the first render, a loader shows until it
+    // resolves, then the tab re-renders itself from the cached catalog.
+    if (this.queryFuncs === null) {
+      this.queriesTabContent.innerHTML = '';
+      this.queriesAccordion = null;
+      this.queriesTabContent.appendChild(ui.loader());
+      if (!this.queryFuncsRequested) {
+        this.queryFuncsRequested = true;
+        loadQueryFuncs().catch((e) => {
+          console.warn('FuncFlow: query catalog load failed', e);
+          return [] as FuncInfo[];
+        }).then((funcs) => {
+          this.queryFuncs = funcs;
+          this.renderQueriesTab();
+          this.updateTabBadges();
+        });
+      }
+      return;
+    }
+    // Group every query by its connection (friendlyName ?? name).
     const query = this.searchInput.value.toLowerCase();
-    const matching = query ? queries.filter((f) => funcMatchesSearch(f, query)) : queries;
+    const matching = query ? this.queryFuncs.filter((f) => funcMatchesSearch(f, query)) : this.queryFuncs;
     this.queriesTabContent.innerHTML = '';
     this.queriesAccordion = null;
     if (matching.length === 0) {
@@ -687,6 +715,7 @@ export class FunctionBrowser {
     const byConn = new Map<string, FuncInfo[]>();
     for (const f of matching) {
       const conn = queryConnectionName(f);
+      if (!conn) continue; // no connection object — skipped by design
       let arr = byConn.get(conn);
       if (!arr) byConn.set(conn, arr = []);
       arr.push(f);

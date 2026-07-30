@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Toolbox: the Queries tab now loads the authoritative query list from the server (`grok.dapi.queries.list`) instead of filtering the `DG.Func.find` catalog scan, which missed queries — slower (async, with a loader shown) but complete; queries without a connection object are skipped, and grouping prefers the connection's `friendlyName` over its `name`
+
 * Canvas: fixed re-clicking an already-selected node doing nothing after the context changed — the click dedupe now checks whether the context panel is still the current object showing that node and whether its output preview is on screen, and restores whichever went stale (tab switch and back, autorun results) instead of requiring an unselect/select round-trip
 * Execution: a run (autorun included) completing on the currently selected node now opens/updates its output preview immediately, and the context panel's Execution section tracks the run live
 * Autorun: functions can opt into live-by-default execution with `meta.autorun: true`, consolidated with the built-in list (OpenFile, AddNewColumn, viewers); the Uploaded File node (`readUploadedFile`) declares it, so dropped local files parse without pressing Run

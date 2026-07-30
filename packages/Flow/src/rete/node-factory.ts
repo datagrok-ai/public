@@ -5,6 +5,7 @@
  *  parity with the old serialization keys, function-browser categories, etc.)
  *  and a zero-arg factory that returns a fresh `FlowNode` instance. */
 
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ClassicPreset} from 'rete';
 import {FlowNode, EXEC_IN_KEY, EXEC_OUT_KEY, ORDER_SOCKET_TYPE} from './scheme';
@@ -326,6 +327,45 @@ export function ensureFuncNodeType(func: DG.Func): string {
     role, tags: getTags(func), packageName: pkgName, nodeTypeName: typeName,
   });
   return typeName;
+}
+
+let queryFuncsPromise: Promise<FuncInfo[]> | null = null;
+
+/** The Queries-pane catalog. The `DG.Func.find({})` scan does not reliably
+ *  return every query, so the pane loads the authoritative list from the
+ *  server — `grok.dapi.queries.list()` (async and slower, but complete, with
+ *  connections populated). Each query gets a node type via
+ *  `ensureFuncNodeType` so double-click / drag work like any catalog row; a
+ *  query without a connection object is skipped (there is nothing to group it
+ *  under in the Queries pane), and dev/test-package queries stay out as
+ *  before. The result is cached — one server round-trip per session (a failed
+ *  load clears the cache so a later render can retry); the returned FuncInfos
+ *  wrap the dapi instances, so `queryConnectionName` reads a real connection. */
+export function loadQueryFuncs(): Promise<FuncInfo[]> {
+  if (queryFuncsPromise) return queryFuncsPromise;
+  queryFuncsPromise = (async () => {
+    const queries = await grok.dapi.queries.list();
+    const result: FuncInfo[] = [];
+    for (const q of queries) {
+      try {
+        if (!q.connection) continue;
+        const pkgName = getPackageName(q);
+        if (DEV_TEST_PACKAGES.has(pkgName)) continue;
+        const typeName = ensureFuncNodeType(q);
+        result.push({
+          func: q, name: getFuncDisplayName(q) || q.name,
+          role: getRole(q), tags: getTags(q), packageName: pkgName, nodeTypeName: typeName,
+        });
+      } catch {
+        // Skip queries that fail to introspect (Dart proxy edge cases).
+      }
+    }
+    return result;
+  })().catch((e) => {
+    queryFuncsPromise = null;
+    throw e;
+  });
+  return queryFuncsPromise;
 }
 
 /** Instantiate a registered node type by name. Returns null if unknown.

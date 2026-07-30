@@ -987,9 +987,16 @@ match-count badge (`funcflow-tab-badge`, only when >0) and a 0-match tab dims (`
   of a COLLAPSED sibling), nested space levels get a 14px step (the d4-toolbar surface compresses
   tree indent to an illegible 6px), and space rows carry the brackets-curly glyph
   (`funcflow-space-icon`) like every other row type.
-  category list** and grouped into one sub-accordion **per connection** (`queryConnectionName` =
-  `connection.friendlyName ?? connection.name`; `ff-browser-query-conn-<name>` + `data-query-conn`),
-  **regardless of the group-by mode**.
+- **Queries tab** (`ff-browser-queries`): the query catalog is loaded **async from the server** —
+  `loadQueryFuncs()` in node-factory.ts, backed by `grok.dapi.queries.list()` (the `DG.Func.find({})`
+  registry scan does not reliably return every query; the dapi list is slower but authoritative and
+  carries populated connections). Loaded once per session (cached promise; a failed load clears the
+  cache for retry), each query registered via `ensureFuncNodeType`; the tab shows a loader until the
+  list resolves, and the search badge counts from the same catalog. Queries **without a connection
+  object are skipped**; dev/test-package queries (`DEV_TEST_PACKAGES`) stay out. Grouped into one
+  sub-accordion **per connection** (`queryConnectionName` = `connection.friendlyName ??
+  connection.name`; `ff-browser-query-conn-<name>` + `data-query-conn`), **regardless of the
+  group-by mode**, and kept out of the category list.
 - **Workflows tab** (`ff-browser-workflows`): the saved flows (`isWorkflowFunc`), excluded from the
   accordion categories in every group-by mode; empty state explains that saved flows appear here.
 - **Favorites tab** (`ff-browser-favorites`) + row stars ([panel/favorites.ts](src/panel/favorites.ts)):
