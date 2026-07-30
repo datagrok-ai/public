@@ -31,6 +31,9 @@ export function shouldUseFunctionEditor(func: DG.Func) {
 const EDITOR_SHORTCUT_INPUTS = new Set([
   'core:AddNewColumn:expression',
   'Chem:descriptorsDocker:selected',
+  // Deprotect's own dialog sketches the protecting group against the molecules
+  // in the table, which a bare sketcher on the parameter can't do.
+  'Chem:deprotect:fragment',
 ].map((s) => s.toLowerCase()));
 
 /** Whether this function input should carry the inline open-editor pencil.

@@ -14,7 +14,7 @@ import {TypedSocket, getSocket} from './sockets';
 import {areTypesCompatible, categorizeBySignature, domainCategory, domainSection} from '../types/type-map';
 
 import {
-  TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode,
+  TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode, MoleculeInputNode,
   NumberInputNode, IntInputNode, BooleanInputNode, DateTimeInputNode,
   FileInputNode, MapInputNode, DynamicInputNode, StringListInputNode, BlobInputNode,
 } from './nodes/input-nodes';
@@ -148,6 +148,7 @@ export function registerBuiltinNodes(): void {
   register('Inputs/Column Input', () => new ColumnInputNode());
   register('Inputs/Column List Input', () => new ColumnListInputNode());
   register('Inputs/String Input', () => new StringInputNode());
+  register('Inputs/Sketcher Input', () => new MoleculeInputNode());
   register('Inputs/Number Input', () => new NumberInputNode());
   register('Inputs/Int Input', () => new IntInputNode());
   register('Inputs/Boolean Input', () => new BooleanInputNode());
@@ -461,6 +462,25 @@ export function getOutputTypesForType(typeName: string): {real: string[]; passth
   return cached;
 }
 
+/** Whether an input node type is a semantic specialization of a plainer one —
+ *  Sketcher Input is a String Input tagged `semType: Molecule`. Several such
+ *  nodes can share a slot type, so a drag of the bare type must still land on
+ *  the general one; the specialization is chosen deliberately, from the
+ *  toolbox. */
+const _specializedInputCache = new Map<string, boolean>();
+
+function isSpecializedInput(typeName: string): boolean {
+  let cached = _specializedInputCache.get(typeName);
+  if (cached !== undefined) return cached;
+  try {
+    cached = String(FACTORIES.get(typeName)?.().properties['semType'] ?? '').trim().length > 0;
+  } catch {
+    cached = false;
+  }
+  _specializedInputCache.set(typeName, cached);
+  return cached;
+}
+
 export interface CompatibleNodeType {
   typeName: string;
   label: string;
@@ -643,10 +663,12 @@ export function findNodeTypesProducingOutput(
     return t.isBuiltin ? 3 : 4;
   };
   const used = (t: CompatibleNodeType): number => (usedFuncs.has(simpleFuncName(t.typeName)) ? 0 : 1);
+  const specialized = (t: CompatibleNodeType): number => Number(isSpecializedInput(t.typeName));
   matches.sort((a, b) =>
     rank(a) - rank(b) ||
     Number(b.realOutput) - Number(a.realOutput) ||
     Number(b.exact) - Number(a.exact) ||
+    specialized(a) - specialized(b) ||
     used(a) - used(b) ||
     a.label.localeCompare(b.label));
   return matches;

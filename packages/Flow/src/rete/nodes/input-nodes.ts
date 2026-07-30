@@ -54,6 +54,18 @@ export class StringInputNode extends InputBase {
   }
 }
 
+/** A String Input pre-tagged `semType: Molecule`, which is all it takes for the
+ *  value editor to become Chem's sketcher (`inputValueProperty` passes semType
+ *  to `ui.input.forProperty`, which matches a registered `valueEditor`). It
+ *  emits an ordinary `//input: string … {semType: Molecule}` line — a sketched
+ *  molecule IS a string, so everything downstream is unchanged. */
+export class MoleculeInputNode extends InputBase {
+  constructor() {
+    super('Sketcher Input', 'molecule', 'string', 'molecule',
+      {nullable: false, caption: '', choices: '', semType: 'Molecule'});
+  }
+}
+
 export class NumberInputNode extends InputBase {
   constructor() {
     super('Number Input', 'value', 'double', 'value',

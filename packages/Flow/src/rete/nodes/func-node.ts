@@ -21,7 +21,9 @@ import {
   getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
   getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
-import {hiddenInputsOf, funcWrapperOf, wrapperProperties} from '../../utils/func-input-overrides';
+import {
+  hiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties,
+} from '../../utils/func-input-overrides';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -78,6 +80,7 @@ export class FuncNode extends FlowNode {
     // seeded value, pass-through, compile, script import/emit — but the node
     // component and the property panel don't render them.
     this.hiddenInputs = hiddenInputsOf(func);
+    this.hiddenOutputs = hiddenOutputsOf(func);
     this.funcWrapper = wrapper ?? undefined;
     const funcInputs = effectiveInputs;
     const funcOutputs = func.outputs;

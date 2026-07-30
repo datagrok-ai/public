@@ -863,6 +863,7 @@ export class FunctionBrowser {
       {name: 'Column Input', type: 'Inputs/Column Input', desc: 'Single column from a table'},
       {name: 'Column List Input', type: 'Inputs/Column List Input', desc: 'Multiple columns from a table'},
       {name: 'String Input', type: 'Inputs/String Input', desc: 'Text input parameter'},
+      {name: 'Sketcher Input', type: 'Inputs/Sketcher Input', desc: 'A molecule, sketched — a string parameter tagged semType: Molecule'},
       {name: 'Number Input', type: 'Inputs/Number Input', desc: 'Floating-point number input'},
       {name: 'Int Input', type: 'Inputs/Int Input', desc: 'Integer number input'},
       {name: 'Boolean Input', type: 'Inputs/Boolean Input', desc: 'True/false toggle input'},

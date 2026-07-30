@@ -3,6 +3,12 @@
 ## v.next
 
 * Toolbox: the Queries tab now loads the authoritative query list from the server (`grok.dapi.queries.list`) instead of filtering the `DG.Func.find` catalog scan, which missed queries — slower (async, with a loader shown) but complete; queries without a connection object are skipped, and grouping prefers the connection's `friendlyName` over its `name`
+* Catalog (cheminformatics): Added Substructure Search, Chemical Similarity Search, To InChI / To InChI Keys, MPO Score by Profile, Apply Reaction, To SDF, Chemical Space Columns, and the two Chemspace lookups; dropped the entries that could not work on a canvas (Morgan fingerprints, synthon search, the four content-taking file importers) and replaced `findSimilar` / `getInchis` / `getInchiKeys` with their better twins
+* Nodes: Added `HIDDEN_FUNC_OUTPUTS`, the mirror of `HIDDEN_FUNC_INPUTS` — a declared output that is bookkeeping rather than a result (Chem's elemental analysis returns the *names* of the columns it appended) no longer shows a socket
+* Nodes: Added `columnHostWrapper`, a `FUNC_WRAPPERS` helper giving column-only functions a `table` input so their column slot has something to resolve against — applied to Chem's Similarities, Diversities and Substructure Search; wrapper inputs can now declare `semType` and `choices`
+* Nodes: `Chem:convertNotation`'s `join`/`overwrite` and `recalculateCoords`' `join` are hidden — at anything but their defaults the node's output carries nothing
+* Inputs: Added the Sketcher Input node — a string parameter tagged `semType: Molecule`, so its editor is the molecule sketcher; input nodes now pass their `semType` qualifier through to `ui.input.forProperty`, which is what selects a semantic-type editor
+* Property panel: `Chem:deprotect`'s fragment input carries the inline open-editor pencil
 
 * Canvas: fixed re-clicking an already-selected node doing nothing after the context changed — the click dedupe now checks whether the context panel is still the current object showing that node and whether its output preview is on screen, and restores whichever went stale (tab switch and back, autorun results) instead of requiring an unselect/select round-trip
 * Execution: a run (autorun included) completing on the currently selected node now opens/updates its output preview immediately, and the context panel's Execution section tracks the run live

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* `shipToCountry` is now a choice list of country names (`getShipToCountries`) converted to ISO-2 on entry, instead of a free-text field that silently needed a two-letter code
+
 * App: Surfaced search errors instead of silently showing an empty table, and guarded against stale responses from rapid input changes
 * Prices panel: Fixed caching — country switches now reuse rendered results instead of refetching
 * Get Chemspace Prices: Offers with missing USD pricing now fall through to the next offer instead of being stored as undefined

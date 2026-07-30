@@ -85,6 +85,11 @@ export class FlowNode extends ClassicPreset.Node<
    *  keep their wire endpoints). */
   hiddenInputs: ReadonlySet<string> = new Set();
 
+  /** Real output keys hidden the same way — for outputs that are bookkeeping
+   *  rather than a result (see `HIDDEN_FUNC_OUTPUTS`). A connected one still
+   *  renders, so old flows keep their wire endpoints. */
+  hiddenOutputs: ReadonlySet<string> = new Set();
+
   /** When set (`FUNC_WRAPPERS`), the node's input slots are the wrapper's
    *  exposed inputs, not the function's own; the compiler folds their resolved
    *  expressions into the real call arguments via `mapInputs`. */

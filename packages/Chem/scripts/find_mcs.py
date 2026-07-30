@@ -2,10 +2,10 @@
 #friendlyName: Most Common Substructure
 #description: Finds the maximum common substructure (MCS) shared by a set of molecules.
 #language: python
-#input: string molecules
-#input: dataframe df
-#input: bool exactAtomSearch [Require exact atom type match]
-#input: bool exactBondSearch [Require exact bond order match]
+#input: string molecules {nullable: false}
+#input: dataframe df {nullable: false}
+#input: bool exactAtomSearch = true [Require exact atom type match]
+#input: bool exactBondSearch = true [Require exact bond order match]
 #output: string result
 
 from rdkit import Chem

@@ -157,8 +157,8 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 
 //name: Substructure Search
 //description: Finds molecules that contain the query substructure.
-//input: column molStringsColumn 
-//input: string molString 
+//input: column molStringsColumn { caption: Molecules }
+//input: string molString { semType: Molecule; caption: Query substructure }
 //input: string molBlockFailover { description: Molblock used as a fallback query when the SMILES/SMARTS query cannot be parsed }
 //output: column result
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, molBlockFailover: string) : Promise<any> {
@@ -324,7 +324,7 @@ export async function bitbirchClusteringTopMenu(table: DG.DataFrame, molecules: 
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 
 //input: column molCol { semType: Molecule; caption: Molecules; description: Molecules to find common substructures in }
-//input: column clusterCol { type: categorical; caption: Cluster; description: Column assigning each molecule to a cluster }
+//input: column clusterCol { type: categorical; caption: Cluster; nullable: false; description: Column assigning each molecule to a cluster }
 //top-menu: Chem | Calculate | Cluster MCS...
 export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
   await PackageFunctions.clusterMCSTopMenu(table, molCol, clusterCol);
@@ -391,6 +391,23 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //meta.role: transform
 export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: string, clusterEmbeddings?: boolean, embedColsNames?: string[], clusterColName?: string) : Promise<any> {
   return await PackageFunctions.chemSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName);
+}
+
+//name: Chemical Space Columns
+//description: Reduces molecules to a 2D embedding (UMAP or t-SNE) and adds the coordinate — and, optionally, cluster and cluster-MCS — columns to the table.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//input: string methodName { caption: Method; nullable: false; choices: ["UMAP","t-SNE"] }
+//input: string similarityMetric { caption: Metric; nullable: false; choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
+//input: bool clusterEmbeddings { caption: Cluster; description: Also assign each molecule to a cluster }
+//input: bool clusterMCS { caption: Cluster MCS; description: Add the most common substructure of each cluster — requires Cluster }
+//output: column x { caption: X }
+//output: column y { caption: Y }
+//output: column clusters { caption: Cluster }
+//output: column clusterMcs { caption: Cluster MCS; semType: Molecule }
+//meta.role: transform
+export async function chemSpaceColumns(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, clusterEmbeddings: boolean, clusterMCS: boolean) {
+  return await PackageFunctions.chemSpaceColumns(table, molecules, methodName, similarityMetric, clusterEmbeddings, clusterMCS);
 }
 
 //name: Chem Space Embeddings
@@ -967,13 +984,13 @@ export function detectSmiles(col: DG.Column, min: number) : void {
 
 //name: Chemical Similarity Search
 //description: Returns molecules from a column ranked by similarity to a query molecule.
-//input: dataframe df 
-//input: column col 
-//input: string molecule 
-//input: string metricName 
-//input: string fingerprint 
-//input: int limit 
-//input: double minScore 
+//input: dataframe df { caption: Table }
+//input: column col { semType: Molecule; caption: Molecules }
+//input: string molecule { semType: Molecule; caption: Query molecule }
+//input: string metricName { caption: Metric; choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
+//input: string fingerprint { caption: Fingerprint; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//input: int limit { caption: Max hits; description: Maximum number of hits to return }
+//input: double minScore { caption: Min similarity; description: Minimum similarity score, 0 to 1; min: 0; max: 1 }
 //output: dataframe result
 export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column, molecule: string, metricName: any, fingerprint: string, limit: number, minScore: number) : Promise<any> {
   return await PackageFunctions.callChemSimilaritySearch(df, col, molecule, metricName, fingerprint, limit, minScore);
@@ -1294,13 +1311,31 @@ export async function _mpo() : Promise<void> {
 //description: Computes a multi-parameter optimization (MPO) desirability score from the selected property columns.
 //input: dataframe df 
 //input: column_list columns 
-//input: string profileName { description: Name of the MPO profile defining per-property desirability functions and weights }
-//input: string aggregation 
+//input: string profileName { caption: Score column; description: Name of the resulting score column. The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name }
+//input: string aggregation { choices: ["Average","Sum","Product","Geomean","Min","Max"] }
 //input: bool createDesirabilityColumns 
 //output: dataframe result { action: join(df) }
 //meta.vectorFunc: true
 export function mpoCalculate(df: DG.DataFrame, columns: DG.ColumnList, profileName: string, aggregation: any, createDesirabilityColumns: boolean) : any {
   return PackageFunctions.mpoCalculate(df, columns, profileName, aggregation, createDesirabilityColumns);
+}
+
+//description: Names of the saved MPO desirability profiles
+//output: list<string> result
+export async function getMpoProfileNames() : Promise<string[]> {
+  return await PackageFunctions.getMpoProfileNames();
+}
+
+//name: MPO Score by Profile
+//description: Scores a table against a saved MPO desirability profile, adding the score column (and, optionally, one desirability column per property).
+//input: dataframe table { caption: Table; nullable: false }
+//input: string profileName { caption: Profile; nullable: false; choices: Chem:getMpoProfileNames(); description: One of the profiles saved in the MPO Profiles app }
+//input: string aggregation { caption: Aggregation; nullable: false; choices: ["Average","Sum","Product","Geomean","Min","Max"] }
+//input: bool createDesirabilityColumns { caption: Per-property columns; description: Also add one desirability column per scored property }
+//output: column result
+//meta.role: transform
+export async function mpoScoreByProfile(table: DG.DataFrame, profileName: string, aggregation: any, createDesirabilityColumns: boolean) : Promise<any> {
+  return await PackageFunctions.mpoScoreByProfile(table, profileName, aggregation, createDesirabilityColumns);
 }
 
 //input: dataframe df 
@@ -1379,29 +1414,48 @@ export async function mpoProfilesAppTreeBrowser(treeNode: any, _browseView: any)
   await PackageFunctions.mpoProfilesAppTreeBrowser(treeNode, _browseView);
 }
 
-//name: removeWaterAndSalts
+//name: Remove Water and Salts
 //description: Removes water and salts from the list of molecules
-//input: dataframe table 
-//input: column molecules 
+//input: dataframe table { nullable: false }
+//input: column molecules { semType: Molecule; nullable: false }
 //output: column result { semType: Molecule }
 //top-menu: Chem | Transform | Reactions | Remove Water and Salts...
-//friendlyName: Remove Water and Salts
 export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules: DG.Column) {
   return await PackageFunctions.removeWaterAndSaltsTopMenu(table, molecules);
 }
 
-//name: transformationReactions
+//name: Run Reaction
 //description: Runs reaction based on the reaction SMARTS and list of reactants
 //top-menu: Chem | Transform | Reactions | Transformation...
-//friendlyName: Run Reaction
 export async function transformationReactionsTopMenu() : Promise<void> {
   await PackageFunctions.transformationReactionsTopMenu();
 }
 
-//name: twoComponentReaction
+//name: Apply Reaction
+//description: Applies a one-component reaction SMARTS to each molecule in a column, returning the products.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//input: string reaction { semType: ChemicalReaction; caption: Reaction; nullable: false; description: Reaction SMARTS with exactly one reactant }
+//input: bool removeSaltsAndWater { caption: Desalt; description: Strip water and salts from each reactant first }
+//output: column result { semType: Molecule }
+//meta.role: transform
+export async function applyReaction(table: DG.DataFrame, molecules: DG.Column, reaction: string, removeSaltsAndWater: boolean) : Promise<any> {
+  return await PackageFunctions.applyReaction(table, molecules, reaction, removeSaltsAndWater);
+}
+
+//name: To SDF
+//description: Serializes a table to SDF text, using the given column as the structure record and the remaining columns as data fields.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//input: string molBlockFormat { caption: Notation; nullable: true; choices: ["molblock","v3Kmolblock"]; description: Leave empty to keep existing molblocks as they are }
+//output: string result
+export async function toSdf(table: DG.DataFrame, molecules: DG.Column, molBlockFormat?: string) : Promise<string> {
+  return await PackageFunctions.toSdf(table, molecules, molBlockFormat);
+}
+
+//name: Two-Component Reaction
 //description: Runs a reaction between molecules from two columns
 //top-menu: Chem | Transform | Reactions | Two-Component Reaction...
-//friendlyName: Two-Component Reaction
 export async function twoComponentReactionTopMenu() : Promise<void> {
   await PackageFunctions.twoComponentReactionTopMenu();
 }
