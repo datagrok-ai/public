@@ -8,6 +8,7 @@ import './tests/curves-cell-renderer-tests';
 import './tests/transform-tests';
 import './tests/fit-tests';
 import './tests/pzfx-tests';
+import './tests/calculated-columns-tests';
 
 export const _package = new DG.Package();
 export {tests};

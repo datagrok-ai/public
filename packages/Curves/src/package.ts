@@ -13,9 +13,9 @@ import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
 import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
 import {convertPzfxToJson} from './fit/converters/pzfx-converter';
-import {registerCurveConverter, initExternalConverters} from './fit/curve-converter';
+import {registerCurveConverter, initExternalConverters, parseCellValue} from './fit/curve-converter';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitStatistics, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getStatistic} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 // import {PlateWidget} from './plate/plate-widget';
@@ -31,6 +31,43 @@ const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
+
+/** Parsed chart data for one cell of a curve column, with x zeroes substituted when needed.
+ * Recalculation hands us a detached column holding only the changed rows, so there is no dataframe
+ * cell to key the caches on - fall back to parsing the value directly in that case. */
+function chartDataAt(curveColumn: DG.Column, rowIdx: number): {data: IFitChartData, cell?: DG.Cell} | null {
+  const value = curveColumn.get(rowIdx);
+  if (value === null || value === undefined || value === '')
+    return null;
+  const cell = curveColumn.dataFrame ? curveColumn.dataFrame.cell(rowIdx, curveColumn.name) : undefined;
+  const data = cell ? getOrCreateParsedChartData(cell, true) : parseCellValue(value, curveColumn);
+  if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
+    data.series?.some((series) => series.points.some((p) => p.x === 0)))
+    substituteZeroes(data);
+  return {data, cell};
+}
+
+/** One statistic of one series, resolved by name so legacy names keep working. */
+function curveStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, seriesNumber: number): number | null {
+  const parsed = chartDataAt(curveColumn, rowIdx);
+  if (!parsed)
+    return null;
+  const series = parsed.data.series?.[seriesNumber];
+  if (!series || series.points.every((p) => p.outlier))
+    return null;
+  const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
+  return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
+}
+
+/** One statistic aggregated across every series of a curve. */
+function curveAggrStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, aggrType: string): number | null {
+  const parsed = chartDataAt(curveColumn, rowIdx);
+  if (!parsed)
+    return null;
+  if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
+    return null;
+  return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
+}
 
 export class Sync {
   private static _currentPromise: Promise<any> = Promise.resolve();
@@ -130,6 +167,38 @@ export class PackageFunctions {
   @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves', 'outputs': [{'name': 'result', 'type': 'dynamic'}]})
   static async dataToCurvesTopMenu() {
     dataToCurvesUI();
+  }
+
+  @grok.decorators.func({
+    name: 'curveStatistic',
+    description: 'Extract a fit statistic (e.g. IC50, AUC, R²) from a curve series into a calculated column.',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'column', options: {action: 'join(table)'}}],
+  })
+  static curveStatistic(table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Curve column to read'}}) curveColumn: DG.Column,
+    @grok.decorators.param({options: {description: 'Fit statistic to extract (e.g. ic50, auc, rSquared)'}}) propName: string,
+    @grok.decorators.param({type: 'int', options: {description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
+    // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
+    const result = DG.Column.float(`${curveColumn.name} ${seriesNumber + 1} ${propName}`, curveColumn.length);
+    result.init((i) => curveStatisticAt(curveColumn, i, propName, seriesNumber));
+    return result;
+  }
+
+  @grok.decorators.func({
+    name: 'curveAggrStatistic',
+    description: 'Aggregate a fit statistic across all series of a curve into a calculated column.',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'column', options: {action: 'join(table)'}}],
+  })
+  static curveAggrStatistic(table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Curve column to read'}}) curveColumn: DG.Column,
+    @grok.decorators.param({options: {description: 'Fit statistic to aggregate'}}) propName: string,
+    @grok.decorators.param({options: {description: 'Aggregation applied across series (avg, med, min, max)'}}) aggrType: string): DG.Column {
+    // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
+    const result = DG.Column.float(`${curveColumn.name} ${aggrType} ${propName}`, curveColumn.length);
+    result.init((i) => curveAggrStatisticAt(curveColumn, i, propName, aggrType));
+    return result;
   }
 
   @grok.decorators.func({

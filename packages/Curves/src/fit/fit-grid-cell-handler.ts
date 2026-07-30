@@ -20,6 +20,7 @@ import {
   IFitSeriesOptions,
   IFitFunctionDescription,
   FitStatistics,
+  LEGACY_FIT_STATISTICS,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
   getOrCreateParsedChartData,
@@ -32,7 +33,7 @@ import {
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue, isNativeFormat} from './curve-converter';
 import {ColorType, SeriesColorType, getSeriesColor} from './render-utils';
-import {Fit, fitFunctions, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {Fit, FitFunction, fitFunctions, fitSeriesProperties, getStatistic, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -64,7 +65,7 @@ const AGGREGATION_TYPES: {[key: string]: string} = {
 
 /** Returns the typed fit for a series, with the inflection point reported in data space. */
 export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
-  tableCell: DG.Cell, useCache: boolean = true, inDataSpace: boolean = true): Fit {
+  tableCell?: DG.Cell, useCache: boolean = true, inDataSpace: boolean = true): Fit {
   const fitFunction = getSeriesFitFunction(series);
   if (series.parameters) {
     if (chartLogOptions.logX) {
@@ -83,7 +84,7 @@ export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartL
 
 /** Returns series statistics in the legacy shape. Prefer {@link calculateSeriesFit}. */
 export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
-  tableCell: DG.Cell, useCache: boolean = true): FitStatistics {
+  tableCell?: DG.Cell, useCache: boolean = true): FitStatistics {
   return toFitStatistics(calculateSeriesFit(series, seriesIdx, chartLogOptions, tableCell, useCache));
 }
 
@@ -104,6 +105,38 @@ function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
       inputType: 'MultiChoice', friendlyName: 'Statistics'}));
 }
 
+/** Runs a curve statistic function so that its `join(table)` output action makes the platform add the
+ * result as a calculated column - it writes the formula, marks it a vector func so the curve column is
+ * bound as a column rather than a per-row value, subscribes it to changes, and (because the call is not
+ * processed) appends the AddNewColumn line to the table's creation script. */
+type CurveStatisticParams = {propName: string, seriesNumber: number} | {propName: string, aggrType: string};
+
+async function addStatisticColumn(gridCell: DG.GridCell, funcName: string,
+  params: CurveStatisticParams): Promise<void> {
+  await DG.Func.find({name: funcName})[0]
+    .prepare({table: gridCell.cell.dataFrame, curveColumn: gridCell.cell.column, ...params})
+    .call(false, undefined, {processed: false});
+}
+
+/** Maps stored statistic names onto the names the choices use, so an option persisted under a legacy
+ * name (`interceptX`) still ticks its current checkbox (`ic50`) instead of silently showing unchecked. */
+function normalizeStatisticNames(chartData: IFitChartData, names: string[]): string[] {
+  const resolved: string[] = [];
+  for (const name of names) {
+    let mapped = name;
+    for (const series of chartData.series ?? []) {
+      const prop = getStatisticProperty(getSeriesFitFunction(series), name);
+      if (prop) {
+        mapped = prop.name;
+        break;
+      }
+    }
+    if (!resolved.includes(mapped))
+      resolved.push(mapped);
+  }
+  return resolved;
+}
+
 /** Series properties with `fitFunction` able to name a custom JS function alongside the built-ins. */
 function seriesPropertiesFor(customFitFunction: IFitFunctionDescription | null): DG.Property[] {
   if (!customFitFunction)
@@ -113,49 +146,62 @@ function seriesPropertiesFor(customFitFunction: IFitFunctionDescription | null):
       choices: [customFitFunction.name, ...Object.keys(fitFunctions)], defaultValue: customFitFunction.name}));
 }
 
-export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string, tableCell: DG.Cell): FitStatistics {
+export type AggregatedFitStatistics = FitStatistics & {[name: string]: number | undefined};
+
+/** Statistics descriptors covering every fit function used in the cell, without duplicates. */
+function aggregatedStatisticsProperties(chartData: IFitChartData): DG.Property[] {
+  const props: DG.Property[] = [];
+  for (const series of chartData.series ?? []) {
+    for (const prop of getSeriesFitFunction(series).statisticsProperties) {
+      if (!props.some((p) => p.name === prop.name))
+        props.push(prop);
+    }
+  }
+  return props.length ? props : statisticsProperties;
+}
+
+/** Aggregates across all series every statistic that the cell's fit functions produce - not just the
+ * seven legacy ones. Values are aggregated in fit space and converted once at the end, so an averaged
+ * IC50 is a geometric mean. Legacy names stay available so recorded transforms keep resolving. */
+export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string,
+  tableCell?: DG.Cell): AggregatedFitStatistics {
   const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-  const rSquaredValues: number[] = []; const aucValues: number[] = []; const interceptXValues: number[] = []; const interceptYValues: number[] = [];
-  const slopeValues: number[] = []; const topValues: number[] = []; const bottomValues: number[] = [];
-  for (let i = 0, j = 0; i < chartData.series?.length!; i++) {
-    if (chartData.series![i].points.every((p) => p.outlier))
+  const values: Map<string, (number | undefined)[]> = new Map();
+  const fitFunctionsUsed: FitFunction[] = [];
+
+  for (let i = 0; i < chartData.series?.length!; i++) {
+    const series = chartData.series![i];
+    if (series.points.every((p) => p.outlier))
       continue;
-    // aggregate in fit space and convert once at the end, so avg of IC50s is a geometric mean
-    const seriesStats = toFitStatistics(
-      calculateSeriesFit(chartData.series![i], i, chartLogOptions, tableCell, true, false));
-    rSquaredValues[j] = seriesStats.rSquared!;
-    aucValues[j] = seriesStats.auc!;
-    interceptXValues[j] = seriesStats.interceptX!;
-    interceptYValues[j] = seriesStats.interceptY!;
-    slopeValues[j] = seriesStats.slope!;
-    topValues[j] = seriesStats.top!;
-    bottomValues[j] = seriesStats.bottom!;
-    j++;
+    const fitFunction = getSeriesFitFunction(series);
+    fitFunctionsUsed.push(fitFunction);
+    const fit = calculateSeriesFit(series, i, chartLogOptions, tableCell, true, false);
+    for (const prop of fitFunction.statisticsProperties) {
+      if (!values.has(prop.name))
+        values.set(prop.name, []);
+      values.get(prop.name)!.push(getStatistic(fit, prop.name));
+    }
   }
 
-  const aggregated: FitStatistics = {
-    rSquared: rSquaredValues.some((elem) => elem === undefined || elem === null) ? undefined:
-      DG.Stats.fromValues(rSquaredValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    auc: aucValues.some((elem) => elem === undefined || elem === null) ? undefined :
-      DG.Stats.fromValues(aucValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    interceptX: interceptXValues.some((elem) => elem === undefined || elem === null) ? undefined :
-      DG.Stats.fromValues(interceptXValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    interceptY: interceptYValues.some((elem) => elem === undefined || elem === null) ? undefined :
-      DG.Stats.fromValues(interceptYValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    slope: slopeValues.some((elem) => elem === undefined || elem === null) ? undefined :
-      DG.Stats.fromValues(slopeValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    top: topValues.some((elem) => elem === undefined || elem === null) ? undefined :
-      DG.Stats.fromValues(topValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number,
-    bottom: bottomValues.some((elem) => elem === undefined || elem === null) ? undefined :
-      DG.Stats.fromValues(bottomValues)[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number
-  };
+  const aggregated: AggregatedFitStatistics = {};
+  for (const [name, seriesValues] of values) {
+    aggregated[name] = seriesValues.some((v) => v === undefined || v === null || isNaN(v!)) ? undefined :
+      DG.Stats.fromValues(seriesValues as number[])[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number;
+  }
 
-  if (chartLogOptions.logX && aggregated.interceptX !== undefined)
-    aggregated.interceptX = Math.pow(10, aggregated.interceptX);
-  if (chartLogOptions.logY) {
-    for (const name of ['top', 'bottom', 'interceptY'] as const) {
-      if (aggregated[name] !== undefined)
-        aggregated[name] = Math.pow(10, aggregated[name]!);
+  // convert once, after aggregating - the same boundary a single series goes through
+  toDataSpace(aggregated as unknown as Fit, chartLogOptions);
+
+  // legacy names resolve to whatever the series' fit functions call them today
+  for (const legacyName of LEGACY_FIT_STATISTICS) {
+    if (aggregated[legacyName] !== undefined)
+      continue;
+    for (const fitFunction of fitFunctionsUsed) {
+      const prop = getStatisticProperty(fitFunction, legacyName);
+      if (prop && aggregated[prop.name] !== undefined) {
+        aggregated[legacyName] = aggregated[prop.name];
+        break;
+      }
     }
   }
   return aggregated;
@@ -353,7 +399,9 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
         {...seriesSource, fitFunction: customFitFunction.name} : seriesSource, seriesOptionsRefresh));
     ui.forms.addGroup(form, 'Series options', fitSeriesChildren);
     ui.forms.addGroup(form, 'Chart options', chartPropertiesFor(chartData).map((p) =>
-      ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
+      ui.input.forProperty(p, p.name === 'showStatistics' ? {...chartData.chartOptions,
+        showStatistics: normalizeStatisticNames(chartData, chartData.chartOptions?.showStatistics ?? [])} :
+        chartData.chartOptions, chartOptionsRefresh)));
     acc.addPane('Options', () => form);
 
     const choices = (chartData.series?.length ?? 0) > 1 ? ['all', 'aggregated'] : ['all'];
@@ -390,15 +438,10 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
             ui.h1(seriesName, {style: {color: color}}),
             // descriptors come from the series' own fit function, so only applicable statistics are listed
             ui.input.form(seriesFit, getSeriesFitFunction(series).statisticsProperties, {
-              onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
-                const funcParams = {table: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, seriesNumber: i};
-                await DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
-              }, `Calculate ${input.property.name} for the whole column`))
-
-              // TODO: Replace with this one after dima merges his branch
-              //   const newName = gridCell.cell.dataFrame.columns.getUnusedName(`${gridCell.gridColumn.name} ${seriesName} ${input.property.name}`);
-              //   await gridCell.cell.dataFrame.columns.addNewCalculated(newName, `Curves:addStatisticsColumn("table", \$\{${gridCell.gridColumn.name}\}, "${input.property.name}", ${i})`, undefined, undefined, false);
-              // }, `Calculate ${input.property.name} for the whole column`))
+              onCreated: (input) => input.root.appendChild(ui.iconFA('plus', () =>
+                addStatisticColumn(gridCell, 'curveStatistic',
+                  {propName: input.property.name, seriesNumber: i}),
+              `Calculate ${input.property.name} for the whole column`))
             })
           ]));
         }
@@ -406,11 +449,12 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
         const seriesStatistics = getChartDataAggrStats(chartData, aggrTypeInput.stringValue, tableCell);
         host.appendChild(ui.panel([
           ui.h1(`series ${aggrTypeInput.stringValue}`),
-          ui.input.form(seriesStatistics, statisticsProperties, {
-            onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
-              const funcParams = {table: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, aggrType: aggrTypeInput.stringValue};
-              await DG.Func.find({name: 'addAggrStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
-            }, `Calculate ${input.property.name} ${aggrTypeInput.stringValue} for the whole column`))
+          // same per-fit-function descriptors as the single-series pane, deduplicated across series
+          ui.input.form(seriesStatistics, aggregatedStatisticsProperties(chartData), {
+            onCreated: (input) => input.root.appendChild(ui.iconFA('plus', () =>
+              addStatisticColumn(gridCell, 'curveAggrStatistic',
+                {propName: input.property.name, aggrType: aggrTypeInput.stringValue}),
+            `Calculate ${input.property.name} ${aggrTypeInput.stringValue} for the whole column`))
           })
         ]));
       }

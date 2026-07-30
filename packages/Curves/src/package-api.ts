@@ -66,6 +66,26 @@ export namespace funcs {
   }
 
   /**
+   * Extract a fit statistic (e.g. IC50, AUC, R²) from a curve series into a calculated column.
+   * @param {DG.Column} curveColumn - Curve column to read
+   * @param {string} propName - Fit statistic to extract (e.g. ic50, auc, rSquared)
+   * @param {number} seriesNumber - Zero-based index of the curve series
+   */
+  export async function curveStatistic(table: DG.DataFrame , curveColumn: DG.Column , propName: string , seriesNumber: number ): Promise<DG.Column> {
+    return await grok.functions.call('Curves:CurveStatistic', { table, curveColumn, propName, seriesNumber });
+  }
+
+  /**
+   * Aggregate a fit statistic across all series of a curve into a calculated column.
+   * @param {DG.Column} curveColumn - Curve column to read
+   * @param {string} propName - Fit statistic to aggregate
+   * @param {string} aggrType - Aggregation applied across series (avg, med, min, max)
+   */
+  export async function curveAggrStatistic(table: DG.DataFrame , curveColumn: DG.Column , propName: string , aggrType: string ): Promise<DG.Column> {
+    return await grok.functions.call('Curves:CurveAggrStatistic', { table, curveColumn, propName, aggrType });
+  }
+
+  /**
    * Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.
    * @param {string} colName - Name of the curve column to read
    * @param {string} propName - Fit statistic to extract (e.g. IC50, AUC, R²)
