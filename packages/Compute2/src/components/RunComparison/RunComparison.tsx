@@ -3,7 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
+import {
+  IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping, wheelGuard,
+} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 
@@ -702,7 +704,7 @@ export const RunComparison = Vue.defineComponent({
           reverse={true}
           onUpdate:size={(size) => chartHeight.value = size}
         />
-        { chart }
+        { Vue.withDirectives(chart, [[wheelGuard]]) }
       </div>;
     };
 
