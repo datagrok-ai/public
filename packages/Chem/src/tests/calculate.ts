@@ -47,7 +47,7 @@ category('calculate', () => {
   test('to inchi', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    PackageFunctions.addInchisTopMenu(smiles, smiles.col('smiles')!);
+    await PackageFunctions.addInchisTopMenu(smiles, smiles.col('smiles')!);
     expect(smiles.columns.names().includes('inchi'), true, `inchi column hasn't been added`);
     expect(smiles.col('inchi')?.get(5), 'InChI=1S/C13H9Cl3N4/c14-5-8-1-3-9(4-2-8)6-20-7-17-12-10(20)11(15)18-13(16)19-12/h1-4,7H,5-6H2', `incorrect inchi value`);
   }, {stressTest: true});
@@ -55,7 +55,7 @@ category('calculate', () => {
   test('to inchi keys', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
-    PackageFunctions.addInchisKeysTopMenu(smiles, smiles.col('smiles')!);
+    await PackageFunctions.addInchisKeysTopMenu(smiles, smiles.col('smiles')!);
     expect(smiles.columns.names().includes('inchi_key'), true, `inchi_key column hasn't been added`);
     expect(smiles.col('inchi_key')?.get(5), 'BSKYPUUFGNPHLM-UHFFFAOYSA-N', `incorrect inchi_key value`);
   }, {stressTest: true});

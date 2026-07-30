@@ -505,8 +505,8 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 //input: column molecules { semType: Molecule }
 //meta.role: transform
 //top-menu: Chem | Calculate | To InchI...
-export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
-  PackageFunctions.addInchisTopMenu(table, col);
+export async function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : Promise<void> {
+  await PackageFunctions.addInchisTopMenu(table, col);
 }
 
 //name: InChI
@@ -514,8 +514,8 @@ export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
 //input: column<string> molecules { semType: Molecule }
 //output: column result
 //meta.vectorFunc: true
-export function getInchis(molecules: DG.Column) : any {
-  return PackageFunctions.getInchis(molecules);
+export async function getInchis(molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.getInchis(molecules);
 }
 
 //name: To InchI Keys
@@ -523,8 +523,8 @@ export function getInchis(molecules: DG.Column) : any {
 //input: column molecules { semType: Molecule }
 //meta.role: transform
 //top-menu: Chem | Calculate | To InchI Keys...
-export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column) : void {
-  PackageFunctions.addInchisKeysTopMenu(table, col);
+export async function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column) : Promise<void> {
+  await PackageFunctions.addInchisKeysTopMenu(table, col);
 }
 
 //name: InChI Keys
@@ -532,8 +532,8 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column) : void
 //input: column<string> molecules { semType: Molecule }
 //output: column result
 //meta.vectorFunc: true
-export function getInchiKeys(molecules: DG.Column) : any {
-  return PackageFunctions.getInchiKeys(molecules);
+export async function getInchiKeys(molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.getInchiKeys(molecules);
 }
 
 //name: Structural Alerts

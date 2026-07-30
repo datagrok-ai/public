@@ -8,6 +8,7 @@
 * GROK-20239: Chem: OCL renderer: Structures do not appear in labels in some visualisations
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
 * GROK-20505: Chem: Some descriptors return string values instead of numeric
+* InChI / InChI Keys: Moved the conversion to the parallel RDKit service (web workers) instead of the single-threaded module — `To InchI`, `To InchI Keys`, `getInchis` and `getInchiKeys` are now async
 
 ## 1.17.13 (2026-06-08)
 

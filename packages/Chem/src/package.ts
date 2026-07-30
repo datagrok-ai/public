@@ -1287,10 +1287,10 @@ export class PackageFunctions {
     'name': 'To InchI',
     'meta': {'role': 'transform'},
   })
-  static addInchisTopMenu(
+  static async addInchisTopMenu(
     table: DG.DataFrame,
-    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
-    const inchiCol = getInchisImpl(col);
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): Promise<void> {
+    const inchiCol = await getInchisImpl(col);
     inchiCol.name = table.columns.getUnusedName(inchiCol.name);
     table.columns.add(inchiCol);
   }
@@ -1300,8 +1300,8 @@ export class PackageFunctions {
     description: 'Computes the InChI identifier for each molecule.',
     meta: {vectorFunc: 'true'},
   })
-  static getInchis(
-    @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column): DG.Column {
+  static async getInchis(
+    @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column): Promise<DG.Column> {
     return getInchisImpl(molecules);
   }
 
@@ -1310,10 +1310,10 @@ export class PackageFunctions {
     'name': 'To InchI Keys',
     'meta': {'role': 'transform'},
   })
-  static addInchisKeysTopMenu(
+  static async addInchisKeysTopMenu(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
-    const inchiKeyCol = getInchiKeysImpl(col);
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): Promise<void> {
+    const inchiKeyCol = await getInchiKeysImpl(col);
     inchiKeyCol.name = table.columns.getUnusedName(inchiKeyCol.name);
     table.columns.add(inchiKeyCol);
   }
@@ -1323,8 +1323,8 @@ export class PackageFunctions {
     description: 'Computes the hashed InChI key for each molecule.',
     meta: {vectorFunc: 'true'},
   })
-  static getInchiKeys(
-    @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column): DG.Column {
+  static async getInchiKeys(
+    @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column): Promise<DG.Column> {
     return getInchiKeysImpl(molecules);
   }
 
