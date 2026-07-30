@@ -368,14 +368,17 @@ category('Flow: mpo column mapping', () => {
       // panel and never run has nothing cached, and treating that as "fine"
       // waved it straight through.
       node.inputValues['profileName'] = 'Some profile';
+      // Assert only that a mapping requirement is REPORTED, not how many: a
+      // blank `columnMapping` input can also surface under its own label, so an
+      // exact count tracks message plumbing rather than the run gate.
       const unresolved = nodeMissingRequirements(node, isConnected).filter((m) => m.includes('Column mapping'));
-      expect(unresolved.length, 1, 'an unverifiable mapping blocks the node');
+      expect(unresolved.length > 0, true, 'an unverifiable mapping blocks the node');
 
       cacheProfileProperties(node, 'Some profile', ['MW', 'LogP']);
       node.inputValues['columnMapping'] = '{"MW":"Molecular Weight"}';
       const partial = nodeMissingRequirements(node, isConnected).filter((m) => m.includes('Column mapping'));
-      expect(partial.length, 1, 'a partly-mapped profile is a missing requirement');
-      expect(partial[0].includes('LogP'), true, 'and it names what is unmapped');
+      expect(partial.length > 0, true, 'a partly-mapped profile is a missing requirement');
+      expect(partial.some((m) => m.includes('LogP')), true, 'and it names what is unmapped');
 
       node.inputValues['columnMapping'] = '{"MW":"Molecular Weight","LogP":"cLogP"}';
       expect(nodeMissingRequirements(node, isConnected).some((m) => m.includes('Column mapping')), false,
@@ -419,16 +422,18 @@ category('Flow: mpo column mapping', () => {
 
       // …and still blocked once it has, now naming the properties. (A profile
       // that scores nothing needs no mapping, so allow that outcome too.)
-      await until(() => {
-        const m = nodeMissingRequirements(node, isConnected).find((x) => x.includes('Column mapping'));
-        return m !== undefined && !m.includes('reading the profile');
-      }, 20_000);
-      const missing = nodeMissingRequirements(node, isConnected).find((m) => m.includes('Column mapping'));
+      // A blank `columnMapping` also surfaces under its own plain label, so
+      // match across ALL mapping messages rather than the first one — keying on
+      // `find` would settle on the plain label and never see the resolution.
+      const mappingHints = (): string[] =>
+        nodeMissingRequirements(node, isConnected).filter((m) => m.includes('Column mapping'));
+      await until(() => mappingHints().some((m) => m.includes('unmapped:')), 20_000);
       const properties = await DG.Func.find({package: 'Chem', name: 'getMpoProfileProperties'})[0]
         .apply({profileName: names[0]}) as string[];
       if (properties.length > 0) {
-        expect(missing !== undefined, true, 'an empty mapping never satisfies a profile that scores properties');
-        expect(missing!.includes(properties[0]), true, 'and the hint names what is unmapped');
+        const hints = mappingHints();
+        expect(hints.length > 0, true, 'an empty mapping never satisfies a profile that scores properties');
+        expect(hints.some((m) => m.includes(properties[0])), true, 'and the hint names what is unmapped');
       }
     } finally {
       destroyEditor(e);

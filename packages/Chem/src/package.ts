@@ -3204,7 +3204,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Apply Reaction',
     description: 'Applies a one-component reaction SMARTS to each molecule in a column, returning the products.',
-    outputs: [{name: 'result', type: 'column', options: {semType: 'Molecule'}}],
+    outputs: [{name: 'result', type: 'column'}],
     meta: {role: 'transform'},
   })
   static async applyReaction(

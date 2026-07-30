@@ -101,13 +101,32 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   // entry is inert until the package is republished.
   'Admetica:getAdmeProperties',
   // Bio
-  'Bio:getRegionTopMenu',
-  'Bio:moleculesToHelmTopMenu',
+  // The canonical, non-interactive numbering entry point. The engine function
+  // `immunumAntibodyNumbering` returns dialog plumbing (position maps,
+  // annotation JSON), not something a pipeline can carry.
+  'Bio:applyAntibodyNumbering',
+  'Bio:convertNotation',
+  'Bio:extractRegion',
+  // NB not `SequenceGenerator` — the sibling sequence_generator.md registers
+  // under that name (a script with no `#name:` falls back to its filename), and
+  // the parameterless doc entity is what you would get.
+  'Bio:GenerateSequences',
+  // 'Bio:getRegionTopMenu',        → Bio:extractRegion (returns the column)
+  // 'Bio:immunumAntibodyNumbering' → Bio:applyAntibodyNumbering
+  // 'Bio:moleculesToHelmTopMenu'   → Bio:moleculesToHelmColumn
+  'Bio:moleculesToHelmColumn',
+  'Bio:motifSearch',
   'Bio:pepseaMsa',
   'Bio:sequenceIdentityScoring',
   'Bio:sequenceSimilarityScoring',
-  'Bio:splitToMonomersTopMenu',
-  'Bio:toAtomicLevel',
+  // 'Bio:splitToMonomersTopMenu'   → Bio:splitToMonomersColumns
+  'Bio:splitToMonomersColumns',
+  'Bio:tagAsMacromolecule',
+  // 'Bio:toAtomicLevel'            → Bio:toAtomicLevelColumn
+  'Bio:toAtomicLevelColumn',
+  // A clean scalar source — a sketched/typed sequence in, a molblock out. Its
+  // `seq2atomic` twin is the same function under a second name; one is enough.
+  'Bio:toAtomicLevelSingleSeq',
   // Bionemo
   // 'Bionemo:DiffdockPython',
   // BiostructureViewer
@@ -191,7 +210,13 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chemspace:getChemspaceIds',
   'Chemspace:getChemspacePrices',
   // Curves
+  // The `addStatisticsColumn` / `addAggrStatisticsColumn` originals address the
+  // curve column by NAME (a free-text string, no picker and no `fit` filter);
+  // these twins take a real column slot and constrained choices.
+  'Curves:addAggrCurveStatistic',
+  'Curves:addCurveStatistic',
   'Curves:CalculateMSR',
+  'Curves:dataToCurves',
   'Curves:pzfxFileHandler',
   // DiffStudio
   'DiffStudio:ballFlight',

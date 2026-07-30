@@ -15,7 +15,7 @@ import {areTypesCompatible, categorizeBySignature, domainCategory, domainSection
 
 import {
   TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode, MoleculeInputNode,
-  NumberInputNode, IntInputNode, BooleanInputNode, DateTimeInputNode,
+  HelmInputNode, NumberInputNode, IntInputNode, BooleanInputNode, DateTimeInputNode,
   FileInputNode, MapInputNode, DynamicInputNode, StringListInputNode, BlobInputNode,
 } from './nodes/input-nodes';
 import {TableOutputNode, ValueOutputNode} from './nodes/output-nodes';
@@ -149,6 +149,7 @@ export function registerBuiltinNodes(): void {
   register('Inputs/Column List Input', () => new ColumnListInputNode());
   register('Inputs/String Input', () => new StringInputNode());
   register('Inputs/Sketcher Input', () => new MoleculeInputNode());
+  register('Inputs/Helm Input', () => new HelmInputNode());
   register('Inputs/Number Input', () => new NumberInputNode());
   register('Inputs/Int Input', () => new IntInputNode());
   register('Inputs/Boolean Input', () => new BooleanInputNode());

@@ -1478,7 +1478,7 @@ export async function transformationReactionsTopMenu() : Promise<void> {
 //input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
 //input: string reaction { semType: ChemicalReaction; caption: Reaction; nullable: false; description: Reaction SMARTS with exactly one reactant }
 //input: bool removeSaltsAndWater = true { caption: Desalt; description: Strip water and salts from each reactant first }
-//output: column result { semType: Molecule }
+//output: column result
 //meta.role: transform
 export async function applyReaction(table: DG.DataFrame, molecules: DG.Column, reaction: string, removeSaltsAndWater: boolean) : Promise<any> {
   return await PackageFunctions.applyReaction(table, molecules, reaction, removeSaltsAndWater);

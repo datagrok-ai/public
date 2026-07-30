@@ -66,6 +66,18 @@ export class MoleculeInputNode extends InputBase {
   }
 }
 
+/** The macromolecule counterpart of {@link MoleculeInputNode}: a String Input
+ *  tagged `semType: Macromolecule`, which is what routes the value editor to
+ *  Helm's registered `valueEditor` (the HELM web editor, `ui.input.helmAsync`).
+ *  A HELM sequence IS a string, so the emitted `//input:` line and everything
+ *  downstream are unchanged. */
+export class HelmInputNode extends InputBase {
+  constructor() {
+    super('Helm Input', 'sequence', 'string', 'sequence',
+      {nullable: false, caption: '', choices: '', semType: 'Macromolecule'});
+  }
+}
+
 export class NumberInputNode extends InputBase {
   constructor() {
     super('Number Input', 'value', 'double', 'value',
