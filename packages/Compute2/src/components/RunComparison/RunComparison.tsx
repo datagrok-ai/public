@@ -9,12 +9,13 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 
 import {History} from '../History/History';
 import {
-  ComparisonTarget, MatchConfidence, matchScalarTargets, matchColumnTargets, getEntryStatuses,
-  normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD,
+  ComparisonTarget, ColumnTarget, MatchConfidence, matchScalarTargets, matchColumnTargets, getEntryStatuses,
+  normalizeName, nameSimilarity, isNumericType, FUZZY_NAME_THRESHOLD,
 } from './comparison-core';
 import {
   ComparisonEntry, ComparisonMode, EntrySourceKind, RUN_COLUMN,
-  entryFromFuncCall, entryFromDataFrame, buildScalarComparison, buildColumnComparison,
+  entryFromFuncCall, entryFromDataFrame,
+  buildScalarComparison, buildColumnComparison, buildMultiColumnComparison,
 } from './data-extraction';
 import './RunComparison.css';
 
@@ -61,6 +62,8 @@ export const RunComparison = Vue.defineComponent({
 
     const historyHeight = Vue.ref(320);
     const sidebarWidth = Vue.ref(360);
+    // user override for the results chart height; the per-type minimum still applies
+    const chartHeight = Vue.ref(0);
 
     Vue.onMounted(async () => {
       try {
@@ -187,11 +190,48 @@ export const RunComparison = Vue.defineComponent({
       return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
     };
 
-    const filteredTargets = Vue.computed(() =>
-      targets.value.filter((target) => matchesFilter(targetFilter.value, target.displayName)));
+    const filteredTargets = Vue.computed(() => {
+      const listed: ComparisonTarget[] = multiMode.value ? compatibleTargets.value : targets.value;
+      return listed.filter((target) => matchesFilter(targetFilter.value, target.displayName));
+    });
 
     const selectedTarget = Vue.computed(() =>
       targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
+
+    const multiMode = Vue.ref(false);
+    const multiKeys = Vue.ref<string[]>([]);
+
+    const bindingSignature = (target: ColumnTarget) =>
+      target.bindings.map((b) => `${b.entryId}|${b.tablePath}|${b.indexColumnName}`).sort().join(';');
+
+    // column targets sharing the selected target's bindings; identical aligned grids by construction
+    const compatibleTargets = Vue.computed<ColumnTarget[]>(() => {
+      const anchor = selectedTarget.value;
+      if (!anchor || anchor.kind !== 'column')
+        return [];
+      const lineIndexed = anchor.bindings.every((b) => {
+        const type = indexColumnType(b.entryId, b.tablePath, b.indexColumnName);
+        return type != null && (isNumericType(type) || type === DG.COLUMN_TYPE.DATE_TIME);
+      });
+      if (!lineIndexed)
+        return [];
+      const signature = bindingSignature(anchor);
+      return targets.value.filter((target): target is ColumnTarget =>
+        target.kind === 'column' && bindingSignature(target) === signature);
+    });
+
+    Vue.watch(compatibleTargets, (list) => {
+      if (multiMode.value && list.length <= 1)
+        multiMode.value = false;
+    });
+
+    const setMultiMode = (val: boolean) => {
+      if (val)
+        multiKeys.value = selectedTargetKey.value ? [selectedTargetKey.value] : [];
+      else if (multiKeys.value.length > 0)
+        selectedTargetKey.value = multiKeys.value[0];
+      multiMode.value = val;
+    };
 
     const entryStatuses = Vue.computed(() => getEntryStatuses(
       entries.value.map((entry) => entry.nodes),
@@ -206,6 +246,17 @@ export const RunComparison = Vue.defineComponent({
       if (target.kind === 'scalar') {
         const result = buildScalarComparison(target, entries.value, baselineId.value);
         return Vue.markRaw({kind: 'scalar' as const, target, ...result});
+      }
+      if (multiMode.value) {
+        const selected = compatibleTargets.value.filter((item) => multiKeys.value.includes(item.key));
+        if (selected.length === 0)
+          return null;
+        if (selected.length > 1) {
+          const result = buildMultiColumnComparison(selected, entries.value, baselineId.value, mode.value);
+          return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
+        }
+        const result = buildColumnComparison(selected[0], entries.value, baselineId.value, mode.value);
+        return result ? Vue.markRaw({kind: 'column' as const, target: selected[0], ...result}) : null;
       }
       const result = buildColumnComparison(target, entries.value, baselineId.value, mode.value);
       return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
@@ -475,7 +526,16 @@ export const RunComparison = Vue.defineComponent({
         <div class='c2-comparison-rows c2-comparison-table'
           style={{gridTemplateColumns: 'max-content fit-content(400px) max-content max-content max-content 1fr'}}>
           { filteredTargets.value.map((target) => {
-            const isSelected = target.key === selectedTargetKey.value;
+            const isSelected = multiMode.value ?
+              multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
+            const onRowClick = () => {
+              if (!multiMode.value) {
+                selectedTargetKey.value = target.key;
+                return;
+              }
+              multiKeys.value = multiKeys.value.includes(target.key) ?
+                multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
+            };
             return <div
               key={target.key}
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
@@ -483,7 +543,7 @@ export const RunComparison = Vue.defineComponent({
                 padding: '3px 6px', cursor: 'pointer',
                 border: `1px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
               }}
-              onClick={() => selectedTargetKey.value = target.key}
+              onClick={onRowClick}
             >
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
@@ -503,6 +563,19 @@ export const RunComparison = Vue.defineComponent({
           </div>;
           })}
         </div>
+      </div>
+    );
+
+    const renderResultsHeader = () => (
+      <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
+        <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Results</div>
+        { compatibleTargets.value.length > 1 &&
+          <ToggleInput
+            caption='Multiple values'
+            value={multiMode.value}
+            onUpdate:value={setMultiMode}
+          />
+        }
       </div>
     );
 
@@ -570,23 +643,40 @@ export const RunComparison = Vue.defineComponent({
           Nothing to show: no matched data points across the selected runs
         </div>;
       }
+      const chartMinHeight = 'valueColumnNames' in currentComparison ?
+        250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
+      const effectiveChartHeight = Math.max(chartMinHeight, chartHeight.value);
+      const chartStyle = {width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'};
       let chart;
       if (currentComparison.kind === 'scalar') {
         chart = <Viewer
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.gridDf}
-          style={{width: '100%', flex: '1', minHeight: '250px'}}
+          style={chartStyle}
           options={{
             valueColumnName: scalarValueColumn.value,
             valueAggrType: 'avg',
             splitColumnName: RUN_COLUMN,
           }}
         />;
+      } else if ('valueColumnNames' in currentComparison) {
+        const valueColumnNames = currentComparison.valueColumnNames as string[];
+        chart = <Viewer
+          type={DG.VIEWER.LINE_CHART}
+          dataFrame={currentComparison.chartDf}
+          style={chartStyle}
+          options={{
+            xColumnName: currentComparison.indexColumnName,
+            yColumnNames: valueColumnNames,
+            splitColumnNames: [RUN_COLUMN],
+            multiAxis: false,
+          }}
+        />;
       } else if (currentComparison.isKeyIndex) {
         chart = <Viewer
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
-          style={{width: '100%', flex: '1', minHeight: '250px'}}
+          style={chartStyle}
           options={{
             valueColumnName: currentComparison.target.displayName,
             valueAggrType: 'avg',
@@ -598,7 +688,7 @@ export const RunComparison = Vue.defineComponent({
         chart = <Viewer
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
-          style={{width: '100%', flex: '1', minHeight: '250px'}}
+          style={chartStyle}
           options={{
             xColumnName: currentComparison.indexColumnName,
             yColumnNames: [currentComparison.target.displayName],
@@ -608,15 +698,24 @@ export const RunComparison = Vue.defineComponent({
       }
       return <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
         { renderModeToggle() }
+        <ResizeHandle
+          axis='y'
+          size={effectiveChartHeight}
+          min={chartMinHeight}
+          reverse={true}
+          onUpdate:size={(size) => chartHeight.value = size}
+        />
         { chart }
-        <div style={{height: '220px', paddingTop: '6px'}}>
-          <Viewer
-            type='Grid'
-            dataFrame={currentComparison.gridDf}
-            style={{height: '100%', width: '100%'}}
-            options={{'allowEdit': false, 'showRowHeader': false}}
-          />
-        </div>
+        { !('valueColumnNames' in currentComparison) &&
+          <div style={{height: '220px', paddingTop: '6px'}}>
+            <Viewer
+              type='Grid'
+              dataFrame={currentComparison.gridDf}
+              style={{height: '100%', width: '100%'}}
+              options={{'allowEdit': false, 'showRowHeader': false}}
+            />
+          </div>
+        }
       </div>;
     };
 
@@ -683,6 +782,7 @@ export const RunComparison = Vue.defineComponent({
             <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px', gap: '12px'}}>
               { renderIndexPickers() }
               { renderTargets() }
+              { renderResultsHeader() }
               { renderStatuses() }
               { renderComparison() }
             </div>

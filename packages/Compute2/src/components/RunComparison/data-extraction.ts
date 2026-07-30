@@ -229,6 +229,92 @@ export interface ColumnComparisonResult {
   excluded: ExcludedEntry[];
 }
 
+export interface MultiColumnComparisonResult extends ColumnComparisonResult {
+  // chart y-columns, one per selected target x run (baseline excluded in delta modes)
+  valueColumnNames: string[];
+}
+
+/**
+ * Combines several column targets that share the same bindings (runs, tables, index columns)
+ * into one wide comparison: `<target> · <run>` value columns over the shared index.
+ */
+export function buildMultiColumnComparison(
+  targets: ColumnTarget[],
+  entries: ComparisonEntry[],
+  baselineEntryId: string,
+  mode: ComparisonMode,
+): MultiColumnComparisonResult | null {
+  const labels = new Map<string, string>();
+  const seenNames = new Map<string, number>();
+  for (const target of targets) {
+    const count = (seenNames.get(target.displayName) ?? 0) + 1;
+    seenNames.set(target.displayName, count);
+    labels.set(target.key, count > 1 ? `${target.displayName} (${count})` : target.displayName);
+  }
+
+  const results = targets
+    .map((target) => ({target, result: buildColumnComparison(target, entries, baselineEntryId, 'values')}))
+    .filter((item): item is {target: ColumnTarget, result: ColumnComparisonResult} => item.result != null);
+  if (results.length === 0)
+    return null;
+  const first = results[0].result;
+  if (first.gridDf.rowCount === 0)
+    return {...first, valueColumnNames: []};
+
+  const participating = entries.filter((entry) =>
+    results[0].target.bindings.some((b) => b.entryId === entry.id));
+  const baselineIdx = Math.max(0, participating.findIndex((entry) => entry.id === baselineEntryId));
+  const srcIndex = first.gridDf.getCol(first.indexColumnName);
+  const makeIndex = () => DG.Column.fromList(srcIndex.type, first.indexColumnName, srcIndex.toList());
+
+  const usable = results.filter(({result}) => result.gridDf.rowCount === first.gridDf.rowCount);
+  const gridColumns: DG.Column[] = [makeIndex()];
+  for (const {target, result} of usable) {
+    const label = labels.get(target.key)!;
+    for (const entry of participating) {
+      const src = result.gridDf.col(entry.name);
+      if (src)
+        gridColumns.push(DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, `${label} · ${entry.name}`, src.toList()));
+    }
+  }
+
+  // long chart df: one value column per target (a stacked panel each), runs split within
+  const indexValues = srcIndex.toList();
+  const deltaPrefix = mode === 'delta' ? 'Δ ' : mode === 'deltaPct' ? 'Δ% ' : '';
+  const chartRuns = participating.filter((_, i) => mode === 'values' || i !== baselineIdx);
+  const longIndex: any[] = [];
+  const longRuns: string[] = [];
+  const longValues = new Map<string, (number | null)[]>(usable.map(({target}) => [labels.get(target.key)!, []]));
+  for (const entry of chartRuns) {
+    longIndex.push(...indexValues);
+    longRuns.push(...indexValues.map(() => entry.name));
+    for (const {target, result} of usable) {
+      const src = result.gridDf.col(mode === 'values' ? entry.name : `${deltaPrefix}${entry.name}`);
+      longValues.get(labels.get(target.key)!)!.push(...src ? src.toList() : indexValues.map(() => null));
+    }
+  }
+  const valueColumnNames = usable.map(({target}) => labels.get(target.key)!);
+  const chartColumns = [
+    DG.Column.fromList(srcIndex.type, first.indexColumnName, longIndex),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
+    ...valueColumnNames.map((label) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, longValues.get(label)!)),
+  ];
+
+  const gridDf = DG.DataFrame.fromColumns(gridColumns);
+  gridDf.name = 'Comparison: multiple values';
+  const chartDf = DG.DataFrame.fromColumns(chartColumns);
+  chartDf.name = gridDf.name;
+  return {
+    gridDf,
+    chartDf,
+    indexColumnName: first.indexColumnName,
+    isKeyIndex: first.isKeyIndex,
+    excluded: first.excluded,
+    valueColumnNames,
+  };
+}
+
 /**
  * Aligns the target column across runs on their user-defined index columns
  * (intersection join) and builds the wide grid df and the long chart df.
