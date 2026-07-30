@@ -324,7 +324,7 @@ export const RunComparison = Vue.defineComponent({
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
               title={`${entryName} · ${table.path}`}>
-              {entryName} · <span style={{color: 'var(--grey-5)'}}>{table.path}</span>
+              {entryName} · <span style={{color: 'var(--grey-5)'}}>{table.friendlyPath ?? table.path}</span>
             </span>
             <select
               value={current}
@@ -399,10 +399,13 @@ export const RunComparison = Vue.defineComponent({
           const matched = status.matched && !buildReason;
           const reason = buildReason ?? status.reason;
           const binding = matched ?
-            (target.bindings as {entryId: string, path?: string, tablePath?: string, columnName?: string}[])
-              .find((b) => b.entryId === status.entryId) : undefined;
+            (target.bindings as {
+              entryId: string, path?: string, friendlyPath?: string,
+              tablePath?: string, tableFriendlyPath?: string, columnName?: string,
+            }[]).find((b) => b.entryId === status.entryId) : undefined;
           const pathText = binding ?
-            (binding.path ?? `${binding.tablePath} · ${binding.columnName}`) : undefined;
+            (binding.friendlyPath ?? binding.path ??
+              `${binding.tableFriendlyPath ?? binding.tablePath} · ${binding.columnName}`) : undefined;
           return <span
             key={status.entryId}
             title={pathText ? `${entry.name} · ${pathText}` : entry.name}

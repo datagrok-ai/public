@@ -38,6 +38,7 @@ function getRunDisplayName(call: DG.FuncCall): string {
 function extractCallNodes(
   call: DG.FuncCall,
   pathPrefix: string,
+  friendlyPrefix: string,
   scalars: ScalarNodeInfo[],
   tables: TableNodeInfo[],
   dataFrames: Map<string, DG.DataFrame>,
@@ -50,10 +51,12 @@ function extractCallNodes(
     const prop = param.property;
     const path = pathPrefix ? `${pathPrefix}/${prop.name}` : prop.name;
     const name = prop.caption ?? prop.name;
+    const friendlyPath = friendlyPrefix ? `${friendlyPrefix} · ${name}` : name;
     if (SCALAR_PROPERTY_TYPES.has(prop.propertyType)) {
       scalars.push({
         path,
         name,
+        friendlyPath,
         valueType: prop.propertyType,
         units: prop.options?.['units'] || undefined,
         value: (value == null || isNaN(Number(value))) ? null : Number(value),
@@ -63,6 +66,7 @@ function extractCallNodes(
       tables.push({
         path,
         name,
+        friendlyPath,
         columns: [...df.columns].map((col) => ({
           name: col.name,
           type: col.type,
@@ -75,17 +79,39 @@ function extractCallNodes(
   }
 }
 
-function collectWorkflowSteps(state: any, prefix: string[], acc: {path: string, funcCallId: string}[]) {
+interface WorkflowStep {
+  path: string;
+  friendlyPath: string;
+  funcCallId: string;
+}
+
+function collectWorkflowSteps(
+  state: any,
+  prefix: string[],
+  friendlyPrefix: string[],
+  acc: WorkflowStep[],
+  isRoot = true,
+) {
   if (state == null || typeof state !== 'object')
     return;
+  const friendlyName = state.friendlyName ?? state.configId;
   if (state.type === 'funccall') {
-    if (state.funcCallId)
-      acc.push({path: [...prefix, state.configId].join('/'), funcCallId: state.funcCallId});
+    if (state.funcCallId) {
+      acc.push({
+        path: [...prefix, state.configId].join('/'),
+        friendlyPath: [...friendlyPrefix, friendlyName].join(' · '),
+        funcCallId: state.funcCallId,
+      });
+    }
     return;
   }
   if (Array.isArray(state.steps)) {
-    for (const step of state.steps)
-      collectWorkflowSteps(step, state.configId ? [...prefix, state.configId] : prefix, acc);
+    // the root pipeline name is shared by every step, so it is left out of friendly paths
+    const nestedFriendly = isRoot ? friendlyPrefix : [...friendlyPrefix, friendlyName];
+    for (const step of state.steps) {
+      collectWorkflowSteps(
+        step, state.configId ? [...prefix, state.configId] : prefix, nestedFriendly, acc, false);
+    }
   }
 }
 
@@ -99,12 +125,12 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
 
   if (serializedConfig) {
     const state = deserialize(serializedConfig);
-    const steps: {path: string, funcCallId: string}[] = [];
-    collectWorkflowSteps(state, [], steps);
+    const steps: WorkflowStep[] = [];
+    collectWorkflowSteps(state, [], [], steps);
     for (const step of steps) {
       try {
         const stepCall = await historyUtils.loadRun(step.funcCallId);
-        extractCallNodes(stepCall, step.path, scalars, tables, dataFrames);
+        extractCallNodes(stepCall, step.path, step.friendlyPath, scalars, tables, dataFrames);
       } catch (e) {
         console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, e);
       }
@@ -119,7 +145,7 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
     };
   }
 
-  extractCallNodes(call, '', scalars, tables, dataFrames);
+  extractCallNodes(call, '', '', scalars, tables, dataFrames);
   return {
     id: call.id,
     name: getRunDisplayName(call),
@@ -136,6 +162,7 @@ export function entryFromDataFrame(df: DG.DataFrame): ComparisonEntry {
   const table: TableNodeInfo = {
     path: df.name,
     name: df.name,
+    friendlyPath: df.name,
     columns: [...df.columns].map((col) => ({
       name: col.name,
       type: col.type,
@@ -184,7 +211,7 @@ export function buildScalarComparison(
   // so numeric-looking run names would produce a numeric column and break chart legends
   const gridDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, ordered.map((entry) => entry.name)),
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Path', bindings.map((b) => b.path)),
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Path', bindings.map((b) => b.friendlyPath ?? b.path)),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, values),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Δ', delta),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Δ%', deltaPct),

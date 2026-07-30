@@ -9,6 +9,8 @@ export const FUZZY_NAME_THRESHOLD = 0.7;
 export interface ScalarNodeInfo {
   path: string;
   name: string;
+  // human-readable path: step friendly names + IO caption; `path` stays the stable id
+  friendlyPath?: string;
   valueType: string;
   units?: string;
   value: number | null;
@@ -23,6 +25,7 @@ export interface ColumnInfo {
 export interface TableNodeInfo {
   path: string;
   name: string;
+  friendlyPath?: string;
   columns: ColumnInfo[];
   rowCount: number;
 }
@@ -38,6 +41,7 @@ export interface ScalarBinding {
   entryId: string;
   path: string;
   name: string;
+  friendlyPath?: string;
   units?: string;
   value: number | null;
 }
@@ -46,6 +50,7 @@ export interface ColumnBinding {
   entryId: string;
   tablePath: string;
   tableName: string;
+  tableFriendlyPath?: string;
   columnName: string;
   units?: string;
   indexColumnName: string;
@@ -212,6 +217,7 @@ export function matchScalarTargets(entries: ComparisonEntryNodes[]): ScalarTarge
           entryId: entry.entryId,
           path: scalar.path,
           name: scalar.name,
+          friendlyPath: scalar.friendlyPath,
           units: scalar.units,
           value: scalar.value,
         },
@@ -259,6 +265,7 @@ export function matchColumnTargets(
             entryId: entry.entryId,
             tablePath: table.path,
             tableName: table.name,
+            tableFriendlyPath: table.friendlyPath,
             columnName: column.name,
             units: column.units,
             indexColumnName,
