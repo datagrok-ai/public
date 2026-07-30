@@ -227,6 +227,30 @@ export const RunComparison = Vue.defineComponent({
         multiMode.value = false;
     });
 
+    const chartViewer = Vue.shallowRef<DG.Viewer | null>(null);
+    const onChartViewerChanged = (viewer: DG.Viewer | undefined) => {
+      chartViewer.value = viewer ? Vue.markRaw(viewer) : null;
+    };
+
+    // snapshot export: clone of the chart data plus the chart with its current options
+    const openInWorkspace = () => {
+      const currentComparison = comparison.value;
+      if (!currentComparison || currentComparison.gridDf.rowCount === 0)
+        return;
+      const nameInput = ui.input.string('Name', {value: currentComparison.chartDf.name || 'Comparison'});
+      ui.dialog('Open in workspace')
+        .add(nameInput.root)
+        .onOK(() => {
+          const df = currentComparison.chartDf.clone();
+          df.name = nameInput.value || 'Comparison';
+          const view = grok.shell.addTableView(df);
+          const options = chartViewer.value?.getOptions();
+          if (options)
+            view.addViewer(options.type, options.look);
+        })
+        .show({center: true});
+    };
+
     const setMultiMode = (val: boolean) => {
       if (val)
         multiKeys.value = selectedTargetKey.value ? [selectedTargetKey.value] : [];
@@ -571,13 +595,30 @@ export const RunComparison = Vue.defineComponent({
     const renderResultsHeader = () => (
       <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
         <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Results</div>
-        { compatibleTargets.value.length > 1 &&
-          <ToggleInput
-            caption='Multiple values'
-            value={multiMode.value}
-            onUpdate:value={setMultiMode}
-          />
-        }
+        <div style={{display: 'flex', alignItems: 'center', gap: '4px 12px', flexWrap: 'wrap'}}>
+          { compatibleTargets.value.length > 1 &&
+            <ToggleInput
+              caption='Multiple values'
+              value={multiMode.value}
+              onUpdate:value={setMultiMode}
+            />
+          }
+          { comparison.value && comparison.value.gridDf.rowCount > 0 &&
+            <span
+              style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                cursor: 'pointer', color: 'var(--blue-1, #2083d5)',
+              }}
+              onClick={openInWorkspace}
+            >
+              <IconFA
+                name='external-link'
+                tooltip='Open a snapshot of the data and chart in the workspace'
+              />
+              <span>Open in workspace</span>
+            </span>
+          }
+        </div>
       </div>
     );
 
@@ -652,6 +693,7 @@ export const RunComparison = Vue.defineComponent({
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.gridDf}
           style={chartStyle}
+          onViewerChanged={onChartViewerChanged}
           options={{
             valueColumnName: scalarValueColumn.value,
             valueAggrType: 'avg',
@@ -664,6 +706,7 @@ export const RunComparison = Vue.defineComponent({
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
+          onViewerChanged={onChartViewerChanged}
           options={{
             xColumnName: currentComparison.indexColumnName,
             yColumnNames: valueColumnNames,
@@ -676,6 +719,7 @@ export const RunComparison = Vue.defineComponent({
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
+          onViewerChanged={onChartViewerChanged}
           options={{
             valueColumnName: currentComparison.target.displayName,
             valueAggrType: 'avg',
@@ -688,6 +732,7 @@ export const RunComparison = Vue.defineComponent({
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
+          onViewerChanged={onChartViewerChanged}
           options={{
             xColumnName: currentComparison.indexColumnName,
             yColumnNames: [currentComparison.target.displayName],
