@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import {IconFA, Viewer, ResizeHandle, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
+import {IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 
@@ -45,6 +45,9 @@ export const RunComparison = Vue.defineComponent({
     const modelSearch = Vue.ref('');
     const modelDropdownOpen = Vue.ref(false);
     const modelDropdownRef = Vue.ref<HTMLElement>();
+
+    const allowFloatIndex = Vue.ref(false);
+    const allowDatetimeIndex = Vue.ref(false);
 
     const historySelection = Vue.shallowRef<DG.FuncCall[]>([]);
     const entries = Vue.shallowRef<ComparisonEntry[]>([]);
@@ -131,12 +134,29 @@ export const RunComparison = Vue.defineComponent({
       };
     };
 
+    // float/datetime indexes are edge cases prone to alignment noise, so they are opt-in
+    const isAllowedIndexType = (type?: string) => {
+      if (type === DG.COLUMN_TYPE.INT || type === DG.COLUMN_TYPE.BIG_INT || type === DG.COLUMN_TYPE.STRING)
+        return true;
+      if (type === DG.COLUMN_TYPE.DATE_TIME)
+        return allowDatetimeIndex.value;
+      if (type === DG.COLUMN_TYPE.FLOAT)
+        return allowFloatIndex.value;
+      return false;
+    };
+
+    const indexColumnType = (entryId: string, tablePath: string, columnName: string) => {
+      const entry = entries.value.find((item) => item.id === entryId);
+      const table = entry?.nodes.tables.find((item) => item.path === tablePath);
+      return table?.columns.find((col) => col.name === columnName)?.type;
+    };
+
     const indexColumnsMap = Vue.computed(() => {
       const map = new Map<string, Map<string, string>>();
       for (const [entryId, tables] of Object.entries(indexSelection.value)) {
         const tableMap = new Map<string, string>();
         for (const [tablePath, columnName] of Object.entries(tables)) {
-          if (columnName)
+          if (columnName && isAllowedIndexType(indexColumnType(entryId, tablePath, columnName)))
             tableMap.set(tablePath, columnName);
         }
         map.set(entryId, tableMap);
@@ -186,17 +206,23 @@ export const RunComparison = Vue.defineComponent({
 
     // tables that could participate in column comparison and need an index choice
     const indexTables = Vue.computed(() => entries.value.flatMap((entry) =>
-      entry.nodes.tables.map((table) => ({
-        entryId: entry.id,
-        entryName: entry.name,
-        table,
-        current: indexSelection.value[entry.id]?.[table.path] ?? '',
-      })),
+      entry.nodes.tables.map((table) => {
+        const candidates = table.columns.filter((col) => isAllowedIndexType(col.type));
+        const stored = indexSelection.value[entry.id]?.[table.path] ?? '';
+        return {
+          entryId: entry.id,
+          entryName: entry.name,
+          table,
+          candidates,
+          current: candidates.some((col) => col.name === stored) ? stored : '',
+        };
+      }),
     ));
 
     const suggestedIndex = (columns: {name: string, type: string}[]) =>
       columns.find((col) => col.type === DG.COLUMN_TYPE.DATE_TIME)?.name ??
-      columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT)?.name;
+      columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT ||
+        col.type === DG.COLUMN_TYPE.BIG_INT)?.name;
 
     const renderModelSelector = () => (
       <div ref={modelDropdownRef} style={{position: 'relative'}}>
@@ -273,13 +299,27 @@ export const RunComparison = Vue.defineComponent({
     const renderIndexPickers = () => (
       indexTables.value.length > 0 &&
       <div>
-        <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Index columns</div>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+          <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Index columns</div>
+          <div style={{display: 'flex', gap: '12px'}}>
+            <ToggleInput
+              caption='Datetime indexes'
+              value={allowDatetimeIndex.value}
+              onUpdate:value={(val) => allowDatetimeIndex.value = val}
+            />
+            <ToggleInput
+              caption='Float indexes'
+              value={allowFloatIndex.value}
+              onUpdate:value={(val) => allowFloatIndex.value = val}
+            />
+          </div>
+        </div>
         <div style={{color: 'var(--grey-4)', paddingBottom: '4px'}}>
           Pick the index (x / key) column for each table to enable column comparison
         </div>
         <div class='c2-comparison-rows'>
-          { indexTables.value.map(({entryId, entryName, table, current}) => {
-            const suggestion = suggestedIndex(table.columns);
+          { indexTables.value.map(({entryId, entryName, table, candidates, current}) => {
+            const suggestion = suggestedIndex(candidates);
             return <div key={`${entryId}:${table.path}`} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
@@ -292,7 +332,7 @@ export const RunComparison = Vue.defineComponent({
               style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px', maxWidth: '160px'}}
             >
               <option value=''>— index —</option>
-              { table.columns.map((col) =>
+              { candidates.map((col) =>
                 <option key={col.name} value={col.name}>
                   {col.name}{col.name === suggestion ? ' (suggested)' : ''}
                 </option>,

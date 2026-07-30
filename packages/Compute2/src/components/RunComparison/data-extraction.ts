@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {
@@ -216,10 +217,12 @@ export function buildColumnComparison(
   if (participating.length < 2)
     return null;
 
-  const isKeyIndex = participating.some(({entry, binding}) => {
-    const df = entry.dataFrames.get(binding.tablePath);
-    return df && !isNumericType(df.getCol(binding.indexColumnName).type);
-  });
+  const indexTypes = participating.map(({entry, binding}) =>
+    entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
+  // datetime indexes are aligned numerically on unix timestamps (ms)
+  const isDatetimeIndex = indexTypes.every((type) => type === DG.TYPE.DATE_TIME);
+  const isKeyIndex = !isDatetimeIndex &&
+    indexTypes.some((type) => type != null && !isNumericType(type));
 
   const baselineIdx = Math.max(0, participating.findIndex(({entry}) => entry.id === baselineEntryId));
   const indexColumnName = participating[baselineIdx].binding.indexColumnName;
@@ -241,8 +244,9 @@ export function buildColumnComparison(
   } else {
     const seriesList: NumericSeries[] = participating.map(({entry, binding}) => {
       const df = entry.dataFrames.get(binding.tablePath)!;
+      const rawIndex = df.getCol(binding.indexColumnName).toList();
       return {
-        index: df.getCol(binding.indexColumnName).toList(),
+        index: isDatetimeIndex ? rawIndex.map((v: any) => v?.valueOf() ?? null) : rawIndex,
         values: df.getCol(binding.columnName).toList(),
       };
     });
@@ -274,9 +278,15 @@ export function buildColumnComparison(
     return series;
   });
 
-  const indexColumn = isKeyIndex ?
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, indexColumnName, index) :
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, indexColumnName, index);
+  const makeIndexColumn = (name: string, list: (number | string)[]) => {
+    if (isKeyIndex)
+      return DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, list);
+    if (isDatetimeIndex)
+      return DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, list.map((v) => v == null ? null : dayjs(v as number)));
+    return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, list);
+  };
+
+  const indexColumn = makeIndexColumn(indexColumnName, index);
 
   const gridColumns: DG.Column[] = [indexColumn];
   participating.forEach(({entry}, i) => {
@@ -304,9 +314,7 @@ export function buildColumnComparison(
     }
   });
   const chartDf = DG.DataFrame.fromColumns([
-    isKeyIndex ?
-      DG.Column.fromList(DG.COLUMN_TYPE.STRING, indexColumnName, longIndex) :
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, indexColumnName, longIndex),
+    makeIndexColumn(indexColumnName, longIndex),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.displayName, longValues),
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
   ]);
