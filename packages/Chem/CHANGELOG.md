@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20436: Chem: Added a `categoryOrderer` for molecules, so viewers can order molecular categories by Tanimoto similarity
 * Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
 * Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
 * Added `Chemical Space Columns` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
