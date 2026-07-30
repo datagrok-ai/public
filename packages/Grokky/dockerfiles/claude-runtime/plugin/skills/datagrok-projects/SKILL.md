@@ -43,7 +43,7 @@ return {projectId: project.id, name: project.friendlyName, updated: true};
 ```
 
 - The entities keep their server ids → each save updates the same project (UI SAVE button behavior).
-- Never `DG.Project.create()` or `create_project` here; no `addChild` — the entities already belong to the project.
+- Never `DG.Project.create()` or a project `create` here; no `addChild` — the entities already belong to the project.
 
 Result:
 - `updated: true` → show the project with `datagrok_show_entities`, confirm saved. Stop.
@@ -52,7 +52,8 @@ Result:
 
 ## Step 2 — Create
 
-`create_project(name)` once → keep returned id as `projectId`. Stop (unless chaining per Routing).
+`datagrok_projects(op:"create", args:{name})` once → keep returned id as `projectId`.
+Stop (unless chaining per Routing).
 
 ## Step 3 — Attach current table + view
 
@@ -73,12 +74,13 @@ return {projectId: project.id, ok: true};
 
 ## Step 4 — Share
 
-`share_project(projectId, groups, access)` — `access` `"View"`|`"Edit"`, default `"View"`. No group named → ask.
+`datagrok_projects(op:"share", args:{projectId, groups, access})` — `access` `"View"`|`"Edit"`,
+default `"View"`. No group named → ask.
 
 ## Don't
 
-- Run `create_project` on "save" while a server project is open — update in place (Step 1).
+- Run a project `create` on "save" while a server project is open — update in place (Step 1).
 - `view.saveLayout()` / `grok.dapi.layouts.save()` — reopens as bare grid.
-- Create or share in `datagrok_exec` — use MCP tools.
-- Pre-announce later steps; call `create_project` twice.
+- Create or share in `datagrok_exec` — use the `datagrok_projects` MCP tool.
+- Pre-announce later steps; call `create` twice.
 - On MCP tool error: surface verbatim, stop. No `datagrok_exec` fallback.

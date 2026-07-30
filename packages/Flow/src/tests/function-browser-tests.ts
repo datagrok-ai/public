@@ -6,6 +6,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc, shouldIncludeFunc,
+  loadQueryFuncs,
 } from '../rete/node-factory';
 import {INCLUDED_FUNC_NQNAMES} from '../rete/included-funcs';
 import {
@@ -242,12 +243,15 @@ category('Flow: function browser', () => {
   });
 
   test('queries are grouped by connection and kept out of the categories', async () => {
-    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+    // The Queries pane loads the authoritative server list (dapi), not the
+    // registry's DG.Func.find scan — which misses queries.
+    const queries = await loadQueryFuncs();
     if (queries.length === 0) {
       expect(true, true, 'no queries on this stand — skipped');
       return;
     }
-    // Every query reports a non-empty connection name (the grouping key).
+    // Every loaded query reports a non-empty connection name (the grouping
+    // key) — connection-less queries are skipped at load time.
     for (const q of queries.slice(0, 20))
       expect(queryConnectionName(q).length > 0, true, `query ${q.func.name} has a connection name`);
 
@@ -258,6 +262,10 @@ category('Flow: function browser', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
+      // The tab renders async off the (already-resolved) catalog promise —
+      // yield until the per-connection accordion materializes.
+      await loadQueryFuncs();
+      await new Promise((r) => setTimeout(r, 50));
 
       // Queries live in the top Queries TAB now — activate it so its content
       // attaches, then expand every per-connection sub-pane so items

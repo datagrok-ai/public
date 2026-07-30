@@ -27,6 +27,55 @@ category('Flow: output strip', () => {
     registerAllFunctions();
   });
 
+  test('an output node never survives losing its last connection', async () => {
+    // No output node without a connection, ever: rows are auto-created when a
+    // value is published, so losing the last wire removes the row too —
+    // whether the wire is deleted directly or the feeding node is removed.
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const out = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      out.properties['paramName'] = 'result';
+      await e.flow.addConnectionByKeys(src.id, 'value', out.id, 'value');
+
+      const conn = e.flow.getConnections().find((c) => c.target === out.id)!;
+      await e.flow.editor.removeConnection(conn.id);
+      expect(await until(() => !e.flow.getNodes().some((n) => n.id === out.id)), true,
+        'orphaned output removed with its wire');
+      expect(e.flow.getNodes().some((n) => n.id === src.id), true, 'the source node stays');
+
+      // Removing the FEEDING node (its connections go down with it) too.
+      const out2 = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
+      out2.properties['paramName'] = 'result2';
+      await e.flow.addConnectionByKeys(src.id, 'value', out2.id, 'value');
+      await e.flow.removeNode(src.id);
+      expect(await until(() => !e.flow.getNodes().some((n) => n.id === out2.id)), true,
+        'output orphaned by its source node removal is removed too');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a still-connected output survives unrelated connection removals', async () => {
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const toStr = await addNode(e.flow, 'Utilities/ToString', 300, 200);
+      const out = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      out.properties['paramName'] = 'result';
+      await e.flow.addConnectionByKeys(src.id, 'value', out.id, 'value');
+      await e.flow.addConnectionByKeys(src.id, 'value', toStr.id, 'value');
+
+      const unrelated = e.flow.getConnections().find((c) => c.target === toStr.id)!;
+      await e.flow.editor.removeConnection(unrelated.id);
+      await new Promise((r) => setTimeout(r, 50)); // let the deferred check run
+      expect(e.flow.getNodes().some((n) => n.id === out.id), true,
+        'the connected output stays when an unrelated wire goes');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('strip column mounts OUTSIDE the canvas viewport with a vertical label', async () => {
     const e = makeEditor();
     try {

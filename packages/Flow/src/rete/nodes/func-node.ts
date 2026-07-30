@@ -21,7 +21,9 @@ import {
   getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
   getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
-import {hiddenInputsOf, funcWrapperOf, wrapperProperties} from '../../utils/func-input-overrides';
+import {
+  hiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties,
+} from '../../utils/func-input-overrides';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -78,6 +80,7 @@ export class FuncNode extends FlowNode {
     // seeded value, pass-through, compile, script import/emit — but the node
     // component and the property panel don't render them.
     this.hiddenInputs = hiddenInputsOf(func);
+    this.hiddenOutputs = hiddenOutputsOf(func);
     this.funcWrapper = wrapper ?? undefined;
     const funcInputs = effectiveInputs;
     const funcOutputs = func.outputs;
@@ -164,8 +167,18 @@ export class FuncNode extends FlowNode {
     // "Needs input" hint and every run gate (runnable set, live runs, rerun).
     // Exempt: bool (a checkbox always holds a value) and list-likes (an empty
     // list is a value).
+    // Annotation override: a leading (dataframe, column) pair is de-facto
+    // required even when declared nullable — mis-annotation is rampant (e.g.
+    // Chem:bitbirchClusteringTopMenu marks both `table` and `molecules`
+    // nullable, but the call is meaningless without them), and a function
+    // taking a table and its column first is a data operation on exactly that
+    // data.
+    const leadingTableColumn = funcInputs.length >= 2 &&
+      String(funcInputs[0].propertyType) === 'dataframe' &&
+      String(funcInputs[1].propertyType) === 'column';
     this.requiredInputs = funcInputs
-      .filter((p) => {
+      .filter((p, i) => {
+        if (leadingTableColumn && i < 2) return true;
         if (isInputOptional(p)) return false;
         const t = String(p.propertyType);
         if (t === 'bool' || t === 'list' || isStringListType(p.propertyType)) return false;

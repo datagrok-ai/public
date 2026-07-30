@@ -10,13 +10,19 @@ export interface ToolInputs {
   AskUserQuestion: {questions?: {question?: string}[]};
 }
 
+/** The datagrok MCP server exposes one tool per domain, each dispatching on `op` — see
+ * mcp-server/src/ops.ts. */
+export interface DomainToolInput {
+  op?: string;
+  args?: Record<string, any>;
+}
+
 export interface McpInputs {
-  call_function: {name?: string};
-  list_functions: {filter?: string};
-  get_function: {id?: string};
-  list_files: {path?: string};
-  download_file: {path?: string};
-  upload_file: {path?: string};
+  datagrok_functions: DomainToolInput;
+  datagrok_files: DomainToolInput;
+  datagrok_projects: DomainToolInput;
+  datagrok_spaces: DomainToolInput;
+  datagrok_platform: DomainToolInput;
   datagrok_exec: {code?: string};
   datagrok_verify: {assertion?: string; description?: string};
   datagrok_show_entities: {entities?: any[]};
@@ -57,6 +63,10 @@ export interface UserMessage {
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
   model?: ClaudeModel;
   clientTools?: ClientToolDef[];
+  /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
+   * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
+   * own off. */
+  gates?: {grounding?: boolean; verify?: boolean};
 }
 
 export interface AbortMessage {
@@ -98,7 +108,9 @@ export interface TurnMetrics {
 
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
-  | {type: 'tool_activity'; sessionId: string; summary: string}
+  // `name` is the bare tool name (mcp prefix stripped) — lets harnesses assert on which path a
+  // turn actually took, not just how many tools it used. Absent for progress-only activity.
+  | {type: 'tool_activity'; sessionId: string; summary: string; name?: string}
   // A gate (verifier / grounding) blocked the turn's Stop and a revision is being generated.
   // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
   // replaces the original ('replaced') or the original stands ('kept').

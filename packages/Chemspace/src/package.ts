@@ -246,6 +246,22 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    'description': 'Countries Chemspace can ship to, for the shipToCountry parameter',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static getShipToCountries(): string[] {
+    return Object.keys(COUNTRY_CODES);
+  }
+
+  /** Accepts either a country name ("United States" — what the choice list
+   *  offers) or the two-letter code the Chemspace API actually wants, so
+   *  existing callers that already pass a code keep working. */
+  private static toCountryCode(shipToCountry: string): string {
+    const code = COUNTRY_CODES[shipToCountry as keyof typeof COUNTRY_CODES];
+    return code ?? shipToCountry;
+  }
+
+  @grok.decorators.func({
     'name': 'Get Chemspace Ids',
     'description': 'Adds a column of Chemspace compound ids matched by exact structure for each molecule.',
     'meta': {
@@ -253,8 +269,9 @@ export class PackageFunctions {
     },
   })
   static async getChemspaceIds(
-    @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'Molecule'}}) molColumn: DG.Column,
-    @grok.decorators.param({'options': {'description': 'Destination country for pricing and availability'}}) shipToCountry: string): Promise<DG.Column> {
+    @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'Molecule', 'nullable': false}}) molColumn: DG.Column,
+    @grok.decorators.param({'options': {'caption': 'Ship to', 'nullable': false, 'choices': 'Chemspace:getShipToCountries()', 'description': 'Destination country for pricing and availability'}}) shipToCountry: string = 'United States'): Promise<DG.Column> {
+    shipToCountry = PackageFunctions.toCountryCode(shipToCountry);
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace ids for ${molColumn.name}...`);
     try {
       await getApiToken();
@@ -295,9 +312,11 @@ export class PackageFunctions {
     'description': 'Looks up vendor, pack size and price for each Chemspace id and joins the result back into the table.',
     outputs: [{name: 'res', type: 'dataframe', options: {action: 'join(data)'}}],
   })
-  static async getChemspacePrices(data: DG.DataFrame,
-     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'chemspace-id', 'description': 'Column of Chemspace compound ids to price'}}) idsColumn: DG.Column,
-    @grok.decorators.param({'options': {'description': 'Destination country for pricing and availability'}}) shipToCountry: string): Promise<DG.DataFrame> {
+  static async getChemspacePrices(
+    @grok.decorators.param({'options': {'nullable': false}}) data: DG.DataFrame,
+     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'chemspace-id', 'nullable': false, 'description': 'Column of Chemspace compound ids to price'}}) idsColumn: DG.Column,
+    @grok.decorators.param({'options': {'caption': 'Ship to', 'nullable': false, 'choices': 'Chemspace:getShipToCountries()', 'description': 'Destination country for pricing and availability'}}) shipToCountry: string = 'United States'): Promise<DG.DataFrame> {
+    shipToCountry = PackageFunctions.toCountryCode(shipToCountry);
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace prices for ${idsColumn.name}...`);
     try {
       await getApiToken();

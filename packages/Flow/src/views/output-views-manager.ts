@@ -42,7 +42,7 @@ export interface OutputTab {
   /** Latest value snapshot (the run's `ValueSummary.clone`). */
   df: DG.DataFrame | null;
   stale: boolean;
-  /** viewState from the loaded .ffjson, applied once after the tv exists and
+  /** viewState from the loaded .flow, applied once after the tv exists and
    *  the pane is visible (applying to a hidden view defers forever). */
   pendingLayout: string | null;
   /** `PowerPack:ConfigViewerGallery` ran for this tv (once per creation). */

@@ -40,7 +40,7 @@ import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execu
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary, NodeExecStatus} from './execution/execution-state';
 import {OutputViewsManager, OutputTab, OutputTabInfo} from './views/output-views-manager';
-import {buildPreview, setPreviewCellFocusHandler} from './execution/value-inspector';
+import {buildPreview, setPreviewCellFocusHandler, hasRenderablePreview} from './execution/value-inspector';
 import {SuggestionPane, FF_SUGGEST_MIME} from './panel/suggestion-pane';
 import {
   collectSuggestContext, computeSuggestions, Suggestion, CellSignal,
@@ -60,8 +60,8 @@ import {FlowAIContext} from './ai-tools';
 /** Bundled starter flows (files in `files/`), surfaced on the Start panel so a
  *  scientist never faces a blank canvas. */
 const FLOW_TEMPLATES: {label: string; file: string; desc: string}[] = [
-  {label: 'Workflow demo', file: 'Workflow Demo.ffjson', desc: 'A sample multi-step data workflow.'},
-  {label: 'Bio Molecules', file: 'Sequence demo.ffjson', desc: 'A Peptides conversion and calculation.'},
+  {label: 'Workflow demo', file: 'Workflow Demo.flow', desc: 'A sample multi-step data workflow.'},
+  {label: 'Bio Molecules', file: 'Sequence demo.flow', desc: 'A Peptides conversion and calculation.'},
 ];
 
 export class FuncFlowView extends DG.ViewBase {
@@ -149,7 +149,7 @@ export class FuncFlowView extends DG.ViewBase {
    *  from / saved to the server. Null for scratch flows — Save asks for a name. */
   private boundScript: DG.Script | null = null;
 
-  /** The dashboard project this flow publishes into, persisted in the .ffjson:
+  /** The dashboard project this flow publishes into, persisted in the .flow:
    *  re-publishing updates that project instead of creating a new one per
    *  save. Cleared on New / Save As / the dialog's "publish as new" link. */
   private dashboardProjectId: string | null = null;
@@ -549,6 +549,24 @@ export class FuncFlowView extends DG.ViewBase {
         grok.shell.o = this.propertyPanel.root;
         this.suggestionPane?.refresh();
       },
+      // Clicking the already-selected node is a no-op ONLY while the panels
+      // still show it: switching tabs replaces the shell's current object, and
+      // a run can leave a renderable output the preview never got to show —
+      // in both cases the re-click must restore the context, so return false.
+      isNodeContextCurrent: (node: FlowNode) => {
+        if (this.propertyPanel.shownNodeId !== node.id) return false;
+        try {
+          if (grok.shell.o !== this.propertyPanel.root) return false;
+        } catch {/* current-object read failed — treat as stale and re-show */
+          return false;
+        }
+        const preview = this.outputPreview;
+        if (preview.isEnabled && preview.pinnedNodeId == null && preview.currentNodeId !== node.id) {
+          const state = this.executionController?.state.getNodeState(node.id);
+          if (state != null && hasRenderablePreview(state)) return false;
+        }
+        return true;
+      },
       // Selection changes that bypass `nodepicked` — the marquee (its release
       // is swallowed before it can bubble to any container listener), Ctrl+A,
       // modifier-click removals, programmatic selects.
@@ -603,6 +621,9 @@ export class FuncFlowView extends DG.ViewBase {
       this.updateOutputViewValue(nodeId);
       // Completed/stale transitions change what's pending → what blocks autorun.
       this.updateAutorunIndicator();
+      // The open panel's Execution section tracks the run live — otherwise a
+      // node that completes while selected keeps showing the pre-run state.
+      this.propertyPanel.updateExecState(nodeId, this.executionController?.state.getNodeState(nodeId));
     };
     // Empty-canvas-click deselects happen inside rete with no callback — any
     // release on the canvas re-reads the selection. (Marquee releases never
@@ -812,7 +833,7 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  /** Layouts of the output tabs for persistence in the `.ffjson`, keyed by
+  /** Layouts of the output tabs for persistence in the `.flow`, keyed by
    *  paramName; undefined when there is nothing to save (keeps docs clean). */
   private captureOutputViews(): FuncFlowDocument['outputViews'] {
     const layouts = this.outputViews?.captureLayouts() ?? {};
@@ -979,6 +1000,10 @@ export class FuncFlowView extends DG.ViewBase {
     const node = await this.addNodeByTypeAtDrop(typeName, dropEvent);
     if (node) {
       node.inputValues['fullPath'] = filePath;
+      // Title carries the file name so several Open File nodes stay tellable
+      // apart at a glance. Cosmetic only — never affects what the flow computes.
+      const fileName = filePath.split('/').pop() || filePath;
+      node.label = `${node.label}: ${fileName}`;
       await this.flow.updateNode(node.id);
       // Report the programmatic param write like any panel edit — it drives
       // invalidation AND lets the live-by-default autorun load the file.
@@ -1057,7 +1082,7 @@ export class FuncFlowView extends DG.ViewBase {
   /** Uploads every pending local file referenced by an Uploaded File node to
    *  the server's GUID-addressed file store and rewrites the node's `fileId`
    *  to the real entity id. Called before any serialization that outlives this
-   *  session (entity save, creation-script save, .ffjson export). */
+   *  session (entity save, creation-script save, .flow export). */
   private async persistPendingUploads(): Promise<void> {
     if (!this.flow) return;
     const upType = this.findUploadedFileNodeType();
@@ -1121,7 +1146,7 @@ export class FuncFlowView extends DG.ViewBase {
         ui.divText(t.label, 'funcflow-start-card-title'),
         ui.divText(t.desc, 'funcflow-start-card-desc'),
       ], 'funcflow-start-card');
-      setTid(card, 'start-template', t.file.replace(/\.ffjson$/i, ''));
+      setTid(card, 'start-template', t.file.replace(/\.flow$/i, ''));
       card.onclick = (): void => void this.loadTemplate(t.file);
       ui.tooltip.bind(card, `Open the "${t.label}" template`);
       return card;
@@ -1325,7 +1350,7 @@ export class FuncFlowView extends DG.ViewBase {
       const json = await _package.files.readAsText(file);
       await this.loadFromJson(json);
       this.hideStartPanel();
-      grok.shell.info(`Opened template: ${file.replace(/\.ffjson$/i, '')}`);
+      grok.shell.info(`Opened template: ${file.replace(/\.flow$/i, '')}`);
     } catch (e: any) {
       grok.shell.error(`Could not open template "${file}": ${e?.message ?? e}`);
     }
@@ -1351,8 +1376,8 @@ export class FuncFlowView extends DG.ViewBase {
       m = m.item('Save As…', () => void this.saveDialog({asNew: true}));
     this.ribbonMenu = m
       .separator()
-      .item('Import .ffjson…', () => void this.openFlow())
-      .item('Export .ffjson', () => void this.exportFfjson())
+      .item('Import .flow…', () => void this.openFlow())
+      .item('Export .flow', () => void this.exportFlowFile())
       .separator()
       .item('Templates…', () => this.showStartPanel())
       .item('Settings…', () => this.editSettings())
@@ -1536,8 +1561,9 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Whether Save is available, and its tooltip. The button is the gateway to
-   *  both saving the script AND publishing a dashboard, so it is enabled for
-   *  any non-empty canvas; the tooltip reflects the dirty state. */
+   *  both saving the script AND publishing a dashboard, so it stays enabled
+   *  for any non-empty canvas — a freshly opened (unchanged) flow must still
+   *  open the dialog to publish; the tooltip reflects the dirty state. */
   private saveAvailability(): {enabled: boolean; tooltip: string} {
     if ((this.flow?.getNodeCount() ?? 0) === 0)
       return {enabled: false, tooltip: 'Nothing to save yet — the canvas is empty'};
@@ -1633,7 +1659,7 @@ export class FuncFlowView extends DG.ViewBase {
   private async openFlow(): Promise<void> {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.ffjson,.json';
+    input.accept = '.flow';
     input.addEventListener('change', async () => {
       const file = input.files?.[0];
       if (!file) return;
@@ -1674,7 +1700,7 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** The `.flow` entity body for the current graph — the single writer, so the
-   *  annotation header and the ffjson payload can never disagree. */
+   *  annotation header and the flow JSON payload can never disagree. */
   private entityBodyText(): string {
     if (!this.flowSettings.tags.includes(FLOW_TAG))
       this.flowSettings.tags.push(FLOW_TAG);
@@ -1694,7 +1720,13 @@ export class FuncFlowView extends DG.ViewBase {
       const script = DG.Script.create(this.entityBodyText());
       if (this.boundScript?.id)
         script.id = this.boundScript.id;
-      this.boundScript = await grok.dapi.scripts.save(script);
+      const saved = await grok.dapi.scripts.save(script);
+      // The UPDATE path (save with an existing id) returns an entity WITHOUT
+      // its namespace — a call serialized from it reads `FlowName()`, which
+      // breaks for anyone else once shared. Re-fetch so the bound entity
+      // always carries the server-qualified name (`user:FlowName`) — what
+      // `stampCreationScripts` embeds into dashboard creation scripts.
+      this.boundScript = (await grok.dapi.scripts.find(saved.id).catch(() => null)) ?? saved;
       this.name = this.flowSettings.scriptName;
       this.updatePath();
       this.markSaved(); // this graph is now the saved baseline
@@ -1913,6 +1945,21 @@ export class FuncFlowView extends DG.ViewBase {
     return count;
   }
 
+  /** Belt-and-braces before stamping creation scripts: a bound script whose
+   *  `nqName` carries no namespace would serialize an unqualified call
+   *  (`FlowName()` instead of `user:FlowName()`) that breaks when shared —
+   *  re-fetch the entity from the server, which always returns it qualified. */
+  private async ensureBoundScriptQualified(): Promise<void> {
+    const s = this.boundScript;
+    if (s?.id == null) return;
+    let nq = '';
+    try {
+      nq = s.nqName ?? '';
+    } catch {/* Dart proxy read can throw */}
+    if (!nq.includes(':'))
+      this.boundScript = (await grok.dapi.scripts.find(s.id).catch(() => null)) ?? s;
+  }
+
   /** Stamp each computed output table with the producing call (`.script` +
    *  `.VariableName` df tags) so the core Save-project dialog offers data sync
    *  — identical producing calls dedup on project open, so the flow runs ONCE
@@ -1962,6 +2009,7 @@ export class FuncFlowView extends DG.ViewBase {
   private async openDashboardDialog(): Promise<void> {
     const tabs = this.outputViews?.getTabs().filter((t) => t.df != null) ?? [];
     if (tabs.length === 0) return;
+    await this.ensureBoundScriptQualified();
     this.stampCreationScripts(tabs);
     const showSaveDialog = (DG.Project as unknown as {
       showSaveDialog?: (o: object) => Promise<unknown>;
@@ -1990,8 +2038,8 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  /** Download the graph as a local `.ffjson` file (the pre-entity behavior). */
-  private async exportFfjson(): Promise<void> {
+  /** Download the graph as a local `.flow` file (the pre-entity behavior). */
+  private async exportFlowFile(): Promise<void> {
     // Best-effort: an export with pending (in-memory) file ids would not be
     // portable — persist them first; on failure export anyway with a warning.
     try {
@@ -2001,7 +2049,7 @@ export class FuncFlowView extends DG.ViewBase {
     }
     const doc = serializeFlow(this.flow, this.flowSettings);
     downloadFlow(doc);
-    grok.shell.info('Flow exported as .ffjson');
+    grok.shell.info('Flow exported as .flow');
   }
 
   private editSettings(): void {
@@ -2242,7 +2290,9 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Load a flow from a JSON string (file viewer entry point). */
   async loadFromJson(json: string): Promise<void> {
-    await this.loadFromDoc(JSON.parse(json) as FuncFlowDocument);
+    // Accepts both `.flow` shapes: the annotated script body (header + JSON)
+    // and the bare JSON document — parseFlowBody handles either.
+    await this.loadFromDoc(parseFlowBody(json).doc);
   }
 
   /** Load a parsed flow document. Awaits editor construction, so it is safe

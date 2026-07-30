@@ -7,6 +7,8 @@ import './test/rfv';
 import './test/navigation';
 import './test/float-display';
 import './test/custom-export';
+import './test/run-comparison-core';
+import './test/run-comparison-df';
 
 export const _package = new DG.Package();
 export {tests};

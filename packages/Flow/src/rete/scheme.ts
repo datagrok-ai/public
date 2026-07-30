@@ -85,6 +85,11 @@ export class FlowNode extends ClassicPreset.Node<
    *  keep their wire endpoints). */
   hiddenInputs: ReadonlySet<string> = new Set();
 
+  /** Real output keys hidden the same way — for outputs that are bookkeeping
+   *  rather than a result (see `HIDDEN_FUNC_OUTPUTS`). A connected one still
+   *  renders, so old flows keep their wire endpoints. */
+  hiddenOutputs: ReadonlySet<string> = new Set();
+
   /** When set (`FUNC_WRAPPERS`), the node's input slots are the wrapper's
    *  exposed inputs, not the function's own; the compiler folds their resolved
    *  expressions into the real call arguments via `mapInputs`. */
@@ -117,7 +122,7 @@ export class FlowNode extends ClassicPreset.Node<
 
   /** Back-reference to the owning editor's callback surface, stamped by
    *  `FlowEditor` when the node enters its data layer. Runtime-only — the
-   *  serializer picks fields explicitly, so this never reaches `.ffjson`. */
+   *  serializer picks fields explicitly, so this never reaches `.flow`. */
   editorBridge?: FlowEditorBridge;
 
   /** Runtime-only companion to `properties['defaultValue']` for values a

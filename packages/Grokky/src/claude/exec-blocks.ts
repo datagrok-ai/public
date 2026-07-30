@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {widgetBriefings} from '../ai/view-tools';
 
 export interface ExecError {
   blockIndex: number;
@@ -74,6 +75,10 @@ export function buildWorkspaceContext(): string {
     const ai = (current as any).aiDescription;
     if (ai)
       lines.push(`About this view: ${ai}`);
+    const briefed = widgetBriefings(current);
+    if (briefed.length > 0)
+      lines.push('Widgets here, including open dialogs (drill in with list_view_widgets / list_view_functions): ' +
+        briefed.map((w) => `${w.type} — ${w.aiDescription}`).join('; '));
     const details = buildViewContext(current);
     if (details)
       lines.push(details);

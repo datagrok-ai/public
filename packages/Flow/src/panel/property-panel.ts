@@ -15,7 +15,7 @@ import {buildExecutionMeta} from '../execution/value-inspector';
 import {setTid} from '../utils/test-ids';
 import {getParamDescription, getParamDisplayName, getFuncDisplayName, getTags} from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
-import {shouldUseFunctionEditor} from '../utils/func-editor-utils';
+import {shouldUseFunctionEditor, hasEditorShortcut} from '../utils/func-editor-utils';
 import {hiddenInputsOf, customEditorFor, CustomInputEditorFactory} from '../utils/func-input-overrides';
 import {buildInputValueEditor} from '../utils/input-values';
 import {ColumnPickRequest} from './column-picker';
@@ -198,6 +198,21 @@ export class PropertyPanel {
     this.currentExecState = undefined;
     this.contentDiv.innerHTML = '';
     this.contentDiv.appendChild(ui.divText('Select a node to view its properties'));
+  }
+
+  /** The node the panel currently renders, or null when empty/cleared. */
+  get shownNodeId(): string | null {
+    return this.currentNode?.id ?? null;
+  }
+
+  /** A run advanced the shown node's execution state under the open panel —
+   *  swap the state in and rebuild, so the Execution section (status,
+   *  duration, dims) never goes stale while the node stays selected.
+   *  Focus-guarded like {@link refreshShownNode}. */
+  updateExecState(nodeId: string, execState?: NodeExecState): void {
+    if (this.currentNode?.id !== nodeId || this.currentExecState === execState) return;
+    this.currentExecState = execState;
+    this.refreshShownNode();
   }
 
   /** Rebuild the panel for the node it currently shows — the graph changed
@@ -807,7 +822,21 @@ export class PropertyPanel {
     } else {
        PropertyPanel.initInputValue(input, node.inputValues[param.name]);
     }
+    this.addEditorShortcut(input, node, param.name);
     return this.propRow(ui.div([input.root], 'funcflow-prop-row funcflow-dg-row'), param.name);
+  }
+
+  /** Inputs on the {@link hasEditorShortcut} list (AddNewColumn's expression,
+   *  descriptors' selection, …) get a pencil option inside the input that
+   *  opens the function's own editor — the exact same action as the
+   *  parameters-pane "Open editor" header button, just where the user looks. */
+  private addEditorShortcut(input: DG.InputBase, node: FlowNode, paramName: string): void {
+    if (!this.onEditFuncParams || !node.dgFunc || !hasEditorShortcut(node.dgFunc, paramName)) return;
+    const pencil = ui.iconFA('pencil', () => this.onEditFuncParams!(node),
+      'Edit in the function’s own dialog (needs all table inputs connected)');
+    pencil.classList.add('funcflow-input-editor-pencil');
+    setTid(pencil, `prop-input-editor-${paramName}`);
+    input.addOptions(pencil);
   }
 
   /** A registered custom editor (`CUSTOM_FUNC_INPUT_EDITORS`) replacing the

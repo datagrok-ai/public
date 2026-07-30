@@ -418,6 +418,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName });
   }
 
+  /**
+  Reduces molecules to a 2D embedding (UMAP or t-SNE) and adds the coordinate — and, optionally, cluster and cluster-MCS — columns to the table.
+  */
+  export async function chemSpaceColumns(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , clusterEmbeddings: boolean , clusterMCS: boolean ): Promise<{x: DG.Column, y: DG.Column, clusters: DG.Column, clusterMcs: DG.Column}> {
+    return await grok.functions.call('Chem:ChemSpaceColumns', { table, molecules, methodName, similarityMetric, clusterEmbeddings, clusterMCS });
+  }
+
   export async function getChemSpaceEmbeddings(col: string , methodName: string , similarityMetric: string , xAxis: string , yAxis: string , options?: any ): Promise<any> {
     return await grok.functions.call('Chem:GetChemSpaceEmbeddings', { col, methodName, similarityMetric, xAxis, yAxis, options });
   }
@@ -956,6 +963,20 @@ export namespace funcs {
     return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns });
   }
 
+  /**
+  Names of the saved MPO desirability profiles
+  */
+  export async function getMpoProfileNames(): Promise<any> {
+    return await grok.functions.call('Chem:GetMpoProfileNames', {});
+  }
+
+  /**
+  Scores a table against a saved MPO desirability profile, adding the score column (and, optionally, one desirability column per property).
+  */
+  export async function mpoScoreByProfile(table: DG.DataFrame , profileName: string , aggregation: string , createDesirabilityColumns: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:MpoScoreByProfile', { table, profileName, aggregation, createDesirabilityColumns });
+  }
+
   export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<any> {
     return await grok.functions.call('Chem:MpoTransformFunction', { df, profileName, aggregation, currentProperties, silent });
   }
@@ -1010,6 +1031,20 @@ export namespace funcs {
   */
   export async function transformationReactionsTopMenu(): Promise<void> {
     return await grok.functions.call('Chem:TransformationReactionsTopMenu', {});
+  }
+
+  /**
+  Applies a one-component reaction SMARTS to each molecule in a column, returning the products.
+  */
+  export async function applyReaction(table: DG.DataFrame , molecules: DG.Column , reaction: string , removeSaltsAndWater: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:ApplyReaction', { table, molecules, reaction, removeSaltsAndWater });
+  }
+
+  /**
+  Serializes a table to SDF text, using the given column as the structure record and the remaining columns as data fields.
+  */
+  export async function toSdf(table: DG.DataFrame , molecules: DG.Column , molBlockFormat: string | null): Promise<string> {
+    return await grok.functions.call('Chem:ToSdf', { table, molecules, molBlockFormat });
   }
 
   /**

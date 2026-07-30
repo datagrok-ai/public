@@ -1,7 +1,7 @@
-/** JSON schema for the .ffjson save format (Rete-based, version 2).
+/** JSON schema for the .flow save format (Rete-based, version 2).
  *
  * **Breaking change from v1**: stores Rete nodes & connections directly,
- * no LiteGraph payload. Old .ffjson files will not load. */
+ * no LiteGraph payload. Old .flow files will not load. */
 
 export interface FuncFlowDocument {
   version: '2.0';
@@ -18,7 +18,7 @@ export interface FuncFlowDocument {
   connections: FuncFlowConnection[];
 
   /** Workflow annotations — purely visual, not part of the executable graph.
-   *  Optional for back-compat with .ffjson files that pre-date this field. */
+   *  Optional for back-compat with .flow files that pre-date this field. */
   annotations?: FuncFlowAnnotation[];
 
   /** Node groups — collapsible titled frames around member node sets. Visual

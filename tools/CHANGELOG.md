@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.2 (2026-07-27)
+
+* `grok publish` — a failed `docker push` is no longer reported as a successful one. `image.json` claimed the tag regardless, so the server recorded a container image that was never published and the spawner failed validation forever ("Image ... not found in any registry") with no recovery short of another publish. The push failure now falls back to an image that is actually in the registry, and says so.
+
 ## 6.5.1 (2026-07-22)
 
 * `grok test` — the Node-pass report now merges into the browser report by column name. The line-wise merge assumed identical column order, so node rows landed misaligned (string values in the integer `ms` column) and the CI test-report upload failed with `invalid input syntax for type integer`.

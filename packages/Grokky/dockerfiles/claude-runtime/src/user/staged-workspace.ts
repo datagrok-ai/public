@@ -3,11 +3,9 @@ import * as path from 'node:path';
 import {WORKSPACE} from '../constants';
 
 const PACKAGES_DIR = 'packages';
-// Repo dev-tooling that must not reach the model's cwd: the root CLAUDE.md instructs a
-// `.kg/scripts/qq.py` knowledge-graph query first (self-installs a venv, ~30 s) — a measured
-// help-turn timeout mechanism if the SDK auto-loads it. The model's instructions come from the
-// system prompt, not the repo.
-const EXCLUDED_ENTRIES = new Set(['CLAUDE.md', '.claude', '.kg']);
+// Repo dev-tooling that must not reach the model's cwd — the model's instructions come from
+// the system prompt, not the repo.
+const EXCLUDED_ENTRIES = new Set(['CLAUDE.md', '.claude']);
 const lastBuilt = new Map<string, string>();
 
 export async function buildStagedWorkspace(

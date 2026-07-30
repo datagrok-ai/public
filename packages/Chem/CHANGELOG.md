@@ -3,11 +3,24 @@
 ## v.next
 
 * GROK-20436: Chem: Added a `categoryOrderer` for molecules, so viewers can order molecular categories by Tanimoto similarity
+* Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
+* Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
+* Added `Chemical Space Columns` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
+* Added `MPO Score by Profile` and `getMpoProfileNames`: `mpoCalculate` scores columns that already carry desirability tags and `mpoTransformFunction` wants those tags as a JSON blob, so neither could be driven from a profile name
+* Chemical Similarity Search: Added choices and defaults for metric, fingerprint, max hits and min similarity, and tagged the query molecule `semType: Molecule`
+* Substructure Search: Tagged the query `semType: Molecule` and defaulted the molblock fallback
+* Curate: Flipped normalization, reionization, neutralization and main-fragment on by default — with every flag off the function ran and changed nothing
+* Fixed display names that were declared via `//friendlyName:`, which the metadata parser ignores: Remove Water and Salts, Run Reaction, Two-Component Reaction
+* Remove Water and Salts: Its `molecules` parameter never carried `semType: Molecule` — the decorator options were nested one level too shallow, so it accepted any string column
+* Marked genuinely-required parameters non-nullable across the reaction, clustering, scaffold and R-group functions (Two Component Reaction's second table/column, Cluster MCS's cluster column, FindMCS, FindRGroupsWithCore, Murcko, Butina, Curate)
+
 * Docker (chem/chemprop): Cleared reported CVEs — pinned Flask/Werkzeug/gunicorn to fixed releases, upgraded pip/setuptools/wheel (build + runtime tooling), pinned urllib3/idna in chemprop, and added `apt upgrade` to patch base-image OS packages
 * Docker (chem/chemprop): Raised security floors (VEX) — torch/torchvision/torchaudio to 2.6.0+cu118 via PyPI wheels (CVE-2025-32434) and removed padelpy's bundled PaDEL-Descriptor jars (log4j 1.2.15, guava 17.0)
 * Moved the Chem Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * GROK-20239: Chem: OCL renderer: Structures do not appear in labels in some visualisations
 * Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
+* GROK-20505: Chem: Some descriptors return string values instead of numeric
+* InChI / InChI Keys: Moved the conversion to the parallel RDKit service (web workers) instead of the single-threaded module — `To InchI`, `To InchI Keys`, `getInchis` and `getInchiKeys` are now async
 
 ## 1.17.13 (2026-06-08)
 

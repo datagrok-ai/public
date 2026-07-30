@@ -52,6 +52,14 @@ export type GraphEdit =
 export interface FlowEditorCallbacks {
   onNodeSelected?: (node: FlowNode) => void;
   onNodeDeselected?: (node: FlowNode) => void;
+  /** Host-state check behind the re-pick dedupe: clicking a node that is
+   *  already selected re-fires `onNodeSelected` unless this returns true —
+   *  i.e. the host's panels (context panel as the shell's current object, the
+   *  output preview) still reflect this node. Selection alone is a bad proxy:
+   *  switching tabs replaces the current object and an autorun can produce a
+   *  preview the panel never showed, both while the node stays selected.
+   *  Omitted → same-pick never re-fires (headless/test editors). */
+  isNodeContextCurrent?: (node: FlowNode) => boolean;
   /** Fired after selection changes that never go through `nodepicked` — the
    *  marquee (whose release is swallowed before it can bubble, see
    *  `installRectSelect`), Ctrl+A / Ctrl+Shift+A, the pointerup modifier
@@ -374,7 +382,7 @@ export class FlowEditor {
    *  node-component.tsx). A connection created or removed while an endpoint is
    *  collapsed changes which sockets must exist, so re-render those nodes.
    *  Without this, a connection added to an already-collapsed node (creation-
-   *  script import, .ffjson load) has no socket element to attach to and stays
+   *  script import, .flow load) has no socket element to attach to and stays
    *  invisible until the node is expanded and collapsed again. */
   private refreshCollapsedEndpoints(conn: FlowScheme['Connection']): void {
     for (const id of [conn.source, conn.target]) {
@@ -424,6 +432,11 @@ export class FlowEditor {
           if (g) this.refreshGroupCard(g);
         }
       }
+      // No output node without a connection, ever: strip rows are auto-created
+      // when a value is published, so losing the last wire (deleted directly,
+      // or via the source node's removal) auto-removes the row too.
+      if (context.type === 'connectionremoved')
+        this.scheduleOrphanOutputCheck(context.data.source, context.data.target);
       if (
         context.type === 'nodecreated' || context.type === 'noderemoved' ||
         context.type === 'connectioncreated' || context.type === 'connectionremoved' ||
@@ -445,8 +458,12 @@ export class FlowEditor {
           // again, grab it to drag) changes nothing — don't make the host
           // rebuild its panels. `lastPointerDownWasSelected` is the state
           // snapshot from BEFORE rete's add-only pick, so a click that
-          // re-selects after a deselect-all still fires.
-          const samePick = node.id === this.lastPickedId && this.lastPointerDownWasSelected;
+          // re-selects after a deselect-all still fires. The host's
+          // `isNodeContextCurrent` can veto the dedupe: staying selected does
+          // not mean the context panel / preview still show this node (tab
+          // switches and autoruns change both without touching the selection).
+          const samePick = node.id === this.lastPickedId && this.lastPointerDownWasSelected &&
+            (this.callbacks.isNodeContextCurrent?.(node) ?? true);
           if (this.lastPickedId && this.lastPickedId !== node.id) {
             const prev = this.editor.getNode(this.lastPickedId);
             if (prev) this.callbacks.onNodeDeselected?.(prev);
@@ -696,9 +713,12 @@ export class FlowEditor {
       const rect = svg.getBoundingClientRect();
       const mmx = e.clientX - rect.left;
       const mmy = e.clientY - rect.top;
-      // minimap px → canvas coords (inverse of the draw transform)
-      const cx = (mmx - fit.offsetX) / fit.scale + fit.minX;
-      const cy = (mmy - fit.offsetY) / fit.scale + fit.minY;
+      // minimap px → canvas coords — the exact inverse of the draw transform
+      // (`x_mm = cx * scale + offsetX`). `offsetX/offsetY` already fold in
+      // `-min * scale`; adding `min` again shifted every pan target down/right
+      // by the graph origin — the further from (0,0), the worse the miss.
+      const cx = (mmx - fit.offsetX) / fit.scale;
+      const cy = (mmy - fit.offsetY) / fit.scale;
       const cont = this.container.getBoundingClientRect();
       const k = this.area.area.transform.k;
       void this.area.area.translate(cont.width / 2 - cx * k, cont.height / 2 - cy * k);
@@ -709,7 +729,10 @@ export class FlowEditor {
       e.preventDefault();
       e.stopPropagation();
       panToEvent(e);
-      body.setPointerCapture(e.pointerId);
+      // Best-effort: synthetic events (tests) have no active pointer to capture.
+      try {
+        body.setPointerCapture(e.pointerId);
+      } catch {/* drag still works via the move/up listeners below */}
       const onMove = (ev: PointerEvent): void => panToEvent(ev);
       const onUp = (): void => {
         body.removeEventListener('pointermove', onMove);
@@ -895,10 +918,14 @@ export class FlowEditor {
       if (!id) return;
       // Re-clicking the chip that is already the sole-selected current object
       // changes nothing — don't re-fire the host callbacks (panel rebuilds).
+      // Same host veto as `nodepicked`: a stale context panel / preview means
+      // the re-click must go through.
       const accumulate = ev.ctrlKey || ev.metaKey;
-      const node = this.editor.getNode(id) as {selected?: boolean} | undefined;
-      if (node?.selected && this.lastPickedId === id &&
-          (accumulate || this.getSelectedNodeIds().length === 1)) return;
+      const node = this.editor.getNode(id);
+      if (node && (node as unknown as {selected?: boolean}).selected === true &&
+          this.lastPickedId === id &&
+          (accumulate || this.getSelectedNodeIds().length === 1) &&
+          (this.callbacks.isNodeContextCurrent?.(node) ?? true)) return;
       void this.selectNode(id, accumulate);
     });
     strip.addEventListener('contextmenu', (ev) => {
@@ -1104,6 +1131,34 @@ export class FlowEditor {
       if (!taken.has(`${base}${i}`)) return `${base}${i}`;
   }
 
+  /** Node ids awaiting the no-orphan-output check, and whether a connection
+   *  drag is in flight. Picking an existing wire's endpoint REMOVES the
+   *  connection before the re-route drop re-adds it — checking mid-gesture
+   *  would kill the output node under the user's cursor, so pending checks
+   *  flush when the gesture ends (or a tick after a non-gesture removal). */
+  private pendingOrphanOutputIds = new Set<string>();
+  private connectionDragActive = false;
+
+  /** Queue both endpoints of a removed connection: any that is an output node
+   *  left with no connections at flush time gets removed — output rows exist
+   *  only as publish targets, so a connection-less one is meaningless. */
+  private scheduleOrphanOutputCheck(...nodeIds: string[]): void {
+    for (const id of nodeIds) this.pendingOrphanOutputIds.add(id);
+    setTimeout(() => this.flushOrphanOutputCheck(), 0);
+  }
+
+  private flushOrphanOutputCheck(): void {
+    if (this.connectionDragActive || this.pendingOrphanOutputIds.size === 0) return;
+    const ids = [...this.pendingOrphanOutputIds];
+    this.pendingOrphanOutputIds.clear();
+    for (const id of ids) {
+      const node = this.editor.getNode(id);
+      if (!node || node.dgNodeType !== 'output') continue;
+      if (this.editor.getConnections().some((c) => c.source === id || c.target === id)) continue;
+      void this.removeNode(id);
+    }
+  }
+
   // ---------- drag-output-to-empty suggestion menu ----------
 
   /** Hook into the connection plugin's own `connectionpick` / `connectiondrop`
@@ -1121,8 +1176,17 @@ export class FlowEditor {
     // dance per-pick.
     window.addEventListener('pointermove', trackPointer, true);
     // Safety net: a pick that ends without a `connectiondrop` (e.g. Esc) still
-    // releases the pointer — clear the compatibility hints then. Idempotent.
-    window.addEventListener('pointerup', () => this.endConnectHints(), true);
+    // releases the pointer — clear the compatibility hints then, and release
+    // the orphan-output hold (the deferred flush runs after the plugin's own
+    // drop processing in this same dispatch, so a re-added wire lands first).
+    // Idempotent.
+    window.addEventListener('pointerup', () => {
+      this.endConnectHints();
+      if (this.connectionDragActive) {
+        this.connectionDragActive = false;
+        setTimeout(() => this.flushOrphanOutputCheck(), 0);
+      }
+    }, true);
 
     this.connection.addPipe((context) => {
       const c = context as {type: string; data: any};
@@ -1137,6 +1201,9 @@ export class FlowEditor {
           return context;
         }
         const sock = c.data.socket as {nodeId: string; key: string; side: 'input' | 'output'};
+        // A pick can be a re-route of an existing wire (removed on pick,
+        // re-added on drop) — hold the orphan-output check until the drop.
+        this.connectionDragActive = true;
         // Dim the canvas and light up only the sockets/nodes this pick can
         // legally connect to (compatible type, opposite side).
         this.beginConnectHints(sock.nodeId, sock.key, sock.side);
@@ -1158,6 +1225,10 @@ export class FlowEditor {
       }
       if (c.type === 'connectiondrop') {
         this.endConnectHints();
+        // Gesture over — if the re-route dropped nowhere, the output it fed
+        // is now orphaned and goes; a tick's grace lets the re-add land first.
+        this.connectionDragActive = false;
+        setTimeout(() => this.flushOrphanOutputCheck(), 0);
         const data = c.data as {created: boolean; socket: {nodeId: string} | null};
         const srcOut = this.dragOutSource;
         const srcIn = this.dragInSource;
@@ -1821,7 +1892,7 @@ export class FlowEditor {
     } else {
       this.fitGroupFrame(g);
       // Member sizes settle when React mounts the views — refit shortly after
-      // (fresh .ffjson loads create groups before the first paint).
+      // (fresh .flow loads create groups before the first paint).
       this.scheduleGroupRefit(g);
       setTimeout(() => {
         if (this.groups.has(g.id) && !g.minimized) this.fitGroupFrame(g);

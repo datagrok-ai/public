@@ -14,7 +14,7 @@ export function funcflowApp(path?: string) : any {
 //input: file file 
 //output: view result
 //meta.role: fileViewer
-//meta.fileViewer: ffjson
+//meta.fileViewer: flow
 export function viewFuncFlow(file: DG.FileInfo) : any {
   return PackageFunctions.viewFuncFlow(file);
 }

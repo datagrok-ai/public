@@ -58,11 +58,49 @@ category('AI: Widgets: TabControl JS API', () => {
     const empty = DG.TabControl.create();
     expect(empty.panes.length, 0);
     expectNoThrow(() => {const cur = empty.currentPane; expect(cur == null, true);});
-    const vertical = DG.TabControl.create(true);
+    const vertical = DG.TabControl.create({vertical: true});
     expect(vertical instanceof DG.TabControl, true);
     const pane = vertical.addPane('v', () => ui.divText('v-body'));
     expect(pane != null, true);
     expect(vertical.currentPane != null, true);
     expect(vertical.currentPane.name, 'v');
+  });
+  test('options object: vertical and key', async () => {
+    expect(DG.TabControl.create({vertical: true}).root.classList.contains('d4-tab-vertical'), true);
+    expect(DG.TabControl.create({}).root.classList.contains('d4-tab-vertical'), false);
+
+    const key = `apitests-tabcontrol-${Date.now()}`;
+    try {
+      const tc = DG.TabControl.create({key: key});
+      tc.addPane('alpha', () => ui.divText('a'));
+      tc.currentPane = tc.addPane('beta', () => ui.divText('b'));
+      expect(window.localStorage[`TabControl:${key}`], 'beta');
+    }
+    finally {
+      window.localStorage.removeItem(`TabControl:${key}`);
+    }
+  });
+
+  test('ui.tabControl: options object and deprecated positional args', async () => {
+    const tabs = ui.tabControl({'first': ui.divText('1'), 'second': ui.divText('2')}, {vertical: true});
+    expect(tabs.panes.length, 2);
+    expect(tabs.root.classList.contains('d4-tab-vertical'), true);
+
+    expect(ui.tabControl(null, true).root.classList.contains('d4-tab-vertical'), true);
+    expect(ui.tabControl(null, false).root.classList.contains('d4-tab-vertical'), false);
+
+    // untyped JS callers pass an explicit null to skip `vertical` and reach `key`
+    expectNoThrow(() => {(ui.tabControl as any)(null, null);});
+    expectNoThrow(() => {(DG.TabControl.create as any)(null);});
+
+    const key = `apitests-tabcontrol-legacy-${Date.now()}`;
+    try {
+      const legacy = ui.tabControl({'alpha': ui.divText('a'), 'beta': ui.divText('b')}, true, key);
+      legacy.currentPane = legacy.getPane('beta');
+      expect(window.localStorage[`TabControl:${key}`], 'beta');
+    }
+    finally {
+      window.localStorage.removeItem(`TabControl:${key}`);
+    }
   });
 }, {owner: 'agolovko@datagrok.ai'});

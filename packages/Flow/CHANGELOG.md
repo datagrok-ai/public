@@ -2,6 +2,25 @@
 
 ## v.next
 
+* Toolbox: the Queries tab now loads the authoritative query list from the server (`grok.dapi.queries.list`) instead of filtering the `DG.Func.find` catalog scan, which missed queries — slower (async, with a loader shown) but complete; queries without a connection object are skipped, and grouping prefers the connection's `friendlyName` over its `name`
+* Catalog (cheminformatics): Added Substructure Search, Chemical Similarity Search, To InChI / To InChI Keys, MPO Score by Profile, Apply Reaction, To SDF, Chemical Space Columns, and the two Chemspace lookups; dropped the entries that could not work on a canvas (Morgan fingerprints, synthon search, the four content-taking file importers) and replaced `findSimilar` / `getInchis` / `getInchiKeys` with their better twins
+* Nodes: Added `HIDDEN_FUNC_OUTPUTS`, the mirror of `HIDDEN_FUNC_INPUTS` — a declared output that is bookkeeping rather than a result (Chem's elemental analysis returns the *names* of the columns it appended) no longer shows a socket
+* Nodes: Added `columnHostWrapper`, a `FUNC_WRAPPERS` helper giving column-only functions a `table` input so their column slot has something to resolve against — applied to Chem's Similarities, Diversities and Substructure Search; wrapper inputs can now declare `semType` and `choices`
+* Nodes: `Chem:convertNotation`'s `join`/`overwrite` and `recalculateCoords`' `join` are hidden — at anything but their defaults the node's output carries nothing
+* Inputs: Added the Sketcher Input node — a string parameter tagged `semType: Molecule`, so its editor is the molecule sketcher; input nodes now pass their `semType` qualifier through to `ui.input.forProperty`, which is what selects a semantic-type editor
+* Property panel: `Chem:deprotect`'s fragment input carries the inline open-editor pencil
+
+* Canvas: fixed re-clicking an already-selected node doing nothing after the context changed — the click dedupe now checks whether the context panel is still the current object showing that node and whether its output preview is on screen, and restores whichever went stale (tab switch and back, autorun results) instead of requiring an unselect/select round-trip
+* Execution: a run (autorun included) completing on the currently selected node now opens/updates its output preview immediately, and the context panel's Execution section tracks the run live
+* Autorun: functions can opt into live-by-default execution with `meta.autorun: true`, consolidated with the built-in list (OpenFile, AddNewColumn, viewers); the Uploaded File node (`readUploadedFile`) declares it, so dropped local files parse without pressing Run
+* Nodes: a function whose first two inputs are a table and a column now requires both even when they are (mis-)annotated nullable (e.g. Chem:bitbirchClusteringTopMenu) — the "Needs input" hint and every run gate enforce setting them
+* Dashboards: the creation script stamped on published tables now always uses the namespace-qualified flow name (`user:FlowName(...)`) — re-saving a flow returned the entity without its namespace, producing a `FlowName().result` script that broke when the dashboard was shared; the save path re-fetches the saved entity and re-checks before stamping
+* Outputs strip: an output row never survives losing its last connection — deleting the wire (or the node feeding it) removes the row too, while re-routing a wire by dragging its endpoint keeps it
+* Files: unified on the `.flow` extension everywhere — export/import, the file viewer, and the bundled demo files (formerly `.ffjson`)
+* Overview minimap: fixed clicking a spot panning the canvas far below/right of it — the click-to-canvas mapping double-counted the graph origin
+* Canvas: an Open File node created by dropping a file now carries the file name in its title
+* Context panel: inputs that require the function's own editor (Add New Column's expression, descriptors' selection) now carry an inline pencil that opens it — same action as the pane's "Open editor" button, easier to spot
+
 * Input nodes: values are now configurable **directly on the node** (and as the Value row in the context panel, both built from the node's qualifiers via `ui.input.forProperty`; a Table Input uses the platform table picker — open tables plus its open-local-file folder icon) — a configured value feeds the run directly, so Run needs no parameter dialog (it still opens, prefilled, for anything left unset) and autorun is no longer blocked by input nodes that have a value; a configured input completes like any node ("Done · 200 × 11", wire count, click-to-preview the parameter)
 * Autorun: when the bolt is on but can't run — an input node without a value, validation errors — it shows an amber pad + corner dot, its tooltip lists the exact blockers, and the empty value editors get a matching amber underline; scalar defaults still emit into the script header (`//input: int n = 5`) while table/file/map values stay runtime-only
 * AI: `getFlowNodeDetails` reports an input node's configured `value` (and `valueBlocks` when it would force a dialog); `setFlowNodeInputs` accepts `{value: …}` on input nodes
