@@ -91,7 +91,8 @@ export const RunComparison = Vue.defineComponent({
       if (!df)
         return;
       addEntry(entryFromDataFrame(df));
-      tableInput.value = null;
+      // resetting synchronously re-enters the Dart stream controller mid-dispatch
+      setTimeout(() => tableInput.value = null);
     });
 
     const addEntry = (entry: ComparisonEntry) => {
