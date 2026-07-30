@@ -8,6 +8,7 @@
 #input: dataframe data [Input data table]
 #input: column molecules {semType: Molecule} [Molecules, in SMILES and MolBlock format]
 #input: double distanceCutoff = 0.4 [Tanimoto distance cutoff for clustering (0-1)]
+#meta.role: transform
 #output: dataframe clusters {action:join(data)} [Clusters]
 
 import numpy as np
