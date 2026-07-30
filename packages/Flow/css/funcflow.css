@@ -3018,3 +3018,37 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 .ff-save-dash-hint {
   color: var(--grey-5, #666);
 }
+/* MPO column-mapping editor (Chem:mpoScoreByProfile) — one column choice per
+   profile property, stacked inside the parameter row. */
+.ff-mpo-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+/* No profile / no table: the editor shows a notice INSTEAD of a row of empty
+   combos, so an unfillable form is never on screen. Amber, matching the
+   "MISSING - required" rows in the Connections pane. */
+.ff-mpo-mapping-blocked {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px dashed var(--orange-2, #ff9800);
+  border-radius: 4px;
+  background: var(--orange-1, #fff4e5);
+}
+
+.ff-mpo-mapping-blocked .grok-icon {
+  color: var(--orange-2, #ff9800);
+  margin-top: 2px;
+}
+
+.ff-mpo-mapping-blocked-text {
+  color: var(--text-color-light, #666);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+}

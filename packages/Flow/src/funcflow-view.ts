@@ -602,6 +602,12 @@ export class FuncFlowView extends DG.ViewBase {
           // A value edited on the node body must show up in the open context
           // panel too (refresh skips itself while focus is inside the panel).
           this.propertyPanel.refreshShownNode();
+          // …and the node's "Needs input" hint must recompute NOW. Only
+          // `onGraphChanged` used to do this, which parameter edits don't fire —
+          // so filling a required value left the amber hint up until something
+          // else happened to re-render the node (clicking away, a run marking
+          // it stale). Cheap: rAF-debounced.
+          this.refreshNodeHints();
         }
         this.updateAutorunIndicator();
       },
@@ -658,6 +664,13 @@ export class FuncFlowView extends DG.ViewBase {
       tags: this.flowSettings.tags,
     }));
     this.propertyPanel.onPickColumns = (req) => void columnPicker.pick(req);
+    // Captured columns for custom editors that map onto the upstream table
+    // (the MPO profile mapping). Deliberately does NOT run the flow — a panel
+    // render must never kick off work.
+    this.propertyPanel.getUpstreamColumns = (sourceNodeId) => {
+      const table = this.executionController?.cloneForNode(sourceNodeId);
+      return table ? Array.from(table.columns) : null;
+    };
 
     // Functions with their own custom editor (an `editor:` meta or the explicit
     // allowlist) get an icon in the parameters pane header that opens that

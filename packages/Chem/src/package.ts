@@ -426,7 +426,7 @@ export class PackageFunctions {
   static async findSimilar(
     @grok.decorators.param({options: {caption: 'Molecules'}}) molStringsColumn: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', caption: 'Query molecule'}}) molString: string,
-    @grok.decorators.param({type: 'int', options: {caption: 'Max hits', description: 'Maximum number of hits to return'}}) limit: number = Number.MAX_VALUE,
+    @grok.decorators.param({type: 'int', options: {caption: 'Max hits', initialValue: '100', description: 'Maximum number of hits to return'}}) limit: number = Number.MAX_VALUE,
     @grok.decorators.param({type: 'int', options: {caption: 'Min similarity', description: 'Minimum similarity score for a molecule to be returned'}}) cutoff: number = 0.0): Promise<DG.DataFrame> {
     assure.notNull(molStringsColumn, 'molStringsColumn');
     assure.notNull(molString, 'molString');
@@ -460,6 +460,69 @@ export class PackageFunctions {
       console.error('Chem | In substructureSearch: ' + e.toString());
       throw e;
     }
+  }
+
+  /* The three functions below are table-aware twins of `getSimilarities`,
+   * `getDiversities` and `searchSubstructure`, which take a bare `column`. A
+   * lone column has no table to resolve against on a pipeline canvas — no
+   * column picker, no semantic-type filter, and a result frame that can't be
+   * lined up with the rows it came from. These take (table, column) with the
+   * semantic types declared, and return something a pipeline can carry on with. */
+
+  @grok.decorators.func({
+    name: 'Filter by Substructure',
+    description: 'Returns the rows whose molecules contain the query substructure.',
+    outputs: [{name: 'result', type: 'dataframe'}],
+    meta: {role: 'transform'},
+  })
+  static async filterBySubstructure(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', caption: 'Substructure', nullable: false}}) substructure: string): Promise<DG.DataFrame> {
+    const hits = await chemSearches.chemSubstructureSearchLibrary(molecules, substructure, '');
+    const mask = DG.BitSet.fromBytes(hits.buffer.buffer as ArrayBuffer, molecules.length);
+    return table.clone(mask);
+  }
+
+  @grok.decorators.func({
+    name: 'Similarity To',
+    description: 'Adds a column of Tanimoto similarity scores between each molecule and a query molecule.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {role: 'transform'},
+  })
+  static async similarityTo(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column,
+    @grok.decorators.param({options: {semType: 'Molecule', caption: 'Query molecule', nullable: false}}) query: string): Promise<DG.Column> {
+    const scores = await chemSearches.chemGetSimilarities(molecules, query);
+    if (!scores)
+      throw new Error('Similarity To: could not compute similarities for the given query');
+    scores.name = table.columns.getUnusedName(`Similarity to query (${molecules.name})`);
+    table.columns.add(scores);
+    return scores;
+    // Note: the fingerprint cache may add a column of its own to `table` — the
+    // contract here is only that the score column ends up in it under the name
+    // the returned column reports.
+  }
+
+  @grok.decorators.func({
+    name: 'Diverse Subset',
+    description: 'Returns the rows holding a diverse representative subset of the molecules.',
+    outputs: [{name: 'result', type: 'dataframe'}],
+    meta: {role: 'transform'},
+  })
+  static async diverseSubset(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'int', options: {caption: 'Max molecules', nullable: false, initialValue: '10', description: 'How many diverse molecules to return'}}) limit: number = 10): Promise<DG.DataFrame> {
+    // `callChemDiversitySearch` returns ROW INDICES, which is what lets the
+    // result keep every other column of the table (`getDiversities` returns a
+    // detached one-column frame instead).
+    const indexes = await PackageFunctions.callChemDiversitySearch(
+      molecules, BitArrayMetricsNames.Tanimoto, Fingerprint.Morgan, limit);
+    const mask = DG.BitSet.create(table.rowCount);
+    for (const i of indexes) mask.set(i, true, false);
+    return table.clone(mask);
   }
 
   @grok.decorators.fileExporter({
@@ -971,8 +1034,8 @@ export class PackageFunctions {
   static async chemSpaceColumns(
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'string', options: {caption: 'Method', choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods = 'UMAP' as DimReductionMethods,
-    @grok.decorators.param({type: 'string', options: {caption: 'Metric', choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
+    @grok.decorators.param({type: 'string', options: {caption: 'Method', nullable: false, initialValue: 'UMAP', choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods = 'UMAP' as DimReductionMethods,
+    @grok.decorators.param({type: 'string', options: {caption: 'Metric', nullable: false, initialValue: 'Tanimoto', choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
     @grok.decorators.param({options: {caption: 'Cluster', description: 'Also assign each molecule to a cluster'}}) clusterEmbeddings: boolean = false,
     @grok.decorators.param({options: {caption: 'Cluster MCS', description: 'Add the most common substructure of each cluster — requires Cluster'}}) clusterMCS: boolean = false,
   // The return type stays unannotated on purpose: the four outputs are declared
@@ -2231,10 +2294,10 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Table'}}) df: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule', caption: 'Molecules'}}) col: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', caption: 'Query molecule'}}) molecule: string,
-    @grok.decorators.param({type: 'string', options: {caption: 'Metric', choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) metricName: BitArrayMetrics = 'Tanimoto' as BitArrayMetrics,
-    @grok.decorators.param({options: {caption: 'Fingerprint', choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}}) fingerprint: string = 'Morgan',
-    @grok.decorators.param({type: 'int', options: {caption: 'Max hits', description: 'Maximum number of hits to return'}}) limit: number = 100,
-    @grok.decorators.param({options: {caption: 'Min similarity', description: 'Minimum similarity score, 0 to 1', min: '0', max: '1'}}) minScore: number = 0.0): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'string', options: {caption: 'Metric', initialValue: 'Tanimoto', choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) metricName: BitArrayMetrics = 'Tanimoto' as BitArrayMetrics,
+    @grok.decorators.param({options: {caption: 'Fingerprint', initialValue: 'Morgan', choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion']}}) fingerprint: string = 'Morgan',
+    @grok.decorators.param({type: 'int', options: {caption: 'Max hits', initialValue: '100', description: 'Maximum number of hits to return'}}) limit: number = 100,
+    @grok.decorators.param({options: {caption: 'Min similarity', initialValue: '0', description: 'Minimum similarity score, 0 to 1', min: '0', max: '1'}}) minScore: number = 0.0): Promise<DG.DataFrame> {
     const res = await chemSimilaritySearch(col, molecule, metricName, limit, minScore,
       fingerprint as Fingerprint);
     return res ?? DG.DataFrame.create();
@@ -2861,7 +2924,7 @@ export class PackageFunctions {
     df: DG.DataFrame,
     @grok.decorators.param({type: 'column_list'}) columns: DG.ColumnList,
     @grok.decorators.param({options: {caption: 'Score column', description: 'Name of the resulting score column. The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name'}}) profileName: string,
-    @grok.decorators.param({type: 'string', options: {choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
+    @grok.decorators.param({type: 'string', options: {initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     createDesirabilityColumns: boolean = false,
   ): DG.DataFrame | null {
     if (columns.length === 0)
@@ -2881,6 +2944,19 @@ export class PackageFunctions {
     return (await MpoProfileManager.load()).map((p) => p.name);
   }
 
+  /** The property names a profile scores — what a caller has to map to columns.
+   *  Exposed so a UI can build a mapping form without reaching into the MPO
+   *  profile format itself. */
+  @grok.decorators.func({
+    description: 'Property names scored by an MPO desirability profile',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static async getMpoProfileProperties(
+    @grok.decorators.param({options: {caption: 'Profile', nullable: false, choices: 'Chem:getMpoProfileNames()'}}) profileName: string): Promise<string[]> {
+    const profile = (await MpoProfileManager.ensureLoaded()).find((p) => p.name === profileName);
+    return profile ? Object.keys(profile.properties ?? {}) : [];
+  }
+
   /** The pipeline-friendly MPO entry point: `mpoCalculate` scores columns that
    *  already carry desirability tags, and `mpoTransformFunction` needs those
    *  tags as a JSON blob — neither can be driven from a profile *name*. This one
@@ -2894,14 +2970,43 @@ export class PackageFunctions {
   static async mpoScoreByProfile(
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({options: {caption: 'Profile', nullable: false, choices: 'Chem:getMpoProfileNames()', description: 'One of the profiles saved in the MPO Profiles app'}}) profileName: string,
-    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
+    // Braces and semicolons must stay OUT of a description — the annotation
+    // parser ends the options block at the first `}`.
+    @grok.decorators.param({options: {caption: 'Column mapping', description: 'JSON object mapping each profile property to a column of this table. Properties left out fall back to a column of the same name.'}}) columnMapping: string = '',
+    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     @grok.decorators.param({options: {caption: 'Per-property columns', description: 'Also add one desirability column per scored property'}}) createDesirabilityColumns: boolean = false,
   ): Promise<DG.Column | null> {
     const profiles = await MpoProfileManager.ensureLoaded();
     const profile = profiles.find((p) => p.name === profileName);
     if (!profile)
       throw new Error(`MPO profile "${profileName}" not found. Available: ${profiles.map((p) => p.name).join(', ')}`);
-    const added = await computeMpo(table, profile, {}, aggregation, false, true, createDesirabilityColumns);
+
+    // `computeMpo` maps property → column name, falling back to the property
+    // name itself for anything unmapped — so an empty mapping keeps the old
+    // same-name behaviour.
+    let mapping: Record<string, string | null> = {};
+    if (columnMapping && columnMapping.trim().length > 0) {
+      try {
+        mapping = JSON.parse(columnMapping);
+      } catch (e) {
+        throw new Error(`MPO Score by Profile: column mapping is not valid JSON — ${e}`);
+      }
+    }
+
+    // Every scored property must resolve to a real column. `computeMpo` merely
+    // WARNS about the ones it can't find and scores over the rest — which
+    // yields a plausible-looking number computed from fewer properties than
+    // asked for. Refuse instead.
+    const unresolved = Object.keys(profile.properties ?? {})
+      .filter((prop) => table.col(mapping[prop] ?? prop) === null);
+    if (unresolved.length > 0) {
+      throw new Error(
+        `MPO Score by Profile: profile "${profileName}" scores ${unresolved.join(', ')}, ` +
+        `but ${unresolved.length === 1 ? 'that property has' : 'those properties have'} no column in ` +
+        `"${table.name}". Map each one to a column of this table.`);
+    }
+
+    const added = await computeMpo(table, profile, mapping, aggregation, false, true, createDesirabilityColumns);
     return added.length > 0 ? table.col(added[0]) : null;
   }
 
@@ -3106,7 +3211,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'ChemicalReaction', caption: 'Reaction', nullable: false, description: 'Reaction SMARTS with exactly one reactant'}}) reaction: string,
-    @grok.decorators.param({options: {caption: 'Desalt', description: 'Strip water and salts from each reactant first'}}) removeSaltsAndWater: boolean = true,
+    @grok.decorators.param({options: {caption: 'Desalt', initialValue: 'true', description: 'Strip water and salts from each reactant first'}}) removeSaltsAndWater: boolean = true,
   ): Promise<DG.Column> {
     const res = await runTransformationReaction(
       chemCommonRdKit.getRdKitModule(), reaction, molecules.toList(), {removeSaltsAndWater, showInfo: true});

@@ -270,7 +270,7 @@ export class PackageFunctions {
   })
   static async getChemspaceIds(
     @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'Molecule', 'nullable': false}}) molColumn: DG.Column,
-    @grok.decorators.param({'options': {'caption': 'Ship to', 'nullable': false, 'choices': 'Chemspace:getShipToCountries()', 'description': 'Destination country for pricing and availability'}}) shipToCountry: string = 'United States'): Promise<DG.Column> {
+    @grok.decorators.param({'options': {'caption': 'Ship to', 'nullable': false, 'initialValue': 'United States', 'choices': 'Chemspace:getShipToCountries()', 'description': 'Destination country for pricing and availability'}}) shipToCountry: string = 'United States'): Promise<DG.Column> {
     shipToCountry = PackageFunctions.toCountryCode(shipToCountry);
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace ids for ${molColumn.name}...`);
     try {
@@ -315,7 +315,7 @@ export class PackageFunctions {
   static async getChemspacePrices(
     @grok.decorators.param({'options': {'nullable': false}}) data: DG.DataFrame,
      @grok.decorators.param({'type': 'column<string>', 'options': {'semType': 'chemspace-id', 'nullable': false, 'description': 'Column of Chemspace compound ids to price'}}) idsColumn: DG.Column,
-    @grok.decorators.param({'options': {'caption': 'Ship to', 'nullable': false, 'choices': 'Chemspace:getShipToCountries()', 'description': 'Destination country for pricing and availability'}}) shipToCountry: string = 'United States'): Promise<DG.DataFrame> {
+    @grok.decorators.param({'options': {'caption': 'Ship to', 'nullable': false, 'initialValue': 'United States', 'choices': 'Chemspace:getShipToCountries()', 'description': 'Destination country for pricing and availability'}}) shipToCountry: string = 'United States'): Promise<DG.DataFrame> {
     shipToCountry = PackageFunctions.toCountryCode(shipToCountry);
     const pi = DG.TaskBarProgressIndicator.create(`Getting Chemspace prices for ${idsColumn.name}...`);
     try {

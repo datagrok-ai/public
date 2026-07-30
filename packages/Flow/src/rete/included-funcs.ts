@@ -144,14 +144,19 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:Curate',
   'Chem:deprotect',
   'Chem:descriptorsDocker',
+  'Chem:diverseSubset',
   'Chem:FilterByCatalogs',
+  'Chem:filterBySubstructure',
   // 'Chem:findSimilar',  → superseded by Chem:callChemSimilaritySearch
   'Chem:GenerateConformers',
-  'Chem:getDiversities',
+  // The three functions below take a bare `column`, which a canvas cannot bind
+  // to a table — replaced by their (table, column) twins:
+  // 'Chem:getDiversities',      → Chem:diverseSubset
+  // 'Chem:getSimilarities',     → Chem:similarityTo
+  // 'Chem:searchSubstructure',  → Chem:filterBySubstructure
   // 'Chem:getInchiKeys',  → superseded by Chem:addInchisKeysTopMenu
   // 'Chem:getInchis',     → superseded by Chem:addInchisTopMenu
   // 'Chem:getMorganFingerprints',  bit-string column nothing downstream reads
-  'Chem:getSimilarities',
   // The four file importers take file *content*, which nothing on a canvas can
   // produce until `core:ReadFileBytes` exists (Phase 6).
   // 'Chem:importMol',
@@ -166,8 +171,8 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:recalculateCoords',
   'Chem:removeWaterAndSaltsTopMenu',
   'Chem:runElementalAnalysis',
-  'Chem:searchSubstructure',
   'Chem:similarityMatrixTopMenu',
+  'Chem:similarityTo',
   'Chem:structuralAlertsTopMenu',
   // Both need a synthon library uploaded first, and offer no readiness signal —
   // the node shows an empty combo with no explanation.

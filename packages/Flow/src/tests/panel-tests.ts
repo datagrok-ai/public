@@ -390,7 +390,8 @@ category('Flow: property panel', () => {
       const factory = customEditorFor(node.dgFunc!, 'fullPath');
       expect(!!factory, true, 'custom editor registered for core:OpenFile fullPath');
       const param = node.dgFunc!.inputs.find((p) => p.name === 'fullPath')!;
-      const ed = factory!(param);
+      // This editor uses none of the node context, so an inert one is enough.
+      const ed = factory!(param, {inputValue: () => undefined, columns: () => null, watch: () => {}});
       let reported: unknown = null;
       ed.onChanged = (v): void => {reported = v;};
       const path = 'System:AppData/Chem/mol1K.csv';

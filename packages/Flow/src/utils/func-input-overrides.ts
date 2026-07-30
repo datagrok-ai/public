@@ -24,6 +24,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getParamDisplayName} from './dart-proxy-utils';
+import {mpoColumnMappingEditor, mpoMappingRequirements} from '../panel/editors/mpo-mapping-editor';
+// Type-only (erased at build time), so the scheme ↔ overrides pair stays free
+// of a runtime import cycle.
+import type {FlowNode} from '../rete/scheme';
 
 /** `{[func.nqName]: {[inputName]: true}}` — inputs hidden from the node and
  *  the context panel (visually only — see the module doc). Edit freely: flag
@@ -81,13 +85,69 @@ export interface CustomInputEditor {
   onChanged?: (v: unknown) => void;
 }
 
-export type CustomInputEditorFactory = (param: DG.Property) => CustomInputEditor;
+/** What a custom editor is allowed to know about the node it edits.
+ *
+ *  Some parameters can only be edited against the rest of the node: an MPO
+ *  column mapping needs the chosen profile AND the columns of the upstream
+ *  table. Passing this in (rather than letting an editor reach into the editor
+ *  graph) keeps the factories pure enough to unit-test. */
+export interface CustomEditorContext {
+  /** Current stored value of a sibling input on the same node. */
+  inputValue: (name: string) => unknown;
+  /** Columns of the table wired to `tableParam`, or null when it isn't
+   *  connected or hasn't been computed. Never runs the flow — an editor must
+   *  degrade gracefully rather than trigger work on a panel render. */
+  columns: (tableParam: string) => DG.Column[] | null;
+  /** Re-run `cb` whenever a sibling input is edited. Needed because the panel
+   *  does NOT re-render while focus is inside it — which is exactly when a
+   *  combo the editor depends on gets changed. */
+  watch: (inputName: string, cb: (value: unknown) => void) => void;
+}
+
+export type CustomInputEditorFactory = (param: DG.Property, ctx: CustomEditorContext) => CustomInputEditor;
 
 /** `{[func.nqName]: {[inputName]: factory}}` — a factory per overridden input
  *  (an editor holds a live HTMLElement, so it must be built per node/render). */
 export const CUSTOM_FUNC_INPUT_EDITORS: Record<string, Record<string, CustomInputEditorFactory>> = {
   'core:OpenFile': {fullPath: filePathEditor},
+  'Chem:mpoScoreByProfile': {columnMapping: mpoColumnMappingEditor},
 };
+
+// ---------- per-function readiness ----------
+
+/** Extra, function-specific requirements a node must satisfy before it can run,
+ *  returned as the labels the "Needs input" hint should list (empty = ready).
+ *
+ *  The generic checks only see whether a slot is wired or non-blank, which
+ *  can't express "this JSON must cover every property of the chosen profile".
+ *  Must be SYNCHRONOUS (it runs on every node render and in the run gate) and
+ *  must fail OPEN when it cannot decide — blocking a run over a cold cache
+ *  would be worse than letting the function report the problem itself. */
+export type FuncNodeValidator = (node: FlowNode) => string[];
+
+export const FUNC_NODE_VALIDATORS: Record<string, FuncNodeValidator> = {
+  'Chem:mpoScoreByProfile': mpoMappingRequirements,
+};
+
+/** The registered validator for a function, wrapped so it can never throw into
+ *  a render, or undefined when the function has none. */
+export function funcValidatorOf(func: DG.Func): FuncNodeValidator | undefined {
+  let validator: FuncNodeValidator | undefined;
+  try {
+    validator = FUNC_NODE_VALIDATORS[func.nqName];
+  } catch {
+    return undefined; // nqName can throw on odd Dart proxies
+  }
+  if (!validator) return undefined;
+  return (node) => {
+    try {
+      return validator!(node);
+    } catch (e) {
+      console.error(`Flow: readiness check failed for ${node.dgFuncName}`, e);
+      return []; // fail open — never block a run over a broken check
+    }
+  };
+}
 
 /** The registered custom-editor factory for a function input, or null. */
 export function customEditorFor(func: DG.Func, inputName: string): CustomInputEditorFactory | null {
@@ -142,32 +202,6 @@ export const FUNC_WRAPPERS: Record<string, FuncWrapper> = {
     ],
     mapInputs: (v) => v.table1 && v.table2 ? {tables: `[${v.table1}, ${v.table2}]`} : {} as Record<string, string>,
   },
-
-  // Chem's column-only search functions — see `columnHostWrapper`.
-  'Chem:getSimilarities': columnHostWrapper([
-    {name: 'molStringsColumn', type: 'column', caption: 'Molecules', semType: 'Molecule'},
-    {name: 'molString', type: 'string', caption: 'Query molecule', semType: 'Molecule'},
-  ]),
-  'Chem:getDiversities': columnHostWrapper([
-    {name: 'molStringsColumn', type: 'column', caption: 'Molecules', semType: 'Molecule'},
-    {name: 'limit', type: 'int', caption: 'Max molecules', defaultValue: 10,
-      description: 'How many diverse molecules to return'},
-  ]),
-  // `molBlockFailover` is a parse fallback for a hand-typed query; the sketcher
-  // hands over a molblock anyway, so it is folded away rather than exposed.
-  'Chem:searchSubstructure': {
-    inputs: [
-      {name: 'table', type: 'dataframe', caption: 'Table',
-        description: 'The table the column belongs to (not passed to the function)'},
-      {name: 'molStringsColumn', type: 'column', caption: 'Molecules', semType: 'Molecule'},
-      {name: 'molString', type: 'string', caption: 'Query substructure', semType: 'Molecule'},
-    ],
-    mapInputs: (v) => ({
-      ...(v.molStringsColumn ? {molStringsColumn: v.molStringsColumn} : {}),
-      ...(v.molString ? {molString: v.molString} : {}),
-      molBlockFailover: `''`,
-    }),
-  },
 };
 
 /** The registered wrapper for a function, or null. */
@@ -177,6 +211,20 @@ export function funcWrapperOf(func: DG.Func): FuncWrapper | null {
   } catch {
     return null;
   }
+}
+
+/** The parameter list a wrapped function PRESENTS — the wrapper's exposed
+ *  inputs when one is registered, else the function's own.
+ *
+ *  Every surface that renders or reasons about a node's parameters must go
+ *  through this, or the node and the panel drift: the node builds its sockets
+ *  from the wrapper while the panel would iterate the raw signature, showing
+ *  different captions, no column picker (the raw signature may have no
+ *  dataframe input to resolve against), and editors for parameters the node
+ *  folds away. */
+export function effectiveFuncInputs(func: DG.Func): DG.Property[] {
+  const wrapper = funcWrapperOf(func);
+  return wrapper ? wrapperProperties(wrapper) : func.inputs;
 }
 
 /** The exposed inputs as real `DG.Property` objects, so `FuncNode` builds
@@ -194,28 +242,13 @@ export function wrapperProperties(wrapper: FuncWrapper): DG.Property[] {
   }));
 }
 
-/** A wrapper that only ADDS a leading `table` input to a function whose data
- *  parameter is a bare `column`.
- *
- *  Such a function is close to unusable on a canvas: Flow resolves a column
- *  argument against one of the node's own dataframe inputs (`columnTables`), so
- *  with none the column slot goes connection-only — no picker, no semType
- *  filter, no way to name a column in the panel. The added input is dropped at
- *  compile time; it exists purely to give the column somewhere to resolve
- *  against, and to make the node read like every other table operation. */
-export function columnHostWrapper(inputs: WrappedFuncInput[]): FuncWrapper {
-  const table: WrappedFuncInput = {
-    name: 'table', type: 'dataframe', caption: 'Table',
-    description: 'The table the column belongs to (not passed to the function)',
-  };
-  return {
-    inputs: [table, ...inputs],
-    mapInputs: (v) => {
-      const {table: _dropped, ...rest} = v;
-      return rest;
-    },
-  };
-}
+/** NOTE on wrapping column-only functions: don't. A function taking a bare
+ *  `column` has no table for Flow to resolve the column against, and bolting a
+ *  synthetic `table` input on with a wrapper only papers over it — the
+ *  parameter the user fills isn't the parameter the function declares, and the
+ *  semantic types and captions live in the wrong place. Write a proper twin
+ *  taking `(table, column, …)` with its semTypes declared instead; Chem's
+ *  `filterBySubstructure` / `similarityTo` / `diverseSubset` are the pattern. */
 
 /** A file picker (`ui.input.file`) for string path parameters like OpenFile's
  *  `fullPath`. The stored value is the plain full-path string

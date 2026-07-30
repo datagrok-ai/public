@@ -295,6 +295,27 @@ export namespace funcs {
   }
 
   /**
+  Returns the rows whose molecules contain the query substructure.
+  */
+  export async function filterBySubstructure(table: DG.DataFrame , molecules: DG.Column , substructure: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:FilterBySubstructure', { table, molecules, substructure });
+  }
+
+  /**
+  Adds a column of Tanimoto similarity scores between each molecule and a query molecule.
+  */
+  export async function similarityTo(table: DG.DataFrame , molecules: DG.Column , query: string ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:SimilarityTo', { table, molecules, query });
+  }
+
+  /**
+  Returns the rows holding a diverse representative subset of the molecules.
+  */
+  export async function diverseSubset(table: DG.DataFrame , molecules: DG.Column , limit: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:DiverseSubset', { table, molecules, limit });
+  }
+
+  /**
   As SDF...
   */
   export async function saveAsSdf(): Promise<void> {
@@ -971,10 +992,17 @@ export namespace funcs {
   }
 
   /**
+  Property names scored by an MPO desirability profile
+  */
+  export async function getMpoProfileProperties(profileName: string ): Promise<any> {
+    return await grok.functions.call('Chem:GetMpoProfileProperties', { profileName });
+  }
+
+  /**
   Scores a table against a saved MPO desirability profile, adding the score column (and, optionally, one desirability column per property).
   */
-  export async function mpoScoreByProfile(table: DG.DataFrame , profileName: string , aggregation: string , createDesirabilityColumns: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:MpoScoreByProfile', { table, profileName, aggregation, createDesirabilityColumns });
+  export async function mpoScoreByProfile(table: DG.DataFrame , profileName: string , columnMapping: string , aggregation: string , createDesirabilityColumns: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:MpoScoreByProfile', { table, profileName, columnMapping, aggregation, createDesirabilityColumns });
   }
 
   export async function mpoTransformFunction(df: DG.DataFrame , profileName: string , aggregation: string , currentProperties: string , silent: boolean ): Promise<any> {

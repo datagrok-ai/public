@@ -16,7 +16,9 @@ import {setTid} from '../utils/test-ids';
 import {getParamDescription, getParamDisplayName, getFuncDisplayName, getTags} from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
 import {shouldUseFunctionEditor, hasEditorShortcut} from '../utils/func-editor-utils';
-import {hiddenInputsOf, customEditorFor, CustomInputEditorFactory} from '../utils/func-input-overrides';
+import {
+  hiddenInputsOf, customEditorFor, CustomInputEditorFactory, effectiveFuncInputs,
+} from '../utils/func-input-overrides';
 import {buildInputValueEditor} from '../utils/input-values';
 import {ColumnPickRequest} from './column-picker';
 import { processChoiceInput } from './choice-input-processor';
@@ -134,6 +136,9 @@ export class PropertyPanel {
 
   showNode(node: FlowNode, execState?: NodeExecState): void {
     this.contentDiv.innerHTML = '';
+    // Watchers belong to the rendered editors — the old ones are about to be
+    // thrown away with the DOM.
+    this.inputWatchers.clear();
     this.currentNode = node;
     this.currentExecState = execState;
 
@@ -306,7 +311,11 @@ export class PropertyPanel {
     const func = node.dgFunc;
     if (!func) return;
 
-    if (func.inputs.length > 0) {
+    // The parameters the NODE exposes — the wrapper's when one is registered.
+    // Iterating `func.inputs` here would show a wrapped node a different form
+    // than its own sockets (see `effectiveFuncInputs`).
+    const funcInputs = effectiveFuncInputs(func);
+    if (funcInputs.length > 0) {
       // The pane is titled with the function itself — it IS the function's
       // parameter form (chips above carry package/role/tags).
       let paneTitle = '';
@@ -314,11 +323,11 @@ export class PropertyPanel {
         paneTitle = getFuncDisplayName(func);
       } catch {/* Dart proxy access can throw */}
       if (!paneTitle) paneTitle = 'Parameters';
-      const dataframeParams = func.inputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
+      const dataframeParams = funcInputs.filter((p) => String(p.propertyType) === 'dataframe').map((p) => p.name);
       const hidden = hiddenInputsOf(func);
       const pane = acc.addPane(paneTitle, () => {
         const content = ui.div([], 'funcflow-accordion-content ui-form');
-        for (const inp of func.inputs) {
+        for (const inp of funcInputs) {
           if (hidden.has(inp.name)) continue;
           const tip = buildFuncInputTooltip(inp);
           // Display label — the property's caption when declared, else its name.
@@ -814,6 +823,7 @@ export class PropertyPanel {
       onValueChanged: (v) => {
         node.inputValues[param.name] = v;
         report(v);
+        this.notifyInputChanged(param.name, v);
       },
     });
     if (param.choices && input instanceof DG.ChoiceInput && node.dgFunc) {
@@ -847,15 +857,61 @@ export class PropertyPanel {
     factory: CustomInputEditorFactory, param: DG.Property, node: FlowNode, tip: string,
   ): HTMLElement {
     const report = this.changeReporter(node.inputValues[param.name]);
-    const ed = factory(param);
+    const ed = factory(param, {
+      inputValue: (name) => node.inputValues[name],
+      // Captured columns only — resolving an uncomputed table would mean
+      // running the flow while a panel renders. An editor shows its
+      // "connect and run" state instead.
+      columns: (tableParam) => this.upstreamColumns(node, tableParam),
+      watch: (name, cb) => this.watchInput(name, cb),
+    });
     ed.onChanged = (v): void => {
       if (ed.isValid && !ed.isValid()) return;
       node.inputValues[param.name] = v;
       report(v);
+      this.notifyInputChanged(param.name, v);
     };
     ed.setValue(node.inputValues[param.name]);
     ui.tooltip.bind(ed.element, tip);
     return this.propRow(ui.div([ed.element], 'funcflow-prop-row funcflow-dg-row'), param.name);
+  }
+
+  /** Live per-input subscriptions for custom editors that depend on a sibling
+   *  parameter (the MPO mapping rebuilds when the profile changes).
+   *
+   *  Why not just re-render the panel: `refreshShownNode` deliberately skips
+   *  itself while focus is inside the panel — which is exactly the moment the
+   *  user picks a different value from a combo. Rebuilt on every `showNode`. */
+  private readonly inputWatchers = new Map<string, Array<(v: unknown) => void>>();
+
+  private watchInput(name: string, cb: (v: unknown) => void): void {
+    const list = this.inputWatchers.get(name);
+    if (list) list.push(cb);
+    else this.inputWatchers.set(name, [cb]);
+  }
+
+  /** Fan a committed edit out to whoever depends on that parameter. Called from
+   *  every editor that writes `node.inputValues`. */
+  private notifyInputChanged(name: string, value: unknown): void {
+    for (const cb of this.inputWatchers.get(name) ?? []) {
+      try {
+        cb(value);
+      } catch (e) {
+        console.error(`Flow: input watcher for "${name}" failed`, e);
+      }
+    }
+  }
+
+  /** Columns of the table feeding `tableParam`, from the upstream node's
+   *  CAPTURED result — null when the input isn't connected or hasn't run.
+   *  Wired by the view to `ExecutionController.cloneForNode`; unset in headless
+   *  editors, where every custom editor degrades to its no-columns state. */
+  getUpstreamColumns?: (sourceNodeId: string) => DG.Column[] | null;
+
+  private upstreamColumns(node: FlowNode, tableParam: string): DG.Column[] | null {
+    if (!this.getUpstreamColumns) return null;
+    const src = this.flow.getInputSource(node.id, tableParam);
+    return src ? this.getUpstreamColumns(src.node.id) : null;
   }
 
   /** A native Datagrok single-line string input (used where there's no

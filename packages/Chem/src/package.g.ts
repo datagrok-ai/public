@@ -148,7 +148,7 @@ export async function getDiversities(molStringsColumn: DG.Column, limit: number)
 //description: Finds the molecules most similar to a query molecule ranked by Tanimoto similarity.
 //input: column molStringsColumn { caption: Molecules }
 //input: string molString { semType: Molecule; caption: Query molecule }
-//input: int limit { caption: Max hits; description: Maximum number of hits to return }
+//input: int limit = 100 { caption: Max hits; description: Maximum number of hits to return }
 //input: int cutoff { caption: Min similarity; description: Minimum similarity score for a molecule to be returned }
 //output: dataframe result
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number) : Promise<any> {
@@ -163,6 +163,39 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //output: column result
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, molBlockFailover: string) : Promise<any> {
   return await PackageFunctions.searchSubstructure(molStringsColumn, molString, molBlockFailover);
+}
+
+//name: Filter by Substructure
+//description: Returns the rows whose molecules contain the query substructure.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//input: string substructure { semType: Molecule; caption: Substructure; nullable: false }
+//output: dataframe result
+//meta.role: transform
+export async function filterBySubstructure(table: DG.DataFrame, molecules: DG.Column, substructure: string) : Promise<any> {
+  return await PackageFunctions.filterBySubstructure(table, molecules, substructure);
+}
+
+//name: Similarity To
+//description: Adds a column of Tanimoto similarity scores between each molecule and a query molecule.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//input: string query { semType: Molecule; caption: Query molecule; nullable: false }
+//output: column result
+//meta.role: transform
+export async function similarityTo(table: DG.DataFrame, molecules: DG.Column, query: string) : Promise<any> {
+  return await PackageFunctions.similarityTo(table, molecules, query);
+}
+
+//name: Diverse Subset
+//description: Returns the rows holding a diverse representative subset of the molecules.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//input: int limit = 10 { caption: Max molecules; nullable: false; description: How many diverse molecules to return }
+//output: dataframe result
+//meta.role: transform
+export async function diverseSubset(table: DG.DataFrame, molecules: DG.Column, limit: number) : Promise<any> {
+  return await PackageFunctions.diverseSubset(table, molecules, limit);
 }
 
 //description: As SDF...
@@ -393,12 +426,12 @@ export async function chemSpaceTransform(table: DG.DataFrame, molecules: DG.Colu
   return await PackageFunctions.chemSpaceTransform(table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings, embedColsNames, clusterColName);
 }
 
-//name: Chemical Space Columns
+//name: Chemical Space
 //description: Reduces molecules to a 2D embedding (UMAP or t-SNE) and adds the coordinate — and, optionally, cluster and cluster-MCS — columns to the table.
 //input: dataframe table { caption: Table; nullable: false }
 //input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
-//input: string methodName { caption: Method; nullable: false; choices: ["UMAP","t-SNE"] }
-//input: string similarityMetric { caption: Metric; nullable: false; choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
+//input: string methodName = 'UMAP' { caption: Method; nullable: false; choices: ["UMAP","t-SNE"] }
+//input: string similarityMetric = 'Tanimoto' { caption: Metric; nullable: false; choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
 //input: bool clusterEmbeddings { caption: Cluster; description: Also assign each molecule to a cluster }
 //input: bool clusterMCS { caption: Cluster MCS; description: Add the most common substructure of each cluster — requires Cluster }
 //output: column x { caption: X }
@@ -987,10 +1020,10 @@ export function detectSmiles(col: DG.Column, min: number) : void {
 //input: dataframe df { caption: Table }
 //input: column col { semType: Molecule; caption: Molecules }
 //input: string molecule { semType: Molecule; caption: Query molecule }
-//input: string metricName { caption: Metric; choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
-//input: string fingerprint { caption: Fingerprint; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
-//input: int limit { caption: Max hits; description: Maximum number of hits to return }
-//input: double minScore { caption: Min similarity; description: Minimum similarity score, 0 to 1; min: 0; max: 1 }
+//input: string metricName = 'Tanimoto' { caption: Metric; choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
+//input: string fingerprint = 'Morgan' { caption: Fingerprint; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
+//input: int limit = 100 { caption: Max hits; description: Maximum number of hits to return }
+//input: double minScore = 0 { caption: Min similarity; description: Minimum similarity score, 0 to 1; min: 0; max: 1 }
 //output: dataframe result
 export async function callChemSimilaritySearch(df: DG.DataFrame, col: DG.Column, molecule: string, metricName: any, fingerprint: string, limit: number, minScore: number) : Promise<any> {
   return await PackageFunctions.callChemSimilaritySearch(df, col, molecule, metricName, fingerprint, limit, minScore);
@@ -1312,7 +1345,7 @@ export async function _mpo() : Promise<void> {
 //input: dataframe df 
 //input: column_list columns 
 //input: string profileName { caption: Score column; description: Name of the resulting score column. The desirability curves come from the desirabilityTemplate tag on each scored column, not from this name }
-//input: string aggregation { choices: ["Average","Sum","Product","Geomean","Min","Max"] }
+//input: string aggregation = 'Average' { choices: ["Average","Sum","Product","Geomean","Min","Max"] }
 //input: bool createDesirabilityColumns 
 //output: dataframe result { action: join(df) }
 //meta.vectorFunc: true
@@ -1326,16 +1359,24 @@ export async function getMpoProfileNames() : Promise<string[]> {
   return await PackageFunctions.getMpoProfileNames();
 }
 
+//description: Property names scored by an MPO desirability profile
+//input: string profileName { caption: Profile; nullable: false; choices: Chem:getMpoProfileNames() }
+//output: list<string> result
+export async function getMpoProfileProperties(profileName: string) : Promise<string[]> {
+  return await PackageFunctions.getMpoProfileProperties(profileName);
+}
+
 //name: MPO Score by Profile
 //description: Scores a table against a saved MPO desirability profile, adding the score column (and, optionally, one desirability column per property).
 //input: dataframe table { caption: Table; nullable: false }
 //input: string profileName { caption: Profile; nullable: false; choices: Chem:getMpoProfileNames(); description: One of the profiles saved in the MPO Profiles app }
-//input: string aggregation { caption: Aggregation; nullable: false; choices: ["Average","Sum","Product","Geomean","Min","Max"] }
+//input: string columnMapping { caption: Column mapping; description: JSON object mapping each profile property to a column of this table. Properties left out fall back to a column of the same name. }
+//input: string aggregation = 'Average' { caption: Aggregation; nullable: false; choices: ["Average","Sum","Product","Geomean","Min","Max"] }
 //input: bool createDesirabilityColumns { caption: Per-property columns; description: Also add one desirability column per scored property }
 //output: column result
 //meta.role: transform
-export async function mpoScoreByProfile(table: DG.DataFrame, profileName: string, aggregation: any, createDesirabilityColumns: boolean) : Promise<any> {
-  return await PackageFunctions.mpoScoreByProfile(table, profileName, aggregation, createDesirabilityColumns);
+export async function mpoScoreByProfile(table: DG.DataFrame, profileName: string, columnMapping: string, aggregation: any, createDesirabilityColumns: boolean) : Promise<any> {
+  return await PackageFunctions.mpoScoreByProfile(table, profileName, columnMapping, aggregation, createDesirabilityColumns);
 }
 
 //input: dataframe df 
@@ -1436,7 +1477,7 @@ export async function transformationReactionsTopMenu() : Promise<void> {
 //input: dataframe table { caption: Table; nullable: false }
 //input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
 //input: string reaction { semType: ChemicalReaction; caption: Reaction; nullable: false; description: Reaction SMARTS with exactly one reactant }
-//input: bool removeSaltsAndWater { caption: Desalt; description: Strip water and salts from each reactant first }
+//input: bool removeSaltsAndWater = true { caption: Desalt; description: Strip water and salts from each reactant first }
 //output: column result { semType: Molecule }
 //meta.role: transform
 export async function applyReaction(table: DG.DataFrame, molecules: DG.Column, reaction: string, removeSaltsAndWater: boolean) : Promise<any> {
