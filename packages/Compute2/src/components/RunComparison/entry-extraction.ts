@@ -5,10 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {deserialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {
+  PipelineSerializedState, isFuncCallSerializedState,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {buildTraverseD} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/graph-traverse-utils';
 import {ComparisonEntry, ScalarNodeInfo, TableNodeInfo} from './types';
-
-// mirrors CONFIG_PATH in reactive-tree-driver/src/runtime/funccall-utils.ts (not exported there)
-const PIPELINE_CONFIG_OPTION = 'PIPELINE_CONFIG';
 
 const SCALAR_PROPERTY_TYPES = new Set<string>([DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BIG_INT]);
 
@@ -67,34 +69,33 @@ interface WorkflowStep {
   funcCallId: string;
 }
 
-function collectWorkflowSteps(
-  state: any,
-  prefix: string[],
-  friendlyPrefix: string[],
-  acc: WorkflowStep[],
-  isRoot = true,
-) {
-  if (state == null || typeof state !== 'object')
-    return;
-  const friendlyName = state.friendlyName ?? state.configId;
-  if (state.type === 'funccall') {
-    if (state.funcCallId) {
+interface StepPath {
+  ids: string[];
+  names: string[];
+}
+
+const traverseSteps = buildTraverseD<PipelineSerializedState, StepPath, boolean>(
+  {ids: [], names: []},
+  (state, path, isRoot) => {
+    if (isFuncCallSerializedState(state))
+      return [];
+    // the root pipeline name is shared by every step, so it is left out of friendly paths
+    const names = isRoot ? path.names : [...path.names, state.friendlyName ?? state.configId];
+    return state.steps.map((step) =>
+      [step, {ids: [...path.ids, state.configId], names}, false] as const);
+  }, true);
+
+function collectWorkflowSteps(state: PipelineSerializedState): WorkflowStep[] {
+  return traverseSteps(state, (acc: WorkflowStep[], item, path) => {
+    if (isFuncCallSerializedState(item) && item.funcCallId) {
       acc.push({
-        path: [...prefix, state.configId].join('/'),
-        friendlyPath: [...friendlyPrefix, friendlyName].join(' · '),
-        funcCallId: state.funcCallId,
+        path: [...path.ids, item.configId].join('/'),
+        friendlyPath: [...path.names, item.friendlyName ?? item.configId].join(' · '),
+        funcCallId: item.funcCallId,
       });
     }
-    return;
-  }
-  if (Array.isArray(state.steps)) {
-    // the root pipeline name is shared by every step, so it is left out of friendly paths
-    const nestedFriendly = isRoot ? friendlyPrefix : [...friendlyPrefix, friendlyName];
-    for (const step of state.steps) {
-      collectWorkflowSteps(
-        step, state.configId ? [...prefix, state.configId] : prefix, nestedFriendly, acc, false);
-    }
-  }
+    return acc;
+  }, []);
 }
 
 /** Builds a comparison entry from a loaded run: a workflow meta-call is flattened into its steps. */
@@ -102,13 +103,17 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   const scalars: ScalarNodeInfo[] = [];
   const tables: TableNodeInfo[] = [];
   const dataFrames = new Map<string, DG.DataFrame>();
-  const serializedConfig = call.options?.[PIPELINE_CONFIG_OPTION];
+  const serializedConfig = call.options?.[CONFIG_PATH];
   const modelName = call.func?.friendlyName ?? call.func?.name ?? '';
 
   if (serializedConfig) {
-    const state = deserialize(serializedConfig);
-    const steps: WorkflowStep[] = [];
-    collectWorkflowSteps(state, [], [], steps);
+    let steps: WorkflowStep[] = [];
+    try {
+      steps = collectWorkflowSteps(deserialize(serializedConfig));
+    } catch (e) {
+      // legacy or malformed serialized configs degrade to an entry with no steps
+      console.warn('Run comparison: failed to parse workflow config', e);
+    }
     for (const step of steps) {
       try {
         const stepCall = await historyUtils.loadRun(step.funcCallId);
