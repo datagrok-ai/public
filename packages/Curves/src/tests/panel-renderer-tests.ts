@@ -42,6 +42,19 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
 }
 
 category('panel and renderer', () => {
+  test('aggregations offered by the transform functions all convert back to data space', async () => {
+    // the panel filters these, the recorded transform does not - offering sum or count would return
+    // a log-space number or a null column on replay
+    for (const name of ['curveAggrStatistic', 'addAggrStatisticsColumn']) {
+      const func = DG.Func.find({package: 'Curves', name: name})[0];
+      expect(func !== undefined, true, `${name} is not registered`);
+      const choices = func.inputs.find((p: DG.Property) => p.name === 'aggrType')?.choices;
+      expect(choices !== undefined && choices !== null, true, `${name} offers a free-text aggregation`);
+      for (const bad of ['sum', 'count', 'stdev', 'variance', 'skew', 'kurt'])
+        expect(choices!.includes(bad), false, `${name} still offers ${bad}`);
+    }
+  });
+
   test('rendering does not mutate the cached series parameters', async () => {
     const chartData = curveWithParameters();
     const before = [...chartData.series![0].parameters!];

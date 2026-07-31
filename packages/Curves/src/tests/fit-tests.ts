@@ -306,6 +306,8 @@ category('fit', () => {
     // the pre-typed API reported interceptY for every fit function, custom ones included
     const jsFit = getSeriesFit(polynomialSeries, getSeriesFitFunction(polynomialSeries));
     expect(typeof getStatistic(jsFit, 'interceptY'), 'number');
+    // and a value with no descriptor is skipped by the plot, so both have to resolve
+    expect(getStatisticProperty(getSeriesFitFunction(polynomialSeries), 'interceptY') !== undefined, true);
 
     // never resolves to a non-numeric field of the fit
     expect(getStatistic(sigmoidFit, 'series') === undefined);

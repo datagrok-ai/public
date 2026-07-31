@@ -5,7 +5,7 @@ import {category, test, expect, expectFloat, awaitCheck} from '@datagrok-librari
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
-import {getChartDataAggrStats, aggregatedStatisticsProperties, calculateSeriesFit} from '../fit/fit-statistics';
+import {getChartDataAggrStats, aggregatedStatisticsProperties, calculateSeriesFit, curveStatisticAt} from '../fit/fit-statistics';
 import {setOutlier} from '../fit/fit-renderer';
 import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
 
@@ -200,6 +200,18 @@ category('calculated columns', () => {
       expectFloat(getStatistic(fit, 'bottom')!, 5, 1e-6, `bottom under ${JSON.stringify(logOptions)}`);
       expectFloat(getStatistic(fit, 'ic50')!, 1e-6, 1e-12, `ic50 under ${JSON.stringify(logOptions)}`);
     }
+  });
+
+  test('a detached column strips the stray pipe like the initial parse does', async () => {
+    // a column with no dataframe is what recalculation hands the function. getChartData sanitizes the
+    // value; this path skipped it, so a '|'-bearing row worked when added and blanked when edited
+    const col = DG.Column.fromStrings('curve', [curveJson(-6.5).replace('{', '{|')]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    expect(col.dataFrame === null || col.dataFrame === undefined, true, 'the column must be detached');
+
+    const value = curveStatisticAt(col, 0, 'ic50', 0);
+    expect(value !== null, true, 'a pipe in the cell value blanked the row');
+    expectFloat(Math.log10(value!), -6.5, 0.3);
   });
 
   test('outlier toggle refreshes statistic columns named by the new API', async () => {

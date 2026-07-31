@@ -7,6 +7,7 @@
 * Fit Dose-Response Curves: Constrained the column pickers by type (numerical for concentration/readout, categorical for the identifiers) and marked the seven mandatory columns `nullable: false` — a column parameter defaults to nullable, which read as optional and let a half-configured node run
 * Calculate MSR: Added captions, descriptions, and column-type constraints to the five unconstrained mandatory column inputs
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
+* GROK-17637: Tests: Guarded the follow-on fixes - the 3DX parser not inventing `logY`, the detached recalculation path stripping the stray `|`, `interceptY` resolving to a descriptor on a custom fit, and the transform functions offering only aggregations that convert back to data space
 * GROK-17637: Statistics: Fixed stored parameters being converted on one axis only - `seriesInFitSpace` and `toDataSpace` are now exact inverses over the same fields, so a stored asymptote on a logarithmic y axis is no longer reported as 10^value
 * GROK-17637: Statistics: The renderer no longer replaces the series of the cached chart data when merging series, which made an extracted statistic depend on whether the row had been painted
 * GROK-17637: Statistics: The recalculation path strips the stray `|` from a cell value like the initial parse does, so a row no longer blanks only when it is edited
