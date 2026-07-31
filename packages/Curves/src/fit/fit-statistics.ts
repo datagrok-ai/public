@@ -83,6 +83,17 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
         values.set(prop.name, []);
       values.get(prop.name)!.push(getStatistic(fit, prop.name));
     }
+    // legacy names a fit function has no statistic of its own for still resolve per series through the
+    // positional fallback, so aggregate them the same way - otherwise `top` on a linear fit reads as a
+    // number in the Fit pane and as null in the aggregated one. Pushing undefined for a series that
+    // cannot produce it makes the check below drop the statistic rather than average a subset.
+    for (const legacyName of LEGACY_FIT_STATISTICS) {
+      if (common.has(legacyName))
+        continue;
+      if (!values.has(legacyName))
+        values.set(legacyName, []);
+      values.get(legacyName)!.push(getStatistic(fit, legacyName));
+    }
   }
 
   const aggregated: AggregatedFitStatistics = {};

@@ -130,7 +130,7 @@ export namespace funcs {
    * @param {string} statistic - interceptX is IC50, top and bottom are max/min Y
    *   choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]
    * @param {string} aggregation - Applied across the series of each curve
-   *   choices: ["med","avg","min","max","sum","stdev","variance","q1","q2","q3"]
+   *   choices: ["med","avg","min","max","q1","q2","q3"]
    */
   export async function addAggrCurveStatistic(table: DG.DataFrame , curvesCol: DG.Column , statistic: string , aggregation: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrCurveStatistic', { table, curvesCol, statistic, aggregation });

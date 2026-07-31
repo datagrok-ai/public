@@ -42,17 +42,22 @@ async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: stri
 }
 
 category('panel and renderer', () => {
-  test('aggregations offered by the transform functions all convert back to data space', async () => {
-    // the panel filters these, the recorded transform does not - offering sum or count would return
-    // a log-space number or a null column on replay
-    for (const name of ['curveAggrStatistic', 'addAggrStatisticsColumn']) {
-      const func = DG.Func.find({package: 'Curves', name: name})[0];
-      expect(func !== undefined, true, `${name} is not registered`);
-      const choices = func.inputs.find((p: DG.Property) => p.name === 'aggrType')?.choices;
-      expect(choices !== undefined && choices !== null, true, `${name} offers a free-text aggregation`);
-      for (const bad of ['sum', 'count', 'stdev', 'variance', 'skew', 'kurt'])
-        expect(choices!.includes(bad), false, `${name} still offers ${bad}`);
+  test('every registered aggregation input offers only convertible aggregations', async () => {
+    // enumerated from the registry rather than from a list of the functions we happened to fix - a
+    // third one existed and a hand-written list missed it. Anything outside the convertible set
+    // returns a log-space number or a null column when a saved transform replays.
+    const CONVERTIBLE = ['min', 'max', 'avg', 'med', 'q1', 'q2', 'q3'];
+    const checked: string[] = [];
+    for (const func of DG.Func.find({package: 'Curves'})) {
+      for (const input of func.inputs.filter((p: DG.Property) => /^(aggrType|aggregation)$/.test(p.name))) {
+        checked.push(func.name);
+        expect(input.choices !== undefined && input.choices !== null, true,
+          `${func.name} takes a free-text aggregation`);
+        for (const choice of input.choices!)
+          expect(CONVERTIBLE.includes(choice), true, `${func.name} offers ${choice}`);
+      }
     }
+    expect(checked.length >= 3, true, `expected every aggregation function to be checked, saw ${checked}`);
   });
 
   test('rendering does not mutate the cached series parameters', async () => {

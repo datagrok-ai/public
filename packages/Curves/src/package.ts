@@ -283,7 +283,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'fit', caption: 'Curves', nullable: false, description: 'Column of fitted curves'}}) curvesCol: DG.Column,
     @grok.decorators.param({type: 'string', options: {caption: 'Statistic', nullable: false, choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'interceptX is IC50, top and bottom are max/min Y'}}) statistic: string = 'interceptX',
-    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, choices: ['med', 'avg', 'min', 'max', 'sum', 'stdev', 'variance', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Applied across the series of each curve'}}) aggregation: string = 'med'): DG.Column {
+    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, choices: ['med', 'avg', 'min', 'max', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Applied across the series of each curve'}}) aggregation: string = 'med'): DG.Column {
     return PackageFunctions.addAggrStatisticsColumn(table, curvesCol.name, statistic, aggregation);
   }
 

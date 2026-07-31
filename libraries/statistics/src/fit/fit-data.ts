@@ -172,7 +172,11 @@ export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, da
 }
 
 export const X_SPACE_STATISTICS = ['ic50', 'ec50'];
-export const Y_SPACE_STATISTICS = ['top', 'bottom', 'interceptY', 'maxY', 'minY'];
+// The y asymptotes are deliberately not converted. Stored parameters can hold a bottom of 0, which
+// has no finite logarithm, so the forward and inverse maps could never be exact inverses - and an
+// unguarded inverse reported that bottom as 1. Reporting them in the space they were fitted in is
+// what the previous implementation did.
+export const Y_SPACE_STATISTICS: string[] = [];
 /** Derived by {@link toDataSpace}, so unavailable to anything that skips the conversion. */
 export const DATA_SPACE_DERIVED_STATISTICS = ['pIC50'];
 

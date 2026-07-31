@@ -27,6 +27,9 @@ import {ColorType, SeriesColorType, getSeriesColor} from './render-utils';
 import {calculateSeriesFit, getChartDataAggrStats, aggregatedStatisticsProperties} from './fit-statistics';
 import {fitFunctions, fitSeriesProperties, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
+// options a statistic can depend on; everything else (title, axis names, colours) only repaints
+const STATISTIC_AFFECTING_OPTIONS = ['logX', 'logY', 'allowXZeroes', 'fitFunction', 'errorModel', 'mergeSeries'];
+
 const CHART_OPTIONS = 'chartOptions';
 const SERIES_OPTIONS = 'seriesOptions';
 enum MANIPULATION_LEVEL {
@@ -214,9 +217,12 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
     }
 
     // the option lives in a tag rather than in the data, so nothing marks the curve column changed
-    // and statistic columns extracted from it would keep stale numbers while the plot updates
-    for (const column of columns)
-      column.fireValuesChanged();
+    // and statistic columns extracted from it would keep stale numbers while the plot updates.
+    // Only for options a statistic can depend on - a title edit would otherwise refit every column.
+    if (STATISTIC_AFFECTING_OPTIONS.includes(propertyName)) {
+      for (const column of columns)
+        column.fireValuesChanged();
+    }
   }
   gridCell.grid.invalidate();
 }

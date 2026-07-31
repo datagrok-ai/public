@@ -220,6 +220,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     g.clip();
 
     const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
+    // a merged series is fitted at index 0, which is the key real series 0 uses - caching it would
+    // hand the statistics the merged fit for series 0
+    const useFitCache = isRenderedOnGrid && !data.chartOptions?.mergeSeries;
     const tableCell = gridCell?.cell;
     if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
       data.series?.some((series) => series.points.some((p) => p.x === 0)))
@@ -259,7 +262,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
           curve = getCurve(fitSpaceSeries, fitFunc);
         } else {
-          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, isRenderedOnGrid);
+          const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, useFitCache);
           curve = fitResult.fittedCurve;
           fitSpaceSeries = {...series, parameters: [...fitResult.parameters]};
           userParamsFlag = false;
@@ -272,7 +275,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
       renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
-        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, isRenderedOnGrid)});
+        dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, useFitCache)});
       if (fitSpaceSeries.parameters) {
         renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
           xValue: fitSpaceSeries.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});

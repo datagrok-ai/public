@@ -140,7 +140,7 @@ export function addCurveStatistic(table: DG.DataFrame, curvesCol: DG.Column, sta
 //input: dataframe table { caption: Table; nullable: false }
 //input: column curvesCol { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
 //input: string statistic = 'interceptX' { caption: Statistic; nullable: false; choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: interceptX is IC50, top and bottom are max/min Y }
-//input: string aggregation = 'med' { caption: Aggregation; nullable: false; choices: ["med","avg","min","max","sum","stdev","variance","q1","q2","q3"]; description: Applied across the series of each curve }
+//input: string aggregation = 'med' { caption: Aggregation; nullable: false; choices: ["med","avg","min","max","q1","q2","q3"]; description: Applied across the series of each curve }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform

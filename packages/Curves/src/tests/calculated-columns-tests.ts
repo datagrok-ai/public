@@ -214,6 +214,19 @@ category('calculated columns', () => {
     expectFloat(Math.log10(value!), -6.5, 0.3);
   });
 
+  test('a legacy statistic reads the same per series and aggregated', async () => {
+    // top on a linear fit resolves through the positional fallback per series; the aggregated path
+    // only remapped onto canonical names, so the Fit pane showed a number and the aggregated pane null
+    const data = JSON.parse(multiSeriesCurveJson([-6.5])) as IFitChartData;
+    data.series![0].fitFunction = 'linear';
+    const logX = {logX: true, logY: false};
+
+    const perSeries = getStatistic(calculateSeriesFit(data.series![0], 0, logX, undefined, false), 'top');
+    const aggregated = getChartDataAggrStats(data, 'med').top;
+    expect(perSeries !== undefined, true, 'the per-series path lost the fallback');
+    expect(aggregated !== undefined, true, 'the aggregated path drops a statistic the per-series one reports');
+  });
+
   test('outlier toggle refreshes statistic columns named by the new API', async () => {
     const df = curveTable('calcColOutlierToggle', [-6.5]);
     const stat = DG.Column.float('ic50 col', df.rowCount);

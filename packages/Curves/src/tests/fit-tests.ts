@@ -372,15 +372,17 @@ category('fit', () => {
     expect(dataSpace.ic50, Math.pow(10, rawIc50));
     // pIC50 is derived from the concentration, so only after the conversion
     expect(dataSpace.pIC50, -Math.log10(Math.pow(10, rawIc50)));
-    // y statistics are untouched when logY is off
     expect(dataSpace.top, untouchedTop);
 
+    // the y asymptotes are reported in the space they were fitted in. A stored bottom of 0 has no
+    // finite logarithm, so the forward map has to skip it while the inverse would still return 1 -
+    // the two could never be exact inverses, so neither converts
     const logY = {logX: false, logY: true};
     const yFit = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'), undefined, logY);
     const rawTop = yFit.top;
     const rawIc50Y = yFit.ic50;
     toDataSpace(yFit, logY);
-    expect(yFit.top, Math.pow(10, rawTop));
+    expect(yFit.top, rawTop);
     expect(yFit.ic50, rawIc50Y); // x untouched when logX is off
 
     // no log axes means no conversion at all

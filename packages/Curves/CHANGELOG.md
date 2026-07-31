@@ -7,8 +7,12 @@
 * Fit Dose-Response Curves: Constrained the column pickers by type (numerical for concentration/readout, categorical for the identifiers) and marked the seven mandatory columns `nullable: false` — a column parameter defaults to nullable, which read as optional and let a half-configured node run
 * Calculate MSR: Added captions, descriptions, and column-type constraints to the five unconstrained mandatory column inputs
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
+* GROK-17637: Statistics: The y asymptotes are reported in the space they were fitted in, as before. A stored `bottom` of 0 has no finite logarithm, so a forward and inverse conversion could never be exact inverses - an unguarded inverse reported that bottom as 1
+* GROK-17637: Statistics: A merged-series cell no longer caches its fit under the key the first real series uses, which made an extracted statistic depend on whether the row had been painted
+* GROK-17637: Statistics: `Add Aggregated Curve Statistic` no longer offers aggregations that are not converted back to data space, matching the other two aggregation functions
+* GROK-17637: Statistics: A legacy statistic a fit function has no field for (`top` on a linear fit) now reads the same aggregated as it does per series, instead of coming back empty
+* GROK-17637: Statistics: Changing a chart option only recalculates extracted statistic columns when the option can affect a statistic - a title or axis-name edit no longer refits every column
 * GROK-17637: Tests: Guarded the follow-on fixes - the 3DX parser not inventing `logY`, the detached recalculation path stripping the stray `|`, `interceptY` resolving to a descriptor on a custom fit, and the transform functions offering only aggregations that convert back to data space
-* GROK-17637: Statistics: Fixed stored parameters being converted on one axis only - `seriesInFitSpace` and `toDataSpace` are now exact inverses over the same fields, so a stored asymptote on a logarithmic y axis is no longer reported as 10^value
 * GROK-17637: Statistics: The renderer no longer replaces the series of the cached chart data when merging series, which made an extracted statistic depend on whether the row had been painted
 * GROK-17637: Statistics: The recalculation path strips the stray `|` from a cell value like the initial parse does, so a row no longer blanks only when it is edited
 * GROK-17637: Statistics: `interceptY` has a descriptor for every fit function, so a custom JS fit renders it instead of holding a value the plot skips
@@ -23,7 +27,6 @@
 * GROK-17637: Behaviour change: `slope` on a linear or log-linear fit now reports the slope; it previously reported the intercept. `top` on those fits keeps its old value, so `top` and `slope` report the same number
 * GROK-17637: Statistics: IC50 is reported as a concentration everywhere, so the plot and the property panel no longer disagree
 * GROK-17637: Behaviour change: IC50 is converted out of log space whenever the x axis is logarithmic. The conversion was previously skipped for stored values >= 1, and for `4pl-dose-response` entirely, so nM/uM-scale curves and every dose-response curve now report a different number - by orders of magnitude in saved projects
-* GROK-17637: Behaviour change: `top`, `bottom` and `interceptY` are converted out of log space on a logarithmic y axis, where they previously showed the raw fitted value
 * GROK-17637: Behaviour change: Statistics aggregated across series are averaged in fit space, so an averaged IC50 is now a geometric mean - 1e-7 and 1e-5 give 1e-6 rather than 5.05e-6. Counts, sums and shape statistics stay on their own scale
 * GROK-17637: Added pIC50, derived as -log10(IC50). It assumes the concentration is molar, so it reads 6 too low on uM data and 9 too low on nM data
 * GROK-17637: Options: A custom JS fit function is now named in the property panel instead of rendering a blank input
@@ -32,7 +35,7 @@
 * GROK-17637: Statistics: Fixed a recalculated statistic ignoring column-level chart options - a column-level `logX`, `allowXZeroes` or fit function was lost on the detached recalculation column
 * GROK-17637: Statistics: A cell mixing fit functions now aggregates only the statistics every series produces, instead of averaging one over the subset that has it
 * GROK-17637: Statistics: Changing a chart option at Column or Dataframe level now refreshes extracted statistic columns - the option lives in a tag, so nothing marked the curve column changed and the columns kept stale numbers while the plot updated
-* GROK-17637: Statistics: Statistics that only carry meaning in data space (IC50/EC50 under a logarithmic x axis, the asymptotes under a logarithmic y axis, and pIC50) are no longer offered for aggregations that are not converted back, where they would have been reported in log space or come back empty
+* GROK-17637: Statistics: Statistics that only carry meaning in data space (IC50/EC50 under a logarithmic x axis, and pIC50) are no longer offered for aggregations that are not converted back, where they would have been reported in log space or come back empty
 * GROK-17637: Fixed the series colour type being widened to `string`, which disabled colour-option checking
 * GROK-17637: Statistics: Added `curveStatistic` and `curveAggrStatistic` - the property panel now adds a statistic as a calculated column that recalculates when its curve changes and is recorded in the table's creation script
 * GROK-17637: Statistics: Aggregation now covers every statistic the cell's fit functions produce rather than a fixed list, and the aggregated pane uses the same per-fit-function descriptors as the single-series one
