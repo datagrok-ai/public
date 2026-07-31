@@ -11,14 +11,14 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 
 import {History} from '../History/History';
 import {
-  ComparisonTarget, ColumnTarget, MatchConfidence, matchScalarTargets, matchColumnTargets, getEntryStatuses,
-  matchesFilter, compatibleTargetsFor, isSplitCandidate, selectionToMap, computeIndexRows,
-} from './comparison-core';
+  ComparisonTarget, ColumnTarget, MatchConfidence, ComparisonEntry, EntrySourceKind, RUN_COLUMN,
+} from './types';
+import {matchScalarTargets, matchColumnTargets} from './matching';
 import {
-  ComparisonEntry, EntrySourceKind, RUN_COLUMN,
-  entryFromFuncCall, entryFromDataFrame,
-  buildScalarComparison, buildColumnComparison, buildMultiColumnComparison,
-} from './data-extraction';
+  getEntryStatuses, matchesFilter, compatibleTargetsFor, isSplitCandidate, selectionToMap, computeIndexRows,
+} from './selection';
+import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
+import {buildScalarComparison, buildColumnComparison, buildMultiColumnComparison} from './comparison-builders';
 import './RunComparison.css';
 
 const SOURCE_BADGES: Record<EntrySourceKind, {label: string, color: string}> = {

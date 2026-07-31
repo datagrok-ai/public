@@ -1,11 +1,13 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
+import {ComparisonEntryNodes, isNumericType} from '../components/RunComparison/types';
 import {
-  ComparisonEntryNodes,
-  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, isNumericType,
-  matchScalarTargets, matchColumnTargets, getEntryStatuses,
-  matchesFilter, bindingSignature, compatibleTargetsFor, isSplitCandidate, selectionToMap, computeIndexRows,
-  FUZZY_NAME_THRESHOLD,
-} from '../components/RunComparison/comparison-core';
+  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
+  matchScalarTargets, matchColumnTargets, FUZZY_NAME_THRESHOLD,
+} from '../components/RunComparison/matching';
+import {
+  getEntryStatuses, matchesFilter, bindingSignature, compatibleTargetsFor,
+  isSplitCandidate, selectionToMap, computeIndexRows,
+} from '../components/RunComparison/selection';
 
 function makeEntry(
   entryId: string,

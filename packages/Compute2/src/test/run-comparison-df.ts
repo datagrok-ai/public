@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {ScalarTarget, ColumnTarget, matchColumnTargets} from '../components/RunComparison/comparison-core';
+import {ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN} from '../components/RunComparison/types';
+import {matchColumnTargets} from '../components/RunComparison/matching';
+import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
 import {
-  ComparisonEntry, RUN_COLUMN, entryFromDataFrame,
   buildScalarComparison, buildColumnComparison, buildMultiColumnComparison,
-} from '../components/RunComparison/data-extraction';
+} from '../components/RunComparison/comparison-builders';
 
 // Regression: run/index columns must be created with an enforced string type.
 // Column.fromStrings infers the type from values, so numeric-looking run names
