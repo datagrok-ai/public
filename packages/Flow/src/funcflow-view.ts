@@ -1801,56 +1801,81 @@ export class FuncFlowView extends DG.ViewBase {
       tooltipText: 'The flow is saved as a platform script entity under this name'});
     const descInput = ui.input.textArea('Description', {value: this.flowSettings.scriptDescription,
       tooltipText: 'Shown in galleries, previews and the context panel'});
+    descInput.root.style.marginBottom = '6px';
+    // Names aren't prose — the browser's squiggle under "MyFuncFlow" reads as
+    // an error right next to the real (amber) warning line.
+    nameInput.input.setAttribute('spellcheck', 'false');
+    descInput.input.setAttribute('spellcheck', 'false');
 
-    const noSpaceLabel = 'Saved as a plain script (not bound to a space)';
     let targetSpace: DG.Project | null = null;
-    const spaceLabel = ui.divText(noSpaceLabel, 'funcflow-save-space-label');
-    const clearLink = ui.link('clear', () => updateSpace(null),
-      'Save as a plain script, not bound to a space');
+    // Reserves its line (min-height in CSS) so appearing text never shifts the form.
     const warningDiv = ui.divText('', 'funcflow-save-name-warning');
-    warningDiv.style.color = '#b26a00'; // matches the warnings strip in saveCreationScriptsDialog
 
     // Best-effort duplicate-name check: purely advisory — the server keeps
     // names unique within a space by suffixing, and plain scripts may repeat.
     let warnTimer: ReturnType<typeof setTimeout> | null = null;
+    const findClashes = async (name: string, space: DG.Project | null): Promise<DG.Script[]> => {
+      const esc = name.replace(/"/g, '\\"');
+      const scope = space ? ` and namespace = "${space.nqName}:"` : '';
+      return (await grok.dapi.scripts
+        .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
+        .filter((s) => s.id !== this.boundScript?.id);
+    };
     const refreshNameWarning = async () => {
       const name = nameInput.value.trim();
       warningDiv.textContent = '';
       if (name === '') return;
-      const esc = name.replace(/"/g, '\\"');
-      const scope = targetSpace ? ` and namespace = "${targetSpace.nqName}:"` : '';
       try {
-        const clashes = (await grok.dapi.scripts
-          .filter(`language = "${FLOW_LANGUAGE}" and friendlyName = "${esc}"${scope}`).list())
-          .filter((s) => s.id !== this.boundScript?.id);
-        if (clashes.length > 0) {
+        // Short enough for one line — the reserved line must not wrap and shift the form.
+        if ((await findClashes(name, targetSpace)).length > 0) {
           warningDiv.textContent = targetSpace ?
-            `A flow named "${name}" already exists in "${targetSpace.friendlyName}" — it will be saved under a unique name` :
-            `A flow named "${name}" already exists`;
+            `Already used in "${targetSpace.friendlyName}" — it will get a unique name` :
+            'This name is already in use — the flow will be saved separately';
         }
       } catch {/* advisory only */}
     };
-    const updateSpace = (space: DG.Project | null) => {
-      targetSpace = space;
-      spaceLabel.textContent = space ? `Space: ${space.friendlyName}` : noSpaceLabel;
-      clearLink.style.display = space ? '' : 'none';
-      void refreshNameWarning();
-    };
-    updateSpace(null);
 
-    const pickerHost = ui.div([]);
+    // ---- space binding: a regular form row (caption / value / actions) ----
+    const noSpaceText = 'None — saved to your scripts';
+    const spaceValue = ui.divText(noSpaceText, 'ff-save-space-value ff-save-space-none');
+    ui.tooltip.bind(spaceValue, 'Where this flow will live');
+    const pickerHost = ui.div([], 'ff-save-space-picker-host');
+    pickerHost.style.display = 'none';
     let picker: SpacePicker | null = null;
-    const bindBtn = ui.button('Add to space…', async () => {
+    const togglePicker = async () => {
       if (picker == null) {
         picker = await SpacePicker.create();
         picker.onChanged = (space) => updateSpace(space);
         pickerHost.appendChild(picker.root);
+        pickerHost.style.display = '';
       } else
         pickerHost.style.display = pickerHost.style.display === 'none' ? '' : 'none';
-    });
-    ui.tooltip.bind(bindBtn,
+    };
+    const chooseLink = ui.link('Choose…', () => void togglePicker(),
       'Choose a space (or subspace) to organize and share this flow; by default it is saved as a plain script in your namespace');
-    ui.tooltip.bind(spaceLabel, 'Where this flow will live');
+    // Clearing goes through the picker when it exists, so its highlighted row
+    // and footer label ("New space…" vs "New subspace…") stay in sync.
+    const clearIcon = ui.iconFA('times',
+      () => picker != null ? picker.clearSelection() : updateSpace(null),
+      'Remove from space — save as a plain script');
+    clearIcon.classList.add('ff-save-space-clear');
+    const spaceCaption = document.createElement('label');
+    spaceCaption.className = 'ui-label ui-input-label';
+    spaceCaption.textContent = 'Space';
+    // ui-input-root makes the caption inherit the dialog form's label column
+    // (right-aligned, 140px, grey) so the row lines up with Name/Description.
+    const spaceRow = ui.divH([spaceCaption, spaceValue, chooseLink, clearIcon],
+      {classes: 'ui-input-root ff-save-space-row', style: {alignItems: 'center', gap: '8px'}});
+
+    const updateSpace = (space: DG.Project | null) => {
+      targetSpace = space;
+      spaceValue.textContent = space ? space.friendlyName : noSpaceText;
+      spaceValue.classList.toggle('ff-save-space-none', space == null);
+      chooseLink.textContent = space ? 'Change…' : 'Choose…';
+      clearIcon.style.display = space ? '' : 'none';
+      void refreshNameWarning();
+    };
+    updateSpace(null);
 
     // ---- dashboard section (run-aware) ----
     const computedTabs = (): OutputTab[] =>
@@ -1859,47 +1884,86 @@ export class FuncFlowView extends DG.ViewBase {
     const publishInput = ui.input.bool('Create dashboard', {value: true,
       tooltipText: 'After saving the flow, open the standard Save-project dialog seeded with the ' +
         'computed output tables and their layouts (data sync, sharing, upload)'});
-    const refreshDash = (running = false): void => {
+    // 'new' is applied only at save time, so the choice stays reversible.
+    let dashMode: 'update' | 'new' = 'update';
+    // The publish-mode combo only makes sense while publishing is on.
+    let modeRoot: HTMLElement | null = null;
+    publishInput.onChanged.subscribe(() => {
+      if (modeRoot != null) modeRoot.style.display = publishInput.value ? '' : 'none';
+    });
+    let runningNow = false;
+    let okBtn: HTMLButtonElement | null = null;
+    const syncOk = () => {
+      if (okBtn == null) return;
+      const empty = nameInput.value.trim() === '';
+      const disabled = empty || runningNow;
+      okBtn.disabled = disabled;
+      okBtn.classList.toggle('disabled', disabled);
+      okBtn.title = empty ? 'Give the flow a name' : runningNow ? 'Waiting for the run to finish' : '';
+    };
+    const refreshDash = (state: {running?: boolean, failed?: boolean, ranOnce?: boolean} = {}): void => {
+      runningNow = state.running === true;
+      syncOk();
       ui.empty(dashHost);
       dashHost.appendChild(ui.divText('Dashboard', 'ff-save-dash-title'));
       const tabs = computedTabs();
       if (tabs.length > 0) {
-        dashHost.appendChild(ui.divV(tabs.map((t) => ui.divText(
-          `• ${t.df!.name || t.paramName} (${t.df!.rowCount.toLocaleString()} × ${t.df!.columns.length})`))));
+        dashHost.appendChild(ui.divText('Result tables:', 'ff-save-dash-hint'));
+        dashHost.appendChild(ui.divV(tabs.map((t) => ui.divH([
+          ui.iconFA('table'),
+          ui.divText(t.df!.name || t.paramName),
+          ui.divText(`${t.df!.rowCount.toLocaleString()} × ${t.df!.columns.length}`, 'ff-save-dash-dims'),
+        ], {classes: 'ff-save-dash-row', style: {alignItems: 'center', gap: '6px'}}))));
         dashHost.appendChild(publishInput.root);
         if (this.dashboardProjectId != null) {
-          const unbind = ui.link('publish as new', () => {
-            this.dashboardProjectId = null;
-            refreshDash();
-          }, 'Forget the bound project — the next publish creates a new dashboard');
-          const bound = ui.div([], 'ff-save-dash-hint');
-          bound.appendChild(document.createTextNode('Updates the previously published dashboard — or '));
-          bound.appendChild(unbind);
-          dashHost.appendChild(bound);
-        }
+          const modeInput = ui.input.choice('Publish', {
+            value: dashMode === 'new' ? 'As a new dashboard' : 'Update the existing dashboard',
+            items: ['Update the existing dashboard', 'As a new dashboard'],
+            tooltipText: 'This flow already published a dashboard — update it in place, or leave it be and publish a new one',
+            onValueChanged: (v) => dashMode = v === 'As a new dashboard' ? 'new' : 'update',
+          });
+          modeRoot = modeInput.root;
+          modeRoot.style.display = publishInput.value ? '' : 'none';
+          dashHost.appendChild(modeRoot);
+        } else
+          modeRoot = null;
       }
-      else if (running)
-        dashHost.appendChild(ui.divText('Running the flow…', 'ff-save-dash-hint'));
-      else {
-        dashHost.appendChild(ui.divText(
-          'Run the flow to publish its result tables as a dashboard.', 'ff-save-dash-hint'));
-        dashHost.appendChild(ui.button('Run the flow', () => {
-          refreshDash(true);
+      else if (state.running) {
+        dashHost.appendChild(ui.divH([ui.loader(), ui.divText('Running the flow…')],
+          {classes: 'ff-save-dash-running', style: {alignItems: 'center', gap: '8px'}}));
+      } else {
+        // Three distinct idle states: never ran, ran and failed, ran fine but
+        // produced no tables — the user who just clicked Run must not see the
+        // section silently bounce back to the initial hint.
+        const ranButNothing = state.failed === false && state.ranOnce === true;
+        dashHost.appendChild(state.failed ?
+          ui.divText('The run failed — check the highlighted step on the canvas.', 'ff-save-dash-failed') :
+          ranButNothing ?
+            ui.divText('The run produced no result tables — check the flow\'s output nodes.', 'ff-save-dash-failed') :
+            ui.divText('Run the flow to publish its result tables as a dashboard.', 'ff-save-dash-hint'));
+        const runBtn = ui.button(state.failed || ranButNothing ? 'Run again' : 'Run the flow', () => {
+          refreshDash({running: true});
           this.runInstrumented();
-        }));
+        });
+        runBtn.style.alignSelf = 'flex-start';
+        runBtn.style.marginLeft = '0';
+        dashHost.appendChild(runBtn);
       }
     };
     refreshDash();
-    this.saveDialogRunEnd = () => refreshDash();
+    this.saveDialogRunEnd = (success) => refreshDash({failed: !success, ranOnce: true});
 
     const dlg = ui.dialog({title: 'Save Flow'})
-      .add(ui.divV([nameInput.root, descInput.root, warningDiv,
-        ui.divH([bindBtn, spaceLabel, clearLink], {style: {alignItems: 'center', gap: '8px'}}),
-        pickerHost, dashHost]))
+      .add(ui.divV([nameInput.root, warningDiv, descInput.root,
+        spaceRow, pickerHost, dashHost]))
       .onOK(async () => {
         const name = nameInput.value.trim();
         if (name === '') { // reachable via Enter even while the Save button is disabled
           grok.shell.warning('Give the flow a name first');
+          return;
+        }
+        if (runningNow) {
+          grok.shell.warning('Wait for the run to finish');
           return;
         }
         this.flowSettings.scriptName = name;
@@ -1921,20 +1985,16 @@ export class FuncFlowView extends DG.ViewBase {
             grok.shell.error(`Could not add to space: ${e?.message ?? e}`);
           }
         }
-        if (saved != null && publishInput.value === true && computedTabs().length > 0)
+        if (saved != null && publishInput.value === true && computedTabs().length > 0) {
+          if (dashMode === 'new') this.dashboardProjectId = null;
           await this.openDashboardDialog();
+        }
       });
     dlg.onClose.subscribe(() => this.saveDialogRunEnd = null);
     dlg.show({width: 500});
     // Validate before close: empty names never reach the OK handler.
-    const okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
+    okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
     if (okBtn) okBtn.textContent = 'Save';
-    const syncOk = () => {
-      if (okBtn == null) return;
-      const empty = nameInput.value.trim() === '';
-      okBtn.disabled = empty;
-      okBtn.classList.toggle('disabled', empty);
-    };
     nameInput.onChanged.subscribe(() => {
       syncOk();
       if (warnTimer != null) clearTimeout(warnTimer);
@@ -1942,6 +2002,23 @@ export class FuncFlowView extends DG.ViewBase {
     });
     syncOk();
     void refreshNameWarning();
+    // A fresh (unsaved) flow keeps the template name — pre-uniquify it so the
+    // dialog doesn't open with an "already exists" warning the user didn't cause.
+    if (this.boundScript == null && !opts.asNew) {
+      const orig = nameInput.value;
+      void (async () => {
+        try {
+          if ((await findClashes(orig.trim(), null)).length === 0 || nameInput.value !== orig) return;
+          for (let i = 2; i <= 9; i++) {
+            const cand = `${orig.trim()} ${i}`;
+            if ((await findClashes(cand, null)).length === 0) {
+              if (nameInput.value === orig) nameInput.value = cand;
+              return;
+            }
+          }
+        } catch {/* advisory only */}
+      })();
+    }
   }
 
   /** Pick a flow entity from the server and open it in this view. */

@@ -3003,12 +3003,14 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   background: #ffb300;
 }
 
-/* Save dialog — dashboard section */
+/* Save dialog — dashboard section. The min-height keeps the dialog from
+   jumping as the section swaps between its not-run / running / outputs states. */
 .ff-save-dash {
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px solid var(--grey-2, #ddd);
   gap: 6px;
+  min-height: 110px;
 }
 
 .ff-save-dash-title {
@@ -3017,6 +3019,70 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 
 .ff-save-dash-hint {
   color: var(--grey-5, #666);
+}
+
+.ff-save-dash-row .grok-icon {
+  color: var(--grey-4, #888);
+}
+
+.ff-save-dash-dims {
+  color: var(--grey-5, #666);
+}
+
+.ff-save-dash-failed {
+  color: #b26a00;
+}
+
+/* The platform loader positions its dots absolutely and collapses to zero
+   width — without a reserved box it renders on top of the text next to it. */
+.ff-save-dash-running > .grok-loader {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 8px;
+  top: 0;
+  margin: 0;
+}
+
+/* The dashboard section's inputs align to the dialog form's label column. */
+.ff-save-dash .ui-input-root > label.ui-input-label:not(:empty) {
+  min-width: 140px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Save dialog — duplicate-name advisory. The line is reserved so the text
+   appearing after the debounce never shifts the form below it. */
+.funcflow-save-name-warning {
+  color: #b26a00;
+  min-height: 18px;
+}
+
+/* Save dialog — space form row + framed picker */
+.ff-save-space-value.ff-save-space-none {
+  color: var(--grey-4, #888);
+}
+
+.ff-save-space-clear {
+  color: var(--grey-4, #888);
+  cursor: pointer;
+}
+
+.ff-save-space-picker-host {
+  margin: 4px 0 4px 148px; /* clears the 140px form-label column */
+}
+
+.funcflow-space-picker-chooser {
+  border: 1px solid var(--grey-2, #ddd);
+  border-radius: 3px;
+}
+
+.funcflow-space-picker-chooser .funcflow-space-picker-tree {
+  padding-top: 4px;
+}
+
+.funcflow-space-picker-footer {
+  border-top: 1px solid var(--grey-2, #ddd);
+  padding: 4px 8px;
 }
 
 /* MPO column-mapping editor (Chem:mpoScoreByProfile) — one column choice per

@@ -38,6 +38,9 @@ export class SpacePicker {
   private readonly loaded = new Set<string>();
   private selection: DG.Project | null = null;
   private readonly options: SpacePickerOptions;
+  /** Chooser-mode footer link; its label tracks the selection ("New space…"
+   *  with nothing selected creates a root space — the label must say so). */
+  private newSpaceLink: HTMLElement | null = null;
 
   /** Fires whenever the selected space changes (null = nothing selected). */
   onChanged: ((space: DG.Project | null) => void) | null = null;
@@ -51,7 +54,7 @@ export class SpacePicker {
     } else {
       this.tree.root.style.maxHeight = '220px';
       this.tree.root.style.minHeight = '50px';
-      this.tree.root.style.width = '250px';
+      this.tree.root.style.width = '100%';
       this.tree.root.style.overflowY = 'auto';
     }
     this.tree.root.style.paddingBottom = '5px';
@@ -68,10 +71,12 @@ export class SpacePicker {
       });
       this.root = ui.divV([this.tree.root], 'funcflow-space-picker');
     } else {
-      const newSpaceBtn = ui.button('New subspace…', () => void this.createSpaceDialog());
-      ui.tooltip.bind(newSpaceBtn,
+      this.newSpaceLink = ui.link('New space…', () => void this.createSpaceDialog());
+      ui.tooltip.bind(this.newSpaceLink,
         'Create a subspace under the selected space, or a new root space when nothing is selected');
-      this.root = ui.divV([this.tree.root, newSpaceBtn], 'funcflow-space-picker');
+      this.root = ui.divV([this.tree.root,
+        ui.div([this.newSpaceLink], 'funcflow-space-picker-footer')],
+      'funcflow-space-picker funcflow-space-picker-chooser');
     }
   }
 
@@ -91,8 +96,18 @@ export class SpacePicker {
 
   get selected(): DG.Project | null { return this.selection; }
 
+  /** Deselects the tree so the host's "clear" control and the picker stay in
+   *  sync (footer label back to "New space…", no highlighted row). */
+  clearSelection(): void {
+    for (const el of Array.from(this.tree.root.querySelectorAll('.d4-current, .d4-tree-view-node-selected')))
+      el.classList.remove('d4-current', 'd4-tree-view-node-selected');
+    this.select(null);
+  }
+
   private select(space: DG.Project | null): void {
     this.selection = space;
+    if (this.newSpaceLink != null)
+      this.newSpaceLink.textContent = space ? 'New subspace…' : 'New space…';
     this.onChanged?.(space);
   }
 
@@ -173,13 +188,18 @@ export class SpacePicker {
   }
 
   private async createSpaceDialog(): Promise<void> {
-    const parentNode = this.tree.currentItem instanceof DG.TreeViewGroup ? this.tree.currentItem : null;
-    const parentSpace = (parentNode?.value as DG.Project) ?? null;
+    // The SELECTION decides the parent, not the tree's current item — after
+    // clearSelection() the tree may still remember the last clicked node.
+    const cur = this.tree.currentItem instanceof DG.TreeViewGroup ? this.tree.currentItem : null;
+    const parentNode = this.selection != null &&
+      (cur?.value as DG.Project | null)?.id === this.selection.id ? cur : null;
+    const parentSpace = parentNode ? this.selection : null;
     const nameInput = ui.input.string('Name', {value: '',
       tooltipText: 'Name of the new space'});
-    const where = parentSpace ? `Created under "${parentSpace.friendlyName}"` : 'Created as a new root space';
+    const where = parentSpace ?
+      `Will be created under "${parentSpace.friendlyName}"` : 'Will be created as a new root space';
 
-    ui.dialog({title: 'New Space'})
+    const dlg = ui.dialog({title: parentSpace ? 'New Subspace' : 'New Space'})
       .add(ui.divText(where))
       .add(nameInput)
       .onOK(async () => {
@@ -217,7 +237,10 @@ export class SpacePicker {
           // Server-side checks: CreateSpace privilege, name uniqueness, EDIT permission.
           grok.shell.error(`Could not create space: ${e?.message ?? e}`);
         }
-      })
-      .show();
+      });
+    dlg.show();
+    // "OK" understates an action that creates a server entity.
+    const ok = dlg.getButton('OK') as HTMLButtonElement | null;
+    if (ok) ok.textContent = 'Create';
   }
 }

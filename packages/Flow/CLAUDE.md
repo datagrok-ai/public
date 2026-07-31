@@ -896,10 +896,16 @@ with full research trail: [docs/OUTPUT-VIEWS-PLAN.md](docs/OUTPUT-VIEWS-PLAN.md)
   `serializeFlow`) — viewStates aren't canonical, so including them would keep Save permanently lit;
   the flip side (v1): rearranging viewers alone doesn't light Save.
 - **Save dialog + dashboard publish**: the ribbon **Save** pill always opens the combined
-  `saveDialog()` — script name/description/space on top, a run-aware **Dashboard** section below
-  (no computed outputs → a "Run the flow" button that refreshes the section via the
-  `saveDialogRunEnd` hook when the run ends; outputs → the table list + a "Create dashboard"
-  toggle). OK saves the script (updating the bound entity in place; `Save As…` passes
+  `saveDialog()` — name (with a one-line reserved duplicate-name advisory under it; a fresh flow
+  pre-uniquifies its template name), description, a **Space** form row (value + "Choose…"/"Change…"
+  link toggling a framed `SpacePicker`, × clears; the picker's footer link reads "New space…" or
+  "New subspace…" depending on selection), and a run-aware **Dashboard** section below with a
+  stable min-height (no computed outputs → a "Run the flow" button; while the run goes the section
+  shows a loader and **Save is disabled**; `saveDialogRunEnd(success)` then renders outputs, a
+  "run failed" notice, or a "produced no result tables" notice with "Run again" — never the initial
+  hint again; outputs → icon rows + a "Create dashboard" toggle, plus, when a dashboard is already
+  bound, a "Publish: update existing / as new" choice applied only at Save time). OK saves the
+  script (updating the bound entity in place; `Save As…` passes
   `{asNew: true}`), then opens the **platform's standard Save-project dialog** —
   `DG.Project.showSaveDialog({tables, views, layouts, name, description, project})`, new js-api
   backed by `grok_Project_OpenSaveDialog` → `ProjectMeta.publishTables` (core,
@@ -911,7 +917,7 @@ with full research trail: [docs/OUTPUT-VIEWS-PLAN.md](docs/OUTPUT-VIEWS-PLAN.md)
   (`dashboard.projectId`, written silently right after the first publish) and is passed back on
   the next publish — core replaces the bound project's table/view children (table ids kept stable
   by `.VariableName`, so entities update server-side in place) instead of creating a new project
-  per save. Cleared on New / Save As / the dialog's "publish as new" link. Before opening it, `stampCreationScripts` tags each
+  per save. Cleared on New / Save As / choosing "Publish: as new" in the save dialog. Before opening it, `stampCreationScripts` tags each
   output df: `.VariableName` = paramName, `.script` =
   `<param> = <FlowNqName>(<defaults>)[.<param>] //{"timestamp": …}` — **the output accessor is
   appended ONLY when the flow declares more than one output** (`flowOutputCount()`); identical
