@@ -4,6 +4,18 @@ import {FitParamBounds, IFitSeries, LogOptions} from './fit-curve';
 /** Low-level point helpers. This module is a leaf on purpose: it depends only on {@link fit-curve}
  * types, so both the fitting engine and the series-level API can use it without a circular import. */
 
+/** A view of the series with its parameters in fit space. `IFitSeries.parameters` are always stored
+ * in data space, so a logarithmic x axis needs the inflection point logged. Returns a copy: the
+ * parsed chart data is cached and shared between the renderer and the statistics, and converting it
+ * in place logs the same value again on the next call. */
+export function seriesInFitSpace(series: IFitSeries, logOptions?: LogOptions): IFitSeries {
+  if (!series.parameters || !logOptions?.logX || !(series.parameters[2] > 0))
+    return series;
+  const parameters = [...series.parameters];
+  parameters[2] = Math.log10(parameters[2]);
+  return {...series, parameters};
+}
+
 /** Returns the data points of a series with filtered outliers and logarithmic data if needed */
 export function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFlag?: boolean):
   {x: number[], y: number[]} {

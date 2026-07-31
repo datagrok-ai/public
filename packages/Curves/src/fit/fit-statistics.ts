@@ -7,8 +7,9 @@ import {statisticsProperties, IFitChartData, IFitSeries, FitStatistics, LEGACY_F
   from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Fit, FitFunction, getStatistic, getStatisticProperty}
   from '@datagrok-libraries/statistics/src/fit/fit-engine';
+import {seriesInFitSpace} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, getOrCreateParsedChartData,
-  substituteZeroes, mergeColumnChartOptions} from './fit-chart-data';
+  substituteZeroes, mergeSourceChartOptions} from './fit-chart-data';
 import {parseCellValue} from './curve-converter';
 
 const AGGREGATION_TYPES: {[key: string]: string} = {
@@ -24,19 +25,9 @@ const DATA_SPACE_AGGREGATIONS = new Set(['min', 'max', 'avg', 'med', 'q1', 'q2',
 export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
   tableCell?: DG.Cell, useCache: boolean = true, inDataSpace: boolean = true): Fit {
   const fitFunction = getSeriesFitFunction(series);
-  let fitInput = series;
-  if (series.parameters) {
-    // stored parameters carry the inflection point as a concentration, the fit works in log space.
-    // Converting on a copy - the parsed chart data is cached, so mutating it re-logs on every call
-    if (chartLogOptions.logX && series.parameters[2] > 0) {
-      const parameters = [...series.parameters];
-      parameters[2] = Math.log10(parameters[2]);
-      fitInput = {...series, parameters};
-    }
-  } else {
-    const params = getOrCreateCachedFitCurve(series, seriesIdx, fitFunction, chartLogOptions, tableCell, useCache).parameters;
-    series.parameters = [...params];
-  }
+  const fitInput = series.parameters ? seriesInFitSpace(series, chartLogOptions) :
+    {...series, parameters: [...getOrCreateCachedFitCurve(series, seriesIdx, fitFunction,
+      chartLogOptions, tableCell, useCache).parameters]};
 
   const fit = getSeriesFit(fitInput, fitFunction,
     getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell), chartLogOptions);
@@ -109,14 +100,15 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
 /** Parsed chart data for one cell of a curve column, with x zeroes substituted when needed.
  * Recalculation hands us a detached column holding only the changed rows, so there is no dataframe
  * cell to key the caches on - fall back to parsing the value directly in that case. */
-function chartDataAt(curveColumn: DG.Column, rowIdx: number): {data: IFitChartData, cell?: DG.Cell} | null {
+function chartDataAt(curveColumn: DG.Column, rowIdx: number, table?: DG.DataFrame): {data: IFitChartData, cell?: DG.Cell} | null {
   const value = curveColumn.get(rowIdx);
   if (value === null || value === undefined || value === '')
     return null;
   const cell = curveColumn.dataFrame ? curveColumn.dataFrame.cell(rowIdx, curveColumn.name) : undefined;
-  // the detached column keeps its tags, so column-level logX/allowXZeroes/fitFunction still apply
+  // the detached column keeps its tags, and the dataframe comes in as an argument, so both levels of
+  // the cascade still apply on the recalculation path
   const data = cell ? getOrCreateParsedChartData(cell, true) :
-    mergeColumnChartOptions(parseCellValue(value, curveColumn), curveColumn);
+    mergeSourceChartOptions(parseCellValue(value, curveColumn), curveColumn, table);
   if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
     data.series?.some((series) => series.points.some((p) => p.x === 0)))
     substituteZeroes(data);
@@ -124,23 +116,34 @@ function chartDataAt(curveColumn: DG.Column, rowIdx: number): {data: IFitChartDa
 }
 
 /** One statistic of one series, resolved by name so legacy names keep working. */
-export function curveStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, seriesNumber: number): number | null {
-  const parsed = chartDataAt(curveColumn, rowIdx);
-  if (!parsed)
+export function curveStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, seriesNumber: number,
+  table?: DG.DataFrame): number | null {
+  // guard per row: one malformed cell must not abort the whole column
+  try {
+    const parsed = chartDataAt(curveColumn, rowIdx, table);
+    if (!parsed)
+      return null;
+    const series = parsed.data.series?.[seriesNumber];
+    if (!series || series.points.every((p) => p.outlier))
+      return null;
+    const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
+    return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
+  } catch (_) {
     return null;
-  const series = parsed.data.series?.[seriesNumber];
-  if (!series || series.points.every((p) => p.outlier))
-    return null;
-  const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
-  return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
+  }
 }
 
 /** One statistic aggregated across every series of a curve. */
-export function curveAggrStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, aggrType: string): number | null {
-  const parsed = chartDataAt(curveColumn, rowIdx);
-  if (!parsed)
+export function curveAggrStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, aggrType: string,
+  table?: DG.DataFrame): number | null {
+  try {
+    const parsed = chartDataAt(curveColumn, rowIdx, table);
+    if (!parsed)
+      return null;
+    if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
+      return null;
+    return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
+  } catch (_) {
     return null;
-  if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
-    return null;
-  return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
+  }
 }

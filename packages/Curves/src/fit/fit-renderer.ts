@@ -15,6 +15,7 @@ import {
   getCurve
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
+import {seriesInFitSpace} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {isNativeFormat} from './curve-converter';
 import {
@@ -244,7 +245,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
-      const containsParams = series.parameters && series.parameters.length > 0;
       if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
         continue;
       series.points.sort((a, b) => a.x - b.x);
@@ -252,18 +252,16 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       let userParamsFlag = true;
       const fitFunc = getSeriesFitFunction(series);
       let curve: ((x: number) => number) | null = null;
+      // everything downstream needs fit-space parameters; the cached series keeps its data-space ones
+      let fitSpaceSeries = series;
       if (!(series.connectDots && !series.showFitLine)) {
         if (series.parameters) {
-          if (data.chartOptions?.logX) {
-            if (series.parameters[2] > 0) // check if sigmoid, then log
-              series.parameters[2] = Math.log10(series.parameters[2]);
-          }
-          curve = getCurve(series, fitFunc);
+          fitSpaceSeries = seriesInFitSpace(series, chartLogOptions);
+          curve = getCurve(fitSpaceSeries, fitFunc);
         } else {
           const fitResult = getOrCreateCachedFitCurve(series, i, fitFunc, chartLogOptions, tableCell, isRenderedOnGrid);
           curve = fitResult.fittedCurve;
-          const params = [...fitResult.parameters];
-          series.parameters = params;
+          fitSpaceSeries = {...series, parameters: [...fitResult.parameters]};
           userParamsFlag = false;
         }
       }
@@ -272,17 +270,15 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, curveFunc: curve!, seriesIdx: i});
       renderConnectDots(g, series, {viewport, ratio, seriesIdx: i});
       renderPoints(g, series, {viewport, ratio, screenBounds, seriesIdx: i});
-      renderConfidenceIntervals(g, series, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
+      renderConfidenceIntervals(g, fitSpaceSeries, {viewport, logOptions: chartLogOptions, showAxes: this.areAxesShown(screenBounds),
         showAxesLabels: this.areAxesLabelsShown(screenBounds, data), screenBounds, fitFunc, userParamsFlag,
         dataPoints: getOrCreateCachedCurvesDataPoints(series, i, chartLogOptions, userParamsFlag, tableCell, isRenderedOnGrid)});
-      if (series.parameters) {
-        renderDroplines(g, series, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
-          xValue: series.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
+      if (fitSpaceSeries.parameters) {
+        renderDroplines(g, fitSpaceSeries, {viewport, ratio, showDroplines: this.areDroplinesShown(screenBounds),
+          xValue: fitSpaceSeries.parameters![2], dataBounds, curveFunc: curve!, logOptions: chartLogOptions});
       }
-      renderStatistics(g, series, {statistics: data.chartOptions?.showStatistics, fitFunc,
+      renderStatistics(g, fitSpaceSeries, {statistics: data.chartOptions?.showStatistics, fitFunc,
         logOptions: chartLogOptions, dataBox, screenBounds, seriesIdx: i});
-      if (!containsParams)
-        delete series.parameters;
     }
 
     renderTitle(g, {showTitle: this.isTitleShown(screenBounds, data), title: data.chartOptions?.title, dataBox, screenBounds});

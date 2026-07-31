@@ -125,16 +125,20 @@ export function getOrCreateParsedChartData(tableCell: DG.Cell, useCache = true):
     }) : getChartData(tableCell);
 }
 
-/** Column level of the options cascade, applied on its own when there is no dataframe - the
- * recalculation path hands us a detached column. */
-export function mergeColumnChartOptions(cellChartData: IFitChartData, column: DG.Column): IFitChartData {
+/** Column and dataframe levels of the options cascade, applied on their own when there is no cell to
+ * reach them through - the recalculation path hands us a detached column. */
+export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG.Column,
+  df?: DG.DataFrame): IFitChartData {
   const columnChartOptions = getColumnChartOptions(column);
+  const dfChartOptions = df ? getDataFrameChartOptions(df) : {};
   cellChartData.series ??= [];
   cellChartData.chartOptions ??= columnChartOptions.chartOptions;
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
+  mergeProperties(fitChartDataProperties, dfChartOptions.chartOptions, cellChartData.chartOptions);
   for (const series of cellChartData.series) {
     mergeProperties(fitSeriesProperties, cellChartData.seriesOptions, series);
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
+    mergeProperties(fitSeriesProperties, dfChartOptions.seriesOptions, series);
   }
   return cellChartData;
 }

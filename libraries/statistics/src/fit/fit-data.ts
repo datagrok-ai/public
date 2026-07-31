@@ -143,12 +143,9 @@ export function getCurve(series: IFitSeries, fitFunc: FitFunction): (x: number) 
 export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunction, userParamsFlag: boolean,
   dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): FitConfidenceIntervals {
   dataPoints ??= getDataPoints(series, logOptions, userParamsFlag);
-  if (!series.parameters) {
-    const params = fitSeries(series, fitFunc, dataPoints).parameters;
-    series.parameters = [...params];
-  }
-  const params = new Float32Array(series.parameters?.length!);
-  params.set(series.parameters!);
+  const source = series.parameters ?? fitSeries(series, fitFunc, dataPoints).parameters;
+  const params = new Float32Array(source.length);
+  params.set(source);
   return getCurveConfidenceIntervals(dataPoints, params, fitFunc.y, 0.05,
     series.errorModel ?? FitErrorModel.CONSTANT as FitErrorModelType);
 }
@@ -158,12 +155,11 @@ export function getSeriesConfidenceInterval(series: IFitSeries, fitFunc: FitFunc
 export function getSeriesFit<T extends Fit>(series: IFitSeries, fitFunc: FitFunction<T>,
   dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T {
   dataPoints ??= getDataPoints(series, logOptions, false);
-  if (!series.parameters) {
-    const params = fitSeries(series, fitFunc, dataPoints).parameters;
-    series.parameters = [...params];
-  }
-  const params = new Float32Array(series.parameters?.length!);
-  params.set(series.parameters!);
+  // never write the fitted parameters back - they are in fit space, and the series contract is data
+  // space, so the next caller would convert them a second time
+  const source = series.parameters ?? fitSeries(series, fitFunc, dataPoints).parameters;
+  const params = new Float32Array(source.length);
+  params.set(source);
   return fitFunc.fillParams({fittedCurve: getFittedCurve(fitFunc.y, params), parameters: params},
     series, dataPoints, logOptions);
 }

@@ -14,6 +14,7 @@ import {
   fitFunctions,
   getFitFunction,
   getStatistic,
+  getStatisticProperty,
   isFit,
   FitSeries,
   SigmoidFit,
@@ -291,13 +292,20 @@ category('fit', () => {
       getFitFunction('4pl-dose-response'));
     expect(getStatistic(doseResponseFit, 'interceptX'), doseResponseFit.ic50);
 
-    // legacy names a 2-parameter fit lacks fall back to the slot the pre-typed API read positionally
+    // legacy names a 2-parameter fit lacks fall back to the slot the pre-typed API read positionally,
+    // and the descriptor has to agree - a value with no descriptor renders nothing on the plot
     const linearFit = getSeriesFit(linearSeries, getFitFunction('linear'));
     expect(getStatistic(linearFit, 'top'), linearFit.parameters[0]);
+    expect(getStatisticProperty(getFitFunction('linear'), 'top') !== undefined, true);
+    expect(getStatisticProperty(getFitFunction('linear'), 'interceptX') === undefined, true);
     expect(getStatistic(linearFit, 'interceptX') === undefined);
     expect(getStatistic(linearFit, 'interceptY') === undefined);
     expect(getStatistic(linearFit, 'bottom') === undefined);
     expect(getStatistic(linearFit, 'slope'), linearFit.slope);
+
+    // the pre-typed API reported interceptY for every fit function, custom ones included
+    const jsFit = getSeriesFit(polynomialSeries, getSeriesFitFunction(polynomialSeries));
+    expect(typeof getStatistic(jsFit, 'interceptY'), 'number');
 
     // never resolves to a non-numeric field of the fit
     expect(getStatistic(sigmoidFit, 'series') === undefined);

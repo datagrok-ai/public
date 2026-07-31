@@ -148,6 +148,19 @@ category('calculated columns', () => {
     expectFloat(first!, 100, 1);
   });
 
+  test('fitting a series does not write fit-space parameters back onto it', async () => {
+    // no stored parameters, so the first call fits. If the fitted (log-space) parameters are written
+    // back, the second call reads them as a concentration and logs them again
+    const data = JSON.parse(multiSeriesCurveJson([2])) as IFitChartData;
+    const series = data.series![0];
+    const logX = {logX: true, logY: false};
+
+    const first = getStatistic(calculateSeriesFit(series, 0, logX, undefined, false), 'ic50');
+    expect(series.parameters === undefined, true, 'the series must keep its data-space contract');
+    const second = getStatistic(calculateSeriesFit(series, 0, logX, undefined, false), 'ic50');
+    expect(first, second, 'the reported IC50 drifted between calls');
+  });
+
   test('recalculation applies column-level chart options', async () => {
     const col = DG.Column.fromStrings('curve', [curveJsonNoChartOptions(-6.5), curveJsonNoChartOptions(-6.5)]);
     col.semType = FitConstants.FIT_SEM_TYPE;

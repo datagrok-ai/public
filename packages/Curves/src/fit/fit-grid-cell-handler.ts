@@ -278,14 +278,24 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
     // a custom JS fit function is stored as a description object, which a choice input cannot display
     const customFitFunction = seriesSource && typeof seriesSource.fitFunction === 'object' ?
       seriesSource.fitFunction : null;
-    const fitSeriesChildren = seriesPropertiesFor(customFitFunction).map((p) =>
-      ui.input.forProperty(p, p.name === 'fitFunction' && customFitFunction ?
-        {...seriesSource, fitFunction: customFitFunction.name} : seriesSource, seriesOptionsRefresh));
+    const fitSeriesChildren = seriesPropertiesFor(customFitFunction).map((p) => {
+      if (p.name !== 'fitFunction' || !customFitFunction)
+        return ui.input.forProperty(p, seriesSource, seriesOptionsRefresh);
+      // the choice input cannot hold the description object, so it is bound to its name - picking
+      // anything else has to be written back to the series, or the input does nothing
+      const named = {...seriesSource, fitFunction: customFitFunction.name};
+      return ui.input.forProperty(p, named, {onValueChanged: (v: any, inputBase: DG.InputBase) => {
+        if (v !== customFitFunction.name)
+          seriesSource.fitFunction = v;
+        seriesOptionsRefresh.onValueChanged(v, inputBase);
+      }});
+    });
     ui.forms.addGroup(form, 'Series options', fitSeriesChildren);
+    // normalize the stored legacy names in place, so the input binds to the real options object
+    if (chartData.chartOptions?.showStatistics)
+      chartData.chartOptions.showStatistics = normalizeStatisticNames(chartData, chartData.chartOptions.showStatistics);
     ui.forms.addGroup(form, 'Chart options', chartPropertiesFor(chartData).map((p) =>
-      ui.input.forProperty(p, p.name === 'showStatistics' ? {...chartData.chartOptions,
-        showStatistics: normalizeStatisticNames(chartData, chartData.chartOptions?.showStatistics ?? [])} :
-        chartData.chartOptions, chartOptionsRefresh)));
+      ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
     acc.addPane('Options', () => form);
 
     const choices = (chartData.series?.length ?? 0) > 1 ? ['all', 'aggregated'] : ['all'];

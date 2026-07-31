@@ -144,7 +144,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'int', options: {description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
     // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
     const result = DG.Column.float(`${curveColumn.name} ${seriesNumber + 1} ${propName}`, curveColumn.length);
-    result.init((i) => curveStatisticAt(curveColumn, i, propName, seriesNumber));
+    result.init((i) => curveStatisticAt(curveColumn, i, propName, seriesNumber, table));
     return result;
   }
 
@@ -160,7 +160,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {description: 'Aggregation applied across series (avg, med, min, max)'}}) aggrType: string): DG.Column {
     // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
     const result = DG.Column.float(`${curveColumn.name} ${aggrType} ${propName}`, curveColumn.length);
-    result.init((i) => curveAggrStatisticAt(curveColumn, i, propName, aggrType));
+    result.init((i) => curveAggrStatisticAt(curveColumn, i, propName, aggrType, table));
     return result;
   }
 

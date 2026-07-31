@@ -3,13 +3,17 @@
 ## v.next
 
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
-* GROK-17637: Statistics: Plot and property panel now show the statistics the series' own fit function produces, labelled with its parameter names, instead of a fixed list that rendered NaN for non-sigmoid fits
-* GROK-17637: Statistics: IC50 is reported as a concentration everywhere; the plot and the panel no longer disagree, and `4pl-dose-response` and positive log-IC50 values are no longer skipped by the conversion
-* GROK-17637: Statistics: Aggregation now happens in fit space, so an averaged IC50 is a geometric mean
-* GROK-17637: Statistics: Added pIC50
+* GROK-17637: Statistics: Plot and property panel now show the statistics the series' own fit function produces, instead of a fixed list that rendered NaN for non-sigmoid fits
+* GROK-17637: Behaviour change: Statistics are labelled with each fit function's own parameter names - `AUC`, `R²`, and `Max`/`Hill`/`IC50`/`Min` for dose-response. `Max Y` and `Min Y` now name the derived asymptote statistics rather than `top`/`bottom`
+* GROK-17637: Behaviour change: `slope` on a linear or log-linear fit now reports the slope; it previously reported the intercept. `top` on those fits keeps its old value, so `top` and `slope` report the same number
+* GROK-17637: Statistics: IC50 is reported as a concentration everywhere, so the plot and the property panel no longer disagree
+* GROK-17637: Behaviour change: IC50 is converted out of log space whenever the x axis is logarithmic. The conversion was previously skipped for stored values >= 1, and for `4pl-dose-response` entirely, so nM/uM-scale curves and every dose-response curve now report a different number - by orders of magnitude in saved projects
+* GROK-17637: Behaviour change: `top`, `bottom` and `interceptY` are converted out of log space on a logarithmic y axis, where they previously showed the raw fitted value
+* GROK-17637: Behaviour change: Statistics aggregated across series are averaged in fit space, so an averaged IC50 is now a geometric mean - 1e-7 and 1e-5 give 1e-6 rather than 5.05e-6. Counts, sums and shape statistics stay on their own scale
+* GROK-17637: Added pIC50, derived as -log10(IC50). It assumes the concentration is molar, so it reads 6 too low on uM data and 9 too low on nM data
 * GROK-17637: Options: A custom JS fit function is now named in the property panel instead of rendering a blank input
-* GROK-17637: Statistics: Fixed count, sum and shape aggregations being exponentiated on a logarithmic axis - a count of 3 series was reported as 1000; only location and order statistics are converted back to data space
-* GROK-17637: Statistics: Fixed toggling an outlier blanking extracted statistic columns whose name is not one of the seven legacy ones (`ic50`, `pIC50`, `maxY`); the refresh now resolves by name off the typed fit
+* GROK-17637: Options: Fixed the statistics and fit-function inputs binding to a throwaway copy of the options, so changing either did nothing
+* GROK-17637: Statistics: Toggling an outlier refreshes extracted statistic columns by name off the typed fit, so columns named beyond the seven legacy statistics (`ic50`, `pIC50`, `maxY`) stay populated
 * GROK-17637: Statistics: Fixed a recalculated statistic ignoring column-level chart options - a column-level `logX`, `allowXZeroes` or fit function was lost on the detached recalculation column
 * GROK-17637: Statistics: A cell mixing fit functions now aggregates only the statistics every series produces, instead of averaging one over the subset that has it
 * GROK-17637: Fixed the series colour type being widened to `string`, which disabled colour-option checking
@@ -18,7 +22,7 @@
 * GROK-17637: Fixed confidence intervals reading a non-existent `series.dataPoints`, which discarded the cached points and recomputed them on every frame
 * GROK-17637: Statistics: Moved the statistics calculation out of the property-panel handler and the package entry point into `fit/fit-statistics.ts`
 * GROK-17637: Extracted the chart-data assembly and fit caches into `fit/fit-chart-data.ts`, breaking the `fit-renderer` <-> `fit-statistics` import cycle
-* GROK-17637: Statistics: Fixed a stored inflection point being re-logged on every calculation, which drifted the reported IC50 of nM/uM-scale curves (100 -> 2 -> 0.301)
+* GROK-17637: Statistics: Fixed the reported IC50 of nM/uM-scale curves drifting (100 -> 2 -> 0.301). `IFitSeries.parameters` are now always in data space: neither the renderer nor the statistics convert them in place or write fitted parameters back onto the cached series
 
 ## 1.12.0 (2026-04-02)
 

@@ -136,12 +136,17 @@ const RESERVED_FIT_FIELDS = ['auc', 'rSquared', 'series', 'parameters', 'name'];
 export class JSFunctionFit extends Fit {
   [key: string]: any;
 
-  constructor(values: IFit, data: IFitSeries, parameters: Float32Array, parameterNames: string[] = []) {
+  constructor(values: IFit, data: IFitSeries, parameters: Float32Array, parameterNames: string[] = [],
+    fittedCurve?: (x: number) => number) {
     super(values, data, parameters);
     for (let i = 0; i < parameterNames.length; i++) {
       if (!RESERVED_FIT_FIELDS.includes(parameterNames[i]))
         this[parameterNames[i]] = parameters[i];
     }
+    // the pre-typed API reported interceptY for every fit function as the curve at the third
+    // parameter; a custom function has no named field for it, so keep deriving it
+    if (fittedCurve && parameters.length > 2 && this.interceptY === undefined)
+      this.interceptY = fittedCurve(parameters[2]);
   }
 
   get name(): string {
@@ -298,7 +303,14 @@ const LEGACY_POSITIONAL_SLOTS: {[legacyName: string]: number} = {top: 0, slope: 
  * @return {DG.Property | undefined} the descriptor, or undefined when this fit function has no such statistic. */
 export function getStatisticProperty(fitFunc: FitFunction<any>, name: string): DG.Property | undefined {
   const field = LEGACY_STATISTICS_ALIASES[fitFunc.name]?.[name] ?? name;
-  return fitFunc.statisticsProperties.find((p) => p.name === field);
+  const prop = fitFunc.statisticsProperties.find((p) => p.name === field);
+  if (prop)
+    return prop;
+  // getStatistic resolves such a name through the positional slot, so describe it the same way -
+  // otherwise a saved showStatistics entry has a value but no descriptor and renders nothing
+  const slot = LEGACY_POSITIONAL_SLOTS[name];
+  return slot !== undefined && slot < fitFunc.parameterNames.length ?
+    statisticsProperty(name, fitFunc.parameterNames[slot]) : undefined;
 }
 
 /** Names of the numeric statistics a fit produces. Derived from the fit class, so adding a field to a
@@ -630,7 +642,7 @@ export class JsFunction extends FitFunction<Fit> {
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
     logOptions?: LogOptions): Fit {
     return new JSFunctionFit(getAucAndRsquared(fitCurve.fittedCurve, resolveDataPoints(data, dataPoints, logOptions)),
-      data, fitCurve.parameters, this._parameterNames);
+      data, fitCurve.parameters, this._parameterNames, fitCurve.fittedCurve);
   }
 
   get name(): string {
