@@ -2,8 +2,8 @@
 feature: piechart
 realizes_atlas:
   - piechart.cp.segment-click-select-filter
-  - piechart.segment-click-select-syncs-dataframe
-  - piechart.segment-click-filter-multi-category
+  - piechart.int.segment-click-select-syncs-dataframe
+  - piechart.int.segment-click-filter-multi-category
 realizes:
   - viewers.pie-chart
 priority: p0

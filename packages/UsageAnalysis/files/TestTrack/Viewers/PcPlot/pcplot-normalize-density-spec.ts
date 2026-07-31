@@ -1,5 +1,5 @@
 /* ---
-realizes: [pcplot.cp.normalize-and-density, pcplot-normalize-density-overlay]
+realizes: [pcplot.cp.normalize-and-density, pcplot.int.normalize-density-overlay]
 --- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

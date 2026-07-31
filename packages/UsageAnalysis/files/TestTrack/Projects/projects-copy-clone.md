@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [save-copy-with-link-mode]
+realizes_atlas: [projects.cp.save-copy-with-link-mode]
 realizes: [views.projects]
 realized_as:
   - projects-copy-clone-spec.ts

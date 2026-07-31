@@ -3,7 +3,7 @@ feature: peptides
 target_layer: playwright
 coverage_type: smoke
 priority: p2
-realizes_atlas: [export-mutation-cliffs-from-sar-viewer]
+realizes_atlas: [peptides.cp.export-mutation-cliffs-from-sar-viewer]
 realizes: []
 produced_from: atlas-driven
 realized_as:

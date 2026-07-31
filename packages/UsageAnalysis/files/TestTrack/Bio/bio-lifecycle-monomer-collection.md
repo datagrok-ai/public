@@ -3,7 +3,7 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [save_monomer_library]
+realizes_atlas: [bio.op.save_monomer_library]
 realizes: []
 produced_from: atlas-driven
 realized_as:

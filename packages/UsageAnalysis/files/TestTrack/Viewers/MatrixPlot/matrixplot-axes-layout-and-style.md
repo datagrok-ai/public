@@ -2,7 +2,7 @@
 feature: matrixplot
 realizes_atlas:
   - matrixplot.cp.axes-layout-and-style
-  - matrixplot-auto-layout-overrides-axis-toggles
+  - matrixplot.int.auto-layout-overrides-axis-toggles
 realizes:
   - viewers.matrix-plot
 realized_as:

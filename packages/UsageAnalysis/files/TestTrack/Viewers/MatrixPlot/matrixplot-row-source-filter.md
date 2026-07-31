@@ -2,7 +2,7 @@
 feature: matrixplot
 realizes_atlas:
   - matrixplot.cp.row-source-filter
-  - matrixplot-row-source-filter-narrow-cells
+  - matrixplot.int.row-source-filter-narrow-cells
 realizes:
   - viewers.matrix-plot
 realized_as:

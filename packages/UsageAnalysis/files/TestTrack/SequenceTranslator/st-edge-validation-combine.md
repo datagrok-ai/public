@@ -3,7 +3,7 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: [st-cp-translator-smoke, st-cp-combine-sense-antisense-flow]
+realizes_atlas: [sequencetranslator.cp.st-cp-translator-smoke, sequencetranslator.cp.st-cp-combine-sense-antisense-flow]
 realizes: [sequencetranslator.oligo-toolkit, bio.polytool.combine-sequences]
 realized_as:
   - st-edge-validation-combine-spec.ts

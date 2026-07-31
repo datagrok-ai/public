@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [derive-then-save-inside-project, share_with_recipient_open, rename_project]
+realizes_atlas: [projects.int.derive-then-save-inside-project, projects.op.share_with_recipient_open, projects.op.rename_project]
 realizes: [views.projects]
 realized_as:
   - projects-lifecycle-derived-spec.ts

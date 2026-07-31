@@ -1,5 +1,5 @@
 /* ---
-realizes: [matrixplot.cp.configure-axes-inner-type, matrixplot-axes-drive-inner-grid, viewers.matrix-plot]
+realizes: [matrixplot.cp.configure-axes-inner-type, matrixplot.int.axes-drive-inner-grid, viewers.matrix-plot]
 --- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

@@ -1,5 +1,5 @@
 /* ---
-realizes: [matrixplot.cp.inspect-scroll-cells, matrixplot-large-matrix-scroll-viewport, matrixplot-cell-tooltip-then-open-fullscreen, viewers.matrix-plot]
+realizes: [matrixplot.cp.inspect-scroll-cells, matrixplot.int.large-matrix-scroll-viewport, matrixplot.int.cell-tooltip-then-open-fullscreen, viewers.matrix-plot]
 --- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

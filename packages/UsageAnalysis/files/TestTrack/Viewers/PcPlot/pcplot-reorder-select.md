@@ -4,8 +4,8 @@ realizes:
   - viewers.pc-plot
 realizes_atlas:
   - pcplot.cp.reorder-and-select
-  - pcplot-area-select-cross-viewer
-  - pcplot-current-row-sync
+  - pcplot.int.area-select-cross-viewer
+  - pcplot.int.current-row-sync
 priority: p1
 target_layer: playwright
 coverage_type: regression

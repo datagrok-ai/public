@@ -3,7 +3,7 @@ feature: peptides
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [manual-alignment-edits-applied-to-sequence]
+realizes_atlas: [peptides.int.manual-alignment-edits-applied-to-sequence]
 realizes: []
 produced_from: atlas-driven
 related_bugs: []

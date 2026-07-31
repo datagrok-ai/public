@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [upload-save-reopen-golden]
+realizes_atlas: [projects.cp.upload-save-reopen-golden]
 realizes: [views.projects]
 realized_as:
   - complex-augment-spec.ts

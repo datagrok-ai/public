@@ -1,5 +1,5 @@
 /* ---
-realizes: [piechart.cp.setup-aggregation-legend-persistence, piechart.category-column-drives-legend]
+realizes: [piechart.cp.setup-aggregation-legend-persistence, piechart.int.category-column-drives-legend]
 --- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

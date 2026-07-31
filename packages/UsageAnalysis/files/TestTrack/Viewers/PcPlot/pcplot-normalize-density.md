@@ -2,7 +2,7 @@
 feature: pcplot
 realizes_atlas:
   - pcplot.cp.normalize-and-density
-  - pcplot-normalize-density-overlay
+  - pcplot.int.normalize-density-overlay
 realizes:
   - viewers.pc-plot
 priority: p1

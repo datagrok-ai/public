@@ -3,7 +3,7 @@ feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
 priority: p1
-realizes_atlas: [load-library-ivp-run]
+realizes_atlas: [diffstudio.cp.load-library-ivp-run]
 realizes: [diffstudio]
 realized_as:
   - cyclic-models.test.ts

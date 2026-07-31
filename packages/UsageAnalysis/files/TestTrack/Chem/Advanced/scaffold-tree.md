@@ -3,7 +3,7 @@ feature: chem
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [chem.cp.scaffold-tree-add-filter, chem.x.scaffold-sketcher-substructure, chem.cp.project-save-reopen-with-chem-state]
+realizes_atlas: [chem.cp.scaffold-tree-add-filter, chem.int.scaffold-sketcher-substructure, chem.cp.project-save-reopen-with-chem-state]
 realizes: [chem.analyze.scaffold-tree, chem.scaffold-tree]
 realized_as:
   - scaffold-tree-spec.ts

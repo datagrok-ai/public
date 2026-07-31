@@ -3,7 +3,7 @@ feature: notebooks
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [open-table-in-notebook]
+realizes_atlas: [notebooks.cp.open-table-in-notebook]
 realizes: [views.notebooks]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/notebooks/create.md

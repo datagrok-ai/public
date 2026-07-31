@@ -4,8 +4,8 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas:
-  - piechart.in-viewer-column-selector-reconfigures-pie
-  - piechart.mouseover-row-group-cross-highlight
+  - piechart.int.in-viewer-column-selector-reconfigures-pie
+  - piechart.int.mouseover-row-group-cross-highlight
 realizes: []
 realized_as:
   - pie-chart-spec.ts

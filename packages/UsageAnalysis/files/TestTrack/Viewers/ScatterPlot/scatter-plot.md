@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas:
-  - scatterplot-lines-by-overrides-color-split
+  - scatterplot.int.lines-by-overrides-color-split
 realizes: []
 realized_as:
   - scatter-plot-spec.ts

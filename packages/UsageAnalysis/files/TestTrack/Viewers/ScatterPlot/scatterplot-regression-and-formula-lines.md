@@ -2,7 +2,7 @@
 feature: scatterplot
 realizes_atlas:
   - scatterplot.cp.regression-and-formula-lines
-  - scatterplot-color-drives-per-category-regression
+  - scatterplot.int.color-drives-per-category-regression
 realizes:
   - viewers.scatter-plot
 priority: p2

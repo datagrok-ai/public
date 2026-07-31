@@ -3,7 +3,7 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [align_sequences]
+realizes_atlas: [bio.op.align_sequences]
 realizes: []
 produced_from: atlas-driven
 related_bugs: []

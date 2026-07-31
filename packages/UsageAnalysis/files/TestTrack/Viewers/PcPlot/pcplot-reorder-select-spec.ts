@@ -1,5 +1,5 @@
 /* ---
-realizes: [pcplot.cp.reorder-and-select, pcplot-area-select-cross-viewer, pcplot-current-row-sync]
+realizes: [pcplot.cp.reorder-and-select, pcplot.int.area-select-cross-viewer, pcplot.int.current-row-sync]
 --- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

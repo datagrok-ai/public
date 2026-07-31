@@ -3,7 +3,7 @@ feature: peptides
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [open-peptides-app-and-load-demo, peptide-sar-demo-dashboard-from-gallery]
+realizes_atlas: [peptides.cp.open-peptides-app-and-load-demo, peptides.cp.sar-demo-dashboard-from-gallery]
 realizes: [bio.analyze.sar, bio.analyze.sequence-space]
 produced_from: atlas-driven
 related_bugs: []

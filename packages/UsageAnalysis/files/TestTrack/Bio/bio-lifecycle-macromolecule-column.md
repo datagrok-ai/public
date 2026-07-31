@@ -3,7 +3,7 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [detect_macromolecule_on_open, convert_notation]
+realizes_atlas: [bio.op.detect_macromolecule_on_open, bio.op.convert_notation]
 realizes: []
 produced_from: atlas-driven
 related_bugs:

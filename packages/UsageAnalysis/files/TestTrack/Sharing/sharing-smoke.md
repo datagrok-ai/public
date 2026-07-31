@@ -3,7 +3,7 @@ feature: sharing
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [cp-share-via-context-menu]
+realizes_atlas: [sharing.cp.cp-share-via-context-menu]
 realizes: []
 realized_as:
   - sharing-smoke-spec.ts

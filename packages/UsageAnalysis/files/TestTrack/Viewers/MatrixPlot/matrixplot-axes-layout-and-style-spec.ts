@@ -1,5 +1,5 @@
 /* ---
-realizes: [matrixplot.cp.axes-layout-and-style, matrixplot-auto-layout-overrides-axis-toggles, viewers.matrix-plot]
+realizes: [matrixplot.cp.axes-layout-and-style, matrixplot.int.auto-layout-overrides-axis-toggles, viewers.matrix-plot]
 --- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

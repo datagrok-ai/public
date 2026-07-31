@@ -2,8 +2,8 @@
 feature: matrixplot
 realizes_atlas:
   - matrixplot.cp.inspect-scroll-cells
-  - matrixplot-large-matrix-scroll-viewport
-  - matrixplot-cell-tooltip-then-open-fullscreen
+  - matrixplot.int.large-matrix-scroll-viewport
+  - matrixplot.int.cell-tooltip-then-open-fullscreen
 realizes:
   - viewers.matrix-plot
 realized_as:

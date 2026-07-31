@@ -1,5 +1,5 @@
 /* ---
-realizes: [densityplot.cp.select-zoom-binrange-axis, densityplot.bin-to-range-viewport, viewers.density-plot]
+realizes: [densityplot.cp.select-zoom-binrange-axis, densityplot.int.bin-to-range-viewport, viewers.density-plot]
 --- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

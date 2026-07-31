@@ -3,8 +3,8 @@ feature: pcplot
 realizes_atlas:
   - pcplot.cp.setup-columns-color-filter
   - pcplot.cp.layout-project-persistence
-  - pcplot-color-column-legend-coding
-  - pcplot-range-filter-cross-viewer
+  - pcplot.int.color-column-legend-coding
+  - pcplot.int.range-filter-cross-viewer
 realizes:
   - viewers.pc-plot
 priority: p0

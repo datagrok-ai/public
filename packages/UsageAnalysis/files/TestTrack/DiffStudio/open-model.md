@@ -3,7 +3,7 @@ feature: diffstudio
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [open-app-edit-run, load-library-ivp-run]
+realizes_atlas: [diffstudio.cp.open-app-edit-run, diffstudio.cp.load-library-ivp-run]
 realizes: [diffstudio]
 realized_as:
   - open-model.test.ts

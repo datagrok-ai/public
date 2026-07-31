@@ -3,7 +3,7 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [import_fasta_file, export_as_fasta]
+realizes_atlas: [bio.op.import_fasta_file, bio.op.export_as_fasta]
 realizes: []
 produced_from: atlas-driven
 related_bugs:

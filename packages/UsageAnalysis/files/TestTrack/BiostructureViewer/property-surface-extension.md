@@ -3,7 +3,7 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: edge
 priority: p2
-realizes_atlas: [biostructure-ligand-overlay-row-driven, biostructure-binding-site-overlay]
+realizes_atlas: [biostructureviewer.cp.ligand-overlay-row-driven, biostructureviewer.int.binding-site-overlay]
 realizes: [biostructureviewer.biostructure]
 produced_from: atlas-driven
 related_bugs: []

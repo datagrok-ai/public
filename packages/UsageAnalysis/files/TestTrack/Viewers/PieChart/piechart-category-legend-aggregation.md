@@ -2,7 +2,7 @@
 feature: piechart
 realizes_atlas:
   - piechart.cp.setup-aggregation-legend-persistence
-  - piechart.category-column-drives-legend
+  - piechart.int.category-column-drives-legend
 realizes:
   - viewers.pie-chart
 priority: p0

@@ -3,7 +3,7 @@ feature: projects
 target_layer: apitest
 coverage_type: regression
 priority: p0
-realizes_atlas: [search-list-recent]
+realizes_atlas: [projects.cp.search-list-recent]
 realizes: [views.projects]
 realized_as:
   - lifecycle-api-spec.ts

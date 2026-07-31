@@ -2,7 +2,7 @@
 feature: densityplot
 realizes_atlas:
   - densityplot.cp.select-zoom-binrange-axis
-  - densityplot.bin-to-range-viewport
+  - densityplot.int.bin-to-range-viewport
 realizes:
   - viewers.density-plot
 priority: p1

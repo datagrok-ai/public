@@ -3,7 +3,7 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [st-cp-convert-helm-to-oligo-pipeline]
+realizes_atlas: [sequencetranslator.cp.st-cp-convert-helm-to-oligo-pipeline]
 realizes: [sequencetranslator.oligo-toolkit]
 realized_as:
   - oligo-nucleotide-grid-spec.ts

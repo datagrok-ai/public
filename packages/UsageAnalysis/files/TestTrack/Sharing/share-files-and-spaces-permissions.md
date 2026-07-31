@@ -3,7 +3,7 @@ feature: sharing
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [cp-share-via-context-menu, cp-shared-with-me-browse-node, sharing-x-project-dependency-cascade]
+realizes_atlas: [sharing.cp.cp-share-via-context-menu, sharing.cp.cp-shared-with-me-browse-node, sharing.int.x-project-dependency-cascade]
 realizes: []
 realized_as:
   - share-files-and-spaces-permissions-spec.ts

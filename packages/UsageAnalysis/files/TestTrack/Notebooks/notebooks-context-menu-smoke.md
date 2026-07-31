@@ -3,7 +3,7 @@ feature: notebooks
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [delete-notebook, rename-notebook, share-notebook, apply-notebook-to-table]
+realizes_atlas: [notebooks.cp.delete-notebook, notebooks.cp.rename-notebook, notebooks.cp.share-notebook, notebooks.cp.apply-notebook-to-table]
 realizes: [views.notebooks]
 produced_from: atlas-driven
 realized_as:

@@ -3,7 +3,7 @@ feature: dendrogram
 target_layer: apitest
 coverage_type: smoke
 priority: p1
-realizes_atlas: [dendrogram.cross.tree-helper-cross-package]
+realizes_atlas: [dendrogram.int.tree-helper-cross-package]
 realizes: [dendrogram]
 produced_from: atlas-driven
 related_bugs: []

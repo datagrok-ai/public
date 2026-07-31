@@ -2,7 +2,7 @@
 feature: scatterplot
 realizes_atlas:
   - scatterplot.cp.zoom-filter-sync
-  - scatterplot-axis-type-drives-filter-out-invalid
+  - scatterplot.int.axis-type-drives-filter-out-invalid
 realizes:
   - viewers.scatter-plot
 priority: p1

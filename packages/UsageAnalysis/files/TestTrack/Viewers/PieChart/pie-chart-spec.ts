@@ -1,5 +1,5 @@
 /* ---
-realizes: [piechart.in-viewer-column-selector-reconfigures-pie, piechart.mouseover-row-group-cross-highlight]
+realizes: [piechart.int.in-viewer-column-selector-reconfigures-pie, piechart.int.mouseover-row-group-cross-highlight]
 --- */
 
 import {test, expect} from '@playwright/test';

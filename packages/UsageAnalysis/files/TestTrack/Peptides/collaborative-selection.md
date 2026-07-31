@@ -3,7 +3,7 @@ feature: peptides
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [collaborative-selection-sync]
+realizes_atlas: [peptides.cp.collaborative-selection-sync]
 realizes: []
 produced_from: atlas-driven
 realized_as:

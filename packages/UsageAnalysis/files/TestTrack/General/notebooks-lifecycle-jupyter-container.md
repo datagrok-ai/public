@@ -1,7 +1,7 @@
 ---
 feature: notebooks
 priority: p1
-realizes_atlas: [new-blank-notebook, browse-and-open-html]
+realizes_atlas: [notebooks.cp.new-blank-notebook, notebooks.cp.browse-and-open-html]
 realizes: [views.notebooks]
 target_layer: playwright
 coverage_type: regression

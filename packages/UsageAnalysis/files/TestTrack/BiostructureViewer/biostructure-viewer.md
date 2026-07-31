@@ -3,7 +3,7 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes_atlas: [biostructure-viewer-add-and-render-pdb, biostructure-file-open-pdb-routes-to-molstar, biostructure-pdb-id-data-provider-roundtrip, biostructure-ligand-overlay-row-driven]
+realizes_atlas: [biostructureviewer.cp.viewer-add-and-render-pdb, biostructureviewer.cp.file-open-pdb-routes-to-molstar, biostructureviewer.cp.pdb-id-data-provider-roundtrip, biostructureviewer.cp.ligand-overlay-row-driven]
 realizes: [biostructureviewer.biostructure]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/BiostructureViewer/biostructure-viewer.md

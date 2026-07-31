@@ -2,7 +2,7 @@
 feature: matrixplot
 realizes_atlas:
   - matrixplot.cp.configure-axes-inner-type
-  - matrixplot-axes-drive-inner-grid
+  - matrixplot.int.axes-drive-inner-grid
 realizes:
   - viewers.matrix-plot
 realized_as:

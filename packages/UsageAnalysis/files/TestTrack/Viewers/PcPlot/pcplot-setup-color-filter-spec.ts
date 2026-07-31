@@ -1,5 +1,5 @@
 /* ---
-realizes: [pcplot.cp.setup-columns-color-filter, pcplot.cp.layout-project-persistence, pcplot-color-column-legend-coding, pcplot-range-filter-cross-viewer]
+realizes: [pcplot.cp.setup-columns-color-filter, pcplot.cp.layout-project-persistence, pcplot.int.color-column-legend-coding, pcplot.int.range-filter-cross-viewer]
 --- */
 import {test, expect} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';

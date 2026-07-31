@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [upload-save-reopen-golden, derive-then-save-inside-project]
+realizes_atlas: [projects.cp.upload-save-reopen-golden, projects.int.derive-then-save-inside-project]
 realizes: [views.projects]
 realized_as:
   - uploading-spec.ts
