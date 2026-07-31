@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import {
   getSeriesFitFunction,
@@ -59,9 +60,18 @@ type CurveStatisticParams = {propName: string, seriesNumber: number} | {propName
 
 async function addStatisticColumn(gridCell: DG.GridCell, funcName: string,
   params: CurveStatisticParams): Promise<void> {
-  await DG.Func.find({name: funcName})[0]
-    .prepare({table: gridCell.cell.dataFrame, curveColumn: gridCell.cell.column, ...params})
-    .call(false, undefined, {processed: false});
+  const func = DG.Func.find({package: 'Curves', name: funcName})[0];
+  if (!func) {
+    grok.shell.error(`Curves: ${funcName} is not registered`);
+    return;
+  }
+  try {
+    await func.prepare({table: gridCell.cell.dataFrame, curveColumn: gridCell.cell.column, ...params})
+      .call(false, undefined, {processed: false});
+  } catch (e) {
+    // the caller is an icon click handler, so an unhandled rejection just looks like a dead button
+    grok.shell.error(`Could not add the statistic column: ${e}`);
+  }
 }
 
 /** Maps stored statistic names onto the names the choices use, so an option persisted under a legacy

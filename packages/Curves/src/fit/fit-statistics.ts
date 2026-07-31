@@ -118,32 +118,23 @@ function chartDataAt(curveColumn: DG.Column, rowIdx: number, table?: DG.DataFram
 /** One statistic of one series, resolved by name so legacy names keep working. */
 export function curveStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, seriesNumber: number,
   table?: DG.DataFrame): number | null {
-  // guard per row: one malformed cell must not abort the whole column
-  try {
-    const parsed = chartDataAt(curveColumn, rowIdx, table);
-    if (!parsed)
-      return null;
-    const series = parsed.data.series?.[seriesNumber];
-    if (!series || series.points.every((p) => p.outlier))
-      return null;
-    const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
-    return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
-  } catch (_) {
+  const parsed = chartDataAt(curveColumn, rowIdx, table);
+  if (!parsed)
     return null;
-  }
+  const series = parsed.data.series?.[seriesNumber];
+  if (!series || series.points.every((p) => p.outlier))
+    return null;
+  const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
+  return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
 }
 
 /** One statistic aggregated across every series of a curve. */
 export function curveAggrStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, aggrType: string,
   table?: DG.DataFrame): number | null {
-  try {
-    const parsed = chartDataAt(curveColumn, rowIdx, table);
-    if (!parsed)
-      return null;
-    if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
-      return null;
-    return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
-  } catch (_) {
+  const parsed = chartDataAt(curveColumn, rowIdx, table);
+  if (!parsed)
     return null;
-  }
+  if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
+    return null;
+  return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
 }

@@ -39,6 +39,7 @@ import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
 /** Class for the fit functions */
 export abstract class FitFunction<T = Fit> {
   private _statisticsProperties?: DG.Property[];
+  private _legacyProperties?: {[name: string]: DG.Property};
 
   abstract get name(): string;
   abstract get parameterNames(): string[];
@@ -59,6 +60,16 @@ export abstract class FitFunction<T = Fit> {
     this._statisticsProperties ??=
       fitStatisticsProperties(this.statisticFields, this.statisticLabels, this.derivedStatisticsProperties);
     return this._statisticsProperties;
+  }
+
+  /** Descriptor for a legacy name this fit function has no statistic of its own for, labelled by the
+   * parameter it maps onto. Memoised - this sits inside a per-repaint loop. */
+  legacyStatisticProperty(name: string): DG.Property | undefined {
+    const slot = LEGACY_POSITIONAL_SLOTS[name];
+    if (slot === undefined || slot >= this.parameterNames.length)
+      return undefined;
+    this._legacyProperties ??= {};
+    return this._legacyProperties[name] ??= statisticsProperty(name, this.parameterNames[slot]);
   }
   abstract fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T;
   abstract y(params: Float32Array, x: number): number;
@@ -303,14 +314,9 @@ const LEGACY_POSITIONAL_SLOTS: {[legacyName: string]: number} = {top: 0, slope: 
  * @return {DG.Property | undefined} the descriptor, or undefined when this fit function has no such statistic. */
 export function getStatisticProperty(fitFunc: FitFunction<any>, name: string): DG.Property | undefined {
   const field = LEGACY_STATISTICS_ALIASES[fitFunc.name]?.[name] ?? name;
-  const prop = fitFunc.statisticsProperties.find((p) => p.name === field);
-  if (prop)
-    return prop;
-  // getStatistic resolves such a name through the positional slot, so describe it the same way -
-  // otherwise a saved showStatistics entry has a value but no descriptor and renders nothing
-  const slot = LEGACY_POSITIONAL_SLOTS[name];
-  return slot !== undefined && slot < fitFunc.parameterNames.length ?
-    statisticsProperty(name, fitFunc.parameterNames[slot]) : undefined;
+  // getStatistic resolves an unknown legacy name through the positional slot, so describe it the same
+  // way - otherwise a saved showStatistics entry has a value but no descriptor and renders nothing
+  return fitFunc.statisticsProperties.find((p) => p.name === field) ?? fitFunc.legacyStatisticProperty(name);
 }
 
 /** Names of the numeric statistics a fit produces. Derived from the fit class, so adding a field to a
