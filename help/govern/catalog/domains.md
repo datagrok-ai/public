@@ -86,10 +86,11 @@ Access is managed with the standard Datagrok
 shared depends on how the plugin defined each table:
 
 * **Table-level**: access is granted on the whole table — anyone with View sees all its rows.
-  Typical for reference and lookup tables.
-* **Inherited**: rows of a detail table (for example, issues of a project) follow the access
-  of the row they belong to. The row's **Effective access** pane explains where its access
-  comes from and links to the place where it is managed.
+  Typical for reference and lookup tables. A row's read-only **Sharing** pane names the table
+  that governs its access.
+* **Inherited**: rows of a detail table (for example, issues of a project) follow the access of
+  the row they belong to. The row's **Sharing** pane explains where its access comes from and
+  links to the place where it is managed.
 * **Row-level**: individual rows can be shared with users and groups — right-click a row and
   select **Share...**, exactly like sharing any Datagrok entity.
 
