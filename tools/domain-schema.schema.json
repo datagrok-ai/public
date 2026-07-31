@@ -93,6 +93,16 @@
         },
         "friendlyName": {"type": "string"},
         "description": {"type": "string"},
+        "singularName": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Explicit singular display name ('New <singular>...' buttons); defaults to a guess from the table name."
+        },
+        "pluralName": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Explicit plural display name (view titles); defaults to a guess from the table name."
+        },
         "columns": {
           "type": "object",
           "description": "Relational columns keyed by column name. System columns (id, is_deleted, version, created_on, updated_on, author_id, idempotency_key, data) are generated and must not be declared.",
