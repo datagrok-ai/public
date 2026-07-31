@@ -43,6 +43,13 @@ category('Dapi: domain visual queries', () => {
   }
 
   before(async () => {
+    if (crypto.subtle == null) {
+      skipReason = 'crypto.subtle is unavailable (a non-secure origin), so the connection id ' +
+        'cannot be computed';
+      return;
+    }
+    // Only the presence check is guarded: an older Datlas has neither the domain
+    // schema nor the virtual connection, and that is the one case worth skipping.
     try {
       const schemas = await grok.dapi.domains.schemas.list();
       if (!schemas.some((s) => s.name === schema)) {
@@ -53,18 +60,20 @@ category('Dapi: domain visual queries', () => {
       // listing; they are addressed by their deterministic id, hash of
       // 'System:Domain.<schema>' (DataConnection.domainConnectionId).
       conn = await grok.dapi.connections.find(await hashId(`System:Domain.${schema}`)) ?? null;
-      if (conn == null)
-        return;
-      for (const s of [sku(), sku()])
-        scratchSkus.push(s);
-      await items().insert([
-        {sku: scratchSkus[0], name: 'VQ Alpha', quantity: 7},
-        {sku: scratchSkus[1], name: 'VQ Beta', quantity: 3},
-      ]);
     } catch (e: any) {
       conn = null;
       skipReason = `${skipReason}: ${e.message ?? e}`;
+      return;
     }
+    if (conn == null)
+      return;
+    // Past the guard: a failure here is a real regression, not a reason to skip.
+    for (const s of [sku(), sku()])
+      scratchSkus.push(s);
+    await items().insert([
+      {sku: scratchSkus[0], name: 'VQ Alpha', quantity: 7},
+      {sku: scratchSkus[1], name: 'VQ Beta', quantity: 3},
+    ]);
   });
 
   after(async () => {
@@ -73,7 +82,9 @@ category('Dapi: domain visual queries', () => {
         const rows = await items().query({filter: `sku = "${s}"`});
         for (const r of rows)
           await items().delete(r.id);
-      } catch (_) {}
+      } catch (e: any) {
+        console.log(`cleanup of '${s}' failed: ${e.message ?? e}`);
+      }
     }
   });
 
@@ -119,4 +130,4 @@ category('Dapi: domain visual queries', () => {
     expect(message.includes('Raw SQL is not supported on domain connections'), true,
       `expected the provider refusal, got: '${message}'`);
   });
-});
+}, {owner: 'askalkin@datagrok.ai'});
