@@ -107,7 +107,7 @@ export namespace funcs {
   }
 
   /**
-   * Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
+   * Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun
    * @param {string} sql - The SQL to test
    * @param {string} description - One line describing what the query does
    */

@@ -316,9 +316,16 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     // Iterate by hand rather than `for await`, so a turn that goes silent is bounded. A wedged
     // CLI emits no events at all, which `for await` would wait on forever (see watchdog.ts).
     const it = q[Symbol.asyncIterator]();
+    let pendingStep: Promise<IteratorResult<SDKMessage, any>> | null = null;
     for (;;) {
-      const step = await raceIdle(it.next(), TURN_IDLE_TIMEOUT_MS);
+      pendingStep = pendingStep ?? it.next();
+      const step = await raceIdle(pendingStep, TURN_IDLE_TIMEOUT_MS);
       if (step === IDLE) {
+        // A browser round-trip in flight (tool call executing in the tab, or a question the user
+        // has not answered yet) blocks the SDK stream legitimately — that silence is not a wedged
+        // CLI. Each round-trip carries its own timeout, so this cannot wait forever.
+        if (active.pendingInputs.size > 0)
+          continue;
         timedOut = true;
         console.warn(`watchdog[${sid}]: no SDK event for ${TURN_IDLE_TIMEOUT_MS / 1000}s — killing turn`);
         emit(ws, {type: 'error', sessionId: sid,
@@ -333,6 +340,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         killStrayChildren(`turn ${sid} went silent`);
         break;
       }
+      pendingStep = null;
       if (step.done || abortController.signal.aborted)
         break;
       if (step.value.type === 'result')
