@@ -67,6 +67,23 @@ category('RunComparison: comparison dataframes', () => {
     expect(result.chartDf.getCol('key').type, DG.COLUMN_TYPE.STRING);
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
   });
+
+  test('returns null when fewer than two runs participate', async () => {
+    const makeDf = (name: string) => {
+      const df = DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.INT, 'time', [1, 2]),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'value', [10, 20]),
+      ]);
+      df.name = name;
+      return df;
+    };
+    const entries = [entryFromDataFrame(makeDf('r1')), entryFromDataFrame(makeDf('r2'))];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'time']])]));
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const single: ColumnTarget = {...(target as ColumnTarget), bindings: [target.bindings[0]]};
+    expect(buildColumnComparison(single, entries), null);
+    expect(buildMultiColumnComparison([single], entries), null);
+  });
 });
 
 category('RunComparison: multi and split dataframes', () => {
@@ -151,5 +168,17 @@ category('RunComparison: multi and split dataframes', () => {
     const mixedResult = buildColumnComparison(mixedTarget as ColumnTarget, mixedEntries)!;
     expect(mixedResult.isKeyIndex, true);
     expect(mixedResult.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
+  });
+
+  test('duplicate display names get deduplicated value columns', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [intCol('time', [1, 2]), floatCol('x', [10, 20])])),
+      entryFromDataFrame(makeDf('r2', [intCol('time', [1, 2]), floatCol('x', [30, 40])])),
+    ];
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'));
+    const twin: ColumnTarget = {...(target as ColumnTarget), key: 'column:x:twin'};
+    const result = buildMultiColumnComparison([target as ColumnTarget, twin], entries)!;
+    expect(result.valueColumnNames.join('|'), 'x|x (2)');
+    expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20,30,40');
   });
 });

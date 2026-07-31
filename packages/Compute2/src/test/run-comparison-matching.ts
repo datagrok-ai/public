@@ -138,6 +138,15 @@ category('RunComparison: column matching', () => {
     expect(bindingA.columnName, 'temperature');
   });
 
+  test('does not group columns with mismatching units', async () => {
+    const table = (units: string) => ({path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'mass', units},
+    ]});
+    const entries = [makeEntry('a', [], [table('mg')]), makeEntry('b', [], [table('g')])];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time'}}));
+    expect(targets.length, 0);
+  });
+
   test('same-named clusters get unique keys', async () => {
     const columns = [{name: 'time', type: 'int'}, {name: 'height'}];
     const tables = [
@@ -185,5 +194,16 @@ category('RunComparison: cluster pairing', () => {
       const names = new Set(target.bindings.map((b) => b.tableName));
       expect(names.size, 1);
     }
+  });
+
+  test('exact-name cluster wins over an earlier fuzzy cluster', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [{name: 'temperatures', value: 1}, {name: 'temperature', value: 2}]),
+      makeEntry('b', [{name: 'temperature', value: 3}]),
+    ]);
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'temperature');
+    expect(targets[0].confidence, 'exact');
+    expectArray(targets[0].bindings.map((b) => b.value), [2, 3]);
   });
 });
