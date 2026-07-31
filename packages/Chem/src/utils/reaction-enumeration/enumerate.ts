@@ -31,6 +31,9 @@ export interface ProductRecord {
   smiles: string;
   routes: Route[];
   firstRound: number;
+  // Set when this SMILES was also one of the original input building blocks — independent of
+  // whether it also has synthesis routes, so both facts can be shown (see the output loop).
+  isOriginalBB?: boolean;
 }
 
 export interface EnumerationResult {
@@ -348,6 +351,15 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
   if (parsedTemplates.length === 0) {
     warnings.push('No valid templates found.');
     return {rows: [], warnings};
+  }
+
+  // The per-round loop below silently `continue`s past any template whose arity exceeds this —
+  // computed once here (not inside the loop) so a fixed set of over-arity templates produces one
+  // warning instead of the same message repeated every round.
+  const overArityCount = parsedTemplates.filter((t) => t.numReactants > config.max_num_components).length;
+  if (overArityCount > 0) {
+    warnings.push(`${overArityCount} template(s) need more reactants than Max # components ` +
+      `(${config.max_num_components}) allows and will be skipped in every round.`);
   }
 
   const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
@@ -748,13 +760,32 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     molCache.dispose();
   }
 
+  // Cap re-applied here too, not just per-round — a product spanning multiple rounds would
+  // otherwise merge each round's own (already-capped) routes with no limit on the total, so
+  // n_routes (read off rec.routes.length below) would count more than the rows actually shown.
+  //
+  // Round 0 (raw building blocks, routes: []) is merged LAST, not first — a BB whose SMILES is
+  // ALSO independently produced by a real reaction would otherwise have round 0's empty-route
+  // record win the "first occurrence" race (below), permanently stamping firstRound=0 on it even
+  // once a real route gets appended. Real rounds first means firstRound already correctly reflects
+  // the earliest round that actually synthesized it; round 0's own (empty) routes then merge in as
+  // a no-op for anything already found, and still seed the plain "no route" row for anything that
+  // wasn't.
   const finalProducts = new Map<string, ProductRecord>();
-  const startRound = config.keep_building_blocks_in_final_output ? 0 : 1;
-  for (let r = startRound; r < productPools.length; r++) {
+  const roundOrder: number[] = [];
+  for (let r = 1; r < productPools.length; r++) roundOrder.push(r);
+  if (config.keep_building_blocks_in_final_output) roundOrder.push(0);
+  for (const r of roundOrder) {
     for (const p of productPools[r]) {
       const ex = finalProducts.get(p.smiles);
-      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice()});
-      else for (const route of p.routes) ex.routes.push(route);
+      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice(), isOriginalBB: r === 0});
+      else {
+        if (r === 0) ex.isOriginalBB = true;
+        for (const route of p.routes) {
+          if (max_num_routes_per_compound >= 0 && ex.routes.length >= max_num_routes_per_compound) break;
+          ex.routes.push(route);
+        }
+      }
     }
   }
 
@@ -764,9 +795,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
         round: rec.firstRound, n_routes: 0});
     } else {
-      const cap = max_num_routes_per_compound;
-      const limited = cap >= 0 ? rec.routes.slice(0, cap) : rec.routes;
-      for (const route of limited) {
+      for (const route of rec.routes) {
         const last = route[route.length - 1];
         rows.push({
           product: rec.smiles,
@@ -777,8 +806,20 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           n_routes: rec.routes.length,
         });
       }
+      // Also independently one of the original building blocks — show that fact as its own row too,
+      // instead of it being invisible once the molecule is recognized as a synthesized product.
+      if (rec.isOriginalBB) {
+        rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
+          round: 0, n_routes: 0});
+      }
     }
   }
+
+  // A synthesized product that's also an original building block gets its "round 0, no recipe"
+  // row generated right alongside its synthesis rows (same finalProducts entry, same loop pass),
+  // not grouped with the other round-0-only rows at the end — stable sort fixes the position
+  // without disturbing anything else's relative order.
+  rows.sort((a, b) => (a.round === 0 ? 1 : 0) - (b.round === 0 ? 1 : 0));
 
   return {rows, warnings};
 }

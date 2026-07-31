@@ -60,6 +60,11 @@ export class RunControls {
   }
 
   setValidation(err: string | null): void {
+    // A run's own disabled state + "already running" tooltip is runWithUi's to own — ordinary
+    // validation churn (e.g. editing Number of rounds, a Subset-by-selection click elsewhere) fires
+    // refreshValidation() mid-run too, and would otherwise flip the buttons back to looking clickable
+    // while a run is still active underneath.
+    if (this.running) return;
     this.runBtn.disabled = err != null;
     this.previewEnumerateBtn.disabled = err != null;
     this.bindRunTooltip(err);
