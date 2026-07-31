@@ -78,6 +78,19 @@ category('converters', () => {
     expect(chartData.chartOptions?.logX, true);
   });
 
+  test('xmlConverter.booleanAttributes', async () => {
+    // XML attributes are strings, so `!!getAttribute(...)` read "False" as true - real 3DX exports
+    // carry drawLine="False" on most series and would have drawn a fit line anyway
+    const off = SAMPLE_XML.replace('drawLine="True"', 'drawLine="False"').replace('logX="true"', 'logX="false"');
+    const chartData: IFitChartData = JSON.parse(convertXmlCurveToJson(off));
+    expect(chartData.series![0].showFitLine, false);
+    expect(chartData.chartOptions?.logX, false);
+
+    const on: IFitChartData = JSON.parse(convertXmlCurveToJson(SAMPLE_XML));
+    expect(on.series![0].showFitLine, true);
+    expect(on.chartOptions?.logX, true);
+  });
+
   test('xmlConverter.parameterReordering', async () => {
     const result = convertXmlCurveToJson(SAMPLE_XML);
     const chartData: IFitChartData = JSON.parse(result);

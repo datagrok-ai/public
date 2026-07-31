@@ -7,6 +7,9 @@
 * Fit Dose-Response Curves: Constrained the column pickers by type (numerical for concentration/readout, categorical for the identifiers) and marked the seven mandatory columns `nullable: false` — a column parameter defaults to nullable, which read as optional and let a half-configured node run
 * Calculate MSR: Added captions, descriptions, and column-type constraints to the five unconstrained mandatory column inputs
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
+* GROK-17637: XML 3DX: Fixed boolean attributes being read as strings - `drawLine="False"` and `logX="false"` both came back true, so a converted curve drew a fit line the source asks to hide, and would have been fitted in log space on a linear axis
+* GROK-17637: XML 3DX: A declared fit function that is not registered now falls back to sigmoid instead of being passed through as an unknown name
+* GROK-17637: XML 3DX: `logY` is read from the chart settings, where it was previously ignored
 * GROK-17637: Statistics: Plot and property panel now show the statistics the series' own fit function produces, instead of a fixed list that rendered NaN for non-sigmoid fits
 * GROK-17637: Behaviour change: Statistics are labelled with each fit function's own parameter names - `AUC`, `R²`, and `Max`/`Hill`/`IC50`/`Min` for dose-response. `Max Y` and `Min Y` now name the derived asymptote statistics rather than `top`/`bottom`
 * GROK-17637: Behaviour change: `slope` on a linear or log-linear fit now reports the slope; it previously reported the intercept. `top` on those fits keeps its old value, so `top` and `slope` report the same number
