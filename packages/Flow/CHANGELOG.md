@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Outputs strip: Chips can be dragged up/down to reorder the flow's outputs — the grabbed chip lifts, rides under the pointer, and its neighbors re-slot live. The order is stored per output node (`outputOrder`), so it survives save/load and drives everything derived from it: chip stacking, wire endpoints, the output-tab order, and the emitted `//output:` lines. A sub-threshold press is still a click
+* Annotations: The Delete key removes the last-clicked annotation (it gets the same blue ring selected nodes get); clicking anywhere else, or Escape, disarms it. Node selection still wins when both exist
+* Canvas: Arrow keys nudge the selected node(s) by 10 canvas units; Ctrl+arrows pan the canvas. Nudges bypass the drag snap — a clicked node stays "picked", so the grid/alignment snap used to round a 10px step straight back and the node looked stuck
+* Nodes: An Open File node's title now restamps to `Open File: <file>` after a successful run — repointing `fullPath` from the properties panel used to leave the drop-time title behind forever
 * Catalog (data): Added Flow-native Filter Rows, Delete Rows, Extract Rows, Select Rows, Filter Random Rows, Select Random Rows, Delete Columns, Tag Columns, Expression To Column, Aggregate and Unpivot. Their platform originals take `TableRowFilterCall` / `ColFilterCall` predicates (or bare string lists), which have no editor and no socket a canvas can feed — the replacements take a table, real column slots and constrained choices instead, and every one returns a new table rather than mutating in place
 * Inputs: Aggregate is also findable as "pivot" — adding a pivot column is what turns its group-by into a pivot table
 * Inputs: Row conditions and column formulas are edited with the platform Add New Column editor, mounted inline and reactive (debounced), constrained to boolean expressions for conditions. Until the upstream table is available the parameter stays an ordinary editable string input that says what is missing, and offers to run the slice when the table is merely uncomputed

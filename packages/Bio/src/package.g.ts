@@ -538,15 +538,17 @@ export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.C
 //description: Extracts a sub-region of each sequence between the given positions into a new column.
 //input: dataframe table { caption: Table; nullable: false }
 //input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
-//input: string start { caption: Start; nullable: true; description: Start position name, inclusive. Empty means the sequence start }
-//input: string end { caption: End; nullable: true; description: End position name, inclusive. Empty means the sequence end }
+//input: string start = 1 { caption: Start; nullable: true; description: Start position name, inclusive. Empty means the sequence start }
+//input: string end = 10 { caption: End; nullable: true; description: End position name, inclusive. Empty means the sequence end }
+//input: string name { optional: true; description: Region column name }
 //output: column result
 //meta.role: transform
-export async function extractRegion(table: DG.DataFrame, sequence: DG.Column<any>, start?: string, end?: string) : Promise<any> {
-  return await PackageFunctions.extractRegion(table, sequence, start, end);
+//editor: Bio:GetRegionEditor
+export async function extractRegion(table: DG.DataFrame, sequence: DG.Column<any>, start?: string, end?: string, name?: string) : Promise<any> {
+  return await PackageFunctions.extractRegion(table, sequence, start, end, name);
 }
 
-//name: To Atomic Level Column
+//name: Convert To Atomic Level
 //description: Converts sequences to molblocks, returning the molecule column.
 //input: dataframe table { caption: Table; nullable: false }
 //input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }

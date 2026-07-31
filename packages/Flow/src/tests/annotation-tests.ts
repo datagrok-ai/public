@@ -95,6 +95,49 @@ category('Flow: annotations', () => {
     }
   });
 
+  test('Delete removes the last-clicked annotation; clicking elsewhere disarms', async () => {
+    const e = makeEditor();
+    try {
+      const ann = e.flow.addAnnotation({pos: {x: 10, y: 10}, size: {w: 200, h: 120}, text: 'doomed'});
+      const down: PointerEventInit = {bubbles: true, cancelable: true, button: 0, clientX: 0, clientY: 0};
+      ann.element.dispatchEvent(new PointerEvent('pointerdown', down));
+      ann.element.dispatchEvent(new PointerEvent('pointerup', down));
+      expect(ann.element.classList.contains('ff-annotation-active'), true, 'clicked → armed and marked');
+
+      // Clicking empty canvas disarms — Delete must NOT remove it then.
+      e.container.querySelector('.ff-canvas')!.dispatchEvent(new PointerEvent('pointerdown', down));
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
+      await new Promise((r) => setTimeout(r, 50));
+      expect(e.flow.getAnnotations().length, 1, 'a disarmed annotation survives Delete');
+      expect(ann.element.classList.contains('ff-annotation-active'), false, 'the mark is gone');
+
+      ann.element.dispatchEvent(new PointerEvent('pointerdown', down));
+      ann.element.dispatchEvent(new PointerEvent('pointerup', down));
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
+      expect(await until(() => e.flow.getAnnotations().length === 0), true,
+        'Delete removed the clicked annotation');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('with nodes selected, Delete removes the nodes, not the armed annotation', async () => {
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, 'Inputs/String Input', 600, 20);
+      const ann = e.flow.addAnnotation({pos: {x: 10, y: 10}, size: {w: 100, h: 80}});
+      const down: PointerEventInit = {bubbles: true, cancelable: true, button: 0, clientX: 0, clientY: 0};
+      ann.element.dispatchEvent(new PointerEvent('pointerdown', down));
+      ann.element.dispatchEvent(new PointerEvent('pointerup', down));
+      await e.flow.selectNode(node.id);
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Delete', bubbles: true, cancelable: true}));
+      expect(await until(() => e.flow.getNodes().length === 0), true, 'the selected node went');
+      expect(e.flow.getAnnotations().length, 1, 'the annotation stayed — selection wins');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('strip-pinned output rows are never carried', async () => {
     const e = makeEditor();
     try {

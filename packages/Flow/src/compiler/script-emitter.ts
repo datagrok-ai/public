@@ -5,7 +5,7 @@
  *   - instrumented: each step wrapped in try/catch firing `funcflow.exec.<runId>`
  *     events for live execution visualization. */
 
-import {FlowEditor} from '../rete/flow-editor';
+import {FlowEditor, outputOrderRank} from '../rete/flow-editor';
 import {FlowNode, isExecKey, isSetVarNode} from '../rete/scheme';
 import {CompiledStep, compileGraph} from './graph-compiler';
 import {NON_HEADER_DEFAULT_TYPES} from '../utils/input-values';
@@ -179,7 +179,11 @@ function buildHeaderLines(
   }
 
   const emittedOutputs = new Set<string>();
-  for (const step of steps.filter((s) => s.nodeType === 'output')) {
+  // Strip order, not topological order — the user can drag the output chips
+  // to say which output comes first, and the script signature follows.
+  const outputSteps = steps.filter((s) => s.nodeType === 'output')
+    .sort((a, b) => outputOrderRank(a) - outputOrderRank(b));
+  for (const step of outputSteps) {
     const node = flow.getNodeById(step.nodeId);
     if (!node) continue;
     lines.push(buildOutputLine(step, node));

@@ -120,6 +120,13 @@ export class OutputViewsManager {
     for (const [id, tab] of [...this.tabs]) {
       if (!seen.has(id)) this.destroyTab(id, tab);
     }
+    // The strip order is the infos order (the outputs strip is reorderable).
+    // Only touch the DOM when it actually differs — moving the pressed chip
+    // mid-click would swallow its click event.
+    const want = infos.map((i) => this.tabs.get(i.nodeId)?.chip).filter((c): c is HTMLElement => c != null);
+    const have = Array.from(this.tabStripHost.children).filter((c) => c !== this.canvasChip);
+    if (want.some((c, i) => c !== have[i]))
+      for (const chip of want) this.tabStripHost.appendChild(chip);
   }
 
   /** An output node completed with a table: remember the snapshot, refresh an

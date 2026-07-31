@@ -625,6 +625,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.executionController.onNodeStateChanged = (nodeId) => {
       this.suggestionPane?.refresh();
       this.updateOutputViewValue(nodeId);
+      this.refreshOpenFileTitle(nodeId);
       // Completed/stale transitions change what's pending → what blocks autorun.
       this.updateAutorunIndicator();
       // The open panel's Execution section tracks the run live — otherwise a
@@ -781,14 +782,16 @@ export class FuncFlowView extends DG.ViewBase {
   private tableOutputs(): OutputTabInfo[] {
     if (!this.flow) return [];
     const res: OutputTabInfo[] = [];
+    // Output nodes first, in strip order (drag-reorderable), then SetVar
+    // terminals in graph order.
+    for (const n of this.flow.getOutputNodes()) {
+      const isTable = n.dgTypeName === 'Outputs/Table Output' ||
+        (n.dgTypeName === 'Outputs/Value Output' && n.properties['outputType'] === 'dataframe');
+      if (isTable)
+        res.push({nodeId: n.id, paramName: String(n.properties['paramName'] ?? '').trim() || n.label});
+    }
     for (const n of this.flow.getNodes()) {
-      if (n.dgNodeType === 'output') {
-        const isTable = n.dgTypeName === 'Outputs/Table Output' ||
-          (n.dgTypeName === 'Outputs/Value Output' && n.properties['outputType'] === 'dataframe');
-        if (isTable)
-          res.push({nodeId: n.id, paramName: String(n.properties['paramName'] ?? '').trim() || n.label});
-      }
-      else if (isSetVarNode(n)) {
+      if (isSetVarNode(n)) {
         const name = String(n.inputValues['variableName'] ?? '').trim();
         if (name === '') continue;
         const src = this.flow.getInputSource(n.id, 'value');
@@ -798,6 +801,29 @@ export class FuncFlowView extends DG.ViewBase {
       }
     }
     return res;
+  }
+
+  /** Keep an Open File node's title in step with the file it actually opened.
+   *  The title is stamped at drop time (`addOpenFileNode`), but the user can
+   *  repoint `fullPath` from the properties panel — so a successful run
+   *  restamps it. Runs only on completion: while the path is merely typed the
+   *  old title still names what the node's captured value IS. */
+  private refreshOpenFileTitle(nodeId: string): void {
+    const node = this.flow?.getNodeById(nodeId);
+    if (!node || (node.dgFuncName ?? '').toLowerCase() !== 'openfile') return;
+    if (this.executionController?.state.getNodeState(nodeId)?.status !== NodeExecStatus.completed) return;
+    const path = String(node.inputValues['fullPath'] ?? '');
+    if (path === '') return;
+    const fileName = path.split('/').pop() || path;
+    // Same shape `addOpenFileNode` stamps: "<base>: <file>". The base is
+    // whatever precedes the colon (survives across re-stamps), falling back to
+    // the function's display name for a node that was never stamped.
+    const colon = node.label.lastIndexOf(': ');
+    const base = colon > 0 ? node.label.slice(0, colon) : (node.dgFunc?.friendlyName || node.label);
+    const label = `${base}: ${fileName}`;
+    if (node.label === label) return;
+    node.label = label;
+    void this.flow.updateNode(node.id);
   }
 
   /** `onNodeStateChanged` fan-out: a completed table output feeds its tab the
@@ -1350,11 +1376,15 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Hide the overlay only while the canvas has content; show it on an empty
-   *  one. While a guide runs it stays hidden regardless — it would sit mid-
-   *  canvas competing with the instruction cards. */
+   *  one. Annotations count as content — a canvas holding only a note must not
+   *  get covered by the start panel (which also swallows the clicks on it).
+   *  While a guide runs it stays hidden regardless — it would sit mid-canvas
+   *  competing with the instruction cards. */
   private updateStartPanelVisibility(): void {
     const wasHidden = this.startPanel.style.display === 'none';
-    const empty = (!this.flow || this.flow.getNodeCount() === 0) && !this.guideRunner.isRunning;
+    const empty = (!this.flow ||
+      (this.flow.getNodeCount() === 0 && this.flow.getAnnotations().length === 0)) &&
+      !this.guideRunner.isRunning;
     this.startPanel.style.display = empty ? 'flex' : 'none';
     if (empty) {
       this.drawStartBackgroundSoon();

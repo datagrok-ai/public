@@ -99,6 +99,15 @@ interface GraphClip {
   connections: Array<{source: string; sourceOutput: string; target: string; targetInput: string}>;
 }
 
+/** An output node's strip rank: the drag-assigned `outputOrder` property, or
+ *  end-of-list for nodes that were never reordered (stable sort keeps their
+ *  insertion order). Shared with the script emitter so the `//output:` lines
+ *  follow the strip. */
+export function outputOrderRank(node: {properties: Record<string, any>}): number {
+  const r = Number(node.properties['outputOrder']);
+  return Number.isFinite(r) ? r : Number.MAX_SAFE_INTEGER;
+}
+
 export class FlowEditor {
   readonly editor = new NodeEditor<FlowScheme>();
   readonly area: AreaPlugin<FlowScheme>;
@@ -214,6 +223,20 @@ export class FlowEditor {
   /** Wire-endpoint subscriptions for sockets on output nodes, keyed by node id
    *  (see the chip-aware socketPositionWatcher in the constructor). */
   private chipSocketSubs = new Map<string, Set<(pos: {x: number; y: number}) => void>>();
+  /** One-shot: a chip reorder-drag just ended — the browser still dispatches
+   *  `click` on release, which must not re-select the dragged chip's node. */
+  private suppressChipClick = false;
+
+  /** The annotation the user last clicked — the Delete-key target, mirroring
+   *  node selection (annotations are not rete citizens, so the selectable
+   *  extension can't track them). Cleared by clicks anywhere else. */
+  private activeAnnotationId: string | null = null;
+
+  /** Raised around keyboard nudges: the drag snap applies to any *picked*
+   *  node, and a clicked node stays picked — so a grid-aligned node had every
+   *  10px arrow step rounded straight back ("stuck"). A nudge is an exact,
+   *  intentional step; it must never snap. */
+  private suppressSnap = false;
 
   /** Suggestion-menu drag state. Set on `connectionpick` for an output
    *  socket; cleared on `connectiondrop`. If the drop didn't create a
@@ -481,7 +504,7 @@ export class FlowEditor {
       // recompute their positions independently and break the group geometry.
       if (context.type === 'nodetranslate') {
         const data = context.data as {id: string; position: {x: number; y: number}};
-        if (this.selector.isPicked({id: data.id, label: 'node'})) {
+        if (!this.suppressSnap && this.selector.isPicked({id: data.id, label: 'node'})) {
           const snap = this.computeSnap(data.id, data.position);
           data.position.x = snap.x;
           data.position.y = snap.y;
@@ -889,6 +912,15 @@ export class FlowEditor {
   private static readonly STRIP_CHIP_GAP = 6;
   private static readonly STRIP_CHIP_H = 24;
 
+  /** Keyboard movement (canvas units — zoom-independent, like a drag). */
+  private static readonly ARROW_DELTAS: Record<string, [number, number]> = {
+    ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+  };
+  /** One arrow press nudges a node by a grid-ish step… */
+  private static readonly NODE_NUDGE_STEP = 10;
+  /** …and Ctrl+arrow pans the canvas by a screen-visible amount. */
+  private static readonly CANVAS_PAN_STEP = 60;
+
   /** Build the strip column: a thin flex sibling to the RIGHT of the canvas
    *  viewport — graph content can never pan or fit behind it. Hosts the chips
    *  (one per output node) above a vertical "Outputs" label. Chip interaction
@@ -913,6 +945,11 @@ export class FlowEditor {
     strip.appendChild(header);
 
     strip.addEventListener('click', (ev) => {
+      // A reorder-drag ends in a `click` on the released chip — swallow it.
+      if (this.suppressChipClick) {
+        this.suppressChipClick = false;
+        return;
+      }
       const chip = (ev.target as HTMLElement | null)?.closest('[data-node-id]') as HTMLElement | null;
       const id = chip?.dataset.nodeId;
       if (!id) return;
@@ -936,6 +973,7 @@ export class FlowEditor {
       ev.stopPropagation();
       this.showNodeContextMenu(ev, node);
     });
+    strip.addEventListener('pointerdown', (ev) => this.beginChipReorder(ev));
 
     this.canvasWrap.appendChild(strip); // after canvasEl → right column
     this.outputStripEl = strip;
@@ -975,8 +1013,95 @@ export class FlowEditor {
     this.notifyChipSockets();
   }
 
+  /** All output nodes in strip order: the user's drag-assigned rank first,
+   *  insertion order for anything unranked (sort is stable). Public — the view
+   *  derives the output-tab order from it, and it IS the flow's output order
+   *  (the emitted `//output:` lines follow it too). */
+  getOutputNodes(): FlowNode[] {
+    return this.editor.getNodes().filter((n) => n.dgNodeType === 'output')
+      .sort((a, b) => outputOrderRank(a) - outputOrderRank(b));
+  }
+
   private outputNodes(): FlowNode[] {
-    return this.editor.getNodes().filter((n) => n.dgNodeType === 'output');
+    return this.getOutputNodes();
+  }
+
+  /** Drag a chip up or down to reorder the flow's outputs. Reorder ONLY — the
+   *  chip never leaves the strip, and a sub-threshold press stays a click.
+   *  The committed order is written to every output node's `outputOrder`
+   *  property, so it serializes with the flow and drives everything derived
+   *  from it: chip stacking, wire endpoints, tab order, `//output:` lines. */
+  private beginChipReorder(ev: PointerEvent): void {
+    if (ev.button !== 0) return;
+    const chips = this.stripChipsEl;
+    const chip = (ev.target as HTMLElement | null)?.closest('.ff-output-row') as HTMLElement | null;
+    if (!chips || !chip?.dataset.nodeId || chips.children.length < 2) return;
+    const startY = ev.clientY;
+    /** Where the pointer grabbed the chip, so it rides under the finger. */
+    const grabOffset = ev.clientY - chip.getBoundingClientRect().top;
+    /** The chip's untransformed slot top — the anchor the pointer-follow
+     *  transform is relative to; re-measured after every re-insertion. */
+    let staticTop = 0;
+    let dragging = false;
+    const onMove = (e: PointerEvent): void => {
+      if (!dragging) {
+        if (Math.abs(e.clientY - startY) < 5) return;
+        dragging = true;
+        chip.classList.add('ff-output-row-dragging');
+        document.body.style.cursor = 'grabbing';
+        staticTop = chip.getBoundingClientRect().top;
+      }
+      // Live re-insertion: the chip slots in before the first chip whose
+      // middle the pointer is above. DOM-only while the drag lasts — the
+      // model (and the wires, which follow model order) commit on release.
+      const next = (Array.from(chips.children) as HTMLElement[])
+        .filter((c) => c !== chip)
+        .find((c) => {
+          const r = c.getBoundingClientRect();
+          return e.clientY < r.top + r.height / 2;
+        }) ?? null;
+      if (next !== chip.nextElementSibling || (next === null && chips.lastElementChild !== chip)) {
+        chips.insertBefore(chip, next);
+        chip.style.transform = ''; // measure the new slot untransformed
+        staticTop = chip.getBoundingClientRect().top;
+      }
+      // Between slot changes the chip visibly follows the pointer — without
+      // this the drag reads as "nothing is happening" until a chip jumps.
+      chip.style.transform = `translateY(${e.clientY - grabOffset - staticTop}px)`;
+    };
+    const onUp = (): void => {
+      window.removeEventListener('pointermove', onMove);
+      if (!dragging) return;
+      chip.classList.remove('ff-output-row-dragging');
+      chip.style.transform = '';
+      document.body.style.cursor = '';
+      // The browser dispatches the release's `click` synchronously after
+      // pointerup — self-clear right after, so a release outside the strip
+      // (no click at all) can't leave the flag armed for the next real click.
+      this.suppressChipClick = true;
+      setTimeout(() => this.suppressChipClick = false, 0);
+      this.commitChipOrder();
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp, {once: true});
+  }
+
+  /** Persist the strip's current DOM order as each output node's rank, then
+   *  resync everything that renders in that order. No-op when nothing moved. */
+  private commitChipOrder(): void {
+    const chips = this.stripChipsEl;
+    if (!chips) return;
+    let changed = false;
+    (Array.from(chips.children) as HTMLElement[]).forEach((el, i) => {
+      const node = el.dataset.nodeId ? this.editor.getNode(el.dataset.nodeId) : undefined;
+      if (node && node.properties['outputOrder'] !== i) {
+        node.properties['outputOrder'] = i;
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    this.scheduleStripSync(true); // wire endpoints follow the model order
+    this.callbacks.onGraphChanged?.(); // dirty tracking + output-tab resync
   }
 
   /** Update every chip's `data-selected` IN PLACE. Deliberately not a rebuild:
@@ -1685,9 +1810,20 @@ export class FlowEditor {
   removeAnnotation(id: string): void {
     const ann = this.annotations.get(id);
     if (!ann) return;
+    if (this.activeAnnotationId === id) this.activeAnnotationId = null;
     this.annotations.delete(id);
     this.area.area.content.remove(ann.element);
     this.callbacks.onGraphChanged?.();
+  }
+
+  /** Mark an annotation as the Delete-key target (or clear with `null`),
+   *  mirroring the highlight node selection gets. */
+  private setActiveAnnotation(id: string | null): void {
+    if (this.activeAnnotationId === id) return;
+    if (this.activeAnnotationId)
+      this.annotations.get(this.activeAnnotationId)?.element.classList.remove('ff-annotation-active');
+    this.activeAnnotationId = id;
+    if (id) this.annotations.get(id)?.element.classList.add('ff-annotation-active');
   }
 
   getAnnotations(): FlowAnnotation[] {
@@ -1783,11 +1919,16 @@ export class FlowEditor {
     });
 
     // ---- title editing: stopPropagation so AreaPlugin doesn't pan ----
-    title.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+    title.addEventListener('pointerdown', (ev) => {
+      ev.stopPropagation();
+      this.setActiveAnnotation(ann.id);
+    });
 
     // ---- drag-to-move (body, not title, not handle) ----
     el.addEventListener('pointerdown', (ev) => {
       if (ev.button !== 0) return;
+      // Any grab makes this THE annotation the Delete key acts on.
+      this.setActiveAnnotation(ann.id);
       const target = ev.target as HTMLElement | null;
       if (target && (target === title || title.contains(target))) return;
       if (target === handle) return;
@@ -2822,7 +2963,7 @@ export class FlowEditor {
       // attribute update, NEVER a chip rebuild: replacing the pressed element
       // mid-gesture would keep the browser from ever dispatching its `click`,
       // killing chip selection.
-      if (this.container.contains(ev.target as Node)) this.refreshChipSelection();
+      if (ev.target instanceof Node && this.container.contains(ev.target)) this.refreshChipSelection();
       const id = this.lastPointerDownNodeId;
       if (ev.button !== 0 || id == null) return;
       if (Math.abs(ev.clientX - this.lastPointerDownPos.x) > 4 ||
@@ -2865,6 +3006,13 @@ export class FlowEditor {
     };
     this.container.addEventListener('pointerdown', guardNonPrimary, true);
     this.container.addEventListener('pointerup', guardNonPrimary, true);
+
+    // A press anywhere outside an annotation disarms the Delete-key target —
+    // clicking a node or empty canvas must not keep an old annotation armed.
+    this.container.addEventListener('pointerdown', (ev) => {
+      if (!(ev.target as HTMLElement | null)?.closest('.ff-annotation'))
+        this.setActiveAnnotation(null);
+    }, true);
   }
 
   private installKeyboardShortcuts(): void {
@@ -2880,6 +3028,41 @@ export class FlowEditor {
         if (selectedIds.length > 0) {
           e.preventDefault();
           void this.removeNodes(selectedIds);
+        }
+        // No nodes selected but an annotation was clicked — delete it, the
+        // same gesture nodes get. (Typing in its title never lands here: the
+        // contenteditable guard above already returned.)
+        else if (this.activeAnnotationId && this.container.isConnected) {
+          e.preventDefault();
+          this.removeAnnotation(this.activeAnnotationId);
+        }
+      }
+
+      // Arrow keys: nudge the selection; with Ctrl/Cmd, pan the canvas.
+      const arrow = FlowEditor.ARROW_DELTAS[e.key];
+      if (arrow && this.container.isConnected) {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          const t = this.area.area.transform;
+          // Ctrl+Right looks right: the content shifts left under the viewport.
+          void this.area.area.translate(
+            t.x - arrow[0] * FlowEditor.CANVAS_PAN_STEP, t.y - arrow[1] * FlowEditor.CANVAS_PAN_STEP);
+        }
+        else {
+          const ids = this.getSelectedNodeIds();
+          if (ids.length > 0) {
+            e.preventDefault();
+            this.suppressSnap = true; // a nudge is an exact step — never snapped
+            const moves: Promise<unknown>[] = [];
+            for (const id of ids) {
+              const node = this.editor.getNode(id);
+              if (node && !this.minimizedGroupOf(id) && node.dgNodeType !== 'output') {
+                moves.push(this.area.translate(id, {x: node.pos.x + arrow[0] * FlowEditor.NODE_NUDGE_STEP,
+                  y: node.pos.y + arrow[1] * FlowEditor.NODE_NUDGE_STEP}));
+              }
+            }
+            void Promise.all(moves).finally(() => this.suppressSnap = false);
+          }
         }
       }
 
@@ -2916,9 +3099,10 @@ export class FlowEditor {
           void this.createGroupFromSelection();
       }
 
-      if (e.key === 'Escape' && this.container.isConnected &&
-          this.getSelectedNodeIds().length > 0)
-        void this.unselectAllNodes();
+      if (e.key === 'Escape' && this.container.isConnected) {
+        if (this.getSelectedNodeIds().length > 0) void this.unselectAllNodes();
+        this.setActiveAnnotation(null);
+      }
 
       // Copy / paste nodes. A live text selection means the user is copying
       // text — leave the event to the browser.

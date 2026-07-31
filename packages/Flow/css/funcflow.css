@@ -3018,6 +3018,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 .ff-save-dash-hint {
   color: var(--grey-5, #666);
 }
+
 /* MPO column-mapping editor (Chem:mpoScoreByProfile) — one column choice per
    profile property, stacked inside the parameter row. */
 .ff-mpo-mapping {
@@ -3078,7 +3079,7 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   white-space: nowrap;
 }
 
-.ff-expression-editor[data-mode="formula"] .ff-expression-editor-label + * {
+.ff-expression-editor[data-mode="formula"] .ff-expression-editor-label+* {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -3087,8 +3088,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   font-size: 12px;
   margin-bottom: 2px;
   text-align: end;
-    color: var(--grey-4);
-    font-weight: 500;
+  color: var(--grey-4);
+  font-weight: 500;
 }
 
 /* Says what is missing (no table connected / not computed yet) — informational,
@@ -3164,8 +3165,9 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
   min-width: 0;
 }
 
-.ff-aggregation-row .ui-input-root > label.ui-input-label {
-  display: none; /* the row's shape is the label */
+.ff-aggregation-row .ui-input-root>label.ui-input-label {
+  display: none;
+  /* the row's shape is the label */
 }
 
 .ff-aggregation-remove {
@@ -3219,4 +3221,25 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
    wrapper is what has to be overridden, hence the specificity. */
 .ff-expression-editor[data-invalid] .add-new-column-widget-cm-div {
   border: solid 1px var(--red-3) !important;
+}
+
+.ff-node-input[data-node-type-name="Inputs/Helm Input"] .ui-input-editor.ui-div {
+  width: 75px !important;
+  height: 75px !important;
+  min-width: 75px !important;
+  min-height: 75px !important;
+}
+
+/* An output chip mid reorder-drag: lifted above its neighbours. */
+.ff-output-row-dragging {
+  opacity: 0.85;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+}
+
+/* The annotation the Delete key acts on (last clicked) — the same blue ring
+   selected nodes get. */
+.ff-annotation-active {
+  outline: 2px solid var(--blue-1, #1976d2);
+  outline-offset: 1px;
 }
