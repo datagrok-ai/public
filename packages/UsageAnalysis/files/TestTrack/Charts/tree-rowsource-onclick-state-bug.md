@@ -3,7 +3,7 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes_atlas: [tree-rowsource-onclick-state-machine]
+realizes_atlas: [charts.int.tree-rowsource-onclick-state-machine]
 realizes: [charts.tree]
 realized_as:
   - tree-rowsource-onclick-state-bug-spec.ts

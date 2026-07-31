@@ -3,7 +3,7 @@ feature: powerpack
 target_layer: apitest
 coverage_type: regression
 priority: p1
-realizes_atlas: [package-cleanup-keeps-widgets]
+realizes_atlas: [powerpack.int.package-cleanup-keeps-widgets]
 realizes: []
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Powerpack/widgets-after-debug-delete.md

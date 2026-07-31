@@ -3,7 +3,7 @@ feature: charts
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes_atlas: [timelines-legend-click-to-filter-stability]
+realizes_atlas: [charts.int.timelines-legend-click-to-filter-stability]
 realizes: []
 realized_as:
   - timelines-spec.ts

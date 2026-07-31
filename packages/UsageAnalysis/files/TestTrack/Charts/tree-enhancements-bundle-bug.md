@@ -3,7 +3,7 @@ feature: charts
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes_atlas: [tree-hierarchical-capability-bundle]
+realizes_atlas: [charts.int.tree-hierarchical-capability-bundle]
 realizes: [charts.tree]
 realized_as:
   - tree-enhancements-bundle-bug-spec.ts

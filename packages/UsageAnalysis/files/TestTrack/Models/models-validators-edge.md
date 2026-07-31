@@ -3,7 +3,7 @@ feature: models
 target_layer: playwright
 coverage_type: regression
 priority: p2
-realizes_atlas: [train-classification-end-to-end, train-regression-end-to-end]
+realizes_atlas: [models.cp.train-classification-end-to-end, models.cp.train-regression-end-to-end]
 realizes: [views.models]
 realized_as:
   - models-validators-edge-spec.ts
