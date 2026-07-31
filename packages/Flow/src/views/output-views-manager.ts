@@ -339,7 +339,10 @@ export class OutputViewsManager {
     } catch (e) {
       console.warn('Flow: semantic type detection failed', e);
     }
-    if (this.destroyed || tab.df !== df) return;
+    // The tab may have been destroyed while we awaited (output node deleted
+    // mid-activation): its pane is detached — mounting a TableView into it
+    // would leak the view and run `_onAdded` against a zero-size root.
+    if (this.destroyed || tab.df !== df || this.tabs.get(tab.nodeId) !== tab) return;
     if (!df.name) df.name = tab.paramName;
     const tv = DG.TableView.create(df, false); // detached — no workspace pollution
     tv.name = df.name;

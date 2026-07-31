@@ -36,11 +36,6 @@ export async function openCreationScriptFlowDialog(script: string, tableIds: str
   return await PackageFunctions.openCreationScriptFlowDialog(script, tableIds, show);
 }
 
-//name: testDialog
-export function testDialog() : void {
-  PackageFunctions.testDialog();
-}
-
 //description: Opens the visual Flow editor for a flow script entity
 //input: script script 
 //output: view result
@@ -229,7 +224,7 @@ export function selectRandomRows(table: DG.DataFrame, count: number, seed: numbe
   return PackageFunctions.selectRandomRows(table, count, seed, clearSelection);
 }
 
-//description: A copy of the table without the chosen columns
+//description: A copy of the table without the chosen columns. Removes selected columns
 //input: dataframe table { nullable: false }
 //input: column_list columns { nullable: false; description: Columns to remove }
 //output: dataframe result

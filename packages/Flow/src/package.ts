@@ -8,7 +8,6 @@ export * from './package.g';
 import {FuncFlowView} from './funcflow-view';
 import {FlowEntityHandler} from './entity/flow-entity-handler';
 import {parseFlowBody, FLOW_LANGUAGE} from './serialization/flow-script-format';
-import { getFilesBrowser } from './utils/files-browser-tree';
 import {readUploadedFileBytes, parseFileToDataFrame, syncFlowFilePermissions} from './utils/uploaded-files';
 import * as aiTools from './ai-tools';
 import * as dataOps from './ops/data-ops';
@@ -94,7 +93,8 @@ export class PackageFunctions {
     const view = new FuncFlowView();
     // A .flow file is either the annotated script body (header + JSON) or the
     // bare JSON document — loadFromJson handles both.
-    file.readAsString().then((json) => view.loadFromJson(json));
+    file.readAsString().then((json) => view.loadFromJson(json))
+      .catch((e) => grok.shell.error(`Cannot open ${file.name}: ${e instanceof Error ? e.message : e}`));
     return view;
   }
 
@@ -134,23 +134,26 @@ export class PackageFunctions {
       grok.shell.error(`Failed to load flow from creation script`);
       console.error(e);
     }
+    let promoted = false;
     const d = ui.dialog({title: 'Creation Script Flow'})
       .add(view.root)
       .addButton('Open In Editor', () => {
         view.setMinimapCollapsed(false);
         view.enableOutputPanel();
+        promoted = true;
         grok.shell.addView(view);
         setTimeout(() => view.fitToScreen(), 100);
         d.close();
       });
+    // A dialog-hosted view is never detached by the shell — release its
+    // editor (window listeners, run state) when the dialog goes away, unless
+    // it was promoted into a real shell view.
+    d.onClose.subscribe(() => {
+      if (!promoted) view.detach();
+    });
     if (show)
       d.show({resizable: true, width: 800, height: 600});
     return d;
-  }
-
-  @grok.decorators.func()
-  static testDialog() {
-    ui.dialog().add(getFilesBrowser((n) => {console.log(n.name)}, (n) => {console.log('dblclick', n.name)}, 'test-dialog-files').root).show();
   }
 
   // ---------- first-class Flow entity (Script with language 'flow') ----------
@@ -365,7 +368,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'deleteColumns',
-    description: 'A copy of the table without the chosen columns',
+    description: 'A copy of the table without the chosen columns. Removes selected columns',
     meta: {includeInFlow: 'true'},
   })
   static deleteColumns(

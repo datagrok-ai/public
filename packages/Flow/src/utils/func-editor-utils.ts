@@ -4,11 +4,6 @@ import * as rxjs from 'rxjs';
 // this code handles the function editors for func nodes.
 // prerequisit is that funccall needs to be configured with tables.
 
-export const DEFAULT_EDITOR_SUPPORTED_TYPES = new Set([
-  'int', 'num', 'double', 'qnum', 'datetime', 'dataframe', 'table', 'column', 'list', 'list<string>',
-  'list<column>', 'string_list', 'column_list', 'string', 'bigint', 'dataframe_list', 'file', 'files', 'blob',
-]);
-
 export const EXPLICITLY_SUPPORTED_EDITABLE_FUNCTIONS = new Set([
   'core:AddNewColumn',
 ]);
@@ -90,9 +85,15 @@ export async function createFuncCallEditor(
     fc.setAuxValue('forceEditParameters', true);
     fc.edit();
     const d = await pollDialogCreation();
-    if (!d)
-      throw new Error('Could not find the dialog for function');
-      // override the call methods, so that
+    if (!d) {
+      // Settle rather than throw: a throw inside an async executor is
+      // swallowed, so the promise would never resolve and the caller's
+      // finally (which releases the autorun hold) would never run.
+      console.warn('Flow: the function editor dialog never appeared — returning the call as-is');
+      res(fc);
+      return;
+    }
+    // override the call methods, so that
     d.root.classList.add('d4-flow-function-funccall-editor'); // style for disabling table inputs
     let dialogSub: rxjs.Subscription | null = null;
     const sub = grok.events.onEvent('d4-before-run-action').subscribe((f: DG.FuncCall) => {

@@ -52,10 +52,6 @@ export namespace funcs {
     return await grok.functions.call('Flow:OpenCreationScriptFlowDialog', { script, tableIds, show });
   }
 
-  export async function testDialog(): Promise<void> {
-    return await grok.functions.call('Flow:TestDialog', {});
-  }
-
   /**
   Opens the visual Flow editor for a flow script entity
   */
@@ -184,7 +180,7 @@ export namespace funcs {
   }
 
   /**
-  A copy of the table without the chosen columns
+  A copy of the table without the chosen columns. Removes selected columns
   */
   export async function deleteColumns(table: DG.DataFrame , columns: string[] ): Promise<DG.DataFrame> {
     return await grok.functions.call('Flow:DeleteColumns', { table, columns });

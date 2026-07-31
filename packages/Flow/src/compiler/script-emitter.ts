@@ -53,6 +53,9 @@ export function emitScript(
   lines.push('');
 
   if (inst) lines.push(...emitPreamble(options!.runId!));
+  // Everything from here down is the run body — wrapped in try/finally for
+  // instrumented emission (see the end of this function).
+  const bodyStart = lines.length;
 
   // -------- body --------
   // Stash a step's live output values into the registry (instrumented only), so
@@ -147,7 +150,22 @@ export function emitScript(
     stash(step);
   }
 
-  if (inst) lines.push(`__ff_emit('run-complete', '', {success: true});`);
+  if (inst) {
+    lines.push(`__ff_emit('run-complete', '', {success: true});`);
+    // Statements between instrumented blocks (SetVar registration, semantic
+    // type detection, output assignments) run outside any per-step try/catch —
+    // if one throws, the controller would never see the run end and stay
+    // `isRunning` forever. The trailing emit is a no-op when the run already
+    // reported (see __ff_done); errors still propagate.
+    return [
+      ...lines.slice(0, bodyStart),
+      'try {',
+      ...lines.slice(bodyStart),
+      '} finally {',
+      `  __ff_emit('run-complete', '', {success: false});`,
+      '}',
+    ].join('\n');
+  }
 
   return lines.join('\n');
 }
@@ -288,13 +306,13 @@ function emitUtilityStep(step: CompiledStep): string | null {
   switch (step.funcName) {
   case 'Select Column': {
     const t = step.inputs.get('table') ?? 'undefined';
-    const n = step.properties['columnName'] ?? '';
-    return `let ${step.variableName} = ${t}.col('${n}');`;
+    const n = String(step.properties['columnName'] ?? '');
+    return `let ${step.variableName} = ${t}.col(${JSON.stringify(n)});`;
   }
   case 'Select Columns': {
     const t = step.inputs.get('table') ?? 'undefined';
     const names = String(step.properties['columnNames'] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-    const exprs = names.map((n) => `${t}.col('${n}')`).join(', ');
+    const exprs = names.map((n) => `${t}.col(${JSON.stringify(n)})`).join(', ');
     return `let ${step.variableName} = [${exprs}];`;
   }
   case 'Select Table': {
@@ -322,8 +340,8 @@ function emitUtilityStep(step: CompiledStep): string | null {
   }
   case 'Log': {
     const v = step.inputs.get('value') ?? 'undefined';
-    const label = step.properties['label'] ?? '';
-    return label ? `console.log('${label}:', ${v});` : `console.log(${v});`;
+    const label = String(step.properties['label'] ?? '');
+    return label ? `console.log(${JSON.stringify(label + ':')}, ${v});` : `console.log(${v});`;
   }
   case 'Info': {
     const m = step.inputs.get('message') ?? '\'\'';
@@ -531,7 +549,14 @@ function emitPreamble(runId: string): string[] {
     '  }',
     '  return base;',
     '}',
+    // run-complete is emitted at most once — the body's finally emits a
+    // failure one as a safety net, a no-op when the run already reported.
+    'var __ff_done = false;',
     'function __ff_emit(type, nodeId, data) {',
+    '  if (type === \'run-complete\') {',
+    '    if (__ff_done) return;',
+    '    __ff_done = true;',
+    '  }',
     '  grok.events.fireCustomEvent(__ff_ch, Object.assign({type, nodeId, timestamp:Date.now()}, data||{}));',
     '}',
     // Dims-only table summary for pass-through wires: enough for the on-edge
@@ -549,7 +574,11 @@ function emitPreamble(runId: string): string[] {
     '}',
     // Live-value registry (on the tab global): each node stashes its outputs so a
     // later single-node re-run can read them without re-running upstream.
+    // An abandoned run (Stop, a superseding run, view closed) must not keep
+    // writing: its late stashes would overwrite the current run's values for
+    // node ids whose visible state reflects the new run.
     '  function __ff_stash(nodeId, map) {',
+    '    if (globalThis.__ffAbortedRuns && globalThis.__ffAbortedRuns.has(__ff_runId)) return;',
     '    (globalThis.__ffFlowLive = globalThis.__ffFlowLive || {})[nodeId] = map;',
     '  }',
     '  function _ffLive(nodeId, key) {',
@@ -799,7 +828,9 @@ function emitBreakpointCode(step: CompiledStep): string[] {
 function formatHeaderDefault(value: unknown, type: string): string {
   switch (type) {
   case 'string':
-    return `"${String(value)}"`;
+    // JSON escaping — a default containing a quote must not break the
+    // `//input:` annotation line (the platform parses these headers).
+    return JSON.stringify(String(value));
   case 'bool':
     return value ? 'true' : 'false';
   case 'int':

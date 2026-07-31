@@ -235,7 +235,7 @@ export class PropertyPanel {
     // formula editor's "Edit in dialog", the function editor) holds live
     // objects the rebuild destroys — the user then edits, presses OK, and their
     // work goes into a FuncCall nothing is listening to anymore.
-    if (document.querySelector('.d4-dialog') !== null) return;
+    if (DG.Dialog.getOpenDialogs().length > 0) return;
     if (!this.flow.getNodes().some((n) => n.id === this.currentNode!.id)) {
       this.clear();
       return;

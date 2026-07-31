@@ -40,7 +40,8 @@ import {AutorunScheduler, AUTORUN_DEBOUNCE_MS, isAutorunByDefault} from './execu
 import {OutputPreviewPanel, OutputPanelState} from './execution/output-preview';
 import {ValueSummary, NodeExecStatus} from './execution/execution-state';
 import {OutputViewsManager, OutputTab, OutputTabInfo} from './views/output-views-manager';
-import {buildPreview, setPreviewCellFocusHandler, hasRenderablePreview} from './execution/value-inspector';
+import {buildPreview, setPreviewCellFocusHandler, releasePreviewCellFocusHandler, hasRenderablePreview}
+  from './execution/value-inspector';
 import {SuggestionPane, FF_SUGGEST_MIME} from './panel/suggestion-pane';
 import {
   collectSuggestContext, computeSuggestions, Suggestion, CellSignal,
@@ -48,7 +49,8 @@ import {
 import {_package} from './package';
 import {setTid} from './utils/test-ids';
 import {
-  addPendingFile, getPendingFile, isPendingFileId, persistPendingFile, syncFlowFilePermissions,
+  addPendingFile, getPendingFile, isPendingFileId, persistPendingFile, removePendingFile,
+  syncFlowFilePermissions,
 } from './utils/uploaded-files';
 import {GuideHost} from './guide/guide-model';
 import {GuideRunner} from './guide/guide-runner';
@@ -166,6 +168,19 @@ export class FuncFlowView extends DG.ViewBase {
    *  requested before the view was attached (see `fitToScreen`). */
   private pendingFitObserver: ResizeObserver | null = null;
 
+  /** True once detach() ran — the deferred initEditor must not build a full
+   *  editor (with its window listeners) into a closed view. */
+  private detached = false;
+  private initEditorTimer: ReturnType<typeof setTimeout> | null = null;
+  /** This view's preview-cell hook — kept so detach() releases only its own
+   *  registration, never a newer view's. */
+  private previewCellHandler:
+    ((cell: {semType: string | null; column: string; value: unknown}) => void) | null = null;
+  /** Serializes canvas loads: a second load (double-clicked recent-flow row,
+   *  entity open racing a template) waits for the first to finish instead of
+   *  interleaving its clear() with the other's node adds. */
+  private loadChain: Promise<void> = Promise.resolve();
+
   /** @param tableInfos tables whose creation scripts this view edits — passing a
    *  non-empty array enables the **Save Creation Scripts** ribbon action.
    *  @param options `outputPanel: false` creates the view without the bottom
@@ -184,6 +199,11 @@ export class FuncFlowView extends DG.ViewBase {
       'Make sure to list guides (run the function listing the guides) to see if there are guides that cover the question, and if so and confidence is high, call that guide function';
     this.tableInfos = tableInfos;
     this.outputPanelEnabled = options.outputPanel !== false;
+    // Instance-scoped hook for browser test harnesses: the JS instance is not
+    // reachable through the Dart view wrapper (`grok.shell.v` returns a plain
+    // DG.View). Lives on this view's own root, so it dies with the DOM —
+    // never a window/global (see the page-global rule in CLAUDE.md).
+    (this.root as unknown as {__ffView?: FuncFlowView}).__ffView = this;
 
     registerBuiltinNodes();
 
@@ -233,7 +253,8 @@ export class FuncFlowView extends DG.ViewBase {
       const {doc} = parseFlowBody(script.script);
       // The entity is already on the server → its loaded state is the saved
       // baseline, so Save stays disabled until the user edits.
-      void this.loadFromDoc(doc).then(() => this.markSaved());
+      void this.loadFromDoc(doc).then(() => this.markSaved())
+        .catch((e) => grok.shell.error(`Cannot load flow "${this.name}": ${e instanceof Error ? e.message : e}`));
     } catch (e) {
       grok.shell.error(`Cannot read flow "${this.name}": ${e instanceof Error ? e.message : e}`);
     }
@@ -270,10 +291,11 @@ export class FuncFlowView extends DG.ViewBase {
     this.functionBrowser.root.appendChild(this.suggestionPane.root);
     // A cell clicked in the output preview is a context signal ("clicked a
     // Molecule value") — remember it and recompute.
-    setPreviewCellFocusHandler((cell) => {
+    this.previewCellHandler = (cell): void => {
       this.previewCell = cell;
       this.suggestionPane.refresh();
-    });
+    };
+    setPreviewCellFocusHandler(this.previewCellHandler);
 
     // The canvas is a direct `.ui-box` child (the splitter pane), where core
     // css forces `overflow: auto !important` on EVERY child — `ui-div`-classed
@@ -362,7 +384,10 @@ export class FuncFlowView extends DG.ViewBase {
     this.installPortContextMenu();
     this.setupAutoPin();
 
-    setTimeout(() => this.initEditor(), 50);
+    this.initEditorTimer = setTimeout(() => {
+      this.initEditorTimer = null;
+      if (!this.detached) this.initEditor();
+    }, 50);
   }
 
   // ---------- per-port "View Output" preview (KNIME pattern #2) ----------
@@ -1603,10 +1628,11 @@ export class FuncFlowView extends DG.ViewBase {
     }
   }
 
-  /** Record the current graph as the saved baseline (after a save, or after
-   *  loading a flow that already lives on the server / a fresh empty flow). */
-  private markSaved(): void {
-    this.savedSnapshot = this.currentSnapshot();
+  /** Record the saved baseline (after a save, or after loading a flow that
+   *  already lives on the server / a fresh empty flow). Pass the snapshot
+   *  taken when the payload was built so mid-save edits stay "unsaved". */
+  private markSaved(snapshot?: string): void {
+    this.savedSnapshot = snapshot ?? this.currentSnapshot();
     this.updateSaveButtonState();
   }
 
@@ -1665,17 +1691,65 @@ export class FuncFlowView extends DG.ViewBase {
     this.root.removeEventListener('keydown', h, opts);
   }
 
-  /** View closed — a pending debounced autorun must not fire into it. */
+  /** View closed — release everything that outlives the view's DOM: pending
+   *  timers/rAFs, the deferred editor init, the guide, the run (its event
+   *  subscription and captured live values), panel editors, and the shell's
+   *  current-object pointer if it is ours. */
   detach(): void {
+    this.detached = true;
+    if (this.initEditorTimer != null) {
+      clearTimeout(this.initEditorTimer);
+      this.initEditorTimer = null;
+    }
+    if (this.hintRaf) {
+      cancelAnimationFrame(this.hintRaf);
+      this.hintRaf = 0;
+    }
+    if (this.startBgRaf) {
+      cancelAnimationFrame(this.startBgRaf);
+      this.startBgRaf = 0;
+    }
     this.autorunScheduler?.reset();
+    this.guideRunner.stop();
     this.teardownAutoPin();
     for (const sub of this.platformSubs) sub.unsubscribe();
     this.platformSubs = [];
+    this.viewerEditSub?.unsubscribe();
+    this.viewerEditSub = undefined;
+    this.pendingFitObserver?.disconnect();
+    this.pendingFitObserver = null;
+    this.currentPortPopup?.remove();
+    this.currentPortPopup = null;
+    // Un-mount the last-shown node's custom editors (their detach() releases
+    // widget subscriptions), and stop the module-level preview-cell hook from
+    // feeding this dead view.
+    this.propertyPanel?.clear();
+    releasePreviewCellFocusHandler(this.previewCellHandler);
+    // The shell must not keep rendering a destroyed view's panel/viewer.
+    try {
+      if (grok.shell.o === this.propertyPanel?.root) grok.shell.o = null;
+    } catch {/* shell not available in this host */}
+    // Bytes of files dropped but never saved would otherwise sit in the
+    // page-global pending registry forever.
+    this.dropPendingUploads();
     this.suggestionPane?.destroy();
     this.functionBrowser?.destroy();
     this.outputViews?.destroy();
+    // Dispose BEFORE the editor: clearing this flow's live-registry entries
+    // iterates the editor's nodes.
+    this.executionController?.dispose();
     this.flow?.destroy();
     super.detach();
+  }
+
+  /** Remove this flow's not-yet-persisted uploaded files from the pending
+   *  registry — the view owned them, and they are gone with it. */
+  private dropPendingUploads(): void {
+    if (!this.flow) return;
+    for (const node of this.flow.getNodes()) {
+      const fileId = String(node.inputValues['fileId'] ?? '');
+      if (fileId.startsWith('pending:')) removePendingFile(fileId);
+    }
   }
 
   /** Re-arrange the existing graph with the importer's layered/banded layout. */
@@ -1707,22 +1781,19 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private async openFlow(): Promise<void> {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.flow';
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const doc = await loadFlowFromFile(file);
-        await this.loadFromDoc(doc);
-        this.boundScript = null; // an imported file is a new, unsaved flow
-        grok.shell.info(`Loaded flow: ${doc.name}`);
-      } catch (e: any) {
-        grok.shell.error(`Failed to load flow: ${e.message}`);
-      }
+    DG.Utils.openFile({
+      accept: '.flow',
+      open: async (file) => {
+        try {
+          const doc = await loadFlowFromFile(file);
+          await this.loadFromDoc(doc);
+          this.boundScript = null; // an imported file is a new, unsaved flow
+          grok.shell.info(`Loaded flow: ${doc.name}`);
+        } catch (e: any) {
+          grok.shell.error(`Failed to load flow: ${e.message}`);
+        }
+      },
     });
-    input.click();
   }
 
   /** Save: in creation-script mode writes creation scripts back to the tables;
@@ -1761,13 +1832,19 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** @param silent no "saved" balloon — for follow-up saves that only persist
-   *  metadata (e.g. the dashboard binding right after a publish). */
-  private async saveToServer(silent = false): Promise<void> {
+   *  metadata (e.g. the dashboard binding right after a publish).
+   *  @returns whether the save reached the server — callers must not proceed
+   *  to share/publish on false. */
+  private async saveToServer(silent = false): Promise<boolean> {
     try {
       // Local files live in memory until this moment — persist them first so
       // the saved body references real, server-addressable file ids.
       await this.persistPendingUploads();
       const script = DG.Script.create(this.entityBodyText());
+      // Snapshot what is actually in the payload BEFORE the server round-trip:
+      // an edit made while the save is in flight must keep Save enabled, not be
+      // silently blessed as "saved" by a post-await snapshot.
+      const savedSnapshot = this.currentSnapshot();
       if (this.boundScript?.id)
         script.id = this.boundScript.id;
       const saved = await grok.dapi.scripts.save(script);
@@ -1779,11 +1856,13 @@ export class FuncFlowView extends DG.ViewBase {
       this.boundScript = (await grok.dapi.scripts.find(saved.id).catch(() => null)) ?? saved;
       this.name = this.flowSettings.scriptName;
       this.updatePath();
-      this.markSaved(); // this graph is now the saved baseline
+      this.markSaved(savedSnapshot); // the payload we sent is the saved baseline
       void this.syncUploadedFilePermissions();
       if (!silent) grok.shell.info(`Flow "${this.flowSettings.scriptName}" saved`);
+      return true;
     } catch (e: any) {
       grok.shell.error(`Failed to save flow: ${e?.message ?? e}`);
+      return false;
     }
   }
 
@@ -1975,7 +2054,8 @@ export class FuncFlowView extends DG.ViewBase {
           this.boundScript = null;
           this.dashboardProjectId = null;
         }
-        await this.saveToServer();
+        // A failed save must not go on to share/publish a stale entity.
+        if (!await this.saveToServer()) return;
         const saved = this.boundScript as DG.Script | null;
         if (targetSpace && saved?.id) {
           try {
@@ -1990,7 +2070,10 @@ export class FuncFlowView extends DG.ViewBase {
           await this.openDashboardDialog();
         }
       });
-    dlg.onClose.subscribe(() => this.saveDialogRunEnd = null);
+    dlg.onClose.subscribe(() => {
+      this.saveDialogRunEnd = null;
+      if (warnTimer != null) clearTimeout(warnTimer);
+    });
     dlg.show({width: 500});
     // Validate before close: empty names never reach the OK handler.
     okBtn = dlg.getButton('OK') as HTMLButtonElement | null;
@@ -2239,14 +2322,16 @@ export class FuncFlowView extends DG.ViewBase {
     // surfaced by Datagrok's standard script-run dialog.
     const func = DG.Script.create(script);
     const fc = func.prepare();
+    const report = (e: unknown): void =>
+      grok.shell.error(`Run failed: ${e instanceof Error ? e.message : e}`);
     if (func.inputs.length === 0)
-      void fc.call(undefined, undefined, {processed: true});
+      void fc.call(undefined, undefined, {processed: true}).catch(report);
     else {
       fc.getEditor(false).then((e: HTMLElement) => {
-        ui.dialog({title: func.friendlyName ?? func.name}).add(e).show().onOK(async () => {
-          await fc.call(undefined, undefined, {processed: true});
+        ui.dialog({title: func.friendlyName ?? func.name}).add(e).show().onOK(() => {
+          void fc.call(undefined, undefined, {processed: true}).catch(report);
         });
-      });
+      }).catch(report);
     }
   }
 
@@ -2299,12 +2384,12 @@ export class FuncFlowView extends DG.ViewBase {
     const blocks: HTMLElement[] = [];
     if (warnings.length > 0) {
       const list = ui.divV(warnings.map((m) => ui.divText(`• ${m}`)));
-      list.style.color = '#b26a00';
+      list.style.color = 'var(--orange-3, #805125)';
       list.style.marginBottom = '8px';
       list.style.maxHeight = '120px';
       list.style.overflow = 'auto';
       blocks.push(ui.divText(`${warnings.length} warning(s) — these nodes have no creation-script form:`,
-        {style: {fontWeight: 'bold', color: '#b26a00'}}));
+        {style: {fontWeight: 'bold', color: 'var(--orange-3, #805125)'}}));
       blocks.push(list);
     }
     const pre = document.createElement('pre');
@@ -2376,12 +2461,12 @@ export class FuncFlowView extends DG.ViewBase {
     const blocks: HTMLElement[] = [];
     if (warnings.length > 0) {
       const list = ui.divV(warnings.map((m) => ui.divText(`• ${m}`)));
-      list.style.color = '#b26a00';
+      list.style.color = 'var(--orange-3, #805125)';
       list.style.maxHeight = '90px';
       list.style.overflow = 'auto';
       list.style.marginBottom = '8px';
       blocks.push(ui.divText(`${warnings.length} warning(s):`,
-        {style: {fontWeight: 'bold', color: '#b26a00'}}));
+        {style: {fontWeight: 'bold', color: 'var(--orange-3, #805125)'}}));
       blocks.push(list);
     }
     blocks.push(tabs.root);
@@ -2406,13 +2491,7 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   private downloadScriptAsJs(script: string): void {
-    const blob = new Blob([script], {type: 'text/javascript'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.flowSettings.scriptName || 'script'}.js`;
-    a.click();
-    URL.revokeObjectURL(url);
+    DG.Utils.download(`${this.flowSettings.scriptName || 'script'}.js`, script, 'text/javascript');
   }
 
   /** Load a flow from a JSON string (file viewer entry point). */
@@ -2423,8 +2502,16 @@ export class FuncFlowView extends DG.ViewBase {
   }
 
   /** Load a parsed flow document. Awaits editor construction, so it is safe
-   *  to call right after the constructor (no timer race). */
+   *  to call right after the constructor (no timer race). Loads are
+   *  serialized: deserialize is clear() + per-node adds, so two interleaved
+   *  loads (a double-clicked recent-flow row) would merge both graphs. */
   async loadFromDoc(doc: FuncFlowDocument): Promise<void> {
+    const run = this.loadChain.then(() => this.doLoadFromDoc(doc));
+    this.loadChain = run.catch(() => {});
+    return run;
+  }
+
+  private async doLoadFromDoc(doc: FuncFlowDocument): Promise<void> {
     await this.editorReady;
     await deserializeFlow(doc, this.flow);
     if (doc.metadata?.settings) this.flowSettings = doc.metadata.settings;
@@ -2475,17 +2562,22 @@ export class FuncFlowView extends DG.ViewBase {
    *  function calls Datagrok records for reproducibly-created tables
    *  (the script behind a project's data sync). Replaces the current graph. */
   async loadFromCreationScript(script: string): Promise<void> {
-    await this.editorReady;
-    try {
-      await this.flow.clear();
-      const result = await buildFlowFromCreationScript(this.flow, script);
-      this.updateStatusBar();
-      this.fitToScreen();
-      for (const warning of result.warnings) grok.shell.warning(warning);
-      grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
-    } catch (e: any) {
-      grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
-    }
+    // Same serialization as loadFromDoc — this path also clears + re-adds.
+    const run = this.loadChain.then(async () => {
+      await this.editorReady;
+      try {
+        await this.flow.clear();
+        const result = await buildFlowFromCreationScript(this.flow, script);
+        this.updateStatusBar();
+        this.fitToScreen();
+        for (const warning of result.warnings) grok.shell.warning(warning);
+        grok.shell.info(`Flow imported: ${result.nodesAdded} nodes, ${result.connectionsAdded} connections`);
+      } catch (e: any) {
+        grok.shell.error(`Creation script import failed: ${e?.message ?? e}`);
+      }
+    });
+    this.loadChain = run.catch(() => {});
+    return run;
   }
 
   /** Dialog: paste a creation script (or prefill it from an open table that

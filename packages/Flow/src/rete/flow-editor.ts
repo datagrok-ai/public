@@ -170,6 +170,12 @@ export class FlowEditor {
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private pointerDownTracker: ((e: PointerEvent) => void) | null = null;
   private pointerUpTracker: ((e: PointerEvent) => void) | null = null;
+  private suggestPointerMove: ((e: PointerEvent) => void) | null = null;
+  private suggestPointerUp: ((e: PointerEvent) => void) | null = null;
+  /** True while this editor owns window-level keyboard shortcuts — set on every
+   *  pointerdown by whether it landed inside this editor's container. Starts
+   *  true so a lone editor answers keys before the first click. */
+  private ownsKeyboard = true;
   /** Per-connection status (for execution coloring). */
   private connectionStatuses = new Map<string, ConnectionStatus>();
 
@@ -1071,7 +1077,9 @@ export class FlowEditor {
     };
     const onUp = (): void => {
       window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointercancel', onUp);
       if (!dragging) return;
+      dragging = false; // idempotent — cancel and a late release can both land here
       chip.classList.remove('ff-output-row-dragging');
       chip.style.transform = '';
       document.body.style.cursor = '';
@@ -1084,6 +1092,9 @@ export class FlowEditor {
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp, {once: true});
+    // A cancelled pointer (touch/pen interruption, window blur) must also
+    // release the drag, or the move handler and the grab cursor stay armed.
+    window.addEventListener('pointercancel', onUp, {once: true});
   }
 
   /** Persist the strip's current DOM order as each output node's rank, then
@@ -1299,19 +1310,21 @@ export class FlowEditor {
     };
     // Always track — cheap, and lets us fall back without the listener
     // dance per-pick.
-    window.addEventListener('pointermove', trackPointer, true);
+    this.suggestPointerMove = trackPointer;
+    window.addEventListener('pointermove', this.suggestPointerMove, true);
     // Safety net: a pick that ends without a `connectiondrop` (e.g. Esc) still
     // releases the pointer — clear the compatibility hints then, and release
     // the orphan-output hold (the deferred flush runs after the plugin's own
     // drop processing in this same dispatch, so a re-added wire lands first).
     // Idempotent.
-    window.addEventListener('pointerup', () => {
+    this.suggestPointerUp = (): void => {
       this.endConnectHints();
       if (this.connectionDragActive) {
         this.connectionDragActive = false;
         setTimeout(() => this.flushOrphanOutputCheck(), 0);
       }
-    }, true);
+    };
+    window.addEventListener('pointerup', this.suggestPointerUp, true);
 
     this.connection.addPipe((context) => {
       const c = context as {type: string; data: any};
@@ -2942,6 +2955,10 @@ export class FlowEditor {
     this.pointerDownTracker = (ev: PointerEvent): void => {
       this.lastPointerButton = ev.button;
       const target = ev.target as HTMLElement | null;
+      // Keyboard ownership: several live editors can share the page (the main
+      // view behind a creation-script dialog hosting its own). Only the editor
+      // the user last pressed inside answers the window-level shortcuts.
+      this.ownsKeyboard = target instanceof Node && this.container.contains(target);
       const nodeEl = target?.closest('.ff-node') as HTMLElement | null;
       const id = nodeEl?.dataset.nodeId ?? null;
       this.lastPointerDownNodeId = target?.closest('.ff-socket') ? null : id;
@@ -3022,6 +3039,9 @@ export class FlowEditor {
       const tag = target?.tagName ?? '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
           target?.isContentEditable) return;
+      // Not mounted, or another live editor owns the keyboard (the user last
+      // pressed inside it) — window shortcuts are not ours to handle.
+      if (!this.container.isConnected || !this.ownsKeyboard) return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         const selectedIds = this.getSelectedNodeIds();
@@ -3032,7 +3052,7 @@ export class FlowEditor {
         // No nodes selected but an annotation was clicked — delete it, the
         // same gesture nodes get. (Typing in its title never lands here: the
         // contenteditable guard above already returned.)
-        else if (this.activeAnnotationId && this.container.isConnected) {
+        else if (this.activeAnnotationId) {
           e.preventDefault();
           this.removeAnnotation(this.activeAnnotationId);
         }
@@ -3040,7 +3060,7 @@ export class FlowEditor {
 
       // Arrow keys: nudge the selection; with Ctrl/Cmd, pan the canvas.
       const arrow = FlowEditor.ARROW_DELTAS[e.key];
-      if (arrow && this.container.isConnected) {
+      if (arrow) {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           const t = this.area.area.transform;
@@ -3068,8 +3088,7 @@ export class FlowEditor {
 
       // Platform selection keys (scatterplot navigation.dart): Ctrl+A selects
       // every node, Ctrl+Shift+A deselects all.
-      if ((e.key === 'a' || e.key === 'A') && (e.ctrlKey || e.metaKey) &&
-          this.container.isConnected) {
+      if ((e.key === 'a' || e.key === 'A') && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (e.shiftKey)
           void this.unselectAllNodes();
@@ -3084,8 +3103,7 @@ export class FlowEditor {
 
       // Ctrl+G groups the selection; Ctrl+Shift+G ungroups every group any
       // selected node belongs to.
-      if ((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey) &&
-          this.container.isConnected) {
+      if ((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (e.shiftKey) {
           const seen = new Set<string>();
@@ -3099,7 +3117,7 @@ export class FlowEditor {
           void this.createGroupFromSelection();
       }
 
-      if (e.key === 'Escape' && this.container.isConnected) {
+      if (e.key === 'Escape') {
         if (this.getSelectedNodeIds().length > 0) void this.unselectAllNodes();
         this.setActiveAnnotation(null);
       }
@@ -3107,11 +3125,10 @@ export class FlowEditor {
       // Copy / paste nodes. A live text selection means the user is copying
       // text — leave the event to the browser.
       if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
-          this.container.isConnected && !document.getSelection()?.toString())
+          !document.getSelection()?.toString())
         this.copySelection();
 
-      if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey) && !e.shiftKey &&
-          this.container.isConnected && this.clipboard) {
+      if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey) && !e.shiftKey && this.clipboard) {
         e.preventDefault();
         void this.pasteClipboard();
       }
@@ -3578,7 +3595,16 @@ export class FlowEditor {
       window.removeEventListener('pointerdown', this.pointerDownTracker, true);
     if (this.pointerUpTracker)
       window.removeEventListener('pointerup', this.pointerUpTracker, true);
+    if (this.suggestPointerMove)
+      window.removeEventListener('pointermove', this.suggestPointerMove, true);
+    if (this.suggestPointerUp)
+      window.removeEventListener('pointerup', this.suggestPointerUp, true);
+    if (this.hoverDocsTimer != null) {
+      clearTimeout(this.hoverDocsTimer);
+      this.hoverDocsTimer = null;
+    }
     if (this.hoverDocsEl) this.hoverDocsEl.remove();
+    this.hoverDocsEl = null;
     if (this.minimapEl) this.minimapEl.remove();
     // Null these so a still-pending rAF redraw after teardown is a no-op.
     this.minimapEl = null;

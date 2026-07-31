@@ -236,7 +236,7 @@ function buildExpressionEditor(
       renderPlain(`Connect a table to “${options.tableParam}” to pick columns and validate as you type.`);
       return;
     }
-    renderPlain('The upstream table is needed for formula editor.', {
+    renderPlain('The upstream table has not been computed yet — run it to pick columns and validate as you type.', {
       label: 'Run to load',
       run: () => {
         if (!ctx.produceTable) return;

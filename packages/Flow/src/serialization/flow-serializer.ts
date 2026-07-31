@@ -2,6 +2,7 @@
  *  Rete-native). */
 
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 import {FlowEditor} from '../rete/flow-editor';
 import {createNode, ensureFunctionsRegistered} from '../rete/node-factory';
@@ -75,7 +76,7 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     node.description = docNode.description ?? String(docNode.properties?.description ?? '');
     delete (node.properties as Record<string, unknown>).description;
     node.collapsed = docNode.collapsed === true;
-    await flow.addNodeAt(node, docNode.pos.x, docNode.pos.y);
+    await flow.addNodeAt(node, docNode.pos?.x ?? 0, docNode.pos?.y ?? 0);
     idMap.set(docNode.id, node.id);
   }
 
@@ -83,7 +84,15 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     const source = idMap.get(c.source);
     const target = idMap.get(c.target);
     if (!source || !target) continue;
-    await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
+    try {
+      await flow.addConnectionByKeys(source, c.sourceOutput, target, c.targetInput);
+    } catch (e) {
+      // A slot key that no longer exists — a DG function whose parameter was
+      // renamed/removed since the flow was saved. Skip the wire, keep the rest
+      // of the document loading (same treatment as an unknown node type).
+      console.warn(`FuncFlow: skipped connection ${c.sourceOutput} → ${c.targetInput}: ${(e as Error).message}`);
+      continue;
+    }
     if (c.waypoints && c.waypoints.length > 0) {
       // Match by source/target/keys since the new connection has a fresh id.
       const newConn = flow.getConnections().find((nc) =>
@@ -119,13 +128,7 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
 
 export function downloadFlow(doc: FuncFlowDocument): void {
   const json = JSON.stringify(doc, null, 2);
-  const blob = new Blob([json], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${doc.name || 'flow'}.flow`;
-  a.click();
-  URL.revokeObjectURL(url);
+  DG.Utils.download(`${doc.name || 'flow'}.flow`, json, 'application/json');
 }
 
 /** Read a `.flow` file: either the bare JSON document or the annotated script

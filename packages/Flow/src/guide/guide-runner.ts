@@ -162,6 +162,11 @@ export class GuideRunner {
     const control = new Promise<StepOutcome>((res) => {
       resolveControl = res;
     });
+    // stop() (view closed, another guide started) must settle this step even
+    // when its `until` ignores the signal — otherwise the finally below never
+    // runs and the card/highlights outlive the view as zombies.
+    const onAbort = (): void => resolveControl('exit');
+    ctx.signal.addEventListener('abort', onAbort, {once: true});
     const onExit = (): void => {
       abort();
       resolveControl('exit');
@@ -220,6 +225,7 @@ export class GuideRunner {
       outcome = 'exit';
     } finally {
       finished = true;
+      ctx.signal.removeEventListener('abort', onAbort);
       window.clearInterval(timer);
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);

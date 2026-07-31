@@ -11,6 +11,7 @@
  *  This file is DOM-light and side-effect-free except for the poll/listen
  *  helpers, so the conditions can be unit-tested. */
 
+import * as DG from 'datagrok-api/dg';
 import {tid} from '../utils/test-ids';
 import type {FlowEditor} from '../rete/flow-editor';
 
@@ -119,8 +120,8 @@ export function byNodeFuncNth(funcName: string, index: number): (ctx: GuideConte
  *  sits above dialogs (z-index 5000 vs 3000), so a step whose action opens a
  *  dialog must re-anchor to it — otherwise the dialog is hidden behind the card. */
 export function openDialogEl(): HTMLElement | null {
-  const dialogs = Array.from(document.querySelectorAll('.d4-dialog')) as HTMLElement[];
-  return dialogs.length ? dialogs[dialogs.length - 1] : null;
+  const dialogs = DG.Dialog.getOpenDialogs();
+  return dialogs.length ? dialogs[dialogs.length - 1].root : null;
 }
 
 /** Wrap a target resolver so the card anchors to an open dialog when there is
@@ -167,13 +168,6 @@ export function paramFieldSelector(paramName: string): string {
 /** The connection row in the Files tree (e.g. 'Demo'), addressed by its test-id. */
 export function byFileTreeConn(connName: string): (ctx: GuideContext) => HTMLElement | null {
   return byTid('files-conn', connName);
-}
-
-/** The expand triangle inside a connection row — what the user clicks (or
- *  double-clicks the row) to open it. */
-export function byFileTreeConnTri(connName: string): (ctx: GuideContext) => HTMLElement | null {
-  const sel = `[data-testid="${tid('files-conn', connName)}"] .d4-tree-view-tri`;
-  return () => el(sel);
 }
 
 /** A file row in the Files tree (e.g. 'demog.csv'), addressed by its test-id. */
@@ -294,12 +288,6 @@ export function untilMoreConnections() {
   };
 }
 
-/** Wait until the canvas has at least `n` nodes (absolute threshold). */
-export function untilNodeCountAtLeast(n: number) {
-  return (ctx: GuideContext): Promise<void> =>
-    poll(() => (ctx.host.getFlow()?.getNodeCount() ?? 0) >= n, ctx.signal);
-}
-
 /** Wait until fewer nodes than at step start (a delete happened). */
 export function untilFewerNodes() {
   return (ctx: GuideContext): Promise<void> => {
@@ -349,12 +337,6 @@ export function untilNodeOfTypeSelected(typeName: string) {
   return (ctx: GuideContext): Promise<void> =>
     poll(() => (Array.from(document.querySelectorAll('.ff-node[data-selected="true"]')) as HTMLElement[])
       .some((n) => n.dataset.nodeTypeName === typeName), ctx.signal);
-}
-
-/** Wait until a node on the canvas is collapsed. */
-export function untilNodeCollapsed() {
-  return (ctx: GuideContext): Promise<void> =>
-    poll(() => !!el('.ff-node.ff-node-collapsed'), ctx.signal);
 }
 
 /** Wait until *another* node becomes collapsed than were at step start — so it

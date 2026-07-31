@@ -2,16 +2,6 @@
 import * as DG from 'datagrok-api/dg';
 import {propertyNameToFriendly} from './naming';
 
-export function safeGetEntries(obj: any): [string, any][] {
-  try {
-    if (!obj) return [];
-    if (typeof obj !== 'object') return [];
-    return Object.entries(obj);
-  } catch {
-    return [];
-  }
-}
-
 export function safeGet(obj: any, key: string): any {
   try {
     if (!obj) return undefined;
@@ -42,7 +32,9 @@ export function getRole(func: DG.Func): string | null {
 
 export function getTags(func: DG.Func): string[] {
   try {
-    const tags = (func as any).tags ?? (!!func.dart ? (window as any).grok_Script_Get_Tags?.(func.dart) : null);
+    // `tags` is public API on Script (the only Func kind that carries them);
+    // plain funcs may still expose a JS-side property.
+    const tags = func instanceof DG.Script ? func.tags : (func as {tags?: unknown}).tags;
     if (!tags) return [];
     if (Array.isArray(tags)) return tags.map(String);
     if (typeof tags === 'string') return tags.split(',').map((t: string) => t.trim()).filter(Boolean);
