@@ -46,16 +46,21 @@ function pickFile(accept: string): Promise<File | null> {
       input.remove();
       resolve(f);
     };
-    // Cancelling the OS dialog never fires 'change' — only returns focus to the window. Give
-    // 'change' a moment to win the race if a file WAS picked, then resolve null otherwise.
-    const onFocus = (): void => {
-      setTimeout(() => cleanup(input.files?.[0] ?? null), 300);
-    };
-    window.addEventListener('focus', onFocus);
     input.onchange = () => cleanup(input.files?.[0] ?? null);
-    // Newer browsers fire 'cancel' directly on an actual dismiss, no timing guesswork needed.
-    // Older browsers simply never dispatch it, leaving the focus fallback above as the only path.
+    // 'cancel' fires reliably on an actual dismiss in every evergreen browser — authoritative, no
+    // timing guesswork needed, and it's what onFocus below used to race against and could lose:
+    // window focus can return (and a blind timeout fire) before 'change' has actually populated
+    // input.files, which resolved null and permanently discarded a real, in-flight file selection
+    // (cleanup's `done` guard blocks the real 'change' from ever landing once that happens).
     input.addEventListener('cancel', () => cleanup(null));
+    // Fallback ONLY for browsers that don't support the 'cancel' event at all — skipped entirely
+    // elsewhere, so there's nothing left to race against. The 1500ms delay (vs. the old 300ms) is
+    // deliberately generous: it only needs to outlast 'change' in browsers that lack 'cancel', not
+    // win a photo finish against it.
+    const onFocus = (): void => {
+      setTimeout(() => cleanup(input.files?.[0] ?? null), 1500);
+    };
+    if (!('oncancel' in input)) window.addEventListener('focus', onFocus);
     input.click();
   });
 }

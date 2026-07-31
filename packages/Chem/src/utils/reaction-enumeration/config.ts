@@ -108,7 +108,11 @@ function validateShape(partial: any, defaults: any, path: string, errors: string
 
 export function configFromYaml(text: string): EnumeratorConfig {
   const raw = yaml.load(text);
-  if (!raw || typeof raw !== 'object')
+  // typeof [] === 'object' and arrays are always truthy, so a top-level YAML list would otherwise
+  // sail past this guard — every key lookup below (`k in partial`, `partial[k]`) then misses on an
+  // array, so validateShape finds nothing to flag and mergeWithDefaults finds nothing to merge,
+  // silently returning pure defaults with no error at all.
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     throw new Error('YAML did not parse to an object.');
   const errors: string[] = [];
   validateShape(raw, DEFAULT_CONFIG, '', errors);
