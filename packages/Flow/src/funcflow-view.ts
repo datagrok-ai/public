@@ -639,6 +639,16 @@ export class FuncFlowView extends DG.ViewBase {
       onPreviewNode: (nodeId: string) => this.previewNodeData(nodeId),
       onRerunNode: (nodeId: string) => this.rerunNode(nodeId),
       canRerunNode: (nodeId: string) => this.executionController?.canRerunNode(nodeId) ?? false,
+      // The drag-out menu leads with the same picks the Suggestions pane shows
+      // for the drag-source node — only those wired FROM that node apply to a
+      // socket drag (cell-based and empty-canvas suggestions don't).
+      getSocketSuggestions: async (nodeId: string) => {
+        if (!this.flow) return [];
+        const ctx = await collectSuggestContext(this.flow, this.executionController ?? null, nodeId, null);
+        return computeSuggestions(ctx)
+          .filter((s) => s.wire.some((w) => w.fromNodeId === nodeId))
+          .map((s) => ({typeName: s.typeName, reason: s.reason, prefill: s.prefill}));
+      },
     });
 
     this.propertyPanel = new PropertyPanel(this.flow);

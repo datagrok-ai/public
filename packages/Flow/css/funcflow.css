@@ -789,11 +789,38 @@
 }
 
 .ff-suggest-item {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
   padding: 5px 10px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.ff-suggest-item-label {
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Engine-recommended rows trail their reason inline, in the exact voice of the
+   toolbox Suggestions pane ("— Molecule column "smiles"") — the two surfaces
+   must read as one assistant. Same flex override as the pane: core css forces
+   flex-shrink: 0 on spans in flex rows, which would hard-clip the reason. */
+.ff-suggest-item-reason {
+  flex: 1 1 auto !important;
+  min-width: 0;
+  font-size: 10.5px;
+  color: var(--grey-4, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ff-suggest-item-reason::before {
+  content: '— ';
 }
 
 .ff-suggest-item-builtin {

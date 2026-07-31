@@ -35,6 +35,8 @@ import {
   FlowGroup, GroupDoc, GROUP_TITLE_H, GROUP_PAD, GROUP_DOT_TOP, GROUP_DOT_STEP,
 } from './node-group';
 import {computeLayers, layoutGraph, LayoutEdge} from './graph-layout';
+// Type-only — the value side of node-factory stays a dynamic import (lazy).
+import type {CompatibleNodeType, SocketSuggestion} from './node-factory';
 
 /** A classified graph edit — tells listeners *what* changed, so run results
  *  can be invalidated precisely (only downstream of the change) instead of
@@ -81,6 +83,10 @@ export interface FlowEditorCallbacks {
   onRerunNode?: (nodeId: string) => void;
   /** Whether the "Rerun this node only" menu item should be shown for a node. */
   canRerunNode?: (nodeId: string) => boolean;
+  /** The toolbox suggestion engine's picks for the node an output drag started
+   *  from (same ranking the Suggestions pane shows). The drag-out menu leads
+   *  with them — reason inline — and applies their prefills on selection. */
+  getSocketSuggestions?: (nodeId: string, outputKey: string) => Promise<SocketSuggestion[]>;
 }
 
 export type ConnectionStatus = 'idle' | 'active' | 'completed' | 'errored' | 'stale';
@@ -1628,17 +1634,35 @@ export class FlowEditor {
     clientX: number, clientY: number,
     source: {nodeId: string; outputKey: string; dgType: string},
   ): Promise<void> {
-    const {findNodeTypesAcceptingInput, createNode} = await import('./node-factory');
+    const {findNodeTypesAcceptingInput, prioritizeCandidates, createNode} = await import('./node-factory');
     // Canvas context for the ranking heuristics: the science the drag came
     // from (source node's package), what's already on the canvas (packages →
     // domain fallback), and which functions the user already reached for.
     const nodes = this.editor.getNodes();
-    const candidates = findNodeTypesAcceptingInput(source.dgType, {
+    let candidates = findNodeTypesAcceptingInput(source.dgType, {
       sourcePackageName: this.editor.getNode(source.nodeId)?.dgPackageName,
       graphPackageNames: nodes.map((n) => n.dgPackageName).filter(Boolean),
       graphFuncNames: nodes.map((n) => n.dgFunc?.name ?? '').filter(Boolean),
     });
     if (candidates.length === 0) return;
+
+    // The toolbox suggestion engine's picks for this node lead the list — the
+    // menu and the Suggestions pane must agree on "what's next". Time-boxed so
+    // a slow context read (semtype detection on a big capture) never holds the
+    // popup back; a miss just shows the heuristic order.
+    const prefills = new Map<string, Record<string, unknown>>();
+    if (this.callbacks.getSocketSuggestions) {
+      try {
+        const suggested = await Promise.race([
+          this.callbacks.getSocketSuggestions(source.nodeId, source.outputKey),
+          new Promise<SocketSuggestion[]>((res) => setTimeout(() => res([]), 600)),
+        ]);
+        candidates = prioritizeCandidates(candidates, suggested);
+        for (const s of suggested) {
+          if (s.prefill && !prefills.has(s.typeName)) prefills.set(s.typeName, s.prefill);
+        }
+      } catch {/* suggestions are advisory — the plain ranking stands */}
+    }
 
     const choice = await this.promptSuggestion(clientX, clientY, candidates);
     if (!choice) return;
@@ -1660,6 +1684,15 @@ export class FlowEditor {
     }
     if (connectedKey)
       await this.addConnectionByKeys(source.nodeId, source.outputKey, node.id, connectedKey);
+
+    // An engine pick carries its prefill (the column it matched on, …) — same
+    // application as the pane's `applySuggestion`, reported like a panel edit.
+    const prefill = prefills.get(choice);
+    if (prefill && Object.keys(prefill).length > 0) {
+      for (const [k, v] of Object.entries(prefill)) node.inputValues[k] = v;
+      await this.updateNode(node.id);
+      this.notifyNodeParamsChanged(node.id);
+    }
   }
 
   // ---------- hover docs ----------
@@ -2681,10 +2714,12 @@ export class FlowEditor {
   /** Build a transient floating popup with a search input and a scrollable
    *  list of candidates. Resolves with the chosen typeName (or null on
    *  dismiss / Escape / click-outside). Keyboard nav: Up/Down/Enter. */
-  private promptSuggestion(
+  private async promptSuggestion(
     clientX: number, clientY: number,
-    candidates: Array<{typeName: string; label: string; isBuiltin: boolean}>,
+    candidates: CompatibleNodeType[],
   ): Promise<string | null> {
+    // Already loaded — both callers just imported it, so this resolves instantly.
+    const {candidateMatchesQuery} = await import('./node-factory');
     return new Promise((resolve) => {
       let resolved = false;
       const close = (val: string | null): void => {
@@ -2722,7 +2757,19 @@ export class FlowEditor {
         filtered.forEach((c, i) => {
           const row = document.createElement('div');
           row.className = 'ff-suggest-item' + (i === activeIdx ? ' ff-suggest-item-active' : '');
-          row.textContent = c.label;
+          const label = document.createElement('span');
+          label.className = 'ff-suggest-item-label';
+          label.textContent = c.label;
+          row.appendChild(label);
+          // An engine-recommended item carries its reason inline, same voice
+          // as the toolbox Suggestions pane ("Molecule column \"smiles\"").
+          if (c.reason) {
+            row.classList.add('ff-suggest-item-suggested');
+            const reason = document.createElement('span');
+            reason.className = 'ff-suggest-item-reason';
+            reason.textContent = c.reason;
+            row.appendChild(reason);
+          }
           row.dataset.testid = tid('suggest-item', c.typeName);
           row.dataset.nodeTypeName = c.typeName;
           if (c.isBuiltin) row.classList.add('ff-suggest-item-builtin');
@@ -2742,9 +2789,10 @@ export class FlowEditor {
       };
 
       search.addEventListener('input', () => {
-        const q = search.value.toLowerCase().trim();
-        filtered = q === '' ? candidates :
-          candidates.filter((c) => c.label.toLowerCase().includes(q) || c.typeName.toLowerCase().includes(q));
+        // Same fields the toolbox search covers (names, description, tags,
+        // package) — "remove column" must find Delete Columns here too.
+        const q = search.value;
+        filtered = candidates.filter((c) => candidateMatchesQuery(c, q));
         activeIdx = 0;
         renderList();
       });
