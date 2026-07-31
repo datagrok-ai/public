@@ -75,6 +75,10 @@ export class DataSourceType {
 
   static Postgres = 'Postgres';
 
+  /// Virtual, credential-less source over an entity-mapped domain schema.
+  /// Executed in-process by DomainDataProvider; never reaches grok_connect.
+  static Domain = 'Domain';
+
   static Redshift = 'Redshift';
 
   static SQLite = 'SQLite';
@@ -121,7 +125,7 @@ export class DataSourceType {
 
   static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'Git', 'SharePoint', 'Amazon EFS'];
 
-  static systemDataSources = ['PostgresDart'];
+  static systemDataSources = ['PostgresDart', 'Domain'];
 
   static secureSources = ['AWS', 'GCP'];
 
