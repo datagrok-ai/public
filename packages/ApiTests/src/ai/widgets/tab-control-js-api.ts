@@ -4,6 +4,12 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {expectFiresWithin, subscribeAll, expectNoThrow} from '../helpers';
 
 category('AI: Widgets: TabControl JS API', () => {
+  const withPanes = (tc: DG.TabControl): DG.TabControl => {
+    tc.addPane('alpha', () => ui.divText('a'));
+    tc.addPane('beta', () => ui.divText('b'));
+    return tc;
+  };
+
   test('create + addPane + currentPane getter reflects first activated pane', async () => {
     const tc = DG.TabControl.create();
     expect(tc instanceof DG.TabControl, true);
@@ -68,13 +74,15 @@ category('AI: Widgets: TabControl JS API', () => {
   test('options object: vertical and key', async () => {
     expect(DG.TabControl.create({vertical: true}).root.classList.contains('d4-tab-vertical'), true);
     expect(DG.TabControl.create({}).root.classList.contains('d4-tab-vertical'), false);
+    expect(DG.TabControl.create(true).root.classList.contains('d4-tab-vertical'), true);
+    expectNoThrow(() => {(DG.TabControl.create as any)(null);});
 
     const key = `apitests-tabcontrol-${Date.now()}`;
     try {
-      const tc = DG.TabControl.create({key: key});
-      tc.addPane('alpha', () => ui.divText('a'));
-      tc.currentPane = tc.addPane('beta', () => ui.divText('b'));
-      expect(window.localStorage[`TabControl:${key}`], 'beta');
+      window.localStorage[`TabControl:${key}`] = 'beta';
+      expect(withPanes(DG.TabControl.create({key: key})).currentPane.name, 'beta');
+      expect(withPanes(DG.TabControl.create({}, key)).currentPane.name, 'beta');
+      expect(withPanes(DG.TabControl.create({})).currentPane.name, 'alpha');
     }
     finally {
       window.localStorage.removeItem(`TabControl:${key}`);
@@ -91,13 +99,13 @@ category('AI: Widgets: TabControl JS API', () => {
 
     // untyped JS callers pass an explicit null to skip `vertical` and reach `key`
     expectNoThrow(() => {(ui.tabControl as any)(null, null);});
-    expectNoThrow(() => {(DG.TabControl.create as any)(null);});
 
     const key = `apitests-tabcontrol-legacy-${Date.now()}`;
     try {
+      window.localStorage[`TabControl:${key}`] = 'beta';
       const legacy = ui.tabControl({'alpha': ui.divText('a'), 'beta': ui.divText('b')}, true, key);
-      legacy.currentPane = legacy.getPane('beta');
-      expect(window.localStorage[`TabControl:${key}`], 'beta');
+      expect(legacy.currentPane.name, 'beta');
+      expect(ui.tabControl({'alpha': ui.divText('a'), 'beta': ui.divText('b')}, true).currentPane.name, 'alpha');
     }
     finally {
       window.localStorage.removeItem(`TabControl:${key}`);
