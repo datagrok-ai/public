@@ -32,9 +32,7 @@ export function getRole(func: DG.Func): string | null {
 
 export function getTags(func: DG.Func): string[] {
   try {
-    // `tags` is public API on Script (the only Func kind that carries them);
-    // plain funcs may still expose a JS-side property.
-    const tags = func instanceof DG.Script ? func.tags : (func as {tags?: unknown}).tags;
+    const tags: unknown = func.tags;
     if (!tags) return [];
     if (Array.isArray(tags)) return tags.map(String);
     if (typeof tags === 'string') return tags.split(',').map((t: string) => t.trim()).filter(Boolean);
@@ -60,17 +58,15 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
-/** Whether a function input parameter is optional. Reads, in order: the Dart
- *  `FuncParam.isOptional` field (what core's own call machinery consults — set
- *  for every declared-default param, e.g. OpenFile's `sheetName`) via the
- *  reflective `grok_Property_Get`; `nullable`; and the `options` map's
+/** Whether a function input parameter is optional. Reads, in order: the
+ *  public `Property.isOptional` (backed by `FuncParam.isOptional` — what
+ *  core's own call machinery consults, set for every declared-default param,
+ *  e.g. OpenFile's `sheetName`); `nullable`; and the `options` map's
  *  `optional` flag (JS-declared `{optional: true}`). */
 export function isInputOptional(prop: DG.Property): boolean {
   try {
-    const get = (window as unknown as {grok_Property_Get?: (dart: unknown, name: string) => unknown})
-      .grok_Property_Get;
-    if (get && get((prop as unknown as {dart: unknown}).dart, 'isOptional') === true) return true;
-  } catch {/* not a FuncParam — fall through */}
+    if (prop.isOptional) return true;
+  } catch {/* older platform without the getter — fall through */}
   if (prop.nullable)
     return true;
   try {

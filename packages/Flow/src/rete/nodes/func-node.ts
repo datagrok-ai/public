@@ -52,7 +52,7 @@ const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
 export function impliedChoiceDefault(prop: DG.Property): string | undefined {
   try {
     if (String(prop.propertyType) !== 'string' || isInputOptional(prop)) return undefined;
-    const choices = (prop as unknown as {choices?: unknown}).choices;
+    const choices: unknown = prop.choices;
     if (!Array.isArray(choices) || !isLiteralChoiceList(choices)) return undefined;
     const first = choices.map((c) => String(c)).find((c) => c.length > 0);
     return first;

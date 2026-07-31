@@ -77,7 +77,7 @@ const OUTPUT_TYPE_VALUES = [
  *  empty option is added separately by `stringChoiceOptions`. */
 export function propertyChoices(param: DG.Property): string[] {
   try {
-    const choices = (param as unknown as {choices?: unknown}).choices;
+    const choices: unknown = param.choices;
     if (!Array.isArray(choices)) return [];
     return choices.map((c) => String(c)).filter((c) => c.length > 0);
   } catch {

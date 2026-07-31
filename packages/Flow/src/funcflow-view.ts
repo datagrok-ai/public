@@ -2221,23 +2221,16 @@ export class FuncFlowView extends DG.ViewBase {
     if (tabs.length === 0) return;
     await this.ensureBoundScriptQualified();
     this.stampCreationScripts(tabs);
-    const showSaveDialog = (DG.Project as unknown as {
-      showSaveDialog?: (o: object) => Promise<unknown>;
-    }).showSaveDialog;
-    if (showSaveDialog == null) {
-      grok.shell.warning('This platform version cannot publish dashboards from Flow yet');
-      return;
-    }
     const layoutsByParam = this.outputViews.captureLayouts();
     try {
-      const saved = await showSaveDialog.call(DG.Project, {
+      const saved = await DG.Project.showSaveDialog({
         tables: tabs.map((t) => t.df!),
         views: tabs.map((t) => t.tv),
         layouts: tabs.map((t) => t.tv != null ? null : layoutsByParam[t.paramName] ?? null),
         name: this.flowSettings.scriptName,
         description: this.flowSettings.scriptDescription,
         project: this.dashboardProjectId ?? undefined,
-      }) as DG.Project | null;
+      });
       if (saved?.id && saved.id !== this.dashboardProjectId) {
         this.dashboardProjectId = saved.id;
         if (this.boundScript != null)
