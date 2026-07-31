@@ -1,13 +1,8 @@
 /* eslint-disable valid-jsdoc */
-import {FitParamBounds, IFitSeries} from './fit-curve';
+import {FitParamBounds, IFitSeries, LogOptions} from './fit-curve';
 
 /** Low-level point helpers. This module is a leaf on purpose: it depends only on {@link fit-curve}
  * types, so both the fitting engine and the series-level API can use it without a circular import. */
-
-export type LogOptions = {
-  logX: boolean | undefined,
-  logY: boolean | undefined
-};
 
 /** Returns the data points of a series with filtered outliers and logarithmic data if needed */
 export function getDataPoints(series: IFitSeries, logOptions?: LogOptions, userParamsFlag?: boolean):

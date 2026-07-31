@@ -26,8 +26,9 @@ import {
   FitFunctionName,
   LegacyFitStatisticName,
   IFitSeriesOptions,
+  LogOptions,
 } from './fit-curve';
-import {getDataPoints, getMedianPoints, logIC50ParameterBounds, LogOptions} from './fit-points';
+import {getDataPoints, getMedianPoints, logIC50ParameterBounds} from './fit-points';
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 import {Extremum, OptimizationResult} from './fitting-algorithm/optimizer-misc';
@@ -633,44 +634,6 @@ export const fitFunctions: {[key: string]: FitFunction<any>} = {
   '4pl-dose-response': new FourPLDoseResponseFunction(),
 };
 
-class FitFunctions {
-  series: FitSeries;
-
-  constructor(series: FitSeries) {
-    this.series = series;
-  }
-
-  linear(): LinearFit {
-    return fitFunctions[FIT_FUNCTION_LINEAR]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LINEAR]), this.series);
-  }
-
-  logLinear(): LogLinearFit {
-    return fitFunctions[FIT_FUNCTION_LOG_LINEAR]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_LOG_LINEAR]), this.series);
-  }
-
-  sigmoid(): SigmoidFit {
-    return fitFunctions[FIT_FUNCTION_SIGMOID]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_SIGMOID]), this.series);
-  }
-
-  exponential(): ExponentialFit {
-    return fitFunctions[FIT_FUNCTION_EXPONENTIAL]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_EXPONENTIAL]), this.series);
-  }
-
-  fourPL(): FourPLRegressionFit {
-    return fitFunctions[FIT_FUNCTION_4PL_REGRESSION]
-      .fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_REGRESSION]), this.series);
-  }
-
-  fourPLDoseResponse(): FourPLDoseResponseFit {
-    return fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE].fillParams(fitSeries(this.series, fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE]), this.series);
-  }
-}
-
-
 // Declaration merging picks up every IFitSeriesOptions member with its real type, so the class
 // cannot drift from the interface the way the previous hand-copied field list had.
 export interface FitSeries extends IFitSeriesOptions {}
@@ -680,12 +643,6 @@ export class FitSeries implements IFitSeries {
 
   constructor(points: IFitPoint[]) {
     this.points = points;
-  }
-
-  /** Prototype getter on purpose: an own property here would be a circular reference back to the
-   * series, which makes JSON.stringify of a series throw. */
-  get fit(): FitFunctions {
-    return new FitFunctions(this);
   }
 }
 

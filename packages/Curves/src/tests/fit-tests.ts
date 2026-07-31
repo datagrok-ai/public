@@ -2,15 +2,15 @@
 import {
   getSeriesFitFunction,
   getCurve,
-  fitSeries,
   getSeriesConfidenceInterval,
   getSeriesStatistics,
   getPointsArrays,
-  getDataPoints,
   getSeriesFit,
   toDataSpace,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {getDataPoints} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {
+  fitSeries,
   fitFunctions,
   getFitFunction,
   getStatistic,
@@ -22,7 +22,7 @@ import {
   ExponentialFit,
   FourPLDoseResponseFit,
   JSFunctionFit,
-} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 import {
   sigmoid,
   FIT_FUNCTION_SIGMOID,

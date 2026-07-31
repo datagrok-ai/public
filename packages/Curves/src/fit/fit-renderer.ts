@@ -8,17 +8,18 @@ import {
   IFitSeries,
   fitChartDataProperties, IFitChartOptions, IFitPoint, FitCurve,
   FitStatistics,
+  LogOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 
 import {
-  fitSeries,
   createDefaultChartData,
   getChartBounds,
   getSeriesFitFunction,
   getCurve,
-  LogOptions, getDataPoints,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {fitSeries} from '@datagrok-libraries/statistics/src/fit/fit-engine';
+import {getDataPoints} from '@datagrok-libraries/statistics/src/fit/fit-points';
 
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue, isNativeFormat} from './curve-converter';
@@ -30,8 +31,8 @@ import {
   renderPoints, renderStatistics, renderTitle
 } from './render-utils';
 import {merge} from 'rxjs';
-import {calculateSeriesStats, getChartDataAggrStats} from './fit-grid-cell-handler';
-import {Fit, FitFunction, FitFunctionTypes, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {calculateSeriesStats, getChartDataAggrStats} from './fit-statistics';
+import {Fit, FitFunction, FitFunctionTypes, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 
 function clamp(value: number, min: number, max: number): number {

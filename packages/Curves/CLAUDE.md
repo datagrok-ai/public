@@ -223,7 +223,8 @@ src/
   fit/
     curve-converter.ts    — Converter registry, LRU cache, parseCellValue() entry point
     fit-renderer.ts       — FitChartCellRenderer, caching, chart layout, merging
-    fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stats calculation
+    fit-grid-cell-handler.ts — FitGridCellHandler (property panel), stat column extraction
+    fit-statistics.ts       — Per-series and aggregated statistics calculation
     render-utils.ts       — Canvas drawing functions (points, lines, CIs, droplines, legend)
     fit-parser.ts         — XML 3DX → IFitChartData parser (used by xml-converter)
     data-to-curves.ts     — Data to Curves pipeline (UI dialog + conversion logic)
@@ -261,12 +262,13 @@ detectors.js              — Semantic type detectors (all curve formats)
 | Function/demo/init registration | `src/package.ts` |
 | Cell renderer (render, click, tooltip) | `src/fit/fit-renderer.ts` |
 | Property panel (options, stats, chart) | `src/fit/fit-grid-cell-handler.ts` |
+| Statistics calculation (per-series, aggregated) | `src/fit/fit-statistics.ts` |
 | Canvas drawing (points, lines, axes) | `src/fit/render-utils.ts` |
 | Data to Curves dialog & conversion | `src/fit/data-to-curves.ts` |
 | Multi-curve overlay viewer | `src/fit/multi-curve-viewer.ts` |
 | XML 3DX format parsing | `src/fit/fit-parser.ts` |
 | Fit data types (IFitChartData, etc.) | `@datagrok-libraries/statistics/src/fit/fit-curve.ts` |
-| Fit functions, typed fits, optimizer | `.../fit/new-fit-API.ts` |
+| Fit functions, typed fits, optimizer | `.../fit/fit-engine.ts` |
 | Series-level API (getSeriesFit, toDataSpace) | `.../fit/fit-data.ts` |
 | Constants (tags, sizes, thresholds) | `@datagrok-libraries/statistics/src/fit/const.ts` |
 | Semantic type detection | `detectors.js` |

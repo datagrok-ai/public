@@ -12,8 +12,11 @@
 * GROK-17637: Fit: Statistic labels now come from each fit function's `parameterNames`, and `maxY`/`minY` are derived from the asymptotes instead of mislabelling parameter slots
 * GROK-17637: Fit: Tightened `IFitSeriesOptions` - removed the catch-all index signature and typed `fitFunction`, `showPoints` and `droplines`
 * GROK-17637: Fit: Fixed `FitSeries.fit` being a circular own property that made `JSON.stringify` of a series throw
-* GROK-17637: Fit: Broke the `fit-data` / `new-fit-API` circular import by adding the `fit-points` leaf module and moving `fitSeries` next to the optimizer; every previous import path still resolves
+* GROK-17637: Fit: Broke the `fit-data` / `fit-engine` circular import by adding the `fit-points` leaf module and moving `fitSeries` next to the optimizer
+* GROK-17637: Fit: Moved `LogOptions` to `fit-curve` alongside the other shared types, and dropped the pass-through re-exports from `fit-data` - `getDataPoints`, `getMedian`, `getMedianPoints`, `logIC50ParameterBounds` and `fitSeries` are now imported from the module that owns them
 * GROK-17637: Fit: Removed the unused `getInvertedFunctions`, `FitInvertedFunctions` and `getInvError`, which inverted the sigmoid only via positional parameter indices
+* GROK-17637: Fit: Removed the unused `FitFunctions` lookup class and the `FitSeries.fit` getter, both superseded by `getFitFunction` and `getSeriesFit`
+* GROK-17637: Fit: Renamed `new-fit-API.ts` to `fit-engine.ts`, so the module is named for what it holds rather than for when it was added
 
 ## 1.12.9 (2026-07-16)
 

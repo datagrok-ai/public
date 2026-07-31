@@ -5,21 +5,18 @@ import {
   FitErrorModel,
   getFittedCurve,
   FitStatistics,
-  FitConfidenceIntervals,
+  FitConfidenceIntervals,
   IFitPoint,
   IFitChartData,
   IFitSeries,
-  fitChartDataProperties,
+  fitChartDataProperties,
   IFitChartOptions,
   FitErrorModelType,
+  LogOptions,
 } from './fit-curve';
 import {Fit, FitFunction, fitSeries, fitSeriesProperties, getStatistic,
-  getCurveConfidenceIntervals, getOrCreateFitFunction} from './new-fit-API';
-import {getDataPoints, LogOptions} from './fit-points';
-
-// re-exported so existing import paths keep resolving after the move that broke the fit-data <-> new-fit-API cycle
-export {getDataPoints, getMedian, getMedianPoints, logIC50ParameterBounds, LogOptions} from './fit-points';
-export {fitSeries} from './new-fit-API';
+  getCurveConfidenceIntervals, getOrCreateFitFunction} from './fit-engine';
+import {getDataPoints} from './fit-points';
 
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: DG.Property[]): any {

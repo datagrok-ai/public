@@ -4,18 +4,18 @@ import {
   FitConfidenceIntervals,
   IFitChartData,
   IFitSeries,
+  LogOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
   getSeriesConfidenceInterval,
   getSeriesFit,
   toDataSpace,
-  LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
-import {FitFunction, getStatistic, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitFunction, getStatistic, getStatisticProperty} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 
 export enum ColorType {

@@ -15,6 +15,12 @@ export type FitParamBounds = {
   max?: number;
 };
 
+/** Which axes are fitted in log space. */
+export type LogOptions = {
+  logX: boolean | undefined,
+  logY: boolean | undefined
+};
+
 /** Fit function description. Applies to custom user fit functions.
  * Requires JS arrow functions for the fit functions and initial parameters. */
 export interface IFitFunctionDescription {

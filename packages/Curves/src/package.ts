@@ -7,16 +7,16 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {FitGridCellHandler, calculateSeriesFit, getChartDataAggrStats} from './fit/fit-grid-cell-handler';
+import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
+import {calculateSeriesFit, getChartDataAggrStats} from './fit/fit-statistics';
 import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
 import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
 import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
 import {convertPzfxToJson} from './fit/converters/pzfx-converter';
 import {registerCurveConverter, initExternalConverters, parseCellValue} from './fit/curve-converter';
-import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {FitStatistics, IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {getStatistic} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitStatistics, IFitChartData, LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {getStatistic} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 // import {PlateWidget} from './plate/plate-widget';
 

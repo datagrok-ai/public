@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as api from '../package-api';
 import wu from 'wu';
-import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
+import {FitFunctionType, FitFunctionTypes} from '@datagrok-libraries/statistics/src/fit/fit-engine';
 
 const groupColumnName = 'Compound|Assay|Target';
 
