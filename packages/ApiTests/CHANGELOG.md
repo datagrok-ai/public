@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20572: Added the `Dapi: domain visual queries` suite — `TableQueryBuilder` (select/where/sortBy/limit and an aggregation) over the virtual `Domain` connection of the package's own `apitests` domain schema, plus the raw-SQL refusal. Self-skips when the schema or its connection is not deployed.
+
 GROK-20322: Behavior change (WO-B15): a mutation that fails as a whole (rolled back, nothing applied) now REJECTS the `DbTable` promise with the SQL message — callers that polled `res.errorMessage` on a resolved result get a rejection instead. Added `Dapi: connector writes` cases: total-failure update rejects; `allOrNothing: false` per-row errors still resolve with survivors committed.
 
 GROK-20322: Added `Dapi: connector ddl` suite for the `grok.data.db.ddl(...)` fluent DDL builder and `DbTable.uploadAs` (create-table-from-DataFrame): scratch-table lifecycle (create → insert → addColumn → dryRun dropTable → typed `DdlConfirmationRequiredError` with the plan attached → confirmed drop), uploadAs dryRun plan + 5k load with native-type spot checks, and a capability negative (PostgresDart, supportsDdl=false). Round trips self-skip on a stack without the DDL dispatch.

@@ -28,6 +28,7 @@ import './dapi/dapi';
 import './dapi/domains';
 import './dapi/domains-batch';
 import './dapi/domain-handlers';
+import './dapi/domain-visual-queries';
 import './dapi/connector-writes';
 import './dapi/connector-ddl';
 import './dapi/connection';
