@@ -20,6 +20,8 @@
 * GROK-17637: Statistics: Toggling an outlier refreshes extracted statistic columns by name off the typed fit, so columns named beyond the seven legacy statistics (`ic50`, `pIC50`, `maxY`) stay populated
 * GROK-17637: Statistics: Fixed a recalculated statistic ignoring column-level chart options - a column-level `logX`, `allowXZeroes` or fit function was lost on the detached recalculation column
 * GROK-17637: Statistics: A cell mixing fit functions now aggregates only the statistics every series produces, instead of averaging one over the subset that has it
+* GROK-17637: Statistics: Changing a chart option at Column or Dataframe level now refreshes extracted statistic columns - the option lives in a tag, so nothing marked the curve column changed and the columns kept stale numbers while the plot updated
+* GROK-17637: Statistics: Statistics that only carry meaning in data space (IC50/EC50 under a logarithmic x axis, the asymptotes under a logarithmic y axis, and pIC50) are no longer offered for aggregations that are not converted back, where they would have been reported in log space or come back empty
 * GROK-17637: Fixed the series colour type being widened to `string`, which disabled colour-option checking
 * GROK-17637: Statistics: Added `curveStatistic` and `curveAggrStatistic` - the property panel now adds a statistic as a calculated column that recalculates when its curve changes and is recorded in the table's creation script
 * GROK-17637: Statistics: Aggregation now covers every statistic the cell's fit functions produce rather than a fixed list, and the aggregated pane uses the same per-fit-function descriptors as the single-series one

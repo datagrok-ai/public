@@ -63,7 +63,9 @@ export abstract class FitFunction<T = Fit> {
   }
 
   /** Descriptor for a legacy name this fit function has no statistic of its own for, labelled by the
-   * parameter it maps onto. Memoised - this sits inside a per-repaint loop. */
+   * parameter it maps onto. Memoised - this sits inside a per-repaint loop.
+   * @param {string} name - a legacy FitStatistics name.
+   * @return {DG.Property | undefined} the descriptor, or undefined when no parameter maps onto it. */
   legacyStatisticProperty(name: string): DG.Property | undefined {
     const slot = LEGACY_POSITIONAL_SLOTS[name];
     if (slot === undefined || slot >= this.parameterNames.length)

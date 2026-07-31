@@ -212,6 +212,11 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
       });
       columns[i].temp[`${options}-custom-${propertyName}`] = false;
     }
+
+    // the option lives in a tag rather than in the data, so nothing marks the curve column changed
+    // and statistic columns extracted from it would keep stale numbers while the plot updates
+    for (const column of columns)
+      column.fireValuesChanged();
   }
   gridCell.grid.invalidate();
 }
@@ -354,7 +359,7 @@ chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outli
         host.appendChild(ui.panel([
           ui.h1(`series ${aggrTypeInput.stringValue}`),
           // same per-fit-function descriptors as the single-series pane, deduplicated across series
-          ui.input.form(seriesStatistics, aggregatedStatisticsProperties(chartData), {
+          ui.input.form(seriesStatistics, aggregatedStatisticsProperties(chartData, aggrTypeInput.stringValue), {
             onCreated: (input) => input.root.appendChild(ui.iconFA('plus', () =>
               addStatisticColumn(gridCell, 'curveAggrStatistic',
                 {propName: input.property.name, aggrType: aggrTypeInput.stringValue}),

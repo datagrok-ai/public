@@ -1,8 +1,8 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
-import {getSeriesFit, getSeriesFitFunction, toDataSpace}
-  from '@datagrok-libraries/statistics/src/fit/fit-data';
+import {getSeriesFit, getSeriesFitFunction, toDataSpace, X_SPACE_STATISTICS, Y_SPACE_STATISTICS,
+  DATA_SPACE_DERIVED_STATISTICS} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, IFitChartData, IFitSeries, FitStatistics, LEGACY_FIT_STATISTICS, LogOptions}
   from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Fit, FitFunction, getStatistic, getStatisticProperty}
@@ -36,9 +36,17 @@ export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartL
 
 export type AggregatedFitStatistics = FitStatistics & {[name: string]: number | undefined};
 
+/** Statistics that only carry meaning once converted back to data space. */
+function dataSpaceOnlyStatistics(chartData: IFitChartData): Set<string> {
+  return new Set([...DATA_SPACE_DERIVED_STATISTICS,
+    ...(chartData.chartOptions?.logX ? X_SPACE_STATISTICS : []),
+    ...(chartData.chartOptions?.logY ? Y_SPACE_STATISTICS : [])]);
+}
+
 /** Statistics viable for every fit function in the cell - aggregating one only some series produce
- * would average over a subset while still labelling it "across series". */
-export function aggregatedStatisticsProperties(chartData: IFitChartData): DG.Property[] {
+ * would average over a subset while still labelling it "across series". With an aggregation we do not
+ * convert back, the space-dependent ones are dropped rather than reported in log space. */
+export function aggregatedStatisticsProperties(chartData: IFitChartData, aggrType?: string): DG.Property[] {
   const seriesList = chartData.series ?? [];
   if (!seriesList.length)
     return statisticsProperties;
@@ -46,6 +54,10 @@ export function aggregatedStatisticsProperties(chartData: IFitChartData): DG.Pro
   for (let i = 1; i < seriesList.length; i++) {
     const names = new Set(getSeriesFitFunction(seriesList[i]).statisticsProperties.map((p) => p.name));
     common = common.filter((p) => names.has(p.name));
+  }
+  if (aggrType !== undefined && !DATA_SPACE_AGGREGATIONS.has(aggrType)) {
+    const excluded = dataSpaceOnlyStatistics(chartData);
+    common = common.filter((p) => !excluded.has(p.name));
   }
   return common;
 }
@@ -56,7 +68,7 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
   const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
   const values: Map<string, (number | undefined)[]> = new Map();
   const fitFunctionsUsed: FitFunction[] = [];
-  const common = new Set(aggregatedStatisticsProperties(chartData).map((p) => p.name));
+  const common = new Set(aggregatedStatisticsProperties(chartData, aggrType).map((p) => p.name));
 
   for (let i = 0; i < chartData.series?.length!; i++) {
     const series = chartData.series![i];

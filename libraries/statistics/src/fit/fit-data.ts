@@ -171,8 +171,10 @@ export function getSeriesStatistics(series: IFitSeries, fitFunc: FitFunction, da
   return toFitStatistics(getSeriesFit(series, fitFunc, dataPoints, logOptions));
 }
 
-const X_SPACE_STATISTICS = ['ic50', 'ec50'];
-const Y_SPACE_STATISTICS = ['top', 'bottom', 'interceptY', 'maxY', 'minY'];
+export const X_SPACE_STATISTICS = ['ic50', 'ec50'];
+export const Y_SPACE_STATISTICS = ['top', 'bottom', 'interceptY', 'maxY', 'minY'];
+/** Derived by {@link toDataSpace}, so unavailable to anything that skips the conversion. */
+export const DATA_SPACE_DERIVED_STATISTICS = ['pIC50'];
 
 /** Converts a fit from fit space back to data space. The optimizer runs on log10-transformed axes when
  * logX/logY are set, so the raw parameters are logarithms. Everything shown to a user - plot, property

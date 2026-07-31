@@ -116,14 +116,6 @@ category('calculated columns', () => {
     expectFloat(Math.log10(getChartDataAggrStats(data, 'avg').ic50!), -6, 0.1);
   });
 
-  test('count-family aggregations are not exponentiated', async () => {
-    const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
-
-    // regression guard: unlogging every aggregation turned a count of 2 into 100
-    expect(getChartDataAggrStats(data, 'count').ic50, 2);
-    expect(getChartDataAggrStats(JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData, 'values').ic50, 2);
-  });
-
   test('mixed fit functions only aggregate statistics common to all series', async () => {
     const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
     data.series![1].fitFunction = 'linear';
@@ -176,6 +168,23 @@ category('calculated columns', () => {
 
     // the detached recalculation column has no dataframe, so it must read logX off its own tags
     expectFloat(Math.log10(df.col('curve 1 ic50')!.get(1)), -5.0, 0.3);
+  });
+
+  test('log-space statistics are not offered for aggregations we do not convert', async () => {
+    const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
+
+    // ic50 lives in log space under logX, and pIC50 is only derived during the conversion. Under an
+    // aggregation we do not convert they would be a log-space number and a null, so both are dropped -
+    // this also guards the regression where unlogging every aggregation turned a count of 2 into 100
+    const counted = aggregatedStatisticsProperties(data, 'count').map((p) => p.name);
+    expect(counted.includes('ic50'), false, 'ic50 would be a log-space number under count');
+    expect(counted.includes('pIC50'), false, 'pIC50 is only derived in data space');
+    expect(counted.includes('rSquared'), true, 'space-independent statistics stay');
+
+    // they come back for an aggregation that is converted
+    const averaged = aggregatedStatisticsProperties(data, 'avg').map((p) => p.name);
+    expect(averaged.includes('ic50'), true);
+    expect(getChartDataAggrStats(data, 'count').ic50 === undefined, true);
   });
 
   test('outlier toggle refreshes statistic columns named by the new API', async () => {
