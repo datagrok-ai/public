@@ -195,8 +195,8 @@ export const statisticsProperties: DG.Property[] = [
   DG.Property.js('interceptY', DG.TYPE.FLOAT, {userEditable: false}),
   DG.Property.js('interceptX', DG.TYPE.FLOAT, {userEditable: false}),
   DG.Property.js('slope', DG.TYPE.FLOAT, {userEditable: false}),
-  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'Max Y'}),
-  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false, friendlyName: 'Min Y'}),
+  DG.Property.js('top', DG.TYPE.FLOAT, {userEditable: false}),
+  DG.Property.js('bottom', DG.TYPE.FLOAT, {userEditable: false}),
 ];
 
 /** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */

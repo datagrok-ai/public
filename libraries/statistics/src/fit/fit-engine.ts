@@ -38,11 +38,28 @@ import {NELDER_MEAD_DEFAULTS} from './fitting-algorithm/optimizer-nelder-mead';
 
 /** Class for the fit functions */
 export abstract class FitFunction<T = Fit> {
-  protected _statisticsProperties?: DG.Property[];
+  private _statisticsProperties?: DG.Property[];
 
   abstract get name(): string;
   abstract get parameterNames(): string[];
-  abstract get statisticsProperties(): DG.Property[];
+  /** Fit fields the parameters map onto, in parameter order. */
+  abstract get statisticFields(): string[];
+
+  /** Statistics derived from the parameters rather than mapped onto one. */
+  protected get derivedStatisticsProperties(): DG.Property[] {
+    return [];
+  }
+
+  /** Labels for the mapped fields, so a fit function can name them independently of its parameters. */
+  protected get statisticLabels(): string[] {
+    return this.parameterNames;
+  }
+
+  get statisticsProperties(): DG.Property[] {
+    this._statisticsProperties ??=
+      fitStatisticsProperties(this.statisticFields, this.statisticLabels, this.derivedStatisticsProperties);
+    return this._statisticsProperties;
+  }
   abstract fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions): T;
   abstract y(params: Float32Array, x: number): number;
   abstract getInitialParameters(x: number[], y: number[]): Float32Array;
@@ -272,6 +289,9 @@ const LEGACY_STATISTICS_ALIASES: {[fitFunctionName: string]: {[legacyName: strin
   [FIT_FUNCTION_4PL_DOSE_RESPONSE]: {interceptX: 'ic50'},
 };
 
+// Slots the pre-typed getStatistics() read positionally, for every fit function alike.
+const LEGACY_POSITIONAL_SLOTS: {[legacyName: string]: number} = {top: 0, slope: 1, interceptX: 2, bottom: 3};
+
 /** Resolves a statistic name (legacy names included) to the descriptor of the fit function producing it.
  * @param {FitFunction} fitFunc - fit function whose statistics are being described.
  * @param {string} name - a statistic name, or a legacy FitStatistics name.
@@ -304,7 +324,12 @@ export function getStatistic<T extends Fit>(fit: T,
   name: FitStatisticName<T> | LegacyFitStatisticName | (string & {})): number | undefined {
   const field = LEGACY_STATISTICS_ALIASES[fit.name]?.[name] ?? name;
   const value = (fit as {[key: string]: any})[field];
-  return typeof value === 'number' ? value : undefined;
+  if (typeof value === 'number')
+    return value;
+  // legacy names this fit function lacks keep the pre-typed positional value, so old columns survive
+  const slot = LEGACY_POSITIONAL_SLOTS[name];
+  const parameter = slot === undefined ? undefined : fit.parameters?.[slot];
+  return typeof parameter === 'number' && !isNaN(parameter) ? parameter : undefined;
 }
 
 function resolveDataPoints(data: IFitSeries, dataPoints?: {x: number[], y: number[]}, logOptions?: LogOptions):
@@ -329,9 +354,8 @@ export class LinearFunction extends FitFunction<LinearFit> {
     return ['Slope', 'Intercept'];
   }
 
-  get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= fitStatisticsProperties(['slope', 'intercept'], this.parameterNames);
-    return this._statisticsProperties;
+  get statisticFields(): string[] {
+    return ['slope', 'intercept'];
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -377,11 +401,12 @@ export class SigmoidFunction extends FitFunction<SigmoidFit> {
     return ['Top', 'Slope', 'IC50', 'Bottom'];
   }
 
-  get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= fitStatisticsProperties(['top', 'slope', 'ic50', 'bottom'],
-      this.parameterNames,
-      [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty]);
-    return this._statisticsProperties;
+  get statisticFields(): string[] {
+    return ['top', 'slope', 'ic50', 'bottom'];
+  }
+
+  protected override get derivedStatisticsProperties(): DG.Property[] {
+    return [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty];
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -432,9 +457,8 @@ export class LogLinearFunction extends FitFunction<LogLinearFit> {
     return ['Slope', 'Intercept'];
   }
 
-  get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= fitStatisticsProperties(['slope', 'intercept'], this.parameterNames);
-    return this._statisticsProperties;
+  get statisticFields(): string[] {
+    return ['slope', 'intercept'];
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -467,9 +491,8 @@ export class ExponentialFunction extends FitFunction<ExponentialFit> {
     return ['Mantissa', 'Power'];
   }
 
-  get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= fitStatisticsProperties(['mantissa', 'power'], this.parameterNames);
-    return this._statisticsProperties;
+  get statisticFields(): string[] {
+    return ['mantissa', 'power'];
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -502,10 +525,12 @@ export class FourPLRegressionFunction extends FitFunction<FourPLRegressionFit> {
     return ['Top', 'Slope', 'EC50', 'Bottom'];
   }
 
-  get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= fitStatisticsProperties(['top', 'slope', 'ec50', 'bottom'],
-      this.parameterNames, asymptoteStatisticsProperties(this.parameterNames[2]));
-    return this._statisticsProperties;
+  get statisticFields(): string[] {
+    return ['top', 'slope', 'ec50', 'bottom'];
+  }
+
+  protected override get derivedStatisticsProperties(): DG.Property[] {
+    return asymptoteStatisticsProperties(this.parameterNames[2]);
   }
 
   // shared with the dose-response parameterization, which only differs in how the parameters are named
@@ -560,11 +585,12 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
     return ['Max', 'Hill', 'IC50', 'Min'];
   }
 
-  override get statisticsProperties(): DG.Property[] {
-    this._statisticsProperties ??= fitStatisticsProperties(['top', 'slope', 'ic50', 'bottom'],
-      this.parameterNames,
-      [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty]);
-    return this._statisticsProperties;
+  override get statisticFields(): string[] {
+    return ['top', 'slope', 'ic50', 'bottom'];
+  }
+
+  protected override get derivedStatisticsProperties(): DG.Property[] {
+    return [...asymptoteStatisticsProperties(this.parameterNames[2]), pIC50StatisticsProperty];
   }
 
   override fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},
@@ -593,12 +619,12 @@ export class JsFunction extends FitFunction<Fit> {
     this.getInitialParameters = getInitParamsFunc;
   }
 
-  get statisticsProperties(): DG.Property[] {
-    if (!this._statisticsProperties) {
-      const fieldNames = this._parameterNames.filter((name) => !RESERVED_FIT_FIELDS.includes(name));
-      this._statisticsProperties = fitStatisticsProperties(fieldNames, fieldNames);
-    }
-    return this._statisticsProperties;
+  get statisticFields(): string[] {
+    return this._parameterNames.filter((name) => !RESERVED_FIT_FIELDS.includes(name));
+  }
+
+  protected override get statisticLabels(): string[] {
+    return this.statisticFields;
   }
 
   fillParams(fitCurve: FitCurve, data: IFitSeries, dataPoints?: {x: number[], y: number[]},

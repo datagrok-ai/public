@@ -8,8 +8,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
-import {calculateSeriesFit, getChartDataAggrStats} from './fit/fit-statistics';
-import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-renderer';
+import {calculateSeriesFit, getChartDataAggrStats, curveStatisticAt, curveAggrStatisticAt} from './fit/fit-statistics';
+import {getOrCreateParsedChartData, substituteZeroes} from './fit/fit-chart-data';
 import {assayCurvesDemo, curveDemo} from './fit/fit-demo';
 import {convertXmlCurveToJson} from './fit/converters/xml-converter';
 import {convertCompactDrToJson} from './fit/converters/compact-dr-converter';
@@ -31,43 +31,6 @@ const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
-
-/** Parsed chart data for one cell of a curve column, with x zeroes substituted when needed.
- * Recalculation hands us a detached column holding only the changed rows, so there is no dataframe
- * cell to key the caches on - fall back to parsing the value directly in that case. */
-function chartDataAt(curveColumn: DG.Column, rowIdx: number): {data: IFitChartData, cell?: DG.Cell} | null {
-  const value = curveColumn.get(rowIdx);
-  if (value === null || value === undefined || value === '')
-    return null;
-  const cell = curveColumn.dataFrame ? curveColumn.dataFrame.cell(rowIdx, curveColumn.name) : undefined;
-  const data = cell ? getOrCreateParsedChartData(cell, true) : parseCellValue(value, curveColumn);
-  if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
-    data.series?.some((series) => series.points.some((p) => p.x === 0)))
-    substituteZeroes(data);
-  return {data, cell};
-}
-
-/** One statistic of one series, resolved by name so legacy names keep working. */
-function curveStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, seriesNumber: number): number | null {
-  const parsed = chartDataAt(curveColumn, rowIdx);
-  if (!parsed)
-    return null;
-  const series = parsed.data.series?.[seriesNumber];
-  if (!series || series.points.every((p) => p.outlier))
-    return null;
-  const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
-  return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
-}
-
-/** One statistic aggregated across every series of a curve. */
-function curveAggrStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, aggrType: string): number | null {
-  const parsed = chartDataAt(curveColumn, rowIdx);
-  if (!parsed)
-    return null;
-  if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
-    return null;
-  return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
-}
 
 export class Sync {
   private static _currentPromise: Promise<any> = Promise.resolve();

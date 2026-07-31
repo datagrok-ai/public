@@ -291,12 +291,11 @@ category('fit', () => {
       getFitFunction('4pl-dose-response'));
     expect(getStatistic(doseResponseFit, 'interceptX'), doseResponseFit.ic50);
 
-    // statistics a 2-parameter fit does not produce resolve to undefined rather than NaN
-    // (expect() defaults its expected value to true, so compare explicitly)
+    // legacy names a 2-parameter fit lacks fall back to the slot the pre-typed API read positionally
     const linearFit = getSeriesFit(linearSeries, getFitFunction('linear'));
+    expect(getStatistic(linearFit, 'top'), linearFit.parameters[0]);
     expect(getStatistic(linearFit, 'interceptX') === undefined);
     expect(getStatistic(linearFit, 'interceptY') === undefined);
-    expect(getStatistic(linearFit, 'top') === undefined);
     expect(getStatistic(linearFit, 'bottom') === undefined);
     expect(getStatistic(linearFit, 'slope'), linearFit.slope);
 
@@ -355,6 +354,8 @@ category('fit', () => {
     const logX = {logX: true, logY: false};
     const fitSpace = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'), undefined, logX);
     const rawIc50 = fitSpace.ic50;
+    // toDataSpace mutates in place, so capture before converting
+    const untouchedTop = fitSpace.top;
     const dataSpace = toDataSpace(fitSpace, logX);
 
     // the inflection point is fitted in log space and must be reported as a concentration
@@ -362,7 +363,7 @@ category('fit', () => {
     // pIC50 is derived from the concentration, so only after the conversion
     expect(dataSpace.pIC50, -Math.log10(Math.pow(10, rawIc50)));
     // y statistics are untouched when logY is off
-    expect(dataSpace.top, fitSpace.top);
+    expect(dataSpace.top, untouchedTop);
 
     const logY = {logX: false, logY: true};
     const yFit = getSeriesFit(sigmoidSeries, getFitFunction('sigmoid'), undefined, logY);

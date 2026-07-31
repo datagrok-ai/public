@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 
 import {
   getSeriesFitFunction,
@@ -16,14 +15,11 @@ import {
   IFitFunctionDescription,
   LogOptions,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {isColorValid, FitChartCellRenderer} from './fit-renderer';
 import {
-  getOrCreateParsedChartData,
-  getColumnChartOptions,
-  getDataFrameChartOptions,
-  isColorValid,
-  mergeProperties,
-  substituteZeroes, FitChartCellRenderer
-} from './fit-renderer';
+  getOrCreateParsedChartData, getColumnChartOptions, getDataFrameChartOptions, mergeProperties,
+  substituteZeroes,
+} from './fit-chart-data';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue, isNativeFormat} from './curve-converter';
 import {ColorType, SeriesColorType, getSeriesColor} from './render-utils';

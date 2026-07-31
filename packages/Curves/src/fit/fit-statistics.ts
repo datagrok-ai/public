@@ -1,65 +1,71 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
-import {getSeriesFit, getSeriesFitFunction, toFitStatistics, toDataSpace}
+import {getSeriesFit, getSeriesFitFunction, toDataSpace}
   from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, IFitChartData, IFitSeries, FitStatistics, LEGACY_FIT_STATISTICS, LogOptions}
   from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Fit, FitFunction, getStatistic, getStatisticProperty}
   from '@datagrok-libraries/statistics/src/fit/fit-engine';
-import {getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints} from './fit-renderer';
+import {getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, getOrCreateParsedChartData,
+  substituteZeroes, mergeColumnChartOptions} from './fit-chart-data';
+import {parseCellValue} from './curve-converter';
 
 const AGGREGATION_TYPES: {[key: string]: string} = {
   'count': 'totalCount', 'nulls': 'missingValueCount', 'unique': 'uniqueCount', 'values': 'valueCount',
   'min': 'min', 'max': 'max', 'sum': 'sum', 'avg': 'avg', 'stdev': 'stdev', 'variance': 'variance',
   'skew': 'skew', 'kurt': 'kurt', 'med': 'med', 'q1': 'q1', 'q2': 'q2', 'q3': 'q3',
 };
+
+/** Aggregations that stay on the statistic's own scale. Unlogging a count of 3 would report 1000. */
+const DATA_SPACE_AGGREGATIONS = new Set(['min', 'max', 'avg', 'med', 'q1', 'q2', 'q3']);
+
 /** Returns the typed fit for a series, with the inflection point reported in data space. */
 export function calculateSeriesFit(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
   tableCell?: DG.Cell, useCache: boolean = true, inDataSpace: boolean = true): Fit {
   const fitFunction = getSeriesFitFunction(series);
+  let fitInput = series;
   if (series.parameters) {
-    if (chartLogOptions.logX) {
-      if (series.parameters[2] > 0)
-        series.parameters[2] = Math.log10(series.parameters[2]);
+    // stored parameters carry the inflection point as a concentration, the fit works in log space.
+    // Converting on a copy - the parsed chart data is cached, so mutating it re-logs on every call
+    if (chartLogOptions.logX && series.parameters[2] > 0) {
+      const parameters = [...series.parameters];
+      parameters[2] = Math.log10(parameters[2]);
+      fitInput = {...series, parameters};
     }
   } else {
     const params = getOrCreateCachedFitCurve(series, seriesIdx, fitFunction, chartLogOptions, tableCell, useCache).parameters;
     series.parameters = [...params];
   }
 
-  const fit = getSeriesFit(series, fitFunction,
+  const fit = getSeriesFit(fitInput, fitFunction,
     getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell), chartLogOptions);
   return inDataSpace ? toDataSpace(fit, chartLogOptions) : fit;
 }
 
-/** Returns series statistics in the legacy shape. Prefer {@link calculateSeriesFit}. */
-export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
-  tableCell?: DG.Cell, useCache: boolean = true): FitStatistics {
-  return toFitStatistics(calculateSeriesFit(series, seriesIdx, chartLogOptions, tableCell, useCache));
-}
 export type AggregatedFitStatistics = FitStatistics & {[name: string]: number | undefined};
 
-/** Statistics descriptors covering every fit function used in the cell, without duplicates. */
+/** Statistics viable for every fit function in the cell - aggregating one only some series produce
+ * would average over a subset while still labelling it "across series". */
 export function aggregatedStatisticsProperties(chartData: IFitChartData): DG.Property[] {
-  const props: DG.Property[] = [];
-  for (const series of chartData.series ?? []) {
-    for (const prop of getSeriesFitFunction(series).statisticsProperties) {
-      if (!props.some((p) => p.name === prop.name))
-        props.push(prop);
-    }
+  const seriesList = chartData.series ?? [];
+  if (!seriesList.length)
+    return statisticsProperties;
+  let common = [...getSeriesFitFunction(seriesList[0]).statisticsProperties];
+  for (let i = 1; i < seriesList.length; i++) {
+    const names = new Set(getSeriesFitFunction(seriesList[i]).statisticsProperties.map((p) => p.name));
+    common = common.filter((p) => names.has(p.name));
   }
-  return props.length ? props : statisticsProperties;
+  return common;
 }
 
-/** Aggregates across all series every statistic that the cell's fit functions produce - not just the
- * seven legacy ones. Values are aggregated in fit space and converted once at the end, so an averaged
- * IC50 is a geometric mean. Legacy names stay available so recorded transforms keep resolving. */
+/** Aggregates in fit space and converts once at the end, so an averaged IC50 is a geometric mean. */
 export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string,
   tableCell?: DG.Cell): AggregatedFitStatistics {
   const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
   const values: Map<string, (number | undefined)[]> = new Map();
   const fitFunctionsUsed: FitFunction[] = [];
+  const common = new Set(aggregatedStatisticsProperties(chartData).map((p) => p.name));
 
   for (let i = 0; i < chartData.series?.length!; i++) {
     const series = chartData.series![i];
@@ -69,6 +75,8 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
     fitFunctionsUsed.push(fitFunction);
     const fit = calculateSeriesFit(series, i, chartLogOptions, tableCell, true, false);
     for (const prop of fitFunction.statisticsProperties) {
+      if (!common.has(prop.name))
+        continue;
       if (!values.has(prop.name))
         values.set(prop.name, []);
       values.get(prop.name)!.push(getStatistic(fit, prop.name));
@@ -81,10 +89,9 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
       DG.Stats.fromValues(seriesValues as number[])[AGGREGATION_TYPES[aggrType] as keyof DG.Stats] as number;
   }
 
-  // convert once, after aggregating - the same boundary a single series goes through
-  toDataSpace(aggregated as unknown as Fit, chartLogOptions);
+  if (DATA_SPACE_AGGREGATIONS.has(aggrType))
+    toDataSpace(aggregated as unknown as Fit, chartLogOptions);
 
-  // legacy names resolve to whatever the series' fit functions call them today
   for (const legacyName of LEGACY_FIT_STATISTICS) {
     if (aggregated[legacyName] !== undefined)
       continue;
@@ -99,3 +106,41 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
   return aggregated;
 }
 
+/** Parsed chart data for one cell of a curve column, with x zeroes substituted when needed.
+ * Recalculation hands us a detached column holding only the changed rows, so there is no dataframe
+ * cell to key the caches on - fall back to parsing the value directly in that case. */
+function chartDataAt(curveColumn: DG.Column, rowIdx: number): {data: IFitChartData, cell?: DG.Cell} | null {
+  const value = curveColumn.get(rowIdx);
+  if (value === null || value === undefined || value === '')
+    return null;
+  const cell = curveColumn.dataFrame ? curveColumn.dataFrame.cell(rowIdx, curveColumn.name) : undefined;
+  // the detached column keeps its tags, so column-level logX/allowXZeroes/fitFunction still apply
+  const data = cell ? getOrCreateParsedChartData(cell, true) :
+    mergeColumnChartOptions(parseCellValue(value, curveColumn), curveColumn);
+  if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
+    data.series?.some((series) => series.points.some((p) => p.x === 0)))
+    substituteZeroes(data);
+  return {data, cell};
+}
+
+/** One statistic of one series, resolved by name so legacy names keep working. */
+export function curveStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, seriesNumber: number): number | null {
+  const parsed = chartDataAt(curveColumn, rowIdx);
+  if (!parsed)
+    return null;
+  const series = parsed.data.series?.[seriesNumber];
+  if (!series || series.points.every((p) => p.outlier))
+    return null;
+  const logOptions: LogOptions = {logX: parsed.data.chartOptions?.logX, logY: parsed.data.chartOptions?.logY};
+  return getStatistic(calculateSeriesFit(series, seriesNumber, logOptions, parsed.cell, true), propName) ?? null;
+}
+
+/** One statistic aggregated across every series of a curve. */
+export function curveAggrStatisticAt(curveColumn: DG.Column, rowIdx: number, propName: string, aggrType: string): number | null {
+  const parsed = chartDataAt(curveColumn, rowIdx);
+  if (!parsed)
+    return null;
+  if (parsed.data.series?.every((series) => series.points.every((p) => p.outlier)))
+    return null;
+  return getChartDataAggrStats(parsed.data, aggrType, parsed.cell)[propName as keyof FitStatistics] ?? null;
+}

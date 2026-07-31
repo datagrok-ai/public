@@ -16,7 +16,10 @@
 * GROK-17637: Fit: Moved `LogOptions` to `fit-curve` alongside the other shared types, and dropped the pass-through re-exports from `fit-data` - `getDataPoints`, `getMedian`, `getMedianPoints`, `logIC50ParameterBounds` and `fitSeries` are now imported from the module that owns them
 * GROK-17637: Fit: Removed the unused `getInvertedFunctions`, `FitInvertedFunctions` and `getInvError`, which inverted the sigmoid only via positional parameter indices
 * GROK-17637: Fit: Removed the unused `FitFunctions` lookup class and the `FitSeries.fit` getter, both superseded by `getFitFunction` and `getSeriesFit`
+* GROK-17637: Fit: `FitFunction` now builds `statisticsProperties` once in the base class from `statisticFields`, instead of each fit function repeating the memo
+* GROK-17637: Fit: `statisticsProperties` no longer labels `top`/`bottom` as "Max Y"/"Min Y", which now name the derived asymptote statistics
 * GROK-17637: Fit: Renamed `new-fit-API.ts` to `fit-engine.ts`, so the module is named for what it holds rather than for when it was added
+* GROK-17637: Fit: A legacy statistic name a fit function does not produce now falls back to the parameter slot the pre-typed API read, so a `top` column extracted from a linear or exponential curve keeps its value instead of turning null
 
 ## 1.12.9 (2026-07-16)
 

@@ -8,12 +8,17 @@
 * GROK-17637: Statistics: Aggregation now happens in fit space, so an averaged IC50 is a geometric mean
 * GROK-17637: Statistics: Added pIC50
 * GROK-17637: Options: A custom JS fit function is now named in the property panel instead of rendering a blank input
-* GROK-17637: Fixed confidence intervals discarding the cached data points and recomputing them on every frame
+* GROK-17637: Statistics: Fixed count, sum and shape aggregations being exponentiated on a logarithmic axis - a count of 3 series was reported as 1000; only location and order statistics are converted back to data space
+* GROK-17637: Statistics: Fixed toggling an outlier blanking extracted statistic columns whose name is not one of the seven legacy ones (`ic50`, `pIC50`, `maxY`); the refresh now resolves by name off the typed fit
+* GROK-17637: Statistics: Fixed a recalculated statistic ignoring column-level chart options - a column-level `logX`, `allowXZeroes` or fit function was lost on the detached recalculation column
+* GROK-17637: Statistics: A cell mixing fit functions now aggregates only the statistics every series produces, instead of averaging one over the subset that has it
 * GROK-17637: Fixed the series colour type being widened to `string`, which disabled colour-option checking
 * GROK-17637: Statistics: Added `curveStatistic` and `curveAggrStatistic` - the property panel now adds a statistic as a calculated column that recalculates when its curve changes and is recorded in the table's creation script
 * GROK-17637: Statistics: Aggregation now covers every statistic the cell's fit functions produce rather than a fixed list, and the aggregated pane uses the same per-fit-function descriptors as the single-series one
 * GROK-17637: Fixed confidence intervals reading a non-existent `series.dataPoints`, which discarded the cached points and recomputed them on every frame
-* GROK-17637: Statistics: Moved the statistics calculation out of the property-panel handler into `fit/fit-statistics.ts`, so the handler is left with the UI
+* GROK-17637: Statistics: Moved the statistics calculation out of the property-panel handler and the package entry point into `fit/fit-statistics.ts`
+* GROK-17637: Extracted the chart-data assembly and fit caches into `fit/fit-chart-data.ts`, breaking the `fit-renderer` <-> `fit-statistics` import cycle
+* GROK-17637: Statistics: Fixed a stored inflection point being re-logged on every calculation, which drifted the reported IC50 of nM/uM-scale curves (100 -> 2 -> 0.301)
 
 ## 1.12.0 (2026-04-02)
 
