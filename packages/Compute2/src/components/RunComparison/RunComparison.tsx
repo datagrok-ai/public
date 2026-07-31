@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
+import {onClickOutside} from '@vueuse/core';
 
 import {
   IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping, wheelGuard,
@@ -78,12 +79,7 @@ export const RunComparison = Vue.defineComponent({
       }
     });
 
-    const onClickOutside = (e: MouseEvent) => {
-      if (modelDropdownRef.value && !modelDropdownRef.value.contains(e.target as Node))
-        modelDropdownOpen.value = false;
-    };
-    Vue.onMounted(() => document.addEventListener('mousedown', onClickOutside));
-    Vue.onUnmounted(() => document.removeEventListener('mousedown', onClickOutside));
+    onClickOutside(modelDropdownRef, () => modelDropdownOpen.value = false);
 
     const modelLabel = (f: DG.Func) => f.friendlyName ?? f.name;
     const filteredModels = Vue.computed(() => {
