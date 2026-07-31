@@ -437,10 +437,23 @@ export class DataPanel {
       barHost.append(hintEl(`Full ${this.opts.noun} library — used by every round unless a round overrides it.`),
         filterIcon, btn, useAll);
     } else {
-      const w = this.stepState[this.selStep - 1]?.df;
-      const status = ui.divText(
-        w ? (this.hasOverride(this.selStep) ? `using ${w.rowCount} / ${this.opts.input.value?.rowCount ?? w.rowCount}` :
-          `all ${w.rowCount}`) : '',
+      const entry = this.stepState[this.selStep - 1];
+      const w = entry?.df;
+      // Once suppressed (see bbOverrideSuppressedInBreadth), `w` is still the stale committed subset
+      // clone — reporting w.rowCount here would show the SUBSET's size labeled as "all", which is both
+      // the wrong number and the wrong word. The true count in that case is the full library's.
+      const suppressed = !!entry?.committed &&
+        bbOverrideSuppressedInBreadth(this.opts.idx === 1, this.deps.currentMode());
+      let statusText = '';
+      if (w) {
+        if (this.hasOverride(this.selStep))
+          statusText = `using ${w.rowCount} / ${this.opts.input.value?.rowCount ?? w.rowCount}`;
+        else {
+          const fullCount = this.opts.input.value?.rowCount ?? w.rowCount;
+          statusText = `all ${fullCount}` + (suppressed ? ' (subset ignored in breadth-first)' : '');
+        }
+      }
+      const status = ui.divText(statusText,
         {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
       const btn = ui.link('Subset by selection', () => this.subsetStepBySelection(this.selStep));
       ui.tooltip.bind(btn, `Narrow round ${this.selStep} to only the selected rows (Ctrl/Shift+click), or — if ` +

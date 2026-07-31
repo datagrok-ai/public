@@ -281,13 +281,16 @@ export class EnumeratorConfigForm {
     );
 
     // ---- CONFIG inputs ----
+    // nullable: true — without it, clearing the box entirely makes .value NaN (not null), and NaN
+    // slips past every `?? fallback` downstream (NaN is neither null nor undefined) uncaught.
     this.numRoundsInput = ui.input.int('Number of rounds',
-      {value: this.config.enumeration.num_rounds, min: 1, max: MAX_ROUNDS, showPlusMinus: true});
+      {value: this.config.enumeration.num_rounds, nullable: true, min: 1, max: MAX_ROUNDS, showPlusMinus: true});
     this.numRoundsInput.setTooltip(
       'Number of consecutive enumeration rounds. Round 1 reacts BBs only; round 2 takes round-1 ' +
       `products and (in depth-first mode) reacts each one with original BBs. Increase for deeper ` +
       `libraries (capped at ${MAX_ROUNDS} — a round tab is built for every round, and product counts ` +
       `grow combinatorially with each one).`);
+    fixNullableIntStepper(this.numRoundsInput, 1);
     // `min`/`max` above only affect the tooltip/spinner, not validation — add that separately.
     this.numRoundsInput.addValidator((v) => {
       const n = Number(v);
@@ -303,9 +306,12 @@ export class EnumeratorConfigForm {
       'combination from rounds 0..r-1 — typically explodes the search space and produces convergent routes.');
 
     // Promoted out of "Advanced limits & product filters" — used often enough to live at top level.
+    // nullable: true for the same reason as numRoundsInput above — a cleared box must read back as
+    // null, not NaN, or validate() below can't tell "cleared" from "still holding its old value".
     this.maxComponentsInput = ui.input.int('Max # components',
-      {value: this.config.max_num_components, min: 1, showPlusMinus: true});
+      {value: this.config.max_num_components, nullable: true, min: 1, showPlusMinus: true});
     this.maxComponentsInput.setTooltip('Max number of reactant components a template may have.');
+    fixNullableIntStepper(this.maxComponentsInput, 1);
     // -1 is the config's own "no cap" sentinel — showing it as a literal number reads as a developer
     // detail, not a value a user would type. Blank means the same thing and is shown/read as such.
     this.maxRoutesInput = ui.input.int('Max routes per compound', {
@@ -552,7 +558,10 @@ export class EnumeratorConfigForm {
     if (rounds < 1) return 'Number of rounds must be at least 1.';
     if (rounds > MAX_ROUNDS) return `Number of rounds must be at most ${MAX_ROUNDS}.`;
 
-    if (this.config.max_num_components < 1) return 'Max # components must be at least 1.';
+    // Reads the input directly, not this.config — syncQuickInputsToConfig() above falls back to the
+    // previous config value on a cleared (null) box, so the config field alone can never observe
+    // "the user just cleared this" once a valid value has been set once.
+    if ((this.maxComponentsInput.value ?? 0) < 1) return 'Max # components must be at least 1.';
     if (this.config.max_num_routes_per_compound === 0)
       return 'Max routes per compound must be at least 1, or blank for no cap.';
     if (this.config.max_num_combinations_per_template === 0)
