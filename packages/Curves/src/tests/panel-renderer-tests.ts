@@ -1,0 +1,108 @@
+/* eslint-disable max-len */
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+
+import {category, test, expect, expectArray, expectFloat, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitChartCellRenderer} from '../fit/fit-renderer';
+import {FitGridCellHandler, normalizeStatisticNames, chartPropertiesFor} from '../fit/fit-grid-cell-handler';
+import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
+
+const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
+
+function points(logIC50: number): {x: number, y: number}[] {
+  return CONCENTRATIONS.map((x) => ({x: x, y: 5 + 95 / (1 + Math.pow(10, Math.log10(x) - logIC50))}));
+}
+
+/** Curve carrying stored parameters whose inflection point is above 1, where converting in place
+ * would log it again on the next pass. */
+function curveWithParameters(): IFitChartData {
+  return {
+    chartOptions: {logX: true},
+    series: [{fitFunction: 'sigmoid', name: 'series', parameters: [100, 1, 100, 5], points: points(-6.5)}],
+  } as IFitChartData;
+}
+
+function curveTable(name: string, chartOptions: boolean, showStatistics?: string[]): DG.DataFrame {
+  const cell = JSON.stringify({
+    ...(chartOptions ? {chartOptions: {logX: true, ...(showStatistics ? {showStatistics} : {})}} : {}),
+    series: [{fitFunction: 'sigmoid', name: 'series', points: points(-6.5)}],
+  });
+  const col = DG.Column.fromStrings('curve', [cell, cell]);
+  col.semType = FitConstants.FIT_SEM_TYPE;
+  const df = DG.DataFrame.fromColumns([col]);
+  df.name = name;
+  return df;
+}
+
+async function addStatisticColumn(df: DG.DataFrame, params: {[key: string]: string | number}): Promise<void> {
+  await DG.Func.find({package: 'Curves', name: 'curveStatistic'})[0]
+    .prepare({table: df, curveColumn: df.col('curve')!, ...params})
+    .call(false, undefined, {processed: false});
+}
+
+category('panel and renderer', () => {
+  test('rendering does not mutate the cached series parameters', async () => {
+    const chartData = curveWithParameters();
+    const before = [...chartData.series![0].parameters!];
+
+    const canvas = ui.canvas(200, 120);
+    const g = canvas.getContext('2d')!;
+    const renderer = new FitChartCellRenderer();
+    const bounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(0, 0, 200, 120));
+    // the parsed chart data is cached and shared with the statistics, so a repaint must leave the
+    // stored parameters in data space - converting in place drifts them 100 -> 2 -> 0.301
+    renderer.renderCurves(g, bounds, chartData);
+    renderer.renderCurves(g, bounds, chartData);
+
+    expectArray(chartData.series![0].parameters!, before);
+  });
+
+  test('firing values-changed on a curve column recalculates its statistic columns', async () => {
+    // logX lives only on the column, so flipping it changes the space the curve is fitted in
+    const df = curveTable('panelColumnOption', false);
+    const col = df.col('curve')!;
+    col.setTag(FitConstants.TAG_FIT, JSON.stringify({chartOptions: {logX: true}}));
+    await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
+    const before = df.col('curve 1 ic50')!.get(0);
+    expectFloat(Math.log10(before), -6.5, 0.3);
+
+    col.setTag(FitConstants.TAG_FIT, JSON.stringify({chartOptions: {logX: false}}));
+    // this is the mechanism the panel relies on after a column/dataframe option change: the option is
+    // a tag rather than data, so nothing marks the column changed on its own. It pins the platform
+    // contract, not the call site in changeCurvesOptions
+    col.fireValuesChanged();
+    await awaitCheck(() => df.col('curve 1 ic50')!.get(0) !== before,
+      'statistic column did not recalculate after the column-level option changed', 5000);
+  });
+
+  test('property panel renders for a saved legacy statistic', async () => {
+    // no test covered this panel before, and it is the surface this ticket changed most
+    const df = curveTable('panelBinding', true, ['interceptX']);
+    const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+
+    // the panes build their contents lazily, so this asserts the panel is constructed without
+    // throwing - which nothing covered before, on the surface this ticket changed most
+    const root = new FitGridCellHandler().renderProperties(gridCell);
+    expect(root instanceof HTMLElement, true, 'the property panel failed to render');
+  });
+
+  test('statistic names stored under a legacy name map onto the current ones', async () => {
+    const chartData = JSON.parse(JSON.stringify({
+      chartOptions: {logX: true},
+      series: [{fitFunction: 'sigmoid', name: 's', points: points(-6.5)}],
+    })) as IFitChartData;
+
+    // a saved project ticks its checkbox only if the stored name resolves to the current one
+    expectArray(normalizeStatisticNames(chartData, ['interceptX']), ['ic50']);
+    expectArray(normalizeStatisticNames(chartData, ['auc', 'rSquared']), ['auc', 'rSquared']);
+    // the same statistic under both names collapses to one entry
+    expectArray(normalizeStatisticNames(chartData, ['interceptX', 'ic50']), ['ic50']);
+
+    // and the choices the panel offers come from the cell's own fit function
+    const names = chartPropertiesFor(chartData).find((p) => p.name === 'showStatistics')!.choices!;
+    expect(names.includes('ic50'), true);
+    expect(names.includes('ec50'), false, 'a sigmoid cell must not offer the 4PL-regression name');
+  });
+});

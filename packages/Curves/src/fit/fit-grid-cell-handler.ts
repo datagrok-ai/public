@@ -37,7 +37,7 @@ enum MANIPULATION_LEVEL {
 
 /** Chart properties with `showStatistics` offering the statistics this cell's fit functions produce,
  * rather than the fixed legacy list. */
-function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
+export function chartPropertiesFor(chartData: IFitChartData): DG.Property[] {
   const names: string[] = [];
   for (const series of chartData.series ?? []) {
     for (const prop of getSeriesFitFunction(series).statisticsProperties) {
@@ -76,7 +76,7 @@ async function addStatisticColumn(gridCell: DG.GridCell, funcName: string,
 
 /** Maps stored statistic names onto the names the choices use, so an option persisted under a legacy
  * name (`interceptX`) still ticks its current checkbox (`ic50`) instead of silently showing unchecked. */
-function normalizeStatisticNames(chartData: IFitChartData, names: string[]): string[] {
+export function normalizeStatisticNames(chartData: IFitChartData, names: string[]): string[] {
   const resolved: string[] = [];
   for (const name of names) {
     let mapped = name;
