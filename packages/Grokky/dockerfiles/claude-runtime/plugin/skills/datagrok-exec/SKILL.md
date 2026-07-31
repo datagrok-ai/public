@@ -61,11 +61,15 @@ separate verify call needed.
 The assertion is yours to design for whatever you changed: re-read that thing and `return` the
 observed result (truthy = verified).
 `verified.passed: true` → report the observed value, not the value you intended.
-`verified.passed: false` (or missing) → the action is NOT confirmed; fix it and verify — the
-standalone **`datagrok_verify`** tool exists for that fix-loop and for MCP calls that changed
-platform state (it takes the same `{assertion, description}`). The runtime blocks the turn from
-ending until a verification passes (bounded retries — if they run out, the response is shown to the
-user flagged as **unverified**, so never present unverified work as done).
+`verified.passed: false` (or missing) → the action is NOT confirmed — but do **not** assume it
+failed: a faulty assertion (wrong property, wrong count, missing `return`) reads exactly the same.
+**Never re-run state-changing action code on a failed verify.** First re-read the affected state
+with a read-only check (a corrected `datagrok_verify` assertion); only if that shows the change is
+genuinely absent, fix and re-run the action — re-running one that already worked creates duplicate
+viewers/columns/rows. The standalone **`datagrok_verify`** tool exists for that fix-loop and for
+MCP calls that changed platform state (it takes the same `{assertion, description}`). The runtime
+blocks the turn from ending until a verification passes (bounded retries — if they run out, the
+response is shown to the user flagged as **unverified**, so never present unverified work as done).
 
 ## Returning a result to the chat
 

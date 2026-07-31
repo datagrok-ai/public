@@ -17,6 +17,8 @@ category('Viewers: Core Viewers', () => {
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID && v != DG.VIEWER.HEAT_MAP &&
     !v.startsWith('Surface') && !v.startsWith('Radar') && !v.startsWith('Timelines') &&
     v !== 'Google map' && v !== 'Markup' && v !== 'Word cloud' &&
+    // Chem JS viewer: the JsViewers filter below is evaluated before Chem loads, so it misses it.
+    v !== DG.VIEWER.SCAFFOLD_TREE &&
     //@ts-ignore
     v !== 'Scatter plot' && v !== DG.VIEWER.FILTERS && v !== 'Pivot table'); // TO FIX
   const JsViewers = DG.Func.find({ meta: {role: DG.FUNC_TYPES.VIEWER} }).map((f) => f.friendlyName);
@@ -107,11 +109,16 @@ category('Viewers', () => {
   */
 
   test('close', async () => {
-    tv.scatterPlot();
-    tv.barChart();
-    expect(Array.from(tv.viewers).length, 3);
-    closeViewers(tv);
-    expect(Array.from(tv.viewers).length, 1);
+    const view = activeTableView();
+    try {
+      view.scatterPlot();
+      view.barChart();
+      expect(Array.from(view.viewers).length, 3);
+      closeViewers(view);
+      expect(Array.from(view.viewers).length, 1);
+    } finally {
+      view.close();
+    }
   });
 
   test('getViewerTypes', async () => {
@@ -130,31 +137,33 @@ category('Viewers', () => {
   });
 
   test('Reset default properties', async () => {
-    try {
-      const options = {
-        colorColumnName: 'sex',
-        backColor: DG.Color.lightBlue,
-      };
+    const options = {
+      colorColumnName: 'sex',
+      backColor: DG.Color.lightBlue,
+    };
 
-      testDefaultSettings(tv, true, true, false);
-      const sp1 = tv.scatterPlot();
+    testDefaultSettings(true, true, false);
+    const view = activeTableView();
+    try {
+      const sp1 = view.scatterPlot();
       expect(sp1.props.colorColumnName, options.colorColumnName);
       expect(sp1.props.backColor, options.backColor);
 
       sp1.props.resetDefault();
-      const sp2 = tv.scatterPlot();
+      const sp2 = view.scatterPlot();
       expect(sp2.props.colorColumnName == options.colorColumnName, false);
       expect(sp2.props.backColor == options.backColor, false);
     } finally {
-      closeViewers(tv);
+      closeViewers(view);
+      view.close();
     }
   });
 
-  test('Set default style properties', async () => testDefaultSettings(tv, false, true));
+  test('Set default style properties', async () => testDefaultSettings(false, true));
 
-  test('Set default data properties', async () => testDefaultSettings(tv, true, false));
+  test('Set default data properties', async () => testDefaultSettings(true, false));
 
-  test('Set default style and data properties', async () => testDefaultSettings(tv, true, true));
+  test('Set default style and data properties', async () => testDefaultSettings(true, true));
 
   test('ScatterPlotViewer.zoom', async () => {
     const sp = DG.Viewer.scatterPlot(df);
@@ -263,6 +272,12 @@ function closeViewers(view: DG.TableView) {
   viewers.forEach((v) => v?.close());
 }
 
+// Viewers added to a non-active view are queued, not docked (GROK-13828): they never reach
+// view.viewers, are absent from saveLayout(), and get no default settings. Hence a fresh view.
+function activeTableView(): DG.TableView {
+  return grok.shell.addTableView(grok.data.demo.demog(100));
+}
+
 // function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Promise<DG.Viewer> {
 //   return new Promise((resolve, reject) => {
 //     const sub = grok.events.onViewerAdded.subscribe((data) => {
@@ -282,11 +297,12 @@ function closeViewers(view: DG.TableView) {
 //   });
 // }
 
-function testDefaultSettings(tv: DG.TableView, dataFields: boolean, styleFields: boolean, reset: boolean = true) {
+function testDefaultSettings(dataFields: boolean, styleFields: boolean, reset: boolean = true) {
   const options = {
     colorColumnName: 'sex',
     backColor: DG.Color.lightBlue,
   };
+  const tv = activeTableView();
   let sp1: DG.Viewer;
 
   try {
@@ -313,5 +329,6 @@ function testDefaultSettings(tv: DG.TableView, dataFields: boolean, styleFields:
     closeViewers(tv);
     if (reset)
       sp1!.props.resetDefault();
+    tv.close();
   }
 }

@@ -4,6 +4,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import {
   registerBuiltinNodes, registerAllFunctions, createNode, ensureFuncNodeType, getRegisteredTypeNames,
   getRegisteredFuncs, findNodeTypesAcceptingInput, findNodeTypesProducingOutput, funcCategory,
+  candidateMatchesQuery, prioritizeCandidates, CompatibleNodeType,
 } from '../rete/node-factory';
 import {FUNC_CATEGORIES} from '../panel/function-browser';
 import {FuncNode} from '../rete/nodes/func-node';
@@ -292,6 +293,70 @@ category('Flow: node-factory', () => {
       expect(idxOf(used, byFunc('Aggregate')) < idxOf(used, byFunc('AddNewColumn')), true,
         'a func already on the canvas floats above its tier peers');
     }
+  });
+
+  test('suggestion menu search covers descriptions, tags, and package like the toolbox', async () => {
+    // The matcher itself: full-haystack substring, whitespace-insensitive.
+    const c: CompatibleNodeType = {
+      typeName: 'DG Functions/Uncategorized/Flow:deleteColumns',
+      label: 'Delete Columns  (Transform Tables)', isBuiltin: false,
+      searchText: 'delete columns  (transform tables) flow removes the given columns, as a new table',
+    };
+    expect(candidateMatchesQuery(c, ''), true, 'empty query matches everything');
+    expect(candidateMatchesQuery(c, 'remove'), true, 'description word matches');
+    expect(candidateMatchesQuery(c, 'removes the given'), true, 'description phrase matches');
+    expect(candidateMatchesQuery(c, 'deletecolumns'), true, 'whitespace-insensitive name match');
+    expect(candidateMatchesQuery(c, 'Flow'), true, 'package matches, case-insensitive');
+    expect(candidateMatchesQuery(c, 'zzz-nothing'), false, 'non-matching query rejected');
+    expect(candidateMatchesQuery({typeName: 'Utilities/Log', label: 'Log', isBuiltin: true}, 'log'),
+      true, 'haystack-less candidate falls back to label/typeName');
+
+    // The live catalog populates the haystack: built-ins carry their toolbox
+    // description, DG funcs their func description + tags.
+    const candidates = findNodeTypesAcceptingInput('dataframe');
+    const tableOut = candidates.find((x) => x.typeName === 'Outputs/Table Output');
+    expect(!!tableOut?.searchText, true, 'built-in candidates carry a search haystack');
+    expect(candidateMatchesQuery(tableOut!, 'marks a dataframe'), true,
+      'built-in description searchable (same text as the toolbox tooltip)');
+
+    const withDesc = getRegisteredFuncs().find((f) => {
+      try {
+        return String(f.func.description || '').length > 10 &&
+          candidates.some((x) => x.typeName === f.nodeTypeName);
+      } catch {
+        return false;
+      }
+    });
+    if (withDesc) {
+      const item = candidates.find((x) => x.typeName === withDesc.nodeTypeName)!;
+      const fragment = String(withDesc.func.description).toLowerCase().slice(0, 12);
+      expect(candidateMatchesQuery(item, fragment), true,
+        `func description searchable in the menu: "${fragment}" → ${item.label}`);
+    }
+
+    // Reverse menu candidates carry the haystack too (shared popup, same search).
+    const producers = findNodeTypesProducingOutput('dataframe');
+    const tableIn = producers.find((x) => x.typeName === 'Inputs/Table Input');
+    expect(candidateMatchesQuery(tableIn!, 'dataframe input parameter'), true,
+      'reverse-menu built-in description searchable');
+  });
+
+  test('prioritizeCandidates floats the suggestion-engine picks, in engine order, with reasons', async () => {
+    const cand = (typeName: string): CompatibleNodeType => ({typeName, label: typeName, isBuiltin: true});
+    const candidates = [cand('A'), cand('B'), cand('C'), cand('D')];
+
+    const merged = prioritizeCandidates(candidates, [
+      {typeName: 'C', reason: 'Molecule column "smiles"'},
+      {typeName: 'B', reason: 'Table from "Open File"', prefill: {molecules: 'smiles'}},
+      {typeName: 'X', reason: 'not a menu candidate — dropped'},
+    ]);
+    expect(merged.map((x) => x.typeName).join(','), 'C,B,A,D',
+      'engine picks lead in engine order, the rest keep their order');
+    expect(merged[0].reason, 'Molecule column "smiles"', 'reason attached');
+    expect(merged[2].reason == null, true, 'non-suggested items carry no reason');
+    expect(candidates[2].reason == null, true, 'input list not mutated');
+
+    expect(prioritizeCandidates(candidates, []), candidates, 'no suggestions → same list');
   });
 
   test('reverse suggestions: producers of a type, real outputs before passthrough threaders', async () => {

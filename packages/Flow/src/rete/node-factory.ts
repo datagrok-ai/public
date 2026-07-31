@@ -14,8 +14,8 @@ import {TypedSocket, getSocket} from './sockets';
 import {areTypesCompatible, categorizeBySignature, domainCategory, domainSection} from '../types/type-map';
 
 import {
-  TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode,
-  NumberInputNode, IntInputNode, BooleanInputNode, DateTimeInputNode,
+  TableInputNode, ColumnInputNode, ColumnListInputNode, StringInputNode, MoleculeInputNode,
+  HelmInputNode, NumberInputNode, IntInputNode, BooleanInputNode, DateTimeInputNode,
   FileInputNode, MapInputNode, DynamicInputNode, StringListInputNode, BlobInputNode,
 } from './nodes/input-nodes';
 import {TableOutputNode, ValueOutputNode} from './nodes/output-nodes';
@@ -35,6 +35,7 @@ import {
 } from '../utils/dart-proxy-utils';
 import {propertyNameToFriendly} from '../utils/naming';
 import {INCLUDED_FUNC_NQNAMES} from './included-funcs';
+import {builtinNodeDesc} from './builtin-catalog';
 
 export interface FuncInfo {
   func: DG.Func;
@@ -148,6 +149,8 @@ export function registerBuiltinNodes(): void {
   register('Inputs/Column Input', () => new ColumnInputNode());
   register('Inputs/Column List Input', () => new ColumnListInputNode());
   register('Inputs/String Input', () => new StringInputNode());
+  register('Inputs/Sketcher Input', () => new MoleculeInputNode());
+  register('Inputs/Helm Input', () => new HelmInputNode());
   register('Inputs/Number Input', () => new NumberInputNode());
   register('Inputs/Int Input', () => new IntInputNode());
   register('Inputs/Boolean Input', () => new BooleanInputNode());
@@ -461,6 +464,25 @@ export function getOutputTypesForType(typeName: string): {real: string[]; passth
   return cached;
 }
 
+/** Whether an input node type is a semantic specialization of a plainer one —
+ *  Sketcher Input is a String Input tagged `semType: Molecule`. Several such
+ *  nodes can share a slot type, so a drag of the bare type must still land on
+ *  the general one; the specialization is chosen deliberately, from the
+ *  toolbox. */
+const _specializedInputCache = new Map<string, boolean>();
+
+function isSpecializedInput(typeName: string): boolean {
+  let cached = _specializedInputCache.get(typeName);
+  if (cached !== undefined) return cached;
+  try {
+    cached = String(FACTORIES.get(typeName)?.().properties['semType'] ?? '').trim().length > 0;
+  } catch {
+    cached = false;
+  }
+  _specializedInputCache.set(typeName, cached);
+  return cached;
+}
+
 export interface CompatibleNodeType {
   typeName: string;
   label: string;
@@ -472,6 +494,70 @@ export interface CompatibleNodeType {
   /** Reverse menu only: whether a **real** output matches (vs pass-through
    *  only) — real producers rank above threaders in their tier. */
   realOutput?: boolean;
+  /** Lower-cased search haystack — the same texts the toolbox search matches
+   *  (names, description, tags, role, package), so "remove column" finds a
+   *  Delete Columns whose description says so. See {@link candidateMatchesQuery}. */
+  searchText?: string;
+  /** Set when the toolbox suggestion engine also recommends this type for the
+   *  dragged socket — shown inline, and such items lead the menu. */
+  reason?: string;
+}
+
+/** The searchable text of a menu candidate: label + typeName + (for DG funcs)
+ *  raw/friendly name, description, tags, role, package — mirroring
+ *  `funcMatchesSearch` in the toolbox — or the built-in node's description. */
+function candidateSearchText(typeName: string, label: string, info?: FuncInfo): string {
+  const parts = [label, typeName];
+  if (info) {
+    parts.push(info.name, info.role ?? '', info.packageName, ...info.tags);
+    try {
+      parts.push(String(info.func.name || ''), String(info.func.friendlyName || ''),
+        String(info.func.description || ''));
+    } catch {/* Dart proxy */}
+  }
+  else
+    parts.push(builtinNodeDesc(typeName));
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+/** Whether a suggestion-menu candidate matches a search query — substring over
+ *  the full haystack, whitespace-insensitive like the toolbox ("tableoutput"
+ *  finds "Table Output" and vice versa). */
+export function candidateMatchesQuery(c: CompatibleNodeType, query: string): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const hay = c.searchText ?? `${c.label} ${c.typeName}`.toLowerCase();
+  return hay.includes(q) || hay.replace(/\s+/g, '').includes(q.replace(/\s+/g, ''));
+}
+
+/** One pick of the toolbox suggestion engine, projected for the drag-out menu. */
+export interface SocketSuggestion {
+  typeName: string;
+  reason: string;
+  prefill?: Record<string, unknown>;
+}
+
+/** Reorder menu candidates so the suggestion engine's picks lead, in engine
+ *  order, each carrying its reason; everything else keeps its heuristic order.
+ *  A suggested type not in `candidates` is dropped (it can't consume the
+ *  dragged socket). */
+export function prioritizeCandidates(
+  candidates: CompatibleNodeType[], suggested: SocketSuggestion[],
+): CompatibleNodeType[] {
+  if (suggested.length === 0) return candidates;
+  const order = new Map<string, {idx: number; s: SocketSuggestion}>();
+  suggested.forEach((s, idx) => {
+    if (!order.has(s.typeName)) order.set(s.typeName, {idx, s});
+  });
+  const lead: CompatibleNodeType[] = [];
+  const rest: CompatibleNodeType[] = [];
+  for (const c of candidates) {
+    const hit = order.get(c.typeName);
+    if (hit) lead.push({...c, reason: hit.s.reason});
+    else rest.push(c);
+  }
+  lead.sort((a, b) => order.get(a.typeName)!.idx - order.get(b.typeName)!.idx);
+  return [...lead, ...rest];
 }
 
 /** Display label for a suggestion-menu candidate. Built-ins show their trailing
@@ -552,11 +638,14 @@ export function findNodeTypesAcceptingInput(
     const inputTypes = getInputTypesForType(typeName);
     if (inputTypes.length === 0) continue;
     if (!inputTypes.some((t) => areTypesCompatible(sourceType, t))) continue;
+    const info = infoByTypeName.get(typeName);
+    const label = labelForTypeName(typeName, info);
     matches.push({
       typeName,
-      label: labelForTypeName(typeName, infoByTypeName.get(typeName)),
+      label,
       isBuiltin: !typeName.startsWith('DG Functions/'),
       exact: inputTypes.includes(sourceType),
+      searchText: candidateSearchText(typeName, label, info),
     });
   }
 
@@ -623,12 +712,15 @@ export function findNodeTypesProducingOutput(
     const {real, passthrough} = getOutputTypesForType(typeName);
     const realCompat = real.some((t) => areTypesCompatible(t, targetType));
     if (!realCompat && !passthrough.some((t) => areTypesCompatible(t, targetType))) continue;
+    const info = infoByTypeName.get(typeName);
+    const label = labelForTypeName(typeName, info);
     matches.push({
       typeName,
-      label: labelForTypeName(typeName, infoByTypeName.get(typeName)),
+      label,
       isBuiltin: !typeName.startsWith('DG Functions/'),
       realOutput: realCompat,
       exact: (realCompat ? real : passthrough).includes(targetType),
+      searchText: candidateSearchText(typeName, label, info),
     });
   }
 
@@ -643,10 +735,12 @@ export function findNodeTypesProducingOutput(
     return t.isBuiltin ? 3 : 4;
   };
   const used = (t: CompatibleNodeType): number => (usedFuncs.has(simpleFuncName(t.typeName)) ? 0 : 1);
+  const specialized = (t: CompatibleNodeType): number => Number(isSpecializedInput(t.typeName));
   matches.sort((a, b) =>
     rank(a) - rank(b) ||
     Number(b.realOutput) - Number(a.realOutput) ||
     Number(b.exact) - Number(a.exact) ||
+    specialized(a) - specialized(b) ||
     used(a) - used(b) ||
     a.label.localeCompare(b.label));
   return matches;

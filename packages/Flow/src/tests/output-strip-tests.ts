@@ -4,6 +4,7 @@
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {emitHeaderLines} from '../compiler/script-emitter';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 /** The chip element for a node id. */
@@ -284,6 +285,79 @@ category('Flow: output strip', () => {
       await e.flow.zoomToFit();
       const k = e.flow.area.area.transform.k;
       expect(Number.isFinite(k) && k > 0, true, 'sane transform after fit');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('dragging a chip reorders the outputs; the rank persists and drives emission', async () => {
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const a = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      const b = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
+      a.properties['paramName'] = 'first';
+      b.properties['paramName'] = 'second';
+      await e.flow.addConnectionByKeys(src.id, 'value', a.id, 'value');
+      await e.flow.addConnectionByKeys(src.id, 'value', b.id, 'value');
+      expect(await until(() => chipEl(e.container, a.id) != null && chipEl(e.container, b.id) != null),
+        true, 'both chips rendered');
+
+      // Grab the FIRST chip, pull it below the second, release.
+      const chip = chipEl(e.container, a.id)!;
+      const from = chip.getBoundingClientRect();
+      const target = chipEl(e.container, b.id)!.getBoundingClientRect();
+      const at = (y: number): PointerEventInit =>
+        ({bubbles: true, cancelable: true, button: 0, clientX: from.x + 10, clientY: y});
+      chip.dispatchEvent(new PointerEvent('pointerdown', at(from.y + 12)));
+      window.dispatchEvent(new PointerEvent('pointermove', at(from.y + 20)));
+      // Mid-drag the chip is visibly lifted and rides under the pointer.
+      expect(chip.classList.contains('ff-output-row-dragging'), true, 'mid-drag: chip marked as dragging');
+      expect(chip.style.transform.includes('translateY'), true, 'mid-drag: chip follows the pointer');
+      window.dispatchEvent(new PointerEvent('pointermove', at(target.bottom + 4)));
+      window.dispatchEvent(new PointerEvent('pointerup', at(target.bottom + 4)));
+      expect(chip.style.transform, '', 'the release clears the pointer-follow transform');
+
+      expect(await until(() => e.flow.getOutputNodes()[0]?.id === b.id), true, 'the flow order flipped');
+      expect(a.properties['outputOrder'], 1, 'rank persisted on the dragged node');
+      expect(b.properties['outputOrder'], 0, 'rank persisted on the other node');
+      expect(await until(() => {
+        const els = Array.from(e.container.querySelectorAll('.ff-output-strip-chips .ff-output-row'));
+        return (els[0] as HTMLElement | undefined)?.dataset.nodeId === b.id;
+      }), true, 'the chips re-render in the new order');
+      expect(e.flow.getSelectedNodeIds().length, 0, 'a drag is not a click — nothing got selected');
+
+      // The compiled signature follows the strip.
+      const outLines = emitHeaderLines(e.flow, {name: 't', description: '', tags: []}, 'flow')
+        .filter((l) => l.startsWith('//output:'));
+      expect(outLines.length, 2, 'both outputs emitted');
+      expect(outLines[0].endsWith(' second'), true, `the reordered output leads: ${outLines[0]}`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a sub-threshold press on a chip stays a click (selects, no reorder)', async () => {
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const a = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      const b = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
+      await e.flow.addConnectionByKeys(src.id, 'value', a.id, 'value');
+      await e.flow.addConnectionByKeys(src.id, 'value', b.id, 'value');
+      expect(await until(() => chipEl(e.container, a.id) != null), true, 'chips rendered');
+
+      const chip = chipEl(e.container, a.id)!;
+      const from = chip.getBoundingClientRect();
+      const at = (y: number): PointerEventInit =>
+        ({bubbles: true, cancelable: true, button: 0, clientX: from.x + 10, clientY: y});
+      chip.dispatchEvent(new PointerEvent('pointerdown', at(from.y + 12)));
+      chip.dispatchEvent(new PointerEvent('pointermove', at(from.y + 14))); // 2px — under the threshold
+      chip.dispatchEvent(new PointerEvent('pointerup', at(from.y + 14)));
+      await new Promise((r) => setTimeout(r, 0)); // the pointerup microtasks run
+      chipEl(e.container, a.id)!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      expect(await until(() => e.flow.getSelectedNodeIds().includes(a.id)), true, 'the click still selects');
+      expect(a.properties['outputOrder'] === undefined, true, 'no rank was written');
     } finally {
       destroyEditor(e);
     }

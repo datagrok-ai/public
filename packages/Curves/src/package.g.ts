@@ -45,13 +45,13 @@ export async function _initCurves() : Promise<void> {
 //name: Fit Dose-Response Curves
 //description: Group well-level assay data by compound, assay, target, and run, then fit a dose-response curve per group.
 //input: dataframe df 
-//input: column concentrationCol { description: Concentration (dose) column }
-//input: column readoutCol { description: Readout (response) column }
-//input: column batchIDCol { description: Batch identifier column }
-//input: column assayCol { description: Assay name column }
-//input: column runIDCol { description: Run identifier column }
-//input: column compoundIDCol { description: Compound identifier column }
-//input: column targetEntityCol { description: Target entity column }
+//input: column concentrationCol { type: numerical; nullable: false; description: Concentration (dose) column }
+//input: column readoutCol { type: numerical; nullable: false; description: Readout (response) column }
+//input: column batchIDCol { type: categorical; nullable: false; description: Batch identifier column }
+//input: column assayCol { type: categorical; nullable: false; description: Assay name column }
+//input: column runIDCol { type: categorical; nullable: false; description: Run identifier column }
+//input: column compoundIDCol { type: categorical; nullable: false; description: Compound identifier column }
+//input: column targetEntityCol { type: categorical; nullable: false; description: Target entity column }
 //input: column excludeOutliersCol { nullable: true; description: Boolean column marking points to exclude as outliers }
 //input: dataframe parentTable { nullable: true }
 //input: list<string> fitParamColumns { nullable: true }
@@ -100,8 +100,8 @@ export function curveAggrStatistic(table: DG.DataFrame, curveColumn: DG.Column, 
 //description: Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.
 //input: dataframe table 
 //input: string colName { description: Name of the curve column to read }
-//input: string propName { description: Fit statistic to extract (e.g. IC50, AUC, R²) }
-//input: int seriesNumber { description: Zero-based index of the curve series }
+//input: string propName = 'interceptX' { choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: Fit statistic to extract. interceptX is IC50, top and bottom are max/min Y }
+//input: int seriesNumber = 0 { description: Zero-based index of the curve series }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform
@@ -113,13 +113,39 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 //description: Aggregate a fit statistic across all series of a curve into a new column.
 //input: dataframe table 
 //input: string colName { description: Name of the curve column to read }
-//input: string propName { description: Fit statistic to aggregate (e.g. IC50, AUC, R²) }
-//input: string aggrType { description: Aggregation type applied across series (e.g. avg, min, max) }
+//input: string propName = 'interceptX' { choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y }
+//input: string aggrType = 'med' { choices: ["min","max","sum","avg","stdev","variance","skew","kurt","med","q1","q2","q3","count","nulls","unique","values"]; description: Aggregation applied across the series of each curve }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
+}
+
+//name: Add Curve Statistic
+//description: Extracts a fit statistic from one series of a curve column into a new column.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column curvesCol { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
+//input: string statistic = 'interceptX' { caption: Statistic; nullable: false; choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: interceptX is IC50, top and bottom are max/min Y }
+//input: int seriesNumber = 0 { caption: Series; nullable: false; description: Zero-based index of the curve series }
+//output: column result
+//meta.vectorFunc: true
+//meta.role: transform
+export function addCurveStatistic(table: DG.DataFrame, curvesCol: DG.Column, statistic: string, seriesNumber: number) : any {
+  return PackageFunctions.addCurveStatistic(table, curvesCol, statistic, seriesNumber);
+}
+
+//name: Add Aggregated Curve Statistic
+//description: Aggregates a fit statistic across all series of a curve column into a new column.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column curvesCol { semType: fit; caption: Curves; nullable: false; description: Column of fitted curves }
+//input: string statistic = 'interceptX' { caption: Statistic; nullable: false; choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: interceptX is IC50, top and bottom are max/min Y }
+//input: string aggregation = 'med' { caption: Aggregation; nullable: false; choices: ["med","avg","min","max","sum","stdev","variance","q1","q2","q3"]; description: Applied across the series of each curve }
+//output: column result
+//meta.vectorFunc: true
+//meta.role: transform
+export function addAggrCurveStatistic(table: DG.DataFrame, curvesCol: DG.Column, statistic: string, aggregation: string) : any {
+  return PackageFunctions.addAggrCurveStatistic(table, curvesCol, statistic, aggregation);
 }
 
 //description: Returns XML 3DX curve converter function

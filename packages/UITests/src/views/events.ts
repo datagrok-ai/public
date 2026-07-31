@@ -117,40 +117,47 @@ category('View: Events', () => {
   });
 
   test('onViewLayoutApplying', async () => {
+    // Built on a fresh view: viewers added to a non-active one are queued, not docked, so they
+    // never reach saveLayout() (GROK-13828).
+    const source = grok.shell.addTableView(df);
+    source.scatterPlot();
+    const layout = source.saveLayout();
     const v = grok.shell.addTableView(df);
     try {
       // @ts-ignore
-      await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplying, (layout) => {
-        expect(layout instanceof DG.ViewInfo, true);
-        const state = JSON.parse(layout.viewState);
+      await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplying, (info) => {
+        expect(info instanceof DG.ViewInfo, true);
+        const state = JSON.parse(info.viewState);
         // Viewers are nested inside dock container nodes (children[].children[]…),
         // not at the top level — search the whole tree (cf. core viewers_test.dart).
         expect(layoutHasViewer(state, DG.VIEWER.SCATTER_PLOT), true);
         expect(Array.from(v.viewers).length, 1);
       }, () => {
-        tv.scatterPlot();
-        v.loadLayout(tv.saveLayout());
+        v.loadLayout(layout);
       });
     } finally {
-      tv.resetLayout();
       v.close();
+      source.close();
     }
   });
 
   test('onViewLayoutApplied', async () => {
+    const source = grok.shell.addTableView(df);
+    source.histogram();
+    const layout = source.saveLayout();
     const v = grok.shell.addTableView(df);
     try {
       // @ts-ignore
-      await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplied, (layout) => {
-        const state = JSON.parse(layout.viewState);
+      await testEvent<DG.ViewInfo>(grok.events.onViewLayoutApplied, (info) => {
+        const state = JSON.parse(info.viewState);
         expect(layoutHasViewer(state, DG.VIEWER.HISTOGRAM), true);
         expect(Array.from(v.viewers).length, 2);
       }, () => {
-        tv.histogram();
-        v.loadLayout(tv.saveLayout());
+        v.loadLayout(layout);
       });
     } finally {
-      tv.resetLayout();
+      v.close();
+      source.close();
     }
   });
 }, {clear: false, owner: 'aparamonov@datagrok.ai' });

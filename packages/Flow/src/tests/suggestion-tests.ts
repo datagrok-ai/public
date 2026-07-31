@@ -269,4 +269,61 @@ category('Flow: suggestions', () => {
       view.root.remove();
     }
   }, {timeout: 60000});
+
+  test('drag-out menu leads with the pane\'s picks and searches descriptions', async () => {
+    const view = new FuncFlowView();
+    try {
+      await until(() => (view as never as {flow?: unknown}).flow != null);
+      const flow = (view as never as {flow: import('../rete/flow-editor').FlowEditor}).flow;
+      const a = await addNode(flow, 'Inputs/Table Input', 0, 0);
+
+      // What the Suggestions pane would show for this node — the menu must
+      // lead with exactly these, in the same order.
+      const expected = computeSuggestions(await collectSuggestContext(flow, null, a.id, null))
+        .filter((s) => s.wire.some((w) => w.fromNodeId === a.id));
+      expect(expected.length > 0, true, 'the engine has picks for a table node');
+
+      // Open the drag-out menu programmatically — the same call an
+      // empty-canvas drop of the node's table output makes.
+      const openMenu = (flow as never as {openSuggestionMenu: (
+        x: number, y: number, src: {nodeId: string; outputKey: string; dgType: string}) => Promise<void>})
+        .openSuggestionMenu.bind(flow);
+      const menuDone = openMenu(200, 200, {nodeId: a.id, outputKey: 'table', dgType: 'dataframe'});
+
+      expect(await until(() => document.querySelector('.ff-suggest-popup') != null), true, 'popup opened');
+      const popup = document.querySelector('.ff-suggest-popup')!;
+      const rows = (): HTMLElement[] => Array.from(popup.querySelectorAll('.ff-suggest-item'));
+
+      // The engine's picks lead, each marked and carrying its reason inline.
+      const first = rows()[0];
+      expect(first.classList.contains('ff-suggest-item-suggested'), true, 'first row is an engine pick');
+      expect(first.dataset.nodeTypeName, expected[0].typeName, 'same top pick as the Suggestions pane');
+      const reason = first.querySelector('.ff-suggest-item-reason');
+      expect(reason?.textContent, expected[0].reason, 'the pane\'s reason shows inline');
+      for (let i = 0; i < expected.length && i < rows().length; i++) {
+        expect(rows()[i].dataset.nodeTypeName, expected[i].typeName,
+          `engine pick #${i} leads the menu in engine order`);
+      }
+
+      // Search matches descriptions like the toolbox: "marks a dataframe" is
+      // Table Output's description — its name says nothing of the sort.
+      const search = popup.querySelector<HTMLInputElement>('.ff-suggest-search')!;
+      search.value = 'marks a dataframe';
+      search.dispatchEvent(new Event('input', {bubbles: true}));
+      expect(await until(() =>
+        rows().length > 0 && rows().every((r) => r.dataset.nodeTypeName === 'Outputs/Table Output')),
+      true, 'description-only query narrows to Table Output');
+
+      // Choosing the filtered item creates the node wired to the dragged output.
+      rows()[0].dispatchEvent(new MouseEvent('mousedown', {bubbles: true, cancelable: true, button: 0}));
+      await menuDone;
+      expect(flow.getNodeCount(), 2, 'chosen node created');
+      const conn = flow.getConnections().find((c) => c.source === a.id && String(c.sourceOutput) === 'table');
+      expect(conn != null, true, 'dragged output auto-connected to the chosen node');
+      expect(document.querySelector('.ff-suggest-popup'), null, 'popup closed');
+    } finally {
+      ((view as never as {flow?: {destroy?: () => void}}).flow)?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 60000});
 });

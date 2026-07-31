@@ -1,38 +1,10 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
+import {isNumericType} from '../components/RunComparison/types';
 import {
-  ComparisonEntryNodes,
-  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, isNumericType,
-  matchScalarTargets, matchColumnTargets, getEntryStatuses,
-  sameIndexGrid, alignSeriesByIndex, alignSeriesByKey, computeDelta, computeDeltaPct,
-  FUZZY_NAME_THRESHOLD,
-} from '../components/RunComparison/comparison-core';
-
-function makeEntry(
-  entryId: string,
-  scalars: {name: string, valueType?: string, units?: string, value?: number | null}[] = [],
-  tables: {path: string, name?: string, columns: {name: string, type?: string, units?: string}[]}[] = [],
-): ComparisonEntryNodes {
-  return {
-    entryId,
-    entryName: entryId,
-    scalars: scalars.map((s, i) => ({
-      path: `io${i}`,
-      name: s.name,
-      valueType: s.valueType ?? 'double',
-      units: s.units,
-      value: s.value ?? 0,
-    })),
-    tables: tables.map((t) => ({
-      path: t.path,
-      name: t.name ?? t.path,
-      columns: t.columns.map((c) => ({name: c.name, type: c.type ?? 'double', units: c.units})),
-      rowCount: 10,
-    })),
-  };
-}
-
-const indexMap = (spec: Record<string, Record<string, string>>) =>
-  new Map(Object.entries(spec).map(([entryId, tables]) => [entryId, new Map(Object.entries(tables))]));
+  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
+  matchScalarTargets, matchColumnTargets, FUZZY_NAME_THRESHOLD,
+} from '../components/RunComparison/matching';
+import {makeEntry, indexMap} from './run-comparison-fixtures';
 
 category('RunComparison: names and units', () => {
   test('normalizeName collapses case and separators', async () => {
@@ -165,84 +137,73 @@ category('RunComparison: column matching', () => {
     expect(bindingA.indexColumnName, 'time');
     expect(bindingA.columnName, 'temperature');
   });
-});
 
-category('RunComparison: alignment and deltas', () => {
-  test('sameIndexGrid', async () => {
-    expect(sameIndexGrid([1, 2, 3], [1, 2, 3]), true);
-    expect(sameIndexGrid([1, 2, 3], [1, 2]), false);
-    expect(sameIndexGrid([1, 2, 3], [1, 2, 4]), false);
+  test('does not group columns with mismatching units', async () => {
+    const table = (units: string) => ({path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'mass', units},
+    ]});
+    const entries = [makeEntry('a', [], [table('mg')]), makeEntry('b', [], [table('g')])];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time'}}));
+    expect(targets.length, 0);
   });
 
-  test('alignSeriesByIndex intersection keeps common points sorted', async () => {
-    const aligned = alignSeriesByIndex([
-      {index: [3, 1, 2], values: [30, 10, 20]},
-      {index: [2, 3, 4], values: [200, 300, 400]},
-    ], 'intersection');
-    expectArray(aligned.index, [2, 3]);
-    expectArray(aligned.values[0], [20, 30]);
-    expectArray(aligned.values[1], [200, 300]);
-  });
-
-  test('alignSeriesByIndex union fills missing with nulls', async () => {
-    const aligned = alignSeriesByIndex([
-      {index: [1, 2], values: [10, 20]},
-      {index: [2, 3], values: [200, 300]},
-    ], 'union');
-    expectArray(aligned.index, [1, 2, 3]);
-    expectArray(aligned.values[0], [10, 20, null]);
-    expectArray(aligned.values[1], [null, 200, 300]);
-  });
-
-  test('alignSeriesByKey matches normalized keys', async () => {
-    const aligned = alignSeriesByKey([
-      {keys: ['Row_A', 'Row_B'], values: [1, 2]},
-      {keys: ['row a', 'row c'], values: [10, 30]},
-    ], 'intersection');
-    expectArray(aligned.keys, ['Row_A']);
-    expectArray(aligned.values[0], [1]);
-    expectArray(aligned.values[1], [10]);
-  });
-
-  test('computeDelta and null propagation', async () => {
-    expectArray(computeDelta([5, null, 7], [1, 2, null]), [4, null, null]);
-  });
-
-  test('computeDeltaPct handles zero baseline as null', async () => {
-    const pct = computeDeltaPct([2, 5, 3], [1, 0, null]);
-    expectFloat(pct[0]!, 100);
-    expect(pct[1], null);
-    expect(pct[2], null);
-  });
-
-  test('computeDeltaPct uses absolute baseline', async () => {
-    const pct = computeDeltaPct([-3], [-2]);
-    expectFloat(pct[0]!, -50);
-  });
-});
-
-category('RunComparison: entry statuses', () => {
-  test('reports matched, index-not-set, and no-similar-data', async () => {
-    const withTable = {path: 't', columns: [{name: 'time'}, {name: 'value'}]};
-    const entries = [
-      makeEntry('a', [], [withTable]),
-      makeEntry('b', [], [withTable]),
-      makeEntry('c', [], [{path: 'other', columns: [{name: 'x'}, {name: 'y'}]}]),
+  test('same-named clusters get unique keys', async () => {
+    const columns = [{name: 'time', type: 'int'}, {name: 'height'}];
+    const tables = [
+      {path: 'step1/df', name: 'Results', columns},
+      {path: 'step2/df', name: 'Results', columns},
     ];
-    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
-    const [target] = matchColumnTargets(entries, indexes);
-    const statuses = getEntryStatuses(entries, target, indexes);
-    expect(statuses.find((s) => s.entryId === 'a')!.matched, true);
-    expect(statuses.find((s) => s.entryId === 'b')!.matched, true);
-    const statusC = statuses.find((s) => s.entryId === 'c')!;
-    expect(statusC.matched, false);
-    expect(statusC.reason, 'index not set');
+    const entries = [makeEntry('a', [], tables), makeEntry('b', [], tables)];
+    const index = indexMap({
+      a: {'step1/df': 'time', 'step2/df': 'time'},
+      b: {'step1/df': 'time', 'step2/df': 'time'},
+    });
+    const targets = matchColumnTargets(entries, index);
+    expect(targets.length, 2);
+    expect(new Set(targets.map((t) => t.key)).size, 2);
   });
 
-  test('reports no similar data when target is absent', async () => {
-    const entries = [makeEntry('a', [{name: 'x'}])];
-    const statuses = getEntryStatuses(entries, null, indexMap({}));
-    expect(statuses[0].matched, false);
-    expect(statuses[0].reason, 'no similar data');
+  test('split column is excluded from candidates and carried into bindings', async () => {
+    const table = {path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'species', type: 'string'},
+    ]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const targets = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}}),
+      indexMap({a: {t: 'species'}, b: {t: 'species'}}));
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'height');
+    expect(targets[0].bindings.every((b) => b.splitColumnName === 'species'), true);
+  });
+});
+
+category('RunComparison: cluster pairing', () => {
+  test('same-named columns pair by table name across entries', async () => {
+    const tables = (suffix: string) => [
+      {path: `s1/df${suffix}`, name: 'Heating', columns: [{name: 'time', type: 'int'}, {name: 'height'}]},
+      {path: `s2/df${suffix}`, name: 'Cooling', columns: [{name: 'time', type: 'int'}, {name: 'height'}]},
+    ];
+    const entries = [makeEntry('a', [], tables('A')), makeEntry('b', [], tables('B'))];
+    const indexes = indexMap({
+      a: {'s1/dfA': 'time', 's2/dfA': 'time'},
+      b: {'s1/dfB': 'time', 's2/dfB': 'time'},
+    });
+    const targets = matchColumnTargets(entries, indexes);
+    expect(targets.length, 2);
+    for (const target of targets) {
+      const names = new Set(target.bindings.map((b) => b.tableName));
+      expect(names.size, 1);
+    }
+  });
+
+  test('exact-name cluster wins over an earlier fuzzy cluster', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [{name: 'temperatures', value: 1}, {name: 'temperature', value: 2}]),
+      makeEntry('b', [{name: 'temperature', value: 3}]),
+    ]);
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'temperature');
+    expect(targets[0].confidence, 'exact');
+    expectArray(targets[0].bindings.map((b) => b.value), [2, 3]);
   });
 });

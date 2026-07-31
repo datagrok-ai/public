@@ -36,11 +36,6 @@ export async function openCreationScriptFlowDialog(script: string, tableIds: str
   return await PackageFunctions.openCreationScriptFlowDialog(script, tableIds, show);
 }
 
-//name: testDialog
-export function testDialog() : void {
-  PackageFunctions.testDialog();
-}
-
 //description: Opens the visual Flow editor for a flow script entity
 //input: script script 
 //output: view result
@@ -168,6 +163,119 @@ export function startFlowGuide(view: any, guideId: string) : any {
 //meta.includeInFlow: false
 export async function runFlow(view: any) : Promise<any> {
   return await PackageFunctions.runFlow(view);
+}
+
+//description: Keeps the rows matching a condition, as a new table
+//input: dataframe table { nullable: false }
+//input: string condition { nullable: false; description: Boolean expression over the table columns }
+//output: dataframe result
+//meta.includeInFlow: true
+export function filterRows(table: DG.DataFrame, condition: string) : any {
+  return PackageFunctions.filterRows(table, condition);
+}
+
+//description: Removes the rows matching a condition, as a new table
+//input: dataframe table { nullable: false }
+//input: string condition { nullable: false; description: Boolean expression selecting the rows to drop }
+//output: dataframe result
+//meta.includeInFlow: true
+export function deleteRows(table: DG.DataFrame, condition: string) : any {
+  return PackageFunctions.deleteRows(table, condition);
+}
+
+//description: Rows matching a condition, keeping only the chosen columns
+//input: dataframe table { nullable: false }
+//input: string condition { nullable: false; description: Boolean expression over the table columns }
+//input: column_list columns { nullable: true; description: Columns to keep. Leave empty to keep all of them }
+//output: dataframe result
+//meta.includeInFlow: true
+export function extractRows(table: DG.DataFrame, condition: string, columns?: DG.Column[]) : any {
+  return PackageFunctions.extractRows(table, condition, columns);
+}
+
+//description: Selects the rows matching a condition and passes the table on
+//input: dataframe table { nullable: false }
+//input: string condition { nullable: false; description: Boolean expression over the table columns }
+//input: bool clearSelection = true { description: Drop the previous selection instead of adding to it }
+//output: dataframe result
+//meta.includeInFlow: true
+export function selectRows(table: DG.DataFrame, condition: string, clearSelection: boolean) : any {
+  return PackageFunctions.selectRows(table, condition, clearSelection);
+}
+
+//description: A reproducible random sample of rows, as a new table
+//input: dataframe table { nullable: false }
+//input: int count { nullable: false; min: 1; description: How many rows to keep }
+//input: int seed = 42 { description: Random seed. The same seed always draws the same rows }
+//output: dataframe result
+//meta.includeInFlow: true
+export function filterRandomRows(table: DG.DataFrame, count: number, seed: number) : any {
+  return PackageFunctions.filterRandomRows(table, count, seed);
+}
+
+//description: Selects a reproducible random sample of rows and passes the table on
+//input: dataframe table { nullable: false }
+//input: int count { nullable: false; min: 1; description: How many rows to select }
+//input: int seed = 42 { description: Random seed. The same seed always draws the same rows }
+//input: bool clearSelection = true { description: Drop the previous selection instead of adding to it }
+//output: dataframe result
+//meta.includeInFlow: true
+export function selectRandomRows(table: DG.DataFrame, count: number, seed: number, clearSelection: boolean) : any {
+  return PackageFunctions.selectRandomRows(table, count, seed, clearSelection);
+}
+
+//description: A copy of the table without the chosen columns. Removes selected columns
+//input: dataframe table { nullable: false }
+//input: column_list columns { nullable: false; description: Columns to remove }
+//output: dataframe result
+//meta.includeInFlow: true
+export function deleteColumns(table: DG.DataFrame, columns: DG.Column[]) : any {
+  return PackageFunctions.deleteColumns(table, columns);
+}
+
+//description: Sets a tag on the chosen columns and passes the table on
+//input: dataframe table { nullable: false }
+//input: column_list columns { nullable: false; description: Columns to tag }
+//input: string tag { nullable: false; description: Tag name, for example units or .formula }
+//input: string value { nullable: true; description: Tag value }
+//output: dataframe result
+//meta.includeInFlow: true
+export function tagColumns(table: DG.DataFrame, columns: DG.Column[], tag: string, value: string) : any {
+  return PackageFunctions.tagColumns(table, columns, tag, value);
+}
+
+//description: Computes an expression into a new column of the table
+//input: dataframe table { nullable: false }
+//input: string expression { nullable: false; description: Formula over the table columns }
+//input: string name { nullable: false; description: Name of the resulting column }
+//input: string type = 'auto' { choices: ["auto","string","int","double","bool","datetime","qnum"]; description: Column type. auto infers it from the expression }
+//output: column result
+//meta.includeInFlow: true
+export function expressionToColumn(table: DG.DataFrame, expression: string, name: string, type: string) : any {
+  return PackageFunctions.expressionToColumn(table, expression, name, type);
+}
+
+//description: Groups rows and aggregates columns. Add a pivot column to build a pivot table
+//input: dataframe table { nullable: false }
+//input: column_list groupByColumns { nullable: true; description: Columns to group by. Leave empty to aggregate the whole table into one row }
+//input: string aggregations { nullable: false; description: Aggregations to compute, as a list of column and function pairs }
+//input: column_list pivotColumns { nullable: true; description: Columns whose values become result columns }
+//output: dataframe result
+//meta.includeInFlow: true
+export function aggregate(table: DG.DataFrame, groupByColumns: DG.Column[], aggregations: string, pivotColumns?: DG.Column[]) : any {
+  return PackageFunctions.aggregate(table, groupByColumns, aggregations, pivotColumns);
+}
+
+//description: Wide to long. Each merged column becomes a category and value row pair
+//input: dataframe table { nullable: false }
+//input: column_list copyColumns { nullable: true; description: Columns repeated alongside every produced row }
+//input: column_list mergeColumns { nullable: false; description: Columns folded into the category and value pair }
+//input: string categoryColumnName = 'Category' { description: Name of the column holding the source column names }
+//input: string valueColumnName = 'Value' { description: Name of the column holding the values }
+//output: dataframe result
+//meta.includeInFlow: true
+export function unpivot(table: DG.DataFrame, copyColumns: DG.Column[], mergeColumns: DG.Column[], categoryColumnName: string, valueColumnName: string) : any {
+  return PackageFunctions.unpivot(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName);
 }
 
 //input: file file 

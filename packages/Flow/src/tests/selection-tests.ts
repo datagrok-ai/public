@@ -275,4 +275,57 @@ category('Flow: selection', () => {
       destroyEditor(e);
     }
   });
+
+  test('arrow keys nudge the selection; Ctrl+arrows pan the canvas instead', async () => {
+    const e = makeEditor();
+    try {
+      const [a, b] = await threeNodes(e);
+      const key = (k: string, ctrl = false): boolean => window.dispatchEvent(
+        new KeyboardEvent('keydown', {key: k, ctrlKey: ctrl, bubbles: true, cancelable: true}));
+
+      // Nothing selected → arrows do nothing.
+      const ax = a.pos.x;
+      key('ArrowRight');
+      await new Promise((r) => setTimeout(r, 50));
+      expect(a.pos.x, ax, 'an unselected node does not move');
+
+      await e.flow.selectNode(a.id);
+      await e.flow.selectNode(b.id, true);
+      const [bx, by] = [b.pos.x, b.pos.y];
+      key('ArrowRight');
+      expect(await until(() => a.pos.x === ax + 10 && b.pos.x === bx + 10), true,
+        'ArrowRight nudged every selected node by 10');
+      key('ArrowUp');
+      expect(await until(() => b.pos.y === by - 10), true, 'ArrowUp nudged up');
+
+      const t0x = e.flow.area.area.transform.x;
+      const [nx, ny] = [a.pos.x, a.pos.y];
+      key('ArrowLeft', true);
+      expect(await until(() => e.flow.area.area.transform.x !== t0x), true, 'Ctrl+arrow panned the canvas');
+      await new Promise((r) => setTimeout(r, 50));
+      expect(a.pos.x === nx && a.pos.y === ny, true, 'Ctrl+arrow left the selection in place');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a nudge is never snapped — a clicked (picked) off-grid node moves by exactly 10', async () => {
+    // Clicking a node makes it *picked*, and the drag snap applies to picked
+    // nodes — so an off-grid node's 10px nudge used to be re-rounded to the
+    // 20px grid (537 → 547 → snapped 540) or captured by an alignment guide.
+    const e = makeEditor();
+    try {
+      const [a] = await threeNodes(e);
+      await e.flow.translate(a.id, 537, 231); // off-grid, BEFORE picking
+      await clickNode(e, a);
+      expect(await until(() => isSelected(e, a)), true, 'the click selected the node');
+      expect(a.pos.x, 537, 'the click itself did not move it');
+      window.dispatchEvent(new KeyboardEvent('keydown',
+        {key: 'ArrowRight', bubbles: true, cancelable: true}));
+      expect(await until(() => a.pos.x === 547), true,
+        `the nudge landed on exactly 547 (got ${a.pos.x})`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
 });

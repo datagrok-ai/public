@@ -47,11 +47,14 @@ export function FlowNodeComponent(props: NodeProps): React.JSX.Element {
   const collapsed = node.collapsed === true;
   // Exec (execution-ordering) ports render separately at the top corners — keep
   // them out of the regular data-socket rows. Hidden inputs (and their
-  // pass-throughs) render only when connected — their slots stay data-carrying,
-  // the user just never sees an unwired one.
+  // pass-throughs) and hidden real outputs render only when connected — their
+  // slots stay data-carrying, the user just never sees an unwired one.
   const hiddenRow = (key: string, side: 'input' | 'output'): boolean => {
-    const base = side === 'input' ? key : (key.endsWith('__pt') ? key.slice(0, -'__pt'.length) : '');
-    return node.hiddenInputs.has(base) && !isConnected(node, side, key);
+    if (isConnected(node, side, key)) return false;
+    if (side === 'input') return node.hiddenInputs.has(key);
+    return key.endsWith('__pt') ?
+      node.hiddenInputs.has(key.slice(0, -'__pt'.length)) :
+      node.hiddenOutputs.has(key);
   };
   const inputs = (Object.entries(node.inputs) as Array<[string, ClassicPreset.Input<TypedSocket> | undefined]>)
     .filter(([key]) => !isExecKey(key) && !hiddenRow(key, 'input'));

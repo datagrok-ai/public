@@ -74,7 +74,7 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   // 'core:RandomData',
   'core:RenameColumn',
   'core:ReplaceValues',
-  'core:RoundNumbers',
+  // 'core:RoundNumbers',
   // 'core:SaveAsColumn',
   // 'core:Second',
   'core:SelectAll',
@@ -89,7 +89,7 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'core:Time',
   'core:TimeParse',
   'core:Today',
-  'core:TransformString',
+  // 'core:TransformString',
   'core:TTest',
   'core:UnixTimestamp',
   'core:Unpivot',
@@ -97,14 +97,36 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'core:Year',
   // Admetica
   // 'Admetica:run_admetica',
+  // Source-only as of 2026-07-30: the deployed Admetica predates it, so the
+  // entry is inert until the package is republished.
+  'Admetica:getAdmeProperties',
   // Bio
-  'Bio:getRegionTopMenu',
-  'Bio:moleculesToHelmTopMenu',
+  // The canonical, non-interactive numbering entry point. The engine function
+  // `immunumAntibodyNumbering` returns dialog plumbing (position maps,
+  // annotation JSON), not something a pipeline can carry.
+  'Bio:applyAntibodyNumbering',
+  'Bio:convertNotation',
+  'Bio:extractRegion',
+  // NB not `SequenceGenerator` — the sibling sequence_generator.md registers
+  // under that name (a script with no `#name:` falls back to its filename), and
+  // the parameterless doc entity is what you would get.
+  'Bio:GenerateSequences',
+  // 'Bio:getRegionTopMenu',        → Bio:extractRegion (returns the column)
+  // 'Bio:immunumAntibodyNumbering' → Bio:applyAntibodyNumbering
+  // 'Bio:moleculesToHelmTopMenu'   → Bio:moleculesToHelmColumn
+  'Bio:moleculesToHelmColumn',
+  'Bio:motifSearch',
   'Bio:pepseaMsa',
   'Bio:sequenceIdentityScoring',
   'Bio:sequenceSimilarityScoring',
-  'Bio:splitToMonomersTopMenu',
-  'Bio:toAtomicLevel',
+  // 'Bio:splitToMonomersTopMenu'   → Bio:splitToMonomersColumns
+  'Bio:splitToMonomersColumns',
+  'Bio:tagAsMacromolecule',
+  // 'Bio:toAtomicLevel'            → Bio:toAtomicLevelColumn
+  'Bio:toAtomicLevelColumn',
+  // A clean scalar source — a sketched/typed sequence in, a molblock out. Its
+  // `seq2atomic` twin is the same function under a second name; one is enough.
+  'Bio:toAtomicLevelSingleSeq',
   // Bionemo
   // 'Bionemo:DiffdockPython',
   // BiostructureViewer
@@ -117,6 +139,12 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   // Chem
   'Chem:addChemPropertiesColumns',
   'Chem:addChemRisksColumns',
+  // Adds the InChI / InChI Key column to the table; the `getInchis` /
+  // `getInchiKeys` twins return a detached column instead, which is less useful
+  // on a canvas (nothing downstream can bind it back to its rows).
+  'Chem:addInchisKeysTopMenu',
+  'Chem:addInchisTopMenu',
+  'Chem:applyReaction',
   'Chem:bitbirchClusteringTopMenu',
   'Chem:ButinaMoleculesClustering',
   'Chem:CalculateLogD',
@@ -124,25 +152,37 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:CalculateLogS',
   'Chem:CalculatePI',
   'Chem:CalculatePKa',
-  'Chem:ChemicalSpaceUsingTSNE',
-  'Chem:ChemicalSpaceUsingUMAP',
+  // Parameterized metric/fingerprint, and it takes the table, so the query
+  // molecule gets a sketcher — unlike `findSimilar`, which hard-codes Morgan.
+  'Chem:callChemSimilaritySearch',
+  // 'Chem:ChemicalSpaceUsingTSNE',
+  // 'Chem:ChemicalSpaceUsingUMAP',
+  'Chem:chemSpaceColumns',
   'Chem:clusterMCSTopMenu',
   'Chem:convertNotation',
   'Chem:Curate',
   'Chem:deprotect',
   'Chem:descriptorsDocker',
+  'Chem:diverseSubset',
   'Chem:FilterByCatalogs',
-  'Chem:findSimilar',
+  'Chem:filterBySubstructure',
+  // 'Chem:findSimilar',  → superseded by Chem:callChemSimilaritySearch
   'Chem:GenerateConformers',
-  'Chem:getDiversities',
-  'Chem:getInchiKeys',
-  'Chem:getInchis',
-  'Chem:getMorganFingerprints',
-  'Chem:getSimilarities',
-  'Chem:importMol',
-  'Chem:importMol2',
-  'Chem:importSdf',
-  'Chem:importSmi',
+  // The three functions below take a bare `column`, which a canvas cannot bind
+  // to a table — replaced by their (table, column) twins:
+  // 'Chem:getDiversities',      → Chem:diverseSubset
+  // 'Chem:getSimilarities',     → Chem:similarityTo
+  // 'Chem:searchSubstructure',  → Chem:filterBySubstructure
+  // 'Chem:getInchiKeys',  → superseded by Chem:addInchisKeysTopMenu
+  // 'Chem:getInchis',     → superseded by Chem:addInchisTopMenu
+  // 'Chem:getMorganFingerprints',  bit-string column nothing downstream reads
+  // The four file importers take file *content*, which nothing on a canvas can
+  // produce until `core:ReadFileBytes` exists (Phase 6).
+  // 'Chem:importMol',
+  // 'Chem:importMol2',
+  // 'Chem:importSdf',
+  // 'Chem:importSmi',
+  'Chem:mpoScoreByProfile',
   'Chem:MurckoScaffolds',
   'Chem:Mutate',
   'Chem:namesToSmiles',
@@ -151,19 +191,32 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Chem:removeWaterAndSaltsTopMenu',
   'Chem:runElementalAnalysis',
   'Chem:similarityMatrixTopMenu',
+  'Chem:similarityTo',
   'Chem:structuralAlertsTopMenu',
-  'Chem:SynthonSearch',
-  'Chem:synthonSearchFunc',
+  // Both need a synthon library uploaded first, and offer no readiness signal —
+  // the node shows an empty combo with no explanation.
+  // 'Chem:SynthonSearch',
+  // 'Chem:synthonSearchFunc',
+  'Chem:toSdf',
   'Chem:TwoComponentReaction',
-  'Chem:USRCAT',
+  // 'Chem:USRCAT',
   // Chembl
   'Chembl:getChemblCompounds',
   'Chembl:getChemblCompoundsByOrganism',
   // ChemblApi
-  'ChemblApi:chemblSearchWidget',
+  // 'ChemblApi:chemblSearchWidget',
   'ChemblApi:getById',
+  // Chemspace
+  'Chemspace:getChemspaceIds',
+  'Chemspace:getChemspacePrices',
   // Curves
+  // The `addStatisticsColumn` / `addAggrStatisticsColumn` originals address the
+  // curve column by NAME (a free-text string, no picker and no `fit` filter);
+  // these twins take a real column slot and constrained choices.
+  'Curves:addAggrCurveStatistic',
+  'Curves:addCurveStatistic',
   'Curves:CalculateMSR',
+  'Curves:dataToCurves',
   'Curves:pzfxFileHandler',
   // DiffStudio
   'DiffStudio:ballFlight',
@@ -175,14 +228,14 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'DiffStudio:solveEquations',
   'DiffStudio:solveODE',
   // Eda
-  'Eda:applyLinearKernelSVM',
-  'Eda:applyLinearRegression',
-  'Eda:applyPLSRegression',
-  'Eda:applyPolynomialKernelSVM',
-  'Eda:applyRBFkernelSVM',
-  'Eda:applySigmoidKernelSVM',
-  'Eda:applySoftmax',
-  'Eda:applyXGBooster',
+  // 'Eda:applyLinearKernelSVM',
+  // 'Eda:applyLinearRegression',
+  // 'Eda:applyPLSRegression',
+  // 'Eda:applyPolynomialKernelSVM',
+  // 'Eda:applyRBFkernelSVM',
+  // 'Eda:applySigmoidKernelSVM',
+  // 'Eda:applySoftmax',
+  // 'Eda:applyXGBooster',
   'Eda:dbScan',
   'Eda:generatePmpoDataset',
   'Eda:kNNImputationForTable',
@@ -190,8 +243,8 @@ export const INCLUDED_FUNC_NQNAMES: ReadonlySet<string> = new Set<string>([
   'Eda:PCA',
   'Eda:PLS',
   // FileEditors
-  'FileEditors:viewDocx',
-  'FileEditors:viewPdf',
+  // 'FileEditors:viewDocx',
+  // 'FileEditors:viewPdf',
   // Proteomics
   'Proteomics:DeqmsDE',
   'Proteomics:LimmaDE',

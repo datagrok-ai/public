@@ -80,13 +80,16 @@ Deep link (dev only): `https://dev.datagrok.ai/apps/usage/release` (per-tab
 
 ## Known limitations / follow-ups
 
-- **Tickets tab is blocked by a pre-existing JiraConnect bug.** `JiraConnect`'s `loadIssues`
-  (`public/packages/JiraConnect/src/api/data.ts`) calls Atlassian's `/rest/api/3/search`, which
-  Atlassian **removed** (HTTP 410 — "migrate to `/rest/api/3/search/jql`"). Until JiraConnect is
-  migrated to the token-paginated `/rest/api/3/search/jql` endpoint, `GetJiraTicketsByFilter` returns
-  nothing and the Tickets tab / Overview card show `n/a` (they degrade gracefully). Jira credentials
-  *are* configured on dev (the 410 is reached, not an auth error). `GetJiraTicketsByFilter` also builds
-  equality-only JQL, so the fix version is passed quoted (`fixVersion = "<next>"`).
+- **Tickets tab** — the JiraConnect 410 is **fixed**: `loadIssues`
+  (`public/packages/JiraConnect/src/api/data.ts:66`) now calls the token-paginated
+  `/rest/api/3/search/jql`, so `GetJiraTicketsByFilter` returns data again.
+  `GetJiraTicketsByFilter` still builds equality-only JQL, so the fix version is passed quoted
+  (`fixVersion = "<next>"`). The version itself comes from `defaultNextVersion()` =
+  `grok.shell.build.client.version`, i.e. whatever the host is running (dev reports `1.28.0`).
+- **Ticket counts are status-name sensitive.** Jira's status is spelled `Won't fix` (lowercase f);
+  `isActionable` compares case-insensitively for exactly that reason. Resolution is `null` on those
+  tickets, so the resolution clause cannot be relied on to exclude them — a case-sensitive
+  comparison here silently counts every Won't-fix ticket as open (20 of them on 1.28.0).
 - **Jenkins deep-link** is the `test-build` job page, not the specific build — the `builds` table
   stores no build URL. Proper fix: persist `build_url` in test ingestion
   (`core/server/datlas/lib/src/services/action_logger_service.dart`) and surface it here.

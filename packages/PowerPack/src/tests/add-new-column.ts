@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, expect,
   isDialogPresent, test} from '@datagrok-libraries/test/src/test';
@@ -63,6 +64,45 @@ category('Add new column', () => {
         await awaitCheck(() => dlg.codeMirror!.state.doc.toString() === f, 'expression has\'t been set');
         await awaitCheck(() => dlg.error === FUNC_VALIDATION[f], 'incorrect validation error');
     }
+  });
+
+  // The editor also serves hosts that store a FORMULA as a value (a pipeline
+  // node's filter condition, a viewer's `filter` property) — `expressionEditorOnly`.
+  // Deciding whether a formula is a condition means evaluating it, so the check
+  // is asynchronous and the verdict has to reach a host in another package.
+  test('expression mode validates and never touches the table', async () => {
+    const call = DG.Func.find({name: 'AddNewColumn'})[0]
+      .prepare({table: df, expression: '', name: 'Condition', type: DG.COLUMN_TYPE.BOOL});
+    call.setAuxValue('expressionEditorOnly', true);
+    call.setAuxValue('filterFormulaEditor', true);
+    const widget = new DG.Widget(ui.div());
+    const dlg = new AddNewColumnDialog(call, widget);
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    const columnsBefore = df.columns.length;
+
+    const type = (expression: string) => dlg.codeMirror!.dispatch({changes: {
+      from: 0, to: dlg.codeMirror!.state.doc.length, insert: expression}});
+    // Whatever this table actually calls its numbers — a hard-coded name that
+    // is merely missing would fail the same assertions for the wrong reason.
+    const numeric = df.columns.toList().find((c) => c.matches('numerical'))!.name;
+
+    // Wait for the verdict's CONTENT, not merely for an attribute — checking
+    // presence alone is satisfied by whatever the previous formula left behind.
+    type(`\${${numeric}} + 1`);
+    await awaitCheck(() => (widget.root.getAttribute('data-expression-error') ?? '').includes('true/false'),
+      'an arithmetic formula was accepted as a condition', 20000);
+    expect(dlg.error.includes('true/false'), true, `unhelpful message: "${dlg.error}"`);
+
+    type(`\${${numeric}} > 30`);
+    await awaitCheck(() => !widget.root.hasAttribute('data-expression-error'),
+      'the error outlived the formula that caused it', 20000);
+
+    // Accepting publishes the text back onto the call — a host is storing a
+    // value, so appending a column to its table would be a side effect nobody
+    // asked for.
+    await dlg.addNewColumnAction();
+    expect(call.getParamValue('expression'), `\${${numeric}} > 30`);
+    expect(df.columns.length, columnsBefore, 'the table gained a column');
   });
 
   test('hints', async () => {

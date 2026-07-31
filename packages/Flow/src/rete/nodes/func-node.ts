@@ -21,7 +21,10 @@ import {
   getRole, getPackageName, getFuncQualifiedName, getFuncDisplayName, isInputOptional,
   getParamDescription, getParamDisplayName, getParamDefault,
 } from '../../utils/dart-proxy-utils';
-import {hiddenInputsOf, funcWrapperOf, wrapperProperties} from '../../utils/func-input-overrides';
+import {
+  hiddenInputsOf, hiddenOutputsOf, funcWrapperOf, wrapperProperties, funcValidatorOf,
+} from '../../utils/func-input-overrides';
+import {isLiteralChoiceList} from '../../utils/choice-refs';
 
 const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
   string: '',
@@ -35,6 +38,29 @@ const PRIMITIVE_DEFAULTS: Record<string, unknown> = {
  *  sharing its numeric suffix (JoinTables: `keys2` → `table2`), else the first
  *  dataframe input. Used to seed the `columnTables` association on a fresh node
  *  and as the compiler's fallback for graphs that pre-date the association. */
+/** The value a `string` parameter's editor will DISPLAY when nothing is stored,
+ *  or undefined when that's the blank option.
+ *
+ *  A non-nullable choice input has no empty option — DG renders the first
+ *  choice, so leaving `inputValues` blank makes the node report a missing
+ *  requirement while the panel plainly shows a value. Seeding the first choice
+ *  keeps stored and shown in agreement.
+ *
+ *  Skipped when the choices are a **reference** (`Pkg:func()` / `query("…")`):
+ *  the single entry is the reference string itself, not a selectable value, and
+ *  the panel replaces the list once it resolves. */
+export function impliedChoiceDefault(prop: DG.Property): string | undefined {
+  try {
+    if (String(prop.propertyType) !== 'string' || isInputOptional(prop)) return undefined;
+    const choices: unknown = prop.choices;
+    if (!Array.isArray(choices) || !isLiteralChoiceList(choices)) return undefined;
+    const first = choices.map((c) => String(c)).find((c) => c.length > 0);
+    return first;
+  } catch {
+    return undefined; // Dart proxy access can throw
+  }
+}
+
 export function defaultTableParam(columnParam: string, dataframeParams: string[]): string {
   const suffix = /(\d+)$/.exec(columnParam)?.[1];
   if (suffix !== undefined) {
@@ -78,6 +104,8 @@ export class FuncNode extends FlowNode {
     // seeded value, pass-through, compile, script import/emit — but the node
     // component and the property panel don't render them.
     this.hiddenInputs = hiddenInputsOf(func);
+    this.hiddenOutputs = hiddenOutputsOf(func);
+    this.extraValidator = funcValidatorOf(func);
     this.funcWrapper = wrapper ?? undefined;
     const funcInputs = effectiveInputs;
     const funcOutputs = func.outputs;
@@ -105,7 +133,7 @@ export class FuncNode extends FlowNode {
         // default seeds null, not 0 — a zero would read as "set" and hide the
         // missing requirement (a blank string stays detectable as-is; the key
         // must exist either way or the panel renders no editor for it).
-        const declared = getParamDefault(inp);
+        const declared = getParamDefault(inp) ?? impliedChoiceDefault(inp);
         let def = declared ?? PRIMITIVE_DEFAULTS[inp.propertyType];
         if (inp.propertyType === 'bool' && typeof def === 'string')
           def = def.toLowerCase() === 'true';

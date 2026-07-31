@@ -54,6 +54,30 @@ export class StringInputNode extends InputBase {
   }
 }
 
+/** A String Input pre-tagged `semType: Molecule`, which is all it takes for the
+ *  value editor to become Chem's sketcher (`inputValueProperty` passes semType
+ *  to `ui.input.forProperty`, which matches a registered `valueEditor`). It
+ *  emits an ordinary `//input: string … {semType: Molecule}` line — a sketched
+ *  molecule IS a string, so everything downstream is unchanged. */
+export class MoleculeInputNode extends InputBase {
+  constructor() {
+    super('Sketcher Input', 'molecule', 'string', 'molecule',
+      {nullable: false, caption: '', choices: '', semType: 'Molecule'});
+  }
+}
+
+/** The macromolecule counterpart of {@link MoleculeInputNode}: a String Input
+ *  tagged `semType: Macromolecule`, which is what routes the value editor to
+ *  Helm's registered `valueEditor` (the HELM web editor, `ui.input.helmAsync`).
+ *  A HELM sequence IS a string, so the emitted `//input:` line and everything
+ *  downstream are unchanged. */
+export class HelmInputNode extends InputBase {
+  constructor() {
+    super('Helm Input', 'sequence', 'string', 'sequence',
+      {nullable: false, caption: '', choices: '', semType: 'Macromolecule'});
+  }
+}
+
 export class NumberInputNode extends InputBase {
   constructor() {
     super('Number Input', 'value', 'double', 'value',

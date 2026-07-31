@@ -17,7 +17,7 @@ import {missingRequiredProps, nodeMissingRequirements, FlowNode} from '../rete/s
 import {sliceDownFrom} from '../compiler/graph-compiler';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
-import {NodeExecStatus} from '../execution/execution-state';
+import {ExecutionState, NodeExecStatus} from '../execution/execution-state';
 import {AutorunScheduler, isAutorunByDefault} from '../execution/autorun';
 import {PropertyPanel} from '../panel/property-panel';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
@@ -90,6 +90,30 @@ category('Flow: invalidation', () => {
     } finally {
       destroyEditor(e);
     }
+  });
+
+  test('a later run clears the previous failure', async () => {
+    // The state is MERGED on every status change, so a failed run's error rode
+    // along into the successful one that followed — the panel showed the old
+    // red block (and its stack) under a green "Completed (23ms)".
+    const state = new ExecutionState();
+    state.setNodeStatus('n', NodeExecStatus.errored, {error: 'Condition "${x} >" is not boolean', stack: 'at …'});
+    expect(state.getNodeState('n')!.error !== undefined, true, 'the failure is recorded');
+
+    // `expect(v, undefined)` reads as `expect(v, true)` in this harness — the
+    // expected value has to be a real one, so compare explicitly.
+    state.setNodeStatus('n', NodeExecStatus.running, {startTime: 1});
+    expect(state.getNodeState('n')!.error === undefined, true, 'a new attempt drops the old verdict');
+    expect(state.getNodeState('n')!.stack === undefined, true, 'stack trace too');
+
+    state.setNodeStatus('n', NodeExecStatus.completed, {endTime: 2, outputs: {}});
+    expect(state.getNodeState('n')!.error === undefined, true, 'and a completed node carries no error');
+
+    // Stale is the exception: the last thing that happened to the node IS the
+    // failure, and "out of date" must not read as "it worked".
+    state.setNodeStatus('n', NodeExecStatus.errored, {error: 'boom'});
+    state.markStale(['n']);
+    expect(state.getNodeState('n')!.error, 'boom', 'a stale node keeps what went wrong');
   });
 
   test('adding a node invalidates nothing', async () => {
