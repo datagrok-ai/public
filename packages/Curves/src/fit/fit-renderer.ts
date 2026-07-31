@@ -12,10 +12,10 @@ import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {
   getChartBounds,
   getSeriesFitFunction,
-  getCurve
+  getCurve,
+  seriesInFitSpace,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
-import {seriesInFitSpace} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {isNativeFormat} from './curve-converter';
 import {
@@ -301,7 +301,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       return;
 
     const isRenderedOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas; // only use cache for grid, because there is no guarantee that rowIdx will be correct for other places
-    const data = getOrCreateParsedChartData(gridCell.cell, isRenderedOnGrid);
+    let data = getOrCreateParsedChartData(gridCell.cell, isRenderedOnGrid);
     const screenBounds = FitChartCellRenderer.inflateScreenBounds(new DG.Rect(x, y, w, h));
 
     for (const [_message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
@@ -313,8 +313,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     if (gridCell.cell.column?.name)
       data.series?.forEach((series) => series.columnName = gridCell.cell.column.name);
+    // on a copy - this chart data is cached and shared with the statistics, which would otherwise
+    // see a different number of series depending on whether the row had been painted
     if (data.chartOptions?.mergeSeries)
-      data.series = [mergeSeries(data.series!)!];
+      data = {...data, series: [mergeSeries(data.series!)!]};
 
     g.clearRect(screenBounds.x, screenBounds.y, screenBounds.width, screenBounds.height);
     this.renderCurves(g, screenBounds, data, gridCell);

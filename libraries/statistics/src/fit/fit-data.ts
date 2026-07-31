@@ -176,6 +176,28 @@ export const Y_SPACE_STATISTICS = ['top', 'bottom', 'interceptY', 'maxY', 'minY'
 /** Derived by {@link toDataSpace}, so unavailable to anything that skips the conversion. */
 export const DATA_SPACE_DERIVED_STATISTICS = ['pIC50'];
 
+/** A view of the series with its parameters in fit space. Stored parameters are in data space, while
+ * the optimizer works on log10 axes, so every parameter mapping onto a space-dependent statistic has
+ * to be converted. Exact inverse of {@link toDataSpace} over the same fields - converting only one
+ * axis leaves the other reported as 10^value. Returns a copy: the parsed chart data is cached and
+ * shared between the renderer and the statistics. */
+export function seriesInFitSpace(series: IFitSeries, logOptions?: LogOptions): IFitSeries {
+  if (!series.parameters || (!logOptions?.logX && !logOptions?.logY))
+    return series;
+  const fields = getSeriesFitFunction(series).statisticFields;
+  const parameters = [...series.parameters];
+  let converted = false;
+  for (let i = 0; i < parameters.length && i < fields.length; i++) {
+    const inFitSpace = (logOptions.logX && X_SPACE_STATISTICS.includes(fields[i])) ||
+      (logOptions.logY && Y_SPACE_STATISTICS.includes(fields[i]));
+    if (inFitSpace && parameters[i] > 0) {
+      parameters[i] = Math.log10(parameters[i]);
+      converted = true;
+    }
+  }
+  return converted ? {...series, parameters} : series;
+}
+
 /** Converts a fit from fit space back to data space. The optimizer runs on log10-transformed axes when
  * logX/logY are set, so the raw parameters are logarithms. Everything shown to a user - plot, property
  * panel, extracted columns - must pass through here exactly once, and aggregation must happen before it. */

@@ -76,9 +76,9 @@ export async function dataToCurvesTopMenu() {
 
 //description: Extract a fit statistic (e.g. IC50, AUC, R²) from a curve series into a calculated column.
 //input: dataframe table 
-//input: column curveColumn { description: Curve column to read }
-//input: string propName { description: Fit statistic to extract (e.g. ic50, auc, rSquared) }
-//input: int seriesNumber { description: Zero-based index of the curve series }
+//input: column curveColumn { semType: fit; nullable: false; description: Curve column to read }
+//input: string propName { nullable: false; description: Fit statistic to extract (e.g. ic50, auc, rSquared) }
+//input: int seriesNumber { nullable: false; description: Zero-based index of the curve series }
 //output: column result { action: join(table) }
 //meta.vectorFunc: true
 export function curveStatistic(table: DG.DataFrame, curveColumn: DG.Column, propName: string, seriesNumber: number) : any {
@@ -87,9 +87,9 @@ export function curveStatistic(table: DG.DataFrame, curveColumn: DG.Column, prop
 
 //description: Aggregate a fit statistic across all series of a curve into a calculated column.
 //input: dataframe table 
-//input: column curveColumn { description: Curve column to read }
-//input: string propName { description: Fit statistic to aggregate }
-//input: string aggrType { description: Aggregation applied across series (avg, med, min, max) }
+//input: column curveColumn { semType: fit; nullable: false; description: Curve column to read }
+//input: string propName { nullable: false; description: Fit statistic to aggregate }
+//input: string aggrType = 'med' { choices: ["avg","med","min","max","q1","q2","q3"]; nullable: false; description: Aggregation applied across the series of each curve }
 //output: column result { action: join(table) }
 //meta.vectorFunc: true
 export function curveAggrStatistic(table: DG.DataFrame, curveColumn: DG.Column, propName: string, aggrType: string) : any {
@@ -114,7 +114,7 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 //input: dataframe table 
 //input: string colName { description: Name of the curve column to read }
 //input: string propName = 'interceptX' { choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]; description: Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y }
-//input: string aggrType = 'med' { choices: ["min","max","sum","avg","stdev","variance","skew","kurt","med","q1","q2","q3","count","nulls","unique","values"]; description: Aggregation applied across the series of each curve }
+//input: string aggrType = 'med' { choices: ["min","max","avg","med","q1","q2","q3"]; description: Aggregation applied across the series of each curve }
 //output: column result
 //meta.vectorFunc: true
 //meta.role: transform

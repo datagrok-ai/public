@@ -7,6 +7,12 @@
 * Fit Dose-Response Curves: Constrained the column pickers by type (numerical for concentration/readout, categorical for the identifiers) and marked the seven mandatory columns `nullable: false` — a column parameter defaults to nullable, which read as optional and let a half-configured node run
 * Calculate MSR: Added captions, descriptions, and column-type constraints to the five unconstrained mandatory column inputs
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
+* GROK-17637: Statistics: Fixed stored parameters being converted on one axis only - `seriesInFitSpace` and `toDataSpace` are now exact inverses over the same fields, so a stored asymptote on a logarithmic y axis is no longer reported as 10^value
+* GROK-17637: Statistics: The renderer no longer replaces the series of the cached chart data when merging series, which made an extracted statistic depend on whether the row had been painted
+* GROK-17637: Statistics: The recalculation path strips the stray `|` from a cell value like the initial parse does, so a row no longer blanks only when it is edited
+* GROK-17637: Statistics: `interceptY` has a descriptor for every fit function, so a custom JS fit renders it instead of holding a value the plot skips
+* GROK-17637: XML 3DX: `logY` is emitted only when the export declares it - always emitting the key stopped a Column or Dataframe level option cascading onto the cell
+* GROK-17637: Statistics: Aggregation choices are limited to the ones that convert back to data space, on the transform functions as well as in the panel, and the new `curveStatistic`/`curveAggrStatistic` declare `semType: fit` and non-nullable inputs like their legacy twins
 * GROK-17637: Tests: Added coverage for the renderer and the property panel - a repaint leaving the cached parameters in data space, values-changed driving statistic-column recalculation, the panel constructing for a saved legacy statistic, and legacy statistic names mapping onto the current ones
 * GROK-17637: XML 3DX: Fixed boolean attributes being read as strings - `drawLine="False"` and `logX="false"` both came back true, so a converted curve drew a fit line the source asks to hide, and would have been fitted in log space on a linear axis
 * GROK-17637: XML 3DX: A declared fit function that is not registered now falls back to sigmoid instead of being passed through as an unknown name

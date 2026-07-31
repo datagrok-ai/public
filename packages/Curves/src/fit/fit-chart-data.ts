@@ -143,13 +143,16 @@ export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG
   return cellChartData;
 }
 
+/** Strips the stray '|' some cell values carry. Both parse paths must agree, or a row reads one way
+ * when the column is added and another when it recalculates. */
+export function sanitizeCellValue(value: string): string {
+  return value.includes('|') ? value.replaceAll('|', '') : value;
+}
+
 /** Constructs {@link IFitChartData} from the table cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
-export function getChartData(tableCell: DG.Cell): IFitChartData {
-  // removing '|' from JSON (how did it get here?)
-  let cellValue = tableCell.value as string;
-  if (cellValue.includes('|'))
-    cellValue = cellValue.replaceAll('|', '');
+function getChartData(tableCell: DG.Cell): IFitChartData {
+  const cellValue = sanitizeCellValue(tableCell.value as string);
   const column = tableCell.column;
   const cellChartData: IFitChartData = column ? (column.type === DG.TYPE.STRING ?
     parseCellValue(cellValue, column) :

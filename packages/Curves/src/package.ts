@@ -147,9 +147,9 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'column', options: {action: 'join(table)'}}],
   })
   static curveStatistic(table: DG.DataFrame,
-    @grok.decorators.param({options: {description: 'Curve column to read'}}) curveColumn: DG.Column,
-    @grok.decorators.param({options: {description: 'Fit statistic to extract (e.g. ic50, auc, rSquared)'}}) propName: string,
-    @grok.decorators.param({type: 'int', options: {description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
+    @grok.decorators.param({type: 'column', options: {semType: 'fit', nullable: false, description: 'Curve column to read'}}) curveColumn: DG.Column,
+    @grok.decorators.param({options: {nullable: false, description: 'Fit statistic to extract (e.g. ic50, auc, rSquared)'}}) propName: string,
+    @grok.decorators.param({type: 'int', options: {nullable: false, description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
     // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
     const result = DG.Column.float(`${curveColumn.name} ${seriesNumber + 1} ${propName}`, curveColumn.length);
     result.init((i) => curveStatisticAt(curveColumn, i, propName, seriesNumber, table));
@@ -163,9 +163,9 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'column', options: {action: 'join(table)'}}],
   })
   static curveAggrStatistic(table: DG.DataFrame,
-    @grok.decorators.param({options: {description: 'Curve column to read'}}) curveColumn: DG.Column,
-    @grok.decorators.param({options: {description: 'Fit statistic to aggregate'}}) propName: string,
-    @grok.decorators.param({options: {description: 'Aggregation applied across series (avg, med, min, max)'}}) aggrType: string): DG.Column {
+    @grok.decorators.param({type: 'column', options: {semType: 'fit', nullable: false, description: 'Curve column to read'}}) curveColumn: DG.Column,
+    @grok.decorators.param({options: {nullable: false, description: 'Fit statistic to aggregate'}}) propName: string,
+    @grok.decorators.param({options: {choices: ['avg', 'med', 'min', 'max', 'q1', 'q2', 'q3'], initialValue: 'med', nullable: false, description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
     // stable name: recalculation matches the result back by name, and AddNewColumn makes it unique on insert
     const result = DG.Column.float(`${curveColumn.name} ${aggrType} ${propName}`, curveColumn.length);
     result.init((i) => curveAggrStatisticAt(curveColumn, i, propName, aggrType, table));
@@ -225,7 +225,7 @@ export class PackageFunctions {
   static addAggrStatisticsColumn(table: DG.DataFrame,
     @grok.decorators.param({options: {description: 'Name of the curve column to read'}}) colName: string,
     @grok.decorators.param({options: {choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y'}}) propName: string,
-    @grok.decorators.param({options: {choices: ['min', 'max', 'sum', 'avg', 'stdev', 'variance', 'skew', 'kurt', 'med', 'q1', 'q2', 'q3', 'count', 'nulls', 'unique', 'values'], initialValue: 'med', description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
+    @grok.decorators.param({options: {choices: ['min', 'max', 'avg', 'med', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const nName = `${colName} ${aggrType} ${propName}`;

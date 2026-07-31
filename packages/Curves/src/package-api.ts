@@ -68,6 +68,7 @@ export namespace funcs {
   /**
    * Extract a fit statistic (e.g. IC50, AUC, R²) from a curve series into a calculated column.
    * @param {DG.Column} curveColumn - Curve column to read
+   *   semType: fit
    * @param {string} propName - Fit statistic to extract (e.g. ic50, auc, rSquared)
    * @param {number} seriesNumber - Zero-based index of the curve series
    */
@@ -78,8 +79,10 @@ export namespace funcs {
   /**
    * Aggregate a fit statistic across all series of a curve into a calculated column.
    * @param {DG.Column} curveColumn - Curve column to read
+   *   semType: fit
    * @param {string} propName - Fit statistic to aggregate
-   * @param {string} aggrType - Aggregation applied across series (avg, med, min, max)
+   * @param {string} aggrType - Aggregation applied across the series of each curve
+   *   choices: ["avg","med","min","max","q1","q2","q3"]
    */
   export async function curveAggrStatistic(table: DG.DataFrame , curveColumn: DG.Column , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:CurveAggrStatistic', { table, curveColumn, propName, aggrType });
@@ -102,7 +105,7 @@ export namespace funcs {
    * @param {string} propName - Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y
    *   choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]
    * @param {string} aggrType - Aggregation applied across the series of each curve
-   *   choices: ["min","max","sum","avg","stdev","variance","skew","kurt","med","q1","q2","q3","count","nulls","unique","values"]
+   *   choices: ["min","max","avg","med","q1","q2","q3"]
    */
   export async function addAggrStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });

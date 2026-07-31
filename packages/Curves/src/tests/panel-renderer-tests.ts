@@ -7,7 +7,6 @@ import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {FitGridCellHandler, normalizeStatisticNames, chartPropertiesFor} from '../fit/fit-grid-cell-handler';
-import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
 
 const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
 

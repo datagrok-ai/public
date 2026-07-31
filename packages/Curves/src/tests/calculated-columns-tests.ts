@@ -187,6 +187,21 @@ category('calculated columns', () => {
     expect(getChartDataAggrStats(data, 'count').ic50 === undefined, true);
   });
 
+  test('stored parameters round-trip through fit space on both axes', async () => {
+    // seriesInFitSpace and toDataSpace have to be inverses. Converting only x left a stored `top`
+    // unlogged on the way in and unlogged again on the way out - a top of 100 reported as 1e100
+    for (const logOptions of [{logX: false, logY: false}, {logX: true, logY: false},
+      {logX: false, logY: true}, {logX: true, logY: true}]) {
+      const series = JSON.parse(curveJson(-6.5)).series[0];
+      series.parameters = [100, 1, 1e-6, 5];
+      const fit = calculateSeriesFit(series, 0, logOptions, undefined, false);
+
+      expectFloat(getStatistic(fit, 'top')!, 100, 1e-6, `top under ${JSON.stringify(logOptions)}`);
+      expectFloat(getStatistic(fit, 'bottom')!, 5, 1e-6, `bottom under ${JSON.stringify(logOptions)}`);
+      expectFloat(getStatistic(fit, 'ic50')!, 1e-6, 1e-12, `ic50 under ${JSON.stringify(logOptions)}`);
+    }
+  });
+
   test('outlier toggle refreshes statistic columns named by the new API', async () => {
     const df = curveTable('calcColOutlierToggle', [-6.5]);
     const stat = DG.Column.float('ic50 col', df.rowCount);

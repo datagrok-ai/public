@@ -1,15 +1,14 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
-import {getSeriesFit, getSeriesFitFunction, toDataSpace, X_SPACE_STATISTICS, Y_SPACE_STATISTICS,
+import {getSeriesFit, getSeriesFitFunction, toDataSpace, seriesInFitSpace, X_SPACE_STATISTICS, Y_SPACE_STATISTICS,
   DATA_SPACE_DERIVED_STATISTICS} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {statisticsProperties, IFitChartData, IFitSeries, FitStatistics, LEGACY_FIT_STATISTICS, LogOptions}
   from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Fit, FitFunction, getStatistic, getStatisticProperty}
   from '@datagrok-libraries/statistics/src/fit/fit-engine';
-import {seriesInFitSpace} from '@datagrok-libraries/statistics/src/fit/fit-points';
 import {getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, getOrCreateParsedChartData,
-  substituteZeroes, mergeSourceChartOptions} from './fit-chart-data';
+  substituteZeroes, mergeSourceChartOptions, sanitizeCellValue} from './fit-chart-data';
 import {parseCellValue} from './curve-converter';
 
 const AGGREGATION_TYPES: {[key: string]: string} = {
@@ -120,7 +119,7 @@ function chartDataAt(curveColumn: DG.Column, rowIdx: number, table?: DG.DataFram
   // the detached column keeps its tags, and the dataframe comes in as an argument, so both levels of
   // the cascade still apply on the recalculation path
   const data = cell ? getOrCreateParsedChartData(cell, true) :
-    mergeSourceChartOptions(parseCellValue(value, curveColumn), curveColumn, table);
+    mergeSourceChartOptions(parseCellValue(sanitizeCellValue(value), curveColumn), curveColumn, table);
   if (data.chartOptions?.allowXZeroes && data.chartOptions?.logX &&
     data.series?.some((series) => series.points.some((p) => p.x === 0)))
     substituteZeroes(data);

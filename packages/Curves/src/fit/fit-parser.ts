@@ -36,7 +36,9 @@ function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
     xAxisName: settings.getAttribute('xLabel')!,
     yAxisName: settings.getAttribute('yLabel')!,
     logX: xmlBool(settings, 'logX'),
-    logY: xmlBool(settings, 'logY'),
+    // only when declared: an always-present key owns it, and a Column or Dataframe level option
+    // can no longer cascade onto the cell
+    ...(settings.getAttribute('logY') !== null ? {logY: xmlBool(settings, 'logY')} : {}),
   };
 }
 

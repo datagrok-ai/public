@@ -67,6 +67,8 @@ export abstract class FitFunction<T = Fit> {
    * @param {string} name - a legacy FitStatistics name.
    * @return {DG.Property | undefined} the descriptor, or undefined when no parameter maps onto it. */
   legacyStatisticProperty(name: string): DG.Property | undefined {
+    if (name === 'interceptY')
+      return interceptYStatisticsProperty;
     const slot = LEGACY_POSITIONAL_SLOTS[name];
     if (slot === undefined || slot >= this.parameterNames.length)
       return undefined;
@@ -309,6 +311,10 @@ const LEGACY_STATISTICS_ALIASES: {[fitFunctionName: string]: {[legacyName: strin
 
 // Slots the pre-typed getStatistics() read positionally, for every fit function alike.
 const LEGACY_POSITIONAL_SLOTS: {[legacyName: string]: number} = {top: 0, slope: 1, interceptX: 2, bottom: 3};
+
+// derived rather than mapped onto a parameter, so it needs a descriptor of its own wherever a fit
+// carries it - without one the plot has a value it refuses to draw
+const interceptYStatisticsProperty = statisticsProperty('interceptY', 'Intercept Y');
 
 /** Resolves a statistic name (legacy names included) to the descriptor of the fit function producing it.
  * @param {FitFunction} fitFunc - fit function whose statistics are being described.
