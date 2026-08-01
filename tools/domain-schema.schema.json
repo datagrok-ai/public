@@ -138,6 +138,7 @@
               },
               "label": {
                 "type": "string",
+                "minLength": 1,
                 "maxLength": 256,
                 "description": "Display label for the filter; defaults to the column's friendly name."
               }
