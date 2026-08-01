@@ -1162,9 +1162,11 @@ export interface DomainFacetSpec {
 }
 
 /** Spec for {@link DomainTableClient.facets}: one request computes every facet in a single round
- * trip. Each facet is computed under `filter` with the conditions on that facet's own column
- * stripped, so a filter control shows counts under all OTHER filters (classic faceted search).
- * At most 32 facets per request. */
+ * trip. Category counts, histogram buckets, and `'count'` are computed under `filter` with the
+ * conditions on that facet's own column stripped, so a filter control shows counts under all
+ * OTHER filters (classic faceted search). Exception: `'minMax'`, `'plan'`, and histogram BOUNDS
+ * are computed under the row predicate only — the stable-axis rule ignores `filter` so a
+ * narrowing filter never re-derives the axis. At most 32 facets per request. */
 export interface DomainFacetsSpec {
   /** Condition tree (the visual-query `filter` shape); omit for unfiltered counts. */
   filter?: any[];
@@ -1307,8 +1309,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
   }
 
   /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,
-   * and column profiling in one round trip, each computed under all other filters (counts respect
-   * the row predicate and column security). Resolves to `{facets: {<id>: <result>}}` —
+   * and column profiling in one round trip — counts under all other filters, bounds under the row
+   * predicate only (the stable-axis exception; see {@link DomainFacetsSpec}). All results respect
+   * the row predicate and column security. Resolves to `{facets: {<id>: <result>}}` —
    * `'categories'` results as `{categories: DomainFacetCategory[], hasMore}`, `'histogram'` as
    * `{min, max, buckets, nulls}` (datetime bounds are ISO-8601 strings), `'minMax'` as
    * `{min, max}`, `'count'` as `{count}`, `'plan'` as `{columns: [{name, distinct, min?, max?}]}`. */

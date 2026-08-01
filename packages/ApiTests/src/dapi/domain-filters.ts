@@ -63,13 +63,17 @@ category('Dapi: domain filters', () => {
     expect(byValue[`${marker} red`]?.total, 2, `red total: ${JSON.stringify(names)}`);
     expect(byValue[`${marker} blue`]?.total, 1, `blue total: ${JSON.stringify(names)}`);
 
-    // The histogram/minMax/count facets run under the name filter (it is not
-    // their own column), so only the marked rows count.
+    // Histogram BUCKETS and count are filter-aware (the name filter is not
+    // their own column), so only the marked rows count. minMax — like plan
+    // and histogram BOUNDS — is computed under the row predicate only (the
+    // stable-axis rule ignores the filter tree), so leftover rows from other
+    // suites may widen it: assert containment, not equality.
     const hist = res.facets['hist'];
     expect(hist.buckets.reduce((a: number, b: number) => a + b, 0), 3,
       `histogram buckets: ${JSON.stringify(hist)}`);
-    expect(res.facets['mm'].min, 11);
-    expect(res.facets['mm'].max, 30);
+    const mm = res.facets['mm'];
+    expect(mm.min <= 11, true, `minMax must contain the marked rows: ${JSON.stringify(mm)}`);
+    expect(mm.max >= 30, true, `minMax must contain the marked rows: ${JSON.stringify(mm)}`);
     expect(res.facets['n'].count, 5); // three quantified + two path parents
   });
 
