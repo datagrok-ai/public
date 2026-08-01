@@ -6,6 +6,7 @@ keywords:
   - registration
   - row-level security
   - data catalog
+  - filtering
 ---
 
 :::note
@@ -17,8 +18,9 @@ This feature is in Beta
 Domains let you keep structured business data — plates, studies, compounds, inventory,
 issues — directly in Datagrok, managed like any other platform object. Each domain is a set
 of related tables defined by a [plugin](../../develop/how-to/db/domain-schemas.md). Rows can
-be searched, browsed, edited, shared with fine-grained permissions, commented on, watched for
-changes, and audited — without leaving the platform or setting up a separate database.
+be searched, browsed, filtered, edited, shared with fine-grained permissions, commented on,
+watched for changes, and audited — without leaving the platform or setting up a separate
+database.
 
 ## Browsing
 
@@ -30,9 +32,8 @@ Click a table to open it. The table view works like other Datagrok galleries:
 
 * **Search** at the top filters rows as you type. Use plain text, or conditions like
   `status = "open" and title starts "Crash"`.
-* **Filters** on the left offer value facets and quick filters (**All**, **Created by me**,
-  **Created recently**). Save the current filter and sort as a named preset to reuse it later
-  or share it as a URL.
+* **Filters** on the left narrow the rows down by column values — see
+  [Filtering](#filtering).
 * Switch between **brief**, **card**, and **grid** modes, and change the sort order.
 * Large tables show the first 1,000 rows along with the total count — refine the filter to
   narrow down the result. To analyze the full filtered subset, use **Open in Table View** or
@@ -47,6 +48,49 @@ stable URL like `/domains/plates/plate/P-000123` that you can bookmark and share
 To find a row from anywhere, type its identifier into the global search: the general form is
 `<domain>.<table>:<key>` (for example, `plates.plate:P-000123`). Plugins can register
 friendlier patterns — for example, `GRIT-123` opens the Grit issue directly.
+
+## Filtering
+
+To open the filter panel, click the **filter** icon next to the search bar. Datagrok builds
+the filters from the table's columns automatically (or shows the set the plugin declared):
+checkboxes with live row counts for categorical columns, histograms with editable min and max
+inputs for numeric columns, date ranges, and a contains input for free-text columns.
+
+Filters always apply to the whole table, not just the rows on screen. Small tables filter
+instantly in the browser. Large tables transparently re-query the server as you adjust the
+filters, so the counts and histograms reflect all matching rows, not only the loaded ones.
+Counts respect your row-level access: two users filtering the same table can see different
+counts when they see different rows.
+
+The counter above the table shows how many rows currently match (for example, `124 / 2155`).
+When nothing matches, the view says "No rows match the current filter" — click
+**Clear filters** to start over.
+
+Working with category filters:
+
+* **Search within a filter**: type in the filter's search box to narrow the displayed list.
+  Columns with many distinct values show only the most frequent ones ("top 100 shown — search
+  to narrow") — search finds the rest.
+* **Only this**: click a category name to keep only its rows.
+* **Everything except**: Ctrl-click a checkbox to exclude that value. The exclusion applies
+  to the whole table, including values beyond the visible list. Check everything back to
+  remove the constraint.
+* **Reset**: each filter has its own reset icon (hover over its header) that clears just that
+  filter. The panel's reset clears them all.
+
+### Related filters
+
+Click **Add related filter...** to filter by columns of the tables a row refers to — for
+example, filter order lines by the category of their product (order line → product →
+category), up to three links away. Related filters follow reference columns forward, from a
+table to the tables it points at.
+
+### Saved filters
+
+To save the current panel as a named preset, open the **Filter Panel** context menu and
+select **Save or Apply > Save...**. Reapply or delete presets from the same menu. Presets are
+regular Datagrok entities: share one with users or groups like any other entity, and it
+appears in their menu, too.
 
 ## Creating and editing
 

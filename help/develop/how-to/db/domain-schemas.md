@@ -8,6 +8,8 @@ keywords:
   - row-level security
   - schema.json
   - CRUD
+  - facets
+  - default filters
 ---
 
 :::note
@@ -26,8 +28,9 @@ server code, domain tables get the full platform treatment out of the box:
 * **Managed CRUD**: the server builds all queries, validates values, checks permissions, and
   writes an [audit trail](../../../govern/audit/audit.md) in the same transaction. You never
   write SQL or a backend.
-* **Standard UI**: browsing, search, create/edit dialogs, in-grid editing, import/export,
-  sharing, watching, and history work automatically — see [Domains](../../../govern/catalog/domains.md).
+* **Standard UI**: browsing, search, filtering, create/edit dialogs, in-grid editing,
+  import/export, sharing, watching, and history work automatically — see
+  [Domains](../../../govern/catalog/domains.md).
 * **Typed API**: a generic JS client (`grok.dapi.domains`) plus generated TypeScript
   interfaces per table.
 
@@ -93,6 +96,7 @@ Every table automatically gets the system columns `id` (UUID, also the row's ent
 | `softDelete`           | `true`    | Deletes mark `is_deleted` instead of removing rows                                               |
 | `idempotency`          | `false`   | Adds the `idempotency_key` column for replay-safe creates                                        |
 | `schemas`              | —         | [Property schemas](#property-schemas-and-column-security) contributing dynamic columns          |
+| `filters`              | —         | [Default filters](#default-filters) shown on the table's filter panel                            |
 | `friendlyName`, `description` | — | Display metadata                                                                                |
 
 ### Column options
@@ -143,6 +147,41 @@ see `cas_number` and `hazard_class`, while procurement sees `unit_cost` — on t
 Hidden columns never leave the server: they are absent from query results, exports, and
 filters. Relational columns belong to the table's built-in "core" schema, which is granted to
 all users on deployment.
+
+### Default filters
+
+Without configuration, the table's
+[filter panel](../../../govern/catalog/domains.md#filtering) is constructed automatically
+from the column types and value cardinality. To control it, declare a per-table `filters`
+section — it replaces the automatic selection for that table, and the declared filters appear
+pre-opened, in order (users can still add more from the panel):
+
+```json
+"filters": [
+  {"column": "sample_state"},
+  {"column": "volume", "type": "histogram", "bins": 24},
+  {"column": "plate_id.barcode", "label": "Plate barcode"},
+  {"column": "created_on", "type": "range"}
+]
+```
+
+| Key      | Description                                                                                       |
+|----------|----------------------------------------------------------------------------------------------------|
+| `column` | A declared column, a property-schema column, a system column (such as `created_on`), or a dotted reference path like `plate_id.barcode` |
+| `type`   | `categories`, `histogram`, `range`, `text`, or `bool`. Omit to pick automatically from the column type |
+| `bins`   | Histogram bucket count (1–200). Requires an explicit `histogram` or `range` type                    |
+| `label`  | Display caption for the filter                                                                      |
+
+The section is validated on deployment, and every problem fails the publish with a distinct
+error:
+
+* Unknown columns, unknown descriptor keys, and duplicate columns are rejected.
+* `type` must match the column type: `histogram` and `range` apply to `int`, `float`, and
+  `datetime` columns, `text` to `string`, `bool` to `bool` (`categories` applies to any).
+* `bins` without an explicit `histogram` or `range` type is rejected.
+* In a dotted path, every segment but the last must be a `ref` column, and paths are capped
+  at three hops. Paths point forward only — from the table to the tables it references — and
+  support the `categories` type only.
 
 ## Security modes
 
@@ -251,6 +290,55 @@ await grok.dapi.domains.transaction('grit', [
 Fetch related rows in one query: `expand: ['project_id']` adds the master row's columns
 prefixed `project_id.<name>`; `expand: ['details:comment']` adds capped child-row arrays
 (JSON queries only). The expanded table's own row and column security applies.
+
+### Facets and saved filters
+
+`facets` powers filter panels: one batched request computes category counts, histogram
+buckets, value ranges, the row count, and column profiles in a single round trip. Category
+counts, buckets, and `count` are computed under the passed `filter` with the conditions on
+each facet's own column stripped, so a filter control shows counts under all *other* filters
+(classic faceted search). The exception is the stable-axis rule: `minMax`, `plan`, and
+histogram *bounds* are computed under your access predicate only, ignoring `filter` — a
+narrowing filter never re-derives a filter's axis. All results respect row-level access and
+column security, so two users can legitimately get different counts for the same data.
+
+```ts
+const wells = grok.dapi.domains.table('plates.plate_well');
+
+const res = await wells.facets({
+  filter: [{property: 'sample_state', operator: '=', value: ['filled', 'dosed']}],
+  facets: [
+    // → {categories: [{value, display?, total, filtered}], hasMore}
+    {id: 'state', kind: 'categories', column: 'sample_state', limit: 100},
+    // Dotted reference path (up to 3 hops); groups by id, `display` carries the name
+    {id: 'plate', kind: 'categories', column: 'plate_id.barcode', search: 'P-1'},
+    // → {min, max, buckets, nulls}; datetime bounds are ISO-8601 strings
+    {id: 'vol', kind: 'histogram', column: 'volume', bins: 24},
+    // → {count}
+    {id: 'n', kind: 'count'},
+    // → {columns: [{name, distinct, min?, max?}]} — for choosing filter types
+    {id: 'plan', kind: 'plan', columns: ['sample_state', 'volume']},
+  ],
+});
+grok.shell.info(`${res.facets['n'].count} rows, buckets: ${res.facets['vol'].buckets}`);
+```
+
+At most 32 facets per request. Category lists are capped (default 100, `hasMore` set when
+more remain) — narrow with `search` (compiled server-side as a bound substring match)
+instead of raising the cap.
+
+Saved filter presets are small shareable entities carrying the filter panel's state maps
+verbatim (the shape `DG.FilterGroup` saves):
+
+```ts
+const preset = await wells.filters.save('Filled wells',
+  {'Sample state': {type: 'categorical', column: 'sample_state', selected: ['filled']}});
+const presets = await wells.filters.list();  // presets visible to the caller, by name
+await wells.filters.delete(preset.id);
+```
+
+Saving with `{id}` updates a preset in place, preserving its original author. Share a preset
+with users or groups like any other entity.
 
 ## Typed clients
 
