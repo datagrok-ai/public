@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20591: Added dapi/domains-filters.js — batched facets (filter-panel counts) and shareable saved filter presets on a domain table
 * GROK-20572: Added data-access/db/query_builder_domain.js — TableQueryBuilder over a domain schema's virtual connection
 * GROK-20316: Added dapi/domains-dapi2.js — querying domain-table rows via the generated grok.dapi2 REST client
 * GROK-20315: Added dapi/domains-batch.js, domains-transaction.js, domains-aggregate.js, domains-dataframe.js, domains-idempotency.js — batch upsert, multi-entity transactions, aggregation, queryDf → grid, idempotent retries + optimistic concurrency
