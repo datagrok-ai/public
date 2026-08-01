@@ -1313,7 +1313,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
    * predicate only (the stable-axis exception; see {@link DomainFacetsSpec}). All results respect
    * the row predicate and column security. Resolves to `{facets: {<id>: <result>}}` —
    * `'categories'` results as `{categories: DomainFacetCategory[], hasMore}`, `'histogram'` as
-   * `{min, max, buckets, nulls}` (datetime bounds are ISO-8601 strings), `'minMax'` as
+   * `{min, max, buckets, totalBuckets, nulls}` — `buckets` counted under the other filters,
+   * `totalBuckets` under the row predicate only (datetime bounds are ISO-8601 strings), `'minMax'` as
    * `{min, max}`, `'count'` as `{count}`, `'plan'` as `{columns: [{name, distinct, min?, max?}]}`. */
   facets(spec: DomainFacetsSpec): Promise<{facets: {[id: string]: any}}> {
     return api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec);
