@@ -113,6 +113,36 @@
           "type": "array",
           "items": {"$ref": "#/definitions/identifier"},
           "description": "Property schemas contributing jsonb keys to this table."
+        },
+        "filters": {
+          "type": "array",
+          "description": "Default filter panel for this table (entity filters): declared columns pre-open in order. Absent = heuristics by column type.",
+          "items": {
+            "type": "object",
+            "required": ["column"],
+            "additionalProperties": false,
+            "properties": {
+              "column": {
+                "type": "string",
+                "description": "Column name, a filterable system column (id, author_id, created_on, updated_on, version), or a dotted forward FK path (e.g. 'category_id.name', max 3 hops)."
+              },
+              "type": {
+                "enum": ["categories", "histogram", "range", "text", "bool"],
+                "description": "Filter kind; defaults by column type. histogram/range need a numeric or datetime column, text a string column, bool a bool column."
+              },
+              "bins": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 200,
+                "description": "Histogram bin count (type histogram/range only)."
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 256,
+                "description": "Display label for the filter; defaults to the column's friendly name."
+              }
+            }
+          }
         }
       }
     },
