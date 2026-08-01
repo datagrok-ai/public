@@ -27,6 +27,7 @@ import './dapi/groups';
 import './dapi/dapi';
 import './dapi/domains';
 import './dapi/domains-batch';
+import './dapi/domain-filters';
 import './dapi/domain-handlers';
 import './dapi/domain-visual-queries';
 import './dapi/connector-writes';
