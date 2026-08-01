@@ -1200,6 +1200,10 @@ export interface IDartApi {
   grok_Dapi_Domains_Aggregate(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_Transaction(c: any, schema: String, ops: any): Promise<any>;
   grok_Dapi_Domains_Batch(c: any, schema: String, table: String, data: any, format: String, options: any): Promise<any>;
+  grok_Dapi_Domains_Facets(c: any, schema: String, table: String, spec: any): Promise<any>;
+  grok_Dapi_Domains_ListFilters(c: any, schema: String, table: String): Promise<any>;
+  grok_Dapi_Domains_SaveFilter(c: any, schema: String, table: String, name: String, states: any, id: String): Promise<any>;
+  grok_Dapi_Domains_DeleteFilter(c: any, id: String): Promise<any>;
   grok_DomainSchema_Get_PgSchema(s: any): any;
   grok_DomainSchema_Get_ManagedBy(s: any): any;
   grok_DomainSchema_Get_Version(s: any): any;

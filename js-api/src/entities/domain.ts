@@ -52,6 +52,17 @@ export class DomainTable extends Entity {
 }
 
 
+/** A saved filter preset of a domain table — a small shareable entity carrying the
+ * filter panel's state maps (entity-filters §7). Managed through
+ * `grok.dapi.domains.table(...).filters`; wrapped here so preset entities work with
+ * the standard entity machinery (sharing, favorites, {@link Dapi.getEntities}). */
+export class DomainSavedFilter extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+
 /** A single row of a {@link DomainTable}. Its semantic type is the row's entity
  * type name, `'<schema>.<table>'` — the string an {@link ObjectHandler} keys on to
  * override rendering per table (see Grit's `grit.issue` handler). */

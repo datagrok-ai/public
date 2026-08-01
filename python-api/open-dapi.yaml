@@ -252,6 +252,22 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/filters/{id}:
+    delete:
+      operationId: deleteSavedFilter
+      summary: delete saved filter
+      description: "Deletes a saved filter; the standard entity Delete permission applies."
+      tags:
+        - domains
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/{table}/query:
     post:
       operationId: queryRows
@@ -302,6 +318,80 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/facets:
+    post:
+      operationId: getFacets
+      summary: get facets
+      description: "Batched facet computation for filter panels (entity-filters §5.1): spec = {filter, facets: [{id, kind: categories|histogram|minMax|count|plan, column?|columns?, limit?, search?, bins?, min?, max?}]}. Each facet is computed under all other filters (conditions on its own column stripped); counts respect the row predicate and column security."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+  /domains/{schema}/{table}/filters:
+    post:
+      operationId: saveSavedFilter
+      summary: save saved filter
+      description: "Saves a filter for the caller: body {name, states, id?} — 'states' is the panel's state-map payload, stored verbatim; 'id' updates in place."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+    get:
+      operationId: getSavedFilters
+      summary: get saved filters
+      description: "Saved filters of a domain table visible to the caller (entity-filters §7): shareable entities carrying the filter panel's state maps verbatim."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Successful response

@@ -1137,6 +1137,62 @@ export interface DomainBatchReport {
  * idempotency key (for tables that declare `"idempotency": true`). */
 export type DomainRowInsert<TRow> = Partial<TRow> & {idempotencyKey?: string};
 
+/** One facet request of {@link DomainFacetsSpec}; `id` keys its result in the response. */
+export interface DomainFacetSpec {
+  /** Response key for this facet's result. */
+  id: string;
+  kind: 'categories' | 'histogram' | 'minMax' | 'count' | 'plan';
+  /** Column name; `'categories'` also accepts a dotted FK path (e.g. `'category_id.name'`, up to
+   * 3 hops — the counts respect the referenced table's row predicate). Not used by `'count'`/`'plan'`. */
+  column?: string;
+  /** `'plan'` only: columns to profile (capped distinct count plus numeric/datetime min/max). */
+  columns?: string[];
+  /** `'categories'` only: category cap (default 100, clamped to 1..1000); the result carries
+   * `hasMore` when more remain — narrow with `search` instead of raising the cap. */
+  limit?: number;
+  /** `'categories'` only: server-side substring narrowing (compiled as a bound ILIKE). */
+  search?: string;
+  /** `'histogram'` only: bucket count (default 20, clamped to 1..200). */
+  bins?: number;
+  /** `'histogram'` only: pinned lower bound (a number, or an ISO-8601 string for datetime columns)
+   * so zooming does not re-derive the axis; omit to bucket over the data bounds. */
+  min?: number | string;
+  /** `'histogram'` only: pinned upper bound (see `min`). */
+  max?: number | string;
+}
+
+/** Spec for {@link DomainTableClient.facets}: one request computes every facet in a single round
+ * trip. Each facet is computed under `filter` with the conditions on that facet's own column
+ * stripped, so a filter control shows counts under all OTHER filters (classic faceted search).
+ * At most 32 facets per request. */
+export interface DomainFacetsSpec {
+  /** Condition tree (the visual-query `filter` shape); omit for unfiltered counts. */
+  filter?: any[];
+  facets: DomainFacetSpec[];
+}
+
+/** One category bucket of a `'categories'` facet: `total` ignores the filter, `filtered` respects
+ * it (minus the facet's own column); ref columns group by id and carry the referenced row's
+ * display name in `display`. */
+export interface DomainFacetCategory {
+  value: any;
+  display?: string;
+  total: number;
+  filtered: number;
+}
+
+/** A saved filter preset of a domain table — a small shareable entity carrying the filter
+ * panel's state maps verbatim (see {@link DomainSavedFiltersClient}). */
+export interface DomainSavedFilterInfo {
+  id: string;
+  name: string;
+  friendlyName: string;
+  /** Per-column filter states (the shape `DG.FilterGroup` saves), stored verbatim. */
+  states: {[column: string]: any};
+  /** The preset's author (preserved on in-place updates). */
+  author?: any;
+}
+
 /**
  * Generic client for domain tables — entity-mapped PostgreSQL schemas that plugins
  * declare via `databases/<schema>/schema.json` manifests. Rows are plain JSON objects;
@@ -1248,6 +1304,50 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
   /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
   audit(id: string): Promise<any[]> {
     return api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id);
+  }
+
+  /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,
+   * and column profiling in one round trip, each computed under all other filters (counts respect
+   * the row predicate and column security). Resolves to `{facets: {<id>: <result>}}` —
+   * `'categories'` results as `{categories: DomainFacetCategory[], hasMore}`, `'histogram'` as
+   * `{min, max, buckets, nulls}` (datetime bounds are ISO-8601 strings), `'minMax'` as
+   * `{min, max}`, `'count'` as `{count}`, `'plan'` as `{columns: [{name, distinct, min?, max?}]}`. */
+  facets(spec: DomainFacetsSpec): Promise<{facets: {[id: string]: any}}> {
+    return api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec);
+  }
+
+  /** Saved filter presets of this table — shareable entities carrying filter panel states. */
+  get filters(): DomainSavedFiltersClient {
+    return new DomainSavedFiltersClient(this.dart, this.schema, this.table);
+  }
+}
+
+/**
+ * Saved filter presets of one domain table (see {@link DomainTableClient.filters}): small
+ * shareable entities carrying the filter panel's state maps. Sharing uses the standard entity
+ * permission machinery ({@link Dapi.permissions}); the server scopes {@link list} to what the
+ * caller can see. */
+export class DomainSavedFiltersClient {
+  dart: any;
+
+  constructor(dart: any, public readonly schema: string, public readonly table: string) {
+    this.dart = dart;
+  }
+
+  /** Presets of this table visible to the current user, ordered by name. */
+  list(): Promise<DomainSavedFilterInfo[]> {
+    return api.grok_Dapi_Domains_ListFilters(this.dart, this.schema, this.table);
+  }
+
+  /** Saves a preset for the caller; pass `options.id` to update an existing preset in place
+   * (the original author is preserved). Resolves to the saved preset. */
+  save(name: string, states: {[column: string]: any}, options?: {id?: string}): Promise<DomainSavedFilterInfo> {
+    return api.grok_Dapi_Domains_SaveFilter(this.dart, this.schema, this.table, name, states, options?.id);
+  }
+
+  /** Deletes a preset (requires the entity Delete permission). */
+  delete(id: string): Promise<void> {
+    return api.grok_Dapi_Domains_DeleteFilter(this.dart, id);
   }
 }
 

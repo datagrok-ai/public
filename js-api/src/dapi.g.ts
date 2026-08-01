@@ -105,6 +105,12 @@ export namespace dapi2 {
       return _fetch(url, {method: 'DELETE'});
     }
 
+    /** Deletes a saved filter; the standard entity Delete permission applies. */
+    export async function deleteSavedFilter(id: string): Promise<any> {
+      let url = `/domains/filters/${id}`;
+      return _fetch(url, {method: 'DELETE'});
+    }
+
     /** Output format is selected by the spec's 'format': JSON rows (default) or a d42 binary DataFrame (pattern: TablesRouter.getTableData); unknown formats are rejected by the spec parse (400). */
     export async function queryRows(schema: string, table: string, spec: any): Promise<any> {
       let url = `/domains/${schema}/${table}/query`;
@@ -114,6 +120,18 @@ export namespace dapi2 {
     export async function aggregateRows(schema: string, table: string, spec: any): Promise<any> {
       let url = `/domains/${schema}/${table}/aggregate`;
       return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(spec)});
+    }
+
+    /** Batched facet computation for filter panels (entity-filters §5.1): spec = {filter, facets: [{id, kind: categories|histogram|minMax|count|plan, column?|columns?, limit?, search?, bins?, min?, max?}]}. Each facet is computed under all other filters (conditions on its own column stripped); counts respect the row predicate and column security. */
+    export async function getFacets(schema: string, table: string, spec: any): Promise<any> {
+      let url = `/domains/${schema}/${table}/facets`;
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(spec)});
+    }
+
+    /** Saves a filter for the caller: body {name, states, id?} — 'states' is the panel's state-map payload, stored verbatim; 'id' updates in place. */
+    export async function saveSavedFilter(schema: string, table: string, body: any): Promise<any> {
+      let url = `/domains/${schema}/${table}/filters`;
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
     }
 
     /** Bulk upload (§5.6); the body format is selected by Content-Type: application/json (row-object array, bare or under 'rows'), text/csv, or application/octet-stream (d42 DataFrame). No server-side Parquet — see PLAN.md phase-2 decision 1 (clients convert via the Arrow package). The generated dapi2 client method is a non-functional stub (it sends no body): use grok.dapi.domains.table(...).batch (JS) or raw HTTP with a JSON/CSV/d42 body instead. */
@@ -172,6 +190,12 @@ export namespace dapi2 {
       const params = new URLSearchParams();
       if (options?.limit !== undefined) params.set('limit', String(options.limit));
       if (params.toString()) url += '?' + params.toString();
+      return _fetch(url);
+    }
+
+    /** Saved filters of a domain table visible to the caller (entity-filters §7): shareable entities carrying the filter panel's state maps verbatim. */
+    export async function getSavedFilters(schema: string, table: string): Promise<any> {
+      let url = `/domains/${schema}/${table}/filters`;
       return _fetch(url);
     }
 
