@@ -51,9 +51,35 @@ export namespace dapi2 {
       return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
     }
 
+    /** Whole-schema audit events, newest first; [limit] clamps to [1, 1000]. Every table's events follow the table-audit visibility rules; schema-level DDL events (op 'ddl', null table_id, {version, summary} in 'after') are registry metadata and visible to everyone. */
+    export async function schemaAudit(schema: string, options?: {limit?: number}): Promise<any> {
+      let url = `/domains/schemas/${schema}/audit`;
+      const params = new URLSearchParams();
+      if (options?.limit !== undefined) params.set('limit', String(options.limit));
+      if (params.toString()) url += '?' + params.toString();
+      return _fetch(url);
+    }
+
     /** Deletes (fully purges) a user-managed schema: the PostgreSQL schema with its data and audit partition, registry rows, entity types, promoted row entities, and permissions. Requires Delete on the schema entity. */
     export async function deleteSchema(schema: string): Promise<any> {
       let url = `/domains/schemas/${schema}`;
+      return _fetch(url, {method: 'DELETE'});
+    }
+
+    /** Restricts a relational domain-table column (body {schema, table, column}): splits it out of the everyone-visible core property schema into its own single-column schema named '<schema>.<table>.<column>' — afterwards only its grantees (and admins) see the column. Idempotent; returns {id, name} of the per-column schema (a /domains/grants target). Requires Share on the table's core schema; jsonb columns are managed via their owning property schema instead (400). */
+    export async function ensureColumnSchema(body: any): Promise<any> {
+      let url = `/domains/grants/column`;
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    }
+
+    /** Inverse of [ensureColumnSchema]: deletes the per-column schema with its grants and re-attaches the column to the everyone-visible core schema. */
+    export async function restoreColumnVisibility(options?: {schema?: string, table?: string, column?: string}): Promise<any> {
+      let url = `/domains/grants/column`;
+      const params = new URLSearchParams();
+      if (options?.schema !== undefined) params.set('schema', String(options.schema));
+      if (options?.table !== undefined) params.set('table', String(options.table));
+      if (options?.column !== undefined) params.set('column', String(options.column));
+      if (params.toString()) url += '?' + params.toString();
       return _fetch(url, {method: 'DELETE'});
     }
 

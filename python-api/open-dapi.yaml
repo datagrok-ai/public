@@ -111,6 +111,28 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/schemas/{schema}/audit:
+    get:
+      operationId: schemaAudit
+      summary: schema audit
+      description: "Whole-schema audit events, newest first; [limit] clamps to [1, 1000]. Every table's events follow the table-audit visibility rules; schema-level DDL events (op 'ddl', null table_id, {version, summary} in 'after') are registry metadata and visible to everyone."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successful response
   /domains/schemas/{schema}:
     delete:
       operationId: deleteSchema
@@ -122,6 +144,47 @@ paths:
         - name: schema
           in: path
           required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful response
+  /domains/grants/column:
+    post:
+      operationId: ensureColumnSchema
+      summary: ensure column schema
+      description: "Restricts a relational domain-table column (body {schema, table, column}): splits it out of the everyone-visible core property schema into its own single-column schema named '<schema>.<table>.<column>' — afterwards only its grantees (and admins) see the column. Idempotent; returns {id, name} of the per-column schema (a /domains/grants target). Requires Share on the table's core schema; jsonb columns are managed via their owning property schema instead (400)."
+      tags:
+        - domains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
+    delete:
+      operationId: restoreColumnVisibility
+      summary: restore column visibility
+      description: "Inverse of [ensureColumnSchema]: deletes the per-column schema with its grants and re-attaches the column to the everyone-visible core schema."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: table
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: column
+          in: query
+          required: false
           schema:
             type: string
       responses:
