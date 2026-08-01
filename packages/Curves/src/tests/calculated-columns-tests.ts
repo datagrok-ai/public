@@ -227,6 +227,17 @@ category('calculated columns', () => {
     expect(aggregated !== undefined, true, 'the aggregated path drops a statistic the per-series one reports');
   });
 
+  test('a legacy name and its canonical field agree after aggregation', async () => {
+    // interceptX aliases onto ic50 and is the default statistic of both aggregation transforms.
+    // Collecting it before the conversion left it in fit space while ic50 was a concentration, so a
+    // saved project replayed -6 into a column of 1e-6 values
+    const data = JSON.parse(multiSeriesCurveJson([-7, -5])) as IFitChartData;
+    const stats = getChartDataAggrStats(data, 'avg');
+
+    expect(stats.interceptX, stats.ic50, 'interceptX must be reported in the same space as ic50');
+    expectFloat(Math.log10(stats.interceptX!), -6, 0.1);
+  });
+
   test('outlier toggle refreshes statistic columns named by the new API', async () => {
     const df = curveTable('calcColOutlierToggle', [-6.5]);
     const stat = DG.Column.float('ic50 col', df.rowCount);

@@ -90,6 +90,12 @@ export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string
     for (const legacyName of LEGACY_FIT_STATISTICS) {
       if (common.has(legacyName))
         continue;
+      // only names that resolve to themselves. One that aliases onto a canonical field (interceptX
+      // onto ic50) is filled in after the conversion - collecting it here would leave it in fit space
+      // while ic50 is a concentration, and the back-fill would then skip it as already defined
+      const prop = getStatisticProperty(getSeriesFitFunction(series), legacyName);
+      if (prop && prop.name !== legacyName)
+        continue;
       if (!values.has(legacyName))
         values.set(legacyName, []);
       values.get(legacyName)!.push(getStatistic(fit, legacyName));
