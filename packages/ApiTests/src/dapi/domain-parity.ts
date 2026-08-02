@@ -144,6 +144,48 @@ category('Dapi: domain parity', () => {
       `expected DomainValidationError, got ${err?.constructor?.name}: ${err?.message}`);
   });
 
+  test('query builder: thenable chains match the spec form; terminals work', async () => {
+    const p = `QB${Date.now()}${Math.floor(Math.random() * 1e4)}`;
+    const ins = await items().insert(
+      [1, 2, 3].map((i) => ({sku: `${p}-${i}`, name: `${p} b`, quantity: i * 10})));
+    for (const r of ins)
+      ids.push(r.id);
+    const viaBuilder = await items().query()
+      .where('name', '=', `${p} b`).orderBy('quantity', true).top(2);
+    const viaSpec = await items().query({filter: [{property: 'name', operator: '=', value: `${p} b`}],
+      sort: '!quantity', limit: 2});
+    expect(viaBuilder.map((r: any) => r.id).join(','), viaSpec.map((r) => r.id).join(','),
+      'builder and spec form must produce identical results');
+    expect(viaBuilder[0].quantity, 30);
+    expect(await items().query().where({name: `${p} b`}).count(), 3);
+    expect(await items().query().where({name: `${p} b`, quantity: 20}).exists(), true);
+    expect(await items().query().where('quantity', '>', 1000000000).first(), null);
+    const df = await items().query().where({name: `${p} b`}).df();
+    expect(df.rowCount, 3, '.df() must return a DataFrame over the same query');
+  });
+
+  test('predicate helpers bind values the string grammar cannot express', async () => {
+    const name = `O'Brien ${Date.now()}`;
+    const [r] = await items().insert({sku: sku(), name: name});
+    ids.push(r.id);
+    // Apostrophes are inexpressible in the smart-filter string grammar — the
+    // condition tree binds them server-side, so they just work.
+    const viaWhere = await items().query().where('name', '=', name).top(2);
+    expect(viaWhere.length, 1);
+    expect(viaWhere[0].name, name);
+    const viaHelpers = await items().query({filter: DG.or(DG.cond('name', '=', name),
+      DG.cond('quantity', '>', 1000000000))});
+    expect(viaHelpers.length, 1);
+    // Mixing a raw string filter with conditions is a clear client-side error.
+    let err: any = null;
+    try {
+      items().query().where('name = "x"').where('quantity', '>', 1);
+    } catch (e) {
+      err = e;
+    }
+    expect(`${err}`.includes('cond()'), true, `${err}`);
+  });
+
   test('deleteWhere: filter forms, hasMore drain, empty filter rejects', async () => {
     const p = `DW${Date.now()}${Math.floor(Math.random() * 1e4)}`;
     const ins = await items().insert(

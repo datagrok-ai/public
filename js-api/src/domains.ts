@@ -324,3 +324,194 @@ export interface DomainTableClientOptions {
 }
 
 export type DomainTxValues<T> = {[K in keyof T]: T[K] | `$${string}`};
+
+/** Result type of one transaction op, keyed on its `op` discriminant — powers the
+ * mapped-tuple `transaction()` signatures (per-op result types, no positional casts). */
+export type DomainOpResultFor<TOp> =
+  TOp extends {op: 'insert'} ? DomainInsertResult :
+  TOp extends {op: 'update'} ? DomainUpdateResult :
+  TOp extends {op: 'delete'} ? DomainDeleteResult : DomainOpResult;
+
+/** Minimal structural client the builder executes against (avoids a domains.ts → dapi.ts cycle). */
+export interface IDomainQueryExecutor<TRow> {
+  query(spec: any): Promise<TRow[]>;
+  queryDf(spec: any): Promise<any>;       // DG.DataFrame
+  count(filter?: any): Promise<number>;
+}
+
+/** Bound condition node: `cond('name', '=', "O'Brien")`. The value travels in the condition
+ * tree and is bound server-side — NEVER interpolated into a filter string, so any string
+ * value is expressible (apostrophes included, which the smart-filter grammar cannot quote). */
+export function cond<TColumn extends string = string>(
+  property: DomainColumnRef<TColumn>, operator: DomainConditionOperator,
+  value?: DomainFilterValue): DomainCondition<TColumn> {
+  return value === undefined ? {property, operator} : {property, operator, value};
+}
+
+/** AND-combined condition tree: `and(a, b, c)` → `[a, 'and', b, 'and', c]`. */
+export function and<TColumn extends string = string>(
+  ...nodes: (DomainCondition<TColumn> | DomainConditionTree<TColumn>)[]): DomainConditionTree<TColumn> {
+  return _joinNodes(nodes, 'and');
+}
+
+/** OR-combined condition tree: `or(a, b, c)` → `[a, 'or', b, 'or', c]`. */
+export function or<TColumn extends string = string>(
+  ...nodes: (DomainCondition<TColumn> | DomainConditionTree<TColumn>)[]): DomainConditionTree<TColumn> {
+  return _joinNodes(nodes, 'or');
+}
+
+function _joinNodes<TColumn extends string>(
+  nodes: (DomainCondition<TColumn> | DomainConditionTree<TColumn>)[],
+  connector: 'and' | 'or'): DomainConditionTree<TColumn> {
+  const tree: DomainConditionTree<TColumn> = [];
+  for (const n of nodes) {
+    if (tree.length > 0)
+      tree.push(connector);
+    tree.push(n as any);
+  }
+  return tree;
+}
+
+/** Thenable query builder (returned by no-arg `query()`): build with
+ * `.where/.orderBy/.select/.expand/.top/.skip`, then `await` it (rows), or finish with
+ * `.df()/.first()/.count()/.exists()`. Prefer the condition forms of `where` (and the
+ * `cond`/`and`/`or` helpers) over template-built filter strings — condition values are
+ * bound server-side, so any string value is safe (apostrophes included). Without `.top()`
+ * the server's default limit (100) applies; page larger sets with `.top()/.skip()`.
+ * Immutable-ish: `expand()`/`select()` return a re-typed builder; other methods mutate
+ * and return this. */
+export class DomainQueryBuilder<TRow, TColumn extends string = string,
+    TExpand extends {[key: string]: {}} = {[key: string]: {}}, TResult = TRow>
+    implements PromiseLike<TResult[]> {
+  private _conds: DomainConditionTree<TColumn> = [];
+  private _rawFilter?: string;
+  private _orders: string[] = [];
+  private _columns?: string[];
+  private _expand: string[] = [];
+  private _limit?: number;
+  private _offset?: number;
+
+  constructor(private readonly client: IDomainQueryExecutor<TRow>) {}
+
+  /** Equality map (AND-combined), a single typed condition (3-arg or node), or a raw
+   * smart-filter string escape hatch; multiple where() calls AND-combine. A raw string
+   * cannot be combined with conditions (the string parses server-side) — use
+   * `cond()/and()/or()` to express everything as one tree instead. */
+  where(values: {[K in TColumn]?: DomainFilterValue}): this;
+  where(property: DomainColumnRef<TColumn>, operator: DomainConditionOperator,
+        value?: DomainFilterValue): this;
+  where(filter: DomainFilter<TColumn>): this;
+  where(a: any, operator?: DomainConditionOperator, value?: DomainFilterValue): this {
+    if (typeof a === 'string' && operator !== undefined)
+      this._addCond(cond(a, operator, value) as DomainCondition<TColumn>);
+    else if (typeof a === 'string') {
+      if (this._rawFilter !== undefined || this._conds.length > 0)
+        throw new Error('combine string filters with conditions via cond()/and()/or()');
+      this._rawFilter = a;
+    }
+    else if (Array.isArray(a) || (a != null && 'property' in a && 'operator' in a))
+      this._addCond(a);
+    else if (a != null)
+      for (const k of Object.keys(a))
+        this._addCond({property: k as any, operator: '=', value: a[k]});
+    return this;
+  }
+
+  private _addCond(node: DomainCondition<TColumn> | DomainConditionTree<TColumn>): void {
+    if (this._rawFilter !== undefined)
+      throw new Error('combine string filters with conditions via cond()/and()/or()');
+    if (this._conds.length > 0)
+      this._conds.push('and');
+    this._conds.push(node as any);
+  }
+
+  /** Appends a sort key (the `'col,!col2'` grammar; [desc] adds the `!`). */
+  orderBy(column: DomainColumnRef<TColumn>, desc: boolean = false): this {
+    this._orders.push(`${desc ? '!' : ''}${column}`);
+    return this;
+  }
+
+  /** Narrows the projection to [columns] (system columns always ride along). */
+  select<K extends TColumn & keyof TRow & string>(...columns: K[]):
+      DomainQueryBuilder<TRow, TColumn, TExpand,
+        Pick<TRow, K | Extract<keyof TRow, 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id'>>> {
+    this._columns = columns;
+    return this as any;
+  }
+
+  /** Adds an expand and intersects its fields into the awaited row type
+   * (`'details:'` child rows are full child rows — dayjs datetimes included). */
+  expand<K extends keyof TExpand & string>(key: K):
+      DomainQueryBuilder<TRow, TColumn, TExpand, TResult & TExpand[K]> {
+    this._expand.push(key);
+    return this as any;
+  }
+
+  /** Row cap for this query (server default 100 without it). */
+  top(count: number): this {
+    this._limit = count;
+    return this;
+  }
+
+  /** Row offset (pair with {@link top} to page). */
+  skip(count: number): this {
+    this._offset = count;
+    return this;
+  }
+
+  private _filter(): DomainFilter<TColumn> | undefined {
+    return this._rawFilter !== undefined ? this._rawFilter
+      : this._conds.length === 0 ? undefined : this._conds;
+  }
+
+  private _spec(): any {
+    const spec: any = {};
+    const filter = this._filter();
+    if (filter !== undefined)
+      spec.filter = filter;
+    if (this._orders.length > 0)
+      spec.sort = this._orders.join(',');
+    if (this._columns != null)
+      spec.columns = this._columns;
+    if (this._expand.length > 0)
+      spec.expand = this._expand;
+    if (this._limit != null)
+      spec.limit = this._limit;
+    if (this._offset != null)
+      spec.offset = this._offset;
+    return spec;
+  }
+
+  private _run(): Promise<TResult[]> {
+    return this.client.query(this._spec()) as Promise<any>;
+  }
+
+  /** The same query as a typed DataFrame (d42; `'details:'` expand is JSON-only and
+   * rejected server-side — await the builder for detail arrays instead). */
+  df(): Promise<any> {
+    return this.client.queryDf(this._spec());
+  }
+
+  /** First matching row or null (forces `top(1)`). */
+  async first(): Promise<TResult | null> {
+    this._limit = 1;
+    const rows = await this._run();
+    return rows.length === 0 ? null : rows[0];
+  }
+
+  /** Matching-row count under the built filter (ignores top/skip/select/expand). */
+  count(): Promise<number> {
+    return this.client.count(this._filter());
+  }
+
+  /** Whether at least one row matches. */
+  async exists(): Promise<boolean> {
+    return (await this.count()) > 0;
+  }
+
+  then<TR1 = TResult[], TR2 = never>(
+    onfulfilled?: ((value: TResult[]) => TR1 | PromiseLike<TR1>) | null,
+    onrejected?: ((reason: any) => TR2 | PromiseLike<TR2>) | null): Promise<TR1 | TR2> {
+    return this._run().then(onfulfilled, onrejected);
+  }
+}

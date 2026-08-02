@@ -24,7 +24,8 @@ export async function adjustStock(itemId: string, delta: number, reason: StockMo
         {op: 'insert', table: 'stock_movements',
           values: {item_id: itemId, delta: delta, reason: reason, moved_on: new Date().toISOString()}},
       ]);
-      return {...item, quantity: quantity, version: (updated as DG.DomainUpdateResult).version};
+      // the mapped-tuple transaction types the first result as DomainUpdateResult
+      return {...item, quantity: quantity, version: updated.version};
     } catch (e: any) {
       if (attempt >= maxRetries || !`${e?.message ?? e}`.includes('Version conflict'))
         throw e;

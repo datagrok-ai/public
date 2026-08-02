@@ -45,7 +45,9 @@ import {
   DomainGrant,
   DomainInsertResult,
   DomainOpResult,
+  DomainOpResultFor,
   DomainPermission,
+  DomainQueryBuilder,
   DomainQuerySpec,
   DomainRestrictError,
   DomainRowInsert,
@@ -1113,8 +1115,11 @@ export class DomainsDataSource {
 
   /** Executes ordered [ops] atomically within domain schema [schema]; any failure rolls the
    * whole transaction back (the error carries `opIndex`). Resolves to ordered per-op results
-   * shaped like the corresponding single-op endpoints. */
-  transaction(schema: string, ops: DomainTransactionOp[]): Promise<DomainOpResult[]> {
+   * shaped like the corresponding single-op endpoints — a tuple ops literal gets per-op
+   * result types (`[{op: 'update', ...}, {op: 'insert', ...}]` →
+   * `[DomainUpdateResult, DomainInsertResult]`, no positional casts). */
+  transaction<T extends DomainTransactionOp[]>(schema: string, ops: [...T]):
+      Promise<{[K in keyof T]: DomainOpResultFor<T[K]>}> {
     return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
   }
 
@@ -1234,10 +1239,20 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return this._datetimeColumns != null || this._detailDatetimeColumns != null;
   }
 
+  /** Bare `query()` returns an awaitable {@link DomainQueryBuilder} (it used to resolve
+   * all-defaults rows — `await table.query()` behaves identically, and everything chains:
+   * `await table.query().where('sku', '=', key).orderBy('created_on', true).top(5)`).
+   * Prefer the builder's condition forms and the `cond`/`and`/`or` helpers over
+   * template-built filter strings — condition values are bound server-side, so any string
+   * value is safe (apostrophes included). */
+  query(): DomainQueryBuilder<TRow, TColumn, TExpand> & {df(): Promise<DataFrame>};
   /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap). */
-  async query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<TRow[]> {
-    const rows = await domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec));
-    return this._converts ? rows.map((r: any) => this._fromWire(r)) : rows;
+  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
+  query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
+    if (spec === undefined)
+      return new DomainQueryBuilder<TRow, TColumn, TExpand>(this);
+    return domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec))
+      .then((rows: any) => this._converts ? rows.map((r: any) => this._fromWire(r)) : rows);
   }
 
   /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,

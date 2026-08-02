@@ -124,9 +124,10 @@ category('Dapi: domains batch', () => {
     ]);
     try {
       expect(res.length, 3);
-      expect((res[0] as _DG.DomainInsertResult).created, true);
-      expect((res[1] as _DG.DomainInsertResult).created, true);
-      expect((res[2] as _DG.DomainUpdateResult).version, 2);
+      // the mapped-tuple transaction types each result by its op — no casts
+      expect(res[0].created, true);
+      expect(res[1].created, true);
+      expect(res[2].version, 2);
       const rows = await items().query({filter: `sku = "${key}"`, expand: ['details:item_event']});
       expect(rows[0].item_event.length, 1);
       expect(rows[0].item_event[0].kind, 'created');

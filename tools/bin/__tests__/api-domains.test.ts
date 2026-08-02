@@ -160,7 +160,9 @@ describe('generateDomainClients', () => {
     expect(code).toContain(
       `      'testdb.sample_event', {datetimeColumns: ['created_on', 'updated_on', 'sample_id.measured_on']});`);
     expect(code).not.toMatch(/ as\r?\n?\s*DG\.DomainTableClient/);
-    expect(code).toContain(`  transaction(ops: TestdbTransactionOp[]): Promise<DG.DomainOpResult[]> {`);
+    // mapped-tuple transaction: per-op result types for tuple ops literals
+    expect(code).toContain(`  transaction<T extends TestdbTransactionOp[]>(ops: [...T]):`);
+    expect(code).toContain(`      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {`);
 
     // CRLF line endings per the repo code style
     expect(code).not.toMatch(/[^\r]\n/);

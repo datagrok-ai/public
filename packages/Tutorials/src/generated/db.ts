@@ -515,7 +515,9 @@ export const northwindDb = {
     return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>(
       'northwind.order_details', {datetimeColumns: ['created_on', 'updated_on', 'order_id.order_date', 'order_id.required_date', 'order_id.shipped_date']});
   },
-  transaction(ops: NorthwindTransactionOp[]): Promise<DG.DomainOpResult[]> {
-    return grok.dapi.domains.transaction('northwind', ops) as Promise<DG.DomainOpResult[]>;
+  transaction<T extends NorthwindTransactionOp[]>(ops: [...T]):
+      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {
+    return grok.dapi.domains.transaction('northwind', ops) as
+      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;
   },
 };

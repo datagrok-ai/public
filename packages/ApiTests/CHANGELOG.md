@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20603: Added query-builder coverage to `Dapi: domain parity` — thenable chain equals the spec form, equality-map/3-arg `where`, `.df()/.first()/.count()/.exists()` terminals, apostrophe-containing values through bound conditions (`cond`/`or` helpers), raw-string + condition mixing rejected client-side; the transaction probe drops its positional casts (mapped-tuple result types).
+
 GROK-20602: Added a details-expand datetime pin to `Dapi: domain parity` — child rows' datetimes materialize as dayjs (via `detailDatetimeColumns`) and the instant equals the same row read top-level (guards the naive-wire tz-shift class).
 
 GROK-20601: WO-4b — `Dapi: domain lifecycle` gains schema-level grants round-trip and a real permissions assertion on shareColumn's grant half; the dapi2 domains smoke test now pins the namespace REMOVAL (typed surface reached parity — dapi2 is type-only now, dapi2Init survives).

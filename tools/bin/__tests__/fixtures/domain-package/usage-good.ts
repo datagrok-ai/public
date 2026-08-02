@@ -24,6 +24,14 @@ export async function good(): Promise<void> {
     {op: 'delete', table: 'sample', id: '$s'},
   ];
   await testdbDb.transaction(ops);
+  // mapped-tuple form: per-op result types, no positional casts
+  const [ins1, upd] = await testdbDb.transaction([
+    {op: 'insert', table: 'sample', ref: 't', values: {name: 'tx2', score: 2}},
+    {op: 'update', table: 'sample', id: '$t', values: {count: 1}},
+  ]);
+  const createdFlag: boolean = ins1.created;
+  const newVersion: number = upd.version;
+  void createdFlag; void newVersion;
   // single-generic (row-only) clients stay permissive on insert — backward compat
   await grok.dapi.domains.table<SampleRow>('testdb.sample').insert({name: 'z', idempotencyKey: 'k'});
   await grok.dapi.domains.table('testdb.sample').insert({});

@@ -430,8 +430,10 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   decls.push([`/** Typed clients for the \`${manifest.name}\` domain schema tables ` +
     `(lazy — no import-time side effects). */`,
     `export const ${utils.snakeToCamelCase(manifest.name, false)}Db = {`, ...clients,
-    `  transaction(ops: ${schemaType}TransactionOp[]): Promise<DG.DomainOpResult[]> {`,
-    `    return grok.dapi.domains.transaction('${manifest.name}', ops) as Promise<DG.DomainOpResult[]>;`,
+    `  transaction<T extends ${schemaType}TransactionOp[]>(ops: [...T]):`,
+    `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {`,
+    `    return grok.dapi.domains.transaction('${manifest.name}', ops) as`,
+    `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;`,
     '  },',
     '};'].join(sep));
   return decls.join(sep.repeat(2)) + sep;

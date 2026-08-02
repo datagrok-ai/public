@@ -196,7 +196,9 @@ export const gritDb = {
     return grok.dapi.domains.table<IssueLabelRow, IssueLabelInsert, IssueLabelColumn, IssueLabelExpand>(
       'grit.issue_label', {datetimeColumns: ['created_on', 'updated_on']});
   },
-  transaction(ops: GritTransactionOp[]): Promise<DG.DomainOpResult[]> {
-    return grok.dapi.domains.transaction('grit', ops) as Promise<DG.DomainOpResult[]>;
+  transaction<T extends GritTransactionOp[]>(ops: [...T]):
+      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {
+    return grok.dapi.domains.transaction('grit', ops) as
+      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;
   },
 };

@@ -103,7 +103,9 @@ export const inventoryDb = {
     return grok.dapi.domains.table<StockMovementsRow, StockMovementsInsert, StockMovementsColumn, StockMovementsExpand>(
       'inventory.stock_movements', {datetimeColumns: ['created_on', 'updated_on', 'moved_on']});
   },
-  transaction(ops: InventoryTransactionOp[]): Promise<DG.DomainOpResult[]> {
-    return grok.dapi.domains.transaction('inventory', ops) as Promise<DG.DomainOpResult[]>;
+  transaction<T extends InventoryTransactionOp[]>(ops: [...T]):
+      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {
+    return grok.dapi.domains.transaction('inventory', ops) as
+      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;
   },
 };
