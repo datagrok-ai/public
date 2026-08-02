@@ -228,7 +228,7 @@ const open = await issues.query({
   limit: 100,
 });
 
-// The same query as a typed DataFrame (1M-row cap); columns carry semantic types,
+// The same query as a typed DataFrame (10M-row cap); columns carry semantic types,
 // choices, and property tags, so grids render them correctly out of the box
 const df = await issues.queryDf({filter: 'assignee = @current'});
 
@@ -254,6 +254,35 @@ const counts = await issues.aggregate({
 // Row history (audit-enabled tables)
 const trail = await issues.audit(r.id);
 ```
+
+For a typed DataFrame of aggregation results, use `DomainQuery` in aggregate mode (below):
+one row per group, columns typed from the resolved measures. A boolean `groupBy` column
+comes back as strings (`'true'`/`'false'`), and aggregate outputs carry no property tags —
+they are not registry columns.
+
+The same select and aggregate surface is packaged as the `DomainQuery`
+[function](../../../datagrok/concepts/functions/functions.md) — the reproducible query the
+platform records behind **Open in Table View** and data-synced domain dashboards (see
+[Queries and dashboards](../../../govern/catalog/domains.md#queries-and-dashboards)). It is
+callable from JS like any function:
+
+```ts
+// Select mode: typed DataFrame, ref-column captions applied (10M-row ceiling)
+const open = await grok.functions.call('DomainQuery', {
+  schema: 'grit', table: 'issue',
+  filters: ['status = "open"'], orderBy: ['!created_on'], limit: 100,
+});
+
+// Aggregate mode: one row per group
+const byStatus = await grok.functions.call('DomainQuery', {
+  schema: 'grit', table: 'issue', groupBy: ['status'], aggregations: ['count'],
+});
+```
+
+Note that only frames opened through the UI (**Open in Table View**, or a `DomainQuery` run
+from the console) record their generation script for project data sync; a frame fetched
+programmatically via `grok.functions.call` carries no creation script — save it as static
+data, or re-run the query in the UI to make it data-sync-ready.
 
 Reads only ever return rows and columns the current user can see — there is no way to opt out
 client-side. Writes are validated, permission-checked, and audited server-side.

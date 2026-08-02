@@ -113,6 +113,15 @@ those values are forwarded to the corresponding function inputs:
 /p/user.dashboard?region=France&year=2025
 ```
 
+List parameters can be bound element-wise: a mapping key like `filters[0]` (offered
+with the default alias `filters_0`) replaces just that element of the recorded call's
+list, leaving the rest untouched — see
+[Domains: URL parameters](../../govern/catalog/domains.md#url-parameters):
+
+```
+/p/user.dashboard?filters_0=freight%20%3E%20100
+```
+
 ## See also
 
 - [Navigation](../../datagrok/navigation/navigation.md)

@@ -1248,7 +1248,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
   }
 
   /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
-   * 1M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
+   * 10M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
    * `.choices`, and semantic types; system columns are untagged. `'details:'` expand is
    * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns. */
   queryDf(spec: DomainQuerySpec = {}): Promise<DataFrame> {

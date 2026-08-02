@@ -36,8 +36,8 @@ Click a table to open it. The table view works like other Datagrok galleries:
   [Filtering](#filtering).
 * Switch between **brief**, **card**, and **grid** modes, and change the sort order.
 * Large tables show the first 1,000 rows along with the total count — refine the filter to
-  narrow down the result. To analyze the full filtered subset, use **Open in Table View** or
-  export it to CSV from the ribbon.
+  narrow down the result. To analyze the full filtered subset, use **Open in Table View**
+  (see [Queries and dashboards](#queries-and-dashboards)) or export it to CSV from the ribbon.
 
 Clicking a row shows its details in the
 [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel): properties,
@@ -60,7 +60,9 @@ Filters always apply to the whole table, not just the rows on screen. Small tabl
 instantly in the browser. Large tables transparently re-query the server as you adjust the
 filters, so the counts and histograms reflect all matching rows, not only the loaded ones.
 Counts respect your row-level access: two users filtering the same table can see different
-counts when they see different rows.
+counts when they see different rows. To analyze or chart the filtered subset with the full
+power of Datagrok, open it as a regular table — see
+[Queries and dashboards](#queries-and-dashboards).
 
 The counter above the table shows how many rows currently match (for example, `124 / 2155`).
 When nothing matches, the view says "No rows match the current filter" — click
@@ -92,6 +94,96 @@ select **Save or Apply > Save...**. Reapply or delete presets from the same menu
 regular Datagrok entities: share one with users or groups like any other entity, and it
 appears in their menu, too.
 
+## Queries and dashboards
+
+To analyze or visualize a filtered subset with grids, viewers, and scripts, open it as a
+regular Datagrok table: in the table view, click **Open in Table View** on the ribbon.
+Datagrok records the query as a `DomainQuery` function call, so the resulting table knows how
+to reproduce itself. Save it in a [project](../../datagrok/concepts/project/dashboard.md) with
+**Data sync** enabled, and reopening the project re-runs the query against the current data —
+with the access rights of whoever opens it applied at that moment.
+
+When the filter matches more rows than the view has loaded, a dialog offers three choices:
+
+* **CANCEL** — do nothing.
+* **LOADED N** — open exactly the N rows the view has loaded. The recorded query keeps
+  `limit = N`, so a dashboard built on it is frozen to the first N rows by design.
+* **ALL M** — open every matching row. The recorded query carries no effective row cap (only
+  the 10,000,000-row ceiling all domain queries share), so a dashboard built on it stays
+  live: rows added later appear the next time the query runs.
+
+### The DomainQuery function
+
+`DomainQuery` is a regular [function](../../datagrok/concepts/functions/functions.md): run it
+from the console, call it from scripts, or edit it in a table's **Source** pane. It queries
+one domain table and returns a dataframe — matching rows (select mode), or grouped totals
+when `aggregations` or `groupBy` is set (aggregate mode). Row-level and column-level access
+apply on every run.
+
+```js
+// Select: filtered, sorted rows ('!' = descending)
+DomainQuery("northwind", "orders", filters = ["freight > 30"], orderBy = ["!order_date"])
+
+// Aggregate: group and summarize, following a reference column via a join
+DomainQuery("northwind", "products", joins = ["category_id"],
+  groupBy = ["category_id.name"], aggregations = ["count", "avg(unit_price) as price"])
+```
+
+| Parameter      | Meaning                                                                 |
+|----------------|-------------------------------------------------------------------------|
+| `schema`       | Domain name                                                             |
+| `table`        | Table name                                                              |
+| `columns`      | Columns to return (select mode; default — all you can see)              |
+| `filters`      | Conditions, combined with AND — see [Filter elements](#filter-elements) |
+| `joins`        | Reference columns to follow into the referenced table                   |
+| `aggregations` | Measures: `count`, `fn(column)`, or `fn(column) as alias`               |
+| `groupBy`      | Grouping columns (aggregate mode)                                       |
+| `orderBy`      | Sort columns; prefix with `!` for descending                            |
+| `limit`        | Maximum rows to return (default and ceiling — 10,000,000)               |
+| `offset`       | Rows to skip (select mode)                                              |
+
+`joins = ["category_id"]` adds the referenced row's columns as `category_id.<name>`, usable
+in filters, grouping, and aggregations; in aggregate mode you can also sort by them (a
+select-mode `orderBy` accepts own columns only). Measure functions are `count`, `sum`, `avg`,
+`min`, and `max`. In aggregate mode `limit` caps the number of groups at 10,000.
+
+### Filter elements
+
+Each `filters` element is one condition, written in any of three forms — the elements are
+combined with AND:
+
+* **Filter expression** — the same grammar as the search bar: `freight > 30`,
+  `status = "open" and title starts "Crash"`. Always quote text values (`country = "France"`,
+  not `country = France`).
+* **Condition object** — a JSON condition, like
+  `{"property": "region", "operator": "=", "value": "Cote d'Azur"}`. Use this form when the
+  value contains an apostrophe or quotation mark (as in `Cote d'Azur`) — such characters
+  cannot appear in an expression-grammar value.
+* **Condition group** — a JSON list of conditions joined by `"and"`/`"or"`, like
+  `[{"property": "freight", "operator": ">=", "value": 20}, "and", {"property": "freight", "operator": "<=", "value": 90}]`.
+  This is the form recorded range filters take.
+
+### Aggregation results
+
+Aggregate mode returns one row per group with the requested measures. A few things to know:
+
+* The result is a plain summary table: unlike select mode, its columns carry no domain
+  metadata (no choice lists, semantic types, or editors).
+* Grouping by a reference column directly (for example, `customer_id`) groups by raw row
+  identifiers, so you see UUIDs. To group by something readable, add the reference to
+  `joins` and group by a display column: `groupBy = ["customer_id.company_name"]`.
+* Boolean grouping columns come back as text values `true` and `false` (empty for unset).
+
+### URL parameters
+
+Dashboards built on `DomainQuery` support
+[project URL parameters](../../develop/advanced/url-parameters.md#project-parameters): when
+uploading the project, map URL names to the query's parameters — including individual filter
+elements, offered as `filters[0]`, `filters[1]`, and so on (aliased as `filters_0` by
+default — rename them to friendly names like `region`). Opening
+`/p/sales.dashboard?region=France` then re-runs the query with that element replaced, and
+sharing links from the open dashboard carries the current values along.
+
 ## Creating and editing
 
 Your permissions determine what you can do: the row actions appear only when you have the
@@ -120,8 +212,9 @@ rows, or update-or-insert matching them by the table's natural key (for example,
 barcode). Before anything is written, a preview reports problems row by row. Choose whether a
 single bad row aborts the whole import or the good rows are applied and the rest reported.
 
-To export, use **Open in Table View** (for analysis and visualization) or the CSV download —
-both include the full filtered subset, not just the rows on screen.
+To export, use **Open in Table View** (for analysis and visualization — see
+[Queries and dashboards](#queries-and-dashboards)) or the CSV download — both include the
+full filtered subset, not just the rows on screen.
 
 ## Sharing and access
 
