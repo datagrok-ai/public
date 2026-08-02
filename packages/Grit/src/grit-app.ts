@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {gritDb, ProjectRow, IssueRow, CommentRow} from './generated/db';
+import {gritDb, ProjectRow, IssueRow, CommentRow, IssueStatus, IssuePriority} from './generated/db';
 
-const statuses = ['open', 'in progress', 'resolved', 'closed'];
-const priorities = ['low', 'medium', 'high', 'critical'];
+const statuses: IssueStatus[] = ['open', 'in progress', 'resolved', 'closed'];
+const priorities: IssuePriority[] = ['low', 'medium', 'high', 'critical'];
 
 /** Issue row with comments embedded by `expand: ['details:comment']`. */
 type ExpandedIssue = IssueRow & {comment?: CommentRow[]};
@@ -97,9 +97,9 @@ export class GritApp {
     const seq = ++this.detailSeq;
     const key = `${this.currentProject!.key}-${issue.number}`;
     const status = ui.input.choice('Status', {items: statuses, value: issue.status,
-      onValueChanged: (v: string) => this.patch(issue, {status: v})});
+      onValueChanged: (v: IssueStatus) => this.patch(issue, {status: v})});
     const priority = ui.input.choice('Priority', {items: priorities, value: issue.priority,
-      onValueChanged: (v: string) => this.patch(issue, {priority: v})});
+      onValueChanged: (v: IssuePriority) => this.patch(issue, {priority: v})});
 
     // One query brings the issue with its comments embedded (expand by the child table).
     const expanded: ExpandedIssue[] = await gritDb.issue.query({
@@ -110,7 +110,7 @@ export class GritApp {
     if (seq !== this.detailSeq)
       return;
     const commentRows = (expanded[0]?.comment ?? [])
-      .sort((a, b) => a.created_on.localeCompare(b.created_on));
+      .sort((a, b) => a.created_on.valueOf() - b.created_on.valueOf());
     const commentInput = ui.input.string('', {placeholder: 'Add a comment...'});
 
     ui.empty(this.detailHost);
@@ -163,7 +163,7 @@ export class GritApp {
     const project = this.currentProject;
     const title = ui.input.string('Title');
     const description = ui.input.textArea('Description');
-    const priority = ui.input.choice('Priority', {items: priorities, value: 'medium'});
+    const priority = ui.input.choice<IssuePriority>('Priority', {items: priorities, value: 'medium'});
     const userNames = [...this.users.values()];
     const assignee = ui.input.choice('Assignee', {items: ['', ...userNames], value: ''});
     ui.dialog(`New issue in ${project.key}`)

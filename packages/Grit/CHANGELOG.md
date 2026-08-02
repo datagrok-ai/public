@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20602: BREAKING regen — `grok api` codegen v2: datetime fields are dayjs (comment timeline sorts by `valueOf()`), `status`/`priority` are literal unions checked against the schema, expand keys and transactions are typed, db.ts clients are lazy
 * GROK-20591: Added a declared default filter panel to `issue` (status, assignee, priority, and the project name via FK path) — the Domain View filter panel pre-opens with these
 * GROK-20409: Marked `issue.title` as the primary display-name column (`isName`) — issue titles now caption cards, tooltips, and entity views, and become the friendly names of promoted issues
 * GROK-20357: Resolved an issue handle (`<PROJECTKEY>-<number>`, e.g. `GRITEST-1`) typed into global search to its issue — registers a `<KEY>-\d+` `grit.issue` detector per project and teaches the ObjectHandler to resolve the handle (project key + number), render a search card, and open the issue's Entity View on click; the handler claims only the `<KEY>-<number>` shape so the `grit.issue:<uuid>` colon form falls through to the generic domain-handle resolver

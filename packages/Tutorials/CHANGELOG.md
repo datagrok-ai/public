@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20602: BREAKING regen — `grok api` codegen v2 for the Northwind demo schema: datetime fields are dayjs, typed expand/transaction surface, lazy db.ts clients
 * Demo app: Added a Domain Databases demo (Data Access | Domain Databases) — ships the classic Northwind schema and data as a plugin-declared domain database (databases/northwind) and walks through browsing, security, audit history, and the JS API
 
 * Demo app: Always clear the "Updating..." overlay when a demo finishes — moved `setUpdateIndicator(false)` into a `finally` so a failing demo no longer leaves the indicator covering the home page

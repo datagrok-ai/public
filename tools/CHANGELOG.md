@@ -2,6 +2,7 @@
 
 ## 6.5.0 (WIP)
 
+* GROK-20602: **BREAKING** — `grok api` domain codegen v2: **datetime columns (including `created_on`/`updated_on`) are now typed as dayjs `Dayjs`** in `<Table>Row` (`Dayjs | string` on inserts) and generated clients pass `datetimeColumns` so JSON reads materialize dayjs objects — code that treated these fields as strings no longer compiles (untyped `table('s.t')` clients are unchanged). Also: `choices` columns emit named literal-union aliases used in Row/Insert; `<Table>Column` unions and NEW `<Table>Expand` maps are threaded through the client generics (filters/columns/expand keys compile-checked); a typed `<Schema>TransactionOp` union powers `<schema>Db.transaction`; the client map now uses LAZY getters — importing db.ts no longer touches `grok.dapi` at import time. Regenerate with `grok api` and fix datetime call sites.
 * GROK-20319: `grok api` — generated domain clients now pass the `<Table>Insert` interface as the second `DG.DomainTableClient` generic, so `insert()` enforces required columns at compile time (e.g. `insert({})` no longer compiles); over-long client lines wrap before the type.
 * GROK-20317: `grok api` — typed domain-table clients: for packages that declare `databases/<schema>/schema.json` manifests, generates `src/generated/db.ts` with per-table `<Table>Row`/`<Table>Insert` interfaces, `<Table>Column` name unions, and a per-schema `<schema>Db` client map over `grok.dapi.domains` (manifests are validated against `domain-schema.schema.json` first; packages without manifests are untouched).
 

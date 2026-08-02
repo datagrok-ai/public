@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {inventoryDb, ItemsRow} from './generated/db';
+import {inventoryDb, ItemsRow, StockMovementsReason} from './generated/db';
 
-const reasons = ['received', 'shipped', 'adjustment', 'damaged', 'returned'];
+const reasons: StockMovementsReason[] = ['received', 'shipped', 'adjustment', 'damaged', 'returned'];
 const systemColumns = ['id', 'version', 'created_on', 'updated_on', 'author_id'];
 
 /** Adjusts the stock of [itemId] by [delta] using optimistic concurrency: reads the
@@ -11,7 +11,7 @@ const systemColumns = ['id', 'version', 'created_on', 'updated_on', 'author_id']
  * the `stock_movements` row in one transaction — either both land or neither does.
  * Retries with a fresh read on a version conflict (a concurrent adjustment bumped
  * the version between the read and the write). */
-export async function adjustStock(itemId: string, delta: number, reason: string,
+export async function adjustStock(itemId: string, delta: number, reason: StockMovementsReason,
   maxRetries: number = 5): Promise<ItemsRow> {
   for (let attempt = 0; ; attempt++) {
     const item = await inventoryDb.items.get(itemId);
@@ -19,12 +19,12 @@ export async function adjustStock(itemId: string, delta: number, reason: string,
       throw new Error('Item not found or not visible');
     const quantity = (item.quantity ?? 0) + delta;
     try {
-      const [updated] = await grok.dapi.domains.transaction('inventory', [
+      const [updated] = await inventoryDb.transaction([
         {op: 'update', table: 'items', id: itemId, values: {quantity: quantity}, expectedVersion: item.version},
         {op: 'insert', table: 'stock_movements',
           values: {item_id: itemId, delta: delta, reason: reason, moved_on: new Date().toISOString()}},
       ]);
-      return {...item, quantity: quantity, version: updated.version};
+      return {...item, quantity: quantity, version: (updated as DG.DomainUpdateResult).version};
     } catch (e: any) {
       if (attempt >= maxRetries || !`${e?.message ?? e}`.includes('Version conflict'))
         throw e;
@@ -182,7 +182,7 @@ export class InventoryApp {
     }
     const delta = ui.input.int('Delta', {value: 0});
     delta.setTooltip('Signed quantity change; the result may not go below zero');
-    const reason = ui.input.choice('Reason', {items: reasons, value: 'adjustment'});
+    const reason = ui.input.choice<StockMovementsReason>('Reason', {items: reasons, value: 'adjustment'});
     ui.dialog(`Adjust stock: ${item.sku}`)
       .add(ui.inputs([delta, reason]))
       .onOK(async () => {
