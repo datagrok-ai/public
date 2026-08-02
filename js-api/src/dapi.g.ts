@@ -141,6 +141,12 @@ export namespace dapi2 {
       return _fetch(url, {method: 'POST'});
     }
 
+    /** Filtered bulk delete: body {filter, limit?}. Soft-deletes up to [limit] (default and max 1000) matching rows the caller may delete, oldest first, with engine-enforced referential actions per row, in ONE transaction; a restrict veto aborts the whole request (409). Returns {'deleted': n, 'hasMore': bool}. 'filter' is required — an empty filter is a 400 (a full-table wipe must be an explicit filter). */
+    export async function deleteRows(schema: string, table: string, body: any): Promise<any> {
+      let url = `/domains/${schema}/${table}/delete`;
+      return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    }
+
     /** Ordered per-op results, shaped like the single-op endpoints; any failure rolls the whole transaction back and the error body carries 'opIndex'. [ops] is the ops list; a {'ops': [...]} wrapper is also accepted over the wire (`@RequestBody() dynamic`, not `List` — see insertRows). */
     export async function runTransaction(schema: string, ops: any): Promise<any> {
       let url = `/domains/${schema}/transaction`;

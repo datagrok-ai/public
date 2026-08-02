@@ -417,6 +417,33 @@ paths:
       responses:
         "200":
           description: Successful response
+  /domains/{schema}/{table}/delete:
+    post:
+      operationId: deleteRows
+      summary: delete rows
+      description: "Filtered bulk delete: body {filter, limit?}. Soft-deletes up to [limit] (default and max 1000) matching rows the caller may delete, oldest first, with engine-enforced referential actions per row, in ONE transaction; a restrict veto aborts the whole request (409). Returns {'deleted': n, 'hasMore': bool}. 'filter' is required — an empty filter is a 400 (a full-table wipe must be an explicit filter)."
+      tags:
+        - domains
+      parameters:
+        - name: schema
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Map"
+      responses:
+        "200":
+          description: Successful response
   /domains/{schema}/transaction:
     post:
       operationId: runTransaction
