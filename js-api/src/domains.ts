@@ -52,8 +52,10 @@ export type DomainOpResult = DomainInsertResult | DomainUpdateResult | DomainDel
 
 /** Wire shape of _audit rows (repository.dart rowAudit/tableAudit/schemaAudit selects). */
 export interface DomainAuditEntry {
-  id: string;
-  tx_id: string | null;
+  /** Audit sequence number (domain_audit.id bigint — a wire number, not a uuid). */
+  id: number;
+  /** PG transaction id grouping multi-op writes (bigint). */
+  tx_id: number | null;
   row_id?: string | null;    // present on table- and schema-wide audits
   table_id?: string | null;  // present on schema audits ('ddl' rows carry null)
   op: 'insert' | 'update' | 'delete' | 'promote' | 'ddl';

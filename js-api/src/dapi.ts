@@ -1284,10 +1284,13 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Watch(this.dart, this.schema, this.table, id ?? null));
   }
 
+  /** Removes the table (or row, when [id] is given) subscription; resolves to whether the
+   * server confirmed the removal. */
   unwatch(id?: string): Promise<boolean> {
     return domainCall(api.grok_Dapi_Domains_Unwatch(this.dart, this.schema, this.table, id ?? null));
   }
 
+  /** Whether the current user watches the table (or row, when [id] is given). */
   isWatching(id?: string): Promise<boolean> {
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
