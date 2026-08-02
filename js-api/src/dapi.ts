@@ -43,11 +43,14 @@ import {
   DomainInsertResult,
   DomainOpResult,
   DomainQuerySpec,
+  DomainRestrictError,
   DomainRowInsert,
   DomainSavedFilterInfo,
   DomainTableClientOptions,
   DomainTransactionOp,
   DomainUpdateResult,
+  DomainValidationError,
+  DomainVersionConflictError,
   domainCall,
 } from './domains';
 
@@ -1182,8 +1185,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Partially updates a row; pass `options.version` (the version the client last read) for
    * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
-   * row has changed since. Resolves to the updated row (its `version` is incremented on every
-   * update). */
+   * row has changed since. Resolves to `{id, version}` (version increments on every update). */
   update(id: string, values: Partial<TRow>, options?: {version?: number}): Promise<DomainUpdateResult> {
     return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
   }

@@ -299,6 +299,7 @@ paths:
     post:
       operationId: aggregateRows
       summary: aggregate rows
+      description: "Output format is selected by the spec's 'format': JSON rows (default) or a d42 binary DataFrame (mirrors [queryRows]); unknown formats are a 400. Aggregate rows stay capped at 10k in both formats (§13.2)."
       tags:
         - domains
       parameters:

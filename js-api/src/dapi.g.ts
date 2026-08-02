@@ -117,6 +117,7 @@ export namespace dapi2 {
       return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(spec)});
     }
 
+    /** Output format is selected by the spec's 'format': JSON rows (default) or a d42 binary DataFrame (mirrors [queryRows]); unknown formats are a 400. Aggregate rows stay capped at 10k in both formats (§13.2). */
     export async function aggregateRows(schema: string, table: string, spec: any): Promise<any> {
       let url = `/domains/${schema}/${table}/aggregate`;
       return _fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(spec)});
