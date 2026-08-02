@@ -399,12 +399,26 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
           if (tc.rawType === 'datetime')
             datetimeColumns.push(`${c.name}.${tc.name}`);
 
+    // Details-expand children need their own datetime lists so _fromWire can
+    // materialize dayjs recursively (keyed by the result field = child table).
+    const detailEntries: string[] = [];
+    for (const childName of tableNames) {
+      if (!tableColumns[childName].some((c) => c.ref === tableName))
+        continue;
+      const cols = ['created_on', 'updated_on',
+        ...tableColumns[childName].filter((c) => c.rawType === 'datetime').map((c) => c.name)];
+      detailEntries.push(`'${childName}': [${cols.map((c) => `'${c}'`).join(', ')}]`);
+    }
+    const dtOption = `{datetimeColumns: [${datetimeColumns.map((c) => `'${c}'`).join(', ')}]` +
+      (detailEntries.length === 0 ? '}' : ',');
     clients.push(
       `  get ${utils.snakeToCamelCase(tableName, false)}() {`,
       `    return grok.dapi.domains.table<${typeName}Row, ${typeName}Insert, ` +
         `${typeName}Column, ${typeName}Expand>(`,
-      `      '${manifest.name}.${tableName}', ` +
-        `{datetimeColumns: [${datetimeColumns.map((c) => `'${c}'`).join(', ')}]});`,
+      ...(detailEntries.length === 0
+        ? [`      '${manifest.name}.${tableName}', ${dtOption});`]
+        : [`      '${manifest.name}.${tableName}', ${dtOption}`,
+           `        detailDatetimeColumns: {${detailEntries.join(', ')}}});`]),
       '  },');
   }
 

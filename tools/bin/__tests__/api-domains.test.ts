@@ -155,7 +155,8 @@ describe('generateDomainClients', () => {
     expect(code).toContain(
       `    return grok.dapi.domains.table<SampleRow, SampleInsert, SampleColumn, SampleExpand>(`);
     expect(code).toContain(
-      `      'testdb.sample', {datetimeColumns: ['created_on', 'updated_on', 'measured_on']});`);
+      `      'testdb.sample', {datetimeColumns: ['created_on', 'updated_on', 'measured_on'],\r\n` +
+      `        detailDatetimeColumns: {'sample_event': ['created_on', 'updated_on']}});`);
     expect(code).toContain(
       `      'testdb.sample_event', {datetimeColumns: ['created_on', 'updated_on', 'sample_id.measured_on']});`);
     expect(code).not.toMatch(/ as\r?\n?\s*DG\.DomainTableClient/);
@@ -307,6 +308,8 @@ describe('generateDomainClients', () => {
     expect(generateDomainClients(dir)).toBe(true);
     const res = runTsc(dir, 'usage-bad.ts');
     expect(res.status).not.toBe(0);
+    // exactly one error per intended negative — no accidental extra breakage
+    expect(res.output.match(/error TS/g)).toHaveLength(9);
     // wrong-typed payload values: `count: string` and `active: string`
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');

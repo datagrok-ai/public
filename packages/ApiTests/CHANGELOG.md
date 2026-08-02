@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20602: Added a details-expand datetime pin to `Dapi: domain parity` — child rows' datetimes materialize as dayjs (via `detailDatetimeColumns`) and the instant equals the same row read top-level (guards the naive-wire tz-shift class).
+
 GROK-20601: WO-4b — `Dapi: domain lifecycle` gains schema-level grants round-trip and a real permissions assertion on shareColumn's grant half; the dapi2 domains smoke test now pins the namespace REMOVAL (typed surface reached parity — dapi2 is type-only now, dapi2Init survives).
 
 GROK-20601: Added the `Dapi: domain lifecycle` suite — user-schema round-trip (createSchema → apply dryRun/apply → table client data → whole-schema audit with ddl + row events → delete; typed `DomainVersionConflictError` on stale ifVersion and `destructive-confirmation-required` with the plan attached; self-skips without the CreateDomainSchema privilege), table grants list/grant/revoke round-trip, and column security (shareColumn / idempotent restrictColumn / restoreColumnVisibility).

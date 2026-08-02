@@ -315,8 +315,12 @@ export interface DomainSavedFilterInfo {
 
 export interface DomainTableClientOptions {
   /** Datetime columns to materialize as dayjs on JSON reads (generated clients pass this;
-   * untyped clients keep ISO strings). */
+   * untyped clients keep ISO strings). Dotted `'<fk>.<col>'` entries cover master-expand
+   * fields. */
   datetimeColumns?: string[];
+  /** Datetime columns of `'details:'` child rows, keyed by the result field (the child-table
+   * name): materialized as dayjs recursively when the expand is requested. */
+  detailDatetimeColumns?: {[detailField: string]: string[]};
 }
 
 export type DomainTxValues<T> = {[K in keyof T]: T[K] | `$${string}`};

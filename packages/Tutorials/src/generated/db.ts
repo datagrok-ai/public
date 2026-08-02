@@ -464,35 +464,43 @@ export type NorthwindTransactionOp =
 export const northwindDb = {
   get categories() {
     return grok.dapi.domains.table<CategoriesRow, CategoriesInsert, CategoriesColumn, CategoriesExpand>(
-      'northwind.categories', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.categories', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'products': ['created_on', 'updated_on']}});
   },
   get suppliers() {
     return grok.dapi.domains.table<SuppliersRow, SuppliersInsert, SuppliersColumn, SuppliersExpand>(
-      'northwind.suppliers', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.suppliers', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'products': ['created_on', 'updated_on']}});
   },
   get products() {
     return grok.dapi.domains.table<ProductsRow, ProductsInsert, ProductsColumn, ProductsExpand>(
-      'northwind.products', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.products', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'order_details': ['created_on', 'updated_on']}});
   },
   get customers() {
     return grok.dapi.domains.table<CustomersRow, CustomersInsert, CustomersColumn, CustomersExpand>(
-      'northwind.customers', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.customers', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'orders': ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date']}});
   },
   get employees() {
     return grok.dapi.domains.table<EmployeesRow, EmployeesInsert, EmployeesColumn, EmployeesExpand>(
-      'northwind.employees', {datetimeColumns: ['created_on', 'updated_on', 'birth_date', 'hire_date', 'reports_to.birth_date', 'reports_to.hire_date']});
+      'northwind.employees', {datetimeColumns: ['created_on', 'updated_on', 'birth_date', 'hire_date', 'reports_to.birth_date', 'reports_to.hire_date'],
+        detailDatetimeColumns: {'employees': ['created_on', 'updated_on', 'birth_date', 'hire_date'], 'employee_territories': ['created_on', 'updated_on'], 'orders': ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date']}});
   },
   get shippers() {
     return grok.dapi.domains.table<ShippersRow, ShippersInsert, ShippersColumn, ShippersExpand>(
-      'northwind.shippers', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.shippers', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'orders': ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date']}});
   },
   get regions() {
     return grok.dapi.domains.table<RegionsRow, RegionsInsert, RegionsColumn, RegionsExpand>(
-      'northwind.regions', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.regions', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'territories': ['created_on', 'updated_on']}});
   },
   get territories() {
     return grok.dapi.domains.table<TerritoriesRow, TerritoriesInsert, TerritoriesColumn, TerritoriesExpand>(
-      'northwind.territories', {datetimeColumns: ['created_on', 'updated_on']});
+      'northwind.territories', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'employee_territories': ['created_on', 'updated_on']}});
   },
   get employeeTerritories() {
     return grok.dapi.domains.table<EmployeeTerritoriesRow, EmployeeTerritoriesInsert, EmployeeTerritoriesColumn, EmployeeTerritoriesExpand>(
@@ -500,7 +508,8 @@ export const northwindDb = {
   },
   get orders() {
     return grok.dapi.domains.table<OrdersRow, OrdersInsert, OrdersColumn, OrdersExpand>(
-      'northwind.orders', {datetimeColumns: ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date', 'employee_id.birth_date', 'employee_id.hire_date']});
+      'northwind.orders', {datetimeColumns: ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date', 'employee_id.birth_date', 'employee_id.hire_date'],
+        detailDatetimeColumns: {'order_details': ['created_on', 'updated_on']}});
   },
   get orderDetails() {
     return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>(

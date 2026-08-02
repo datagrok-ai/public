@@ -175,11 +175,13 @@ export type GritTransactionOp =
 export const gritDb = {
   get project() {
     return grok.dapi.domains.table<ProjectRow, ProjectInsert, ProjectColumn, ProjectExpand>(
-      'grit.project', {datetimeColumns: ['created_on', 'updated_on']});
+      'grit.project', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'issue': ['created_on', 'updated_on']}});
   },
   get issue() {
     return grok.dapi.domains.table<IssueRow, IssueInsert, IssueColumn, IssueExpand>(
-      'grit.issue', {datetimeColumns: ['created_on', 'updated_on']});
+      'grit.issue', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'comment': ['created_on', 'updated_on'], 'issue_label': ['created_on', 'updated_on']}});
   },
   get comment() {
     return grok.dapi.domains.table<CommentRow, CommentInsert, CommentColumn, CommentExpand>(
@@ -187,7 +189,8 @@ export const gritDb = {
   },
   get label() {
     return grok.dapi.domains.table<LabelRow, LabelInsert, LabelColumn, LabelExpand>(
-      'grit.label', {datetimeColumns: ['created_on', 'updated_on']});
+      'grit.label', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'issue_label': ['created_on', 'updated_on']}});
   },
   get issueLabel() {
     return grok.dapi.domains.table<IssueLabelRow, IssueLabelInsert, IssueLabelColumn, IssueLabelExpand>(

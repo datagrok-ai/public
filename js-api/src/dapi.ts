@@ -1198,28 +1198,46 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     TExpand extends {[key: string]: {}} = {[key: string]: {}}> {
   dart: any;
   private readonly _datetimeColumns?: string[];
+  private readonly _detailDatetimeColumns?: {[detailField: string]: string[]};
 
   constructor(dart: any, public readonly schema: string, public readonly table: string,
               options?: DomainTableClientOptions) {
     this.dart = dart;
     this._datetimeColumns = options?.datetimeColumns;
+    this._detailDatetimeColumns = options?.detailDatetimeColumns;
   }
 
   /** Materializes the declared datetime columns as dayjs on JSON reads
    * ({@link DomainTableClientOptions.datetimeColumns} — generated clients opt in;
-   * untyped clients keep ISO strings). */
+   * untyped clients keep ISO strings), recursing into `'details:'` child arrays
+   * per {@link DomainTableClientOptions.detailDatetimeColumns}. */
   private _fromWire(row: any): any {
-    if (row != null && this._datetimeColumns != null)
+    if (row == null)
+      return row;
+    if (this._datetimeColumns != null)
       for (const c of this._datetimeColumns)
         if (typeof row[c] === 'string')
           row[c] = dayjs(row[c]);
+    if (this._detailDatetimeColumns != null)
+      for (const field of Object.keys(this._detailDatetimeColumns)) {
+        const children = row[field];
+        if (Array.isArray(children))
+          for (const child of children)
+            for (const c of this._detailDatetimeColumns[field])
+              if (child != null && typeof child[c] === 'string')
+                child[c] = dayjs(child[c]);
+      }
     return row;
+  }
+
+  private get _converts(): boolean {
+    return this._datetimeColumns != null || this._detailDatetimeColumns != null;
   }
 
   /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap). */
   async query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<TRow[]> {
     const rows = await domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec));
-    return this._datetimeColumns == null ? rows : rows.map((r: any) => this._fromWire(r));
+    return this._converts ? rows.map((r: any) => this._fromWire(r)) : rows;
   }
 
   /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,

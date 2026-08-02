@@ -96,7 +96,8 @@ export type InventoryTransactionOp =
 export const inventoryDb = {
   get items() {
     return grok.dapi.domains.table<ItemsRow, ItemsInsert, ItemsColumn, ItemsExpand>(
-      'inventory.items', {datetimeColumns: ['created_on', 'updated_on']});
+      'inventory.items', {datetimeColumns: ['created_on', 'updated_on'],
+        detailDatetimeColumns: {'stock_movements': ['created_on', 'updated_on', 'moved_on']}});
   },
   get stockMovements() {
     return grok.dapi.domains.table<StockMovementsRow, StockMovementsInsert, StockMovementsColumn, StockMovementsExpand>(

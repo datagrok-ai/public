@@ -77,3 +77,7 @@ optimistic-concurrency conflict + retry, aggregation totals, per-schema column
 attribution, and the demo group setup.
 
 See `core/docs/features/db-schemas/ARCHITECTURE.md` (§9.4) in the Datagrok monorepo for the design.
+
+Note: a meaningful `tsc --noEmit` in this package requires `grok link` (or a junction) to the
+local `js-api` — the generated `src/generated/db.ts` consumes dayjs-typed domain clients that a
+published `datagrok-api` copy may not carry yet.

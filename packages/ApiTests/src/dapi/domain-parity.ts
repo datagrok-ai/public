@@ -201,6 +201,31 @@ category('Dapi: domain parity', () => {
     }
   });
 
+  test('details-expand child datetimes are dayjs with the correct instant', async () => {
+    // The details json_agg path used to emit NAIVE datetime strings (no Z);
+    // the server now serializes the same treat-as-UTC Z-form as top-level
+    // rows, and detailDatetimeColumns materializes them recursively.
+    const withDetails = grok.dapi.domains.table('apitests.item', {
+      datetimeColumns: ['created_on', 'updated_on'],
+      detailDatetimeColumns: {'item_event': ['created_on', 'updated_on']},
+    });
+    const [item] = await withDetails.insert({sku: sku(), name: 'dt probe'});
+    ids.push(item.id);
+    const [ev] = await grok.dapi.domains.table('apitests.item_event')
+      .insert({item_id: item.id, kind: 'dt', amount: 1});
+    const [expanded] = await withDetails.query(
+      {filter: [{property: 'id', operator: '=', value: item.id}], expand: ['details:item_event']});
+    const child = (expanded as any).item_event[0];
+    expect(typeof child.created_on, 'object', 'child created_on must be dayjs, not a string');
+    // The INSTANT matches the same row fetched top-level — guards a tz shift
+    // from naive-form handling.
+    const events = grok.dapi.domains.table('apitests.item_event',
+      {datetimeColumns: ['created_on', 'updated_on']});
+    const top = await events.get(ev.id);
+    expect(child.created_on.valueOf(), top.created_on.valueOf(),
+      'expanded child instant must equal the top-level read');
+  });
+
   test('auditLog: newest first, typed entries', async () => {
     const [ins] = await items().insert({sku: sku(), name: 'audit probe', quantity: 1});
     ids.push(ins.id);
