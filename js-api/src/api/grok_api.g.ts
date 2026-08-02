@@ -1218,6 +1218,9 @@ export interface IDartApi {
   grok_Dapi_Domains_TableGrants(c: any, schema: String, table: String): Promise<any>;
   grok_Dapi_Domains_TableGrant(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
   grok_Dapi_Domains_TableRevoke(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_SchemaGrants(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_SchemaGrant(c: any, schema: String, group: String, permission: String): Promise<any>;
+  grok_Dapi_Domains_SchemaRevoke(c: any, schema: String, group: String, permission: String): Promise<any>;
   grok_Dapi_Domains_ShareColumn(c: any, schema: String, table: String, column: String, group: String, permission: String): Promise<any>;
   grok_Dapi_Domains_RestrictColumn(c: any, schema: String, table: String, column: String): Promise<any>;
   grok_Dapi_Domains_RestoreColumnVisibility(c: any, schema: String, table: String, column: String): Promise<any>;

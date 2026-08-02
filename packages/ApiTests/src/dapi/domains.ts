@@ -87,17 +87,14 @@ category('Dapi: domains', () => {
     }
   });
 
-  test('dapi2 generated client smoke', async () => {
-    grok.dapi2Init(grok.dapi.root, grok.dapi.token);
-    const key = sku();
-    const [ins] = await items().insert({sku: key, name: 'Gen'});
-    try {
-      const rows = await grok.dapi2.domains.queryRows('apitests', 'item', {filter: `sku = "${key}"`});
-      expect(rows.length, 1);
-      expect(rows[0].name, 'Gen');
-    } finally {
-      await items().delete(ins.id);
-    }
+  test('dapi2 generated client: domains removed at parity, init export intact', async () => {
+    // WO-4b: every dapi2 function belonged to the domains namespace — with it
+    // removed at typed-surface parity the generated client has no value members
+    // left (the chats namespace never emitted functions), so `dapi2` is
+    // type-only now; dapi2Init survives as a value and the OpenAPI yaml keeps
+    // every /domains/ route.
+    expect(typeof grok.dapi2Init, 'function');
+    expect((grok as any).dapi2?.domains, undefined, 'dapi2.domains must be gone');
   });
 
   test('table name validation', async () => {

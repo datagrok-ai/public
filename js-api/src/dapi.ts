@@ -44,8 +44,8 @@ import {
   DomainFilter,
   DomainGrant,
   DomainInsertResult,
-  DomainPermission,
   DomainOpResult,
+  DomainPermission,
   DomainQuerySpec,
   DomainRestrictError,
   DomainRowInsert,
@@ -1166,6 +1166,22 @@ export class DomainSchemaClient {
   delete(): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
   }
+
+  /** Direct permission rows on this schema's registry entity. Requires Share. */
+  grants(): Promise<DomainGrant[]> {
+    return domainCall(api.grok_Dapi_Domains_SchemaGrants(this.dart, this.name));
+  }
+
+  /** Idempotently grants [permission] on this schema to [group] (a group id); schema-level
+   * grants fan out to the schema's tables per the sharing model. Requires Share. */
+  grant(group: string, permission: DomainPermission): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_SchemaGrant(this.dart, this.name, group, permission));
+  }
+
+  /** Revokes [permission] (or all four when omitted) from [group]. Requires Share. */
+  revoke(group: string, permission?: DomainPermission): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_SchemaRevoke(this.dart, this.name, group, permission ?? null));
+  }
 }
 
 /**
@@ -1379,8 +1395,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   /** Restricts [column] to its own single-column property schema and grants [group] View on
    * it — afterwards only grantees (and admins) see the column. Returns the per-column
    * schema {id, name} (a further grants target). Requires Share on the core schema;
-   * jsonb columns are managed via their property schema (DomainError). Listing a
-   * per-column schema's own grants is out of scope here — keep the returned id. */
+   * jsonb columns are managed via their property schema (DomainError). Out of scope on
+   * this surface: listing a per-column schema's own grants (keep the returned id), and
+   * property-schema grants in general (server-supported; no JS surface yet). */
   shareColumn(column: TColumn, group: string, permission?: DomainPermission): Promise<{id: string; name: string}> {
     return domainCall(api.grok_Dapi_Domains_ShareColumn(this.dart, this.schema, this.table,
       column, group, permission ?? 'View'));

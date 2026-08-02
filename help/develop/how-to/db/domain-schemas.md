@@ -195,7 +195,8 @@ Each table declares how its rows are protected:
 
 Grants use the standard permissions (View, Edit, Delete, Share) on the schema, table, and
 property-schema entities. Grant them from the UI (the table's **Sharing** pane) or
-programmatically via `grok.dapi2.domains` (grant/revoke/list endpoints). In row mode, sharing
+programmatically — `grok.dapi.domains.table('s.t').grants()/grant()/revoke()` for a table,
+`grok.dapi.domains.schema('s').grants()/grant()/revoke()` for a whole schema. In row mode, sharing
 a row for the first time transparently *promotes* it to a full platform entity — after that it
 behaves like any entity: sharing dialog, favorites, comments, global search.
 

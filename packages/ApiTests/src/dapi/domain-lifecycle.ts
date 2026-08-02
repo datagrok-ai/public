@@ -98,13 +98,38 @@ category('Dapi: domain lifecycle', () => {
     try {
       expect(shared.id != null, true, JSON.stringify(shared));
       expect(shared.name, 'apitests.item.name');
+      // The grant half really landed: the per-column schema entity carries the
+      // View permission (domain-filters.ts permissions pattern).
+      const [entity] = await grok.dapi.getEntities([shared.id]);
+      const perms = await grok.dapi.permissions.get(entity);
+      expect((perms as any).view.some((g: _DG.Group) => g.id === group.id), true,
+        'shareColumn must grant View on the per-column schema');
       const again = await items.restrictColumn('name');
       expect(again.id, shared.id, 'restrict is idempotent — same per-column schema');
     } finally {
       await items.restoreColumnVisibility('name');
     }
-    // Restored: every caller sees the column through the core schema again.
+    // Restored: the core schema serves the column again — a query NAMING it
+    // succeeding is the assertion (a restricted column would 400, no-oracle).
     const rows = await items.query({limit: 1, columns: ['name']});
-    expect(rows.length >= 0, true);
+    expect(Array.isArray(rows), true);
+  });
+
+  test('schema grants: list, grant, revoke round-trip', async () => {
+    const schema = grok.dapi.domains.schema('apitests');
+    const group = await allUsers();
+    const before = (await schema.grants()).length;
+    await schema.grant(group.id, 'View');
+    try {
+      const listed = await schema.grants();
+      expect(listed.some((g) => g.group.id === group.id && g.permission === 'View'), true,
+        JSON.stringify(listed));
+    } finally {
+      await schema.revoke(group.id, 'View');
+    }
+    const after = await schema.grants();
+    expect(after.some((g) => g.group.id === group.id && g.permission === 'View'), false,
+      'revoked schema grant must disappear from a second read');
+    expect(after.length, before);
   });
 });
