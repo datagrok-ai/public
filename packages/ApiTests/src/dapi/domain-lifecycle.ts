@@ -98,11 +98,17 @@ category('Dapi: domain lifecycle', () => {
     try {
       expect(shared.id != null, true, JSON.stringify(shared));
       expect(shared.name, 'apitests.item.name');
-      // The grant half really landed: the per-column schema entity carries the
-      // View permission (domain-filters.ts permissions pattern).
-      const [entity] = await grok.dapi.getEntities([shared.id]);
-      const perms = await grok.dapi.permissions.get(entity);
-      expect((perms as any).view.some((g: _DG.Group) => g.id === group.id), true,
+      // The grant half really landed. Per-column property schemas have NO
+      // entities rows (registry-entities rule), so grok.dapi.getEntities /
+      // permissions cannot read them and no typed JS accessor takes arbitrary
+      // registry ids (the WO-4a security boundary) — read the domains-native
+      // grants route directly, the ApiTests authenticated-fetch pattern
+      // (cf. user-settings-storage.ts).
+      const res = await fetch(`${grok.dapi.root}/domains/grants/${shared.id}`,
+        {credentials: 'include'});
+      const granted = await res.json();
+      expect(Array.isArray(granted), true, JSON.stringify(granted));
+      expect(granted.some((g: any) => g.group?.id === group.id && g.permission === 'View'), true,
         'shareColumn must grant View on the per-column schema');
       const again = await items.restrictColumn('name');
       expect(again.id, shared.id, 'restrict is idempotent — same per-column schema');

@@ -94,7 +94,9 @@ category('Dapi: domains', () => {
     // type-only now; dapi2Init survives as a value and the OpenAPI yaml keeps
     // every /domains/ route.
     expect(typeof grok.dapi2Init, 'function');
-    expect((grok as any).dapi2?.domains, undefined, 'dapi2.domains must be gone');
+    // NB: compare against true — utils expect() treats a passed undefined
+    // `expected` as its default (true), so expect(x, undefined) never passes.
+    expect((grok as any).dapi2?.domains === undefined, true, 'dapi2.domains must be gone');
   });
 
   test('table name validation', async () => {

@@ -1167,13 +1167,16 @@ export class DomainSchemaClient {
     return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
   }
 
-  /** Direct permission rows on this schema's registry entity. Requires Share. */
+  /** Direct permission rows on this schema's registry entity (schema-level operation
+   * rights, not row-data access — see {@link grant}). Requires Share. */
   grants(): Promise<DomainGrant[]> {
     return domainCall(api.grok_Dapi_Domains_SchemaGrants(this.dart, this.name));
   }
 
-  /** Idempotently grants [permission] on this schema to [group] (a group id); schema-level
-   * grants fan out to the schema's tables per the sharing model. Requires Share. */
+  /** Idempotently grants [permission] on this schema's registry entity to [group] (a group
+   * id). Schema grants gate schema-level operations (apply requires Edit, delete requires
+   * Delete, sharing requires Share). They do NOT grant access to row data — use
+   * `table('s.t').grant()` per table for that. Requires Share. */
   grant(group: string, permission: DomainPermission): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_SchemaGrant(this.dart, this.name, group, permission));
   }
