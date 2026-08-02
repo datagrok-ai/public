@@ -106,11 +106,17 @@ with the access rights of whoever opens it applied at that moment.
 When the filter matches more rows than the view has loaded, a dialog offers three choices:
 
 * **CANCEL** — do nothing.
-* **LOADED N** — open exactly the N rows the view has loaded. The recorded query keeps
-  `limit = N`, so a dashboard built on it is frozen to the first N rows by design.
-* **ALL M** — open every matching row. The recorded query carries no effective row cap (only
-  the 10,000,000-row ceiling all domain queries share), so a dashboard built on it stays
-  live: rows added later appear the next time the query runs.
+* **FIRST n ONLY** — open exactly the n rows the view has loaded. The recorded query keeps
+  `limit = n`, so a dashboard built on it is frozen to the first n rows by design.
+* **OPEN ALL M** — open every matching row. The recorded query carries no effective row cap
+  (only the 10,000,000-row ceiling all domain queries share), so a dashboard built on it
+  stays live: rows added later appear the next time the query runs.
+
+The opened table leads with the table's business columns in their declared order; the
+system columns (`id`, `version`, `created_on`, `updated_on`, `author_id`) are hidden
+behind a `~` name prefix — show them via the column manager's service-columns toggle.
+Note that, being hidden, `id` and `version` are absent from CSV exports of an opened
+frame unless you unhide them first.
 
 ### The DomainQuery function
 
