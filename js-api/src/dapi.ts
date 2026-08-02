@@ -40,6 +40,7 @@ import {
   DomainFacetKind,
   DomainFacetResultOf,
   DomainFacetsSpec,
+  DomainFilter,
   DomainInsertResult,
   DomainOpResult,
   DomainQuerySpec,
@@ -1229,6 +1230,66 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   facets<TId extends string = string, TKind extends DomainFacetKind = DomainFacetKind>(
     spec: DomainFacetsSpec<TColumn, TId, TKind>): Promise<{facets: {[K in TId]: DomainFacetResultOf<TKind>}}> {
     return domainCall(api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec));
+  }
+
+  /** Row count under [filter] (condition tree or smart string; omit for the whole table). */
+  count(filter?: DomainFilter<TColumn>): Promise<number> {
+    return domainCall(api.grok_Dapi_Domains_Count(this.dart, this.schema, this.table, filter ?? null));
+  }
+
+  /** True when at least one visible row matches [filter]. */
+  async exists(filter?: DomainFilter<TColumn>): Promise<boolean> {
+    return (await this.count(filter)) > 0;
+  }
+
+  /** First matching row or null; shorthand for query({...spec, limit: 1}). */
+  async first(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow | null> {
+    const rows = await this.query({...spec, limit: 1});
+    return rows.length === 0 ? null : rows[0];
+  }
+
+  /** Business-key (or any equality-set) lookup; ambiguous or absent → null. */
+  async getByKey(keyValues: Partial<TRow>): Promise<TRow | null> {
+    return this._fromWire(await domainCall(api.grok_Dapi_Domains_GetByKey(this.dart, this.schema, this.table, keyValues)));
+  }
+
+  /** Rows for [ids] as a typed DataFrame: the 'id' column plus [fields] (default: all
+   * visible columns). Chunked client-side at 100k ids; row predicate + column security
+   * apply (missing/invisible ids are absent rows). */
+  fetchFields(ids: string[], fields?: TColumn[]): Promise<DataFrame> {
+    return domainCall(api.grok_Dapi_Domains_FetchFields(this.dart, this.schema, this.table, ids, fields ?? null));
+  }
+
+  /** {@link aggregate} returning a typed d42 DataFrame (10k row cap, both formats). */
+  aggregateDf(spec: DomainAggregateSpec<TColumn>): Promise<DataFrame> {
+    return domainCall(api.grok_Dapi_Domains_AggregateDf(this.dart, this.schema, this.table, spec));
+  }
+
+  /** Inserts or merges ONE row by the table's business key (requires businessKey).
+   * Rides the batch engine in upsert mode; failures (invalid values, missing
+   * business-key column) reject with a {@link DomainValidationError}. */
+  upsert(row: TInsert): Promise<{id: string; status: 'inserted' | 'updated'}> {
+    return domainCall(api.grok_Dapi_Domains_Upsert(this.dart, this.schema, this.table, row));
+  }
+
+  /** Table-wide audit trail, newest first; limit clamps to [1, 1000]. */
+  auditLog(options?: {limit?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_TableAudit(this.dart, this.schema, this.table, options?.limit ?? null));
+  }
+
+  /** Subscribes the current user to change notifications for the table (or one row when
+   * [id] is given; row watch requires the table's audit trail). Resolves to whether the
+   * server confirmed the subscription. */
+  watch(id?: string): Promise<boolean> {
+    return domainCall(api.grok_Dapi_Domains_Watch(this.dart, this.schema, this.table, id ?? null));
+  }
+
+  unwatch(id?: string): Promise<boolean> {
+    return domainCall(api.grok_Dapi_Domains_Unwatch(this.dart, this.schema, this.table, id ?? null));
+  }
+
+  isWatching(id?: string): Promise<boolean> {
+    return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
 
   /** Saved filter presets of this table — shareable entities carrying filter panel states. */
