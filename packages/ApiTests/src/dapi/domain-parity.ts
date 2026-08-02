@@ -144,6 +144,55 @@ category('Dapi: domain parity', () => {
       `expected DomainValidationError, got ${err?.constructor?.name}: ${err?.message}`);
   });
 
+  test('deleteWhere: filter forms, hasMore drain, empty filter rejects', async () => {
+    const p = `DW${Date.now()}${Math.floor(Math.random() * 1e4)}`;
+    await items().insert([1, 2, 3, 4, 5].map((i) => ({sku: `${p}-${i}`, name: `${p} bulk`, quantity: i})));
+    // String form, limited: the two oldest go, more remain.
+    const first = await items().deleteWhere(`name = "${p} bulk"`, {limit: 2});
+    expect(first.deleted, 2);
+    expect(first.hasMore, true);
+    // Tree form drains the rest via the hasMore loop.
+    let total = first.deleted;
+    for (let guard = 0; guard < 5; guard++) {
+      const r = await items().deleteWhere(
+        [{property: 'name', operator: '=', value: `${p} bulk`}], {limit: 2});
+      total += r.deleted;
+      if (!r.hasMore)
+        break;
+    }
+    expect(total, 5);
+    expect(await items().count(`name = "${p} bulk"`), 0);
+
+    const err = await thrown(() => items().deleteWhere([]));
+    expect(err instanceof DG.DomainValidationError, true,
+      `expected DomainValidationError, got ${err?.constructor?.name}: ${err?.message}`);
+  });
+
+  test('deleteWhere: restrict rejects the whole call with zero deletions', async () => {
+    const schemas = await grok.dapi.domains.schemas.list();
+    if (!schemas.some((s) => s.name === 'grit')) {
+      console.log('skipped: grit schema (restrict fixture) not deployed');
+      return;
+    }
+    const projects = grok.dapi.domains.table('grit.project');
+    const issues = grok.dapi.domains.table('grit.issue');
+    const key = `DW${Date.now() % 10000000}`;
+    // The free project is OLDER than the blocked one, so the per-row loop
+    // deletes it first — the restrict rollback must undo it too.
+    await projects.insert({key: `${key}A`, name: 'DW free'});
+    const [blocked] = await projects.insert({key: `${key}B`, name: 'DW blocked'});
+    const [issue] = await issues.insert({project_id: blocked.id, number: 1, title: 'blocks'});
+    try {
+      const err = await thrown(() => projects.deleteWhere(`key starts "${key}"`));
+      expect(err instanceof DG.DomainRestrictError, true,
+        `expected DomainRestrictError, got ${err?.constructor?.name}: ${err?.message}`);
+      expect(await projects.count(`key starts "${key}"`), 2, 'restrict must delete nothing');
+    } finally {
+      await issues.delete(issue.id);
+      await projects.deleteWhere(`key starts "${key}"`);
+    }
+  });
+
   test('auditLog: newest first, typed entries', async () => {
     const [ins] = await items().insert({sku: sku(), name: 'audit probe', quantity: 1});
     ids.push(ins.id);

@@ -11,9 +11,8 @@ category('Dapi: domains batch', () => {
   const prefix = () => `BT-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
   async function purge(p: string): Promise<void> {
-    const rows = await items().query({filter: `sku starts "${p}"`, limit: 1000});
-    for (const r of rows)
-      await items().delete(r.id);
+    // One filtered bulk delete instead of the old query + per-row N+1 loop.
+    while ((await items().deleteWhere(`sku starts "${p}"`)).hasMore);
   }
 
   test('batch CSV string', async () => {

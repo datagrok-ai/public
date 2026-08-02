@@ -37,6 +37,7 @@ import {
   DomainAuditEntry,
   DomainBatchOptions,
   DomainBatchReport,
+  DomainDeleteReport,
   DomainFacetKind,
   DomainFacetResultOf,
   DomainFacetsSpec,
@@ -1207,6 +1208,19 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * a restrict reference rejects with a {@link DomainRestrictError}). */
   delete(id: string): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));
+  }
+
+  /** Soft-deletes up to `options.limit` (≤1000, default 1000) matching rows you may delete,
+   * oldest first, in ONE transaction; referential actions apply per row and a restrict
+   * reference rejects the whole call ({@link DomainRestrictError} — nothing is deleted).
+   * The filter is required — an empty one rejects with a {@link DomainValidationError}.
+   * Each row runs through the per-row engine (cascade fan-out, audit), so this is not a
+   * free bulk sweep: prefer a narrow filter and a modest limit, and loop while `hasMore`
+   * for larger sets. A row already gone by its turn (deleted concurrently, or eaten by an
+   * earlier row's cascade) is skipped, not an error. */
+  deleteWhere(filter: DomainFilter<TColumn>, options?: {limit?: number}): Promise<DomainDeleteReport> {
+    return domainCall(api.grok_Dapi_Domains_DeleteWhere(this.dart, this.schema, this.table,
+      filter, options?.limit ?? null));
   }
 
   /** Creates the entities row for a domain row so it can be individually shared. */

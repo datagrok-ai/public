@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20600: Added `deleteWhere` coverage to the `Dapi: domain parity` suite — string + tree filters with a `hasMore` drain loop, empty filter → `DomainValidationError`, restrict → `DomainRestrictError` with zero deletions (Grit fixture, self-skips); `Dapi: domains batch` teardown now uses one `deleteWhere` instead of the query + per-row delete loop.
+
 GROK-20599: Added the `Dapi: domain parity` suite — count/exists (string + tree filters), first, getByKey (composite hit / ambiguity → null), upsert (inserted→updated with version bump; typed validation failures incl. the report-carrying case), fetchFields (requested shape, absent ids, empty ids → empty DataFrame), aggregateDf vs aggregate parity, watch round-trips (table + row), row-watch on an audit:false table (Inventory fixture, self-skips), auditLog newest-first with numeric wire ids.
 
 GROK-20598: Added the `Dapi: domain errors` suite — typed error probes: stale-version update → `DomainVersionConflictError` with both versions, restrict delete (Grit fixture, self-skips without Grit) → `DomainRestrictError`, malformed filter → `DomainFilterError` (400), `errorOnDuplicate` insert → `DomainValidationError.isDuplicate`.

@@ -70,6 +70,10 @@ export interface DomainAuditEntry {
   after: any;
 }
 
+/** Report of domain table `deleteWhere`: rows actually soft-deleted in this call,
+ * and whether more matching deletable rows remain (loop while `hasMore`). */
+export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
+
 export interface DomainBatchRowResult {
   index: number;
   id: string | null;
