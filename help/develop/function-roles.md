@@ -25,6 +25,7 @@ Typically, each function type has a special role denoting what the function does
 * `#autostart` for [automatic execution at platform startup](#autostart)
 * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
 * `#cellRenderer` for custom [cell renderers](#cell-renderers)
+* `#categoryOrderer` for [semantic value properties](#semantic-value-properties)
 * `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers)
   and [exporters](#file-exporters)
 * `#packageSettingsEditor` for [settings editors](#settings-editors)
@@ -122,6 +123,24 @@ grok add detector <semantic-type-name>
 ```
 
 *Details:* [How to define semantic type detectors](how-to/functions/define-semantic-type-detectors.md)
+
+## Semantic value properties
+
+A function with the `categoryOrderer` role (the historical name — the concept has since generalized
+from ordering categories to computing any comparable per-value number) computes one comparable number per value of a semantic type,
+letting the platform sort, order and bin values it knows nothing about — see
+[category order](../visualize/table-view-1.md#category-order). It takes a column of that semantic type and
+returns a column of the same length; a second parameter with `choices` turns one function into one property
+per choice. The platform only ever passes the distinct values, so the calculation stays cheap on large tables.
+
+```ts
+//name: Molecular Property
+//input: column molecules { semType: Molecule }
+//input: string property { choices: ["MW","LogP","PSA"] }
+//output: column result
+//meta.role: categoryOrderer
+export async function molecularProperty(molecules: DG.Column, property: string): Promise<DG.Column> { ... }
+```
 
 ## Cell renderers
 

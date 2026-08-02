@@ -130,6 +130,22 @@ Examples include:
 
 ![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
 
+#### Category order
+
+Viewers with a categorical axis ([scatterplot](viewers/scatter-plot.md), [box plot](viewers/box-plot.md),
+[line chart](viewers/line-chart.md)) let you reorder its categories from the axis context menu, under **Order**:
+
+* **Sort by a column** — numerical columns compare categories by the chosen **Aggregation**, categorical
+  ones by their values.
+* **Property** — a number computed for the values themselves. The choices are discovered from the
+  installed packages: with the [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
+  package a column of molecules can be ordered by MW, LogP, PSA and the other molecular properties.
+  Packages add their own by registering a function with the `categoryOrderer` role.
+* **Edit Manually** — arrange the categories by hand.
+* **Apply To All Viewers** — makes the current order the column's order everywhere, including the grid.
+
+The order is a property of the viewer and is saved with the layout.
+
 #### Viewer coloring
 
 Core viewers like [scatterplot](viewers/scatter-plot.md), [box plot](viewers/box-plot.md), and [PC plot](viewers/pc-plot.md) support color-coding data based on a column. The coloring behavior depends on the data type of the color column:

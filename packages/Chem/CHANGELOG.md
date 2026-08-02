@@ -2,10 +2,10 @@
 
 ## v.next
 
-* GROK-20436: Chem: Added a `categoryOrderer` for molecules, so viewers can order molecular categories by Tanimoto similarity
+* GROK-20436: Chem: Added `Molecular Property`, a vectorized single-property calculator that lets viewers order molecular categories by MW, LogP, PSA and the other OCL properties
 * Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
 * Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
-* Added `Chemical Space Columns` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
+* Added `Chemical Space` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
 * Added `MPO Score by Profile` and `getMpoProfileNames`: `mpoCalculate` scores columns that already carry desirability tags and `mpoTransformFunction` wants those tags as a JSON blob, so neither could be driven from a profile name
 * Chemical Similarity Search: Added choices and defaults for metric, fingerprint, max hits and min similarity, and tagged the query molecule `semType: Molecule`
 * Substructure Search: Tagged the query `semType: Molecule` and defaulted the molblock fallback

@@ -2308,21 +2308,16 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Molecule Category Order',
-    description: 'Orders the categories of a molecular column by Tanimoto similarity to its first molecule',
-    meta: {role: 'categoryOrderer'},
+    name: 'Molecular Property',
+    description: 'Computes one chemical property for a column of molecules so that the platform can sort and order them by it.',
+    meta: {role: 'categoryOrderer', vectorFunc: 'true'},
   })
-  static async orderMoleculeCategories(
-    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column): Promise<DG.Column | null> {
-    const categories = molecules.categories;
-    const reference = categories.find((mol) => mol !== '');
-    if (reference === undefined)
-      return null;
-    const cats = DG.Column.fromStrings(molecules.name, categories);
-    const similarities = await chemSearches.chemGetSimilarities(cats, reference);
-    // the keys are ordered ascending, so invert the scores to put the closest analogs first
-    return similarities === null ? null : DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'keys',
-      similarities.toList().map((similarity: number | null) => similarity === null ? null : 1 - similarity));
+  static async molecularProperty(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA',
+      'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column | null> {
+    const cols = await getPropertiesAsColumns(molecules, [property]);
+    return cols.length === 0 ? null : cols[0];
   }
 
   @grok.decorators.func({

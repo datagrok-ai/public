@@ -452,6 +452,9 @@ export interface IScatterPlotSettings {
   /// Aggregation used to compute the per-category sort key for the Y axis.
   ySortByAggr: string;
 
+  /// A property of the Y sort values to compare them by; see *X Sort By Property*.
+  ySortByProperty: string;
+
   /// Whether the Y axis categories are sorted in ascending or descending order.
   ySortOrder: string;
 
@@ -817,6 +820,12 @@ export interface IScatterPlotSettings {
   /// Aggregation used to compute the per-category sort key for the X axis.
   xSortByAggr: string;
 
+  /// A property computed for the X sort values to compare them by when they are not numbers;
+  /// works for any semantic type with a registered calculator - e.g. `Chem:molecularProperty(MW)`
+  /// for molecules. Pick it from *Order | Property* - the choices depend on the semantic type
+  /// and on the installed packages.
+  xSortByProperty: string;
+
   /// Whether the X axis categories are sorted in ascending or descending order.
   xSortOrder: string;
 
@@ -1144,6 +1153,12 @@ export interface IBoxPlotSettings {
 
   /// Aggregation used to compute the per-category sort key.
   categorySortByAggr: string;
+
+  /// A property computed for the sort values to compare them by when they are not numbers;
+  /// works for any semantic type with a registered calculator - e.g. `Chem:molecularProperty(MW)`
+  /// for molecules. Pick it from *Order | Property* - the choices depend on the semantic type
+  /// and on the installed packages.
+  categorySortByProperty: string;
 
   /// Whether the categories are sorted in ascending or descending order.
   categorySortOrder: string;
@@ -2580,6 +2595,12 @@ export interface ILineChartSettings {
 
   /// Aggregation used to compute the per-category sort key for the X axis.
   xSortByAggr: string;
+
+  /// A property computed for the X sort values to compare them by when they are not numbers;
+  /// works for any semantic type with a registered calculator - e.g. `Chem:molecularProperty(MW)`
+  /// for molecules. Pick it from *Order | Property* - the choices depend on the semantic type
+  /// and on the installed packages.
+  xSortByProperty: string;
 
   /// Whether the X axis categories are sorted in ascending or descending order.
   xSortOrder: string;
