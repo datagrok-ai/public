@@ -146,7 +146,11 @@ category('Dapi: domain parity', () => {
 
   test('deleteWhere: filter forms, hasMore drain, empty filter rejects', async () => {
     const p = `DW${Date.now()}${Math.floor(Math.random() * 1e4)}`;
-    await items().insert([1, 2, 3, 4, 5].map((i) => ({sku: `${p}-${i}`, name: `${p} bulk`, quantity: i})));
+    const ins = await items().insert(
+      [1, 2, 3, 4, 5].map((i) => ({sku: `${p}-${i}`, name: `${p} bulk`, quantity: i})));
+    // The suite's after() drains leftovers by id if the probe fails mid-way.
+    for (const r of ins)
+      ids.push(r.id);
     // String form, limited: the two oldest go, more remain.
     const first = await items().deleteWhere(`name = "${p} bulk"`, {limit: 2});
     expect(first.deleted, 2);
@@ -183,6 +187,10 @@ category('Dapi: domain parity', () => {
     const [blocked] = await projects.insert({key: `${key}B`, name: 'DW blocked'});
     const [issue] = await issues.insert({project_id: blocked.id, number: 1, title: 'blocks'});
     try {
+      // Assert the premise: the free project really is the older one, so the
+      // per-row loop reaches (and must roll back) a completed delete.
+      const ordered = await projects.query({filter: `key starts "${key}"`, sort: 'created_on'});
+      expect(ordered[0].key, `${key}A`, 'premise: the free project must be older');
       const err = await thrown(() => projects.deleteWhere(`key starts "${key}"`));
       expect(err instanceof DG.DomainRestrictError, true,
         `expected DomainRestrictError, got ${err?.constructor?.name}: ${err?.message}`);

@@ -15,6 +15,5 @@ report = await items.batch([
 ], {mode: 'upsert'});
 grok.shell.info(`inserted: ${report.inserted}, updated: ${report.updated}`);
 
-// Cleanup
-for (const row of await items.query({filter: `sku starts "${stamp}"`}))
-  await items.delete(row.id);
+// Cleanup: one filtered bulk delete (loop while hasMore for larger sets)
+while ((await items.deleteWhere(`sku starts "${stamp}"`)).hasMore);

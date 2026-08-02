@@ -42,7 +42,9 @@ import {
   DomainFacetResultOf,
   DomainFacetsSpec,
   DomainFilter,
+  DomainGrant,
   DomainInsertResult,
+  DomainPermission,
   DomainOpResult,
   DomainQuerySpec,
   DomainRestrictError,
@@ -1115,6 +1117,55 @@ export class DomainsDataSource {
   transaction(schema: string, ops: DomainTransactionOp[]): Promise<DomainOpResult[]> {
     return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
   }
+
+  /** Creates an empty user-managed domain schema (physical PG schema 'usr_<name>');
+   * requires the CreateDomainSchema privilege. Add tables via schema(name).apply(). */
+  createSchema(name: string, options?: {friendlyName?: string; description?: string}): Promise<{[key: string]: any}> {
+    return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,
+      options?.friendlyName ?? null, options?.description ?? null));
+  }
+
+  /** Lifecycle handle for a registered domain schema (mirrors table()). */
+  schema(name: string): DomainSchemaClient {
+    return new DomainSchemaClient(this.dart, name);
+  }
+}
+
+/**
+ * Lifecycle handle for one registered domain schema (see {@link DomainsDataSource.schema}):
+ * manifest export, partial applies with dry-run change plans, whole-schema audit, and full
+ * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish). */
+export class DomainSchemaClient {
+  dart: any;
+
+  constructor(dart: any, public readonly name: string) {
+    this.dart = dart;
+  }
+
+  /** Full manifest reconstructed from the registry (feeds editors; doubles as export). */
+  manifest(): Promise<{[key: string]: any}> {
+    return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
+  }
+
+  /** Applies a partial manifest to a user-managed schema; dryRun returns the change plan.
+   * Destructive plans require confirmDestructive; stale ifVersion → DomainVersionConflictError;
+   * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
+   * (the plan rides in error.body.plan). */
+  apply(body: {tables?: object; propertySchemas?: object; dropTables?: string[];
+               ifVersion?: string; confirmDestructive?: boolean},
+        options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
+    return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));
+  }
+
+  /** Whole-schema history: all tables' events + 'ddl' registry events, newest first. */
+  audit(options?: {limit?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_SchemaAudit(this.dart, this.name, options?.limit ?? null));
+  }
+
+  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions. */
+  delete(): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
+  }
 }
 
 /**
@@ -1307,6 +1358,43 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   /** Whether the current user watches the table (or row, when [id] is given). */
   isWatching(id?: string): Promise<boolean> {
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
+  }
+
+  /** Direct permission rows on this table's registry entity. Requires Share. */
+  grants(): Promise<DomainGrant[]> {
+    return domainCall(api.grok_Dapi_Domains_TableGrants(this.dart, this.schema, this.table));
+  }
+
+  /** Idempotently grants [permission] on this table to [group] (a group id). Requires Share. */
+  grant(group: string, permission: DomainPermission): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_TableGrant(this.dart, this.schema, this.table, group, permission));
+  }
+
+  /** Revokes [permission] (or all four when omitted) from [group]. Requires Share. */
+  revoke(group: string, permission?: DomainPermission): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_TableRevoke(this.dart, this.schema, this.table,
+      group, permission ?? null));
+  }
+
+  /** Restricts [column] to its own single-column property schema and grants [group] View on
+   * it — afterwards only grantees (and admins) see the column. Returns the per-column
+   * schema {id, name} (a further grants target). Requires Share on the core schema;
+   * jsonb columns are managed via their property schema (DomainError). Listing a
+   * per-column schema's own grants is out of scope here — keep the returned id. */
+  shareColumn(column: TColumn, group: string, permission?: DomainPermission): Promise<{id: string; name: string}> {
+    return domainCall(api.grok_Dapi_Domains_ShareColumn(this.dart, this.schema, this.table,
+      column, group, permission ?? 'View'));
+  }
+
+  /** Restricts [column] without granting anyone (inverse: {@link restoreColumnVisibility}). */
+  restrictColumn(column: TColumn): Promise<{id: string; name: string}> {
+    return domainCall(api.grok_Dapi_Domains_RestrictColumn(this.dart, this.schema, this.table, column));
+  }
+
+  /** Deletes the per-column schema with its grants; the column rejoins the
+   * everyone-visible core schema. */
+  restoreColumnVisibility(column: TColumn): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_RestoreColumnVisibility(this.dart, this.schema, this.table, column));
   }
 
   /** Saved filter presets of this table — shareable entities carrying filter panel states. */

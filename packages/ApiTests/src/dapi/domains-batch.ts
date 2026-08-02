@@ -12,7 +12,9 @@ category('Dapi: domains batch', () => {
 
   async function purge(p: string): Promise<void> {
     // One filtered bulk delete instead of the old query + per-row N+1 loop.
-    while ((await items().deleteWhere(`sku starts "${p}"`)).hasMore);
+    for (let guard = 0; guard < 100; guard++)
+      if (!(await items().deleteWhere(`sku starts "${p}"`)).hasMore)
+        return;
   }
 
   test('batch CSV string', async () => {

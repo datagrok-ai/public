@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20600: dapi/domains-batch.js cleanup now uses one `deleteWhere` filtered bulk delete instead of the query + per-row delete loop
 * GROK-20591: Added dapi/domains-filters.js — batched facets (filter-panel counts) and shareable saved filter presets on a domain table
 * GROK-20572: Added data-access/db/query_builder_domain.js — TableQueryBuilder over a domain schema's virtual connection
 * GROK-20316: Added dapi/domains-dapi2.js — querying domain-table rows via the generated grok.dapi2 REST client

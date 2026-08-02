@@ -74,6 +74,14 @@ export interface DomainAuditEntry {
  * and whether more matching deletable rows remain (loop while `hasMore`). */
 export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
 
+export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share';
+
+/** One direct permission row on a domain registry entity (see `DomainTableClient.grants`). */
+export interface DomainGrant {
+  group: {id: string; friendlyName: string; personal: boolean};
+  permission: DomainPermission;
+}
+
 export interface DomainBatchRowResult {
   index: number;
   id: string | null;
