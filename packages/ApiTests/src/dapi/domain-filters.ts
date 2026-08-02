@@ -48,7 +48,7 @@ category('Dapi: domain filters', () => {
   });
 
   test('facets round trip: categories, histogram, minMax, count in one batch', async () => {
-    const filter = [{property: 'name', operator: 'like', value: `${marker}%`}];
+    const filter: _DG.DomainConditionTree = [{property: 'name', operator: 'like', value: `${marker}%`}];
     const res = await items().facets({filter, facets: [
       {id: 'names', kind: 'categories', column: 'name', search: marker},
       {id: 'hist', kind: 'histogram', column: 'quantity', bins: 2, min: 10, max: 30},
@@ -56,7 +56,7 @@ category('Dapi: domain filters', () => {
       {id: 'n', kind: 'count'},
     ]});
 
-    const names = res.facets['names'];
+    const names = res.facets['names'] as _DG.DomainFacetCategoriesResult;
     const byValue: {[v: string]: any} = {};
     for (const c of names.categories)
       byValue[c.value] = c;
@@ -68,19 +68,19 @@ category('Dapi: domain filters', () => {
     // and histogram BOUNDS — is computed under the row predicate only (the
     // stable-axis rule ignores the filter tree), so leftover rows from other
     // suites may widen it: assert containment, not equality.
-    const hist = res.facets['hist'];
+    const hist = res.facets['hist'] as _DG.DomainFacetHistogramResult;
     expect(hist.buckets.reduce((a: number, b: number) => a + b, 0), 3,
       `histogram buckets: ${JSON.stringify(hist)}`);
-    const mm = res.facets['mm'];
-    expect(mm.min <= 11, true, `minMax must contain the marked rows: ${JSON.stringify(mm)}`);
-    expect(mm.max >= 30, true, `minMax must contain the marked rows: ${JSON.stringify(mm)}`);
-    expect(res.facets['n'].count, 5); // three quantified + two path parents
+    const mm = res.facets['mm'] as _DG.DomainFacetMinMaxResult;
+    expect((mm.min as number) <= 11, true, `minMax must contain the marked rows: ${JSON.stringify(mm)}`);
+    expect((mm.max as number) >= 30, true, `minMax must contain the marked rows: ${JSON.stringify(mm)}`);
+    expect((res.facets['n'] as _DG.DomainFacetCountResult).count, 5); // three quantified + two path parents
   });
 
   test('FK-path filter: dotted tree in query, path categories facet', async () => {
     // Query item_event through the FK path (compiles to EXISTS server-side).
     const rows = await events().query(
-      {filter: [{property: 'item_id.name', operator: '=', value: [`${marker} P1`]}] as any});
+      {filter: [{property: 'item_id.name', operator: '=', value: [`${marker} P1`]}]});
     expect(rows.length, 2, `expected the two P1 events, got ${rows.length}`);
     expect(rows.every((r: any) => r.kind === 'e1'), true);
 

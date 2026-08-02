@@ -96,10 +96,10 @@ category('Dapi: domains batch', () => {
         [{sku: `${p}-ok`, quantity: 1}, {sku: `${p}-bad`, quantity: -5}], {allOrNothing: false});
       expect(res.inserted, 1);
       expect(res.errorCount, 1);
-      const bad = res.rows.find((r: any) => r.status === 'error');
+      const bad = res.rows.find((r) => r.status === 'error');
       expect(bad != null, true, 'no error row in the report');
-      expect(bad.index, 1);
-      expect(bad.errors[0].column, 'quantity');
+      expect(bad!.index, 1);
+      expect(bad!.errors![0].column, 'quantity');
     } finally {
       await purge(p);
     }
@@ -123,9 +123,9 @@ category('Dapi: domains batch', () => {
     ]);
     try {
       expect(res.length, 3);
-      expect(res[0].created, true);
-      expect(res[1].created, true);
-      expect(res[2].version, 2);
+      expect((res[0] as _DG.DomainInsertResult).created, true);
+      expect((res[1] as _DG.DomainInsertResult).created, true);
+      expect((res[2] as _DG.DomainUpdateResult).version, 2);
       const rows = await items().query({filter: `sku = "${key}"`, expand: ['details:item_event']});
       expect(rows[0].item_event.length, 1);
       expect(rows[0].item_event[0].kind, 'created');
@@ -156,7 +156,7 @@ category('Dapi: domains batch', () => {
       await items().batch([
         {sku: `${p}-1`, name: 'AgA', quantity: 1}, {sku: `${p}-2`, name: 'AgA', quantity: 2},
         {sku: `${p}-3`, name: 'AgB', quantity: 3}, {sku: `${p}-4`, name: 'AgB', quantity: 4}]);
-      const res = await items().aggregate({
+      const res = await items().aggregate<string, string>({
         groupBy: ['name'],
         measures: [{fn: 'count'}, {fn: 'sum', column: 'quantity'}, {fn: 'max', column: 'quantity', as: 'top'}],
         filter: `sku starts "${p}"`,

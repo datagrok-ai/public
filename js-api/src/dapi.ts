@@ -31,6 +31,25 @@ import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
 import dayjs from 'dayjs';
 import {DbInfo} from "./data";
+import {
+  DomainAggregateRow,
+  DomainAggregateSpec,
+  DomainAuditEntry,
+  DomainBatchOptions,
+  DomainBatchReport,
+  DomainFacetKind,
+  DomainFacetResultOf,
+  DomainFacetsSpec,
+  DomainInsertResult,
+  DomainOpResult,
+  DomainQuerySpec,
+  DomainRowInsert,
+  DomainSavedFilterInfo,
+  DomainTableClientOptions,
+  DomainTransactionOp,
+  DomainUpdateResult,
+  domainCall,
+} from './domains';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -1054,147 +1073,6 @@ export class SpaceFilesClient {
   }
 }
 
-/** Query options for {@link DomainTableClient.query} and {@link DomainTableClient.queryDf}. */
-export interface DomainQuerySpec {
-  /** Smart-filter string (same grammar as entity search), e.g. `barcode starts "P-1" and organism = "human"`. */
-  filter?: string;
-  /** Comma-separated column list; `!` prefix for descending, e.g. `'name,!created_on'`. */
-  sort?: string;
-  /** Columns to return; omit for all viewable columns. */
-  columns?: string[];
-  /** Expansions (same-schema, depth 1): `'<fk_column>'` returns the master row's declared
-   * columns prefixed `'<fk_column>.<name>'`; `'details:<table>[.<fk_column>]'` returns capped
-   * child-row arrays under the child-table name (JSON queries only — not supported by
-   * {@link DomainTableClient.queryDf}). */
-  expand?: string[];
-  limit?: number;
-  offset?: number;
-}
-
-/** One measure of {@link DomainAggregateSpec}: `fn` over `column` (`count` needs no column);
- * the output name is `as` (defaults to `fn` or `<fn>_<column>`). */
-export interface DomainAggregateMeasure {
-  fn: 'count' | 'sum' | 'avg' | 'min' | 'max';
-  column?: string;
-  as?: string;
-}
-
-/** Spec for {@link DomainTableClient.aggregate}. */
-export interface DomainAggregateSpec {
-  /** Column names to group by; omit for a single-row grand total. */
-  groupBy?: string[];
-  measures: DomainAggregateMeasure[];
-  /** Smart-filter string applied before aggregation. */
-  filter?: string;
-  /** Comma-separated output names (group columns or measure aliases); `!` prefix for descending. */
-  sort?: string;
-  limit?: number;
-}
-
-/** One operation of {@link DomainsDataSource.transaction}. */
-export interface DomainTransactionOp {
-  op: 'insert' | 'update' | 'delete';
-  /** Table name within the transaction's schema. */
-  table: string;
-  /** Names this op's new row id; later ops may reference it in values as `'$<ref>'`
-   * (escape a literal leading `$` in a value by doubling it: `'$$100'` stores `'$100'`). */
-  ref?: string;
-  values?: object;
-  id?: string;
-  /** Optimistic-concurrency guard for update ops. */
-  expectedVersion?: number;
-}
-
-/** Options for {@link DomainTableClient.batch}. */
-export interface DomainBatchOptions {
-  /** `'insert'` (default) or `'upsert'` (merge by the table's business key). */
-  mode?: 'insert' | 'upsert';
-  /** Abort the whole batch on any row error (default true); false applies good rows
-   * and reports bad ones per row. */
-  allOrNothing?: boolean;
-  /** Report business-key duplicates as errors instead of skipping them. */
-  errorOnDuplicate?: boolean;
-  /** Payload format for `Uint8Array` data: `'d42'` (default; `DataFrame.toByteArray()` output)
-   * or `'parquet'` (converted client-side via the Arrow package — fails with a clear error when
-   * Arrow is not installed). Ignored for other payloads — the format is inferred:
-   * DataFrame → sent as d42, string → `'csv'`, object[] → `'json'`. */
-  format?: 'csv' | 'd42' | 'parquet' | 'json';
-}
-
-/** Batch upload report of {@link DomainTableClient.batch}. */
-export interface DomainBatchReport {
-  inserted: number;
-  updated: number;
-  skipped: number;
-  errorCount: number;
-  /** Per-row outcomes `{index, id?, status, errors?}`; capped server-side. */
-  rows: any[];
-  /** Set when the batch failed but a per-row report is available (e.g. an allOrNothing abort). */
-  error?: string;
-}
-
-/** Insert payload for {@link DomainTableClient.insert}: row values plus an optional
- * idempotency key (for tables that declare `"idempotency": true`). */
-export type DomainRowInsert<TRow> = Partial<TRow> & {idempotencyKey?: string};
-
-/** One facet request of {@link DomainFacetsSpec}; `id` keys its result in the response. */
-export interface DomainFacetSpec {
-  /** Response key for this facet's result. */
-  id: string;
-  kind: 'categories' | 'histogram' | 'minMax' | 'count' | 'plan';
-  /** Column name; `'categories'` also accepts a dotted FK path (e.g. `'category_id.name'`, up to
-   * 3 hops — the counts respect the referenced table's row predicate). Not used by `'count'`/`'plan'`. */
-  column?: string;
-  /** `'plan'` only: columns to profile (capped distinct count plus numeric/datetime min/max). */
-  columns?: string[];
-  /** `'categories'` only: category cap (default 100, clamped to 1..1000); the result carries
-   * `hasMore` when more remain — narrow with `search` instead of raising the cap. */
-  limit?: number;
-  /** `'categories'` only: server-side substring narrowing (compiled as a bound ILIKE). */
-  search?: string;
-  /** `'histogram'` only: bucket count (default 20, clamped to 1..200). */
-  bins?: number;
-  /** `'histogram'` only: pinned lower bound (a number, or an ISO-8601 string for datetime columns)
-   * so zooming does not re-derive the axis; omit to bucket over the data bounds. */
-  min?: number | string;
-  /** `'histogram'` only: pinned upper bound (see `min`). */
-  max?: number | string;
-}
-
-/** Spec for {@link DomainTableClient.facets}: one request computes every facet in a single round
- * trip. Category counts, histogram buckets, and `'count'` are computed under `filter` with the
- * conditions on that facet's own column stripped, so a filter control shows counts under all
- * OTHER filters (classic faceted search). Exception: `'minMax'`, `'plan'`, and histogram BOUNDS
- * are computed under the row predicate only — the stable-axis rule ignores `filter` so a
- * narrowing filter never re-derives the axis. At most 32 facets per request. */
-export interface DomainFacetsSpec {
-  /** Condition tree (the visual-query `filter` shape); omit for unfiltered counts. */
-  filter?: any[];
-  facets: DomainFacetSpec[];
-}
-
-/** One category bucket of a `'categories'` facet: `total` ignores the filter, `filtered` respects
- * it (minus the facet's own column); ref columns group by id and carry the referenced row's
- * display name in `display`. */
-export interface DomainFacetCategory {
-  value: any;
-  display?: string;
-  total: number;
-  filtered: number;
-}
-
-/** A saved filter preset of a domain table — a small shareable entity carrying the filter
- * panel's state maps verbatim (see {@link DomainSavedFiltersClient}). */
-export interface DomainSavedFilterInfo {
-  id: string;
-  name: string;
-  friendlyName: string;
-  /** Per-column filter states (the shape `DG.FilterGroup` saves), stored verbatim. */
-  states: {[column: string]: any};
-  /** The preset's author (preserved on in-place updates). */
-  author?: any;
-}
-
 /**
  * Generic client for domain tables — entity-mapped PostgreSQL schemas that plugins
  * declare via `databases/<schema>/schema.json` manifests. Rows are plain JSON objects;
@@ -1213,19 +1091,24 @@ export class DomainsDataSource {
 
   /** Returns a client for the domain table addressed as `'<schema>.<table>'`, e.g. `'plates.plate'`.
    * Pass a row interface for a typed client: `grok.dapi.domains.table<PlateRow>('plates.plate')`;
-   * pass an insert interface as the second argument to also gate {@link DomainTableClient.insert}. */
-  table<TRow = any, TInsert = DomainRowInsert<TRow>>(name: string): DomainTableClient<TRow, TInsert> {
+   * pass an insert interface as the second generic to also gate {@link DomainTableClient.insert},
+   * a column-name union as the third to compile-check filters/columns/sorts, and an expand map
+   * as the fourth to compile-check expand keys (`grok api`-generated clients pass all four). */
+  table<TRow = any, TInsert = DomainRowInsert<TRow>, TColumn extends string = string,
+      TExpand extends {[key: string]: {}} = {[key: string]: {}}>(
+    name: string, options?: DomainTableClientOptions): DomainTableClient<TRow, TInsert, TColumn, TExpand> {
     const dot = name.indexOf('.');
     if (dot < 1 || dot === name.length - 1)
       throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
-    return new DomainTableClient<TRow, TInsert>(this.dart, name.substring(0, dot), name.substring(dot + 1));
+    return new DomainTableClient<TRow, TInsert, TColumn, TExpand>(
+      this.dart, name.substring(0, dot), name.substring(dot + 1), options);
   }
 
   /** Executes ordered [ops] atomically within domain schema [schema]; any failure rolls the
    * whole transaction back (the error carries `opIndex`). Resolves to ordered per-op results
    * shaped like the corresponding single-op endpoints. */
-  transaction(schema: string, ops: DomainTransactionOp[]): Promise<any[]> {
-    return api.grok_Dapi_Domains_Transaction(this.dart, schema, ops);
+  transaction(schema: string, ops: DomainTransactionOp[]): Promise<DomainOpResult[]> {
+    return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
   }
 }
 
@@ -1235,50 +1118,74 @@ export class DomainsDataSource {
  * Pass a row interface as `TRow` for typed reads/writes, and an insert interface
  * as `TInsert` so {@link insert} enforces required columns (`grok api`-generated
  * clients pass both; see {@link DomainsDataSource.table}). */
-export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
+export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
+    TColumn extends string = string,
+    TExpand extends {[key: string]: {}} = {[key: string]: {}}> {
   dart: any;
+  private readonly _datetimeColumns?: string[];
 
-  constructor(dart: any, public readonly schema: string, public readonly table: string) {
+  constructor(dart: any, public readonly schema: string, public readonly table: string,
+              options?: DomainTableClientOptions) {
     this.dart = dart;
+    this._datetimeColumns = options?.datetimeColumns;
+  }
+
+  /** Materializes the declared datetime columns as dayjs on JSON reads
+   * ({@link DomainTableClientOptions.datetimeColumns} — generated clients opt in;
+   * untyped clients keep ISO strings). */
+  private _fromWire(row: any): any {
+    if (row != null && this._datetimeColumns != null)
+      for (const c of this._datetimeColumns)
+        if (typeof row[c] === 'string')
+          row[c] = dayjs(row[c]);
+    return row;
   }
 
   /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap). */
-  query(spec: DomainQuerySpec = {}): Promise<TRow[]> {
-    return api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec);
+  async query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<TRow[]> {
+    const rows = await domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec));
+    return this._datetimeColumns == null ? rows : rows.map((r: any) => this._fromWire(r));
   }
 
   /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
    * 10M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
    * `.choices`, and semantic types; system columns are untagged. `'details:'` expand is
    * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns. */
-  queryDf(spec: DomainQuerySpec = {}): Promise<DataFrame> {
-    return api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec);
+  queryDf(spec: DomainQuerySpec<TColumn, keyof TExpand & string> = {}): Promise<DataFrame> {
+    return domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
   }
 
   /** Grouped aggregation over the rows and columns visible to the caller;
-   * resolves to result rows named by group column / measure alias. */
-  aggregate(spec: DomainAggregateSpec): Promise<any[]> {
-    return api.grok_Dapi_Domains_Aggregate(this.dart, this.schema, this.table, spec);
+   * resolves to result rows named by group column / measure alias. Alias measures with `as`
+   * (and pass literal groupBy) to get typed result keys; without them, cast or use `aggregateDf`. */
+  aggregate<TGroup extends string = never, TAlias extends string = never>(
+    spec: DomainAggregateSpec<TColumn, TGroup, TAlias>): Promise<DomainAggregateRow<TGroup | TAlias>[]> {
+    return domainCall(api.grok_Dapi_Domains_Aggregate(this.dart, this.schema, this.table, spec));
   }
 
-  /** Fetches one row by id; resolves to null if the row does not exist or is not visible. */
-  get(id: string): Promise<TRow> {
-    return api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id);
+  /** Fetches one row by id; resolves to null if the row does not exist or is not visible
+   * (typed `TRow` for backward compatibility — guard against null, or use `first`). */
+  async get(id: string): Promise<TRow> {
+    return this._fromWire(await domainCall(api.grok_Dapi_Domains_GetRow(this.dart, this.schema, this.table, id)));
   }
 
   /** Inserts a single row or a small array of rows; resolves to per-row reports
-   * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match).
+   * (`{id, created}`, or `{status: 'duplicate', existingId}` on a business-key match —
+   * pass `options.errorOnDuplicate` to reject duplicates with a
+   * {@link DomainValidationError} instead, its `isDuplicate` set).
    * For tables that declare `"idempotency": true`, pass an `idempotencyKey` (UUID) row field
    * to make retries safe: a replay returns the existing id with `status: 'idempotent-replay'`. */
-  insert(rows: TInsert | TInsert[]): Promise<any[]> {
-    return api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows);
+  insert(rows: TInsert | TInsert[], options?: {errorOnDuplicate?: boolean}): Promise<DomainInsertResult[]> {
+    return domainCall(api.grok_Dapi_Domains_Insert(this.dart, this.schema, this.table, rows,
+      options?.errorOnDuplicate ?? false));
   }
 
   /** Partially updates a row; pass `options.version` (the version the client last read) for
-   * optimistic concurrency — the update fails with a version conflict if the row has changed
-   * since. Resolves to the updated row (its `version` is incremented on every update). */
-  update(id: string, values: Partial<TRow>, options?: {version?: number}): Promise<any> {
-    return api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version);
+   * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
+   * row has changed since. Resolves to the updated row (its `version` is incremented on every
+   * update). */
+  update(id: string, values: Partial<TRow>, options?: {version?: number}): Promise<DomainUpdateResult> {
+    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
   }
 
   /** Bulk upload: a DataFrame (sent as d42), a CSV string, an array of row objects, or raw
@@ -1289,23 +1196,24 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
   batch(data: DataFrame | string | object[] | Uint8Array, options: DomainBatchOptions = {}): Promise<DomainBatchReport> {
     const format = data instanceof DataFrame ? 'df' : typeof data === 'string' ? 'csv' :
       data instanceof Uint8Array ? (options.format ?? 'd42') : 'json';
-    return api.grok_Dapi_Domains_Batch(this.dart, this.schema, this.table,
-      data instanceof DataFrame ? data.dart : data, format, options);
+    return domainCall(api.grok_Dapi_Domains_Batch(this.dart, this.schema, this.table,
+      data instanceof DataFrame ? data.dart : data, format, options));
   }
 
-  /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations). */
+  /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations;
+   * a restrict reference rejects with a {@link DomainRestrictError}). */
   delete(id: string): Promise<void> {
-    return api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id);
+    return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));
   }
 
   /** Creates the entities row for a domain row so it can be individually shared. */
-  promote(id: string): Promise<any> {
-    return api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id);
+  promote(id: string): Promise<{id: string; promoted: boolean}> {
+    return domainCall(api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id));
   }
 
   /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
-  audit(id: string): Promise<any[]> {
-    return api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id);
+  audit(id: string): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id));
   }
 
   /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,
@@ -1316,8 +1224,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>> {
    * `{min, max, buckets, totalBuckets, nulls}` — `buckets` counted under the other filters,
    * `totalBuckets` under the row predicate only (datetime bounds are ISO-8601 strings), `'minMax'` as
    * `{min, max}`, `'count'` as `{count}`, `'plan'` as `{columns: [{name, distinct, min?, max?}]}`. */
-  facets(spec: DomainFacetsSpec): Promise<{facets: {[id: string]: any}}> {
-    return api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec);
+  facets<TId extends string = string, TKind extends DomainFacetKind = DomainFacetKind>(
+    spec: DomainFacetsSpec<TColumn, TId, TKind>): Promise<{facets: {[K in TId]: DomainFacetResultOf<TKind>}}> {
+    return domainCall(api.grok_Dapi_Domains_Facets(this.dart, this.schema, this.table, spec));
   }
 
   /** Saved filter presets of this table — shareable entities carrying filter panel states. */
@@ -1340,18 +1249,18 @@ export class DomainSavedFiltersClient {
 
   /** Presets of this table visible to the current user, ordered by name. */
   list(): Promise<DomainSavedFilterInfo[]> {
-    return api.grok_Dapi_Domains_ListFilters(this.dart, this.schema, this.table);
+    return domainCall(api.grok_Dapi_Domains_ListFilters(this.dart, this.schema, this.table));
   }
 
   /** Saves a preset for the caller; pass `options.id` to update an existing preset in place
    * (the original author is preserved). Resolves to the saved preset. */
   save(name: string, states: {[column: string]: any}, options?: {id?: string}): Promise<DomainSavedFilterInfo> {
-    return api.grok_Dapi_Domains_SaveFilter(this.dart, this.schema, this.table, name, states, options?.id);
+    return domainCall(api.grok_Dapi_Domains_SaveFilter(this.dart, this.schema, this.table, name, states, options?.id));
   }
 
   /** Deletes a preset (requires the entity Delete permission). */
   delete(id: string): Promise<void> {
-    return api.grok_Dapi_Domains_DeleteFilter(this.dart, id);
+    return domainCall(api.grok_Dapi_Domains_DeleteFilter(this.dart, id));
   }
 }
 

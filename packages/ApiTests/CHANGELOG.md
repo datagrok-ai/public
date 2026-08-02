@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20598: Adapted the domain suites to the typed js-api domain surface (WO-1): condition-tree filters now compile without `as any`, facet results are per-kind typed (casts on heterogeneous batches), batch report rows / transaction results / audit entries are typed; no behavior changes.
+
 GROK-20591: Added the `Dapi: domain filters` suite — batched facets round trip (categories/histogram/minMax/count under a condition-tree filter), FK-path filtering (dotted tree through `query` + path categories facet), and saved filter presets (save, list, in-place update, entity sharing via `grok.dapi.permissions`, delete) over the package's own `apitests` schema.
 
 GROK-20572: Added the `Dapi: domain visual queries` suite — `TableQueryBuilder` (select/where/sortBy/limit and an aggregation) over the virtual `Domain` connection of the package's own `apitests` domain schema, plus the raw-SQL refusal. Self-skips when the schema or its connection is not deployed.
