@@ -332,6 +332,22 @@ export type DomainOpResultFor<TOp> =
   TOp extends {op: 'update'} ? DomainUpdateResult :
   TOp extends {op: 'delete'} ? DomainDeleteResult : DomainOpResult;
 
+/** Runs [action], retrying on DomainVersionConflictError (for transaction-based
+ * read-modify-write flows — put the fresh read INSIDE [action]); rethrows anything else
+ * and the final conflict. Default 5 retries. */
+export async function retryOnVersionConflict<T>(
+    action: () => Promise<T>, options?: {maxRetries?: number}): Promise<T> {
+  const maxRetries = options?.maxRetries ?? 5;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await action();
+    } catch (e) {
+      if (attempt >= maxRetries || !(e instanceof DomainVersionConflictError))
+        throw e;
+    }
+  }
+}
+
 /** Minimal structural client the builder executes against (avoids a domains.ts → dapi.ts cycle). */
 export interface IDomainQueryExecutor<TRow> {
   query(spec: any): Promise<TRow[]>;

@@ -32,6 +32,7 @@ import {CsvImportOptions} from "./const";
 import dayjs from 'dayjs';
 import {DbInfo} from "./data";
 import {
+  DOMAIN_SYSTEM_COLUMNS,
   DomainAggregateRow,
   DomainAggregateSpec,
   DomainAuditEntry,
@@ -44,6 +45,7 @@ import {
   DomainFilter,
   DomainGrant,
   DomainInsertResult,
+  DomainNotFoundError,
   DomainOpResult,
   DomainOpResultFor,
   DomainPermission,
@@ -58,6 +60,7 @@ import {
   DomainValidationError,
   DomainVersionConflictError,
   domainCall,
+  retryOnVersionConflict,
 } from './domains';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -1448,6 +1451,45 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * everyone-visible core schema. */
   restoreColumnVisibility(column: TColumn): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_RestoreColumnVisibility(this.dart, this.schema, this.table, column));
+  }
+
+  /** Insert-or-update by row identity: no id → insert; id → version-checked partial update
+   * (uses row.version when present). System columns other than the addressing id/version are
+   * stripped from the payload, so spreading a read row is safe. Resolves to the row merged
+   * with the new id/version — NB: re-saving an OLD object after a successful save carries its
+   * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
+   * row. */
+  async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
+    const values: any = {};
+    for (const k of Object.keys(row))
+      if (!(DOMAIN_SYSTEM_COLUMNS as readonly string[]).includes(k))
+        values[k] = (row as any)[k];
+    if (row.id == null) {
+      const [res] = await this.insert(values);
+      return {...(row as any), id: res.id, version: res.version ?? 1};
+    }
+    const res = await this.update(row.id, values, row.version != null ? {version: row.version} : undefined);
+    return {...(row as any), id: res.id, version: res.version};
+  }
+
+  /** Read-modify-write with optimistic retry: fetches the fresh row, applies [mutate], writes
+   * with the fresh version; retries on DomainVersionConflictError (default 5 attempts).
+   * [mutate] returning null skips the write (resolves null). Rejects
+   * {@link DomainNotFoundError} when the row is invisible/absent. For multi-op flows
+   * (e.g. a guarded transaction), use `DG.retryOnVersionConflict` directly with the fresh
+   * read inside the action. */
+  updateWithRetry(id: string, mutate: (fresh: TRow) => Partial<TRow> | null,
+      options?: {maxRetries?: number}): Promise<DomainUpdateResult | null> {
+    return retryOnVersionConflict(async () => {
+      const fresh = await this.get(id);
+      if (fresh == null)
+        throw new DomainNotFoundError(`Row "${id}" not found in ${this.schema}.${this.table}`,
+          404, {error: 'not-found', id: id});
+      const values = mutate(fresh);
+      if (values == null)
+        return null;
+      return await this.update(id, values, {version: (fresh as any).version});
+    }, options);
   }
 
   /** Saved filter presets of this table — shareable entities carrying filter panel states. */

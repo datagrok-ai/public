@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20604: Added optimistic-concurrency helpers: `DomainTableClient.save(row)` (insert-or-update by identity, system columns stripped, version-checked), `updateWithRetry(id, mutate)` (read-modify-write with typed conflict retry), and `DG.retryOnVersionConflict(action)` for transaction-based flows.
 * GROK-20603: Added the fluent domain surface: thenable `DomainQueryBuilder` off bare `query()` (`.where/.orderBy/.select/.expand/.top/.skip` + `.df()/.first()/.count()/.exists()`), bound-condition helpers `cond`/`and`/`or` (any string value expressible — values are never interpolated), `DomainOpResultFor`, and mapped-tuple `transaction()` (tuple ops literals get per-op result types).
 * GROK-20603: BEHAVIOR NOTE: bare `table.query()` now returns an awaitable builder instead of a Promise — `await table.query()` is unchanged, but Promise-typed assignments and `.catch()/.finally()` on the bare call no longer compile (wrap in `try { await ... } catch`, or pass an explicit spec: `query({})`).
 * GROK-20602: BREAKING: `grok api`-generated domain clients now type datetime columns (including `created_on`/`updated_on`) as dayjs `Dayjs` and pass `datetimeColumns` so JSON reads materialize dayjs objects; untyped `grok.dapi.domains.table('s.t')` clients keep ISO strings. Regenerate `src/generated/db.ts` and fix call sites that treated datetimes as strings.

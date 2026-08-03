@@ -81,17 +81,16 @@ export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
     return x instanceof DG.SemanticValue && typeof x.value === 'string' ? x.value : null;
   }
 
-  /** Resolves a `GRIT-123` handle (project key + per-project number) to its issue row. */
+  /** Resolves a `GRIT-123` handle (project key + per-project number) to its issue row
+   * via the business-key lookups (`project.key`, then `issue.(project_id, number)`). */
   private async resolveHandle(handle: string): Promise<IssueRow | null> {
     const m = ISSUE_HANDLE_RE.exec(handle);
     if (m == null)
       return null;
-    const projects = await gritDb.project.query({filter: `key = "${m[1]}"`, limit: 1});
-    if (projects.length === 0)
+    const project = await gritDb.project.getByKey({key: m[1]});
+    if (project == null)
       return null;
-    const issues = await gritDb.issue.query(
-      {filter: `project_id = "${projects[0].id}" and number = ${m[2]}`, limit: 1});
-    return issues.length === 1 ? issues[0] : null;
+    return await gritDb.issue.getByKey({project_id: project.id, number: Number(m[2])});
   }
 
   /** Card for a handle typed into search: resolves asynchronously, shows the issue,
@@ -202,8 +201,8 @@ export class GritIssueHandler extends DG.ObjectHandler<DG.DomainRow> {
     const audit = await gritDb.issue.audit(row.id);
     if (audit.length === 0)
       return ui.divText('No changes recorded.');
-    return ui.divV(audit.map((a: any) => {
-      const who = users.get(a.actor_id) ?? 'unknown';
+    return ui.divV(audit.map((a) => {
+      const who = users.get(a.actor_id ?? '') ?? 'unknown';
       const when = a.ts?.substring(0, 16).replace('T', ' ') ?? '';
       const changes = a.op === 'update' && a.after != null ?
         ': ' + Object.keys(a.after).map((k) => `${k} → ${a.after[k]}`).join(', ') : '';

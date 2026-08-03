@@ -4,33 +4,27 @@ import * as DG from 'datagrok-api/dg';
 import {inventoryDb, ItemsRow, StockMovementsReason} from './generated/db';
 
 const reasons: StockMovementsReason[] = ['received', 'shipped', 'adjustment', 'damaged', 'returned'];
-const systemColumns = ['id', 'version', 'created_on', 'updated_on', 'author_id'];
 
 /** Adjusts the stock of [itemId] by [delta] using optimistic concurrency: reads the
  * fresh row, then atomically updates `quantity` (guarded by its `version`) and logs
  * the `stock_movements` row in one transaction — either both land or neither does.
- * Retries with a fresh read on a version conflict (a concurrent adjustment bumped
- * the version between the read and the write). */
+ * `DG.retryOnVersionConflict` re-runs the whole read+write on a typed
+ * DomainVersionConflictError (a concurrent adjustment bumped the version between
+ * the read and the write) — no error-message matching. */
 export async function adjustStock(itemId: string, delta: number, reason: StockMovementsReason,
   maxRetries: number = 5): Promise<ItemsRow> {
-  for (let attempt = 0; ; attempt++) {
+  return await DG.retryOnVersionConflict(async () => {
     const item = await inventoryDb.items.get(itemId);
     if (item == null)
       throw new Error('Item not found or not visible');
     const quantity = (item.quantity ?? 0) + delta;
-    try {
-      const [updated] = await inventoryDb.transaction([
-        {op: 'update', table: 'items', id: itemId, values: {quantity: quantity}, expectedVersion: item.version},
-        {op: 'insert', table: 'stock_movements',
-          values: {item_id: itemId, delta: delta, reason: reason, moved_on: new Date().toISOString()}},
-      ]);
-      // the mapped-tuple transaction types the first result as DomainUpdateResult
-      return {...item, quantity: quantity, version: updated.version};
-    } catch (e: any) {
-      if (attempt >= maxRetries || !`${e?.message ?? e}`.includes('Version conflict'))
-        throw e;
-    }
-  }
+    const [updated] = await inventoryDb.transaction([
+      {op: 'update', table: 'items', id: itemId, values: {quantity: quantity}, expectedVersion: item.version},
+      {op: 'insert', table: 'stock_movements',
+        values: {item_id: itemId, delta: delta, reason: reason, moved_on: new Date().toISOString()}},
+    ]);
+    return {...item, quantity: quantity, version: updated.version};
+  }, {maxRetries});
 }
 
 /** Minimal inventory app over the typed clients that `grok api` generates from
@@ -95,7 +89,7 @@ export class InventoryApp {
     }
     df.name = 'Inventory items';
     const grid = DG.Viewer.grid(df);
-    for (const c of systemColumns)
+    for (const c of DG.DOMAIN_SYSTEM_COLUMNS)
       if (grid.col(c) != null)
         grid.col(c)!.visible = false;
     grid.root.style.width = '100%';
@@ -106,9 +100,10 @@ export class InventoryApp {
   async refreshAggregation(): Promise<void> {
     ui.empty(this.aggHost);
     this.aggHost.appendChild(ui.loader());
-    let rows: any[];
+    let df: DG.DataFrame;
     try {
-      rows = await inventoryDb.items.aggregate({
+      // aggregateDf returns the typed frame directly — no fromObjects bridge.
+      df = await inventoryDb.items.aggregateDf({
         groupBy: ['location'],
         measures: [
           {fn: 'sum', column: 'quantity', as: 'stock_on_hand'},
@@ -122,11 +117,10 @@ export class InventoryApp {
       return;
     }
     ui.empty(this.aggHost);
-    if (rows.length === 0) {
+    if (df.rowCount === 0) {
       this.aggHost.appendChild(ui.divText('No items to aggregate.'));
       return;
     }
-    const df = DG.DataFrame.fromObjects(rows)!;
     df.name = 'Stock on hand by location';
     const grid = DG.Viewer.grid(df);
     grid.root.style.width = '100%';

@@ -276,6 +276,46 @@ category('Dapi: domain parity', () => {
       'expanded child instant must equal the top-level read');
   });
 
+  test('save: insert-or-update by identity; stale saves reject typed', async () => {
+    const saved = await items().save({sku: sku(), name: 'save probe', quantity: 1});
+    ids.push(saved.id);
+    expect(saved.version, 1, 'insert path must resolve version 1');
+    const again = await items().save({...saved, quantity: 2});
+    expect(again.version, 2, 'update path must carry the fresh version back');
+    expect((await items().get(saved.id)).quantity, 2);
+    // Re-saving the OLD object carries its stale version — typed conflict, not a lie.
+    const stale = await thrown(() => items().save({...saved, quantity: 3}));
+    expect(stale instanceof DG.DomainVersionConflictError, true,
+      `expected DomainVersionConflictError, got ${stale?.constructor?.name}: ${stale?.message}`);
+  });
+
+  test('optimistic retry helpers converge under a forced conflict', async () => {
+    const [ins] = await items().insert({sku: sku(), name: 'retry probe', quantity: 0});
+    ids.push(ins.id);
+    // retryOnVersionConflict: the first attempt loses to an out-of-band bump
+    // fired between its fresh read and its write; the second converges.
+    let attempts = 0;
+    const res = await DG.retryOnVersionConflict(async () => {
+      attempts++;
+      const fresh = await items().get(ins.id);
+      if (attempts === 1)
+        await items().update(ins.id, {quantity: 1}, {version: fresh.version});
+      return await items().update(ins.id, {quantity: 2}, {version: fresh.version});
+    });
+    expect(attempts, 2, 'the first attempt must conflict, the second converge');
+    expect(res.version, 3);
+
+    // updateWithRetry: mutate sees the fresh row; null skips; unknown id rejects typed.
+    const upd = await items().updateWithRetry(ins.id, (fresh) => ({quantity: (fresh.quantity ?? 0) + 5}));
+    expect(upd?.version, 4);
+    expect((await items().get(ins.id)).quantity, 7);
+    expect(await items().updateWithRetry(ins.id, () => null), null, 'null mutate must skip the write');
+    const nf = await thrown(() =>
+      items().updateWithRetry('00000000-0000-0000-0000-000000000000', () => ({quantity: 1})));
+    expect(nf instanceof DG.DomainNotFoundError, true,
+      `expected DomainNotFoundError, got ${nf?.constructor?.name}: ${nf?.message}`);
+  });
+
   test('auditLog: newest first, typed entries', async () => {
     const [ins] = await items().insert({sku: sku(), name: 'audit probe', quantity: 1});
     ids.push(ins.id);

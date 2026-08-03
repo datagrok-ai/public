@@ -13,9 +13,10 @@ category('Inventory', () => {
   const prefix = () => `INV-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 
   async function purge(p: string): Promise<void> {
-    const rows = await items().query({filter: `sku starts "${p}"`, limit: 1000});
-    for (const r of rows)
-      await items().delete(r.id); // stock_movements cascade with their item
+    // One filtered bulk delete (stock_movements cascade with their item).
+    for (let guard = 0; guard < 100; guard++)
+      if (!(await items().deleteWhere(`sku starts "${p}"`)).hasMore)
+        return;
   }
 
   test('schema registration', async () => {
@@ -91,13 +92,15 @@ category('Inventory', () => {
     const [ins] = await items().insert({sku: `${p}-1`, name: 'Contended', quantity: 10, location: 'A'});
     try {
       await items().update(ins.id, {name: 'Contended 2'}, {version: 1});
-      let conflict = '';
+      let conflict: any = null;
       try {
         await items().update(ins.id, {name: 'Contended 3'}, {version: 1});
       } catch (e: any) {
-        conflict = e.message ?? `${e}`;
+        conflict = e;
       }
-      expect(conflict.includes('Version conflict'), true, `unexpected error: '${conflict}'`);
+      expect(conflict instanceof DG.DomainVersionConflictError, true,
+        `unexpected error: '${conflict?.message ?? conflict}'`);
+      expect(conflict.currentVersion, 2);
 
       // Two concurrent adjustments: the loser retries with the fresh version and wins.
       await Promise.all([

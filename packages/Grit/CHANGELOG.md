@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20604: Migrated to the fluent typed surface — builder queries with bound conditions (string-built filters gone), `expand('details:comment')` types the comment array (hand-written ExpandedIssue deleted), `updateWithRetry` replaces the read-then-write patch, `nextNumber` uses `aggregate max(number)`, handle resolution uses business-key `getByKey` lookups, audit rendering is typed `DomainAuditEntry`
 * GROK-20602: BREAKING regen — `grok api` codegen v2: datetime fields are dayjs (comment timeline sorts by `valueOf()`), `status`/`priority` are literal unions checked against the schema, expand keys and transactions are typed, db.ts clients are lazy
 * GROK-20591: Added a declared default filter panel to `issue` (status, assignee, priority, and the project name via FK path) — the Domain View filter panel pre-opens with these
 * GROK-20409: Marked `issue.title` as the primary display-name column (`isName`) — issue titles now caption cards, tooltips, and entity views, and become the friendly names of promoted issues
