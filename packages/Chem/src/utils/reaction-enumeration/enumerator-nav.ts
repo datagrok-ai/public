@@ -204,6 +204,11 @@ export class EnumeratorNav {
     // threshold and never condense, regardless of where the left/right splitter sits when a section
     // is first expanded.
     const CHEM_ENUM_FORM_MIN_WIDTH = 480;
+    // Combination limits/Product filters are panes of limitsAccordion, one accordion level below this
+    // one — the platform's own .d4-accordion (6px padding) + .d4-accordion-pane-content (20px margin)
+    // indent that extra level, so without a matching offset here the rounds/components form's label
+    // column starts 26px to the left of the otherwise-identical 220px column below it.
+    const CHEM_ENUM_NESTED_ACCORDION_INDENT = 26;
     // Independently-collapsible sub-sections within "How to combine" (no forced exclusivity, unlike
     // the outer wizard-navigation accordion).
     const limitsAccordion = ui.accordion();
@@ -221,7 +226,8 @@ export class EnumeratorNav {
         this.deps.configInfoIcon,
       ], {style: {alignItems: 'center', gap: '4px'}}),
       ui.divV([this.stratDepthCard.root, this.stratBreadthCard.root, this.reagentsModeNote], {style: {gap: '6px'}}),
-      ui.form([this.deps.numRoundsInput, this.deps.maxComponentsInput, this.deps.maxRoutesInput]),
+      ui.div([ui.form([this.deps.numRoundsInput, this.deps.maxComponentsInput, this.deps.maxRoutesInput])],
+        {style: {marginLeft: `${CHEM_ENUM_NESTED_ACCORDION_INDENT}px`}}),
       limitsAccordion.root,
       // First pane in the chain — no Back target.
       navRow(null, mkNextBtn(() => this.accReactionsPane, 'Reactions')),
