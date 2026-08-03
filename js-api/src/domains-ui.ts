@@ -112,6 +112,15 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
     return row instanceof DomainRow && row.typeName === this.table ? row : null;
   }
 
+  /** {@link rowOf}, for the members that cannot act without a row: throws a
+   * named error naming the table instead of failing later on a null. */
+  protected rowOrThrow(x: any): DomainRow {
+    const row = this.rowOf(x);
+    if (row == null)
+      throw new Error(`not a ${this.table} row: ${x}`);
+    return row;
+  }
+
   /** The platform's per-table meta, as an {@link EntityMetaDartProxy} — what the
    * default render members delegate to. Never a JS handler (delegating into one
    * would recurse); null only for a table whose address cannot be parsed. Only a
@@ -338,20 +347,21 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   }
 
   /** Opens the platform's create dialog prefilled from [x]. */
-  cloneRow(x: T): Promise<boolean> { return DomainObjectHandler.cloneRow(this.rowOf(x)!); }
+  cloneRow(x: T): Promise<boolean> { return DomainObjectHandler.cloneRow(this.rowOrThrow(x)); }
 
   /** Deletes [x] after the standard confirmation. */
-  deleteRow(x: T): Promise<boolean> { return DomainObjectHandler.deleteRow(this.rowOf(x)!); }
+  deleteRow(x: T): Promise<boolean> { return DomainObjectHandler.deleteRow(this.rowOrThrow(x)); }
 
-  /** Opens the standard sharing flow for [x] (row-mode tables). */
-  shareRow(x: T): Promise<void> { return DomainObjectHandler.shareRow(this.rowOf(x)!); }
+  /** Opens the standard sharing flow for [x] (row-mode tables); resolves when
+   * the sharing dialog is SHOWN, not when sharing is done. */
+  shareRow(x: T): Promise<void> { return DomainObjectHandler.shareRow(this.rowOrThrow(x)); }
 
   /** Shows the row's audit history in the platform's History dialog. */
-  showHistory(x: T): void { DomainObjectHandler.showHistory(this.rowOf(x)!); }
+  showHistory(x: T): void { DomainObjectHandler.showHistory(this.rowOrThrow(x)); }
 
   /** The row's audit history as an embeddable element (the History pane of the
    * built-in context panel). */
-  auditPane(x: T): HTMLElement { return DomainObjectHandler.auditPane(this.rowOf(x)!); }
+  auditPane(x: T): HTMLElement { return DomainObjectHandler.auditPane(this.rowOrThrow(x)); }
 
   /** Opens the platform's row picker for this table; resolves to the picked row
    * or null. */
@@ -386,8 +396,9 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   }
 
   /** Deletes [row] after the platform's confirmation; resolves to whether it was
-   * deleted (false on cancel, and on a failed delete — the dialog stays open
-   * with the server's message). */
+   * deleted — false on cancel, and on a failed delete (a restrict violation, no
+   * Delete permission, a server error), which the platform reports in a balloon
+   * and then closes the dialog. */
   static deleteRow(row: DomainRow): Promise<boolean> {
     return domainCall(api.grok_DomainMeta_ConfirmDelete(toDart(row)));
   }
@@ -395,7 +406,9 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   /** Opens the standard sharing flow for [row]: the row is promoted to an entity
    * (idempotent, needs Share on it) and the platform sharing dialog follows.
    * Row-mode tables only — elsewhere access comes from the securing table, whose
-   * grants are {@link grantsPane}'s subject. */
+   * grants are {@link grantsPane}'s subject. Resolves once the dialog is SHOWN
+   * (promotion done, permission denial already ballooned) — NOT when the user
+   * finishes sharing; subscribe to the platform's sharing events for that. */
   static shareRow(row: DomainRow): Promise<void> {
     return domainCall(api.grok_DomainMeta_ShareRow(toDart(row)));
   }
@@ -414,7 +427,7 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * version), or null when the dialog is dismissed. The caller applies it; the
    * platform's own editors resolve their conflicts through this same dialog. */
   static showConflictDialog(subject: string): Promise<'reload' | 'overwrite' | null> {
-    return api.grok_DomainConflictDialog_Show(subject);
+    return domainCall(api.grok_DomainConflictDialog_Show(subject));
   }
 
   /** The row's audit trail as an embeddable element: who / when / what, newest
@@ -502,11 +515,16 @@ export interface DomainViewOptions {
  * v.showFilters();
  * ```
  *
- * Rows are capped at 1000 (a banner invites refining the filter); {@link query}
- * reports the full current query, so a caller can re-run the uncapped subset.
- * The inherited {@link CardView} members that need a JS-defined data source —
- * `meta`, `objectType`, `searchFields` — do not apply here: the view takes them
- * from the domain registry.
+ * Rows are capped at 1000 (a banner invites refining the filter), and
+ * {@link query} reports that cap as its `limit` — running it reproduces exactly
+ * what the view shows; raise or drop `limit` on the reported params to go past
+ * the cap. The inherited {@link CardView} members that need a JS-defined data
+ * source — `meta`, `objectType`, `searchFields` — do not apply here: the view
+ * takes them from the domain registry, and `meta` throws to say so.
+ *
+ * A view the USER opened by navigating to `/domains/<schema>/<table>` is a plain
+ * `DG.View` in JS (route-opened views are, platform-wide) — wrap its handle to
+ * get this surface: `new DG.DomainView(grok.shell.v.dart)`.
  */
 export class DomainView extends CardView {
   declare dart: any;
@@ -515,10 +533,21 @@ export class DomainView extends CardView {
     super(dart);
   }
 
-  /** Creates the Domain View for a table; the rows load asynchronously. */
+  /** Creates the Domain View for a table; the rows load asynchronously.
+   * Deliberately independent of the `enableDomainDatabases` client flag that
+   * gates the `/domains` pages: calling this API IS the opt-in. */
   static create(options: DomainViewOptions): DomainView {
     return new DomainView(api.grok_DomainView_Create(options));
   }
+
+  /** @throws always — the Domain View takes its object handler from the domain
+   * registry (the per-table `ObjectHandler`), not from a JS-assigned one. */
+  get meta(): ObjectHandler { throw new Error(DomainView._noMeta); }
+  set meta(_: ObjectHandler) { throw new Error(DomainView._noMeta); }
+
+  private static readonly _noMeta =
+    'the Domain View takes its meta from the domain registry: register an ' +
+    'ObjectHandler (DG.DomainObjectHandler) for the table instead';
 
   /** Docks the filter panel (server-backed facets and histograms) — the 'Toggle
    * filters' icon; idempotent. Needs the view to be docked. */

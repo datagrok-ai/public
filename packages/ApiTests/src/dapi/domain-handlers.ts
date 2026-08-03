@@ -352,19 +352,21 @@ category('JS: domain handlers', () => {
   test('DomainView: lists rows, honors permanentFilter, reports its query', async () => {
     const mine = `SKU-DV-${stamp()}`;
     const other = `SKU-DV-${stamp()}`;
-    // sku and name carry the same stamp: whichever the table's name column is,
-    // the rendered row text contains it.
-    const [a] = await items().insert({sku: mine, name: mine});
-    const [b] = await items().insert({sku: other, name: other});
-    // Embedded: a brief DOM list instead of the canvas grid, so the rendered
-    // rows are readable from the test (and the render mode is not remembered).
-    const view = DG.DomainView.create({schema: 'apitests', table: 'item',
-      permanentFilter: `sku = "${mine}"`, embedded: true});
-    grok.shell.addView(view);
+    // One insert inside the try so no partial pair can leak; sku and name carry
+    // the same stamp, so whichever the table's name column is, the rendered row
+    // text contains it.
+    let inserted: {id: string}[] = [];
+    let view: _DG.DomainView | null = null;
     try {
+      inserted = await items().insert([{sku: mine, name: mine}, {sku: other, name: other}]);
+      // Embedded: a brief DOM list instead of the canvas grid, so the rendered
+      // rows are readable from the test (and the render mode is not remembered).
+      view = DG.DomainView.create({schema: 'apitests', table: 'item',
+        permanentFilter: `sku = "${mine}"`, embedded: true});
+      grok.shell.addView(view);
       expect(view instanceof DG.DomainView, true, 'create must resolve a DG.DomainView');
       expect(view.permanentFilter, `sku = "${mine}"`, 'permanentFilter did not round-trip');
-      await awaitCheck(() => view.root.textContent!.includes(mine),
+      await awaitCheck(() => view!.root.textContent!.includes(mine),
         'the permanently filtered row never appeared in the view', 15000);
       expect(view.root.textContent!.includes(other), false,
         'a row outside permanentFilter is listed');
@@ -372,14 +374,37 @@ category('JS: domain handlers', () => {
       expect(q.schema, 'apitests');
       expect(q.table, 'item');
       expect(q.limit! > 0, true, `query must carry the view's row cap: ${JSON.stringify(q)}`);
+      // The reported query is the WHOLE current state: the invisible
+      // permanentFilter is merged into the filter elements like everything else.
+      expect((q.filters ?? []).some((f) => f.includes(mine)), true,
+        `permanentFilter missing from the reported query: ${JSON.stringify(q)}`);
+      // ...and so is what the user typed into the search box.
+      view.searchValue = 'quantity > 0';
+      await awaitCheck(() => (view!.query.filters ?? []).some((f) => f.includes('quantity > 0')),
+        `searchValue never reached the reported query: ${JSON.stringify(view.query)}`, 15000);
+      view.searchValue = '';
+      // The inherited CardView refresh() re-runs the query behind the view.
+      view.refresh();
+      await awaitCheck(() => view!.root.textContent!.includes(mine),
+        'refresh() did not re-list the row', 15000);
       view.showFilters();
-      await awaitCheck(() => view.root.querySelector('.grok-domains-filter-panel') != null,
+      await awaitCheck(() => view!.root.querySelector('.grok-domains-filter-panel') != null,
         'showFilters did not dock the filter panel', 15000);
       view.showFilters();      // idempotent
+      // The registry is the view's meta source — assigning one is refused by name.
+      let assigned = '';
+      try {
+        (view as any).meta = null;
+      } catch (e: any) {
+        assigned = e.message ?? `${e}`;
+      }
+      expect(assigned.includes('domain registry'), true,
+        `DomainView.meta must fail with a named error, got: '${assigned}'`);
     } finally {
-      view.close();
-      await items().delete(a.id);
-      await items().delete(b.id);
+      if (view != null)
+        view.close();
+      for (const r of inserted)
+        await items().delete(r.id);
     }
   });
 

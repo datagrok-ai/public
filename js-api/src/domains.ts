@@ -282,7 +282,9 @@ export interface DomainQueryParams {
   table: string;
   /** Projection; omit for all viewable columns (select mode only). */
   columns?: string[];
-  /** Filter elements, AND-combined. */
+  /** Filter elements, AND-combined. OMITTED, not `[]`, when there are none —
+   * these are the function's parameter values, and it takes no empty lists
+   * (`DomainView.query` on an unfiltered view has no `filters` key). */
   filters?: string[];
   /** Master-FK expands (`'<fk_column>'`); `'details:'` child arrays are not supported. */
   joins?: string[];
