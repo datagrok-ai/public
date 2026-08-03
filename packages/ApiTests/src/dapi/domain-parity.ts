@@ -176,7 +176,8 @@ category('Dapi: domain parity', () => {
     const viaHelpers = await items().query({filter: DG.or(DG.cond('name', '=', name),
       DG.cond('quantity', '>', 1000000000))});
     expect(viaHelpers.length, 1);
-    // Mixing a raw string filter with conditions is a clear client-side error.
+    // Mixing a raw string filter with conditions is a clear client-side error
+    // — in BOTH orders (string→condition and condition→string).
     let err: any = null;
     try {
       items().query().where('name = "x"').where('quantity', '>', 1);
@@ -184,6 +185,13 @@ category('Dapi: domain parity', () => {
       err = e;
     }
     expect(`${err}`.includes('cond()'), true, `${err}`);
+    let err2: any = null;
+    try {
+      items().query().where('quantity', '>', 1).where('name = "x"');
+    } catch (e) {
+      err2 = e;
+    }
+    expect(`${err2}`.includes('cond()'), true, `${err2}`);
   });
 
   test('deleteWhere: filter forms, hasMore drain, empty filter rejects', async () => {

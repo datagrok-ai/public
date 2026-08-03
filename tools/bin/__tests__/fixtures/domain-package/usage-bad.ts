@@ -16,4 +16,15 @@ export async function bad(): Promise<void> {
     {op: 'insert', table: 'sample_event', values: {name: 'wrong-table-values', score: 1}},
   ];
   await testdbDb.transaction(ops);
+  // builder negatives: every chain below must fail on the typed client
+  testdbDb.sample.query().where('nope', '=', 1);
+  testdbDb.sample.query().orderBy('nope');
+  testdbDb.sample.query().select('nope');
+  testdbDb.sample.query().expand('details:nope');
+  const slim = await testdbDb.sample.query().select('name').top(1);
+  const notSelected: number | undefined = slim[0].count;
+  const [insR] = await testdbDb.transaction([
+    {op: 'insert', table: 'sample', values: {name: 'x', score: 1}}]);
+  const badField: boolean = insR.deleted;
+  void notSelected; void badField;
 }

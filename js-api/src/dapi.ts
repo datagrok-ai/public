@@ -1245,12 +1245,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * Prefer the builder's condition forms and the `cond`/`and`/`or` helpers over
    * template-built filter strings — condition values are bound server-side, so any string
    * value is safe (apostrophes included). */
-  query(): DomainQueryBuilder<TRow, TColumn, TExpand> & {df(): Promise<DataFrame>};
+  query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
   /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap). */
   query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
   query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
     if (spec === undefined)
-      return new DomainQueryBuilder<TRow, TColumn, TExpand>(this);
+      return new DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>(this);
     return domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec))
       .then((rows: any) => this._converts ? rows.map((r: any) => this._fromWire(r)) : rows);
   }

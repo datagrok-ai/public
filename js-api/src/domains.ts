@@ -379,9 +379,11 @@ function _joinNodes<TColumn extends string>(
  * bound server-side, so any string value is safe (apostrophes included). Without `.top()`
  * the server's default limit (100) applies; page larger sets with `.top()/.skip()`.
  * Immutable-ish: `expand()`/`select()` return a re-typed builder; other methods mutate
- * and return this. */
+ * and return this. Invariants: the builder is PromiseLike only — there is no
+ * `.catch()`/`.finally()`, use `try { await b } catch`; EVERY `await` (or terminal)
+ * re-executes the query — two awaits are two round trips, cache the rows instead. */
 export class DomainQueryBuilder<TRow, TColumn extends string = string,
-    TExpand extends {[key: string]: {}} = {[key: string]: {}}, TResult = TRow>
+    TExpand extends {[key: string]: {}} = {[key: string]: {}}, TResult = TRow, TDf = any>
     implements PromiseLike<TResult[]> {
   private _conds: DomainConditionTree<TColumn> = [];
   private _rawFilter?: string;
@@ -434,7 +436,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   /** Narrows the projection to [columns] (system columns always ride along). */
   select<K extends TColumn & keyof TRow & string>(...columns: K[]):
       DomainQueryBuilder<TRow, TColumn, TExpand,
-        Pick<TRow, K | Extract<keyof TRow, 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id'>>> {
+        Pick<TRow, K | Extract<keyof TRow, 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id'>>, TDf> {
     this._columns = columns;
     return this as any;
   }
@@ -442,7 +444,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   /** Adds an expand and intersects its fields into the awaited row type
    * (`'details:'` child rows are full child rows — dayjs datetimes included). */
   expand<K extends keyof TExpand & string>(key: K):
-      DomainQueryBuilder<TRow, TColumn, TExpand, TResult & TExpand[K]> {
+      DomainQueryBuilder<TRow, TColumn, TExpand, TResult & TExpand[K], TDf> {
     this._expand.push(key);
     return this as any;
   }
@@ -488,11 +490,12 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
 
   /** The same query as a typed DataFrame (d42; `'details:'` expand is JSON-only and
    * rejected server-side — await the builder for detail arrays instead). */
-  df(): Promise<any> {
+  df(): Promise<TDf> {
     return this.client.queryDf(this._spec());
   }
 
-  /** First matching row or null (forces `top(1)`). */
+  /** First matching row or null. NB: permanently overwrites the builder's limit with 1 —
+   * a later `await` of the same builder returns at most one row. */
   async first(): Promise<TResult | null> {
     this._limit = 1;
     const rows = await this._run();

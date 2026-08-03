@@ -311,7 +311,7 @@ describe('generateDomainClients', () => {
     const res = runTsc(dir, 'usage-bad.ts');
     expect(res.status).not.toBe(0);
     // exactly one error per intended negative — no accidental extra breakage
-    expect(res.output.match(/error TS/g)).toHaveLength(9);
+    expect(res.output.match(/error TS/g)).toHaveLength(15);
     // wrong-typed payload values: `count: string` and `active: string`
     expect(res.output).toContain('usage-bad.ts(5,');
     expect(res.output).toContain('usage-bad.ts(7,');
@@ -328,5 +328,14 @@ describe('generateDomainClients', () => {
     expect(res.output).toMatch(/Type 'string' is not assignable to type 'Dayjs/);
     // transaction values must pair with their table
     expect(res.output).toContain('usage-bad.ts(16,');
+    // builder negatives: unknown where/orderBy/select/expand columns...
+    expect(res.output).toContain('usage-bad.ts(20,');
+    expect(res.output).toContain('usage-bad.ts(21,');
+    expect(res.output).toContain('usage-bad.ts(22,');
+    expect(res.output).toContain('usage-bad.ts(23,');
+    // ...non-selected field access after select()...
+    expect(res.output).toMatch(/Property 'count' does not exist on type 'Pick<SampleRow/);
+    // ...and a field absent from the mapped-tuple insert result
+    expect(res.output).toMatch(/Property 'deleted' does not exist on type 'DomainInsertResult'/);
   });
 });
