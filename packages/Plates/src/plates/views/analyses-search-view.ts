@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {AnalysisManager} from '../../plate/analyses/analysis-manager';
-import {AnalysisProperty, AnalysisQuery, getAnalysisRunGroups, queryAnalysesGeneric, PropertyCondition, allProperties, queryAnalyses} from '../plates-crud';
+import {AnalysisManager, queryAnalyses} from '../../plate/analyses/analysis-manager';
+import {AnalysisProperty, AnalysisQuery, getAnalysisRunGroups, queryAnalysesGeneric, PropertyCondition, allProperties} from '../plates-crud';
 import {NumericMatcher} from '../matchers';
 import './analyses-search-view.css';
 
