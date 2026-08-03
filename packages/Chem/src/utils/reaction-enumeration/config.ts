@@ -19,9 +19,8 @@ export interface ProductsSpecs {
   remove_charged_species: boolean;
 }
 
-// No file-path fields here (template/BB/reagent/output file names, CSV delimiter) — the app never
-// auto-loads a file from config, the user always picks each one manually, so persisting a file name
-// would only ever go stale and mislead (it can't be kept in sync with what's actually loaded).
+// No file-path fields: the app never auto-loads a file from config, so a persisted name could only
+// go stale and mislead.
 export interface EnumerationSpecs {
   smarts_col: string;
   reactant_blocking_groups_per_template_column: string;
@@ -83,11 +82,10 @@ export function configToYaml(c: EnumeratorConfig): string {
   return yaml.dump(cloneConfig(c), {lineWidth: 120, noRefs: true, sortKeys: false});
 }
 
-// Walks `partial` against `defaults`' own shape — DEFAULT_CONFIG already has every field with its
-// correct type, so this needs no separately-maintained schema. Catches the case a hand-edited or
-// corrupted YAML silently carries a wrong-typed value all the way into a numeric comparison at
-// filter time (e.g. a string in a product-filter field makes that filter's `>= 0` check
-// permanently false, disabling it with no indication anything's wrong).
+/** Type-checks `partial` against DEFAULT_CONFIG's own shape, so there's no second schema to keep in
+ * sync. Without it a wrong-typed value from a hand-edited YAML reaches a numeric comparison at
+ * filter time — e.g. a string in a product-filter field makes its `>= 0` check permanently false,
+ * silently disabling that filter. */
 function validateShape(partial: any, defaults: any, path: string, errors: string[]): void {
   for (const k of Object.keys(defaults)) {
     if (!(k in partial)) continue;
@@ -97,26 +95,21 @@ function validateShape(partial: any, defaults: any, path: string, errors: string
       if (!Array.isArray(actual) || !actual.every((x: unknown) => typeof x === 'string'))
         errors.push(`'${path}${k}' must be a list of strings.`);
     } else if (typeof expected === 'object') {
-      // Same reason as configFromYaml's own top-level guard: an array or primitive here would
-      // otherwise recurse as if it were the section's object (silently validating nothing, since
-      // `k in partial` never matches a named key against an array/primitive) or throw a raw
-      // `TypeError: Cannot use 'in' operator...` instead of this function's own clean message.
+      // An array or primitive here would otherwise recurse as if it were the section's object,
+      // validating nothing, or throw a raw TypeError instead of this function's own message.
       if (actual != null && (typeof actual !== 'object' || Array.isArray(actual)))
         errors.push(`'${path}${k}' must be an object.`);
       else
         validateShape(actual ?? {}, expected, `${path}${k}.`, errors);
-    } else if (typeof actual !== typeof expected || (typeof expected === 'number' && !Number.isFinite(actual))) {
+    } else if (typeof actual !== typeof expected || (typeof expected === 'number' && !Number.isFinite(actual)))
       errors.push(`'${path}${k}' must be a ${typeof expected}.`);
-    }
   }
 }
 
 export function configFromYaml(text: string): EnumeratorConfig {
   const raw = yaml.load(text);
-  // typeof [] === 'object' and arrays are always truthy, so a top-level YAML list would otherwise
-  // sail past this guard — every key lookup below (`k in partial`, `partial[k]`) then misses on an
-  // array, so validateShape finds nothing to flag and mergeWithDefaults finds nothing to merge,
-  // silently returning pure defaults with no error at all.
+  // The Array check matters: a top-level YAML list is a truthy 'object', and every key lookup
+  // below then misses on it, so the load would silently return pure defaults with no error.
   if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     throw new Error('YAML did not parse to an object.');
   const errors: string[] = [];
@@ -125,10 +118,8 @@ export function configFromYaml(text: string): EnumeratorConfig {
   return mergeWithDefaults(raw as Partial<EnumeratorConfig>);
 }
 
-// File-name fields (template_file, bb_file, reagent_file, output_file, delimiter,
-// exclusion_smarts_products_file) were removed from the schema — a YAML saved before that change
-// may still carry them. Object.assign below would otherwise let them tag along as inert extra
-// properties, so an old file loaded then re-saved keeps leaking them forward.
+// Dropped from the schema, but a YAML saved before that still carries them; without this the
+// Object.assign below lets them tag along and an old file re-saved leaks them forward.
 const LEGACY_ENUMERATION_KEYS = ['template_file', 'bb_file', 'reagent_file', 'output_file', 'delimiter'];
 const LEGACY_PRODUCTS_SPECS_KEYS = ['exclusion_smarts_products_file'];
 

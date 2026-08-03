@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
-import {CHANGED_DOT_STYLE, clampRounds, DataKey, detectChemSemTypes, Mode} from './enumerator-app';
+import {CHANGED_DOT_STYLE, clampRounds, DataKey, detectChemSemTypes, Mode} from './shared';
 
 export type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
 export const makeTabBadge = (): TabBadge => {
@@ -17,23 +17,20 @@ export const makeTabBadge = (): TabBadge => {
   }};
 };
 
-// Table names aren't unique in a workspace, so `.name` can't tell "same table" from "same-named
-// table" — compare `.id` instead, which the platform assigns once a table is registered.
+// Table names aren't unique in a workspace, and a ChoiceInput's `.value` getter re-wraps the table
+// on every read — `.id` (assigned on registration) is the only reliable identity.
 function isSameTrackedTable(a: DG.DataFrame | null | undefined, b: DG.DataFrame | null | undefined): boolean {
   return a?.id != null && a.id === b?.id;
 }
 
-// ui.input.table is a ChoiceInput over the workspace tables list; setting .value to a DataFrame
-// not in that list is silently rejected. Register via grok.shell.addTable first, and dip through
-// null to drop any cached pointer-equality with the previous selection.
+// ui.input.table is a ChoiceInput over the workspace tables list, which silently rejects a value
+// that isn't in it. Register first, then dip through null to drop cached pointer-equality.
 function assignTableInput(input: DG.InputBase<DG.DataFrame | null>, df: DG.DataFrame): void {
   grok.shell.addTable(df);
   try {input.value = null;} catch {/* nullable: false rejects */}
   input.value = df;
 }
 
-// Shared wording for the two identically-phrased "how to subset" prompts (per-step's empty-
-// selection message and its hint text) — kept as one constant so the two stay in sync.
 const SELECT_ROWS_OR_FILTER = 'Select rows (Ctrl/Shift+click) or apply a filter';
 
 function closeTableSafe(t: DG.DataFrame | null | undefined, label: string): void {
@@ -41,11 +38,9 @@ function closeTableSafe(t: DG.DataFrame | null | undefined, label: string): void
   try {grok.shell.closeTable(t);} catch (e) {console.warn(`Could not close ${label}: ${e}`);}
 }
 
-// Shared clone/rename/detect core for both the global ("All steps") and per-step "Subset by
-// selection" actions — returns null (after an info toast) when there's nothing to subset.
-// Falls back to the active filter when nothing is explicitly selected, so filtering alone is
-// enough to subset without an extra manual "select all" step — explicit selection still wins
-// when both are present, since it's the more deliberate action.
+/** Clones `df` down to its selection, falling back to the active filter when nothing is selected
+ * (so filtering alone is enough to subset). Returns null, after an info toast, when there's
+ * nothing to narrow. */
 function cloneSubsetByRows(df: DG.DataFrame, emptyMsg: string): DG.DataFrame | null {
   const sel = df.selection;
   const mask = sel.anyTrue ? sel : df.filter;
@@ -53,7 +48,6 @@ function cloneSubsetByRows(df: DG.DataFrame, emptyMsg: string): DG.DataFrame | n
     grok.shell.info(emptyMsg);
     return null;
   }
-  // Also covers the trivial "filter matches every row" case — nothing left to narrow either way.
   if (!mask.anyFalse) {
     grok.shell.info('All rows are selected — nothing to subset.');
     return null;
@@ -61,19 +55,13 @@ function cloneSubsetByRows(df: DG.DataFrame, emptyMsg: string): DG.DataFrame | n
   const subset = df.clone(mask);
   subset.name = `${df.name} (subset, ${subset.rowCount}/${df.rowCount} rows)`;
   detectChemSemTypes(subset);
-  // df.clone(mask) leaves the SOURCE df's own .selection set to `mask` as a side effect — left
-  // uncleared, a later filter-only "Subset by selection" on the restored original table picks up
-  // this stale selection instead of the new filter, since selection is checked first above.
+  // clone(mask) leaves the source's own .selection set to `mask`, and the clone's .filter all-false.
   df.selection.setAll(false, false);
-  // Same clone-carries-BitSet-state issue on the other side: the new subset's OWN .filter comes
-  // back all-false when cloning off a filtered source — reset it so the subset isn't born with
-  // every row hidden.
   subset.filter.setAll(true, false);
   return subset;
 }
 
-// Breadth-first ignores per-round BB overrides entirely (see `eligibleSmiles` in enumerate.ts) —
-// one shared rule instead of every caller re-encoding the same check.
+// Breadth-first draws from every earlier product, so it never reads the per-round BB pool.
 function bbOverrideSuppressedInBreadth(isBuildingBlocks: boolean, mode: Mode): boolean {
   return isBuildingBlocks && mode === 'breadth';
 }
@@ -89,12 +77,10 @@ export interface DataPanelOpts {
   badge?: TabBadge;
   noTableMsg?: string;
   emptyMsg?: string;
-  // How to fold this component's per-round work df into a PerRoundOverride fragment.
+  /** How to fold this component's per-round work df into a PerRoundOverride fragment. */
   apply: (o: PerRoundOverride, work: DG.DataFrame, cfg: EnumeratorConfig) => void;
 }
 
-// Shared across every DataPanel instance (all three read the same config/mode/rounds and mediate
-// through the same orchestrator-level refresh functions).
 export interface DataPanelDeps {
   view: DG.View;
   viewerHost: MountedViewerRegistry;
@@ -105,43 +91,35 @@ export interface DataPanelDeps {
   refreshCfgRibbon: () => void;
 }
 
-/** Single-grid per-component panel with a per-step strip. Each data tab shows ONE grid plus a
- * horizontal step strip, rendered as a ui.tabControl: "All rounds" shows the full library (with
- * the global "Subset by selection"); "Round k" shows a display-only clone whose row selection is
- * that round's subset. Switching tabs swaps what the single grid displays — no second grid. */
+/** One grid plus a round-tab strip: "All rounds" shows the full library (with the global "Subset by
+ * selection"); "Round k" shows a display-only clone whose rows are that round's subset. Switching
+ * tabs swaps what the single grid displays — there is never a second grid. */
 export class DataPanel {
   readonly panel: HTMLElement;
 
-  private selStep = 0; // 0 = All rounds (full library); 1..rounds = that round's subset
-  private filtersOn = false; // funnel toggle: show the standard Datagrok filters panel next to the grid
-  // host -> last (table identity, filtersOn) successfully mounted there. "Subset by selection"/"Use
-  // all" both trigger a render twice (see the comment above assignTableInput) — renderGrid no-ops
-  // the second call once it sees nothing actually changed.
+  private selStep = 0; // 0 = All rounds; 1..rounds = that round's subset
+  private filtersOn = false;
+  // host -> what was last mounted there, so the second of the two renders a table swap triggers
+  // (input.onChanged plus the caller's own explicit render) is a no-op.
   private readonly lastMounted = new Map<HTMLElement, {identity: string | DG.DataFrame; filtersOn: boolean}>();
   private readonly state: SubsetState = {prev: null, original: null, freshClone: null};
-  // Per-round state (index k-1 = round k) — one array instead of parallel ones, so df/sub/committed
-  // can't drift out of sync. `committed` is an explicit flag, NOT inferred from row-count: a step's
-  // clone can silently drift from the global table if rows are added/removed in place (no onChanged
-  // fires), and inferring "override" from that drift lets deleted rows resurrect in a round's
-  // reactant pool. Set only by subsetStepBySelection, cleared only by useAllForStep.
+  // Index k-1 = round k. `committed` is explicit, never inferred from row count: a clone can drift
+  // from the global table without any onChanged firing, and inferring from that drift let deleted
+  // rows resurrect in a round's reactant pool.
   private readonly stepState: StepState[] = [];
-  // Step selector: a real ui.tabControl. Each pane owns its own persistent barHost/gridHost (built
-  // once via its addPane factory) — relocating a live grid between panes corrupts it, so nothing is
-  // shared. `paneHosts[selStep]` gives renderBar/renderGrid the current pane's own hosts.
   private readonly stepTabsHost: HTMLElement;
   private stepTabsSub: Subscription | null = null;
-  private readonly stepDots: (HTMLElement | null)[] = []; // index k = 1..rounds; index 0 unused
+  private readonly stepDots: (HTMLElement | null)[] = []; // index 0 ("All rounds") unused
+  // Each pane owns its own barHost/gridHost — relocating a live grid between panes corrupts it.
   private paneHosts: {barHost: HTMLElement; gridHost: HTMLElement}[] = [];
 
   constructor(private readonly opts: DataPanelOpts, private readonly deps: DataPanelDeps) {
     this.stepTabsHost = ui.div([], {style: {flex: '1 1 0', minHeight: '0', display: 'flex',
       flexDirection: 'column', overflow: 'hidden'}});
-    // min-height:0 — same reason as tabPanel()'s wrapper: this is a flex child of the platform's
-    // own .d4-tab-content, which without it refuses to shrink below content height.
     this.panel = ui.div([this.stepTabsHost], {style: {
       height: '100%', display: 'flex', flexDirection: 'column', minHeight: '0',
       background: 'var(--white)', overflow: 'hidden'}});
-    this.buildStepTabs(0); // also mounts the grid once hosts are in the DOM
+    this.buildStepTabs(0);
   }
 
   render(): void {this.renderGrid(); this.renderBar(); this.updateDots();}
@@ -150,9 +128,8 @@ export class DataPanel {
   onTableChanged(): void {
     const df = this.opts.input.value;
     if (df) detectChemSemTypes(df);
-    // A match against neither prev nor freshClone means the input changed from outside either of
-    // them — e.g. a different file — so the old subset bookkeeping no longer applies and must be
-    // cleared, or a later "Use all" would restore the wrong table's `original`.
+    // Matching neither prev nor freshClone means the input changed from outside both — e.g. a
+    // different file — so the old subset bookkeeping would restore the wrong table's `original`.
     if (df && !isSameTrackedTable(df, this.state.prev) && !isSameTrackedTable(df, this.state.freshClone)) {
       this.state.original = null;
       this.state.prev = null;
@@ -164,37 +141,29 @@ export class DataPanel {
     this.deps.refreshValidation();
   }
 
-  // Deliberately does NOT drop stepState entries beyond the new round count — Dart int inputs fire
-  // onChanged per keystroke, so typing "10" over "5" transiently passes through "1", which would
-  // eagerly destroy committed overrides on steps 2-5 before the user finishes typing.
+  // Deliberately keeps stepState entries beyond the new round count: typing "10" over "5"
+  // transiently passes through "1", which would otherwise destroy overrides on rounds 2-5.
   onRoundsChanged(): void {this.buildStepTabs(this.selStep);}
 
-  // Applies this component's round-r override (if any) onto `out`; returns whether it did. Lets
-  // buildPerRoundOverrides reach each panel's own stepState without a shared indexed array.
+  /** Applies this component's round-r override (if any) onto `out`; returns whether it did. */
   applyOverrideForRound(r: number, out: PerRoundOverride, cfg: EnumeratorConfig): boolean {
     const entry = this.stepState[r - 1];
-    if (!entry?.committed || !entry.df) return false; // !entry.df shouldn't happen if committed
+    if (!entry?.committed || !entry.df) return false;
     this.opts.apply(out, entry.df, cfg);
     return true;
   }
 
-  // Whether any round has a custom subset for this component — drives its ribbon chip's dot.
   hasAnyOverride(): boolean {
     for (let k = 1; k <= this.roundCount(); k++) if (this.hasOverride(k)) return true;
     return false;
   }
 
-  // A step "has an override" only once stepState[k-1].committed is explicitly set — see the flag's
-  // own comment above for why row-count inference was wrong.
   private hasOverride(k: number): boolean {
     if (!this.stepState[k - 1]?.committed) return false;
-    // BB overrides don't apply in breadth-first (see bbOverrideSuppressedInBreadth) — don't show the dot.
     if (bbOverrideSuppressedInBreadth(this.opts.idx === 1, this.deps.currentMode())) return false;
     return true;
   }
 
-  // Defensive clamp — see clampRounds()'s own comment for why; an over-max value still reaches
-  // here even though validate() blocks Run for it.
   private roundCount(): number {
     return clampRounds(this.deps.currentRounds());
   }
@@ -206,9 +175,7 @@ export class DataPanel {
     }
   }
 
-  // Shared bookkeeping behind every place a step's clone changes: unsubscribe the old selection
-  // listener, subscribe the new one (if any), and replace the round's state record. Preserves the
-  // existing `committed` value — callers that need to change it do so explicitly right after.
+  // Preserves the existing `committed` value; callers that need to change it do so right after.
   private setStepWork(k: number, work: DG.DataFrame | null): void {
     this.stepState[k - 1]?.sub?.unsubscribe();
     const sub = work ? work.onSelectionChanged.subscribe(() => {this.updateDots(); this.renderBar();}) : null;
@@ -222,7 +189,7 @@ export class DataPanel {
     if (existing) return existing;
     const global = this.opts.input.value;
     if (!global) return null;
-    // Display-only clone, never registered in the workspace; its selection carries the subset.
+    // Display-only clone, never registered in the workspace.
     const work = global.clone(null);
     work.name = `${global.name} · round ${k}`;
     detectChemSemTypes(work);
@@ -230,41 +197,34 @@ export class DataPanel {
     return work;
   }
 
-  // Per-step mirror of the global "Subset by selection": selecting rows in a step's grid is just
-  // staging, the round only narrows once this commits it by swapping in a new clone.
+  // Selecting rows in a round's grid is only staging; the round narrows once this commits it.
   private subsetStepBySelection(k: number): void {
     const w = this.stepState[k - 1]?.df;
-    if (!w) return; // grid must be mounted (via stepClone) before this button is reachable
+    if (!w) return;
     const subset = cloneSubsetByRows(w,
       `${SELECT_ROWS_OR_FILTER} to use only those ${this.opts.noun} in round ${k}.`);
     if (!subset) return;
     this.setStepWork(k, subset);
     this.stepState[k - 1].committed = true;
     this.render();
-    this.deps.refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
+    this.deps.refreshCfgRibbon();
     this.deps.viewerHost.deferredFilterReset(subset);
   }
 
-  // Undo: drop the clone entirely so the step falls back to (re-derives from) "All steps" lazily.
+  // Drops the clone entirely so the round re-derives from "All rounds" lazily.
   private useAllForStep(k: number): void {
     this.setStepWork(k, null);
     this.stepState[k - 1].committed = false;
     this.render();
-    this.deps.refreshCfgRibbon(); // this component's ribbon chip dot depends on hasAnyOverride()
-    // stepClone(k) can inherit the global table's active filter — reset it.
+    this.deps.refreshCfgRibbon();
     const w = this.stepState[k - 1]?.df;
     if (w) this.deps.viewerHost.deferredFilterReset(w);
   }
 
-  // Shared tail of doSubsetBySelection/doRestoreFullTable: commit `newDf` into the tracked table
-  // input, re-render, guard against the just-mounted Filters viewer's async filter clobber, and
-  // close the tables `newDf` replaces. `keepIfSameAs`, when given, skips closing a previous table
-  // that is the SAME tracked table as it (doSubsetBySelection's "don't close what's still showing"
-  // guard); omitted, both previous tables always close (doRestoreFullTable's case).
-  //
-  // assignTableInput's null-then-real two-step assignment doesn't reliably reach here via the
-  // input's own onChanged -> onTableChanged reaction alone, so renderGrid() is called explicitly —
-  // intentionally redundant with onTableChanged's own re-render, in favor of correctness.
+  /** Commits `newDf` into the tracked table input and closes the tables it replaces. `keepIfSameAs`
+   * skips closing a previous table that is the same tracked table as it. renderGrid() is called
+   * explicitly because assignTableInput's null-then-real assignment doesn't reliably reach here
+   * through the input's own onChanged. */
   private commitTableSwap(
     newDf: DG.DataFrame, prev: DG.DataFrame | null, prevFresh: DG.DataFrame | null,
     keepIfSameAs?: DG.DataFrame | null,
@@ -288,69 +248,52 @@ export class DataPanel {
     const subset = cloneSubsetByRows(df,
       `Select rows in the ${this.opts.noun} grid (Ctrl/Shift+click) or apply a filter first.`);
     if (!subset) return;
-    // remember the user's own table for "Use all"
     if (!isSameTrackedTable(df, this.state.prev)) this.state.original = df;
     const prev = this.state.prev;
     const prevFresh = this.state.freshClone;
     this.state.prev = subset;
-    this.state.freshClone = null; // no longer showing a "Use all"-produced copy
+    this.state.freshClone = null;
     this.commitTableSwap(subset, prev, prevFresh, df);
   }
 
-  // Undo "Subset by selection": put the remembered full table back into the input and close the
-  // subset clone. No-op (with a hint) when the full library is already in use.
   private doRestoreFullTable(): void {
-    // Shared "no swap needed" case: just clear an active filter directly, or say so if there isn't one.
     const clearOrInform = (current: DG.DataFrame | null): void => {
       if (current && current.filter.trueCount < current.rowCount) current.filter.setAll(true, true);
       else grok.shell.info(`The full ${this.opts.noun} library is already in use.`);
     };
     const orig = this.state.original;
-    if (!orig) return clearOrInform(this.opts.input.value); // no subset was ever taken from this table
+    if (!orig) return clearOrInform(this.opts.input.value);
     if (this.state.freshClone && isSameTrackedTable(this.opts.input.value, this.state.freshClone))
-      return clearOrInform(this.state.freshClone); // already showing a "Use all" copy — no need to re-clone
+      return clearOrInform(this.state.freshClone);
     const prev = this.state.prev;
     const prevFresh = this.state.freshClone;
     this.state.prev = null;
-    // "Use all" swaps in a fresh, distinctly-named clone of `orig` rather than reusing it directly.
-    // Reusing `orig` carries forward per-column tags (e.g. chem's CHEM_APPLY_FILTER_SYNC) that can hang
-    // a re-run substructure search — and even a tag-free clone NAMED the same as `orig` still gets the
-    // platform's own remembered filter/sketch state (keyed by table+column name) reapplied to it.
-    // clone(null) plus a distinct name sidesteps both. `orig` stays untouched so repeated clicks keep
-    // deriving from the same known-good source.
+    // A distinctly-named clone, not `orig` itself: reusing it carries forward per-column tags (e.g.
+    // CHEM_APPLY_FILTER_SYNC) that can hang a re-run substructure search, and even a tag-free clone
+    // sharing its name gets the platform's remembered filter/sketch state reapplied.
     const fresh = orig.clone(null);
-    // Strip a prior "(full)" suffix instead of appending blindly — `orig` can itself be an earlier
-    // "Use all" clone (subsetting from it re-points state.original at it), and re-suffixing every cycle
-    // would otherwise grow "X (full) (full) (full)...".
+    // `orig` can itself be an earlier "Use all" clone, so strip before appending.
     fresh.name = `${orig.name.replace(/ \(full\)$/, '')} (full)`;
     this.state.freshClone = fresh;
     this.commitTableSwap(fresh, prev, prevFresh);
   }
 
-  // (Re)build the step tab strip, landing on `initialStep` (clamped). TabControl has no
-  // add/remove-pane API, only clear()+re-addPane(); `tc.panes` insertion order lines up with selStep.
+  // TabControl has no add/remove-pane API, only clear()+re-addPane().
   private buildStepTabs(initialStep = 0): void {
     this.stepTabsSub?.unsubscribe();
-    // Close each pane's mounted viewer(s) BEFORE wiping stepTabsHost — otherwise their gridHost
-    // divs are dropped from the DOM while still registered in `mountedViewers`, orphaning the
-    // Viewer instances (never closed) instead of releasing their Dart-side resources.
+    // Close viewers BEFORE wiping stepTabsHost, or their hosts leave the DOM while still registered
+    // and the Viewer instances are orphaned instead of released.
     for (const ph of this.paneHosts) if (ph) this.deps.viewerHost.close(ph.gridHost);
-    // Every gridHost below is about to be discarded and rebuilt from scratch — drop renderGrid's
-    // per-host dedup entries too, or they'd hold the old (now-detached) elements alive forever.
     this.lastMounted.clear();
     this.stepTabsHost.innerHTML = '';
     this.stepDots.length = 0;
     this.paneHosts = [];
     const tc = ui.tabControl(null, false);
-    // tc.root must fill available height, not size to its header-strip content — each pane's own
-    // content div (built below) needs the real space to lay its grid out in.
     tc.root.style.width = '100%';
     tc.root.style.flex = '1 1 0';
     tc.root.style.minHeight = '0';
     tc.root.style.overflow = 'hidden';
-    // Builds one pane's persistent content (barHost+gridHost), recorded in paneHosts at its OWN
-    // fixed index k (not push-order) — works whether TabControl's addPane factory runs eagerly or
-    // lazily, since position k always lands at paneHosts[k] regardless of firing order.
+    // Recorded at its own fixed index k, so it works whether addPane's factory runs eagerly or lazily.
     const makePaneContent = (k: number): () => HTMLElement => () => {
       const barHost = ui.div([], {style: {display: 'flex', alignItems: 'center', gap: '8px', flex: '0 0 auto',
         padding: '4px 8px 5px', borderBottom: '1px solid var(--grey-2)'}});
@@ -369,10 +312,8 @@ export class DataPanel {
     this.stepDots.push(null);
     for (let k = 1; k <= this.roundCount(); k++) {
       const pane = tc.addPane(`Round ${k}`, makePaneContent(k));
-      // Position dot absolutely (header stacks children vertically, so marginLeft lands below the
-      // label). Positive left offset only — a negative one bleeds into the adjacent tab, since tabs
-      // sit flush. Fixed top offset, not top:50% — the header's box shrinks ~7px when selected
-      // (underline indicator), so a percentage-based center drifts on selection.
+      // Absolute, with a positive left offset (a negative one bleeds into the flush adjacent tab)
+      // and a fixed top (the header box shrinks ~7px when selected, so a percentage would drift).
       const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, position: 'absolute', left: '5px', top: '12px',
         display: 'none'}});
       pane.header.style.position = 'relative';
@@ -380,14 +321,12 @@ export class DataPanel {
       this.stepDots.push(dot);
     }
     this.stepTabsSub = tc.onTabChanged.subscribe(() => {
-      // Index into tc.panes IS selStep (0 = "All rounds", k = "Round k", by insertion order above)
-      // — no need to parse the pane's label, which would break if it were ever reworded.
+      // Insertion order above makes the pane index equal selStep, so the label never needs parsing.
       const idx = tc.currentPane ? tc.panes.indexOf(tc.currentPane) : -1;
       this.selStep = idx < 0 ? 0 : idx;
       this.render();
     });
-    // Each rebuild unsubscribes the prior instance, but the LAST one has no later rebuild to retire
-    // it — track it in view.subs too so view close still reaches it.
+    // Each rebuild retires the prior instance, but the last one needs view close to reach it.
     this.deps.view.subs.push(this.stepTabsSub);
     this.stepTabsHost.appendChild(tc.root);
     // Select explicitly — onTabChanged may not fire if the target is already the control's default.
@@ -400,11 +339,10 @@ export class DataPanel {
 
   private renderBar(): void {
     const barHost = this.paneHosts[this.selStep]?.barHost;
-    if (!barHost) return; // pane not built yet (shouldn't happen once buildStepTabs has run once)
+    if (!barHost) return;
     barHost.innerHTML = '';
     const hintEl = (t: string): HTMLElement =>
       ui.divText(t, {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '1 1 auto', marginRight: '4px'}});
-    // Funnel toggle — shows the standard Datagrok filters panel for the visible grid. Off by default.
     const filterIcon = ui.iconFA('filter',
       () => {this.filtersOn = !this.filtersOn; this.renderGrid(); this.renderBar();},
       this.filtersOn ? 'Hide filters' : 'Show filters');
@@ -413,13 +351,13 @@ export class DataPanel {
     filterIcon.style.flex = '0 0 auto';
     filterIcon.style.color = this.filtersOn ? 'var(--blue-2)' : 'var(--grey-5)';
     if (this.selStep === 0) {
-      // Warn only when the click actually swaps the table AND overrides existed to lose — a no-op
-      // click already gets its own info toast from doSubsetBySelection/doRestoreFullTable.
+      // Only warn when the click actually swapped the table AND there were overrides to lose — a
+      // no-op click already gets its own toast from doSubsetBySelection/doRestoreFullTable.
       const doGlobalAction = (action: () => void, clearedSuffix: string): void => {
         const hadOverride = this.hasAnyOverride();
         const prevValue = this.opts.input.value;
         action();
-        if (hadOverride && this.opts.input.value !== prevValue) {
+        if (hadOverride && !isSameTrackedTable(prevValue, this.opts.input.value)) {
           grok.shell.info(`Per-round ${this.opts.noun} overrides were cleared — every round now uses the ` +
             `${clearedSuffix}.`);
         }
@@ -437,9 +375,8 @@ export class DataPanel {
     } else {
       const entry = this.stepState[this.selStep - 1];
       const w = entry?.df;
-      // Once suppressed (see bbOverrideSuppressedInBreadth), `w` is still the stale committed subset
-      // clone — reporting w.rowCount here would show the SUBSET's size labeled as "all", which is both
-      // the wrong number and the wrong word. The true count in that case is the full library's.
+      // While suppressed, `w` is still the committed subset clone — reporting its row count as
+      // "all" would be both the wrong number and the wrong word.
       const suppressed = !!entry?.committed &&
         bbOverrideSuppressedInBreadth(this.opts.idx === 1, this.deps.currentMode());
       let statusText = '';
@@ -469,19 +406,14 @@ export class DataPanel {
 
   private renderGrid(): void {
     const gridHost = this.paneHosts[this.selStep]?.gridHost;
-    if (!gridHost) return; // pane not built yet (shouldn't happen once buildStepTabs has run once)
+    if (!gridHost) return;
     const currentDf = this.selStep === 0 ? this.opts.input.value : this.stepClone(this.selStep);
     if (!currentDf) {
       this.lastMounted.delete(gridHost);
-      // Close mounted viewers BEFORE wiping the DOM — closing after innerHTML='' hands the viewer
-      // a detached container, which throws ("Cannot read properties of null") deep in the Dart-side
-      // close path. Under rapid re-triggering (e.g. the filter icon clicked several times in quick
-      // succession) that cascades badly enough to crash the tab's renderer.
+      // Close before wiping the DOM: closing after innerHTML='' hands the viewer a detached
+      // container, which throws deep in the Dart-side close path.
       this.deps.viewerHost.close(gridHost);
       gridHost.innerHTML = '';
-      // gridHost itself stays overflow:hidden (correct once a real grid — which scrolls itself —
-      // is mounted there); this empty-state text gets its own scrollable wrapper instead, since it
-      // can outgrow a short window on its own.
       gridHost.appendChild(ui.div(
         [ui.divText(this.opts.emptyMsg ?? `No ${this.opts.noun} table selected.`,
           {style: {color: 'var(--grey-5)', padding: '20px', textAlign: 'center'}})],
@@ -489,31 +421,25 @@ export class DataPanel {
       if (this.selStep === 0) this.opts.badge?.refresh(null);
       return;
     }
-    // Step override clones (selStep != 0) never get a registered `.id` — they're tracked by
-    // stepState, not SubsetState — and stepClone() always names a fresh "full" clone identically
-    // (`${global.name} · round ${k}`), so a name-based key can't tell a rebuilt clone apart from the
-    // one it replaced. stepClone() already guarantees reference stability for "nothing changed" (its
-    // cache-or-create branch returns the same object every call), so use the reference itself.
+    // Round clones are never registered, so they have no `.id`, and stepClone() names every fresh
+    // clone identically — but it does guarantee reference stability, so use the reference itself.
     const identity = this.selStep === 0 ? currentDf.id : currentDf;
     const prevMounted = this.lastMounted.get(gridHost);
     if (prevMounted && prevMounted.identity === identity && prevMounted.filtersOn === this.filtersOn) {
       if (this.selStep === 0) this.opts.badge?.refresh(currentDf.rowCount);
       return;
     }
-    this.deps.viewerHost.mountDf(gridHost, currentDf, this.filtersOn); // mountDf itself closes-then-clears the host
+    this.deps.viewerHost.mountDf(gridHost, currentDf, this.filtersOn);
     this.lastMounted.set(gridHost, {identity, filtersOn: this.filtersOn});
     if (this.selStep === 0) this.opts.badge?.refresh(currentDf.rowCount);
   }
 }
 
-// A step's clone IS the subset once committed via "Subset by selection" — no deriving from a live
-// .selection bitset at run time. A round with no narrowed component falls back to the global set;
-// the whole result is undefined when nothing is overridden.
+/** A round with no narrowed component falls back to the global set; the whole result is undefined
+ * when nothing is overridden. */
 export function buildPerRoundOverrides(panels: DataPanel[], cfg: EnumeratorConfig): PerRoundOverride[] | undefined {
   const overrides: PerRoundOverride[] = [];
   let any = false;
-  // Clamped for the same reason as roundCount() above — Strategy summary and Preview recap both
-  // call this directly off the raw, unclamped config value while the user is still typing it.
   for (let r = 0; r < clampRounds(cfg.enumeration.num_rounds); r++) {
     const o: PerRoundOverride = {};
     for (const panel of panels)
@@ -524,8 +450,7 @@ export function buildPerRoundOverrides(panels: DataPanel[], cfg: EnumeratorConfi
   return any ? overrides : undefined;
 }
 
-// Shared by the Strategy summary and the Preview recap, so the "does round r have a custom
-// subset" logic lives in exactly one place.
+/** Shared by the Strategy summary and the Preview recap. */
 export function overrideCountFor(
   overrides: PerRoundOverride[] | undefined, mode: Mode, r: number, key: DataKey,
 ): number | null {

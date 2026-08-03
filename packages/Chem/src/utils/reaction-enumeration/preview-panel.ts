@@ -8,14 +8,13 @@ import {MountedViewerRegistry} from './viewer-mount';
 import {
   BuiltInputs, buildInputs, buildResultDataFrame, clampRounds, DataKey, MAX_ROUNDS, Mode, MODE_LABEL, panelHeader,
   roundsLabel, tabPanel,
-} from './enumerator-app';
+} from './shared';
 
 // Small enough to compute fast, large enough to show a representative mixed sample.
 const PREVIEW_TARGET_ROWS = 20;
 const PREVIEW_MAX_COMBOS_PER_TEMPLATE = 3;
 const PREVIEW_MAX_ROUNDS = 2;
 
-// Shuffles arr in place (Fisher-Yates) and returns it, for pickPreviewSamples' random sampling.
 function shuffleInPlace<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -24,8 +23,7 @@ function shuffleInPlace<T>(arr: T[]): T[] {
   return arr;
 }
 
-// Biases the sample toward multi-step routes (70/30 split) since those are the more interesting
-// case to eyeball in a quick preview, while still showing some single-step ones.
+// Biased 70/30 toward multi-step routes — the more interesting case to eyeball in a quick preview.
 function pickPreviewSamples(rows: OutputRow[], n: number): OutputRow[] {
   if (rows.length <= n) return shuffleInPlace(rows.slice());
   const stepCount = (r: OutputRow) => r.route ? Math.max(0, r.route.split('>>').length - 1) : 0;
@@ -51,9 +49,8 @@ export interface PreviewPanelDeps {
   validate: () => string | null;
 }
 
-/** Right-pane "Preview" tab (samples a small, budgeted product set) plus the compact recap card
- * embedded in the left-nav's own Preview breadcrumb pane. Re-renders whenever the user switches to
- * the tab; a stale in-flight run is short-circuited via an incrementing run id (isCancelled). */
+/** Right-pane "Preview" tab (a small, budgeted product sample) plus the recap card embedded in the
+ * left-nav's Preview pane. A stale in-flight run is short-circuited via an incrementing run id. */
 export class PreviewPanel {
   readonly panel: HTMLElement;
   private readonly host: HTMLElement;
@@ -67,14 +64,11 @@ export class PreviewPanel {
     this.status = ui.divText('', {style: {fontSize: '11px', color: 'var(--grey-5)', flex: '0 0 auto'}});
     const header = panelHeader('Quick preview of a small product sample.', this.status);
     this.panel = tabPanel(header, this.host);
-    // Closing the hosting view is otherwise not a cancellation signal at all (only switching tabs
-    // away from Preview bumps runId, via cancelPendingRun) — without this, an in-flight refresh()
-    // finishes after the view is gone and mounts a viewer nothing can ever close again.
+    // Otherwise an in-flight refresh() finishes after the view is gone and mounts a viewer that
+    // nothing can ever close.
     this.deps.viewerHost.onClose(() => this.cancelPendingRun());
   }
 
-  /** The left-nav recap card host — built once here, embedded by EnumeratorConfigForm's own
-   * Preview accordion pane factory alongside its own nav row. */
   buildRecapCard(): HTMLElement {
     return this.recapHost;
   }
@@ -97,11 +91,8 @@ export class PreviewPanel {
     addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`);
     if (rounds > MAX_ROUNDS) addRow('', `Showing the first ${MAX_ROUNDS} rounds — capped at ${MAX_ROUNDS}.`);
 
-    // Per-round breakdown only for rounds that actually have a custom subset — every round shows
-    // "all N" identically otherwise, which just repeats the total for no benefit.
+    // Only rounds with a custom subset get a row; the rest would just repeat the total.
     const overrides = tDf && bDf ? this.deps.buildPerRoundOverrides(this.deps.getConfig()) : undefined;
-    // Same freeze risk as StrategySummary's own displayRounds — this loop builds real DOM rows off
-    // whatever's currently typed into "Number of rounds", which can transiently exceed MAX_ROUNDS.
     const displayRounds = clampRounds(rounds);
     const addComponentRows = (
       label: string, df: DG.DataFrame | null, key: 'templates' | 'buildingBlocks',
@@ -117,8 +108,7 @@ export class PreviewPanel {
     addComponentRows('Building blocks', bDf, 'buildingBlocks');
   }
 
-  /** Bumps the run id without starting new work — called on tab-away, so an in-flight preview
-   * (checked only at its own isCancelled points) stops updating an unwatched tab. */
+  /** Bumps the run id without starting new work — called on tab-away and on view close. */
   cancelPendingRun(): void {
     this.runId++;
   }
@@ -194,9 +184,7 @@ export class PreviewPanel {
     }
     if (myRunId !== this.runId) return;
 
-    // Same silent-failure risk as a full run (invalid exclusion/blocking SMARTS column, a per-round
-    // override with no effect, truncated combos) — without this, Preview is the one path that would
-    // never tell you why its output looks the way it does.
+    // Without this, Preview is the one path that never says why its output looks the way it does.
     if (warnings.length > 0) {
       console.warn('Preview warnings:', warnings);
       const preview = warnings.slice(0, 3).join(' | ');
@@ -213,8 +201,7 @@ export class PreviewPanel {
 
     const samples = pickPreviewSamples(rows, PREVIEW_TARGET_ROWS);
     const df = buildResultDataFrame(samples, 'Preview');
-    // rowHeight 110 (vs the data tabs' 75) fits the extra route-step lines; route isn't the last
-    // column, so skip extendLastColumn.
+    // Taller rows fit the extra route-step lines; route isn't the last column, so no extendLastColumn.
     this.deps.viewerHost.mountDf(this.host, df, false, {rowHeight: 110, extendLastColumn: false});
     this.status.textContent =
       `${samples.length} samples of ${rows.length} preview rows (≤ ${previewConfig.enumeration.num_rounds} ` +
