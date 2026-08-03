@@ -377,15 +377,133 @@ with users or groups like any other entity.
 
 `grok api` (already part of standard package build scripts) detects
 `databases/*/schema.json` and generates `src/generated/db.ts` with per-table row and insert
-interfaces, column-name unions, and a ready-made client:
+interfaces, column-name unions, expand maps, a typed transaction union, and a lazy
+per-schema client:
 
 ```ts
-import {gritDb} from './generated/db';
+import {gritDb, IssueRow, IssueStatus} from './generated/db';
 
 const projects = await gritDb.project.query({sort: 'name'});   // ProjectRow[]
 await gritDb.issue.insert({project_id: projects[0].id, number: 7, title: 'Typed!'});
 // gritDb.issue.insert({}) — compile error: required columns are enforced
 ```
+
+The generated surface is truthful about the wire:
+
+* **Datetimes are dayjs.** Declared datetime columns and `created_on`/`updated_on` are typed
+  `Dayjs` and materialize as dayjs objects on JSON reads, including expanded master fields
+  and detail child rows (inserts also accept ISO strings). Untyped `table('s.t')` clients
+  keep ISO strings. Regenerating db.ts across this change is breaking — fix call sites that
+  treated datetimes as strings (`a.created_on.valueOf()` instead of `localeCompare`).
+* **`choices` columns are literal unions** (`IssueStatus = 'open' | 'in progress' | ...`)
+  used in both row and insert types — a typo in a status value no longer compiles.
+* **Column names and expand keys are compile-checked** through the client generics: filter
+  conditions, `columns`, `groupBy`, and `expand` reject unknown names.
+
+### Fluent queries and bound conditions
+
+Bare `query()` returns an awaitable builder; `query(spec)` is unchanged:
+
+```ts
+const top = await gritDb.issue.query()
+  .where('project_id', '=', projectId)
+  .where({status: 'open'})                        // equality map, AND-combined
+  .orderBy('number', true)
+  .top(20);
+
+const one = await gritDb.issue.query().where('number', '=', 7).first();  // row | null
+const df = await gritDb.issue.query().where({status: 'open'}).df();      // typed DataFrame
+const n = await gritDb.issue.query().where({status: 'open'}).count();
+```
+
+Condition values are **bound server-side, never interpolated** — any string value works,
+including apostrophes that the filter-string grammar cannot express:
+
+```ts
+await gritDb.project.query().where('name', '=', "O'Brien's project");
+await gritDb.issue.query({filter: DG.or(
+  DG.cond('status', '=', 'open'), DG.cond('priority', '=', 'critical'))});
+```
+
+`.expand('details:comment')` types the child arrays into the awaited rows. `.select(...)`
+narrows the projection — system columns always ride along, and call it before `.expand()`.
+
+### Typed errors
+
+Failures are `DG.DomainError` subclasses discriminated by class and `code` — never match
+message text:
+
+```ts
+try {
+  await gritDb.issue.update(id, {status: 'resolved'}, {version});
+} catch (e) {
+  if (e instanceof DG.DomainVersionConflictError)
+    grok.shell.info(`expected v${e.expectedVersion}, current v${e.currentVersion}`);
+}
+```
+
+The family: `DomainValidationError` (per-row `.rows`, `.isDuplicate`),
+`DomainVersionConflictError`, `DomainRestrictError`, `DomainFilterError`,
+`DomainForbiddenError`, `DomainNotFoundError`, `DomainManifestValidationError`. A failed
+transaction carries `.opIndex` — the index of the failing op.
+
+### Optimistic concurrency
+
+```ts
+const saved = await gritDb.project.save({key: 'GRIT', name: 'Grit'}); // insert-or-update
+await gritDb.issue.updateWithRetry(id, (fresh) => ({votes: (fresh.votes ?? 0) + 1}));
+await DG.retryOnVersionConflict(async () => {/* fresh read + transaction write */});
+```
+
+`save` addresses rows by identity — a business-key duplicate applies your values to the
+existing row under a versioned update. `updateWithRetry` re-reads and retries on conflict
+(default five retries after the initial attempt). Typed transactions get per-op result
+types from a tuple ops literal: `const [upd, ins] = await gritDb.transaction([...]);`.
+
+### Bulk delete
+
+```ts
+while ((await items.deleteWhere(`sku starts "${stamp}"`)).hasMore);
+```
+
+Soft-deletes up to 1000 matching rows you may delete per call, oldest first, in one
+transaction. Declared referential actions run per row, and a `restrict` reference rejects
+the whole call with a `DomainRestrictError`. Never write per-row delete loops.
+
+### Schema lifecycle, grants, and watching
+
+```ts
+await grok.dapi.domains.createSchema('inv', {friendlyName: 'Inventory'});
+const handle = grok.dapi.domains.schema('inv');
+await handle.apply({tables: {/* manifest fragment */}}, {dryRun: true}); // change plan
+await handle.apply({tables: {/* manifest fragment */}});
+const events = await handle.audit({limit: 50});  // row + ddl history, newest first
+await handle.delete();                           // full purge
+```
+
+Table-scoped access control lives on the table client: `grants()`,
+`grant(group, permission)`, `revoke(group)`, and column security via
+`shareColumn`/`restrictColumn`/`restoreColumnVisibility`. Schema-entity grants
+(`handle.grant(...)`) gate schema *operations* — apply requires Edit, delete requires
+Delete, sharing requires Share — and do not grant access to row data. Grant per table for
+that.
+
+`watch()`/`unwatch()`/`isWatching()` subscribe the current user to change notifications for
+a table or one row (row watch requires the table's audit trail). `audit(id)` reads a row's
+history, `auditLog({limit})` the table-wide trail.
+
+### Samples
+
+Runnable in the platform's samples gallery:
+[domains](https://public.datagrok.ai/js/samples/dapi/domains),
+[domains-typed-client](https://public.datagrok.ai/js/samples/dapi/domains-typed-client),
+[domains-aggregate](https://public.datagrok.ai/js/samples/dapi/domains-aggregate),
+[domains-batch](https://public.datagrok.ai/js/samples/dapi/domains-batch),
+[domains-transaction](https://public.datagrok.ai/js/samples/dapi/domains-transaction),
+[domains-filters](https://public.datagrok.ai/js/samples/dapi/domains-filters),
+[domains-dataframe](https://public.datagrok.ai/js/samples/dapi/domains-dataframe),
+[domains-idempotency](https://public.datagrok.ai/js/samples/dapi/domains-idempotency),
+[domains-schema](https://public.datagrok.ai/js/samples/dapi/domains-schema).
 
 ## Customizing the UI
 

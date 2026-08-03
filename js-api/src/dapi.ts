@@ -1375,7 +1375,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** Rows for [ids] as a typed DataFrame: the 'id' column plus [fields] (default: all
    * visible columns). Chunked client-side at 100k ids; row predicate + column security
-   * apply (missing/invisible ids are absent rows). */
+   * apply (missing/invisible ids are absent rows). An empty [ids] list short-circuits to
+   * an empty ZERO-COLUMN frame — even when [fields] are requested. */
   fetchFields(ids: string[], fields?: TColumn[]): Promise<DataFrame> {
     return domainCall(api.grok_Dapi_Domains_FetchFields(this.dart, this.schema, this.table, ids, fields ?? null));
   }
@@ -1488,7 +1489,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   }
 
   /** Read-modify-write with optimistic retry: fetches the fresh row, applies [mutate], writes
-   * with the fresh version; retries on DomainVersionConflictError (default 5 attempts).
+   * with the fresh version; retries on DomainVersionConflictError (`maxRetries` counts
+   * retries after the initial attempt — default 5 retries = up to 6 attempts, no backoff).
    * [mutate] returning null skips the write (resolves null). Rejects
    * {@link DomainNotFoundError} when the row is invisible/absent. For multi-op flows
    * (e.g. a guarded transaction), use `DG.retryOnVersionConflict` directly with the fresh
@@ -1500,10 +1502,14 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
       if (fresh == null)
         throw new DomainNotFoundError(`Row "${id}" not found in ${this.schema}.${this.table}`,
           404, {error: 'not-found', id: id});
+      const version = (fresh as any).version;
+      // Guard: never silently degrade to an unversioned (last-write-wins) update.
+      if (version == null)
+        throw new Error(`updateWithRetry: row "${id}" carries no version — cannot update optimistically`);
       const values = mutate(fresh);
       if (values == null)
         return null;
-      return await this.update(id, values, {version: (fresh as any).version});
+      return await this.update(id, values, {version});
     }, options);
   }
 

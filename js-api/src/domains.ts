@@ -1,13 +1,35 @@
+/**
+ * Typed surface for entity-mapped domain tables (`grok.dapi.domains`): condition-tree
+ * filter types, typed results, the DomainError class family, predicate helpers, the fluent
+ * query builder, and optimistic-concurrency helpers.
+ *
+ * Two rules hold everywhere: condition VALUES are bound server-side — never interpolated
+ * into filter strings, so any string value is expressible (apostrophes included, which the
+ * smart-filter string grammar cannot quote); and datetime columns materialize as dayjs on
+ * generated clients (`datetimeColumns`) while untyped clients keep ISO strings.
+ *
+ * @remarks BREAKING (codegen v2, GROK-20602): `grok api`-generated clients type datetime
+ * columns as `Dayjs` and thread `<Table>Column`/`<Table>Expand` generics; regenerating
+ * db.ts changes its surface. The generated `dapi2.domains` namespace is removed
+ * (GROK-20601) — this module and `DomainTableClient` are the API.
+ */
 import type {Dayjs} from 'dayjs';
 
-/** Column reference: a declared/system column of the table, or a dotted FK path
- * ('project_id.name', up to 3 forward hops). */
-export type DomainColumnRef<TColumn extends string = string> = TColumn | `${string}.${string}`;
+/** The system columns every domain table carries (always projected on reads). */
+export type DomainSystemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id';
+
+/** Column reference: a declared column of the table, a system column, or a dotted FK path
+ * ('project_id.name', up to 3 forward hops). System columns are accepted even when a
+ * hand-written [TColumn] union omits them (generated `<Table>Column` unions include them). */
+export type DomainColumnRef<TColumn extends string = string> =
+  TColumn | DomainSystemColumn | `${string}.${string}`;
 
 /** Operators of the canonical condition tree (server: filter_compiler.dart:149-153 + fuzzy). */
 export type DomainConditionOperator =
   '=' | '!=' | '>' | '>=' | '<' | '<=' | 'like' | 'not like' | '~*' | '!~*' | 'is' | 'is not' | 'fuzzy';
 
+/** Value of one condition: scalar, list (`= ANY` / `!= ALL`), null (IS [NOT] NULL),
+ * or dayjs (sent as ISO-8601). Always bound server-side. */
 export type DomainFilterValue =
   string | number | boolean | null | Dayjs | (string | number | boolean)[];
 
@@ -24,6 +46,7 @@ export interface DomainCondition<TColumn extends string = string> {
  * (sticky — the last seen connector repeats). */
 export type DomainConditionNode<TColumn extends string = string> =
   DomainCondition<TColumn> | 'and' | 'or' | DomainConditionTree<TColumn>;
+/** The canonical condition tree: conditions and nested trees joined by connector strings. */
 export type DomainConditionTree<TColumn extends string = string> =
   DomainConditionNode<TColumn>[];
 
@@ -33,11 +56,15 @@ export type DomainConditionTree<TColumn extends string = string> =
 export type DomainFilter<TColumn extends string = string> =
   string | DomainCondition<TColumn> | DomainConditionTree<TColumn>;
 
+/** Runtime list of the system columns (type-level counterpart: {@link DomainSystemColumn}). */
 export const DOMAIN_SYSTEM_COLUMNS = ['id', 'version', 'created_on', 'updated_on', 'author_id'] as const;
 
+/** One per-column failure of a validation-failed write. */
 export interface DomainColumnError { column: string; code: string; message: string; }
+/** Per-row failure list of a validation-failed write ({@link DomainValidationError.rows}). */
 export interface DomainRowErrors { index: number; id?: string | null; errors: DomainColumnError[]; }
 
+/** Result of one inserted row. */
 export interface DomainInsertResult {
   id: string;
   created: boolean;
@@ -46,8 +73,11 @@ export interface DomainInsertResult {
   status?: 'duplicate' | 'idempotent-replay';
   existingId?: string;
 }
+/** Result of one updated row: `version` is the new (incremented) row version. */
 export interface DomainUpdateResult { id: string; version: number; }
+/** Result of one deleted row. */
 export interface DomainDeleteResult { id: string; deleted: true; }
+/** Result of one transaction op (see {@link DomainOpResultFor} for the typed-tuple form). */
 export type DomainOpResult = DomainInsertResult | DomainUpdateResult | DomainDeleteResult;
 
 /** Wire shape of _audit rows (repository.dart rowAudit/tableAudit/schemaAudit selects). */
@@ -74,6 +104,7 @@ export interface DomainAuditEntry {
  * and whether more matching deletable rows remain (loop while `hasMore`). */
 export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
 
+/** Grantable permission on a domain registry entity (table, schema, or column schema). */
 export type DomainPermission = 'View' | 'Edit' | 'Delete' | 'Share';
 
 /** One direct permission row on a domain registry entity (see `DomainTableClient.grants`). */
@@ -82,6 +113,7 @@ export interface DomainGrant {
   permission: DomainPermission;
 }
 
+/** Per-row outcome inside a {@link DomainBatchReport}. */
 export interface DomainBatchRowResult {
   index: number;
   id: string | null;
@@ -155,7 +187,9 @@ export async function domainCall<T>(p: Promise<T>): Promise<T> {
 /** Query options for domain table `query`/`queryDf`. */
 export interface DomainQuerySpec<TColumn extends string = string, TExpandKey extends string = string> {
   /** Smart-filter string (same grammar as entity search, e.g. `barcode starts "P-1"`),
-   * a single condition, or the canonical condition tree — values are bound server-side. */
+   * a single condition, or the canonical condition tree — values are bound server-side.
+   * Row caps: JSON `query` 10k, d42 `queryDf` 10M, `aggregate` 10k (both formats),
+   * `deleteWhere` 1000 per call, ≤32 facets per request, ≤1000 transaction ops. */
   filter?: DomainFilter<TColumn>;
   /** Comma-separated column list; `!` prefix for descending, e.g. `'name,!created_on'`. */
   sort?: string;
@@ -192,9 +226,11 @@ export interface DomainAggregateSpec<TColumn extends string = string,
   /** Master-FK expands ('<fk_column>'); groupBy/measures may then use '<fk>.<col>' (§13.2). */
   expand?: string[];
 }
+/** One result row of `aggregate` — keys are the group columns and measure aliases. */
 export type DomainAggregateRow<TKeys extends string = string> =
   {[K in TKeys]: number | string | boolean | null};
 
+/** The facet kinds of {@link DomainFacetSpec}. */
 export type DomainFacetKind = 'categories' | 'histogram' | 'minMax' | 'count' | 'plan';
 
 /** One facet request of {@link DomainFacetsSpec}; `id` keys its result in the response. */
@@ -239,16 +275,22 @@ export interface DomainFacetsSpec<TColumn extends string = string,
  * it (minus the facet's own column); ref columns group by id and carry the referenced row's
  * display name in `display`. */
 export interface DomainFacetCategory { value: any; display?: string; total: number; filtered: number; }
+/** Result of a `'categories'` facet; `hasMore` set when the category cap was hit. */
 export interface DomainFacetCategoriesResult { categories: DomainFacetCategory[]; hasMore?: boolean; }
+/** Result of a `'histogram'` facet: `buckets` respect the filter, `totalBuckets` ignore it. */
 export interface DomainFacetHistogramResult {
   min: number | string | null; max: number | string | null;
   buckets: number[]; totalBuckets: number[]; nulls: number;
 }
+/** Result of a `'minMax'` facet (row predicate only — the stable-axis rule ignores the filter). */
 export interface DomainFacetMinMaxResult { min: number | string | null; max: number | string | null; }
+/** Result of a `'count'` facet: the filtered row count. */
 export interface DomainFacetCountResult { count: number; }
+/** Result of a `'plan'` facet: per-column profile for choosing filter-control types. */
 export interface DomainFacetPlanResult {
   columns: {name: string; distinct: number; min?: number | string; max?: number | string}[];
 }
+/** Maps a facet `kind` to its result type (keys the typed `facets()` response). */
 export type DomainFacetResultOf<K extends DomainFacetKind> =
   K extends 'categories' ? DomainFacetCategoriesResult :
   K extends 'histogram' ? DomainFacetHistogramResult :
@@ -313,6 +355,7 @@ export interface DomainSavedFilterInfo {
   author?: any;
 }
 
+/** Options of `DomainsDataSource.table` (generated clients pass these). */
 export interface DomainTableClientOptions {
   /** Datetime columns to materialize as dayjs on JSON reads (generated clients pass this;
    * untyped clients keep ISO strings). Dotted `'<fk>.<col>'` entries cover master-expand
@@ -323,6 +366,7 @@ export interface DomainTableClientOptions {
   detailDatetimeColumns?: {[detailField: string]: string[]};
 }
 
+/** Typed transaction-op values: each column also accepts a `'$<ref>'` back-reference. */
 export type DomainTxValues<T> = {[K in keyof T]: T[K] | `$${string}`};
 
 /** Result type of one transaction op, keyed on its `op` discriminant — powers the
@@ -334,7 +378,10 @@ export type DomainOpResultFor<TOp> =
 
 /** Runs [action], retrying on DomainVersionConflictError (for transaction-based
  * read-modify-write flows — put the fresh read INSIDE [action]); rethrows anything else
- * and the final conflict. Default 5 retries. */
+ * and the final conflict. `maxRetries` counts retries AFTER the initial attempt
+ * (default 5 retries = up to 6 attempts). Retries run immediately, without backoff —
+ * conflicts resolve by re-reading, not waiting; add your own delay for high-contention
+ * hot rows. */
 export async function retryOnVersionConflict<T>(
     action: () => Promise<T>, options?: {maxRetries?: number}): Promise<T> {
   const maxRetries = options?.maxRetries ?? 5;
@@ -424,7 +471,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
       this._addCond(cond(a, operator, value) as DomainCondition<TColumn>);
     else if (typeof a === 'string') {
       if (this._rawFilter !== undefined || this._conds.length > 0)
-        throw new Error('combine string filters with conditions via cond()/and()/or()');
+        throw new Error('cannot combine a string filter with conditions — express everything as one tree via cond()/and()/or()');
       this._rawFilter = a;
     }
     else if (Array.isArray(a) || (a != null && 'property' in a && 'operator' in a))
@@ -437,7 +484,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
 
   private _addCond(node: DomainCondition<TColumn> | DomainConditionTree<TColumn>): void {
     if (this._rawFilter !== undefined)
-      throw new Error('combine string filters with conditions via cond()/and()/or()');
+      throw new Error('cannot combine a string filter with conditions — express everything as one tree via cond()/and()/or()');
     if (this._conds.length > 0)
       this._conds.push('and');
     this._conds.push(node as any);
@@ -449,7 +496,10 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return this;
   }
 
-  /** Narrows the projection to [columns] (system columns always ride along). */
+  /** Narrows the projection to [columns] (system columns always ride along).
+   * NB: select() re-types the result from TRow — call it BEFORE expand(): the
+   * select-then-expand order composes, while expand-then-select keeps the expanded
+   * fields at runtime but drops them from the compile-time type. */
   select<K extends TColumn & keyof TRow & string>(...columns: K[]):
       DomainQueryBuilder<TRow, TColumn, TExpand,
         Pick<TRow, K | Extract<keyof TRow, 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id'>>, TDf> {

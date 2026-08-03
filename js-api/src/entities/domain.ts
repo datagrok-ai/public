@@ -39,6 +39,7 @@ export class DomainTable extends Entity {
     super(dart);
   }
 
+  /** Owning {@link DomainSchema}. */
   get schema(): DomainSchema { return toJs(api.grok_DomainTable_Get_Schema(this.dart)); }
 
   /** Row security mode: 'table' | 'master' | 'row'. */
@@ -102,11 +103,13 @@ export class DomainRow {
   /** Id of the user who last authored the row. */
   get authorId(): string { return api.grok_DomainRow_Get_AuthorId(this.dart); }
 
+  /** Creation instant (dayjs; null when the wire value is absent). */
   get createdOn(): dayjs.Dayjs | null {
     const d = api.grok_DomainRow_Get_CreatedOn(this.dart);
     return d ? dayjs(d) : null;
   }
 
+  /** Last-update instant (dayjs; null when the wire value is absent). */
   get updatedOn(): dayjs.Dayjs | null {
     const d = api.grok_DomainRow_Get_UpdatedOn(this.dart);
     return d ? dayjs(d) : null;

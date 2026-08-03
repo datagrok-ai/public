@@ -164,7 +164,10 @@ combined with AND:
 * **Condition object** — a JSON condition, like
   `{"property": "region", "operator": "=", "value": "Cote d'Azur"}`. Use this form when the
   value contains an apostrophe or quotation mark (as in `Cote d'Azur`) — such characters
-  cannot appear in an expression-grammar value.
+  cannot appear in an expression-grammar value. From JS, build these with `DG.cond`,
+  `DG.and`, and `DG.or`, or the query builder's `.where(...)` — condition values are bound
+  server-side, never interpolated (see
+  [Typed clients](../../develop/how-to/db/domain-schemas.md#typed-clients)).
 * **Condition group** — a JSON list of conditions joined by `"and"`/`"or"`, like
   `[{"property": "freight", "operator": ">=", "value": 20}, "and", {"property": "freight", "operator": "<=", "value": 90}]`.
   This is the form recorded range filters take.
