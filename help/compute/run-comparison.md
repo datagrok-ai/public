@@ -20,6 +20,31 @@ Scalars and dataframe columns are matched across runs by name: exact, then norma
 (case/underscore/dash-insensitive), then fuzzy. Values with mismatching units never match;
 partially missing units produce a warning icon.
 
+Columns additionally require their tables to be comparable: the index columns must
+name-match, and the split columns must either both be unset or name-match. Beyond that,
+matching stays per column — the tables don't need to share their full column sets.
+
+## Fine-tuning matches
+
+Each compare row maps the same value across runs: one item per run. To chart several
+series within one run, use a [split column](#index-and-split-columns) instead — that is
+the native pattern for model results.
+
+Automatic matching picks the best candidate per run, which is not always the desired one —
+for example, when a run has several similar tables. Expand a compare row (the chevron on
+column targets) to see every compatible item grouped by run, with checkboxes:
+
+* items picked by the automatic matching are checked and marked **(auto)**;
+* other compatible items are listed unchecked — checking one makes it the run's series
+  and unchecks the run's previous pick (one item per run);
+* unchecking an item excludes the run from the chart;
+* raw workspace tables are checked in every target whose name matches exactly (up to case
+  and separators), not just the best one; fuzzy name matches are listed unchecked;
+* **Reset to auto** discards the manual toggles for that target.
+
+Toggles survive index and split changes, and the coverage count next to each target
+reflects the checked items.
+
 ## Index and split columns
 
 Column comparison requires an index (x axis) column per table. An optional split column

@@ -127,12 +127,13 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   }
 
   const name = getRunTitle(call);
+  const sourceKind = serializedConfig ? 'workflow' as const : 'function' as const;
   return {
     id: call.id,
     name,
-    sourceKind: serializedConfig ? 'workflow' : 'function',
+    sourceKind,
     modelName,
-    nodes: {entryId: call.id, entryName: name, scalars, tables},
+    nodes: {entryId: call.id, entryName: name, sourceKind, scalars, tables},
     dataFrames,
   };
 }
@@ -152,7 +153,7 @@ export function entryFromDataFrame(df: DG.DataFrame): ComparisonEntry {
     name: df.name,
     sourceKind: 'raw',
     modelName: '',
-    nodes: {entryId: id, entryName: df.name, scalars: [], tables: [table]},
+    nodes: {entryId: id, entryName: df.name, sourceKind: 'raw', scalars: [], tables: [table]},
     dataFrames: new Map([[df.name, df]]),
   };
 }

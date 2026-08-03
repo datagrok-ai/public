@@ -45,9 +45,11 @@ interface ParticipatingRun {
   binding: ColumnTarget['bindings'][number];
 }
 
+// enabled bindings only; matching guarantees at most one per run
 function getParticipating(target: ColumnTarget, entries: ComparisonEntry[]): ParticipatingRun[] {
   return entries
-    .map((entry) => ({entry, binding: target.bindings.find((b) => b.entryId === entry.id)}))
+    .map((entry) => ({entry, binding: target.bindings.find((b) =>
+      b.entryId === entry.id && entry.dataFrames.has(b.tablePath))}))
     .filter((item) => !!item.binding) as ParticipatingRun[];
 }
 

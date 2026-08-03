@@ -12,7 +12,8 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 
 import {History} from '../History/History';
 import {
-  ComparisonTarget, ColumnTarget, MatchConfidence, ComparisonEntry, EntrySourceKind, RUN_COLUMN,
+  ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
+  ComparisonEntry, EntrySourceKind, RUN_COLUMN, candidateId,
 } from './types';
 import {matchScalarTargets, matchColumnTargets} from './matching';
 import {
@@ -62,6 +63,8 @@ export const RunComparison = Vue.defineComponent({
     // entryId -> tablePath -> split (category) column name
     const splitSelection = Vue.ref<Record<string, Record<string, string>>>({});
     const selectedTargetKey = Vue.ref('');
+    const candidateOverrides = Vue.ref<CandidateOverrides>({});
+    const expandedTargetKeys = Vue.ref<Record<string, boolean>>({});
 
     const historyHeight = Vue.ref(320);
     const sidebarWidth = Vue.ref(360);
@@ -202,8 +205,55 @@ export const RunComparison = Vue.defineComponent({
       const nodes = entries.value.map((entry) => entry.nodes);
       return [
         ...matchScalarTargets(nodes),
-        ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value),
-      ].sort((a, b) => b.coverage - a.coverage);
+        ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value),
+      ].sort((a, b) => b.defaultCoverage - a.defaultCoverage);
+    });
+
+    // radio semantics: checking an item makes it the run's pick and unchecks the
+    // run's current one; unchecking excludes the run from the target
+    const setCandidateEnabled = (target: ColumnTarget, candidate: ColumnCandidate, enabled: boolean) => {
+      const next = {...candidateOverrides.value[target.key]};
+      if (enabled) {
+        for (const other of target.candidates) {
+          if (other !== candidate && other.enabled && other.binding.entryId === candidate.binding.entryId)
+            next[candidateId(other.binding)] = false;
+        }
+      }
+      next[candidateId(candidate.binding)] = enabled;
+      candidateOverrides.value = {...candidateOverrides.value, [target.key]: next};
+    };
+
+    const resetTargetOverrides = (targetKey: string) => {
+      const {[targetKey]: _removed, ...rest} = candidateOverrides.value;
+      candidateOverrides.value = rest;
+    };
+
+    const toggleExpanded = (targetKey: string) => {
+      expandedTargetKeys.value = {
+        ...expandedTargetKeys.value,
+        [targetKey]: !expandedTargetKeys.value[targetKey],
+      };
+    };
+
+    // drop overrides that no longer resolve (entry removed, index changed, cluster reshaped);
+    // removed entries are not consumed by matching, so the rewrite converges in one cycle
+    Vue.watch(targets, (list) => {
+      const validIds = new Map(list
+        .filter((target): target is ColumnTarget => target.kind === 'column')
+        .map((target) => [target.key,
+          new Set(target.candidates.map((candidate) => candidateId(candidate.binding)))]));
+      let changed = false;
+      const next: CandidateOverrides = {};
+      for (const [key, ids] of Object.entries(candidateOverrides.value)) {
+        const valid = validIds.get(key);
+        const kept = valid ? Object.entries(ids).filter(([id]) => valid.has(id)) : [];
+        if (kept.length !== Object.keys(ids).length)
+          changed = true;
+        if (kept.length > 0)
+          next[key] = Object.fromEntries(kept);
+      }
+      if (changed)
+        candidateOverrides.value = next;
     });
 
     const indexFilter = Vue.ref('');
@@ -461,6 +511,73 @@ export const RunComparison = Vue.defineComponent({
       </div>
     );
 
+    const renderCandidateRow = (target: ColumnTarget, candidate: ColumnCandidate) => {
+      const id = candidateId(candidate.binding);
+      return <label
+        key={id}
+        style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '1px 0px 1px 14px', cursor: 'pointer'}}
+      >
+        <input
+          type='checkbox'
+          checked={candidate.enabled}
+          onChange={(e: Event) => setCandidateEnabled(target, candidate, (e.target as HTMLInputElement).checked)}
+        />
+        <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+          title={candidate.binding.tablePath}>
+          {candidate.binding.tableFriendlyPath ?? candidate.binding.tableName}
+        </span>
+        <span style={{color: 'var(--grey-5)', flexShrink: '0'}}>{candidate.binding.columnName}</span>
+        <span style={{
+          fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
+          background: CONFIDENCE_COLORS[candidate.confidence], flexShrink: '0',
+        }}>{candidate.confidence}</span>
+        { candidate.unitsWarn &&
+          <IconFA name='exclamation-triangle' tooltip='Units are missing on some items'/> }
+        { candidate.auto &&
+          <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>(auto)</span> }
+      </label>;
+    };
+
+    const renderCandidatePanel = (target: ColumnTarget) => {
+      const groups: {entry: ComparisonEntry, candidates: ColumnCandidate[]}[] = [];
+      for (const candidate of target.candidates) {
+        const last = groups[groups.length - 1];
+        if (last && last.entry.id === candidate.binding.entryId) {
+          last.candidates.push(candidate);
+          continue;
+        }
+        const entry = entries.value.find((item) => item.id === candidate.binding.entryId);
+        if (entry)
+          groups.push({entry, candidates: [candidate]});
+      }
+      return <div
+        key={`${target.key}:candidates`}
+        class='c2-comparison-expansion'
+        style={{gridColumn: '1 / -1', padding: '2px 6px 6px 26px'}}
+        onClick={(e: MouseEvent) => e.stopPropagation()}
+      >
+        { candidateOverrides.value[target.key] &&
+          <span
+            style={{fontSize: '11px', color: 'var(--blue-1, #2083d5)', cursor: 'pointer'}}
+            onClick={() => resetTargetOverrides(target.key)}
+          >Reset to auto</span> }
+        { groups.map(({entry, candidates}) => {
+          const badge = SOURCE_BADGES[entry.sourceKind];
+          return <div key={entry.id}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0px'}}>
+              <span style={{
+                fontSize: '10px', color: 'white', background: badge.color,
+                borderRadius: '3px', padding: '0px 4px', flexShrink: '0',
+              }}>{badge.label}</span>
+              <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+                title={entry.name}>{entry.name}</span>
+            </div>
+            { candidates.map((candidate) => renderCandidateRow(target, candidate)) }
+          </div>;
+        })}
+      </div>;
+    };
+
     const renderTargets = () => (
       <div>
         <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
@@ -475,7 +592,9 @@ export const RunComparison = Vue.defineComponent({
         { targets.value.length > 0 && filteredTargets.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>No values match the filter</div> }
         <div class='c2-comparison-rows c2-comparison-table'
-          style={{gridTemplateColumns: 'max-content fit-content(400px) max-content max-content max-content 1fr'}}>
+          style={{
+            gridTemplateColumns: 'max-content max-content fit-content(400px) max-content max-content max-content 1fr',
+          }}>
           { filteredTargets.value.map((target) => {
             const isSelected = multiMode.value ?
               multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
@@ -504,7 +623,8 @@ export const RunComparison = Vue.defineComponent({
               multiKeys.value = multiKeys.value.includes(target.key) ?
                 multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
             };
-            return <div
+            const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
+            const row = <div
               key={target.key}
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
               style={{
@@ -514,6 +634,13 @@ export const RunComparison = Vue.defineComponent({
               onClick={onRowClick}
               onMousedown={(e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); }}
             >
+            { target.kind === 'column' ?
+              <IconFA
+                name={isExpanded ? 'chevron-down' : 'chevron-right'}
+                tooltip='Show matched items'
+                onClick={(e: Event) => {e.stopPropagation(); toggleExpanded(target.key);}}
+              /> :
+              <span></span> }
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
               title={target.displayName}>
@@ -530,6 +657,7 @@ export const RunComparison = Vue.defineComponent({
               {target.coverage}/{target.total}
             </span>
           </div>;
+            return isExpanded ? [row, renderCandidatePanel(target as ColumnTarget)] : row;
           })}
         </div>
       </div>

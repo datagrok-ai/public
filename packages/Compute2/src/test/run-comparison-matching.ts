@@ -1,7 +1,7 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
 import {isNumericType} from '../components/RunComparison/types';
 import {
-  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
+  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, tablesCompatible,
   matchScalarTargets, matchColumnTargets, FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -174,6 +174,199 @@ category('RunComparison: column matching', () => {
     expect(targets.length, 1);
     expect(targets[0].displayName, 'height');
     expect(targets[0].bindings.every((b) => b.splitColumnName === 'species'), true);
+  });
+});
+
+category('RunComparison: table compatibility', () => {
+  test('tablesCompatible index and split rules', async () => {
+    expect(tablesCompatible({indexColumnName: 'time'}, {indexColumnName: 'Time '}), true);
+    expect(tablesCompatible({indexColumnName: 'times'}, {indexColumnName: 'time'}), true);
+    expect(tablesCompatible({indexColumnName: 'time'}, {indexColumnName: 'step'}), false);
+    expect(tablesCompatible(
+      {indexColumnName: 'time', splitColumnName: 'species'},
+      {indexColumnName: 'time', splitColumnName: 'Species'}), true);
+    expect(tablesCompatible(
+      {indexColumnName: 'time', splitColumnName: 'species'},
+      {indexColumnName: 'time'}), false);
+    expect(tablesCompatible(
+      {indexColumnName: 'time', splitColumnName: 'species'},
+      {indexColumnName: 'time', splitColumnName: 'region'}), false);
+  });
+
+  test('index name mismatch blocks clustering', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [{name: 'step', type: 'int'}, {name: 'height'}]}]),
+    ];
+    expect(matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'step'}})).length, 0);
+  });
+
+  test('split presence mismatch blocks clustering', async () => {
+    const table = {path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'species', type: 'string'},
+    ]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const targets = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}}),
+      indexMap({a: {t: 'species'}}));
+    expect(targets.length, 0);
+  });
+});
+
+category('RunComparison: candidates', () => {
+  test('other compatible columns attach as disabled candidates', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [
+        {name: 'time', type: 'int'}, {name: 'temperature'}, {name: 'temperatures'},
+      ]}]),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time'}}));
+    expect(targets.length, 1);
+    const [target] = targets;
+    expect(target.candidates.length, 3);
+    const extra = target.candidates.find((c) => c.binding.columnName === 'temperatures')!;
+    expect(extra.auto, false);
+    expect(extra.enabled, false);
+    expect(extra.confidence, 'fuzzy');
+    expect(target.candidates.filter((c) => c.auto).every((c) => c.enabled), true);
+    expect(target.bindings.length, 2);
+    expect(target.coverage, 2);
+    expect(target.confidence, 'exact');
+  });
+
+  test('raw items are enabled in every compatible cluster', async () => {
+    const tables = [
+      {path: 's1/df', name: 'Heating', columns: [{name: 'time', type: 'int'}, {name: 'height'}]},
+      {path: 's2/df', name: 'Cooling', columns: [{name: 'time', type: 'int'}, {name: 'height'}]},
+    ];
+    const entries = [
+      makeEntry('a', [], tables),
+      makeEntry('b', [], tables),
+      makeEntry('raw', [], [{path: 'exp', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}], 'raw'),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({
+      a: {'s1/df': 'time', 's2/df': 'time'},
+      b: {'s1/df': 'time', 's2/df': 'time'},
+      raw: {exp: 'time'},
+    }));
+    expect(targets.length, 2);
+    for (const target of targets) {
+      const rawCandidate = target.candidates.find((c) => c.binding.entryId === 'raw')!;
+      expect(rawCandidate.enabled, true);
+      expect(target.coverage, 3);
+    }
+    expect(targets.filter((t) =>
+      t.candidates.find((c) => c.binding.entryId === 'raw')!.auto).length, 1);
+  });
+
+  test('raw attachment resurrects a single-entry cluster', async () => {
+    const entries = [
+      makeEntry('a', [], [
+        {path: 't1', name: 'T1', columns: [{name: 'time', type: 'int'}, {name: 'height'}]},
+        {path: 't2', name: 'T2', columns: [{name: 'time', type: 'int'}, {name: 'height'}]},
+      ]),
+      makeEntry('raw', [], [{path: 'exp', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}], 'raw'),
+    ];
+    const targets = matchColumnTargets(entries,
+      indexMap({a: {t1: 'time', t2: 'time'}, raw: {exp: 'time'}}));
+    expect(targets.length, 2);
+    for (const target of targets)
+      expect(target.coverage, 2);
+  });
+
+  test('raw items enable only on non-fuzzy matches', async () => {
+    const wfTable = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]};
+    const entries = [
+      makeEntry('a', [], [wfTable]),
+      makeEntry('b', [], [wfTable]),
+      makeEntry('raw', [], [{path: 'exp', columns: [
+        {name: 'time', type: 'int'}, {name: 'Temperature'}, {name: 'temperatures'},
+      ]}], 'raw'),
+    ];
+    const targets = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}, raw: {exp: 'time'}}));
+    const target = targets.find((t) => t.displayName === 'temperature')!;
+    const normalized = target.candidates.find((c) => c.binding.columnName === 'Temperature')!;
+    expect(normalized.enabled, true);
+    const fuzzy = target.candidates.find((c) => c.binding.columnName === 'temperatures')!;
+    expect(fuzzy.enabled, false);
+    expect(target.bindings.filter((b) => b.entryId === 'raw').length, 1);
+  });
+
+  test('fuzzy greedy raw pick stays unchecked', async () => {
+    const wfTable = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]};
+    const entries = [
+      makeEntry('a', [], [wfTable]),
+      makeEntry('b', [], [wfTable]),
+      makeEntry('raw', [], [{path: 'exp', columns: [
+        {name: 'time', type: 'int'}, {name: 'temperatures'},
+      ]}], 'raw'),
+    ];
+    const [target] = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}, raw: {exp: 'time'}}));
+    const rawCandidate = target.candidates.find((c) => c.binding.entryId === 'raw')!;
+    expect(rawCandidate.auto, true);
+    expect(rawCandidate.enabled, false);
+    expect(target.coverage, 2);
+  });
+
+  test('overrides flip candidates and update derived fields', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [
+        {name: 'time', type: 'int'}, {name: 'temperature'}, {name: 'temperatures', units: 'K'},
+      ]}]),
+    ];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [base] = matchColumnTargets(entries, indexes);
+    const key = base.key;
+
+    const [disabled] = matchColumnTargets(entries, indexes, undefined, {[key]: {'b|t|temperature': false}});
+    expect(disabled.bindings.length, 1);
+    expect(disabled.coverage, 1);
+    expect(disabled.confidence, 'exact');
+
+    // radio semantics: the explicit pick replaces the run's auto one
+    const [swapped] = matchColumnTargets(entries, indexes, undefined, {[key]: {'b|t|temperatures': true}});
+    expect(swapped.bindings.length, 2);
+    expect(swapped.coverage, 2);
+    expect(swapped.confidence, 'fuzzy');
+    expect(swapped.unitsWarning, true);
+    expect(swapped.candidates.find((c) => c.binding.columnName === 'temperature' &&
+      c.binding.entryId === 'b')!.enabled, false);
+
+    const [stale] = matchColumnTargets(entries, indexes, undefined, {[key]: {'zzz|t|nope': false}});
+    expect(stale.bindings.length, 2);
+  });
+
+  test('at most one candidate per run is enabled by default', async () => {
+    const wfTable = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]};
+    const entries = [
+      makeEntry('a', [], [wfTable]),
+      makeEntry('b', [], [wfTable]),
+      makeEntry('raw', [], [{path: 'exp', columns: [
+        {name: 'time', type: 'int'}, {name: 'Temperature'}, {name: 'TEMPERATURE'},
+      ]}], 'raw'),
+    ];
+    const [target] = matchColumnTargets(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'time'}, raw: {exp: 'time'}}));
+    const rawCandidates = target.candidates.filter((c) => c.binding.entryId === 'raw');
+    expect(rawCandidates.length, 2);
+    expect(rawCandidates.filter((c) => c.enabled).length, 1);
+  });
+
+  test('user toggles never remove the target', async () => {
+    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [base] = matchColumnTargets(entries, indexes);
+    const [target] = matchColumnTargets(entries, indexes, undefined,
+      {[base.key]: {'a|t|height': false, 'b|t|height': false}});
+    expect(target.key, base.key);
+    expect(target.bindings.length, 0);
+    expect(target.coverage, 0);
+    expect(target.defaultCoverage, 2);
   });
 });
 

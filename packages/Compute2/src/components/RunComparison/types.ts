@@ -36,14 +36,16 @@ export interface TableNodeInfo {
   rowCount: number;
 }
 
+export type EntrySourceKind = 'workflow' | 'function' | 'raw';
+
 export interface ComparisonEntryNodes {
   entryId: string;
   entryName: string;
+  // 'raw' (standalone) tables get enabled in every compatible cluster, not just the best one
+  sourceKind?: EntrySourceKind;
   scalars: ScalarNodeInfo[];
   tables: TableNodeInfo[];
 }
-
-export type EntrySourceKind = 'workflow' | 'function' | 'raw';
 
 export interface ComparisonEntry {
   id: string;
@@ -80,6 +82,9 @@ export interface TargetBase {
   confidence: MatchConfidence;
   unitsWarning: boolean;
   coverage: number;
+  // coverage under default enablement — a toggle-independent sort key, so rows
+  // don't jump while the user (un)checks candidates
+  defaultCoverage: number;
   total: number;
 }
 
@@ -88,10 +93,27 @@ export interface ScalarTarget extends TargetBase {
   bindings: ScalarBinding[];
 }
 
+export interface ColumnCandidate {
+  binding: ColumnBinding;
+  // confidence/unitsWarn are relative to the cluster canonical name and seed units
+  confidence: MatchConfidence;
+  unitsWarn: boolean;
+  auto: boolean;
+  enabled: boolean;
+}
+
 export interface ColumnTarget extends TargetBase {
   kind: 'column';
+  candidates: ColumnCandidate[];
+  // enabled candidates' bindings; what statuses, signatures and builders consume
   bindings: ColumnBinding[];
 }
+
+// index/split column names are deliberately excluded so toggles survive picker changes
+export const candidateId = (b: ColumnBinding) => `${b.entryId}|${b.tablePath}|${b.columnName}`;
+
+// targetKey -> candidateId -> enabled
+export type CandidateOverrides = Record<string, Record<string, boolean>>;
 
 export type ComparisonTarget = ScalarTarget | ColumnTarget;
 

@@ -44,6 +44,18 @@ category('RunComparison: entry statuses', () => {
     expect(statusC.reason, 'no similar data');
   });
 
+  test('entry with all candidates toggled off reports disabled', async () => {
+    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [base] = matchColumnTargets(entries, indexes);
+    const [target] = matchColumnTargets(entries, indexes, undefined,
+      {[base.key]: {'b|t|height': false}});
+    const statusB = getEntryStatuses(entries, target, indexes).find((s) => s.entryId === 'b')!;
+    expect(statusB.matched, false);
+    expect(statusB.reason, 'disabled');
+  });
+
   test('scalar target unmatched entry reports no-similar-data', async () => {
     const entries = [
       makeEntry('a', [{name: 'x'}]),
@@ -98,6 +110,51 @@ category('RunComparison: filters and compatibility', () => {
     const [withSplit] = matchColumnTargets(entries, indexes, splits);
     const [withoutSplit] = matchColumnTargets(entries, indexes);
     expect(bindingSignature(withSplit) === bindingSignature(withoutSplit), false);
+  });
+
+  test('enablement changes the bindings signature', async () => {
+    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [base] = matchColumnTargets(entries, indexes);
+    const [toggled] = matchColumnTargets(entries, indexes, undefined,
+      {[base.key]: {'b|t|height': false}});
+    expect(bindingSignature(base) === bindingSignature(toggled), false);
+  });
+
+  test('enabling a sibling swaps the pick and keeps multi-value available', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [
+        {name: 'time', type: 'int'}, {name: 'height'}, {name: 'heights'},
+      ]}]),
+    ];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [base] = matchColumnTargets(entries, indexes);
+    const [anchor] = matchColumnTargets(entries, indexes, undefined,
+      {[base.key]: {'b|t|heights': true}});
+    expect(anchor.bindings.length, 2);
+    expect(anchor.bindings.find((b) => b.entryId === 'b')!.columnName, 'heights');
+    expect(compatibleTargetsFor(anchor, [anchor], () => 'int').length, 1);
+  });
+
+  test('raw fuzzy siblings do not block multi-value mode', async () => {
+    const wfTable = {path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'temperature'}, {name: 'velocity'},
+    ]};
+    const rawTable = {path: 'exp', columns: [
+      {name: 'time', type: 'int'}, {name: 'temperature'}, {name: 'temperatures'},
+    ]};
+    const entries = [
+      makeEntry('a', [], [wfTable]),
+      makeEntry('b', [], [wfTable]),
+      makeEntry('raw', [], [rawTable], 'raw'),
+    ];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}, raw: {exp: 'time'}});
+    const targets = matchColumnTargets(entries, indexes);
+    const anchor = targets.find((t) => t.displayName === 'temperature')!;
+    expect(anchor.bindings.filter((b) => b.entryId === 'raw').length, 1);
+    expect(compatibleTargetsFor(anchor, targets, () => 'int').length >= 1, true);
   });
 
   test('isSplitCandidate requires a string column that is not the index', async () => {

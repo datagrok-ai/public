@@ -38,6 +38,7 @@ category('RunComparison: comparison dataframes', () => {
       confidence: 'exact',
       unitsWarning: false,
       coverage: 2,
+      defaultCoverage: 2,
       total: 2,
       bindings: [
         {entryId: 'a', path: 'x', name: 'x', value: 10},
@@ -168,6 +169,18 @@ category('RunComparison: multi and split dataframes', () => {
     const mixedResult = buildColumnComparison(mixedTarget as ColumnTarget, mixedEntries)!;
     expect(mixedResult.isKeyIndex, true);
     expect(mixedResult.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
+  });
+
+  test('disabled candidates are excluded from the chart', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [intCol('time', [1, 2]), floatCol('value', [10, 20])])),
+      entryFromDataFrame(makeDf('r2', [intCol('time', [1, 2]), floatCol('value', [30, 40])])),
+    ];
+    const indexes = indexesFor(entries, 'time');
+    const [base] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes, undefined,
+      {[base.key]: {[`${entries[1].id}|r2|value`]: false}});
+    expect(buildColumnComparison(target as ColumnTarget, entries), null);
   });
 
   test('duplicate display names get deduplicated value columns', async () => {

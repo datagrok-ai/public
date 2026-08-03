@@ -16,6 +16,7 @@ export function matchesFilter(query: string, text: string): boolean {
   return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
 }
 
+// over enabled bindings only (matching guarantees at most one per run)
 export function bindingSignature(target: ColumnTarget): string {
   return target.bindings
     .map((b) => `${b.entryId}|${b.tablePath}|${b.indexColumnName}|${b.splitColumnName ?? ''}`)
@@ -181,7 +182,8 @@ export function computeIndexRows(
 
 export type ExclusionReason =
   | 'no similar data'
-  | 'index not set';
+  | 'index not set'
+  | 'disabled';
 
 export interface EntryStatus {
   entryId: string;
@@ -201,6 +203,9 @@ export function getEntryStatuses(
     const binding = (target.bindings as {entryId: string}[]).find((b) => b.entryId === entry.entryId);
     if (binding)
       return {entryId: entry.entryId, matched: true};
+    if (target.kind === 'column' &&
+      target.candidates.some((candidate) => candidate.binding.entryId === entry.entryId))
+      return {entryId: entry.entryId, matched: false, reason: 'disabled'};
     if (target.kind === 'column' &&
       entry.tables.length > 0 &&
       entry.tables.every((table) => !indexColumns.get(entry.entryId)?.get(table.path)))

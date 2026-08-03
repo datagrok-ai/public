@@ -32,3 +32,10 @@
 .c2-comparison-table .c2-comparison-row > * {
     min-width: 0;
 }
+
+/* inline candidate checklist under an expanded target row */
+.c2-comparison-rows .c2-comparison-expansion {
+    border-bottom: 1pt solid var(--grey-12);
+    background-color: rgba(32, 131, 213, 0.04);
+    cursor: default;
+}
