@@ -13,9 +13,9 @@ const Z_TO_SYMBOL: Record<number, string> = {
   55: 'Cs', 56: 'Ba', 78: 'Pt', 79: 'Au', 80: 'Hg', 82: 'Pb', 83: 'Bi', 85: 'At', 86: 'Rn',
 };
 
-function isHetero(z: number): boolean { return z !== 1 && z !== 6; }
-function isMetal(z: number): boolean { return !NONMETAL_Z.has(z); }
-function isHalogen(z: number): boolean { return HALOGEN_Z.has(z); }
+function isHetero(z: number): boolean {return z !== 1 && z !== 6;}
+function isMetal(z: number): boolean {return !NONMETAL_Z.has(z);}
+function isHalogen(z: number): boolean {return HALOGEN_Z.has(z);}
 
 export interface MolStats {
   numHeavy: number;
@@ -30,11 +30,11 @@ export interface MolStats {
 
 export function computeMolStats(mol: RDMol): MolStats {
   let raw: string;
-  try { raw = mol.get_json(); } catch (e) {
+  try {raw = mol.get_json();} catch (e) {
     throw new Error(`get_json failed: ${e instanceof Error ? e.message : String(e)}`);
   }
   let json: any;
-  try { json = JSON.parse(raw); } catch (e) {
+  try {json = JSON.parse(raw);} catch (e) {
     throw new Error(`get_json returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
   const m = json.molecules?.[0];
@@ -131,9 +131,8 @@ export function applyProductFilters(
 
   if (specs.only_these_atoms_allowed && specs.only_these_atoms_allowed.length > 0) {
     const allowed = new Set(specs.only_these_atoms_allowed.map((s) => s.trim()));
-    for (const sym of stats.symbols) {
+    for (const sym of stats.symbols)
       if (!allowed.has(sym)) return {pass: false, reason: 'only_these_atoms_allowed'};
-    }
   }
 
   if (specs.remove_radicals && stats.hasRadical)
@@ -143,7 +142,7 @@ export function applyProductFilters(
 
   for (const qmol of exclusionQmols) {
     let match: string;
-    try { match = mol.get_substruct_match(qmol); } catch { continue; }
+    try {match = mol.get_substruct_match(qmol);} catch {continue;}
     if (match && match !== '' && match !== '{}') {
       try {
         const obj = JSON.parse(match);
@@ -170,8 +169,7 @@ export function buildExclusionQmols(rdkit: RDModule, smartsList: string[]): {qmo
     if (!trimmed) continue;
     try {
       const q = rdkit.get_qmol(trimmed);
-      if (q && q.is_valid()) { qmols.push(q); sources.push(trimmed); }
-      else q?.delete();
+      if (q && q.is_valid()) {qmols.push(q); sources.push(trimmed);} else q?.delete();
     } catch {
       // skip invalid SMARTS
     }
@@ -183,8 +181,7 @@ export function buildExclusionQmols(rdkit: RDModule, smartsList: string[]): {qmo
       if (disposed) return;
       disposed = true;
       for (let i = 0; i < qmols.length; i++) {
-        try { qmols[i].delete(); }
-        catch (e) {
+        try {qmols[i].delete();} catch (e) {
           console.warn(`exclusion qmol[${i}] delete failed (SMARTS="${sources[i]}"): ` +
             `${e instanceof Error ? e.message : String(e)}`);
         }
