@@ -316,6 +316,20 @@ export function formatRoute(route: Route): string {
   return route.map((s) => `${s.reactants.join('.')}>>${s.product}`).join(BRANCH_DELIMITER);
 }
 
+// The same synthesis can be found more than once for one ProductRecord: breadth-first's eligible
+// pool always includes round 0's raw BBs, so a BB combo already used in an earlier round stays
+// retriable in every later round; a single combo can also match a template's reactant slots in
+// more than one way, producing several structurally-identical result sets. Comparing by the
+// formatted route string (not object identity) catches both, so a rediscovered synthesis is
+// skipped instead of inflating n_routes and emitting a duplicate row. Returns false once `cap` is
+// reached, so callers can stop iterating the same way they did before this check existed.
+function addRouteIfNew(rec: ProductRecord, route: Route, cap: number): boolean {
+  if (cap >= 0 && rec.routes.length >= cap) return false;
+  const key = formatRoute(route);
+  if (!rec.routes.some((r) => formatRoute(r) === key)) rec.routes.push(route);
+  return true;
+}
+
 export interface OutputRow {
   product: string;
   route: string;
@@ -722,10 +736,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       rec = {smiles: productSmiles, routes: [], firstRound: round};
                       newPool.set(productSmiles, rec);
                     }
-                    for (const base of baseRoutes) {
-                      if (max_num_routes_per_compound >= 0 && rec.routes.length >= max_num_routes_per_compound) break;
-                      rec.routes.push([...base, step]);
-                    }
+                    for (const base of baseRoutes)
+                      if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound)) break;
                   } finally {
                     try {productMol?.delete();} catch {/* ignore */}
                   }
@@ -773,10 +785,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice(), isOriginalBB: r === 0});
       else {
         if (r === 0) ex.isOriginalBB = true;
-        for (const route of p.routes) {
-          if (max_num_routes_per_compound >= 0 && ex.routes.length >= max_num_routes_per_compound) break;
-          ex.routes.push(route);
-        }
+        for (const route of p.routes)
+          if (!addRouteIfNew(ex, route, max_num_routes_per_compound)) break;
       }
     }
   }
