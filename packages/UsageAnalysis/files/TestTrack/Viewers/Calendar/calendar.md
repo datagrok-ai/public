@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.calendar]
 realized_as:
   - calendar-spec.ts
 related_bugs: []

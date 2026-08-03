@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: smoke
 priority: p0
 realizes_atlas: []
-realizes: []
+realizes: [sharing.share-dialog, views.projects]
 realized_as:
   - projects-chat-collaboration-spec.ts
 related_bugs: []

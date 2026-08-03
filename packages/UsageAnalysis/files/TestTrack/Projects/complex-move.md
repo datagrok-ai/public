@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: []
-realizes: []
+realizes: [views.projects, views.space]
 realized_as:
   - complex-move-spec.ts
 pyramid_layer: integration

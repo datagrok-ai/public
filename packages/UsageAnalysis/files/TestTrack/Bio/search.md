@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [bio.cp.subsequence-search]
-realizes: [bio.search.subsequence-search, bio.bio-substructure-filter]
+realizes: [bio.menu.search.subsequence-search, bio.filter.bio-substructure-filter]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/search.md
 migration_date: 2026-06-01

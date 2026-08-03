@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [powerpack.cp.add-new-column-persists, add-new-column-datasync-roundtrip]
-realizes: []
+realizes: [powerpack.dialogs.add-new-column, file.menu.save.tables-as-project]
 pyramid_layer: bug-focused
 ui_coverage_responsibility:
   - add-new-column-dialog

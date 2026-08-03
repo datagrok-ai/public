@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [rename-dependent-entity-reopen, share-with-unshared-deps, share-spaces-datasync, view-and-use-failure-state, derive-then-save-inside-project]
-realizes: [views.projects]
+realizes: [views.projects, data.menu.join-tables, views.space]
 pyramid_layer: bug-focused
 ui_coverage_responsibility:
   - context-menu-rename-project

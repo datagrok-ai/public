@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [macromolecule_helm_column]
-realizes: []
+realizes: [sequencetranslator.oligo-renderer.convert-helm-to-oligo, sequencetranslator.oligo-renderer.combine-sense-antisense, bio.menu.polytool.convert, bio.menu.polytool.enumerate-helm, bio.menu.polytool.combine-sequences]
 realized_as:
   - st-lifecycle-macromolecule-helm-column-spec.ts
 related_bugs: []

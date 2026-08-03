@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [molecule_column]
-realizes: []
+realizes: [chem.menu.transform.markush-enumeration]
 realized_as:
   - st-lifecycle-molecule-column-spec.ts
 related_bugs: []

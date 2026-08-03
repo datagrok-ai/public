@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [viewers.correlation-plot, entities.viewer.action.open-as-table]
 realized_as:
   - correlation-plot-spec.ts
 related_bugs: []

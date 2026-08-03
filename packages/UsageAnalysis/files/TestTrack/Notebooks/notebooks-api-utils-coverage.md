@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p2
 realizes_atlas: [delete-notebook]
-realizes: [views.notebooks]
+realizes: [notebooks.view.notebook]
 produced_from: atlas-driven
 realized_as:
   - notebooks-api-utils-coverage-api-spec.ts

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [tree-hierarchical-capability-bundle]
-realizes: [charts.tree]
+realizes: [charts.viewer.tree]
 realized_as:
   - tree-enhancements-bundle-bug-spec.ts
 pyramid_layer: bug-focused

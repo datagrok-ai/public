@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [charts.viewer.word-cloud]
 realized_as:
   - word-cloud-spec.ts
 related_bugs: []

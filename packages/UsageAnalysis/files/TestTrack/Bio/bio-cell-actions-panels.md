@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p2
 realizes_atlas: []
-realizes: []
+realizes: [bio.actions.copy-as, bio.panel.composition-analysis, bio.panel.monomer, bio.menu.calculate.extract-region, bio.menu.transform.split-to-monomers]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

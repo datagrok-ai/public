@@ -1,3 +1,8 @@
+---
+realizes_atlas: []
+realizes: [grid.column-resizing, grid.row-col-resizing, grid.column-reordering, grid.block-selection, grid.tooltip, grid.column-tools, grid.column-groups, grid.special-rows, powergrid.action.smart-form]
+---
+
 # Grid — Manual Test Checklist
 
 All scenarios should start with the following sequence of events:

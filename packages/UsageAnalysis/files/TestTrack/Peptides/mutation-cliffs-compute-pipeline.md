@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [export-mutation-cliffs-from-sar-viewer, peptide-space-sar-with-mcl]
-realizes: [bio.analyze.sar, peptides.sequence-mutation-cliffs]
+realizes: [bio.menu.analyze.sar, peptides.viewer.sequence-mutation-cliffs, peptides.viewer.sequence-variability-map, peptides.viewer.logo-summary-table, peptides.action.export-mutation-cliffs]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

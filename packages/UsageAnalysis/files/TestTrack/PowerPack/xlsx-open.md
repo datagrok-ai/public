@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p0
 realizes_atlas: [powerpack.cp.xlsx-file-open, xlsx-open-all-entry-paths]
-realizes: []
+realizes: [powerpack.import.xlsx]
 produced_from: atlas-driven
 original_path: D:\work\datagrok\reddata\public\packages\UsageAnalysis\files\TestTrack\Powerpack\xlsx-open.md
 migration_date: 2026-05-23

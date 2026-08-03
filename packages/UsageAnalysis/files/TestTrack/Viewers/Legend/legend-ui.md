@@ -1,5 +1,6 @@
 ---
 feature: legend
+realizes: [viewers.line-chart, viewers.scatter-plot]
 target_layer: manual-only
 coverage_type: regression
 priority: p2

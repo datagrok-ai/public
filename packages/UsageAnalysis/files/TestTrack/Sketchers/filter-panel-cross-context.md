@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [chem.cp.substructure-filter, chem.x.sketcher-backend-switch-propagation, chem.x.filter-panel-sketcher-reopen]
-realizes: []
+realizes: [chem.filter.substructure-filter, viewers.filters, chem.sketcher.open-chem-lib, ketchersketcher.sketcher.ketcher]
 produced_from: atlas-driven
 pyramid_layer: bug-focused
 migration_date: 2026-06-02

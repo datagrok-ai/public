@@ -1,7 +1,7 @@
 ---
 feature: legend
 realizes_atlas: []
-realizes: []
+realizes: [viewers.line-chart]
 realized_as:
   - line-chart-spec.ts
 target_layer: playwright

@@ -4,7 +4,7 @@ target_layer: playwright
 coverage_type: regression
 priority: p1
 realizes_atlas: [collaborative-selection-sync]
-realizes: []
+realizes: [bio.menu.analyze.sar, peptides.viewer.sequence-variability-map, peptides.viewer.most-potent-residues]
 produced_from: atlas-driven
 realized_as:
   - collaborative-selection-spec.ts

@@ -4,7 +4,7 @@ target_layer: apitest
 coverage_type: regression
 priority: p0
 realizes_atlas: [charts.cp.open-viewer-with-required-columns]
-realizes: [charts.radar, charts.sunburst, charts.tree, charts.timelines]
+realizes: [charts.viewer.radar, charts.viewer.sunburst, charts.viewer.tree, charts.viewer.timelines]
 realized_as:
   - charts-api-spec.ts
 pyramid_layer: integration
