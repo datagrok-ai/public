@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: Added `ObjectHandler: renderGrid` — a registered JS handler wins the dispatch and decorates a `queryDf` frame (no `~item` assumption), and the per-table Dart meta's `renderGrid` decorates a JS-created grid (system column hidden, ref caption stamped).
+
 GROK-20605: Coverage sweep — `save()` business-key-duplicate regression probe (no fabricated version), typed `opIndex` on transaction rollback, `fetchFields([], fields)` zero-column shape, builder `.skip/.select` combination.
 
 GROK-20604: Added optimistic-concurrency coverage to `Dapi: domain parity` — `save` insert/update round-trip with a typed stale-save conflict, `retryOnVersionConflict` convergence under a deterministic forced conflict, `updateWithRetry` (fresh-row mutate, null-skip, typed not-found).

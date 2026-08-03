@@ -37,7 +37,7 @@ import $ from 'cash-dom';
 import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, Grid, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -1776,6 +1776,21 @@ export class ObjectHandler<T = any> {
     return this.renderProperties(x);
   }
 
+  /** Customizes a {@link Grid} presenting a collection of this handler's objects
+   * IN PLACE: column order/visibility, captions, cell renderers, interactivity.
+   * `options.items` is the DataFrame backing the grid when the caller wants the
+   * handler to tag or (re)bind it; when omitted, operate on `grid.dataFrame`.
+   *
+   * Contract: derive presentation from column tags/semTypes only — the frame may
+   * be a pure data frame (e.g. a `queryDf` result) with NO hidden `~item` object
+   * column; never assume one. Interactivity that needs the object goes through
+   * the semType renderer/context machinery.
+   *
+   * Dispatch: defining this member takes FULL responsibility for grid decoration
+   * of the built-in views (e.g. the Domain View grid); handlers that predate the
+   * member fall through to the platform default. Default: no-op. */
+  renderGrid(grid: Grid, options?: {items?: DataFrame}): void { }
+
   /** Converts object to its markup description */
   toMarkup(T: any): string | null {
     return null;
@@ -1863,6 +1878,9 @@ export class EntityMetaDartProxy extends ObjectHandler {
   renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
   renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
   renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }
+  renderGrid(grid: Grid, options?: {items?: DataFrame}): void {
+    api.grok_Meta_RenderGrid(this.dart, grid.dart, options?.items ? toDart(options.items) : null);
+  }
 }
 
 /**
