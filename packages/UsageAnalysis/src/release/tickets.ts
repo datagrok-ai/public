@@ -19,11 +19,15 @@ export async function fetchReleaseTickets(version: string): Promise<JiraIssue[]>
   return await grok.functions.call('JiraConnect:GetJiraTicketsByFilter', {filter: fixVersionFilter(version)});
 }
 
-/** A ticket still needs attention unless it's Done or Won't Fix (by either status or resolution). */
+/** Done / Won't fix, matched case-insensitively — Jira's status is "Won't fix", not "Won't Fix". */
+function isResolvedName(name: string | undefined): boolean {
+  const t = (name ?? '').toLowerCase();
+  return t === 'done' || t === 'won\'t fix';
+}
+
+/** A ticket still needs attention unless it's Done or Won't fix (by either status or resolution). */
 export function isActionable(issue: JiraIssue): boolean {
-  const status = issue.fields.status?.name ?? '';
-  const res = issue.fields.resolution?.name ?? '';
-  return status !== 'Done' && status !== 'Won\'t Fix' && res !== 'Done' && res !== 'Won\'t Fix';
+  return !isResolvedName(issue.fields.status?.name) && !isResolvedName(issue.fields.resolution?.name);
 }
 
 /** True when the ticket carries the "Main" label (case-insensitive). */

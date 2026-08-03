@@ -48,6 +48,7 @@ export class ReportingApp {
     }
 
     let table: DG.DataFrame = await allReportsPromise;
+    table.name = ReportingApp.APP_NAME;
     this.view.table = table;
 
     if (reportNumber) {

@@ -112,17 +112,35 @@ async function findContainer(containerName: string): Promise<DG.DockerContainer>
   return container;
 }
 
+// run/stop reject with the bare response body, which reaches JS opaque (logged as just "null").
+function describeFailure(action: string, container: DG.DockerContainer, name: string, e: any): Error {
+  return new Error(`Failed to ${action} container "${name}" (id ${container.id}, ` +
+    `status "${container.status}"): ${e?.message ?? e}`);
+}
+
 async function stopContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await findContainer(containerName);
+  // DockerRouter.stop answers 400 for `error`; nothing to stop anyway, and a later run clears it.
+  if (container.status === 'error')
+    return container;
   //@ts-ignore
-  if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping'))
-    await grok.dapi.docker.dockerContainers.stop(container.id, true);
+  if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping')) {
+    try {
+      await grok.dapi.docker.dockerContainers.stop(container.id, true);
+    } catch (e: any) {
+      throw describeFailure('stop', container, containerName, e);
+    }
+  }
   return container;
 }
 
 async function startContainer(containerName: string): Promise<DG.DockerContainer> {
   const container = await findContainer(containerName);
-  await grok.dapi.docker.dockerContainers.run(container.id, true);
+  try {
+    await grok.dapi.docker.dockerContainers.run(container.id, true);
+  } catch (e: any) {
+    throw describeFailure('start', container, containerName, e);
+  }
   return container;
 }
 

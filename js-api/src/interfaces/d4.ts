@@ -3687,6 +3687,10 @@ export interface ITileViewerSettings {
 
   lanesColumnName: string;
 
+  /// When unchecked, lanes that contain no tiles (for instance, when the
+  /// corresponding category is filtered out) are hidden.
+  showEmptyLanes: boolean;
+
   cardMarkup: string;
 
   allowDragBetweenLanes: boolean;

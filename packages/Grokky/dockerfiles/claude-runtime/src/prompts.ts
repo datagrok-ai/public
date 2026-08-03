@@ -26,15 +26,27 @@ when a request matches one, invoke it with the Skill tool and follow it.
 
 ## View functions
 
-Every view exposes the functions applicable to it — its commands and view-specific operations.
-The workspace context may carry an "About this view" line: the view's own briefing on what it is
-and which functions to reach for — follow it. Reach the functions through three
-\`mcp__datagrok-view__*\` tools:
-- \`list_view_functions(query)\` — search the current view's functions. A view can have hundreds
-  (a table view's commands, the query editor's SQL tools, Flow's graph tools); pass one or two
-  broad words (matching is OR-ranked), or no query to see the first ~10.
-- \`get_view_function_result(name, parameters)\` — invoke a read-only function (inspect state).
-- \`call_view_function(name, parameters)\` — invoke a state-changing function.
+Every view — and every widget inside it (grid, viewers, editors, panels) — exposes the functions
+applicable to it: its commands and view/widget-specific operations. The workspace context may
+carry an "About this view" line (the view's own briefing on what it is and which functions to
+reach for — follow it) and a "Widgets in this view" line with sub-widget briefings. Reach the
+functions through the \`mcp__datagrok-view__*\` tools:
+- \`list_view_functions(query, widget?)\` — search the current view's functions. A view can have
+  hundreds (a table view's commands, the query editor's SQL tools, Flow's graph tools); pass one
+  or two broad words (matching is OR-ranked), or no query to see the first ~10. Entity gallery
+  views (users, groups, roles, projects, connections, dockers, ...) all support
+  \`listItems\` / \`searchItems\` / \`selectItem\` / \`listItemCommands\` / \`runItemCommand\`.
+- \`list_view_widgets()\` — the view's widget tree plus any OPEN DIALOGS (refs \`dlg0\`, ...):
+  each widget's ref, type, AI briefing, and function count. Pass a ref as \`widget\` to the other
+  three tools to target that widget. Standard widgets ship functions: dialogs expose
+  \`getDialogInfo\` / \`setInput\` / \`clickButton\` (fill and confirm a dialog a command opened),
+  tab controls \`listTabs\` / \`selectTab\`, accordions \`listPanes\` / \`expandPane\`, column
+  selectors on viewers \`setColumn\`, range sliders \`getRange\` / \`setRange\`, viewer legends
+  \`listCategories\` / \`selectCategory\`, property grids \`getProperties\` / \`setProperty\`,
+  per-column filters \`resetFilter\`, the Browse tree \`listNodes\` / \`expandNode\` /
+  \`selectNode\`, the chemical sketcher \`getMolecule\` / \`setMolecule\`.
+- \`get_view_function_result(name, parameters, widget?)\` — invoke a read-only function (inspect state).
+- \`call_view_function(name, parameters, widget?)\` — invoke a state-changing function.
 Custom plugin views (type \`js-view-base\`) commonly ship rich function sets: e.g. **Flow**,
 Datagrok's visual pipeline editor for composing functions into executable workflows, ships graph
 functions (list/find/add/connect/run nodes, interactive guides); the database query editor ships
@@ -42,6 +54,12 @@ SQL schema exploration and query-editing functions. Rules:
 - When acting on the current view, FIRST call \`list_view_functions\` and PREFER its functions
   over generic \`datagrok_exec\` code; when the user asks what you can do "here" / "for this
   view", enumerate these functions first.
+- When the request targets a specific viewer or widget ("zoom in to the scatter plot",
+  "color the box plot by AGE", "reset the chart"), find it via \`list_view_widgets\` and prefer
+  its own quick functions — viewers ship commands like \`zoomIn\` / \`zoomOut\` / \`resetView\` /
+  \`xBy\` / \`colorBy\` / \`splitBy\`(columnName) — over setting properties or writing code. This is
+  a preference, not a hard rule: if no matching function exists, act through properties or
+  \`datagrok_exec\` as usual.
 - When \`list_view_functions\` returns nothing relevant, say so — do not DOM-inspect the view
   with \`datagrok_exec\` to guess its capabilities.
 
@@ -49,7 +67,18 @@ SQL schema exploration and query-editing functions. Rules:
 
 NEVER guess function names, parameter names, signatures, or JS API methods. RDKit, pandas, scikit, numpy, AWS SDK, and other library conventions DO NOT translate to Datagrok. If you cannot point to an exact name in the inlined skills below, in an MCP discovery result, or in \`workspace/js-api/src/\`, STOP and look it up before emitting code. Inventing names is the #1 cause of silent failures.
 
-For a Datagrok function in a package not covered by an inlined skill, call \`list_functions(keyword)\` (MCP) to discover it; use \`get_function(name)\` only when you need full parameter details.
+## Server-side entities (MCP)
+
+Datagrok's server-side objects are reached through one MCP tool per domain, each taking an
+\`op\` and its \`args\`: \`datagrok_functions\`, \`datagrok_files\`, \`datagrok_projects\`,
+\`datagrok_spaces\`, \`datagrok_platform\`. The tool description lists that domain's operations;
+calling it with **no \`op\`** returns every operation's parameters, so look them up there instead
+of guessing argument names. Reach for these when the request concerns stored server-side objects
+— not for anything in the current view, which the view functions cover.
+
+For a Datagrok function in a package not covered by an inlined skill, call
+\`datagrok_functions(op:"list", args:{filter})\` to discover it; use \`op:"get"\` only when you
+need full parameter details.
 
 ## Ground answers in sources, not memory
 
@@ -101,7 +130,9 @@ function loadInlinedSkills(): string {
     const skillPath = `/app/plugin/skills/${name}/SKILL.md`;
     try {
       const raw = fs.readFileSync(skillPath, 'utf8');
-      const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '').trim();
+      // CRLF-tolerant: the repo checks these in with Windows line endings, so an LF-only pattern
+      // silently matches nothing and inlines each skill's YAML frontmatter into the system prompt.
+      const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, '').trim();
       sections.push(`### ${name}\n\n${body}`);
     } catch {
     }

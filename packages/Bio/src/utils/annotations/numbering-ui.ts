@@ -265,7 +265,7 @@ function createAlignedColumn(
  *    No column-level position names (they differ per row).
  *  - Aligned column: column-level annotations only (all rows share unified positions).
  *    Position names tag set to the unified list. */
-function applyNumberingResults(
+export function applyNumberingResults(
   df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame,
   schemeName: string, populateRegions: boolean, engineLabel: string,
 ): void {

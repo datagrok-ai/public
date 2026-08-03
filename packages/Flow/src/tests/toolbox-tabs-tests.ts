@@ -3,10 +3,11 @@
  *  listing, the lazy Spaces browser, star toggling from a catalog row,
  *  localStorage persistence, and the Favorites tab round-trip (star → listed →
  *  create node → unstar → gone). */
-import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before, after} from '@datagrok-libraries/utils/src/test';
 
-import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc} from '../rete/node-factory';
+import {
+  registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc, loadQueryFuncs,
+} from '../rete/node-factory';
 import {FunctionBrowser, TOOLBOX_TABS, TOOLBOX_TAB_ICONS} from '../panel/function-browser';
 import {getFavorites, isFavorite, toggleFavorite, clearFavorites, onFavoritesChanged} from '../panel/favorites';
 import {supportedUploadExtensions} from '../utils/uploaded-files';
@@ -169,6 +170,10 @@ category('Flow: toolbox tabs', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
+      // The Queries badge counts from the server-loaded catalog — wait for
+      // the load the render kicked off to resolve.
+      await loadQueryFuncs();
+      await new Promise((r) => setTimeout(r, 50));
       const input = browser.root.querySelector('[data-testid="ff-browser-search"]') as HTMLInputElement;
       const qHeader = browser.root.querySelector('[data-testid="ff-browser-tab-queries"]') as HTMLElement;
 
@@ -178,7 +183,7 @@ category('Flow: toolbox tabs', () => {
       expect(qHeader.classList.contains('funcflow-tab-dim'), true, '0-match tab dims');
 
       // A query with real query matches shows a >0 count badge.
-      const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+      const queries = await loadQueryFuncs();
       if (queries.length > 0) {
         input.value = queries[0].name.slice(0, 6);
         input.dispatchEvent(new Event('input', {bubbles: true}));

@@ -19,6 +19,7 @@
 
 import {GraphEdit} from '../rete/flow-editor';
 import {FlowNode} from '../rete/scheme';
+import {safeGet} from '../utils/dart-proxy-utils';
 
 /** Delay between the last result-affecting edit and the automatic run. Long
  *  enough to swallow a burst (typing a value, dragging several wires), short
@@ -28,8 +29,11 @@ export const AUTORUN_DEBOUNCE_MS = 1000;
 // ---- Live-by-default nodes -------------------------------------------------
 // These rerun automatically after an edit that touches them (their own params
 // or connections, or an upstream change that invalidates them) even while the
-// ribbon autorun toggle is OFF. Modify the two lists below to change what's
-// live.
+// ribbon autorun toggle is OFF. The consolidated set is: the two lists below
+// PLUS any function that declares `meta.autorun: true` on itself (the author
+// opt-in — surfaces as `func.options`, the value may arrive as a string, e.g.
+// Flow's own `readUploadedFile`). Modify the lists to change what's live for
+// functions you don't own; prefer the meta for ones you do.
 
 /** DG function simple names (case-insensitive) that are live by default. */
 export const AUTORUN_FUNC_NAMES: string[] = [
@@ -48,6 +52,10 @@ export const AUTORUN_NODE_TYPES: string[] = [
 export function isAutorunByDefault(node: FlowNode): boolean {
   const fn = node.dgFunc?.name?.toLowerCase();
   if (fn && AUTORUN_FUNC_NAMES.some((n) => n.toLowerCase() === fn)) return true;
+  try {
+    const meta = safeGet(node.dgFunc?.options, 'autorun');
+    if (meta === true || String(meta).toLowerCase() === 'true') return true;
+  } catch {/* options can throw on odd Dart proxies — fall through */}
   const typeName = node.dgTypeName ?? '';
   for (const pat of AUTORUN_NODE_TYPES) {
     if (pat.endsWith('*') ? typeName.startsWith(pat.slice(0, -1)) : typeName === pat)

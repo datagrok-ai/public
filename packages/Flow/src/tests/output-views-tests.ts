@@ -5,7 +5,7 @@
  *  lazily on activation (`_onAdded` against a live, laid-out pane); a re-run
  *  refreshes the SAME TableView in place; ribbon/toolbox swap to the active
  *  tab's (MultiView pattern) and restore on Canvas; layouts persist in the
- *  `.ffjson` keyed by paramName and survive node-id remapping across a
+ *  `.flow` keyed by paramName and survive node-id remapping across a
  *  save → load round-trip. */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -14,7 +14,8 @@ import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {FuncFlowView} from '../funcflow-view';
 import {FlowEditor} from '../rete/flow-editor';
-import {ensureFuncNodeType} from '../rete/node-factory';
+import {ensureFuncNodeType, registerAllFunctions} from '../rete/node-factory';
+import {NodeExecStatus} from '../execution/execution-state';
 import {parseFlowBody} from '../serialization/flow-script-format';
 import {FuncFlowDocument} from '../serialization/flow-schema';
 import {until, addNode} from './test-utils';
@@ -363,6 +364,57 @@ category('Flow: output views', () => {
     }
   }, {timeout: 180000});
 
+  test('a completed Open File run restamps the node title from its path', async () => {
+    registerAllFunctions();
+    const h = await makeView();
+    try {
+      const typeName = (h.view as unknown as {findOpenFileNodeType(): string | null}).findOpenFileNodeType();
+      if (!typeName) throw new Error('OpenFile is not registered as a node');
+      const node = await addNode(h.flow, typeName, 0, 0);
+      node.label = 'Open File: demog.csv'; // what the toolbox drop stamped
+      node.inputValues['fullPath'] = 'System:DemoFiles/cars.csv'; // panel edit
+      const view = h.view as unknown as {
+        executionController: {state: {setNodeStatus(id: string, s: NodeExecStatus): void}};
+        refreshOpenFileTitle(id: string): void;
+      };
+
+      // Merely typing a new path must not retitle — the captured value is
+      // still the old file.
+      view.executionController.state.setNodeStatus(node.id, NodeExecStatus.running);
+      view.refreshOpenFileTitle(node.id);
+      expect(node.label, 'Open File: demog.csv', 'no restamp before completion');
+
+      view.executionController.state.setNodeStatus(node.id, NodeExecStatus.completed);
+      view.refreshOpenFileTitle(node.id);
+      expect(node.label, 'Open File: cars.csv', 'the title follows the path after a run');
+    } finally {
+      destroyView(h);
+    }
+  });
+
+  test('the tab strip follows the outputs-strip order (drag-assigned ranks)', async () => {
+    const h = await makeView();
+    try {
+      const a = await addNode(h.flow, 'Outputs/Table Output', 100, 0);
+      const b = await addNode(h.flow, 'Outputs/Table Output', 100, 100);
+      a.properties['paramName'] = 'alpha';
+      b.properties['paramName'] = 'beta';
+      const sync = (): void => h.view.outputViews.syncTabs(
+        (h.view as unknown as {tableOutputs(): {nodeId: string; paramName: string}[]}).tableOutputs());
+      sync();
+      expect(outputChips(h).map((c) => c.dataset.param).join(','), 'alpha,beta', 'insertion order first');
+
+      // The reorder-drag writes ranks; the next sync must reorder the chips.
+      a.properties['outputOrder'] = 1;
+      b.properties['outputOrder'] = 0;
+      sync();
+      expect(outputChips(h).map((c) => c.dataset.param).join(','), 'beta,alpha', 'ranked order after');
+      expect(chips(h)[0].dataset.param, 'canvas', 'the Canvas chip stays first');
+    } finally {
+      destroyView(h);
+    }
+  });
+
   test('tab layouts persist by paramName and survive a save → load round-trip', async () => {
     const h = await makeView();
     let h2: ViewHarness | null = null;
@@ -386,7 +438,7 @@ category('Flow: output views', () => {
       // dirty tracking (`serializeFlow`) does not.
       const body = (h.view as unknown as {entityBodyText(): string}).entityBodyText();
       const doc: FuncFlowDocument = parseFlowBody(body).doc;
-      expect(!!doc.outputViews?.['result']?.layout, true, 'the .ffjson carries outputViews');
+      expect(!!doc.outputViews?.['result']?.layout, true, 'the .flow carries outputViews');
 
       // Fresh view + load: node ids remap, the layout still finds its tab.
       h2 = await makeView();
