@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "datagrok-api": "^1.27.0",
-    "dayjs": "^1.11.13",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {

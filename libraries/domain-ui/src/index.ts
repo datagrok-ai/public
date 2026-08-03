@@ -17,6 +17,7 @@
 
 export * from './frame-editor';
 export * from './domain-grid';
+export * from './styles';
 
 // The core domain surface, re-exported so apps import from ONE place. These are
 // the SAME classes `DG.*` carries (they resolve to the `datagrok-api/dg`

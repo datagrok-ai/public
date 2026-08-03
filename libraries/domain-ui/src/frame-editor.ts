@@ -207,17 +207,29 @@ export interface DomainPendingOp {
 export class DomainFrameEditor {
   private _df: DG.DataFrame;
   private _subs: rxjs.Subscription[] = [];
-  private _properties: DG.Property[] = [];
+  private _properties: DG.Property[];
   private _propByName = new Map<string, DG.Property>();
   private _snapshots = new Map<number, {[column: string]: any}>();
+  /** Parsed {@link CHANGES_COLUMN} / {@link ERRORS_COLUMN} objects, per column
+   * and row: the JSON columns are read on every cell paint and on every change
+   * count, so re-parsing them would cost a full parse per cell per frame. Every
+   * writer of those columns goes through {@link _setJson} / {@link _clearRowState},
+   * and anything that shifts row indices resets the whole cache. */
+  private _parsed = new Map<string, Map<number, any>>();
+  /** Running {@link changeCount}: kept per row so a keystroke costs one row
+   * recount instead of a scan of the frame. */
+  private _contributions = new Map<number, number>();
+  private _changeCount = 0;
   private _suspend = false;
   private _saving = false;
   private _saveDepth = 0;
   private _dirty = false;
   private _query?: DG.DomainQuerySpec;
+  private _nameColumn: string | null;
 
   private readonly _onChanged = new rxjs.Subject<DomainFrameEditor>();
   private readonly _onDirtyChanged = new rxjs.Subject<boolean>();
+  private readonly _onSavingChanged = new rxjs.Subject<boolean>();
   private readonly _onSaved = new rxjs.Subject<DomainSaveResult>();
   private readonly _onConflict = new rxjs.Subject<DG.DomainVersionConflictError>();
   private readonly _onRefreshed = new rxjs.Subject<DG.DataFrame>();
@@ -225,14 +237,18 @@ export class DomainFrameEditor {
   private constructor(
     /** The table the frame's rows belong to. */
     public readonly client: DG.DomainTableClient,
-    /** Effective capabilities of the current user — what read-only degradation
-     * and the writable-column payload filter derive from. */
+    /** Effective capabilities of the current user, SNAPSHOT when the editor was
+     * created — what read-only degradation and the writable-column payload filter
+     * derive from. A later `grok.dapi.domains.invalidateUiCaches()` (or a grant
+     * change) does NOT reach an existing editor: re-create it to pick the new
+     * permissions up. */
     public readonly capabilities: DG.DomainTableCapabilities,
-    df: DG.DataFrame, properties: DG.Property[], query?: DG.DomainQuerySpec) {
-    this.capabilities = capabilities;
+    df: DG.DataFrame, properties: DG.Property[], nameColumn: string | null,
+    query?: DG.DomainQuerySpec) {
     this._properties = properties;
     for (const p of properties)
       this._propByName.set(p.name, p);
+    this._nameColumn = nameColumn;
     this._query = query;
     this._df = df;
     this._bind(df);
@@ -244,11 +260,13 @@ export class DomainFrameEditor {
   static async attach(dataFrame: DG.DataFrame, client: DG.DomainTableClient,
     options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
     const address = `${client.schema}.${client.table}`;
-    const [properties, capabilities] = await Promise.all([
+    const [properties, capabilities, info] = await Promise.all([
       grok.dapi.domains.registry.rowProperties(address),
       options?.capabilities != null ? Promise.resolve(options.capabilities) : client.capabilities(),
+      grok.dapi.domains.registry.tableInfo(address),
     ]);
-    return new DomainFrameEditor(client, capabilities, dataFrame, properties, options?.query);
+    return new DomainFrameEditor(client, capabilities, dataFrame, properties,
+      info.nameColumn, options?.query);
   }
 
   /** Runs `options.query` (everything the caller may see, by default) and
@@ -275,23 +293,19 @@ export class DomainFrameEditor {
   /** Whether anything is pending (a changed cell, a new row, a deleted row). */
   get isDirty(): boolean { return this._dirty; }
 
+  /** Whether a {@link save} is in flight. While it is, the editor refuses every
+   * write, {@link discard} and {@link refresh} — see {@link save}. */
+  get isSaving(): boolean { return this._saving; }
+
   /** Number of pending cell changes — what a "N unsaved changes" bar shows. */
-  get changeCount(): number {
-    let n = 0;
-    for (let i = 0; i < this._df.rowCount; i++) {
-      const state = this.stateOf(i);
-      if (state === 'new' || state === 'deleted')
-        n++;
-      else
-        n += Object.keys(this.changesOf(i)).length;
-    }
-    return n;
-  }
+  get changeCount(): number { return this._changeCount; }
 
   /** Fires on every service-state write — the repaint hook for a grid. */
   get onChanged(): rxjs.Observable<DomainFrameEditor> { return this._onChanged; }
   /** Fires when {@link isDirty} flips — what a caller's refresh policy listens to. */
   get onDirtyChanged(): rxjs.Observable<boolean> { return this._onDirtyChanged; }
+  /** Fires when {@link isSaving} flips — what a grid locks its editing on. */
+  get onSavingChanged(): rxjs.Observable<boolean> { return this._onSavingChanged; }
   /** Fires after a successful {@link save}. */
   get onSaved(): rxjs.Observable<DomainSaveResult> { return this._onSaved; }
   /** Fires when a save hits a version conflict, BEFORE the standard dialog. */
@@ -308,12 +322,14 @@ export class DomainFrameEditor {
 
   /** ORIGINAL values of [row]'s changed cells, keyed by column (empty when the
    * row is unchanged; always empty for a `'new'` row — all of its values are
-   * new). */
+   * new). Read-only: the object is the editor's own cached parse, and writing to
+   * it changes nothing on the frame. */
   changesOf(row: number): {[column: string]: any} {
     return this._json(CHANGES_COLUMN, row);
   }
 
-  /** Per-cell problems of [row], keyed by column. */
+  /** Per-cell problems of [row], keyed by column. Read-only, see
+   * {@link changesOf}. */
   errorsOf(row: number): {[column: string]: DomainCellError} {
     return this._json(ERRORS_COLUMN, row);
   }
@@ -347,8 +363,11 @@ export class DomainFrameEditor {
   }
 
   /** Writes [value] into the cell AND tracks it — the programmatic write path
-   * (a form field, a paste, a fill-down). */
+   * (a form field, a paste, a fill-down). Refused while a {@link save} is in
+   * flight. */
   setValue(row: number, column: string, value: any): void {
+    if (this._busy('editing'))
+      return;
     const original = column in this.changesOf(row) ? undefined : this._wire(row, column);
     this._write(() => this._df.set(column, row, value));
     this._track(row, column, original);
@@ -357,16 +376,18 @@ export class DomainFrameEditor {
   /** Tracks a cell the GRID already wrote (its `onCellValueEdited` path); the
    * original comes from the {@link beginEdit} snapshot. */
   commitEdit(row: number, column: string): void {
-    if (this._suspend)
+    if (this._suspend || this._busy('editing'))
       return;
     const snapshot = this._snapshots.get(row);
     const original = snapshot != null && column in snapshot ? snapshot[column] : UNKNOWN_ORIGINAL;
     this._track(row, column, original);
   }
 
-  /** Appends a new, unsaved row (state `'new'`), optionally prefilled;
-   * returns its index. */
+  /** Appends a new, unsaved row (state `'new'`), optionally prefilled; returns
+   * its index (-1 when refused because a {@link save} is in flight). */
   addRow(values?: {[column: string]: any}): number {
+    if (this._busy('adding a row'))
+      return -1;
     const row = this._df.rowCount;
     this._write(() => {
       this._df.rows.addNew();
@@ -376,7 +397,11 @@ export class DomainFrameEditor {
             this._df.set(name, row, values[name]);
     });
     this._col(STATE_COLUMN).set(row, 'new', false);
+    this._recount(row);
     this._validateRow(row);
+    // The row was appended while the filter was already computed — recompute it,
+    // or the new row is invisible in every filtered view of the frame.
+    this._df.rows.requestFilter();
     this._fire();
     return row;
   }
@@ -387,13 +412,18 @@ export class DomainFrameEditor {
     this._setDeleted(rows, true);
   }
 
-  /** Undoes {@link markDeleted}, restoring whatever the row was before. */
+  /** Undoes {@link markDeleted}, restoring whatever the row was before — a row
+   * added in this batch goes back to `'new'`, an edited one back to
+   * `'modified'`. */
   unmarkDeleted(rows: number | number[]): void {
     this._setDeleted(rows, false);
   }
 
-  /** Restores one cell to its original value and drops its change entry. */
+  /** Restores one cell to its original value and drops its change entry.
+   * Refused while a {@link save} is in flight. */
   revertCell(row: number, column: string): void {
+    if (this._busy('reverting'))
+      return;
     const changes = this.changesOf(row);
     if (!(column in changes))
       return;
@@ -412,13 +442,19 @@ export class DomainFrameEditor {
 
   /** {@link revertCell} for every changed cell of [row]. */
   revertRow(row: number): void {
+    if (this._busy('reverting'))
+      return;
     for (const column of Object.keys(this.changesOf(row)))
       this.revertCell(row, column);
   }
 
   /** Drops the whole pending batch: changed cells go back to their originals,
-   * new rows are removed, deleted rows are restored. */
+   * new rows are removed, deleted rows are restored. Refused while a
+   * {@link save} is in flight — removing rows under the transaction would make
+   * its results land on the wrong ones. */
   discard(): void {
+    if (this._busy('discarding'))
+      return;
     this._write(() => {
       for (let row = this._df.rowCount - 1; row >= 0; row--) {
         if (this.stateOf(row) === 'new') {
@@ -433,6 +469,7 @@ export class DomainFrameEditor {
       }
     });
     this._snapshots.clear();
+    this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();
   }
@@ -515,9 +552,15 @@ export class DomainFrameEditor {
    * the chosen outcome is applied and retried. Server validation errors land on
    * the offending cells as {@link ERRORS_COLUMN} entries and everything stays
    * pending.
+   *
+   * **The editor is CLOSED while this runs** ({@link isSaving}): every write,
+   * {@link discard} and {@link refresh} is refused with a warning instead of
+   * being silently lost between the request and its results (and, for the
+   * row-removing ones, instead of shifting the rows the results address). A grid
+   * bound to the editor locks its own editing off {@link onSavingChanged}.
    */
   async save(): Promise<boolean> {
-    if (this._saving)
+    if (this._busy('saving'))
       return false;
     const blocking = this._firstBlockingError();
     if (blocking != null) {
@@ -527,12 +570,12 @@ export class DomainFrameEditor {
     const pending = this.buildOps();
     if (pending.length === 0)
       return true;
-    this._saving = true;
+    this._setSaving(true);
     this._saveDepth = 0;
     try {
       return await this._runSave(pending);
     } finally {
-      this._saving = false;
+      this._setSaving(false);
     }
   }
 
@@ -547,9 +590,12 @@ export class DomainFrameEditor {
    * {@link onDirtyChanged}) and prompt the user to save or discard first.
    *
    * Resolves to the NEW frame, which also arrives on {@link onRefreshed}: a grid
-   * bound to the old one must rebind.
+   * bound to the old one must rebind. Refused (resolving to the CURRENT frame,
+   * with a warning) while a {@link save} is in flight.
    */
   async refresh(query?: DG.DomainQuerySpec): Promise<DG.DataFrame> {
+    if (this._busy('refreshing'))
+      return this._df;
     const spec = query ?? this._query;
     const df = await this.client.queryDf(spec ?? {});
     this._query = spec;
@@ -581,7 +627,10 @@ export class DomainFrameEditor {
       col.meta.includeInBinaryExport = false;
       col.meta.includeInCsvExport = false;
     }
-    this._dirty = false;
+    // NB: `_dirty` is deliberately NOT reset here — `_fire()` is what detects the
+    // transition, and writing it directly would swallow the true → false edge a
+    // refresh() produces (a subscriber that saw `true` would stay stale forever).
+    this._resetCaches();
     this._subs.push(df.onRowsFiltering.subscribe(() => this._maskDeleted()));
     df.rows.requestFilter();
   }
@@ -596,20 +645,72 @@ export class DomainFrameEditor {
     return this._df.columns.byName(name) as DG.Column<string>;
   }
 
+  private _cache(name: string): Map<number, any> {
+    let byRow = this._parsed.get(name);
+    if (byRow == null)
+      this._parsed.set(name, byRow = new Map<number, any>());
+    return byRow;
+  }
+
   private _json(name: string, row: number): any {
+    const byRow = this._cache(name);
+    let value = byRow.get(row);
+    if (value !== undefined)
+      return value;
     const raw = this._col(name).get(row);
-    if (raw == null || raw === '')
-      return {};
-    try {
-      return JSON.parse(raw);
-    } catch (_) {
-      return {};
+    value = {};
+    if (raw != null && raw !== '') {
+      try {
+        value = JSON.parse(raw);
+      } catch (_) { /* corrupt state reads as none */ }
     }
+    byRow.set(row, value);
+    return value;
   }
 
   private _setJson(name: string, row: number, value: any): void {
     const empty = value == null || Object.keys(value).length === 0;
     this._col(name).set(row, empty ? '' : JSON.stringify(value), false);
+    this._cache(name).set(row, value ?? {});
+    this._recount(row);
+  }
+
+  /** Drops every per-row cache and re-derives {@link changeCount} — for the
+   * paths that add or remove rows, where every index below the change shifts. */
+  private _resetCaches(): void {
+    this._parsed.clear();
+    this._contributions.clear();
+    this._changeCount = 0;
+    for (let row = 0; row < this._df.rowCount; row++)
+      this._recount(row);
+  }
+
+  /** [row]'s share of {@link changeCount}: a new or deleted row counts once, an
+   * edited one counts its changed cells. */
+  private _recount(row: number): void {
+    const state = this.stateOf(row);
+    const now = state === 'new' || state === 'deleted' ? 1 : Object.keys(this.changesOf(row)).length;
+    this._changeCount += now - (this._contributions.get(row) ?? 0);
+    if (now === 0)
+      this._contributions.delete(row);
+    else
+      this._contributions.set(row, now);
+  }
+
+  /** Refuses a mutation while a save is in flight, saying so out loud: a write
+   * landing between the transaction and its results would be wiped by
+   * {@link _applyResults}, and a discard/refresh would shift the very rows those
+   * results address. */
+  private _busy(action: string): boolean {
+    if (!this._saving)
+      return false;
+    grok.shell.warning(`${this.table}: ${action} is not available while the batch is being saved`);
+    return true;
+  }
+
+  private _setSaving(saving: boolean): void {
+    this._saving = saving;
+    this._onSavingChanged.next(saving);
   }
 
   /** Runs [action] with the tracking latch closed, so writes the editor makes
@@ -633,8 +734,7 @@ export class DomainFrameEditor {
   }
 
   private _track(row: number, column: string, original: any): void {
-    const property = this._propByName.get(column);
-    const message = property == null ? null : validateCellValue(property, this._df.get(column, row));
+    const message = this._cellProblem(row, column);
     if (this.stateOf(row) !== 'new') {
       const changes = this.changesOf(row);
       if (!(column in changes)) {
@@ -651,6 +751,17 @@ export class DomainFrameEditor {
     this._setError(row, column, message == null ? null : {message: message, kind: 'error'});
     this._recomputeState(row);
     this._fire();
+  }
+
+  /** Why the cell cannot be saved as it stands: the registry constraints, plus
+   * column security. A change to a column the user may not write would be
+   * dropped from the payload by {@link buildOps} and leave the row pending after
+   * a "successful" save — marking it blocks the save instead, loudly. */
+  private _cellProblem(row: number, column: string): string | null {
+    if (this.stateOf(row) !== 'new' && !this.capabilities.writableColumns.includes(column))
+      return `Column '${column}' is read-only`;
+    const property = this._propByName.get(column);
+    return property == null ? null : validateCellValue(property, this._df.get(column, row));
   }
 
   private _setError(row: number, column: string, error: DomainCellError | null): void {
@@ -681,15 +792,21 @@ export class DomainFrameEditor {
       return;
     const changed = Object.keys(this.changesOf(row)).length > 0;
     this._col(STATE_COLUMN).set(row, changed ? 'modified' : '', false);
+    this._recount(row);
   }
 
   private _clearRowState(row: number): void {
     this._col(STATE_COLUMN).set(row, '', false);
     this._col(CHANGES_COLUMN).set(row, '', false);
     this._col(ERRORS_COLUMN).set(row, '', false);
+    this._cache(CHANGES_COLUMN).delete(row);
+    this._cache(ERRORS_COLUMN).delete(row);
+    this._recount(row);
   }
 
   private _setDeleted(rows: number | number[], deleted: boolean): void {
+    if (this._busy(deleted ? 'deleting' : 'restoring a row'))
+      return;
     const list = Array.isArray(rows) ? rows : [rows];
     const state = this._col(STATE_COLUMN);
     for (const row of list) {
@@ -698,7 +815,13 @@ export class DomainFrameEditor {
       if (deleted)
         state.set(row, 'deleted', false);
       else if (state.get(row) === 'deleted')
-        state.set(row, Object.keys(this.changesOf(row)).length > 0 ? 'modified' : '', false);
+        // A row ADDED in this batch has no id — buildOps' own predicate — and its
+        // values live nowhere but the frame, so it must go back to 'new'; a 'new'
+        // row carries no ~changes by design, which is why the change test below
+        // would otherwise land it on '' and make it invisible to save AND discard.
+        state.set(row, this._wire(row, 'id') == null ? 'new'
+          : Object.keys(this.changesOf(row)).length > 0 ? 'modified' : '', false);
+      this._recount(row);
     }
     this._df.rows.requestFilter();
     this._fire();
@@ -784,6 +907,7 @@ export class DomainFrameEditor {
         this._df.rows.removeAt(row, 1, false);
     });
     this._snapshots.clear();
+    this._resetCaches();
     this._df.rows.requestFilter();
     this._fire();
     this._onSaved.next(result);
@@ -830,6 +954,9 @@ export class DomainFrameEditor {
               this._df.set(name, row, fresh[name]);
         });
       this._clearRowState(row);
+      // The pre-reload values are gone: a snapshot of them would make the next
+      // in-grid edit record an "original" the cell never held.
+      this._snapshots.delete(row);
       this._fire();
       return await this._runSave(this.buildOps());
     }
@@ -862,16 +989,13 @@ export class DomainFrameEditor {
     this._fire();
   }
 
-  /** The row's display value for a dialog caption: the table's name column when
-   * the frame carries it, else the id. */
+  /** The row's display value for a dialog caption: the registry's declared name
+   * column when the frame carries it — the same identity every other platform
+   * surface shows. Null falls the caller back to the id. */
   private _displayOf(row: number): string | null {
-    for (const p of this._properties) {
-      if (`${p.semType ?? ''}` !== '' || p.propertyType !== DG.TYPE.STRING)
-        continue;
-      const v = this._wire(row, p.name);
-      if (v != null && `${v}` !== '')
-        return `${v}`;
-    }
-    return null;
+    if (this._nameColumn == null || !this._df.columns.contains(this._nameColumn))
+      return null;
+    const v = this._wire(row, this._nameColumn);
+    return v == null || `${v}` === '' ? null : `${v}`;
   }
 }

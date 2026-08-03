@@ -12,6 +12,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DomainFrameEditor, DomainFrameEditorOptions, isReferenceProperty,
   SERVICE_COLUMNS} from './frame-editor';
+import {applyDomainUiStyles} from './styles';
 
 /** Background of a cell with an unsaved edit. Canvas ints, matching the
  * platform's own in-grid editing (compare-tables convention) — cell backgrounds
@@ -50,6 +51,11 @@ export interface DomainGridOptions extends DomainFrameEditorOptions {
  *   a read-only grid, no `canInsert` means no Add row, no `canDelete` means no
  *   Delete row, and columns the caller cannot write stay read-only.
  *
+ * Capabilities are SNAPSHOT when the grid is built. A later grant change (or a
+ * `grok.dapi.domains.invalidateUiCaches()`) affects only grids created after it —
+ * an existing grid keeps the gating it was born with; rebuild it to pick the new
+ * permissions up.
+ *
  * Refreshing is the CALLER's decision: {@link DomainFrameEditor.refresh} rebuilds
  * and discards pending edits by design — check {@link DomainFrameEditor.isDirty}
  * first (this class rebinds the grid to whatever the editor rebuilds).
@@ -67,8 +73,11 @@ export class DomainGrid {
    * through `unsubscribe()`. */
   private readonly _subs: {unsubscribe(): void}[] = [];
   private readonly _editable: boolean;
+  /** Every toolbar button, disabled together while a save is in flight. */
+  private readonly _buttons: HTMLButtonElement[] = [];
 
   private constructor(editor: DomainFrameEditor, options: DomainGridOptions) {
+    applyDomainUiStyles();
     this.editor = editor;
     this._editable = (options.editable ?? true) && editor.capabilities.canEdit;
     this.grid = DG.Grid.create(editor.dataFrame);
@@ -76,14 +85,14 @@ export class DomainGrid {
     this._count = ui.divText('', 'domain-ui-edit-count');
     this._saveBar = ui.divH([
       this._count,
-      ui.button('Save', () => this.editor.save(), 'Save every pending change as one transaction'),
-      ui.button('Cancel', () => this.editor.discard(), 'Discard every pending change'),
+      this._button('Save', () => this.editor.save(), 'Save every pending change as one transaction'),
+      this._button('Cancel', () => this.editor.discard(), 'Discard every pending change'),
     ], 'domain-ui-save-bar');
     this._toolbar = ui.divH([
       this._editable && editor.capabilities.canInsert
-        ? ui.button('Add row', () => this._addRow(), 'Append a new row') : null,
+        ? this._button('Add row', () => this._addRow(), 'Append a new row') : null,
       this._editable && editor.capabilities.canDelete
-        ? ui.button('Delete row', () => this._deleteCurrentRow(), 'Mark the current row for deletion') : null,
+        ? this._button('Delete row', () => this._deleteCurrentRow(), 'Mark the current row for deletion') : null,
       this._saveBar,
     ], 'domain-ui-grid-toolbar');
     ui.setDisplay(this._toolbar, (options.toolbar ?? true) && this._editable);
@@ -147,21 +156,35 @@ export class DomainGrid {
    * is safe for plain handlers — one that does not override `renderGrid` falls
    * through to the platform meta from the JS side too.
    *
-   * With one exception, and it is the reason this is not a one-liner:
-   * `forEntity` can resolve the platform's GENERIC `'DomainRow'` handler (it
-   * matches every domain row, and wins whenever no per-table meta is registered
-   * — e.g. a client session with domain databases not enabled). Its `renderGrid`
-   * is a deliberate no-op, so decorating through it silently produces a raw
-   * grid. A resolved handler therefore only decorates when it claims THIS table;
-   * anything else collapses to the table's own handler, whose inherited
-   * `renderGrid` reaches the per-table meta regardless of registration. Same
-   * collapse the built-in Domain View applies.
+   * Which is not a one-liner, because `forEntity` resolves plenty of handlers
+   * that must NOT be decorated through. It applies the collapse rule of the
+   * built-in Domain View (`DomainView.refreshGrid`), member for member:
+   * - a DART meta collapses — the resolved proxy may be the inert GENERIC
+   *   `'DomainRow'` fallback (no per-table meta registered, e.g. a session with
+   *   domain databases not enabled), whose `renderGrid` early-returns into a raw
+   *   grid; a registered per-table meta decorates identically to `own` anyway;
+   * - a JS handler WITHOUT a real `renderGrid` collapses — the base method is a
+   *   no-op the platform marks `isPlatformDefault`;
+   * - everything else wins, INCLUDING a plugin handler that claims the table
+   *   through `isApplicable` under a type of its own.
+   *
+   * `own`'s inherited `renderGrid` reaches the per-table meta regardless of
+   * registration, so the collapse never loses decoration.
    */
   static decorate(grid: DG.Grid, table: string, dataFrame?: DG.DataFrame): void {
     const own = new DG.DomainObjectHandler(table);
     const resolved = DG.ObjectHandler.forEntity(own.newRow());
-    const winner = resolved != null && DomainGrid._typeOf(resolved) === table ? resolved : own;
+    const winner = resolved != null && DomainGrid._decorates(resolved, table) ? resolved : own;
     winner.renderGrid(grid, {items: dataFrame ?? grid.dataFrame});
+  }
+
+  /** Whether [handler] is worth decorating [table]'s grid through — see
+   * {@link decorate}. */
+  private static _decorates(handler: DG.ObjectHandler, table: string): boolean {
+    if (handler instanceof DG.EntityMetaDartProxy)
+      return false;
+    return DomainGrid._typeOf(handler) === table ||
+      (handler.renderGrid as any)?.isPlatformDefault !== true;
   }
 
   /** A handler's type, defensively: `type` is abstract on the base class and a
@@ -195,6 +218,12 @@ export class DomainGrid {
     this._subs.push(this.editor.onRefreshed.subscribe((df) => {
       this.grid.dataFrame = df;
       this._decorate();
+      this._refreshBar();
+    }));
+    // The editor is the single writer and closes while its transaction is in
+    // flight — the grid must not offer an edit that would be refused (or lost).
+    this._subs.push(this.editor.onSavingChanged.subscribe(() => {
+      this._applyEditability();
       this._refreshBar();
     }));
 
@@ -231,17 +260,18 @@ export class DomainGrid {
   }
 
   /** Read-only degradation and column security, in the platform's own shape:
-   * the whole grid when the table is not editable, and per column otherwise —
-   * non-writable columns and reference columns (uuids, whose editing path is a
-   * picker) stay read-only. */
+   * the whole grid when the table is not editable (or while a save is in
+   * flight), and per column otherwise — non-writable columns and reference
+   * columns (uuids, whose editing path is a picker) stay read-only. */
   private _applyEditability(): void {
-    this.grid.props.allowEdit = this._editable;
+    const editable = this._editable && !this.editor.isSaving;
+    this.grid.props.allowEdit = editable;
     for (let i = 0; i < this.grid.columns.length; i++) {
       const gc = this.grid.columns.byIndex(i);
       if (gc != null)
         gc.editable = false;
     }
-    if (!this._editable)
+    if (!editable)
       return;
     const writable = this.editor.capabilities.writableColumns;
     for (const p of this.editor.properties) {
@@ -266,9 +296,17 @@ export class DomainGrid {
     this.editor.markDeleted(row);
   }
 
+  private _button(text: string, action: () => void, tooltip: string): HTMLButtonElement {
+    const button = ui.button(text, action, tooltip);
+    this._buttons.push(button);
+    return button;
+  }
+
   private _refreshBar(): void {
     const n = this.editor.changeCount;
-    this._count.textContent = `${n} unsaved change${n === 1 ? '' : 's'}`;
-    ui.setDisplay(this._saveBar, n > 0);
+    this._count.textContent = this.editor.isSaving ? 'Saving…' : `${n} unsaved change${n === 1 ? '' : 's'}`;
+    ui.setDisplay(this._saveBar, n > 0 || this.editor.isSaving);
+    for (const button of this._buttons)
+      button.disabled = this.editor.isSaving;
   }
 }

@@ -9,8 +9,10 @@ import {withRestrictedUser} from './domain-lifecycle';
 
 // ui-js-api WO-7: @datagrok-libraries/domain-ui — DomainFrameEditor (THE single
 // writer of the '~state'/'~changes'/'~errors' service columns) and DomainGrid.
-// Pure state-transition and op-builder tests run alongside the live loop here,
-// as planned: they import the library, which only ApiTests bundles.
+// The state-transition and op-builder tests run alongside the live loop here, as
+// planned: they import the library, which only ApiTests bundles. NONE of them is
+// pure — an editor probes the registry and the caller's capabilities on create,
+// so every test below needs a live server with the apitests schema registered.
 //
 // Fixture: the package's own 'apitests.item' (sku required+unique, name,
 // quantity int min 0). Every test inserts inside its try and deletes its rows in
@@ -170,9 +172,18 @@ category('Dapi: domain frame editor', () => {
       expect(del.id, df.get('id', 2), 'the delete addresses the wrong row');
 
       // A row that was added and then deleted never reached the server: no op.
-      const ghost = editor.addRow({sku: `${prefix}-ghost`});
+      const ghost = editor.addRow({sku: `${prefix}-ghost`, name: 'Ghost', quantity: 0});
       editor.markDeleted(ghost);
       expect(editor.buildOps().length, 3, 'an add-then-delete row produced an op');
+
+      // Undeleting it puts it back where it was: a 'new' row (it has no id —
+      // buildOps' own predicate — and nothing but the frame knows about it).
+      editor.unmarkDeleted(ghost);
+      expect(editor.stateOf(ghost), 'new', 'undelete did not restore the new row');
+      expect(editor.buildOps().length, 4, 'the restored row is invisible to save');
+      expect(await editor.save(), true, 'the batch did not save');
+      expect(await items().count({property: 'sku', operator: '=',
+        value: `${prefix}-ghost`} as any), 1, 'the restored row never reached the server');
       editor.detach();
     } finally {
       await cleanup(prefix);
@@ -214,12 +225,14 @@ category('Dapi: domain frame editor', () => {
       // ONE transaction: every write of the batch shares a tx_id.
       const log = await items().auditLog({limit: 100});
       const mine = log.filter((e) => ids.includes(`${e.row_id}`) || `${e.row_id}` === `${addedId}`);
-      const txIds = new Set(mine.filter((e) => e.tx_id != null).map((e) => `${e.tx_id}`));
       expect(mine.length >= 4, true, `expected the seed + batch audit rows, got ${mine.length}`);
       // The seed insert is its own transaction; the batch is exactly one more.
-      const batchTx = new Set(mine.filter((e) => e.op !== 'insert' || `${e.row_id}` === `${addedId}`)
-        .map((e) => `${e.tx_id}`));
-      expect(batchTx.size, 1, `the batch spanned ${batchTx.size} transactions, not one (${[...txIds]})`);
+      // Assert on the NON-NULL ids and demand that every batch row carries one —
+      // a set of all-null tx_ids would also have size 1 and prove nothing.
+      const batch = mine.filter((e) => e.op !== 'insert' || `${e.row_id}` === `${addedId}`);
+      const batchTx = new Set(batch.filter((e) => e.tx_id != null).map((e) => `${e.tx_id}`));
+      expect(batch.every((e) => e.tx_id != null), true, 'a batch audit row carries no tx_id');
+      expect(batchTx.size, 1, `the batch spanned ${batchTx.size} transactions, not one`);
       editor.detach();
     } finally {
       await cleanup(prefix);
@@ -267,6 +280,9 @@ category('Dapi: domain frame editor', () => {
 
       // RELOAD: an out-of-band write makes the pending edit stale.
       let editor = await editorFor(prefix);
+      // The grid snapshots the row when it becomes current, BEFORE the edit — so
+      // the reload has a pre-reload snapshot to invalidate.
+      editor.beginEdit(0);
       editor.setValue(0, 'name', 'My name');
       await items().update(id, {name: 'Their name'});
       expect(await editor.save(), true, 'the reload path did not finish the save');
@@ -274,6 +290,16 @@ category('Dapi: domain frame editor', () => {
       expect(editor.isDirty, false, 'the reload path left edits pending');
       expect((await items().get(id)).name, 'Their name', 'reload did not keep the server value');
       expect(editor.dataFrame.get('name', 0), 'Their name', 'the frame kept the discarded edit');
+
+      // The pre-reload snapshot is gone: the NEXT in-grid edit records the value
+      // the cell actually held after the reload, so a revert restores THAT.
+      editor.beginEdit(0);
+      editor.dataFrame.set('name', 0, 'Typed after the reload');
+      editor.commitEdit(0, 'name');
+      expect(editor.changesOf(0)['name'], 'Their name',
+        'the edit after a reload captured a pre-reload original');
+      editor.revertCell(0, 'name');
+      expect(editor.dataFrame.get('name', 0), 'Their name', 'revertCell restored a stale value');
       editor.detach();
 
       // OVERWRITE: the same setup, the other answer.
@@ -333,6 +359,83 @@ category('Dapi: domain frame editor', () => {
         'refresh() wrote something');
       editor.detach();
     } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('onDirtyChanged: every transition, refresh() included', async () => {
+    const prefix = `fe-dirty-${stamp()}`;
+    await seed(prefix, 2);
+    try {
+      const editor = await editorFor(prefix);
+      const seen: boolean[] = [];
+      const sub = editor.onDirtyChanged.subscribe((dirty) => seen.push(dirty));
+      try {
+        editor.setValue(0, 'name', 'Edited');
+        await editor.refresh();
+        editor.setValue(0, 'name', 'Edited again');
+        editor.discard();
+        // The refresh transition is the one a save/discard prompt binds to: a
+        // subscriber that saw `true` and never sees `false` prompts forever.
+        expect(seen.join(','), 'true,false,true,false',
+          `onDirtyChanged reported [${seen.join(', ')}]`);
+        expect(editor.isDirty, false, 'the editor stayed dirty after discard()');
+      } finally {
+        sub.unsubscribe();
+      }
+      editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('in-flight save: writes, discard and refresh are refused', async () => {
+    const prefix = `fe-busy-${stamp()}`;
+    await seed(prefix, 2);
+    // Seam: pause the transaction so the whole save window is observable. The
+    // data source is re-created on every `grok.dapi.domains` access, so the stub
+    // goes on its prototype.
+    const proto = Object.getPrototypeOf(grok.dapi.domains) as any;
+    const realTransaction = proto.transaction;
+    let release: () => void = () => {};
+    const paused = new Promise<void>((resolve) => release = resolve);
+    proto.transaction = async function(...args: any[]): Promise<any> {
+      await paused;
+      return await realTransaction.apply(this, args);
+    };
+    try {
+      const editor = await editorFor(prefix);
+      const grid = DomainGrid.forEditor(editor);
+      const rowsBefore = editor.dataFrame.rowCount;
+      editor.setValue(0, 'name', 'Saved under the lock');
+
+      const saving = editor.save();
+      expect(editor.isSaving, true, 'the editor did not close for the save');
+      expect(grid.grid.props.allowEdit, false, 'the grid stayed editable during the save');
+
+      // Every writer is refused — loudly, and without touching the batch the
+      // in-flight transaction addresses.
+      editor.setValue(1, 'name', 'Would be wiped');
+      expect(editor.isChanged(1, 'name'), false, 'a write landed during the save');
+      editor.addRow({sku: `${prefix}-nope`});
+      expect(editor.dataFrame.rowCount, rowsBefore, 'addRow ran during the save');
+      editor.discard();
+      expect(editor.isDirty, true, 'discard() ran during the save');
+      expect(await editor.refresh() === editor.dataFrame, true,
+        'refresh() rebuilt the frame during the save');
+      expect(editor.dataFrame.rowCount, rowsBefore, 'the frame moved under the save');
+
+      release();
+      expect(await saving, true, 'the save did not finish');
+      expect(editor.isSaving, false, 'the editor stayed closed after the save');
+      expect(grid.grid.props.allowEdit, grid.editable, 'the grid stayed locked after the save');
+      expect(editor.isDirty, false, 'the save left the batch pending');
+      const server = await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, sort: 'sku'});
+      expect(server[0].name, 'Saved under the lock', 'the edit did not reach the server');
+      grid.detach();
+    } finally {
+      proto.transaction = realTransaction;
       await cleanup(prefix);
     }
   });
@@ -415,34 +518,84 @@ category('Dapi: domain frame editor', () => {
     }
   });
 
+  test('DomainGrid.decorate: an overriding handler of another type still wins', async () => {
+    const seen: any[] = [];
+    // A plugin handler that claims apitests.item rows through isApplicable while
+    // declaring a type of its own — the shape the collapse rule must NOT drop.
+    class ForeignHandler extends DG.ObjectHandler {
+      retired = false;
+      get type() { return this.retired ? 'apitests.foreign-retired' : 'apitests.foreign'; }
+      isApplicable(x: any) {
+        return !this.retired && x instanceof DG.DomainRow && x.typeName === 'apitests.item';
+      }
+      renderGrid(grid: _DG.Grid, options?: {items?: _DG.DataFrame}) {
+        seen.push(options?.items ?? null);
+        grid.columns.byName('quantity')!.visible = false;
+      }
+    }
+    const handler = new ForeignHandler();
+    DG.ObjectHandler.register(handler);
+    const prefix = `fe-sentinel-${stamp()}`;
+    await seed(prefix, 1);
+    try {
+      const df = await items().queryDf({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any});
+      const grid = DG.Grid.create(df);
+      DomainGrid.decorate(grid, 'apitests.item', df);
+      expect(seen.length, 1, 'the overriding handler was collapsed away');
+      expect(grid.columns.byName('quantity')!.visible, false, 'its decoration did not land');
+
+      // Retired: nothing claims the table, and the platform decoration is back
+      // (the id column is a system column renderGrid hides).
+      handler.retired = true;
+      const plain = DG.Grid.create(df);
+      DomainGrid.decorate(plain, 'apitests.item', df);
+      expect(seen.length, 1, 'a retired handler still decorated');
+      expect(plain.col('id')?.visible, false, 'the platform decoration did not run');
+    } finally {
+      handler.retired = true;
+      await cleanup(prefix);
+    }
+  });
+
   test('DomainGrid: read-only degradation under a restricted user', async () => {
     const prefix = `fe-ro-${stamp()}`;
     await seed(prefix, 1);
     try {
-      await withRestrictedUser('wo7ro', async (probe) => {
+      const outcome = await withRestrictedUser('wo7ro', async (probe) => {
         const table = items();
         // Give the throwaway user View only: rows are readable, nothing is writable.
         await table.grant(probe.group, 'View');
-        await probe.asUser(async () => {
-          grok.dapi.domains.invalidateUiCaches();
-          const caps = await grok.dapi.domains.table('apitests.item').capabilities();
-          expect(caps.canEdit, false, 'a View-only user reports canEdit');
-          const grid = await DomainGrid.create(grok.dapi.domains.table('apitests.item') as any,
-            {query: {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any}});
-          try {
-            expect(grid.editable, false, 'the grid stayed editable for a View-only user');
-            expect(grid.grid.props.allowEdit, false, 'allowEdit survived read-only degradation');
-            for (const p of grid.editor.properties) {
-              const gc = grid.grid.col(p.name);
-              if (gc != null)
-                expect(gc.editable, false, `${p.name} is editable for a View-only user`);
+        try {
+          await probe.asUser(async () => {
+            grok.dapi.domains.invalidateUiCaches();
+            const caps = await grok.dapi.domains.table('apitests.item').capabilities();
+            expect(caps.canEdit, false, 'a View-only user reports canEdit');
+            const grid = await DomainGrid.create(grok.dapi.domains.table('apitests.item') as any,
+              {query: {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any}});
+            try {
+              expect(grid.editable, false, 'the grid stayed editable for a View-only user');
+              expect(grid.grid.props.allowEdit, false, 'allowEdit survived read-only degradation');
+              for (const p of grid.editor.properties) {
+                const gc = grid.grid.col(p.name);
+                if (gc != null)
+                  expect(gc.editable, false, `${p.name} is editable for a View-only user`);
+              }
+            } finally {
+              grid.detach();
             }
-          } finally {
-            grid.detach();
-          }
-        });
-        await table.revoke(probe.group, 'View');
+          });
+        } finally {
+          // The grant is ours whatever the body did — never leave the probe
+          // user holding View on the fixture table.
+          await table.revoke(probe.group, 'View');
+        }
+        return 'checked';
       });
+      // withRestrictedUser resolves null when it could not build a restricted
+      // session — say so instead of reporting a green run that checked nothing.
+      expect(outcome, 'checked',
+        'read-only degradation was NOT verified: no restricted session (see the console for why)');
     } finally {
       grok.dapi.domains.invalidateUiCaches();
       await cleanup(prefix);
