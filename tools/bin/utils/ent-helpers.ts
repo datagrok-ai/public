@@ -3,6 +3,19 @@ The application ${appName} has been added successfully
 Read more at https://datagrok.ai/help/develop/how-to/build-an-app
 See application examples at https://public.datagrok.ai/apps`;
 
+const domainApp = (appNames: string[], tables: string[]) => `
+The application${appNames.length > 1 ? 's' : ''} ${appNames.join(', ')} ` +
+`(over ${tables.join(', ')}) ${appNames.length > 1 ? 'have' : 'has'} been added successfully
+
+Next steps:
+  npm install                     install @datagrok-libraries/domain-ui
+  npm run build && grok publish   publish the package and open the app from the browse tree
+
+The app is the domain-ui defaults alone — list, search, entity page, editing,
+permissions and deep links. Customize by extending DomainAppView, or register a
+DG.DomainObjectHandler for the table to change how its rows render.
+Read more at https://datagrok.ai/help/develop/how-to/build-an-app`;
+
 const connection = (connectionName: string) => `
 The connection ${connectionName} has been added successfully
 Read more at https://datagrok.ai/help/access/access#data-connection,
@@ -57,6 +70,7 @@ Read more about package testing at https://datagrok.ai/help/develop/how-to/test-
 
 export const help = {
   app,
+  domainApp,
   connection,
   detector,
   func,

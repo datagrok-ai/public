@@ -12,7 +12,9 @@ const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.join(testsDir, 'fixtures', 'domain-package');
 const toolsDir = path.dirname(path.dirname(testsDir));
 const jsApiDir = path.resolve(toolsDir, '..', 'js-api');
+const domainUiDir = path.resolve(toolsDir, '..', 'libraries', 'domain-ui');
 const dbPath = (dir: string) => path.join(dir, 'src', 'generated', 'db.ts');
+const dbUiPath = (dir: string) => path.join(dir, 'src', 'generated', 'db-ui.ts');
 
 function makePackage(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'grok-api-domains-'));
@@ -38,21 +40,23 @@ function runCapturingLog(dir: string): {result: boolean, output: string} {
   }
 }
 
-/** Copies the local js-api `.d.ts` tree (declarations only, so tsc never pulls the
- * `.ts` sources) into `<dir>/node_modules/datagrok-api`. */
+/** Copies a package's `.d.ts` tree (declarations only, so tsc never pulls the `.ts`
+ * sources) from [src] to [dst]. */
+function copyDts(src: string, dst: string): void {
+  for (const entry of fs.readdirSync(src, {withFileTypes: true})) {
+    if (entry.isDirectory()) {
+      if (entry.name !== 'node_modules')
+        copyDts(path.join(src, entry.name), path.join(dst, entry.name));
+    } else if (entry.name.endsWith('.d.ts')) {
+      fs.mkdirSync(dst, {recursive: true});
+      fs.copyFileSync(path.join(src, entry.name), path.join(dst, entry.name));
+    }
+  }
+}
+
+/** Stages the local js-api types into `<dir>/node_modules/datagrok-api`. */
 function stageDatagrokApiTypes(dir: string): void {
   const dstRoot = path.join(dir, 'node_modules', 'datagrok-api');
-  const copyDts = (src: string, dst: string) => {
-    for (const entry of fs.readdirSync(src, {withFileTypes: true})) {
-      if (entry.isDirectory()) {
-        if (entry.name !== 'node_modules')
-          copyDts(path.join(src, entry.name), path.join(dst, entry.name));
-      } else if (entry.name.endsWith('.d.ts')) {
-        fs.mkdirSync(dst, {recursive: true});
-        fs.copyFileSync(path.join(src, entry.name), path.join(dst, entry.name));
-      }
-    }
-  };
   copyDts(jsApiDir, dstRoot);
   fs.writeFileSync(path.join(dstRoot, 'package.json'),
     '{"name": "datagrok-api", "version": "0.0.0", "types": "datagrok.d.ts"}');
@@ -68,9 +72,24 @@ function stageDatagrokApiTypes(dir: string): void {
     path.join(dayjsDst, 'locale', 'types.d.ts'));
 }
 
-/** Typechecks the generated db.ts plus one usage fixture against the local js-api types. */
+/** Stages the local domain-ui types (what the generated db-ui.ts imports) into
+ * `<dir>/node_modules/@datagrok-libraries/domain-ui`. Its own `rxjs` imports stay
+ * unresolved on purpose — `skipLibCheck` covers them, and staging 670 rxjs
+ * declarations per test would not check anything this file cares about. */
+function stageDomainUiTypes(dir: string): void {
+  const dstRoot = path.join(dir, 'node_modules', '@datagrok-libraries', 'domain-ui');
+  copyDts(path.join(domainUiDir, 'src'), path.join(dstRoot, 'src'));
+  fs.writeFileSync(path.join(dstRoot, 'package.json'),
+    '{"name": "@datagrok-libraries/domain-ui", "version": "0.0.0", "types": "./src/index.d.ts"}');
+}
+
+/** Typechecks the generated files plus one usage fixture against the local js-api (and,
+ * for the `--ui` fixtures, domain-ui) types. */
 function runTsc(dir: string, usageFile: string): {status: number | null, output: string} {
   stageDatagrokApiTypes(dir);
+  const ui = fs.existsSync(dbUiPath(dir));
+  if (ui)
+    stageDomainUiTypes(dir);
   fs.writeFileSync(path.join(dir, 'tsconfig.json'), JSON.stringify({
     compilerOptions: {
       target: 'es2020',
@@ -80,7 +99,7 @@ function runTsc(dir: string, usageFile: string): {status: number | null, output:
       noEmit: true,
       skipLibCheck: true,
     },
-    include: ['src/generated/db.ts', usageFile],
+    include: ['src/generated/db.ts', ...(ui ? ['src/generated/db-ui.ts'] : []), usageFile],
   }, null, 2));
   const tsc = path.join(toolsDir, 'node_modules', 'typescript', 'bin', 'tsc');
   const res = spawnSync(process.execPath, [tsc, '-p', dir], {encoding: 'utf8'});
@@ -338,4 +357,107 @@ describe('generateDomainClients', () => {
     // ...and a field absent from the mapped-tuple insert result
     expect(res.output).toMatch(/Property 'deleted' does not exist on type 'DomainInsertResult'/);
   });
+});
+
+describe('generateDomainClients --ui', () => {
+  it('emits db-ui.ts only when asked, and never touches db.ts', () => {
+    const dir = makePackage();
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.existsSync(dbUiPath(dir))).toBe(false);
+    const dbOnly = fs.readFileSync(dbPath(dir));
+
+    expect(generateDomainClients(dir, {ui: true})).toBe(true);
+    expect(fs.existsSync(dbUiPath(dir))).toBe(true);
+    // data-only consumers are unaffected: same db.ts, and it imports nothing UI
+    expect(fs.readFileSync(dbPath(dir)).equals(dbOnly)).toBe(true);
+    expect(fs.readFileSync(dbPath(dir), 'utf8')).not.toContain('domain-ui');
+  });
+
+  it('emits per-table option types and a <table>Ui wrapper over domain-ui', () => {
+    const dir = makePackage();
+    expect(generateDomainClients(dir, {ui: true})).toBe(true);
+    const code = fs.readFileSync(dbUiPath(dir), 'utf8');
+
+    expect(code).toContain('auto-generated by the grok api command (--ui)');
+    expect(code).toContain(`from '@datagrok-libraries/domain-ui';`);
+    // the typed names it reuses come from db.ts — nothing is re-derived here
+    expect(code).toMatch(/import \{testdbDb, SampleColumn, SampleExpand, SampleInsert, SampleRow,/);
+    expect(code).toMatch(/from '\.\/db';/);
+
+    // per-table option types narrowed to this table's columns / insert payload
+    expect(code).toContain(
+      'export type SampleQuerySpec = DG.DomainQuerySpec<SampleColumn, keyof SampleExpand & string>;');
+    expect(code).toContain(`  columns?: SampleColumn[];`);
+    expect(code).toContain(
+      `export interface SampleGridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {`);
+    expect(code).toContain('  defaults?: Partial<SampleInsert>;');
+    expect(code).toContain(`export interface SampleListOptions extends Omit<EntityListOptions, 'query'> {`);
+    expect(code).toContain(`export interface SampleAppViewOptions extends Omit<DomainAppViewOptions, 'query'> {`);
+
+    // the wrapper itself: typed client + the reflective components, one per table
+    expect(code).toContain('export class SampleUi {');
+    expect(code).toContain(`  readonly table: string = 'testdb.sample';`);
+    expect(code).toContain(
+      '  get client(): DG.DomainTableClient<SampleRow, SampleInsert, SampleColumn, SampleExpand> {');
+    expect(code).toContain('    return testdbDb.sample;');
+    expect(code).toContain('  appView(options?: SampleAppViewOptions): DomainAppView {');
+    expect(code).toContain('  grid(options?: SampleGridOptions): Promise<DomainGrid> {');
+    expect(code).toContain('  list(options?: SampleListOptions): Promise<EntityListWidget | null> {');
+    expect(code).toContain('  row(values: Partial<SampleRow> | null): DG.DomainRow {');
+    expect(code).toContain(
+      `    return new DG.DomainQuery({...params, schema: 'testdb', table: 'sample'});`);
+    expect(code).toContain('export const sampleUi = new SampleUi();');
+    // the snake_case table gets the camelCase client getter and its own wrapper
+    expect(code).toContain('    return testdbDb.sampleEvent;');
+    expect(code).toContain('export const sampleEventUi = new SampleEventUi();');
+
+    expect(code).not.toMatch(/[^\r]\n/);   // CRLF, per the repo code style
+  });
+
+  it('the opt-in persists: a plain rerun keeps db-ui.ts up to date, byte-identically', () => {
+    const dir = makePackage();
+    expect(generateDomainClients(dir, {ui: true})).toBe(true);
+    const first = fs.readFileSync(dbUiPath(dir));
+    // no flag this time — the existing file is what opts the package in
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbUiPath(dir)).equals(first)).toBe(true);
+
+    mutateManifest(dir, (m) => m.tables.sample.columns.extra_note = {type: 'string'});
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbUiPath(dir), 'utf8')).toContain('SampleUi');
+    expect(fs.readFileSync(dbPath(dir), 'utf8')).toContain('extra_note?: string;');
+  });
+
+  it('typed UI usage compiles under strict tsc', {timeout: 180_000}, () => {
+    const dir = makePackage();
+    expect(generateDomainClients(dir, {ui: true})).toBe(true);
+    const res = runTsc(dir, 'usage-ui-good.ts');
+    expect(res.output.trim(), res.output).toBe('');
+    expect(res.status).toBe(0);
+  });
+
+  it('wrong-typed UI usage fails tsc: columns, expand, filter, insert defaults, choices',
+    {timeout: 180_000}, () => {
+      const dir = makePackage();
+      expect(generateDomainClients(dir, {ui: true})).toBe(true);
+      const res = runTsc(dir, 'usage-ui-bad.ts');
+      expect(res.status).not.toBe(0);
+      // exactly one error per intended negative — no accidental extra breakage
+      expect(res.output.match(/error TS/g)).toHaveLength(10);
+      // a wrong column name in a query spec, an expand key, and a condition
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(5,.*'"nope"' is not assignable to type 'SampleColumn'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(8,.*'"details:nope"' is not assignable/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(9,/);
+      expect(res.output).toMatch(/Type '"nope"' is not assignable to type 'DomainColumnRef<SampleColumn>/);
+      // insert defaults: unknown column, wrong type, a column of ANOTHER table
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(6,.*'nope' does not exist in type 'Partial<SampleInsert>'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(7,/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(11,.*'kind' does not exist in type 'Partial<SampleInsert>'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(12,/);
+      // rowFrom values and DomainQuery columns are this table's too
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(13,.*'nope' does not exist in type 'Partial<SampleRow>'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(14,.*'"nope"' is not assignable to type 'SampleColumn'/);
+      // choices stay the generated literal union
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(16,.*'"bogus"' is not assignable to type 'SampleStatus/);
+    });
 });
