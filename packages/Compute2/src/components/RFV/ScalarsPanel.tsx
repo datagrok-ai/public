@@ -14,12 +14,22 @@ export interface ScalarState {
   units?: string,
 }
 
+export interface ScalarsSection {
+  label?: string,
+  indent: number,
+  scalarsData: ScalarState[],
+}
+
 export const ScalarsPanel = Vue.defineComponent({
   name: 'ScalarsPanel',
   props: {
     scalarsData: {
       type: Array as Vue.PropType<ScalarState[]>,
       required: true,
+    },
+    sections: {
+      type: Array as Vue.PropType<ScalarsSection[]>,
+      default: undefined,
     },
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
@@ -31,14 +41,15 @@ export const ScalarsPanel = Vue.defineComponent({
     });
 
     const scalarsData = Vue.computed(() => Vue.markRaw(props.scalarsData));
+    const sections = Vue.computed(() => props.sections ? Vue.markRaw(props.sections) : undefined);
     const validationStates = Vue.computed(() => props.validationStates);
 
-    return () =>
-      scalarsData.value.length <= 3 ?
+    const renderScalars = (data: ScalarState[]) =>
+      data.length <= 3 ?
         <div
           class='flex flex-wrap justify-around rfv2-scalar-widget'
         >
-          { scalarsData.value.map((prop) => {
+          { data.map((prop) => {
             const {formattedValue, units, friendlyName, name} = prop;
 
             return <div
@@ -60,32 +71,48 @@ export const ScalarsPanel = Vue.defineComponent({
             </div>;
           })}
         </div> :
-        <div class='h-full overflow-scroll'>
-          <table class='d4-table d4-item-table d4-info-table rfv2-scalar-table'>
-            <tbody>
-              {
-                scalarsData.value.map((prop) => {
-                  const {formattedValue, units, friendlyName, name} = prop;
+        <table class='d4-table d4-item-table d4-info-table rfv2-scalar-table'>
+          <tbody>
+            {
+              data.map((prop) => {
+                const {formattedValue, units, friendlyName, name} = prop;
 
-                  return <tr
-                    key={name}
-                  >
-                    <td> <span> { friendlyName } </span></td>
-                    <td> <span> { units } </span></td>
-                    <td> <span> { formattedValue } </span></td>
-                    { validationStates.value?.[name] &&
-                      <td>
-                        <span>
-                          <ValidationIcon validationStatus={{validation: validationStates.value?.[name]}}/>
-                        </span>
-                      </td>
-                    }
-                    <td> <span> </span></td>
-                  </tr>;
-                })
-              }
-            </tbody>
-          </table>
+                return <tr
+                  key={name}
+                >
+                  <td> <span> { friendlyName } </span></td>
+                  <td> <span> { units } </span></td>
+                  <td> <span> { formattedValue } </span></td>
+                  { validationStates.value?.[name] &&
+                    <td>
+                      <span>
+                        <ValidationIcon validationStatus={{validation: validationStates.value?.[name]}}/>
+                      </span>
+                    </td>
+                  }
+                  <td> <span> </span></td>
+                </tr>;
+              })
+            }
+          </tbody>
+        </table>;
+
+    return () => {
+      if (sections.value && sections.value.length) {
+        return <div class='h-full overflow-scroll p-2'>
+          { sections.value.map((s, i) => (
+            <div key={`${s.label ?? ''}-${s.indent}-${i}`} style={{paddingLeft: `${s.indent * 16}px`}}>
+              { s.label && Vue.h(`h${Math.min(6, 2 + s.indent)}`, null, s.label) }
+              { s.scalarsData.length > 0 && renderScalars(s.scalarsData) }
+            </div>
+          ))}
         </div>;
+      }
+      return scalarsData.value.length <= 3 ?
+        renderScalars(scalarsData.value) :
+        <div class='h-full overflow-scroll'>
+          { renderScalars(scalarsData.value) }
+        </div>;
+    };
   },
 });

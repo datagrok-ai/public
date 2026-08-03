@@ -104,13 +104,12 @@ const FuncCallParamMapProxy = new Proxy(class {
 
 
 export interface IFunctionRegistrationData {
-  signature: string;    // int foo(string bar)
+  signature: string;    // int foo(string bar) or ({int x, int y}) foo(string bar) for multiple outputs
   run: Function;
   tags?: string;        // comma-separated tags
   isAsync?: boolean;    // whether is can be called synchronously
   namespace?: string;
   options?: {[key: string]: string};
-  outputs?: {name: string, type: string, semType?: string}[];
 }
 
 
@@ -334,7 +333,7 @@ export class FuncCall extends Entity {
   get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
   get status(): string { return api.grok_FuncCall_Get_Status(this.dart); }
-
+  set status(newStatus: string) { api.grok_FuncCall_Set_Status(this.dart, newStatus)}
   get adHoc(): boolean { return api.grok_FuncCall_Get_AdHoc(this.dart); }
   set adHoc(a: boolean) { api.grok_FuncCall_Set_AdHoc(this.dart, a); }
 
@@ -395,7 +394,10 @@ export class FuncCall extends Entity {
 
   /** Returns views with result. Should be called on succeeded FuncCall **/
   getResultViews(): ViewBase[] {
-    return toJs(api.grok_FuncCall_GetOutputViews(this.dart));
+    const views: ViewBase[] = toJs(api.grok_FuncCall_GetOutputViews(this.dart));
+    for (const view of views)
+      setTimeout(() => api.grok_View_OnAdded(view.dart), 200);
+    return views;
   }
 
   /** Makes a shallow copy. */

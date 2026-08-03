@@ -95,6 +95,16 @@ export const biologicsConfig: DBExplorerConfig = {
         'nonVariablePart': 'GROKTGT-',
         'regexpMarkup': 'GROKTGT-{d6}'
       }
+    },
+    'DG_BIOLOGICS_CURVE_ID': {
+      'table': 'assay_curves',
+      'column': 'identifier',
+      'matchRegexp': 'GROKCRV-\\d{6}',
+      'regexpExample': {
+        'example': 'GROKCRV-000001',
+        'nonVariablePart': 'GROKCRV-',
+        'regexpMarkup': 'GROKCRV-{d6}'
+      }
     }
   },
   'joinOptions': [
@@ -110,7 +120,7 @@ export const biologicsConfig: DBExplorerConfig = {
       'columnName': 'antibody_id',
       'tableName': 'sequences',
       'onColumn': 'id',
-      'select': ['sequence as antibody_sequence', 'name as sequence_name']
+      'select': ['heavy_chain as antibody_heavy_chain', 'light_chain as antibody_light_chain', 'name as sequence_name']
     },
     {
       'fromTable': 'assay_results',
@@ -125,12 +135,29 @@ export const biologicsConfig: DBExplorerConfig = {
       'tableName': 'targets',
       'onColumn': 'id',
       'select': ['name as target_name']
+    },
+    {
+      'fromTable': 'assay_results',
+      'columnName': 'id',
+      'tableName': 'assay_curves',
+      'onColumn': 'assay_result_id',
+      'select': ['curve']
+    },
+    {
+      'fromTable': 'assay_curves',
+      'columnName': 'assay_result_id',
+      'tableName': 'assay_results',
+      'onColumn': 'id',
+      'select': ['assay_id as assay_id', 'result_value as assay_value', 'units as assay_units']
     }
   ],
   'headerNames': {
     'linkers': 'linker_type',
     'sequence_liabilities': 'liability_type',
     'sequence_regions': 'region_type',
+    'sequence_properties': 'chain',
+    'expression_batches': 'chain',
+    'purification_batches': 'chain',
   },
   'uniqueColumns': {
     'adc': 'identifier',
@@ -142,12 +169,14 @@ export const biologicsConfig: DBExplorerConfig = {
     'expression_batches': 'identifier',
     'peptides': 'identifier',
     'targets': 'identifier',
+    'assay_curves': 'identifier',
   },
   'customSelectedColumns': {
     'adc': [
       'name',
       'identifier',
-      'antibody_sequence',
+      'antibody_heavy_chain',
+      'antibody_light_chain',
       'antibody_id',
       'drug_id',
       'linker_id',
@@ -158,6 +187,19 @@ export const biologicsConfig: DBExplorerConfig = {
       'name',
       'identifier',
       'helm'
+    ],
+    'sequences': [
+      'name',
+      'identifier',
+      'heavy_chain',
+      'light_chain'
+    ],
+    'assay_curves': [
+      'identifier',
+      'assay_result_id',
+      'assay_value',
+      'assay_units',
+      'curve'
     ]
   }
 };

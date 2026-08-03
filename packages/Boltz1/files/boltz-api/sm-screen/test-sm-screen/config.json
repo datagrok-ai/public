@@ -1,0 +1,15 @@
+{
+  "target": {
+    "entities": [{ "type": "protein", "value": "MKTIIALSYIFCLVFA", "chain_ids": ["A"] }],
+    "pocket_residues": { "A": [2, 3, 4, 7, 8, 9] },
+    "reference_ligands": ["CC(=O)Oc1ccccc1C(=O)O"],
+    "constraints": [
+      {
+        "type": "pocket",
+        "binder_chain_id": "L",
+        "contact_residues": { "A": [2, 3, 4, 7, 8, 9] },
+        "max_distance_angstrom": 6.0
+      }
+    ]
+  }
+}

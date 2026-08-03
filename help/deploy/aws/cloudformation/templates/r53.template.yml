@@ -83,10 +83,26 @@ Resources:
               Ref: DNSDomain
             postfix:
               Ref: Postfix
+      SubjectAlternativeNames:
+        - Fn::Sub:
+            - "registry.${AWS::StackName}${postfix}.${domain}"
+            - domain:
+                Ref: DNSDomain
+              postfix:
+                Ref: Postfix
       DomainValidationOptions:
         - DomainName:
             Fn::Sub:
               - "${AWS::StackName}${postfix}.${domain}"
+              - postfix:
+                  Ref: Postfix
+                domain:
+                  Ref: DNSDomain
+          HostedZoneId:
+            Ref: DNSZoneId
+        - DomainName:
+            Fn::Sub:
+              - "registry.${AWS::StackName}${postfix}.${domain}"
               - postfix:
                   Ref: Postfix
                 domain:
@@ -217,8 +233,43 @@ Resources:
         Fn::GetAtt:
           - DatagrokR53CleanupLambdaFunction
           - Arn
+  RegistryDNS:
+    Type: AWS::Route53::RecordSet
+    Condition: RegistryProxyEnabled
+    Properties:
+      Type: A
+      AliasTarget:
+        HostedZoneId:
+          Fn::GetAtt:
+            - DatagrokLoadBalancer
+            - CanonicalHostedZoneID
+        DNSName:
+          Fn::GetAtt:
+            - DatagrokLoadBalancer
+            - DNSName
+      Comment:
+        Fn::Sub: "${AWS::StackName} Public Registry Proxy DNS"
+      HostedZoneId:
+        Ref: DNSZoneId
+      Name:
+        Fn::Sub:
+          - "registry.${AWS::StackName}${postfix}.${domain}."
+          - postfix:
+              Ref: Postfix
+            domain:
+              Ref: DNSDomain
 Outputs:
   DatagrokEndpoint:
     Description: Datagrok endpoint
     Value:
       Ref: DatagrokDNS
+  RegistryEndpoint:
+    Condition: RegistryProxyEnabled
+    Description: Docker registry endpoint
+    Value:
+      Fn::Sub:
+        - "registry.${AWS::StackName}${postfix}.${domain}"
+        - postfix:
+            Ref: Postfix
+          domain:
+            Ref: DNSDomain

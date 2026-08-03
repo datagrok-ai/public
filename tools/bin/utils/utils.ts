@@ -30,6 +30,28 @@ export function descriptionToComment(s: string) {
   return '/**\n' + s + '\n*/\n';
 }
 
+const JSDOC_META_KEYS = ['choices', 'suggestions', 'semType'];
+
+export function buildJsDoc(opts: {
+  description: string,
+  inputs: {name?: string, type?: string, options?: Record<string, string>}[],
+}): string {
+  const {description, inputs} = opts;
+  const lines: string[] = [];
+  if (description)
+    lines.push(` * ${description}`);
+  for (const {name, type, options = {}} of inputs) {
+    const metaLines = JSDOC_META_KEYS
+      .filter((k) => options[k])
+      .map((k) => ` *   ${k}: ${options[k]}`);
+    if (!options.description && !metaLines.length)
+      continue;
+    const desc = options.description ? ` - ${options.description}` : '';
+    lines.push(` * @param {${type}} ${name}${desc}`, ...metaLines);
+  }
+  return lines.length ? `/**\n${lines.join('\n')}\n */\n` : '';
+}
+
 export function spaceToCamelCase(s: string, firstUpper: boolean = true): string {
   s = s.replace(/\s+./g, (x) => x[x.length - 1].toUpperCase());
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
@@ -90,6 +112,7 @@ export const replacers: Indexable = {
   PACKAGE_DETECTORS_NAME: (s: string, name: string) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name)),
   PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, name),
   FUNC_DESCRIPTION: (s: string, desc: string) => s.replace(/#{FUNC_DESCRIPTION}/g, descriptionToComment(desc)),
+  FUNC_JSDOC: (s: string, opts: any) => s.replace(/#{FUNC_JSDOC}/g, buildJsDoc(opts)),
   FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, friendlyNameToName(name)),
   FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, friendlyNameToName(name, false)),
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
@@ -108,7 +131,7 @@ export class TemplateBuilder {
     this.template = template;
   }
 
-  replace(pattern: string, value: string | object[]) {
+  replace(pattern: string, value: string | object | object[]) {
     this.template = replacers[pattern](this.template, value);
     return this;
   }
@@ -234,7 +257,7 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
-  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
+  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*\\{([^}\\n]*)\\})?`, 'g');
   const testOptional = (inputAnnotation: string) => /isOptional\s*:\s*true/.test(inputAnnotation) || /optional\s*:\s*true/.test(inputAnnotation);
   const inputAnnotations = [...script.matchAll(regex)];
   let firstTsValidOptionalIdx: number = inputAnnotations.length-1;
@@ -251,7 +274,14 @@ export function getScriptInputs(script: string, comment: string = '#'): object[]
     const nullable = /nullable\s*:\s*true/.test(match[0]);
     const type = dgToTsTypeMap[match[1]] || 'any';
     const name = match[2];
-    inputs.push({type, name, isOptional, undefinable, nullable});
+    const options: Record<string, string> = {};
+    for (const part of (match[3] ?? '').split(';')) {
+      const i = part.indexOf(':');
+      if (i < 0)
+        continue;
+      options[part.slice(0, i).trim()] = part.slice(i + 1).trim();
+    }
+    inputs.push({type, name, isOptional, undefinable, nullable, options});
   }
   return inputs;
 };
@@ -265,11 +295,11 @@ export function getScriptDescription(script: string, comment: string = '#'): str
 
 export const dgImports = `import * as grok from 'datagrok-api/grok';\nimport * as DG from 'datagrok-api/dg';\n`;
 
-export const scriptWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+export const scriptWrapperTemplate = `#{FUNC_JSDOC}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.functions.call('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
-export const queryWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+export const queryWrapperTemplate = `#{FUNC_JSDOC}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.data.query('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 

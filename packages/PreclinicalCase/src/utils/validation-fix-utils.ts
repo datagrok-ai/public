@@ -59,8 +59,8 @@ function fixISO8601Format(
 
   for (const issueDetail of issueDetails) {
     const row = issueDetail.row;
-    if (row !== '' && row !== 'Not in dataset' && typeof row !== 'string') {
-      const rowIdx = typeof row === 'number' ? row : parseInt(String(row));
+    if (row !== '' && row !== 'Not in dataset') {
+      const rowIdx = typeof row === 'number' ? row : parseInt(String(row), 10);
       if (!isNaN(rowIdx) && rowIdx >= 1 && rowIdx < df.rowCount) {
         affectedRows.add(rowIdx - 1);
         if (Array.isArray(issueDetail.variables)) {

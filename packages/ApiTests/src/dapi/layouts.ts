@@ -241,7 +241,7 @@ category('Dapi: layouts', () => {
     }
 
   }, { owner: 'aparamonov@datagrok.ai' });
-});
+}, { node: true });
 
 async function createTestLayout(): Promise<_DG.ViewLayout> {
   const l = DG.ViewLayout.fromJson(layout);

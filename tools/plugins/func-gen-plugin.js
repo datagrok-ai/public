@@ -19,6 +19,102 @@ const {toCamelCase} = require('../bin/commands/migrate');
 
 const {api} = require('../bin/commands/api');
 
+// Prebuilt CJS bundle of diff-grok's IVP parser (`getIVP` + a couple constants), tree-shaken
+// to exclude the script-code generator. Regenerate with `npm run update:ivp-parser`.
+function loadIvpParser() {
+  try {
+    const parser = require('./ivp-parser.bundle.cjs');
+    if (typeof parser.getIVP !== 'function') {
+      console.warn('[func-gen] ivp-parser.bundle.cjs has no getIVP export — skipping ivp models');
+      return null;
+    }
+    return parser;
+  } catch (e) {
+    console.warn(`[func-gen] could not load ivp-parser.bundle.cjs (run "npm run update:ivp-parser"): ${e.message}`);
+    return null;
+  }
+}
+
+// Derive a function signature from a `.ivp` model using diff-grok's parser. Builds the
+// `//input:` / `//output:` lines directly from the parsed object (input annotations are stored
+// verbatim on it), matching the runnable script's names exactly — no codegen needed.
+function preparseIvpModel(parser, text) {
+  const {getIVP, MAX_LINE_CHART, STAGE_COL_NAME} = parser;
+  let ivp;
+  try {
+    ivp = getIVP(text);
+  } catch {
+    return null;
+  }
+  if (!ivp || !ivp.name) return null;
+
+  // Input names use the script-form names (arg bounds/step `_`-prefixed, loop count `_count`) so the
+  // run path, the diff-grok fitting/SA pipeline, and `propagateChoice` lookups all agree on one set
+  // of names. `scriptKey` mirrors `name`; it is kept only for the value-forwarding map below.
+  // Numeric IVP inputs are always required: mark them `nullable: false` so an emptied field fails
+  // form validation instead of running with a null (which throws in the solver).
+  const withNullable = (annot) => {
+    const a = (annot ?? '').trim();
+    if (!a.startsWith('{')) return '{nullable: false}';     // no options block
+    if (/[{;\s]nullable\s*:/.test(a)) return a;              // already declares nullable (any value)
+    if (/^\{\s*\}$/.test(a)) return '{nullable: false}';     // empty {}
+    return `{nullable: false; ${a.slice(1).trimStart()}`;    // everything after '{' untouched
+  };
+
+  const mk = (type, name, scriptKey, input) =>
+    ({tsType: 'number', name, scriptKey,
+      annotation: `//input: ${type} ${name} = ${input.value} ${withNullable(input.annot)}`.trim()});
+
+  const inputs = [];
+  const a = ivp.arg.name;
+  if (ivp.loop) inputs.push(mk('int', '_count', '_count', ivp.loop.count));
+  inputs.push(mk('double', `_${a}0`, `_${a}0`, ivp.arg.initial));
+  inputs.push(mk('double', `_${a}1`, `_${a}1`, ivp.arg.final));
+  inputs.push(mk('double', '_h', '_h', ivp.arg.step));
+  for (const [k, v] of ivp.inits) inputs.push(mk('double', k, k, v));
+  if (ivp.params) for (const [k, v] of ivp.params) inputs.push(mk('double', k, k, v));
+
+  const cols = ivp.outputs ? ivp.outputs.size : ivp.inits.size;
+  const multiAxis = cols > MAX_LINE_CHART - 1 ? 'true' : 'false';
+  const segments = ivp.updates ? ` segmentColumnName: "${STAGE_COL_NAME}",` : '';
+  // The 'DiffStudio Facet' viewer (one line chart per variable) is appended last; it resolves
+  // only when the DiffStudio package is installed, so Grid / Line chart remain the always-available
+  // viewers for packages that ship `.ivp` models without depending on DiffStudio.
+  const facetSegment = ivp.updates ? `, segmentColumnName: "${STAGE_COL_NAME}"` : '';
+  const viewer = `Grid(block: 100) | Line chart(block: 100, multiAxis: "${multiAxis}",${segments} ` +
+    `multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false")` +
+    ` | DiffStudio Facet(block: 100${facetSegment})`;
+  const outputAnnotation = `//output: dataframe df {caption: ${ivp.name}; viewer: ${viewer}}`;
+
+  const metas = {runOnOpen: 'true', runOnInput: 'true', features: '{"sens-analysis": true, "fitting": true}'};
+  let isModel = false;
+  for (const meta of ivp.metas || []) {
+    const m = /^(?:\/\/)?meta\.([\w-]+):\s*(.*)$/.exec(String(meta).trim());
+    if (!m) continue;
+    if (m[1] === 'role') {
+      if (m[2].split(',').map((s) => s.trim()).includes('model')) isModel = true;
+    } else if (m[1] !== 'solver') metas[m[1]] = m[2];
+  }
+  // Convert a `#meta.inputs` lookup into a real `propagateChoice: all` string input. RFV renders
+  // this natively (it ignores `meta.inputs`); selecting a row fills the matching inputs by name.
+  // Name / brace parsing mirrors DiffStudio's getLookupsInfo (utils.ts): the name is the text
+  // before the first `{` with spaces stripped, and the options block ends at the first `}`.
+  if (ivp.inputsLookup) {
+    const raw = ivp.inputsLookup.trim();
+    const open = raw.indexOf('{');
+    const close = raw.indexOf('}');
+    if (open >= 0 && close >= 0) {
+      const name = raw.slice(0, open).replaceAll(' ', '');
+      inputs.unshift({
+        tsType: 'string', name, scriptKey: null,
+        annotation: `//input: string ${raw.slice(0, close)}; propagateChoice: all${raw.slice(close)}`.trim(),
+      });
+    }
+  }
+
+  return {name: ivp.name, description: ivp.descr || undefined, isModel, inputs, outputAnnotation, metas};
+}
+
 const baseImport = 'import * as DG from \'datagrok-api/dg\';\n';
 
 function normEol(s) {
@@ -91,6 +187,7 @@ class FuncGeneratorPlugin {
         this._insertImports([...imports]);
         fs.appendFileSync(this.options.outputPath, normEol(functions.join('')), 'utf-8');
       }
+      this._generateIvpModels(compiler.context);
       this._checkPackageFileForDecoratorsExport(packageFilePath);
       // Uncommment to add obvious import/export
       // this._writeToPackageFile(packageFilePath, genImports, genExports);
@@ -515,6 +612,74 @@ class FuncGeneratorPlugin {
     
   }
 
+  // Scan the package's `files/` tree for `.ivp` models. Each one with a `#meta.role: model`
+  // line is preparsed into a function signature and emitted as a Rich-Function-View model
+  // wrapper that links back to the deployed `.ivp` (multithreaded fitting reads that link).
+  // Parse failures are warned, never thrown, so a malformed `.ivp` cannot break the build.
+  _generateIvpModels(context) {
+    const filesDir = path.join(context, 'files');
+    if (!fs.existsSync(filesDir)) return;
+
+    const parser = loadIvpParser();
+    if (!parser) return;
+
+    const ivpFiles = fs.readdirSync(filesDir, {recursive: true})
+      .filter((f) => typeof f === 'string' && f.endsWith('.ivp'))
+      .map((f) => path.join(filesDir, f));
+
+    const namespace = path.basename(context);
+    const blocks = [];
+    for (const file of ivpFiles) {
+      const rel = path.relative(context, file).replace(/\\/g, '/');
+      let res;
+      try {
+        res = preparseIvpModel(parser, fs.readFileSync(file, 'utf-8'));
+      } catch (e) {
+        console.warn(`[func-gen] skipped ivp model ${rel}: ${e.message}`);
+        continue;
+      }
+      if (!res) {
+        console.warn(`[func-gen] skipped ivp model ${rel}: missing #name`);
+        continue;
+      }
+      if (!res.isModel) continue;
+
+      const modelPath = `System:AppData/${namespace}/${path.relative(filesDir, file).replace(/\\/g, '/')}`;
+      const fnName = 'ivpModel_' + res.name.replace(/[^A-Za-z0-9]/g, '_');
+      const argList = res.inputs.map((i) => `${i.name}: ${i.tsType}`).join(', ');
+      const argObj = res.inputs
+        .filter((i) => i.scriptKey)
+        .map((i) => i.scriptKey === i.name ? i.name : `${i.scriptKey}: ${i.name}`)
+        .join(', ');
+      // res.metas already merges the shared Diff Studio defaults with the model's own #meta.*.
+      const meta = {
+        ...res.metas,
+        role: 'model',
+        diffStudioModel: modelPath,
+      };
+      // Emit name / description / editor / meta through the canonical annotation generator
+      // (handles meta key translation); keep the IVP-derived //input / //output lines verbatim
+      // so they match the runnable script exactly.
+      const header = getFuncAnnotation({
+        name: res.name,
+        description: res.description,
+        editor: 'Compute2:RichFunctionViewEditor',
+        meta,
+        inputs: [],
+        outputs: [],
+      }).trimEnd();
+      const annotations = [header, ...res.inputs.map((i) => i.annotation), res.outputAnnotation].join('\n');
+      blocks.push(`${annotations}\nexport async function ${fnName}(${argList}): Promise<DG.DataFrame> {\n` +
+        `  return await runDiffStudioModel('${modelPath}', {${argObj}});\n}\n`);
+    }
+
+    if (blocks.length === 0) return;
+    const importLine = `import {runDiffStudioModel} from './ivp-runtime';\n`;
+    let content = fs.readFileSync(this.options.outputPath, 'utf-8');
+    if (!content.includes(importLine)) content = content.replace(baseImport, baseImport + importLine);
+    content += '\n' + blocks.join('\n');
+    fs.writeFileSync(this.options.outputPath, normEol(content), 'utf-8');
+  }
   _clearGeneratedFile() {
     fs.writeFileSync(this.options.outputPath, normEol(baseImport));
   }

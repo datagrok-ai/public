@@ -30,6 +30,16 @@ export async function demoBioSimDiv() {
     {df: grok.shell.t, colNameList: ['sequence'], distance: 'euclidian', linkage: 'complete'});
 }
 
+export async function demoBioSimDivLayout() {
+  const t = await _package.files.readCsv('samples/peptides-non-natural.csv');
+  const tv = grok.shell.addTableView(t);
+  _package.files.readAsText('demo-files/bio_similarity_diversity.layout').then(async (layoutString: string) => {
+    const layout = DG.ViewLayout.fromJson(layoutString);
+    await DG.delay(100);
+    tv.loadLayout(layout);
+  });
+}
+
 export async function demoBio01UISteps() {
   const seqHelper: ISeqHelper = await getSeqHelper();
 

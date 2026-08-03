@@ -10,6 +10,16 @@
 	background: white;
 }
 
+.demo-app-loading {
+	position: relative;
+}
+
+.demo-app-loading > .d4-update-shadow {
+	opacity: 1 !important;
+	background-color: white;
+	z-index: 100;
+}
+
 .tutorials-demo-container .panel-content {
 	overflow: auto;
 }

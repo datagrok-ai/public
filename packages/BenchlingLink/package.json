@@ -8,7 +8,7 @@
   "version": "0.0.1",
   "description": "Enables seamless interaction with the Benchling platform",
   "dependencies": {
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.27.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "^4.6.14",

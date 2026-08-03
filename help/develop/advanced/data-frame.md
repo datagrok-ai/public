@@ -1,5 +1,15 @@
 ---
 title: "Dataframe"
+description: Deep dive into the DG.DataFrame and DG.Column JavaScript API, covering construction, access, and data types.
+keywords:
+  - DG.DataFrame
+  - DG.Column
+  - columnar storage
+  - getRawData
+  - null values
+  - qualified numbers
+  - virtual columns
+  - column statistics
 ---
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class
@@ -649,9 +659,9 @@ property setter).
 
 [102]: ../../visualize/viewers/viewers.md "Datagrok Viewers"
 
-[103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/consts.ts#L50 "DG.COLUMN_TYPE"
+[103]: https://github.com/datagrok-ai/public/blob/master/js-api/src/const.ts#L67 "DG.COLUMN_TYPE"
 
-[104]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/consts.ts#L39 "NULL constants"
+[104]: https://github.com/datagrok-ai/public/blob/master/js-api/src/const.ts#L55 "NULL constants"
 
 [105]: #column-data-types "Column data types"
 

@@ -6,7 +6,7 @@ import {CURRENT_MPO_VERSION, DesirabilityProfile, isDesirabilityProfile, migrate
 import {generateMpoFileName, getNextAvailable} from '@datagrok-libraries/statistics/src/mpo/utils';
 
 import {deleteMpoProfile, loadMpoProfiles, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT,
-  MPO_TEMPLATE_PATH, MpoProfileInfo, MpoSaveResult} from './utils';
+  MPO_TEMPLATE_PATH, MpoProfileInfo, MpoSaveResult, MpoUploadConflictAction} from './utils';
 
 class MpoProfileManagerImpl {
   private profiles: MpoProfileInfo[] = [];
@@ -111,6 +111,29 @@ class MpoProfileManagerImpl {
     });
   }
 
+  private promptUploadConflict(profileName: string): Promise<MpoUploadConflictAction> {
+    return new Promise((resolve) => {
+      const REPLACE = 'Replace existing profile';
+      const KEEP_BOTH = 'Keep both profiles';
+
+      const choice = ui.input.radio('', {
+        value: KEEP_BOTH,
+        items: [REPLACE, KEEP_BOTH],
+        nullable: false,
+      });
+
+      const dlg = ui.dialog('Upload options')
+        .add(ui.divText(`A profile named "${profileName}" already exists.`))
+        .add(choice)
+        .addButton('Upload', () => {
+          resolve(choice.value === REPLACE ? MpoUploadConflictAction.Replace : MpoUploadConflictAction.KeepBoth);
+          dlg.close();
+        })
+        .onCancel(() => resolve(MpoUploadConflictAction.Cancel))
+        .show();
+    });
+  }
+
   async save(profile: DesirabilityProfile, fileName: string): Promise<boolean> {
     try {
       await grok.dapi.files.writeAsText(`${MPO_TEMPLATE_PATH}/${fileName}`, JSON.stringify(profile));
@@ -140,6 +163,21 @@ class MpoProfileManagerImpl {
         migrateProfile(parsed);
         if (!parsed.name)
           parsed.name = file.name.replace(/\.json$/i, '');
+
+        if (this.existingNames.has(parsed.name)) {
+          const action = await this.promptUploadConflict(parsed.name);
+          if (action === MpoUploadConflictAction.Cancel)
+            return;
+
+          if (action === MpoUploadConflictAction.Replace) {
+            const existing = this.profiles.find((p) => p.name === parsed.name)!;
+            await this.save(parsed, existing.fileName);
+            return;
+          }
+
+          parsed.name = getNextAvailable(parsed.name, this.existingNames, (b, n) => n ? `${b} (${n})` : b);
+        }
+
         await this.save(parsed, this.generateFileName(parsed.name));
       } catch (e) {
         grok.shell.warning('Upload failed: invalid JSON file');

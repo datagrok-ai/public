@@ -4,16 +4,17 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, combineLatest, merge, Observable, Subject, of} from 'rxjs';
 import dayjs from 'dayjs';
 import {v4 as uuidv4} from 'uuid';
-import {PipelineStateParallel, PipelineStateSequential, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData, PipelineOutline} from '../config/PipelineInstance';
-import {PipelineConfigurationParallelProcessed, PipelineConfigurationProcessed, PipelineConfigurationSequentialProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
+import {PipelineStateDynamic, PipelineStateStatic, StepFunCallInitialConfig, StepFunCallSerializedState, StepFunCallState, PipelineSerializedState, isFuncCallSerializedState, ViewAction, PipelineInstanceRuntimeData} from '../config/PipelineInstance';
+import {PipelineConfigurationDynamicProcessed, PipelineConfigurationProcessed, PipelineConfigurationStaticProcessed} from '../config/config-processing-utils';
 import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {RestrictionType, ValidationResult} from '../data/common-types';
-import {customDeepEqual, mergeValidationResults} from '../utils';
+import {isDynamicType, RestrictionType, ValidationResult} from '../data/common-types';
+import {DriverLogger} from '../data/Logger';
+import {customDeepEqual, mergeValidationResults, pruneByKeys} from '../utils';
 
-export const descriptionOutputs = ['title', 'description', 'tags'] as const;
+export const descriptionOutputs = ['title', 'description', 'tags', 'body'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
 
 export type StateTreeSerializationOptions = {
@@ -64,7 +65,7 @@ export class FuncCallNode implements IStoreProvider {
   public uuid = uuidv4();
   public readonly nodeType = 'funccall';
 
-  public instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.config.states ?? [], this.isReadonly);
+  public instancesWrapper: FuncCallInstancesBridge;
   public pendingId?: string;
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
@@ -79,7 +80,9 @@ export class FuncCallNode implements IStoreProvider {
   constructor(
     public readonly config: PipelineStepConfigurationProcessed,
     public isReadonly: boolean,
+    private logger?: DriverLogger,
   ) {
+    this.instancesWrapper = new FuncCallInstancesBridge(this.config.io!, this.config.states ?? [], this.isReadonly, this.logger);
     this.getConsistencyChanges().pipe(
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
@@ -165,6 +168,7 @@ export class FuncCallNode implements IStoreProvider {
       funcCall: options?.skipFuncCalls ? undefined : instance?.getFuncCall(),
       isReadonly: this.isReadonly,
       viewersHook: this.config.viewersHook,
+      enableHistory: this.config.enableHistory,
       actions,
     };
     if (options.disableNodesUUID)
@@ -193,15 +197,9 @@ export class FuncCallNode implements IStoreProvider {
     for (const meta$ of Object.values(this.instancesWrapper.metaStates ?? {})) {
       if (!meta$?.value)
         continue;
-      let needsUpdate = false;
-      for (const handlerId of Object.keys(meta$.value)) {
-        if (!currentIds.has(handlerId)) {
-          delete meta$.value[handlerId];
-          needsUpdate = true;
-        }
-      }
-      if (needsUpdate)
-        meta$.next(Object.keys(meta$.value).length === 0 ? undefined : meta$.value);
+      const next = pruneByKeys(meta$.value, currentIds);
+      if (next)
+        meta$.next(Object.keys(next).length === 0 ? undefined : next);
     }
   }
 
@@ -210,17 +208,9 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   clearOldValidations(currentIds: Set<string>) {
-    const cval = this.instancesWrapper.validations$.value;
-    const nval: Record<string, Record<string, ValidationResult | undefined>> = {};
-    let needsUpdate = false;
-    for (const [k, v] of Object.entries(cval)) {
-      if (currentIds.has(k))
-        nval[k] = v;
-      else
-        needsUpdate = true;
-    }
-    if (needsUpdate)
-      this.instancesWrapper.validations$.next(nval);
+    const next = pruneByKeys(this.instancesWrapper.validations$.value, currentIds);
+    if (next)
+      this.instancesWrapper.validations$.next(next);
   }
 
   close() {
@@ -322,10 +312,12 @@ export class PipelineNodeBase implements IStoreProvider {
   public uuid = uuidv4();
   private store: MemoryStore;
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
+  public pipelineValidations$ = new BehaviorSubject<Record<string, ValidationResult | undefined>>({});
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
     public readonly isReadonly: boolean,
+    protected logger?: DriverLogger,
   ) {
     this.store = new MemoryStore(config.states ?? [], false);
   }
@@ -341,18 +333,19 @@ export class PipelineNodeBase implements IStoreProvider {
     return this.store;
   }
 
-  clearOldTags(currentIds: Set<string>) {
-    const cval = this.nodeDescription.getState<Record<string, string[]>>('tags') ?? [];
-    const nval: Record<string, string[]> = {};
-    let needsUpdate = false;
-    for (const [k, v] of Object.entries(cval)) {
-      if (currentIds.has(k))
-        nval[k] = v;
-      else
-        needsUpdate = true;
-    }
-    if (needsUpdate)
-      this.nodeDescription.setState('tags', nval);
+  setPipelineValidation(uuid: string, r?: ValidationResult) {
+    const cur = {...this.pipelineValidations$.value};
+    if (r === undefined)
+      delete cur[uuid];
+    else
+      cur[uuid] = r;
+    this.pipelineValidations$.next(cur);
+  }
+
+  clearOldPipelineValidations(currentIds: Set<string>) {
+    const next = pruneByKeys(this.pipelineValidations$.value, currentIds);
+    if (next)
+      this.pipelineValidations$.next(next);
   }
 
   toSerializedState(options: StateTreeSerializationOptions) {
@@ -362,6 +355,7 @@ export class PipelineNodeBase implements IStoreProvider {
       version: this.config.version,
       nqName: this.config.nqName,
       friendlyName: this.config.friendlyName,
+      description: this.config.description,
       isReadonly: this.isReadonly,
     };
     if (options.disableNodesUUID)
@@ -382,16 +376,6 @@ export class PipelineNodeBase implements IStoreProvider {
     return res;
   }
 
-  getStructureCheck(state: PipelineOutline) {
-    if (this.config.structureCheck) {
-      try {
-        return this.config.structureCheck(state);
-      } catch (e: any) {
-        grok.shell.error(e);
-        console.error(e);
-      }
-    }
-  }
 }
 
 export class StaticPipelineNode extends PipelineNodeBase {
@@ -400,8 +384,9 @@ export class StaticPipelineNode extends PipelineNodeBase {
   constructor(
     public readonly config: PipelineConfigurationStaticProcessed,
     public readonly isReadonly: boolean,
+    logger?: DriverLogger,
   ) {
-    super(config, isReadonly);
+    super(config, isReadonly, logger);
   }
 
   toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
@@ -411,6 +396,7 @@ export class StaticPipelineNode extends PipelineNodeBase {
       type: this.nodeType,
       steps: [],
       actions,
+      isActionStep: this.config.isActionStep || undefined,
     };
   }
 
@@ -425,19 +411,20 @@ export class StaticPipelineNode extends PipelineNodeBase {
   }
 }
 
-export class ParallelPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'parallel';
+export class DynamicPipelineNode extends PipelineNodeBase {
+  public readonly nodeType = this.config.type;
 
   constructor(
-    public readonly config: PipelineConfigurationParallelProcessed,
+    public readonly config: PipelineConfigurationDynamicProcessed,
     public readonly isReadonly: boolean,
+    logger?: DriverLogger,
   ) {
-    super(config, isReadonly);
+    super(config, isReadonly, logger);
   }
 
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> {
+  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
     const state = super.toState(options);
-    const res: PipelineStateParallel<StepFunCallState, PipelineInstanceRuntimeData> = {
+    const res: PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> = {
       ...state,
       type: this.nodeType,
       steps: [],
@@ -447,9 +434,9 @@ export class ParallelPipelineNode extends PipelineNodeBase {
     return res;
   }
 
-  toSerializedState(options: StateTreeSerializationOptions): PipelineStateParallel<StepFunCallSerializedState, {}> {
+  toSerializedState(options: StateTreeSerializationOptions): PipelineStateDynamic<StepFunCallSerializedState, {}> {
     const base = super.toSerializedState(options);
-    const res: PipelineStateParallel<StepFunCallSerializedState, {}> = {
+    const res: PipelineStateDynamic<StepFunCallSerializedState, {}> = {
       ...base,
       type: this.nodeType,
       steps: [],
@@ -459,41 +446,7 @@ export class ParallelPipelineNode extends PipelineNodeBase {
   }
 }
 
-export class SequentialPipelineNode extends PipelineNodeBase {
-  public readonly nodeType = 'sequential';
-
-  constructor(
-    public readonly config: PipelineConfigurationSequentialProcessed,
-    public readonly isReadonly: boolean,
-  ) {
-    super(config, isReadonly);
-  }
-
-  toState(options: StateTreeSerializationOptions, actions?: ViewAction[]): PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> {
-    const state = super.toState(options);
-    const res: PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> = {
-      ...state,
-      type: this.nodeType,
-      steps: [],
-      stepTypes: getStepTypes(this.config),
-      actions,
-    };
-    return res;
-  }
-
-  toSerializedState(options: StateTreeSerializationOptions): PipelineStateSequential<StepFunCallSerializedState, {}> {
-    const base = super.toSerializedState(options);
-    const res: PipelineStateSequential<StepFunCallSerializedState, {}> = {
-      ...base,
-      type: this.nodeType,
-      steps: [],
-      stepTypes: getStepTypes(this.config),
-    };
-    return res;
-  }
-}
-
-export type StateTreeNode = FuncCallNode | StaticPipelineNode | ParallelPipelineNode | SequentialPipelineNode;
+export type StateTreeNode = FuncCallNode | StaticPipelineNode | DynamicPipelineNode;
 
 export function isFuncCallNode(node: StateTreeNode): node is FuncCallNode {
   return node.nodeType === 'funccall';
@@ -503,15 +456,11 @@ export function isStaticPipelineNode(node: StateTreeNode): node is StaticPipelin
   return node.nodeType === 'static';
 }
 
-export function isParallelPipelineNode(node: StateTreeNode): node is ParallelPipelineNode {
-  return node.nodeType === 'parallel';
+export function isDynamicPipelineNode(node: StateTreeNode): node is DynamicPipelineNode {
+  return isDynamicType(node.nodeType);
 }
 
-export function isSequentialPipelineNode(node: StateTreeNode): node is SequentialPipelineNode {
-  return node.nodeType === 'sequential';
-}
-
-function getStepTypes(conf: PipelineConfigurationParallelProcessed | PipelineConfigurationSequentialProcessed) {
+function getStepTypes(conf: PipelineConfigurationDynamicProcessed) {
   return conf.stepTypes.map((s) => {
     if (isPipelineConfig(s) || isPipelineStepConfig(s)) {
       const {id: configId, disableUIAdding, disableUIDragging, disableUIRemoving, nqName, friendlyName} = s;

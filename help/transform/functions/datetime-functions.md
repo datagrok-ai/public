@@ -1,5 +1,12 @@
 ---
 title: "Date and Time functions"
+description: Reference for functions that create, parse, and extract parts of dates and times in formulas.
+keywords:
+  - date and time functions reference
+  - date parsing functions
+  - dayofweek dayofyear
+  - extract date parts
+  - datetime arithmetic
 ---
 
 *Function List:*

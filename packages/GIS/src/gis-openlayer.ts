@@ -138,6 +138,7 @@ export class OpenLayers {
 
   currentAreaObject: Feature | null = null;
 
+  disposed: boolean = false;
   useWebGLFlag: boolean = true;
   preventFocusing: boolean = false;
   //map interacions
@@ -754,6 +755,7 @@ export class OpenLayers {
   }
 
   removeAllLayers(): void {
+    this.disposed = true;
     if (this.olMap) {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
@@ -1020,6 +1022,8 @@ export class OpenLayers {
 
   //map base events handlers>>
   onMapClick(evt: MapBrowserEvent<any>): void {
+    if (this.disposed)
+      return;
     const arrFeatures: FeatureLike[] = [];
     const res: OLCallbackParam = {
       coord: evt.coordinate,
@@ -1027,9 +1031,14 @@ export class OpenLayers {
       features: arrFeatures,
     };
 
-    this.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
-      arrFeatures.push(feature);
-    });
+    try {
+      this.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
+        arrFeatures.push(feature);
+      });
+    }
+    catch (e) {
+      return;
+    }
     if (arrFeatures.length == 0)
       return;
 
@@ -1056,6 +1065,8 @@ export class OpenLayers {
   }
 
   onMapPointermove(evt: MapBrowserEvent<any>) {
+    if (this.disposed)
+      return;
     if (evt.dragging)
       return;
 
@@ -1070,7 +1081,13 @@ export class OpenLayers {
     const getFeaturesOption = {
       layerFilter: this.selectCondition.bind(this),
     };
-    const ftArr = this.olMap.getFeaturesAtPixel(evt.pixel, getFeaturesOption);
+    let ftArr: FeatureLike[];
+    try {
+      ftArr = this.olMap.getFeaturesAtPixel(evt.pixel, getFeaturesOption);
+    }
+    catch (e) {
+      return;
+    }
     if (ftArr.length > 0) {
       for (let i = 0; i < ftArr.length; i++) {
         const geom = ftArr[i].getGeometry();

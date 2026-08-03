@@ -1,4 +1,15 @@
-# Supported formats
+---
+title: "Supported formats"
+description: Reference of file formats Datagrok can open, including domain-specific chemistry, biology, and scientific formats.
+keywords:
+  - supported file formats
+  - file types
+  - sdf
+  - fasta
+  - smiles
+  - molecule file formats
+  - required plugins
+---
 
 Datagrok supports over 50 file formats, including domain-specific formats like SDF, FASTA, and others. Datagrok also understands how data is structured or represented within those files (e.g., assay plates within an XLSX, SDTM conventions within a CSV, and notations like SMILES and HELM).
 
@@ -181,13 +192,24 @@ Datagrok supports over 50 file formats, including domain-specific formats like S
 
 ## Images and diagrams
 
-| Format          | Description                  | Required plugins |
-|-----------------|------------------------------|------------------|
-| `.jpg`, `.jpeg` | Photo, scan                  |                  |
-| `.png`          | Screenshot, icon, UI graphic |                  |
-| `.svg`          | Logo, diagram, UI asset      |                  |
-| `.bmp`          | Raw pixel data               |                  |
-| `.excalidraw`   | JSON-based vector drawings   | [Excalidraw]     |
+| Format          | Description                        | Required plugins |
+|-----------------|------------------------------------|------------------|
+| `.jpg`, `.jpeg` | Photo, scan                        |                  |
+| `.png`          | Screenshot, icon, UI graphic       |                  |
+| `.svg`          | Logo, diagram, UI asset            |                  |
+| `.bmp`          | Raw pixel data                     |                  |
+| `.eps`          | Encapsulated PostScript (vector)   | [EpsViewer]      |
+| `.excalidraw`   | JSON-based vector drawings         | [Excalidraw]     |
+
+## Audio and video
+
+Previewed with the browser's native HTML5 `<audio>` and `<video>` players; actual playback depends on
+the codecs your browser supports.
+
+| Format                                                       | Description       | Required plugins |
+|--------------------------------------------------------------|-------------------|------------------|
+| `.mp3`, `.wav`, `.flac`, `.ogg`, `.oga`, `.opus`, `.m4a`, `.aac`, `.weba` | Audio | [Media]          |
+| `.mp4`, `.m4v`, `.webm`, `.ogv`, `.mov`                      | Video             | [Media]          |
 
 
 
@@ -207,3 +229,5 @@ Datagrok supports over 50 file formats, including domain-specific formats like S
 [Curves]: https://github.com/datagrok-ai/public/tree/master/packages/Curves#readme
 [Clinical Case]: https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase#readme
 [Excalidraw]: https://github.com/datagrok-ai/public/tree/master/packages/Excalidraw#readme
+[EpsViewer]: https://github.com/datagrok-ai/public/tree/master/packages/EpsViewer#readme
+[Media]: https://github.com/datagrok-ai/public/tree/master/packages/Media#readme

@@ -1,4 +1,13 @@
-# Dendrogram
+---
+title: "Dendrogram"
+description: Visualize phylogenetic trees and hierarchical clustering results from Newick-format tree data.
+keywords:
+  - phylogenetic tree
+  - newick format
+  - hierarchical clustering
+  - tree visualization
+  - large tree rendering
+---
 
 _Dendrogram_ is a [package](../../develop/develop.md#packages) for phylogenetic trees visualization.
 
@@ -9,7 +18,7 @@ Currently, only the _Newick_ tree format is supported.
 ## Viewers
 
 Dendrogram viewer is a pure typescript component derived from
-[DG.JsViewer](https://datagrok.ai/api/js/api/dg/classes/JsViewer) to be used as
+[DG.JsViewer](https://datagrok.ai/api/js/dg/classes/JsViewer) to be used as
 [a Datagrok viewer](../../visualize/viewers/viewers.md).
 Exposed properties allow customizing the viewer appearance for the line width and color, the node size and fill color.
 

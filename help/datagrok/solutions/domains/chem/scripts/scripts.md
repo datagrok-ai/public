@@ -1,5 +1,15 @@
 ---
 title: "Chemical scripts"
+description: Reference table of built-in cheminformatics functions with performance benchmarks on large molecule sets.
+keywords:
+  - rdkit functions
+  - substructure search
+  - r-groups decomposition
+  - fingerprints
+  - mcs
+  - butina clustering
+  - inchi conversion
+  - performance benchmarks
 ---
 
 | Name                               | Function                  |

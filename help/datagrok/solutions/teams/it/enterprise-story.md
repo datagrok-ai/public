@@ -1,5 +1,13 @@
 ---
 title: "Enterprise IT"
+description: How Datagrok addresses data silos, legacy tooling, and fragmented analytics for large organizations.
+keywords:
+  - data silos
+  - legacy systems integration
+  - big pharma data
+  - centralized data platform
+  - discovery clinical manufacturing
+  - real world evidence
 ---
 <!-- SUBTITLE: -->
 

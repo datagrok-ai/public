@@ -1,7 +1,18 @@
 ---
 title: "Datagrok and Schrödinger: Which one is right for you?"
 sidebar_label: Schrödinger
-format: mdx
+mdx:
+  format: mdx
+description: Compares Datagrok and Schrödinger across architecture, data integration, visualization, cheminformatics, and extensibility for life-science R&D.
+keywords:
+  - schrodinger vs datagrok
+  - livedesign alternative
+  - maestro alternative
+  - pymol alternative
+  - fep+
+  - structure-based drug design
+  - molecular modeling comparison
+  - cheminformatics platform comparison
 ---
 
 _Physical models vs. fully immersive exploration. Deep simulations vs. connected

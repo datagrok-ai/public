@@ -1,14 +1,14 @@
 {
   "name": "revvitysignalslink",
   "friendlyName": "RevvitySignalsLink",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Integration with RevvitySignals",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.27.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
     "@datagrok-libraries/utils": "^4.6.8",

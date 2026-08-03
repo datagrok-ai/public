@@ -11,7 +11,8 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 const DASH_GAP_SYMBOL = '-';
@@ -154,7 +155,7 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
         const actBioType: HelmType = this.getHelmType(gridCell, biotype);
         return this.monomerLib!.getTooltip(actBioType, s);
       });
-    const tooltipEl = ui.divH(tooltipEls, {style: {alignItems: 'top'}});
+    const tooltipEl = ui.divH(tooltipEls, {style: {alignItems: 'top', flexWrap: 'wrap', gap: '4px'}});
     // tooltip max width is 600px, so we need to shrink the canvases a bit if needed. by default, it is 250px
     const canvases = Array.from(tooltipEl.querySelectorAll('canvas'));
     if (canvases.length > 2) {

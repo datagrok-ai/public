@@ -81,7 +81,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
               patienIdBoxPlot.input.selectedIndex = current;
               patienIdBoxPlot.fireChanged();
             }
-          }),
+          }, 'Previous'),
         ],
         [
           patienIdBoxPlot.root,
@@ -100,7 +100,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
               patienIdBoxPlot.input.selectedIndex = current;
               patienIdBoxPlot.fireChanged();
             }
-          }),
+          }, 'Next'),
         ],
         [
           labBaselineSelect,

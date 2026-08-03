@@ -1,0 +1,19 @@
+packageName: Retrosynthesis
+description: Retrosynthetic route planning for small molecules — works backward from a target molecule to commercially available starting materials, displayed as a synthesis tree in the Chemistry context panel. Powered by AiZynthFinder, with support for custom expansion models, templates, and stock files
+keywords:
+  - retrosynthesis
+  - retrosynthetic planning
+  - synthesis planning
+  - synthetic routes
+  - synthesis tree
+  - target molecule
+  - starting materials
+  - reactions
+  - aizynthfinder
+  - expansion model
+  - stock files
+  - custom configs
+  - smiles
+  - cheminformatics
+apiRef: src/package-api.ts
+docsRef: README.md

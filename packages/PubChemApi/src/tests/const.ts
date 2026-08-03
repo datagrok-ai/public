@@ -1,8 +1,4 @@
 
-export const pubChemBaseURL = 'https://pubchem.ncbi.nlm.nih.gov';
-export const pubChemRest = `${pubChemBaseURL}/rest`;
-export const pubChemPug = `${pubChemRest}/pug`;
-
 export const SMILES = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
 export const MOL2000 = `
 MJ200900                      

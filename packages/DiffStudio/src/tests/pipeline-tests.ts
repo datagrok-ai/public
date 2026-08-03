@@ -130,6 +130,7 @@ category('Pipelines', () => {
   testPipelineTemplate('Extended template', TEMPLATES.EXTENDED);
   testPipelineTemplate('Chem react', USE_CASES.CHEM_REACT);
   testPipelineTemplate('Robertson', USE_CASES.ROBERTSON);
+  testPipelineTemplate('Lotka-Volterra', USE_CASES.LOTKA_VOLT);
   testPipelineTemplate('Fermentation', USE_CASES.FERMENTATION);
   testPipelineTemplate('Multistage model', USE_CASES.ACID_PROD);
   testPipelineTemplate('Nimotuzumab', USE_CASES.NIMOTUZUMAB);

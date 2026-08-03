@@ -1,0 +1,16 @@
+{
+  "base_template": "latex",
+  "mimetypes": {
+    "application/pdf": true
+  },
+  "preprocessors": {
+    "CodeFolding": {
+      "type": "jupyter_contrib_nbextensions.nbconvert_support.CodeFoldingPreprocessor",
+      "enabled": true
+    },
+    "PyMarkdown": {
+      "type": "jupyter_contrib_nbextensions.nbconvert_support.PyMarkdownPreprocessor",
+      "enabled": true
+    }
+  }
+}

@@ -1,5 +1,15 @@
 ---
 title: "Develop custom viewers"
+description: Build a JavaScript-based or scripting-based custom viewer with properties, rendering, events, and registration.
+keywords:
+  - DG.JsViewer
+  - viewer role
+  - scripting viewer
+  - viewer properties
+  - onTableAttached
+  - registerViewer
+  - grok.decorators.viewer
+  - custom bar chart viewer
 ---
 
 Developers can extend Datagrok with special visual components bound to data, which are called
@@ -45,7 +55,7 @@ import {AwesomeViewer} from './awesome-viewer.js'
 
 //name: AwesomeViewer
 //description: Creates an awesome viewer
-//tags: viewer
+//meta.role: viewer
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
@@ -68,7 +78,7 @@ JavaScript API Samples, there you can run
 this [code snippet](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers) to get a simple working
 example right away and see how it functions within the platform. Finally, if you would like to explore the methods
 discussed in the article on your own, jump right to
-our [JavaScript API documentation](https://datagrok.ai/api/js/api/dg/classes/JsViewer).
+our [JavaScript API documentation](https://datagrok.ai/api/js/dg/classes/JsViewer).
 
 ### External dependencies
 
@@ -413,7 +423,7 @@ the following script:
 ```python
 # name: Bar chart
 # language: python
-# tags: demo, viewers
+# tags: viewers
 # input: dataframe df
 # input: column splitColumnName {type: categorical}
 # input: column valueColumnName {type: numerical}
@@ -551,7 +561,7 @@ doing it in a package:
 ```js
 import {AwesomeViewer} from './awesome-viewer.js'
 
-//tags: autostart
+//meta.role: autostart
 export function initFunctionPackage() {
   grok.shell.registerViewer('AwesomeViewer', 'Creates an awesome viewer', () => new AwesomeViewer());
 }

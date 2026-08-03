@@ -1,5 +1,12 @@
 ---
 title: "Density plot"
+description: Visualize the concentration of data points across a 2D area by binning and color-coding point density.
+keywords:
+  - heat density chart
+  - 2d histogram
+  - point density
+  - binned scatter plot
+  - hexbin
 ---
 
 Unlike [scatter plot](scatter-plot.md) that visualizes each individual data point, density plot splits 2D area by bins,
@@ -30,6 +37,7 @@ General:
 | Bin To Range | boolean |  |
 | Show Bin Selector | boolean |  |
 | Back Color | number |  |
+| Lasso Tool | boolean | When true, lasso area selector is used instead of the rectangular one when drawing annotation regions. |
 | Row Source | string | Determines the rows shown on the plot. |
 | Allow Dynamic Menus | boolean |  |
 | Show Context Menu | boolean | Properties common for all viewers todo: use code generation |
@@ -46,6 +54,8 @@ General:
 | Color Transform Type | string |  |
 | Linear Color Scheme | list |  |
 | Controls Font | string | Viewer controls elements font. |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **X** | | |
 | Show X Axis | boolean |  |
 | X Axis Type | string |  |
@@ -67,6 +77,11 @@ General:
 | Table | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Annotations** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

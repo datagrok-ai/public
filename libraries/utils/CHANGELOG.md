@@ -1,5 +1,13 @@
 # utils changelog
 
+## 4.7.7 (2026-07-09)
+
+* GROK-20367: Forms viewer: Number formatting does not match grid in some cases
+
+## 4.7.2 (2026-04-08)
+
+Added method to ensure the table view for the given dataframe is active
+
 ## 4.6.14 (2025-12-15)
 
 GROK-19378: Forms viewer: Non-molecule semantic type is incorrectly treated as Molecule

@@ -1,15 +1,12 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {EarlyStoppingSettings, LOSS, ReproSettings} from './constants';
 import {makeConstFunction} from './cost-functions';
 import {performNelderMeadOptimization} from './optimizer';
-import {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig,
-  TargetTableOutput} from './optimizer-misc';
+import {OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig} from './optimizer-misc';
 import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
-import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, getInputsData,
-  makeGetCalledFuncCall} from './fitting-utils';
-import {getNonSimilar} from './similarity-utils';
+import {defaultEarlyStoppingSettings, defaultRandomSeedSettings} from './fitting-utils';
+import {finalizeOptimizationResult, FinalizedFitting} from './finalize';
+import type {ExecutorChoice} from './worker/executor';
 
 
 // Public API for Compute2 to expose as a platform function
@@ -24,65 +21,93 @@ export type OptimizerParams = {
   settings?: Map<string, number>;
   reproSettings?: Partial<ReproSettings>;
   earlyStoppingSettings?: Partial<EarlyStoppingSettings>;
+  /**
+   * Default 'auto' — canHandle routes JS-language scripts annotated with
+   * `//meta.workerSafe: true` to the worker arm; everything else falls back
+   * to MainExecutor. Pass 'main' or 'worker' to force a specific arm.
+   */
+  executor?: ExecutorChoice;
 };
 
-export async function runOptimizer(
-  {
-    lossType = LOSS.RMSE,
-    func,
-    inputBounds,
-    outputTargets,
-    samplesCount,
-    similarity,
-    settings,
-    reproSettings,
-    earlyStoppingSettings,
-  }: OptimizerParams,
-): Promise<[OptimizationResult, DG.FuncCall[]]> {
-  const {variedInputNames, fixedInputs} = getInputsData(inputBounds);
+type ResolvedParams = {
+  lossType: LOSS;
+  func: DG.Func;
+  inputBounds: OptimizerInputsConfig;
+  outputTargets: OptimizerOutputsConfig;
+  samplesCount: number;
+  similarity: number;
+  settings: Map<string, number>;
+  reproSettings: ReproSettings;
+  earlyStoppingSettings: EarlyStoppingSettings;
+  executor: ExecutorChoice;
+};
 
-  const objectiveFunc = makeConstFunction(lossType, func, inputBounds, outputTargets);
+function resolveParams(params: OptimizerParams): ResolvedParams {
+  const {func, inputBounds, outputTargets, executor = 'auto', reproSettings, earlyStoppingSettings} = params;
+  const lossType = params.lossType ?? LOSS.RMSE;
 
   const defaultsOverrides = JSON.parse(func.options['fittingSettings'] || '{}');
 
-  settings ??= new Map();
+  const settings = params.settings ?? new Map<string, number>();
   nelderMeadSettingsOpts.forEach((opts, key) => {
     if (settings.get(key) == null)
       settings.set(key, defaultsOverrides[key] ?? opts.default);
   });
 
-  samplesCount = samplesCount ?? defaultsOverrides.samplesCount ?? 1;
-  similarity = similarity ?? defaultsOverrides.similarity ?? 10;
+  const samplesCount = params.samplesCount ?? defaultsOverrides.samplesCount ?? 1;
+  const similarity = params.similarity ?? defaultsOverrides.similarity ?? 10;
 
-  const reproSettingsFull = {...defaultRandomSeedSettings, ...defaultsOverrides, ...(reproSettings ?? {})};
-  const earlyStoppingSettingsFull = {...defaultEarlyStoppingSettings,
+  const reproSettingsFull: ReproSettings = {...defaultRandomSeedSettings, ...defaultsOverrides, ...(reproSettings ?? {})};
+  const earlyStoppingSettingsFull: EarlyStoppingSettings = {...defaultEarlyStoppingSettings,
     ...defaultsOverrides, ...(earlyStoppingSettings ?? {})};
 
-  const optResult = await performNelderMeadOptimization({
-    objectiveFunc,
-    inputsBounds: inputBounds,
-    settings,
-    samplesCount: samplesCount!,
+  return {
+    lossType, func, inputBounds, outputTargets,
+    samplesCount, similarity, settings,
     reproSettings: reproSettingsFull,
     earlyStoppingSettings: earlyStoppingSettingsFull,
+    executor,
+  };
+}
+
+async function runRawOptimizer(p: ResolvedParams): Promise<OptimizationResult> {
+  const objectiveFunc = makeConstFunction(p.lossType, p.func, p.inputBounds, p.outputTargets);
+  return performNelderMeadOptimization({
+    objectiveFunc,
+    inputsBounds: p.inputBounds,
+    settings: p.settings,
+    samplesCount: p.samplesCount,
+    reproSettings: p.reproSettings,
+    earlyStoppingSettings: p.earlyStoppingSettings,
+    executor: p.executor,
+    func: p.func,
+    outputTargets: p.outputTargets,
+    lossType: p.lossType,
   });
-  const extrema = optResult.extremums;
-  extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+}
 
-  const getCalledFuncCall = makeGetCalledFuncCall(func, fixedInputs, variedInputNames, true);
-  const targetDfs: TargetTableOutput[] = outputTargets
-    .filter((output) => output.type === DG.TYPE.DATA_FRAME)
-    .map((output) => {
-      return {name: output.propName, target: output.target as DG.DataFrame, argColName: output.argName};
-    });
+/**
+ * New finalized API. Returns sorted-and-similarity-filtered extrema together
+ * with the unfiltered list and the materialized FuncCalls. Single source of
+ * truth for post-processing — callers should not re-sort or re-run getNonSimilar.
+ */
+export async function runOptimizerFinalized(params: OptimizerParams): Promise<FinalizedFitting> {
+  const resolved = resolveParams(params);
+  const optResult = await runRawOptimizer(resolved);
+  return finalizeOptimizationResult(optResult, {
+    func: resolved.func,
+    inputBounds: resolved.inputBounds,
+    outputTargets: resolved.outputTargets,
+    similarity: resolved.similarity,
+  });
+}
 
-  const nonSimilarExtrema = await getNonSimilar(extrema, similarity!, getCalledFuncCall, targetDfs);
-
-  const calls: DG.FuncCall[] = [];
-  for (const extrema of nonSimilarExtrema) {
-    const calledFuncCall = await getCalledFuncCall(extrema.point);
-    calls.push(calledFuncCall);
-  }
-
-  return [optResult, calls];
+/**
+ * @deprecated Prefer {@link runOptimizerFinalized}. Kept for backward
+ * compatibility with deep-import callers; reimplemented as a thin shim over
+ * the finalized API. The tuple shape and `OptimizationResult` shape are unchanged.
+ */
+export async function runOptimizer(params: OptimizerParams): Promise<[OptimizationResult, DG.FuncCall[]]> {
+  const fin = await runOptimizerFinalized(params);
+  return [{extremums: fin.allExtremums, fails: fin.fails}, fin.calls];
 }

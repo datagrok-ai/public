@@ -7,7 +7,6 @@ import * as ui from 'datagrok-api/ui';
 import * as crud from './plates-crud';
 import {searchWellsView} from './views/plates-search-view';
 import {searchPlatesView} from './views/plates-search-view';
-import {propertySchemaView as templateView} from './views/plates-schema-view';
 import {createTemplatesView} from './views/plates-templates-view';
 import {filter} from 'rxjs/operators';
 import {createPlatesView} from './views/plates-create-view';
@@ -60,8 +59,7 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
   const wellTemplatesNode = templatesNode.group('Wells');
 
   for (const template of crud.plateTemplates) {
-    const plateTemplateNode = plateTemplatesNode.item(template.name, DG.SemanticValue.fromValueType(template, crud.TYPE.TEMPLATE));
-    plateTemplateNode.onSelected.subscribe(async (_) => grok.shell.addPreview(templateView(template)));
+    plateTemplatesNode.item(template.name, DG.SemanticValue.fromValueType(template, crud.TYPE.TEMPLATE));
   }
 
   crud.events.pipe(filter((event) => event.eventType === 'deleted')).subscribe((event) => {

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5a524"/>
+      <stop offset="1" stop-color="#e8590c"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f1f3f5"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
+      <feOffset dx="0" dy="8" result="off"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.4"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#bg)"/>
+
+  <!-- page with folded corner -->
+  <g filter="url(#shadow)">
+    <path d="M128 96
+             H336
+             L400 160
+             V416
+             a24 24 0 0 1 -24 24
+             H128
+             a24 24 0 0 1 -24 -24
+             V120
+             a24 24 0 0 1 24 -24 Z"
+          fill="url(#page)"/>
+    <!-- fold -->
+    <path d="M336 96 L400 160 H352 a16 16 0 0 1 -16 -16 Z" fill="#e8590c" opacity="0.85"/>
+    <path d="M336 96 L400 160 H352 a16 16 0 0 1 -16 -16 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+  </g>
+
+  <!-- bezier vector curve hinting PostScript -->
+  <g fill="none" stroke="#e8590c" stroke-width="10" stroke-linecap="round">
+    <path d="M144 336 C 196 236, 276 236, 364 336"/>
+  </g>
+  <g fill="#1a7cff">
+    <circle cx="144" cy="336" r="11"/>
+    <circle cx="364" cy="336" r="11"/>
+  </g>
+  <g fill="none" stroke="#1a7cff" stroke-width="4" stroke-dasharray="8 6" opacity="0.7">
+    <line x1="144" y1="336" x2="196" y2="236"/>
+    <line x1="364" y1="336" x2="276" y2="236"/>
+  </g>
+  <g fill="#f5a524" stroke="#1a7cff" stroke-width="3">
+    <circle cx="196" cy="236" r="9"/>
+    <circle cx="276" cy="236" r="9"/>
+  </g>
+
+  <!-- EPS label -->
+  <g font-family="Verdana, Geneva, sans-serif" font-weight="700" font-size="72" text-anchor="middle" fill="#343a40">
+    <text x="254" y="418">EPS</text>
+  </g>
+</svg>

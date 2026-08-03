@@ -1,5 +1,29 @@
 # HitTriage changelog
 
+## 1.10.6 (2026-07-16)
+
+* Hit Design: Added a "Re-run when campaign opens" option per compute function/script/query, available both in a campaign's compute dialog and at template creation. When enabled, the function is recomputed over the whole molecule column every time the campaign is opened — useful for database lookups that resolve after a molecule was first drawn.
+* Hit Design: Recomputing a function/script/query now overwrites the existing result column in place instead of appending a duplicate `<name> (2)` column.
+
+## 1.10.2 (2026-05-15)
+
+* Auto merging of data file if configured in campaign settings.
+
+## 1.10.0 (2026-04-09)
+
+### Features
+
+* Introduced PepTriage — a peptide-focused workflow alongside Hit Triage and Hit Design
+* Hit Triage:
+  * Added campaign grouping by template, status, author, last modified user, or custom fields
+  * Added sortable campaigns table columns
+  * Added column visibility editor for the campaigns table
+  * Migrated the compute function engine to a shared implementation now used together with Chem MPO
+
+### Bug Fixes
+
+* Browse panel compatibility restored
+
 ## 1.9.1 (2025-02-03)
 
 * HD: Parallel running functions, fix table joining

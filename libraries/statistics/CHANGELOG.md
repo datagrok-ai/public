@@ -1,5 +1,39 @@
 # statistics changelog
 
+## 1.12.9 (2026-07-16)
+
+* Compute functions dialog: Optional per-function "re-run on open" checkbox (`rerunOnOpenOption`), with the flag surfaced in the dialog result and template compute types.
+* Compute functions: `joinQueryResults` now overwrites an existing result column in place (matched by molecule) instead of appending a duplicate `<name> (2)` column.
+
+## 1.12.8 (2026-07-03)
+
+* MPO: Format score columns adaptively
+* MPO: Add an option to invert numerical desirability profiles
+* MPO: Add logarithmic scale support for numerical desirability profiles
+* MPO: Fix a freeze when reopening dialogs containing large profiles
+
+## 1.12.7 (2026-06-04)
+
+* MPO: Optimized score calculation for large datasets
+
+## 1.12.6 (2026-04-30)
+
+* GROK-20056: MPO: Prevent rerendering on column input hover and wheel scroll
+
+## 1.12.5 (2026-04-15)
+
+* MPO: Use column input for auto-updating column selectors
+* MPO: Fix column selector hover rerendering and layout overflow
+* Compute dialog: Add single-select radio button mode for MPO functionality
+
+## 1.12.4 (2026-04-08)
+
+* MPO: Share compute function engine with HT
+
+## 1.12.3 (2026-04-02)
+
+* Statistics: Update fit consts
+
 ## 1.12.2 (2026-03-26)
 
 * MPO: Add profile versioning

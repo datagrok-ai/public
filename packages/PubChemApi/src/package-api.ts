@@ -8,6 +8,10 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  export async function pubChemPanel(molString: string ): Promise<any> {
+    return await grok.functions.call('PubChem:PubChemPanel', { molString });
+  }
+
   export async function pubChemSubstructureSearchPanel(molString: string ): Promise<any> {
     return await grok.functions.call('PubChem:PubChemSubstructureSearchPanel', { molString });
   }
@@ -16,8 +20,8 @@ export namespace funcs {
     return await grok.functions.call('PubChem:PubChemSimilaritySearchPanel', { molString });
   }
 
-  export async function pubChemIdentitySearch(molString: string ): Promise<any> {
-    return await grok.functions.call('PubChem:PubChemIdentitySearch', { molString });
+  export async function pubChemIdentitySearchPanel(molString: string ): Promise<any> {
+    return await grok.functions.call('PubChem:PubChemIdentitySearchPanel', { molString });
   }
 
   export async function pubChemToSmiles(id: string ): Promise<string> {

@@ -18,12 +18,25 @@ module.exports = {
       import: './src/package-test.ts',
     },
   },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true,
+  },
   resolve: {
     fallback: {'url': false},
     extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
   },
   module: {
     rules: [
+      {
+        test: /\.wasm$/i,
+        type: 'javascript/auto',
+        loader: 'file-loader',
+        options: {
+          publicPath: 'dist/',
+          name: '[name].[ext]',
+        },
+      },
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
       {test: /\.css$/, use: ['style-loader', 'css-loader']},

@@ -1,6 +1,15 @@
 ---
 title: "Dataframe"
 sidebar_position: 1
+description: Describes the dataframe (table) structure in Datagrok, its columns, metadata, and how to filter and search tables.
+keywords:
+  - table structure
+  - column properties
+  - column tags
+  - semantic type
+  - table metadata
+  - smart search fields
+  - grid viewer
 ---
 
 A table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types

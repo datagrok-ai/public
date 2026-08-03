@@ -3,7 +3,7 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, expectTable, test} from '@datagrok-libraries/test/src/test';
-import {_package} from '../package-test';
+import {_package} from '../test-package';
 
 category('Dapi: files', () => {
   const filePrefix = 'System:AppData/ApiTests/';
@@ -121,7 +121,7 @@ category('Dapi: files', () => {
     expect(!!res);
   }, {stressTest: true});
 
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 category('Dapi: files: formats', () => {
   const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip', 'kmz', 'kml'];
@@ -135,7 +135,7 @@ category('Dapi: files: formats', () => {
           : ['kmz', 'kml'].includes(ext) ? 'GROK-13263'
               : undefined});
   }
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 async function safeDeleteFile(path: string): Promise<void> {
   try {

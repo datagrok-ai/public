@@ -3,7 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {applyCodeMirror} from "./utils/code-mirror-check";
 
+const SCRIPT_RIBBON_SELECTOR = 'i.fa-window-maximize[aria-label="Views"]';
+
 export function initScriptEditor(view: DG.View): void {
+  if (view.root?.parentElement?.querySelector(SCRIPT_RIBBON_SELECTOR) != null)
+    return;
   applyCodeMirror(view, (editor) => {
     const doc = editor.getDoc();
     const lineCount = doc.lineCount();
@@ -425,22 +429,22 @@ function setScriptRibbon(v: DG.View, doc: any) {
     componentsPopup.show();
   };
 
-  const view = ui.iconFA('window-maximize', () => viewsMenu);
+  const view = ui.iconFA('window-maximize', () => viewsMenu, 'Views');
   view.className = 'grok-icon far fa-window-maximize';
   const viewBtn = ui.div([view], 'd4-combo-popup');
   viewBtn.addEventListener('click', viewsMenu);
 
-  const layouts = ui.iconFA('columns', () => layoutsMenu);
+  const layouts = ui.iconFA('columns', () => layoutsMenu, 'Layouts');
   layouts.className = 'grok-icon far fa-columns';
   const layoutsBtn = ui.div([layouts], 'd4-combo-popup');
   layoutsBtn.addEventListener('click', layoutsMenu);
 
-  const elements = ui.iconFA('sliders-h');
+  const elements = ui.iconFA('sliders-h', null, 'Elements');
   elements.className = 'grok-icon far fa-sliders-h';
   const elementsBtn = ui.div([elements], 'd4-combo-popup');
   elementsBtn.addEventListener('click', elementsMenu);
 
-  const components = ui.iconFA('cubes');
+  const components = ui.iconFA('cubes', null, 'Components');
   components.className = 'grok-icon fas fa-cubes';
   const componentsBtn = ui.div([components], 'd4-combo-popup');
   componentsBtn.addEventListener('click', componentsMenu);

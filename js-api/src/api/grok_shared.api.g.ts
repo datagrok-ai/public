@@ -39,6 +39,8 @@ export class DataSourceType {
 
   static Databricks = 'Databricks';
 
+  static Snowflake = 'Snowflake';
+
   static DB2 = 'DB2';
 
   static Excel = 'Excel';
@@ -82,8 +84,6 @@ export class DataSourceType {
   static Sparql = 'Sparql';
 
   static Teradata = 'Teradata';
-
-  static Twitter = 'Twitter';
 
   static Vertica = 'Vertica';
 
@@ -136,6 +136,8 @@ export class Permission {
 
   static EDIT_GLOBAL_PERMISSIONS = 'EditGlobalPermissions';
 
+  static EDIT_SETTINGS = 'EditSettings';
+
   static START_ADMIN_SESSION = 'StartAdminSession';
 
   static EDIT_PLUGINS_SETTINGS = 'EditPluginsSettings';
@@ -147,6 +149,10 @@ export class Permission {
   static ADMIN_SYSTEM_CONNECTIONS = 'AdminSystemConnections';
 
   static ADMIN_STICKY_META = 'AdminStickyMeta';
+
+  static ADMIN_KEYS = 'AdminKeys';
+
+  static ADMIN_SYNC = 'AdminSync';
 
   static CREATE_REPOSITORY = 'CreateRepository';
 
@@ -260,6 +266,8 @@ export class ScriptLanguage {
 
   static PythonDocker = 'docker';
 
+  static Flow = 'flow';
+
 }
 import {Entity} from '../entities'
 
@@ -271,9 +279,11 @@ export class DockerImage extends Entity {
 
   static STATUS_ERROR = 'error';
 
-  static STATUS_BUILDING = 'building';
+  static STATUS_PENDING_VALIDATION = 'pending validation';
 
-  static STATUS_PENDING_BUILD = 'pending build';
+  static STATUS_VALIDATING = 'validating';
+
+  static STATUS_DELETED = 'deleted';
 
   static dbTableName = 'dockerfiles';
 

@@ -11,6 +11,10 @@ export class UsageType {
 
   static DIALOG_SHOW = 'dialog show';
 
+  static DIALOG_CLOSE = 'dialog close';
+
+  static COMMAND = 'command';
+
   static USER_REPORT_POSTED = 'user report posted';
 
   static INPUT = 'input';
@@ -20,6 +24,18 @@ export class UsageType {
   static DRAG_START = 'dragstart';
 
   static DROP = 'drop';
+
+  static DOCK = 'dock';
+
+  static UNDOCK = 'undock';
+
+  static DIALOG_SHOWED = 'dialog-showed';
+
+  static DIALOG_CLOSED = 'dialog-closed';
+
+  static TABLE_ADDED = 'table-added';
+
+  static FUNC_RUN = 'func-run';
 
 }
 export class GridCellStyleEx {
@@ -167,6 +183,8 @@ export class InputType {
   static File = 'File';
 
   static Files = 'Files';
+
+  static Folder = 'Folder';
 
   static List = 'List';
 

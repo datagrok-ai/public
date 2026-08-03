@@ -2,7 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+// @ts-ignore
 import '../../../../css/tutorial.css';
+
+// @ts-ignore
 import '../../../../css/ui-describer.css';
 import {_package} from '../../../package';
 
@@ -58,6 +61,27 @@ export async function getElement(parent: HTMLElement | Document, selectors: stri
   }
 
   return element;
+}
+
+/** Wait for the specified number of elements */
+export async function waitForElement(parent: HTMLElement, selectors: string, count: number): Promise<boolean> {
+  let element: NodeListOf<HTMLElement> | null;
+  let totalTime = 0;
+
+  while (true) {
+    element = parent.querySelectorAll(selectors);
+
+    if (element.length >= count)
+      break;
+
+    if (totalTime > MAX_TIME)
+      return false;
+
+    await new Promise((resolve) => setTimeout(resolve, TICK));
+    totalTime += TICK;
+  }
+
+  return true;
 }
 
 /** Get the specified view */

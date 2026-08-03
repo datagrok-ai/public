@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "source": "validate_rest_statistics.py — Mann-Whitney U",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Shier] SPSS: diabetes age",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          19,
+          22,
+          16,
+          29,
+          24
+        ],
+        "y": [
+          20,
+          11,
+          17,
+          12
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 17.0,
+        "p_value": 0.1111111111111111
+      }
+    },
+    {
+      "name": "[Statology] tied ranks: drug vs placebo",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          3,
+          5,
+          1,
+          4,
+          3,
+          5
+        ],
+        "y": [
+          4,
+          8,
+          6,
+          2,
+          1,
+          9
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 13.0,
+        "p_value": 0.46804160590041655
+      }
+    },
+    {
+      "name": "fully separated [1,2,3] vs [4,5,6]",
+      "category": "published_reference",
+      "inputs": {
+        "x": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "y": [
+          4.0,
+          5.0,
+          6.0
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.0,
+        "p_value": 0.1
+      }
+    },
+    {
+      "name": "NaN removal (pairwise)",
+      "category": "nan_handling",
+      "inputs": {
+        "x": [
+          1.0,
+          null,
+          2.0,
+          3.0
+        ],
+        "y": [
+          10.0,
+          11.0,
+          null
+        ]
+      },
+      "expected_clean_inputs": {
+        "x": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "y": [
+          10.0,
+          11.0
+        ]
+      },
+      "expected": {
+        "statistic": 0.0,
+        "p_value": 0.2
+      }
+    },
+    {
+      "name": "empty group → None",
+      "category": "edge_none",
+      "inputs": {
+        "x": [],
+        "y": [
+          1.0,
+          2.0
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "all-NaN group → None",
+      "category": "edge_none",
+      "inputs": {
+        "x": [
+          null
+        ],
+        "y": [
+          1.0,
+          2.0
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    }
+  ]
+}

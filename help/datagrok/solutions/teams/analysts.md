@@ -1,7 +1,8 @@
 ---
 title: "Analysts"
 sidebar-position: 3
-format: mdx
+mdx:
+  format: mdx
 keywords:
   - data analyst
   - DataOps

@@ -1,6 +1,15 @@
 ---
 title: "Databases"
-format: mdx
+mdx:
+  format: mdx
+description: How to connect Datagrok to relational databases, run and share parameterized queries, and build dynamic dashboards.
+keywords:
+  - connect to a database
+  - database manager
+  - parameterized query
+  - visual query editor
+  - schema browser
+  - share database connection
 ---
 
 ```mdx-code-block
@@ -153,7 +162,7 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 
   :::
 
-* [_AI Query Builder_](#ai-query-builder): lets users build queries using natural language. To access AI Query Builder, install the [ChatGPT](https://github.com/datagrok-ai/public/tree/master/packages/ChatGPT) plugin.
+* [_AI Query Builder_](#ai-query-builder): lets users build queries using natural language. To access AI Query Builder, install the [Grokky](https://github.com/datagrok-ai/public/tree/master/packages/Grokky) plugin.
 
 
 When you successfully create a query, it appears in the **Database Manager**

@@ -4,7 +4,9 @@
  */
 
 import {toDart, toJs} from "../wrappers";
+import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
+import {observeStream} from "../events";
 import {Func, Property, IProperty} from "../entities";
 import {DataFrame} from "../dataframe";
 import {Type} from "../const";
@@ -191,6 +193,40 @@ export class ObjectPropertyBag {
 }
 
 
+/** Event type descriptor as returned by {@link IWidgetStatus.events}. */
+export interface IEventType {
+  name: string;
+  eventName: string;
+  description: string;
+}
+
+/** Bounding rectangle returned by {@link IWidgetStatus.hitAreas}. */
+export interface IRectBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Runtime snapshot of a widget's structure, used by the automated testing system.
+ * Returned by {@link Widget.getWidgetStatus}.
+ */
+export interface IWidgetStatus {
+  /** Named UI parts: part name → root DOM Element. */
+  parts: { [name: string]: Element };
+  /** Named interactive regions: region name → bounding rectangle. */
+  hitAreas: { [name: string]: IRectBounds };
+  /** Keyboard shortcuts: key combo string → human-readable description. */
+  shortcuts: { [key: string]: string };
+  /** Events fired by this widget. */
+  events: IEventType[];
+  /** Free-form description of the widget's current state. */
+  description: string | null;
+  /** Validation error message; null means the widget is in a valid state. */
+  error: string | null;
+}
+
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget<TSettings = any> {
 
@@ -262,6 +298,14 @@ export class Widget<TSettings = any> {
     Used in the UI to display context actions, and for the AI integrations. */
   getFunctions(): Func[] { return this._functions;  }
 
+  private _aiDescription: string | null = null;
+
+  /** A short AI-facing briefing: what this widget is, what its functions do, and how the
+   * assistant should approach it (e.g. which {@link getFunctions} entries to call first).
+   * Shown to the AI assistant as part of the workspace context. */
+  get aiDescription(): string | null { return this._aiDescription; }
+  set aiDescription(x: string | null) { this._aiDescription = x; }
+
   /** Gets called when viewer's property is changed.
    * @param {Property} property - or null, if multiple properties were changed. */
   onPropertyChanged(property: Property | null): void {}
@@ -328,6 +372,12 @@ export class Widget<TSettings = any> {
     return p.defaultValue;
   }
 
+  /** Observes events with the specified eventId. Override in subclasses to provide actual events. */
+  onEvent(eventId: string | null = null): rxjs.Observable<any> { return rxjs.EMPTY; }
+
+  /** Returns the widget's runtime structure for automated testing and introspection. */
+  getWidgetStatus(): IWidgetStatus { return {parts: {}, hitAreas: {}, shortcuts: {}, events: [], description: null, error: null}; }
+
   /** Creates a new widget from the root element. */
   static fromRoot(root: HTMLElement): Widget {
     return new Widget(root);
@@ -337,7 +387,7 @@ export class Widget<TSettings = any> {
   // // @ts-ignore
   // static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
   //   let widget = Widget.fromRoot(ui.div());
-  //   // @ts-ignore
+  //   // @ts-ignore=
   //   ReactDOM.render(reactComponent, widget.root);
   //   return widget;
   // }
@@ -356,6 +406,25 @@ export class DartWidget extends Widget {
   get root(): HTMLElement { return api.grok_Widget_Get_Root(this.dart); }
   getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
   getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
+  getWidgetStatus(): IWidgetStatus { return api.grok_Widget_GetWidgetStatus(this.dart); }
+
+  /** AI briefing of the underlying Dart widget. */
+  get aiDescription(): string | null {
+    const f = (api as any).grok_Widget_Get_AIDescription;
+    return f ? (f(this.dart) ?? null) : null;
+  }
+
+  set aiDescription(x: string | null) {
+    const f = (api as any).grok_Widget_Set_AIDescription;
+    if (f)
+      f(this.dart, x);
+  }
+
+  onEvent(eventId: string | null = null): rxjs.Observable<any> {
+    if (eventId === null)
+      return rxjs.EMPTY;
+    return observeStream(api.grok_Widget_OnEvent(this.dart, eventId));
+  }
 }
 
 

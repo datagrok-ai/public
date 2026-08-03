@@ -5,7 +5,6 @@ import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import {PuppeteerNode} from 'puppeteer';
 import type * as DG from 'datagrok-api/dg';
-import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
 import {spaceToCamelCase} from '../utils/utils';
 import puppeteer from 'puppeteer';
 import {Browser, Page} from 'puppeteer';
@@ -25,25 +24,52 @@ export const defaultLaunchParameters: utils.Indexable = {
     '--window-size=1920,1080',
     '--js-flags=--expose-gc',
   ],
-  ignoreHTTPSErrors: true,
-  headless: 'new',
+  acceptInsecureCerts: true,
+  headless: true,
   protocolTimeout: 0,
 };
 
 export async function getToken(url: string, key: string) {
-  let response;
-  try {
-    response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
-  } catch (error: any) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${url}`);
-    throw error;
+  // Retry transient failures: on a freshly-provisioned CI stack the datlas behind nginx may not
+  // be serving /api as JSON yet, so the dev-key exchange briefly returns an HTML error page
+  // (`Unexpected token '<'` from response.json()) or the node is momentarily unreachable. These
+  // are stack-readiness races, not bad credentials — re-poll for ~45s before giving up. A real
+  // auth failure (valid JSON with isSuccess=false) is returned immediately, no retry.
+  const maxAttempts = 15;
+  const delayMs = 3000;
+  let lastError: any;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+      const text = await response.text();
+      let json: any;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // Non-JSON body (HTML error page) => stack not ready yet; retry.
+        lastError = new Error(`non-JSON response from ${url}/users/login/dev (status ${response.status})`);
+        if (attempt < maxAttempts) {
+          color.warn(`Playwright: token exchange not ready (attempt ${attempt}/${maxAttempts}), retrying...`);
+          await new Promise((r) => setTimeout(r, delayMs));
+          continue;
+        }
+        throw lastError;
+      }
+      if (json.isSuccess == true)
+        return json.token;
+      // Valid JSON but login rejected => definitive failure, do not retry.
+      throw new Error('Unable to login to server. Check your dev key');
+    } catch (error: any) {
+      if (error?.message === 'Unable to login to server. Check your dev key')
+        throw error;
+      lastError = error;
+      if (utils.isConnectivityError(error))
+        color.warn(`Playwright: server not reachable yet (attempt ${attempt}/${maxAttempts}): ${url}`);
+      if (attempt < maxAttempts)
+        await new Promise((r) => setTimeout(r, delayMs));
+    }
   }
-  const json = await response.json();
-  if (json.isSuccess == true)
-    return json.token;
-  else
-    throw new Error('Unable to login to server. Check your dev key');
+  throw lastError ?? new Error(`Unable to exchange dev key for token at ${url}`);
 }
 
 export async function isPackageOnServer(hostKey: string, packageName: string): Promise<boolean> {
@@ -133,7 +159,7 @@ export async function getBrowserPage(
   });
   page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
-  await page.setCookie({name: 'auth', value: token});
+  await page.browser().setCookie({name: 'auth', value: token, domain: new URL(url).hostname});
   await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
@@ -180,24 +206,6 @@ export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
   process.exit(code);
 }
-
-export const recorderConfig = {
-  followNewTab: true,
-  fps: 25,
-  ffmpeg_Path: null,
-  videoFrame: {
-    width: 1280,
-    height: 630,
-  },
-  videoCrf: 18,
-  videoCodec: 'libx264',
-  videoPreset: 'ultrafast',
-  videoBitrate: 1000,
-  autopad: {
-    color: 'black',
-  },
-  // aspectRatio: '16:9',
-};
 
 export async function loadPackage(
     packageDir: string,
@@ -296,13 +304,17 @@ export async function loadTestsList(packages: string[], core: boolean = false, r
       const logsDir = `./load-test-console-output${suffix}.log`;
       const recordDir = `./load-test-record${suffix}.mp4`;
 
-      recorder = new PuppeteerScreenRecorder(page, recorderConfig);
-      await recorder.start(recordDir);
+      try {
+        recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      } catch (e: any) {
+        recorder = null;
+        color.warn(`Screen recording disabled: ${e?.message || e}`);
+      }
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);
       page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
-      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
+      page.on('pageerror', (error: any) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
       page.on('response', (response) => {
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
@@ -370,6 +382,137 @@ export function addLogsToFile(filePath: string, stringToSave: string) {
   fs.appendFileSync(filePath, `${stringToSave}`);
 }
 
+/**
+ * Parses the `Package testing: ...` progress lines emitted by the
+ * @datagrok-libraries/test runner and prints live per-category summaries.
+ * Used for both the Puppeteer console stream and the Node-pass worker stdout.
+ */
+export class TestProgressReporter {
+  modernOutput = false;
+  private categoryResults: Map<string, {passed: number, failed: number, skipped: number}> = new Map();
+  private currentCategory: string | null = null;
+  private pendingFailures: {testName: string, error: string | null}[] = [];
+  private pendingSkipped: string[] = [];
+  private pendingBeforeFailure: {error: string | null} | null = null;
+  private pendingAfterFailure: {error: string | null} | null = null;
+
+  constructor(private verbose: boolean = false) {}
+
+  private printCategorySummary(category: string): void {
+    const results = this.categoryResults.get(category);
+    if (!results) return;
+    const passedCount = results.passed;
+    const skippedSuffix = results.skipped > 0 ? `, \x1b[33m${results.skipped} skipped\x1b[0m` : '';
+    if (results.failed > 0 || this.pendingBeforeFailure || this.pendingAfterFailure) {
+      console.log(`\x1b[31m❌ ${category}\x1b[31m (\x1b[32m${passedCount} passed${skippedSuffix}\x1b[31m)\x1b[0m`);
+      if (this.pendingBeforeFailure) {
+        console.log(`  \x1b[31m❌ before\x1b[0m`);
+        if (this.pendingBeforeFailure.error)
+          console.log(`    \x1b[31m${this.pendingBeforeFailure.error}\x1b[0m`);
+        console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
+      }
+      if (this.pendingAfterFailure) {
+        console.log(`  \x1b[31m❌ after\x1b[0m`);
+        if (this.pendingAfterFailure.error)
+          console.log(`    \x1b[31m${this.pendingAfterFailure.error}\x1b[0m`);
+        console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
+      }
+      for (const skippedName of this.pendingSkipped)
+        console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
+      for (const failure of this.pendingFailures) {
+        console.log(`  \x1b[31m❌ ${failure.testName}\x1b[0m`);
+        if (failure.error)
+          console.log(`    \x1b[31m${failure.error}\x1b[0m`);
+        console.log(`    \x1b[33mTo run this test separately use --category "${category}" --test "${failure.testName}"\x1b[0m`);
+      }
+    } else {
+      console.log(`\x1b[32m✅ ${category} (${passedCount} passed${skippedSuffix}\x1b[32m)\x1b[0m`);
+      for (const skippedName of this.pendingSkipped)
+        console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
+    }
+    this.pendingFailures = [];
+    this.pendingSkipped = [];
+    this.pendingBeforeFailure = null;
+    this.pendingAfterFailure = null;
+  }
+
+  onLine(text: string): void {
+    if (!text.startsWith('Package testing: '))
+      return;
+    this.modernOutput = true;
+    // Extract tokens in {{...}} format
+    const tokens: string[] = [];
+    const tokenRegex = /\{\{([^}]+)\}\}/g;
+    let match;
+    while ((match = tokenRegex.exec(text)) !== null)
+      tokens.push(match[1]);
+
+    // Category start: "Package testing: Started {{Category}}" or "Package testing: Started {{Category}} skipped {{N}}"
+    if (text.includes('Started') && (tokens.length === 1 || (tokens.length === 2 && text.includes('skipped')))) {
+      if (this.currentCategory && this.categoryResults.has(this.currentCategory))
+        this.printCategorySummary(this.currentCategory);
+      this.currentCategory = tokens[0];
+      const skippedCount = tokens.length === 2 ? parseInt(tokens[1]) || 0 : 0;
+      this.categoryResults.set(this.currentCategory, {passed: 0, failed: 0, skipped: skippedCount});
+      this.pendingFailures = [];
+      this.pendingSkipped = [];
+      this.pendingBeforeFailure = null;
+      this.pendingAfterFailure = null;
+    } else if (text.includes('Skipped') && tokens.length === 2 && !text.includes('benchmark')) {
+      // Individual skipped test: "Package testing: Skipped {{Category}} {{TestName}}"
+      if (tokens[0] === this.currentCategory)
+        this.pendingSkipped.push(tokens[1]);
+    } else if (text.includes('Started') && tokens.length === 2) {
+      // Test start: "Package testing: Started {{Category}} {{TestName}}"
+      process.stdout.write(`${tokens[0]}: ${tokens[1]}...`);
+    } else if (text.includes('Finished') && tokens.length === 3) {
+      // Test finish: "Package testing: Finished {{Category}} {{TestName}} with {{success/error}} for X ms"
+      const results = this.categoryResults.get(tokens[0]);
+      if (!this.verbose)
+        process.stdout.write('\r\x1b[K');
+      if (tokens[2] === 'success') {
+        if (results) results.passed++;
+      } else {
+        if (results) results.failed++;
+        this.pendingFailures.push({testName: tokens[1], error: null});
+      }
+    } else if (text.includes('Result for') && tokens.length === 2) {
+      // Error result: "Package testing: Result for {{Category}} {{TestName}}: error message"
+      const errorMsg = text.split(': ').slice(-1)[0];
+      if (this.pendingFailures.length > 0)
+        this.pendingFailures[this.pendingFailures.length - 1].error = errorMsg;
+    } else if (text.includes('Category before()') && text.includes('failed') && tokens.length >= 1) {
+      // Category before() failed: "Package testing: Category before() {{Category}} failed"
+      process.stdout.write('\r\x1b[K');
+      this.pendingBeforeFailure = {error: null};
+    } else if (text.includes('Result for') && text.includes('before:') && tokens.length >= 1) {
+      // Before error result: "Package testing: Result for {{Category}} before: error message"
+      const errorMsg = text.split('before: ').slice(-1)[0];
+      if (this.pendingBeforeFailure)
+        this.pendingBeforeFailure.error = errorMsg;
+    } else if (text.includes('Category after()') && text.includes('failed') && tokens.length >= 1) {
+      // Category after() failed: "Package testing: Category after() {{Category}} failed"
+      process.stdout.write('\r\x1b[K');
+      this.pendingAfterFailure = {error: null};
+    } else if (text.includes('Result for') && text.includes('after:') && tokens.length >= 1) {
+      // After error result: "Package testing: Result for {{Category}} after: error message"
+      const errorMsg = text.split('after: ').slice(-1)[0];
+      if (this.pendingAfterFailure)
+        this.pendingAfterFailure.error = errorMsg;
+    } else if (text.includes('Unhandled Exception')) {
+      process.stdout.write('\r\x1b[K\n');
+      const errorMsg = text.replace('Package testing: Unhandled Exception: ', '');
+      if (errorMsg && errorMsg !== 'null')
+        console.log(`\x1b[31m❌ Unhandled Exception: ${errorMsg}\x1b[0m`);
+    }
+  }
+
+  finish(): void {
+    if (this.currentCategory && this.categoryResults.has(this.currentCategory))
+      this.printCategorySummary(this.currentCategory);
+  }
+}
+
 export function printBrowsersResult(browserResult: ResultObject, verbose: boolean = false) {
   // Skip detailed summary if modernOutput was used (already printed per-category)
   if (!browserResult.modernOutput) {
@@ -435,13 +578,15 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
     let countFailed = 0;
 
     try {
-        // Check if retry is supported by looking for skipToCategory parameter
+        // Check feature support by looking at the test function's declared inputs
         let retrySupported = false;
+        let excludeNodeSupported = false;
         try {
             const funcs = (<any>window).DG.Func.find({package: testParams.package, name: 'test'});
             if (funcs && funcs.length > 0) {
                 const testFunc = funcs[0];
                 retrySupported = testFunc.inputs?.some((input: any) => input.name === 'skipToCategory') === true;
+                excludeNodeSupported = testFunc.inputs?.some((input: any) => input.name === 'excludeNodeTests') === true;
             }
         } catch (e) {
             retrySupported = false;
@@ -452,6 +597,9 @@ async function runTests(testParams: { package: any, params: any }): Promise<any>
             testCallParams.category = testParams.params.category;
         if (testParams.params?.test)
             testCallParams.test = testParams.params.test;
+        // Skip node-marked tests in the browser only when the Node pass already ran them
+        if (testParams.params?.excludeNodeTests && excludeNodeSupported)
+            testCallParams.excludeNodeTests = true;
         // Only pass retry-related params if supported
         if (retrySupported) {
             if (testParams.params?.skipToCategory)
@@ -712,78 +860,33 @@ export async function runBrowser(
       page = out.page;
       webUrl = await getWebUrlFromPage(page);
     }
-    const recorder = new PuppeteerScreenRecorder(page, recorderConfig);
+    let recorder = null;
     const currentBrowserNum = browsersId;
     const logsDir = `./test-console-output-${currentBrowserNum}.log`;
     const recordDir = `./test-record-${currentBrowserNum}.mp4`;
 
     if (browserOptions.record && !existingBrowserSession) {
-      // Only set up recording on initial browser creation, not on retry
-      await recorder.start(recordDir);
+      // Only set up recording on initial browser creation, not on retry.
+      // Recording is an optional diagnostic — if it can't start (e.g. ffmpeg is
+      // missing on the runner), warn and keep testing instead of failing the pass.
+      try {
+        recorder = await page.screencast({path: recordDir as `${string}.mp4`});
+      } catch (e: any) {
+        recorder = null;
+        color.warn(`Screen recording disabled: ${e?.message || e}`);
+      }
       await page.exposeFunction('addLogsToFile', addLogsToFile);
 
       fs.writeFileSync(logsDir, ``);
       page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
-      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
+      page.on('pageerror', (error: any) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
       page.on('response', (response) => {
         addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
       });
     }
 
-    // State tracking for test output formatting
-    const categoryResults: Map<string, {passed: number, failed: number, skipped: number}> = new Map();
-    let currentCategory: string | null = null;
-    let currentTestName: string | null = null;
-    // Store failed tests with their errors to print after category header
-    let pendingFailures: {testName: string, error: string | null}[] = [];
-    let pendingSkipped: string[] = [];
-    let pendingBeforeFailure: {error: string | null} | null = null;
-    let pendingAfterFailure: {error: string | null} | null = null;
-    let modernOutput = false;
-
-    const printCategorySummary = (category: string) => {
-      const results = categoryResults.get(category);
-      if (!results) return;
-      const formattedCategory = category;
-      const passedCount = results.passed;
-      const skippedSuffix = results.skipped > 0 ? `, \x1b[33m${results.skipped} skipped\x1b[0m` : '';
-      if (results.failed > 0 || pendingBeforeFailure || pendingAfterFailure) {
-        console.log(`\x1b[31m❌ ${formattedCategory}\x1b[31m (\x1b[32m${passedCount} passed${skippedSuffix}\x1b[31m)\x1b[0m`);
-        // Print before() failure first
-        if (pendingBeforeFailure) {
-          console.log(`  \x1b[31m❌ before\x1b[0m`);
-          if (pendingBeforeFailure.error)
-            console.log(`    \x1b[31m${pendingBeforeFailure.error}\x1b[0m`);
-          console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
-        }
-        // Print after() failure
-        if (pendingAfterFailure) {
-          console.log(`  \x1b[31m❌ after\x1b[0m`);
-          if (pendingAfterFailure.error)
-            console.log(`    \x1b[31m${pendingAfterFailure.error}\x1b[0m`);
-          console.log(`    \x1b[33mTo run this category separately use --category "${category}"\x1b[0m`);
-        }
-        // Print skipped tests
-        for (const skippedName of pendingSkipped)
-          console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
-        // Print test failures
-        for (const failure of pendingFailures) {
-          console.log(`  \x1b[31m❌ ${failure.testName}\x1b[0m`);
-          if (failure.error)
-            console.log(`    \x1b[31m${failure.error}\x1b[0m`);
-          console.log(`    \x1b[33mTo run this test separately use --category "${category}" --test "${failure.testName}"\x1b[0m`);
-        }
-      } else {
-        console.log(`\x1b[32m✅ ${formattedCategory} (${passedCount} passed${skippedSuffix}\x1b[32m)\x1b[0m`);
-        // Print skipped tests
-        for (const skippedName of pendingSkipped)
-          console.log(`  \x1b[33m⊘ ${skippedName}\x1b[0m`);
-      }
-      pendingFailures = [];
-      pendingSkipped = [];
-      pendingBeforeFailure = null;
-      pendingAfterFailure = null;
-    };
+    // Live test-output formatting (shared with the Node pass)
+    const reporter = new TestProgressReporter(browserOptions.verbose ?? false);
 
     // Print all console messages when verbose mode is enabled
     if (browserOptions.verbose) {
@@ -799,103 +902,14 @@ export async function runBrowser(
         else
           console.log(`[console.log] ${text}`);
       });
-      page.on('pageerror', (error) => {
+      page.on('pageerror', (error: any) => {
         console.log(`\x1b[31m[page error] ${error.message}\x1b[0m`);
       });
     }
 
     // Subscribe to page console events for modern output formatting
     // On retry, old listeners were removed so we need to re-attach
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (!text.startsWith('Package testing: '))
-        return;
-      modernOutput = true;
-      // Extract tokens in {{...}} format
-      const tokens: string[] = [];
-      const tokenRegex = /\{\{([^}]+)\}\}/g;
-      let match;
-      while ((match = tokenRegex.exec(text)) !== null)
-        tokens.push(match[1]);
-
-      // Category start: "Package testing: Started {{Category}}" or "Package testing: Started {{Category}} skipped {{N}}"
-      if (text.includes('Started') && (tokens.length === 1 || (tokens.length === 2 && text.includes('skipped')))) {
-        // Print summary of previous category if exists
-        if (currentCategory && categoryResults.has(currentCategory))
-          printCategorySummary(currentCategory);
-        currentCategory = tokens[0];
-        const skippedCount = tokens.length === 2 ? parseInt(tokens[1]) || 0 : 0;
-        categoryResults.set(currentCategory, {passed: 0, failed: 0, skipped: skippedCount});
-        pendingFailures = [];
-        pendingSkipped = [];
-        pendingBeforeFailure = null;
-        pendingAfterFailure = null;
-      } else if (text.includes('Skipped') && tokens.length === 2 && !text.includes('benchmark')) {
-        // Individual skipped test: "Package testing: Skipped {{Category}} {{TestName}}"
-        // Only collect if the test belongs to the current active category
-        if (tokens[0] === currentCategory)
-          pendingSkipped.push(tokens[1]);
-      } else if (text.includes('Started') && tokens.length === 2) {
-        // Test start: "Package testing: Started {{Category}} {{TestName}}"
-        const category = tokens[0];
-        currentTestName = tokens[1];
-        process.stdout.write(`${category}: ${currentTestName}...`);
-      } else if (text.includes('Finished') && tokens.length === 3) {
-        // Test finish: "Package testing: Finished {{Category}} {{TestName}} with {{success/error}} for X ms"
-        const category = tokens[0];
-        const testName = tokens[1];
-        const status = tokens[2];
-        const results = categoryResults.get(category);
-
-        // Clear the current test line
-          if (!browserOptions.verbose)
-            process.stdout.write('\r\x1b[K');
-
-        if (status === 'success') {
-          if (results) results.passed++;
-        } else {
-          if (results) results.failed++;
-          pendingFailures.push({testName, error: null});
-        }
-        currentTestName = null;
-      } else if (text.includes('Result for') && tokens.length === 2) {
-        // Error result: "Package testing: Result for {{Category}} {{TestName}}: error message"
-        const errorMsg = text.split(': ').slice(-1)[0];
-        // Attach error to the last pending failure
-        if (pendingFailures.length > 0)
-          pendingFailures[pendingFailures.length - 1].error = errorMsg;
-      } else if (text.includes('Category before()') && text.includes('failed') && tokens.length >= 1) {
-        // Category before() failed: "Package testing: Category before() {{Category}} failed"
-        process.stdout.write('\r\x1b[K');
-        pendingBeforeFailure = {error: null};
-      } else if (text.includes('Result for') && text.includes('before:') && tokens.length >= 1) {
-        // Before error result: "Package testing: Result for {{Category}} before: error message"
-        const errorMsg = text.split('before: ').slice(-1)[0];
-        if (pendingBeforeFailure)
-          pendingBeforeFailure.error = errorMsg;
-      } else if (text.includes('Category after()') && text.includes('failed') && tokens.length >= 1) {
-        // Category after() failed: "Package testing: Category after() {{Category}} failed"
-        process.stdout.write('\r\x1b[K');
-        pendingAfterFailure = {error: null};
-      } else if (text.includes('Result for') && text.includes('after:') && tokens.length >= 1) {
-        // After error result: "Package testing: Result for {{Category}} after: error message"
-        const errorMsg = text.split('after: ').slice(-1)[0];
-        if (pendingAfterFailure)
-          pendingAfterFailure.error = errorMsg;
-      } else if (text.includes('Unhandled Exception')) {
-        // Unhandled exception: "Package testing: Unhandled Exception: ..."
-        // Clear any pending test line and move to new line
-        process.stdout.write('\r\x1b[K\n');
-        const errorMsg = text.replace('Package testing: Unhandled Exception: ', '');
-        if (errorMsg && errorMsg !== 'null')
-          console.log(`\x1b[31m❌ Unhandled Exception: ${errorMsg}\x1b[0m`);
-      }
-    });
-
-    const printFinalCategorySummary = () => {
-      if (currentCategory && categoryResults.has(currentCategory))
-        printCategorySummary(currentCategory);
-    };
+    page.on('console', (msg) => reporter.onLine(msg.text()));
 
     const testingResults = await page.evaluate((testData, options): Promise<ResultObject> => {
 
@@ -950,12 +964,12 @@ export async function runBrowser(
     }, testsToRun, browserOptions);
 
     // Print the final category summary
-    printFinalCategorySummary();
+    reporter.finish();
 
     if (browserOptions.record && !existingBrowserSession)
-      await recorder.stop();
+      await recorder?.stop();
 
-    if (modernOutput) {
+    if (reporter.modernOutput) {
       testingResults.verbosePassed = '';
       testingResults.verboseSkipped = '';
       testingResults.verboseFailed = '';
@@ -969,7 +983,7 @@ export async function runBrowser(
     return {
       ...testingResults,
       browserSession: browserOptions.keepBrowserOpen ? {browser, page, webUrl} : undefined,
-      modernOutput,
+      modernOutput: reporter.modernOutput,
     };
   }, testInvocationTimeout);
 }
@@ -1074,11 +1088,30 @@ export type OrganizedTests = {
     skipToCategory?: string,
     skipToTest?: string,
     returnOnFail?: boolean,
+    excludeNodeTests?: boolean,
     options: {
       catchUnhandled: boolean | undefined,
       report: boolean | undefined
     }
   }
+}
+
+/**
+ * Merges two test-result CSVs by column NAME (union of headers), unlike
+ * mergeBrowsersResults' line concatenation which assumes identical column order.
+ * Used to merge the Node-pass report into the browser report.
+ */
+export function mergeCsvByHeader(a: string, b: string): string {
+  const hasRows = (csv: string) => csv && csv.trim().split('\n').length >= 2;
+  if (!hasRows(a)) return hasRows(b) ? b : (a || b || '');
+  if (!hasRows(b)) return a;
+  const pa = Papa.parse(a.trim(), {header: true, skipEmptyLines: true});
+  const pb = Papa.parse(b.trim(), {header: true, skipEmptyLines: true});
+  const columns = [...(pa.meta.fields ?? [])];
+  for (const f of pb.meta.fields ?? [])
+    if (!columns.includes(f))
+      columns.push(f);
+  return Papa.unparse([...(pa.data as any[]), ...(pb.data as any[])], {columns});
 }
 
 export function addColumnToCsv(

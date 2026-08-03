@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
-import {OrgHelmModule, ScilModule} from '../types';
 
 import {
   RGROUP_CAP_GROUP_NAME,
@@ -16,9 +15,6 @@ import {
   SDF_MONOMER_NAME
 } from '../constants';
 
-
-declare const scil: ScilModule;
-declare const org: OrgHelmModule;
 
 // Global flag is for replaceAll
 const helmGapStartRe = /\{(\*\.)+/g;
@@ -48,7 +44,7 @@ export function parseHelm(s: string): string[] {
   const sections = split(s, '$');
   s = sections[0];
   const monomers = [];
-  if (!scil.Utils.isNullOrEmpty(s)) {
+  if (!(s == null || s === '')) {
     const seqs = split(s, '|');
     for (let i = 0; i < seqs.length; ++i) {
       const e = detachAnnotation(seqs[i]);
@@ -205,7 +201,7 @@ function detachAnnotation(s: string) {
 
 function _detachAppendix(s: string, c: string) {
   let tag = null;
-  if (scil.Utils.endswith(s, c)) {
+  if (s.endsWith(c)) {
     let p = s.length - 1;
     while (p > 0) {
       p = s.lastIndexOf(c, p - 1);
@@ -224,7 +220,7 @@ function _detachAppendix(s: string, c: string) {
 }
 
 function unescape(s: string) {
-  if (scil.Utils.isNullOrEmpty(s))
+  if (s == null || s === '')
     return s;
 
   return s.replace(/[\\]./g, function(m) {

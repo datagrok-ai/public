@@ -1,5 +1,13 @@
 ---
 title: "Parallel coordinates plot"
+description: Visualize high-dimensional and multivariate data as polylines across parallel axes, one per column.
+keywords:
+  - parallel coordinates
+  - pc plot
+  - multivariate data
+  - high-dimensional visualization
+  - multidimensional analysis
+  - column axes
 ---
 
 Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data. To show a
@@ -57,6 +65,7 @@ General:
 | Show Mouse Over Line | boolean |  |
 | Show Mouse Over Row Group | boolean |  |
 | Show All Lines | boolean | Either all lines are shown or only current line, mouse over line, selected ones. |
+| Show Selected Rows | boolean | When checked, selected lines are highlighted using the selected rows color. When unchecked, selected lines use their regular color coding. |
 | **General** | | |
 | Show Filters | boolean | Whether the in-chart filters are visible |
 | Back Color | number |  |
@@ -90,7 +99,7 @@ General:
 | Min Max Orientation | textorientation |  |
 | Axis Font | string |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | Whisker Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
 | **Box Plot** | | |

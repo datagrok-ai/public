@@ -1,5 +1,13 @@
 ---
 title: "Bar chart"
+description: Display grouped categorical data as rectangular bars with lengths proportional to their values.
+keywords:
+  - column chart
+  - stacked bars
+  - categorical data
+  - relative values
+  - split by category
+  - group by date part
 ---
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent.
@@ -63,7 +71,7 @@ Year - Month' and 'Year - Quarter':
 | **General** | | |
 | Orientation | string |  |
 | Show Mouse Over Rect | boolean |  |
-| Show Filtered Rows | boolean | Show which part is filtered. Only works with RowSource = All. |
+| Show Filtered Rows | boolean | Show which part is filtered Only works with RowSource = All |
 | Show Mouse Over Rows | boolean |  |
 | Back Color | number |  |
 | Axis Color | number |  |
@@ -77,7 +85,7 @@ Year - Month' and 'Year - Quarter':
 | Outer Margin Right | number |  |
 | Outer Margin Top | number |  |
 | Outer Margin Bottom | number |  |
-| Show Empty Bars | boolean |  |
+| Show Empty Bars | boolean | Indicates whether categories with no matching rows should appear as zero-height bars. |
 | Show Labels | string |  |
 | Legend Visibility | visibilitymode |  |
 | Legend Position | flexautoposition |  |
@@ -121,8 +129,15 @@ Year - Month' and 'Year - Quarter':
 | Min Text Height | number |  |
 | Show Clipped Bar Indicators | boolean | When enabled, shows hatched areas and arrows on bars that are clipped by the value axis range. |
 | Controls Font | string | Viewer controls elements font. |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Annotations** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

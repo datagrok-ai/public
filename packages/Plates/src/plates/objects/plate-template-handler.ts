@@ -13,6 +13,10 @@ export class PlateTemplateHandler extends DG.ObjectHandler<DG.SemanticValue<crud
     return x instanceof DG.SemanticValue && crud.TYPE.TEMPLATE === x.semType;
   }
 
+  async renderPreview(x: DG.SemanticValue<crud.PlateTemplate>): Promise<DG.View> {
+    return propertySchemaView(x.value);
+  }
+
   renderView(x: DG.SemanticValue<crud.PlateTemplate>, _context: any): HTMLElement {
     return propertySchemaView(x.value).root;
   }

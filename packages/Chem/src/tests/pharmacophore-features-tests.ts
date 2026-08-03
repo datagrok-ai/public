@@ -9,7 +9,7 @@ import {getPharmacophoreFeatures, pharmacophoreFeaturesWidget} from '../widgets/
 import * as CONST from './const';
 
 
-category('pharmacophore features', () => {
+category('pharmacophores', () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -21,7 +21,7 @@ category('pharmacophore features', () => {
   test('single molecule: aspirin', async () => {
     const aspirin = 'CC(=O)Oc1ccccc1C(=O)O';
     const features = await getPharmacophoreFeatures(aspirin);
-    expect(features.length > 0, true, 'aspirin should have pharmacophore features');
+    expect(features.length > 0, true, 'aspirin should have pharmacophores');
     const families = new Set(features.map((f) => f.family));
     expect(families.has('A'), true, 'aspirin should have acceptor features');
     expect(families.has('a'), true, 'aspirin should have aromatic features');
@@ -88,7 +88,7 @@ category('pharmacophore features', () => {
     const molFormats = [CONST.SMILES, CONST.MOL2000, CONST.MOL3000];
     for (const mol of molFormats) {
       const features = await getPharmacophoreFeatures(mol);
-      expect(features.length > 0, true, 'molecule should have pharmacophore features');
+      expect(features.length > 0, true, 'molecule should have pharmacophores');
     }
   });
 

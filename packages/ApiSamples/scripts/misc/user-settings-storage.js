@@ -27,7 +27,7 @@ let storageButton = ui.iconFA('database', () => {
     menu.show();
   }
 
-});
+}, 'Load settings');
 storageButton.style.margin = '8px 24px 0 24px';
 
 let postButton = ui.button('Post to storage', () => {

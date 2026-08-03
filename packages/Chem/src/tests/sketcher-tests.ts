@@ -165,7 +165,7 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
       }, 'error div has not been created', 10000, 500);
     } else {
       await awaitCheck(() => {
-        const resMolblock = s.getMolFile(); ;
+        const resMolblock = s.getMolFile();
         return compareTwoMols(rdkitModule, mol, resMolblock);
       }, 'mols are not equal', 3000);
     }
@@ -203,6 +203,7 @@ export async function sketchersWarmUp(funcs: DG.Func[]) {
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 10000);
   }
+  chem.currentSketcherType = 'OpenChemLib';
 }
 
 const exampleSmiles = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';

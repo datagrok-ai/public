@@ -198,6 +198,11 @@ export class TreeViewGroup extends TreeViewNode {
     return api.grok_TreeViewNode_Children(this.dart).map((i: any) => toJs(i));
   }
 
+  /** Adds an existing node at the specified index. Use with remove() to reorder nodes. */
+  addNode(node: TreeViewNode, index?: number): void {
+    api.grok_TreeViewGroup_AddNode(this.dart, toDart(node), index);
+  }
+
   /** Removes all children (going down recursively) that satisfy the predicate */
   removeChildrenWhere(predicate: (node: TreeViewNode) => boolean): void {
     for (const child of this.children) {

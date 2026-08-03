@@ -44,7 +44,11 @@ enum TITLES {
   PARAMS = 'Params count',
   CATS = 'Categories',
   CATS_SIZE = 'Categories size',
+  WAS_BOOL = 'Was bool',
 }
+
+/** String labels of a boolean target after conversion to string */
+const BOOL_TRUE = 'true';
 
 /** XGBoost modeling */
 export class XGBooster {
@@ -54,7 +58,8 @@ export class XGBooster {
       if (!col.matches('numerical'))
         return false;
     }
-    if (!predictColumn.matches('numerical') && !predictColumn.matches('string'))
+    if (!predictColumn.matches('numerical') && !predictColumn.matches('string') &&
+      (predictColumn.type !== DG.COLUMN_TYPE.BOOL))
       return false;
 
     return true;
@@ -80,6 +85,8 @@ export class XGBooster {
   private modelParams: Int32Array | undefined = undefined;
   private targetType: string | undefined = undefined;
   private targetCategories: string[] | undefined = undefined;
+  /** True if the original target was a boolean column (trained as a 2-class string target) */
+  private targetWasBool = false;
 
   constructor(packedModel?: Uint8Array) {
     if (packedModel) {
@@ -99,6 +106,10 @@ export class XGBooster {
         this.targetType = headerDf.get(TITLES.TYPE, 0) as string;
         const modelParamsCount = headerDf.get(TITLES.PARAMS, 0) as number;
         const categoriesBytesSize = headerDf.get(TITLES.CATS_SIZE, 0) as number;
+
+        // Bool flag is absent in models packed before bool-target support (guard for backward compat)
+        const wasBoolCol = headerDf.col(TITLES.WAS_BOOL);
+        this.targetWasBool = (wasBoolCol !== null) && (wasBoolCol.get(0) === 1);
 
         // Unpack categories
         if (categoriesBytesSize > 0) {
@@ -124,15 +135,20 @@ export class XGBooster {
   public async fit(features: DG.ColumnList, target: DG.Column, iterations: number = DEFAULT.ITERATIONS,
     eta: number = DEFAULT.ETA, maxDepth: number = DEFAULT.MAX_DEPTH, lambda: number = DEFAULT.LAMBDA,
     alpha: number = DEFAULT.ALPHA) {
+    // A boolean target is converted to a 2-class string target ('true'/'false') and
+    // trained as such; the bool flag lets predict() reconstruct a BOOL column.
+    this.targetWasBool = (target.type === DG.COLUMN_TYPE.BOOL);
+    const tgt = this.targetWasBool ? target.convertTo(DG.COLUMN_TYPE.STRING) : target;
+
     // Type of the target
-    this.targetType = target.type;
+    this.targetType = tgt.type;
 
     // Store categories of string target
     if (this.targetType === DG.COLUMN_TYPE.STRING)
-      this.targetCategories = target.categories;
+      this.targetCategories = tgt.categories;
 
     // Train model params
-    this.modelParams = await fitInWebWorker(features, target, MISSING_VALUE,
+    this.modelParams = await fitInWebWorker(features, tgt, MISSING_VALUE,
       iterations, eta, maxDepth, lambda, alpha, RESERVED.MODEL, RESERVED.UTILS,
     );
   }
@@ -144,6 +160,11 @@ export class XGBooster {
 
     // Get prediction
     const prediction = predict(features, MISSING_VALUE, this.modelParams);
+
+    // A bool target was trained as a 2-class string target (targetType === STRING),
+    // so this check must precede the switch below.
+    if (this.targetWasBool)
+      return this.boolColPrediction(prediction);
 
     // Create an appropriate column
     switch (this.targetType) {
@@ -180,6 +201,7 @@ export class XGBooster {
       DG.Column.fromStrings(TITLES.TYPE, [this.targetType]),
       DG.Column.fromInt32Array(TITLES.PARAMS, new Int32Array([this.modelParams.length])),
       DG.Column.fromInt32Array(TITLES.CATS_SIZE, new Int32Array([categoriesBytesSize])),
+      DG.Column.fromInt32Array(TITLES.WAS_BOOL, new Int32Array([this.targetWasBool ? 1 : 0])),
     ]);
 
     // Header bytes
@@ -232,6 +254,24 @@ export class XGBooster {
       predClass[i] = this.targetCategories[categoryIdx(Math.round(prediction[i]))];
 
     return DG.Column.fromList(DG.COLUMN_TYPE.STRING, TITLES.PREDICT, predClass);
+  }
+
+  /** Return predicted bool column (target was a boolean trained as a 2-class string target) */
+  private boolColPrediction(prediction: Float32Array): DG.Column {
+    const samplesCount = prediction.length;
+
+    if (this.targetCategories === undefined)
+      throw new Error('Predicting fails: undefined categories');
+
+    const predClass = new Array<boolean>(samplesCount);
+
+    const maxCategory = this.targetCategories.length - 1;
+    const categoryIdx = (val: number) => Math.max(0, Math.min(val, maxCategory));
+
+    for (let i = 0; i < samplesCount; ++i)
+      predClass[i] = (this.targetCategories[categoryIdx(Math.round(prediction[i]))] === BOOL_TRUE);
+
+    return DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLES.PREDICT, predClass);
   }
 
   /** Return predicted int column */

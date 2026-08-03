@@ -1,0 +1,198 @@
+//name: Workflow Demo
+//description: Demo of workflow with multiple outputs
+//language: flow
+//tags: flow
+//output: dataframe helmResult
+//output: dataframe CHemblResult
+//output: dataframe Molecules
+{
+  "version": "2.0",
+  "name": "Workflow Demo",
+  "description": "Demo of workflow with multiple outputs",
+  "author": "admin",
+  "created": "2026-06-25T11:49:31.089Z",
+  "modified": "2026-06-25T11:49:31.089Z",
+  "nodes": [
+    {
+      "id": "2e73353d30bf5b24",
+      "typeName": "DG Functions/Uncategorized/OpenFile",
+      "label": "Open HELM File",
+      "description": "",
+      "pos": {
+        "x": 40,
+        "y": 40
+      },
+      "properties": {},
+      "inputValues": {
+        "fullPath": "System:AppData/Bio/samples/HELM.csv",
+        "sheetName": ""
+      }
+    },
+    {
+      "id": "80728b3113fcb6db",
+      "typeName": "DG Functions/Uncategorized/ChemblNumberOfStructures",
+      "label": "Chembl query",
+      "description": "",
+      "pos": {
+        "x": 40,
+        "y": 216
+      },
+      "properties": {},
+      "inputValues": {
+        "maxNumberOfMolecules": 1000
+      }
+    },
+    {
+      "id": "c498b9d6eb9ca667",
+      "typeName": "Outputs/Table Output",
+      "label": "CHEMBL Output",
+      "description": "",
+      "pos": {
+        "x": 320,
+        "y": 226
+      },
+      "properties": {
+        "paramName": "CHemblResult"
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "b332dd7740241563",
+      "typeName": "Outputs/Table Output",
+      "label": "Molecules Table",
+      "description": "",
+      "pos": {
+        "x": 820,
+        "y": 372
+      },
+      "properties": {
+        "paramName": "Molecules"
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "4aa8994fdd218b1f",
+      "typeName": "Outputs/Table Output",
+      "label": "HELM Table Output",
+      "description": "",
+      "pos": {
+        "x": 320,
+        "y": 60
+      },
+      "properties": {
+        "paramName": "helmResult"
+      },
+      "inputValues": {}
+    },
+    {
+      "id": "32ad12738b7a915b",
+      "typeName": "DG Functions/Uncategorized/OpenFile",
+      "label": "Open Mol File",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 40,
+        "y": 372
+      },
+      "properties": {},
+      "inputValues": {
+        "fullPath": "System:AppData/Chem/mol1K.csv",
+        "sheetName": ""
+      }
+    },
+    {
+      "id": "0b9e0bcbce58667a",
+      "typeName": "DG Functions/hitTriageFunction,transform/addChemPropertiesColumns",
+      "label": "Chemical Properties",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 320,
+        "y": 372
+      },
+      "properties": {
+        "columnTables": {
+          "molecules": "table"
+        }
+      },
+      "inputValues": {
+        "molecules": "molecule",
+        "MW": true,
+        "HBA": true,
+        "HBD": true,
+        "logP": true,
+        "logS": false,
+        "PSA": false,
+        "rotatableBonds": false,
+        "stereoCenters": false,
+        "moleculeCharge": false
+      }
+    },
+    {
+      "id": "42a68450bff93ca9",
+      "typeName": "DG Functions/Uncategorized/AddNewColumn",
+      "label": "Add New Column",
+      "description": "",
+      "collapsed": true,
+      "pos": {
+        "x": 600,
+        "y": 372
+      },
+      "properties": {},
+      "inputValues": {
+        "expression": "${MW} + ${HBA}",
+        "name": "New Col",
+        "type": "auto",
+        "treatAsString": false,
+        "subscribeOnChanges": false
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "5e2bb5de78dcc42d",
+      "source": "80728b3113fcb6db",
+      "sourceOutput": "result",
+      "target": "c498b9d6eb9ca667",
+      "targetInput": "table"
+    },
+    {
+      "id": "9fdebca2d9c4b4fa",
+      "source": "2e73353d30bf5b24",
+      "sourceOutput": "result",
+      "target": "4aa8994fdd218b1f",
+      "targetInput": "table"
+    },
+    {
+      "id": "4ff40217a00c0cda",
+      "source": "32ad12738b7a915b",
+      "sourceOutput": "result",
+      "target": "0b9e0bcbce58667a",
+      "targetInput": "table"
+    },
+    {
+      "id": "039fa5a438f3d7a8",
+      "source": "0b9e0bcbce58667a",
+      "sourceOutput": "table__pt",
+      "target": "42a68450bff93ca9",
+      "targetInput": "table"
+    },
+    {
+      "id": "49de6b7de56091cd",
+      "source": "42a68450bff93ca9",
+      "sourceOutput": "table__pt",
+      "target": "b332dd7740241563",
+      "targetInput": "table"
+    }
+  ],
+  "annotations": [],
+  "metadata": {
+    "settings": {
+      "scriptName": "Workflow Demo",
+      "scriptDescription": "Demo of workflow with multiple outputs",
+      "tags": [
+        "flow"
+      ]
+    }
+  }
+}

@@ -3,21 +3,24 @@ import * as DG from 'datagrok-api/dg';
 import {
   category,
   test,
-  expect
+  expect,
 } from '@datagrok-libraries/test/src/test';
 
+// The csv tests run headless via the shared OpenFile fallback (grok_shared
+// shared_actions.dart, dapi.files.readBinaryDataFrames); the browser supersedes it
+// with xamgle's OpenFile.
 category('Files: OpenFile', () => {
   test('Open big csv', async () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/chem/zbb/99_p0_ph7.csv'});
     expect(df.name, '99_p0_ph7', 'Table name differs');
     expect(df.rowCount, 574356);
-  }, {stressTest: true});
+  }, {stressTest: true, node: true});
 
   test('Open small csv', async () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/cars.csv'});
     expect(df.name, 'cars', 'Table name differs');
     expect(df.rowCount, 30);
-  }, {stressTest: true});
+  }, {stressTest: true, node: true});
 
   test('Project with big table csv', async () => {
     const projectName = 'Test tables > 20mb';
@@ -26,7 +29,7 @@ category('Files: OpenFile', () => {
       const v = grok.shell.addTableView(df);
       const ti = df.getTableInfo();
       const layout = v.saveLayout();
-      let project = DG.Project.create();
+      const project = DG.Project.create();
       project.name = projectName;
       project.addChild(ti);
       project.addChild(layout);
@@ -45,6 +48,6 @@ category('Files: OpenFile', () => {
         await grok.dapi.projects.delete(await grok.dapi.projects.filter(projectName).first());
       } catch (_) {}
     }
-  }, {timeout: 120000, stressTest: true});
+  }, {timeout: 120000, stressTest: true}); // grok.shell table view / project open
 });
 

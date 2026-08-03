@@ -32,54 +32,74 @@ export class KnimeHubClient implements IKnimeClient {
   }
 
   // ------------------------------------------------------------------ HTTP
-  private async request<T>(method: string, path: string, body?: any): Promise<T> {
+  private async authHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
     const creds = await getCredentials();
-    const headers: Record<string, string> = {
+    return {
       'Authorization': getBasicAuthHeader(creds.id, creds.secret),
       'Accept': 'application/json',
+      ...(extra ?? {}),
     };
-    if (body !== undefined)
-      headers['Content-Type'] = 'application/json';
+  }
 
-    const url = `${this.apiUrl}${path}`;
-    const response = await grok.dapi.fetchProxy(url, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-
+  private async parseResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       const text = await response.text();
       throw new Error(`KNIME Hub API error ${response.status}: ${text}`);
     }
-
     const ct = response.headers.get('content-type') ?? '';
     if (ct.includes('application/json'))
       return await response.json() as T;
     return await response.text() as unknown as T;
   }
 
-  private async requestMultipart<T>(method: string, path: string, formData: FormData): Promise<T> {
-    const creds = await getCredentials();
-    const url = `${this.apiUrl}${path}`;
-    const response = await grok.dapi.fetchProxy(url, {
+  private async request<T>(method: string, path: string, body?: any): Promise<T> {
+    const headers = await this.authHeaders(body !== undefined ? {'Content-Type': 'application/json'} : undefined);
+    const response = await grok.dapi.fetchProxy(`${this.apiUrl}${path}`, {
       method,
-      headers: {
-        'Authorization': getBasicAuthHeader(creds.id, creds.secret),
-        'Accept': 'application/json',
-      },
-      body: formData,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     });
+    return this.parseResponse<T>(response);
+  }
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`KNIME Hub API error ${response.status}: ${text}`);
+  private async requestMultipart<T>(method: string, path: string, formData: FormData): Promise<T> {
+    const headers = await this.authHeaders();
+    const response = await grok.dapi.fetchProxy(`${this.apiUrl}${path}`, {method, headers, body: formData});
+    return this.parseResponse<T>(response);
+  }
+
+  /**
+   * Build a request body from a KnimeExecutionInput — multipart/form-data when any
+   * value is a File/Blob, otherwise plain JSON. Returns either a FormData (for
+   * multipart) or the raw input object (for JSON).
+   */
+  private buildInputBody(input: KnimeExecutionInput): FormData | KnimeExecutionInput {
+    const fileKeys: string[] = [];
+    for (const key of Object.keys(input)) {
+      if (input[key] instanceof File || input[key] instanceof Blob)
+        fileKeys.push(key);
     }
+    if (fileKeys.length === 0)
+      return input;
 
-    const ct = response.headers.get('content-type') ?? '';
-    if (ct.includes('application/json'))
-      return await response.json() as T;
-    return await response.text() as unknown as T;
+    const formData = new FormData();
+    const jsonInputs: {[key: string]: any} = {};
+    for (const key of Object.keys(input)) {
+      if (fileKeys.includes(key))
+        formData.append(key, input[key] as Blob);
+      else
+        jsonInputs[key] = input[key];
+    }
+    for (const [key, value] of Object.entries(jsonInputs))
+      formData.append(key, new Blob([JSON.stringify(value)], {type: 'application/json'}));
+    return formData;
+  }
+
+  private async postWithInput<T>(path: string, input: KnimeExecutionInput): Promise<T> {
+    const body = this.buildInputBody(input);
+    return body instanceof FormData
+      ? await this.requestMultipart<T>('POST', path, body)
+      : await this.request<T>('POST', path, body);
   }
 
   // ----------------------------------------------------------- deployments
@@ -294,7 +314,7 @@ export class KnimeHubClient implements IKnimeClient {
       if (!multipart?.schema?.properties)
         continue;
       for (const [name, prop] of Object.entries(multipart.schema.properties) as [string, any][]) {
-        if (prop?.format === 'binary' || prop?.type === 'string')
+        if (prop?.format === 'binary')
           params.push({name, type: 'file', required: false, description: prop.description});
       }
       break;
@@ -313,29 +333,7 @@ export class KnimeHubClient implements IKnimeClient {
 
   // ------------------------------------------------------------ execution
   async executeSyncWorkflow(id: string, input: KnimeExecutionInput): Promise<KnimeExecutionResult> {
-    // Check if any input values are File/Blob — if so, use multipart/form-data
-    const fileKeys: string[] = [];
-    for (const key of Object.keys(input)) {
-      if (input[key] instanceof File || input[key] instanceof Blob)
-        fileKeys.push(key);
-    }
-
-    let data: any;
-    if (fileKeys.length > 0) {
-      const formData = new FormData();
-      const jsonInputs: {[key: string]: any} = {};
-      for (const key of Object.keys(input)) {
-        if (fileKeys.includes(key))
-          formData.append(key, input[key] as Blob);
-        else
-          jsonInputs[key] = input[key];
-      }
-      for (const [key, value] of Object.entries(jsonInputs))
-        formData.append(key, new Blob([JSON.stringify(value)], {type: 'application/json'}));
-      data = await this.requestMultipart<any>('POST', `/deployments/${id}/execution?reset=true`, formData);
-    }
-    else
-      data = await this.request<any>('POST', `/deployments/${id}/execution?reset=true`, input);
+    let data = await this.postWithInput<any>(`/deployments/${id}/execution?reset=true`, input);
 
     // Response may come as a string (when content-type is not application/json) — parse it
     if (typeof data === 'string') {
@@ -361,34 +359,10 @@ export class KnimeHubClient implements IKnimeClient {
     const jobId = createData.id ?? createData.jobId;
 
     // Step 2: Execute with input asynchronously
-    const hasInput = Object.keys(input).length > 0;
-    if (!hasInput) {
+    if (Object.keys(input).length === 0)
       await this.request<any>('POST', `/jobs/${jobId}?async=true`);
-      return jobId;
-    }
-
-    // Check for file (Blob/File) inputs — if present, use multipart/form-data
-    const fileKeys: string[] = [];
-    for (const key of Object.keys(input)) {
-      if (input[key] instanceof File || input[key] instanceof Blob)
-        fileKeys.push(key);
-    }
-
-    if (fileKeys.length > 0) {
-      const formData = new FormData();
-      const jsonInputs: {[key: string]: any} = {};
-      for (const key of Object.keys(input)) {
-        if (fileKeys.includes(key))
-          formData.append(key, input[key] as Blob);
-        else
-          jsonInputs[key] = input[key];
-      }
-      for (const [key, value] of Object.entries(jsonInputs))
-        formData.append(key, new Blob([JSON.stringify(value)], {type: 'application/json'}));
-      await this.requestMultipart<any>('POST', `/jobs/${jobId}?async=true`, formData);
-    }
     else
-      await this.request<any>('POST', `/jobs/${jobId}?async=true`, input);
+      await this.postWithInput<any>(`/jobs/${jobId}?async=true`, input);
 
     return jobId;
   }
@@ -461,13 +435,6 @@ export class KnimeHubClient implements IKnimeClient {
     if (ct.startsWith('text/'))
       return {contentType: ct, text: await response.text()};
     return {contentType: ct, blob: await response.blob()};
-  }
-
-  /** Build the viewable data-app URL from deployment info and job ID. */
-  getDataAppUrl(deploymentName: string, deploymentId: string, jobId: string): string {
-    const hubHost = this.apiUrl.replace('https://api.', '').replace('http://api.', '');
-    const encodedName = encodeURIComponent(deploymentName);
-    return `https://apps.${hubHost}/d/${encodedName}~${deploymentId}/${jobId}`;
   }
 
   async cancelJob(jobId: string): Promise<void> {

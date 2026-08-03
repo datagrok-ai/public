@@ -18,7 +18,6 @@ export async function chemblSearchWidgetLocalDb(mol: string, substructure: boole
 //input: string mol { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
-//condition: true
 export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSubstructureSearchPanel(mol);
 }
@@ -27,7 +26,6 @@ export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> 
 //input: string mol { semType: Molecule }
 //output: widget result
 //meta.role: widgets,panel
-//condition: true
 export async function chemblSimilaritySearchPanel(mol: string) : Promise<any> {
   return await PackageFunctions.chemblSimilaritySearchPanel(mol);
 }

@@ -1,5 +1,13 @@
 ---
 title: "SharePoint"
+description: Connect Datagrok to SharePoint or OneDrive as a file share using Microsoft Entra ID OAuth.
+keywords:
+  - sharepoint connector
+  - onedrive
+  - microsoft entra id
+  - azure ad oauth
+  - document library
+  - office 365 storage
 ---
 
 Provides access to [SharePoint](https://www.microsoft.com/en-us/microsoft-365/sharepoint) or [OneDrive](https://www.microsoft.com/en-us/microsoft-365/onedrive) as [file shares](../files.md).
@@ -43,6 +51,6 @@ The SharePoint connector supports OneDrive as well, when **Drive** is set to "On
 See also:
 
 * [File shares](../files.md)
-* [Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/databricks/dev-tools/app-aad-token)
+* [Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/fundamentals/whatis)
 * [SharePoint](https://www.microsoft.com/en-us/microsoft-365/sharepoint)
 * [OneDrive](https://www.microsoft.com/en-us/microsoft-365/onedrive)

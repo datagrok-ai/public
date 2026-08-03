@@ -29,14 +29,16 @@ import {
   TypeAhead,
   TypeAheadConfig,
   ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
+  EmailDialog, EmailDialogOptions,
+  ITabControlOptions,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
-import {__obs} from './src/events';
+import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
-import {CanvasRenderer, GridCellRenderer, SemanticValue, Size} from './src/grid';
+import {CanvasRenderer, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
 import {Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
@@ -203,15 +205,17 @@ export function accordion(key: any = null): Accordion {
 
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
- * @param {Object} pages - list of page factories
- * @param {boolean} vertical
+ * @param pages - list of page factories
+ * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
+ * @param key - deprecated, use `options.key` instead.
  * @returns {TabControl} */
-export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false): TabControl {
-  let tabs = TabControl.create(vertical);
+export function tabControl(pages: { [key: string]: any; } | null = null,
+                           options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
+  let tabs = TabControl.create(options, key);
   if (pages != null) {
-    for (let key of Object.keys(pages)) {
-      let value = pages[key];
-      tabs.addPane(key, value instanceof Function ? value : () => render(value));
+    for (let name of Object.keys(pages)) {
+      let value = pages[name];
+      tabs.addPane(name, value instanceof Function ? value : () => render(value));
     }
   }
   return tabs;
@@ -253,8 +257,10 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   i.classList.add(`fa-${name}`);
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -276,8 +282,10 @@ export function iconImage(name: string, path: string,
   i.style.backgroundImage = `url(${path})`;
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return _options(i, options);
 }
 
@@ -300,8 +308,10 @@ export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEve
 
   if (handler !== null)
     i.addEventListener('click', handler);
-  if (tooltipMsg !== null)
+  if (tooltipMsg !== null) {
     tooltip.bind(i, tooltipMsg);
+    i.setAttribute('aria-label', tooltipMsg);
+  }
   return i;
 }
 
@@ -407,12 +417,12 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
     if (divActual) divActual.style.display = 'block';
     close.style.display = 'block';
     show.style.display = 'none';
-  });
+  }, 'Show info');
   let close = iconFA('times', () => {
     if (divActual) divActual.style.display = 'none';
     close.style.display = 'none';
     show.style.display = reopenable ? 'block' : 'none';
-  });
+  }, 'Close');
   if (header !== null && header !== undefined) {
     divContent.push(h1(header));
   }
@@ -486,6 +496,27 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
+ * Creates a toggle button (`d4-toggle-button`). When clicked, marks itself as current
+ * (`d4-current`) and clears that class from sibling toggle buttons under the same parent.
+ * Wrap a set of these in {@link toggleButtonGroup} to get the group container styling.
+ * @param caption  Button text.
+ * @param handler  Invoked on click after the active state is updated.
+ * @param tooltip  Tooltip shown on hover.
+ */
+export function toggleButton(caption: string, handler: Function | null = null, tooltip: string | null = null): HTMLDivElement {
+  return api.grok_UI_ToggleButton(caption, handler, tooltip);
+}
+
+/**
+ * Wraps a list of {@link toggleButton}s in a vertical `d4-toggle-button-group` container.
+ * @param buttons      Toggle buttons to group.
+ * @param toggleFirst  If true, marks the first button as `d4-current`.
+ */
+export function toggleButtonGroup(buttons: HTMLDivElement[], toggleFirst: boolean = false): HTMLDivElement {
+  return api.grok_UI_ToggleButtonGroup(buttons, toggleFirst);
+}
+
+/**
  * Creates a combo popup with the specified icons and items.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
@@ -522,7 +553,7 @@ export function tableFromProperties(items: any[], properties: Property[]) {
 
 /** Creates a visual table based on [items] and [renderer].
  * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
- * Because... What's a better way to make developers life miserable, right? 
+ * Because... What's a better way to make developers life miserable, right?
 */
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
@@ -635,6 +666,14 @@ export function dialog(options?: { title?: string, helpUrl?: string, showHeader?
   return Dialog.create(options);
 }
 
+/**
+ * Creates an email dialog with editable subject/to/bcc, a markdown body,
+ * and attachment management.
+ */
+export function composeEmail(options?: EmailDialogOptions): EmailDialog {
+  return EmailDialog.create(options);
+}
+
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
  * tooltip, and popup menu.*/
 export function bind(item: any, element: HTMLElement, options?: {contextMenu: boolean}): HTMLElement {
@@ -738,14 +777,58 @@ export function makeDraggable<T>(e: Element,
   );
 }
 
-export function makeDroppable<T>(e: Element,
-    options?: {
-      acceptDrop?: (dragObject: T) => boolean,
-      doDrop?: (dragObject: T, copying: boolean) => void
-    }): void {
-  api.grok_UI_MakeDroppable(e,
-      options?.acceptDrop ? (dragObject: T) => options?.acceptDrop!(toJs(dragObject)) : null,
-      options?.doDrop ? (dragObject: T, copying: boolean) => options?.doDrop!(toJs(dragObject), toJs(copying)) : null,
+/** Options for {@link makeDroppable}. All callbacks are optional; pass only what you need. */
+export interface IDragAndDropOptions<T = any> {
+  /** Fast predicate used to decide whether to show a drop zone for `dragObject`. */
+  acceptDrop?: (dragObject: T) => boolean;
+  /** Predicate called with the full {@link DragDropArgs} — veto by returning false or setting `args.handled = true`. */
+  acceptDrag?: (args: DragDropArgs<T>) => boolean;
+  /** Handles the drop. Read `args.dragObject`, `args.copying`, `args.link`, etc. */
+  doDrop?: (args: DragDropArgs<T>) => void;
+  /** Fires when a drag session starts and this zone is eligible. */
+  onBeginDrag?: (args: DragDropArgs<T>) => void;
+  /** Fires when a drag session ends (whether it landed here or not). */
+  onEndDrag?: (args: DragDropArgs<T>) => void;
+  onMouseEnter?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseOver?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseLeave?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  onMouseOut?: (e: MouseEvent, args: DragDropArgs<T>) => void;
+  /** Returns the element that should receive the `d4-drop` class during the drag. */
+  getDropElement?: () => Element;
+  /** Returns a custom drop-zone element, replacing the default `.d4-drop-zone`. */
+  makeDropZone?: () => Element;
+  /** Transforms the default rectangle used to position the drop zone over the host. */
+  dropZoneRectTransformation?: (r: Rect) => Rect;
+  /** Text shown inside the default drop zone. */
+  dropSuggestion?: string;
+  /** When false, suppresses the default `d4-drop-zone` element. Defaults to true. */
+  dropIndication?: boolean;
+}
+
+export function makeDroppable<T = any>(e: Element, options?: IDragAndDropOptions<T>): void {
+  const wrapObj = <R>(cb?: (o: T) => R) =>
+      cb ? (o: any) => cb(toJs(o)) : null;
+  const wrapArgs = <R>(cb?: (a: DragDropArgs<T>) => R) =>
+      cb ? (a: any) => cb(toJs(a)) : null;
+  const wrapMouse = (cb?: (e: MouseEvent, a: DragDropArgs<T>) => void) =>
+      cb ? (me: MouseEvent, a: any) => cb(me, toJs(a)) : null;
+  const wrapRect = (cb?: (r: Rect) => Rect) =>
+      cb ? (r: any) => toDart(cb(toJs(r))) : null;
+  api.grok_UI_MakeDroppableEx(e,
+      wrapObj(options?.acceptDrop),
+      wrapArgs(options?.acceptDrag),
+      wrapArgs(options?.doDrop),
+      wrapArgs(options?.onBeginDrag),
+      wrapArgs(options?.onEndDrag),
+      wrapMouse(options?.onMouseEnter),
+      wrapMouse(options?.onMouseOver),
+      wrapMouse(options?.onMouseLeave),
+      wrapMouse(options?.onMouseOut),
+      options?.getDropElement ?? null,
+      options?.makeDropZone ?? null,
+      wrapRect(options?.dropZoneRectTransformation),
+      options?.dropSuggestion ?? null,
+      options?.dropIndication ?? null,
   );
 }
 
@@ -1050,6 +1133,10 @@ export namespace input {
     return _create(d4.InputType.Files, name, options);
   }
 
+  export function folder(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
+    return _create(d4.InputType.Folder, name, options);
+  }
+
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
@@ -1107,7 +1194,7 @@ export namespace input {
     //put tags into items (for backward compatibility)
     if (config?.tags && !config.items)
         config.items = config.tags as any[];
-    return _create(d4.InputType.Tags, name, config);  
+    return _create(d4.InputType.Tags, name, config);
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
@@ -1389,7 +1476,7 @@ export class tools {
       let width = 100;
       if (element.classList.contains('ui-input-bool'))
         width = 30;
-      if (element.classList.contains('ui-input-switch'))
+      if (element.classList.contains('ui-input-bool-switch'))
         width = 50;
       if (element.classList.contains('ui-input-table'))
         width = 200;
@@ -1489,11 +1576,26 @@ export class tools {
   }
 }
 
+/** Options for tooltip display. Future-proof — add fields here as tooltip features grow. */
+export interface ITooltipOptions {
+  /** Delay in milliseconds before the tooltip appears. Defaults to 0 (immediate). */
+  delay?: number;
+}
+
 /** Represents a tooltip. */
 export class Tooltip {
+  private _pendingTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Hides the tooltip. */
+  private _cancelPending(): void {
+    if (this._pendingTimer !== null) {
+      clearTimeout(this._pendingTimer);
+      this._pendingTimer = null;
+    }
+  }
+
+  /** Hides the tooltip. Also cancels any pending {@link showDelayed} call. */
   hide(): void {
+    this._cancelPending();
     api.grok_Tooltip_Hide();
   }
 
@@ -1506,9 +1608,35 @@ export class Tooltip {
     return element;
   }
 
-  /** Shows the tooltip at the specified position */
-  show(content: HTMLElement | string, x: number, y: number): void {
-    api.grok_Tooltip_Show(content, x, y);
+  /** Shows the tooltip at the specified position.
+   *
+   * Any pending delayed show is cancelled first. Passing `null`/`undefined` for `content`
+   * hides the tooltip and cancels any pending show — ideal for hover handlers where a single
+   * call replaces the show+hide+debounce quartet:
+   *
+   * ```ts
+   * onMouseMove(e) {
+   *   const t = getTooltipFor(e);   // string | HTMLElement | null
+   *   ui.tooltip.show(t, e.x + 16, e.y + 16, {delay: 200});
+   * }
+   * ```
+   */
+  show(content: HTMLElement | string | null | undefined, x: number, y: number,
+       options?: ITooltipOptions): void {
+    this._cancelPending();
+    if (content == null) {
+      api.grok_Tooltip_Hide();
+      return;
+    }
+    const delay = options?.delay ?? 0;
+    if (delay <= 0) {
+      api.grok_Tooltip_Show(content, x, y);
+      return;
+    }
+    this._pendingTimer = setTimeout(() => {
+      this._pendingTimer = null;
+      api.grok_Tooltip_Show(content, x, y);
+    }, delay);
   }
 
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
@@ -1729,14 +1857,14 @@ export class EntityMetaDartProxy extends ObjectHandler {
 
   get type(): string { return api.grok_Meta_Get_Type(this.dart); }
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
-  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, x); }
+  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, toDart(x)); }
 
-  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, x); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, x); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
-  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, toDart(x)); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x)); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }
 }
 
 /**
@@ -2183,6 +2311,8 @@ export function star(id: string): HTMLElement {
 function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
   e?.addEventListener('click', (e) => handler(e));
+  if (tooltipMsg !== null)
+    e.setAttribute('aria-label', tooltipMsg);
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -2191,6 +2321,8 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
   if (handler != null)
     e?.addEventListener('click', (e) => handler(e));
+  if (tooltipMsg !== null)
+    e.setAttribute('aria-label', tooltipMsg);
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -2400,7 +2532,7 @@ export namespace hints {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
 
-    const closeBtn = iconFA('times', () => root.remove());
+    const closeBtn = iconFA('times', () => root.remove(), 'Close');
     closeBtn.style.cssText = `
       position: absolute;
       right: 10px;
@@ -2462,11 +2594,35 @@ export namespace hints {
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
+    let clippers: HTMLElement[] | null = null;
+    function targetClipped(): boolean {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0)
+        return true;
+      if (r.bottom <= 0 || r.right <= 0 || r.top >= window.innerHeight || r.left >= window.innerWidth)
+        return true;
+      if (clippers == null) {
+        clippers = [];
+        for (let p = el.parentElement; p != null && p !== document.body; p = p.parentElement) {
+          const style = getComputedStyle(p);
+          if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
+            clippers.push(p);
+        }
+      }
+      for (const p of clippers) {
+        const pr = p.getBoundingClientRect();
+        if (r.bottom <= pr.top || r.top >= pr.bottom || r.right <= pr.left || r.left >= pr.right)
+          return true;
+      }
+      return false;
+    }
+
     let setPosition = setInterval(function () {
       if ($('body').has(el).length != 0) {
         const indicatorNode = el.getBoundingClientRect();
         hintIndicator.style.left = indicatorNode.left + 'px';
         hintIndicator.style.top = indicatorNode.top + 'px';
+        hintIndicator.style.display = targetClipped() ? 'none' : '';
       } else {
         hintIndicator.remove();
         clearInterval(setPosition);

@@ -25,7 +25,6 @@ rdt = new Date(dt);
 rdt.setDate(rdt.getDate() + 10);
 rm = m;
 rm['b'] = ri;
-col = df.clone().col('height');
-col.name = 'column';
+col = DG.Column.fromList(df.col('height').type, 'column', df.col('height').toList());
 df.columns.add(col);
 rdf = df;

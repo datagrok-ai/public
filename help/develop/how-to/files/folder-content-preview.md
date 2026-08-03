@@ -1,15 +1,21 @@
 ---
 title: "Custom folder content preview"
+description: Register a folderViewer function that inspects a folder's files and returns a custom preview widget.
+keywords:
+  - folderViewer role
+  - folder preview
+  - file share folder widget
+  - custom launcher button
 ---
 
-To provide custom folder content preview, register a function tagged as `folderViewer` that takes two
+To provide custom folder content preview, register a function with the `folderViewer` role that takes two
 parameters `folder` and `files`, inspects them and returns a widget if a custom preview could be provided, or null
 otherwise.
 
 The following function adds the 'START' button if one of the files in that folder is named "demog.csv":
 
 ```js
-//tags: folderViewer
+//meta.role: folderViewer
 //input: file folder
 //input: list<file> files
 //output: widget

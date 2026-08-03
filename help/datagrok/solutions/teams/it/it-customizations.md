@@ -1,5 +1,14 @@
 ---
 title: "IT customizations"
+description: Summary of IT-controlled settings for authentication, authorization, audit, storage, and backup policies.
+keywords:
+  - active directory integration
+  - single sign-on
+  - oauth
+  - role-based privileges
+  - network file shares
+  - backup policies
+  - database connections
 ---
 
 We understand the need to comply with your organization's standards, so we made the platform easily customizable. Here are

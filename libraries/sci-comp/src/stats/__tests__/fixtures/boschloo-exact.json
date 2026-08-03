@@ -1,0 +1,1492 @@
+{
+  "metadata": {
+    "source": "scipy.stats.boschloo_exact (n=32 Sobol/SHGO default)",
+    "generated_at": "2026-05-04T18:20:58+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 1e-06,
+      "statistic": 1e-12
+    }
+  },
+  "cases": [
+    {
+      "name": "[Saari04] [[74,31],[43,32]] (scipy docs) alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            74,
+            31
+          ],
+          [
+            43,
+            32
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.048312210086912236,
+        "p_value": 0.0711281286030935
+      }
+    },
+    {
+      "name": "[Saari04] [[74,31],[43,32]] (scipy docs) alt=greater",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            74,
+            31
+          ],
+          [
+            43,
+            32
+          ]
+        ],
+        "alternative": "greater"
+      },
+      "expected": {
+        "statistic": 0.048312210086912236,
+        "p_value": 0.03556406430154675
+      }
+    },
+    {
+      "name": "[Saari04] [[74,31],[43,32]] (scipy docs) alt=less",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            74,
+            31
+          ],
+          [
+            43,
+            32
+          ]
+        ],
+        "alternative": "less"
+      },
+      "expected": {
+        "statistic": 0.9759961281714722,
+        "p_value": 0.9665032229005569
+      }
+    },
+    {
+      "name": "[Fisher35] Lady Tea [[3,1],[1,3]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            1
+          ],
+          [
+            1,
+            3
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.24285714285714283,
+        "p_value": 0.28906250000000017
+      }
+    },
+    {
+      "name": "Perfect separation 3×3 [[3,0],[0,3]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            0
+          ],
+          [
+            0,
+            3
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.05000000000000001,
+        "p_value": 0.031250000000000014
+      }
+    },
+    {
+      "name": "Perfect separation 3×3 [[3,0],[0,3]] alt=greater",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            0
+          ],
+          [
+            0,
+            3
+          ]
+        ],
+        "alternative": "greater"
+      },
+      "expected": {
+        "statistic": 0.05000000000000001,
+        "p_value": 0.015625000000000007
+      }
+    },
+    {
+      "name": "Perfect separation 3×3 [[3,0],[0,3]] alt=less",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            0
+          ],
+          [
+            0,
+            3
+          ]
+        ],
+        "alternative": "less"
+      },
+      "expected": {
+        "statistic": 1.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "Perfect separation 4×4 [[4,0],[0,4]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            4,
+            0
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.014285714285714284,
+        "p_value": 0.007812500000000002
+      }
+    },
+    {
+      "name": "Perfect separation 5×5 [[5,0],[0,5]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            0
+          ],
+          [
+            0,
+            5
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.003968253968253969,
+        "p_value": 0.001953125
+      }
+    },
+    {
+      "name": "Preclinical 2/3 vs 0/3 [[2,1],[0,3]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            2,
+            1
+          ],
+          [
+            0,
+            3
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.20000000000000004,
+        "p_value": 0.15861061850134617
+      }
+    },
+    {
+      "name": "Preclinical 2/3 vs 0/3 [[2,1],[0,3]] alt=greater",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            2,
+            1
+          ],
+          [
+            0,
+            3
+          ]
+        ],
+        "alternative": "greater"
+      },
+      "expected": {
+        "statistic": 0.20000000000000004,
+        "p_value": 0.07930530925067308
+      }
+    },
+    {
+      "name": "Preclinical 3/5 vs 1/5 [[3,1],[2,4]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            1
+          ],
+          [
+            2,
+            4
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.2619047619047619,
+        "p_value": 0.34375
+      }
+    },
+    {
+      "name": "Balanced symmetric [[5,5],[5,5]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            5
+          ],
+          [
+            5,
+            5
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.6718591006516703,
+        "p_value": 0.9449272155761729
+      }
+    },
+    {
+      "name": "Mid-size [[10,5],[3,12]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            10,
+            5
+          ],
+          [
+            3,
+            12
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.012663843516838068,
+        "p_value": 0.011862866443205604
+      }
+    },
+    {
+      "name": "Mid-size [[10,5],[3,12]] alt=greater",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            10,
+            5
+          ],
+          [
+            3,
+            12
+          ]
+        ],
+        "alternative": "greater"
+      },
+      "expected": {
+        "statistic": 0.012663843516838068,
+        "p_value": 0.005931433221602802
+      }
+    },
+    {
+      "name": "Mid-size [[10,5],[3,12]] alt=less",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            10,
+            5
+          ],
+          [
+            3,
+            12
+          ]
+        ],
+        "alternative": "less"
+      },
+      "expected": {
+        "statistic": 0.9987453641600252,
+        "p_value": 0.9960262512270817
+      }
+    },
+    {
+      "name": "Larger [[20,5],[10,15]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            20,
+            5
+          ],
+          [
+            10,
+            15
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.004289254075234562,
+        "p_value": 0.004314673411976721
+      }
+    },
+    {
+      "name": "Zero cell a [[0,5],[3,7]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            0,
+            5
+          ],
+          [
+            3,
+            7
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.26373626373626374,
+        "p_value": 0.2606521672272114
+      }
+    },
+    {
+      "name": "Zero cell d [[5,3],[4,0]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            3
+          ],
+          [
+            4,
+            0
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.2545454545454546,
+        "p_value": 0.26356036722544746
+      }
+    },
+    {
+      "name": "[Agresti02] [[6,2],[1,4]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            6,
+            2
+          ],
+          [
+            1,
+            4
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.08624708624708625,
+        "p_value": 0.09652220113772693
+      }
+    },
+    {
+      "name": "[Agresti02] [[6,2],[1,4]] alt=greater",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            6,
+            2
+          ],
+          [
+            1,
+            4
+          ]
+        ],
+        "alternative": "greater"
+      },
+      "expected": {
+        "statistic": 0.08624708624708625,
+        "p_value": 0.048261100568863464
+      }
+    },
+    {
+      "name": "[Rosner06] [[3,17],[1,19]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            3,
+            17
+          ],
+          [
+            1,
+            19
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.30249480249480254,
+        "p_value": 0.3585946954707558
+      }
+    },
+    {
+      "name": "Toxicology [[8,2],[2,8]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            8,
+            2
+          ],
+          [
+            2,
+            8
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.011507068782610578,
+        "p_value": 0.011817932128906262
+      }
+    },
+    {
+      "name": "Degenerate zero-col [[0,3],[0,3]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            0,
+            3
+          ],
+          [
+            0,
+            3
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": null,
+        "p_value": null
+      }
+    },
+    {
+      "name": "Degenerate zero-row [[0,0],[3,3]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            0,
+            0
+          ],
+          [
+            3,
+            3
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 1.0,
+        "p_value": 1.0
+      }
+    },
+    {
+      "name": "Tiny [[1,0],[0,1]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.5,
+        "p_value": 0.5
+      }
+    },
+    {
+      "name": "Tiny [[2,1],[1,2]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.5000000000000001,
+        "p_value": 0.6874999999999998
+      }
+    },
+    {
+      "name": "Tiny imbalance [[5,1],[1,2]] alt=two-sided",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "alternative": "two-sided"
+      },
+      "expected": {
+        "statistic": 0.22619047619047622,
+        "p_value": 0.2081142544219027
+      }
+    },
+    {
+      "name": "Tiny imbalance [[5,1],[1,2]] alt=greater",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "alternative": "greater"
+      },
+      "expected": {
+        "statistic": 0.22619047619047622,
+        "p_value": 0.10405712721095135
+      }
+    },
+    {
+      "name": "Tiny imbalance [[5,1],[1,2]] alt=less",
+      "category": "published_or_constructed",
+      "inputs": {
+        "table": [
+          [
+            5,
+            1
+          ],
+          [
+            1,
+            2
+          ]
+        ],
+        "alternative": "less"
+      },
+      "expected": {
+        "statistic": 0.9880952380952381,
+        "p_value": 0.8923641376303817
+      }
+    },
+    {
+      "name": "random 60 two-sided tables (seeded)",
+      "category": "randomized_property",
+      "data_origin": "np.random.seed(202611); randint(0,20,(2,2)) × ∞, dropping zero-column, take first 60",
+      "tables": [
+        {
+          "table": [
+            [
+              10,
+              12
+            ],
+            [
+              9,
+              6
+            ]
+          ],
+          "expected_statistic": 0.29721298897194814,
+          "expected_p_value": 0.431793407937171
+        },
+        {
+          "table": [
+            [
+              17,
+              19
+            ],
+            [
+              3,
+              1
+            ]
+          ],
+          "expected_statistic": 0.3024948024948026,
+          "expected_p_value": 0.4295905914805193
+        },
+        {
+          "table": [
+            [
+              19,
+              9
+            ],
+            [
+              14,
+              3
+            ]
+          ],
+          "expected_statistic": 0.23911378913319387,
+          "expected_p_value": 0.32208733648527427
+        },
+        {
+          "table": [
+            [
+              7,
+              11
+            ],
+            [
+              19,
+              14
+            ]
+          ],
+          "expected_statistic": 0.16297849348552165,
+          "expected_p_value": 0.23712252461742597
+        },
+        {
+          "table": [
+            [
+              15,
+              0
+            ],
+            [
+              14,
+              12
+            ]
+          ],
+          "expected_statistic": 0.0012227018521275015,
+          "expected_p_value": 0.000821380991148394
+        },
+        {
+          "table": [
+            [
+              15,
+              9
+            ],
+            [
+              17,
+              10
+            ]
+          ],
+          "expected_statistic": 0.6002536987477345,
+          "expected_p_value": 0.9929157582757249
+        },
+        {
+          "table": [
+            [
+              4,
+              3
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "expected_statistic": 0.2916666666666667,
+          "expected_p_value": 0.2678917638534498
+        },
+        {
+          "table": [
+            [
+              11,
+              6
+            ],
+            [
+              19,
+              19
+            ]
+          ],
+          "expected_statistic": 0.23692324754389826,
+          "expected_p_value": 0.3415049606909264
+        },
+        {
+          "table": [
+            [
+              6,
+              16
+            ],
+            [
+              18,
+              8
+            ]
+          ],
+          "expected_statistic": 0.004207366095580755,
+          "expected_p_value": 0.004674545008874978
+        },
+        {
+          "table": [
+            [
+              3,
+              8
+            ],
+            [
+              0,
+              2
+            ]
+          ],
+          "expected_statistic": 0.576923076923077,
+          "expected_p_value": 0.7329955446377046
+        },
+        {
+          "table": [
+            [
+              17,
+              12
+            ],
+            [
+              10,
+              6
+            ]
+          ],
+          "expected_statistic": 0.5277806762171755,
+          "expected_p_value": 0.8561198497527319
+        },
+        {
+          "table": [
+            [
+              12,
+              7
+            ],
+            [
+              10,
+              2
+            ]
+          ],
+          "expected_statistic": 0.21453144395544163,
+          "expected_p_value": 0.2611880793922398
+        },
+        {
+          "table": [
+            [
+              1,
+              6
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "expected_statistic": 0.0003467165938561819,
+          "expected_p_value": 0.0002444075053693866
+        },
+        {
+          "table": [
+            [
+              10,
+              16
+            ],
+            [
+              9,
+              7
+            ]
+          ],
+          "expected_statistic": 0.21027554551252978,
+          "expected_p_value": 0.2918728477725038
+        },
+        {
+          "table": [
+            [
+              3,
+              0
+            ],
+            [
+              15,
+              16
+            ]
+          ],
+          "expected_statistic": 0.13636363636363635,
+          "expected_p_value": 0.15105808242393046
+        },
+        {
+          "table": [
+            [
+              4,
+              17
+            ],
+            [
+              15,
+              17
+            ]
+          ],
+          "expected_statistic": 0.03624507458548237,
+          "expected_p_value": 0.04656191161884327
+        },
+        {
+          "table": [
+            [
+              12,
+              19
+            ],
+            [
+              17,
+              18
+            ]
+          ],
+          "expected_statistic": 0.2890614687099725,
+          "expected_p_value": 0.43628307535945343
+        },
+        {
+          "table": [
+            [
+              18,
+              0
+            ],
+            [
+              0,
+              18
+            ]
+          ],
+          "expected_statistic": 1.1019119461502683e-10,
+          "expected_p_value": 2.9103830456733717e-11
+        },
+        {
+          "table": [
+            [
+              5,
+              8
+            ],
+            [
+              2,
+              7
+            ]
+          ],
+          "expected_statistic": 0.37229102167182665,
+          "expected_p_value": 0.48622035239312755
+        },
+        {
+          "table": [
+            [
+              4,
+              4
+            ],
+            [
+              5,
+              1
+            ]
+          ],
+          "expected_statistic": 0.23776223776223776,
+          "expected_p_value": 0.2759823324961496
+        },
+        {
+          "table": [
+            [
+              7,
+              16
+            ],
+            [
+              8,
+              11
+            ]
+          ],
+          "expected_statistic": 0.3215570742768984,
+          "expected_p_value": 0.4595269162737939
+        },
+        {
+          "table": [
+            [
+              14,
+              2
+            ],
+            [
+              4,
+              2
+            ]
+          ],
+          "expected_statistic": 0.291866028708134,
+          "expected_p_value": 0.3248383636416815
+        },
+        {
+          "table": [
+            [
+              16,
+              14
+            ],
+            [
+              5,
+              2
+            ]
+          ],
+          "expected_statistic": 0.3328049457081715,
+          "expected_p_value": 0.45315676509977454
+        },
+        {
+          "table": [
+            [
+              5,
+              3
+            ],
+            [
+              3,
+              1
+            ]
+          ],
+          "expected_statistic": 0.593939393939394,
+          "expected_p_value": 0.8386777729873418
+        },
+        {
+          "table": [
+            [
+              13,
+              4
+            ],
+            [
+              8,
+              3
+            ]
+          ],
+          "expected_statistic": 0.581159420289855,
+          "expected_p_value": 0.8758442725543937
+        },
+        {
+          "table": [
+            [
+              4,
+              13
+            ],
+            [
+              3,
+              8
+            ]
+          ],
+          "expected_statistic": 0.581159420289855,
+          "expected_p_value": 0.8758442725543996
+        },
+        {
+          "table": [
+            [
+              2,
+              12
+            ],
+            [
+              1,
+              10
+            ]
+          ],
+          "expected_statistic": 0.5934782608695652,
+          "expected_p_value": 0.8103253551266294
+        },
+        {
+          "table": [
+            [
+              13,
+              4
+            ],
+            [
+              6,
+              3
+            ]
+          ],
+          "expected_statistic": 0.4624505928853755,
+          "expected_p_value": 0.6392978553135518
+        },
+        {
+          "table": [
+            [
+              3,
+              12
+            ],
+            [
+              11,
+              17
+            ]
+          ],
+          "expected_statistic": 0.1730921807674766,
+          "expected_p_value": 0.2142376338977082
+        },
+        {
+          "table": [
+            [
+              16,
+              2
+            ],
+            [
+              14,
+              13
+            ]
+          ],
+          "expected_statistic": 0.00999616926464492,
+          "expected_p_value": 0.009967223473381259
+        },
+        {
+          "table": [
+            [
+              1,
+              1
+            ],
+            [
+              9,
+              6
+            ]
+          ],
+          "expected_statistic": 0.6691176470588236,
+          "expected_p_value": 0.9765840954841957
+        },
+        {
+          "table": [
+            [
+              16,
+              4
+            ],
+            [
+              8,
+              5
+            ]
+          ],
+          "expected_statistic": 0.22154245457916205,
+          "expected_p_value": 0.27632294656763234
+        },
+        {
+          "table": [
+            [
+              3,
+              12
+            ],
+            [
+              16,
+              0
+            ]
+          ],
+          "expected_statistic": 3.224194354435686e-06,
+          "expected_p_value": 1.633048629746376e-06
+        },
+        {
+          "table": [
+            [
+              15,
+              13
+            ],
+            [
+              11,
+              15
+            ]
+          ],
+          "expected_statistic": 0.289664691759129,
+          "expected_p_value": 0.4453216088432232
+        },
+        {
+          "table": [
+            [
+              19,
+              6
+            ],
+            [
+              11,
+              6
+            ]
+          ],
+          "expected_statistic": 0.3250685776256193,
+          "expected_p_value": 0.45392400877678346
+        },
+        {
+          "table": [
+            [
+              18,
+              4
+            ],
+            [
+              3,
+              16
+            ]
+          ],
+          "expected_statistic": 2.733257179991327e-05,
+          "expected_p_value": 2.5957205044144118e-05
+        },
+        {
+          "table": [
+            [
+              3,
+              4
+            ],
+            [
+              9,
+              13
+            ]
+          ],
+          "expected_statistic": 0.6307179743461602,
+          "expected_p_value": 0.9666170896225217
+        },
+        {
+          "table": [
+            [
+              4,
+              16
+            ],
+            [
+              3,
+              13
+            ]
+          ],
+          "expected_statistic": 0.6314760508308895,
+          "expected_p_value": 0.954771639931254
+        },
+        {
+          "table": [
+            [
+              1,
+              9
+            ],
+            [
+              14,
+              15
+            ]
+          ],
+          "expected_statistic": 0.03393467909596942,
+          "expected_p_value": 0.0360806513200742
+        },
+        {
+          "table": [
+            [
+              3,
+              7
+            ],
+            [
+              12,
+              14
+            ]
+          ],
+          "expected_statistic": 0.31093470859877975,
+          "expected_p_value": 0.43607903108600315
+        },
+        {
+          "table": [
+            [
+              8,
+              15
+            ],
+            [
+              2,
+              9
+            ]
+          ],
+          "expected_statistic": 0.2829326031773195,
+          "expected_p_value": 0.36807657913221464
+        },
+        {
+          "table": [
+            [
+              16,
+              19
+            ],
+            [
+              18,
+              7
+            ]
+          ],
+          "expected_statistic": 0.0382164725381837,
+          "expected_p_value": 0.05082180896527011
+        },
+        {
+          "table": [
+            [
+              4,
+              2
+            ],
+            [
+              19,
+              14
+            ]
+          ],
+          "expected_statistic": 0.5216450077131193,
+          "expected_p_value": 0.804761071460756
+        },
+        {
+          "table": [
+            [
+              2,
+              8
+            ],
+            [
+              0,
+              3
+            ]
+          ],
+          "expected_statistic": 0.576923076923077,
+          "expected_p_value": 0.6886720524579134
+        },
+        {
+          "table": [
+            [
+              19,
+              15
+            ],
+            [
+              4,
+              10
+            ]
+          ],
+          "expected_statistic": 0.07936352615996839,
+          "expected_p_value": 0.117357080256948
+        },
+        {
+          "table": [
+            [
+              0,
+              18
+            ],
+            [
+              10,
+              5
+            ]
+          ],
+          "expected_statistic": 3.244345569150908e-05,
+          "expected_p_value": 2.1385446461155168e-05
+        },
+        {
+          "table": [
+            [
+              13,
+              10
+            ],
+            [
+              15,
+              17
+            ]
+          ],
+          "expected_statistic": 0.33302868885509773,
+          "expected_p_value": 0.5280567324990865
+        },
+        {
+          "table": [
+            [
+              9,
+              15
+            ],
+            [
+              19,
+              12
+            ]
+          ],
+          "expected_statistic": 0.06935001197921162,
+          "expected_p_value": 0.10597893718163316
+        },
+        {
+          "table": [
+            [
+              9,
+              12
+            ],
+            [
+              14,
+              5
+            ]
+          ],
+          "expected_statistic": 0.048785938329876044,
+          "expected_p_value": 0.06525688811162432
+        },
+        {
+          "table": [
+            [
+              1,
+              15
+            ],
+            [
+              18,
+              7
+            ]
+          ],
+          "expected_statistic": 3.2159789613871374e-05,
+          "expected_p_value": 2.983292602414312e-05
+        },
+        {
+          "table": [
+            [
+              2,
+              18
+            ],
+            [
+              13,
+              8
+            ]
+          ],
+          "expected_statistic": 0.0006470359776200956,
+          "expected_p_value": 0.0005889144598475656
+        },
+        {
+          "table": [
+            [
+              9,
+              19
+            ],
+            [
+              10,
+              8
+            ]
+          ],
+          "expected_statistic": 0.10270715168165355,
+          "expected_p_value": 0.1289488812040016
+        },
+        {
+          "table": [
+            [
+              2,
+              10
+            ],
+            [
+              7,
+              17
+            ]
+          ],
+          "expected_statistic": 0.35027481515409264,
+          "expected_p_value": 0.48205732839071647
+        },
+        {
+          "table": [
+            [
+              17,
+              16
+            ],
+            [
+              7,
+              11
+            ]
+          ],
+          "expected_statistic": 0.2851861875448708,
+          "expected_p_value": 0.4422885877805357
+        },
+        {
+          "table": [
+            [
+              17,
+              11
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "expected_statistic": 0.25361512791991103,
+          "expected_p_value": 0.32253295525250375
+        },
+        {
+          "table": [
+            [
+              5,
+              11
+            ],
+            [
+              6,
+              8
+            ]
+          ],
+          "expected_statistic": 0.38994502748625687,
+          "expected_p_value": 0.5507787953479437
+        },
+        {
+          "table": [
+            [
+              10,
+              17
+            ],
+            [
+              4,
+              12
+            ]
+          ],
+          "expected_statistic": 0.3200133567068916,
+          "expected_p_value": 0.45320312219459613
+        },
+        {
+          "table": [
+            [
+              3,
+              10
+            ],
+            [
+              18,
+              11
+            ]
+          ],
+          "expected_statistic": 0.021535500882471772,
+          "expected_p_value": 0.0210754410686822
+        },
+        {
+          "table": [
+            [
+              15,
+              13
+            ],
+            [
+              8,
+              1
+            ]
+          ],
+          "expected_statistic": 0.06174728677509545,
+          "expected_p_value": 0.07162851317359563
+        },
+        {
+          "table": [
+            [
+              8,
+              4
+            ],
+            [
+              10,
+              0
+            ]
+          ],
+          "expected_statistic": 0.06766917293233084,
+          "expected_p_value": 0.053253171945195944
+        }
+      ]
+    }
+  ]
+}

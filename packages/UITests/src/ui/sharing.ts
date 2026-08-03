@@ -7,7 +7,11 @@ import * as DG from 'datagrok-api/dg';
 category('UI: Sharing', () => {
   let v: DG.ViewBase;
   let testUser: DG.User;
-  const entityName = 'apitestsentityshare';
+  // Unique per run: a fixed name collides with leftovers from a prior run whose
+  // finally-delete failed or was aborted, making the gallery search return >1
+  // result ("more than one testing entity present"). Lowercased for the
+  // `share ${entityName}` dialog-title check below.
+  const entityName = 'apitestsentityshare' + DG.Utils.randomString(6).toLowerCase();
 
   before(async () => {
     testUser = await grok.dapi.users.filter('login = "admin"').first();
@@ -43,7 +47,8 @@ category('UI: Sharing', () => {
     });
     await grok.dapi.connections.save(newConnection);
     try {
-      await testEntityUI(['Databases'], '.d4-gallery-card');
+      // Connection is in the tree (hierarchy in the DataSourceCardView) under the Postgres
+      await testEntityUI(['Databases'], '.d4-link-label');
     } finally {
       await grok.dapi.connections.delete(newConnection);
     }
@@ -54,7 +59,10 @@ category('UI: Sharing', () => {
   });
 
   test('projects.api', async () => {
-    await testEntityAPI(DG.Project.create(), grok.dapi.projects);
+    // Projects now require a non-empty name on save (datlas projects_service guard).
+    const project = DG.Project.create();
+    project.name = 'apitests';
+    await testEntityAPI(project, grok.dapi.projects);
   });
 
   test('connections.api', async () => {
@@ -85,14 +93,15 @@ category('UI: Sharing', () => {
         (treeGroupToClick as DG.TreeViewGroup).getOrCreateGroup(name);
     }
     treeGroupToClick.root.click();
-    await awaitCheck(() => (document.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
+    // Scope to the opened view: document.querySelector can return another view's gallery.
+    await awaitCheck(() => (grok.shell.v?.root?.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
       'cannot load gallery grid', 3000);
     v = grok.shell.v;
     const gallery = v.root;
     const search = gallery.querySelector('.ui-input-editor') as HTMLInputElement;
     search.value = entityName;
     search.dispatchEvent(new MouseEvent('input'));
-    await awaitCheck(() => document.querySelector('.grok-gallery-grid')?.children?.length === 1,
+    await awaitCheck(() => gallery.querySelector('.grok-gallery-grid')?.children?.length === 1,
       'more than one testing entity present', 3000);
     await delay(2000);
     let entity = gallery.querySelector('.grok-gallery-grid')!.children[0];

@@ -4,7 +4,7 @@ declare let grok: typeof _grok;
 import {category, expect, test, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
-import {_package} from '../package-test';
+import {_package} from '../test-package';
 
 category('Dapi: packages', () => {
   test('list', async () => {
@@ -22,9 +22,9 @@ category('Dapi: packages', () => {
   test('webRoot content', async () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
     expect(apiTestsPackage.webRoot + '/', _package.webRoot);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'under Node the test package is a dapi entity (no client webRoot)' : undefined});
 
   test('readCsv error', async () => {
     await expectExceptionAsync(() => _package.files.readCsv('datasets/noFile.csv').then());
   });
-});
+}, {node: true});

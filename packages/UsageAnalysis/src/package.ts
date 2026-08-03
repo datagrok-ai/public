@@ -6,6 +6,7 @@ import {UsageWidget} from './widgets/usage-widget';
 import {PackageUsageWidget} from './widgets/package-usage-widget';
 import '../css/usage_analysis.css';
 import '../css/test_track.css';
+import '../css/click_events_widget.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
 import {ReportsWidget} from './widgets/reports-widget';
@@ -17,6 +18,9 @@ import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
 import {ClickEventsWidget} from './widgets/click-events-widget';
+import {fetchVexDashboardImages, vexImagesToDataFrame} from './tabs/vulnerabilities';
+import {ReleaseHandler} from './release/release-handler';
+import {isDevHost} from './release/data';
 
 export const _package = new DG.Package();
 export let _properties: any;
@@ -97,8 +101,8 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/',
-    'browsePath': 'Admin',
     'name': 'Usage Analysis',
+    'meta': {'role': 'adminApp'},
   })
   static usageAnalysisApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
@@ -111,6 +115,23 @@ export class PackageFunctions {
     const handler = new ViewHandler();
     handler.view.parentCall = grok.functions.getCurrentCall();
     handler.init(date, groups, packages, tags, categories, projects, path);
+    return handler.view;
+  }
+
+  // Release-readiness dashboard. Dev-only: available and visible on dev.datagrok.ai; a no-op elsewhere.
+  @grok.decorators.app({
+    'url': '/release',
+    'name': 'Release',
+    'meta': {'role': 'adminApp'},
+  })
+  static releaseDashboardApp(
+    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): DG.ViewBase | null {
+    if (!isDevHost()) {
+      grok.shell.warning('The Release dashboard is available on dev.datagrok.ai only.');
+      return null;
+    }
+    const handler = new ReleaseHandler(path);
+    handler.view.parentCall = grok.functions.getCurrentCall();
     return handler.view;
   }
 
@@ -292,10 +313,42 @@ export class PackageFunctions {
     return highestPriority;
   }
 
+  /** Published VEX scan results (one row per scanned image) — feeds the
+   * CicdTests dashboard's data-synced VEX table. Core images use their
+   * bleeding-edge scan; packages/tools use the latest released scan. */
+  @grok.decorators.func()
+  static async vexImages(): Promise<DG.DataFrame> {
+    return vexImagesToDataFrame(await fetchVexDashboardImages());
+  }
+
+  /** JS wrappers for the CicdTests dashboard's data-synced stress tables:
+   * project datasync of DataQuery calls intermittently loses the result
+   * dataframe (GROK-20391), while JS-function-backed sync is reliable. */
+  @grok.decorators.func()
+  static async stressSummaryDashboard(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsSummary', {lastBuildsNum: 20});
+  }
+
+  @grok.decorators.func()
+  static async stressRawDashboard(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsRaw', {build: null});
+  }
+
+  @grok.decorators.app({
+    'url': '/metrics',
+    'name': 'Metrics',
+    'icon': 'images/icons/metrics.svg',
+    'meta': {'role': 'adminApp'},
+  })
+  static metricsApp(): DG.ViewBase | null {
+    return PackageFunctions.usageAnalysisApp('/metrics');
+  }
+
   @grok.decorators.app({
     'url': '/tests/manager',
-    'browsePath': 'Admin',
     'name': 'Test Track',
+    'icon': 'images/icons/test-track.svg',
+    'meta': {'role': 'adminApp'},
   })
   static testTrackApp(): void {
     if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
@@ -307,8 +360,9 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/reports',
-    'browsePath': 'Admin',
     'name': 'Reports',
+    'icon': 'images/icons/reports.svg',
+    'meta': {'role': 'adminApp'},
   })
   static async reportsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): Promise<DG.ViewBase> {
@@ -321,8 +375,9 @@ export class PackageFunctions {
 
   @grok.decorators.app({
     'url': '/service-logs',
-    'browsePath': 'Admin',
     'name': 'Service Logs',
+    'icon': 'images/icons/service-logs.svg',
+    'meta': {'role': 'adminApp'},
   })
   static serviceLogsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,

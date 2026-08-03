@@ -160,6 +160,6 @@ selected properties across different motifs or positions, helping correlate
 sequence patterns with assay results or molecular properties. You can also use
 hypothesis testing tools, including
 [MVA](../../../../explore/multivariate-analysis.md) and
-[ANOVA](../../../../explore/anova.md).
+[ANOVA](../../../../explore/group-comparison.md#anova).
 
 <!-- add a wiki page and a link for the Sequence Position Statistics viewer-->

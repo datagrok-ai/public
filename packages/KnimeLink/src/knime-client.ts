@@ -1,4 +1,4 @@
-import {KnimeInputParam, KnimeWorkflowSpec, KnimeExecutionInput, KnimeExecutionResult, KnimeJobStatus, KnimeDeployment, KnimeOutputResource} from './types';
+import {KnimeWorkflowSpec, KnimeExecutionInput, KnimeExecutionResult, KnimeJobStatus, KnimeDeployment, KnimeOutputResource} from './types';
 
 export interface IKnimeClient {
   listDeployments(typeFilter?: string): Promise<KnimeDeployment[]>;

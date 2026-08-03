@@ -69,7 +69,7 @@ export class TutorialRunner {
     const trackRoot = ui.divV([
       ui.divH([
         ui.h1(track.name),
-        ui.button(ui.icons.help(() => {}),
+        ui.button(ui.icons.help(() => {}, 'Help'),
           () => window.open(track.helpUrl, '_blank'),
           'Read more about ' + track.name + '\n' + track.helpUrl),
       ], 'tutorials-track-title'),
@@ -111,7 +111,7 @@ class TutorialCard {
     const icon = ui.div([], 'tutorials-card-status');
     const title = ui.divText(tutorial.name, 'tutorials-card-title');
     const description = ui.divText(tutorial.description, 'tutorials-card-description');
-    icon.append(ui.iconFA('check-circle', () => { }));
+    icon.append(ui.iconFA('check-circle', () => { }, 'Done'));
     $(icon).hide();
     $(icon).children().removeClass('fal');
     $(icon).children().addClass('fas');

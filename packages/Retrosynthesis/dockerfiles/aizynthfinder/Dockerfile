@@ -8,14 +8,14 @@ FROM python:3.10 as builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libgomp1 libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt /app/
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip setuptools wheel && \
     pip install --prefix=/install -r requirements.txt && \
     pip install --prefix=/install "aizynthfinder[all]==4.3.2"
 
@@ -25,7 +25,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN useradd -m datagrok
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     libgomp1 libpq5 libxrender1 libxext6 libsm6 libgl1 patchelf \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 

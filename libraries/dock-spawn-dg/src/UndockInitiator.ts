@@ -153,6 +153,11 @@ export class UndockInitiator {
             e = e.touches[0];
         }
 
+        if ((<MouseEvent>e).buttons == 0){
+            this.onMouseUp();
+            return;
+        }
+
         let position = new Point(e.clientX, e.clientY);
         let dy = position.y - this.dragStartPosition.y;
 

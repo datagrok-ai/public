@@ -1,7 +1,16 @@
+---
+title: "Tests: Upload project"
+description: Manual test scenario for uploading, sharing, downloading, and re-uploading a project.
+keywords:
+  - upload project test
+  - publish project dialog
+  - share project link
+  - download project zip
+  - test scenario
+---
+
 <!-- TITLE: Tests: Upload project -->
 <!-- SUBTITLE: -->
-
-# Tests: Upload project
 
 A [project](project.md) is a collection of different objects that you want to use together.
 [Project](project.md) can contain [tables](table.md), [queries](../access/access.md#data-query),

@@ -10,6 +10,21 @@ const MAX_INT = 10;
 const MAX_FLOAT = 10;
 const CATEGORIES = ['Alpha', 'Beta', 'Gamma', 'Delta'];
 
+/**
+ * Deterministic PRNG (mulberry32). Returns a `Math.random`-compatible function
+ * (0 <= x < 1). Pass a fixed seed to a dataset generator to make it reproducible
+ * bit-for-bit and remove flakiness; omit it to keep the legacy random behaviour.
+ */
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return function() {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Check lengths of columns */
 function checkLen(target: DG.Column, prediction: DG.Column): void {
   if (target.length !== prediction.length)
@@ -75,8 +90,14 @@ export function madError(target: DG.Column, prediction: DG.Column): number {
   return mad;
 }
 
-/** Return dataframe for testing classifiers */
-export function classificationDataset(samples: number, features: number, useShift: boolean): DG.DataFrame {
+/**
+ * Return dataframe for testing classifiers.
+ * Pass `seed` to generate a reproducible dataset (kills flakiness); omit it for
+ * the legacy `Math.random` behaviour.
+ */
+export function classificationDataset(
+  samples: number, features: number, useShift: boolean, seed?: number): DG.DataFrame {
+  const rng = seed === undefined ? Math.random : mulberry32(seed);
   const labels = new Array<string>(samples);
   const raw = new Array<Float32Array>(features);
 
@@ -84,7 +105,7 @@ export function classificationDataset(samples: number, features: number, useShif
     const arr = new Float32Array(samples);
 
     for (let i = 0; i < samples; ++i)
-      arr[i] = Math.random();
+      arr[i] = rng();
 
     raw[j] = arr;
   }

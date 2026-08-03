@@ -43,3 +43,6 @@ test-report.csv
 test-console-output.log
 
 
+
+# Package-owned Playwright E2E suite — not shipped in the npm artifact
+playwright/

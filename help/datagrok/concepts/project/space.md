@@ -1,6 +1,16 @@
 ---
 title: "Spaces"
-format: mdx
+description: Explains Datagrok spaces (projects) hierarchy, and how to create, move, link, and search entities within them.
+keywords:
+  - root and child spaces
+  - namespaces
+  - my stuff
+  - moving entities
+  - clone move link
+  - browse tree
+  - organizing and sharing data
+mdx:
+  format: mdx
 ---
 
 Spaces act like folders that contain various [entities](../objects.md), such as tables,

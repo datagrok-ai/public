@@ -181,12 +181,14 @@ export function createDifferencesWithPositions(
 }
 
 export function createLinesGrid(df: DG.DataFrame, colNames: string[]): DG.Grid {
-  const seqDiffCol = DG.Column.string('seq_diff', df.rowCount)
-    .init((i) => `${df.get(colNames[0], i)}#${df.get(colNames[1], i)}`);
-  seqDiffCol.semType = 'MacromoleculeDifference';
-  seqDiffCol.meta.units = df.col(colNames[0])!.meta.units;
-  seqDiffCol.setTag(bioTAGS.separator, df.col(colNames[0])!.getTag(bioTAGS.separator));
-  df.columns.add(seqDiffCol);
+  if (!df.col('seq_diff')) {
+    const seqDiffCol = DG.Column.string('seq_diff', df.rowCount)
+      .init((i) => `${df.get(colNames[0], i)}#${df.get(colNames[1], i)}`);
+    seqDiffCol.semType = 'MacromoleculeDifference';
+    seqDiffCol.meta.units = df.col(colNames[0])!.meta.units;
+    seqDiffCol.setTag(bioTAGS.separator, df.col(colNames[0])!.getTag(bioTAGS.separator));
+    df.columns.add(seqDiffCol);
+  }
   const grid = df.plot.grid();
   grid.col(colNames[0])!.visible = false;
   grid.col(colNames[1])!.visible = false;

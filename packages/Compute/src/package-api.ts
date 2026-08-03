@@ -90,4 +90,20 @@ export namespace funcs {
   export async function objectCoolingSelector(params: any ): Promise<any> {
     return await grok.functions.call('Compute:ObjectCoolingSelector', { params });
   }
+
+  export async function customInputMock(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:CustomInputMock', { params });
+  }
+
+  export async function rangeValidatorFactory(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:RangeValidatorFactory', { params });
+  }
+
+  export async function asyncValidatorDemoFactory(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:AsyncValidatorDemoFactory', { params });
+  }
+
+  export async function globalValidatorDemoFactory(params: any ): Promise<any> {
+    return await grok.functions.call('Compute:GlobalValidatorDemoFactory', { params });
+  }
 }

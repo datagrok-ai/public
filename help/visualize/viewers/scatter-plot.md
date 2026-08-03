@@ -1,6 +1,15 @@
 ---
 title: "Scatterplot"
-format: mdx
+mdx:
+  format: mdx
+description: Plot data points on X and Y axes with color, shape, and size encoding, regression lines, and formula annotations.
+keywords:
+  - xy plot
+  - regression line
+  - chemical space
+  - activity cliffs
+  - webgpu acceleration
+  - annotation regions
 ---
 
 A scatterplot displays data points on the X and Y axes
@@ -141,6 +150,12 @@ To customize a region, provide a description and configure visual properties suc
 
 ![Annotation Regions](img/annotation-regions.gif)
 
+### Supported viewers
+
+Formula lines and annotation regions are supported on the [scatter plot](scatter-plot.md), [line chart](line-chart.md), [bar chart](bar-chart.md), [histogram](histogram.md), [box plot](box-plot.md), and [density plot](density-plot.md). When applied to the dataframe, they automatically appear on every viewer with matching axes.
+
+![Formula lines and annotation regions across viewers](img/formula-lines-annotation-regions-viewers.png)
+
 ## Tooltip
 
 By default, a scatterplot inherits the tooltip from the grid. However, you can
@@ -274,6 +289,8 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | **Size** | | |
 | Size Column Name | string | A numerical column to use for size-coding markers. See also *Marker Min Size* and *Marker Max Size*. |
 | Show Size Selector | boolean |  |
+| Show Markers With Empty Size | boolean | When a *Size* column is set, show rows with empty values instead of hiding them. |
+| Marker Size Scaling | string | Linear or logarithmic scale for the *Size* column. |
 | **Marker** | | |
 | Markers Column Name | string | A categorical column that determines the shape of the markers. |
 | Markers Map | string | Marker category time unit map function (applicable to dates only). |
@@ -314,21 +331,11 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Label Color As Marker | boolean | To display labels separately or as markers (works for non-text labels). |
 | Label As Marker Size | number | Marker size in which label is inscribed. |
 | Label Content Size | number | Label inner content size. |
-| **Lines** | | |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R) |
-| Show Regression Line Equation | boolean |  |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Supports up to 20 categories. Otherwise, a common regression line is shown. |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Selection** | | |
 | Show Current Point | boolean | Controls the indication of the current row |
 | Show Mouse Over Point | boolean | Controls the indication of the mouse-over row |
 | Show Mouse Over Row Group | boolean | Highlight ''mouse-over'' rows (such as the ones that fall into a histogram bin that the mouse is currently hovering over). |
-| Show Selected Rows | boolean | When true, selected markers are highlighted using the selected rows color. When false, selected markers use their regular color coding. |
+| Show Selected Rows | boolean | When checked, selected markers are highlighted using the selected rows color. When unchecked, selected markers use their regular color coding. |
 | Reset Selection On Background Click | boolean | When true, clicking on the background (no point hit) clears the current selection. Set to false to preserve the selection when accidentally clicking outside of the markers. |
 | **Style** | | |
 | Auto Layout | boolean |  |
@@ -341,23 +348,22 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Axis Line Color | number |  |
 | Axis Text Color | number |  |
 | Grid Line Color | number |  |
-| Regression Line Color | number |  |
 | Whisker Color | number |  |
-| Regression Line Transparency | number |  |
 | Linear Color Scheme | list |  |
-| Categorical Color Scheme | list |  |
+| Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column''s color coding is used. |
 | Axes Use Column Format | boolean | Determines whether the axes should follow the non-precision-related format (such as money) set for the corresponding column. |
 | Auto Axis Size | boolean | If true, *X Axis Height* and *Y Axis Width* are calculated automatically to fit the required precision. If false, the specified *X Axis Height* and *Y Axis Width* properties are used. |
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
 | Y Axis Width | number | Requires *Auto Axis Size* to be turned off. |
 | Axis Font | string |  |
 | Label Font | string |  |
-| Formula Font | string |  |
-| Annotation Font | string |  |
 | Controls Font | string | Viewer controls elements font. |
-| **Annotation regions** | | |
-| Show Viewer Annotation Regions | boolean |  |
-| Show Dataframe Annotation Regions | boolean |  |
+| Regression Line Color | number |  |
+| Regression Line Transparency | number |  |
+| Moving Average Line Color | number |  |
+| Moving Average Line Transparency | number |  |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -367,6 +373,24 @@ Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=214s)
 | Row Group Tooltip | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Lines** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
+| **Annotations** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 
 
 See also:
@@ -377,5 +401,5 @@ See also:
 * [Table view](../table-view-1.md)
 * [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)
 * Community:
-    * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
-    * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)
+  * [Scatterplot updates](https://community.datagrok.ai/t/scatterplot-updates/625)
+  * [Visualization-related updates](https://community.datagrok.ai/t/visualization-related-updates/521)

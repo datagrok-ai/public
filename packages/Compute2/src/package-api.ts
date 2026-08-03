@@ -36,12 +36,25 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TreeWizardEditor', { call });
   }
 
+  /**
+  Launch a compute workflow (pipeline) by its qualified name and open its editor.
+  */
   export async function startWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<any> {
     return await grok.functions.call('Compute2:StartWorkflow', { nqName, version, instanceConfig });
   }
 
+  /**
+  Run parameter optimization (fitting) for a model and return the resulting function calls.
+  */
   export async function runOptimizer(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:RunOptimizer', { params });
+  }
+
+  /**
+  Compare data across model runs: scalars or a single table column
+  */
+  export async function compareRuns(): Promise<void> {
+    return await grok.functions.call('Compute2:CompareRuns', {});
   }
 
   export async function viewerTestApp(): Promise<void> {
@@ -56,12 +69,22 @@ export namespace funcs {
     return await grok.functions.call('Compute2:HistoryTestApp', {});
   }
 
+  /**
+  Sample static two-step workflow configuration used for testing the workflow engine.
+  */
   export async function mockPipeline1(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline1', { params });
   }
 
+  /**
+  Sample sequential workflow configuration with links, actions, and validators for testing.
+  */
   export async function mockPipeline2(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
+  }
+
+  export async function stressTestPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:StressTestPipeline', { params });
   }
 
   export async function testAdd2(a: number , b: number ): Promise<number> {
@@ -84,7 +107,7 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestDF1', { df });
   }
 
-  export async function testCustomView(): Promise<void> {
+  export async function testCustomView(): Promise<any> {
     return await grok.functions.call('Compute2:TestCustomView', {});
   }
 
@@ -100,5 +123,13 @@ export namespace funcs {
   */
   export async function testFittingOutputs(): Promise<void> {
     return await grok.functions.call('Compute2:TestFittingOutputs', {});
+  }
+
+  export async function testCustomExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestCustomExportModel', { a });
+  }
+
+  export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
+    return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
   }
 }

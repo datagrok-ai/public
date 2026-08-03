@@ -5,15 +5,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA} from './eda-tools';
 import {addPrefixToEachColumnName} from './eda-ui';
-import {LINEAR, RBF, POLYNOMIAL, SIGMOID,
-  getTrainedModel, getPrediction, isApplicableSVM, isInteractiveSVM, showTrainReport, getPackedModel} from './svm';
 
 import {PLS_ANALYSIS} from './pls/pls-constants';
 import {runMVA, runDemoMVA, getPlsAnalysis, PlsOutput} from './pls/pls-tools';
 import {runOneWayAnova} from './anova/anova-ui';
+import {runTwoSampleTTest} from './ttest/ttest-ui';
+import {runControlComparisons} from './control-comparisons/control-comparisons-ui';
 
 import {getDbscanWorker} from '@datagrok-libraries/math';
 
@@ -30,7 +29,9 @@ import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression} from './regression';
+import {getLinearRegressionParams, getPredictionByLinearRegression,
+  isLinearRegressionApplicable, isLinearRegressionInteractive,
+  TOLERANCE} from './regression';
 import {PlsModel} from './pls/pls-ml';
 import {SoftmaxClassifier} from './softmax-classifier';
 
@@ -57,7 +58,6 @@ export class PackageFunctions {
 
   @grok.decorators.init({tags: ['init']})
   static async init(): Promise<void> {
-    await _initEDAAPI();
     await initXgboost();
   }
 
@@ -84,7 +84,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | PCA...',
-    'description': 'Principal component analysis (PCA)',
+    'description': 'Principal component analysis (PCA).',
     'helpUrl': '/help/explore/dim-reduction#pca',
   })
   static async PCA(
@@ -95,7 +95,10 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Center', 'initialValue': 'false', 'description': 'Indicating whether the variables should be shifted to be zero centered.'}}) center: boolean,
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Scale', 'initialValue': 'false', 'description': 'Indicating whether the variables should be scaled to have unit variance.'}}) scale: boolean): Promise<void> {
     try {
-      const pcaTable = await computePCA(table, features, components, center, scale);
+      // "column_list" might be passed as array of columns, not DG.ColumnList (slack: https://datagrok.slack.com/archives/C04BF3YM6CF/p1776968116891119)
+      const featuresToPass = Array.isArray(features) ? DG.DataFrame.fromColumns(features).columns : features;
+
+      const pcaTable = await computePCA(table, featuresToPass, components, center, scale);
       addPrefixToEachColumnName('PC', pcaTable.columns);
 
       if (table.id === null) // table is loaded from a local file
@@ -252,7 +255,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Cluster | MCL...',
-    'name': 'MCLClustering',
+    'name': 'MCL Clustering',
     'description': 'Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.',
     'editor': 'EDA:GetMCLEditor',
     'outputs': [],
@@ -260,16 +263,16 @@ export class PackageFunctions {
   static async MCLClustering(
     df: DG.DataFrame,
     cols: DG.Column[],
-    @grok.decorators.param({'type': 'list<string>'}) metrics: KnownMetrics[],
-    weights: number[],
-    @grok.decorators.param({'type': 'string'}) aggregationMethod: DistanceAggregationMethod,
-    @grok.decorators.param({'type': 'list<func>'}) preprocessingFuncs: any[],
-    @grok.decorators.param({'type': 'object'}) preprocessingFuncArgs: any[],
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '80'}}) threshold: number = 80,
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '10'}}) maxIterations: number = 10,
-    @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false'}}) useWebGPU: boolean = false,
-    @grok.decorators.param({'type': 'double', 'options': {'initialValue': '2'}}) inflate: number = 0,
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '5'}}) minClusterSize: number = 5): Promise<MCLViewer> {
+    @grok.decorators.param({'type': 'list<string>', 'options': {'description': 'Distance metric per column used to measure similarity between rows.'}}) metrics: KnownMetrics[],
+    @grok.decorators.param({'options': {'description': 'Relative weight of each column when combining per-column distances.'}}) weights: number[],
+    @grok.decorators.param({'type': 'string', 'options': {'description': 'How per-column distances are aggregated into a single distance.'}}) aggregationMethod: DistanceAggregationMethod,
+    @grok.decorators.param({'type': 'list<func>', 'options': {'description': 'Preprocessing function applied to each column before distances are computed.'}}) preprocessingFuncs: any[],
+    @grok.decorators.param({'type': 'object', 'options': {'description': 'Arguments passed to the preprocessing functions.'}}) preprocessingFuncArgs: any[],
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '80', 'description': 'Similarity threshold (percentile): edges below it are dropped before clustering.'}}) threshold: number = 80,
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '10', 'description': 'Maximum number of expansion/inflation iterations.'}}) maxIterations: number = 10,
+    @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false', 'description': 'Run the computation on the GPU via WebGPU when available.'}}) useWebGPU: boolean = false,
+    @grok.decorators.param({'type': 'double', 'options': {'initialValue': '2', 'description': 'Inflation factor controlling cluster granularity: higher values yield more, smaller clusters.'}}) inflate: number = 0,
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '5', 'description': 'Clusters smaller than this are merged into noise.'}}) minClusterSize: number = 5): Promise<MCLViewer> {
     const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
     const serializedOptions: string = JSON.stringify({
       cols: cols.map((col) => col.name),
@@ -301,6 +304,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    'name': 'PLS',
     'outputs': [{'name': 'plsResults', 'type': 'object'}],
     'description': 'Compute partial least squares (PLS) regression analysis components: prediction, regression coefficients, T- & U-scores, X-loadings.',
   })
@@ -308,7 +312,7 @@ export class PackageFunctions {
     table: DG.DataFrame,
     @grok.decorators.param({'type': 'column_list', 'options': {'type': 'numerical'}}) features: DG.ColumnList,
     @grok.decorators.param({'type': 'column', 'options': {'type': 'numerical'}}) predict: DG.Column,
-    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '3'}}) components: number,
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '3', 'description': 'Number of latent factors the model extracts from the predictors.'}}) components: number,
     @grok.decorators.param({'type': 'column', 'options': {'type': 'string'}}) names: DG.Column): Promise<PlsOutput> {
     return await getPlsAnalysis({
       table: table,
@@ -353,303 +357,32 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'mlname': 'linear kernel LS-SVM',
-      'mlrole': 'train',
-    },
+    'top-menu': 'ML | Analyze | Group Comparison | T-test...',
+    'name': 'T-test',
+    'description': 'Two-sample t-test (Welch or Student) compares the means of a feature between two groups.',
   })
-  static async trainLinearKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0'}}) gamma: number): Promise<any> {
-    const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predictColumn);
-    return getPackedModel(trainedModel);
+  static tTest(): void {
+    runTwoSampleTTest();
   }
 
 
   @grok.decorators.func({
-    'meta': {
-      'mlname': 'linear kernel LS-SVM',
-      'mlrole': 'apply',
-    },
-  })
-  static async applyLinearKernelSVM(
-    df: DG.DataFrame,
-    model: any): Promise<DG.DataFrame> {
-    return await getPrediction(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'linear kernel LS-SVM',
-      'mlrole': 'isApplicable',
-    },
-  })
-  static async isApplicableLinearKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isApplicableSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'linear kernel LS-SVM',
-      'mlrole': 'isInteractive',
-    },
-  })
-  static async isInteractiveLinearKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isInteractiveSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'linear kernel LS-SVM',
-      'mlrole': 'visualize',
-    },
-  })
-  static async visualizeLinearKernelSVM(
-    df: DG.DataFrame,
-    targetColumn: DG.Column,
-    predictColumn: DG.Column,
-    model: any): Promise<any> {
-    return showTrainReport(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'RBF-kernel LS-SVM',
-      'mlrole': 'train',
-    },
-  })
-  static async trainRBFkernelSVM(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0'}}) gamma: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.5'}}) sigma: number): Promise<any> {
-    const trainedModel = await getTrainedModel(
-      {gamma: gamma, kernel: RBF, sigma: sigma},
-      df, predictColumn);
-
-    return getPackedModel(trainedModel);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'RBF-kernel LS-SVM',
-      'mlrole': 'apply',
-    },
-  })
-  static async applyRBFkernelSVM(
-    df: DG.DataFrame,
-    model: any): Promise<DG.DataFrame> {
-    return await getPrediction(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'RBF-kernel LS-SVM',
-      'mlrole': 'isApplicable',
-    },
-  })
-  static async isApplicableRBFkernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isApplicableSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'RBF-kernel LS-SVM',
-      'mlrole': 'isInteractive',
-    },
-  })
-  static async isInteractiveRBFkernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isInteractiveSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'RBF-kernel LS-SVM',
-      'mlrole': 'visualize',
-    },
-  })
-  static async visualizeRBFkernelSVM(
-    df: DG.DataFrame,
-    targetColumn: DG.Column,
-    predictColumn: DG.Column,
-    model: any): Promise<any> {
-    return showTrainReport(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'polynomial kernel LS-SVM',
-      'mlrole': 'train',
-    },
-  })
-  static async trainPolynomialKernelSVM(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0'}}) gamma: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1'}}) c: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '2'}}) d: number): Promise<any> {
-    const trainedModel = await getTrainedModel(
-      {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d},
-      df, predictColumn);
-
-    return getPackedModel(trainedModel);
-  } // trainPolynomialKernelSVM
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'polynomial kernel LS-SVM',
-      'mlrole': 'apply',
-    },
-  })
-  static async applyPolynomialKernelSVM(
-    df: DG.DataFrame,
-    model: any): Promise<DG.DataFrame> {
-    return await getPrediction(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'polynomial kernel LS-SVM',
-      'mlrole': 'isApplicable',
-    },
-  })
-  static async isApplicablePolynomialKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isApplicableSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'polynomial kernel LS-SVM',
-      'mlrole': 'isInteractive',
-    },
-  })
-  static async isInteractivePolynomialKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isInteractiveSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'polynomial kernel LS-SVM',
-      'mlrole': 'visualize',
-    },
-    'outputs': [{'name': 'widget', 'type': 'dynamic'}],
-    'name': 'visualizePolynomialKernelSVM',
-  })
-  static async visualizePolynomialKernelSVM(
-    df: DG.DataFrame,
-    targetColumn: DG.Column,
-    predictColumn: DG.Column,
-    model: any): Promise<any> {
-    return showTrainReport(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'sigmoid kernel LS-SVM',
-      'mlrole': 'train',
-    },
-    'name': 'trainSigmoidKernelSVM',
-  })
-  static async trainSigmoidKernelSVM(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0'}}) gamma: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1'}}) kappa: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1'}}) theta: number): Promise<any> {
-    const trainedModel = await getTrainedModel(
-      {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta},
-      df, predictColumn);
-
-    return getPackedModel(trainedModel);
-  } // trainSigmoidKernelSVM
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'sigmoid kernel LS-SVM',
-      'mlrole': 'apply',
-    },
-    'name': 'applySigmoidKernelSVM',
-  })
-  static async applySigmoidKernelSVM(
-    df: DG.DataFrame,
-    model: any): Promise<DG.DataFrame> {
-    return await getPrediction(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'sigmoid kernel LS-SVM',
-      'mlrole': 'isApplicable',
-    },
-    'name': 'isApplicableSigmoidKernelSVM',
-  })
-  static async isApplicableSigmoidKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isApplicableSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'sigmoid kernel LS-SVM',
-      'mlrole': 'isInteractive',
-    },
-    'name': 'isInteractiveSigmoidKernelSVM',
-  })
-  static async isInteractiveSigmoidKernelSVM(
-    df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<boolean> {
-    return isInteractiveSVM(df, predictColumn);
-  }
-
-
-  @grok.decorators.func({
-    'meta': {
-      'mlname': 'sigmoid kernel LS-SVM',
-      'mlrole': 'visualize',
-    },
-    'name': 'visualizeSigmoidKernelSVM',
-  })
-  static async visualizeSigmoidKernelSVM(
-    df: DG.DataFrame,
-    targetColumn: DG.Column,
-    predictColumn: DG.Column,
-    model: any): Promise<any> {
-    return showTrainReport(df, model);
-  }
-
-
-  @grok.decorators.func({
-    'top-menu': 'ML | Analyze | ANOVA...',
+    'top-menu': 'ML | Analyze | Group Comparison | ANOVA...',
     'name': 'ANOVA',
     'description': 'One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.',
   })
   static anova(): void {
     runOneWayAnova();
+  }
+
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Analyze | Group Comparison | Control Comparisons...',
+    'name': 'Control comparisons',
+    'description': 'Compare several groups against a single control (Dunnett\'s test or Holm-corrected Welch\'s t-tests).',
+  })
+  static controlComparisons(): void {
+    runControlComparisons();
   }
 
 
@@ -683,9 +416,13 @@ export class PackageFunctions {
   })
   static async trainLinearRegression(
     df: DG.DataFrame,
-    predictColumn: DG.Column): Promise<Uint8Array> {
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'max': '10', 'step': '0.01', 'description': 'Gradient descent learning rate.'}}) rate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number): Promise<Uint8Array> {
     const features = df.columns;
-    const params = await getLinearRegressionParams(features, predictColumn);
+    const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, TOLERANCE);
 
     return new Uint8Array(params.buffer);
   }
@@ -696,11 +433,12 @@ export class PackageFunctions {
       'mlname': 'Linear Regression',
       'mlrole': 'apply',
     },
-    'name': 'applyLinearRegression',
+    'name': 'Apply Linear Regression',
+    'description': 'Predict the target for a table using a trained linear regression model.',
   })
   static applyLinearRegression(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): DG.DataFrame {
     const features = df.columns;
     const params = new Float32Array((model as Uint8Array).buffer);
     return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params)]);
@@ -717,12 +455,7 @@ export class PackageFunctions {
   static isApplicableLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    for (const col of df.columns) {
-      if (!col.matches('numerical'))
-        return false;
-    }
-
-    return predictColumn.matches('numerical');
+    return isLinearRegressionApplicable(df.columns, predictColumn);
   }
 
 
@@ -736,7 +469,7 @@ export class PackageFunctions {
   static isInteractiveLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return df.rowCount <= 100000;
+    return isLinearRegressionInteractive(df.columns, predictColumn);
   }
 
 
@@ -749,14 +482,14 @@ export class PackageFunctions {
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Learning rate.'}}) rate: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Fitting iterations count'}}) iterations: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
-    @grok.decorators.param({'options': {'category': 'Hyperparameters', 'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Fitting tolerance.'}}) tolerance: number): Promise<Uint8Array> {
+    @grok.decorators.param({'options': {'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Gradient descent learning rate.'}}) rate: number,
+    @grok.decorators.param({'options': {'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
+    @grok.decorators.param({'options': {'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
+    @grok.decorators.param({'options': {'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
     const features = df.columns;
 
     const model = new SoftmaxClassifier({
-      classesCount: predictColumn.categories.length,
+      classesCount: predictColumn.type === DG.COLUMN_TYPE.BOOL ? 2 : predictColumn.categories.length,
       featuresCount: features.length,
     });
 
@@ -771,11 +504,12 @@ export class PackageFunctions {
       'mlname': 'Softmax',
       'mlrole': 'apply',
     },
-    'name': 'applySoftmax',
+    'name': 'Apply Softmax',
+    'description': 'Classify the rows of a table using a trained softmax (multinomial logistic regression) model.',
   })
   static applySoftmax(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained softmax classifier model to apply.'}}) model: any): DG.DataFrame {
     const features = df.columns;
     const unpackedModel = new SoftmaxClassifier(undefined, model);
 
@@ -841,11 +575,12 @@ export class PackageFunctions {
       'mlname': 'PLS Regression',
       'mlrole': 'apply',
     },
-    'name': 'applyPLSRegression',
+    'name': 'Apply PLS Regression',
+    'description': 'Predict the target for a table using a trained partial least squares (PLS) regression model.',
   })
   static applyPLSRegression(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained PLS regression model to apply.'}}) model: any): DG.DataFrame {
     const unpackedModel = new PlsModel(model);
     return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
   }
@@ -927,11 +662,12 @@ export class PackageFunctions {
       'mlname': 'XGBoost',
       'mlrole': 'apply',
     },
-    'name': 'applyXGBooster',
+    'name': 'Apply XGBoost',
+    'description': 'Predict the target for a table using a trained XGBoost gradient-boosting model.',
   })
   static applyXGBooster(
     df: DG.DataFrame,
-    model: any): DG.DataFrame {
+    @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): DG.DataFrame {
     const unpackedModel = new XGBooster(model);
     return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
   }
@@ -1011,25 +747,23 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({'name': 'getPmpoAppItems', 'outputs': [{name: 'result', type: 'object'}]})
-  static getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): any | null {
+  static async getPmpoAppItems(@grok.decorators.param({type: 'view'}) view: DG.TableView): Promise<any | null> {
     const df = view.dataFrame;
     if (!Pmpo.isTableValid(df))
       return null;
 
     const pMPO = new Pmpo(df, view);
-
     return pMPO.getPmpoAppItems();
   }
 
   @grok.decorators.func({
-    'name': 'generatePmpoDataset',
-    'description': 'Generates syntethetic dataset oriented on the pMPO modeling',
+    'name': 'Generate pMPO Dataset',
+    'description': 'Generate a synthetic dataset oriented on probabilistic multi-parameter optimization (pMPO) modeling.',
     'outputs': [{name: 'Synthetic', type: 'dataframe'}],
   })
-  static async generatePmpoDataset(@grok.decorators.param({'type': 'int'}) samples: number): Promise<DG.DataFrame> {
+  static async generatePmpoDataset(@grok.decorators.param({'type': 'int', 'options': {'description': 'Number of rows (samples) to generate.'}}) samples: number): Promise<DG.DataFrame> {
     const df = await getSynteticPmpoData(samples, false);
     df.name = 'Synthetic';
     return df;
   }
-
 }

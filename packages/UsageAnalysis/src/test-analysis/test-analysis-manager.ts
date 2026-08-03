@@ -11,18 +11,6 @@ interface IPackageTest {
 }
 
 export class TestAnalysisManager {
-    private testsListMapped: any[] = []; 
-
-    constructor() {
-    }
-
-    public async init() {
-        let testsList = await TestAnalysisManager.collectPackageTests();
-        this.testsListMapped = testsList.map((elem) => {
-            return { 'name': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
-        });
-    }
-
     static async collectPackages(packageName?: string): Promise<any[]> {
         let testFunctions = DG.Func.find({ name: 'Test', meta: { file: 'package-test.js' } });
         testFunctions = testFunctions.sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName));
@@ -52,29 +40,29 @@ export class TestAnalysisManager {
                         });
                         testsData = testsData.concat(tests);
                     });
-                };
+                }
             }
         }
         return testsData;
     }
 
     static async collectManualTestNames(): Promise<string[]> { 
-        const files = await _package.files.list('Test Track', true);
+        const files = await _package.files.list('TestTrack', true);
         const tests: string[] = [];
         
         for (const file of files) {
-            if (!file.isDirectory) { 
+            if (!file.isDirectory) {
+                if (!file.path.endsWith('.md') || file.path.endsWith('-run.md'))
+                    continue;
                 const pathL = file.path.replace(/\.[^.]+$/, '').split('/').slice(2);
 
                 if (pathL.length < 2)
                     grok.shell.error('Root test case');
 
-                tests[tests.length] = pathL.join(': '); 
+                tests[tests.length] = pathL.join(': ');
             }
         }
 
         return tests;
     }
-
-
 }

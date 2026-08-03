@@ -266,4 +266,4 @@ category('Functions: Math', () => {
     'Tan(PI / 4)': 1.0001, // enables float comparison
     'Tan(PI / 3)': 1.732,
   }));
-});
+}, {node: true});

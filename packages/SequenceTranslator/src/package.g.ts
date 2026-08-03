@@ -77,29 +77,6 @@ export function linkStrands(strands: any) : string {
   return PackageFunctions.linkStrands(strands);
 }
 
-//name: demoOligoTranslator
-//description: Translate oligonucleotide sequences across various formats accepted by different synthesizers
-//meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
-//meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
-//meta.demoSkip: GROK-14320
-export async function demoTranslateSequence() : Promise<void> {
-  await PackageFunctions.demoTranslateSequence();
-}
-
-//description: Design a modification pattern for an oligonucleotide sequence
-//meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
-//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoOligoPattern() : Promise<void> {
-  await PackageFunctions.demoOligoPattern();
-}
-
-//description: Visualize duplex and save SDF
-//meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
-//meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoOligoStructure() : Promise<void> {
-  await PackageFunctions.demoOligoStructure();
-}
-
 //input: string sequence 
 //input: string sourceFormat 
 //input: string targetFormat 
@@ -141,11 +118,11 @@ export async function polyToolEnumerateHelmTopMenu() : Promise<void> {
   await PackageFunctions.polyToolEnumerateHelmTopMenu();
 }
 
-//name: polyToolEnumerateChem
-//description: Perform enumeration of a molecule using different fragments at specified positions
-//top-menu: Bio | PolyTool | Enumerate Chem...
-export async function polyToolEnumerateChemTopMenu() : Promise<void> {
-  await PackageFunctions.polyToolEnumerateChemTopMenu();
+//name: Markush Enumerator
+//description: Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)
+//top-menu: Chem | Transform | Markush Enumeration...
+export async function chemEnumerateMarkushTopMenu() : Promise<void> {
+  await PackageFunctions.chemEnumerateMarkushTopMenu();
 }
 
 //input: dataframe df { description: Input data table }
@@ -168,13 +145,14 @@ export async function ptEnumeratorHelmApp() : Promise<void> {
   await PackageFunctions.ptEnumeratorHelmApp();
 }
 
-//name: Chem Enumerator
+//name: Markush Enumerator
 //tags: app
+//output: view result
 //meta.icon: img/icons/structure.png
-//meta.browsePath: Peptides | PolyTool
+//meta.browsePath: Chem
 //meta.role: app
-export async function ptEnumeratorChemApp() : Promise<void> {
-  await PackageFunctions.ptEnumeratorChemApp();
+export async function ptEnumeratorChemApp() {
+  return await PackageFunctions.ptEnumeratorChemApp();
 }
 
 //name: Polytool Helm Enumerator dialog
@@ -187,6 +165,12 @@ export async function getPtHelmEnumeratorDialog(cell?: any) : Promise<void> {
 //input: object cell { nullable: true }
 export async function getPtChemEnumeratorDialog(cell?: any) : Promise<void> {
   await PackageFunctions.getPtChemEnumeratorDialog(cell);
+}
+
+//name: Polytool Oligo Enumerator dialog
+//input: object cell { nullable: true }
+export async function getPtOligoEnumeratorDialog(cell?: any) : Promise<void> {
+  await PackageFunctions.getPtOligoEnumeratorDialog(cell);
 }
 
 //name: Enumerate Single HELM Sequence
@@ -215,6 +199,83 @@ export async function getPolyToolCombineDialog() : Promise<void> {
   await PackageFunctions.getPolyToolCombineDialog();
 }
 
+//description: Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: OligoNucleotide
+//meta.columnTags: quality=OligoNucleotide
+//meta.role: cellRenderer
+export function oligoNucleotideCellRenderer() : any {
+  return PackageFunctions.oligoNucleotideCellRenderer();
+}
+
+//description: OligoNucleotide
+//tags: cellEditor
+//input: grid_cell cell 
+//meta.role: cellEditor
+export function editOligoNucleotideCell(cell: any) : void {
+  PackageFunctions.editOligoNucleotideCell(cell);
+}
+
+//name: Open HELM Editor
+//description: Edit the oligonucleotide HELM in the HELM Web Editor
+//input: semantic_value value { semType: OligoNucleotide }
+//meta.action: Edit HELM
+export function openOligoHelmEditor(value: DG.SemanticValue) : void {
+  PackageFunctions.openOligoHelmEditor(value);
+}
+
+//name: Oligo-Nucleotide
+//description: Modifications, lengths, conjugates and color legend for an OligoNucleotide cell
+//tags: panel, widgets
+//input: semantic_value value { semType: OligoNucleotide }
+//output: widget result
+export function oligoNucleotidePanel(value: DG.SemanticValue) : any {
+  return PackageFunctions.oligoNucleotidePanel(value);
+}
+
+//name: Oligo Structures
+//description: Sense and antisense full molecular structures rendered separately
+//tags: panel, widgets
+//input: semantic_value value { semType: OligoNucleotide }
+//output: widget result
+export function oligoNucleotideStructuresPanel(value: DG.SemanticValue) : any {
+  return PackageFunctions.oligoNucleotideStructuresPanel(value);
+}
+
+//name: Copy as HELM
+//description: Copy the HELM string of an oligo cell to the clipboard
+//input: semantic_value value { semType: OligoNucleotide }
+//meta.action: Copy as HELM
+export function copyOligoAsHelm(value: DG.SemanticValue) : void {
+  PackageFunctions.copyOligoAsHelm(value);
+}
+
+//name: Copy as Image
+//description: Copy a high-resolution image of the oligo duplex
+//input: semantic_value value { semType: OligoNucleotide }
+//meta.action: Copy as Image
+export function copyOligoAsImage(value: DG.SemanticValue) : void {
+  PackageFunctions.copyOligoAsImage(value);
+}
+
+//description: Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view
+//input: dataframe table 
+//input: column helmCol { caption: HELM column; semType: Macromolecule }
+//output: column result
+export async function convertHelmToOligoNucleotide(table: DG.DataFrame, helmCol: DG.Column) : Promise<any> {
+  return await PackageFunctions.convertHelmToOligoNucleotide(table, helmCol);
+}
+
+//description: Combine separate sense + antisense HELM columns into one OligoNucleotide column
+//input: dataframe table 
+//input: column senseCol { caption: Sense; semType: Macromolecule }
+//input: column antiCol { caption: Antisense; semType: Macromolecule }
+//output: column result
+export async function combineSenseAntisenseToOligoNucleotide(table: DG.DataFrame, senseCol: DG.Column, antiCol: DG.Column) : Promise<any> {
+  return await PackageFunctions.combineSenseAntisenseToOligoNucleotide(table, senseCol, antiCol);
+}
+
 //name: applyNotationProviderForHarmonizedSequence
 //input: column col 
 //input: string separator 
@@ -226,4 +287,13 @@ export function applyNotationProviderForCyclized(col: DG.Column<any>, separator:
 //meta.role: notationProviderConstructor
 export async function harmonizedSequenceNotationProviderConstructor() : Promise<any> {
   return await PackageFunctions.harmonizedSequenceNotationProviderConstructor();
+}
+
+//name: Markush Enumerator package settings editor
+//tags: packageSettingsEditor
+//input: object propList 
+//output: widget result
+//meta.role: packageSettingsEditor
+export async function markushSettingsEditor(properties: any) : Promise<any> {
+  return await PackageFunctions.markushSettingsEditor(properties);
 }

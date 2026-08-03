@@ -15,37 +15,31 @@ let currentWidget: DG.Widget | null = null;
 
 moleculeStream$.pipe(
   debounceTime(2000),
-).subscribe({
-  next: (molecule: string) => {
-    if (currentWidget)
-      updateRetrosynthesisWidget(molecule, currentWidget);
-  },
-  error: (error: any) => {
-    if (currentWidget) {
-      ui.empty(currentWidget.root);
-      currentWidget.root.append(ui.divText(error?.message ?? 'An error occurred'));
-    }
-  },
+).subscribe(async (molecule: string) => {
+  if (!currentWidget)
+    return;
+  try {
+    await updateRetrosynthesisWidget(molecule, currentWidget);
+  } catch (e: any) {
+    ui.empty(currentWidget.root);
+    currentWidget.root.append(ui.divText(e?.message ?? 'An error occurred'));
+  }
 });
 export class PackageFunctions {
   @grok.decorators.panel({
     'meta': {'allowAddAsColumn': 'false', 'role': 'widgets', 'domain': 'chem'},
     'name': 'Chemistry | Retrosynthesis',
+    'description': 'Predict retrosynthesis routes for a molecule using AiZynthFinder.',
     'condition': 'true',
   })
   static retroSynthesisPath(
-    @grok.decorators.param({'name': 'smiles', 'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
+    @grok.decorators.param({'name': 'smiles', 'options': {'semType': 'Molecule', 'description': 'Target molecule to plan a synthesis route for'}}) molecule: string): DG.Widget {
     if (!currentWidget)
       currentWidget = new DG.Widget(ui.div('', 'retrosynthesis-widget-div'));
     ui.setUpdateIndicator(currentWidget.root, true, 'Calculating paths...');
     // Emit the new molecule value to the stream
     moleculeStream$.next(molecule);
     return currentWidget;
-  }
-
-  @grok.decorators.func()
-  static retrosynthesisTopMenu(): void {
-    (grok.shell.v as DG.TableView).addViewer('Retrosynthesis Viewer');
   }
 
   @grok.decorators.func({

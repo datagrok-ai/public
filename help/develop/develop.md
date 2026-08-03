@@ -1,6 +1,15 @@
 ---
 title: "Develop"
 sidebar_position: 0
+description: Overview of package-based JavaScript and TypeScript development on Datagrok, from structure to publishing.
+keywords:
+  - package.json
+  - package.js
+  - webpack.config.js
+  - detectors.js
+  - grok publish
+  - creating a package
+  - custom viewers and applications
 ---
 
 ## JavaScript development
@@ -68,7 +77,7 @@ In addition to that, it might contain the following folders:
   <!--, [Discovery](https://github.com/datagrok-ai/labs/tree/master/packages/Discovery)-->
 * `files` and `tables`: data for demonstration and testing.
   Example: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  <!--, [Sunburst](https://github.com/datagrok-ai/labs/tree/master/packages/Sunburst)-->
+  <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Charts/src/viewers/sunburst)-->
 * `layouts`: `json` files with table view [layouts](how-to/views/layouts.md)
 * `schemas`: `yaml` files with property schemas
 * `jobs`: data jobs
@@ -154,7 +163,7 @@ Below, there is an example of a package `Sequence` containing a single detector 
 ```js
 class SequencePackageDetectors extends DG.Package {
 
-  //tags: semTypeDetector
+  //meta.role: semTypeDetector
   //input: column col
   //output: string semType
   detectNucleotides(col) {
@@ -404,7 +413,7 @@ our [public packages](https://github.com/datagrok-ai/public/tree/master/packages
 
 To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is elementary to do using [docker-compose](../deploy/docker-compose/docker-compose.md)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](../deploy/docker-compose/docker-compose.mdx)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/tests/test-packages.md#local-testing)

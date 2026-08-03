@@ -203,9 +203,9 @@ CAGUGUCAGUGU
 UUCAACUUCAAC`;
     /** Pure amino acids sequence */
     [csvTests.fastaPt1]: string = `seq
-FWPHEY
-YNRQWYV
-MKPSEYV`;
+FWPHEYWYV
+YNRQWYVWPH
+MKPSEYVQWY`;
     [csvTests.fastaUn]: string = `seq
 [meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]DN
 [meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2][Aca]
@@ -462,8 +462,12 @@ MWRSWY-CKHPMWRSWY-CKHP`;
   // sample_testHelm.csv
   // columns: ID,Test type,HELM string,Valid?,Mol Weight,Mol Formula,SMILES
   test('samplesTestHelmCsv', async () => {
+    // Alphabet size of 8 reflects splitterAsHelm's triplet-splitting of HELM
+    // RNA monomers (each `sugar(base)phosphate` becomes 3 tokens), which can
+    // collapse what used to be N distinct triple-tokens into a smaller union
+    // of {sugar(s), bases, phosphate(s)} symbols.
     await _testDf(readSamples(Samples.testHelmCsv), {
-      'HELM string': new PosCol(NOTATION.HELM, null, null, 9, true),
+      'HELM string': new PosCol(NOTATION.HELM, null, null, 7, true),
     }, seqHelper);
   });
 

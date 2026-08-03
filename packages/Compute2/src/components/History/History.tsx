@@ -15,6 +15,10 @@ import {watchExtractedObservable} from '@vueuse/rxjs';
 
 const GRID_INITED_EVENT = 'd4-grid-initialized';
 
+// Explicit marker set on a FuncCall when it is saved as per-step history (see TreeWizard).
+// When `savedOnly` is set, the panel shows only runs carrying this flag.
+export const STEP_HISTORY_OPTION = 'compute2StepHistory';
+
 export const History = Vue.defineComponent({
   name: 'History',
   props: {
@@ -46,10 +50,16 @@ export const History = Vue.defineComponent({
       type: String,
       default: 'No historical runs found',
     },
+    // when true, show only runs explicitly saved as per-step history (carrying STEP_HISTORY_OPTION)
+    savedOnly: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     runChosen: (_chosenCall: DG.FuncCall) => true,
     compare: (_ids: string[]) => true,
+    selectionChanged: (_selectedCalls: DG.FuncCall[]) => true,
     afterRunEdited: (_editedCall: DG.FuncCall) => true,
     afterRunDeleted: (_deletedCall: DG.FuncCall) => true,
   },
@@ -82,7 +92,10 @@ export const History = Vue.defineComponent({
         );
         historicalRuns.value.clear();
 
-        newHistoricalRuns.reduce((acc, run) => {
+        const visibleRuns = props.savedOnly ?
+          newHistoricalRuns.filter((run) => run.options[STEP_HISTORY_OPTION] === 'true') :
+          newHistoricalRuns;
+        visibleRuns.reduce((acc, run) => {
           acc.set(run.id, run);
           return acc;
         }, historicalRuns.value);
@@ -219,6 +232,7 @@ export const History = Vue.defineComponent({
       for (const call of selectedCalls)
         currentSelection.add(call);
       hasSelected.value = selectedCalls.length > 0;
+      emit('selectionChanged', selectedCalls);
     });
 
     const currentGrid = Vue.shallowRef<null | DG.Grid>(null);
@@ -400,7 +414,7 @@ export const History = Vue.defineComponent({
       const grid = <Viewer
         type='Grid'
         dataFrame={historicalRunsDf.value}
-        style={{height: '100%', width: '100%', minHeight: '300px'}}
+        style={{flex: '1', width: '100%', minHeight: '0px'}}
         onViewerChanged={(viewer) => handleGridRendering(viewer as DG.Grid | undefined)}
         options={{
           'showCurrentRowIndicator': true,
@@ -434,7 +448,7 @@ export const History = Vue.defineComponent({
             width: '100%',
             height: '100%',
           }}>
-            <div style={{display: 'flex', flexDirection: 'column', flex: '1'}}>
+            <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
               { controls }
               { grid }
             </div>

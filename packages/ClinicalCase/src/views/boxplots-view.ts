@@ -162,7 +162,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
           this.updateBoxPlots(this.viewerTitle, this.selectedSplitBy);
         })
         .show();
-    });
+    }, 'Settings');
 
     this.setRibbonPanels(
       [[blVisitChoices.root], [splitByChoices.root], [selectBiomarkers]],

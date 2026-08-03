@@ -1,0 +1,62 @@
+/**
+ * Public entry point for the NCA computation core.
+ *
+ * Re-exports the type contract and the implemented core functions.
+ * Concrete numerical functions are added incrementally by Phase 1 tasks.
+ */
+
+export * from './types';
+export {mulberry32, deriveWorkerSeeds} from './prng';
+export {applyBlqStrategy} from './blq';
+export {findCmax} from './cmax';
+export {lambdaZBestFit, lambdaZManual} from './lambda-z';
+export {estimateC0, insertC0, C0_DEFAULT_METHODS} from './c0';
+export type {C0Method, C0Options} from './c0';
+export {
+  halfLifeFromLambdaZ,
+  clearance,
+  volumeTerminal,
+  pctExtrapolated,
+  meanResidenceTime,
+  volumeSteadyState,
+  pctExtrapolatedAumc,
+  tlag,
+} from './derived';
+export {computeNca} from './compute-nca';
+export {
+  aucLinearNaive,
+  aucLogLinearNaive,
+  aucLinearUpLogDownNaive,
+  aucLinearCompensated,
+  aucLogLinearCompensated,
+  aucLinearUpLogDownCompensated,
+  aucExtrapolateToInfinity,
+  neumaierSum,
+} from './auc';
+export {
+  aumcLinearNaive,
+  aumcLogLinearNaive,
+  aumcLinearUpLogDownNaive,
+  aumcLinearCompensated,
+  aumcLogLinearCompensated,
+  aumcLinearUpLogDownCompensated,
+  aumcExtrapolateToInfinity,
+} from './aumc';
+export {sparseAuc, buildCompositeProfile} from './sparse';
+export type {
+  SparseInput,
+  SparseAucOptions,
+  SparseAucResult,
+  SparseWarning,
+  SparseWarningCode,
+  SamplingTopology,
+  CompositeTimepoint,
+  CompositeProfileResult,
+} from './sparse';
+export {
+  summarizeBootstrap,
+  DEFAULT_MIN_N_PER_TIMEPOINT,
+  DEFAULT_BOOTSTRAP_ITERATIONS,
+  BOOTSTRAP_DISTINCT_RESAMPLE_FLOOR,
+} from './bootstrap';
+export type {BootstrapOptions, BootstrapSummary} from './bootstrap';

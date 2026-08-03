@@ -1,8 +1,26 @@
 ---
 title: "Complex data types"
 sidebar_position: 3
-format: 'md'
+mdx:
+  format: mdx
+description: Work with dataframes, column selectors, files, blobs, and graphical outputs as script input/output parameters.
+keywords:
+  - dataframe input
+  - column selector
+  - column_list
+  - file io
+  - blob input
+  - graphics output
+  - matplotlib figure
+  - case-insensitive column names
 ---
+
+:::tip Looking for the type table?
+
+For the full correspondence between Datagrok types and their native equivalents in
+Python, R, Octave, Julia, and JavaScript, see [Data types](data-types.md).
+
+:::
 
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
@@ -45,7 +63,6 @@ populated default values, and created popups with help text.
 #name: DataframeIdDemo
 #description: Adding ID column to a dataframe
 #language: python
-#tags: demo, dataframe
 #input: dataframe table [Data table]
 #input: string id_column = 'ID' [Name of ID column]
 #input: string id_prefix = 'id_' [Prefix for ID column]
@@ -69,7 +86,6 @@ last_row = len(new_table)
 #name: DataframeDemo
 #description: Adding a new column to a dataframe
 #language: r
-#tags: demo, dataframe
 #input: dataframe table [Data table]
 #input: string id_column = 'ID' [Name of ID column]
 #input: string id_prefix = 'id_' [Prefix for ID column]
@@ -91,7 +107,6 @@ last_row <- nrow(new_table)
 //name: DataframeIdDemo
 //description: Adding ID column to a dataframe
 //language: javascript
-//tags: demo, dataframe
 //sample: cars.csv
 //input: dataframe table [Data table]
 //input: string id_column = 'model' [Name of ID column]
@@ -111,18 +126,6 @@ new_table.col(id_column).init((i) => `${id_prefix}${i}`);
 
 After running this script, Datagrok automatically opens the new dataframe.
 It will contain an additional column **ID** with the generated row ID.
-
-:::note
-
-Datagrok's dataframe converts to:
-
-* Pandas [dataframe](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) for Python,
-* Native [data frames](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/data.frame) for R,
-* [Cell arrays](https://docs.octave.org/v8.4.0/Cell-Arrays.html) for Octave
-* [DataFrame](https://dataframes.juliadata.org/stable/man/getting_started/#The-DataFrame-Type) for Julia
-* [DG.DataFrame](https://datagrok.ai/help/develop/advanced/data-frame) for JavaScript
-
-:::
 
 :::caution Case-insensitive column names
 
@@ -163,7 +166,6 @@ to choose a dataframe.
 #name: ColumnSelectorDemo
 #description: Using column selectors
 #language: python
-#tags: demo, dataframe, column_selector
 #input: dataframe table [Data table]
 #input: column id_column [Fill this column with auto-d=generated ID]
 #input: column_list data_columns [Keep this column and drop all others]
@@ -184,7 +186,6 @@ new_table = new_table[ [id_column] + data_columns ]
 //name: ColumnSelectorDemo
 //description: Using column selectors
 //language: javascript
-//tags: demo, dataframe, column_selector
 //input: dataframe table [Data table]
 //input: column id_column [Fill this column with auto-d=generated ID]
 //input: column_list data_columns [Keep this column and drop all others]
@@ -203,6 +204,7 @@ new_table.col('model').init((i) => `${id_column.get(i)}_${i}`);
 
 
 ##  File I/O
+
 You can use files as input or output parameters
 using `file` and `blob` annotations.
 
@@ -231,7 +233,6 @@ Datagrok creates an interface to load the file.
 #name: DfFromJSON
 #description: Loads a dataframe from JSON file
 #language: python
-#tags: template, demo, FileIo
 #input: file json_file {caption:JSON file} [A JSON file to load a dataframe]
 #output: dataframe df 
 
@@ -247,7 +248,6 @@ df = pd.read_json(json_file)
 //name: DfFromJSON
 //description: Loads a file and returns first sheet name
 //language: javascript
-//tags: template, demo, FileIo
 //input: file uploadedFile {caption:Excel file}
 //output: string first_sheet_name 
 
@@ -273,7 +273,6 @@ The `blob` input works in a very similar way but provides the binary stream inst
 #name: BlobTest
 #description: Example of Blob usage
 #language: python
-#tags: template, demo
 #input: blob array_blob 
 #output: string typeofblob
 
@@ -305,7 +304,6 @@ For example, let's save a dataframe to a JSON file:
 #name: DfToJSON
 #description: Saves a dataframe to JSON file
 #language: python
-#tags: template, demo, FileIo
 #input: dataframe df [Dataframe to convert to JSON]
 #output: file json_file
 

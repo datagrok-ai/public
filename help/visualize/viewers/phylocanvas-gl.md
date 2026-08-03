@@ -1,4 +1,12 @@
-# Phylocanvas.gl
+---
+title: "Phylocanvas.gl"
+description: A WebGL-based phylogenetic tree viewer that scales to hundreds of thousands of leaves, with multiple tree layouts.
+keywords:
+  - phylogenetic tree
+  - webgl tree viewer
+  - radial rectangular tree
+  - large-scale tree rendering
+---
 
 [_Phylocanvas.gl_](https://www.phylocanvas.gl/) is a WebGL-based viewer enhanced to scale to hundreds of thousands
 of leaves.

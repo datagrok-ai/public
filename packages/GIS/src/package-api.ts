@@ -25,29 +25,29 @@ export namespace funcs {
   }
 
   /**
-  GIS geocoding - receive coordinates for address
-  */
+   * GIS geocoding - receive coordinates for address
+   */
   export async function gisGeocoding(address: string ): Promise<string> {
     return await grok.functions.call('GIS:GisGeocoding', { address });
   }
 
   /**
-  GIS geocoding - receive address for coordinates
-  */
+   * GIS geocoding - receive address for coordinates
+   */
   export async function gisReverseGeocoding(x: number , y: number ): Promise<string> {
     return await grok.functions.call('GIS:GisReverseGeocoding', { x, y });
   }
 
   /**
-  GIS geocoding - receive coordinates from address
-  */
+   * GIS geocoding - receive coordinates from address
+   */
   export async function gisBatchGeocoding(address: string ): Promise<string> {
     return await grok.functions.call('GIS:GisBatchGeocoding', { address });
   }
 
   /**
-  GIS map viewer
-  */
+   * GIS map viewer
+   */
   export async function gisViewer(): Promise<any> {
     return await grok.functions.call('GIS:GisViewer', {});
   }
@@ -72,13 +72,17 @@ export namespace funcs {
     return await grok.functions.call('GIS:GisGeoJSONFileHandler', { filecontent });
   }
 
+  /**
+   * @param {string} gisArea
+   *   semType: gis-area
+   */
   export async function gisAreaWidget(gisArea: string ): Promise<any> {
     return await grok.functions.call('GIS:GisAreaWidget', { gisArea });
   }
 
   /**
-  Map viewer shows geospatial data on a map as either markers, or a heat map.
-  */
+   * Map viewer shows geospatial data on a map as either markers, or a heat map.
+   */
   export async function mapDemo(): Promise<void> {
     return await grok.functions.call('GIS:MapDemo', {});
   }

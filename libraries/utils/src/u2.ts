@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import './u2.css';
 
@@ -10,15 +11,14 @@ export namespace u2 {
   export namespace panels {
 
     /** Vertically positioned items */
-    export function vert(items: any[]): HTMLElement {
-      return ui.divV(items.map((item) => ui.render(item)), { classes: 'u2-panel'});
+    export function vert(items: any[], options?: DG.ElementOptions): HTMLElement {
+      return DG._options(ui.divV(items.map((item) => ui.render(item)), { classes: 'u2-panel'}), options);
     }
 
     /** Horizontally positioned items */
-    export function horz(items: any[]): HTMLElement {
-      return ui.divH(items.map((item) => ui.render(item)), { classes: 'u2-panel'});
+    export function horz(items: any[], options?: DG.ElementOptions): HTMLElement {
+      return DG._options(ui.divH(items.map((item) => ui.render(item)), { classes: 'u2-panel'}), options);
     }
-
   }
 
   export interface IAppInfo {
@@ -38,7 +38,7 @@ export namespace u2 {
       icon.style.width = `${header.iconSize}px`;
       icon.style.height = `${header.iconSize}px`;
     }
-    const appHeaderDiv = panels.horz([]);
+    const appHeaderDiv = panels.horz([], { classes: 'ui-app-header' });
     if (header.appTitle) {
       appHeaderDiv.classList.add('u2-app-header-with-name');
       const nameDiv = ui.divV([ui.divText(header.appTitle, 'u2-app-header-app-name-div')], 'u2-app-header-app-name-and-slogan-div');

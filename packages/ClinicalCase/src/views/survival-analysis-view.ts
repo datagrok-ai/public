@@ -128,7 +128,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
       [
         ui.icons.info(() => {
           updateDivInnerHTML(guide, ui.info(SURVIVAL_ANALYSIS_GUIDE, 'Survival Analysis Quick Guide', false));
-        }),
+        }, 'Info'),
       ],
     ]);
 

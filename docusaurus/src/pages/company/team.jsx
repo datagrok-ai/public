@@ -7,18 +7,18 @@ import Bootstrap from '/static/docusaurus_css/bootstrap.min.css';
 import SignupLogin from '/static/docusaurus_css/signup_login.css';
 import Datagrok from '/static/docusaurus_css/datagrok.css';
 
-import MainMenu from '@site/src/components/new/navbar.jsx';
+import MainMenu from '@site/src/components/default/menu.jsx';
 import TeamLayout from '@site/src/docs/team/default.mdx';
 import Banner from '@site/src/components/default/banner';
-import Footer from '@site/src/components/new/footer';
+import Footer from '@site/src/components/default/footer';
   
 export default function root() {
     return(
         <div>
-            <div className="new"><MainMenu name='Team'/></div>
+            <MainMenu name='Team'/>
             <TeamLayout/>
             <Banner/>
-            <div className="new"><Footer/></div>
+            <Footer/>
         </div>
     )
 }

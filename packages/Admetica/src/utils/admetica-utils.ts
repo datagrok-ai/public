@@ -67,7 +67,11 @@ export async function performChemicalPropertyPredictions(
   try {
     const existingColumns = viewTable.columns.names();
     progressIndicator.update(10, 'Predicting...');
-    await grok.functions.call('Admetica:getAdmeProperties', {table: viewTable, molecules: molColumn, props: models});
+    await DG.Func.find({package: 'Admetica', name: 'getAdmeProperties'})[0].prepare({
+      table: viewTable,
+      molecules: molColumn,
+      props: models,
+    }).call(undefined, undefined, {processed: false});
     progressIndicator.update(80, 'Results are ready');
 
     const newColumnNames = viewTable.columns.names().filter((name: string) => !existingColumns.includes(name));
@@ -431,7 +435,7 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 }
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  let { cell, units } = semValue;
+  let { cell } = semValue;
   cell ??= grok.shell.o.cell;
 
   if (!cell)
@@ -443,9 +447,8 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
-  const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
-  const col = DG.Column.fromStrings('molecules', [parsedValue]);
+  const col = DG.Column.fromStrings('molecules', [value]);
   const result = await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col, params);
   const pieSettings = createPieSettings(dataFrame, params, properties);
   pieSettings.sectors.values = result.toCsv()!;
@@ -464,12 +467,14 @@ export function createDynamicForm(
   const formState = generator.generateFormState();
   form.form.state = JSON.stringify(formState);
 
-  ui.onSizeChanged(form.root).subscribe(() => {
+  form.subs.push(ui.onSizeChanged(form.root).subscribe(() => {
+    if (!form.root.isConnected)
+      return;
     const containerWidth = form.root.clientWidth;
     if (!containerWidth) return;
     const updatedFormState = generator.generateFormState(containerWidth);
     form.form.state = JSON.stringify(updatedFormState);
-  });
+  }));
   return form;
 }
 

@@ -24,7 +24,7 @@ category('activityCliffs', async () => {
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
-  const helmEncodingFunc = DG.Func.find({name: 'helmPreprocessingFunction', package: 'Bio'})[0];
+  const helmEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
   before(async () => {
     helmHelper = await getHelmHelper(); // init Helm package
     monomerLibHelper = await getMonomerLibHelper();
@@ -46,7 +46,7 @@ category('activityCliffs', async () => {
     const _view = grok.shell.addTableView(df);
 
     await _testActivityCliffsOpen(_view, df, DimReductionMethods.UMAP,
-      'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
+      'HELM', 'Activity', 65, 311, MmDistanceFunctionsNames.HAMMING, helmEncodingFunc);
   });
 });
 

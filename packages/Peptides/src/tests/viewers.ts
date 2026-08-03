@@ -13,6 +13,9 @@ import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {TEST_COLUMN_NAMES} from './utils';
 import {showTooltip} from '../utils/tooltips';
 import {PeptideUtils} from '../peptideUtils';
+import {GEN_COLUMN_NAMES, PEPTIDE_GENERATION_PROPS, PEPTIDE_GENERATION_VIEWER_NAME,
+  PeptideGenerationViewer} from '../viewers/peptide-generation-viewer';
+import {ACTIVITY_TARGET} from '../utils/constants';
 
 // category('Viewers: Basic', () => {
 //   let df: DG.DataFrame;
@@ -195,3 +198,56 @@ category('Viewers: Logo Summary Table', () => {
     expect(tooltipElement !== null, true, `Tooltip is not shown for cluster '${cluster}'`);
   });
 }, {clear: false});
+
+category('Viewers: Peptide Generation', () => {
+  let df: DG.DataFrame;
+  let genViewer: PeptideGenerationViewer;
+
+  before(async () => {
+    await PeptideUtils.loadComponents();
+    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    const sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    genViewer = await df.plot.fromType(PEPTIDE_GENERATION_VIEWER_NAME, {
+      [PEPTIDE_GENERATION_PROPS.SEQUENCE]: TEST_COLUMN_NAMES.SEQUENCE,
+      [PEPTIDE_GENERATION_PROPS.ACTIVITY]: TEST_COLUMN_NAMES.ACTIVITY,
+    }) as PeptideGenerationViewer;
+    await delay(500);
+  });
+
+  after(async () => await delay(1000));
+
+  test('Generates peptides', async () => {
+    const peptideCount = 10;
+    genViewer.getProperty(PEPTIDE_GENERATION_PROPS.PEPTIDE_COUNT)!.set(genViewer, peptideCount);
+    genViewer.getProperty(PEPTIDE_GENERATION_PROPS.EXCLUDE_EXISTING)!.set(genViewer, false);
+    const resultDf = genViewer.generatePeptides();
+    expect(resultDf.rowCount > 0, true, 'Peptide Generation produced no peptides');
+    expect(resultDf.rowCount <= peptideCount, true,
+      `Peptide Generation produced more than the requested ${peptideCount} peptides`);
+    for (const colName of Object.values(GEN_COLUMN_NAMES)) {
+      expect(resultDf.col(colName) !== null, true,
+        `Generated dataframe is missing the '${colName}' column`);
+    }
+    expect(resultDf.getCol(GEN_COLUMN_NAMES.PEPTIDE).semType, DG.SEMTYPE.MACROMOLECULE,
+      'Generated peptide column is not a Macromolecule');
+    // Per-position basis columns are appended after the fixed statistics columns.
+    expect(resultDf.columns.length > Object.values(GEN_COLUMN_NAMES).length, true,
+      'Generated dataframe is missing the per-position basis columns');
+  });
+
+  test('Respects High/Low target', async () => {
+    genViewer.getProperty(PEPTIDE_GENERATION_PROPS.EXCLUDE_EXISTING)!.set(genViewer, false);
+    genViewer.getProperty(PEPTIDE_GENERATION_PROPS.ACTIVITY_TARGET)!.set(genViewer, ACTIVITY_TARGET.HIGH);
+    const highDf = genViewer.generatePeptides();
+    const highMax = highDf.getCol(GEN_COLUMN_NAMES.PREDICTED).stats.max;
+
+    genViewer.getProperty(PEPTIDE_GENERATION_PROPS.ACTIVITY_TARGET)!.set(genViewer, ACTIVITY_TARGET.LOW);
+    const lowDf = genViewer.generatePeptides();
+    const lowMin = lowDf.getCol(GEN_COLUMN_NAMES.PREDICTED).stats.min;
+
+    expect(highMax >= lowMin, true,
+      'High-target peptides should reach at least as high a predicted activity as the Low-target minimum');
+  });
+});

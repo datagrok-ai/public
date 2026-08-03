@@ -20,6 +20,10 @@ npm run link-all           # Link local datagrok-api and @datagrok-libraries/*
 
 Publishing: `grok publish` (debug) or `grok publish --release` (public).
 
+**Never put `src` in `.npmignore`.** `grok publish` uses `ignore-walk` on `.npmignore`/`.gitignore`/`.grokignore`, and Datagrok reads `//name:` / `//top-menu:` / `//meta.*` metadata from `src/package*.ts`, not from the minified bundle. Ignoring `src/` publishes successfully but registers zero functions. The publish tool already filters `src/` down to just `src/package*.ts` when webpack is detected, so letting it through is safe.
+
+**Never put `webpack.config.js` in `.npmignore`.** The server detects webpack packages by checking whether `webpack.config.js` exists in the published package dir. Without it, `isWebpack` stays `false` and the client loads `.../package.js` instead of `.../dist/package.js` — a 404 whose `text/plain` body the browser then refuses to execute as a script. Functions register but the bundle never loads.
+
 ## Package Structure
 
 ```

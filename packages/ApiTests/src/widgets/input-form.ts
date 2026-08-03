@@ -290,7 +290,7 @@ category('Widgets: InputForm w/ custom input', () => {
   let newFuncCall: DG.FuncCall;
   let form: DG.InputForm;
 
-  
+
   function updateInputs(): void {
     inputs = {
       'stringInput': form.getInput('stringInput') ?? null,
@@ -301,12 +301,12 @@ category('Widgets: InputForm w/ custom input', () => {
       'tableInput': form.getInput('tableInput') ?? null,
     };
   }
-  
+
   before(async () => {
     funcCall = (await grok.functions.eval('ApiTests:InputFormTest')).prepare();
 
     form = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true});
-    
+
     inputs = {
       'stringInput': form.getInput('stringInput') ?? null,
       'intInput': form.getInput('intInput') ?? null,
@@ -397,3 +397,37 @@ category('Widgets: InputForm w/ custom input', () => {
 function expectNullOrUndefined(value: any): void {
   expect(value === null || value === undefined, true);
 }
+
+
+category('Widgets: InputForm validation and events', () => {
+  let form: DG.InputForm;
+
+  before(async () => {
+    const fc = (await grok.functions.eval('ApiTests:InputFormValidationTest')).prepare();
+    form = await DG.InputForm.forFuncCall(fc, {twoWayBinding: true});
+  });
+
+  test('validateInputs returns true for in-range values', async () => {
+    form.getInput('boundedInt').value = 5;
+    form.getInput('boundedDouble').value = 0.5;
+    form.getInput('requiredText').value = 'ok';
+    expect(form.validateInputs(), true);
+    expect(form.isValid, true);
+  });
+
+  test('validateInputs returns false for out-of-range int', async () => {
+    form.getInput('boundedInt').value = 999;
+    form.getInput('boundedDouble').value = 0.5;
+    form.getInput('requiredText').value = 'ok';
+    expect(form.validateInputs(), false);
+    expect(form.isValid, false);
+  });
+
+  test('validateInputs fires onValidationCompleted', async () => {
+    let fired = 0;
+    const sub = form.onValidationCompleted.pipe(take(1)).subscribe(() => fired++);
+    form.validateInputs();
+    expect(fired, 1);
+    sub.unsubscribe();
+  });
+}, {owner: 'dkovalyov@datagrok.ai'});

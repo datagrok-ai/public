@@ -118,20 +118,19 @@ export enum COLOR {
 
 /** Intro markdown for demo app */
 export const DEMO_INTRO_MD = `# Data
-Each car has many features - patterns extraction is complicated.
+Cars have many correlated features, which makes pattern extraction difficult.
 
 # Model
-Predict car price by its other features.
+Predict a car's price from its other features.
 
-# Try
-Press 'RUN' to perform multivariate analysis using partial least squares
-([PLS](https://en.wikipedia.org/wiki/Partial_least_squares_regression)) regression.
+# Approach
+[**Partial Least Squares (PLS)**](https://en.wikipedia.org/wiki/Partial_least_squares_regression)
+regression projects features onto latent factors that best explain the response.
 
 # Essence
-The method finds the latent factors that
-
-* capture the maximum variance in the features
-* maximize correlation with the response variable`;
+PLS finds latent factors that simultaneously:
+* capture maximum variance in the features
+* maximize correlation with the response`;
 
 /** Description of demo results: wizard components */
 export const DEMO_RESULTS = [
@@ -157,9 +156,3 @@ export const DEMO_RESULTS = [
   },
 ];
 
-/** Form results markdown for demo app */
-export const DEMO_RESULTS_MD = DEMO_RESULTS.map((item) => `# ${item.caption}\n\n${item.text}`)
-  .join('\n\n') + `\n\n# Learn more
-  
-  * [Multivariate analysis](${LINK.MVA}),
-  * [ANOVA](https://datagrok.ai/help/explore/anova)`;

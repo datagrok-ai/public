@@ -213,7 +213,7 @@ export function addExpandIcon(grid: DG.Grid): void {
     pairsFullscreenDialog.add(fullscreenGrid.root);
     pairsFullscreenDialog.showModal(true);
     fullscreenGrid.invalidate();
-  });
+  }, 'Full screen');
   grid.root.appendChild(fullscreenIcon);
   fullscreenIcon.style.position = 'absolute';
   fullscreenIcon.style.right = '0px';
@@ -252,7 +252,7 @@ export function addExpandIconsToGridPair(grids: DG.Grid[], name: string, onClose
       });
       //fullscreenGrid.invalidate();
       fullscreenGrids.forEach((g) => g.invalidate());
-    });
+    }, 'Full screen');
     grid.root.appendChild(fullscreenIcon);
     fullscreenIcon.style.position = 'absolute';
     fullscreenIcon.style.right = '0px';

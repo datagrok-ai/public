@@ -9,8 +9,9 @@ import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies} from '../../utils';
+import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies, hasAnyInconsistency} from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
@@ -81,9 +82,49 @@ const statesToStatus = (
   return 'next';
 };
 
-const getToolTip = (status: Status, isReadonly: boolean) => {
-  if (!isReadonly || status !== 'next') return statusToTooltip[status];
-  return 'This step is locked';
+const listContributingIos = (
+  status: Status,
+  validationStates?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
+): string[] => {
+  const result = new Set<string>();
+  const valEntries = Object.entries(validationStates ?? {});
+  const consEntries = Object.entries(consistencyStates ?? {});
+  const addIf = (name: string, cond: boolean) => { if (cond) result.add(name); };
+  if (status === 'next error')
+    valEntries.forEach(([n, v]) => addIf(n, !!v.errors?.length));
+  else if (status === 'next warn') {
+    valEntries.forEach(([n, v]) => addIf(n, !!v.warnings?.length));
+    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
+  } else if (status === 'succeeded warn') {
+    valEntries.forEach(([n, v]) => addIf(n, !!(v.warnings?.length || v.errors?.length)));
+    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
+  } else if (status === 'succeeded info')
+    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent && c.restriction === 'info'));
+  else if (status === 'succeeded inconsistent')
+    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
+  return [...result];
+};
+
+const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): string => {
+  const prop =
+    funcCall?.func?.inputs?.find((p: DG.Property) => p.name === ioName) ??
+    funcCall?.func?.outputs?.find((p: DG.Property) => p.name === ioName);
+  return prop?.friendlyName ?? prop?.caption ?? ioName;
+};
+
+const getToolTip = (
+  status: Status,
+  isReadonly: boolean,
+  funcCall?: DG.FuncCall,
+  validationStates?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
+): string | undefined => {
+  if (isReadonly && status === 'next') return 'This step is locked';
+  const base = statusToTooltip[status];
+  const ios = listContributingIos(status, validationStates, consistencyStates);
+  if (!ios.length) return base;
+  return `${base}: ${ios.map((io) => friendlyIoName(funcCall, io)).join(', ')}`;
 };
 
 const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
@@ -114,6 +155,9 @@ export const TreeNode = Vue.defineComponent({
     },
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
+    },
+    pipelineValidationState: {
+      type: Object as Vue.PropType<ValidationResult>,
     },
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
@@ -160,10 +204,12 @@ export const TreeNode = Vue.defineComponent({
     const isRoot = Vue.computed(() => !props.stat.parent);
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
+      const data: any = props.stat.data;
+      const funcCall: DG.FuncCall | undefined = isFuncCallState(data) ? data.funcCall : undefined;
       return <IconFA
         name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
-        tooltip={getToolTip(status, isReadOnly) ?? null}
+        tooltip={getToolTip(status, isReadOnly, funcCall, props.validationStates, props.consistencyStates) ?? null}
         style={{
           color: statusToColor[status],
           alignSelf: 'center',
@@ -202,19 +248,26 @@ export const TreeNode = Vue.defineComponent({
 
     const pipelineValidation = Vue.computed(() => {
       if (!isFuncCallState(props.stat.data))
-        return Vue.markRaw({validation: props.stat.data.structureCheckResults});
+        return Vue.markRaw({validation: props.pipelineValidationState});
     });
 
     return () => (
       <div
         style={{
           display: 'flex',
+          flexDirection: 'column',
           width: '100%',
-          height: '30px',
-          alignItems: 'center',
           borderBottom: '1px solid var(--steel-2)',
         }}
         ref={treeNodeRef}
+      >
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          minHeight: '30px',
+          alignItems: 'center',
+        }}
       >
         { status.value && progressIcon(status.value, props.isReadonly) }
         { checkIcon() }
@@ -239,8 +292,8 @@ export const TreeNode = Vue.defineComponent({
                 caption={ui.iconFA('plus')}
                 rightAligned
                 items={props.stat.data.stepTypes
-                  .filter((stepType) => !stepType.disableUIAdding)
-                  .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)
+                  .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
+                  .map((stepType: StepDynamicDescription) => stepType.friendlyName || stepType.nqName || stepType.configId)
                 }
                 onSelected={({itemIdx}) => {
                   const data = props.stat.data as PipelineWithAdd;
@@ -276,7 +329,7 @@ export const TreeNode = Vue.defineComponent({
             /> }
             {
               isRunnable.value && !props.isReadonly &&
-                hasInconsistencies(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
+                hasAnyInconsistency(props.consistencyStates) && !(props.callState?.pendingDependencies?.length) &&
                 <IconFA
                   name='sync'
                   tooltip={'Update this step with consistent values'}
@@ -298,6 +351,7 @@ export const TreeNode = Vue.defineComponent({
               />
             }
           </div> }
+      </div>
       </div>
     );
   },

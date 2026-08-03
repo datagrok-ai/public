@@ -1,5 +1,15 @@
 # Chemspace changelog
 
+## v.next
+
+* `shipToCountry` is now a choice list of country names (`getShipToCountries`) converted to ISO-2 on entry, instead of a free-text field that silently needed a two-letter code
+
+* App: Surfaced search errors instead of silently showing an empty table, and guarded against stale responses from rapid input changes
+* Prices panel: Fixed caching — country switches now reuse rendered results instead of refetching
+* Get Chemspace Prices: Offers with missing USD pricing now fall through to the next offer instead of being stored as undefined
+* queryMultipart: URL-encoded query params (raw joining broke on spaces and commas)
+* queryMultipart: Rewrote retry loop — a successful 401 refresh no longer throws, and refreshed tokens are actually used on retry
+
 ## 1.2.3 (2025-05-06)
 
 Fixed token request

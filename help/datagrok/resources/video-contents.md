@@ -1,6 +1,16 @@
 ---
 title: "Videos. Interesting topics"
 sidebar position: 5
+description: Indexes Datagrok videos by topic, including demos, getting started, JavaScript API, data access, visualizations, and predictive modeling.
+keywords:
+  - video index
+  - user group meetings
+  - javascript api tutorial video
+  - predictive modeling video
+  - dsp with wasm
+  - clinicalcase demo
+  - table comparer
+  - dynamic dashboards video
 ---
 
 

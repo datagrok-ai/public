@@ -8,6 +8,7 @@ import {Observable} from "rxjs";
 import {__obs} from "../events";
 import {IDartApi} from "../api/grok_api.g";
 import {DartWidget} from "./base";
+import {ITabControlOptions} from "./types";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -124,9 +125,14 @@ export class TabControl extends DartWidget {
     this.dart = dart;
   }
 
-  /** Creates a new TabControl */
-  static create(vertical: boolean = false): TabControl {
-    return toJs(api.grok_TabControl(vertical));
+  /** Creates a new TabControl.
+   * When [options.key] is provided, the currently selected pane is persisted across sessions
+   * in localStorage. Without a key, state is not remembered.
+   * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
+   * @param key - deprecated, use `options.key` instead. */
+  static create(options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
+    const o: ITabControlOptions = typeof options === 'boolean' ? {vertical: options} : (options ?? {});
+    return toJs(api.grok_TabControl(o.vertical ?? false, o.key ?? key));
   }
 
   /** Visual root */

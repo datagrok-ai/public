@@ -5,6 +5,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 
@@ -12,10 +13,7 @@ category('ComputeUtils: Driver steps dependencies tracking', async () => {
   let testScheduler: TestScheduler;
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   const config1: PipelineConfiguration = {

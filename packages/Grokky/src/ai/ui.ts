@@ -3,15 +3,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
+
 import {CombinedAISearchAssistant} from './search/combined-search';
-import {fireAIAbortEvent, fireAIPanelToggleEvent, getAIAbortSubscription,
-  fireBeforeUserPromptEvent, fireAfterUserPromptEvent, UserPromptEventArgs} from '../utils';
-import {BuiltinDBInfoMeta} from '../db/query-meta-utils';
-import {DBAIPanel, ScriptingAIPanel, ShellAIPanel, StreamingPanel, TVAIPanel} from './panel';
-import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {executeDatagrokBlocks} from '../claude/exec-blocks';
+import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
+  copyToClipboard} from '../utils';
+import {AIPanel, StreamingPanel} from './panel';
+import {AIWindowManager} from './ai-window';
+import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent, AuthUrlEvent, AuthErrorEvent} from '../claude/runtime-client';
+import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {UsageLimiter} from './usage-limiter';
-import {SQLGenerationContext} from '../db/sql-tools';
+import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
+import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {_package} from '../package';
 
 interface ExecutionPlan {
   plan: string[];
@@ -24,7 +29,7 @@ const executionPlanSchema = {
     plan: {
       type: 'array',
       items: {type: 'string'},
-      description: 'Numbered list of steps to achieve the goal',
+      description: 'Steps to achieve the goal. Each item is a single step, plain text, without any leading number, bullet, or punctuation prefix.',
     },
     code: {
       type: 'string',
@@ -35,39 +40,128 @@ const executionPlanSchema = {
   additionalProperties: false,
 } as const;
 
-export async function smartExecution(prompt: string): Promise<DG.Widget> {
-  const waitDiv = ui.wait(async () => {
-    try {
-      const result: ExecutionPlan = await ClaudeRuntimeClient.getInstance().query(prompt, {outputSchema: executionPlanSchema});
-      const container = ui.divV([]);
-      container.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+const MAX_ACTIVITY_LINES = 5;
 
-      if (result.code) {
-        const wrappedCode = '```datagrok-exec\n' + result.code + '\n```';
-        const execResults = await executeDatagrokBlocks(wrappedCode, grok.shell.v);
-        for (const el of execResults)
-          container.appendChild(el);
-      }
-
-      return container;
-    } catch (error: any) {
-      console.error('Error during AI execution:', error);
-      return ui.divText(`Error during AI execution: ${error.message}`);
-    }
-  });
-  return DG.Widget.fromRoot(waitDiv);
+interface StreamingOpts {
+  sessionPrefix?: string;
+  sessionId?: string;
+  outputSchema?: object;
+  onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
 }
 
-export async function askWiki(question: string) {
-  try {
-    const res = await ClaudeRuntimeClient.getInstance().query(question);
-    const markdown = ui.markdown(res);
-    markdown.style.userSelect = 'text';
-    return DG.Widget.fromRoot(markdown);
-  } catch (error: any) {
-    console.error('Error during AI help:', error);
-    return DG.Widget.fromRoot(ui.divText(`Error during AI help: ${error.message}`));
-  }
+
+export const RENDERED_EVENT = 'grokky-rendered';
+
+async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
+  const client = ClaudeRuntimeClient.getInstance();
+  await client.ensureConnected();
+  const sessionId = opts.sessionId ?? `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+
+  const activityHost = ui.divV([], 'grokky-stream-activity');
+  const contentHost = ui.div([], 'grokky-stream-content');
+  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+
+  let onFirstEvent: () => void = () => {};
+  const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
+
+  const widget = DG.Widget.fromRoot(ui.wait(async () => {
+    await firstEvent;
+    return container;
+  }));
+
+  const signalRendered = () => grok.events.fireCustomEvent(RENDERED_EVENT, sessionId);
+
+  const sessionSubs: rxjs.Subscription[] = [];
+  const forSession = <T extends {sessionId: string}>(
+    src: rxjs.Observable<T>, handler: (evt: T) => void,
+  ) => {
+    const sub = src.subscribe((evt) => {
+      if (evt.sessionId === sessionId)
+        handler(evt);
+    });
+    widget.subs.push(sub);
+    sessionSubs.push(sub);
+  };
+  const stopListening = () => sessionSubs.forEach((s) => s.unsubscribe());
+
+  forSession<ToolActivityEvent>(client.onToolActivity, (evt) => {
+    activityHost.appendChild(ui.divText(evt.summary, 'grokky-stream-activity-line'));
+    while (activityHost.children.length > MAX_ACTIVITY_LINES)
+      activityHost.removeChild(activityHost.firstChild!);
+    onFirstEvent();
+  });
+
+  forSession<FinalEvent>(client.onFinal, async (evt) => {
+    activityHost.remove();
+    onFirstEvent();
+    try {
+      await opts.onFinal(evt, contentHost);
+    } finally {
+      signalRendered();
+      stopListening();
+    }
+  });
+
+  forSession<ErrorEvent>(client.onError, (evt) => {
+    activityHost.remove();
+    contentHost.appendChild(ui.info(`Error: ${evt.message}`));
+    onFirstEvent();
+    signalRendered();
+    stopListening();
+  });
+
+  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
+  return widget;
+}
+
+export async function smartExecution(prompt: string, sessionId?: string): Promise<DG.Widget> {
+  return streamingWidget(prompt, {
+    sessionId,
+    sessionPrefix: 'execute',
+    outputSchema: executionPlanSchema,
+    onFinal: async (evt, host) => {
+      const result = evt.structured_output as ExecutionPlan | undefined;
+      if (!result) {
+        host.appendChild(ui.divText(evt.content || 'No plan returned.'));
+        return;
+      }
+
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      if (!result.code)
+        return;
+
+      const codeAcc = ui.accordion();
+      const fencedCode = '```datagrok-exec\n' + result.code + '\n```';
+      codeAcc.addPane('Code', () => createStyledMarkdown(fencedCode), false);
+      host.appendChild(codeAcc.root);
+
+      let resolveExec: () => void = () => {};
+      const execDone = new Promise<void>((res) => { resolveExec = res; });
+      host.appendChild(ui.wait(async () => {
+        try {
+          const {element, error} = await executeSingleBlock(result.code, grok.shell.v, 0);
+          if (error)
+            return ui.info(`Execution error: ${error.error}`);
+          return element ?? ui.divText('');
+        } finally {
+          resolveExec();
+        }
+      }));
+      await execDone;
+    },
+  });
+}
+
+export async function askWiki(question: string, sessionId?: string): Promise<DG.Widget> {
+  return streamingWidget(question, {
+    sessionId,
+    sessionPrefix: 'help',
+    onFinal: (evt, host) => {
+      const md = ui.markdown(evt.content || '');
+      md.style.userSelect = 'text';
+      host.appendChild(md);
+    },
+  });
 }
 
 // sets up the ui button for the input
@@ -82,41 +176,39 @@ export function setupSearchUI() {
     const searchBoxContainer = document.getElementsByClassName('power-pack-welcome-view')[0];
     if (!searchBoxContainer)
       return null;
-    const searchInput = Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
-    return searchInput;
+    return Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
   }
 
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
-    const aiIcon = ui.iconFA('magic', () => { aiCombinedSearch(searchInput.value); }, 'Ask AI');
-    aiIcon.style.cursor = 'pointer';
-    aiIcon.style.color = 'var(--blue-1)';
-    aiIcon.style.marginLeft = '4px';
-    aiIcon.style.marginRight = '4px';
-    parent.appendChild(aiIcon);
+    const wandIcon = ui.iconFA('magic', async (e) => {
+      const scopes = await resolveScopes('powerSearch');
+      showSuggestionsMenu(scopes, (s) => {
+        const prompt = s.prompt ?? '';
+        searchInput.value = prompt;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+        // PowerPack's input handler debounces 500ms and then calls ui.empty(host) on power-pack-search-host;
+        // wait past that so the AI loader/result isn't wiped immediately after we prepend it.
+        setTimeout(() => aiCombinedSearch(prompt), 600);
+      }, e);
+    }, 'Prompt suggestions');
+    wandIcon.classList.add('grokky-search-wand');
+    parent.insertBefore(wandIcon, searchInput);
 
-    const onSearchChanged = () => {
-      if (!searchInput.value?.trim())
-        aiIcon.style.display = 'none';
-      else
-        aiIcon.style.display = 'flex';
-    };
-    searchInput.addEventListener('input', onSearchChanged);
-    // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
-    if (searchHelpDiv)
+    if (searchHelpDiv) {
       searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
+      searchHelpDiv.style.display = 'none';
+    }
 
     searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && searchInput.value?.trim()) {
+      if (isEnterKey(event) && searchInput.value?.trim()) {
         event.preventDefault();
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
       if (searchHelpDiv)
-        searchHelpDiv.style.visibility = searchInput.value?.trim().split(' ').length > 1 ? 'visible' : 'hidden';
+        searchHelpDiv.style.display = searchInput.value?.trim().split(' ').length > 1 ? '' : 'none';
     });
-
-    onSearchChanged();
   }
 
   const retries = 0;
@@ -132,186 +224,403 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-async function aiCombinedSearch(prompt: string) {
+export async function aiCombinedSearch(prompt: string) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
   await CombinedAISearchAssistant.instance.searchUI(prompt);
 }
 
-export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
+// Called by the core query editor to decide whether to show its AI toggle icon.
+// The query view needs no dedicated panel anymore: its functions (getQueryInfo,
+// setQueryAndRun + the meta.viewType-registered SQL schema functions) are reached
+// by the singleton panel through the view-function meta-tools.
+export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: string, _queryEditorRoot: HTMLElement, _setAndRunFunc: (query: string) => void): Promise<boolean> {
   if (!grok.ai.config.configured)
     return false;
-  const connection = await grok.dapi.connections.find(connectionID);
-  if (!connection) {
-    grok.shell.error(`Connection with ID ${connectionID} not found.`);
-    return false;
-  }
-
-  const allDbInfos = await BuiltinDBInfoMeta.allFromConnection(connection);
-  const catalogs = allDbInfos.map((d) => d.name);
-  const defaultCatalog = connection.parameters?.['catalog'] ?? connection.parameters?.['db'] ?? catalogs[0] ?? '';
-
-  const panel = new DBAIPanel(catalogs, defaultCatalog, connectionID, v, setAndRunFunc);
-  panel.show();
-
-  let sqlContext: SQLGenerationContext | null = null;
-
-  panel.onRunRequest.subscribe(async (args) => {
-    if (!sqlContext)
-      sqlContext = await SQLGenerationContext.create(connectionID, args.currentPrompt.catalogName);
-    await runPromptWithLifecycle(panel, args.currentPrompt.prompt, v, 'db-query', (toolName, input) => sqlContext!.handleToolCall(toolName, input));
-  });
+  initAIWindow();
   return true;
 }
 
-async function runPromptWithLifecycle(
+export async function runPromptWithLifecycle(
   panel: StreamingPanel,
   prompt: string,
   view: DG.ViewBase,
   quotaCategory: string,
-  clientToolHandler?: (toolName: string, input: any) => Promise<string>,
+  displayPrompt?: string,
 ): Promise<void> {
-  if (prompt.startsWith('!!')) {
+  if (prompt.startsWith('!!'))
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
-  } else if (prompt.startsWith('!')) {
+  else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
     if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
       return;
-    await runClaudeStreaming(panel, command, view, clientToolHandler, 'bash');
+    await runClaudeStreaming(panel, command, view, 'bash');
     return;
   }
+  let session: ReturnType<StreamingPanel['startChatSession']> | undefined;
   if (!panel.rawRender) {
     const args: UserPromptEventArgs = {prompt, context: view, handled: false};
     fireBeforeUserPromptEvent(args);
     if (args.handled)
       return;
-    if (await grok.ai.processPrompt(prompt))
+
+    // Echo the user message before routing so it never disappears, even when
+    // grok.ai.processPrompt's built-in handler claims the prompt.
+    session = panel.startChatSession();
+    if (displayPrompt) {
+      session.session.addEngineMessage({role: 'user', content: [{type: 'text', text: prompt}]});
+      session.session.addUiMessage(displayPrompt, false, {system: true});
+    } else
+      session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
+
+    if (await grok.ai.processPrompt(prompt)) {
+      // Built-in handler claimed the prompt — no AI response, just a green check next to it.
+      session.session.markHandledNatively();
+      session.endSession();
+      panel.pushNativeContext(prompt);
       return;
+    }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt))
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+    session?.endSession();
     return;
-  await runClaudeStreaming(panel, prompt, view, clientToolHandler);
+  }
+  await runClaudeStreaming(panel, prompt, view, undefined, session);
   if (!panel.rawRender)
     fireAfterUserPromptEvent({prompt, context: view, handled: false});
 }
 
-async function runClaudeStreaming(panel: StreamingPanel, userPrompt: string, view: DG.ViewBase, clientToolHandler?: (toolName: string, input: any) => Promise<string>, systemPromptMode?: string) {
-  const chatSession = panel.startChatSession();
-  const sessionId = panel.sessionId;
-  let accumulated = '';
-  let toolStatus = '';
-  const subs: {unsubscribe: () => void}[] = [];
-  const cleanup = () => subs.forEach((s) => s.unsubscribe());
+function buildAuthRenewalWidget(client: ClaudeRuntimeClient): HTMLElement {
+  const errorDiv = ui.divText('', 'grokky-auth-error');
 
-  const forSession = <T extends {sessionId: string}>(
-    source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
-    handler: (evt: T) => void,
-  ) => subs.push(source.subscribe((evt) => {
-      if (evt.sessionId === sessionId)
-        handler(evt);
-    }));
+  const submitBtn = ui.button('Submit', () => submitCode()) as HTMLButtonElement;
+  submitBtn.disabled = true;
 
-  const endWithError = (msg: string) => {
-    panel.clearStreaming();
-    grok.shell.error(msg);
-    chatSession.endSession();
-    cleanup();
-  };
+  const codeInput = ui.input.string('Authorization code', {
+    placeholder: 'Paste code here',
+    onValueChanged: () => {
+      submitBtn.disabled = !codeInput.value?.trim();
+      errorDiv.classList.add('grokky-auth-error');
+    },
+  });
 
-  try {
-    const client = ClaudeRuntimeClient.getInstance();
-    const prompt = panel.rawRender ? userPrompt : panel.prependViewContext(userPrompt, view);
+  const subs: rxjs.Subscription[] = [];
+  const cleanupSubs = () => subs.forEach((s) => s.unsubscribe());
 
-    await client.ensureConnected();
-
-    chatSession.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
-
-    forSession(client.onChunk, (evt) => {
-      accumulated += evt.content;
-      toolStatus = '';
-      panel.updateStreaming(accumulated, chatSession.loader);
+  const openLink = ui.link('Open authorization page', () => {
+    if (openLink.getAttribute('href'))
+      return;
+    const sub = client.onAuthUrl.subscribe((evt) => {
+      openLink.setAttribute('href', evt.url);
+      openLink.setAttribute('target', '_blank');
+      window.open(evt.url, '_blank');
+      sub.unsubscribe();
     });
+    subs.push(sub);
+    client.startAuth();
+  });
 
-    forSession(client.onToolActivity, (evt) => {
-      toolStatus = `\n\n---\n**${evt.summary}**`;
-      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
-    });
+  const pendingStrip = ui.divV([
+    ui.divText('Session expired'),
+    ui.divText('Open the auth page and paste the code below'),
+  ], 'grokky-auth-strip-pending');
 
-    forSession(client.onToolResult, (evt) => {
-      toolStatus = `\n\n---\n\`\`\`\n${evt.content}\n\`\`\``;
-      panel.updateStreaming(accumulated + toolStatus, chatSession.loader);
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-result] ${evt.content}`}]});
-    });
+  const successStrip = ui.divV([
+    ui.divText('Session renewed'),
+    ui.divText('Re-send your message to continue'),
+  ], 'grokky-auth-strip-success');
+  successStrip.style.display = 'none';
 
-    forSession(client.onFinal, (evt) => {
-      panel.cancelInputRequest();
-      chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: evt.content}]});
-      panel.finalizeStreaming(evt.content, view);
-      chatSession.endSession();
-      cleanup();
-    });
+  const pendingBody = ui.divV([openLink, codeInput.root, errorDiv, submitBtn], 'grokky-auth-body');
 
-    forSession(client.onError, (evt) => {
-      panel.cancelInputRequest();
-      endWithError(`Claude: ${evt.message}`);
-    });
+  const widget = ui.div([pendingStrip, pendingBody, successStrip], 'grokky-auth-widget');
 
-    forSession(client.onAborted, () => {
-      panel.cancelInputRequest();
-      panel.clearStreaming();
-      chatSession.session.addUiMessage('**Processing aborted by user**', false);
-      chatSession.endSession();
-      cleanup();
-    });
-
-    forSession(client.onInputRequest, async (evt) => {
-      // Dispatch client-side DB tool calls (arrive as mcp__datagrok__<name>)
-      const mcpToolName = evt.toolName.replace(/^mcp__datagrok__/, '');
-      if (clientToolHandler && mcpToolName !== evt.toolName) {
-        try {
-          const result = await clientToolHandler(mcpToolName, evt.input);
-          client.respondToInput(sessionId, result);
-        } catch (e: any) {
-          client.respondToInput(sessionId, `Error: ${e.message}`);
-        }
+  subs.push(
+    client.onAuthDone.subscribe(() => {
+      if (!widget.isConnected) {
+        cleanupSubs();
         return;
       }
-      // Default: AskUserQuestion
-      accumulated = '';
-      toolStatus = '';
-      panel.clearStreaming();
-      const response = await panel.showInputRequest(evt.input);
-      if (response) {
-        client.respondToInput(sessionId, response);
-        const answerText = Object.values(response.answers).join(', ');
-        chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+      pendingStrip.remove();
+      pendingBody.remove();
+      successStrip.style.display = '';
+      cleanupSubs();
+    }),
+    client.onAuthError.subscribe((evt) => {
+      if (!widget.isConnected) {
+        cleanupSubs();
+        return;
       }
-    });
+      errorDiv.textContent = evt.message;
+      errorDiv.classList.remove('grokky-auth-error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit';
+      codeInput.input.focus();
+    }),
+  );
 
-    subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+  function submitCode(): void {
+    const code = codeInput.value?.trim();
+    if (!code)
+      return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying…';
+    client.sendAuthCode(code);
+  }
 
-    subs.push(getAIAbortSubscription().subscribe(() => {
-      client.abort(sessionId);
-    }));
+  return widget;
+}
 
-    const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
-    client.send(sessionId, prompt, resolvedMode ? {systemPromptMode: resolvedMode} : undefined);
-  } catch (e: any) {
-    panel.clearStreaming();
-    grok.shell.error(`Claude runtime: ${e.message}`);
-    console.error('Claude runtime error:', e);
-    chatSession.endSession();
-    cleanup();
+async function runClaudeStreaming(
+  panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
+  systemPromptMode?: string,
+  existingSession?: ReturnType<StreamingPanel['startChatSession']>,
+): Promise<void> {
+  const session = existingSession ?? panel.startChatSession();
+  if (!existingSession)
+    session.session.addUserMessage({role: 'user', content: [{type: 'text', text: userPrompt}]}, userPrompt);
+  try {
+    await streamOnce(panel, userPrompt, view, systemPromptMode, session);
+  } finally {
+    session.endSession();
   }
 }
 
-let _shellAIPanel: ShellAIPanel | null = null;
+async function streamOnce(
+  panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
+  systemPromptMode: string | undefined,
+  chatSession: ReturnType<StreamingPanel['startChatSession']>,
+): Promise<void> {
+  return new Promise<void>(async (resolve) => {
+    const sessionId = panel.sessionId;
+    let accumulated = '';
+    let segmentStart = 0;
+    let toolStatus = '';
+    let nextBlockIndex = 0;
+    const subs: {unsubscribe: () => void}[] = [];
+    const cleanup = () => subs.forEach((s) => s.unsubscribe());
 
-export function setupShellAIPanelUI(): void {
-  if (!grok.ai.config.configured) return;
+    const forSession = <T extends {sessionId: string}>(
+      source: {subscribe: (cb: (evt: T) => void) => {unsubscribe: () => void}},
+      handler: (evt: T) => void,
+    ) => subs.push(source.subscribe((evt) => {
+        if (evt.sessionId === sessionId)
+          handler(evt);
+      }));
+
+    const endWithError = (msg: string) => {
+      panel.clearStreaming();
+      grok.shell.error(msg);
+      cleanup();
+      resolve();
+    };
+
+    try {
+      const client = ClaudeRuntimeClient.getInstance();
+      const nativeCtx = panel.flushNativeContext();
+      // A conversation restored from history exists only in the browser — the runtime session is
+      // fresh — so the first prompt after a load carries the transcript (one-shot; the SDK session
+      // remembers it from then on).
+      const restoredCtx = panel.flushRestoredContext();
+      const enrichedUserPrompt = (restoredCtx ? restoredCtx + '\n---\n\n' : '') +
+        (nativeCtx ? nativeCtx + userPrompt : userPrompt);
+      const prompt = panel.rawRender ? enrichedUserPrompt : panel.prependViewContext(panel.prependEntityContext(enrichedUserPrompt), view);
+
+      // Three static meta-tools let Claude search and invoke the current view's functions
+      // (view.getFunctions()) without declaring them all. Defs are identical every turn
+      // (prompt-cache friendly); the runners resolve the live grok.shell.v at call time.
+      const fullMode = !systemPromptMode && !panel.noPrompt;
+      const viewTools = fullMode ? viewFunctionTools() : NO_VIEW_TOOLS;
+
+      await client.ensureConnected();
+
+      // Text before and after a tool call arrives as separate assistant segments; without a
+      // separator they concatenate mid-sentence ("…check those.No, there are…").
+      let pendingSegmentBreak = false;
+      forSession(client.onChunk, (evt) => {
+        if (pendingSegmentBreak) {
+          pendingSegmentBreak = false;
+          if (accumulated && !/\n\s*$/.test(accumulated))
+            accumulated += '\n\n';
+        }
+        accumulated += evt.content;
+        toolStatus = '';
+        panel.updateStreaming(accumulated.slice(segmentStart), chatSession.loader);
+      });
+
+      forSession(client.onToolActivity, (evt) => {
+        pendingSegmentBreak = true;
+        toolStatus = `\n\n---\n**${evt.summary}**`;
+        panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
+      });
+
+      let revisingTimer: number | null = null;
+      forSession(client.onRevisionStart, () => {
+        // A gate demanded a revision. The visible answer stays put; the revision streams hidden
+        // (the runtime suppresses its chunks) and `final.revision` decides whether it replaces the
+        // original. The status appears only if revising takes noticeable time — an immediate
+        // NO_REVISION resolves before it ever shows.
+        revisingTimer = window.setTimeout(() => {
+          if (toolStatus) return; // a live tool-activity status is more informative
+          toolStatus = '\n\n---\n*Revising…*';
+          panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+        }, 1200);
+      });
+
+
+      forSession(client.onFinal, async (evt) => {
+        panel.cancelInputRequest();
+        if (revisingTimer != null) {
+          clearTimeout(revisingTimer);
+          revisingTimer = null;
+        }
+        if (evt.revision === 'replaced') {
+          // The revision supersedes the visible answer — render it in place of the original.
+          accumulated = evt.content;
+          segmentStart = 0;
+          toolStatus = '';
+        } else if (evt.revision === 'kept')
+          toolStatus = ''; // original answer stands; just drop the Revising status
+        const fullContent = accumulated || evt.content;
+        if (/Failed to authenticate.*API Error: 401|authentication_error|\/login/i.test(fullContent)) {
+          panel.clearStreaming();
+          panel.appendStreamedElement(buildAuthRenewalWidget(client));
+          cleanup();
+          resolve();
+          return;
+        }
+        const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+        await panel.finalizeStreaming(segmentContent, fullContent, view);
+        if (evt.unverified) {
+          const warn = 'Not verified — the assistant could not confirm this action took effect.';
+          panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
+        }
+        cleanup();
+        resolve();
+      });
+
+      forSession(client.onError, (evt) => {
+        panel.cancelInputRequest();
+        if (/401|authentication|credentials|\/login/i.test(evt.message)) {
+          panel.clearStreaming();
+          panel.appendStreamedElement(buildAuthRenewalWidget(client));
+          cleanup();
+          resolve();
+          return;
+        }
+        endWithError(`Claude: ${evt.message}`);
+      });
+
+      forSession(client.onAborted, async () => {
+        panel.cancelInputRequest();
+        panel.clearStreaming();
+        chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
+        cleanup();
+        resolve();
+      });
+
+      forSession(client.onInputRequest, async (evt) => {
+        // datagrok_exec: run the JS here, return the outcome so Claude responds AFTER knowing it.
+        if (evt.toolName === 'datagrok_exec') {
+          // Record the code that actually ran — this is what makes a history-restored
+          // conversation reproducible ("do that again") instead of a text-only memory.
+          chatSession.session.addEngineMessage({role: 'assistant',
+            content: [{type: 'text', text: `[executed datagrok_exec]\n${(evt.input.code ?? '').slice(0, 1500)}`}]});
+          const {element, value, error} = await executeSingleBlock(evt.input.code ?? '', view, nextBlockIndex++);
+          if (element) {
+            panel.appendStreamedElement(element);
+            segmentStart = accumulated.length;
+            toolStatus = '';
+          }
+          let result: any = error ?
+            {success: false, error: error.error} :
+            {success: true, ...(value != null ? {returnValue: value} : {})};
+          // In-round-trip verification: run the provided assertion right after the action code, so a
+          // passing action needs no separate datagrok_verify round-trip (see verify.ts in the runtime).
+          if (!error && evt.input.verify?.assertion) {
+            const v = await runVerification(evt.input.verify.assertion, view);
+            result = {...result, verified: {passed: v.passed,
+              ...(v.observed !== undefined ? {observed: v.observed} : {}), ...(v.error ? {error: v.error} : {})}};
+          }
+          client.respondToInput(sessionId, evt.requestId, result);
+          return;
+        }
+        if (evt.toolName === 'datagrok_verify') {
+          const {passed, observed, error} = await runVerification(evt.input.assertion ?? '', view);
+          client.respondToInput(sessionId, evt.requestId, {
+            passed,
+            ...(observed !== undefined ? {observed} : {}),
+            ...(error ? {error} : {}),
+          });
+          return;
+        }
+        // datagrok_show_entities: render entity cards immediately, no user interaction needed.
+        if (evt.toolName === 'datagrok_show_entities') {
+          panel.appendStreamedElement(renderEntityRefList(evt.input.entities ?? []));
+          segmentStart = accumulated.length;
+          toolStatus = '';
+          client.respondToInput(sessionId, evt.requestId, {success: true});
+          return;
+        }
+        // View-declared tool call — run the tool's implementation from the current view.
+        const runner = viewTools.runners.get(evt.toolName);
+        if (runner) {
+          try {
+            const result = await runner(evt.input ?? {});
+            client.respondToInput(sessionId, evt.requestId, result === undefined ? {success: true} : result);
+          } catch (e: any) {
+            client.respondToInput(sessionId, evt.requestId, {success: false, error: e.message});
+          }
+          return;
+        }
+        // Default: AskUserQuestion
+        accumulated = '';
+        segmentStart = 0;
+        toolStatus = '';
+        panel.clearStreaming();
+        // The ball is in the user's court — a spinning loader would read as "still working".
+        chatSession.loader.style.display = 'none';
+        const response = await panel.showInputRequest(evt.input);
+        if (response) {
+          client.respondToInput(sessionId, evt.requestId, response);
+          const answerText = Object.values(response.answers).join(', ');
+          chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
+          // And back to us: show the loader immediately — the next runtime event (thinking,
+          // tool call) can be many seconds away, and dead air here reads as "nothing happened".
+          panel.showWaitingIndicator(chatSession.loader);
+        }
+      });
+
+      subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+
+      subs.push(getAIAbortSubscription().subscribe(() => {
+        client.abort(sessionId);
+      }));
+
+      const resolvedMode = systemPromptMode ?? (panel.noPrompt ? 'none' : undefined);
+      client.send(sessionId, prompt, {
+        ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
+        ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+      });
+    } catch (e: any) {
+      panel.clearStreaming();
+      grok.shell.error(`Claude runtime: ${e.message}`);
+      console.error('Claude runtime error:', e);
+      cleanup();
+      resolve();
+    }
+  });
+}
+
+let _shellAIPanel: AIPanel | null = null;
+
+export function initAIWindow(): AIPanel | null {
+  if (!grok.ai.config.configured)
+    return null;
   if (!_shellAIPanel) {
-    _shellAIPanel = new ShellAIPanel();
+    _shellAIPanel = new AIPanel('shell-ai-panel', null as any);
     _shellAIPanel.onRunRequest.subscribe(async (args) => {
       if (args.currentPrompt.prompt.trim() === '/noprompt') {
         _shellAIPanel!.enableNoPrompt();
@@ -319,27 +628,29 @@ export function setupShellAIPanelUI(): void {
       }
       await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
     });
+    AIWindowManager.instance.init(_shellAIPanel);
   }
-  _shellAIPanel.show();
+  return _shellAIPanel;
 }
+
+export function setupShellAIPanelUI(): void {
+  if (!initAIWindow())
+    return;
+  AIWindowManager.instance.show();
+}
+
+const AI_ICON_SELECTOR = 'i[data-name="ai"]';
 
 export async function setupTableViewAIPanelUI() {
   if (!grok.ai.config.configured)
     return;
   const handleView = (tableView: DG.TableView) => {
-    // setup ribbon panel icon
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(tableView), 'Ask AI \n Ctrl+I');
+    if (tableView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
+      return;
+    // Ribbon icon toggles the shared singleton panel; table context is picked up at prompt time.
+    const iconFse = ui.iconFA('user-robot', () => fireAIPanelToggleEvent(tableView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
-    // setup the panel itself
-    const panel = new TVAIPanel(tableView);
-    panel.hide();
-
-    // Setup request handler
-    panel.onRunRequest.subscribe(async (args) => {
-      const prompt = args.currentPrompt.prompt;
-      await runPromptWithLifecycle(panel, prompt, tableView, 'tableview');
-    });
   };
   // also handle already opened views
   Array.from(grok.shell.tableViews).filter((v) => v.dataFrame != null).forEach((view) => {
@@ -352,21 +663,53 @@ export async function setupTableViewAIPanelUI() {
   });
 }
 
-// TODO: rewrite to use Claude engine instead of deprecated script-tools
 export async function setupScriptsAIPanelUI() {
   const handleView = (scriptView: DG.ScriptView) => {
-    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), 'Ask AI \n Ctrl+I');
+    if (scriptView.root?.parentElement?.querySelector(AI_ICON_SELECTOR) != null)
+      return;
+    // The singleton panel picks up the script view's AI tools (get/set code) at prompt time.
+    const iconFse = ui.iconSvg('ai.svg', () => fireAIPanelToggleEvent(scriptView), `Ask AI \n ${SHORTCUT_HINT}`);
     iconFse.style.width = iconFse.style.height = '18px';
     scriptView.setRibbonPanels([...scriptView.getRibbonPanels(), [iconFse]]);
-    const panel = new ScriptingAIPanel(scriptView);
-    panel.hide();
-    panel.onRunRequest.subscribe(async (args) => {
-      await runPromptWithLifecycle(panel, args.currentPrompt.prompt, scriptView, 'scripting');
-    });
   };
 
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type === 'ScriptView')
       setTimeout(() => handleView(view as DG.ScriptView), 500);
   });
+}
+
+// Adds a "Run" button to the ribbon of file views opened from MyFiles/agents/scripts/.
+export function setupAgentScriptsUI(): void {
+  grok.events.onViewAdded.subscribe((view) => {
+    try {
+      const basePath = view.basePath ?? view.path ?? '';
+      if (!basePath.includes('/agents/scripts/'))
+        return;
+      const {name} = view;
+      const runIcon = ui.iconFA('play', () => runAgentScript(name), `Run ${name}`);
+      runIcon.classList.add('fas');
+      view.setRibbonPanels([...view.getRibbonPanels(), [runIcon]]);
+    } catch (e: any) {
+      console.warn('Grokky: failed to add run button:', e.message);
+    }
+  });
+}
+
+async function runAgentScript(name: string): Promise<void> {
+  try {
+    const shell = initAIWindow();
+    if (!shell)
+      return;
+    AIWindowManager.instance.showPanel(shell);
+    shell.resetSession();
+    const workflow = await _package.files.readAsText(`scripts/${name}.md`);
+    const prompt =
+      `Execute the following workflow. After each step, post a one-line status update to chat.\n\n` +
+      `---\n${workflow}\n---`;
+    const displayPrompt = `▶ Running workflow: ${name}`;
+    await runPromptWithLifecycle(shell, prompt, grok.shell.v, 'shell-ai', displayPrompt);
+  } catch (e: any) {
+    grok.shell.error(`Failed to run ${name}: ${e.message}`);
+  }
 }

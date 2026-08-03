@@ -22,4 +22,16 @@ export namespace funcs {
   export async function knimeLinkAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('KnimeLink:KnimeLinkAppTreeBrowser', { treeNode });
   }
+
+  export async function knimeListDeployments(typeFilter: string ): Promise<any> {
+    return await grok.functions.call('KnimeLink:KnimeListDeployments', { typeFilter });
+  }
+
+  export async function knimeGetOrRegisterFunc(deploymentId: string , deploymentName: string , deploymentType: string ): Promise<any> {
+    return await grok.functions.call('KnimeLink:KnimeGetOrRegisterFunc', { deploymentId, deploymentName, deploymentType });
+  }
+
+  export async function knimeGetWorkflowImageUrl(workflowId: string ): Promise<string> {
+    return await grok.functions.call('KnimeLink:KnimeGetWorkflowImageUrl', { workflowId });
+  }
 }

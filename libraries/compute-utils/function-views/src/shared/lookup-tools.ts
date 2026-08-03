@@ -195,8 +195,14 @@ function getLookupsInfo(inputsLookup: string) {
   };
 } // getLookupsInfo
 
-/** Return values lookup choice input */
-export async function getLookupChoiceInput(inputsLookup: string, constIputs: Map<string, DG.InputBase>) {
+/** Return values lookup choice input. When `disableDefault` is set, the synthetic "Default" choice
+ *  (which resets inputs to the function's defaults) is omitted — use it when the lookup table already
+ *  ships its own default row, so it is not duplicated. */
+export async function getLookupChoiceInput(
+  inputsLookup: string,
+  constIputs: Map<string, DG.InputBase>,
+  disableDefault = false,
+) {
   if (inputsLookup === undefined)
     return null;
 
@@ -214,7 +220,7 @@ export async function getLookupChoiceInput(inputsLookup: string, constIputs: Map
   const rowCount = inputsDf.rowCount;
 
   const inpSetsNames = cols.byIndex(INPUTS_DF.INPUT_SETS_COL_IDX).toList();
-  const choices = [LOOKUP.DEFAULT as string].concat(inpSetsNames);
+  const choices = disableDefault ? inpSetsNames : [LOOKUP.DEFAULT as string].concat(inpSetsNames);
 
   const defaultInputs = new Map<string, any>();
 
@@ -245,7 +251,7 @@ export async function getLookupChoiceInput(inputsLookup: string, constIputs: Map
     value: choices[0],
     tooltipText: info.tooltip,
     onValueChanged: (value) => {
-      if (value === LOOKUP.DEFAULT)
+      if (!disableDefault && value === LOOKUP.DEFAULT)
         constIputs.forEach((input, name) => input.value = defaultInputs.get(name));
       else {
         const colInputs = tableInputs.get(value);
@@ -257,5 +263,6 @@ export async function getLookupChoiceInput(inputsLookup: string, constIputs: Map
   return {
     input: lookupChoiceInput,
     category: info.category ?? 'Misc',
+    name: info.name,
   };
 }

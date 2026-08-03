@@ -8,7 +8,8 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {Unsubscribable} from 'rxjs';
 
-import {GetMonomerResType, HelmAtom, MonomerNumberingTypes} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
+import {GetMonomerResType, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
+import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getHelmHelper, HelmInputBase, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
@@ -26,17 +27,18 @@ import {PolyToolPlaceholdersInput} from './pt-placeholders-input';
 import {showMonomerSelectionDialog} from '@datagrok-libraries/bio/src/utils/monomer-selection-dialog';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input';
-import {PT_ENUM_TYPE_TOOLTIPS, PT_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
+import {PT_ENUM_TYPE_TOOLTIPS, PT_HELM_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
 import {PolyToolDataRole, PolyToolTags} from '../consts';
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {Chain} from './conversion/pt-chain';
 import {polyToolConvert} from './pt-dialog';
 
 import {_package, applyNotationProviderForCyclized, PackageFunctions} from '../package';
+import {tagAsOligoNucleotide} from '../oligo-renderer/converters';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
-import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {CyclizedNotationProvider} from '../utils/cyclized';
 import {INotationProvider, NotationProviderBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
@@ -84,8 +86,12 @@ type PolyToolEnumerateHelmSerialized = {
   rules: string[],
 };
 
-/** Entry point: creates, sizes, and shows the enumeration dialog. */
-export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
+/** Entry point: creates, sizes, and shows the enumeration dialog.
+ * @param outputAsOligo If true, the enumerated HELM column in the result df
+ *   is tagged as `OligoNucleotide` (semType + units=helm + cellRenderer hints)
+ *   so the duplex cell renderer picks it up. Used when the source cell was an
+ *   OligoNucleotide column. */
+export async function polyToolEnumerateHelmUI(cell?: DG.Cell, outputAsOligo: boolean = false): Promise<void> {
   await _package.initPromise;
 
   // Capture viewport dimensions for dialog sizing
@@ -122,7 +128,7 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
         }
       }
     };
-    dialog = await getPolyToolEnumerateDialog(cell, resizeInputs);
+    dialog = await getPolyToolEnumerateDialog(cell, resizeInputs, outputAsOligo);
 
     // On first show, center the dialog at 70% of viewport; on subsequent resizes, just reflow inputs
     let isFirstShow = true;
@@ -155,7 +161,7 @@ export async function polyToolEnumerateHelmUI(cell?: DG.Cell): Promise<void> {
 
 /** Builds and configures the enumeration dialog with all inputs, validators, and event handlers. */
 async function getPolyToolEnumerateDialog(
-  cell?: DG.Cell, resizeInputs?: () => void
+  cell?: DG.Cell, resizeInputs?: () => void, outputAsOligo: boolean = false,
 ): Promise<DG.Dialog> {
   const logPrefix = `ST: PT: HelmDialog()`;
   let inputs: PolyToolEnumerateInputs;
@@ -490,7 +496,7 @@ async function getPolyToolEnumerateDialog(
         const mol = inputs.macromolecule.molValue;
         const hoveredAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (hoveredAtom) {
-          const hoveredAtomContIdx = hoveredAtom._parent.atoms.indexOf(hoveredAtom);
+          const hoveredAtomContIdx = mol.atoms.indexOf(hoveredAtom);
           const substitutingMonomers = inputs.placeholders.placeholdersValue
             .find((ph) => ph.position === hoveredAtomContIdx)?.monomers;
 
@@ -515,7 +521,7 @@ async function getPolyToolEnumerateDialog(
         const mol = inputs.macromolecule.molValue;
         const clickedAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (clickedAtom) {
-          const clickedAtomContIdx = clickedAtom._parent.atoms.indexOf(clickedAtom);
+          const clickedAtomContIdx = mol.atoms.indexOf(clickedAtom);
           inputs.placeholders.addPosition(clickedAtomContIdx, '');
         }
       } catch (err: any) {
@@ -541,8 +547,13 @@ async function getPolyToolEnumerateDialog(
       fillForCurrentCell(seqValue, dataRole, cell);
     }));
 
-    inputs.macromolecule.root.style.setProperty('min-width', '250px', 'important');
+    // inputs.macromolecule.root.style.setProperty('min-width', '250px', 'important');
     // inputs.macromolecule.root.style.setProperty('max-height', '300px', 'important');
+    // This dialog wants the editor to FILL the flex-allocated pane (the input's
+    // default is now a fixed 250×250 box), so opt the editor host into fill.
+    inputs.macromolecule.getInput().style.setProperty('width', '100%', 'important');
+    inputs.macromolecule.getInput().style.setProperty('height', '100%', 'important');
+    inputs.macromolecule.getInput().style.removeProperty('min-height');
 
     // === VIEW UPDATE HELPERS ===
 
@@ -668,7 +679,7 @@ async function getPolyToolEnumerateDialog(
           if (Object.keys(inputs.placeholders.placeholdersValue).length === 0 &&
             Object.keys(inputs.placeholdersBreadth.placeholdersBreadthValue).length === 0
           ) {
-            grok.shell.warning(`${PT_UI_DIALOG_ENUMERATION}: placeholders are empty`);
+            grok.shell.warning(`${PT_HELM_UI_DIALOG_ENUMERATION}: placeholders are empty`);
             return;
           }
           await getHelmHelper(); // initializes JSDraw and org
@@ -712,6 +723,15 @@ async function getPolyToolEnumerateDialog(
               rules: await ruleInputs.getActive()
             } : false,
             helmHelper);
+
+          // When the source was an OligoNucleotide cell, tag the enumerated
+          // HELM column as OligoNucleotide so the duplex renderer picks it up.
+          if (outputAsOligo) {
+            const enumCol = enumeratorResDf.col('Enumerated');
+            if (enumCol && enumCol.type === DG.COLUMN_TYPE.STRING)
+              tagAsOligoNucleotide(enumCol as DG.Column<string>);
+          }
+
           const appendTarget = inputs.appendToTable.value;
           if (appendTarget) {
             appendTarget.append(enumeratorResDf, true);
@@ -727,7 +747,7 @@ async function getPolyToolEnumerateDialog(
 
     // === DIALOG CONSTRUCTION AND LAYOUT ===
     // Layout: macromolecule editor on top, two-column (placeholders | breadth), two-column (options | rules)
-    const dialog = ui.dialog({title: PT_UI_DIALOG_ENUMERATION, showFooter: true})
+    const dialog = ui.dialog({title: PT_HELM_UI_DIALOG_ENUMERATION, showFooter: true})
       .add(inputs.macromolecule.root)
       .add(ui.divH([
         ui.divV([

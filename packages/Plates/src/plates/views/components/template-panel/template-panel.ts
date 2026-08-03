@@ -194,7 +194,7 @@ export class TemplatePanel {
       content.style.display = isExpanded ? 'none' : 'block';
       icon.classList.toggle('fa-chevron-down', !isExpanded);
       icon.classList.toggle('fa-chevron-right', isExpanded);
-    });
+    }, 'Toggle');
     icon.classList.add('assay-plates--collapsible-icon');
 
     header.onclick = () => icon.click();

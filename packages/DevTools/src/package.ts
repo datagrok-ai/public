@@ -66,9 +66,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.app({
-    browsePath: 'Admin',
     name: 'Test Manager',
     'top-menu': 'Tools | Dev | Test Manager',
+    meta: {role: 'adminApp'},
   })
   static async testManager(): Promise<void> {
     c = grok.functions.getCurrentCall();
@@ -82,6 +82,12 @@ export class PackageFunctions {
     const tm = new TestManager('Test Manager', false);
     tm.testFunctions = await tm.collectPackages();
     await tm.populateTree(treeNode);
+    const buttons = tm.createButtons(false);
+    buttons.runAll.style.padding = '0';
+    buttons.run.style.padding = '0';
+    buttons.settings.style.padding = '0';
+    const toolbar = ui.divH([buttons.runAll, buttons.run, buttons.settings]);
+    treeNode.root.children[0].appendChild(toolbar);
   }
 
 

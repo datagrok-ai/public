@@ -1,8 +1,10 @@
 #name: survivalPlot
+#friendlyName: Survival Analysis
+#description: Kaplan-Meier survival curves with optional stratification and confidence interval
 #language: r
-#input: string inputStrata = '1'
-#input: string confInt = '0.95'
-#input: dataframe survivalDf
+#input: string inputStrata = '1' [Stratification variable or '1' for no stratification]
+#input: string confInt = '0.95' [Confidence interval level (0-1)]
+#input: dataframe survivalDf [Survival data with 'time' and 'status' columns]
 #output: graphics plot
 #output: dataframe diagnostics
 

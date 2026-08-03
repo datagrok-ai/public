@@ -123,18 +123,18 @@ export function getValidationIcon(messages?: ValidationResultBase) {
   let popover!: HTMLElement;
   let icon!: HTMLElement;
   if (messages?.pending) {
-    icon = ui.iconFA('spinner', () => {displayValidation(messages, icon, popover);});
+    icon = ui.iconFA('spinner', () => {displayValidation(messages, icon, popover);}, 'Validating');
     icon.classList.add('fa-spin');
   }
 
   if (messages?.errors && messages.errors.length) {
-    icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);});
+    icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);}, 'Validation');
     icon.style.color = 'var(--red-3)';
   } else if (messages?.warnings && messages.warnings.length) {
-    icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);});
+    icon = ui.iconFA('exclamation-circle', () => {displayValidation(messages, icon, popover);}, 'Validation');
     icon.style.color = 'var(--orange-2)';
   } else if (messages?.notifications && messages.notifications.length) {
-    icon = ui.iconFA('info-circle', () => {displayValidation(messages, icon, popover);} );
+    icon = ui.iconFA('info-circle', () => {displayValidation(messages, icon, popover);} , 'Info');
     icon.style.color = 'var(--blue-1)';
   }
   if (icon) {

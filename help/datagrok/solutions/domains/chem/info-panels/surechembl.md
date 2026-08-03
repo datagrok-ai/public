@@ -1,6 +1,15 @@
 ---
 title: SureChEMBL integration
-format: mdx
+mdx:
+  format: mdx
+description: Search patented molecules by similarity or substructure and view associated patent data using the SureChEMBL plugin.
+keywords:
+  - patent search
+  - patented molecules
+  - substructure search patents
+  - similarity search patents
+  - SureChEMBL database
+  - chemical intellectual property
 ---
 
 The [SureChEMBL plugin](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl) 

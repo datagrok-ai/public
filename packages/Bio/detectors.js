@@ -325,6 +325,14 @@ class BioPackageDetectors extends DG.Package {
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely ? 0.15 : 0);
+        if (units == NOTATION.FASTA && alphabet != ALPHABET.UN) {
+          const minLength = colNameVeryLikely ? 6 : (colNameLikely ? 9 : 16);
+          const satisfiesMinLength = categoriesSample.filter((s) => (s?.length ?? 0) >= minLength).length >= Math.max(categoriesSample.length - 2, 2);
+          if (!satisfiesMinLength) {
+            last.rejectReason = 'FASTA min characters counts not reached for column';
+            return null;
+          }
+        }
         if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) {
           last.rejectReason = `FASTA single character alphabet is not allowed to be 'UN'.`;
           return null;
@@ -333,7 +341,8 @@ class BioPackageDetectors extends DG.Package {
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         col.meta.units = units;
         if (separator) col.setTag(SeqHandler.TAGS.separator, separator);
-        col.setTag(SeqHandler.TAGS.aligned, aligned);
+        if (!col.getTag(SeqHandler.TAGS.aligned))
+          col.setTag(SeqHandler.TAGS.aligned, aligned);
         col.setTag(SeqHandler.TAGS.alphabet, alphabet);
         if (alphabet === ALPHABET.UN) {
           // alphabetSize calculated on (sub)sample of data is incorrect
@@ -706,7 +715,8 @@ class BioPackageDetectors extends DG.Package {
           const isPotentiallyMSA = averageLength > 1 && std < 2; // if the average length is more than 1 and the std is less than 0.5, then it is potentially MSA
           column.setTag('units', notationInput.value);
           separatorInput.value && column.setTag('separator', separatorInput.value);
-          column.setTag('aligned', isPotentiallyMSA ? 'SEQ.MSA' : 'SEQ');
+          if (!column.getTag('aligned'))
+            column.setTag('aligned', isPotentiallyMSA ? 'SEQ.MSA' : 'SEQ');
           column.setTag('alphabet', defaultAlphabet);
           isMultichar && column.setTag('.alphabetIsMultichar', 'true');
           column.semType = 'Macromolecule';

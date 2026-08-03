@@ -1,5 +1,35 @@
 # Diff Studio changelog
 
+## v.next
+
+* Moved the DiffStudio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
+## 1.6.5 (2026-06-26)
+
+* Inputs lookup: Apply the preselected input set's values on form load (previously they appeared only after toggling the choice)
+* Facet viewer: Reuse line charts across runs to avoid flicker
+* Bump compute-utils to 1.46.4 (Fitting/Sensitivity Analysis lookup fixes)
+
+## 1.6.4 (2026-06-16)
+
+* Use Rich Function View for Model Hub items
+
+## 1.6.3 (2026-06-12)
+
+Exposed the facet plot (one line chart per output variable) as a registered **DiffStudio Facet** viewer, so Rich Function View renders it for multi-variable models — previously it existed only inside the Diff Studio app.
+
+## 1.6.1 (2026-05-15)
+
+Update info for Bioreactor and PK-PD demos
+
+## 1.6.0 (2026-05-13)
+
+Added:
+
+* Hub - centralized landing view with Templates, Library, and Recent
+* Save to Library - publish models to the personal Library
+* Export to LaTeX and Markdown
+
 ## 1.5.2 (2026-03-14)
 
 Updated the bioreactor model

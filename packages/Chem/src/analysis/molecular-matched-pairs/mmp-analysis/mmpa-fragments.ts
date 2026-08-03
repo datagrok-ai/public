@@ -7,7 +7,7 @@ import {IMmpFragmentsResult} from '../../../rdkit-service/rdkit-service-worker-s
 import {MMP_CONSTRICTIONS, MMP_ERRORS, MmpFragments, MmpRules, MolecularPair} from './mmpa-misc';
 
 /**
-* Runs paralled fragmentation for molecules
+* Runs parallel fragmentation for molecules
 * @param {DG.Column} molecules column with molecules
 */
 export async function getMmpFrags(molecules: string[]): Promise<[MmpFragments, string[]]> {
@@ -55,7 +55,7 @@ export async function getMmpRules(
 function getBestFragmentPair(
   dimFirst: number, idxFirst: number,
   dimSecond: number, idxSecond: number,
-  fragsOut: MmpFragments): [number, number, number] {
+  fragsOut: MmpFragments): [number, number, number] | null {
   let core: number | null = null;
   let r1: number | null = null; // molecule minus core for first molecule in pair
   let r2: number | null = null; // molecule minus core for second molecule in pair
@@ -65,7 +65,8 @@ function getBestFragmentPair(
     for (let p2 = 0; p2 < dimSecond; p2++) {
       if (fragsOut.fragCodes[idxFirst][p1][0] === fragsOut.fragCodes[idxSecond][p2][0]) {
         const newCore = fragsOut.fragCodes[idxFirst][p1][0];
-        if (!core || fragsOut.sizes[newCore] > fragsOut.sizes[core]) {
+        // core is a fragment index (0 is valid) — compare against null, not falsiness
+        if (core === null || fragsOut.sizes[newCore] > fragsOut.sizes[core]) {
           core = newCore;
           r1 = fragsOut.fragCodes[idxFirst][p1][1];
           r2 = fragsOut.fragCodes[idxSecond][p2][1];
@@ -74,7 +75,8 @@ function getBestFragmentPair(
     }
   }
 
-  return [core!, r1!, r2!];
+  // null when the two molecules share no common core (or one has no fragmentations)
+  return core === null ? null : [core, r1!, r2!];
 }
 
 function fillRules(
@@ -88,23 +90,23 @@ function fillRules(
   let ruleIndexInverse = -1;
 
   for (let ind = 0; ind < mmpRules.rules.length; ind++) {
-    if (mmpRules.rules[ind].sr1 == ruleSmiles1 && mmpRules.rules[ind].sr2 == ruleSmiles2)
+    if (mmpRules.rules[ind].sr1 === ruleSmiles1 && mmpRules.rules[ind].sr2 === ruleSmiles2)
       ruleIndexStraight = ind;
-    if (mmpRules.rules[ind].sr1 == ruleSmiles2 && mmpRules.rules[ind].sr2 == ruleSmiles1)
+    if (mmpRules.rules[ind].sr1 === ruleSmiles2 && mmpRules.rules[ind].sr2 === ruleSmiles1)
       ruleIndexInverse = ind;
   }
 
-  if (ruleSmiles1 == -1) {
+  if (ruleSmiles1 === -1) {
     mmpRules.smilesFrags.push(rFirst);
     ruleSmiles1 = mmpRules.smilesFrags.length -1;
   }
-  if (ruleSmiles2 == -1) {
+  if (ruleSmiles2 === -1) {
     mmpRules.smilesFrags.push(rSecond);
     ruleSmiles2 = mmpRules.smilesFrags.length -1;
   }
 
   const indxFirst = ruleSmiles1 < ruleSmiles2;
-  if (ruleIndexStraight == -1) {
+  if (ruleIndexStraight === -1) {
     mmpRules.rules.push({
       sr1: indxFirst ? ruleSmiles1: ruleSmiles2,
       sr2: indxFirst ? ruleSmiles2: ruleSmiles1,
@@ -179,8 +181,11 @@ function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRul
     const dimFirstMolecule = fragsOut.fragCodes[i].length;
     for (let j = i + 1; j < dim; j++) {
       const dimSecondMolecule = fragsOut.fragCodes[j].length;
-      const [core, firstR, secondR] = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, fragsOut);
-      if (!core || fragsOut.idToName[core] === '' ||
+      const best = getBestFragmentPair(dimFirstMolecule, i, dimSecondMolecule, j, fragsOut);
+      if (best === null)
+        continue;
+      const [core, firstR, secondR] = best;
+      if (fragsOut.idToName[core] === '' ||
         fragsOut.sizes[firstR] / fragsOut.sizes[core] > fragmentCutoff ||
         fragsOut.sizes[secondR] / fragsOut.sizes[core] > fragmentCutoff)
         continue;

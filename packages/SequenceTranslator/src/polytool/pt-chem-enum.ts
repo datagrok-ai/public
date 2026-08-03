@@ -1,0 +1,779 @@
+/* eslint-disable max-len */
+import * as DG from 'datagrok-api/dg';
+
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+
+/**
+ * PolyTool Chemical Enumeration — pure logic module.
+ *
+ * Responsibilities:
+ *   • Recognize and normalize the many spellings of R-group labels used in SMILES
+ *     (`[1*]`, `[*:1]`, `[R1]`, `[R:1]`, `[*1]`, including multi-digit R numbers).
+ *   • Validate cores (≥1 R-label) and R-groups (exactly one R-label).
+ *   • Join a core SMILES with one R-group per R-number via SMILES-concatenation
+ *     using shared ring-closure digits, then canonicalize through RDKit.
+ *   • Enumerate across multiple cores and R-group lists in Zip or Cartesian mode.
+ *   • Enforce a hard result cap.
+ *
+ * No Datagrok or UI dependencies — safe to unit-test with just an RDKit module.
+ */
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+export const CHEM_ENUM_MAX_RESULTS = 1_000_000;
+
+export const ChemEnumModes = {
+  Zip: 'Zip',
+  Cartesian: 'Cartesian',
+} as const;
+export type ChemEnumMode = typeof ChemEnumModes[keyof typeof ChemEnumModes];
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ChemEnumCore {
+  /** Normalized SMILES — all R-labels rewritten to `[*:N]` form. */
+  smiles: string;
+  /** SMILES as supplied by the user (pre-normalization). */
+  originalSmiles: string;
+  /** Unique, sorted ascending, R numbers present in the core. */
+  rNumbers: number[];
+  /** Human-readable source, e.g. `"Drawn #1"` or `"Cores[3]"`. */
+  id: string;
+  /** If set, the core is invalid and should be excluded from enumeration. */
+  error?: string;
+}
+
+export interface ChemEnumRGroup {
+  /**
+   * Normalized SMILES with its single R-label remapped to the target R number,
+   * OR — when {@link isSingleAtom} is set — the canonical single-atom token
+   * (e.g. `N`, `O`, `[N+]`) to splice into the core's `[*:N]` slot.
+   */
+  smiles: string;
+  /** SMILES as supplied (pre-normalization and pre-remap). */
+  originalSmiles: string;
+  /** Target R number this group fills in. */
+  rNumber: number;
+  /** R number as originally written in `originalSmiles` (pre-remap). */
+  sourceRNumber?: number;
+  /**
+   * True when the R-group has zero R-labels and is exactly one heavy atom.
+   * Such groups are spliced into the core's `[*:N]` slot via plain string
+   * replace instead of ring-closure joining.
+   */
+  isSingleAtom?: boolean;
+  id: string;
+  error?: string;
+}
+
+export interface ChemEnumParams {
+  cores: ChemEnumCore[];
+  /** Key = R number (1-based). Value = list of R-groups for that slot. */
+  rGroups: Map<number, ChemEnumRGroup[]>;
+  mode: ChemEnumMode;
+  /** Overrides `CHEM_ENUM_MAX_RESULTS` for tests. */
+  maxResults?: number;
+}
+
+export interface ChemEnumResult {
+  /** Canonical SMILES of the assembled molecule. */
+  smiles: string;
+  /** `originalSmiles` of the core used. */
+  coreSmiles: string;
+  /** R-number → SMILES of the R-group as attached at that position (re-labeled to that R#). */
+  rGroupSmilesByNum: Map<number, string>;
+}
+
+export interface ChemEnumValidation {
+  /** Overall validity flag. */
+  ok: boolean;
+  /** Free-form top-level messages (e.g. zip-length mismatch, cap exceeded). */
+  errors: string[];
+  /** Predicted total result count (capped at MAX+1 to signal "too many"). */
+  predictedCount: number;
+  /** True when `predictedCount > maxResults`. */
+  overCap: boolean;
+}
+
+// ─── R-label recognition ────────────────────────────────────────────────────
+
+/**
+ * Matches all supported R-label spellings as a single bracketed atom:
+ *   [N*]   [*:N]   [*N]   [RN]   [R:N]
+ * Capture groups 1..5 hold the numeric portion (exactly one is non-empty).
+ */
+const R_LABEL_SOURCE = String.raw`\[(?:(\d+)\*|\*:(\d+)|\*(\d+)|R(\d+)|R:(\d+))\]`;
+
+export function rLabelRegex(): RegExp {
+  return new RegExp(R_LABEL_SOURCE, 'g');
+}
+
+function pickNum(groups: string[]): number | null {
+  for (const g of groups) if (g !== undefined) return parseInt(g, 10);
+  return null;
+}
+
+/** Replaces every supported R-label spelling with the canonical `[*:N]` form. */
+export function normalizeRLabels(smi: string): string {
+  return smi.replace(rLabelRegex(), (_m, g1, g2, g3, g4, g5) => {
+    const n = pickNum([g1, g2, g3, g4, g5]);
+    return n === null ? _m : `[*:${n}]`;
+  });
+}
+
+/** Returns R numbers found in the SMILES, sorted ascending, deduplicated. */
+export function extractRNumbers(smi: string): number[] {
+  const seen = new Set<number>();
+  for (const m of smi.matchAll(rLabelRegex())) {
+    const n = pickNum([m[1], m[2], m[3], m[4], m[5]]);
+    if (n !== null) seen.add(n);
+  }
+  return [...seen].sort((a, b) => a - b);
+}
+
+/** Returns every R-label occurrence with its source number (order-preserving). */
+export function findRLabels(smi: string): { source: number, match: string, index: number }[] {
+  const out: { source: number, match: string, index: number }[] = [];
+  for (const m of smi.matchAll(rLabelRegex())) {
+    const n = pickNum([m[1], m[2], m[3], m[4], m[5]]);
+    if (n !== null) out.push({source: n, match: m[0], index: m.index!});
+  }
+  return out;
+}
+
+/**
+ * Rewrites every R-label in `smi` to `[*:newN]`, regardless of source number
+ * or spelling. Intended for single-R groups being remapped into their assigned slot.
+ */
+export function remapSingleRLabel(smi: string, newN: number): string {
+  return smi.replace(rLabelRegex(), () => `[*:${newN}]`);
+}
+
+// ─── Core / R-group construction ────────────────────────────────────────────
+
+export function makeCore(originalSmiles: string, id: string, rdkit?: RDModule): ChemEnumCore {
+  const trimmed = (originalSmiles ?? '').trim();
+  if (trimmed === '')
+    return {smiles: '', originalSmiles, rNumbers: [], id, error: 'Empty SMILES'};
+
+  const normalized = normalizeRLabels(trimmed);
+  const rNumbers = extractRNumbers(normalized);
+
+  if (rNumbers.length === 0)
+    return {smiles: normalized, originalSmiles, rNumbers, id, error: 'Core must contain at least one R group'};
+
+  if (rdkit) {
+    const err = tryParse(normalized, rdkit);
+    if (err) return {smiles: normalized, originalSmiles, rNumbers, id, error: `Invalid SMILES: ${err}`};
+  }
+
+  return {smiles: normalized, originalSmiles, rNumbers, id};
+}
+
+export function makeRGroup(
+  originalSmiles: string, targetRNumber: number, id: string, rdkit?: RDModule,
+): ChemEnumRGroup {
+  const trimmed = (originalSmiles ?? '').trim();
+  if (trimmed === '')
+    return {smiles: '', originalSmiles, rNumber: targetRNumber, id, error: 'Empty SMILES'};
+
+  const normalized = normalizeRLabels(trimmed);
+  const rNumbers = extractRNumbers(normalized);
+
+  if (rNumbers.length === 0) {
+    // Single-atom mode: a no-R-label SMILES is acceptable iff RDKit confirms
+    // exactly one heavy atom. The atom is then substituted into the core's
+    // `[*:N]` slot by `buildJoinedSmiles` instead of ring-closure-joined.
+    if (rdkit) {
+      const atomSmi = trySingleAtomCanonical(normalized, rdkit);
+      if (atomSmi) {
+        return {
+          smiles: atomSmi, originalSmiles, rNumber: targetRNumber, id,
+          isSingleAtom: true,
+        };
+      }
+    }
+    return {
+      smiles: normalized, originalSmiles, rNumber: targetRNumber, id,
+      error: 'R-group must contain exactly one R label, or be a single atom (e.g. N, O, Cl)'};
+  }
+  if (rNumbers.length > 1) {
+    return {
+      smiles: normalized, originalSmiles, rNumber: targetRNumber, id,
+      sourceRNumber: rNumbers[0],
+      error: `R-group must contain exactly one R label (found ${rNumbers.length}: ${rNumbers.map((n) => 'R' + n).join(', ')})`};
+  }
+
+  const sourceRNumber = rNumbers[0];
+  const remapped = remapSingleRLabel(normalized, targetRNumber);
+
+  if (rdkit) {
+    const err = tryParse(remapped, rdkit);
+    if (err) {
+      return {
+        smiles: remapped, originalSmiles, rNumber: targetRNumber, id, sourceRNumber,
+        error: `Invalid SMILES: ${err}`};
+    }
+  }
+
+  return {smiles: remapped, originalSmiles, rNumber: targetRNumber, id, sourceRNumber};
+}
+
+/** A ready-made R-group substituent set offered by the "Templates…" picker. The full
+ * catalogue ships as `files/enumeration/r-group-templates.json` (editable without a rebuild);
+ * {@link BUILTIN_R_GROUP_TEMPLATES} is the in-code fallback for when that file is unreadable. */
+export interface RGroupTemplate {
+  /** Name shown in the template dropdown. */
+  name: string;
+  items: RGroupTemplateItem[];
+}
+
+/** One substituent in a template: a `[*:1]`-labeled fragment (or bare single atom) re-labeled
+ * to the chosen R# on insert, plus an optional chemical name shown under the preview thumbnail. */
+export interface RGroupTemplateItem {
+  smiles: string;
+  label?: string;
+}
+
+/** In-code fallback used when `files/enumeration/r-group-templates.json` is missing or
+ * unreadable, so the picker is never empty. The shipped JSON carries the full catalogue. */
+export const BUILTIN_R_GROUP_TEMPLATES: RGroupTemplate[] = [
+  {name: 'Alkyl (C1–C8)', items: [
+    {smiles: 'C[*:1]', label: 'methyl'}, {smiles: 'CC[*:1]', label: 'ethyl'},
+    {smiles: 'CCC[*:1]', label: 'propyl'}, {smiles: 'CCCC[*:1]', label: 'butyl'},
+    {smiles: 'CCCCC[*:1]', label: 'pentyl'}, {smiles: 'CCCCCC[*:1]', label: 'hexyl'},
+    {smiles: 'CCCCCCC[*:1]', label: 'heptyl'}, {smiles: 'CCCCCCCC[*:1]', label: 'octyl'},
+  ]},
+];
+
+/** Parses the templates JSON (an array of {@link RGroupTemplate}). Throws on invalid JSON so the
+ * loader can warn and skip the offending file instead of silently dropping it; returns `[]` for
+ * valid JSON that just isn't a template array. Only enforces the shape — SMILES validity is checked
+ * separately by {@link invalidTemplateSmiles}. */
+export function parseRGroupTemplates(text: string): RGroupTemplate[] {
+  const raw: unknown = JSON.parse(text); // let malformed JSON throw — the loader catches it and logs the file name
+  if (!Array.isArray(raw)) return [];
+  const out: RGroupTemplate[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry.name !== 'string' || !Array.isArray(entry.items)) continue;
+    const items: RGroupTemplateItem[] = [];
+    for (const it of entry.items) {
+      if (it && typeof it.smiles === 'string' && it.smiles.trim())
+        items.push({smiles: it.smiles, label: typeof it.label === 'string' ? it.label : undefined});
+    }
+    if (items.length > 0) out.push({name: entry.name, items});
+  }
+  return out;
+}
+
+/** Whether `smiles` parses as a valid R-group (tested at R1). Shared by the load-time filter
+ * and {@link invalidTemplateSmiles} so the validity rule lives in one place. */
+export function isValidTemplateSmiles(smiles: string, rdkit: RDModule): boolean {
+  return makeRGroup(smiles, 1, '', rdkit).error == null;
+}
+
+/** Returns the SMILES in `templates` that fail {@link isValidTemplateSmiles}.
+ * Used to gate the shipped catalogue in tests. */
+export function invalidTemplateSmiles(templates: RGroupTemplate[], rdkit: RDModule): string[] {
+  return templates.flatMap((t) => t.items.map((it) => it.smiles)).filter((smi) => !isValidTemplateSmiles(smi, rdkit));
+}
+
+/**
+ * Builds R-groups from `smilesList` (each re-labeled to `targetN` via {@link makeRGroup}) and adds
+ * them to slot `targetN`, de-duplicating by the re-labeled SMILES so a slot never holds the same
+ * substituent twice. `'replace'` overwrites the slot (an empty list clears it); `'append'` adds only
+ * substituents not already present (an empty or all-duplicate list is a no-op). Returns the number
+ * actually added.
+ */
+export function addRGroupsFromSmiles(
+  rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+  smilesList: string[], targetN: number, mode: 'append' | 'replace', rdkit: RDModule,
+): number {
+  const made = smilesList.map((smi) => makeRGroup(smi, targetN, '', rdkit));
+  // Seed the seen-set from existing entries on append (so we skip ones already there); on replace
+  // start empty, since the slot is overwritten. This also drops duplicates within `made` itself.
+  const existing = mode === 'append' ? (rGroupsByNum.get(targetN) ?? []) : [];
+  const seen = new Set(existing.map((rg) => rg.smiles));
+  const added: ChemEnumRGroup[] = [];
+  for (const rg of made) {
+    if (seen.has(rg.smiles)) continue;
+    seen.add(rg.smiles);
+    added.push(rg);
+  }
+  if (mode === 'replace') {
+    if (added.length > 0) rGroupsByNum.set(targetN, added);
+    else rGroupsByNum.delete(targetN); // replacing with nothing clears the slot
+  } else if (added.length > 0) {
+    existing.push(...added);
+    rGroupsByNum.set(targetN, existing);
+  }
+  return added.length;
+}
+
+/**
+ * Copies slot `srcN`'s substituents into slot `targetN`, re-labeling each to the target R#.
+ * No-op (returns 0) when the source is empty or `targetN === srcN`. Returns the number added
+ * (after de-duplication against the target slot).
+ */
+export function copyRGroupList(
+  rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+  srcN: number, targetN: number, mode: 'append' | 'replace', rdkit: RDModule,
+): number {
+  const srcList = rGroupsByNum.get(srcN);
+  if (!srcList || srcList.length === 0 || targetN === srcN) return 0;
+  return addRGroupsFromSmiles(rGroupsByNum, srcList.map((rg) => rg.originalSmiles), targetN, mode, rdkit);
+}
+
+/**
+ * Default target R# a copy/template dialog opens on: the lowest core-referenced R# still unpopulated
+ * and ≠ `exclude` (so it opens out of a warning state), else the lowest other populated slot, else
+ * `(exclude ?? 0) + 1`. `exclude` is the source slot for a copy; omit it for templates.
+ */
+export function pickDefaultTargetR(populated: Set<number>, coreRNumbers: Set<number>, exclude?: number): number {
+  const freeCoreR = [...coreRNumbers].sort((a, b) => a - b).find((n) => n !== exclude && !populated.has(n));
+  const lowestOther = [...populated].sort((a, b) => a - b).find((n) => n !== exclude);
+  return freeCoreR ?? lowestOther ?? (exclude ?? 0) + 1;
+}
+
+/**
+ * Non-blocking advisory lines for adding/copying into slot `targetN`: invalid source entries carried
+ * as-is, and a target R# referenced by no core (ignored at enumeration). Empty when nothing's worth
+ * flagging (`invalidCount` is 0 for templates).
+ */
+export function rGroupTargetWarnings(targetN: number, invalidCount: number, coreRNumbers: Set<number>): string[] {
+  const warnings: string[] = [];
+  if (invalidCount > 0)
+    warnings.push(`${invalidCount} invalid ${invalidCount === 1 ? 'entry' : 'entries'} copied as-is`);
+  if (coreRNumbers.size > 0 && !coreRNumbers.has(targetN))
+    warnings.push(`R${targetN} isn't used by any core, so it'll be ignored when enumerating`);
+  return warnings;
+}
+
+/**
+ * Shapes cores + R-groups into named columns for CSV export: a `Core` column then one `R{n}` column
+ * per populated R#, valid (non-errored) entries only. Columns have different lengths, so shorter ones
+ * are padded with '' to a shared row count; columns that end up empty are dropped. Returns `[]` when
+ * there's nothing to export. Pure — the caller turns these into a DataFrame.
+ */
+export function buildExportColumns(
+  cores: ChemEnumCore[], rGroupsByNum: Map<number, ChemEnumRGroup[]>,
+): {name: string, values: string[]}[] {
+  const coreCol = {name: 'Core', values: cores.filter((c) => !c.error).map((c) => c.smiles)};
+  const rCols = [...rGroupsByNum.keys()].sort((a, b) => a - b)
+    .map((n) => ({name: `R${n}`, values: rGroupsByNum.get(n)!.filter((rg) => !rg.error).map((rg) => rg.smiles)}));
+  const all = [coreCol, ...rCols].filter((col) => col.values.length > 0);
+  if (all.length === 0) return [];
+  const maxLen = Math.max(...all.map((col) => col.values.length));
+  return all.map((col) => ({name: col.name, values: Array.from({length: maxLen}, (_, i) => col.values[i] ?? '')}));
+}
+
+function tryParse(smi: string, rdkit: RDModule): string | null {
+  let mol: RDMol | null = null;
+  try {
+    mol = rdkit.get_mol(smi);
+    if (!mol || !mol.is_valid()) return 'failed to parse';
+    return null;
+  } catch (err: any) {
+    return (err?.message ?? String(err)).toString().slice(0, 120);
+  } finally {
+    mol?.delete();
+  }
+}
+
+/**
+ * Returns the canonical, H-stripped SMILES iff `smi` parses as exactly one
+ * heavy atom — used to detect single-atom R-groups (`N`, `O`, `[N+]`, …) that
+ * substitute into the core's `[*:N]` slot directly. Returns null otherwise.
+ */
+function trySingleAtomCanonical(smi: string, rdkit: RDModule): string | null {
+  let mol: RDMol | null = null;
+  try {
+    mol = rdkit.get_mol(smi);
+    if (!mol || !mol.is_valid()) return null;
+    if (mol.get_num_atoms(true) !== 1) return null;
+    mol.remove_hs_in_place();
+    const canon = mol.get_smiles();
+    return canon && canon.length > 0 ? canon : null;
+  } catch {
+    return null;
+  } finally {
+    mol?.delete();
+  }
+}
+
+// ─── Count + validation ─────────────────────────────────────────────────────
+
+/** Results per core: depends on mode and the R-numbers the core uses. */
+export function countForCore(
+  core: ChemEnumCore, rGroups: Map<number, ChemEnumRGroup[]>, mode: ChemEnumMode,
+): { count: number, uncovered: number[] } {
+  const uncovered: number[] = [];
+  const counts: number[] = [];
+  for (const n of core.rNumbers) {
+    const list = rGroups.get(n);
+    if (!list || list.length === 0) { uncovered.push(n); continue; }
+    counts.push(list.filter((g) => !g.error).length);
+  }
+  if (uncovered.length > 0) return {count: 0, uncovered};
+  if (counts.some((c) => c === 0)) return {count: 0, uncovered};
+
+  if (mode === ChemEnumModes.Zip) {
+    if (counts.length === 0) return {count: 0, uncovered};
+    const first = counts[0];
+    return {count: counts.every((c) => c === first) ? first : -1, uncovered};
+  }
+  // Cartesian
+  return {count: counts.reduce((p, c) => p * c, 1), uncovered};
+}
+
+/**
+ * Quickly validates the overall enumeration parameters, predicting the total
+ * result count and flagging structural issues (invalid inputs, uncovered R-numbers,
+ * zip-length mismatches, cap exceedance).
+ */
+export function validateParams(params: ChemEnumParams): ChemEnumValidation {
+  const max = params.maxResults ?? CHEM_ENUM_MAX_RESULTS;
+  const errors: string[] = [];
+  let total = 0;
+
+  const validCores = params.cores.filter((c) => !c.error);
+  if (validCores.length === 0) errors.push('No valid cores provided.');
+
+  // Collect all R-numbers used by any valid core
+  const usedRs = new Set<number>();
+  for (const c of validCores) for (const n of c.rNumbers) usedRs.add(n);
+
+  // Per-R-number R-group validity counts
+  const rgCounts = new Map<number, number>();
+  for (const n of usedRs) {
+    const list = params.rGroups.get(n) ?? [];
+    const valid = list.filter((g) => !g.error).length;
+    rgCounts.set(n, valid);
+    if (valid === 0) errors.push(`No valid R-group provided for R${n}.`);
+  }
+
+  // Zip mode: all used R-group lists must share a length > 0
+  if (params.mode === ChemEnumModes.Zip) {
+    const lens = [...rgCounts.values()].filter((v) => v > 0);
+    if (lens.length > 1 && !lens.every((v) => v === lens[0]))
+      errors.push(`Zip mode requires every R-group list to have the same number of entries. Got ${[...rgCounts.entries()].map(([n, v]) => `R${n}=${v}`).join(', ')}.`);
+  }
+
+  for (const c of validCores) {
+    const {count, uncovered} = countForCore(c, params.rGroups, params.mode);
+    if (uncovered.length > 0) {
+      errors.push(`Core "${c.id}" references uncovered R-number${uncovered.length > 1 ? 's' : ''}: ${uncovered.map((n) => 'R' + n).join(', ')}.`);
+      continue;
+    }
+    if (count < 0) continue; // already covered by the global zip-mismatch message
+    total += count;
+    if (total > max) break;
+  }
+
+  const overCap = total > max;
+  if (overCap)
+    errors.push(`Too many combinations (> ${max.toLocaleString()}). Reduce the number of cores or R-groups, or switch to Zip mode.`);
+
+  return {ok: errors.length === 0, errors, predictedCount: total, overCap};
+}
+
+// ─── SMILES assembly ────────────────────────────────────────────────────────
+
+/**
+ * Pure-string join: core + one R-group per R-number share ring-closure digits
+ * across a disconnected SMILES. Returns a SMILES that RDKit can parse, but
+ * **not canonicalized** — call `Chem:convertNotation` or {@link assembleMolecule}
+ * for canonical output. No RDKit calls — safe to run on millions of rows without
+ * blocking the main thread.
+ *
+ *   core: `C[*:1]N[*:2]`, R1=`O[*:1]`, R2=`S[*:2]`
+ *   → `C%50N%51.O%50.S%51` (uncanonical but valid)
+ */
+export function buildJoinedSmiles(
+  coreSmiles: string,
+  rgSmilesByNum: Map<number, string>,
+): string | null {
+  if (rgSmilesByNum.size === 0) return null;
+
+  // Single-atom R-groups (no `[*:k]` in their SMILES) are spliced into the
+  // core's `[*:k]` slot directly. Labeled R-groups go through the standard
+  // ring-closure join. The two paths cooperate when both are present:
+  // atoms are substituted first, then the labeled rest is joined.
+  const atomReps = new Map<number, string>();
+  const labeled = new Map<number, string>();
+  for (const [k, s] of rgSmilesByNum) {
+    if (extractRNumbers(s).includes(k)) labeled.set(k, s);
+    else atomReps.set(k, s);
+  }
+
+  let preparedCore = coreSmiles;
+  for (const [k, atom] of atomReps)
+    preparedCore = substituteRLabelWithAtom(preparedCore, k, atom);
+
+  if (labeled.size === 0) return preparedCore;
+
+  const coreFixed = moveStartRLabelToBranch(preparedCore);
+  const rgsFixed = new Map<number, string>();
+  for (const [k, s] of labeled) rgsFixed.set(k, moveStartRLabelToBranch(s));
+
+  const allPieces = [coreFixed, ...rgsFixed.values()];
+  const digits = pickFreeRingDigits(allPieces, labeled.size);
+  if (digits.length < labeled.size) return null;
+
+  const digitByNum = new Map<number, string>();
+  let i = 0;
+  for (const k of labeled.keys()) digitByNum.set(k, formatRingDigit(digits[i++]));
+
+  let assembledCore = coreFixed;
+  for (const [k, d] of digitByNum)
+    assembledCore = substituteRLabelWithRingDigit(assembledCore, k, d);
+
+  const assembledRgs: string[] = [];
+  for (const [k, s] of rgsFixed)
+    assembledRgs.push(substituteRLabelWithRingDigit(s, k, digitByNum.get(k)!));
+
+  return [assembledCore, ...assembledRgs].join('.');
+}
+
+/**
+ * Splices an atom token into every `[*:n]` slot of `smi`. Unlike ring-digit
+ * substitution, parens around the label (`(N)` etc.) are valid SMILES, so a
+ * plain string replace is enough.
+ */
+export function substituteRLabelWithAtom(smi: string, n: number, atom: string): string {
+  return smi.split(`[*:${n}]`).join(atom);
+}
+
+/**
+ * Joins a core with one R-group per R-number and canonicalizes via RDKit.
+ * Per-molecule sync RDKit call — **do not use in bulk**; prefer {@link buildJoinedSmiles}
+ * + a batched `Chem:convertNotation` over the whole column.
+ */
+export function assembleMolecule(
+  coreSmiles: string,
+  rgSmilesByNum: Map<number, string>,
+  rdkit: RDModule,
+): string | null {
+  const joined = buildJoinedSmiles(coreSmiles, rgSmilesByNum);
+  if (!joined) return null;
+  let mol: RDMol | null = null;
+  try {
+    mol = rdkit.get_mol(joined);
+    if (!mol || !mol.is_valid()) return null;
+    return mol.get_smiles();
+  } catch {
+    return null;
+  } finally {
+    mol?.delete();
+  }
+}
+
+/**
+ * `[*:N]X…` or `[*:N]=X…` at SMILES start becomes `X([*:N])…` / `X(=[*:N])…`
+ * so every R-label is preceded by an atom — required for ring-digit substitution.
+ */
+export function moveStartRLabelToBranch(smi: string): string {
+  const m = smi.match(/^(\[\*:\d+\])([-=#:/\\])?(\[[^\]]+\]|Br|Cl|[BCNOPSFIbcnops])(.*)$/s);
+  if (!m) return smi;
+  const [, rlab, bond, atom, rest] = m;
+  return `${atom}(${bond ?? ''}${rlab})${rest}`;
+}
+
+/** Replaces `[*:n]` and `([*:n])` in `smi` with a ring-closure token. */
+export function substituteRLabelWithRingDigit(smi: string, n: number, digitToken: string): string {
+  const target = `[*:${n}]`;
+  // Collapse a lone-branch form first so `(` / `)` don't linger: X([*:n]) → X<digit>
+  const branchForm = new RegExp(`\\(\\s*\\[\\*:${n}\\]\\s*\\)`, 'g');
+  smi = smi.replace(branchForm, digitToken);
+  return smi.split(target).join(digitToken);
+}
+
+/**
+ * Picks `count` ring-closure digits not already in use in any of the pieces,
+ * formatted as bare digits when possible and `%NN` otherwise.
+ */
+export function pickFreeRingDigits(pieces: string[], count: number): number[] {
+  const used = new Set<number>();
+  for (const p of pieces) {
+    const stripped = p.replace(/\[[^\]]*\]/g, ''); // atoms are bracketed — ignore their digits
+    for (const m of stripped.matchAll(/%(\d{2})/g))
+      used.add(parseInt(m[1], 10));
+    for (const ch of stripped) {
+      const v = ch.charCodeAt(0) - 48;
+      if (v >= 0 && v <= 9) used.add(v);
+    }
+  }
+  const free: number[] = [];
+  for (let d = 1; d < 100 && free.length < count; d++)
+    if (!used.has(d)) free.push(d);
+  return free;
+}
+
+export function formatRingDigit(n: number): string {
+  if (n < 0 || n > 99) throw new Error(`Ring digit out of range: ${n}`);
+  return n <= 9 ? `${n}` : `%${n.toString().padStart(2, '0')}`;
+}
+
+// ─── Enumeration ────────────────────────────────────────────────────────────
+
+/** Enumerates R-group assignments per core, yielding up to `params.maxResults`. */
+export function* iterateAssignments(params: ChemEnumParams): Generator<{core: ChemEnumCore, assignment: Map<number, ChemEnumRGroup>}> {
+  const max = params.maxResults ?? CHEM_ENUM_MAX_RESULTS;
+  let produced = 0;
+
+  for (const core of params.cores) {
+    if (core.error) continue;
+
+    const rNums = core.rNumbers;
+    const lists: ChemEnumRGroup[][] = [];
+    let uncovered = false;
+    for (const n of rNums) {
+      const list = (params.rGroups.get(n) ?? []).filter((g) => !g.error);
+      if (list.length === 0) { uncovered = true; break; }
+      lists.push(list);
+    }
+    if (uncovered) continue;
+
+    if (params.mode === ChemEnumModes.Zip) {
+      if (lists.length === 0) continue;
+      const N = lists[0].length;
+      if (!lists.every((l) => l.length === N)) continue;
+      for (let i = 0; i < N; i++) {
+        const assignment = new Map<number, ChemEnumRGroup>();
+        for (let j = 0; j < rNums.length; j++) assignment.set(rNums[j], lists[j][i]);
+        yield {core, assignment};
+        if (++produced >= max) return;
+      }
+    } else {
+      // Cartesian — odometer iteration
+      const idx = new Array<number>(lists.length).fill(0);
+      while (true) {
+        const assignment = new Map<number, ChemEnumRGroup>();
+        for (let j = 0; j < rNums.length; j++) assignment.set(rNums[j], lists[j][idx[j]]);
+        yield {core, assignment};
+        if (++produced >= max) return;
+
+        let k = idx.length - 1;
+        while (k >= 0) {
+          idx[k]++;
+          if (idx[k] < lists[k].length) break;
+          idx[k] = 0;
+          k--;
+        }
+        if (k < 0) break;
+      }
+    }
+  }
+}
+
+/**
+ * Runs the full enumeration. Returns `null` when validation fails (errors available
+ * via {@link validateParams}). Silently skips assignments that fail to assemble.
+ */
+export function enumerate(params: ChemEnumParams, rdkit: RDModule): ChemEnumResult[] | null {
+  const v = validateParams(params);
+  if (!v.ok) return null;
+
+  const out: ChemEnumResult[] = [];
+  for (const {core, assignment} of iterateAssignments(params)) {
+    const rgSmiByNum = new Map<number, string>();
+    for (const [n, rg] of assignment)
+      rgSmiByNum.set(n, rg.smiles);
+    const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
+    if (!smi) continue;
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum});
+  }
+  return out;
+}
+
+/**
+ * Reservoir-samples up to `sampleSize` results for a live preview.
+ * Total iteration count is capped at `params.maxResults` for safety.
+ */
+export function enumerateSample(
+  params: ChemEnumParams, rdkit: RDModule, sampleSize: number, rand: () => number = Math.random,
+): ChemEnumResult[] {
+  const reservoir: ChemEnumResult[] = [];
+  let seen = 0;
+  for (const {core, assignment} of iterateAssignments(params)) {
+    const rgSmiByNum = new Map<number, string>();
+    for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
+    const smi = assembleMolecule(core.smiles, rgSmiByNum, rdkit);
+    if (!smi) continue;
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum};
+
+    if (reservoir.length < sampleSize) {
+      reservoir.push(item);
+    } else {
+      const j = Math.floor(rand() * (seen + 1));
+      if (j < sampleSize) reservoir[j] = item;
+    }
+    seen++;
+  }
+  return reservoir;
+}
+
+/**
+ * No-RDKit enumeration — returns *uncanonical* joined SMILES per assignment.
+ * Intended as the first stage of a bulk pipeline: collect these into a column
+ * and canonicalize with one parallel `Chem:convertNotation` call instead of
+ * per-row sync RDKit work.
+ */
+export function enumerateRaw(params: ChemEnumParams): ChemEnumResult[] | null {
+  const v = validateParams(params);
+  if (!v.ok) return null;
+
+  const out: ChemEnumResult[] = [];
+  for (const {core, assignment} of iterateAssignments(params)) {
+    const rgSmiByNum = new Map<number, string>();
+    for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
+    const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
+    if (!smi) continue;
+    out.push({smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum});
+  }
+  return out;
+}
+
+/** Reservoir-sample with the no-RDKit join. Output SMILES are uncanonical but parseable. */
+export function enumerateSampleRaw(
+  params: ChemEnumParams, sampleSize: number, rand: () => number = Math.random,
+): ChemEnumResult[] {
+  const reservoir: ChemEnumResult[] = [];
+  let seen = 0;
+  for (const {core, assignment} of iterateAssignments(params)) {
+    const rgSmiByNum = new Map<number, string>();
+    for (const [n, rg] of assignment) rgSmiByNum.set(n, rg.smiles);
+    const smi = buildJoinedSmiles(core.smiles, rgSmiByNum);
+    if (!smi) continue;
+    const item: ChemEnumResult = {smiles: smi, coreSmiles: core.originalSmiles, rGroupSmilesByNum: rgSmiByNum};
+
+    if (reservoir.length < sampleSize) {
+      reservoir.push(item);
+    } else {
+      const j = Math.floor(rand() * (seen + 1));
+      if (j < sampleSize) reservoir[j] = item;
+    }
+    seen++;
+  }
+  return reservoir;
+}
+
+/**
+ * First-occurrence keep-mask for `values`, as a {@link DG.BitSet}: bit `i` is set when
+ * `values[i]` is the first time that value is seen, and cleared for a later duplicate.
+ * Nullish/empty entries are always kept — they stand for blank or unparseable rows that
+ * must not be collapsed together. Returns a ready-to-use BitSet so callers can pass it
+ * straight to `DataFrame.clone` without rebuilding it.
+ */
+export function uniqueKeepMask(values: ReadonlyArray<string | null | undefined>): DG.BitSet {
+  const seen = new Set<string>();
+  // BitSet.create populates via init(), which calls the predicate for i = 0..n-1 in order,
+  // so the stateful `seen` set sees values left-to-right and the first occurrence wins.
+  return DG.BitSet.create(values.length, (i) => {
+    const v = values[i];
+    if (v == null || v === '') return true;
+    if (seen.has(v)) return false;
+    seen.add(v);
+    return true;
+  });
+}

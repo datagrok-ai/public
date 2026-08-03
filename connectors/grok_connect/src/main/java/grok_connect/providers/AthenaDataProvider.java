@@ -131,9 +131,15 @@ public class AthenaDataProvider extends JdbcDataProvider {
 
     @Override
     public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
-        return GrokConnectUtil.isNotEmpty((String) conn.credentials.parameters.getOrDefault("expires", null)) ?
-                DriverManager.getConnection(getConnectionString(conn), getProperties(conn))
-                : ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+        if (GrokConnectUtil.isEmpty((String) conn.credentials.parameters.getOrDefault("expires", null)))
+            return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+        try {
+            Class.forName(driverClassName);
+        }
+        catch (ClassNotFoundException e) {
+            throw new GrokConnectException("JDBC driver not found: " + driverClassName, e);
+        }
+        return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
 
     @Override

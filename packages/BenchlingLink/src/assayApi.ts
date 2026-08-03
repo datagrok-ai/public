@@ -59,7 +59,7 @@ export interface AssayResultsQueryParams {
 }
 
 export interface AssayRunsQueryParams {
-  schemaId?: string;
+  schemaId: string;
   minCreatedTime?: number;
   maxCreatedTime?: number;
   nextToken?: string;
@@ -87,7 +87,7 @@ export async function queryAssayResults(params: AssayResultsQueryParams = {}): P
 }
 
 
-export async function queryAssayRuns(params: AssayRunsQueryParams = {}): Promise<DG.DataFrame> {
+export async function queryAssayRuns(params: AssayRunsQueryParams): Promise<DG.DataFrame> {
   // const token = 'YOUR_BENCHLING_API_TOKEN';
   // const query = buildQueryString(params);
   // const url = `https://benchling.com/api/v2/assay-runs${query ? '?' + query : ''}`;
@@ -107,17 +107,24 @@ export async function queryAssayRuns(params: AssayRunsQueryParams = {}): Promise
 }
 
 
-export interface AssayResultCreateRequest {
+export interface AssayResultCreate {
   schemaId: string;
-  fields?: any;
-  entityIds?: string[];
-  storageIds?: string[];
-  assayRunId?: string;
-  authorIds?: string[];
-  customFields?: any;
+  fields: any;
+  id?: string;
+  projectId?: string | null;
+  fieldValidation?: any;
 }
 
-export async function postAssayResult(body: AssayResultCreateRequest): Promise<AssayResult> {
+export interface AssayResultsBulkCreateRequest {
+  assayResults: AssayResultCreate[];
+}
+
+export interface AssayResultsCreateResponse {
+  assayResults: string[];
+  errors?: any;
+}
+
+export async function postAssayResults(body: AssayResultsBulkCreateRequest): Promise<AssayResultsCreateResponse> {
   // const token = 'YOUR_BENCHLING_API_TOKEN';
   // const response = await grok.dapi.fetchProxy('https://benchling.com/api/v2/assay-results', {
   //   method: 'POST',
@@ -132,18 +139,29 @@ export async function postAssayResult(body: AssayResultCreateRequest): Promise<A
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
   // return data;
-  return mockAssayResults.assayResults[0];
+  const count = body.assayResults?.length ?? 0;
+  return { assayResults: mockAssayResults.assayResults.slice(0, count).map((r) => r.id) };
 }
 
-export interface AssayRunCreateRequest {
+export interface AssayRunCreate {
   schemaId: string;
-  fields?: any;
-  name?: string;
-  authorIds?: string[];
-  customFields?: any;
+  fields: any;
+  id?: string;
+  projectId?: string;
+  validationComment?: string;
+  validationStatus?: string;
 }
 
-export async function postAssayRun(body: AssayRunCreateRequest): Promise<AssayRun> {
+export interface AssayRunsBulkCreateRequest {
+  assayRuns: AssayRunCreate[];
+}
+
+export interface AssayRunsBulkCreateResponse {
+  assayRuns: string[];
+  errors?: any;
+}
+
+export async function postAssayRuns(body: AssayRunsBulkCreateRequest): Promise<AssayRunsBulkCreateResponse> {
   // const token = 'YOUR_BENCHLING_API_TOKEN';
   // const response = await grok.dapi.fetchProxy('https://benchling.com/api/v2/assay-runs', {
   //   method: 'POST',
@@ -158,7 +176,8 @@ export async function postAssayRun(body: AssayRunCreateRequest): Promise<AssayRu
   //   throw new Error(`Benchling API error: ${response.statusText}`);
   // const data = await response.json();
   // return data;
-  return mockAssayRuns.assayRuns[0];
+  const count = body.assayRuns?.length ?? 0;
+  return { assayRuns: mockAssayRuns.assayRuns.slice(0, count).map((r) => r.id) };
 }
 
 export const mockAssayResults = {

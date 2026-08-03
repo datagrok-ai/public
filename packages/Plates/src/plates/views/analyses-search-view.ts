@@ -62,10 +62,8 @@ function getAnalysesSearchView(
 
   const refreshResults = () => {
     const selectedAnalysis = AnalysisManager.instance.byFriendlyName(analysisTypeSelector.value as string);
-    if (!selectedAnalysis) {
-      resultsView.dataFrame = DG.DataFrame.create(0);
+    if (!selectedAnalysis)
       return;
-    }
 
     const queryBase = analysisFormToQuery(analysisForm, selectedAnalysis.name);
     const query: AnalysisQuery = {
@@ -97,13 +95,7 @@ function getAnalysesSearchView(
     ui.empty(analysisFormHost);
     const selectedAnalysisName = analysisTypeSelector.value;
 
-    if (selectedAnalysisName === 'None' || selectedAnalysisName === null) {
-      analysisForm = DG.InputForm.forInputs([]);
-      refreshResults();
-      return;
-    }
-
-    const analysis = AnalysisManager.instance.byFriendlyName(selectedAnalysisName);
+    const analysis = selectedAnalysisName ? AnalysisManager.instance.byFriendlyName(selectedAnalysisName) : null;
     if (!analysis) {
       console.error(`Analysis "${selectedAnalysisName}" not found.`);
       refreshResults();
@@ -146,9 +138,10 @@ function getAnalysesSearchView(
     refreshResults();
   };
 
+  const analysisFriendlyNames = AnalysisManager.instance.analyses.map((a) => a.friendlyName);
   const analysisTypeSelector = ui.input.choice('Analysis', {
-    items: ['None', ...AnalysisManager.instance.analyses.map((a) => a.friendlyName)],
-    value: 'None',
+    items: analysisFriendlyNames,
+    value: analysisFriendlyNames[0],
     onValueChanged: refreshAnalysisUI,
   });
   analysisTypeSelector.root.classList.add('assay-analyses-search-view__analysis-type-selector');

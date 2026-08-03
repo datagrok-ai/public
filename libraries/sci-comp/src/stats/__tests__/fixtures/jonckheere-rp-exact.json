@@ -1,0 +1,203 @@
+{
+  "metadata": {
+    "source": "tests\\python_generation\\exact_jonckheere_test_results_regression_pack.json",
+    "generated_at": "2026-05-01T13:24:00+00:00",
+    "method": "exact",
+    "tolerances": {
+      "p_value": 0.001,
+      "j_statistic": 0.5
+    }
+  },
+  "cases": [
+    {
+      "name": "rp-exact#0: alt=increasing, k=3, n=3, id=0",
+      "category": "exact",
+      "inputs": {
+        "x": [
+          0.5488135039273248,
+          0.9784454912760541,
+          1.4080774786247834,
+          0.7151893663724195,
+          1.1448213537211487,
+          1.5744533410698782,
+          0.6027633760716439,
+          1.032395363420373,
+          1.4620273507691026
+        ],
+        "g": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        "alternative": "increasing",
+        "method": "exact",
+        "continuity": false,
+        "nperm": null
+      },
+      "expected": {
+        "j_statistic": 15.0,
+        "z_statistic": null,
+        "p_value": 0.4154761904761905,
+        "significant": false
+      }
+    },
+    {
+      "name": "rp-exact#1: alt=increasing, k=3, n=3, id=1",
+      "category": "exact",
+      "inputs": {
+        "x": [
+          0.417022004702574,
+          0.5067883706963677,
+          0.5965547366901615,
+          0.7203244934421581,
+          0.8100908594359518,
+          0.8998572254297456,
+          0.00011437481734488664,
+          0.08988074081113862,
+          0.17964710680493234
+        ],
+        "g": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        "alternative": "increasing",
+        "method": "exact",
+        "continuity": false,
+        "nperm": null
+      },
+      "expected": {
+        "j_statistic": 9.0,
+        "z_statistic": null,
+        "p_value": 0.8613095238095239,
+        "significant": false
+      }
+    },
+    {
+      "name": "rp-exact#2: alt=increasing, k=3, n=3, id=2",
+      "category": "exact",
+      "inputs": {
+        "x": [
+          0.43599490214200376,
+          0.0406600474056833,
+          -0.35467480733063717,
+          0.025926231827891333,
+          -0.36940862290842913,
+          -0.7647434776447496,
+          0.5496624778787091,
+          0.15432762314238868,
+          -0.24100723159393178
+        ],
+        "g": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        "alternative": "increasing",
+        "method": "exact",
+        "continuity": false,
+        "nperm": null
+      },
+      "expected": {
+        "j_statistic": 15.0,
+        "z_statistic": null,
+        "p_value": 0.4154761904761905,
+        "significant": false
+      }
+    },
+    {
+      "name": "rp-exact#3: alt=increasing, k=3, n=3, id=3",
+      "category": "exact",
+      "inputs": {
+        "x": [
+          0.5507979025745755,
+          0.42144268781112926,
+          0.292087473047683,
+          0.7081478226181048,
+          0.5787926078546586,
+          0.44943739309121233,
+          0.2909047389129443,
+          0.16154952414949808,
+          0.032194309386051834
+        ],
+        "g": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        "alternative": "increasing",
+        "method": "exact",
+        "continuity": false,
+        "nperm": null
+      },
+      "expected": {
+        "j_statistic": 8.0,
+        "z_statistic": null,
+        "p_value": 0.9053571428571429,
+        "significant": false
+      }
+    },
+    {
+      "name": "rp-exact#4: alt=increasing, k=3, n=3, id=4",
+      "category": "exact",
+      "inputs": {
+        "x": [
+          0.9670298390136767,
+          0.9886850494090027,
+          1.0103402598043287,
+          0.5472322491757223,
+          0.5688874595710484,
+          0.5905426699663744,
+          0.9726843599648843,
+          0.9943395703602104,
+          1.0159947807555363
+        ],
+        "g": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3
+        ],
+        "alternative": "increasing",
+        "method": "exact",
+        "continuity": false,
+        "nperm": null
+      },
+      "expected": {
+        "j_statistic": 15.0,
+        "z_statistic": null,
+        "p_value": 0.4154761904761905,
+        "significant": false
+      }
+    }
+  ]
+}

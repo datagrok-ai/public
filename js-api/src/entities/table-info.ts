@@ -32,6 +32,10 @@ export class TableInfo extends Entity {
   get dataFrame(): DataFrame { return toJs(api.grok_TableInfo_Get_DataFrame(this.dart)); }
 
   get columns(): ColumnInfo[] { return toJs(api.grok_TableInfo_Get_Columns(this.dart)); }
+
+  /** Persists [script] as this table's creation script: updates the metadata, mirrors it to the
+   * live dataframe tags, and saves the metadata on the server. */
+  saveCreationScript(script: string): Promise<void> { return api.grok_TableInfo_SaveCreationScript(this.dart, script); }
 }
 
 
@@ -111,6 +115,11 @@ export class FileInfo extends Entity {
   /** @returns {Promise<Uint8Array>} */
   readAsBytes(): Promise<Uint8Array> {
     return api.grok_FileInfo_ReadAsBytes(this.dart);
+  }
+
+  /** Saves the file info on the server. */
+  save(): Promise<FileInfo> {
+    return api.grok_FileInfo_Save(this.dart);
   }
 
   static fromBytes(path: string, data: Uint8Array): FileInfo {

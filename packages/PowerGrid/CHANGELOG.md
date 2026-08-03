@@ -2,8 +2,21 @@
 
 ## v.next
 
+* [#3765](https://github.com/datagrok-ai/public/issues/3765): Forms viewer: Added the ability to pin rows via the context menu; pinned forms stay in place when scrolling
+
+## 1.8.3 (2026-07-09)
+
+* [#3781](https://github.com/datagrok-ai/public/issues/3781): Forms viewer: Added font size control
+* GROK-20367: Forms viewer: Number formatting does not match grid in some cases
+
+## 1.8.2 (2026-05-07)
+
 * Introduced SVG cell renderer with content-based LRU caching for canvas rendering
 * Added SVG semantic type auto-detector
+* Tags cell renderer: Fixed missing return in `getColor` that left first render of a new tag with an undefined color
+* Pie chart sparkline: Filter null columns in hit-test so hovering with stale/missing column names no longer throws
+* Forms cell renderer: Scoped per-cell scene via WeakMap keyed on grid (removes cross-grid contamination) and debounced tooltip shows (no more flicker)
+* Vlaaivis manager: Migrated drop handler to the new `doDrop(args)` signature in `ui.makeDroppable`
 
 ## 1.8.1 (2026-03-17)
 

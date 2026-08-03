@@ -42,6 +42,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
         this.dockManager = new DockManager(dockSpawnDiv);
         this.dockManager.config.dialogRootElement = dockSpawnDiv;
+        // Panels are added programmatically (Vue render -> MutationObserver), so a new
+        // tab must not steal focus from the user's current tab. The preferred tab is
+        // driven explicitly via the `preferredPanelTitle` property instead.
+        this.dockManager.config.activatePanelOnAdd = false;
     }
 
     private initDockManager() {
@@ -52,6 +56,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
                 this.dispatchEvent(new CustomEvent('active-panel-changed', {detail: {
                     newPanel: panel?.title,
                     prevPanel: prevPanel?.title
+                }}));
+            },
+            onTabChanged: (_, tabpage) => {
+                this.dispatchEvent(new CustomEvent('tab-clicked', {detail: {
+                    title: tabpage?.panel?.title
                 }}));
             },
             onClosePanel: (dockManager, dockNode) => {
@@ -95,6 +104,20 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
             const pNode = this.dockManager?.findNodeFromContainerElement(foundPanel?.tabPage?.container?.containerElement)?.parent;
             pNode?.container?.setActiveChild(foundPanel);
         }
+    }
+
+    // The tab to keep active across tab adds/rebuilds. Re-asserted after structural
+    // changes; a no-op when the tab is already active, so it never causes a flicker.
+    private _preferredPanelTitle: string | null = null;
+    public set preferredPanelTitle(panelTitle: string | null) {
+        this._preferredPanelTitle = panelTitle;
+        this.applyPreferred();
+    }
+
+    private applyPreferred() {
+        const title = this._preferredPanelTitle;
+        if (title && this.dockManager?.getPanels().some((panel) => panel.title === title))
+            this.activePanelTitle = title;
     }
 
     public getElementInSlot(slot: HTMLSlotElement): HTMLElement {
@@ -166,6 +189,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         if ((<HTMLElement>element).style.display == 'none')
             (<HTMLElement>element).style.display = 'block';
 
+        this.applyPreferred();
         this.dispatchEvent(new CustomEvent('panel-opened', {detail: element}));
     }
 

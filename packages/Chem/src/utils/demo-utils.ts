@@ -44,10 +44,12 @@ export async function openSketcher(parent: HTMLElement, className: string) {
 
 
 export function getAccordionPane(name: string, parent: Element) {
-  const paneHeader = Array.from(parent!.getElementsByClassName('d4-accordion-pane-header'))
-    .find((el) => el.textContent === name) as HTMLElement;
-  if (!paneHeader!.classList.contains('expanded'))
-        paneHeader!.click();
+  const paneHeader = Array.from(parent.getElementsByClassName('d4-accordion-pane-header'))
+    .find((el) => el.textContent === name) as HTMLElement | undefined;
+  if (!paneHeader)
+    throw new Error(`Accordion pane '${name}' not found`);
+  if (!paneHeader.classList.contains('expanded'))
+    paneHeader.click();
   return paneHeader.parentElement?.children[1];
 }
 
@@ -65,8 +67,8 @@ export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   return grok.shell.addTableView(table);
 }
 
-export function addCustomHelp(linkAddress: string, sectioName: string) {
-  const str = `to find out more about ${sectioName} in Datagrok.`;
+export function addCustomHelp(linkAddress: string, sectionName: string) {
+  const str = `to find out more about ${sectionName} in Datagrok.`;
   const el = ui.div([
     ui.divText('Click'),
     ui.link(`here`, linkAddress),

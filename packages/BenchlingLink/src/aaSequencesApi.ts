@@ -1,8 +1,7 @@
 // Types for AA Sequences API
 import { UserSummary } from './types';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { dataFrameFromObjects } from './utils';
+import { buildQueryString, dataFrameFromObjects } from './utils';
 
 export interface AaAnnotation {
   color?: string;
@@ -39,28 +38,6 @@ export interface AaSequence {
 export interface AaSequencesPaginatedList {
   aaSequences: AaSequence[];
   nextToken?: string;
-}
-
-export async function getToken(): Promise<DG.DataFrame> {
-  const response = await grok.dapi.fetchProxy('https://benchling.com/api/v2/token', {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
-  if (!response.ok)
-    throw new Error(`Benchling API error: ${response.statusText}`);
-  const data = await response.json();
-  const df = DG.DataFrame.fromObjects(data.aaSequences ?? []) ?? DG.DataFrame.create();
-  grok.shell.addTableView(df);
-  return df;
-}
-
-export function buildQueryString(params: Record<string, any>): string {
-  const esc = encodeURIComponent;
-  return Object.entries(params)
-    .filter(([_, v]) => v !== undefined && v !== null && v !== '')
-    .map(([k, v]) => `${esc(k)}=${esc(v)}`)
-    .join('&');
 }
 
 export interface AASequencesQueryParams {

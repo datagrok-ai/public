@@ -50,6 +50,9 @@ export class MonomerLibBase implements IMonomerLibBase {
 
   get onChanged(): Observable<any> { return this._onChanged; }
 
+  fireChanged(value?: any) {
+    this._onChanged.next(value);
+  }
 
   constructor(
     protected _monomers: MonomerLibData,
@@ -72,7 +75,9 @@ export class MonomerLibBase implements IMonomerLibBase {
 
   // smiles to symbol Mapping cache
   private _smilesMonomerCache: {[polymerType: string]: {[smiles: string]: string}} = {};
-
+  public clearSmilesMonomerCache() {
+    this._smilesMonomerCache = {};
+  }
   /** Creates missing {@link Monomer} */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
     let mSet = this._monomers[polymerType];
@@ -167,11 +172,12 @@ export class MonomerLibBase implements IMonomerLibBase {
 
     /** Get or create {@link Monomer} object (in case it is missing in monomer library current config) */
     let m: Monomer | null = this.getMonomer(pt, elem);
-    if (m && biotype == HelmTypes.LINKER && m[REQ.RGROUPS].length != 2) {
-      // Web Editor expects null
-      return null;
-    }
-    if (m && biotype == HelmTypes.SUGAR && m[REQ.RGROUPS].length != 3) {
+    // there can be linkers that have 1 rgroup that are terminal, so we allow that.
+    // if (m && biotype == HelmTypes.LINKER && (m[REQ.RGROUPS]?.length ?? 0) < 2) {
+    //   // Web Editor expects null
+    //   return null;
+    // }
+    if (m && biotype == HelmTypes.SUGAR && (m[REQ.RGROUPS]?.length ?? 0) < 3) {
       // Web Editor expects null
       return null;
     }

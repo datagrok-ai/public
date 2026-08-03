@@ -71,9 +71,3 @@ function getSettingInt(name: string, defaultValue: number): number {
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-export function dataFrameFromObjects(objects: any[]): DG.DataFrame | null {
-  if (!objects || objects.length === 0)
-    return null;
-  return DG.DataFrame.fromObjects(objects) ?? null;
-}

@@ -1,5 +1,13 @@
 ---
 title: "Use layouts"
+description: Create, save, search, and apply Datagrok view layouts programmatically, including project layouts and metadata.
+keywords:
+  - ViewLayout class
+  - saveLayout loadLayout
+  - grok.dapi.layouts
+  - getApplicable layouts
+  - layout-id tag
+  - project layout export
 ---
 
 [Layouts](../../../visualize/view-layout.md) define the way visualizations are positioned in a table view, allowing to
@@ -93,7 +101,7 @@ view.loadLayout(DG.ViewLayout.fromViewState(layout.viewState));
 ## Saving and searching
 
 The `grok.dapi.layouts` endpoint provides common functionality inherited from
-[HttpDataSource](https://datagrok.ai/api/js/api/dg/classes/HttpDataSource) that is responsible for handling collections of
+[HttpDataSource](https://datagrok.ai/api/js/dg/classes/HttpDataSource) that is responsible for handling collections of
 entities stored on the server. Developers can save layouts, find them by id, filter the list of entities according
 to [certain criteria](../../../visualize/table-view-1.md#search), and so on.
 

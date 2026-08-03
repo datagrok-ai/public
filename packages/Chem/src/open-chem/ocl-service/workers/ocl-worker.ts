@@ -1,5 +1,6 @@
 import {MolNotationType, OCLServiceCall} from '../consts';
 import * as OCL from 'openchemlib/full';
+import {MAX_SMILES_LENGTH} from '../../../utils/chem-constants';
 
 type OCLWorkerReturnType = {res: {[key: string]: Array<number>}, errors: string[]};
 
@@ -10,8 +11,10 @@ onmessage = ({data: {op, data, argList, notationType}}) => {
     break;
   case OCLServiceCall.DRUG_LIKENESS:
     postMessage(getDrugLikeliness(data, notationType));
+    break;
   case OCLServiceCall.Molfile_To_V3K:
     postMessage(molfilesToV3K(data));
+    break;
   case OCLServiceCall.RECALCULATE_COORDINATES:
     postMessage(recalculateCoordinates(data, notationType));
     break;
@@ -26,7 +29,7 @@ function isSmiles(notationType: string): boolean {
 }
 
 function oclMol(mol: string, notationType: string): OCL.Molecule {
-  if (isSmiles(notationType) && mol.length > 5000)
+  if (isSmiles(notationType) && mol.length > MAX_SMILES_LENGTH)
     throw new Error('Invalid molecule string');
   return isSmiles(notationType) ? OCL.Molecule.fromSmiles(mol) : OCL.Molecule.fromMolfile(mol);
 }
@@ -145,7 +148,7 @@ const CHEM_PROP_MAP: {[k: string]: IChemProperty} = {
 function getMoleculeCharge(mol: OCL.Molecule): number {
   const atomsNumber = mol.getAllAtoms();
   let moleculeCharge = 0;
-  for (let atomIndx = 0; atomIndx <= atomsNumber; ++atomIndx)
+  for (let atomIndx = 0; atomIndx < atomsNumber; ++atomIndx)
     moleculeCharge += mol.getAtomCharge(atomIndx);
 
   return moleculeCharge;

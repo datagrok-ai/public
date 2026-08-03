@@ -1,8 +1,9 @@
 #name: hierarchicalClusteringByDistanceScript
-#description: Returns the newick representation of the tree for given distance matrix
+#friendlyName: Hierarchical Clustering by Distance
+#description: Cluster observations hierarchically from a precomputed distance matrix and return the tree in Newick format.
 #language: python
-#input: dataframe data [Input distance matrix condensed]
-#input: double size [Input size (obs number)]
+#input: dataframe data [Condensed distance matrix]
+#input: double size [Number of observations]
 #input: string linkage_name = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']} [Linkage]
 #output: string newick
 

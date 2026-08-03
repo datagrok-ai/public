@@ -3,31 +3,6 @@
     height: initial !important;
 }
 
-.hit-triage-compute-dialog-pane-header {
-    display: flex;
-    align-items: center;
-    justify-content: end;
-}
-
-.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header {
-    border: none;
-    border-left: 4px solid transparent;
-    border-radius: 1px;
-    padding: 4px 8px;
-    min-height: 28px;
-    justify-content: flex-end;
-    flex-direction: row-reverse;
-}
-
-.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header.selected {
-    border-left: 4px solid var(--blue-1);
-    background-color: #f2f2f5;
-}
-
-.hit-triage-compute-dialog-host>.d4-tab-host.d4-tab-vertical>.d4-tab-header-stripe>.d4-tab-header.hit-triage-compute-dialog-pane-header>span {
-    padding: 0 4px;
-}
-
 table.hit-triage-table {
     margin: 10px;
     width: calc(100% - 20px);
@@ -62,22 +37,6 @@ table.hit-triage-table {
 
 .hit-triage-new-template-functions-input > .d4-tab-host {
     width: 100% !important;
-}
-
-.hit-triage-compute-dialog-host {
-    max-height: 550px;
-    max-width: 800px;
-    min-width: 550px;
-    overflow: clip;
-}
-
-.hit-triage-compute-dialog-descriptors-group {
-    margin-left: 16px;
-    overflow: hidden;
-}
-
-.oy-scroll {
-    overflow-y: scroll;
 }
 
 .d4-ribbon-name .ui-breadcrumbs {

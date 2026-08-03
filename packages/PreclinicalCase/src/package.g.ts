@@ -38,6 +38,14 @@ export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
 export async function runCoreValidate(standard: string, dataPath: string, version?: string, outputFormat?: string, options?: any) : Promise<string> {
   return await PackageFunctions.runCoreValidate(standard, dataPath, version, outputFormat, options);
 }
+
+//description: Open a Preclinical Case view by name. Loads the study if needed. Used by tests.
+//input: string studyId 
+//input: string viewName 
+//output: view result
+export async function openPreclinicalCaseView(studyId: string, viewName: string) : Promise<any> {
+  return await PackageFunctions.openPreclinicalCaseView(studyId, viewName);
+}
 //name: combinedMeasurementsRenderer
 //output: grid_cell_renderer renderer
 //meta.role: cellRenderer

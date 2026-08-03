@@ -1,0 +1,42 @@
+packageName: Chembl
+description: "Query the ChEMBL database from Datagrok: structure search, identifier conversion, and compound lookup"
+keywords:
+  - chembl
+  - database queries
+  - substructure search
+  - similarity search
+  - molregno
+  - chembl id
+  - smiles
+  - rdkit cartridge
+  - compound lookup
+  - bioactivity
+  - target
+  - organism
+  - hit triage data source
+  - cheminformatics
+overview: |
+  Queries the ChEMBL database via a built-in connection, with an RDKit
+  cartridge for structure-aware searches.
+
+  Ready-made queries: parameterized SQL queries for protein classification,
+  target activity details, PK data, bioactivity for bacterial targets, and
+  more — runnable from the Databases tree.
+
+  Context panel (molecule cell): 'Substructure Search (Internal)' and
+  'Similarity Search (Internal)' appear under Databases > ChEMBL, each
+  showing a grid of top-N matches. Click a match to open it on
+  ebi.ac.uk/chembl; click the arrow icon to open the full result as a table.
+
+  CHEMBL IDs: text like 'CHEMBL1185' is auto-recognized; clicking it opens
+  a compound preview in the context panel.
+
+  Converters: CHEMBL IDs pasted into a molecule sketcher are auto-converted
+  to SMILES.
+
+  Hit Triage: plugs ChEMBL in as a starting data source (fetch compounds,
+  or fetch compounds active against an organism's targets) and provides a
+  'Chembl molregno' function that looks up the CHEMBL molregno ID for each
+  molecule in a column.
+apiRef: src/package-api.ts
+docsRef: README.md

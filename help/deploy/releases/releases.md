@@ -1,11 +1,14 @@
 ---
 title: "What's new"
-format: mdx
+mdx:
+  format: mdx
 keywords:
   - release history
   - release highlights
   - release summary
 ---
+
+<!-- markdownlint-disable MD024 -->
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775/159), [Platform releases](https://community.datagrok.ai/t/platform-releases/73/21)
@@ -191,7 +194,7 @@ Community: [Plugin releases](https://community.datagrok.ai/t/plugin-releases/775
 
 |<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
 |----------------- | -----------------------------------|
-|**Custom identifier registration**:<br/>Register custom identifiers (e.g., compound IDs) to search, link, and analyze entity data across the platform<br/><br/>[Video demo](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=2932s)<br/>[Developers: Learn more](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)|![custom identifiers](img/register-idenitifiers.gif)|
+|**Custom identifier registration**:<br/>Register custom identifiers (e.g., compound IDs) to search, link, and analyze entity data across the platform<br/><br/>[Video demo](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=2932s)<br/>[Developers: Learn more](https://datagrok.ai/help/develop/how-to/db/register-identifiers)|![custom identifiers](img/register-idenitifiers.gif)|
 |**Search integrated functions**:<br/>Annotate queries and other functions with search patterns to display results when users search with matching terms<br/><br/>[Learn more](../../datagrok/concepts/functions/func-params-annotation.md#search-integrated-functions) |![Search-integrated queries](../../datagrok/concepts/functions/search-integrated-queries.gif)|
 |**Plugin databases**|You can now ship a Postgres database (such as chemical registration system) with your plugin|
 
@@ -282,8 +285,8 @@ Improved in-platform model training:
 [MLflow](https://mlflow.org/) integration ([learn more](../../learn/mlflow.md)):
 * Import and apply MLflow predictive models directly to Datagrok datasets
 * Streamlined model management:
-   * Automatic MLflow model fetching
-   * Input annotation via MLflow tags
+  * Automatic MLflow model fetching
+  * Input annotation via MLflow tags
 * MLflow models inference support
 
 ### Platform performance

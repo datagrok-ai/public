@@ -128,8 +128,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   }
 
   public buildRibbonPanels(): HTMLElement[][] {
-    const historyButton = ui.iconFA('history', () => this.showHistory.next(!this.showHistory.value));
-    const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined);
+    const historyButton = ui.iconFA('history', () => this.showHistory.next(!this.showHistory.value), 'History');
+    const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined, 'Save');
     const exportBtn = ui.comboPopup(
       ui.iconFA('arrow-to-bottom'),
       this.getFormats(),

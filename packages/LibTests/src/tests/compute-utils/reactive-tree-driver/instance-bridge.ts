@@ -4,6 +4,7 @@ import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {FuncCallMockAdapter} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallAdapters';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {TestScheduler} from 'rxjs/testing';
+import {createTestScheduler} from '../../../test-utils';
 import {FuncCallIODescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 
@@ -17,10 +18,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
   ];
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Init', async () => {
@@ -338,6 +336,60 @@ category('ComputeUtils: Driver instance bridge', async () => {
       expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
       expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
       expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
+    });
+  });
+
+  test('overrideToConsistent default skips info-typed inputs', async () => {
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const adapter = new FuncCallMockAdapter(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
+      bridge.setPreInitialData({
+        initialRestrictions: {
+          arg1: {assignedValue: 1, type: 'restricted'},
+          arg2: {assignedValue: 3, type: 'info'},
+        },
+        initialValues: {arg1: 1, arg2: 3},
+      });
+      cold('-a').subscribe(() => {
+        bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: true});
+      });
+      cold('--a').subscribe(() => {
+        bridge.editState('arg1', 100);
+        bridge.editState('arg2', 200);
+      });
+      cold('---a').subscribe(() => {
+        bridge.overrideToConsistent().subscribe();
+      });
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abcd', {a: undefined, b: 1, c: 100, d: 1});
+      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('abc', {a: undefined, b: 3, c: 200});
+    });
+  });
+
+  test('overrideToConsistent with includeInfo resets info-typed inputs', async () => {
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const adapter = new FuncCallMockAdapter(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
+      bridge.setPreInitialData({
+        initialRestrictions: {
+          arg1: {assignedValue: 1, type: 'restricted'},
+          arg2: {assignedValue: 3, type: 'info'},
+        },
+        initialValues: {arg1: 1, arg2: 3},
+      });
+      cold('-a').subscribe(() => {
+        bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: true});
+      });
+      cold('--a').subscribe(() => {
+        bridge.editState('arg1', 100);
+        bridge.editState('arg2', 200);
+      });
+      cold('---a').subscribe(() => {
+        bridge.overrideToConsistent(true).subscribe();
+      });
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abcd', {a: undefined, b: 1, c: 100, d: 1});
+      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('abcd', {a: undefined, b: 3, c: 200, d: 3});
     });
   });
 

@@ -8,19 +8,67 @@ import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+const nodeSkip = typeof process !== 'undefined' ? 'grok.functions.register is browser-only' : undefined;
+
+category('Functions: Multiple outputs', () => {
+  test('sync: register and call', async () => {
+    const f = grok.functions.register({
+      signature: '({int sum, int product}) testMultiOutSync(int a, int b)',
+      run: (a: number, b: number) => ({sum: a + b, product: a * b}),
+    });
+    const call = f.prepare({a: 3, b: 4});
+    await call.call();
+    expect(call.outputs.get('sum'), 7, 'sum');
+    expect(call.outputs.get('product'), 12, 'product');
+  }, {skipReason: nodeSkip});
+
+  test('async: register and call', async () => {
+    const f = grok.functions.register({
+      signature: '({string greeting, int length}) testMultiOutAsync(string name)',
+      run: async (name: string) => ({greeting: `hello ${name}`, length: name.length}),
+      isAsync: true,
+    });
+    const call = f.prepare({name: 'world'});
+    await call.call();
+    expect(call.outputs.get('greeting'), 'hello world', 'greeting');
+    expect(call.outputs.get('length'), 5, 'length');
+  }, {skipReason: nodeSkip});
+
+  test('output params metadata', async () => {
+    const f = grok.functions.register({
+      signature: '({double x, double y}) testMultiOutMeta(double angle)',
+      run: (angle: number) => ({x: Math.cos(angle), y: Math.sin(angle)}),
+    });
+    expect(f.outputs.length, 2, 'output count');
+    expect(f.outputs[0].name, 'x', 'first output name');
+    expect(f.outputs[1].name, 'y', 'second output name');
+  }, {skipReason: nodeSkip});
+
+  test('with semantic type', async () => {
+    const f = grok.functions.register({
+      signature: '({string/Molecule mol, double score}) testMultiOutSemType(string smiles)',
+      run: (smiles: string) => ({mol: smiles, score: 0.95}),
+    });
+    const call = f.prepare({smiles: 'c1ccccc1'});
+    await call.call();
+    expect(call.outputs.get('mol'), 'c1ccccc1', 'mol');
+    expect(call.outputs.get('score'), 0.95, 'score');
+  }, {skipReason: nodeSkip});
+}, {node: true});
+
 category('Functions: General', () => {
   test('eval', async () => {
     const dfList: DG.DataFrame[] = await grok.functions
       .eval('OpenServerFile("System:AppData/ApiTests/datasets/demog.csv")');
     expect(dfList[0].columns instanceof DG.ColumnList, true);
-  }, {stressTest: true});
+  }, {stressTest: true, skipReason: typeof process !== 'undefined' ? 'OpenServerFile is a client command' : undefined});
 
   test('call', async () => {
     const dfList: DG.DataFrame[] = await grok.functions
       .call('OpenServerFile', {'fullPath': 'System:AppData/ApiTests/datasets/demog.csv'});
     expect(dfList[0].columns instanceof DG.ColumnList, true);
-  }, {stressTest: true});
-  
+  }, {stressTest: true, skipReason: typeof process !== 'undefined' ? 'OpenServerFile is a client command' : undefined});
+
   test('def param', async () => {
     await grok.functions.call('AddNewColumn', {table: grok.data.demo.demog(), expression: 'test', name: 'test'});
   });
@@ -41,17 +89,31 @@ category('Functions: General', () => {
   });
 
   test(`script's package load`, async () => {
-    const sin: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
-    expect(sin.package.nqName, 'ApiTests');
-  }, {skipReason: 'GROK-15178'});
+    const f: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    expect(f.package.nqName, 'ApiTests');
+  });
 
   test(`package func's package load`, async () => {
-    const sin: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
-    expect(sin.package.nqName, 'ApiTests');
-  }, {skipReason: 'GROK-15178'});
+    const f: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    expect(f.package.nqName, 'ApiTests');
+  });
 
-  test(`core package load`, async () => {
-    const sin: DG.Func = await grok.functions.eval('Sin');
-    expect(sin.package.nqName, 'core');
-  }, {skipReason: 'GROK-15178'});
-});
+  test(`core func has no package`, async () => {
+    const f: DG.Func = await grok.functions.eval('Sin');
+    expect(f.package, null);
+  });
+
+  test('getResultViews', async () => {
+    const f = grok.functions.register({
+      signature: 'dataframe testGetResultViews()',
+      run: () => DG.DataFrame.fromCsv('a,b\n1,2\n3,4'),
+    });
+    const fc = f.prepare({});
+    await fc.call();
+    const views = fc.getResultViews();
+    expect(Array.isArray(views), true, 'returns array');
+    expect(views.length, 1, 'one view');
+    expect(views[0] instanceof DG.TableView, true, 'view is TableView');
+    expect((views[0] as DG.TableView).dataFrame.columns.length, 2, 'dataframe columns');
+  }, {skipReason: nodeSkip, node: false});
+}, {node: true});

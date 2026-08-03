@@ -9,8 +9,13 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     super(new Worker(new URL('../rdkit.worker', import.meta.url)));
   }
 
-  moduleInit = async (pathToRdkit: string) =>
-    this.call('module::init', [pathToRdkit]);
+  moduleInit = (pathToRdkit: string): Promise<unknown> => {
+    // Set readiness synchronously (ungated) so any call queued during a restart waits for this init.
+    const init = this.call('module::init', [pathToRdkit], false);
+    // A failed init must not leave _ready permanently rejected — that would block every future call.
+    this._ready = init.catch((e) => console.error('Chem | worker module init failed:', e));
+    return init; // raw promise, so restartWorker/init() still observe a real failure
+  };
 
   /** Creates RDMols for the specified {@link molecules}.
    * They will be used for subsequent substructure search, or calculation of fingerprints.
@@ -33,6 +38,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   convertMolNotation = async (molecules: string[], targetNotation: string, kekulize = false) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation, kekulize]);
+
+  getInchis = async (molecules: string[], keys = false): Promise<string[]> =>
+    this.call(WORKER_CALL.GET_INCHIS, [molecules, keys]);
 
   getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, molecules?: string[]) =>
     this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, molecules]);

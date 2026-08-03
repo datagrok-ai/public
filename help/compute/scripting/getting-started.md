@@ -1,7 +1,18 @@
 ---
 title: "Getting started with scripting"
 sidebar_position: 0
-format: 'mdx'
+mdx:
+  format: mdx
+description: A step-by-step introduction to writing, running, and integrating your first Datagrok script.
+keywords:
+  - python script
+  - r script
+  - javascript script
+  - script header annotation
+  - script inputs and outputs
+  - process a dataframe
+  - error handling
+  - datagrok client
 ---
 
 ```mdx-code-block
@@ -27,7 +38,7 @@ data science languages like Python or R. JavaScript script executes right in you
 ## Prerequisites
 
 * Sign up and log in to [public server of Datagrok](https://public.datagrok.ai/).
-* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.md).
+* Alternatively, set up a [local Datagrok environment](../../deploy/docker-compose/docker-compose.mdx).
 
 ## Create a script
 

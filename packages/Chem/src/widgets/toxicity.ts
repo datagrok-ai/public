@@ -46,8 +46,10 @@ export async function getToxicityRisksColumns(col: DG.Column,
   const risks = await oclService.getChemToxicity(col, toxRiskIds);
   oclService.terminate();
   const cols: DG.Column[] = [];
+  const {dataFrame} = col;
   toxRiskIds.forEach((riskId) => {
-    const riskName = riskTypes[riskId];
+    const baseName = riskTypes[riskId];
+    const riskName = dataFrame ? dataFrame.columns.getUnusedName(baseName) : baseName;
     const toxCol = DG.Column.fromStrings(riskName, risks[riskId].map((risk) => riskLevels[risk]));
     toxCol.meta.colors.setCategorical(riskColorCoding);
     cols.push(toxCol);

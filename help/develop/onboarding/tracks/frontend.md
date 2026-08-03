@@ -1,5 +1,13 @@
 ---
 title: "Frontend"
+description: Prerequisites and exercises for the Frontend track covering TypeScript, CSS, and building production-grade Datagrok applications.
+keywords:
+  - frontend track
+  - UI development exercises
+  - TypeScript basics
+  - CSS basics
+  - JS API examples
+  - chembl browser exercise
 ---
 
 The Frontend track teaches you how to create production-grade Datagrok applications. Before proceeding to exercises,
@@ -31,7 +39,7 @@ completion.
 **Know where to get help**.
 
 * [JS API examples](https://public.datagrok.ai/js)
-* [JS API documentation](https://datagrok.ai/api/js/api)
+* [JS API documentation](https://datagrok.ai/api/js/)
 
 ## Exercise 1: chembl browser
 

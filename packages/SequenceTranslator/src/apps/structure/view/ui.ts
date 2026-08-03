@@ -140,7 +140,7 @@ class StructureAppLayout {
     const clearBlock = Object.fromEntries(
       STRANDS.map(
         (key) => {
-          const clearIcon = ui.icons.delete(() => { coloredInput[key].inputBase.value = ''; });
+          const clearIcon = ui.icons.delete(() => { coloredInput[key].inputBase.value = ''; }, 'Delete');
           const clearButton = ui.button(clearIcon, () => {});
           ui.tooltip.bind(clearButton, `Clear ${key.toUpperCase()}`);
           return [key, clearIcon];

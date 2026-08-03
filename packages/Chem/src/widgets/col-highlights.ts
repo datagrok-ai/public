@@ -23,6 +23,7 @@ export class HighlightWidget extends DG.Widget {
   latestHighLightTag = '';
   itemsGridChanged = false;
   onMetaDataChangeSub: Subscription;
+  itemsGridSubs: Subscription[] = [];
   col: DG.Column;
 
   constructor(col: DG.Column) {
@@ -38,6 +39,11 @@ export class HighlightWidget extends DG.Widget {
   }
 
   createItemsGrid() {
+    // tear down subscriptions from a previously built grid before creating a new one
+    for (const sub of this.itemsGridSubs)
+      sub.unsubscribe();
+    this.itemsGridSubs = [];
+
     const scaffoldsString = this.col.getTag(HIGHLIGHT_BY_SCAFFOLD_TAG);
     const items: IColoredScaffold[] = scaffoldsString ? JSON.parse(scaffoldsString) : [];
     const itemsGrid = new ItemsGrid(this.props, items,
@@ -50,12 +56,12 @@ export class HighlightWidget extends DG.Widget {
         newItemFunction: () => ({color: '#00FF00'}),
       });
 
-    itemsGrid.onItemAdded.subscribe(() => {
+    this.itemsGridSubs.push(itemsGrid.onItemAdded.subscribe(() => {
       this.itemsGridChanged = true;
       this.latestHighLightTag = JSON.stringify(itemsGrid.items);
       this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
-    });
-    itemsGrid.onAddingItemChanged.subscribe((item) => {
+    }));
+    this.itemsGridSubs.push(itemsGrid.onAddingItemChanged.subscribe((item) => {
       this.itemsGridChanged = true;
       if (itemsGrid.items.indexOf(item.item) === -1 && item.item.molecule) {
         this.latestHighLightTag = JSON.stringify(itemsGrid.items.concat([item.item]));
@@ -63,23 +69,26 @@ export class HighlightWidget extends DG.Widget {
       }
       if (itemsGrid.items.filter(((it) => item.item.molecule === it.molecule)).length > 0 && item.fieldName === 'molecule')
         grok.shell.warning(`Current structure has been added previously`);
-    });
-    itemsGrid.onItemRemoved.subscribe(() => {
+    }));
+    this.itemsGridSubs.push(itemsGrid.onItemRemoved.subscribe(() => {
       this.itemsGridChanged = true;
       this.latestHighLightTag = JSON.stringify(itemsGrid.items);
       this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
-    });
-    itemsGrid.onItemChanged.subscribe(() => {
+    }));
+    this.itemsGridSubs.push(itemsGrid.onItemChanged.subscribe(() => {
       this.itemsGridChanged = true;
       this.latestHighLightTag = JSON.stringify(itemsGrid.items);
       this.col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, this.latestHighLightTag);
-    });
+    }));
     ui.empty(this.root);
     this.root.append(itemsGrid.root);
   };
 
   detach() {
     this.onMetaDataChangeSub.unsubscribe();
+    for (const sub of this.itemsGridSubs)
+      sub.unsubscribe();
+    this.itemsGridSubs = [];
   }
 }
 

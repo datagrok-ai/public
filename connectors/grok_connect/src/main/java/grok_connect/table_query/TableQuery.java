@@ -23,7 +23,7 @@ public class TableQuery extends DataQuery {
     public List<String> groupByFields = new ArrayList<>();
     public List<HavingPredicate> having = new ArrayList<>();
     public List<FieldOrder> orderBy = new ArrayList<>();
-    List<TableJoin> joins = new ArrayList<>();
+    public List<TableJoin> joins = new ArrayList<>();
     public String tableName;
     public String schema;
     public String catalog;

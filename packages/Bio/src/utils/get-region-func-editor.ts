@@ -220,7 +220,7 @@ export class GetRegionFuncEditor {
       `${seqCol?.name}: (${startPos}-${endPos})`;
   }
 
-  private getParams(): {} {
+  public getParams(): GetRegionParams {
     return {
       table: this.inputs.table.value!,
       sequence: this.inputs.sequence.value!,
@@ -243,7 +243,43 @@ export class GetRegionFuncEditor {
     return str == '' ? null : str;
   }
 
+  // -- History --
+
+  /** Serializes the region selection (start/end position codes + column name) for dialog history. */
+  public getStringInput(): string {
+    return JSON.stringify({
+      start: this.getStart(),
+      end: this.getEnd(),
+      name: this.inputs.name.stringValue,
+    });
+  }
+
+  /** Restores a region selection from history, applying start/end only if the positions exist in the
+   * current sequence column (positions depend on the chosen column). */
+  public applyStringInput(input: string): void {
+    try {
+      const parsed = JSON.parse(input);
+      const seqCol = this.inputs.sequence.value;
+      const posList: string[] = seqCol ? this.seqHelper.getSeqHandler(seqCol).posList : [];
+      if (parsed.start != null && posList.includes(parsed.start))
+        this.inputs.start.value = parsed.start;
+      if (parsed.end != null && posList.includes(parsed.end))
+        this.inputs.end.value = parsed.end;
+      // set the name last: changing start/end resets it to the default via updateNameInput
+      if (parsed.name)
+        this.inputs.name.value = parsed.name;
+    } catch (e: any) {
+      _package.logger.error(e instanceof Error ? e.message : e?.toString());
+    }
+  }
+
   // -- UI --
+
+  /** Full inputs form (table + sequence + region/start/end/name), for hosting inside the canonical
+   * FuncCallParamsEditor. */
+  public getEditorForm(): HTMLElement {
+    return ui.inputs(Object.values(this.inputs), {style: {minWidth: '320px'}});
+  }
 
   public dialog(): void {
     const inputsForm = ui.inputs(Object.values(this.inputs), {style: {minWidth: '320px'}});

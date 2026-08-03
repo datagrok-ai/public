@@ -1,5 +1,13 @@
 ---
 title: "Publish packages"
+description: Publish a Datagrok package publicly via NPM through GitHub Actions, or privately to a platform instance.
+keywords:
+  - grok publish
+  - NPM registry
+  - GitHub Actions workflow
+  - semantic versioning
+  - private package
+  - package.json version bump
 ---
 
 To make your package publicly available, you need to publish a package to NPM. Then you will be able to install it to
@@ -30,7 +38,7 @@ If an error occurred for the action triggered by the commit, it is possible to t
 check the package version from `package.json` in the NPM repository. If the version is absent, it will run the
 publishing job. Otherwise, it will run the test and build jobs instead.
 
-1) Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yml)
+1) Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yaml)
 2) Press `run workflow` and set packages list to publish separated with spaces, for example: `Demo Tutorials`. Use
    the `master` branch. Then `Run workflow`
 3) Check that the GitHub Actions workflow finished successfully

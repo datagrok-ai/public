@@ -5,6 +5,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {of} from 'rxjs';
 import {delay, map, switchMap, tap} from 'rxjs/operators';
 import {FuncCallNode, StaticPipelineNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -14,10 +15,7 @@ category('ComputeUtils: Driver hooks running', async () => {
   let testScheduler: TestScheduler;
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   const config1: PipelineConfiguration = {
@@ -126,6 +124,40 @@ category('ComputeUtils: Driver hooks running', async () => {
         switchMap((item) => item.getStateStore().getStateChanges('meta1')),
       );
       expectObservable(item$).toBe('250ms b', {b: 10});
+    });
+  });
+
+  test('Run onInit with states shorthand', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+        },
+      ],
+      states: ['meta1'],
+      onInit: {
+        id: 'link1',
+        from: 'in1:step1/b',
+        to: 'out1:meta1',
+        handler({controller}) {
+          return of(undefined).pipe(
+            delay(250),
+            tap(() => controller.setAll('out1', 10)),
+          );
+        },
+      },
+    };
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const rnode = tree.nodeTree.root;
+      expectObservable(rnode.getItem().getStateStore().getStateChanges('meta1')).toBe('a 249ms b', {a: undefined, b: 10});
     });
   });
 

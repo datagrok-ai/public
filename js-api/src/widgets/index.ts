@@ -21,6 +21,7 @@ export * from './markdown-input';
 
 // Forms and dialogs
 export * from './forms';
+export * from './email-dialog';
 
 // Container widgets
 export * from './containers';

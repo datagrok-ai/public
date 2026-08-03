@@ -1,197 +1,291 @@
-/** Singleton docked output preview panel.
+/** In-view bottom output panel.
  *
- * After a flow run completes, this module creates a docked panel at the bottom
- * of the Datagrok shell showing output previews as tabs.  DataFrames get a
- * full grid viewer; other supported types get lightweight representations.
+ *  Behavior contract (splitter rework — replaces the old dock-manager panel):
+ *  - The panel is a permanent pane of the Flow view's vertical splitter
+ *    (`ui.splitV`), owned by the view — never docked to the platform dock
+ *    manager, so it can never leak over other views or outlive its flow.
+ *  - It is not closable. It starts fully hidden; the first renderable output
+ *    (clicking a completed node, or a run's focus node) expands it. The header
+ *    caret minimizes it to a slim strip; the choice is remembered — while
+ *    minimized, later clicks update the content but never pop the panel back
+ *    up. Restoring is always an explicit header click.
+ *  - `clear()` empties and hides it (graph change / new run — values are
+ *    stale), preserving the user's minimized preference.
+ *  - The header pin freezes the preview on the shown node: other node clicks
+ *    no longer switch it, while fresh results of the pinned node re-render
+ *    (the controller re-shows it on node-complete) — adjust an upstream node
+ *    and watch the pinned chart update. The pin survives `clear()`; deleting
+ *    the pinned node or replacing the graph unpins.
+ *  - Embedded hosts (the creation-script dialog) construct it disabled: it
+ *    never shows there, only in the real editor view.
  *
- * The panel is a singleton: if already docked, content is updated in-place.
- * Users can close individual tabs or the whole panel — re-running the flow
- * recreates everything. */
+ *  Rendering is delegated to {@link buildValuePreviews} from
+ *  `value-inspector.ts` — keeps the DataFrame / Column / graphics / primitive
+ *  layout consistent with the context panel. */
 
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-/** Output types we know how to preview */
-type PreviewableOutput =
-  | {type: 'dataframe'; name: string; value: DG.DataFrame}
-  | {type: 'viewer'; name: string; value: DG.Viewer}
-  | {type: 'graphics'; name: string; value: string} // image data as string
-  | {type: 'widget'; name: string; value: DG.Widget}
-  | {type: 'primitive'; name: string; value: any};
+import {NodeExecState} from './execution-state';
+import {buildValuePreviews, hasRenderablePreview} from './value-inspector';
+import {setTid} from '../utils/test-ids';
+
+export type OutputPanelState = 'hidden' | 'minimized' | 'expanded';
+
+/** Height of the header strip — the whole panel when minimized. */
+const HEADER_HEIGHT = 30;
+/** Default expanded height; replaced by the real height once the user resizes
+ *  (captured on minimize, and the splitter divider writes `style.height`). */
+const DEFAULT_EXPANDED_HEIGHT = 260;
 
 export class OutputPreviewPanel {
-  private rootNode: DG.DockNode | null = null;
-  /** Track ALL docked elements so close() can remove every tab */
-  private dockedElements: HTMLElement[] = [];
-  /** The view root to dock relative to */
-  private viewRoot: HTMLElement | null = null;
+  /** The splitter pane (`ui.box`) the view mounts as the bottom `splitV` item. */
+  readonly root: HTMLElement;
+  private readonly contentEl: HTMLElement;
+  private readonly nodeLabelEl: HTMLElement;
+  private readonly caretEl: HTMLElement;
+  private readonly pinEl: HTMLElement;
 
-  /** Set the Flow view root so panels dock relative to it */
-  setViewRoot(root: HTMLElement): void {
-    this.viewRoot = root;
+  private state: OutputPanelState = 'hidden';
+  /** The user minimized the panel — remembered for the view's lifetime so
+   *  showing new content never pops the panel back up uninvited. */
+  private userMinimized = false;
+  private expandedHeight = DEFAULT_EXPANDED_HEIGHT;
+  /** Disabled panels never show — embedded hosts (dialogs) construct it so. */
+  private enabled: boolean;
+
+  /** What the panel currently renders. `ExecutionState.setNodeStatus` always
+   *  builds a fresh state object, so reference identity of the state IS value
+   *  identity — re-clicking the same node with unchanged results must not
+   *  rebuild the preview (grids re-mount, scroll resets, the panel jumps). */
+  private lastNodeId: string | null = null;
+  private lastState: NodeExecState | null = null;
+
+  /** When set, the panel is pinned to that node: clicking other nodes no
+   *  longer switches the preview, but fresh state for the pinned node itself
+   *  still re-renders (the controller re-shows it on node-complete). Survives
+   *  `clear()` — an invalidated pinned value comes back pinned once recomputed. */
+  private pinnedId: string | null = null;
+
+  /** A spinner overlay is on the kept (stale) content — the pinned node is
+   *  recomputing. Set by the controller on the pinned node's node-start;
+   *  released by the next render, `clearUpdating()`, or `clear()`. */
+  private updating = false;
+
+  /** Called when the user clicks "Edit settings" on a viewer preview — the host
+   *  shows the viewer in the context panel and captures its option changes. */
+  onEditViewer?: (node: {id: string; label: string}, viewer: unknown) => void;
+
+  /** Fired on every hidden/minimized/expanded transition — the view syncs the
+   *  splitter divider (resizing a hidden or minimized pane makes no sense). */
+  onStateChanged?: (state: OutputPanelState) => void;
+
+  /** Fired when the user unpins via the header icon (not on programmatic
+   *  `unpin()`) — the controller re-shows the currently selected node, so
+   *  "unpin to see what I clicked while pinned" works without a re-click. */
+  onUnpinned?: () => void;
+
+  constructor(options: {enabled?: boolean} = {}) {
+    this.enabled = options.enabled !== false;
+
+    // Only the caret toggles — a fully clickable header would sit right under
+    // the splitter divider and swallow near-miss resize clicks.
+    this.caretEl = setTid(ui.div([], 'ff-output-panel-caret'), 'output-panel-caret');
+    this.caretEl.addEventListener('click', () => this.toggle());
+    ui.tooltip.bind(this.caretEl, () => this.state === 'minimized' ? 'Expand outputs' : 'Minimize outputs');
+    this.nodeLabelEl = setTid(ui.div([], 'ff-output-panel-node'), 'output-panel-node');
+    // Pin: freeze the preview on the current node so clicking other nodes
+    // (to tweak their settings) doesn't hide the result being watched.
+    this.pinEl = setTid(ui.iconFA('thumbtack', () => this.togglePin()), 'output-panel-pin');
+    this.pinEl.classList.add('ff-output-panel-pin');
+    ui.tooltip.bind(this.pinEl, () => this.pinnedId != null ?
+      'Unpin — clicking a node switches the preview again' :
+      'Pin this preview — keep it while you adjust other nodes');
+    const title = ui.div([], 'ff-output-panel-title');
+    title.textContent = 'Preview';
+    const header = setTid(
+      ui.div([title, this.nodeLabelEl, this.pinEl, this.caretEl], 'ff-output-panel-header'), 'output-panel-header');
+
+    this.contentEl = setTid(ui.div([], 'ff-output-panel-content'), 'output-panel-content');
+
+    this.root = setTid(ui.box(), 'output-panel');
+    this.root.classList.add('ff-output-panel');
+    // Pin the pane so the canvas (flex: 1 1 0) absorbs all remaining space:
+    // the pane's height IS its size, in every state.
+    this.root.style.flex = '0 0 auto';
+    this.root.appendChild(header);
+    this.root.appendChild(this.contentEl);
+    this.applyState();
+    this.updatePinVisual();
   }
 
-  /** Clear previous outputs and show new ones.
-   *  @param outputs — named output values from fc.outputs
-   *  @param typeHints — optional map of output name → declared DG type (e.g. 'graphics', 'dataframe') */
-  showOutputs(outputs: Record<string, any>, typeHints?: Record<string, string>): void {
-    this.close();
+  /** The node the preview is pinned to, or null when unpinned. */
+  get pinnedNodeId(): string | null {
+    return this.pinnedId;
+  }
 
-    const entries = Object.entries(outputs);
-    if (entries.length === 0) return;
+  togglePin(): void {
+    if (this.pinnedId != null) {
+      this.unpin();
+      this.onUnpinned?.();
+      return;
+    }
+    if (this.lastNodeId != null) {
+      this.pinnedId = this.lastNodeId;
+      this.updatePinVisual();
+    }
+  }
 
-    const previews = entries
-      .map(([name, value]) => this.classifyOutput(name, value, typeHints?.[name]))
-      .filter((p): p is PreviewableOutput => p !== null);
+  /** Drop the pin — the next node click switches the preview again. Called by
+   *  the controller when the pinned node is deleted or the graph is replaced. */
+  unpin(): void {
+    this.pinnedId = null;
+    this.updatePinVisual();
+  }
 
-    if (previews.length === 0) {
-      for (const [name, value] of entries)
-        console.log(`Flow output [${name}]:`, value);
+  /** Overlay a "Recalculating…" spinner on the current (stale) content instead
+   *  of hiding the panel — the pinned node is being recomputed and its fresh
+   *  render will take over. No-op without visible content. */
+  markUpdating(message = 'Recalculating...'): void {
+    if (!this.enabled || this.state === 'hidden' || this.lastNodeId == null) return;
+    this.updating = true;
+    ui.setUpdateIndicator(this.contentEl, true, message);
+  }
+
+  /** Remove the spinner overlay, keeping whatever content is shown. Safe to
+   *  call when no indicator is on. */
+  clearUpdating(): void {
+    if (!this.updating) return;
+    this.updating = false;
+    ui.setUpdateIndicator(this.contentEl, false);
+  }
+
+  private updatePinVisual(): void {
+    this.pinEl.dataset.pinned = this.pinnedId != null ? 'true' : 'false';
+    // Nothing shown and nothing pinned → there is nothing to pin; hide the
+    // icon. A pinned-but-cleared panel keeps it so the user can still unpin.
+    this.pinEl.style.display = this.lastNodeId != null || this.pinnedId != null ? '' : 'none';
+  }
+
+  get panelState(): OutputPanelState {
+    return this.state;
+  }
+
+  get isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  /** The node whose values the panel currently renders, or null when empty —
+   *  lets the invalidator close the panel only when *its* node went stale. */
+  get currentNodeId(): string | null {
+    return this.lastNodeId;
+  }
+
+  /** Turn the panel on/off. Off = never shows (embedded hosts). Turning it on
+   *  does not show anything by itself — the next renderable output does. */
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) this.clear();
+  }
+
+  /** Show the runtime values for one node. No-op when disabled or when the
+   *  node has nothing renderable (DataFrame grid, column sample, graphics,
+   *  widget/viewer root). First content ever → the panel expands (or appears
+   *  minimized if the user minimized it earlier); afterwards content updates
+   *  in place and the current state is respected. */
+  showForNode(node: {id: string; label: string}, state: NodeExecState | undefined): void {
+    if (!this.enabled || !state) return;
+    // A pinned preview stays put: selecting other nodes never replaces it.
+    // Fresh state for the pinned node itself still updates in place.
+    if (this.pinnedId != null && node.id !== this.pinnedId) return;
+    // Status, duration, error, primitives — those go in the property panel
+    // (see `buildExecutionMeta`). This panel only shows rich values.
+    if (!hasRenderablePreview(state)) return;
+
+    // Same node, same captured state, panel visible → the content is already
+    // right; rebuilding would re-mount the grids and reset their scroll.
+    if (this.state !== 'hidden' && node.id === this.lastNodeId && state === this.lastState) {
+      this.clearUpdating();
       return;
     }
 
-    // Find the flow view's dock node to dock relative to
-    const refNode = this.viewRoot ?
-      grok.shell.dockManager.findNode(this.viewRoot) ?? null :
-      null;
+    this.clearUpdating();
+    const inner = buildValuePreviews(state, (viewer) => this.onEditViewer?.(node, viewer));
+    inner.style.padding = '8px 12px';
+    this.contentEl.innerHTML = '';
+    this.contentEl.appendChild(inner);
+    this.nodeLabelEl.textContent = node.label;
+    this.lastNodeId = node.id;
+    this.lastState = state;
+    this.updatePinVisual();
 
-    // Dock the first output at the bottom of the flow view
-    const first = previews[0];
-    const firstEl = this.buildPreview(first);
-    this.dockedElements.push(firstEl);
+    if (this.state === 'hidden')
+      this.setState(this.userMinimized ? 'minimized' : 'expanded');
+  }
 
-    try {
-      this.rootNode = grok.shell.dockManager.dock(
-        firstEl, DG.DOCK_TYPE.DOWN, refNode, first.name, 0.4,
-      );
-    } catch (e) {
-      console.warn('OutputPreview: failed to dock first output', e);
+  /** Collapse to the header strip. Remembered: subsequent content never
+   *  auto-expands — only an explicit `expand()` (header click) does. */
+  minimize(): void {
+    this.userMinimized = true;
+    if (this.state === 'expanded') {
+      // Keep the height the user (or the splitter divider) last gave it.
+      const h = this.root.offsetHeight;
+      if (h > HEADER_HEIGHT + 10) this.expandedHeight = h;
+      this.setState('minimized');
+    }
+  }
+
+  expand(): void {
+    this.userMinimized = false;
+    if (this.state === 'minimized') this.setState('expanded');
+  }
+
+  toggle(): void {
+    if (this.state === 'minimized') this.expand();
+    else if (this.state === 'expanded') this.minimize();
+  }
+
+  /** Empty and hide the panel (graph change / new run — values are stale).
+   *  The user's minimized preference AND the pin survive — a pinned node's
+   *  fresh result re-opens into the pinned panel; only `unpin()` drops it. */
+  clear(): void {
+    this.clearUpdating();
+    this.contentEl.innerHTML = '';
+    this.nodeLabelEl.textContent = '';
+    this.lastNodeId = null;
+    this.lastState = null;
+    this.setState('hidden');
+    this.updatePinVisual();
+  }
+
+  private setState(state: OutputPanelState): void {
+    if (state === this.state) return;
+    this.state = state;
+    this.applyState();
+    this.onStateChanged?.(state);
+  }
+
+  private applyState(): void {
+    const s = this.root.style;
+    if (this.state === 'hidden') {
+      s.display = 'none';
       return;
     }
-
-    // Dock remaining outputs as tabs (FILL) onto the first panel
-    for (let i = 1; i < previews.length; i++) {
-      const p = previews[i];
-      const el = this.buildPreview(p);
-      this.dockedElements.push(el);
-      try {
-        grok.shell.dockManager.dock(
-          el, DG.DOCK_TYPE.FILL, this.rootNode, p.name,
-        );
-      } catch (e) {
-        console.warn(`OutputPreview: failed to dock output "${p.name}"`, e);
-      }
+    s.display = '';
+    // `ui.splitV`'s container-resize handler keeps rewriting `style.height` on
+    // every pane; min/max clamp the rendered size so a minimized strip stays a
+    // strip and an expanded pane can't be squeezed below its header.
+    if (this.state === 'minimized') {
+      s.height = `${HEADER_HEIGHT}px`;
+      s.maxHeight = `${HEADER_HEIGHT}px`;
+      this.contentEl.style.display = 'none';
+      this.caretEl.textContent = '▴';
+      s.minHeight = `${HEADER_HEIGHT}px`;
+    } else {
+      s.height = `${this.expandedHeight}px`;
+      s.maxHeight = '';
+      this.contentEl.style.display = '';
+      this.caretEl.textContent = '▾';
+      s.minHeight = `${180}px`;
     }
-  }
-
-  /** Close all docked output panels */
-  close(): void {
-    for (const el of this.dockedElements) {
-      try {
-        const node = grok.shell.dockManager.findNode(el);
-        if (node)
-          grok.shell.dockManager.close(node);
-      } catch {/* already closed by user */}
-    }
-    this.rootNode = null;
-    this.dockedElements = [];
-  }
-
-  private classifyOutput(name: string, value: any, typeHint?: string): PreviewableOutput | null {
-    if (value == null) return null;
-
-    // DataFrame
-    if (value.rowCount !== undefined && value.columns !== undefined)
-      return {type: 'dataframe', name, value: value as DG.DataFrame};
-
-    // Viewer
-    if (value instanceof DG.Viewer)
-      return {type: 'viewer', name, value};
-
-    // Widget
-    if (value instanceof DG.Widget)
-      return {type: 'widget', name, value};
-
-    // Graphics — detected by type hint or by content inspection
-    if (typeHint === 'graphics' && typeof value === 'string')
-      return {type: 'graphics', name, value};
-    if (typeof value === 'string' && (value.startsWith('data:image') || value.startsWith('<svg')))
-      return {type: 'graphics', name, value};
-
-    // Primitives (string, number, bool) — only if simple enough to display
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
-      return {type: 'primitive', name, value};
-
-    // Unknown complex types — just log
-    console.log(`Flow output [${name}]:`, value);
-    return null;
-  }
-
-  private buildPreview(preview: PreviewableOutput): HTMLElement {
-    switch (preview.type) {
-    case 'dataframe':
-      return this.buildDataframePreview(preview.name, preview.value);
-    case 'viewer':
-      return preview.value.root;
-    case 'widget':
-      return preview.value.root;
-    case 'graphics':
-      return this.buildGraphicsPreview(preview.value);
-    case 'primitive':
-      return this.buildPrimitivePreview(preview.name, preview.value);
-    }
-  }
-
-  private buildDataframePreview(_name: string, df: DG.DataFrame): HTMLElement {
-    const container = ui.div([], {style: {width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}});
-
-    // Toolbar with + button
-    const toolbar = ui.div([], {style: {
-      display: 'flex', alignItems: 'center', gap: '6px',
-      padding: '4px 8px', flexShrink: '0',
-    }});
-    const addBtn = ui.div([ui.iconFA('plus'), ui.inlineText(['Add to workspace'])], {style: {
-      display: 'flex', alignItems: 'center', gap: '4px',
-      cursor: 'pointer', color: '#1976d2', fontSize: '12px',
-    }});
-    addBtn.addEventListener('click', () => {
-      grok.shell.addTableView(df);
-      try {
-        const node = grok.shell.dockManager.findNode(container);
-        if (node) grok.shell.dockManager.close(node);
-      } catch { /* already closed */}
-    });
-    toolbar.appendChild(addBtn);
-    container.appendChild(toolbar);
-
-    const grid = DG.Viewer.grid(df);
-    grid.root.style.width = '100%';
-    grid.root.style.flex = '1';
-    container.appendChild(grid.root);
-    return container;
-  }
-
-  private buildGraphicsPreview(imageData: string): HTMLElement {
-    const container = ui.div([], {style: {width: '100%', height: '100%', overflow: 'auto',
-      position: 'relative',
-      backgroundPosition: 'left',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: 'contain',
-    }});
-    if (imageData.startsWith('<svg'))
-      container.innerHTML = imageData;
-    else
-      container.style.backgroundImage = `url('data:image/png;base64,${imageData}')`;
-
-    return container;
-  }
-
-  private buildPrimitivePreview(name: string, value: any): HTMLElement {
-    const container = ui.div([]);
-    container.appendChild(ui.divText(`${name} = ${JSON.stringify(value)}`));
-    container.style.padding = '12px';
-    container.style.fontSize = '14px';
-    return container;
   }
 }

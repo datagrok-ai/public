@@ -22,12 +22,9 @@ export const Viewer = Vue.defineComponent({
   },
   emits: {
     viewerChanged: (_v: DG.Viewer<any> | undefined) => true,
+    viewerDataFrameChanged: (_v: DG.Viewer<any> | undefined) => true,
   },
   setup(props, {emit}) {
-    Vue.onRenderTriggered((event) => {
-      console.log('Viewer onRenderTriggered', event);
-    });
-
     const currentDf = Vue.computed(() => props.dataFrame ? Vue.markRaw(props.dataFrame) : undefined);
     const options = Vue.computed(() => props.options ? Vue.markRaw(props.options) : undefined);
     const type = Vue.computed(() => props.type);
@@ -35,6 +32,11 @@ export const Viewer = Vue.defineComponent({
 
     const viewerChangedCb = (event: any) => {
       emit('viewerChanged', event.detail ? Vue.markRaw(event.detail) : undefined);
+    };
+
+    const viewerDataFrameChangedCb = () => {
+      const v = viewerRef.value?.viewer;
+      emit('viewerDataFrameChanged', v ? Vue.markRaw(v) : undefined);
     };
 
     Vue.onBeforeUnmount(() => {
@@ -47,6 +49,7 @@ export const Viewer = Vue.defineComponent({
         options={options.value}
         dataFrame={currentDf.value}
         onViewerChanged={viewerChangedCb}
+        onViewerDataFrameChanged={viewerDataFrameChangedCb}
         style={{display: 'block', flexGrow: '1'}}
         ref={viewerRef}
       >

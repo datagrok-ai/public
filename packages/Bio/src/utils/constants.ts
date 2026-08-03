@@ -1,5 +1,3 @@
-import {pepseaMethods} from './pepsea';
-
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
   ACTIVITY = '~activity',
@@ -64,14 +62,12 @@ export namespace PEPSEA {
 export const kalignVersion = '3.3.1';
 
 export const msaDefaultOptions = {
-  pepsea: {
-    gapOpen: 1.53,
-    gapExtend: 0,
-    method: pepseaMethods[0],
-  },
   kalign: {
     gapOpen: -1.0,
     gapExtend: -1.0,
     terminalGap: -1.0,
   },
 } as const;
+
+/** meta.role value for dynamically discovered MSA engine functions */
+export const MSA_ENGINE_ROLE = 'sequenceMSA';

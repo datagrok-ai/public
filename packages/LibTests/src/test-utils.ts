@@ -30,6 +30,25 @@ export async function snapshotCompare(actual: any, snapshotName: string) {
   }
 }
 
+/**
+ * Creates a TestScheduler that resets its frame counter before each run().
+ * Datagrok's before() runs once per category, not per test, so the same
+ * TestScheduler instance is reused across tests. Without this reset, the
+ * virtual time frame accumulates from previous tests' subscription windows.
+ */
+export function createTestScheduler(): TestScheduler {
+  const scheduler = new TestScheduler((actual, expected) => {
+    expectDeepEqual(actual, expected);
+  });
+  const origRun = scheduler.run.bind(scheduler);
+  scheduler.run = ((callback: any) => {
+    scheduler.frame = 0;
+    (scheduler as any).index = -1;
+    return origRun(callback);
+  }) as typeof scheduler.run;
+  return scheduler;
+}
+
 export type ExpectObservableNamed = (name: string, observable: Observable<any>, subscriptionMarbles?: string) => void;
 
 export async function runRXTreeSnapshotTest(testName: string, fn: (expectObservable: ExpectObservableNamed, cold: typeof TestScheduler.prototype.createColdObservable) => void) {

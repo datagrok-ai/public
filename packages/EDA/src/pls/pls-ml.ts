@@ -26,6 +26,9 @@ enum INTERACTIVITY {
   MAX_FEATURES = 1000,
 };
 
+/** Applicability bound: design-matrix budget (Float32 cells, ≈ 200 MB) */
+const APPLICABILITY_MAX_CELLS = 5e7;
+
 /** Model specification */
 type PlsModelSpecification = {
   params: Float32Array,
@@ -45,6 +48,9 @@ export class PlsModel {
         return false;
     }
     if (!predictColumn.matches('numerical'))
+      return false;
+
+    if (features.length * predictColumn.length > APPLICABILITY_MAX_CELLS)
       return false;
 
     return true;

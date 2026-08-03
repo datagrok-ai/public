@@ -1,5 +1,15 @@
 ---
 title: "Extending Datagrok"
+description: Catalog of the extension points available to Datagrok packages, from viewers and cell renderers to applications and connections.
+keywords:
+  - plugin architecture
+  - custom viewers
+  - cell renderers
+  - semantic type detectors
+  - file viewers
+  - info panels
+  - custom applications
+  - data connections
 ---
 
 Datagrok is built to be highly extensible, composable, and customizable. Many parts of the Datagrok platform can be enhanced by
@@ -28,7 +38,7 @@ Using our [JavaScript API](js-api.md), you can create your own:
 * [semantic type detectors](../how-to/functions/define-semantic-type-detectors.md) — to attach semantic types to columns of
   particular data types to later re-use this knowledge
 * Web [applications](../how-to/apps/build-an-app.md) focused on specific tasks, such as an interactive dashboard or a data set
-  browser<!--, as [the one for Chembl](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
+  browser<!--, as [the one for Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)-->
 * menus, which may be embedded into virtually any context inside the Datagrok UI, such as a
   [top menu](https://public.datagrok.ai/js/samples/ui/menu) or
   a [context menu](https://public.datagrok.ai/js/samples/events/viewer-events) of a viewer

@@ -24,8 +24,6 @@ export interface SettingsInterface {
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
 
-  allowAsyncFileImport: boolean;
-
   /// Controls whether tables pane automatically shows when more
   /// than one table is open
   autoShowTablesPane: boolean;
@@ -58,6 +56,9 @@ export interface SettingsInterface {
   dataHistory: boolean;
 
   isServer: boolean;
+
+  /// Settings keys locked by a group/All-Users scope: localStorage must not override them.
+  lockedKeys: any;
 
   showRecentlyOpenedViewsInHistory: boolean;
 
@@ -102,6 +103,8 @@ export interface SettingsInterface {
 
   showHelp: boolean;
 
+  showAI: boolean;
+
   enableBetaViewers: boolean;
 
   //@Prop(editor: 'Beta') bool enableViewerFunctions = false;
@@ -114,6 +117,10 @@ export interface SettingsInterface {
   enableMcpServers: boolean;
 
   enableIndexedDBTablesCache: boolean;
+
+  allowViewerMinimization: boolean;
+
+  viewersToTrellis: boolean;
 
   dateFormat: string;
 

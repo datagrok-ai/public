@@ -1,5 +1,12 @@
 ---
 title: "Pie chart"
+description: Show numerical proportions across categories as slices of a circle, with segment size, angle, and length options.
+keywords:
+  - donut chart
+  - proportions
+  - categorical breakdown
+  - segment visualization
+  - part-to-whole
 ---
 
 A pie chart shows numerical proportions across categories. Like a bar chart, it
@@ -53,7 +60,6 @@ Controls:
 | Show Value | boolean | Show the number of values inside the pie. |
 | Show Column Selector | boolean |  |
 | Show Mouse Over Row Group | boolean | Highlight part of the pie that corresponds to the mouse-over rows |
-| Show Selected Rows | boolean | Highlight selected rows |
 | Margin Left | number |  |
 | Margin Top | number |  |
 | Margin Right | number |  |
@@ -79,6 +85,8 @@ Controls:
 | Label Position | string |  |
 | Auto Layout | boolean |  |
 | Controls Font | string | Viewer controls elements font. |
+| **Selection** | | |
+| Show Selected Rows | boolean | Highlight selected rows |
 | **Description** | | |
 | Show Title | boolean |  |
 

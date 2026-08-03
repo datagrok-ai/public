@@ -12,7 +12,7 @@ export async function initDB() : Promise<void> {
 }
 
 //name: MolTrack
-//input: string path { meta.url: true; optional: true }
+//input: string path { meta.url: true; optional: true; description: View to open: "Compound", "Batch", "Register", "Search", "Saved Searches", "Bulk", "Assay", "Schema". }
 //output: view result
 //meta.browsePath: Chem
 //meta.icon: images/moltrack.png
@@ -57,42 +57,42 @@ export async function fetchDirectSchema() : Promise<string> {
   return await PackageFunctions.fetchDirectSchema();
 }
 
-//input: string corporateValue 
+//input: string corporateValue { description: Corporate compound ID to look up. }
 //output: object compound
 export async function getCompoundByCorporateId(corporateValue: string) {
   return await PackageFunctions.getCompoundByCorporateId(corporateValue);
 }
 
-//input: string corporateValue 
+//input: string corporateValue { description: Corporate batch ID to look up. }
 //output: object batch
 export async function getBatchByCorporateId(corporateValue: string) {
   return await PackageFunctions.getBatchByCorporateId(corporateValue);
 }
 
 //description: Registers compound properties in the MolTrack service using the provided JSON payload
-//input: string jsonPayload 
+//input: string jsonPayload { description: JSON schema defining entity properties to register (name, value_type, entity_type, nullable, etc.). }
 //output: string result
 export async function registerMolTrackProperties(jsonPayload: string) : Promise<string> {
   return await PackageFunctions.registerMolTrackProperties(jsonPayload);
 }
 
-//input: string assayPayload 
+//input: string assayPayload { description: JSON describing assays to register (name, properties, result types). }
 //output: string result
 export async function registerAssays(assayPayload: string) : Promise<string> {
   return await PackageFunctions.registerAssays(assayPayload);
 }
 
-//input: file csvFile 
-//input: string scope 
-//input: string mapping 
-//input: string errorHandling 
+//input: file csvFile { description: CSV file with rows to register. }
+//input: string scope { description: Entity scope: "compounds", "batches", "assays", "assay_runs", "assay_results". }
+//input: string mapping { description: JSON mapping CSV columns to MolTrack property names. }
+//input: string errorHandling { description: "reject_all" aborts on any invalid row, "reject_row" skips invalid rows. }
 //output: dataframe result
 export async function registerBulk(csvFile: DG.FileInfo, scope: string, mapping: string, errorHandling: string) : Promise<any> {
   return await PackageFunctions.registerBulk(csvFile, scope, mapping, errorHandling);
 }
 
-//input: string query 
-//input: string entityEndpoint 
+//input: string query { description: JSON-encoded MolTrack search query with keys: level, output, filter, output_format. }
+//input: string entityEndpoint { description: Entity to search: "compounds", "batches", "assays", "assay_runs", "assay_results". }
 //output: dataframe df
 export async function search(query: string, entityEndpoint: string) {
   return await PackageFunctions.search(query, entityEndpoint);
@@ -106,7 +106,7 @@ export async function advancedSearch(outputFields: string[], filter: any) : Prom
   return await PackageFunctions.advancedSearch(outputFields, filter);
 }
 
-//input: string scope 
+//input: string scope { description: Entity scope: "compounds", "batches", "assays", "assay_runs", "assay_results". }
 //output: dataframe result
 export async function retrieveEntity(scope: string) : Promise<any> {
   return await PackageFunctions.retrieveEntity(scope);

@@ -1,0 +1,981 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1728,
+      "height": 1034
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 262,
+          "height": 1034,
+          "element": {
+            "id": "76dabbf0-48b0-11f1-bbae-1bbd3e6d3dbf",
+            "type": "Filters",
+            "look": {
+              "#type": "FiltersLook",
+              "filters": [
+                {
+                  "type": "categorical",
+                  "column": "Assay Name",
+                  "active": true,
+                  "radioCheckboxMode": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Target Entity",
+                  "active": true,
+                  "radioCheckboxMode": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Run ID",
+                  "active": true,
+                  "radioCheckboxMode": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "AUC",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Hill",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Min",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Max",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "IC50",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Max Percent Inhibition",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Max Percent Inhibition (Compound | Assay | Target)",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                }
+              ]
+            },
+            "title": "Filters"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 1464,
+          "height": 1034
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 1464,
+              "height": 509,
+              "element": {
+                "id": "76dabbf0-48b0-11f1-a401-79ea2af0b321",
+                "type": "Trellis plot",
+                "look": {
+                  "#type": "TrellisPlotLook",
+                  "yColumnNames": [
+                    "Compound|Assay|Target"
+                  ],
+                  "viewerType": "MultiCurveViewer",
+                  "innerViewerLook": {
+                    "#type": "JsViewerHostLook"
+                  },
+                  "showXSelectors": false,
+                  "showXLabels": false,
+                  "showYLabels": false,
+                  "showControlPanel": false,
+                  "onClick": "Select",
+                  "legendPosition": "Auto",
+                  "viewport": "(0, 3, 4, 3)"
+                },
+                "title": "Fitted Curves"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "horizontal",
+            "state": {
+              "width": 1464,
+              "height": 524
+            },
+            "children": [
+              {
+                "containerType": "fill",
+                "state": {
+                  "width": 802,
+                  "height": 524,
+                  "documentManager": true
+                },
+                "children": [
+                  {
+                    "containerType": "panel",
+                    "state": {
+                      "width": 802,
+                      "height": 502,
+                      "element": {
+                        "id": "76db0a10-48b0-11f1-91a4-b158208066ce",
+                        "type": "Grid",
+                        "look": {
+                          "#type": "GridLook",
+                          "showAddNewRowIcon": true,
+                          "addNewRowOnLastRowEdit": true,
+                          "rowHeight": 186,
+                          "topLevelDefaultMenu": true,
+                          "showDefaultPopupMenu": false,
+                          "allowColumnMenu": true,
+                          "columns": [
+                            {
+                              "width": 28,
+                              "backgroundColor": 4294440951,
+                              "customName": "",
+                              "cellType": "row header",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 302,
+                              "columnName": "Molecule",
+                              "cellType": "Molecule",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 230,
+                              "columnName": "Fitted Curve",
+                              "cellType": "fit",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 60,
+                              "columnName": "AUC",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 56,
+                              "columnName": "Hill",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 60,
+                              "columnName": "Min",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 60,
+                              "columnName": "Max",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 64,
+                              "columnName": "IC50",
+                              "customFormat": "scientific",
+                              "cellType": "number",
+                              "format": "scientific",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 308,
+                              "columnName": "Compound|Assay|Target",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 152,
+                              "columnName": "Assay Name",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 87,
+                              "columnName": "Batch ID",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 116,
+                              "columnName": "Compound ID",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 99,
+                              "columnName": "Target Entity",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 66,
+                              "columnName": "Run ID",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 162,
+                              "columnName": "Max Percent Inhibition",
+                              "customFormat": "0.0000000000000000",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 325,
+                              "columnName": "Max Percent Inhibition (Compound | Assay | Target)",
+                              "customFormat": "0.0000000000000000",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "visible": false,
+                              "width": 0,
+                              "columnName": "~Molecule.Pattern",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "visible": false,
+                              "width": 0,
+                              "columnName": "~Molecule.canonicalSmiles",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            }
+                          ],
+                          "title": "Fitted Curves"
+                        },
+                        "title": "Fitted Curves",
+                        "default": true
+                      }
+                    },
+                    "children": []
+                  },
+                  {
+                    "containerType": "panel",
+                    "state": {
+                      "width": 802,
+                      "height": 382,
+                      "element": {
+                        "id": "76db5830-48b0-11f1-b1f9-dd831780264c",
+                        "type": "Grid",
+                        "look": {
+                          "#type": "GridLook",
+                          "rowHeight": 160,
+                          "topLevelDefaultMenu": true,
+                          "showDefaultPopupMenu": false,
+                          "allowColumnMenu": true,
+                          "selectedRowsColor": 4294967295,
+                          "columns": [
+                            {
+                              "width": 28,
+                              "backgroundColor": 4294440951,
+                              "customName": "",
+                              "cellType": "row header",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 230,
+                              "columnName": "Fitted Curve",
+                              "cellType": "fit",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 60,
+                              "columnName": "AUC",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 56,
+                              "columnName": "Hill",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 60,
+                              "columnName": "Min",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 60,
+                              "columnName": "Max",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 64,
+                              "columnName": "IC50",
+                              "customFormat": "scientific",
+                              "cellType": "number",
+                              "format": "scientific",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 308,
+                              "columnName": "Compound|Assay|Target",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 152,
+                              "columnName": "Assay Name",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 87,
+                              "columnName": "Batch ID",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 116,
+                              "columnName": "Compound ID",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 99,
+                              "columnName": "Target Entity",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 66,
+                              "columnName": "Run ID",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 162,
+                              "columnName": "Max Percent Inhibition",
+                              "customFormat": "0.0000000000000000",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 325,
+                              "columnName": "Max Percent Inhibition (Compound | Assay | Target)",
+                              "customFormat": "0.0000000000000000",
+                              "cellType": "number",
+                              "format": "0.0000000000000000",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "width": 200,
+                              "columnName": "Molecule",
+                              "cellType": "Molecule",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "visible": false,
+                              "width": 0,
+                              "columnName": "~Molecule.Pattern",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            },
+                            {
+                              "visible": false,
+                              "width": 0,
+                              "columnName": "~Molecule.canonicalSmiles",
+                              "headerCellStyle": {
+                                "textWrap": "words"
+                              }
+                            }
+                          ],
+                          "rowSource": "FilteredSelected",
+                          "title": "Selected Curves"
+                        },
+                        "title": "Selected Curves"
+                      }
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 661,
+                  "height": 524,
+                  "element": {
+                    "id": "76db7f40-48b0-11f1-b152-195c4f55875b",
+                    "type": "MultiCurveViewer",
+                    "look": {
+                      "#type": "JsViewerHostLook",
+                      "curvesColumnNames": [
+                        "Fitted Curve"
+                      ],
+                      "legendColumnName": "",
+                      "showSelectedRowsCurves": true,
+                      "showCurrentRowCurve": false,
+                      "showMouseOverRowCurve": false,
+                      "mergeColumnSeries": false,
+                      "showOutliers": true,
+                      "minX": null,
+                      "minY": null,
+                      "maxX": null,
+                      "maxY": null,
+                      "title": null,
+                      "xAxisName": null,
+                      "yAxisName": null,
+                      "logX": null,
+                      "logY": null,
+                      "allowXZeroes": null,
+                      "mergeCellSeries": null,
+                      "showColumnLabel": null,
+                      "showStatistics": null
+                    },
+                    "title": "MultiCurveViewer"
+                  }
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "24ea1e30-48b0-11f1-d427-47ceb6cba29e",
+    "tableName": "Assay_Curves"
+  },
+  "userData": {
+    ".columnTags": {
+      "Fitted Curve": {
+        "quality": "fit",
+        "cell.renderer": "fit"
+      },
+      "AUC": {
+        "format": "0.0000000000000000",
+        ".%initialName": "Fitted Curve 1 auc"
+      },
+      "Hill": {
+        "format": "0.0000000000000000",
+        ".%initialName": "Fitted Curve 1 slope"
+      },
+      "Min": {
+        "format": "0.0000000000000000",
+        ".%initialName": "Fitted Curve 1 bottom"
+      },
+      "Max": {
+        "format": "0.0000000000000000",
+        ".%initialName": "Fitted Curve 1 top"
+      },
+      "IC50": {
+        "format": "scientific",
+        ".%initialName": "Fitted Curve 1 interceptX"
+      },
+      "Max Percent Inhibition": {
+        "format": "0.0000000000000000"
+      },
+      "Max Percent Inhibition (Compound | Assay | Target)": {
+        "format": "0.0000000000000000"
+      },
+      "Molecule": {
+        "quality": "Molecule",
+        "cell.renderer": "Molecule",
+        ".%chem-scaffold-highlight": "[{\"color\":\"#9C27B0\",\"molecule\":\"[$([Cl,Br,I;X1]-[#6])]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[Br,I;X1]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[SX2H0;$([S]([#6])[#6])]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[$([CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[$([CH2X4,CH1X3,CH0X2]~[$([!#1]);!$([CH2X4,CH1X3,CH0X2])])]~[CH2X4,CH1X3,CH0X2]~[CH2X4,CH1X3,CH0X2]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[CH2X4,CH1X3,CH0X2]~[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[C&r8]1~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]~[C&r8]1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[C&r7]1~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]~[C&r7]1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[C&r6]1~[C&r6]~[C&r6]~[C&r6]~[C&r6]~[C&r6]1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[C&r5]1~[C&r5]~[C&r5]~[C&r5]~[C&r5]1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[C&r4]1~[C&r4]~[C&r4]~[C&r4]1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[C&r3]1~[C&r3]~[C&r3]1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(*([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])[CH3X4,CH2X3,CH1X2,F,Cl,Br,I]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"[$([CH3X4,CH2X3,CH1X2,F,Cl,Br,I])&!$(**[CH3X4,CH2X3,CH1X2,F,Cl,Br,I])]\"},{\"color\":\"#FFEB3B\",\"molecule\":\"a1aaaa1\"},{\"color\":\"#FFEB3B\",\"molecule\":\"a1aaaaa1\"},{\"color\":\"#FF9800\",\"molecule\":\"[NR;H1,-1](-C(=O))-[SX4](=O)(=O)\"},{\"color\":\"#FF9800\",\"molecule\":\"[$([-,-2,-3])&!$(*[+,+2,+3])]\"},{\"color\":\"#FF9800\",\"molecule\":\"[$([CX3,SX3,PX3](=O)[O-,OH])](=O)[O-,OH]\"},{\"color\":\"#FF9800\",\"molecule\":\"[$([SX4,PX4](=O)(=O)[O-,OH])](=O)(=O)[O-,OH]\"},{\"color\":\"#FF9800\",\"molecule\":\"c1nn[nH1]n1\"},{\"color\":\"#00BCD4\",\"molecule\":\"c1c[nH]cn1\"},{\"color\":\"#00BCD4\",\"molecule\":\"[$([NX3;H1;+0]([CX4])[CX4])&!$([NX3;H1](C)(C)C=[O,N,S])]\"},{\"color\":\"#00BCD4\",\"molecule\":\"[$([NX3;H2;+0][CX4])&!$([NX3;H2](C)C=[O,N,S])]\"},{\"color\":\"#00BCD4\",\"molecule\":\"[$([+,+2,+3])&!$(*[-,-2,-3])]\"},{\"color\":\"#00BCD4\",\"molecule\":\"N=[CX3](N)-N\"},{\"color\":\"#00BCD4\",\"molecule\":\"[$([CX3](=N)(-N)[!N])](=N)-N\"},{\"color\":\"#00BCD4\",\"molecule\":\"[$([NX3]([CX4])([CX4,#1])[CX4,#1])&!$([NX3]-*=[!#6])]\"},{\"color\":\"#E53935\",\"molecule\":\"[NX1]#[CX2]\"},{\"color\":\"#E53935\",\"molecule\":\"[o+0]\"},{\"color\":\"#E53935\",\"molecule\":\"[$([SX2;H0;v2]),$([SX2;H1;+0]),$([S;-])]\"},{\"color\":\"#E53935\",\"molecule\":\"[$([F;$(F-[#6])])]\"},{\"color\":\"#E53935\",\"molecule\":\"[$([O])&!$([OX2](C)C=O)&!$(*(~a)~a)]\"},{\"color\":\"#E53935\",\"molecule\":\"[#7&!$([nX3])&!$([NX3]-*=[!#6])&!$([NX3]-[a])&!$([NX4])&!$(N=C([C,N])N)&!$([#7;+])]\"},{\"color\":\"#2196F3\",\"molecule\":\"[OX2H1][CX3]=[OX1]\"},{\"color\":\"#2196F3\",\"molecule\":\"[#7;+;!H0]\"},{\"color\":\"#2196F3\",\"molecule\":\"[#16!H0]\"},{\"color\":\"#2196F3\",\"molecule\":\"[#8!H0&!$([OH][C,S,P]=O)]\"},{\"color\":\"#2196F3\",\"molecule\":\"[#7!H0&!$(N-[SX4](=O)(=O)[CX4](F)(F)F)]\"},{\"color\":\"#4CAF50\",\"molecule\":\"a1aaaa1\"},{\"color\":\"#4CAF50\",\"molecule\":\"a1aaaaa1\"}]"
+      },
+      "~Molecule.Pattern": {
+        ".includeInCsvExport": "false"
+      },
+      "~Molecule.canonicalSmiles": {
+        ".includeInCsvExport": "false",
+        "quality": "Text"
+      }
+    }
+  },
+  "columns": [
+    {
+      "name": "Run ID",
+      "type": "string",
+      "id": "5848ce70-48b0-11f1-aac6-77cbd294b772",
+      "friendlyName": "Run ID",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dba650-48b0-11f1-bbe0-9539a819de04"
+        },
+        {
+          "tag": ".id",
+          "id": "76dba650-48b0-11f1-9aa8-cb60aca28e05"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "5848ce70-48b0-11f1-aac6-77cbd294b772"
+      }
+    },
+    {
+      "name": "Hill",
+      "type": "double",
+      "id": "5848f580-48b0-11f1-a489-036b4931bf99",
+      "friendlyName": "Hill",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dba650-48b0-11f1-fd19-052e5dd1bf4f"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dba650-48b0-11f1-eba8-51002254e2e1"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dba650-48b0-11f1-f0be-a9ec6a0cebc1"
+        },
+        {
+          "tag": ".%initialName",
+          "id": "76dbcd60-48b0-11f1-a8cf-e39bafb1425e"
+        },
+        {
+          "tag": ".id",
+          "id": "76dbcd60-48b0-11f1-ce93-e10cf36dd019"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000000000000",
+        ".source-precision": "16",
+        ".semantic-detection-duration": "1",
+        ".%initialName": "Fitted Curve 1 slope",
+        ".id": "5848f580-48b0-11f1-a489-036b4931bf99"
+      }
+    },
+    {
+      "name": "Min",
+      "type": "double",
+      "id": "58491c90-48b0-11f1-99a8-bf24999facff",
+      "friendlyName": "Min",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dbcd60-48b0-11f1-8bdd-03195fd059f5"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dbcd60-48b0-11f1-8d64-31e5ac18ecff"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dbcd60-48b0-11f1-d8d7-a9d51a45d0a7"
+        },
+        {
+          "tag": ".%initialName",
+          "id": "76dbcd60-48b0-11f1-d821-094e0e3cbf8d"
+        },
+        {
+          "tag": ".id",
+          "id": "76dbcd60-48b0-11f1-d7d4-3d25111b6f6f"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000000000000",
+        ".source-precision": "16",
+        ".semantic-detection-duration": "1",
+        ".%initialName": "Fitted Curve 1 bottom",
+        ".id": "58491c90-48b0-11f1-99a8-bf24999facff"
+      }
+    },
+    {
+      "name": "Max",
+      "type": "double",
+      "id": "584943a0-48b0-11f1-c18a-09e00728cfaf",
+      "friendlyName": "Max",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dbf470-48b0-11f1-963b-750c77fafbec"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dbf470-48b0-11f1-8035-31cf93f5e05a"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dbf470-48b0-11f1-f911-29910038cb26"
+        },
+        {
+          "tag": ".%initialName",
+          "id": "76dbf470-48b0-11f1-d27d-47ea6e8a6b26"
+        },
+        {
+          "tag": ".id",
+          "id": "76dbf470-48b0-11f1-9f3f-e19866a33e13"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000000000000",
+        ".source-precision": "16",
+        ".semantic-detection-duration": "0",
+        ".%initialName": "Fitted Curve 1 top",
+        ".id": "584943a0-48b0-11f1-c18a-09e00728cfaf"
+      }
+    },
+    {
+      "name": "Assay Name",
+      "type": "string",
+      "id": "584943a0-48b0-11f1-bbcb-c19379b9e432",
+      "friendlyName": "Assay Name",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dbf470-48b0-11f1-8f13-c3a68814b8e5"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc1b80-48b0-11f1-ad00-8fbc91973c65"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "584943a0-48b0-11f1-bbcb-c19379b9e432"
+      }
+    },
+    {
+      "name": "Max Percent Inhibition",
+      "type": "double",
+      "id": "58496ab0-48b0-11f1-c0ee-0bed67a87b15",
+      "friendlyName": "Max Percent Inhibition",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dc1b80-48b0-11f1-f53d-c3760a0fb40e"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dc1b80-48b0-11f1-9f58-79f1ac122d7c"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc1b80-48b0-11f1-b247-d3a286faa43f"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc1b80-48b0-11f1-f173-5716c7ee64db"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000000000000",
+        ".source-precision": "16",
+        ".semantic-detection-duration": "1",
+        ".id": "58496ab0-48b0-11f1-c0ee-0bed67a87b15"
+      }
+    },
+    {
+      "name": "IC50",
+      "type": "double",
+      "id": "58496ab0-48b0-11f1-d77c-a9f9f8ad7970",
+      "friendlyName": "IC50",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dc1b80-48b0-11f1-b07e-65a944e27c20"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dc1b80-48b0-11f1-8ef3-e3aafe43ecf0"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc4290-48b0-11f1-f2ff-e32de1e2f4f4"
+        },
+        {
+          "tag": ".%initialName",
+          "id": "76dc4290-48b0-11f1-c6ca-2df4ab523e9e"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc4290-48b0-11f1-d17d-ed644f47a7b8"
+        }
+      ],
+      "metaParams": {
+        "format": "scientific",
+        ".source-precision": "4",
+        ".semantic-detection-duration": "2",
+        ".%initialName": "Fitted Curve 1 interceptX",
+        ".id": "58496ab0-48b0-11f1-d77c-a9f9f8ad7970"
+      }
+    },
+    {
+      "name": "AUC",
+      "type": "double",
+      "id": "584991c0-48b0-11f1-f3ac-c5f33475b796",
+      "friendlyName": "AUC",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dc4290-48b0-11f1-83d5-835256f9e9e9"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dc4290-48b0-11f1-d84e-7fce3db2ab54"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc4290-48b0-11f1-c4cd-67bb0eb613a3"
+        },
+        {
+          "tag": ".%initialName",
+          "id": "76dc69a0-48b0-11f1-98e4-e1f89a07bab0"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc69a0-48b0-11f1-b56e-2709d814fb27"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000000000000",
+        ".source-precision": "16",
+        ".semantic-detection-duration": "1",
+        ".%initialName": "Fitted Curve 1 auc",
+        ".id": "584991c0-48b0-11f1-f3ac-c5f33475b796"
+      }
+    },
+    {
+      "name": "Target Entity",
+      "type": "string",
+      "id": "584991c0-48b0-11f1-8eef-b55478036969",
+      "friendlyName": "Target Entity",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc69a0-48b0-11f1-f29f-e307331ff853"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc69a0-48b0-11f1-e03f-5fb7cda9b1ba"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "584991c0-48b0-11f1-8eef-b55478036969"
+      }
+    },
+    {
+      "name": "Max Percent Inhibition (Compound | Assay | Target)",
+      "type": "double",
+      "id": "584991c0-48b0-11f1-9a29-6f26992ce9e8",
+      "friendlyName": "Max Percent Inhibition (Compound | Assay | Target)",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "76dc69a0-48b0-11f1-e3ca-ef623a5aa6d1"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "76dc69a0-48b0-11f1-a710-51270e047fdc"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc69a0-48b0-11f1-f6f6-fff18bfae628"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc90b0-48b0-11f1-dd79-7742b704ff8a"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000000000000",
+        ".source-precision": "16",
+        ".semantic-detection-duration": "2",
+        ".id": "584991c0-48b0-11f1-9a29-6f26992ce9e8"
+      }
+    },
+    {
+      "name": "Compound|Assay|Target",
+      "type": "string",
+      "id": "5849b8d0-48b0-11f1-d67e-f11257ce177d",
+      "friendlyName": "Compound| Assay| Target",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc90b0-48b0-11f1-bfc7-6d035c4896ea"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc90b0-48b0-11f1-dc65-cb34e4f67eb4"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "3",
+        ".id": "5849b8d0-48b0-11f1-d67e-f11257ce177d"
+      }
+    },
+    {
+      "name": "Fitted Curve",
+      "type": "string",
+      "semType": "fit",
+      "id": "5849dfe0-48b0-11f1-a08a-a975969df95e",
+      "friendlyName": "Fitted Curve",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "76dc90b0-48b0-11f1-b99b-bbc0674bdabf"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "76dc90b0-48b0-11f1-9ff5-4f36b81c4225"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "76dc90b0-48b0-11f1-d7ab-97ced3572548"
+        },
+        {
+          "tag": ".fit",
+          "id": "76dc90b0-48b0-11f1-a6fa-3fe007bb7bcb"
+        },
+        {
+          "tag": ".id",
+          "id": "76dc90b0-48b0-11f1-e640-0358c055f724"
+        }
+      ],
+      "metaParams": {
+        "quality": "fit",
+        "cell.renderer": "fit",
+        ".semantic-detection-duration": "3",
+        ".fit": "{\"chartOptions\":{\"logX\":false,\"logY\":false,\"allowXZeroes\":true,\"mergeSeries\":false,\"showColumnLabel\":false},\"seriesOptions\":{\"fitFunction\":\"sigmoid\",\"errorModel\":\"constant\",\"connectDots\":false,\"clickToToggle\":false,\"showFitLine\":true,\"showPoints\":\"points\",\"showOutliers\":true,\"showCurveConfidenceInterval\":false,\"markerType\":\"circle\",\"outlierMarkerType\":\"outlier\",\"lineStyle\":\"solid\",\"columnName\":\"\"}}",
+        ".id": "5849dfe0-48b0-11f1-a08a-a975969df95e"
+      }
+    }
+  ],
+  "name": "AssayCurves",
+  "friendlyName": "Assay_Curves",
+  "author": {
+    "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
+  },
+  "createdOn": "2026-05-13T21:48:23.214Z"
+}

@@ -5,6 +5,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {switchMap} from 'rxjs/operators';
 import {FuncCallNode, PipelineNodeBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -55,10 +56,7 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
 
   let testScheduler: TestScheduler;
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Remove obsolete consistency', async () => {
@@ -217,6 +215,34 @@ category('ComputeUtils: Driver obsolete meta cleanup', async () => {
         tree.runMutateTree().subscribe();
       });
       expectObservable((outNode.getItem() as PipelineNodeBase).nodeDescription.getStateChanges('tags')).toBe('ab 8ms c', {
+        a: undefined,
+        b: {
+          '1234': [
+            'tag1',
+            'tag2',
+          ],
+        },
+        c: {},
+      });
+    });
+  });
+
+  test('Remove obsolete tags on funcCall node', async () => {
+    const pconf = await getProcessedConfig(config);
+
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.linksState.forceInitialMetaRun = true;
+      tree.init().subscribe();
+      const stepNode = tree.nodeTree.getNode([{idx: 0}]);
+      cold('-a').subscribe(() => {
+        (stepNode.getItem() as FuncCallNode).nodeDescription.setState('tags', {'1234': ['tag1', 'tag2']});
+      });
+      cold('10ms a').subscribe(() => {
+        tree.runMutateTree().subscribe();
+      });
+      expectObservable((stepNode.getItem() as FuncCallNode).nodeDescription.getStateChanges('tags')).toBe('ab 8ms c', {
         a: undefined,
         b: {
           '1234': [

@@ -83,6 +83,14 @@ export namespace funcs {
     return await grok.functions.call('HitTriage:PeptiHitApp', {});
   }
 
+  export async function pepTriageAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('HitTriage:PepTriageAppTreeBrowser', { treeNode });
+  }
+
+  export async function pepTriageApp(): Promise<DG.View> {
+    return await grok.functions.call('HitTriage:PepTriageApp', {});
+  }
+
   export async function demoFileIngest(): Promise<DG.DataFrame> {
     return await grok.functions.call('HitTriage:DemoFileIngest', {});
   }
@@ -93,6 +101,10 @@ export namespace funcs {
 
   export async function demoFileIngest2(numberOfMolecules: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('HitTriage:DemoFileIngest2', { numberOfMolecules });
+  }
+
+  export async function demoPeptideSequences(peptideCount: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('HitTriage:DemoPeptideSequences', { peptideCount });
   }
 
   export async function demoFileSubmit(df: DG.DataFrame , molecules: string ): Promise<void> {

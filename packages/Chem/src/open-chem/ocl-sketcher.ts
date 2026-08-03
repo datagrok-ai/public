@@ -11,6 +11,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   mouseDown = false;
   savedMolecule: string | null = null;
   setSavedMolecule = false;
+  importing = false;
 
   constructor() {
     super();
@@ -22,7 +23,10 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this.root.id = id;
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((_) => {
-      this.explicitMol = null;
+      if (this.importing)
+        this.importing = false;
+      else
+        this.explicitMol = null;
       if (this.setSavedMolecule) {
         this.setSavedMolecule = false;
         this.molFile = this.savedMolecule!;
@@ -62,8 +66,9 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   set smiles(s) {
-    this._sketcher?.setSmiles(s);
     this.explicitMol = {notation: 'smiles', value: s};
+    this.importing = true;
+    this._sketcher?.setSmiles(s);
   }
 
   get molFile() {
@@ -73,8 +78,9 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   set molFile(s) {
-    this._sketcher?.setMolFile(s);
     this.explicitMol = {notation: 'molblock', value: s};
+    this.importing = true;
+    this._sketcher?.setMolFile(s);
   }
 
   get molV3000() {
@@ -84,8 +90,9 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   set molV3000(s) {
-    this._sketcher?.setMolFile(s);
     this.explicitMol = {notation: 'molblockV3000', value: s};
+    this.importing = true;
+    this._sketcher?.setMolFile(s);
   }
 
   async getSmarts(): Promise<string> {
@@ -93,6 +100,9 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   set smarts(s: string) {
+    //@ts-ignore
+    this.explicitMol = {notation: 'smarts', value: s};
+    this.importing = true;
     this.convertAndSetSmarts(s);
   }
 

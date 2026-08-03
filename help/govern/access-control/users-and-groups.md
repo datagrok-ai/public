@@ -1,8 +1,19 @@
 ---
 title: 'Users and groups'
-format: 'mdx'
+mdx:
+  format: mdx
 unlisted: false
 sidebar_position: 1
+description: Create and manage Datagrok users and groups, including administrators, invitations, and bulk provisioning.
+keywords:
+  - user management
+  - group management
+  - add a user
+  - invite a user
+  - administrators group
+  - block a user
+  - group admin
+  - bulk user provisioning
 ---
 
 ```mdx-code-block
@@ -86,6 +97,14 @@ them with others if necessary.
 Currently, there is no way to permanently delete a user. We are planning 
 to implement it in the future versions.
 
+### Bulk and scripted management
+
+For scripted user lifecycle management — bulk imports, syncing with an external
+identity source such as Active Directory, or seeding a fresh server — use the
+[`grok s` CLI](../../develop/server-management.md). It exposes `users save`,
+`users block`, `groups save`, `groups add-members`, and `groups list-members`
+as idempotent shell commands that talk to the platform's public REST API.
+
 ## Groups
 
 A _group_ is a named collection of users that share permissions. To view 
@@ -143,11 +162,11 @@ with specific roles and permissions:
 * **All users**: This group includes all users and groups and initially comes
   with a basic set of [permissions](access-control.md#permissions).
 * **Administrators**:
-     * During the deployment process, the Administrators group is created and
+  * During the deployment process, the Administrators group is created and
        granted all available permissions, ensuring complete control over the
        platform.
-     * An 'admin' user and password is provided in the deployment script.
-     * Immediately following the deployment, logging in as the admin user is the
+  * An 'admin' user and password is provided in the deployment script.
+  * Immediately following the deployment, logging in as the admin user is the
        standard procedure to begin configuring and managing the Datagrok
        instance.
      

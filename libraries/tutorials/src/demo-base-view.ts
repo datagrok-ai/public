@@ -28,6 +28,7 @@ export abstract class BaseViewApp {
   filePath: string = '';
   addPath: boolean = true;
   addTabControl: boolean = true;
+  persistSketcherValue: boolean = true;
   mode: string = 'sketch';
   tableName: string = '';
   target: DG.ChoiceInput<string | null> | null = null;
@@ -80,12 +81,15 @@ export abstract class BaseViewApp {
     await grok.functions.call('Chem:initChemAutostart');
     this.sketcherInstance = new grok.chem.Sketcher();
     const [name, defaultSmiles] = Object.entries(this.sketcherValue)[0];
-    const storedSmiles = grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) ?? defaultSmiles;
+    const storedSmiles = (this.persistSketcherValue ?
+      grok.userSettings.getValue(this.STORAGE_NAME, this.KEY) :
+      null) ?? defaultSmiles;
 
     this.sketcherInstance.onChanged.subscribe(async () => {
       const newSmiles: string = this.sketcherInstance!.getSmiles();
       this.sketcherInstance!.molInput.value = (newSmiles !== defaultSmiles) ? '' : name;
-      grok.userSettings.put(this.STORAGE_NAME, {[this.KEY]: newSmiles});
+      if (this.persistSketcherValue)
+        grok.userSettings.put(this.STORAGE_NAME, {[this.KEY]: newSmiles});
       await this.onChanged(newSmiles);
     });
 

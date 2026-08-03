@@ -112,4 +112,4 @@ category('TableQueryBuilder', () => {
         expect(df.rowCount, 6);
         expect(df.columns.length, 4);
     });
-});
+}, {node: true});
