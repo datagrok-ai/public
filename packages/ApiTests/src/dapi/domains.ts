@@ -225,7 +225,9 @@ category('Dapi: domain registry', () => {
 category('Dapi: domain query state', () => {
   const items = () => grok.dapi.domains.table('apitests.item');
   const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-  /** Key-order-independent comparison of two plain objects. */
+  /** Key-order-independent comparison of two plain objects. NB the replacer is the
+   * TOP-level key list, so it also masks keys nested objects do not share — enough for
+   * the flat parameter/URL maps here, not a deep comparison. */
   const sorted = (o: any) => JSON.stringify(o, Object.keys(o).sort());
   /** The message of whatever [action] throws, or null when it succeeds. */
   const thrown = (action: () => any): string | null => {
@@ -240,36 +242,62 @@ category('Dapi: domain query state', () => {
   test('URL parameters round-trip losslessly, reserved params ignored', async () => {
     // The platform's list-element binding: one URL key per element (filters[0]), so
     // a recorded run can be re-parameterized element by element.
+    // Every list parameter of the function, so nothing is lost silently (a link that
+    // drops joins or groupBy is a different query). The fixture deliberately mixes
+    // select-mode (columns/offset) and aggregate-mode (aggregations/groupBy) parameters:
+    // the URL layer is mode-agnostic and nothing is executed here — the modes are
+    // reconciled by toSpec()/the function, covered below and in the malformed test.
     const url = {
-      'filters[0]': 'quantity > 1',
-      'filters[1]': '{"property":"name","operator":"=","value":"Widget"}',
+      'columns[0]': 'kind',
+      'columns[1]': 'amount',
+      'filters[0]': 'amount > 1',
+      'filters[1]': '{"property":"kind","operator":"=","value":"Widget"}',
+      'joins[0]': 'item_id',
+      'aggregations[0]': 'avg(amount) as avg_amount',
+      'groupBy[0]': 'kind',
       'orderBy[0]': '!created_on',
       'limit': '25',
+      'offset': '10',
     };
-    const q = DG.DomainQuery.fromUrlParams('apitests', 'item',
+    const q = DG.DomainQuery.fromUrlParams('apitests', 'item_event',
       {...url, 'view': 'grid', 'entity': 'abc'});     // UI-only state rides along, stays out
     expect(q.schema, 'apitests');
-    expect(q.table, 'item');
+    expect(q.table, 'item_event');
+    expect(q.columns!.join(','), 'kind,amount');
     expect(q.filters!.length, 2);
     expect(q.filters![1].includes('Widget'), true, `JSON element mangled: ${q.filters![1]}`);
+    expect(q.joins!.join(','), 'item_id');
+    expect(q.aggregations!.join(','), 'avg(amount) as avg_amount');
+    expect(q.groupBy!.join(','), 'kind');
     expect(q.orderBy!.join(','), '!created_on');
     expect(q.limit, 25);
+    expect(q.offset, 10);
     expect(sorted(q.toUrlParams()), sorted(url), 'URL round trip is not lossless');
+    // toParams() is the same content in the function's own shape.
+    expect(sorted(DG.DomainQuery.fromParams(q.toParams()).toUrlParams()), sorted(url),
+      'params round trip is not lossless');
 
     // Gaps close and indices are read in ascending order (a hand-edited link stays usable).
     const gapped = DG.DomainQuery.fromUrlParams('apitests', 'item',
       {'filters[2]': 'b = 2', 'filters[0]': 'a = 1'});
     expect(gapped.filters!.join('|'), 'a = 1|b = 2');
+
+    // A lone smart-filter string is passed to the REST spec verbatim (the server parses
+    // that grammar); only SEVERAL of them need the function itself.
+    const one = DG.DomainQuery.fromUrlParams('apitests', 'item', {'filters[0]': 'quantity > 1'});
+    expect(one.toSpec().filter, 'quantity > 1', 'a single grammar element must pass through');
   });
 
   test('view state -> DomainQuery -> params, and run() reproduces the subset', async () => {
     const mine = `SKU-QS-${stamp()}`;
-    const [a] = await items().insert({sku: mine, name: mine});
-    const view = DG.DomainView.create({schema: 'apitests', table: 'item',
-      permanentFilter: `sku = "${mine}"`, embedded: true});
-    grok.shell.addView(view);
+    let inserted: {id: string}[] = [];
+    let view: any = null;
     let df: _DG.DataFrame | null = null;
     try {
+      inserted = await items().insert({sku: mine, name: mine});
+      view = DG.DomainView.create({schema: 'apitests', table: 'item',
+        permanentFilter: `sku = "${mine}"`, embedded: true});
+      grok.shell.addView(view);
       await awaitCheck(() => view.root.textContent!.includes(mine),
         'the filtered row never appeared in the view', 15000);
       const params = view.query;
@@ -283,25 +311,33 @@ category('Dapi: domain query state', () => {
     } finally {
       if (df != null)
         grok.shell.closeTable(df);
-      view.close();
-      await items().delete(a.id);
+      if (view != null)
+        view.close();
+      for (const r of inserted)
+        await items().delete(r.id);
     }
   });
 
   test('run() matches queryDf(toSpec()) and records a creation script', async () => {
     const prefix = `SKU-QR-${stamp()}`;
-    const inserted = await items().insert([
-      {sku: `${prefix}-1`, name: 'one', quantity: 1},
-      {sku: `${prefix}-2`, name: 'two', quantity: 2},
-      {sku: `${prefix}-3`, name: 'three', quantity: 3}]);
     // JSON condition elements: values are bound server-side, and toSpec() AND-joins
     // them into one REST condition tree.
     const q = new DG.DomainQuery({schema: 'apitests', table: 'item',
       filters: [`{"property":"sku","operator":"like","value":"${prefix}%"}`,
         '{"property":"quantity","operator":">","value":1}'],
       orderBy: ['!quantity'], limit: 10});
+    // Recording is gated on the user's data-history setting (data_history.dart), so a
+    // profile with it off would fail the creation-script assertions: force it on and
+    // restore whatever the profile had.
+    const dataHistory = grok.shell.settings.dataHistory;
+    let inserted: {id: string}[] = [];
     let df: _DG.DataFrame | null = null;
     try {
+      grok.shell.settings.dataHistory = true;
+      inserted = await items().insert([
+        {sku: `${prefix}-1`, name: 'one', quantity: 1},
+        {sku: `${prefix}-2`, name: 'two', quantity: 2},
+        {sku: `${prefix}-3`, name: 'three', quantity: 3}]);
       const direct = await items().queryDf(q.toSpec());
       df = await q.run();
       expect(df!.rowCount, 2, 'the AND-combined filter elements did not select 2 rows');
@@ -317,6 +353,7 @@ category('Dapi: domain query state', () => {
       expect(script.includes('DomainQuery'), true, `no DomainQuery creation script: '${script}'`);
       expect(script.includes(prefix), true, `the creation script lost the filter values: '${script}'`);
     } finally {
+      grok.shell.settings.dataHistory = dataHistory;
       if (df != null)
         grok.shell.closeTable(df);
       for (const r of inserted)
@@ -326,10 +363,11 @@ category('Dapi: domain query state', () => {
 
   test('fromBuilder preserves where/orderBy/top and selects the same rows', async () => {
     const prefix = `SKU-QB-${stamp()}`;
-    const inserted = await items().insert([
-      {sku: `${prefix}-1`, quantity: 1},
-      {sku: `${prefix}-2`, quantity: 2}]);
+    let inserted: {id: string}[] = [];
     try {
+      inserted = await items().insert([
+        {sku: `${prefix}-1`, quantity: 1},
+        {sku: `${prefix}-2`, quantity: 2}]);
       const builder = items().query()
         .where('sku', 'like', `${prefix}%`)
         .where('quantity', '>', 1)
@@ -358,6 +396,8 @@ category('Dapi: domain query state', () => {
       'a non-numeric element index must throw');
     expect((bad({'limit': 'ten'}) ?? '').includes('Malformed URL parameter'), true,
       'a non-integer limit must throw, not resolve to NaN');
+    expect((bad({'limit': '-5'}) ?? '').includes('Malformed URL parameter'), true,
+      'a negative limit must throw — the server clamps it to 0 and returns nothing');
     expect((bad({'filters': 'a = 1'}) ?? '').includes('filters[0]'), true,
       'a list bound without an index must name the element form');
     expect(bad({'view': 'grid', 'unknown[3]': 'x'}), null, 'unknown keys must be ignored');
@@ -365,6 +405,11 @@ category('Dapi: domain query state', () => {
     const q = new DG.DomainQuery({schema: 'apitests', table: 'item'});
     q.filters = ['{not json'];
     expect((thrown(() => q.toSpec()) ?? '').includes('invalid JSON'), true);
+    // Sub-group members must be conditions, nested groups, or connectors — the same
+    // shape check the function applies, so run() and toSpec() reject the same input.
+    q.filters = ['["a","b"]'];
+    expect((thrown(() => q.toSpec()) ?? '').includes('condition sub-group'), true,
+      'a bare-string sub-group member must be rejected');
     // Several smart-filter strings can only be parsed by the function itself (a bare
     // string inside a REST condition tree means a connector, not a filter).
     q.filters = ['a = 1', 'b = 2'];

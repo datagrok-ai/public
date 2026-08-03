@@ -16,6 +16,8 @@
 import type {Dayjs} from 'dayjs';
 import type {DataFrame} from './dataframe';
 
+// The runtime DG namespace, declared instead of imported: dg.ts re-exports this module,
+// so importing it back would close a module cycle (same seam as IDomainQueryExecutor).
 declare let DG: any;
 
 /** The system columns every domain table carries (always projected on reads). */
@@ -276,7 +278,10 @@ export async function domainCall<T>(p: Promise<T>): Promise<T> {
  * mutable, URL-serializable counterpart. Grammar strings, not condition trees: each
  * element is one `DomainQuery` filter expression (`'status = "open"'`) with the
  * per-element JSON escape hatch. Use {@link DomainQuerySpec} for the REST surface
- * instead. */
+ * instead.
+ *
+ * Aggregate mode (non-empty `aggregations`/`groupBy`) REJECTS `columns` and `offset`
+ * with a 400 — they are select-mode parameters, not ignored ones. */
 export interface DomainQueryParams {
   schema: string;
   table: string;
@@ -698,7 +703,12 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
   /** This builder's accumulated state as a serializable {@link DomainQuery} (the
    * URL / deep-link / recorded-run form of the same query). Conditions become filter
    * elements: top-level AND conjuncts are emitted one per element (so a URL can bind
-   * `filters[0]` alone), anything else travels as one JSON element. */
+   * `filters[0]` alone), anything else travels as one JSON element.
+   *
+   * The row cap travels, but its DEFAULT does not: without `.top()`, awaiting the
+   * builder takes the server default of 100 rows while `toQuery().toSpec()` falls back
+   * to {@link DOMAIN_QUERY_ROW_LIMIT} — the same builder, two row counts. Pin one with
+   * `.top()` when the two forms must agree. */
   toQuery(): DomainQuery {
     if (this.client.schema == null || this.client.table == null)
       throw new Error('the query builder has no table address — construct the DomainQuery explicitly');
@@ -765,19 +775,29 @@ function _decodeFilterElement(element: string): any {
   // A '['-element that decodes as JSON is a condition sub-group; one that does not
   // is grammar ('[bracketed column] = ...').
   if (s.startsWith('[')) {
+    let decoded: any;
     try {
-      const decoded = JSON.parse(s);
-      if (Array.isArray(decoded))
-        return decoded;
+      decoded = JSON.parse(s);
     } catch (_) { /* falls through to the grammar */ }
+    if (Array.isArray(decoded)) {
+      // Same minimal shape check the function applies (domain_query_func.dart): members
+      // are conditions, nested groups, or 'and'/'or' — a bare-string member would splice
+      // server-side nonsense.
+      if (decoded.length === 0 || !decoded.every((e: any) =>
+        (e != null && typeof e === 'object') || e === 'and' || e === 'or'))
+        throw new Error(`Cannot parse filter "${element}": expected a condition sub-group`);
+      return decoded;
+    }
   }
   return undefined;
 }
 
+/** `limit`/`offset` from a URL: a negative value is rejected rather than passed on —
+ * the server clamps it to 0, which would silently return nothing. */
 function _parseUrlInt(key: string, value: string): number {
   const s = `${value}`.trim();
-  if (!/^-?\d+$/.test(s))
-    throw new Error(`Malformed URL parameter '${key}': expected an integer, got '${value}'`);
+  if (!/^\d+$/.test(s))
+    throw new Error(`Malformed URL parameter '${key}': expected a non-negative integer, got '${value}'`);
   return parseInt(s, 10);
 }
 
@@ -865,8 +885,9 @@ export class DomainQuery {
     return params;
   }
 
-  /** Aggregate mode: `aggregations` or `groupBy` carries elements (then `columns`
-   * and `offset` do not apply). */
+  /** Aggregate mode: `aggregations` or `groupBy` carries elements. `columns` and
+   * `offset` are then REJECTED, not ignored — {@link toSpec} throws and {@link run}
+   * gets a 400 from the function. */
   get isAggregate(): boolean {
     return (this.aggregations?.length ?? 0) > 0 || (this.groupBy?.length ?? 0) > 0;
   }
@@ -875,10 +896,19 @@ export class DomainQuery {
    * path: the resulting DataFrame carries a creation script, so it refreshes from the
    * Source pane, survives a saved project as a data-synced dashboard, and takes URL
    * parameters (`filters[0]`, ...). Being a normal function run, its result also goes
-   * through the platform's default handling (the frame is added to the workspace).
-   * Per-caller row and column security applies on every run.
+   * through the platform's default handling: the frame is added to the workspace and
+   * OPENED IN A TABLE VIEW, which becomes the current view. Per-caller row and column
+   * security applies on every run.
    *
-   * For a silent read (no history, no workspace entry) pass {@link toSpec} to
+   * The creation script is recorded only when the user has data history enabled
+   * (`grok.shell.settings.dataHistory`, on by default) — the query itself runs either
+   * way, but the frame comes back without `.script`/`.history` tags when it is off.
+   *
+   * Failures arrive as the function's own error (raw Dart message text), NOT as the
+   * typed {@link DomainError} family: the function boundary carries no error envelope.
+   * Where typed failures matter, run {@link toSpec} through `queryDf` instead.
+   *
+   * For a silent read (no history, no workspace entry, no view) pass {@link toSpec} to
    * `grok.dapi.domains.table('<schema>.<table>').queryDf(...)` instead. */
   async run(): Promise<DataFrame> {
     const func = DG.Func.byName('DomainQuery');
