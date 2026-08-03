@@ -19,7 +19,12 @@ export type ICodeEditorOptions = {
 
 /** Async suggestion callback for {@link TypeAheadConfig.source}: receives the typed query and
  * resolves to suggestions — strings or objects with a `label` (extra fields ride along and are
- * passed to `onSubmit` intact, e.g. `{label, value}` for lookups resolving to an id). */
+ * passed to `onSubmit` intact, e.g. `{label, value}` for lookups resolving to an id).
+ *
+ * The callback path is a self-contained dropdown, not typeahead-standalone: of the
+ * {@link TypeAheadConfig} keys it honors only `minLength`, `limit`, `debounceRemote`, and
+ * `onSubmit`; `display`, `templates`, `highlight`, `hint`, `autoSelect`, `diacritics`,
+ * `preventSubmit`, and the other standalone options are ignored. */
 export type TypeAheadCallbackSource = (query: string) => Promise<(string | Dictionary)[]>;
 
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className' | 'source'> & {

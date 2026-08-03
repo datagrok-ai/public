@@ -1861,6 +1861,11 @@ export class ObjectHandler<T = any> {
   }
 }
 
+// Sentinel for the Dart dispatch guard: prototype-chain lookups find the base
+// no-op on EVERY class-based handler, so it is marked as the platform default
+// and treated as absent — only a real override takes over grid decoration.
+(ObjectHandler.prototype.renderGrid as any).isPlatformDefault = true;
+
 export class EntityMetaDartProxy extends ObjectHandler {
 
   constructor(d: any) {

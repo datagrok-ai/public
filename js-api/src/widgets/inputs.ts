@@ -94,7 +94,14 @@ export class TypeAhead extends InputBase {
     let items: Dictionary[] = [];
     let selectedIdx = -1;
 
-    const hide = () => { list.classList.add('tt-hide'); selectedIdx = -1; };
+    const hide = () => {
+      if (timer != null) {
+        clearTimeout(timer);   // a pending debounce must not query into a closed dropdown
+        timer = null;
+      }
+      list.classList.add('tt-hide');
+      selectedIdx = -1;
+    };
     const pick = (ev: Event, i: number) => {
       const item = items[i];
       this.value = `${item.label ?? ''}`;
@@ -128,7 +135,8 @@ export class TypeAhead extends InputBase {
         try {
           results = await source(query);
         }
-        catch (_) {
+        catch (e) {
+          console.error('TypeAhead callback source failed:', e);
           results = [];
         }
         if (id !== requestId)
@@ -142,7 +150,9 @@ export class TypeAhead extends InputBase {
       if (list.classList.contains('tt-hide'))
         return;
       if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-        selectedIdx = (selectedIdx + (ev.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length;
+        selectedIdx = ev.key === 'ArrowDown'
+          ? (selectedIdx + 1) % items.length
+          : (selectedIdx <= 0 ? items.length - 1 : selectedIdx - 1);
         render();
         ev.preventDefault();
       }

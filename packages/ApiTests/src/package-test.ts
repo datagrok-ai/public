@@ -32,7 +32,6 @@ import './dapi/domain-filters';
 import './dapi/domain-lifecycle';
 import './dapi/domain-parity';
 import './dapi/domain-handlers';
-import './dapi/domain-render-grid';
 import './dapi/domain-visual-queries';
 import './dapi/connector-writes';
 import './dapi/connector-ddl';
