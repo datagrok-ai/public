@@ -1049,6 +1049,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ui.dialog('Delete all conversation history').add(ui.divText('This action will permanently delete all saved conversations. Are you sure you want to proceed?'))
           .onOK(async () => {
             await ConversationStorage.clearAll();
+            this.currentConversationId = null;
             grok.shell.info('History cleared');
           }).show();
       });
