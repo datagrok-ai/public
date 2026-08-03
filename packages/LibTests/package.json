@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/lib-tests",
   "friendlyName": "LibTests",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -69,6 +69,7 @@
     "directory": "packages/LibTests"
   },
   "overrides": {
-    "datagrok-api": "$datagrok-api"
+    "datagrok-api": "$datagrok-api",
+    "uuid": "^11.1.1"
   }
 }

@@ -1,5 +1,12 @@
 ---
 title: "Develop column tooltips"
+description: Register a function with the tooltip role to display a custom widget when hovering over columns of a given semantic type.
+keywords:
+  - tooltip role
+  - column hover tooltip
+  - semType tooltip
+  - custom grid tooltip
+  - WebLogo tooltip
 ---
 
 Developers can extend Datagrok with column tooltips. This could be done by defining a function annotated with special

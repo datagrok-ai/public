@@ -53,6 +53,11 @@ export class Func extends Entity {
    * rather than being executed separately for each scalar element (row) */
   get isVectorFunc(): boolean { return api.grok_Func_Get_IsVectorFunc(this.dart); }
 
+  /** Function tags. Every function kind carries them (scripts, queries, package
+   * functions). See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
+  get tags(): string[] { return api.grok_Func_Get_Tags(this.dart); }
+  set tags(tags: string[]) { api.grok_Func_Set_Tags(this.dart, tags); }
+
   /** Returns {@link FuncCall} object in a stand-by state */
   prepare(parameters: {[name: string]: any} = {}): FuncCall {
     return toJs(api.grok_Func_Prepare(this.dart, parameters));
@@ -166,9 +171,6 @@ export class Script extends Func {
   get sample(): string { return api.grok_Script_Get_Sample(this.dart); }
   set sample(s: string) { api.grok_Script_Set_Sample(this.dart, s); }
 
-  /** Script tags. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
-  get tags(): string[] { return api.grok_Script_Get_Tags(this.dart); }
-  set tags(tags: string[]) { api.grok_Script_Set_Tags(this.dart, tags); }
 }
 
 

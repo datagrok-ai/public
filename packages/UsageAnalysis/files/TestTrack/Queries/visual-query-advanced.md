@@ -1,3 +1,15 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: regression
+priority: p1
+realizes_atlas: []
+realizes: [views.queries]
+realized_as:
+  - visual-query-advanced.test.ts
+related_bugs: []
+---
+
 1. Create a new visual query (with any parameter)
 1. Run it
 1. Set the custom name (e.g. `test_visual_query`)

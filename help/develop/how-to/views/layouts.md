@@ -1,5 +1,13 @@
 ---
 title: "Use layouts"
+description: Create, save, search, and apply Datagrok view layouts programmatically, including project layouts and metadata.
+keywords:
+  - ViewLayout class
+  - saveLayout loadLayout
+  - grok.dapi.layouts
+  - getApplicable layouts
+  - layout-id tag
+  - project layout export
 ---
 
 [Layouts](../../../visualize/view-layout.md) define the way visualizations are positioned in a table view, allowing to

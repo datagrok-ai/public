@@ -1,0 +1,45 @@
+{
+  "name": "datagrok-celery-worker",
+  "version": "0.0.1",
+  "description": "Generic Node.js Celery-compatible worker that executes a published Datagrok package's JS functions",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "datagrok-celery-worker": "dist/worker.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "start": "node dist/worker.js"
+  },
+  "keywords": [
+    "datagrok",
+    "celery",
+    "worker",
+    "amqp"
+  ],
+  "dependencies": {
+    "amqplib": "^0.10.5",
+    "ws": "^8.21.0"
+  },
+  "peerDependencies": {
+    "datagrok-api": ">=1.27.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.6",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}

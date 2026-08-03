@@ -345,6 +345,48 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
+  /** Returns InChI identifiers for {@link molecules}, or InChI keys when {@link keys} is set.
+   * Malformed molecules result in an empty string. */
+  async getInchis(molecules: string[], keys = false): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
+      return [];
+    // no need to cache these
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules.length; ++i) {
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item)
+        continue;
+      let isInCache = false;
+      let rdMol = this._molsCache?.get(item);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      } else
+        isInCache = true;
+
+      if (rdMol) {
+        try {
+          const inchi = rdMol.get_inchi();
+          results[i] = keys ? this._rdKitModule.get_inchikey_for_inchi(inchi) : inchi;
+        } catch {
+          // nothing to do, the result is already empty
+        } finally {
+          if (!isInCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
+  }
+
   getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {
     if (this._rdKitMols === null && typeof molecules === 'undefined') {
       console.debug(`getStructuralAlerts: No molecules to process`);

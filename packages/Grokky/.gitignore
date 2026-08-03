@@ -1,6 +1,10 @@
 # Developer keys
 upload.keys.json
 
+# Dev-loop subscription credentials for the local claude-runtime container (see dev/seed-creds.mjs)
+dev/.claude/
+files/benchmarks
+
 # Dependency directories
 node_modules/
 

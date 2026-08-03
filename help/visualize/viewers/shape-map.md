@@ -1,6 +1,13 @@
 ---
 title: "Shape map"
 unlisted: true
+description: Visualize geographical or custom shape data such as countries, states, counties, floor plans, or EEG electrodes.
+keywords:
+  - geospatial visualization
+  - choropleth map
+  - custom shapes
+  - region mapping
+  - floor plan
 ---
 
 Shows a map applicable to the specified dataset. Typically, the map represents a geographical area (countries,

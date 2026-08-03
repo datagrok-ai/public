@@ -3,6 +3,7 @@ feature: row-source
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - row-source-spec.ts

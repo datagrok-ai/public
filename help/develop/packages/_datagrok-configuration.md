@@ -1,7 +1,16 @@
+---
+title: "Datagrok configuration"
+description: How to configure the config.yaml file and developer keys used by datagrok-tools to publish packages.
+keywords:
+  - config.yaml
+  - grok config
+  - developer key
+  - datagrok-tools setup
+  - grok publish
+---
+
 <!-- TITLE: Debugging -->
 <!-- ORDER: 5 -->
-
-# Datagrok configuration
 
 After you install `datagrok-tools` and run the first command (probably, to [generate a package]), you need to configure
 your environment.

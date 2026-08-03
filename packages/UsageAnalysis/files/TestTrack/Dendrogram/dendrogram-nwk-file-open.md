@@ -3,7 +3,8 @@ feature: dendrogram
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [dendrogram.cp.newick-file-open-via-files-browser]
+realizes_atlas: [dendrogram.cp.newick-file-open-via-files-browser]
+realizes: [dendrogram]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

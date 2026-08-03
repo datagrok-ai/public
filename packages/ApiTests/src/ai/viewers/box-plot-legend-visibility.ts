@@ -6,8 +6,10 @@ import {demog, expectLook, look, until, withAttachedViewer} from '../helpers';
 // BoxPlot auto-syncs markerColorColumnName to the category column; tests flip allowColorSynchronization
 // off before assigning a different markerColor so the deferred sync respects the override.
 category('AI: Viewers: BoxPlot legend visibility', () => {
+  // legendVisibility must be Auto for the "single category == markerColor" suppression to apply;
+  // 'Always' would force the legend on and contradict the hidden-legend assertions below.
   const opts = {valueColumnName: 'age', category1ColumnName: 'race',
-    markerColorColumnName: 'race', legendVisibility: 'Always'};
+    markerColorColumnName: 'race', legendVisibility: 'Auto'};
   const legendPresent = (v: DG.Viewer): boolean => v.root.querySelector('.d4-legend') != null;
 
   test('legend hidden when single category equals markerColor column', async () => {

@@ -8,6 +8,7 @@ category('Viewers', () => {
   const viewers = DG.Func.find({package: 'Charts', meta: {role: DG.FUNC_TYPES.VIEWER}}).map((f) => f.friendlyName);
   const viewersToSkip: {[v: string]: string} = {
     // 'Globe': 'GROK-14320',
+    'Surface plot': 'GROK-18695: deterministic EXECUTION TIMEOUT in headless CI (echarts-gl WebGL); reproduces on echarts 5 and 6',
   };
 
   for (const v of viewers) {

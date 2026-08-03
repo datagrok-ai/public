@@ -13,17 +13,22 @@ category('Celery: datagrok-celery-task', () => {
       expect(await grok.functions.call(`CVMTests:${func}`, {x: value}), value);
     const big = '9007199254740993'; // 2^53 + 1 — survives only as a string
     expect(String(await grok.functions.call('CVMTests:cvmBigInt', {x: big})), big);
-  }, {timeout: 120000 /* long timeout: first call starts the worker container */});
+  }, {timeout: 120000, node: true /* long timeout: first call starts the worker container */});
 
   test('String escaping', async () => {
     for (const s of escapingTestStrings)
       expect(await grok.functions.call('CVMTests:cvmString', {x: s}), s);
-  }, {timeout: 90000});
+  }, {timeout: 90000, node: true});
 
   test('Long string', async () => {
     const long = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyz');
     expect(await grok.functions.call('CVMTests:cvmString', {x: long}), long);
-  }, {timeout: 90000});
+  }, {timeout: 90000, node: true});
+
+  // The dataframe tests below stay browser-only: celery dataframes travel
+  // Parquet-encoded both ways, and GrokSocketEncoder/Decoder init the
+  // client-loaded Arrow package, which exists only in the browser. Annotate
+  // node: true when the encoder/decoder fall back to d42 without Arrow.
 
   test('DataFrame round-trip', async () => {
     const df = DG.DataFrame.fromColumns([
@@ -56,22 +61,22 @@ category('Celery: datagrok-celery-task', () => {
 
   test('Blob streaming (multi-chunk)', async () => {
     expect(await roundTripBytes('CVMTests:cvmBlob', 'blob', 5 * 1024 * 1024), true);
-  }, {timeout: 120000});
+  }, {timeout: 120000, node: true});
 
   test('File round-trip', async () => {
     expect(await roundTripBytes('CVMTests:cvmFile', 'file', 100), true);
-  }, {timeout: 90000});
+  }, {timeout: 90000, node: true});
 
   test('Datetime tz round-trip', async () => {
     const now = dayjs();
     const result = await grok.functions.call('CVMTests:cvmDate', {dt: now});
     expect(result.valueOf(), now.add(1, 'day').valueOf());
-  }, {timeout: 90000});
+  }, {timeout: 90000, node: true});
 
   test('USER_API_KEY injection', async () => {
     const key: string = await grok.functions.call('CVMTests:cvmApiKey', {});
     expect(typeof key === 'string' && key.length > 0, true);
-  }, {timeout: 90000});
+  }, {timeout: 90000, node: true});
 
   test('Cancellation', async () => {
     const call = DG.Func.find({package: 'CVMTests', name: 'cvmCancel'})[0].prepare({seconds: 60});
@@ -80,7 +85,7 @@ category('Celery: datagrok-celery-task', () => {
     await call.cancel();
     await promise;
     expect(call.status, 'Canceled');
-  }, {timeout: 120000});
+  }, {timeout: 120000, node: true});
 
   test('Single-output guard', async () => {
     await expectExceptionAsync(
@@ -88,7 +93,7 @@ category('Celery: datagrok-celery-task', () => {
         await grok.functions.call('CVMTests:cvmTwoOutputs', {});
       },
       (e) => String(e).includes('Only one return parameter is allowed'));
-  }, {timeout: 90000});
+  }, {timeout: 90000, node: true});
 
   test('Multi-input streaming', async () => {
     const size = 1234;

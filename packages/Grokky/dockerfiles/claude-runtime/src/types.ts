@@ -10,17 +10,19 @@ export interface ToolInputs {
   AskUserQuestion: {questions?: {question?: string}[]};
 }
 
+/** The datagrok MCP server exposes one tool per domain, each dispatching on `op` — see
+ * mcp-server/src/ops.ts. */
+export interface DomainToolInput {
+  op?: string;
+  args?: Record<string, any>;
+}
+
 export interface McpInputs {
-  call_function: {name?: string};
-  list_functions: {filter?: string};
-  get_function: {id?: string};
-  list_files: {path?: string};
-  download_file: {path?: string};
-  upload_file: {path?: string};
-  index_codebase: {path?: string};
-  search_code: {query?: string};
-  get_indexing_status: {path?: string};
-  clear_index: {path?: string};
+  datagrok_functions: DomainToolInput;
+  datagrok_files: DomainToolInput;
+  datagrok_projects: DomainToolInput;
+  datagrok_spaces: DomainToolInput;
+  datagrok_platform: DomainToolInput;
   datagrok_exec: {code?: string};
   datagrok_verify: {assertion?: string; description?: string};
   datagrok_show_entities: {entities?: any[]};
@@ -41,6 +43,15 @@ export interface ImageAttachment {
   data: string;
 }
 
+/** A tool declared by the browser for this turn (usually supplied by the current view).
+ * Calls round-trip to the browser via input_request / input_response. */
+export interface ClientToolDef {
+  name: string;
+  description: string;
+  /** JSON Schema (object type) describing the arguments. */
+  inputSchema?: object;
+}
+
 export interface UserMessage {
   type: 'user_message';
   sessionId: string;
@@ -51,6 +62,11 @@ export interface UserMessage {
   outputSchema?: object;
   systemPromptMode?: 'datagrok' | 'bash' | 'none';
   model?: ClaudeModel;
+  clientTools?: ClientToolDef[];
+  /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
+   * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
+   * own off. */
+  gates?: {grounding?: boolean; verify?: boolean};
 }
 
 export interface AbortMessage {
@@ -78,12 +94,30 @@ export interface AuthCodeMessage {type: 'auth_code'; code: string}
 
 export type IncomingMessage = UserMessage | AbortMessage | InputResponseMessage | SyncMessage | AuthStartMessage | AuthCodeMessage;
 
+/** Per-turn metrics forwarded from the SDK `result` message (see docs/BENCHMARK.md). */
+export interface TurnMetrics {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheCreationTokens: number | null;
+  costUsd: number | null;
+  numTurns: number | null;
+  durationMs: number | null;
+  durationApiMs: number | null;
+}
+
 export type OutgoingMessage =
   | {type: 'chunk'; sessionId: string; content: string}
-  | {type: 'tool_activity'; sessionId: string; summary: string}
-  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean}
+  // `name` is the bare tool name (mcp prefix stripped) — lets harnesses assert on which path a
+  // turn actually took, not just how many tools it used. Absent for progress-only activity.
+  | {type: 'tool_activity'; sessionId: string; summary: string; name?: string}
+  // A gate (verifier / grounding) blocked the turn's Stop and a revision is being generated.
+  // The visible answer stays; the revision streams hidden, and `final.revision` says whether it
+  // replaces the original ('replaced') or the original stands ('kept').
+  | {type: 'revision_start'; sessionId: string}
+  | {type: 'final'; sessionId: string; content: string; structured_output?: any; unverified?: boolean; metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
   | {type: 'error'; sessionId: string; message: string}
-  | {type: 'busy'; sessionId: string}
+  | {type: 'queued'; sessionId: string}
   | {type: 'aborted'; sessionId: string}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: any}
   | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]}

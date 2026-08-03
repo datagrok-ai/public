@@ -5,13 +5,15 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {
   PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode, MpoScale,
-  createDefaultCategorical, createDefaultNumerical, isNumerical,
+  convertScaleParams, createDefaultCategorical, createDefaultNumerical, isNumerical,
 } from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 import {MpoCategoricalEditor} from '../editors/mpo-categorical-editor';
 
-const DESIRABILITY_MODES: DesirabilityMode[] = ['freeform', 'gaussian', 'sigmoid'];
+const DESIRABILITY_MODES: DesirabilityMode[] = [DesirabilityMode.Freeform, DesirabilityMode.Gaussian, DesirabilityMode.Sigmoid];
 const PROPERTY_TYPES = ['numerical', 'categorical'] as const;
+
+type DesirabilityPatch = Partial<NumericalDesirability> | Partial<CategoricalDesirability>;
 
 type ParamConfig = {
   key: 'min' | 'max' | 'mean' | 'sigma' | 'x0' | 'k';
@@ -28,7 +30,7 @@ export class DesirabilityModeDialog {
   constructor(
     private propertyName: string,
     private prop: PropertyDesirability,
-    private onUpdate: (patch: Partial<PropertyDesirability>) => void,
+    private onUpdate: (patch: DesirabilityPatch) => void,
     private onTypeChanged?: (newProp: PropertyDesirability) => void,
     private mappedCol?: DG.Column | null,
   ) {}
@@ -63,7 +65,7 @@ export class DesirabilityModeDialog {
         else
           prop.missingValues = {strategy: 'exclude'};
         scoreInput.root.style.display = use ? '' : 'none';
-        this.onUpdate({missingValues: prop.missingValues} as any);
+        this.onUpdate({missingValues: prop.missingValues});
       },
     });
     choiceInput.setTooltip(
@@ -111,15 +113,29 @@ export class DesirabilityModeDialog {
 
     const buildNumericalContent = () => {
       const prop = this.prop as NumericalDesirability;
-      prop.mode ??= 'freeform';
+      prop.mode ??= DesirabilityMode.Freeform;
 
       const previewEditor = new MpoDesirabilityLineEditor(prop, 355, 103);
       if (this.mappedCol?.isNumerical)
         previewEditor.setColumn(this.mappedCol);
 
+      const materializeParams = () => {
+        if (prop.mode === DesirabilityMode.Gaussian) {
+          prop.mean ??= previewEditor.getDefaultMean();
+          prop.sigma ??= previewEditor.getDefaultSigma();
+          this.onUpdate({mean: prop.mean, sigma: prop.sigma});
+        }
+        else if (prop.mode === DesirabilityMode.Sigmoid) {
+          prop.x0 ??= previewEditor.getDefaultX0();
+          prop.k ??= previewEditor.getDefaultK();
+          this.onUpdate({x0: prop.x0, k: prop.k});
+        }
+      };
+
       const modeInput = ui.input.choice('Mode', {items: DESIRABILITY_MODES, value: prop.mode, onValueChanged: (v) => {
         prop.mode = v as DesirabilityMode;
-        this.onUpdate({mode: prop.mode} as any);
+        materializeParams();
+        this.onUpdate({mode: prop.mode});
         updateParams();
         previewEditor.redrawAll(false);
       }});
@@ -138,7 +154,7 @@ export class DesirabilityModeDialog {
         inputs.set(cfg.key, ui.input.float(cfg.label, {value: prop[cfg.key] ?? cfg.fallback(), format: '#0.000', onValueChanged: (v) => {
           const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
           prop[cfg.key] = value;
-          this.onUpdate({[cfg.key]: value} as any);
+          this.onUpdate({[cfg.key]: value} as Partial<NumericalDesirability>);
           previewEditor.redrawAll(false);
         }}));
       }
@@ -163,24 +179,25 @@ export class DesirabilityModeDialog {
       paramForm.classList.add('statistics-mpo-param-grid');
 
       const updateParams = () => {
-        inputs.get('mean')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'gaussian');
-        inputs.get('sigma')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'gaussian');
-        inputs.get('x0')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'sigmoid');
-        inputs.get('k')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'sigmoid');
+        inputs.get('mean')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Gaussian);
+        inputs.get('sigma')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Gaussian);
+        inputs.get('x0')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Sigmoid);
+        inputs.get('k')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Sigmoid);
       };
 
       updateParams();
+      materializeParams();
 
       previewEditor.onParamsChanged = (p) => {
         Object.assign(prop, p);
         syncInputs();
-        this.onUpdate(p as any);
+        this.onUpdate(p);
       };
 
       subs.push(previewEditor.onChanged.subscribe((line) => {
         prop.line = line;
-        if (prop.mode === 'freeform')
-          this.onUpdate({line} as any);
+        if (prop.mode === DesirabilityMode.Freeform)
+          this.onUpdate({line});
       }));
 
       const updateScaleLabels = () => {
@@ -208,9 +225,18 @@ export class DesirabilityModeDialog {
         toolbar.push(curveToggle('log₁₀', prop.scale === MpoScale.Log,
           'Log₁₀ axis — for values spanning orders of magnitude',
           (on) => {
+            // Freeze min/max first so a line-derived domain isn't re-derived from the log-floored resampled line
+            // on the way back (a negative min never returns otherwise).
+            const patch: Partial<NumericalDesirability> = {};
+            patch.min = prop.min ??= previewEditor.getMinX();
+            patch.max = prop.max ??= previewEditor.getMaxX();
+            convertScaleParams(prop, on);
             prop.scale = on ? MpoScale.Log : MpoScale.Linear;
+            patch.scale = prop.scale;
+            patch.sigma = prop.sigma;
+            patch.k = prop.k;
             updateScaleLabels();
-            this.onUpdate({scale: prop.scale} as any);
+            this.onUpdate(patch);
             previewEditor.redrawAll(false);
             syncInputs();
           }));
@@ -219,7 +245,7 @@ export class DesirabilityModeDialog {
         'Invert desirability (d → 1 − d)',
         (on) => {
           prop.inverted = on;
-          this.onUpdate({inverted: on} as any);
+          this.onUpdate({inverted: on});
           previewEditor.redrawAll(false);
         }));
 

@@ -1,6 +1,15 @@
 ---
 title: "Learning plan"
 sidebar_position: 1
+description: A recommended seven-day schedule for completing the Datagrok developer exercises and tutorials.
+keywords:
+  - one-week onboarding
+  - daily learning schedule
+  - tutorials roadmap
+  - data aggregation
+  - calculated columns
+  - scripting viewers
+  - application development
 ---
 
 Datagrok provides [programming exercises](exercises.md) to help developers get proficient with the platform. This page

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import type Konva from 'konva';
-import {DesirabilityLine, NumericalDesirability, toScale, fromScale, domainMinX, domainMaxX, MpoScale} from '../mpo';
+import {DesirabilityLine, DesirabilityMode, NumericalDesirability, toScale, fromScale, domainMinX, domainMaxX, MpoScale} from '../mpo';
 import {Subject} from 'rxjs';
 
 let _konva: typeof Konva | undefined;
@@ -197,10 +197,10 @@ export class MpoDesirabilityLineEditor {
       const minX = this.getMinX();
       const maxX = this.getMaxX();
 
-      if (this._prop.mode === 'freeform' && this._prop.freeformLine)
+      if (this._prop.mode === DesirabilityMode.Freeform && this._prop.freeformLine)
         this._prop.line = this._prop.freeformLine;
 
-      if (this._prop.mode !== 'freeform') {
+      if (this._prop.mode !== DesirabilityMode.Freeform) {
         if (!this._prop.freeformLine)
           this._prop.freeformLine = [...this._prop.line];
         this._prop.line = this.computeLine();
@@ -218,7 +218,7 @@ export class MpoDesirabilityLineEditor {
         const coords = mapper.toCanvasCoords([p[0], p[1]]);
         konvaPoints.push(coords.x, coords.y);
 
-        if (this._prop.mode !== 'freeform')
+        if (this._prop.mode !== DesirabilityMode.Freeform)
           return;
 
         const pointCircle = new Konva.Circle({
@@ -374,7 +374,7 @@ export class MpoDesirabilityLineEditor {
       if (!pos)
         return;
 
-      if (this._prop.mode !== 'freeform') {
+      if (this._prop.mode !== DesirabilityMode.Freeform) {
         if (this.isInPlotArea(pos, this._width, this._height))
           this.stage.container().style.cursor = 'grab';
         else
@@ -407,7 +407,7 @@ export class MpoDesirabilityLineEditor {
   }
 
   private computeLine(): DesirabilityLine {
-    if (this._prop.mode === 'freeform')
+    if (this._prop.mode === DesirabilityMode.Freeform)
       return this._prop.line;
 
     const log = this.isLog;
@@ -420,7 +420,7 @@ export class MpoDesirabilityLineEditor {
       const u = tMin + (tMax - tMin) * (i / n);
       let y = 0;
 
-      if (this._prop.mode === 'gaussian') {
+      if (this._prop.mode === DesirabilityMode.Gaussian) {
         const meanVal = this._prop.mean ?? this.getDefaultMean();
         const sigma = this._prop.sigma ?? this.getDefaultSigma();
         const mean = toScale(log ? Math.max(this.getMinX(), meanVal) : meanVal, log);
@@ -428,7 +428,7 @@ export class MpoDesirabilityLineEditor {
         y = Math.exp(-0.5 * z * z);
       }
 
-      if (this._prop.mode === 'sigmoid') {
+      if (this._prop.mode === DesirabilityMode.Sigmoid) {
         const x0Val = this._prop.x0 ?? this.getDefaultX0();
         const k = this._prop.k ?? this.getDefaultK();
         const x0 = toScale(log ? Math.max(this.getMinX(), x0Val) : x0Val, log);
@@ -623,7 +623,7 @@ export class MpoDesirabilityLineEditor {
     let startK = 0;
 
     this.stage.on('mousedown touchstart', (evt) => {
-      if (this._prop.mode === 'freeform')
+      if (this._prop.mode === DesirabilityMode.Freeform)
         return;
       if (!evt.evt)
         return;
@@ -662,12 +662,12 @@ export class MpoDesirabilityLineEditor {
       const plotWidth = this._width - EDITOR_PADDING.left - EDITOR_PADDING.right;
       const uPerPx = plotWidth === 0 ? 0 : tSpan / plotWidth;
 
-      if (this._prop.mode === 'gaussian') {
+      if (this._prop.mode === DesirabilityMode.Gaussian) {
         this._prop.mean = fromScale(toScale(log ? Math.max(this.getMinX(), startMean) : startMean, log) + dx * uPerPx, log);
         this._prop.sigma = Math.max(0.01, startSigma + (-dy) * this.dragScaleY * tSpan);
       }
 
-      if (this._prop.mode === 'sigmoid') {
+      if (this._prop.mode === DesirabilityMode.Sigmoid) {
         this._prop.x0 = fromScale(toScale(log ? Math.max(this.getMinX(), startX0) : startX0, log) + dx * uPerPx, log);
         this._prop.k = Math.max(0.1, startK + (-dy) * this.dragScaleY * 50);
       }
@@ -687,7 +687,7 @@ export class MpoDesirabilityLineEditor {
   private addSpecialHandle(width: number, height: number) {
     const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
-    if (this._prop.mode === 'freeform')
+    if (this._prop.mode === DesirabilityMode.Freeform)
       return;
 
     const minX = this.getMinX();
@@ -697,10 +697,10 @@ export class MpoDesirabilityLineEditor {
     let x = (minX + maxX) / 2;
     let y = 0.5;
 
-    if (this._prop.mode === 'gaussian') {
+    if (this._prop.mode === DesirabilityMode.Gaussian) {
       x = this._prop.mean ?? this.getDefaultMean();
       y = 1;
-    } else if (this._prop.mode === 'sigmoid') {
+    } else if (this._prop.mode === DesirabilityMode.Sigmoid) {
       x = this._prop.x0 ?? this.getDefaultX0();
       y = 0.5;
     }
@@ -721,10 +721,10 @@ export class MpoDesirabilityLineEditor {
         const m = new CoordMapper(this.getMinX(), this.getMaxX(), this._width, this._height, !!this._prop.inverted, this.isLog);
         const data = m.toDataCoords(evt.target.x(), evt.target.y());
 
-        if (this._prop.mode === 'gaussian') {
+        if (this._prop.mode === DesirabilityMode.Gaussian) {
           this._prop.mean = data.x;
           this._prop.sigma = Math.max(0.01, Math.abs(data.y - 1));
-        } else if (this._prop.mode === 'sigmoid') {
+        } else if (this._prop.mode === DesirabilityMode.Sigmoid) {
           this._prop.x0 = data.x;
           this._prop.k = clamp(Math.abs(data.y - 0.5) * 30, 0.1, 30);
         }

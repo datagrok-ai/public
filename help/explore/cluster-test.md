@@ -1,7 +1,12 @@
-<!-- TITLE: Tests: Cluster data -->
-<!-- SUBTITLE: -->
-
-# Tests: Cluster data
+---
+title: "Tests: Cluster data"
+description: Testing scenarios for validating the k-means cluster data feature and its scatter plot integration.
+keywords:
+  - cluster data test
+  - k-means test scenario
+  - qa testing
+  - test cases
+---
 
 [Clustering](cluster-data.md) is the task of grouping a set of objects in such a way that objects in the same group
 (called a cluster) are more similar (in some sense or another) to each other than to those in other

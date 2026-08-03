@@ -3,7 +3,8 @@ feature: dendrogram
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [dendrogram.cp.hier-clustering-chem-dialog-end-to-end]
+realizes_atlas: [dendrogram.cp.hier-clustering-chem-dialog-end-to-end]
+realizes: [chem.analyze.hierarchical-clustering, dendrogram]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Dendrogram/hierarchical-clustering-chem.md
 migration_date: 2026-06-02

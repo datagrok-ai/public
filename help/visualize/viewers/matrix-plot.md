@@ -1,5 +1,12 @@
 ---
 title: "Matrix plot"
+description: Assess relationships among many pairs of columns at once using a grid of small inner plots.
+keywords:
+  - scatter plot matrix
+  - pairwise comparison
+  - column relationships
+  - grid of charts
+  - multivariate exploration
 ---
 
 Use Matrix Plot to assess the relationship among many pairs of columns at the same time.

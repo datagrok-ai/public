@@ -34,7 +34,7 @@ end
 else (Yes)
 :Upgrade all dependencies to latest version;
 :Build docker image;
-:Check vulnerabilities in docker image using Snyk;
+:Check vulnerabilities in docker image using GCP;
 if (Vulnerabilities were detected?) then (Yes)
 :Create report;
 :Notify the developer;

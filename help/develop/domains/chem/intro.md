@@ -1,5 +1,16 @@
 ---
 title: "Cheminformatics concepts"
+description: An introduction to cheminformatics concepts, molecular representation formats, and their use in Datagrok.
+keywords:
+  - in silico
+  - molecular graph
+  - SMILES
+  - SMARTS
+  - SMIRKS
+  - MOL format
+  - QSAR
+  - descriptors and fingerprints
+  - structural alerts
 ---
 
 Please see the

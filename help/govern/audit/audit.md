@@ -5,6 +5,15 @@ mdx:
 sidebar_position: 2
 toc_max_heading_level: 3
 unlisted: false
+description: How Datagrok records, stores, and exports audit logs of user and system activity across entities.
+keywords:
+  - audit log
+  - activity log
+  - track usage
+  - event logging
+  - cloudwatch export
+  - audit record types
+  - entity history
 ---
 
 In Datagrok, users can perform a wide range of tasks, from self-service data analytics to using custom applications. Datagrok's audit system provides detailed insights into how
@@ -98,8 +107,8 @@ Each event is associated with a fixed type and the user session that triggered i
 
 You can access audit logs in a number of ways:
 * From the [Context Panel](../../datagrok/navigation/panels/panels.md#context-panel)
-     * **Activity**: This [info pane](../../datagrok/navigation/panels/info-panels.md) shows server-side activity for the current entity over the past seven days
-     * **Usage**: This info pane shows a high-level overview of server-side usage for the current entity in the last seven days
+  * **Activity**: This [info pane](../../datagrok/navigation/panels/info-panels.md) shows server-side activity for the current entity over the past seven days
+  * **Usage**: This info pane shows a high-level overview of server-side usage for the current entity in the last seven days
 * From the [Console](../../datagrok/navigation/panels/panels.md#console)
 * From a Datagrok app, [Usage Analysis](usage-analysis.md)
 * Using external providers like Amazon CloudWatch

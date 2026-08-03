@@ -2,8 +2,9 @@
 feature: biostructureviewer
 target_layer: apitest
 coverage_type: regression
-priority: p1
-realizes: []
+priority: p2
+realizes_atlas: [biostructure-viewer-add-and-render-pdb]
+realizes: [biostructureviewer.biostructure]
 produced_from: atlas-driven
 related_bugs: []
 realized_as:

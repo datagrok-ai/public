@@ -36,7 +36,7 @@ category('Connections', () => {
       'email': 'contains com', 'some_number': '>20', 'country': 'in (Indonesia)', 'date': 'before 1/1/2022'});
     expect(result?.rowCount ?? 0, 1);
   });
-});
+}, {node: true});
 
 category('Docker connection', () => {
   let testConnection: DG.DataConnection | null;
@@ -47,7 +47,7 @@ category('Docker connection', () => {
 
   test('Connection test', async () => {
     await testConnection!.test();
-  }, {timeout: 120000 /* on demand start */});
+  }, {timeout: 300000 /* on-demand start: image pull on a fresh CI agent takes minutes */});
 
   test('Connection getSchemas', async () => {
     const schemas: string[] = await grok.dapi.connections.getSchemas(testConnection!);
@@ -69,4 +69,4 @@ category('Docker connection', () => {
     const result: DG.DataFrame = call.getOutputParamValue();
     expect(result.rowCount, 4079);
   });
-});
+}, {node: true});

@@ -1,42 +1,28 @@
 import * as DG from 'datagrok-api/dg';
-import {_rdKitModule} from '../utils/chem-common-rdkit';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {hasNewLines} from '../utils/chem-common';
-import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+// type-only: rdkit-service imports package.ts, importing it as a value here would close an import cycle
+import type {RdKitService} from '../rdkit-service/rdkit-service';
+import {getRdKitService} from '../utils/chem-common-rdkit';
 
-/** Adds a derived column, given a source column `col` and extraction function `extract`.
- * Handles progress indication, and molecule disposal. */
-function getDerived(col: DG.Column, description: string,
-  extract: (mol: RDMol) => string, colName: string): DG.Column {
+/** Builds a derived column out of a molecular column `col`, using the parallel RDKit service.
+ * Handles progress indication. Malformed molecules result in an empty string. */
+async function getDerived(col: DG.Column, description: string,
+  extract: (service: RdKitService, molecules: string[]) => Promise<string[]>,
+  colName: string): Promise<DG.Column> {
+  const service = await getRdKitService();
   const pi = DG.TaskBarProgressIndicator.create(description);
-  const result = new Array(col.length);
-  for (let i = 0; i < result.length; i++) {
-    let mol: RDMol | null = null;
-    try {
-      const molString = col.get(i);
-      if (molString && typeof molString === 'string' && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH) {
-        result[i] = '';
-        continue; // do not attempt to parse very long SMILES, will cause MOB.
-      }
-      mol = _rdKitModule.get_mol(col.get(i));
-      result[i] = extract(mol);
-    } catch (e: any) {
-      result[i] = '';
-    } finally {
-      mol?.delete();
-    }
+  try {
+    return DG.Column.fromList('string', colName, await extract(service, col.toList()));
+  } finally {
+    pi.close();
   }
-  pi.close();
-  return DG.Column.fromList('string', colName, result);
 }
 
 /** Adds InchI identifiers for the specified molecular column. */
-export function getInchisImpl(col: DG.Column): DG.Column {
-  return getDerived(col, 'Getting Inchi', (m) => m.get_inchi(), 'inchi');
+export async function getInchisImpl(col: DG.Column): Promise<DG.Column> {
+  return getDerived(col, 'Getting Inchi', (service, molecules) => service.getInchis(molecules), 'inchi');
 }
 
 /** Adds InchI keys identifiers for the specified molecular column. */
-export function getInchiKeysImpl(col: DG.Column): DG.Column {
-  return getDerived(col, 'Getting Inchi',
-    (m) => _rdKitModule.get_inchikey_for_inchi(m.get_inchi()), 'inchi_key');
+export async function getInchiKeysImpl(col: DG.Column): Promise<DG.Column> {
+  return getDerived(col, 'Getting Inchi', (service, molecules) => service.getInchiKeys(molecules), 'inchi_key');
 }

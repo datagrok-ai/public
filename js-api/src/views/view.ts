@@ -176,6 +176,12 @@ export class ViewBase extends Widget {
   get path(): string { return api.grok_View_Get_Path(this.dart); }
   set path(s: string) { api.grok_View_Set_Path(this.dart, s); }
 
+  /** Functions applicable to this view. Override in subclasses to return the view's
+   * registered package functions — each typically takes the generic `view` argument
+   * and reaches this instance through `view.jsView`. The Dart JsViewHost forwards its
+   * own `getFunctions()` here, so callers holding `grok.shell.v` see these functions. */
+  getFunctions(): Func[] { return []; }
+
   /** Handles URL path. Override in subclasses. */
   handlePath(_urlPath: string): void { }
 
@@ -224,6 +230,27 @@ export class View extends ViewBase {
     super(null, '', false);
     this.dart = dart;
     this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
+  }
+
+  /** AI briefing of the underlying view (widget-level on the Dart side). For a JS-defined
+   * view the Dart host forwards to the original {@link ViewBase} instance. */
+  get aiDescription(): string | null {
+    const f = (api as any).grok_Widget_Get_AIDescription;
+    return f ? (f(this.dart) ?? null) : null;
+  }
+
+  set aiDescription(x: string | null) {
+    const f = (api as any).grok_Widget_Set_AIDescription;
+    if (f)
+      f(this.dart, x);
+  }
+
+  /** The original JS {@link ViewBase} instance when this view hosts a JS-defined view
+   * (e.g. a plugin app view), null for native Dart views. Lets callers reach the actual
+   * view class (its methods, tools, state) from `grok.shell.v`. */
+  get jsView(): ViewBase | null {
+    const f = (api as any).grok_View_Get_JsView;
+    return f ? (f(this.dart) ?? null) : null;
   }
 
   static fromDart(dart: any): View | TableView {

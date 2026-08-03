@@ -53,7 +53,7 @@ category('Admetica', () => {
     await grok.data.detectSemanticTypes(molecules);
     await delay(5000);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Chem').group('Admetica').find('Сalculate...').click();
+    grok.shell.topMenu.find('Chem').group('Admetica').find('Calculate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Admetica dialog', 2000);
     const admeticaDialog = returnDialog('Admetica')?.root;
     await awaitCheck(() => admeticaDialog!.querySelectorAll('.d4-tree-view-group-host > .d4-tree-view-group').length === 5,

@@ -97,7 +97,7 @@ export class PackageFunctions {
       const keysToLoad = ticketKeys.slice(index, index + chunkSize);
       try {
         const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
-          0, chunkSize, undefined, keysToLoad);
+          undefined, keysToLoad);
 
         upperFor:
         for (let i = 0; i < (loadedIssues?.issues.length ?? 0); i++) {
@@ -137,23 +137,8 @@ export class PackageFunctions {
     const jiraCreds = await getJiraCreds();
     if (!jiraCreds)
       return [];
-    let result: JiraIssue[] = [];
-    let total = -1;
-    const chunkSize = 100;
-    let startAt = 0;
-    while (true) {
-      const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
-        startAt, chunkSize, filter, undefined);
-      if (loadedIssues != null) {
-        total = loadedIssues.total;
-        result = [...result, ...loadedIssues.issues]
-      }
-
-      if (total <= startAt)
-        break;
-      startAt += chunkSize;
-    }
-    return result;
+    const loaded = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey), filter, undefined);
+    return loaded.issues;
   }
 
   @grok.decorators.func({outputs: [{name: 'result', type: 'object'}]})

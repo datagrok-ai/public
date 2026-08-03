@@ -1,7 +1,16 @@
+---
+title: "JavaScript development overview"
+description: High-level overview of the workflow for developing, debugging, and publishing JavaScript packages on Datagrok.
+keywords:
+  - package workflow
+  - development environments
+  - public and dev servers
+  - datagrok inspector
+  - javascript code samples
+---
+
 <!-- TITLE: JavaScript Development Overview -->
 <!-- ORDER: 0 -->
-
-# JavaScript development overview
 
 This document provides a high-level overview of JavaScript development on the Datagrok platform.
 Using [our feature-rich JavaScript API], you can develop packages to perform various tasks on Datagrok, namely:

@@ -9,12 +9,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
-import {NodeExecState, NodeExecStatus} from '../execution/execution-state';
+import {NodeExecState, NodeExecStatus, ValueSummary} from '../execution/execution-state';
+import {connectionCountLabel} from '../execution/execution-controller';
 import {
   buildExecutionMeta, buildValuePreviews, hasRenderablePreview, buildPreview,
 } from '../execution/value-inspector';
 import {OutputPreviewPanel, OutputPanelState} from '../execution/output-preview';
 import {FuncFlowView} from '../funcflow-view';
+import {until} from './test-utils';
 
 function renderableState(): NodeExecState {
   const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('x', ['a', 'b'])]);
@@ -36,6 +38,29 @@ function widgetState(type: 'widget' | 'viewer'): {state: NodeExecState; root: HT
 }
 
 category('Flow: execution preview', () => {
+  test('edge count labels read "rows × cols" for tables; __pt entries stay out of panels', async () => {
+    // A table with both dims → "N × K"; dims-only summaries (pass-throughs)
+    // count too; columns keep the bare count; nothing countable → null.
+    expect(connectionCountLabel({type: 'dataframe', rows: 1204, cols: 8}), '1,204 × 8');
+    expect(connectionCountLabel({type: 'dataframe', rows: 5} as ValueSummary), '5 rows', 'no cols → rows fallback');
+    expect(connectionCountLabel({type: 'column', length: 42} as ValueSummary), '42');
+    expect(connectionCountLabel(null), null);
+    expect(connectionCountLabel({type: 'primitive', value: 3} as ValueSummary), null);
+
+    // Panel listings skip the `__pt` bookkeeping entries (and tolerate null).
+    const state: NodeExecState = {
+      status: NodeExecStatus.completed,
+      outputs: {
+        'result': {type: 'primitive', value: 7},
+        'table__pt': {type: 'dataframe', rows: 3, cols: 2},
+        'other__pt': null as unknown as ValueSummary,
+      },
+    };
+    expect(hasRenderablePreview(state), false, 'dims-only entries are not renderable');
+    const meta = buildExecutionMeta(state);
+    expect((meta.textContent ?? '').includes('__pt'), false, 'no __pt rows in the context-panel meta');
+  });
+
   test('widget output is renderable and mounts its live root', async () => {
     const {state, root} = widgetState('widget');
     expect(hasRenderablePreview(state), true, 'widget counts as renderable');
@@ -187,6 +212,100 @@ category('Flow: execution preview', () => {
     expect(contentEl() !== rebuilt, true, 'another node rebuilds the preview');
   });
 
+  test('pin freezes the preview on the shown node; unpin releases it', async () => {
+    const panel = new OutputPreviewPanel();
+    const label = (): string =>
+      panel.root.querySelector('[data-testid="ff-output-panel-node"]')!.textContent ?? '';
+    const pin = panel.root.querySelector('[data-testid="ff-output-panel-pin"]') as HTMLElement;
+
+    expect(pin.style.display, 'none', 'no content → nothing to pin, icon hidden');
+
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    expect(pin.style.display === 'none', false, 'the icon appears with content');
+    pin.click();
+    expect(panel.pinnedNodeId, 'n1', 'pin captures the shown node');
+    expect(pin.dataset.pinned, 'true', 'pinned state on the icon');
+
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(label(), 'a', 'other nodes cannot replace a pinned preview');
+    expect(panel.currentNodeId, 'n1', 'still showing the pinned node');
+
+    // Fresh state for the pinned node itself still re-renders (the controller
+    // re-shows it on node-complete — the "watch the chart while editing" case).
+    panel.showForNode({id: 'n1', label: 'a2'}, renderableState());
+    expect(label(), 'a2', 'the pinned node itself updates in place');
+
+    pin.click();
+    expect(panel.pinnedNodeId, null, 'second click unpins');
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(label(), 'b', 'unpinned → node clicks switch the preview again');
+  });
+
+  test('unpinning via the icon reports onUnpinned; programmatic unpin stays silent', async () => {
+    // The controller listens to onUnpinned to re-show the currently selected
+    // node — re-clicking an already-selected node fires no selection event, so
+    // without this "unpin to see what I clicked while pinned" showed stale content.
+    const panel = new OutputPreviewPanel();
+    let fires = 0;
+    panel.onUnpinned = (): void => {fires++;};
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    panel.togglePin();
+    expect(fires, 0, 'pinning does not fire');
+    panel.togglePin();
+    expect(fires, 1, 'a user unpin fires');
+    panel.togglePin();
+    panel.unpin();
+    expect(fires, 1, 'programmatic unpin (node deleted / graph replaced) stays silent');
+  });
+
+  test('markUpdating overlays a spinner on the kept content; the next render releases it', async () => {
+    // The pinned-preview recompute path: instead of hiding + re-docking (which
+    // reads as jumping), the stale content stays with a "Recalculating…"
+    // indicator until the fresh render lands.
+    const panel = new OutputPreviewPanel();
+    const content = panel.root.querySelector('[data-testid="ff-output-panel-content"]') as HTMLElement;
+    const shadow = (): Element | null => content.querySelector('.d4-update-shadow');
+
+    panel.markUpdating();
+    expect(shadow(), null, 'no content → no indicator (nothing to overlay)');
+
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    panel.togglePin();
+    panel.markUpdating();
+    expect(panel.panelState, 'expanded', 'the panel stays visible — no hide');
+    expect(!!shadow(), true, 'indicator overlays the kept content');
+    expect(content.childElementCount >= 2, true, 'the stale preview is still mounted under it');
+
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    expect(shadow(), null, 'a fresh render releases the indicator');
+
+    panel.markUpdating();
+    panel.clearUpdating();
+    expect(shadow(), null, 'clearUpdating releases it without a render (error / skipped run)');
+
+    panel.markUpdating();
+    panel.clear();
+    expect(shadow(), null, 'clear() drops the indicator with the content');
+  });
+
+  test('the pin survives clear(); unpin() drops it', async () => {
+    const panel = new OutputPreviewPanel();
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    panel.togglePin();
+
+    panel.clear();
+    expect(panel.pinnedNodeId, 'n1', 'clear (invalidation / new run) keeps the pin');
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(panel.panelState, 'hidden', 'other nodes stay gated even after a clear');
+    panel.showForNode({id: 'n1', label: 'a'}, renderableState());
+    expect(panel.panelState, 'expanded', 'the pinned node\'s fresh result re-opens the panel');
+
+    panel.unpin();
+    panel.showForNode({id: 'n2', label: 'b'}, renderableState());
+    expect(panel.root.querySelector('[data-testid="ff-output-panel-node"]')!.textContent, 'b',
+      'unpin releases the gate');
+  });
+
   test('the panel is a pane of the view splitter; embedded views create it disabled', async () => {
     const view = new FuncFlowView();
     try {
@@ -211,6 +330,38 @@ category('Flow: execution preview', () => {
       await new Promise((r) => setTimeout(r, 120));
       ((embedded as any).flow)?.destroy?.();
       embedded.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('opening the output preview minimizes the overview minimap', async () => {
+    // Regression: the minimap and the bottom output panel crowd the same corner,
+    // so the minimap auto-minimizes to its header the first time the preview
+    // opens. This wiring was dropped in the dock → splitter rework.
+    const view = new FuncFlowView();
+    const host = ui.div([view.root], {style: {
+      width: '900px', height: '600px', position: 'absolute', left: '-10000px',
+    }});
+    document.body.appendChild(host);
+    try {
+      // Wait for the deferred editor build to mount the minimap.
+      await until(() => view.root.querySelector('.ff-minimap') != null);
+      const mm = view.root.querySelector('.ff-minimap') as HTMLElement;
+      expect(!!mm, true, 'minimap mounted');
+      expect(mm.dataset.collapsed, 'false', 'minimap starts expanded');
+      expect(view.outputPreview.panelState, 'hidden', 'preview starts hidden');
+
+      // Opening the preview (hidden → expanded) minimizes the minimap.
+      view.outputPreview.showForNode({id: 'n1', label: 'a'}, renderableState());
+      expect(view.outputPreview.panelState, 'expanded', 'preview opened');
+      expect(mm.dataset.collapsed, 'true', 'minimap minimized when the preview opened');
+
+      // One-shot: manually reopening the minimap while the preview stays open sticks.
+      view.setMinimapCollapsed(false);
+      view.outputPreview.showForNode({id: 'n2', label: 'b'}, renderableState());
+      expect(mm.dataset.collapsed, 'false', 'no re-collapse while the preview was already open');
+    } finally {
+      ((view as any).flow)?.destroy?.();
+      host.remove();
     }
   }, {timeout: 30000});
 
@@ -296,5 +447,29 @@ category('Flow: execution preview', () => {
     const withGear = buildPreview('result', summary, () => {});
     expect(!!wsBtn(withGear), true, 'the workspace button coexists with the gear');
     expect(!!withGear!.querySelector('[data-testid="ff-viewer-edit"]'), true, 'the edit gear is present');
+  });
+
+  test('a single output fills the panel; multiple outputs split side by side', async () => {
+    const df = (name: string): DG.DataFrame =>
+      DG.DataFrame.fromColumns([DG.Column.fromStrings(name, ['a', 'b'])]);
+
+    // One output → the block is mounted directly (no splitter).
+    const one = buildValuePreviews({
+      status: NodeExecStatus.completed,
+      outputs: {result: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')}},
+    });
+    expect(one.querySelectorAll('.funcflow-preview-block').length, 1, 'one preview block');
+    expect(one.querySelector('.ui-split-h'), null, 'a lone output is not wrapped in a splitter');
+
+    // Two renderable outputs (e.g. a multi-output func) → side-by-side splitH.
+    const two = buildValuePreviews({
+      status: NodeExecStatus.completed,
+      outputs: {
+        result1: {type: 'dataframe', rows: 2, cols: 1, clone: df('x')},
+        result2: {type: 'dataframe', rows: 2, cols: 1, clone: df('y')},
+      },
+    });
+    expect(two.querySelectorAll('.funcflow-preview-block').length, 2, 'both previews built');
+    expect(!!two.querySelector('.ui-split-h'), true, 'multiple outputs share a horizontal splitter');
   });
 });

@@ -70,10 +70,21 @@ export class TestGridCellHandler extends DG.ObjectHandler {
           await grok.dapi.stickyMeta.setAllValues(testSchema, keys, DG.DataFrame.fromColumns([valueBool, valueString]));
         });
         ui.tooltip.bind(triageButton, ()=> 'Save tickets related to the test')
+        const unignoreButton = ui.button('Unignore', async () => {
+          let keys = DG.Column.fromStrings('', [semValue.cell.value]);
+          keys.semType = semValue.semType;
+          let valueBool = DG.Column.fromType(DG.TYPE.BOOL, 'ignore?', 1);
+          let valueString = DG.Column.fromType(DG.TYPE.STRING, 'ignoreReason', 1);
+          valueBool.set(0, false);
+          valueString.set(0, '');
+          await grok.dapi.stickyMeta.setAllValues(testSchema, keys, DG.DataFrame.fromColumns([valueBool, valueString]));
+          grok.shell.info(`${semValue.cell.value}: unignored`);
+        });
+        ui.tooltip.bind(unignoreButton, () => 'Clear the triaged/ignored flag and its reason so the test needs attention again');
         const triageForm = ui.form([
           triageTextInput
         ]);
-        ui.forms.addButtons(triageForm, [triageButton]);
+        ui.forms.addButtons(triageForm, [triageButton, unignoreButton]);
         // resolveButton.classList.add('ui-btn-raised');
         triageButton.classList.add('ui-btn-raised');
         const packageDiv = ui.divH([ui.p('package:'), ui.h3(testData[0])]);

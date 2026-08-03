@@ -3,7 +3,8 @@ feature: powerpack
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [powerpack.cp.add-new-column-persists]
+realizes_atlas: [powerpack.cp.add-new-column-persists, add-new-column-datasync-roundtrip, formula-info-panel-reedit]
+realizes: []
 pyramid_layer: bug-focused
 ui_coverage_responsibility:
   - add-new-column-dialog

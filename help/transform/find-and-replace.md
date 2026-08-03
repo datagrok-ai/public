@@ -2,6 +2,14 @@
 title: "Find and replace"
 mdx:
   format: mdx
+description: Find and replace values across selected columns and rows, with support for search patterns and regex.
+keywords:
+  - find and replace
+  - search and replace
+  - search patterns
+  - replace values in column
+  - regex find replace
+  - ctrl+h
 ---
 
 ```mdx-code-block

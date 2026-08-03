@@ -4,7 +4,11 @@ import {TemplateFunction} from '../compute-functions/types';
 /// An array of [x, y] points representing the desirability line, sorted by x ascending.
 export type DesirabilityLine = number[][];
 
-export type DesirabilityMode = 'freeform' | 'gaussian' | 'sigmoid';
+export enum DesirabilityMode {
+  Freeform = 'freeform',
+  Gaussian = 'gaussian',
+  Sigmoid = 'sigmoid',
+}
 
 export type MissingValueConfig =
   | { strategy: 'exclude' }

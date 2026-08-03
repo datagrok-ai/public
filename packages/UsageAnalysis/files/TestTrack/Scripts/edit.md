@@ -1,3 +1,15 @@
+---
+feature: scripts
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: []
+realizes: [views.scripts]
+realized_as:
+  - scripts-edit-debugged.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse > Platform > Functions > Scripts**
 2. Find the `testRscript` script from Create test case and double-click it
 3. Add the expression `newParam="test"` to the script body

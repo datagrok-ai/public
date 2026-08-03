@@ -482,6 +482,35 @@
 .grokky-empty-state .grokky-scope-icon.grokky-scope-view     { color: var(--green-2); }
 .grokky-empty-state .grokky-scope-icon.grokky-scope-anywhere { color: var(--grey-4); }
 
+/* Inline choice block rendered by suggestion actions (e.g. demo-dataset picker). */
+.grokky-choice-block > * + * {
+  margin-top: 10px;
+}
+
+.grokky-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.grokky-choice-card {
+  margin: 0 8px 8px 0;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-color);
+  border: 1px solid var(--grey-3);
+  border-radius: 14px;
+  background: var(--grey-1);
+  -webkit-transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.grokky-choice-card:hover {
+  border-color: var(--blue-1);
+  background: var(--grey-2);
+}
+
 .grokky-system-message {
   text-align: right;
   font-size: 12px;

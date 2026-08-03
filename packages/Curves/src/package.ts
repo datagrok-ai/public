@@ -87,14 +87,22 @@ export class PackageFunctions {
     description: 'Group well-level assay data by compound, assay, target, and run, then fit a dose-response curve per group.',
   })
   static async dataToCurves(df: DG.DataFrame,
-    @grok.decorators.param({options: {description: 'Concentration (dose) column'}}) concentrationCol: DG.Column,
-    @grok.decorators.param({options: {description: 'Readout (response) column'}}) readoutCol: DG.Column,
-    @grok.decorators.param({options: {description: 'Batch identifier column'}}) batchIDCol: DG.Column,
-    @grok.decorators.param({options: {description: 'Assay name column'}}) assayCol: DG.Column,
-    @grok.decorators.param({options: {description: 'Run identifier column'}}) runIDCol: DG.Column,
-    @grok.decorators.param({options: {description: 'Compound identifier column'}}) compoundIDCol: DG.Column,
-    @grok.decorators.param({options: {description: 'Target entity column'}}) targetEntityCol: DG.Column,
-    @grok.decorators.param({options: {nullable: true, description: 'Boolean column marking points to exclude as outliers'}})excludeOutliersCol?: DG.Column,
+    /* The declared `type` must stay `column`: an `options.type` on its own
+     * becomes the parameter's OWN type in the generated annotation, turning the
+     * column slot into a plain numerical/categorical value. (And never spell an
+     * `input:` annotation out inside a comment — the server scans package.ts for
+     * those lines and would try to parse it as a real parameter.) */
+    // All seven are dereferenced unconditionally, so they are `nullable: false`
+    // — a column parameter defaults to nullable, which read as "optional" and
+    // let a half-configured node run.
+    @grok.decorators.param({type: 'column', options: {type: 'numerical', nullable: false, description: 'Concentration (dose) column'}}) concentrationCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical', nullable: false, description: 'Readout (response) column'}}) readoutCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', nullable: false, description: 'Batch identifier column'}}) batchIDCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', nullable: false, description: 'Assay name column'}}) assayCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', nullable: false, description: 'Run identifier column'}}) runIDCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', nullable: false, description: 'Compound identifier column'}}) compoundIDCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', nullable: false, description: 'Target entity column'}}) targetEntityCol: DG.Column,
+    @grok.decorators.param({type: 'column', options: {nullable: true, description: 'Boolean column marking points to exclude as outliers'}})excludeOutliersCol?: DG.Column,
     // rest is parent level data
     @grok.decorators.param({options: {nullable: true}})parentTable?: DG.DataFrame, // these inputs need to be string and resolved here bellow, because this function is used in datasync, otherwise context is lost
     @grok.decorators.param({options: {nullable: true}})fitParamColumns?: string[],
@@ -138,8 +146,10 @@ export class PackageFunctions {
   })
   static addStatisticsColumn(table: DG.DataFrame,
     @grok.decorators.param({options: {description: 'Name of the curve column to read'}}) colName: string,
-    @grok.decorators.param({options: {description: 'Fit statistic to extract (e.g. IC50, AUC, R²)'}}) propName: string,
-    @grok.decorators.param({type: 'int', options: {description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
+    // Literal strings, not `statisticsProperties.map(...)` — the func generator
+    // only reads literal arrays and emits nothing for a computed one.
+    @grok.decorators.param({options: {choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'Fit statistic to extract. interceptX is IC50, top and bottom are max/min Y'}}) propName: string,
+    @grok.decorators.param({type: 'int', options: {initialValue: '0', description: 'Zero-based index of the curve series'}}) seriesNumber: number): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const sourceColName = col.name;
@@ -180,8 +190,8 @@ export class PackageFunctions {
   })
   static addAggrStatisticsColumn(table: DG.DataFrame,
     @grok.decorators.param({options: {description: 'Name of the curve column to read'}}) colName: string,
-    @grok.decorators.param({options: {description: 'Fit statistic to aggregate (e.g. IC50, AUC, R²)'}}) propName: string,
-    @grok.decorators.param({options: {description: 'Aggregation type applied across series (e.g. avg, min, max)'}}) aggrType: string): DG.Column {
+    @grok.decorators.param({options: {choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y'}}) propName: string,
+    @grok.decorators.param({options: {choices: ['min', 'max', 'sum', 'avg', 'stdev', 'variance', 'skew', 'kurt', 'med', 'q1', 'q2', 'q3', 'count', 'nulls', 'unique', 'values'], initialValue: 'med', description: 'Aggregation applied across the series of each curve'}}) aggrType: string): DG.Column {
     const df = table;
     const col = df.col(colName)!;
     const nName = `${colName} ${aggrType} ${propName}`;
@@ -206,6 +216,41 @@ export class PackageFunctions {
       });
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
     return column;
+  }
+
+  /* The two functions above address the curve column by NAME, because their
+   * `colName` string is what the "+" buttons in the Fit pane and the Data to
+   * Curves pipeline pass, and both are recorded as `role: transform` steps that
+   * must keep replaying. On a pipeline canvas a name string means no column
+   * picker and no `fit` filter, so these twins take a real column slot and
+   * delegate to the same implementation. */
+
+  @grok.decorators.func({
+    name: 'Add Curve Statistic',
+    description: 'Extracts a fit statistic from one series of a curve column into a new column.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {vectorFunc: 'true', role: 'transform'},
+  })
+  static addCurveStatistic(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'fit', caption: 'Curves', nullable: false, description: 'Column of fitted curves'}}) curvesCol: DG.Column,
+    @grok.decorators.param({type: 'string', options: {caption: 'Statistic', nullable: false, choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'interceptX is IC50, top and bottom are max/min Y'}}) statistic: string = 'interceptX',
+    @grok.decorators.param({type: 'int', options: {caption: 'Series', nullable: false, initialValue: '0', description: 'Zero-based index of the curve series'}}) seriesNumber: number = 0): DG.Column {
+    return PackageFunctions.addStatisticsColumn(table, curvesCol.name, statistic, seriesNumber);
+  }
+
+  @grok.decorators.func({
+    name: 'Add Aggregated Curve Statistic',
+    description: 'Aggregates a fit statistic across all series of a curve column into a new column.',
+    outputs: [{name: 'result', type: 'column'}],
+    meta: {vectorFunc: 'true', role: 'transform'},
+  })
+  static addAggrCurveStatistic(
+    @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'fit', caption: 'Curves', nullable: false, description: 'Column of fitted curves'}}) curvesCol: DG.Column,
+    @grok.decorators.param({type: 'string', options: {caption: 'Statistic', nullable: false, choices: ['rSquared', 'auc', 'interceptX', 'interceptY', 'slope', 'top', 'bottom'], initialValue: 'interceptX', description: 'interceptX is IC50, top and bottom are max/min Y'}}) statistic: string = 'interceptX',
+    @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, choices: ['med', 'avg', 'min', 'max', 'sum', 'stdev', 'variance', 'q1', 'q2', 'q3'], initialValue: 'med', description: 'Applied across the series of each curve'}}) aggregation: string = 'med'): DG.Column {
+    return PackageFunctions.addAggrStatisticsColumn(table, curvesCol.name, statistic, aggregation);
   }
 
   @grok.decorators.func({description: 'Returns XML 3DX curve converter function', meta: {role: 'curveConverter', curveFormat: '3dx'}})

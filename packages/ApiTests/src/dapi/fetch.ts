@@ -37,4 +37,4 @@ category('Dapi: fetch', () => {
     if (resText.length == 0)
       throw new Error('Response text is empty');
   }, {stressTest: true});
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});

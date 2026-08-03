@@ -40,8 +40,9 @@ Claude read access to the full JS API source, packages, samples, and documentati
 The starting point for Claude is determined by whether any user knowledge exists — if the user has
 agent files, Claude's working directory is the user directory; otherwise it defaults to `/workspace`.
 
-All agent files are listed in Claude's system prompt (up to 50) so it knows what knowledge is
-available without needing to scan the filesystem.
+Agent files are read from disk on demand (Glob / Read). The system prompt does not enumerate them;
+the `datagrok-*` capability skills are surfaced through the Claude Code **Skill tool** (`## Skills`
+in `DATAGROK_PROMPT`, `dockerfiles/claude-runtime/src/prompts.ts`).
 
 User-created packages sync into `/users/{userId}/agents/` rather than the public workspace,
 since their skills are personal.
@@ -101,18 +102,13 @@ apiRef: src/package-api.ts
 docsRef: ../../help/datagrok/solutions/domains/chem/chem.md
 ```
 
-At startup, the runtime scans `/workspace/packages/*/agents/package-knowledge.yaml` on the local
-filesystem (no network calls, no ZIP downloads) and aggregates all found files into a unified
-markdown table. This table is injected directly into Claude's system prompt as
-`## Available Packages`, giving Claude immediate awareness of all package capabilities without
-requiring a tool call.
+These files are not aggregated or injected anywhere — they simply sit in the synced workspace at
+`workspace/packages/<Name>/agents/package-knowledge.yaml`, where Claude discovers them with
+Glob/Read like any other file. (Earlier iterations injected an `## Available Packages` prompt
+table and later exposed a `get_package_knowledge` MCP tool; both were retired — the table bloated
+the prompt and the tool went unused.)
 
-The index is cached after the first scan — subsequent messages reuse the cached result.
-
-Claude is instructed to consult this table first when a user asks about platform capabilities,
-and to read the full `package-knowledge.yaml` for details before falling back to code search.
-
-**Future direction:** consolidate the package index, agent file listings, and other dynamic context
+**Future direction:** consolidate agent file listings and other dynamic context
 into a generated `CLAUDE.md` or skills file rather than appending sections to the system prompt.
 This would align with how Claude Code natively consumes project context and make the knowledge
 layer easier to inspect and debug.

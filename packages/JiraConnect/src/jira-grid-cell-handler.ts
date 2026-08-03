@@ -214,7 +214,7 @@ class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
             const keysToLoad = keys.slice(index, index + chunkSize);
             try {
                 const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
-                    0, chunkSize, undefined, keysToLoad);
+                    undefined, keysToLoad);
                 for (let issue of loadedIssues?.issues ?? []) {
                     result.set(issue.key, issue);
                 }

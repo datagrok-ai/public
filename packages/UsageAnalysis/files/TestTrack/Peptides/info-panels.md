@@ -3,7 +3,8 @@ feature: peptides
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [sar-context-panel-info-panels]
+realizes_atlas: [sar-context-panel-info-panels]
+realizes: []
 produced_from: migrated
 realized_as:
   - info-panels-spec.ts

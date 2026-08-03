@@ -1,5 +1,12 @@
 ---
 title: "Trellis plot"
+description: Show a grid of smaller charts split by category, each sharing consistent scales, for comparing subsets of data.
+keywords:
+  - small multiples
+  - facet grid
+  - lattice plot
+  - panel chart
+  - category comparison
 ---
 
 A trellis plot is useful for finding structure and patterns in complex data. It is a layout of smaller

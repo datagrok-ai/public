@@ -15,6 +15,12 @@ boundary to be real, not conventional.
 | **Proteomics analyst** (data generator) | Builds the analysis: import → annotate → normalize → impute → differential expression | A defensible, reproducible, FDR-controlled result they can stand behind and hand off |
 | **Biology scientist** (data consumer / reviewer) | Interprets a finished analysis: volcano, enrichment, per-protein annotation | To understand *what changed and what it means* — without touching (or being able to change) the analysis itself |
 
+A third role sits **outside** this pair: the **package administrator** (deployment owner)
+configures the Share-for-review governance — the controlled list of projects analysts may
+share under, the default reviewer team, and the review Spaces (see
+[Configuration](../README.md#configuration)). They neither build nor interpret analyses; they
+set, once per deployment, *where* shared results land and *under what project names*.
+
 The dividing line is **"the interpretation"** — the set of decisions that determine what the
 result *says*: group assignment, normalization, imputation, the DE method, and the
 significance thresholds. The analyst owns these. The biologist reads the consequences and
@@ -84,6 +90,13 @@ group **View only**. The publish flow's verify-and-rollback gate aborts if the r
 group has any Edit / Share / Delete right at the project, child-space, or umbrella-space
 level. So through the **shared snapshot**, a biologist genuinely cannot change the
 interpretation — they get a read-only copy.
+
+The dialog itself is **governed by package settings the administrator maintains** (Plugins →
+Proteomics → Settings). The analyst files the snapshot under a **project** chosen from an
+admin-curated controlled vocabulary — they cannot invent project names, and cannot share at
+all until an admin has populated the list — and it goes to a reviewer **team** whose default
+the admin can preset. This keeps shared analyses landing under approved project names, in the
+intended teams and Spaces, rather than letting each analyst decide that governance ad hoc.
 
 ## The gap
 
@@ -163,3 +176,6 @@ an explicit read-only "Reviewer mode" toggle vs. inferring it from group members
 - `src/menu.ts` — `sampleLevelDisabledReason`, the `sampleOnly` gate
 - `src/package.ts` — `requireSampleLevelData`, the handler-level guards
 - `src/publishing/` — the Share for Review view-only publish flow
+- `src/publishing/package-settings-editor.ts` — the administrator's settings editor
+  (project vocabulary, default reviewer team)
+- [`README.md` → Configuration](../README.md#configuration) — the admin-configurable package settings

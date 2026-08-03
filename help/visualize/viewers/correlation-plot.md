@@ -1,5 +1,12 @@
 ---
 title: "Correlation plot"
+description: Assess correlations between all numeric columns at once using a color-coded correlation matrix.
+keywords:
+  - correlation matrix
+  - pearson coefficient
+  - spearman rank correlation
+  - column relationships
+  - scatter plot matrix
 ---
 
 A quick way to assess correlations between all columns at once. Cells are color-coded by the

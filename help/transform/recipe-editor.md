@@ -1,5 +1,12 @@
 ---
 title: "Recipe Editor"
+description: Define reusable, parameterized data transformation steps that can run as post-processing for data queries.
+keywords:
+  - recipe editor
+  - transformation recipe
+  - reusable data pipeline
+  - parameterized steps
+  - macro recorder
 ---
 
 Recipe editor lets you define data transformations. A recipe can be used as post-run steps for data queries.

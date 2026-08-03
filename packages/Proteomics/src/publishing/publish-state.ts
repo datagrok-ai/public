@@ -26,7 +26,7 @@ export const PUBLISHED_TAGS = {
   PUBLISHED_AT: 'proteomics.published_at',
   PUBLISHED_BY: 'proteomics.published_by',
   PUBLISHED_BY_EMAIL: 'proteomics.published_by_email',
-  PUBLISHED_TARGET: 'proteomics.published_target',
+  PUBLISHED_PROJECT: 'proteomics.published_project',
   PUBLISHED_DE_METHOD: 'proteomics.published_de_method',
   PUBLISHED_FC_THRESHOLD: 'proteomics.published_fc_threshold',
   PUBLISHED_P_THRESHOLD: 'proteomics.published_p_threshold',
@@ -48,7 +48,7 @@ export const META_COLUMNS = {
   PUBLISHED_AT: '_meta_published_at',
   PUBLISHED_BY: '_meta_published_by',
   PUBLISHED_BY_EMAIL: '_meta_published_by_email',
-  PUBLISHED_TARGET: '_meta_published_target',
+  PUBLISHED_PROJECT: '_meta_published_project',
   PUBLISHED_DE_METHOD: '_meta_published_de_method',
   PUBLISHED_FC_THRESHOLD: '_meta_published_fc_threshold',
   PUBLISHED_P_THRESHOLD: '_meta_published_p_threshold',
@@ -59,10 +59,20 @@ export const META_COLUMNS = {
   SUPERSEDES: '_meta_supersedes',
 } as const;
 
+/**
+ * Legacy persisted keys from before the Target→Project rename (the project label
+ * used to be called "target"). Read-only fallbacks so analyses published under
+ * the old naming still open. Never written — {@link setPublishedTags} only emits
+ * the current `PUBLISHED_PROJECT` key.
+ */
+export const LEGACY_PUBLISHED_TARGET_TAG = 'proteomics.published_target' as const;
+export const LEGACY_PUBLISHED_TARGET_COL = '_meta_published_target' as const;
+
 /** Typed view of one published-analysis DataFrame's metadata. */
 export interface PublishedMetadata {
-  /** Raw user input — never use directly for paths/URLs (use {@link slugifyTarget}). */
-  target: string;
+  /** Raw user input — the project name. Never use directly for paths/URLs
+   *  (use {@link slugifyProject}). */
+  project: string;
   /** Normalized to Date when read; ISO string accepted on write. */
   publishedAt: Date;
   publishedBy: string;
@@ -70,7 +80,7 @@ export interface PublishedMetadata {
   deMethod: 'limma' | 'deqms' | 't-test' | 'spectronaut' | string;
   fcThreshold: number;
   pThreshold: number;
-  /** Monotonically increasing per (target, group); first share is version 1. */
+  /** Monotonically increasing per (project, group); first share is version 1. */
   version: number;
   /** The published Project's id — set after `projects.save` returns. */
   publishId: string;
@@ -83,7 +93,7 @@ export interface PublishedMetadata {
 
 /** Input shape consumed by `share-dialog.ts` → `publishAnalysis(df, opts)`. */
 export interface PublishOptions {
-  target: string;
+  project: string;
   reviewerGroup: DG.Group;
   note: string;
   /** Set by {@link findPriorShare} when this is a republish; null on first share. */
@@ -121,7 +131,7 @@ export function isPublished(df: DG.DataFrame): boolean {
  * Reads the published metadata from a DataFrame, column-FIRST and tag-SECOND
  * (Pitfall 3 belt-and-braces). Returns `null` when the DataFrame is not a
  * published analysis. Returns a populated object when at least the required
- * load-bearing fields (target, publishId) are recoverable; per-field corruption
+ * load-bearing fields (project, publishId) are recoverable; per-field corruption
  * falls back gracefully without crashing the whole read.
  */
 export function getPublishedMetadata(df: DG.DataFrame): PublishedMetadata | null {
@@ -171,16 +181,35 @@ export function getPublishedMetadata(df: DG.DataFrame): PublishedMetadata | null
     return s === 'true';
   };
 
-  const target = readString('PUBLISHED_TARGET', 'PUBLISHED_TARGET');
+  // Project label — read the current key, then fall back to the pre-rename
+  // `published_target` tag/column so already-published analyses still open.
+  const readProject = (): string | null => {
+    const current = readString('PUBLISHED_PROJECT', 'PUBLISHED_PROJECT');
+    if (current != null) return current;
+    try {
+      const col = df.col(LEGACY_PUBLISHED_TARGET_COL);
+      if (col != null) {
+        const v = col.get(0);
+        if (v != null && v !== '') return String(v);
+      }
+    } catch { /* fall through to legacy tag */ }
+    try {
+      return df.getTag(LEGACY_PUBLISHED_TARGET_TAG) ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const project = readProject();
   const publishId = readString('PUBLISHED_ID', 'PUBLISHED_ID');
-  if (target == null || publishId == null) return null;
+  if (project == null || publishId == null) return null;
 
   const publishedAt = readDate();
   const versionRaw = readString('PUBLISHED_VERSION', 'PUBLISHED_VERSION');
   const versionNum = versionRaw != null ? parseInt(versionRaw, 10) : NaN;
 
   return {
-    target,
+    project,
     publishedAt: publishedAt ?? new Date(NaN),
     publishedBy: readString('PUBLISHED_BY', 'PUBLISHED_BY') ?? '',
     publishedByEmail: readString('PUBLISHED_BY_EMAIL', 'PUBLISHED_BY_EMAIL'),
@@ -212,7 +241,7 @@ export function setPublishedTags(df: DG.DataFrame, meta: PublishedMetadata): voi
   df.setTag(PUBLISHED_TAGS.PUBLISHED_BY, meta.publishedBy);
   if (meta.publishedByEmail != null)
     df.setTag(PUBLISHED_TAGS.PUBLISHED_BY_EMAIL, meta.publishedByEmail);
-  df.setTag(PUBLISHED_TAGS.PUBLISHED_TARGET, meta.target);
+  df.setTag(PUBLISHED_TAGS.PUBLISHED_PROJECT, meta.project);
   df.setTag(PUBLISHED_TAGS.PUBLISHED_DE_METHOD, meta.deMethod);
   df.setTag(PUBLISHED_TAGS.PUBLISHED_FC_THRESHOLD, String(meta.fcThreshold));
   df.setTag(PUBLISHED_TAGS.PUBLISHED_P_THRESHOLD, String(meta.pThreshold));
@@ -226,7 +255,7 @@ export function setPublishedTags(df: DG.DataFrame, meta: PublishedMetadata): voi
 }
 
 /**
- * Sanitizes a freeform target string per D-01 into a safe slug.
+ * Sanitizes a freeform project string per D-01 into a safe slug.
  *
  * Rules:
  *  - Charset `[A-Za-z0-9._-]` (case PRESERVED — do NOT lowercase)
@@ -235,7 +264,7 @@ export function setPublishedTags(df: DG.DataFrame, meta: PublishedMetadata): voi
  *  - Cap at 64 chars
  *  - Empty result → `'unnamed'` (never produce empty slug — would break Project.name)
  */
-export function slugifyTarget(raw: string): string {
+export function slugifyProject(raw: string): string {
   if (raw == null) return 'unnamed';
   let s = String(raw)
     .replace(/[^A-Za-z0-9._-]+/g, '-')
@@ -249,7 +278,7 @@ export function slugifyTarget(raw: string): string {
 
 /**
  * Looks up the most recent prior published Project matching the slugified
- * target. Used by Plan 05 (`share-dialog.ts`) for republish-detection banner
+ * project. Used by Plan 05 (`share-dialog.ts`) for republish-detection banner
  * and Plan 04 (`publish-project.ts`) for the supersede chain.
  *
  * Smart-filter `like` confirmed working by spike 15-00 (assumption A8); the
@@ -260,8 +289,8 @@ export function slugifyTarget(raw: string): string {
  * the platform ACL implicitly scoping `dapi.projects.filter` to projects the
  * current user can administer.
  */
-export async function findPriorShare(target: string, _group: DG.Group | null): Promise<DG.Project | null> {
-  const slug = slugifyTarget(target);
+export async function findPriorShare(project: string, _group: DG.Group | null): Promise<DG.Project | null> {
+  const slug = slugifyProject(project);
   const namePrefix = `${reviewNamePrefix()}-${slug}-v`;
   const versionRe = /-v(\d+)-/;
 

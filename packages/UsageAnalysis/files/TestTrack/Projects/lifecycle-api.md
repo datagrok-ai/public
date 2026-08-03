@@ -3,7 +3,10 @@ feature: projects
 target_layer: apitest
 coverage_type: regression
 priority: p0
-realizes: [search-list-recent]
+realizes_atlas: [search-list-recent]
+realizes: [views.projects]
+realized_as:
+  - lifecycle-api-spec.ts
 pyramid_layer: integration
 ui_coverage_responsibility: []
 ui_coverage_delegated_to: null

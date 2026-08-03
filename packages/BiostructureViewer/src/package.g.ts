@@ -46,6 +46,7 @@ export async function viewBiostructure(content: string, format?: string, name?: 
   await PackageFunctions.viewBiostructure(content, format, name);
 }
 
+//name: Import PDB
 //description: Opens PDB file
 //input: string fileContent 
 //output: list<dataframe> result
@@ -55,6 +56,7 @@ export async function importPdb(fileContent: string) : Promise<any> {
   return await PackageFunctions.importPdb(fileContent);
 }
 
+//name: Import XYZ
 //description: Opens XYZ file
 //input: string fileContent 
 //output: list<dataframe> result
@@ -64,6 +66,7 @@ export async function importXYZ(fileContent: string) : Promise<any> {
   return await PackageFunctions.importXYZ(fileContent);
 }
 
+//name: Import Structure (NGL)
 //description: Opens biostructure files supported with NGL
 //input: string fileContent 
 //output: list<dataframe> result
@@ -73,6 +76,7 @@ export async function importWithNgl(fileContent: string) : Promise<any> {
   return await PackageFunctions.importWithNgl(fileContent);
 }
 
+//name: Import PDBQT (Docking Poses)
 //description: Opens .pdbqt file with docking result ligand poses
 //input: string fileContent 
 //input: bool test = false { optional: true }

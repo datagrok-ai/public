@@ -67,6 +67,13 @@ export namespace funcs {
     return await grok.functions.call('Peptides:ClusterMaxActivity', {});
   }
 
+  /**
+  Generates new candidate peptides from monomer-position statistics, ranked by predicted activity
+  */
+  export async function peptideGeneration(): Promise<any> {
+    return await grok.functions.call('Peptides:PeptideGeneration', {});
+  }
+
   export async function manualAlignment(_monomer: string ): Promise<any> {
     return await grok.functions.call('Peptides:ManualAlignment', { _monomer });
   }

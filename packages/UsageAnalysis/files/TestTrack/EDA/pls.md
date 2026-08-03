@@ -1,3 +1,15 @@
+---
+feature: eda
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: [eda.cp.multivariate-analysis]
+realizes: [ml.analyze.multivariate-analysis, ml.analyze.pls]
+realized_as:
+  - pls-spec.ts
+related_bugs: []
+---
+
 ### Partial least squares regression (PLS)
 
 1. Open the DataFrame:

@@ -3,6 +3,16 @@ title: "Getting started with scripting"
 sidebar_position: 0
 mdx:
   format: mdx
+description: A step-by-step introduction to writing, running, and integrating your first Datagrok script.
+keywords:
+  - python script
+  - r script
+  - javascript script
+  - script header annotation
+  - script inputs and outputs
+  - process a dataframe
+  - error handling
+  - datagrok client
 ---
 
 ```mdx-code-block

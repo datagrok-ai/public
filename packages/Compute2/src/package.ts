@@ -9,6 +9,7 @@ import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
+import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
 import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
 import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
@@ -68,9 +69,20 @@ function setVueAppOptions(app: Vue.App<any>) {
     app.config.performance = true;
 }
 
+// Compute2-only extension of the Model Hub view: adds the run comparison tool
+// to the ribbon menu without touching the shared model-catalog code (used by Compute1).
+class Compute2ModelCatalogView extends ModelCatalogView {
+  constructor(viewName: string, roleOnlyFilter = false) {
+    super(viewName, roleOnlyFilter);
+    this.ribbonMenu.group('Tools')
+      .item('Compare Runs...', () => grok.functions.call('Compute2:CompareRuns'))
+      .endGroup();
+  }
+}
+
 const modelCatalogOptions = {
   _package,
-  ViewClass: ModelCatalogView,
+  ViewClass: Compute2ModelCatalogView,
   segment: 'Modelhub',
   viewName: 'Model Hub',
   funcName: 'modelCatalog',
@@ -270,6 +282,29 @@ export class PackageFunctions {
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Compare Runs',
+    description: 'Compare data across model runs: scalars or a single table column',
+  })
+  static async CompareRuns() {
+    const view = new DG.ViewBase();
+    view.name = 'Run Comparison';
+    view.root.classList.remove('ui-panel');
+    const app = Vue.createApp(RunComparisonAppInstance, {roleOnlyFilter: modelCatalogOptions.roleOnlyFilter});
+    setVueAppOptions(app);
+    app.mount(view.root);
+
+    grok.events.onViewRemoved.pipe(
+      filter((closedView) => closedView === view),
+      take(1),
+    ).subscribe(() => {
+      app.unmount();
+    });
+
+    grok.shell.addView(view);
   }
 
 

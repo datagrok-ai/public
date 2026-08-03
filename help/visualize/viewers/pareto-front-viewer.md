@@ -1,6 +1,13 @@
 ---
 title: "Pareto front viewer"
 slug: /pareto-front-viewer
+description: Highlight non-dominated solutions and optimal trade-offs in multi-objective optimization problems.
+keywords:
+  - multi-objective optimization
+  - non-dominated solutions
+  - trade-off analysis
+  - optimal front
+  - minimize maximize objectives
 ---
 
 [Pareto Front](https://en.wikipedia.org/wiki/Pareto_front) highlights a set of non-dominated solutions in a [multi-objective optimization](https://en.wikipedia.org/wiki/Multi-objective_optimization) problem, where improving one objective will necessarily degrade at least one other objective. It represents the optimal trade-offs between conflicting goals, such as speed versus power consumption or production rate versus energy use.

@@ -1,3 +1,13 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: edge
+priority: p2
+realizes: []
+realized_as: []
+related_bugs: []
+---
+
 # Catalogs — manual UI checks
 
 This is the **manual companion** to `catalogs.md`. The autotest

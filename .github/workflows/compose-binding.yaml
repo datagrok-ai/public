@@ -1,0 +1,57 @@
+name: "Compose release binding"
+
+# A compose file and the images it starts must come from the same release train -- the
+# compose file carries GROK_PARAMETERS, which the datlas build inside datagrok/datagrok
+# parses, and the two evolve together. This gate keeps master's compose files bound to
+# `bleeding-edge` and a release branch's bound to its release, so no one can download a
+# compose file that starts images it was not written for.
+on:
+  workflow_dispatch: { }
+  push:
+    branches:
+      - master
+      - 'release/**'
+    paths:
+      - 'docker/**'
+  pull_request:
+    paths:
+      - 'docker/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
+
+jobs:
+  check:
+    name: Check binding
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            ./docker
+      - name: Verify compose files are bound to this branch's release
+        working-directory: docker
+        env:
+          # On a PR, GITHUB_REF_NAME is the merge ref, so name the target branch instead.
+          BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.base_ref || github.ref_name }}
+        run: python3 stamp_release.py check --online
+      - name: Test the binding tool
+        working-directory: docker
+        run: python3 test_stamp_release.py
+      - name: Test how the install scripts resolve a release
+        working-directory: docker
+        run: bash test_install_scripts.sh
+      - name: Validate every compose file parses
+        working-directory: docker
+        run: |
+          set -euo pipefail
+          for f in localhost*.docker-compose.yaml; do
+            # The JS API debug file is an overlay on the base stack, not a stack itself.
+            if [ "$f" = "localhost.js-api.debug.docker-compose.yaml" ]; then
+              docker compose -f localhost.docker-compose.yaml -f "$f" --profile all config -q
+            else
+              docker compose -f "$f" --profile all config -q
+            fi
+            echo "OK $f"
+          done

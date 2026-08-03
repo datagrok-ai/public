@@ -1,6 +1,14 @@
 ---
 title: "Usage Analysis"
 sidebar_position: 2
+description: Use the Usage Analysis app to monitor platform, package, and function usage patterns.
+keywords:
+  - usage analysis app
+  - track usage
+  - user activity monitoring
+  - package usage statistics
+  - function usage
+  - platform analytics
 ---
 
 Datagrok provides a dedicated application called **Usage Analysis** for

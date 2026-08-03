@@ -3,7 +3,7 @@ import {Observable} from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
 import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
-import {FileInfo, Package, Property} from './entities';
+import {Entity, FileInfo, Package, Property} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode, Widget} from "./widgets";
 import {View} from './views/view';
 import {ViewInfo} from './entities';
@@ -213,6 +213,14 @@ export class Events {
 
   /** You can use it to override the default implementation of file import. */
   get onFileImportRequest(): rxjs.Observable<EventData<FileImportArgs>> { return __obs(EVENT_TYPE.FILE_IMPORT_REQUEST); }
+
+  /** Occurs when files are dragged into the application window, before the platform shows its
+   * drop overlay. Call {@link EventData.preventDefault} to suppress the overlay and handle the
+   * drop yourself (attach your own DOM `dragover`/`drop` handlers to your view). */
+  get onFileDragEnter(): rxjs.Observable<EventData> { return __obs(EVENT_TYPE.FILE_DRAG_ENTER); }
+
+  /** Occurs when an entity is shared with users or groups via the share dialog. */
+  get onEntityShared(): rxjs.Observable<Entity> { return __obs(EVENT_TYPE.ENTITY_SHARED); }
 
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs(EVENT_TYPE.GRID_CELL_LINK_CLICKED); }
 

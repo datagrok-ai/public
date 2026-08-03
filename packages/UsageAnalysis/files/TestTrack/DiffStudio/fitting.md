@@ -1,3 +1,15 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p1
+realizes_atlas: [load-library-ivp-run]
+realizes: [diffstudio]
+realized_as:
+  - fitting.test.ts
+related_bugs: []
+---
+
 ### Fitting in Diff Studio (Bioreactor)
 To validate the functionality of the Fitting tool in Diff Studio, ensuring that the fitting process is executed correctly and the results are accurately visualized.
 

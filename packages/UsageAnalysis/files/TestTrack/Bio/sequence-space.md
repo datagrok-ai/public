@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [bio.cp.sequence-space]
+realizes_atlas: [bio.cp.sequence-space]
+realizes: [bio.analyze.sequence-space]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/sequence-space.md
 migration_date: 2026-05-31

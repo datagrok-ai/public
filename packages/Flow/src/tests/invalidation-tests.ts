@@ -13,12 +13,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNode} from '../rete/node-factory';
 import {FlowEditor, GraphEdit} from '../rete/flow-editor';
-import {missingRequiredProps, nodeMissingRequirements} from '../rete/scheme';
+import {missingRequiredProps, nodeMissingRequirements, FlowNode} from '../rete/scheme';
 import {sliceDownFrom} from '../compiler/graph-compiler';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
-import {NodeExecStatus} from '../execution/execution-state';
-import {AutorunScheduler} from '../execution/autorun';
+import {ExecutionState, NodeExecStatus} from '../execution/execution-state';
+import {AutorunScheduler, isAutorunByDefault} from '../execution/autorun';
 import {PropertyPanel} from '../panel/property-panel';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
 
@@ -90,6 +90,30 @@ category('Flow: invalidation', () => {
     } finally {
       destroyEditor(e);
     }
+  });
+
+  test('a later run clears the previous failure', async () => {
+    // The state is MERGED on every status change, so a failed run's error rode
+    // along into the successful one that followed — the panel showed the old
+    // red block (and its stack) under a green "Completed (23ms)".
+    const state = new ExecutionState();
+    state.setNodeStatus('n', NodeExecStatus.errored, {error: 'Condition "${x} >" is not boolean', stack: 'at …'});
+    expect(state.getNodeState('n')!.error !== undefined, true, 'the failure is recorded');
+
+    // `expect(v, undefined)` reads as `expect(v, true)` in this harness — the
+    // expected value has to be a real one, so compare explicitly.
+    state.setNodeStatus('n', NodeExecStatus.running, {startTime: 1});
+    expect(state.getNodeState('n')!.error === undefined, true, 'a new attempt drops the old verdict');
+    expect(state.getNodeState('n')!.stack === undefined, true, 'stack trace too');
+
+    state.setNodeStatus('n', NodeExecStatus.completed, {endTime: 2, outputs: {}});
+    expect(state.getNodeState('n')!.error === undefined, true, 'and a completed node carries no error');
+
+    // Stale is the exception: the last thing that happened to the node IS the
+    // failure, and "out of date" must not read as "it worked".
+    state.setNodeStatus('n', NodeExecStatus.errored, {error: 'boom'});
+    state.markStale(['n']);
+    expect(state.getNodeState('n')!.error, 'boom', 'a stale node keeps what went wrong');
   });
 
   test('adding a node invalidates nothing', async () => {
@@ -257,11 +281,12 @@ category('Flow: invalidation', () => {
       await sleepMs(30);
       rec.edits.length = 0;
 
-      const textarea = panel.root.querySelector('[data-param="tableName"] textarea') as HTMLTextAreaElement;
-      expect(textarea !== null, true, 'the tableName editor is rendered');
+      // Every panel editor is a DG input now (ui.input.string here).
+      const field = panel.root.querySelector('[data-param="tableName"] input, [data-param="tableName"] textarea') as HTMLInputElement;
+      expect(field !== null, true, 'the tableName editor is rendered');
       const type = (v: string): void => {
-        textarea.value = v;
-        textarea.dispatchEvent(new Event('input', {bubbles: true}));
+        field.value = v;
+        field.dispatchEvent(new Event('input', {bubbles: true}));
       };
 
       type('demog');
@@ -487,6 +512,179 @@ category('Flow: autorun', () => {
     expect(runs, 0);
   });
 
+  test('live-by-default nodes schedule runs even while the toggle is off', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20, (id) => id === 'viewer');
+    // The toggle stays OFF. A non-live edit schedules nothing…
+    s.onEdit(edit('a'), new Set(['a']));
+    await sleep(60);
+    expect(runs.length, 0, 'non-live edit ignored while off');
+    // …an edit whose affected cone touches a live node runs ONLY that node —
+    // the rest of the cone must never run uninvited.
+    s.onEdit(edit('a'), new Set(['a', 'viewer']));
+    await sleep(60);
+    expect(runs.length, 1, 'a live node admitted the run');
+    expect(runs[0].dirty.join(), 'viewer', 'only the live node is handed over');
+    expect(runs[0].liveOnly, true, 'flagged as a live-only run');
+    // With the toggle ON the whole affected slice goes through as before.
+    s.toggle();
+    s.onEdit(edit('a'), new Set(['a', 'b']));
+    await sleep(60);
+    expect(runs[1].dirty.join(), 'a,b', 'toggle on → full affected slice');
+    expect(runs[1].liveOnly, false, 'flagged as a normal autorun');
+  });
+
+  test('a dropped live node and a loaded flow schedule live runs (node-added + kickLive)', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20, (id) => id.startsWith('live'));
+    // Toggle OFF. A plain node drop never schedules…
+    s.onEdit({kind: 'node-added', nodeId: 'plain'}, new Set());
+    await sleep(60);
+    expect(runs.length, 0, 'plain node-added ignored');
+    // …a LIVE node drop does (a file dragged onto the canvas creates a ready
+    // Open File — readiness is re-checked at fire time anyway).
+    s.onEdit({kind: 'node-added', nodeId: 'live1'}, new Set());
+    await sleep(60);
+    expect(runs.length, 1, 'live node-added schedules');
+    expect(runs[0].dirty.join(), 'live1');
+    expect(runs[0].liveOnly, true);
+    // Loading a flow kicks its live nodes only.
+    s.kickLive(['a', 'live2', 'b']);
+    await sleep(60);
+    expect(runs.length, 2, 'kickLive schedules');
+    expect(runs[1].dirty.join(), 'live2', 'only live nodes enter the set');
+    // With the toggle ON, node-added keeps its old no-op semantics.
+    s.toggle();
+    s.onEdit({kind: 'node-added', nodeId: 'live3'}, new Set());
+    await sleep(60);
+    expect(runs.length, 2, 'toggle on → node-added still never schedules');
+  });
+
+  test('runLiveNodes executes only the ready live nodes, never the rest of the canvas', async () => {
+    registerBuiltinNodes();
+    const e = makeEditor();
+    try {
+      const {a, b, c} = await makeChain(e);
+      const ctrl = new ExecutionController(e.flow);
+      // c's input is connected but no upstream value was ever captured →
+      // inputs not satisfied → nothing runs (the old behavior ran EVERYTHING).
+      expect(ctrl.runLiveNodes(new Set([c]), SETTINGS), 'skipped',
+        'unsatisfied inputs never trigger a run');
+      expect(ctrl.state.nodeStates.size, 0, 'no node was touched');
+
+      // The const source runs from its parameters alone — and ONLY it runs.
+      e.flow.getNodeById(a)!.properties['value'] = 'hello';
+      expect(ctrl.runLiveNodes(new Set([a]), SETTINGS), 'started');
+      const done = await until(() => status(ctrl, a) === NodeExecStatus.completed, 8000);
+      expect(done, true, 'the live node ran');
+      expect(status(ctrl, b) === undefined, true, 'downstream b stays untouched');
+      expect(status(ctrl, c) === undefined, true, 'downstream c stays untouched');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a live func with a blank required string param never live-runs', async () => {
+    // An Open File added bare (toolbox double-click, suggestion) has no
+    // fullPath yet — the scheduled live run must quietly no-op instead of
+    // executing OpenFile('').
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      const ctrl = new ExecutionController(e.flow);
+      const missing = nodeMissingRequirements(node, () => false);
+      expect(missing.length > 0, true, 'the node itself reports the unset path ("Needs input")');
+      expect(ctrl.runLiveNodes(new Set([node.id]), SETTINGS), 'skipped', 'blank fullPath → not ready');
+      expect(ctrl.state.nodeStates.size, 0, 'nothing ran');
+
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      const outcome = ctrl.runLiveNodes(new Set([node.id]), SETTINGS);
+      if (outcome !== 'started') {
+        const {validateGraph} = await import('../compiler/validator');
+        const {isInputOptional} = await import('../utils/dart-proxy-utils');
+        console.log('FF-DIAG outcome=' + outcome +
+          ' isRunning=' + ctrl.state.isRunning +
+          ' dgNodeType=' + node.dgNodeType +
+          ' missing=' + JSON.stringify(nodeMissingRequirements(node, (k) => e.flow.isInputConnected(node.id, k))) +
+          ' validation=' + JSON.stringify(validateGraph(e.flow)) +
+          ' inputs=' + JSON.stringify((node.dgFunc?.inputs ?? []).map((p) => ({
+            name: p.name, type: String(p.propertyType), value: node.inputValues[p.name],
+            optional: isInputOptional(p),
+            nullable: (() => { try {return (p as {nullable?: boolean}).nullable;} catch {return 'threw';} })(),
+            connected: e.flow.isInputConnected(node.id, p.name),
+          }))) +
+          ' typeName=' + typeName);
+      }
+      expect(outcome, 'started', 'path set → live run starts');
+      await until(() => {
+        const st = status(ctrl, node.id);
+        return st !== undefined && st !== NodeExecStatus.running;
+      }, 15000);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a run completing on the selected node opens its preview', async () => {
+    // An autorun (or explicit run) of the already-selected node must show its
+    // output without an unselect/select round-trip: node-complete on the sole
+    // selected node feeds the preview panel, same as clicking it would.
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      const ctrl = new ExecutionController(e.flow);
+      await e.flow.selectNode(node.id);
+      expect(ctrl.outputPreview.currentNodeId, null, 'nothing previewed before the run');
+      expect(ctrl.runLiveNodes(new Set([node.id]), SETTINGS), 'started');
+      expect(await until(() => status(ctrl, node.id) === NodeExecStatus.completed, 15000), true, 'node ran');
+      expect(await until(() => ctrl.outputPreview.currentNodeId === node.id), true,
+        'completion on the selected node opened its preview');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('isAutorunByDefault: Open File, Add New Column, and viewers are live', async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+    const viewer = createNode('Viewers/Scatter Plot');
+    if (viewer) expect(isAutorunByDefault(viewer), true, 'viewers are live');
+    for (const name of ['OpenFile', 'AddNewColumn']) {
+      const typeName = funcTypeName(name);
+      if (!typeName) continue; // function not present on this stand
+      expect(isAutorunByDefault(createNode(typeName)!), true, `${name} is live`);
+    }
+    expect(isAutorunByDefault(createNode('Utilities/Info')!), false, 'ordinary utilities are not live');
+    expect(isAutorunByDefault(createNode('Inputs/Table Input')!), false, 'inputs are not live');
+  });
+
+  test('isAutorunByDefault: meta.autorun consolidates with the built-in lists', async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+    // The author opt-in — bool and annotation-string forms both count.
+    const stub = (options: Record<string, unknown>): FlowNode =>
+      ({dgFunc: {name: 'somePkgFunc', options}, dgTypeName: 'f', properties: {}} as unknown as FlowNode);
+    expect(isAutorunByDefault(stub({autorun: true})), true, 'meta.autorun: true (bool) → live');
+    expect(isAutorunByDefault(stub({autorun: 'true'})), true, 'meta.autorun: true (string) → live');
+    expect(isAutorunByDefault(stub({autorun: 'false'})), false, 'meta.autorun: false → not live');
+    expect(isAutorunByDefault(stub({})), false, 'no meta → not live');
+    // The real opt-in: Flow's own Uploaded File node declares meta.autorun.
+    const uploaded = funcTypeName('readUploadedFile');
+    if (uploaded)
+      expect(isAutorunByDefault(createNode(uploaded)!), true, 'readUploadedFile is live via meta.autorun');
+  });
+
   test('busy postpones and keeps the dirty set; skipped waits for the next edit', async () => {
     const runs: Array<{dirty: string[]; outcome: string}> = [];
     let outcome: 'started' | 'busy' | 'skipped' = 'busy';
@@ -537,8 +735,10 @@ category('Flow: autorun', () => {
       const output = await addNode(e.flow, 'Outputs/Table Output');
       await e.flow.addConnectionByKeys(input.id, 'table', output.id, 'table');
       const ctrl = new ExecutionController(e.flow);
+      // A Table Input with no configured value — a CONFIGURED one no longer
+      // blocks (covered in input-value-tests).
       expect(ctrl.runAutorun(new Set([output.id]), SETTINGS), 'skipped',
-        'an input node in the run set would open a dialog — autorun must not');
+        'an unconfigured input node in the run set would open a dialog — autorun must not');
     } finally {
       destroyEditor(e);
     }

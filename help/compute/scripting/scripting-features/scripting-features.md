@@ -3,6 +3,14 @@ title: "Scripting features"
 sidebar_position: 1
 mdx:
   format: mdx
+description: Index of scripting features for enhancing input UI, visualizing output, and integrating scripts into Datagrok.
+keywords:
+  - script ui enhancement
+  - semantic types for scripts
+  - conda environment management
+  - script editor
+  - integrate script into datagrok ui
+  - complex data types
 ---
 
 ```mdx-code-block

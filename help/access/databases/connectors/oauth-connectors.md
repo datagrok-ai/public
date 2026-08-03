@@ -1,6 +1,18 @@
 ---
 title: "OAuth authentication for connectors"
 sidebar_label: "OAuth (BigQuery, Databricks)"
+description: Set up per-user OAuth authentication for BigQuery and Databricks connectors in Datagrok.
+keywords:
+  - oauth authentication
+  - per-user authentication
+  - bigquery oauth
+  - databricks oauth
+  - azure ad
+  - google workspace
+  - row-level security
+  - pkce
+  - token refresh
+  - consent popup
 ---
 
 Datagrok supports per-user OAuth authentication for [BigQuery](bigquery.md)

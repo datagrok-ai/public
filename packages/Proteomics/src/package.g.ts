@@ -83,9 +83,9 @@ export async function showPcaPlot() : Promise<void> {
   await PackageFunctions.showPcaPlot();
 }
 
-//name: showGroupMeanCorrelation
-export async function showGroupMeanCorrelation() : Promise<void> {
-  await PackageFunctions.showGroupMeanCorrelation();
+//name: abundanceCorrelation
+export async function abundanceCorrelation() : Promise<void> {
+  await PackageFunctions.abundanceCorrelation();
 }
 
 //name: showQcDashboard
@@ -111,6 +111,11 @@ export async function enrichmentAnalysis() : Promise<void> {
 //name: exportEnrichmentInputs
 export async function exportEnrichmentInputs() : Promise<void> {
   await PackageFunctions.exportEnrichmentInputs();
+}
+
+//name: rankAbundance
+export async function rankAbundance() : Promise<void> {
+  await PackageFunctions.rankAbundance();
 }
 
 //name: enrichmentCharts
@@ -153,6 +158,15 @@ export async function shareAnalysisForReview() : Promise<void> {
 //meta.role: widgets,panel
 export function publishedAnalysisPanelWidget(proteinId: string) : any {
   return PackageFunctions.publishedAnalysisPanelWidget(proteinId);
+}
+
+//name: Proteomics package settings editor
+//tags: packageSettingsEditor
+//input: object propList 
+//output: widget result
+//meta.role: packageSettingsEditor
+export async function proteomicsSettingsEditor(propList: any) : Promise<any> {
+  return await PackageFunctions.proteomicsSettingsEditor(propList);
 }
 
 //tags: autostart

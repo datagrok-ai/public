@@ -5,6 +5,8 @@
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import {getFilesBrowser} from '../utils/files-browser-tree';
+import {FuncFlowView} from '../funcflow-view';
+import {ensureFunctionsRegistered} from '../rete/node-factory';
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
@@ -19,6 +21,33 @@ async function waitFor<T>(fn: () => T | null | undefined, timeoutMs = 8000): Pro
 }
 
 category('Flow: files tree', () => {
+  test('a dropped file titles its Open File node with the file name', async () => {
+    // Several Open File nodes on one canvas must be tellable apart at a glance
+    // — the title carries the file name (cosmetic; never affects the run).
+    ensureFunctionsRegistered();
+    const view = new FuncFlowView();
+    const probe = view as unknown as {
+      editorReady: Promise<void>;
+      flow: {getNodes(): Array<{label: string; inputValues: Record<string, unknown>}>; destroy?(): void};
+      addOpenFileNode(path: string): Promise<void>;
+    };
+    try {
+      await probe.editorReady;
+      await probe.addOpenFileNode('System:AppData/Chem/mol1K.csv');
+      const node = probe.flow.getNodes()[0];
+      expect(node != null, true, 'node added');
+      expect(node.label.endsWith(': mol1K.csv'), true, `title carries the file name (got "${node.label}")`);
+      expect(node.inputValues['fullPath'], 'System:AppData/Chem/mol1K.csv', 'path still configured');
+    } finally {
+      // The path write arms the live-by-default autorun (1 s debounce) —
+      // detach resets the scheduler so nothing fires into the torn-down view.
+      view.detach();
+      await sleep(120);
+      probe.flow?.destroy?.();
+      view.root.remove();
+    }
+  }, {timeout: 30000});
+
   test('connections, folders and files carry name-based test-ids', async () => {
     const tree = getFilesBrowser(() => {}, () => {}, undefined);
     document.body.appendChild(tree.root);

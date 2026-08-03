@@ -3,7 +3,8 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [biostructure-prolif-cross-cell-type]
+realizes_atlas: [biostructure-prolif-cross-cell-type]
+realizes: [biostructureviewer.biostructure]
 produced_from: atlas-driven
 related_bugs: []
 source_text_fixes: []

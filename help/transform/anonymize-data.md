@@ -1,5 +1,13 @@
 ---
 title: "Anonymize data"
+description: Replace real values in categorical and numerical columns with synthetic data while preserving structure.
+keywords:
+  - data masking
+  - data anonymization
+  - synthetic data generation
+  - obfuscate data
+  - pseudonymize column
+  - randomization factor
 ---
 
 Sometimes you need to prepare a dataset that conveys the data structure and patterns

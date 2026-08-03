@@ -1,5 +1,12 @@
 ---
 title: "Select random rows"
+description: Randomly select a specified number or proportion of rows, commonly used for sampling.
+keywords:
+  - random sampling
+  - select random rows
+  - random subset
+  - sample dataset
+  - random row selection
 ---
 
 Selects the specified number of rows randomly.

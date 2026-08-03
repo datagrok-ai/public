@@ -5,11 +5,11 @@
 #tags: Transform
 #top-menu: Data | Curves | Calculate MSR...
 #input: dataframe table [Input data table]
-#input: column ic50Column [IC50 column]
-#input: column compoundIdColumn [Compound ID column]
-#input: column runDateColumn [Run date column]
-#input: column assayNameColumn [Assay name column]
-#input: column targetEntityColumn [Target entity column]
+#input: column ic50Column {type: numerical; caption: IC50} [IC50 values, one row per measurement]
+#input: column compoundIdColumn {type: categorical; caption: Compound ID} [Compound identifier the measurements are grouped by]
+#input: column runDateColumn {caption: Run date} [Date of the run; used as the repeat axis]
+#input: column assayNameColumn {type: categorical; caption: Assay} [Assay name]
+#input: column targetEntityColumn {type: categorical; caption: Target entity} [Target entity]
 #output: dataframe res {action:join(table)}
 
 import pandas as pd

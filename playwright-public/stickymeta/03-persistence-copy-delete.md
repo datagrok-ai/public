@@ -7,7 +7,7 @@ copy/clone/save/reopen/reload/relogin, and that clearing values removes the mark
 
 - A molecule-matching schema (`PW_SM_Schema_<suffix>`) exists with `rating`/int and
   `notes`/string properties (autotest creates and later deletes it).
-- `System:DemoFiles/SPGI.csv` open, with metadata seeded on a few molecules (e.g. `rating` and
+- `System:DemoFiles/chem/SPGI.csv` open, with metadata seeded on a few molecules (e.g. `rating` and
   `notes` on three rows). Seeding may use the UI (Test 2.1 flow) or, in the autotest, the JS API
   for speed.
 

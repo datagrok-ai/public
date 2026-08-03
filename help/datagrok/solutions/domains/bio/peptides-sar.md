@@ -28,6 +28,7 @@ The results of SAR analysis are presented in multiple integrated tables and view
 * **Visualize** point-mutations and sequence variability for every monomer-position.
 * **Explore** Mutation cliffs that lead to significant changes in activity.
 * **Predict** Most potent residues for every monomer-position based on activity statistics.
+* **Generate** new candidate peptides ranked by predicted activity with the [Peptide Generation](../../../../visualize/viewers/peptide-generation.md) viewer.
 
 ![Peptide SAR Analysis](img/peptides/pep-analysis-view.png)
 
@@ -83,6 +84,18 @@ Configurable options include activity column, scaling method and activity target
 
 ![Most Potent Residues](./img/peptides/mpr.png)
 
+## Peptide Generation
+
+The optional [Peptide Generation](../../../../visualize/viewers/peptide-generation.md) viewer reuses the monomer-position statistics to design new candidate peptides and rank them by predicted activity. It combines the best-scoring monomers at each position, toward a High or Low activity target, into whole sequences using an additive positional model, and shows the statistical basis for every choice.
+
+* Generated peptides are listed with predicted activity, confidence and support statistics, and a novelty flag
+* Per-position basis columns show each chosen monomer with an effect circle (size for effect magnitude, color for direction and significance) and its contribution
+* Hovering over a basis cell shows the activity distribution behind the choice
+
+This viewer is not added by default. Add it from the **Add viewer** menu.
+
+![Peptide Generation](./img/peptides/peptide-generation.png)
+
 ## Logo Summary Table and Clustering
 
 The analysis uses Markov clustering to group sequences based on their distances and visualizes the clusters on a [scatterplot](../../../../visualize/viewers/scatter-plot.md) with connecting lines. These lines indicate that the distance between two sequences is below a specified threshold. During clustering, some connections are removed while others are reinforced, leading to distinct clusters that may still be interconnected.
@@ -106,9 +119,9 @@ The context panel updates dynamically based on current selections and filtering,
 
 * **Selection Sources** displays information about current selections from clusters, monomer-positions, most potent residues, mutation cliffs, and WebLogo.
 * **Actions** provides the following options for the current selection:
-    * **New cluster**: Creates a cluster from the intersection of filter and selection
-    * **Remove cluster**: Deletes selected custom cluster
-    * **New view**: Creates and adds a new table from current selection with Logo Summary Table
+  * **New cluster**: Creates a cluster from the intersection of filter and selection
+  * **Remove cluster**: Deletes selected custom cluster
+  * **New view**: Creates and adds a new table from current selection with Logo Summary Table
 * **Mutation Cliffs Pairs** displays sequence pairs and unique sequences forming mutation cliffs. Filter by specific monomers or expand to full screen for detailed examination.
 * **Distribution** shows statistics and activity distribution of selected sequences compared to all sequences. Optional breakdown by monomers, positions, or clusters is available via checkboxes.
 * **Selection Table** Lists selected sequences with corresponding activity values and a summary WebLogo header.

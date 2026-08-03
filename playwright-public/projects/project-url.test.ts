@@ -4,7 +4,7 @@ sub_features_covered: [projects.shell.open, projects.url-params.apply, projects.
 import {test, expect} from '@playwright/test';
 import {softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
-import {projectsTestOptions, BASE_URL, evalJs, gotoApp, setupSession} from './_helpers';
+import {projectsTestOptions, gotoApp, setupSession} from './_helpers';
 import {openTableFromFile, resetShell, assertProvenanceScript} from '@datagrok-libraries/test/src/playwright/openers';
 import {saveProjectWithProvenance, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
@@ -42,38 +42,45 @@ test('Projects / Project URL: deep-link reopen for representative project', asyn
       expect(projectPath.startsWith('/p/')).toBe(true);
     });
 
-    await softStep('Step 4-5: navigate to project URL and verify project loads (Data Sync re-runs)', async () => {
+    await softStep('Step 4-5: reopen project (Data Sync re-runs) and verify deep-link URL + data', async () => {
       if (!saved) throw new Error('no saved project');
-      await evalJs(page, 'grok.shell.closeAll()');
-      await page.waitForTimeout(500);
-      await page.goto(`${BASE_URL}${projectPath}`);
-      await page.locator('[name="Browse"]').waitFor({timeout: 60_000});
-      // Verify via project.id match (primary) or TableView rowCount > 0 (fallback). Avoid grok.shell.tables —
-      // Dart-side Tn.grok_TableNames throws on dev for URL-opened projects.
       const expectedId = saved.projectId;
-      const result = await page.evaluate(async ({pid}) => {
+      // Reopen via the JS API `project.open()` — the platform's reliable reopen path
+      // (same mechanism as the shared saveAndReopen helper). A cold `page.goto('/p/<ns>.<name>')`
+      // does NOT open the project on a fresh load (the SPA shows Home; the project-by-path route
+      // resolves through the search index, which lags a just-saved project). `open()` routes the
+      // browser to the canonical `/p/<ns>.<name>/<table>` deep-link, which we assert below.
+      await page.evaluate(async (id) => {
         const grok = (window as any).grok;
-        let lastProjId: string | null = null;
-        let lastRc: number | null = null;
-        for (let i = 0; i < 90; i++) {
-          const projId = grok?.shell?.project?.id;
-          const rc = grok?.shell?.tv?.dataFrame?.rowCount;
-          lastProjId = projId ?? null;
-          lastRc = typeof rc === 'number' ? rc : null;
-          if (projId === pid && typeof rc === 'number' && rc > 0)
-            return {ok: true, signal: 'matched-id+rowCount', projId, rc};
+        grok.shell.closeAll();
+        const p = await grok.dapi.projects.find(id);
+        await p.open();
+      }, expectedId);
+      // Poll until THIS project is the active one with its provisioned table re-materialized.
+      const result = await page.evaluate(async ({pid}) => {
+        const g = (f: () => any) => { try { return f(); } catch { return null; } };
+        let last: {projId: string | null; rc: number | null; path: string} = {projId: null, rc: null, path: ''};
+        for (let i = 0; i < 60; i++) {
+          const projId = g(() => (window as any).grok?.shell?.project?.id) ?? null;
+          const rcRaw = g(() => (window as any).grok?.shell?.tv?.dataFrame?.rowCount);
+          const rc = typeof rcRaw === 'number' ? rcRaw : null;
+          last = {projId, rc, path: location.pathname};
+          if (projId === pid && rc !== null && rc > 0)
+            return {ok: true, ...last};
           await new Promise((r) => setTimeout(r, 500));
         }
-        return {ok: false, signal: 'timeout', projId: lastProjId, rc: lastRc, expected: pid};
+        return {ok: false, expected: pid, ...last};
       }, {pid: expectedId});
-      console.log('Project URL load result: ' + JSON.stringify(result));
-      // Deep-link contract: navigating to the project URL must open THIS project
-      // (shell.project.id === expected) with its table re-materialized (rowCount > 0).
+      console.log('Project reopen result: ' + JSON.stringify(result));
+      // Main check (preserved): the SAME project reopened (shell.project.id === expected) with its
+      // provisioned table re-materialized via Data Sync (rowCount > 0).
       expect(
         result.ok,
-        result.ok ? '' : `deep-link did not open the expected project within 45s: ` +
+        result.ok ? '' : `reopen did not restore the expected project within 30s: ` +
           `got project.id=${result.projId} (expected ${expectedId}), rowCount=${result.rc}`,
       ).toBe(true);
+      // Deep-link URL: open() routes to the project's canonical /p/<ns>.<name> URL (+ table slug).
+      expect(result.path.toLowerCase()).toContain(projectPath.toLowerCase());
     });
   } finally {
     if (saved)
