@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {
-  CHANGED_DOT_STYLE, combinationLimitsChanged, DataKey, estimateProductCount, Mode, MODE_LABEL,
+  CHANGED_DOT_STYLE, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
   OVERRIDE_DOT_COLOR, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
 } from './enumerator-app';
 
@@ -45,7 +45,12 @@ export class StrategySummary {
     const tDf = this.deps.templatesInput.value;
     const bDf = this.deps.bbsInput.value;
     const mode = this.deps.currentMode();
+    // Kept raw (not clamped) for anything just displaying the number, so it can't drift from what's
+    // literally typed into "Number of rounds" (see currentRounds()'s own doc comment) — but a round
+    // count this large must never drive a per-round DOM-building loop directly, or typing enough
+    // digits to exceed MAX_ROUNDS freezes the tab rendering thousands of row elements per keystroke.
     const rounds = this.deps.currentRounds();
+    const displayRounds = Math.min(MAX_ROUNDS, Math.max(1, rounds));
     const n = estimateProductCount(tDf, bDf);
 
     // Per-round subset overrides, computed once for both the round diagram and the per-component
@@ -57,6 +62,10 @@ export class StrategySummary {
     const card = ui.div([], {style: {maxWidth: '480px'}});
     card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`,
       {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '10px'}}));
+    if (rounds > MAX_ROUNDS) {
+      card.appendChild(ui.divText(`Showing the first ${MAX_ROUNDS} rounds — Number of rounds is capped at ${MAX_ROUNDS}.`,
+        {style: {fontSize: '11px', color: 'var(--grey-5)', marginBottom: '8px'}}));
+    }
 
     if (tDf && bDf) {
       // One section per component, each listing what every round uses.
@@ -66,7 +75,7 @@ export class StrategySummary {
         const section = ui.div([], {style: {marginTop: '10px'}});
         section.appendChild(ui.divText(title,
           {style: {fontWeight: 'bold', fontSize: '12px', marginBottom: '4px'}}));
-        for (let r = 1; r <= rounds; r++) {
+        for (let r = 1; r <= displayRounds; r++) {
           const oc = overrideCount(r, key);
           const rowChildren: HTMLElement[] = [
             ui.divText(`Round ${r}`, {style: {color: 'var(--grey-6)', width: '64px', flex: '0 0 auto'}}),
