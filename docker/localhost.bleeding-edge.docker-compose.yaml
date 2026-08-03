@@ -1,3 +1,5 @@
+x-datagrok-release: 1.27.7
+
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
@@ -16,7 +18,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:${DATAGROK_VERSION:-bleeding-edge}
+    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-1.22.0}
     container_name: grok_pipe
     ports:
       - "3000:3000"
@@ -31,7 +33,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.7}
     environment:
       GROK_PARAMETERS: |
         {
@@ -90,7 +92,7 @@ services:
     profiles: [ "all", "datagrok" ]
 
   grok_spawner:
-    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
+    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-2.22.0}
     user: root
     environment:
       GROK_SPAWNER_DATAGROK_API_URL: http://datagrok:8080/api
@@ -109,7 +111,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-2.6.5}
     networks:
       datagrok:
         aliases:
@@ -124,7 +126,7 @@ services:
     profiles: [ "all", "grok_connect" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge-cuda}
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-1.34.1}
     networks:
       datagrok:
         aliases:
