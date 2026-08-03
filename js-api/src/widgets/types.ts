@@ -17,7 +17,16 @@ export type ICodeEditorOptions = {
   root?: HTMLDivElement;
 }
 
-export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+/** Async suggestion callback for {@link TypeAheadConfig.source}: receives the typed query and
+ * resolves to suggestions — strings or objects with a `label` (extra fields ride along and are
+ * passed to `onSubmit` intact, e.g. `{label, value}` for lookups resolving to an id). */
+export type TypeAheadCallbackSource = (query: string) => Promise<(string | Dictionary)[]>;
+
+export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className' | 'source'> & {
+  /** Suggestion source: any typeahead-standalone source (`local`/`prefetch`/`remote` URLs),
+   * or an async callback — the way to serve suggestions from a server-side query. */
+  source: typeaheadConfig<Dictionary>['source'] | TypeAheadCallbackSource;
+};
 
 export type MarkdownConfig = {
   value?: string;
