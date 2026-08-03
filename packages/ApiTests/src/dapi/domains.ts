@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, awaitCheck} from '@datagrok-libraries/test/src/test';
 
 // Tests for grok.dapi.domains against the 'apitests' domain schema that this
 // package declares in databases/apitests/schema.json (deployed on publish).
@@ -215,5 +215,163 @@ category('Dapi: domain registry', () => {
       for (const r of inserted)
         await items.delete(r.id);
     }
+  });
+}, {owner: 'askalkin@datagrok.ai'});
+
+// DomainQuery state class (ui-js-api WO-6): the single serializable representation
+// of what a user is looking at — the `DomainQuery` function's parameters, a URL deep
+// link, and a REST spec, all the same object. UI-only state (view mode, current
+// entity) never enters it: the reserved 'view='/'entity=' URL params are ignored.
+category('Dapi: domain query state', () => {
+  const items = () => grok.dapi.domains.table('apitests.item');
+  const stamp = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  /** Key-order-independent comparison of two plain objects. */
+  const sorted = (o: any) => JSON.stringify(o, Object.keys(o).sort());
+  /** The message of whatever [action] throws, or null when it succeeds. */
+  const thrown = (action: () => any): string | null => {
+    try {
+      action();
+      return null;
+    } catch (e: any) {
+      return e.message ?? `${e}`;
+    }
+  };
+
+  test('URL parameters round-trip losslessly, reserved params ignored', async () => {
+    // The platform's list-element binding: one URL key per element (filters[0]), so
+    // a recorded run can be re-parameterized element by element.
+    const url = {
+      'filters[0]': 'quantity > 1',
+      'filters[1]': '{"property":"name","operator":"=","value":"Widget"}',
+      'orderBy[0]': '!created_on',
+      'limit': '25',
+    };
+    const q = DG.DomainQuery.fromUrlParams('apitests', 'item',
+      {...url, 'view': 'grid', 'entity': 'abc'});     // UI-only state rides along, stays out
+    expect(q.schema, 'apitests');
+    expect(q.table, 'item');
+    expect(q.filters!.length, 2);
+    expect(q.filters![1].includes('Widget'), true, `JSON element mangled: ${q.filters![1]}`);
+    expect(q.orderBy!.join(','), '!created_on');
+    expect(q.limit, 25);
+    expect(sorted(q.toUrlParams()), sorted(url), 'URL round trip is not lossless');
+
+    // Gaps close and indices are read in ascending order (a hand-edited link stays usable).
+    const gapped = DG.DomainQuery.fromUrlParams('apitests', 'item',
+      {'filters[2]': 'b = 2', 'filters[0]': 'a = 1'});
+    expect(gapped.filters!.join('|'), 'a = 1|b = 2');
+  });
+
+  test('view state -> DomainQuery -> params, and run() reproduces the subset', async () => {
+    const mine = `SKU-QS-${stamp()}`;
+    const [a] = await items().insert({sku: mine, name: mine});
+    const view = DG.DomainView.create({schema: 'apitests', table: 'item',
+      permanentFilter: `sku = "${mine}"`, embedded: true});
+    grok.shell.addView(view);
+    let df: _DG.DataFrame | null = null;
+    try {
+      await awaitCheck(() => view.root.textContent!.includes(mine),
+        'the filtered row never appeared in the view', 15000);
+      const params = view.query;
+      const q = DG.DomainQuery.fromParams(params);
+      expect(sorted(q.toParams()), sorted(params), 'DomainView.query did not round-trip');
+      expect((q.filters ?? []).some((f) => f.includes(mine)), true,
+        `the view's filter is missing from its query: ${JSON.stringify(params)}`);
+      df = await q.run();
+      expect(df!.rowCount, 1, 'run() must reproduce the subset the view shows');
+      expect(df!.col('sku')!.get(0), mine);
+    } finally {
+      if (df != null)
+        grok.shell.closeTable(df);
+      view.close();
+      await items().delete(a.id);
+    }
+  });
+
+  test('run() matches queryDf(toSpec()) and records a creation script', async () => {
+    const prefix = `SKU-QR-${stamp()}`;
+    const inserted = await items().insert([
+      {sku: `${prefix}-1`, name: 'one', quantity: 1},
+      {sku: `${prefix}-2`, name: 'two', quantity: 2},
+      {sku: `${prefix}-3`, name: 'three', quantity: 3}]);
+    // JSON condition elements: values are bound server-side, and toSpec() AND-joins
+    // them into one REST condition tree.
+    const q = new DG.DomainQuery({schema: 'apitests', table: 'item',
+      filters: [`{"property":"sku","operator":"like","value":"${prefix}%"}`,
+        '{"property":"quantity","operator":">","value":1}'],
+      orderBy: ['!quantity'], limit: 10});
+    let df: _DG.DataFrame | null = null;
+    try {
+      const direct = await items().queryDf(q.toSpec());
+      df = await q.run();
+      expect(df!.rowCount, 2, 'the AND-combined filter elements did not select 2 rows');
+      expect(df!.rowCount, direct.rowCount, 'run() and queryDf(toSpec()) disagree on row count');
+      expect(df!.col('sku')!.toList().join(','), direct.col('sku')!.toList().join(','),
+        'run() and queryDf(toSpec()) returned different rows');
+      // The function arranges its output (system columns behind '~') — proof the run
+      // went through the function, not the raw REST path.
+      expect(df!.col('~id') != null, true, `system columns are not hidden: ${df!.columns.names()}`);
+      // Recorded: the frame carries a creation script, so it refreshes, data-syncs,
+      // and takes URL parameters.
+      const script = df!.tags['.script'] ?? '';
+      expect(script.includes('DomainQuery'), true, `no DomainQuery creation script: '${script}'`);
+      expect(script.includes(prefix), true, `the creation script lost the filter values: '${script}'`);
+    } finally {
+      if (df != null)
+        grok.shell.closeTable(df);
+      for (const r of inserted)
+        await items().delete(r.id);
+    }
+  });
+
+  test('fromBuilder preserves where/orderBy/top and selects the same rows', async () => {
+    const prefix = `SKU-QB-${stamp()}`;
+    const inserted = await items().insert([
+      {sku: `${prefix}-1`, quantity: 1},
+      {sku: `${prefix}-2`, quantity: 2}]);
+    try {
+      const builder = items().query()
+        .where('sku', 'like', `${prefix}%`)
+        .where('quantity', '>', 1)
+        .orderBy('sku')
+        .top(5);
+      const q = DG.DomainQuery.fromBuilder(builder);
+      expect(q.schema, 'apitests');
+      expect(q.table, 'item');
+      expect(q.filters!.length, 2, 'AND conjuncts must become one filter element each');
+      expect(q.orderBy!.join(','), 'sku');
+      expect(q.limit, 5);
+      const rows = await builder;
+      const df = await items().queryDf(q.toSpec());
+      expect(df.rowCount, rows.length, 'the converted query selects different rows');
+      expect(df.rowCount, 1);
+    } finally {
+      for (const r of inserted)
+        await items().delete(r.id);
+    }
+  });
+
+  test('malformed input throws instead of degrading', async () => {
+    const bad = (params: {[key: string]: string}) =>
+      thrown(() => DG.DomainQuery.fromUrlParams('apitests', 'item', params));
+    expect((bad({'filters[k]': 'a = 1'}) ?? '').includes('Malformed URL parameter'), true,
+      'a non-numeric element index must throw');
+    expect((bad({'limit': 'ten'}) ?? '').includes('Malformed URL parameter'), true,
+      'a non-integer limit must throw, not resolve to NaN');
+    expect((bad({'filters': 'a = 1'}) ?? '').includes('filters[0]'), true,
+      'a list bound without an index must name the element form');
+    expect(bad({'view': 'grid', 'unknown[3]': 'x'}), null, 'unknown keys must be ignored');
+
+    const q = new DG.DomainQuery({schema: 'apitests', table: 'item'});
+    q.filters = ['{not json'];
+    expect((thrown(() => q.toSpec()) ?? '').includes('invalid JSON'), true);
+    // Several smart-filter strings can only be parsed by the function itself (a bare
+    // string inside a REST condition tree means a connector, not a filter).
+    q.filters = ['a = 1', 'b = 2'];
+    expect((thrown(() => q.toSpec()) ?? '').includes('run()'), true);
+    q.filters = undefined;
+    q.aggregations = ['count'];
+    expect(q.isAggregate, true);
+    expect((thrown(() => q.toSpec()) ?? '').includes('aggregate'), true);
   });
 }, {owner: 'askalkin@datagrok.ai'});

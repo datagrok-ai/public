@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: Added `Dapi: domain query state` — `DG.DomainQuery`: lossless URL round trip with the platform's list-element binding (reserved `view=`/`entity=` ignored, gaps closed), a live Domain View's `query` reconstructed and re-run to the same subset, `run()` matching `queryDf(toSpec())` value-for-value while recording a `DomainQuery` creation script, `fromBuilder` (AND conjuncts split per element) selecting the same rows, and typed failures for malformed element indices, non-integer limits, unparseable filter elements, and specs that need the function's own grammar parser.
+
 GROK-20298: Added `DG.DomainView` and dialog-opener coverage to `JS: domain handlers` — an embedded Domain View lists exactly the rows its `permanentFilter` allows and reports its `query`, `showFilters()` docks the filter panel, and the platform dialogs are driven for real (create cancelled -> false, edit saved -> true with a server-side version bump, picker cancelled -> null, conflict dialog resolving reload/overwrite/dismiss, delete confirmation cancelled -> false), plus the audit and grants panes and `openRow` navigation through the platform's routing.
 
 GROK-20298: Added JS-side renderGrid fall-through coverage (a plain, non-overriding handler decorates a queryDf grid identically to the platform meta) and a `defaultRowVisibility: "none"` fixture table (`apitests.hidden_item`, schema 1.2.0) with a restricted-session probe proving a table grant does NOT reach its rows — the server semantics `capabilities()`' reaches-rows rule mirrors. Ribbon-action assertions follow the new gating (Open always, Share... only with the row's Share permission, nothing at all for an unsaved row).

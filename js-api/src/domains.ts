@@ -14,6 +14,9 @@
  * (GROK-20601) — this module and `DomainTableClient` are the API.
  */
 import type {Dayjs} from 'dayjs';
+import type {DataFrame} from './dataframe';
+
+declare let DG: any;
 
 /** The system columns every domain table carries (always projected on reads). */
 export type DomainSystemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id';
@@ -265,21 +268,33 @@ export async function domainCall<T>(p: Promise<T>): Promise<T> {
 
 /** Parameter values of the `DomainQuery` function — the serializable representation of
  * what a domain view is showing (filter elements, ordering, cap), as
- * {@link DomainView.query} reports it. Passing it to
- * `grok.functions.call('DomainQuery', params)` reproduces the subset as a DataFrame,
- * with the creation script recorded.
+ * {@link DomainView.query} reports it. Feeding it back to the function
+ * ({@link DomainQuery.run}) reproduces the subset as a DataFrame, with the creation
+ * script recorded.
  *
- * Grammar strings, not condition trees: each element is one `DomainQuery` filter
- * expression (`'status = "open"'`) with the per-element JSON escape hatch. Use
- * {@link DomainQuerySpec} for the REST surface instead. */
+ * This is the ONLY parameter shape of the function — {@link DomainQuery} is its
+ * mutable, URL-serializable counterpart. Grammar strings, not condition trees: each
+ * element is one `DomainQuery` filter expression (`'status = "open"'`) with the
+ * per-element JSON escape hatch. Use {@link DomainQuerySpec} for the REST surface
+ * instead. */
 export interface DomainQueryParams {
   schema: string;
   table: string;
+  /** Projection; omit for all viewable columns (select mode only). */
+  columns?: string[];
   /** Filter elements, AND-combined. */
   filters?: string[];
+  /** Master-FK expands (`'<fk_column>'`); `'details:'` child arrays are not supported. */
+  joins?: string[];
+  /** Measures (`'count'`, `'avg(amount) as avg_amount'`) — non-empty means aggregate mode. */
+  aggregations?: string[];
+  /** Grouping columns — non-empty means aggregate mode. */
+  groupBy?: string[];
   /** Sort elements; a `'!'` prefix means descending. */
   orderBy?: string[];
   limit?: number;
+  /** Row offset (select mode only). */
+  offset?: number;
 }
 
 /** Query options for domain table `query`/`queryDf`. */
@@ -497,6 +512,9 @@ export interface IDomainQueryExecutor<TRow> {
   query(spec: any): Promise<TRow[]>;
   queryDf(spec: any): Promise<any>;       // DG.DataFrame
   count(filter?: any): Promise<number>;
+  /** Table address, needed by {@link DomainQueryBuilder.toQuery} (`DomainTableClient` carries it). */
+  readonly schema?: string;
+  readonly table?: string;
 }
 
 /** Bound condition node: `cond('name', '=', "O'Brien")`. The value travels in the condition
@@ -675,9 +693,298 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return (await this.count()) > 0;
   }
 
+  /** This builder's accumulated state as a serializable {@link DomainQuery} (the
+   * URL / deep-link / recorded-run form of the same query). Conditions become filter
+   * elements: top-level AND conjuncts are emitted one per element (so a URL can bind
+   * `filters[0]` alone), anything else travels as one JSON element. */
+  toQuery(): DomainQuery {
+    if (this.client.schema == null || this.client.table == null)
+      throw new Error('the query builder has no table address — construct the DomainQuery explicitly');
+    return new DomainQuery({
+      schema: this.client.schema, table: this.client.table,
+      filters: this._rawFilter !== undefined ? [this._rawFilter] : _treeToFilterElements(this._conds),
+      columns: this._columns, joins: this._expand, orderBy: this._orders,
+      limit: this._limit, offset: this._offset,
+    });
+  }
+
   then<TR1 = TResult[], TR2 = never>(
     onfulfilled?: ((value: TResult[]) => TR1 | PromiseLike<TR1>) | null,
     onrejected?: ((reason: any) => TR2 | PromiseLike<TR2>) | null): Promise<TR1 | TR2> {
     return this._run().then(onfulfilled, onrejected);
+  }
+}
+
+/** The `DomainQuery` function's client-side row ceiling (the server clamps to it):
+ * the limit {@link DomainQuery.toSpec} writes when the query declares none, so a spec
+ * never silently inherits the server's default of 100. */
+export const DOMAIN_QUERY_ROW_LIMIT = 10000000;
+
+/** List-typed `DomainQuery` parameters, in the order {@link DomainQuery.toUrlParams} emits them. */
+const _DOMAIN_QUERY_LISTS = ['columns', 'filters', 'joins', 'aggregations', 'groupBy', 'orderBy'] as const;
+type _DomainQueryList = (typeof _DOMAIN_QUERY_LISTS)[number];
+
+function _isListParam(name: string): name is _DomainQueryList {
+  return (_DOMAIN_QUERY_LISTS as readonly string[]).includes(name);
+}
+
+/** Copy of a list parameter; an empty or absent list normalizes to undefined, so
+ * every DomainQuery has exactly ONE representation of "no elements". */
+function _copyList(list?: string[] | null): string[] | undefined {
+  return list == null || list.length === 0 ? undefined : list.slice();
+}
+
+/** Condition tree → `filters` elements: top-level AND conjuncts become one element each
+ * (a URL can then bind `filters[0]` alone); anything with an 'or' at the top travels as
+ * a single `'['`-prefixed JSON sub-group, which the function splices verbatim. */
+function _treeToFilterElements(tree: DomainConditionTree): string[] | undefined {
+  if (tree == null || tree.length === 0)
+    return undefined;
+  if (tree.some((n) => n === 'or'))
+    return [JSON.stringify(tree)];
+  return tree.filter((n) => typeof n !== 'string').map((n) => JSON.stringify(n));
+}
+
+/** One `filters` element as a condition node, or undefined when it is a smart-filter
+ * grammar string (which only the function parses — client-side, via the Dart parser). */
+function _decodeFilterElement(element: string): any {
+  const s = `${element}`.trim();
+  if (s.startsWith('{')) {
+    let node: any;
+    try {
+      node = JSON.parse(s);
+    } catch (_) {
+      throw new Error(`Cannot parse filter "${element}": invalid JSON`);
+    }
+    if (node == null || typeof node !== 'object')
+      throw new Error(`Cannot parse filter "${element}": expected a condition node`);
+    return node;
+  }
+  // A '['-element that decodes as JSON is a condition sub-group; one that does not
+  // is grammar ('[bracketed column] = ...').
+  if (s.startsWith('[')) {
+    try {
+      const decoded = JSON.parse(s);
+      if (Array.isArray(decoded))
+        return decoded;
+    } catch (_) { /* falls through to the grammar */ }
+  }
+  return undefined;
+}
+
+function _parseUrlInt(key: string, value: string): number {
+  const s = `${value}`.trim();
+  if (!/^-?\d+$/.test(s))
+    throw new Error(`Malformed URL parameter '${key}': expected an integer, got '${value}'`);
+  return parseInt(s, 10);
+}
+
+/**
+ * What the user is looking at, as ONE serializable object: the parameters of the
+ * platform's `DomainQuery` function (filters, joins, aggregations, groupBy, orderBy,
+ * projection, limit, offset). URL routing, deep links, saved filters, "open in Table
+ * View" and data-synced dashboards all serialize exactly this — there is no parallel
+ * query-state vocabulary.
+ *
+ * ```ts
+ * const q = new DG.DomainQuery({schema: 'grit', table: 'issue',
+ *   filters: ['status = "open"'], orderBy: ['!created_on'], limit: 100});
+ * const df = await q.run();                                  // recorded run
+ * const url = new URLSearchParams(q.toUrlParams()).toString(); // filters[0]=...&orderBy[0]=...
+ * ```
+ *
+ * **UI-only state stays out of it.** Search text, view mode, the current entity ride
+ * separate reserved URL parameters (`view=`, `entity=`) that {@link fromUrlParams}
+ * ignores; if an app needs to carry them together, wrap a DomainQuery in an envelope
+ * object — never widen this class.
+ */
+export class DomainQuery {
+  schema: string;
+  table: string;
+  /** Projection; omit for all viewable columns (select mode only). */
+  columns?: string[];
+  /** Filter elements, AND-combined: smart-filter grammar strings (`'status = "open"'`),
+   * or the per-element JSON escape hatch (a `'{'`-prefixed condition node, a
+   * `'['`-prefixed condition sub-group). Values inside a JSON node are bound
+   * server-side; a grammar string cannot quote apostrophes, so prefer nodes for
+   * arbitrary user values. */
+  filters?: string[];
+  /** Master-FK expands (`'<fk_column>'`); `'details:'` child arrays are rejected. */
+  joins?: string[];
+  /** Measures (`'count'`, `'avg(amount) as avg_amount'`) — non-empty means aggregate mode. */
+  aggregations?: string[];
+  /** Grouping columns — non-empty means aggregate mode. */
+  groupBy?: string[];
+  /** Sort elements; a `'!'` prefix means descending. */
+  orderBy?: string[];
+  /** Row cap; {@link toSpec} falls back to {@link DOMAIN_QUERY_ROW_LIMIT} when unset. */
+  limit?: number;
+  /** Row offset (select mode only). */
+  offset?: number;
+
+  /** Empty and absent lists are the same thing: they normalize to undefined, so
+   * {@link toParams} / {@link toUrlParams} round-trip to an identical object. */
+  constructor(params: DomainQueryParams) {
+    if (params == null || params.schema == null || params.table == null)
+      throw new Error("DomainQuery needs a 'schema' and a 'table'");
+    this.schema = params.schema;
+    this.table = params.table;
+    for (const name of _DOMAIN_QUERY_LISTS)
+      this[name] = _copyList(params[name]);
+    if (params.limit != null)
+      this.limit = params.limit;
+    if (params.offset != null)
+      this.offset = params.offset;
+  }
+
+  /** The query behind a view's current state: `DG.DomainQuery.fromParams(domainView.query)`. */
+  static fromParams(params: DomainQueryParams): DomainQuery {
+    return new DomainQuery(params);
+  }
+
+  /** The state a {@link DomainQueryBuilder} accumulated (see its `toQuery`). */
+  static fromBuilder(builder: DomainQueryBuilder<any>): DomainQuery {
+    return builder.toQuery();
+  }
+
+  /** The `DomainQuery` function's parameter values — the shape {@link DomainView.query}
+   * reports and {@link run} passes to the function. */
+  toParams(): DomainQueryParams {
+    const params: DomainQueryParams = {schema: this.schema, table: this.table};
+    for (const name of _DOMAIN_QUERY_LISTS) {
+      const list = _copyList(this[name]);
+      if (list !== undefined)
+        params[name] = list;
+    }
+    if (this.limit != null)
+      params.limit = this.limit;
+    if (this.offset != null)
+      params.offset = this.offset;
+    return params;
+  }
+
+  /** Aggregate mode: `aggregations` or `groupBy` carries elements (then `columns`
+   * and `offset` do not apply). */
+  get isAggregate(): boolean {
+    return (this.aggregations?.length ?? 0) > 0 || (this.groupBy?.length ?? 0) > 0;
+  }
+
+  /** Runs the query through the platform's `DomainQuery` function — the reproducible
+   * path: the resulting DataFrame carries a creation script, so it refreshes from the
+   * Source pane, survives a saved project as a data-synced dashboard, and takes URL
+   * parameters (`filters[0]`, ...). Being a normal function run, its result also goes
+   * through the platform's default handling (the frame is added to the workspace).
+   * Per-caller row and column security applies on every run.
+   *
+   * For a silent read (no history, no workspace entry) pass {@link toSpec} to
+   * `grok.dapi.domains.table('<schema>.<table>').queryDf(...)` instead. */
+  async run(): Promise<DataFrame> {
+    const func = DG.Func.byName('DomainQuery');
+    if (func == null)
+      throw new Error("the 'DomainQuery' function is not registered on this client");
+    const call = await func.prepare(this.toParams()).call(false, undefined, {processed: false});
+    return call.getOutputParamValue();
+  }
+
+  /** The same query as a REST spec for `queryDf`/`query` — the same rows as {@link run},
+   * without the recording (the limit is always explicit, so the result never depends on
+   * the server default).
+   *
+   * Throws for an aggregate query (use {@link run}, or `aggregateDf` with a
+   * {@link DomainAggregateSpec}), and for several smart-filter grammar elements at
+   * once: those are parsed by the function itself, and a bare string inside a REST
+   * condition tree means a connector, not a filter. */
+  toSpec(): DomainQuerySpec {
+    if (this.isAggregate)
+      throw new Error('an aggregate DomainQuery has no queryDf spec — use run(), or ' +
+        'grok.dapi.domains.table(...).aggregateDf() with a DomainAggregateSpec');
+    const spec: DomainQuerySpec = {limit: this.limit ?? DOMAIN_QUERY_ROW_LIMIT, offset: this.offset ?? 0};
+    const filter = this._toFilter();
+    if (filter !== undefined)
+      spec.filter = filter;
+    if (this.orderBy != null)
+      spec.sort = this.orderBy.join(',');
+    if (this.joins != null)
+      spec.expand = this.joins;
+    if (this.columns != null)
+      spec.columns = this.columns;
+    return spec;
+  }
+
+  private _toFilter(): DomainFilter | undefined {
+    const elements = (this.filters ?? []).filter((e) => `${e}`.trim() !== '');
+    if (elements.length === 0)
+      return undefined;
+    const nodes: DomainConditionTree = [];
+    for (const element of elements) {
+      const node = _decodeFilterElement(element);
+      if (node === undefined) {
+        if (elements.length > 1)
+          throw new Error(`toSpec() cannot combine ${elements.length} filter elements into one REST ` +
+            `filter: "${element}" is a smart-filter string, and only the DomainQuery function parses ` +
+            'those. Use run(), or express the filters as condition nodes (cond()/and()/or()).');
+        return `${element}`.trim();
+      }
+      if (nodes.length > 0)
+        nodes.push('and');
+      nodes.push(node);
+    }
+    return nodes;
+  }
+
+  /** URL parameters for a deep link, binding one list element per key
+   * (`filters[0]=status %3D "open"`) — the platform's list-element binding scheme, so a
+   * recorded run's `filters[0]` can be substituted from the URL. The table address
+   * (`schema`/`table`) is NOT emitted: it addresses the view, and {@link fromUrlParams}
+   * takes it back explicitly. Values are raw — encode them (`URLSearchParams`). */
+  toUrlParams(): {[key: string]: string} {
+    const params: {[key: string]: string} = {};
+    for (const name of _DOMAIN_QUERY_LISTS) {
+      const list = this[name];
+      if (list != null)
+        for (let i = 0; i < list.length; i++)
+          params[`${name}[${i}]`] = list[i];
+    }
+    if (this.limit != null)
+      params['limit'] = `${this.limit}`;
+    if (this.offset != null)
+      params['offset'] = `${this.offset}`;
+    return params;
+  }
+
+  /** Rebuilds the query from {@link toUrlParams} output (lossless round trip). Keys that
+   * are not query parameters — the reserved `view=` / `entity=` UI state among them —
+   * are ignored; a malformed element index (`filters[x]`) or a non-integer
+   * `limit`/`offset` throws instead of degrading to NaN. Element indices are read in
+   * ascending order and gaps are closed. */
+  static fromUrlParams(schema: string, table: string, params: {[key: string]: string}): DomainQuery {
+    const query = new DomainQuery({schema, table});
+    const lists: {[name: string]: {index: number, value: string}[]} = {};
+    for (const key of Object.keys(params ?? {})) {
+      const value = params[key];
+      const bracket = key.indexOf('[');
+      const name = bracket < 0 ? key : key.substring(0, bracket);
+      if (bracket < 0) {
+        if (name === 'limit')
+          query.limit = _parseUrlInt(key, value);
+        else if (name === 'offset')
+          query.offset = _parseUrlInt(key, value);
+        else if (_isListParam(name))
+          throw new Error(`Malformed URL parameter '${key}': '${name}' is a list — ` +
+            `address its elements as '${name}[0]'`);
+        continue;
+      }
+      if (!_isListParam(name))
+        continue;
+      const index = /^\[(\d+)]$/.exec(key.substring(bracket));
+      if (index == null)
+        throw new Error(`Malformed URL parameter '${key}': expected '${name}[<index>]'`);
+      if (lists[name] == null)
+        lists[name] = [];
+      lists[name].push({index: parseInt(index[1], 10), value: value});
+    }
+    for (const name of Object.keys(lists))
+      query[name as _DomainQueryList] = lists[name].sort((a, b) => a.index - b.index).map((e) => e.value);
+    return query;
   }
 }
