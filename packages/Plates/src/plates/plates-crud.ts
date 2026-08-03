@@ -7,7 +7,6 @@ import {Plate} from '../plate/plate';
 import {Matcher, NumericMatcher} from './matchers';
 import {Subject} from 'rxjs';
 import * as api from '../package-api';
-import {AnalysisManager} from '../plate/analyses/analysis-manager';
 
 export const events: Subject<CrudEvent> = new Subject();
 /** Events emitted by the plates CRUD layer. */
@@ -871,12 +870,4 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
     console.error('Query failed:', error);
     throw error;
   }
-}
-
-// fallback
-export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
-  const analysis = AnalysisManager.instance.getAnalysis(query.analysisName);
-  if (analysis && 'queryResults' in analysis)
-    return await (analysis as any).queryResults(query);
-  return queryAnalysesGeneric(query);
 }
