@@ -45,6 +45,12 @@ const actionButtionValues = {
   stop: 'Stop AI Generation',
 } as const;
 
+const micTooltips = {
+  default: 'Voice Input',
+  accessDenied: 'Microphone access denied. Please enable microphone permissions.',
+  noDevice: 'No microphone found or access denied',
+} as const;
+
 export type UIMessageOptions = {
   /** if set, will add feedback buttons to the message*/
   finalResult?: string,
@@ -96,6 +102,11 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
+  /** Shows the turn's loader again (e.g. right after the user answers an input request),
+   * so the wait for the assistant's next move is visibly "working", not dead air. */
+  showWaitingIndicator(loader: HTMLElement): void;
+  /** One-shot transcript of a history-restored conversation the runtime has never seen. */
+  flushRestoredContext(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
   enableNoPrompt(): void;
@@ -126,6 +137,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private isRecognizing: boolean = false;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
+  private micAccessDenied: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   protected _messages: T[] = [];
   protected _uiMessages: UIMessage[] = [];
@@ -209,7 +221,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
-    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), 'Voice Input');
+    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), micTooltips.default);
+    this.checkMicPermission();
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -622,6 +635,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._pendingNativeContext.push(prompt);
   }
 
+  /** Set when a conversation is loaded from history: the runtime's session is fresh (or belongs
+   * to another conversation), so the first prompt after a load carries this transcript. */
+  private _restoredContext: string | null = null;
+
+  flushRestoredContext(): string {
+    const ctx = this._restoredContext;
+    this._restoredContext = null;
+    return ctx ?? '';
+  }
+
+  /** Serializes the restored messages into a compact transcript the model can act on
+   * ("reproduce what we did") — includes executed code blocks recorded as engine messages. */
+  private buildRestoredTranscript(): string {
+    const parts: string[] = [];
+    for (const m of this._messages) {
+      const c: any = (m as any).content;
+      const text = typeof c === 'string' ? c :
+        Array.isArray(c) ? c.map((x: any) => x?.text ?? '').filter((x: string) => x).join('\n') : '';
+      if (!text.trim())
+        continue;
+      const role = (m as any).role === 'user' ? 'USER' : 'ASSISTANT';
+      parts.push(`${role}: ${text.length > 1500 ? text.slice(0, 1500) + ' …[truncated]' : text}`);
+    }
+    let out = parts.join('\n');
+    if (out.length > 9000)
+      out = out.slice(0, 4500) + '\n[... middle of the conversation truncated ...]\n' + out.slice(-4500);
+    return out;
+  }
+
   flushNativeContext(): string {
     if (this._pendingNativeContext.length === 0)
       return '';
@@ -745,6 +787,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
 
     return new Promise<AskUserResponse | null>((resolve) => {
+      const submitButton = ui.button('Submit', () => {
+        const answers: Record<string, string> = {};
+        for (let i = 0; i < questions.length; i++)
+          answers[questions[i].question] = choiceInputs[i].value!;
+        doResolve({questions, answers});
+      }) as HTMLButtonElement;
+
       const doResolve = (value: AskUserResponse | null) => {
         if (resolved)
           return;
@@ -752,15 +801,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this._pendingInputResolve = null;
         for (const inp of choiceInputs)
           (inp.input as HTMLSelectElement).disabled = true;
+        // Instant feedback on click — the assistant's next event can be seconds away.
+        submitButton.disabled = true;
+        if (value)
+          submitButton.textContent = 'Submitted';
         resolve(value);
       };
 
-      form.appendChild(ui.button('Submit', () => {
-        const answers: Record<string, string> = {};
-        for (let i = 0; i < questions.length; i++)
-          answers[questions[i].question] = choiceInputs[i].value!;
-        doResolve({questions, answers});
-      }));
+      form.appendChild(submitButton);
 
       this._pendingInputResolve = doResolve;
       this.ensureResponseBlock();
@@ -775,6 +823,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._pendingInputResolve(null);
       this._pendingInputResolve = null;
     }
+  }
+
+  showWaitingIndicator(loader: HTMLElement): void {
+    this.clearStreamingLoaderTimer();
+    loader.style.display = '';
+    this.outputArea.appendChild(loader);
+    this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
   private tryAgain() {
@@ -897,6 +952,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._messages = [];
     this._uiMessages = [];
     this._pendingNativeContext = [];
+    this._restoredContext = null;
     this._promptHistoryIndex = null;
     this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';
@@ -1001,6 +1057,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ui.dialog('Delete all conversation history').add(ui.divText('This action will permanently delete all saved conversations. Are you sure you want to proceed?'))
           .onOK(async () => {
             await ConversationStorage.clearAll();
+            this.currentConversationId = null;
             grok.shell.info('History cleared');
           }).show();
       });
@@ -1030,6 +1087,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       conv.uiMessages.forEach((msg) => {
         this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
       });
+      // The runtime never saw this conversation (page reloads drop its session; a live session
+      // holds a DIFFERENT conversation). Start a fresh session and hand the transcript to the
+      // first prompt so follow-ups ("reproduce this", "continue") have the actual history.
+      this.resetSession();
+      const transcript = this.buildRestoredTranscript();
+      this._restoredContext = transcript ?
+        '[Conversation restored from saved history — you have no memory of it. ' +
+        'The transcript below is what happened earlier; treat it as this conversation\'s history. ' +
+        'ASSISTANT entries starting with "[executed datagrok_exec]" are code that actually ran.]\n' +
+        transcript : null;
       this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
@@ -1063,6 +1130,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private toggleSpeechRecognition() {
+    if (this.micAccessDenied)
+      return;
     if (this.isRecognizing)
       this.stopRecognition();
     else
@@ -1073,6 +1142,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private syncVoiceCancelHint() {
     if (this._voiceCancelHint)
       this._voiceCancelHint.style.display = this.isRecognizing ? '' : 'none';
+  }
+
+  private async checkMicPermission(): Promise<void> {
+    if (!navigator.permissions?.query)
+      return;
+
+    try {
+      const status = await navigator.permissions.query({name: 'microphone' as PermissionName});
+      this.applyMicPermissionStatus(status.state);
+      status.onchange = () => this.applyMicPermissionStatus(status.state);
+    } catch (error) {
+      console.error('Failed to query microphone permission:', error);
+    }
+  }
+
+  private applyMicPermissionStatus(state: PermissionState): void {
+    this.micAccessDenied = state === 'denied';
+    ui.setDisabled(this.micButton, this.micAccessDenied,
+      this.micAccessDenied ? micTooltips.accessDenied : micTooltips.default);
   }
 
   private startRecognition() {
@@ -1125,10 +1213,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         let errorMessage = 'Speech recognition error';
         switch (event.error) {
         case 'audio-capture':
-          errorMessage = 'No microphone found or access denied';
+          errorMessage = micTooltips.noDevice;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.noDevice);
           break;
         case 'not-allowed':
-          errorMessage = 'Microphone access denied. Please enable microphone permissions.';
+          errorMessage = micTooltips.accessDenied;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.accessDenied);
           break;
         case 'network':
           errorMessage = 'Network error during speech recognition';

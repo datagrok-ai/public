@@ -318,11 +318,16 @@ async function judge(client: ClaudeRuntimeClient, prompt: string, answer: string
   const jp = `You are grading an AI assistant's answer against a rubric. Be strict but fair.\n\n` +
     `USER PROMPT:\n${prompt}\n\nASSISTANT ANSWER:\n${answer || '(empty)'}\n\nRUBRIC:\n${rubric}\n\n` +
     `Return pass (boolean), score (0..1), and a one-line reason.`;
-  try {
-    const r = await client.query(jp, {model: ClaudeModel.Haiku, outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none'});
-    return {pass: !!r.pass, score: typeof r.score === 'number' ? r.score : (r.pass ? 1 : 0), reason: r.reason ?? ''};
-  } catch (e: any) {
-    return {pass: false, score: 0, reason: `judge failed: ${e.message}`};
+  // One retry: a judge call that times out (query() now has a timeout; the runtime watchdog can
+  // kill a wedged CLI) must not flip a correct answer to failed on transient grounds.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const r = await client.query(jp, {model: ClaudeModel.Haiku, outputSchema: JUDGE_SCHEMA, systemPromptMode: 'none'});
+      return {pass: !!r.pass, score: typeof r.score === 'number' ? r.score : (r.pass ? 1 : 0), reason: r.reason ?? ''};
+    } catch (e: any) {
+      if (attempt >= 1)
+        return {pass: false, score: 0, reason: `judge failed: ${e.message}`};
+    }
   }
 }
 

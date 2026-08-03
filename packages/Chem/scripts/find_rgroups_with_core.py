@@ -2,10 +2,10 @@
 #friendlyName: Find R-Groups With Core
 #description: Decomposes molecules into R-groups around a specified core scaffold.
 #language: python
-#input: string molecules
-#input: dataframe df
-#input: string core [Core scaffold (SMILES/SMARTS) to decompose around]
-#input: bool onlyMatchAtRGroups [Match R-groups only at the marked attachment points]
+#input: string molecules {nullable: false}
+#input: dataframe df {nullable: false}
+#input: string core {semType: Molecule; nullable: false} [Core scaffold (SMILES/SMARTS) to decompose around]
+#input: bool onlyMatchAtRGroups = false [Match R-groups only at the marked attachment points]
 #output: dataframe result
 
 from rdkit import Chem

@@ -131,7 +131,7 @@ export async function listDbJoins(view: any, tables: string) : Promise<string> {
   return await PackageFunctions.listDbJoins(view, tables);
 }
 
-//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run
+//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun
 //input: view view 
 //input: string sql { description: The SQL to test }
 //input: string description { description: One line describing what the query does }

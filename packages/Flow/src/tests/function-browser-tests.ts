@@ -6,6 +6,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 
 import {
   registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, isWorkflowFunc, shouldIncludeFunc,
+  loadQueryFuncs,
 } from '../rete/node-factory';
 import {INCLUDED_FUNC_NQNAMES} from '../rete/included-funcs';
 import {
@@ -26,9 +27,13 @@ category('Flow: function browser', () => {
     const funcs = getRegisteredFuncs();
     expect(funcs.length > 100, true, 'catalog is non-trivially populated');
 
-    // Known allowlisted core funcs are present.
+    // Known allowlisted core funcs are present. Keep this list to functions the
+    // allowlist is not expected to churn — which entries are in or out is a
+    // curation decision (`Aggregate`, for one, is commented out pending the
+    // colfiltercall/tablerowfiltercall work), so pinning them here would just
+    // make the test lie about intent.
     const names = new Set(funcs.map((f) => f.func.name));
-    for (const known of ['JoinTables', 'OpenFile', 'AddNewColumn', 'Aggregate'])
+    for (const known of ['JoinTables', 'OpenFile', 'AddNewColumn'])
       expect(names.has(known), true, `allowlisted ${known} present`);
 
     // Formerly-denied machinery is NOT on the allowlist and stays out: dev/test
@@ -79,16 +84,22 @@ category('Flow: function browser', () => {
     expect(inCatalog, false, 'openCreationScriptFlowDialog is opted out via meta.includeInFlow');
   });
 
-  test('widget-producing functions are kept (Widgets pane populated)', async () => {
-    // Widgets are supported (preview) — allowlisted widget-producing functions
-    // survive into the Widgets pane.
+  test('widget-producing functions are routed to the Widgets pane, never the categories', async () => {
+    // Widgets are supported (they preview), so an allowlisted widget-producing
+    // function goes to the Widgets pane rather than a task category. How MANY
+    // are allowlisted is a curation decision and may legitimately be zero — the
+    // invariant is the routing, plus the fact that right-click
+    // (`semantic_value`) widgets are never catalog entries: they act on a cell,
+    // not on a pipeline value, so nothing on a canvas could feed one.
     const widgets = getRegisteredFuncs().filter(funcOutputsWidget);
-    expect(widgets.length > 0, true, 'at least one widget-producing function survives');
-    // And right-click (semantic_value) widgets were never allowlisted.
     const ctxWidgets = widgets.filter((f) => {
       try {return f.func.inputs.some((p) => String(p.propertyType) === 'semantic_value');} catch {return false;}
     });
     expect(ctxWidgets.length, 0, 'context (semantic_value) widgets stay out');
+    for (const w of widgets) {
+      expect(FUNC_CATEGORIES.includes(categorizeFunc(w.func, w.role, w.packageName)), true,
+        `${w.name} still categorizes cleanly`);
+    }
   });
 
   test('categorizeFunc places funcs by what they do', async () => {
@@ -242,12 +253,15 @@ category('Flow: function browser', () => {
   });
 
   test('queries are grouped by connection and kept out of the categories', async () => {
-    const queries = getRegisteredFuncs().filter((f) => f.func instanceof DG.DataQuery);
+    // The Queries pane loads the authoritative server list (dapi), not the
+    // registry's DG.Func.find scan — which misses queries.
+    const queries = await loadQueryFuncs();
     if (queries.length === 0) {
       expect(true, true, 'no queries on this stand — skipped');
       return;
     }
-    // Every query reports a non-empty connection name (the grouping key).
+    // Every loaded query reports a non-empty connection name (the grouping
+    // key) — connection-less queries are skipped at load time.
     for (const q of queries.slice(0, 20))
       expect(queryConnectionName(q).length > 0, true, `query ${q.func.name} has a connection name`);
 
@@ -258,6 +272,10 @@ category('Flow: function browser', () => {
     document.body.appendChild(browser.root);
     try {
       browser.render();
+      // The tab renders async off the (already-resolved) catalog promise —
+      // yield until the per-connection accordion materializes.
+      await loadQueryFuncs();
+      await new Promise((r) => setTimeout(r, 50));
 
       // Queries live in the top Queries TAB now — activate it so its content
       // attaches, then expand every per-connection sub-pane so items

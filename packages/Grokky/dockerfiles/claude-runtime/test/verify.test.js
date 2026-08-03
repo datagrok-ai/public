@@ -28,14 +28,32 @@ test('isReadonlyTool recognises the read-only name prefixes', () => {
     assert.ok(!isReadonlyTool(n), `${n} should not be read-only`);
 });
 
+// Domain tools are one tool name covering both reads and mutations, so the gate has to read the
+// op. Getting this wrong is silent: a mutating call classified read-only skips verification.
+test('isReadonlyTool reads the op for domain tools, not the tool name', () => {
+  for (const op of ['list', 'get', 'list_children', 'read_file', 'search', 'whoami'])
+    assert.ok(isReadonlyTool('datagrok_spaces', {op}), `op ${op} should be read-only`);
+  for (const op of ['create', 'delete', 'write_file', 'add_entity', 'remove_entity', 'share'])
+    assert.ok(!isReadonlyTool('datagrok_spaces', {op}), `op ${op} should count as an action`);
+  assert.ok(isReadonlyTool('datagrok_spaces', {}), 'no op = asking for the catalog');
+  assert.ok(isReadonlyTool('datagrok_projects', {op: 'list', args: {filter: 'x'}}));
+  assert.ok(!isReadonlyTool('datagrok_projects', {op: 'create', args: {name: 'x'}}));
+});
+
 test('isActionTool: exec and mutating mcp tools count, reads and plain tools do not', () => {
   assert.ok(isActionTool(EXEC));
-  assert.ok(isActionTool('mcp__datagrok__call_function'));
-  assert.ok(isActionTool('mcp__datagrok__create_script'));
-  assert.ok(!isActionTool('mcp__datagrok__list_functions'));
-  assert.ok(!isActionTool('mcp__datagrok__whoami'));
+  assert.ok(isActionTool('mcp__datagrok__datagrok_functions', {op: 'call', args: {name: 'X:y'}}));
+  assert.ok(isActionTool('mcp__datagrok__datagrok_functions', {op: 'create_script', args: {script: 'x'}}));
+  assert.ok(!isActionTool('mcp__datagrok__datagrok_functions', {op: 'list'}));
+  assert.ok(!isActionTool('mcp__datagrok__datagrok_platform', {op: 'whoami'}));
   assert.ok(!isActionTool('Read'), 'non-mcp built-ins are never actions');
   assert.ok(!isActionTool('Bash'));
+});
+
+// Fail-closed: a domain tool whose op we do not recognise must count as an action so the verify
+// gate over-asks, rather than letting an unverified mutation through.
+test('isActionTool treats an unrecognised domain op as an action', () => {
+  assert.ok(isActionTool('mcp__datagrok__datagrok_spaces', {op: 'reticulate'}));
 });
 
 test('an unverified action blocks the Stop', async () => {
@@ -73,13 +91,32 @@ test('a passing datagrok_verify clears everything pending', async () => {
   assert.ok(!blocked(await v.stop(stop())), 'one passing verify covers all pending actions in the turn');
 });
 
-test('a failing verify blocks with the stronger "did NOT take effect" reason', async () => {
+// Regression: an earlier unverified exec used to keep pendingActions > 0 through a later
+// self-verified exec, so the turn paid a hidden revision + verify round-trip for nothing.
+test('a self-verified exec pass clears earlier pending actions like a datagrok_verify pass', async () => {
+  const v = new Verifier();
+  await v.postToolUse(post(EXEC, mcpResult({success: true, verified: {passed: false}})));
+  await v.postToolUse(post(EXEC, mcpResult({success: true, verified: {passed: true, observed: 4}})));
+  assert.ok(!blocked(await v.stop(stop())), 'the passing self-verify covers the turn');
+});
+
+test('a failing verify blocks with a reason that forbids redoing the action', async () => {
   const v = new Verifier();
   await v.postToolUse(post(EXEC, mcpResult({success: true})));
   await v.postToolUse(post(VERIFY, mcpResult({passed: false})));
   const r = await v.stop(stop());
   assert.ok(blocked(r));
-  assert.match(r.reason, /did NOT take effect/);
+  assert.match(r.reason, /Verification has failed/);
+  assert.match(r.reason, /NEVER redo a state-changing action/);
+  assert.match(r.reason, /assertion itself was faulty/);
+});
+
+test('the first (no-failure) block also forbids redoing the actions', async () => {
+  const v = new Verifier();
+  await v.postToolUse(post(EXEC, mcpResult({success: true})));
+  const r = await v.stop(stop());
+  assert.ok(blocked(r));
+  assert.match(r.reason, /Do NOT redo the actions/);
 });
 
 test('block reasons are framed as internal feedback the model must not quote', async () => {

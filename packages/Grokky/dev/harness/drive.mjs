@@ -156,6 +156,7 @@ export class RuntimeDriver {
         ...(opts.systemPromptMode ? {systemPromptMode: opts.systemPromptMode} : {}),
         ...(opts.clientTools?.length ? {clientTools: opts.clientTools} : {}),
         ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {}),
+        ...(opts.gates ? {gates: opts.gates} : {}),
       }));
     });
   }

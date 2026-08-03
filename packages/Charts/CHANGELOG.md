@@ -4,10 +4,10 @@
 
 * GROK-18695: Forced d3-color >= 3.1.0 (ReDoS fix under circos); kept echarts 5 — the 6.1.0 upgrade (XSS fix GHSA-fgmj-fm8m-jvvx) deterministically breaks the Tree and Surface plot viewers (CI EXECUTION TIMEOUT on two independent runs) and needs a proper migration
 * Moved the Charts Playwright E2E suite into the package (`playwright/`); helpers sourced from `@datagrok-libraries/test/src/playwright`
-
 * GROK-19683: Charts | Tree viewer: Option to customize molecule label size
 * GROK-20084: Radar, Tree, Timelines: Broken help page
 * GROK-19362: Charts: Radar: Inherits ordinary column coloring but not linked
+* Charts | Globe: Fixed crash when columns are removed from the underlying dataframe
 
 ## 1.7.0 (2026-03-20)
 

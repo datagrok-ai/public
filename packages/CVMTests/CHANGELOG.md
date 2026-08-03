@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: `Docker` no longer asks the server to stop a container in the `error` state — `DockerRouter.stop` answers 400 there, which failed the category's `before()` and took all four tests with it; the following `run` clears the error anyway. Stop/start failures now report the container name and status instead of the opaque response body (previously logged as just `null`).
 * Tests: annotated API-only tests (scripts, celery, docker, files) with `node: true` — `grok test` now runs them headless in Node; the WebSocket proxy, project/table-view, client-cache, and Parquet-dataframe tests stay in the browser
 * GROK-20452: Added `queue/container.json` (`on_demand: true`, mirrors the python celery config) — the auto-generated node-worker container now lazy-starts on first call, which the `Cold start` benchmark relies on (it stops the container and expects the platform to revive it)
 

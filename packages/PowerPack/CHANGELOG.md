@@ -3,8 +3,15 @@
 ## v.next
 
 * 23226: Use hasOwnProperty for function-name map lookups in getFunctionNameAtPosition to ignore inherited Object.prototype keys
+* Add New Column: Added an expression-only widget mode (`aux.expressionEditorOnly`) that edits a formula as a value — no Apply button, no preview, and the debounced text published back onto the call so a host can read it through `call.inputParams['expression'].onChanged`
+* Add New Column: The expression-only mode now validates what it is given — the formula is evaluated on the preview frame and checked against the call's declared type, so a filter/condition editor refuses anything that is not true/false. The verdict is published on the widget root (`data-expression-error` + an `expression-validated` event), the only channel that survives the package boundary
+* Add New Column: Fixed "Edit in dialog" from a hosted expression editor. The dialog shares the FuncCall, so it inherited expression-only mode and took the widget's no-preview path: its preview grid never updated, and it republished the formula on every keystroke, which made the host rebuild its panel and yank focus out of the dialog mid-word. OK now publishes the formula back to the host instead of appending a column, and the widget picks up the accepted text
+* Add New Column: A hosted widget no longer grabs focus 50ms after mounting — that is dialog behaviour, and in a context panel it steals the caret from wherever the user actually is
+* Add New Column: A condition editor's type mismatch now reads "The formula is int, not a true/false condition" instead of pointing at a column-type input that is hidden (viewer filters) or absent (hosted editors)
+* Add New Column: Fixed the widget-hosted editor always getting the DIALOG CodeMirror height (the class was chosen from `this.widget` before that field was assigned, so it always read undefined)
+* Added `PowerPack:expressionEditorWidget(call)`, the formula editor as a widget bound to a table. Used by Flow's row-condition nodes; the Dart viewer `filter` property editor is the same idea in dialog form
+* Add New Column: Fixed the preview grid ignoring column-name changes after a rename raced with a preview computation (e.g. when the dialog opens with a pre-filled expression and the name is edited right away) — the tracked preview column name could go stale, silently disabling all subsequent renames until the dialog was reopened
 * Excel tests: moved the xlsx test/benchmark datasets out of Demo files to the public data.datagrok.ai bucket (`s3://datagrok-data/tests/excel`); tests create an anonymous S3 connection in `before()`
-
 * Moved the PowerPack Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
 * Workspace: Fixed the editor-header "Open" doing nothing for a pinned query/function or data connection — it now opens the entity's own view the way the Browse tree does (a query's run view, a connection's queries browser) via the handler's `renderPreview`, consistently for all entity types, instead of `Func.apply()` (which ran with empty inputs and added no view) or only setting the context object. Running the query and viewing its table result stays on Run / the bottom-preview "Open"
 * Search: Added Spaces, Plugins, Notebooks, and Models to the search provider

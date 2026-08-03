@@ -30,6 +30,7 @@ import {
   TypeAheadConfig,
   ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
   EmailDialog, EmailDialogOptions,
+  ITabControlOptions,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -204,16 +205,17 @@ export function accordion(key: any = null): Accordion {
 
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
- * @param {Object} pages - list of page factories
- * @param {boolean} vertical
- * @param {string} key - when provided, the currently selected pane is persisted across sessions
+ * @param pages - list of page factories
+ * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
+ * @param key - deprecated, use `options.key` instead.
  * @returns {TabControl} */
-export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false, key: string | null = null): TabControl {
-  let tabs = TabControl.create(vertical, key);
+export function tabControl(pages: { [key: string]: any; } | null = null,
+                           options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
+  let tabs = TabControl.create(options, key);
   if (pages != null) {
-    for (let key of Object.keys(pages)) {
-      let value = pages[key];
-      tabs.addPane(key, value instanceof Function ? value : () => render(value));
+    for (let name of Object.keys(pages)) {
+      let value = pages[name];
+      tabs.addPane(name, value instanceof Function ? value : () => render(value));
     }
   }
   return tabs;

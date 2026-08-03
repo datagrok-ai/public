@@ -63,6 +63,20 @@ function up() {
   ]);
   console.log(`runtime: ${NAME} up on ws://localhost:${PORT}/ws`);
   waitHealthy();
+  restoreCliConfig();
+}
+
+// ~/.claude.json (CLI state, distinct from .claude/.credentials.json) lives OUTSIDE the bind
+// mount, so recreating the container loses it and every turn then dies with "Claude
+// configuration file not found" — which surfaces as a 90s watchdog kill, not as an auth error.
+// The CLI backs the file up into .claude/backups/, which IS mounted, so restore from there.
+function restoreCliConfig() {
+  const r = spawnSync('docker', ['exec', NAME, 'sh', '-c',
+    '[ -f /home/grok/.claude.json ] && exit 0; ' +
+    'b=$(ls -t /home/grok/.claude/backups/.claude.json.backup.* 2>/dev/null | head -1); ' +
+    '[ -n "$b" ] && cp "$b" /home/grok/.claude.json && echo restored']);
+  if (r.stdout?.toString().includes('restored'))
+    console.log('runtime: restored ~/.claude.json from backup');
 }
 
 function waitHealthy() {

@@ -2,20 +2,36 @@ import type {HookCallback} from '@anthropic-ai/claude-agent-sdk';
 
 const MAX_VERIFY_BLOCKS = 3;
 
-const READONLY_NAME_RE = /^(whoami$|list_|get_|search_|read_|download_)/;
+const READONLY_NAME_RE = /^(whoami$|list|get|search|read|download|find)/;
 const READONLY_EXTRAS = new Set(['datagrok_show_entities']);
 
-export function isReadonlyTool(bare: string): boolean {
-  return READONLY_NAME_RE.test(bare) || READONLY_EXTRAS.has(bare);
+// The datagrok MCP server dispatches on an `op` argument (one tool per domain), so the tool name
+// alone no longer says whether a call mutates anything — `datagrok_spaces` is both `list` and
+// `delete`. Read the op when there is one and fall back to the name otherwise. Fail-closed: an
+// unrecognised call counts as an action, so the verify gate over-asks rather than letting an
+// unverified mutation through.
+const DOMAIN_TOOLS = new Set([
+  'datagrok_functions', 'datagrok_files', 'datagrok_projects', 'datagrok_spaces', 'datagrok_platform',
+]);
+
+export function isReadonlyTool(bare: string, input?: unknown): boolean {
+  if (READONLY_EXTRAS.has(bare))
+    return true;
+  if (DOMAIN_TOOLS.has(bare)) {
+    const op = (input as {op?: unknown} | undefined)?.op;
+    // No op is a catalog request — pure discovery, nothing to verify.
+    return typeof op === 'string' ? READONLY_NAME_RE.test(op) : true;
+  }
+  return READONLY_NAME_RE.test(bare);
 }
 
 export function bareToolName(name: string): string {
   return name.replace(/^mcp__.+?__/, '');
 }
 
-export function isActionTool(toolName: string): boolean {
+export function isActionTool(toolName: string, input?: unknown): boolean {
   const bare = bareToolName(toolName);
-  return bare === 'datagrok_exec' || (toolName.startsWith('mcp__') && !isReadonlyTool(bare));
+  return bare === 'datagrok_exec' || (toolName.startsWith('mcp__') && !isReadonlyTool(bare, input));
 }
 
 function parseMcpToolResponse(resp: unknown): any {
@@ -70,15 +86,18 @@ export class Verifier {
         this.verifyFailures = 0;
       } else
         this.verifyFailures++;
-    } else if (isActionTool(input.tool_name)) {
+    } else if (isActionTool(input.tool_name, input.tool_input)) {
       this.stats.actions++;
       // datagrok_exec can self-verify: the browser runs the provided verify.assertion right after
       // the action code (same round-trip) and returns it as `verified` — a passing one is exactly
-      // a datagrok_verify pass, minus the extra model round-trip.
+      // a datagrok_verify pass, minus the extra model round-trip, so it clears the gate the same way.
       const res = bare === 'datagrok_exec' ? parseMcpToolResponse(input.tool_response) : undefined;
       if (res?.verified?.passed === true) {
         this.stats.verifies++;
         this.stats.passes++;
+        this.pendingActions = 0;
+        this.blockCount = 0;
+        this.verifyFailures = 0;
       } else
         this.pendingActions++;
     }
@@ -107,13 +126,16 @@ export class Verifier {
       decision: 'block',
       reason: this.verifyFailures > 0 ?
         internal +
-        `Verification has failed ${this.verifyFailures} time(s) — the action did NOT take effect as claimed. ` +
-        'Fix the problem, then call datagrok_verify again with an assertion that re-reads the affected ' +
-        'state. Do not report success until a verify passes.' :
+        `Verification has failed ${this.verifyFailures} time(s). A failed verify means EITHER the action ` +
+        'did not take effect OR the assertion itself was faulty (most commonly a missing `return`). ' +
+        'FIRST re-read the affected state with a read-only check to see what actually happened. ' +
+        'NEVER redo a state-changing action unless the re-read shows it is genuinely missing — actions ' +
+        'are not idempotent, and redoing one that already worked creates duplicates. Then call ' +
+        'datagrok_verify again with a corrected assertion. Do not report success until a verify passes.' :
         internal +
         'You performed one or more actions but have not verified they took effect. Call datagrok_verify ' +
-        'with an assertion that RE-READS all affected state from t/view/grok. ' +
-        'If verification fails, fix the problem — do not report success.',
+        'with an assertion that RE-READS all affected state from t/view/grok. Do NOT redo the actions ' +
+        'themselves. If verification fails, fix the problem — do not report success.',
     };
   };
 }

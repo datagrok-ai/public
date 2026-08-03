@@ -4,6 +4,7 @@
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {registerBuiltinNodes, registerAllFunctions} from '../rete/node-factory';
+import {emitHeaderLines} from '../compiler/script-emitter';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 /** The chip element for a node id. */
@@ -25,6 +26,55 @@ category('Flow: output strip', () => {
   before(async () => {
     registerBuiltinNodes();
     registerAllFunctions();
+  });
+
+  test('an output node never survives losing its last connection', async () => {
+    // No output node without a connection, ever: rows are auto-created when a
+    // value is published, so losing the last wire removes the row too —
+    // whether the wire is deleted directly or the feeding node is removed.
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const out = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      out.properties['paramName'] = 'result';
+      await e.flow.addConnectionByKeys(src.id, 'value', out.id, 'value');
+
+      const conn = e.flow.getConnections().find((c) => c.target === out.id)!;
+      await e.flow.editor.removeConnection(conn.id);
+      expect(await until(() => !e.flow.getNodes().some((n) => n.id === out.id)), true,
+        'orphaned output removed with its wire');
+      expect(e.flow.getNodes().some((n) => n.id === src.id), true, 'the source node stays');
+
+      // Removing the FEEDING node (its connections go down with it) too.
+      const out2 = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
+      out2.properties['paramName'] = 'result2';
+      await e.flow.addConnectionByKeys(src.id, 'value', out2.id, 'value');
+      await e.flow.removeNode(src.id);
+      expect(await until(() => !e.flow.getNodes().some((n) => n.id === out2.id)), true,
+        'output orphaned by its source node removal is removed too');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a still-connected output survives unrelated connection removals', async () => {
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const toStr = await addNode(e.flow, 'Utilities/ToString', 300, 200);
+      const out = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      out.properties['paramName'] = 'result';
+      await e.flow.addConnectionByKeys(src.id, 'value', out.id, 'value');
+      await e.flow.addConnectionByKeys(src.id, 'value', toStr.id, 'value');
+
+      const unrelated = e.flow.getConnections().find((c) => c.target === toStr.id)!;
+      await e.flow.editor.removeConnection(unrelated.id);
+      await new Promise((r) => setTimeout(r, 50)); // let the deferred check run
+      expect(e.flow.getNodes().some((n) => n.id === out.id), true,
+        'the connected output stays when an unrelated wire goes');
+    } finally {
+      destroyEditor(e);
+    }
   });
 
   test('strip column mounts OUTSIDE the canvas viewport with a vertical label', async () => {
@@ -235,6 +285,79 @@ category('Flow: output strip', () => {
       await e.flow.zoomToFit();
       const k = e.flow.area.area.transform.k;
       expect(Number.isFinite(k) && k > 0, true, 'sane transform after fit');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('dragging a chip reorders the outputs; the rank persists and drives emission', async () => {
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const a = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      const b = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
+      a.properties['paramName'] = 'first';
+      b.properties['paramName'] = 'second';
+      await e.flow.addConnectionByKeys(src.id, 'value', a.id, 'value');
+      await e.flow.addConnectionByKeys(src.id, 'value', b.id, 'value');
+      expect(await until(() => chipEl(e.container, a.id) != null && chipEl(e.container, b.id) != null),
+        true, 'both chips rendered');
+
+      // Grab the FIRST chip, pull it below the second, release.
+      const chip = chipEl(e.container, a.id)!;
+      const from = chip.getBoundingClientRect();
+      const target = chipEl(e.container, b.id)!.getBoundingClientRect();
+      const at = (y: number): PointerEventInit =>
+        ({bubbles: true, cancelable: true, button: 0, clientX: from.x + 10, clientY: y});
+      chip.dispatchEvent(new PointerEvent('pointerdown', at(from.y + 12)));
+      window.dispatchEvent(new PointerEvent('pointermove', at(from.y + 20)));
+      // Mid-drag the chip is visibly lifted and rides under the pointer.
+      expect(chip.classList.contains('ff-output-row-dragging'), true, 'mid-drag: chip marked as dragging');
+      expect(chip.style.transform.includes('translateY'), true, 'mid-drag: chip follows the pointer');
+      window.dispatchEvent(new PointerEvent('pointermove', at(target.bottom + 4)));
+      window.dispatchEvent(new PointerEvent('pointerup', at(target.bottom + 4)));
+      expect(chip.style.transform, '', 'the release clears the pointer-follow transform');
+
+      expect(await until(() => e.flow.getOutputNodes()[0]?.id === b.id), true, 'the flow order flipped');
+      expect(a.properties['outputOrder'], 1, 'rank persisted on the dragged node');
+      expect(b.properties['outputOrder'], 0, 'rank persisted on the other node');
+      expect(await until(() => {
+        const els = Array.from(e.container.querySelectorAll('.ff-output-strip-chips .ff-output-row'));
+        return (els[0] as HTMLElement | undefined)?.dataset.nodeId === b.id;
+      }), true, 'the chips re-render in the new order');
+      expect(e.flow.getSelectedNodeIds().length, 0, 'a drag is not a click — nothing got selected');
+
+      // The compiled signature follows the strip.
+      const outLines = emitHeaderLines(e.flow, {name: 't', description: '', tags: []}, 'flow')
+        .filter((l) => l.startsWith('//output:'));
+      expect(outLines.length, 2, 'both outputs emitted');
+      expect(outLines[0].endsWith(' second'), true, `the reordered output leads: ${outLines[0]}`);
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a sub-threshold press on a chip stays a click (selects, no reorder)', async () => {
+    const e = makeEditor();
+    try {
+      const src = await addNode(e.flow, 'Constants/String', 0, 0);
+      const a = await addNode(e.flow, 'Outputs/Value Output', 300, 0);
+      const b = await addNode(e.flow, 'Outputs/Value Output', 300, 100);
+      await e.flow.addConnectionByKeys(src.id, 'value', a.id, 'value');
+      await e.flow.addConnectionByKeys(src.id, 'value', b.id, 'value');
+      expect(await until(() => chipEl(e.container, a.id) != null), true, 'chips rendered');
+
+      const chip = chipEl(e.container, a.id)!;
+      const from = chip.getBoundingClientRect();
+      const at = (y: number): PointerEventInit =>
+        ({bubbles: true, cancelable: true, button: 0, clientX: from.x + 10, clientY: y});
+      chip.dispatchEvent(new PointerEvent('pointerdown', at(from.y + 12)));
+      chip.dispatchEvent(new PointerEvent('pointermove', at(from.y + 14))); // 2px — under the threshold
+      chip.dispatchEvent(new PointerEvent('pointerup', at(from.y + 14)));
+      await new Promise((r) => setTimeout(r, 0)); // the pointerup microtasks run
+      chipEl(e.container, a.id)!.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      expect(await until(() => e.flow.getSelectedNodeIds().includes(a.id)), true, 'the click still selects');
+      expect(a.properties['outputOrder'] === undefined, true, 'no rank was written');
     } finally {
       destroyEditor(e);
     }

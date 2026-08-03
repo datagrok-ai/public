@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": { "datagrok-mcp": "dist/index.js" },
-  "scripts": { "start": "node dist/index.js", "build": "tsc" },
+  "scripts": { "start": "node dist/index.js", "build": "tsc", "test": "tsc && node --test test/" },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@hono/node-server": "^1.19.14",

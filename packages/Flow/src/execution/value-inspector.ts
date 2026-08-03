@@ -35,6 +35,19 @@ export function setPreviewCellFocusHandler(
   _previewCellFocusHandler = h;
 }
 
+/** Release the hook only if this owner still holds it — several Flow views can
+ *  be alive at once, and a closing view must not tear down the handler a newer
+ *  view has since installed. */
+export function releasePreviewCellFocusHandler(
+  h: ((cell: {semType: string | null; column: string; value: unknown}) => void) | null,
+): void {
+  if (h !== null && _previewCellFocusHandler === h) {
+    _previewCellFocusHandler = null;
+    previewHookSub?.unsubscribe();
+    previewHookSub = null;
+  }
+}
+
 let previewHookSub: rxjs.Subscription | null = null;
 /** Report current-cell changes of a preview grid's dataframe to the host.
  *  The df is a preview clone that dies with the panel content, so the
@@ -80,11 +93,11 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
   if (state.error) {
     const errorHeader = ui.divText('Error');
     errorHeader.style.fontWeight = 'bold';
-    errorHeader.style.color = '#F44336';
+    errorHeader.style.color = 'var(--red-3, #eb6767)';
     errorHeader.style.marginTop = '8px';
     container.appendChild(errorHeader);
     const errorMsg = ui.divText(state.error);
-    errorMsg.style.color = '#F44336';
+    errorMsg.style.color = 'var(--red-3, #eb6767)';
     errorMsg.style.fontSize = '12px';
     errorMsg.style.whiteSpace = 'pre-wrap';
     errorMsg.style.wordBreak = 'break-word';
@@ -94,7 +107,7 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
       const stackDetails = document.createElement('details');
       const stackSummary = document.createElement('summary');
       stackSummary.textContent = 'Stack trace';
-      stackSummary.style.cssText = 'cursor:pointer;font-size:11px;color:#999;';
+      stackSummary.style.cssText = 'cursor:pointer;font-size:11px;color:var(--grey-4, #9497a0);';
       stackDetails.appendChild(stackSummary);
       const stackPre = document.createElement('pre');
       stackPre.textContent = state.stack;
@@ -109,11 +122,11 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
 
 function buildStatusBadge(state: NodeExecState): HTMLElement {
   const colors: Record<string, string> = {
-    [NodeExecStatus.idle]: '#78909c',
-    [NodeExecStatus.running]: '#1976d2',
-    [NodeExecStatus.completed]: '#43a047',
-    [NodeExecStatus.errored]: '#e53935',
-    [NodeExecStatus.stale]: '#9E9E9E',
+    [NodeExecStatus.idle]: 'var(--grey-4, #9497a0)',
+    [NodeExecStatus.running]: 'var(--blue-1, #2083d5)',
+    [NodeExecStatus.completed]: 'var(--green-2, #3cb173)',
+    [NodeExecStatus.errored]: 'var(--red-3, #eb6767)',
+    [NodeExecStatus.stale]: 'var(--grey-3, #b8bac0)',
   };
   const labels: Record<string, string> = {
     [NodeExecStatus.idle]: 'Idle',
@@ -127,7 +140,7 @@ function buildStatusBadge(state: NodeExecState): HTMLElement {
   badge.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;';
 
   const dot = document.createElement('span');
-  dot.style.cssText = `width:10px;height:10px;border-radius:50%;background-color:${colors[state.status] ?? '#888'};display:inline-block;`;
+  dot.style.cssText = `width:10px;height:10px;border-radius:50%;background-color:${colors[state.status] ?? 'var(--grey-4, #9497a0)'};display:inline-block;`;
   badge.appendChild(dot);
 
   let label = labels[state.status] ?? state.status;
@@ -151,7 +164,7 @@ function buildMetaRow(name: string, summary: ValueSummary): HTMLElement {
       const addBtn = ui.iconFA('plus-circle', () => {
         grok.shell.addTableView(summary.clone as DG.DataFrame);
       }, 'Add to workspace');
-      addBtn.style.cssText = 'cursor:pointer;color:#1976d2;font-size:13px;';
+      addBtn.style.cssText = 'cursor:pointer;color:var(--blue-1, #2083d5);font-size:13px;';
       headerLine.appendChild(addBtn);
     }
     row.appendChild(headerLine);
@@ -351,27 +364,27 @@ export function buildPreview(
     if (!summary.sample || summary.sample.length === 0) return null;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const title = ui.divText(`${name}: ${summary.name ?? ''}`);
-    title.style.cssText = 'font-size:12px;color:#444;margin-bottom:4px;';
+    title.style.cssText = 'font-size:12px;color:var(--grey-6, #4d5261);margin-bottom:4px;';
     wrap.appendChild(title);
     const table = document.createElement('table');
-    table.style.cssText = 'font-size:11px;color:#555;border-collapse:collapse;';
+    table.style.cssText = 'font-size:11px;color:var(--grey-5, #717581);border-collapse:collapse;';
     const headerRow = table.insertRow();
     const idxTh = document.createElement('th');
     idxTh.textContent = '#';
-    idxTh.style.cssText = 'padding:2px 8px;text-align:right;color:#999;font-weight:normal;';
+    idxTh.style.cssText = 'padding:2px 8px;text-align:right;color:var(--grey-4, #9497a0);font-weight:normal;';
     headerRow.appendChild(idxTh);
     const valTh = document.createElement('th');
     valTh.textContent = 'Value';
-    valTh.style.cssText = 'padding:2px 8px;text-align:left;font-weight:normal;color:#999;';
+    valTh.style.cssText = 'padding:2px 8px;text-align:left;font-weight:normal;color:var(--grey-4, #9497a0);';
     headerRow.appendChild(valTh);
     for (let i = 0; i < summary.sample.length; i++) {
       const tr = table.insertRow();
       const idxTd = tr.insertCell();
       idxTd.textContent = String(i);
-      idxTd.style.cssText = 'padding:1px 8px;text-align:right;color:#999;';
+      idxTd.style.cssText = 'padding:1px 8px;text-align:right;color:var(--grey-4, #9497a0);';
       const valTd = tr.insertCell();
       valTd.textContent = String(summary.sample[i]);
-      valTd.style.cssText = 'padding:1px 8px;border-bottom:1px solid #eee;';
+      valTd.style.cssText = 'padding:1px 8px;border-bottom:1px solid var(--grey-2, #dbdcdf);';
     }
     wrap.appendChild(table);
     return wrap;

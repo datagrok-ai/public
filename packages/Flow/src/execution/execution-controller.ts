@@ -74,6 +74,8 @@ export class ExecutionController {
   private visualizer: ExecutionVisualizer;
   private flow: FlowEditor;
   private subscription: {unsubscribe(): void} | null = null;
+  /** The in-flight run's call — kept so Stop / a superseding run can cancel it. */
+  private currentCall: DG.FuncCall | null = null;
   /** The output panel's node when an invalidation closed it — the next autorun
    *  re-opens it (without stealing selection) so the preview stays live. */
   private autorunPreviewNodeId: string | null = null;
@@ -127,12 +129,16 @@ export class ExecutionController {
     if (errors.some((e) => e.severity === 'error')) {
       const msgs = errors.filter((e) => e.severity === 'error').map((e) => e.message).join('\n');
       grok.shell.error('Validation errors:\n' + msgs);
+      // A run that never starts must still report an end — the save dialog's
+      // "Run the flow" disables OK until onRunEnd fires.
+      this.onRunEnd?.(false);
       return;
     }
     const {roots, cone} = this.invalidNodes();
     const runSet = this.flow.getNodes().map((n) => n.id).filter((id) => !cone.has(id));
     if (runSet.length === 0) {
       grok.shell.error('Nothing to run — every node is missing a required input (for a plot, connect a table).');
+      this.onRunEnd?.(false);
       return;
     }
     if (roots.length > 0)
@@ -484,28 +490,57 @@ export class ExecutionController {
       // then comes prefilled with everything that was configured.
       const {values, missing} = this.configuredInputValues(func);
       const fc = func.prepare(values);
+      this.currentCall = fc;
+      // The run's own error already surfaced through the node-error/run-complete
+      // events — the rejection here is the same failure resurfacing.
+      const startCall = (): void => {void fc.call(undefined, undefined, {processed: true}).catch(() => {})};
       // No auto-dock at completion — the user opens the panel by clicking a
       // completed node (see `showOutputsForNode`).
       if (func.inputs.length === 0 || missing.length === 0)
-        void fc.call(undefined, undefined, {processed: true});
+        startCall();
       else {
         fc.getEditor(false).then((e: HTMLElement) => {
-          ui.dialog({title: settings.name}).add(e).show().onOK(async () => {
-            await fc.call(undefined, undefined, {processed: true});
+          // Canceling the dialog must release the run state the same way a
+          // failed start does: `isRunning` would otherwise stay true forever —
+          // autorun spins in its busy-retry loop and the save dialog waits for
+          // an onRunEnd that never comes.
+          let started = false;
+          const dlg = ui.dialog({title: settings.name}).add(e);
+          dlg.onOK(() => {
+            started = true;
+            startCall();
           });
+          dlg.onClose.subscribe(() => {
+            if (!started) this.abortPendingRun();
+          });
+          dlg.show();
+        }).catch((err: unknown) => {
+          grok.shell.error(`Could not build the run dialog: ${err instanceof Error ? err.message : err}`);
+          this.abortPendingRun();
         });
       }
     } catch (e: any) {
       grok.shell.error(`Script generation failed: ${e.message}`);
-      this.stopRun();
-      // A headless slice run (column picker) is awaiting completion — release it
-      // so the caller's promise resolves (with null, since nothing was captured).
-      if (this.pendingOnComplete) {
-        const cb = this.pendingOnComplete;
-        this.pendingOnComplete = null;
-        cb();
-      }
+      this.abortPendingRun();
     }
+  }
+
+  /** A run that was set up but never got going (script generation failed, the
+   *  parameter dialog was canceled, …): release the run state and settle every
+   *  waiter — a headless slice run (column picker) is awaiting completion, and
+   *  the view is waiting for onRunEnd to re-enable its Run/Save controls. */
+  private abortPendingRun(): void {
+    this.stopRun();
+    this.pendingPreviewNodeId = null;
+    // Mirror the run-complete dispatch: a headless waiter gets its callback
+    // (resolving with whatever was captured — nothing), everyone else onRunEnd.
+    if (this.pendingOnComplete) {
+      const cb = this.pendingOnComplete;
+      this.pendingOnComplete = null;
+      cb();
+    }
+    else
+      this.onRunEnd?.(false);
   }
 
   /** Lazily open or update the docked output panel with this node's runtime
@@ -539,6 +574,16 @@ export class ExecutionController {
       if (this.outputPreview.pinnedNodeId === event.nodeId) {
         const pinned = this.flow.getNodeById(event.nodeId);
         if (pinned) this.showOutputsForNode(pinned);
+      } else if (this.outputPreview.pinnedNodeId == null) {
+        // A fresh result for the node the user is looking at (the sole
+        // selection) opens/updates its preview, exactly as clicking it would —
+        // an autorun of an already-selected node must not require an
+        // unselect/select round-trip to see its output.
+        const sel = this.flow.getSelectedNodeIds();
+        if (sel.length === 1 && sel[0] === event.nodeId) {
+          const node = this.flow.getNodeById(event.nodeId);
+          if (node) this.showOutputsForNode(node);
+        }
       }
       break;
     case 'node-error':
@@ -557,6 +602,14 @@ export class ExecutionController {
       break;
     case 'run-complete':
       this.state.endRun();
+      this.currentCall = null;
+      // The run's event channel is done — drop the subscription now rather
+      // than at the start of the *next* run (a view that never runs again
+      // would otherwise keep it, and everything it captures, alive).
+      if (this.subscription) {
+        this.subscription.unsubscribe();
+        this.subscription = null;
+      }
       // Safety: if the pinned node never completed this run (skipped/halted),
       // don't leave the spinner spinning over the kept content.
       this.outputPreview.clearUpdating();
@@ -589,6 +642,31 @@ export class ExecutionController {
     if (this.subscription) {
       this.subscription.unsubscribe();
       this.subscription = null;
+    }
+    // Mark the abandoned run so its still-executing script stops writing to
+    // the live registry (`__ff_stash` checks this set) — late stashes would
+    // otherwise overwrite the next run's values. Bounded: prune oldest.
+    if (this.state.isRunning && this.state.runId) {
+      const g = globalThis as {__ffAbortedRuns?: Set<string>};
+      const aborted = g.__ffAbortedRuns ?? (g.__ffAbortedRuns = new Set());
+      aborted.add(this.state.runId);
+      if (aborted.size > 100)
+        aborted.delete(aborted.values().next().value!);
+    }
+    // A script paused at a breakpoint awaits a continue event that would
+    // otherwise never fire once this run is abandoned (startRun overwrites
+    // runId) — release it so the emitted promise settles and its closure
+    // (captured tables, the continue subscription) is freed.
+    this.continueBreakpoint();
+    if (this.currentCall) {
+      // Best effort — a client-side script between statements can't be
+      // preempted, but a queued/server call honors it. `cancel()` returns the
+      // raw interop result (can be undefined) and may throw — never let that
+      // break the state release below.
+      try {
+        void Promise.resolve(this.currentCall.cancel()).catch(() => {});
+      } catch {/* cancellation unsupported here — the run just finishes headless */}
+      this.currentCall = null;
     }
     this.state.endRun();
   }
@@ -690,5 +768,8 @@ export class ExecutionController {
   dispose(): void {
     this.stopRun();
     this.visualizer.resetAllNodes();
+    // The view is going away — its captured live values (DataFrame clones on
+    // the page-global registry) must go with it, per the per-flow-cleanup rule.
+    this.clearLiveRegistry();
   }
 }

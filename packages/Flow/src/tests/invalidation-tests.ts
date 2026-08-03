@@ -13,11 +13,11 @@ import * as ui from 'datagrok-api/ui';
 
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNode} from '../rete/node-factory';
 import {FlowEditor, GraphEdit} from '../rete/flow-editor';
-import {missingRequiredProps, nodeMissingRequirements} from '../rete/scheme';
+import {missingRequiredProps, nodeMissingRequirements, FlowNode} from '../rete/scheme';
 import {sliceDownFrom} from '../compiler/graph-compiler';
 import {emitScript} from '../compiler/script-emitter';
 import {ExecutionController, expandToLiveBoundary} from '../execution/execution-controller';
-import {NodeExecStatus} from '../execution/execution-state';
+import {ExecutionState, NodeExecStatus} from '../execution/execution-state';
 import {AutorunScheduler, isAutorunByDefault} from '../execution/autorun';
 import {PropertyPanel} from '../panel/property-panel';
 import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
@@ -90,6 +90,30 @@ category('Flow: invalidation', () => {
     } finally {
       destroyEditor(e);
     }
+  });
+
+  test('a later run clears the previous failure', async () => {
+    // The state is MERGED on every status change, so a failed run's error rode
+    // along into the successful one that followed — the panel showed the old
+    // red block (and its stack) under a green "Completed (23ms)".
+    const state = new ExecutionState();
+    state.setNodeStatus('n', NodeExecStatus.errored, {error: 'Condition "${x} >" is not boolean', stack: 'at …'});
+    expect(state.getNodeState('n')!.error !== undefined, true, 'the failure is recorded');
+
+    // `expect(v, undefined)` reads as `expect(v, true)` in this harness — the
+    // expected value has to be a real one, so compare explicitly.
+    state.setNodeStatus('n', NodeExecStatus.running, {startTime: 1});
+    expect(state.getNodeState('n')!.error === undefined, true, 'a new attempt drops the old verdict');
+    expect(state.getNodeState('n')!.stack === undefined, true, 'stack trace too');
+
+    state.setNodeStatus('n', NodeExecStatus.completed, {endTime: 2, outputs: {}});
+    expect(state.getNodeState('n')!.error === undefined, true, 'and a completed node carries no error');
+
+    // Stale is the exception: the last thing that happened to the node IS the
+    // failure, and "out of date" must not read as "it worked".
+    state.setNodeStatus('n', NodeExecStatus.errored, {error: 'boom'});
+    state.markStale(['n']);
+    expect(state.getNodeState('n')!.error, 'boom', 'a stale node keeps what went wrong');
   });
 
   test('adding a node invalidates nothing', async () => {
@@ -609,6 +633,28 @@ category('Flow: autorun', () => {
     }
   });
 
+  test('a run completing on the selected node opens its preview', async () => {
+    // An autorun (or explicit run) of the already-selected node must show its
+    // output without an unselect/select round-trip: node-complete on the sole
+    // selected node feeds the preview panel, same as clicking it would.
+    const typeName = funcTypeName('OpenFile');
+    if (!typeName) return;
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, typeName);
+      node.inputValues['fullPath'] = 'System:AppData/Chem/mol1K.csv';
+      const ctrl = new ExecutionController(e.flow);
+      await e.flow.selectNode(node.id);
+      expect(ctrl.outputPreview.currentNodeId, null, 'nothing previewed before the run');
+      expect(ctrl.runLiveNodes(new Set([node.id]), SETTINGS), 'started');
+      expect(await until(() => status(ctrl, node.id) === NodeExecStatus.completed, 15000), true, 'node ran');
+      expect(await until(() => ctrl.outputPreview.currentNodeId === node.id), true,
+        'completion on the selected node opened its preview');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
   test('isAutorunByDefault: Open File, Add New Column, and viewers are live', async () => {
     registerBuiltinNodes();
     registerAllFunctions();
@@ -621,6 +667,22 @@ category('Flow: autorun', () => {
     }
     expect(isAutorunByDefault(createNode('Utilities/Info')!), false, 'ordinary utilities are not live');
     expect(isAutorunByDefault(createNode('Inputs/Table Input')!), false, 'inputs are not live');
+  });
+
+  test('isAutorunByDefault: meta.autorun consolidates with the built-in lists', async () => {
+    registerBuiltinNodes();
+    registerAllFunctions();
+    // The author opt-in — bool and annotation-string forms both count.
+    const stub = (options: Record<string, unknown>): FlowNode =>
+      ({dgFunc: {name: 'somePkgFunc', options}, dgTypeName: 'f', properties: {}} as unknown as FlowNode);
+    expect(isAutorunByDefault(stub({autorun: true})), true, 'meta.autorun: true (bool) → live');
+    expect(isAutorunByDefault(stub({autorun: 'true'})), true, 'meta.autorun: true (string) → live');
+    expect(isAutorunByDefault(stub({autorun: 'false'})), false, 'meta.autorun: false → not live');
+    expect(isAutorunByDefault(stub({})), false, 'no meta → not live');
+    // The real opt-in: Flow's own Uploaded File node declares meta.autorun.
+    const uploaded = funcTypeName('readUploadedFile');
+    if (uploaded)
+      expect(isAutorunByDefault(createNode(uploaded)!), true, 'readUploadedFile is live via meta.autorun');
   });
 
   test('busy postpones and keeps the dirty set; skipped waits for the next edit', async () => {

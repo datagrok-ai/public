@@ -10,7 +10,7 @@ import {syncUserFiles} from './sync/orchestrator';
 import {ensureUserDir} from './user/user-dir';
 import {awaitWorkspaceSync, markQueryStart, markQueryEnd} from './sync/workspace';
 import {Verifier, bareToolName} from './verify';
-import {GroundingGate} from './grounding';
+import {GroundingGate, isSmallTalk} from './grounding';
 import {createBrowserExecServer, createViewToolsServer, toolSummary, buildOptions, rewriteForDocker, apiUrlFromMcpUrl} from './query-options';
 
 // Re-exported so server.ts keeps importing the transport surface from one place.
@@ -36,6 +36,10 @@ const sessions = new Map<string, SessionRecord>();
 
 // Last assistant uuid of the in-flight turn; committed to the record on a clean result.
 const pendingUuid = new Map<string, string>();
+
+// Visible streamed text of the in-flight turn, per session — the grounding gate reads it at Stop
+// to decide whether the answer makes platform how-to claims (grounding.ts makesPlatformClaims).
+const turnText = new Map<string, string>();
 
 function storeSession(clientId: string, sdkId: string, lastCleanUuid?: string): void {
   sessions.delete(clientId);
@@ -73,8 +77,14 @@ function forwardEvent(ws: WsSender, sid: string, event: SDKMessage, verifier?: V
     }
     break;
   case 'stream_event':
-    if (e.event?.delta?.type === 'text_delta' && e.event.delta.text)
+    if (e.event?.delta?.type === 'text_delta' && e.event.delta.text) {
+      // The grounding gate reads this at Stop to decide whether the answer makes platform
+      // how-to claims — only the pre-revision visible answer counts, so stop accumulating
+      // once a revision is underway.
+      if (!isRevising(sid))
+        turnText.set(sid, (turnText.get(sid) ?? '') + e.event.delta.text);
       emitFiltered(ws, sid, e.event.delta.text);
+    }
     break;
   case 'tool_progress':
     emit(ws, {type: 'tool_activity', sessionId: sid, summary: `Running ${e.tool_name ?? ''}…`});
@@ -281,8 +291,14 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         emit(ws, {type: 'revision_start', sessionId: sid});
       }
     };
-    verifier = fullPromptTurn ? new Verifier(onGateBlock) : undefined;
-    groundingGate = fullPromptTurn && !data.outputSchema ? new GroundingGate(onGateBlock) : undefined;
+    const gates = data.gates ?? {};
+    verifier = fullPromptTurn && gates.verify !== false ? new Verifier(onGateBlock) : undefined;
+    // Small talk skips the gate entirely — the block would cost a full hidden revision call just
+    // to hear NO_REVISION, and the panel would show "Revising…" over a greeting (see grounding.ts).
+    turnText.delete(sid); // fresh answer buffer — the gate must judge THIS turn's text only
+    groundingGate = fullPromptTurn && gates.grounding !== false && !data.outputSchema &&
+      !isSmallTalk(data.message ?? '') ?
+      new GroundingGate(onGateBlock, () => turnText.get(sid) ?? '') : undefined;
 
     const rec = getSession(sid);
     const opts = buildOptions(browserExecServer, rec?.sdkId, data.apiKey, mcpUrl, data.systemPromptMode, userDir, data.model,
@@ -300,9 +316,16 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     // Iterate by hand rather than `for await`, so a turn that goes silent is bounded. A wedged
     // CLI emits no events at all, which `for await` would wait on forever (see watchdog.ts).
     const it = q[Symbol.asyncIterator]();
+    let pendingStep: Promise<IteratorResult<SDKMessage, any>> | null = null;
     for (;;) {
-      const step = await raceIdle(it.next(), TURN_IDLE_TIMEOUT_MS);
+      pendingStep = pendingStep ?? it.next();
+      const step = await raceIdle(pendingStep, TURN_IDLE_TIMEOUT_MS);
       if (step === IDLE) {
+        // A browser round-trip in flight (tool call executing in the tab, or a question the user
+        // has not answered yet) blocks the SDK stream legitimately — that silence is not a wedged
+        // CLI. Each round-trip carries its own timeout, so this cannot wait forever.
+        if (active.pendingInputs.size > 0)
+          continue;
         timedOut = true;
         console.warn(`watchdog[${sid}]: no SDK event for ${TURN_IDLE_TIMEOUT_MS / 1000}s — killing turn`);
         emit(ws, {type: 'error', sessionId: sid,
@@ -317,6 +340,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
         killStrayChildren(`turn ${sid} went silent`);
         break;
       }
+      pendingStep = null;
       if (step.done || abortController.signal.aborted)
         break;
       if (step.value.type === 'result')
@@ -337,6 +361,7 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
     if (activeQueries.get(sid) === active) {
       clearFenceState(sid);
       endRevision(sid);
+      turnText.delete(sid);
     }
     unregisterActiveQuery(sid, active);
   }

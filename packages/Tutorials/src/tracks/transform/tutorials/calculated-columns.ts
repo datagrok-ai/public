@@ -48,16 +48,17 @@ export class CalculatedColumnsTutorial extends Tutorial {
     await this.dlgInputAction(addNCDlg, `Enter the expression "${simpleFormula}"`, '', simpleFormula, '', false, 2);
 
     await this.action(`Enter the expression "${simpleFormula}"`, new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          //@ts-ignore
-          if (m.target.innerText === simpleFormula) {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
+      const formulaEntered = () => Array.from(addNCDlg!.root.querySelectorAll('.cm-line'))
+        .map((line) => line.textContent).join('\n') === simpleFormula;
+      if (formulaEntered()) return void subscriber.next(true);
+      // .cm-line may not be rendered yet when this step starts, so watch the dialog root instead
+      const observer = new MutationObserver(() => {
+        if (formulaEntered()) {
+          subscriber.next(true);
+          observer.disconnect();
+        }
       });
-      observer.observe(addNCDlg!.root.querySelector('.cm-line')!, {childList: true, attributes: true});
+      observer.observe(addNCDlg!.root, {childList: true, subtree: true, characterData: true});
     }));
 
     await this.action('Click "OK"', this.t!.onColumnsAdded.pipe(filter((data) =>

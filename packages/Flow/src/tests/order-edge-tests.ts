@@ -127,9 +127,10 @@ category('Flow: order edges', () => {
       const script = emitScript(e.flow, SETTINGS);
       // The ordering edge is invisible in the output — no exec ports leak in.
       expect(script.includes('__exec'), false, 'no exec port keys in generated code');
-      // ...but the run order is enforced: AAA logged before BBB.
-      const iA = script.indexOf(`'AAA:'`);
-      const iB = script.indexOf(`'BBB:'`);
+      // ...but the run order is enforced: AAA logged before BBB. Labels are
+      // JSON-escaped into the script (a label with a quote must not break it).
+      const iA = script.indexOf(JSON.stringify('AAA:'));
+      const iB = script.indexOf(JSON.stringify('BBB:'));
       expect(iA >= 0 && iB >= 0, true, 'both Log steps present');
       expect(iA < iB, true, 'order edge sequenced AAA before BBB');
     } finally {

@@ -114,6 +114,57 @@ Grokky:compareBenchmarks("baseline,pin-haiku")           // 2+ comma-separated l
 
 Reports are written to `System:AppData/Grokky/benchmarks/` (JSON + Markdown) and downloaded.
 
+## Second result: the context diet, end to end
+
+`benchmark-sonnet-clean` (before) vs `benchmark-diet-full` + `benchmark-diet-fixup` (after), on
+the 44 prompts the two arms share:
+
+| | before | after |
+|---|---:|---:|
+| Accuracy (44 shared) | 39/44 | **39/44** — parity |
+| Median turn | 26.6 s | **17.9 s** (−33%) |
+| Median TTFT | 17.9 s | **14.4 s** (−20%) |
+| Median cache-read/turn | 92,009 | **55,781** (−39%) |
+| Prefix (probe, tok/call) | 27,977 | **17,637** (−37%) |
+| `entities` (new, 8 prompts) | — | **8/8** |
+
+A third of the wall clock came off with no accuracy cost, and the five remaining failures are the
+*same kinds* the baseline had — the box plot and the piperidine filter fail in both arms.
+
+**Read the run log before trusting a red cell.** The first pass of this arm scored 41/52, and four
+of the eleven failures were `judge failed: Claude Code process terminated by SIGKILL` — the judge
+container was being recreated underneath the run while a publish churned images. The prompts
+themselves were fine; rerunning the affected slice (`--only`) scored 7/9 and moved the arm to
+47/52. Never publish, rebuild an image, or recreate a container while an arm is in flight.
+
+## Third result: the grounding gate's Stop-block never changed an answer
+
+The question (raised by the context probe's "full mode costs a second API call" finding): does the
+`GroundingGate`'s post-answer Stop-block actually protect help accuracy, or is it a tax? A/B on the
+dev runtime (T2 driver, `files/benchmarks/grounding-ab-raw.txt`): 4 help prompts + 2 contextual
+data prompts × 3 reps × {gate on, gate off} via the new per-turn `gates` override.
+
+| | gated | ungated |
+|---|---:|---:|
+| help median turn | 64.8 s | 57.4 s |
+| help docs-reads per turn | the model reads the docs **in both arms** (3–21 reads) | same |
+| data-question turn | 7.6 s / **2 calls** | 3.5 s / 1 call |
+| blocks that *changed* an answer | **0 of 14** | — |
+
+Every single Stop-block across the sample ended in `NO_REVISION`. The system prompt's grounding
+rule does the real work — the model opens `help/INDEX.md` and reads pages whether or not the gate
+exists — while the block doubled the cost of trivial contextual answers and flashed "Revising…"
+at users.
+
+**Consequences (all landed):** small talk never arms the gate; a `Skill` invocation counts as
+grounding (the prompt names skills a source of truth, yet skill-grounded answers were paying a
+block); and the block itself is now **content-aware** — it fires only when the visible answer
+makes platform *UI-instruction* claims (`makesPlatformClaims` in grounding.ts: click/menu/dialog/
+"go to"-style text) without a source opened this turn. That is the one case the gate was built
+for: an ungrounded answer that looks authoritative. A data answer ("5,850 rows and 11 columns")
+ends the turn in one API call. Measured post-change: data question 2 calls → 1, 7.6 s → 3.6 s,
+gate still armed.
+
 ## First result: model tier is not the latency lever
 
 The first thing this instrument was built to answer was whether a cheap-model-first dispatcher
@@ -145,12 +196,63 @@ TTFT (context diet, prompt-cache stability, thinking budget) and at eliminating 
 at model choice. Use `--model` to re-check that conclusion when models change; it is a property of
 this architecture, not a permanent law.
 
+## Context probe — attributing the prompt prefix
+
+`dev/harness/context-probe.mjs` answers a different question from the suite: not "how good/fast is
+a turn" but **"what is the model re-reading before it can emit a token"**. It runs the same trivial
+prompt under configurations that switch one contributor on at a time (MCP server, view tools,
+Datagrok prompt + plugin) and reports the prefix each one adds.
+
+```bash
+cd dev/harness
+node context-probe.mjs --label before                       # full ablation
+node context-probe.mjs --label after --only base,mcp,full   # re-check one contributor
+node context-probe.mjs --mcp http://localhost:33003/mcp     # against `node dev/mcp.mjs up`
+```
+
+Two measurement rules make the numbers trustworthy, and both were wrong in the first version:
+
+- **Prefix = input + cacheRead + cacheCreation.** Reading `cacheRead` alone measures how the cache
+  happened to break, not how much context there was.
+- **Divide by `numTurns`.** SDK usage on the `result` message is *cumulative over every API call the
+  turn made*. Before normalizing, enabling thinking looked like a 2× context regression when it was
+  really a second API call — a completely different problem with a completely different fix.
+
+Ablation (`context-probe-*.md`), Sonnet, per API call — with the diet each finding produced:
+
+| Contributor | before | after | lever |
+|---|---:|---:|---|
+| SDK floor — built-in tools, CLAUDE.md, base prompt | 17,493 | **9,921** | `tools:` restricts the *declared* built-ins; `allowedTools` only pre-approves them, so Task/TodoWrite/NotebookEdit/plan-mode schemas shipped unused — 7,572 tok/call |
+| Datagrok system prompt + inlined skills + plugin | +6,363 | ≈ | CRLF frontmatter leak fixed; body is deliberate content |
+| datagrok MCP server | +3,847 | **+1,061** | 34 tools → 5 domain tools dispatching on `op` |
+| view meta-tools (3) | +274 | +274 | already the meta-tool pattern — the model to copy |
+| **production total** | **27,977** | **17,637** | **−37%** |
+
+The findings worth carrying forward:
+
+1. **Declared ≠ allowed.** The biggest single cut was not Datagrok's own surface at all but the
+   SDK's default built-in tool set, which `allowedTools` does not remove from the prompt.
+2. **Tool defs were never the main course.** All 34 MCP tools cost less than the plugin and prompt
+   block, and the three view meta-tools cost 274 tokens. Consolidating to five domain tools was
+   still worth it (−2,786 tok/call, 72% of that block).
+3. **Full mode costs a second API call** on any turn that neither grounded nor acted: the
+   `GroundingGate` blocks the Stop and the model burns a whole call replying `NO_REVISION`.
+   Small talk is now exempt (measured on "hello": 2 calls → 1, 9.3 s → 6.0 s, no "Revising…"
+   flash), but the block still fires on real ungrounded answers — that part is an accuracy
+   feature and needs an A/B on the `help` category, not a unilateral removal.
+
 ## The suite
 
-`files/benchmark/suite.yaml` — 44 prompts across `help`, `visualization`, `analysis`, `codegen`,
-`multitool`, `query`. Fields: `category`, `prompt`, optional `difficulty`, `table`, `assert`,
-`rubric`. Edit freely — it's plain YAML, no rebuild needed for suite-only changes (it's a static
-package file; re-publish to pick it up).
+`files/benchmark/suite.yaml` — 52 prompts across `help`, `visualization`, `analysis`, `codegen`,
+`multitool`, `query`, `entities`. Fields: `category`, `prompt`, optional `difficulty`, `table`,
+`assert`, `rubric`. Edit freely — it's plain YAML, no rebuild needed for suite-only changes (it's a
+static package file; re-publish to pick it up).
+
+**`entities`** covers the server-side MCP surface (the five domain tools). It exists because the
+suite previously had none: the 34-tool → 5-tool consolidation could have broken every server-side
+operation and the arm would still have reported 39/44. These prompts carry no `table`, their asserts
+read the **server** through `grok.dapi` rather than the view, and anything they create they delete in
+the assert itself — an arm runs each prompt `reps` times and must not litter the instance.
 
 **Assert scope:** `grok, DG, view, t, before, opened, openedViews, tools`, where `before` is
 `{cols, rowCount, viewers, tableViews}` (note `viewers` counts the grid, so a fresh view is 1),

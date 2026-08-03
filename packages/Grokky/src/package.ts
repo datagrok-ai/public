@@ -260,7 +260,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({meta: {viewType: 'DataQueryView'},
-    description: 'Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before set_query_and_run'})
+    description: 'Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun'})
   static async getSqlTestResult(
     @grok.decorators.param({type: 'view'}) view: any,
     @grok.decorators.param({type: 'string', options: {description: 'The SQL to test'}}) sql: string,

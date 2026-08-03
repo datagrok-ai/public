@@ -270,7 +270,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     await _testToAtomicLevel(await readCsv(csvTests.separatorDna), 'seq', monomerLibHelper);
   });
 
-  test('separatorDna', async () => {
+  test('separatorRna', async () => {
     await _testToAtomicLevel(await readCsv(csvTests.separatorRna), 'seq', monomerLibHelper);
   });
 

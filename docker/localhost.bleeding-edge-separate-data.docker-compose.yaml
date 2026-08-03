@@ -1,3 +1,11 @@
+# Datagrok local stack tracking unreleased images, with data volumes detached.
+#
+# This file is bound to a single release train. `x-datagrok-release` names it, and every
+# datagrok/* image below defaults to a tag from that train. The compose file and the images
+# it starts must always come from the same train — pairing them across trains makes the
+# server fail to start. See `localhost.docker-compose.yaml` for the full rationale.
+x-datagrok-release: bleeding-edge
+
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
@@ -6,8 +14,8 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     networks:
       datagrok_dev:
         aliases:
@@ -16,7 +24,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:${DATAGROK_VERSION:-bleeding-edge}
+    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-bleeding-edge}
     container_name: grok_pipe_dev
     ports:
       - "3000:3000"
@@ -127,7 +135,7 @@ services:
     profiles: [ "all", "grok_connect" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
     container_name: jupyter_kernel_gateway_dev
     networks:
       datagrok_dev:
@@ -234,7 +242,7 @@ services:
     profiles: [ "demo", "postgres_unichem", "unichem" ]
 
   starbucks:
-    image: datagrok/demo_db_postgres:bleeding-edge-1.1.0
+    image: datagrok/demo_db_postgres:latest-1.1.0
     container_name: starbucks_dev
     environment:
       POSTGRES_DB: starbucks

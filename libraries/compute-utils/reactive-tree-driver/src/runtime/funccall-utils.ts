@@ -15,7 +15,7 @@ export const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 export const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 export const RUN_ERROR_PATH = 'RUN_ERROR';
 
-const CONFIG_PATH = 'PIPELINE_CONFIG';
+export const CONFIG_PATH = 'PIPELINE_CONFIG';
 
 // Marker key for a consistency DataFrame stored outside the restrictions blob as a table id.
 const DF_REF_TOKEN = '_DG_CONSISTENCY_DF_REF_';

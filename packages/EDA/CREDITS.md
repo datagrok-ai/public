@@ -15,11 +15,15 @@ component is bundled into the published EDA plugin artifact.
 
 ### XGBoost (linked into `wasm/XGBoostAPI.wasm`)
 
-Gradient-boosting library compiled to WebAssembly. The C++ XGBoost source is
-linked into `wasm/XGBoostAPI.wasm` at build time (Emscripten, see
-`wasm/xgboost/CMakeLists.txt`), and the resulting `wasm/XGBoostAPI.js` glue +
-`.wasm` binary are shipped in the published artifact via the `sources` field
-of `package.json`.
+Gradient-boosting library compiled to WebAssembly. The C++ XGBoost source
+(upstream tag **v3.3.0**, with a minimal-build patch from
+`wasm/xgboost/patches/` that trims unused components) is linked into
+`wasm/XGBoostAPI.wasm` at build time (Emscripten, see `wasm/xgboost/build.ps1`;
+XGBoost sources come from an external clone); the resulting
+`wasm/XGBoostAPI.js` loader + `.wasm` binary are bundled by webpack into the
+published artifact (the binary is emitted to `dist/`). XGBoost bundles
+dmlc-core (also Apache-2.0, same copyright holders), which is linked in as
+part of the build.
 
 - Upstream: https://xgboost.ai/ — https://github.com/dmlc/xgboost
 - License: **Apache-2.0**

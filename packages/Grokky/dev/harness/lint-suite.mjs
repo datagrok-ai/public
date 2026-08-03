@@ -12,7 +12,7 @@ import yaml from 'yaml'; // CommonJS — no named exports
 const {parse} = yaml;
 
 const SUITE = path.join(import.meta.dirname, '..', '..', 'files', 'benchmark', 'suite.yaml');
-const CATEGORIES = ['help', 'visualization', 'analysis', 'codegen', 'multitool', 'query'];
+const CATEGORIES = ['help', 'visualization', 'analysis', 'codegen', 'multitool', 'query', 'entities'];
 const DIFFICULTIES = ['trivial', 'standard', 'hard'];
 // Mirrors the identifiers benchmark.ts injects into the assert function.
 const SCOPE = ['grok', 'DG', 'view', 't', 'before', 'opened', 'openedViews', 'tools'];

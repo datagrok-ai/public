@@ -226,12 +226,26 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel, systemPromptMode?: string}): Promise<any> {
+  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel,
+    systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
     await this.ensureConnected();
     const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    // Never wait forever: if the runtime's watchdog kills a wedged turn, no final/error for this
+    // sid ever arrives, and an untimed query() then hangs its caller permanently (this hung a
+    // full benchmark arm in its judging phase). The default comfortably exceeds the runtime's own
+    // 90s idle watchdog, so it only fires when the turn is truly gone.
+    const timeoutMs = options?.timeoutMs ?? 120_000;
     return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
-      const cleanup = () => { subs.forEach((s) => s.unsubscribe()); };
+      const timer = window.setTimeout(() => {
+        cleanup();
+        this.abort(sid);
+        reject(new Error(`query timed out after ${timeoutMs / 1000}s`));
+      }, timeoutMs);
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        subs.forEach((s) => s.unsubscribe());
+      };
       subs.push(this.onFinal.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
         cleanup();

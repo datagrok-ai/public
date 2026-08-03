@@ -11,6 +11,7 @@ import {pathToFileURL} from 'node:url';
 
 const DEV = import.meta.dirname;
 const RUNTIME = path.join(DEV, '..', 'dockerfiles', 'claude-runtime');
+const MCP = path.join(DEV, '..', 'dockerfiles', 'mcp-server');
 const fast = process.argv.includes('--fast');
 
 function step(label, fn) {
@@ -34,6 +35,14 @@ step('unit tests', () => {
   const out = execFileSync('node', ['--test', 'test/'], {cwd: RUNTIME, encoding: 'utf8'});
   const pass = out.match(/^# pass (\d+)$/m)?.[1] ?? '?';
   return `(${pass} tests)`;
+});
+
+// The MCP server is a separate image with its own build, so a runtime-only check would miss a
+// broken op registry until a benchmark run failed on it 20 minutes in.
+step('mcp-server', () => {
+  execFileSync('npx', ['tsc'], {cwd: MCP, encoding: 'utf8', shell: true});
+  const out = execFileSync('node', ['--test', 'test/'], {cwd: MCP, encoding: 'utf8'});
+  return `(${out.match(/^# pass (\d+)$/m)?.[1] ?? '?'} tests)`;
 });
 
 // Cheap to check, expensive to get wrong: a malformed assert only surfaces ~20 minutes into a run.
