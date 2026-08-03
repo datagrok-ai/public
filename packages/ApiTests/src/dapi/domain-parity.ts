@@ -93,6 +93,11 @@ category('Dapi: domain parity', () => {
     expect(df.columns.names().sort().join(','), 'id,sku', 'exactly id + requested fields');
     const empty = await items().fetchFields([]);
     expect(empty.rowCount, 0, 'empty ids must resolve to an empty DataFrame');
+    // Current contract: an empty id list short-circuits BEFORE the projection,
+    // so the frame is zero-column even with fields requested.
+    const emptyWithFields = await items().fetchFields([], ['sku']);
+    expect(emptyWithFields.rowCount, 0);
+    expect(emptyWithFields.columns.length, 0, 'empty ids yield a zero-column frame');
   });
 
   test('aggregateDf: typed frame matches aggregate JSON', async () => {
@@ -162,6 +167,11 @@ category('Dapi: domain parity', () => {
     expect(await items().query().where('quantity', '>', 1000000000).first(), null);
     const df = await items().query().where({name: `${p} b`}).df();
     expect(df.rowCount, 3, '.df() must return a DataFrame over the same query');
+    // skip + select combine: the middle row by quantity, projection narrowed.
+    const [mid] = await items().query()
+      .where({name: `${p} b`}).orderBy('quantity').select('quantity').skip(1).top(1);
+    expect(mid.quantity, 20, 'skip(1) after orderBy must land on the middle row');
+    expect((mid as any).name, undefined, 'unselected columns must be absent at runtime');
   });
 
   test('predicate helpers bind values the string grammar cannot express', async () => {
@@ -287,6 +297,21 @@ category('Dapi: domain parity', () => {
     const stale = await thrown(() => items().save({...saved, quantity: 3}));
     expect(stale instanceof DG.DomainVersionConflictError, true,
       `expected DomainVersionConflictError, got ${stale?.constructor?.name}: ${stale?.message}`);
+  });
+
+  test('save: a business-key duplicate resolves the existing id with NO version', async () => {
+    const s = sku();
+    const first = await items().save({sku: s, name: 'dup v', quantity: 1});
+    ids.push(first.id);
+    await items().update(first.id, {quantity: 2}, {version: 1});   // real version is now 2
+    const dup = await items().save({sku: s, name: 'dup v2'});      // id-less, key exists
+    expect(dup.id, first.id, 'duplicate save must resolve the existing id');
+    expect((dup as any).version == null, true,
+      'no fabricated version on a duplicate (the server reports none)');
+    // The follow-up save is an unversioned update — no phantom-v1 conflict.
+    const after = await items().save({...dup, quantity: 5});
+    expect(after.version, 3);
+    expect((await items().get(first.id)).quantity, 5);
   });
 
   test('optimistic retry helpers converge under a forced conflict', async () => {

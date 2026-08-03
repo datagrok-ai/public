@@ -9,13 +9,17 @@ const [first] = await plates.insert(values);
 const [retry] = await plates.insert(values);
 grok.shell.info(`created: ${first.created}; retry: ${retry.status}, same id: ${retry.id === first.id}`);
 
-// Optimistic concurrency: pass the version you last read; a stale version fails the update
+// Optimistic concurrency: pass the version you last read; a stale version rejects
+// with a TYPED DomainVersionConflictError (discriminate by class, not message text)
 const plate = await plates.get(first.id);
 await plates.update(first.id, {row_count: 16}, {version: plate.version});
 try {
   await plates.update(first.id, {row_count: 24}, {version: plate.version}); // stale
 } catch (e) {
-  grok.shell.info(e.message); // Version conflict: expected 1, current 2
+  if (e instanceof DG.DomainVersionConflictError)
+    grok.shell.info(`conflict: expected ${e.expectedVersion}, current ${e.currentVersion}`);
 }
+// ...or let the client retry with a fresh read:
+await plates.updateWithRetry(first.id, (fresh) => ({row_count: fresh.row_count + 8}));
 
 await plates.delete(first.id);

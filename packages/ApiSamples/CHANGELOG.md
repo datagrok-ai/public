@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20605: Rewrote the domains samples to the typed patterns — fluent builder + bound-condition helpers (apostrophe teaching), getByKey/first/count/exists, aggregateDf, typed tuple transactions with `opIndex`, typed conflict errors + `updateWithRetry`, schema grants with the no-fan-out truth; NEW dapi/domains-typed-client.js (upsert, save/updateWithRetry, typed errors, bounded deleteWhere cleanup); every remaining per-row delete loop is gone
 * GROK-20601: Replaced dapi/domains-dapi2.js (the generated dapi2 domains client is removed at typed-surface parity) with dapi/domains-schema.js — schema lifecycle handle: manifest export + whole-schema audit
 * GROK-20600: dapi/domains-batch.js cleanup now uses one `deleteWhere` filtered bulk delete instead of the query + per-row delete loop
 * GROK-20591: Added dapi/domains-filters.js — batched facets (filter-panel counts) and shareable saved filter presets on a domain table

@@ -32,6 +32,12 @@ export async function good(): Promise<void> {
   const createdFlag: boolean = ins1.created;
   const newVersion: number = upd.version;
   void createdFlag; void newVersion;
+  // the fluent builder rides the generated generics: columns, choices, expand keys
+  const built = await testdbDb.sample.query()
+    .where('status', '=', 'new').orderBy('created_on', true).select('name', 'status').top(3);
+  const builtName: string = built[0].name;
+  void builtName;
+  await testdbDb.sample.query().expand('details:sample_event').first();
   // single-generic (row-only) clients stay permissive on insert — backward compat
   await grok.dapi.domains.table<SampleRow>('testdb.sample').insert({name: 'z', idempotencyKey: 'k'});
   await grok.dapi.domains.table('testdb.sample').insert({});

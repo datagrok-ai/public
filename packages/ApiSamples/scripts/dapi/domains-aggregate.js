@@ -7,6 +7,7 @@ await items.batch([
   {sku: `${stamp}-2`, name: 'Bolt', quantity: 5},
   {sku: `${stamp}-3`, name: 'Nut', quantity: 7}]);
 
+// JSON rows named by group column / measure alias
 const totals = await items.aggregate({
   groupBy: ['name'],
   measures: [{fn: 'count'}, {fn: 'sum', column: 'quantity', as: 'total'}],
@@ -15,6 +16,15 @@ const totals = await items.aggregate({
 });
 grok.shell.info(totals.map((t) => `${t.name}: ${t.count} rows, ${t.total} pcs`).join('\n'));
 
-// Cleanup
-for (const row of await items.query({filter: `sku starts "${stamp}"`}))
-  await items.delete(row.id);
+// The same aggregation as a typed DataFrame — feed grids and viewers directly
+const df = await items.aggregateDf({
+  groupBy: ['name'],
+  measures: [{fn: 'sum', column: 'quantity', as: 'total'}],
+  filter: `sku starts "${stamp}"`,
+});
+grok.shell.info(`aggregateDf: ${df.rowCount} rows, columns ${df.columns.names().join(', ')}`);
+
+// Cleanup: one bounded filtered bulk delete
+for (let guard = 0; guard < 100; guard++)
+  if (!(await items.deleteWhere(`sku starts "${stamp}"`)).hasMore)
+    break;

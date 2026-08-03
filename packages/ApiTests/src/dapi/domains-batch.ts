@@ -136,18 +136,20 @@ category('Dapi: domains batch', () => {
     }
   });
 
-  test('transaction rollback', async () => {
+  test('transaction rollback carries the typed opIndex', async () => {
     const key = `${prefix()}-rb`;
-    let error = '';
+    let error: any = null;
     try {
       await grok.dapi.domains.transaction('apitests', [
         {op: 'insert', table: 'item', ref: 'i', values: {sku: key}},
         {op: 'insert', table: 'item_event', values: {item_id: '$i'}}, // missing required 'kind'
       ]);
     } catch (e: any) {
-      error = e.message ?? `${e}`;
+      error = e;
     }
-    expect(error !== '', true, 'transaction should have failed');
+    expect(error instanceof DG.DomainValidationError, true,
+      `expected DomainValidationError, got ${error?.constructor?.name}: ${error?.message}`);
+    expect(error.opIndex, 1, 'the error must point at the failing op');
     const rows = await items().query({filter: `sku = "${key}"`});
     expect(rows.length, 0, 'first op was not rolled back');
   });

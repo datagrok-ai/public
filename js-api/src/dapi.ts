@@ -1458,7 +1458,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * stripped from the payload, so spreading a read row is safe. Resolves to the row merged
    * with the new id/version — NB: re-saving an OLD object after a successful save carries its
    * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
-   * row. */
+   * row. An id-less save whose business key matches an existing row resolves that row's id
+   * with NO version (the server reports the duplicate without one) — a follow-up save is then
+   * an unversioned update; {@link get} the row when you need its real version. */
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
     const values: any = {};
     for (const k of Object.keys(row))
@@ -1466,7 +1468,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
-      return {...(row as any), id: res.id, version: res.version ?? 1};
+      return {...(row as any), id: res.id, version: res.version};
     }
     const res = await this.update(row.id, values, row.version != null ? {version: row.version} : undefined);
     return {...(row as any), id: res.id, version: res.version};

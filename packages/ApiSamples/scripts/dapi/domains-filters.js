@@ -28,6 +28,7 @@ const preset = await items.filters.save(`Bolts only ${stamp}`,
 grok.shell.info((await items.filters.list()).map((f) => f.friendlyName).join(', '));
 await items.filters.delete(preset.id);
 
-// Cleanup
-for (const row of await items.query({filter: `sku starts "${stamp}"`}))
-  await items.delete(row.id);
+// Cleanup: one bounded filtered bulk delete
+for (let guard = 0; guard < 100; guard++)
+  if (!(await items.deleteWhere(`sku starts "${stamp}"`)).hasMore)
+    break;
