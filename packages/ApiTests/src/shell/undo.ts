@@ -43,6 +43,10 @@ category('Undo', () => {
   }, { skipReason: nodeSkip, node: false });
 
   test('multi-level LIFO', async () => {
+    // UndoService.contextCheck only applies records whose context is the current table, so
+    // a test that undoes df's records has to own the view first — the Dart-side suite gets
+    // the same isolation by nulling contextCheck, which JS callers cannot do.
+    grok.shell.v = view;
     DG.UndoService.clear();
     const column = df.col('age')!;
     const original = column.get(1);
@@ -63,6 +67,7 @@ category('Undo', () => {
   }, { skipReason: nodeSkip, node: false });
 
   test('onUndo fires', async () => {
+    grok.shell.v = view;
     DG.UndoService.clear();
     let fired: string | null = null;
     const sub = grok.shell.onUndo.subscribe((args) => fired = args.name);
