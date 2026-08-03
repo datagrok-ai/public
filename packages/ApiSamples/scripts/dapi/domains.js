@@ -16,7 +16,7 @@ const [ins] = await items.insert({sku: sku, name: 'Widget', quantity: 5, note: '
 const rows = await items.query().where('name', '=', 'Widget').orderBy('created_on', true).top(10);
 const byKey = await items.getByKey({sku: sku});        // business-key lookup; null on ambiguity
 const n = await items.count({property: 'name', operator: '=', value: 'Widget'});
-const has = await items.exists(`sku = "${sku}"`);
+const has = await items.exists(`sku = "${sku}"`); // app-generated value — bind USER input via conditions instead
 grok.shell.info(`${rows.length} rows, count ${n}, exists ${has}, byKey ${byKey?.id === ins.id}`);
 
 // Update with optimistic concurrency; read the row and table audit trails

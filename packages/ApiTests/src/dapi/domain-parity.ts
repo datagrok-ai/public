@@ -171,7 +171,9 @@ category('Dapi: domain parity', () => {
     const [mid] = await items().query()
       .where({name: `${p} b`}).orderBy('quantity').select('quantity').skip(1).top(1);
     expect(mid.quantity, 20, 'skip(1) after orderBy must land on the middle row');
-    expect((mid as any).name, undefined, 'unselected columns must be absent at runtime');
+    // NB: expect(x, undefined) falls back to expected=true (utils default) — compare a boolean.
+    expect(Object.prototype.hasOwnProperty.call(mid, 'name'), false,
+      'unselected columns must be absent at runtime');
   });
 
   test('predicate helpers bind values the string grammar cannot express', async () => {
@@ -299,18 +301,21 @@ category('Dapi: domain parity', () => {
       `expected DomainVersionConflictError, got ${stale?.constructor?.name}: ${stale?.message}`);
   });
 
-  test('save: a business-key duplicate resolves the existing id with NO version', async () => {
+  test('save: a business-key duplicate is a TRUE insert-or-update', async () => {
     const s = sku();
     const first = await items().save({sku: s, name: 'dup v', quantity: 1});
     ids.push(first.id);
     await items().update(first.id, {quantity: 2}, {version: 1});   // real version is now 2
-    const dup = await items().save({sku: s, name: 'dup v2'});      // id-less, key exists
+    const dup = await items().save({sku: s, name: 'dup v2', quantity: 9}); // id-less, key exists
     expect(dup.id, first.id, 'duplicate save must resolve the existing id');
-    expect((dup as any).version == null, true,
-      'no fabricated version on a duplicate (the server reports none)');
-    // The follow-up save is an unversioned update — no phantom-v1 conflict.
+    const fresh = await items().get(first.id);
+    expect(fresh.name, 'dup v2', "the caller's values must LAND on the existing row");
+    expect(fresh.quantity, 9);
+    expect(dup.version, fresh.version, 'resolved version is the real incremented one');
+    expect(dup.version, 3);
+    // The follow-up save runs under a GENUINE optimistic check, conflict-free.
     const after = await items().save({...dup, quantity: 5});
-    expect(after.version, 3);
+    expect(after.version, 4);
     expect((await items().get(first.id)).quantity, 5);
   });
 

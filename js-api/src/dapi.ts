@@ -1458,9 +1458,11 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * stripped from the payload, so spreading a read row is safe. Resolves to the row merged
    * with the new id/version — NB: re-saving an OLD object after a successful save carries its
    * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
-   * row. An id-less save whose business key matches an existing row resolves that row's id
-   * with NO version (the server reports the duplicate without one) — a follow-up save is then
-   * an unversioned update; {@link get} the row when you need its real version. */
+   * row. An id-less save whose business key matches an existing row is a TRUE
+   * insert-or-update: the values are applied to the existing row as a versioned update
+   * (retried on conflict), so save() never resolves a version-less row. The unversioned
+   * (last-write-wins) update remains available ONLY by deliberately constructing
+   * `{id}` without a version — never as a side effect of a duplicate. */
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
     const values: any = {};
     for (const k of Object.keys(row))
@@ -1468,6 +1470,17 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
+      if (res.status === 'duplicate') {
+        // The duplicate insert wrote NOTHING — land the caller's values on the
+        // existing row under the optimistic check (fresh read + retry).
+        const upd = await this.updateWithRetry(res.id, () => values);
+        return {...(row as any), id: res.id, version: upd!.version};
+      }
+      if (res.status === 'idempotent-replay') {
+        // The ORIGINAL insert already applied these values; report its state.
+        const fresh = await this.get(res.id);
+        return {...(row as any), id: res.id, version: (fresh as any)?.version};
+      }
       return {...(row as any), id: res.id, version: res.version};
     }
     const res = await this.update(row.id, values, row.version != null ? {version: row.version} : undefined);
