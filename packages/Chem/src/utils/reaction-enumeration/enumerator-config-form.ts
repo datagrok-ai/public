@@ -187,8 +187,10 @@ export class EnumeratorConfigForm {
   private productFilterFields: ReturnType<typeof buildProductFilterFields>;
   // Tracks ONLY combinationLimitFields/productFilterFields' own subscriptions (rebuilt wholesale on
   // every YAML load) — unsubscribed and cleared right before each rebuild, so the previous
-  // generation's inputs stop being pinned alive. Deliberately separate from view.subs, which every
-  // input (including the permanent ones) also gets pushed into as a session-close safety net.
+  // generation's inputs stop being pinned alive. Deliberately separate from view.subs (which the
+  // permanent inputs below use instead) — view.subs only drains once at view close, so routing
+  // these through it too would leave a growing pile of already-unsubscribed entries behind on
+  // every reload for the rest of the session.
   private limitFieldSubs: Subscription[] = [];
   private pushingConfigToInputs = false;
 
@@ -351,15 +353,17 @@ export class EnumeratorConfigForm {
 
     this.syncQuickInputsToConfig();
 
-    // Re-validate on every input change so the Run button stays accurate.
+    // Re-validate on every input change so the Run button stays accurate. These inputs live for
+    // the view's whole lifetime, so view.subs' own drain at view close is their only cleanup.
     [this.smartsColInput, this.blockingColInput, this.rxnNameColInput, this.bbColInput, this.reagentsColInput,
       this.exclusionInput, this.exclusionColInput, this.numRoundsInput, this.depthFirstInput,
       this.maxComponentsInput, this.maxRoutesInput,
-    ].forEach((inp) => this.wireValidationOne(inp));
-    // Tracked separately (see limitFieldSubs) — these two field groups get rebuilt wholesale on
-    // every YAML load, unlike the permanent inputs above.
+    ].forEach((inp) => this.deps.view.subs.push(this.wireValidationOne(inp)));
     [...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs].forEach((inp) =>
       this.limitFieldSubs.push(this.wireValidationOne(inp)));
+    // Safety net for a view that closes without ever loading a YAML in between (limitFieldSubs'
+    // own comment above covers the more common per-reload unsubscribe).
+    this.deps.viewerHost.onClose(() => this.limitFieldSubs.forEach((s) => s.unsubscribe()));
 
     // ---- Buttons ----
     // Icon buttons in the ribbon: 'folder-open' for import, 'arrow-to-bottom' for export.
@@ -520,8 +524,7 @@ export class EnumeratorConfigForm {
         if (c) this.setAndFire(this.exclusionColInput, c);
       }
       // Neither field group has a "set value" hook — rebuild from the loaded config; the rebuilt
-      // inputs are brand new objects, so they need their own revalidation wiring too. Unsubscribe
-      // the previous generation first, or every YAML load leaks the old inputs/subscriptions.
+      // inputs are brand new objects, so they need their own revalidation wiring too.
       this.limitFieldSubs.forEach((s) => s.unsubscribe());
       this.limitFieldSubs = [];
       this.combinationLimitFields = buildCombinationLimitFields(config);
@@ -535,11 +538,7 @@ export class EnumeratorConfigForm {
   }
 
   private wireValidationOne(input: DG.InputBase<unknown>): Subscription {
-    const sub = input.onChanged.subscribe(() => {
-      this.deps.refreshValidation();
-    });
-    this.deps.view.subs.push(sub);
-    return sub;
+    return input.onChanged.subscribe(() => this.deps.refreshValidation());
   }
 
   validate = (): string | null => {

@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {
-  CHANGED_DOT_STYLE, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
-  OVERRIDE_DOT_COLOR, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
+  CHANGED_DOT_STYLE, clampRounds, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode,
+  MODE_LABEL, OVERRIDE_DOT_COLOR, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
 } from './enumerator-app';
 
 export interface StrategySummaryDeps {
@@ -50,7 +50,7 @@ export class StrategySummary {
     // count this large must never drive a per-round DOM-building loop directly, or typing enough
     // digits to exceed MAX_ROUNDS freezes the tab rendering thousands of row elements per keystroke.
     const rounds = this.deps.currentRounds();
-    const displayRounds = Math.min(MAX_ROUNDS, Math.max(1, rounds));
+    const displayRounds = clampRounds(rounds);
     const n = estimateProductCount(tDf, bDf);
 
     // Per-round subset overrides, computed once for both the round diagram and the per-component

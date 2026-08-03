@@ -119,6 +119,13 @@ const ROUNDS_INPUT_DEBOUNCE_MS = 300;
 // A round tab is built for every round, and product counts grow combinatorially with each one.
 export const MAX_ROUNDS = 10;
 
+// Shared by every per-round DOM-building loop (data-panel.ts, strategy-summary.ts,
+// preview-panel.ts) — a round count typed past MAX_ROUNDS must never drive one of those loops
+// directly, or it freezes the tab building thousands of row elements per keystroke.
+export function clampRounds(rounds: number): number {
+  return Math.min(MAX_ROUNDS, Math.max(1, rounds));
+}
+
 // Sniff string columns and set semType so the grid renders reactions and molecules: presence of
 // `>>` in sampled values wins as ChemicalReaction, else auto-detection handles Molecule etc.
 export function detectChemSemTypes(df: DG.DataFrame): Promise<void> {

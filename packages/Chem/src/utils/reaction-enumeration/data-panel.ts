@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
-import {DataKey, detectChemSemTypes, MAX_ROUNDS, Mode, OVERRIDE_DOT_COLOR} from './enumerator-app';
+import {clampRounds, DataKey, detectChemSemTypes, Mode, OVERRIDE_DOT_COLOR} from './enumerator-app';
 
 export type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
 export const makeTabBadge = (): TabBadge => {
@@ -196,7 +196,7 @@ export class DataPanel {
   // Capped defensively regardless of validation state — an invalid (too-high) input value still
   // blocks Run via `validate()`, but must not make buildStepTabs try to build hundreds of tabs.
   private roundCount(): number {
-    return Math.min(MAX_ROUNDS, Math.max(1, this.deps.currentRounds()));
+    return clampRounds(this.deps.currentRounds());
   }
 
   private updateDots(): void {
@@ -514,7 +514,9 @@ export class DataPanel {
 export function buildPerRoundOverrides(panels: DataPanel[], cfg: EnumeratorConfig): PerRoundOverride[] | undefined {
   const overrides: PerRoundOverride[] = [];
   let any = false;
-  for (let r = 0; r < cfg.enumeration.num_rounds; r++) {
+  // Clamped for the same reason as roundCount() above — Strategy summary and Preview recap both
+  // call this directly off the raw, unclamped config value while the user is still typing it.
+  for (let r = 0; r < clampRounds(cfg.enumeration.num_rounds); r++) {
     const o: PerRoundOverride = {};
     for (const panel of panels)
       if (panel.applyOverrideForRound(r + 1, o, cfg)) any = true;

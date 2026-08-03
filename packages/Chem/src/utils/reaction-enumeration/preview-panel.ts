@@ -6,8 +6,8 @@ import {enumerate, OutputRow, PerRoundOverride} from './enumerate';
 import {getRdKitModule} from '../chem-common-rdkit';
 import {MountedViewerRegistry} from './viewer-mount';
 import {
-  BuiltInputs, buildInputs, buildResultDataFrame, DataKey, Mode, MODE_LABEL, panelHeader, roundsLabel,
-  tabPanel,
+  BuiltInputs, buildInputs, buildResultDataFrame, clampRounds, DataKey, MAX_ROUNDS, Mode, MODE_LABEL, panelHeader,
+  roundsLabel, tabPanel,
 } from './enumerator-app';
 
 // Small enough to compute fast, large enough to show a representative mixed sample.
@@ -95,16 +95,20 @@ export class PreviewPanel {
     };
 
     addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`);
+    if (rounds > MAX_ROUNDS) addRow('', `Showing the first ${MAX_ROUNDS} rounds — capped at ${MAX_ROUNDS}.`);
 
     // Per-round breakdown only for rounds that actually have a custom subset — every round shows
     // "all N" identically otherwise, which just repeats the total for no benefit.
     const overrides = tDf && bDf ? this.deps.buildPerRoundOverrides(this.deps.getConfig()) : undefined;
+    // Same freeze risk as StrategySummary's own displayRounds — this loop builds real DOM rows off
+    // whatever's currently typed into "Number of rounds", which can transiently exceed MAX_ROUNDS.
+    const displayRounds = clampRounds(rounds);
     const addComponentRows = (
       label: string, df: DG.DataFrame | null, key: 'templates' | 'buildingBlocks',
     ): void => {
       if (!df) {addRow(label, 'Not selected'); return;}
       addRow(label, `${df.rowCount}`);
-      for (let r = 1; r <= rounds; r++) {
+      for (let r = 1; r <= displayRounds; r++) {
         const oc = this.deps.overrideCountFor(overrides, mode, r, key);
         if (oc != null) addRow(`Round ${r}`, `${oc} of ${df.rowCount} (custom subset)`, true);
       }

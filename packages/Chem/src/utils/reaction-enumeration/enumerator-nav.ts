@@ -326,7 +326,6 @@ export class EnumeratorNav {
     };
     setChip(this.chipReactionsC, s.reactionsText, s.reactionsOverride);
     setChip(this.chipBbsC, s.bbsText, s.bbsOverride);
-    // Extras is fully optional — never flagged as an error state.
     this.chipExtrasC.textEl.textContent = s.extrasText;
     this.chipExtrasC.dot.style.display = s.extrasOverride ? '' : 'none';
     // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".

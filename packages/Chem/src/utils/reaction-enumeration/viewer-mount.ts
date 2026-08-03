@@ -14,8 +14,8 @@ const FILTER_REMOUNT_SETTLE_MS = 200;
  * deferred filter-reset timer scheduled against them, and drains `view.subs` itself. `View.detach()`
  * (js-api) never calls `ViewBase.detach()`, so `view.subs` never unsubscribes on its own for this
  * app-hosted view type — cleanup runs off `grok.events.onViewRemoved` instead (filtered by
- * `view.id`, so multiple open Reaction Enumerator tabs never cancel each other's timers/viewers).
- * Every `view.subs.push(...)` call anywhere in this module relies on this one drain to ever unsubscribe.
+ * `view.id`, so multiple open Reaction Enumerator tabs never cancel each other's timers/viewers),
+ * which is what every `view.subs.push(...)` call anywhere in this module relies on to unsubscribe.
  */
 export class MountedViewerRegistry {
   private readonly mountedViewers = new Map<HTMLElement, DG.Viewer[]>();
