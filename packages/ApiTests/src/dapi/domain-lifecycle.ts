@@ -151,6 +151,7 @@ category('Dapi: domain lifecycle', () => {
 // self-signup is unavailable (SSO-only or email-confirm setups).
 category('Dapi: domain capabilities', () => {
   const items = () => grok.dapi.domains.table('apitests.item');
+  const hidden = () => grok.dapi.domains.table('apitests.hidden_item');
 
   test('admin sees full capabilities; cache survives reads, drops on invalidation', async () => {
     const caps = await items().capabilities();
@@ -183,6 +184,7 @@ category('Dapi: domain capabilities', () => {
       console.log('skipped: the auth cookie is not readable (HttpOnly) — impersonation is not restorable');
       return;
     }
+    const adminToken = grok.dapi.token;
     const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
     const login = `wo2caps${stamp}`;
     // Self-signup issues the restricted session token the probes run under.
@@ -199,7 +201,13 @@ category('Dapi: domain capabilities', () => {
       document.cookie = `auth=${encodeURIComponent(token)}; path=/`;
       grok.dapi.token = token;
     };
-    const restoreAdmin = () => setAuth(decodeURIComponent(adminCookie));
+    // Restore exactly what was captured — the cookie VALUE as it was written
+    // (re-encoding a decoded value is not always the same string) and the token
+    // the client held, which the cookie need not carry.
+    const restoreAdmin = () => {
+      document.cookie = `auth=${adminCookie}; path=/`;
+      grok.dapi.token = adminToken;
+    };
     const user = await grok.dapi.users.filter(`login = "${login}"`).include('group').first();
     expect(user != null, true, 'signed-up user not found');
     // Runs capabilities() under the restricted user's session: the permission probes
@@ -238,6 +246,105 @@ category('Dapi: domain capabilities', () => {
       } catch (_) { /* already revoked */ }
       // Users are not API-deletable — blocking is the platform cleanup for test
       // users (revokes their sessions too, including the signup session).
+      const blocked = await fetch(`${grok.dapi.root}/users/block`, {
+        method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({'#type': 'User', 'id': user!.id, 'login': login}),
+      });
+      expect(blocked.ok, true, `test user ${login} not blocked: ${blocked.status}`);
+      grok.dapi.domains.invalidateUiCaches();
+    }
+  });
+
+  test('a table grant does not reach the rows of a defaultRowVisibility:"none" table', async () => {
+    // capabilities() ANDs canEdit/canDelete with "a grant on the securing TABLE
+    // reaches its ROWS" — false exactly for this fixture. The client-side term
+    // cannot be observed from here (Auth.adminMode short-circuits it, and a
+    // cookie swap does not change the CLIENT's user), so what this pins is the
+    // SERVER semantics the term mirrors, side by side with apitests.item whose
+    // rows default to table visibility. STANDING LIMITATION: the client term
+    // itself needs a genuinely restricted browser session (ui-js-api progress).
+    const e = await thrown(() => hidden().capabilities());
+    if (e instanceof DG.DomainValidationError) {
+      console.log('skipped: apitests.hidden_item is not deployed (schema.json < 1.2.0)');
+      return;
+    }
+    expect(e, null, `apitests.hidden_item capabilities failed: ${e?.message}`);
+    const adminCookie = document.cookie.match(/(?:^|; )auth=([^;]*)/)?.[1] ?? null;
+    if (adminCookie == null) {
+      console.log('skipped: the auth cookie is not readable (HttpOnly) — impersonation is not restorable');
+      return;
+    }
+    const adminToken = grok.dapi.token;
+    const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
+    const login = `wo4fvis${stamp}`;
+    const signup = await (await fetch(`${grok.dapi.root}/users/signup`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({login: login, email: `${login}@test.datagrok.ai`,
+        password: btoa(`Wo4f-${stamp}`), firstName: 'WO4F', lastName: 'VisProbe'}),
+    })).json();
+    if (!signup?.token) {
+      console.log(`skipped: self-signup unavailable (${signup?.reason ?? 'no token'})`);
+      return;
+    }
+    const restoreAdmin = () => {
+      document.cookie = `auth=${adminCookie}; path=/`;
+      grok.dapi.token = adminToken;
+    };
+    const asUser = async <T>(action: () => Promise<T>): Promise<T> => {
+      document.cookie = `auth=${encodeURIComponent(signup.token)}; path=/`;
+      grok.dapi.token = signup.token;
+      try {
+        return await action();
+      } finally {
+        restoreAdmin();
+      }
+    };
+    // Every server call is labelled: this test touches two tables, two sessions
+    // and four grants, and a bare 'forbidden' would not say which.
+    const step = async <T>(label: string, action: () => Promise<T>): Promise<T> => {
+      try {
+        return await action();
+      } catch (x: any) {
+        throw new Error(`${label}: ${x?.message ?? x} (${JSON.stringify(x?.body ?? {})})`);
+      }
+    };
+    const user = await grok.dapi.users.filter(`login = "${login}"`).include('group').first();
+    expect(user != null, true, 'signed-up user not found');
+    const group = user!.group.id;
+    const sku = `SKU-VIS-${stamp}`;
+    let visibleId: string | undefined;
+    let hiddenId: string | undefined;
+    try {
+      visibleId = (await step('insert into apitests.item', () => items().insert({sku, name: 'Visibility probe'})))[0].id;
+      hiddenId = (await step('insert into apitests.hidden_item',
+        () => hidden().insert({sku, name: 'Visibility probe'})))[0].id;
+      await step('grant View on apitests.item', () => items().grant(group, 'View'));
+      await step('grant View on apitests.hidden_item', () => hidden().grant(group, 'View'));
+      // Same grant, same row-mode: only the table whose rows default to table
+      // visibility lets it through.
+      const seenVisible = await step('read apitests.item as the restricted user',
+        () => asUser(() => items().query({filter: `sku = "${sku}"`})));
+      const seenHidden = await step('read apitests.hidden_item as the restricted user',
+        () => asUser(() => hidden().query({filter: `sku = "${sku}"`})));
+      expect(seenVisible.length, 1, 'a table View grant must reach rows of a table-visibility table');
+      expect(seenHidden.length, 0,
+        `a table View grant must NOT reach rows of a defaultRowVisibility:"none" table: ${JSON.stringify(seenHidden)}`);
+    } finally {
+      restoreAdmin();
+      // Best-effort, one report per failure: a throw here would mask the result
+      // AND skip the rest of the cleanup.
+      const cleanup: [string, () => Promise<any>][] = [
+        ['revoke View on apitests.item', () => items().revoke(group, 'View')],
+        ['revoke View on apitests.hidden_item', () => hidden().revoke(group, 'View')],
+        ['delete the apitests.item probe row', async () => visibleId && await items().delete(visibleId)],
+        ['delete the apitests.hidden_item probe row', async () => hiddenId && await hidden().delete(hiddenId)],
+      ];
+      for (const [label, action] of cleanup)
+        try {
+          await action();
+        } catch (x) {
+          console.error(`cleanup — ${label} failed: ${x}`);
+        }
       const blocked = await fetch(`${grok.dapi.root}/users/block`, {
         method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({'#type': 'User', 'id': user!.id, 'login': login}),

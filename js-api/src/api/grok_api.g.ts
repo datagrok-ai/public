@@ -823,6 +823,7 @@ export interface IDartApi {
   grok_Meta_RenderView(meta: any, x: any): any;
   grok_Meta_RenderGrid(meta: any, grid: any, items: any): any;
   grok_Meta_GetById(meta: any, id: String): Promise<any>;
+  grok_Meta_DartForType(type: String): any;
   grok_DomainRowMeta_RegisterPerTableMetas(): Promise<any>;
   grok_DomainRegistry_RowProperties(type: String): Promise<any>;
   grok_DomainRegistry_TableInfo(schemaName: String, tableName: String): Promise<any>;
@@ -832,6 +833,7 @@ export interface IDartApi {
   grok_Domains_InvalidateUiCaches(): any;
   grok_DomainMeta_ForType(type: String): any;
   grok_DomainMeta_DeepLink(row: any): any;
+  grok_DomainMeta_ChildTablePath(schema: String, table: String, fkColumn: String, rowId: String): any;
   grok_DomainRow_Create(schemaName: String, tableName: String, values: any): any;
   grok_Meta_RenderPreview(meta: any, x: any, params: any, path: String): any;
   grok_MarkupHandler_Register(regexp: String, description: String, renderFromMatches: any): any;

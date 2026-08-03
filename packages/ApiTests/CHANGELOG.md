@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: Added JS-side renderGrid fall-through coverage (a plain, non-overriding handler decorates a queryDf grid identically to the platform meta) and a `defaultRowVisibility: "none"` fixture table (`apitests.hidden_item`, schema 1.2.0) with a restricted-session probe proving a table grant does NOT reach its rows — the server semantics `capabilities()`' reaches-rows rule mirrors. Ribbon-action assertions follow the new gating (Open always, Share... only with the row's Share permission, nothing at all for an unsaved row).
+
 GROK-20298: Added `DomainObjectHandler` coverage to `JS: domain handlers` — an override-nothing handler renders DOM-identically to the platform meta (card/markup/tooltip/caption) and `getById` gives JS its first `DG.DomainRow` acquisition path; registering one keeps the Dart meta (owner of the CRUD commands) while winning `forEntity`; reflective properties/detail tabs/editor (inputs = writable columns); `DomainRow.permissions()` and the ribbon actions flip on a real Delete grant round-trip, and an unsaved row holds no permissions; malformed and unknown table addresses fail with clear/typed errors.
 
 GROK-20298: Added `Dapi: domain registry` (rowProperties constraints round-trip incl. grit.issue choices/min/nullable, tableInfo childTables FK inversion, resolveNames business-key identity + null for unresolvable ids, typed unknown-table rejections) and `Dapi: domain capabilities` (admin full capabilities + cache invalidation; canInsert/canEdit flip on a real Edit grant round-trip probed under a throwaway restricted user's session token, cleaned up in finally).

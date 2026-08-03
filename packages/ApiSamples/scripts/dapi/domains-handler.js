@@ -19,6 +19,8 @@ DG.ObjectHandler.register(new IssueHandler());
 // Everything else works without a single line of custom code:
 const handler = new DG.DomainObjectHandler('grit.issue');
 const issue = (await grok.dapi.domains.table('grit.issue').query({limit: 1}))[0];
+if (issue == null)
+  throw new Error('grit.issue has no rows — create one first (/domains/grit/issue).');
 const row = await handler.getById(issue.id);                 // DG.DomainRow
 
 const props = await handler.getProperties();                 // registry Property metadata

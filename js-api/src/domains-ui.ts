@@ -16,8 +16,6 @@ import {DomainConditionTree, DomainTableCapabilities, splitDomainTable} from './
 import {DomainRow} from './entities/domain';
 import {Property} from './entities/property';
 import {SemanticValue} from './grid';
-import {Grid} from './grid';
-import {DataFrame} from './dataframe';
 import {View} from './views/view';
 import {IDartApi} from './api/grok_api.g';
 import {toDart, toJs} from './wrappers';
@@ -83,7 +81,7 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   readonly schemaName: string;
   /** Table name of {@link table} within {@link schemaName}. */
   readonly tableName: string;
-  private _meta: EntityMetaDartProxy | null | undefined;
+  private _meta: EntityMetaDartProxy | null = null;
 
   /** [table] addresses the domain table as `'<schema>.<table>'` (also the row
    * entity type and semType); a malformed address throws immediately. */
@@ -95,8 +93,6 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   }
 
   get type(): string { return this.table; }
-
-  get name(): string { return `${this.table} handler`; }
 
   /** Claims rows of {@link table}, including ones wrapped in a
    * {@link SemanticValue} (how the platform passes cell values around). */
@@ -113,13 +109,15 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   }
 
   /** The platform's per-table meta, as an {@link EntityMetaDartProxy} — what the
-   * default render members delegate to. Resolved on first use and never a JS
-   * handler (delegating into one would recurse); null only for a table whose
-   * address cannot be parsed. */
+   * default render members delegate to. Never a JS handler (delegating into one
+   * would recurse); null only for a table whose address cannot be parsed. Only a
+   * real hit is cached: a miss is re-resolved on the next use, so a handler
+   * constructed before the platform metas exist starts delegating as soon as
+   * they do. */
   protected get dartMeta(): EntityMetaDartProxy | null {
-    if (this._meta === undefined)
+    if (this._meta == null)
       this._meta = toJs(api.grok_DomainMeta_ForType(this.table)) ?? null;
-    return this._meta!;
+    return this._meta;
   }
 
   private _delegate(x: T, dart: (m: EntityMetaDartProxy, row: DomainRow) => HTMLElement,
@@ -166,10 +164,19 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   }
 
   /** Permalink to the row's Entity View (business-key URL when unambiguous, id
-   * URL otherwise — the platform's own rule). */
+   * URL otherwise — the platform's own rule); null for an unsaved row
+   * ({@link newRow}), which has no address yet. */
   deepLink(x: T): string | null {
     const row = this.rowOf(x);
-    return row == null ? null : api.grok_DomainMeta_DeepLink(toDart(row));
+    return row?.id == null ? null : api.grok_DomainMeta_DeepLink(toDart(row));
+  }
+
+  /** Opens the row's Entity View — the platform's default (double-click) action
+   * for a domain row. */
+  openRow(x: T): void {
+    const link = this.deepLink(x);
+    if (link != null)
+      api.grok_Route(link);
   }
 
   // ─────────────────────── rendering (delegating defaults) ─────────────────────────
@@ -210,29 +217,28 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
     return m == null || row == null ? super.renderPreview(x, params, path) : m.renderPreview(row, params, path);
   }
 
-  /** Decorates a grid over this table's rows: registry tags, reference captions,
-   * `~`/system-column hiding, name-column-first ordering, semType renderer
-   * re-resolution. Delegates to the platform meta, so it is identical to what
-   * the built-in Domain View grid does — override it to take over completely
-   * (see {@link ObjectHandler.renderGrid}). */
-  renderGrid(grid: Grid, options?: {items?: DataFrame}): void {
-    const m = this.dartMeta;
-    if (m != null)
-      m.renderGrid(grid, options);
-  }
+  // renderGrid is deliberately NOT overridden: the base
+  // {@link ObjectHandler.renderGrid} already delegates to the platform meta for
+  // its type, so this handler decorates a grid exactly like the Domain View —
+  // and so does every other non-overriding handler.
 
   /** Reflective property form over the writable columns of [x] (a new row when
    * omitted) — inputs come from {@link getProperties}, and non-writable columns
    * are excluded from the form AND from any payload built off it, mirroring
-   * column security. A richer form (async validation, reference pickers, error
-   * mapping) is `DomainForm` in `@datagrok-libraries/domain-ui`. */
+   * column security. Callers without the corresponding table capability
+   * (`canInsert` for a new row, `canEdit` for an existing one) get a read-only
+   * explanation instead: column security alone is NOT table Edit. A richer form
+   * (async validation, reference pickers, error mapping) is `DomainForm` in
+   * `@datagrok-libraries/domain-ui`. */
   async renderEditor(x?: T): Promise<HTMLElement> {
     const [properties, caps] = await Promise.all([this.getProperties(), this.capabilities()]);
     const writable = caps.writableColumns;
     const inputs = properties.filter((p) => writable.includes(p.name));
-    if (inputs.length === 0)
-      return ui.divText(`You cannot edit ${this.table} rows.`);
     const row = (x == null ? null : this.rowOf(x)) ?? this.newRow();
+    const creating = row.id == null;
+    if (!(creating ? caps.canInsert : caps.canEdit) || inputs.length === 0)
+      return ui.divText(creating ? `You cannot create ${this.table} rows.`
+        : `You cannot edit ${this.table} rows.`);
     return ui.input.form(toDart(row), inputs);
   }
 
@@ -250,43 +256,52 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
       // Two FKs to the same parent yield two tabs for one child table —
       // disambiguate by the FK label (the platform's own rule).
       const ambiguous = children.filter((o) => `${o.schema}.${o.table}` === table).length > 1;
-      const smartFilter = `${c.fkColumn} = "${row.id}"`;
       return {
         name: ambiguous ? `${table} (${c.label})` : table,
         table: table,
         fkColumn: c.fkColumn,
         filter: [{property: c.fkColumn, operator: '=', value: row.id}] as DomainConditionTree,
+        // The path (and its `q` smart filter) comes from the platform's own
+        // builder — the /domains URL scheme has ONE encode side.
         open: () => api.grok_Route(
-          `/domains/${c.schema}/${c.table}?q=${encodeURIComponent(smartFilter)}`),
+          api.grok_DomainMeta_ChildTablePath(c.schema, c.table, c.fkColumn, row.id!)),
       };
     });
   }
 
   /** Actions available on [x] for the CURRENT user — the JS mirror of the Entity
-   * View ribbon (Edit, Clone, Delete, Share, Watch, History, Copy link), gated by
-   * server-truth row permissions ({@link DomainRow.permissions}) and the table's
-   * registry metadata. Actions the user may not perform are absent from the list.
+   * View ribbon plus its default Open action (Open, Edit, Clone, Delete, Share,
+   * Watch, History, Copy link), gated by server-truth row permissions
+   * ({@link DomainRow.permissions}) and the table's registry metadata. Actions
+   * the user may not perform are absent from the list; an unsaved row
+   * ({@link newRow}) has none of them — it has no address, history or
+   * permissions until it is inserted.
    *
    * The dialog-backed runs delegate to {@link editRow} / {@link cloneRow} /
    * {@link deleteRow} / {@link shareRow} / {@link showHistory}, which land with
    * the core openers (`DG.DomainView`) — override them until then. */
   async getRibbonActions(x: T): Promise<DomainAction[]> {
     const row = this.rowOf(x);
-    if (row == null)
+    if (row?.id == null)
       return [];
     const info = await new DomainRegistryClient().tableInfo(this.table);
     const perms = await row.permissions();
-    const res: DomainAction[] = [];
+    const res: DomainAction[] = [{name: 'Open', icon: 'folder-open', run: () => this.openRow(x)}];
     if (perms.edit) {
       res.push({name: 'Edit...', icon: 'pencil', run: () => this.editRow(x)});
       res.push({name: 'Clone', icon: 'clone', run: () => this.cloneRow(x)});
     }
     if (perms.delete)
       res.push({name: 'Delete', icon: 'trash-alt', run: () => this.deleteRow(x)});
-    if (info.securityMode === 'row')
+    // Row-mode tables are the ones that CAN share a row; Share on the row itself
+    // is what makes it offerable (the Dart ribbon shows it and explains the
+    // denial on click — JS consumers render the list as-is, so gate it here).
+    if (info.securityMode === 'row' && perms.share)
       res.push({name: 'Share...', icon: 'share-alt', run: () => this.shareRow(x)});
-    // Row-level watch needs the audit trail as its change source.
-    if (info.audit && row.id != null) {
+    // Row-level watch needs the audit trail as its change source. NB the state
+    // is a server round trip per build (the Dart ribbon reads its warmed cache);
+    // callers rebuilding the list often should cache it themselves.
+    if (info.audit) {
       const watching = await this.client.isWatching(row.id);
       res.push({name: watching ? 'Unwatch' : 'Watch', icon: 'bell',
         run: () => this.setWatch(x, !watching)});

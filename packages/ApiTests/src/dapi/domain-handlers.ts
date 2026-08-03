@@ -130,6 +130,45 @@ category('JS: domain handlers', () => {
     }
   });
 
+  test('renderGrid: a plain handler falls through to the platform from JS too', async () => {
+    // The base ObjectHandler.renderGrid delegates to the platform meta for its
+    // type (Meta_DartForType), so a handler that overrides NOTHING decorates a
+    // grid exactly like the built-in view — the JS-side mirror of the Dart
+    // fall-through. Not registered: this asserts the member, not the dispatch.
+    class PlainHandler extends DG.ObjectHandler {
+      get type() { return 'apitests.item_event'; }
+      isApplicable(_x: any) { return false; }
+    }
+    const sku = `SKU-RG-${stamp()}`;
+    const kind = `rg-plain-${stamp()}`;
+    const [item] = await items().insert({sku, name: 'Root fall-through parent'});
+    try {
+      await events().insert({item_id: item.id, kind, amount: 1});
+      const decorate = async (render: (g: _DG.Grid, df: _DG.DataFrame) => void) => {
+        const df = await events().queryDf({filter: `kind = "${kind}"`});
+        const grid = DG.Grid.create(df);
+        render(grid, df);
+        const visible: string[] = [];
+        for (let i = 0; i < grid.columns.length; i++) {
+          const gc = grid.columns.byIndex(i);
+          if (gc?.visible)
+            visible.push(gc.name);
+        }
+        return {visible: visible, caption: df.col('item_id')!.getTag(DG.TAGS.FRIENDLY_NAME)};
+      };
+      const dart = dartMetaFor('apitests.item_event');
+      expect(dart != null, true, 'per-table Dart meta for apitests.item_event not registered');
+      const viaPlatform = await decorate((g, df) => dart.renderGrid(g, {items: df}));
+      const viaHandler = await decorate((g, df) => new PlainHandler().renderGrid(g, {items: df}));
+      expect(viaHandler.visible.join(','), viaPlatform.visible.join(','),
+        `a plain handler must decorate like the platform meta (${viaHandler.visible.join(',')})`);
+      expect(viaHandler.visible.includes('id'), false, 'system columns must be hidden');
+      expect(viaHandler.caption, viaPlatform.caption, 'ref-column caption not stamped');
+    } finally {
+      await items().delete(item.id); // cascades to item_event
+    }
+  });
+
   // ─────────── DomainObjectHandler (ui-js-api WO-4) ───────────
   // The reflective per-table handler: registry-driven metadata, capability-gated
   // actions, and render defaults that DELEGATE to the platform's Dart meta — so
@@ -233,20 +272,24 @@ category('JS: domain handlers', () => {
     const handler = new DG.DomainObjectHandler('apitests.item');
     const sku = `SKU-DOH-${stamp()}`;
     const [ins] = await items().insert({sku, name: 'Permission probe'});
-    const current = await grok.dapi.users.current();
-    const me = await grok.dapi.users.include('group').filter(`login = "${current.login}"`).first();
-    expect(me?.group?.id != null, true, 'current user personal group not resolved');
-    const group = me!.group.id;
-    // The fixture's BASELINE grants must survive: revoking a Delete grant the
-    // environment already had would 403 every later row delete in the suite.
-    const hadDelete = (await items().grants())
-      .some((g) => g.group.id === group && g.permission === 'Delete');
+    // Everything after the insert runs inside the try — a throw in any of the
+    // lookups below would otherwise leak the row.
+    let group: string | undefined;
+    let hadDelete = false;
     try {
+      const current = await grok.dapi.users.current();
+      const me = await grok.dapi.users.include('group').filter(`login = "${current.login}"`).first();
+      expect(me?.group?.id != null, true, 'current user personal group not resolved');
+      group = me!.group.id;
+      // The fixture's BASELINE grants must survive: revoking a Delete grant the
+      // environment already had would 403 every later row delete in the suite.
+      hadDelete = (await items().grants())
+        .some((g) => g.group.id === group && g.permission === 'Delete');
       const row = await handler.getById(ins.id) as _DG.DomainRow;
       const names = async () => (await handler.getRibbonActions(row)).map((a) => a.name);
       // Both directions of one real grant round-trip (grant/revoke drop the caches).
       const gate = async (granted: boolean) => {
-        granted ? await items().grant(group, 'Delete') : await items().revoke(group, 'Delete');
+        granted ? await items().grant(group!, 'Delete') : await items().revoke(group!, 'Delete');
         return {perms: await row.permissions(), actions: await names()};
       };
       const denied = await gate(false);
@@ -260,22 +303,32 @@ category('JS: domain handlers', () => {
       // the denial side is only observable where the probe actually ran.
       if (!denied.perms.delete)
         expect(denied.actions.includes('Delete'), false, 'Delete must be hidden without the grant');
-      // Always offered; Share only for row-mode tables (apitests.item is one).
-      for (const n of ['History', 'Copy link', 'Share...'])
+      // Open (the platform's default row action), History and Copy link are
+      // always offered; Share needs BOTH a row-mode table and Share on the row.
+      for (const n of ['Open', 'History', 'Copy link'])
         expect(allowed.actions.includes(n), true, `${n} action missing: ${JSON.stringify(allowed.actions)}`);
-      // Unsaved rows have no securing entity, hence no permissions — for admins too.
+      expect(allowed.actions.includes('Share...'), allowed.perms.share === true,
+        `Share... must follow the row's Share permission: ${JSON.stringify(allowed.perms)}`);
+      // Unsaved rows have no securing entity, hence no permissions — for admins
+      // too — and therefore no actions at all (no address, history or link).
       const p = await handler.newRow().permissions();
       expect(p.edit || p.delete || p.share, false,
         `an unsaved row must hold no permissions: ${JSON.stringify(p)}`);
-      expect((await handler.getRibbonActions(handler.newRow() as any)).some((a) => a.name === 'Delete'),
-        false, 'an unsaved row must offer no Delete');
+      expect((await handler.getRibbonActions(handler.newRow() as any)).length, 0,
+        'an unsaved row must offer no actions');
+      expect(handler.deepLink(handler.newRow() as any), null,
+        'an unsaved row must have no deep link');
     } finally {
       // Delete needs the grant; restore the baseline only afterwards.
-      try {
-        await items().grant(group, 'Delete');
-      } catch (_) { /* the probe above may have failed before the grant existed */ }
+      if (group != null)
+        try {
+          await items().grant(group, 'Delete');
+        } catch (e) {
+          // Never silent: a failed restore is exactly how a baseline grant gets lost.
+          console.error(`restoring the Delete grant on apitests.item failed: ${e}`);
+        }
       await items().delete(ins.id);
-      if (!hadDelete)
+      if (group != null && !hadDelete)
         await items().revoke(group, 'Delete');
       grok.dapi.domains.invalidateUiCaches();
     }

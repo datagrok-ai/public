@@ -1788,10 +1788,23 @@ export class ObjectHandler<T = any> {
    *
    * Dispatch: OVERRIDING this member takes FULL responsibility for grid decoration
    * of the built-in views (e.g. the Domain View grid). Any handler that does not
-   * override it — including one written against this version of the API — inherits
-   * the sentinel-marked base no-op and falls through to the platform default; to
-   * opt out of decoration entirely, override it with an empty body. */
-  renderGrid(grid: Grid, options?: {items?: DataFrame}): void { }
+   * override it — including one written against this version of the API — falls
+   * through to the platform meta for {@link type}, from EITHER side: the Dart
+   * dispatch skips the sentinel-marked base (see below), and the base itself
+   * delegates, so `ObjectHandler.forEntity(x).renderGrid(grid)` decorates exactly
+   * like the platform. To opt out of decoration entirely, override it with an
+   * empty body. */
+  renderGrid(grid: Grid, options?: {items?: DataFrame}): void {
+    let type: string;
+    try {
+      type = this.type;         // abstract on the base, and JS getters may throw
+    } catch (_) {
+      return;
+    }
+    const dart: EntityMetaDartProxy | null = toJs(api.grok_Meta_DartForType(type));
+    if (dart != null)
+      dart.renderGrid(grid, options);
+  }
 
   /** Converts object to its markup description */
   toMarkup(T: any): string | null {
@@ -1864,8 +1877,10 @@ export class ObjectHandler<T = any> {
 }
 
 // Sentinel for the Dart dispatch guard: prototype-chain lookups find the base
-// no-op on EVERY class-based handler, so it is marked as the platform default
+// member on EVERY class-based handler, so it is marked as the platform default
 // and treated as absent — only a real override takes over grid decoration.
+// Keeping it marked also avoids a round trip: the Dart side already knows which
+// meta the base would delegate to.
 (ObjectHandler.prototype.renderGrid as any).isPlatformDefault = true;
 
 export class EntityMetaDartProxy extends ObjectHandler {

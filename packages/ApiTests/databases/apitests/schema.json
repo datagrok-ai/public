@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "apitests",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "tables": {
     "item": {
       "securityMode": "row",
@@ -22,6 +22,15 @@
         "item_id": {"type": "ref", "ref": "item", "onDelete": "cascade", "required": true},
         "kind": {"type": "string", "required": true},
         "amount": {"type": "int"}
+      }
+    },
+    "hidden_item": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "description": "Fixture for the reaches-rows rule: a grant on THIS table does not reach its rows",
+      "columns": {
+        "sku": {"type": "string", "required": true, "unique": true},
+        "name": {"type": "string"}
       }
     }
   },
