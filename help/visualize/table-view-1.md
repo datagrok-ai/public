@@ -4,6 +4,14 @@ mdx:
   format: mdx
 sidebar_position: 1
 slug: /table-view
+description: The primary spreadsheet-like view for working with tables, viewers, tooltips, filters, and layouts.
+keywords:
+  - spreadsheet view
+  - grid and viewers
+  - table manager
+  - column manager
+  - group tooltips
+  - viewer properties
 ---
 
 ```mdx-code-block

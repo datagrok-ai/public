@@ -2,8 +2,9 @@
 feature: chem
 target_layer: playwright
 coverage_type: regression
-priority: p2
-realizes: []
+priority: p0
+realizes_atlas: [chem.cp.scaffold-tree-add-filter, chem.x.scaffold-sketcher-substructure, chem.cp.project-save-reopen-with-chem-state]
+realizes: [chem.analyze.scaffold-tree, chem.scaffold-tree]
 realized_as:
   - scaffold-tree-spec.ts
 related_bugs: []

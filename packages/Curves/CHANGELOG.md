@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Flow: Added Add Curve Statistic and Add Aggregated Curve Statistic, which take a real `column {semType: fit}` slot. The `addStatisticsColumn` / `addAggrStatisticsColumn` originals address the curve column by NAME — a free-text field with no picker and no filter — and stay as they are because the Fit pane and the Data to Curves pipeline call them by name as replayable transforms
+* Curve statistics: The free-text `propName` and `aggrType` parameters now declare `choices:` and a default, on both the originals and the new twins
+* Fit Dose-Response Curves: Constrained the column pickers by type (numerical for concentration/readout, categorical for the identifiers) and marked the seven mandatory columns `nullable: false` — a column parameter defaults to nullable, which read as optional and let a half-configured node run
+* Calculate MSR: Added captions, descriptions, and column-type constraints to the five unconstrained mandatory column inputs
 * GROK-20232: Fit renderer: degrade gracefully on malformed fit-cell JSON instead of throwing on every grid redraw
 
 ## 1.12.0 (2026-04-02)

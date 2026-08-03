@@ -3,7 +3,8 @@ feature: powerpack
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [powerpack.cp.add-new-column-persists]
+realizes_atlas: [powerpack.cp.add-new-column-persists]
+realizes: []
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-new-column-dialog

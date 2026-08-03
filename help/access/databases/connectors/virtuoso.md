@@ -1,5 +1,14 @@
 ---
 title: "Virtuoso"
+description: Connect Datagrok to the Virtuoso data virtualization platform using SQL queries via a JDBC driver.
+keywords:
+  - virtuoso database
+  - data virtualization platform
+  - jdbc driver
+  - connect to a database
+  - schema browsing
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to the [Virtuoso](https://virtuoso.openlinksw.com/) data virtualization platform via a JDBC driver.

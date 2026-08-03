@@ -1,5 +1,13 @@
 ---
 title: "Queue architecture"
+description: How Datagrok's queue-based computation system routes function calls to scalable, capability-matched nodes.
+keywords:
+  - funccall queue
+  - computation nodes
+  - load balancing
+  - node capabilities
+  - scalable computing
+  - job dispatch
 ---
 
 The primary objective of the queue mechanism in Datagrok is to offer a scalable and extensible computing system.

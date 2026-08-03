@@ -90,9 +90,10 @@ class Environments(object):
             if isinstance(dep, str) and dep.startswith('python='):
                 ver = dep.split('=')[1]
                 major_minor = '.'.join(ver.split('.')[:2])
-                tar_path = os.path.join(CONDA_HOME, 'envs', TEMPLATE_ENV_PREFIX + major_minor + '.tar')
-                if os.path.isfile(tar_path):
-                    return tar_path
+                for ext in ('.tar.zst', '.tar'):
+                    tar_path = os.path.join(CONDA_HOME, 'envs', TEMPLATE_ENV_PREFIX + major_minor + ext)
+                    if os.path.isfile(tar_path):
+                        return tar_path
         return None
 
     def _normalize_environment(self, environment, language):
@@ -169,10 +170,11 @@ class Environments(object):
             'else\n'
 
         if template_tar:
-            # Extract pre-built template tarball (sequential I/O, fast on overlay2).
+            # Extract pre-built template tarball (sequential I/O, fast on overlay2;
+            # tar auto-detects zstd compression on extract).
             # Then fix shebangs and symlinks that reference the template env path.
             # Use grep -rIl (-I skips binary files) to avoid corrupting ELF binaries.
-            template_env_dir = os.path.splitext(template_tar)[0]
+            template_env_dir = re.sub(r'\.tar(\.zst)?$', '', template_tar)
             script += \
                 'mkdir -p ' + env_path + '\n' + \
                 'tar xf ' + template_tar + ' -C ' + env_path + '\n' + \

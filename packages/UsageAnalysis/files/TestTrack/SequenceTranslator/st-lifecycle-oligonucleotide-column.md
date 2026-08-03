@@ -3,7 +3,8 @@ feature: sequencetranslator
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [oligonucleotide_column]
+realizes_atlas: [oligonucleotide_column]
+realizes: []
 realized_as:
   - st-lifecycle-oligonucleotide-column-spec.ts
 related_bugs: []

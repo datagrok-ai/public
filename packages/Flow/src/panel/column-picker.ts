@@ -3,8 +3,8 @@
  *  A column input on a node (e.g. AddNewColumn's `column`, or JoinTables'
  *  `keys1` / `keys2` / `values1` / `values2`) resolves against one of the
  *  node's dataframe inputs. Typing column names from memory is brittle — this
- *  opens a real column / columns picker dialog seeded by the *actual* upstream
- *  table, so the user chooses from a list.
+ *  drops a real column selector *menu* right under the picker icon, seeded by
+ *  the *actual* upstream table, so the user chooses from a list.
  *
  *  Three cases, keyed off the table this column refers to:
  *   - the table input is not connected  → tell the user to connect a table;
@@ -12,6 +12,15 @@
  *     from its captured output table;
  *   - it's connected but not yet computed → offer to run the flow up to that
  *     point, then pick from the produced table.
+ *
+ *  The picker used to open a modal dialog after the run confirmation — two
+ *  dialogs back to back. Now the run confirmation stays modal, but the column
+ *  choice itself is a `DG.Menu` popped next to the icon (`singleColumnSelector`
+ *  / `multiColumnSelector`) — one click, no second dialog.
+ *
+ *  When the input is a DG func param carrying a `semType` and/or
+ *  `columnTypeFilter` (`numerical` | `categorical` | `int` | `double` |
+ *  `string`), the menu is filtered to matching columns only.
  *
  *  Multi-table funcs (JoinTables) carry a per-column `columnTables`
  *  association choosing which dataframe input each column resolves against;
@@ -39,6 +48,29 @@ export interface ColumnPickRequest {
   current: string;
   /** Write the chosen name(s) back into the field. */
   apply: (value: string) => void;
+  /** The picker icon — the menu is popped up next to it. */
+  anchor?: HTMLElement;
+}
+
+/** columnTypeFilter values `Column.matches` understands (anything else → skip). */
+const COLUMN_TYPE_FILTERS = ['numerical', 'categorical', 'int', 'double', 'string'];
+
+/** Column-menu filter for a param's `semType` / `columnTypeFilter`, or
+ *  `undefined` when neither constrains the choice (menu shows every column).
+ *  A recognised `columnTypeFilter` (numerical | categorical | int | double |
+ *  string) narrows by type; a non-empty `semType` narrows by semantic type;
+ *  both together require both. Exported for unit testing. */
+export function buildColumnMatchFilter(
+  semType: string | null | undefined,
+  columnTypeFilter: string | null | undefined,
+): ((c: DG.Column) => boolean) | undefined {
+  const tests: Array<(c: DG.Column) => boolean> = [];
+  if (typeof semType === 'string' && semType.length > 0)
+    tests.push((c) => c.semType === semType);
+  if (typeof columnTypeFilter === 'string' && COLUMN_TYPE_FILTERS.includes(columnTypeFilter))
+    tests.push((c) => c.matches(columnTypeFilter as DG.ColumnType | 'numerical' | 'categorical'));
+  if (tests.length === 0) return undefined;
+  return (c) => tests.every((t) => t(c));
 }
 
 export class ColumnPicker {
@@ -69,7 +101,17 @@ export class ColumnPicker {
     // types detected before the picker opens — a captured clone may not have
     // been through detection yet.
     await detectSemanticTypes([table]);
-    this.openDialog(table, req);
+    this.openMenu(table, req);
+  }
+
+  /** Build a column filter from the func param's `semType` / `columnTypeFilter`.
+   *  Non-func nodes (Select Column utilities) and params without either
+   *  attribute get no filter — the menu shows every column. */
+  private buildColumnFilter(req: ColumnPickRequest): ((c: DG.Column) => boolean) | undefined {
+    const prop = this.flow.getNodeById(req.nodeId)?.dgFunc?.inputs
+      .find((p) => p.name === req.paramName);
+    if (!prop) return undefined;
+    return buildColumnMatchFilter(prop.semType, prop.columnTypeFilter);
   }
 
   /** Modal confirm before running a slice to materialize the upstream table. */
@@ -86,24 +128,36 @@ export class ColumnPicker {
     });
   }
 
-  private openDialog(table: DG.DataFrame, req: ColumnPickRequest): void {
+  /** Pop a column selector menu next to the picker icon. Single inputs use
+   *  `singleColumnSelector` (click → set → close); lists use
+   *  `multiColumnSelector` writing back the checked set live on each toggle. */
+  private openMenu(table: DG.DataFrame, req: ColumnPickRequest): void {
     const names = table.columns.names();
+    const columnFilter = this.buildColumnFilter(req);
+    const show = (menu: DG.Menu): void => {
+      const bb = req.anchor?.getBoundingClientRect();
+      menu.show(bb ? {x: bb.x + 30, y: bb.y + 30, element: document.body} : {});
+    };
+
     if (req.isList) {
       const checked = req.current.split(',').map((s) => s.trim()).filter((n) => n && names.includes(n));
-      const input = ui.input.columns(req.paramName, {table, value: table.columns.byNames(checked)});
-      ui.dialog('Select columns')
-        .add(input.root)
-        .onOK(() => req.apply((input.value ?? []).map((c) => c.name).join(', ')))
-        .show();
+      const menu = DG.Menu.popup().multiColumnSelector(table, {
+        initialValue: checked,
+        columnFilter,
+        editable: true,
+        onChange: (grid) => req.apply(grid.getCheckedColumnNames().join(', ')),
+      });
+      menu.closeOnClick = false;
+      show(menu);
     } else {
       const cur = req.current.trim();
-      const input = ui.input.column(req.paramName, {
-        table, value: names.includes(cur) ? table.col(cur) ?? undefined : undefined,
-      });
-      ui.dialog('Select column')
-        .add(input.root)
-        .onOK(() => {if (input.value) req.apply(input.value.name);})
-        .show();
+      show(DG.Menu.popup().singleColumnSelector(table, {
+        initialValue: names.includes(cur) ? cur : undefined,
+        columnFilter,
+        changeOnHover: false,
+        closeOnClick: true,
+        onChange: (_grid, column) => {if (column) req.apply(column.name);},
+      }));
     }
   }
 }

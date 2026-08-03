@@ -1,7 +1,9 @@
+import * as DG from 'datagrok-api/dg';
 import {DoseRatioAnalysis} from './dose-ratio/dose-ratio-analysis';
 import {DrcAnalysis} from './drc/drc-analysis';
 import {IPlateAnalysis} from './base-analysis';
 import {QpcrAnalysis} from './qpcr/qpcr-analysis';
+import {AnalysisQuery, queryAnalysesGeneric} from '../../plates/plates-crud';
 
 export class AnalysisManager {
   private static _instance: AnalysisManager;
@@ -36,4 +38,12 @@ export class AnalysisManager {
   public byFriendlyName(name: string): IPlateAnalysis | undefined {
     return this._analyses.find((a) => a.friendlyName === name);
   }
+}
+
+// fallback
+export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
+  const analysis = AnalysisManager.instance.getAnalysis(query.analysisName);
+  if (analysis && 'queryResults' in analysis)
+    return await (analysis as any).queryResults(query);
+  return queryAnalysesGeneric(query);
 }

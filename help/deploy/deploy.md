@@ -1,5 +1,13 @@
 ---
 title: "Deployment"
+description: Overview of Datagrok's Docker-based components and the deployment paths available for AWS, GCP, and Kubernetes.
+keywords:
+  - deployment paths
+  - docker containers
+  - kubernetes helm chart
+  - aws cloudformation
+  - grok_spawner
+  - grok_connect
 ---
 
 Datagrok runs as a set of Docker containers on top of a PostgreSQL metadata database and
@@ -38,6 +46,10 @@ Datagrok stand will live.
 | [Kubernetes Helm chart](k8s/install-helm-chart.md) | Any Kubernetes cluster: on-prem, GKE, AKS, kind, k3s, MicroK8s, or a pre-existing EKS. The EKS CFN template uses the same chart. |
 | [AWS CloudFormation (EKS)](aws/deploy-amazon-eks.mdx) | **Recommended for new AWS stands.** Provisions EKS, RDS, S3, IAM with IRSA, and installs the Helm chart automatically. |
 | [AWS CloudFormation (ECS)](aws/deploy-amazon-ecs.mdx) | Existing ECS stacks. Same RDS / S3 logical IDs as the EKS template, so an in-place stack-template swap migrates without re-creating data. Targeted for deprecation. |
+
+Whichever path you take, take the configuration from the same release as the images — a
+Compose file, Helm chart, or CloudFormation template written for one release can be invalid
+for another. See [configuration is versioned with the image](images.md#release-binding).
 
 The [AWS Marketplace](aws/deploy-marketplace.md) listing wraps the EKS template for one-click,
 infrastructure-isolated installs.

@@ -15,10 +15,10 @@ different actions. For details, see the documentation for such tool or viewer.
 
 * <kbd>Esc</kbd>:
 
-    * **Viewers** | Clear selection _or_ toggle filters without resetting them. <br/> If
+  * **Viewers** | Clear selection _or_ toggle filters without resetting them. <br/> If
     you have both selected and filtered rows, pressing **Esc** first clears the
     selection, then toggles the filters.
-     * **Full Screen mode** | Exit 
+  * **Full Screen mode** | Exit 
 
 
 * <kbd>F1</kbd>: <b>Context Help</b> | Toggle
@@ -55,10 +55,10 @@ different actions. For details, see the documentation for such tool or viewer.
 * <kbd>Ctrl + V</kbd>: <b>Viewers | Grid</b> | Paste into cell
 * <kbd>Ctrl + Z</kbd>: <b>Viewers | Grid</b> | Undo. You can reverse only one action. Supported actions:
 
-   * Manually changing a cell value via a double-click
-   * Clearing the [layout](../../visualize/view-layout.md)
-   * Deleting rows
-   * Closing a viewer by clicking on the **x** icon
+  * Manually changing a cell value via a double-click
+  * Clearing the [layout](../../visualize/view-layout.md)
+  * Deleting rows
+  * Closing a viewer by clicking on the **x** icon
  
 <!--
 * <kbd>Ctrl + J</kbd>: Viewers | Grid | Undo. You can reverse only one action.
@@ -89,23 +89,23 @@ TBD: Add Alt+ I +R/C to add new row or column
 
 * <kbd>Click</kbd>:
 
-   * **Browse** | Make an object current (e.g., file or query)
-   * **Viewers** | Make a row or cell object current 
+  * **Browse** | Make an object current (e.g., file or query)
+  * **Viewers** | Make a row or cell object current 
 
 * <kbd>Double click</kbd>: 
 
-   * **Browse** | Open an object (e.g., file or query)
-   * **Viewers | Grid** 
-     * Cell | Edit a cell
-     * Column header | Sort a column (Also works for grid-based viewers like a [heatmap](../../visualize/viewers/heat-map.md) or [correlation plot](../../visualize//viewers/correlation-plot.md))
-   * **Viewers | Empty area** | Reset view in these viewers: 
+  * **Browse** | Open an object (e.g., file or query)
+  * **Viewers | Grid** 
+    * Cell | Edit a cell
+    * Column header | Sort a column (Also works for grid-based viewers like a [heatmap](../../visualize/viewers/heat-map.md) or [correlation plot](../../visualize//viewers/correlation-plot.md))
+  * **Viewers | Empty area** | Reset view in these viewers: 
    
-     * Scatterplot
-     * 3D Scatterplot
-     * Histogram
-     * Bar chart
-     * Pie chart
-     * Network diagram
+    * Scatterplot
+    * 3D Scatterplot
+    * Histogram
+    * Bar chart
+    * Pie chart
+    * Network diagram
 
 * <kbd>Right-click</kbd>: Show context menu
 * <kbd>Ctrl + Click</kbd>: <b>Viewers</b> | Toggle selected state, one at a time. For columns, Ctrl+click the column's header
@@ -142,11 +142,11 @@ TBD: Add Alt+ I +R/C to add new row or column
   * <b>Views, Grid</b> | Scroll
   * <b>Viewers</b> | Zoom in/out for these viewers:
     
-     * Scatterplot
-     * 3D scatterplot
-     * Line chart
-     * Network diagram
-     * Map
+    * Scatterplot
+    * 3D scatterplot
+    * Line chart
+    * Network diagram
+    * Map
 
 
 * <kbd>Up (↑), Down (↓)</kbd>: <b>Browse, Grid</b> | Navigate up/down

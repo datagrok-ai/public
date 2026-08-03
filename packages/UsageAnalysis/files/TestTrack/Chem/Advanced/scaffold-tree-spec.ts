@@ -15,7 +15,7 @@ test('Chem: Scaffold Tree filter + viewer smoke', async ({page}) => {
     try { grok.shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
     await new Promise(r => setTimeout(r, 500));
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });

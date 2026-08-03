@@ -3,6 +3,7 @@ feature: annotation-regions
 target_layer: playwright
 coverage_type: regression
 priority: p2
+realizes_atlas: []
 realizes: []
 realized_as:
   - annotation-regions-spec.ts
@@ -177,5 +178,5 @@ Verifies the user-visible warning surfaces when PowerPack is not installed (i.e.
 ---
 {
   "order": 29,
-  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/demog.csv","System:DemoFiles/chem/SPGI.csv"]
 }

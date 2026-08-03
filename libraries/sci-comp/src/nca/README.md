@@ -9,7 +9,7 @@ Operates on plain `Float64Array` / `Uint8Array` inputs.
 | **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion, extravascular (PO/SC/IM treated uniformly) |
 | **AUC methods** | linear, log-linear, linear-up/log-down — each as both naive Float64 and Neumaier-compensated summation |
 | **BLQ rules**  | `set-zero`, `set-half-lloq`, `exclude`, `missing` — per-phase configurable (`preFirstMeasurable`, `embedded`, `afterLast`, `consecutiveAfterLast`) |
-| **λz**         | auto best-fit (subset search by adjusted R² `adjRSquaredFactor` tie-breaking) + manual point selection |
+| **λz**         | auto best-fit (subset search; PKNCA/WinNonlin flat-tolerance tie-break — most points within `adjRSquaredFactor` of the global-max adjusted R²) + manual point selection |
 
 ## Quickstart
 

@@ -34,7 +34,7 @@ category('DataFrame: Calculated columns', () => {
     } finally {
       df.columns.remove('new');
     }
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'client package functions are not loaded in NodeJS' : undefined});
 
   test('Create a calculated column with async formula', async () => {
     try {
@@ -44,7 +44,7 @@ category('DataFrame: Calculated columns', () => {
     } finally {
       df.columns.remove('new');
     }
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'client package functions are not loaded in NodeJS' : undefined});
 
   test('Add new column dialog', () => new Promise(async (resolve, reject) => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
@@ -68,7 +68,7 @@ category('DataFrame: Calculated columns', () => {
         grok.shell.closeTable(df);
       }
     }
-  }));
+  }), {node: false});
 
   test('Edit formula dialog', () => new Promise(async (resolve, reject) => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
@@ -90,7 +90,7 @@ category('DataFrame: Calculated columns', () => {
         df.columns.remove('editable');
       }
     }
-  }));
+  }), {node: false});
 
   test('Calculated columns addition event', () => new Promise(async (resolve, reject) => {
     const t = df.clone();
@@ -122,4 +122,4 @@ category('DataFrame: Calculated columns', () => {
     subs.forEach((sub) => sub.unsubscribe());
     dialogs.forEach((d) => d.close());
   });
-}, {owner: 'mdolotova@datagrok.ai'});
+}, {owner: 'mdolotova@datagrok.ai', node: true});

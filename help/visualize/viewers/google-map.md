@@ -1,6 +1,12 @@
 ---
 title: "Google Map viewer"
 unlisted: true
+description: Overlay latitude/longitude data from a table on top of Google Maps.
+keywords:
+  - geospatial map
+  - latitude longitude overlay
+  - address to coordinates
+  - marker settings
 ---
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.

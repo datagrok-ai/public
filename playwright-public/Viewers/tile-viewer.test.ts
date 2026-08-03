@@ -193,7 +193,7 @@ test('Tile Viewer tests', async ({page}) => {
     const result = await page.evaluate(async () => {
       const v = (grok as any).shell.tv.viewers.find((v: any) => v.type === 'Tile Viewer');
       v.props.autoGenerate = true;
-      const spgi = await (grok as any).dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+      const spgi = await (grok as any).dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
       (grok as any).shell.addTableView(spgi);
       await new Promise(r => setTimeout(r, 1000));
       const demogView = Array.from((grok as any).shell.views).find((v: any) => v.name === 'Table');

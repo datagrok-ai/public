@@ -1,3 +1,13 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: edge
+priority: p2
+realizes: []
+realized_as: []
+related_bugs: []
+---
+
 # Query Post-Processing — manual UI checks
 
 This is the **manual companion** to `query-postprocessing.md`. The autotest

@@ -1,5 +1,8 @@
 ---
 feature: notebooks
+priority: p1
+realizes_atlas: [new-blank-notebook, browse-and-open-html]
+realizes: [views.notebooks]
 target_layer: playwright
 coverage_type: regression
 produced_from: atlas-driven

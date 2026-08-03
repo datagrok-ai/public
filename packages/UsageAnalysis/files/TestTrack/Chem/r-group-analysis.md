@@ -3,7 +3,10 @@ feature: chem
 target_layer: playwright
 coverage_type: edge
 priority: p0
-realizes: [chem.cp.r-groups-analysis]
+realizes_atlas: [chem.cp.r-groups-analysis]
+realizes: [chem.analyze.r-groups-analysis]
+realized_as:
+  - r-group-analysis-spec.ts
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/Chem/r-group-analysis.md
 migration_date: 2026-05-11

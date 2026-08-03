@@ -3,7 +3,8 @@ feature: peptides
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [sar-parameters-and-weblogo-rendering]
+realizes_atlas: [sar-parameters-and-weblogo-rendering]
+realizes: [bio.analyze.sar]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/peptides/peptides.md
 migration_date: 2026-05-28

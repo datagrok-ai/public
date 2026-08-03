@@ -1,3 +1,15 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: []
+realizes: [views.connections]
+realized_as:
+  - 10-catalogs.test.ts
+related_bugs: []
+---
+
 ### Catalog browsing
 
 1. Go to **Browse** > **Databases**

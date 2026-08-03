@@ -1,5 +1,9 @@
 # SureChEMBL changelog
 
+## v.next
+
+* Docker: Removed the unused `/opt/py27` data-prep env (stale pip/setuptools/wheel/certifi with no py2.7 upgrades) (VEX)
+
 ## 1.1.3 (2026-04-08)
 
 * Chem: Smiles length limit

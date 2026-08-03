@@ -1,5 +1,11 @@
 ---
 title: "Treemap"
+description: Show hierarchical data as nested rectangles sized by a chosen aggregation, useful for spotting patterns and outliers.
+keywords:
+  - hierarchical rectangles
+  - part-to-whole hierarchy
+  - nested rectangles
+  - proportional area chart
 ---
 
 Treemap displays hierarchical (tree-structured) data as nested rectangles. The

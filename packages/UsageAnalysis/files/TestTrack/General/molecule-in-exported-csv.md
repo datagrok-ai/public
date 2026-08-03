@@ -18,5 +18,5 @@ text, and reads back correctly when the exported file is reopened.
 ---
 {
   "order": 5,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

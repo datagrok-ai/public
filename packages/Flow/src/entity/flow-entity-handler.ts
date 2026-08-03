@@ -1,6 +1,6 @@
 /** All JS-side behavior behind the first-class Flow entity — a Datagrok
  *  `Script` with `language: 'flow'` whose body is an annotation header plus
- *  the ffjson document (see serialization/flow-script-format.ts).
+ *  the flow JSON document (see serialization/flow-script-format.ts).
  *
  *  One class so the package surface stays a handful of thin registered
  *  wrappers (see PackageFunctions): core reaches execution through the

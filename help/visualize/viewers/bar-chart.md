@@ -1,5 +1,13 @@
 ---
 title: "Bar chart"
+description: Display grouped categorical data as rectangular bars with lengths proportional to their values.
+keywords:
+  - column chart
+  - stacked bars
+  - categorical data
+  - relative values
+  - split by category
+  - group by date part
 ---
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent.

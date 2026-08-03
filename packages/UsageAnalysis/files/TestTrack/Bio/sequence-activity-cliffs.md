@@ -3,7 +3,8 @@ feature: bio
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes: [bio.cp.activity-cliffs]
+realizes_atlas: [bio.cp.activity-cliffs]
+realizes: [bio.analyze.activity-cliffs]
 produced_from: migrated
 original_path: public/packages/UsageAnalysis/files/TestTrack/bio/sequence-activity-cliffs.md
 migration_date: 2026-05-31

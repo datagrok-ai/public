@@ -1,7 +1,6 @@
 import * as yaml from 'js-yaml';
 
 export interface ProductsSpecs {
-  exclusion_smarts_products_file: string | null;
   exclusion_smarts_products_file_smarts_col: string;
   max_num_heavy_atoms: number;
   min_num_carbon_atoms: number;
@@ -20,17 +19,15 @@ export interface ProductsSpecs {
   remove_charged_species: boolean;
 }
 
+// No file-path fields here (template/BB/reagent/output file names, CSV delimiter) — the app never
+// auto-loads a file from config, the user always picks each one manually, so persisting a file name
+// would only ever go stale and mislead (it can't be kept in sync with what's actually loaded).
 export interface EnumerationSpecs {
-  template_file: string;
   smarts_col: string;
   reactant_blocking_groups_per_template_column: string;
-  bb_file: string;
   bb_smiles_column: string;
-  reagent_file: string | null;
   reagent_smiles_column: string;
-  output_file: string;
   reaction_name_col: string;
-  delimiter: string;
   depth_first: boolean;
   num_rounds: number;
 }
@@ -50,7 +47,6 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
   max_num_routes_per_compound: -1,
   max_num_combinations_per_template: 50,
   products_specs: {
-    exclusion_smarts_products_file: 'ex_smarts.csv',
     exclusion_smarts_products_file_smarts_col: 'SMARTS',
     max_num_heavy_atoms: -1,
     min_num_carbon_atoms: 10,
@@ -69,16 +65,11 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
     remove_charged_species: true,
   },
   enumeration: {
-    template_file: 'reactions.csv',
     smarts_col: 'reaction_smarts',
     reactant_blocking_groups_per_template_column: 'blocking_fg',
-    bb_file: 'bb.csv',
     bb_smiles_column: 'SMILES',
-    reagent_file: null,
     reagent_smiles_column: 'SMILES',
-    output_file: 'enumeration_output.csv',
     reaction_name_col: 'reaction_name',
-    delimiter: ',',
     depth_first: true,
     num_rounds: 2,
   },
@@ -89,18 +80,57 @@ export function cloneConfig(c: EnumeratorConfig): EnumeratorConfig {
 }
 
 export function configToYaml(c: EnumeratorConfig): string {
-  const dump: any = JSON.parse(JSON.stringify(c));
-  if (dump.enumeration?.reagent_file == null)
-    dump.enumeration.reagent_file = 'None';
-  return yaml.dump(dump, {lineWidth: 120, noRefs: true, sortKeys: false});
+  return yaml.dump(cloneConfig(c), {lineWidth: 120, noRefs: true, sortKeys: false});
+}
+
+// Walks `partial` against `defaults`' own shape — DEFAULT_CONFIG already has every field with its
+// correct type, so this needs no separately-maintained schema. Catches the case a hand-edited or
+// corrupted YAML silently carries a wrong-typed value all the way into a numeric comparison at
+// filter time (e.g. a string in a product-filter field makes that filter's `>= 0` check
+// permanently false, disabling it with no indication anything's wrong).
+function validateShape(partial: any, defaults: any, path: string, errors: string[]): void {
+  for (const k of Object.keys(defaults)) {
+    if (!(k in partial)) continue;
+    const expected = defaults[k];
+    const actual = partial[k];
+    if (Array.isArray(expected)) {
+      if (!Array.isArray(actual) || !actual.every((x: unknown) => typeof x === 'string'))
+        errors.push(`'${path}${k}' must be a list of strings.`);
+    } else if (typeof expected === 'object') {
+      // Same reason as configFromYaml's own top-level guard: an array or primitive here would
+      // otherwise recurse as if it were the section's object (silently validating nothing, since
+      // `k in partial` never matches a named key against an array/primitive) or throw a raw
+      // `TypeError: Cannot use 'in' operator...` instead of this function's own clean message.
+      if (actual != null && (typeof actual !== 'object' || Array.isArray(actual)))
+        errors.push(`'${path}${k}' must be an object.`);
+      else
+        validateShape(actual ?? {}, expected, `${path}${k}.`, errors);
+    } else if (typeof actual !== typeof expected || (typeof expected === 'number' && !Number.isFinite(actual))) {
+      errors.push(`'${path}${k}' must be a ${typeof expected}.`);
+    }
+  }
 }
 
 export function configFromYaml(text: string): EnumeratorConfig {
   const raw = yaml.load(text);
-  if (!raw || typeof raw !== 'object')
+  // typeof [] === 'object' and arrays are always truthy, so a top-level YAML list would otherwise
+  // sail past this guard — every key lookup below (`k in partial`, `partial[k]`) then misses on an
+  // array, so validateShape finds nothing to flag and mergeWithDefaults finds nothing to merge,
+  // silently returning pure defaults with no error at all.
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw))
     throw new Error('YAML did not parse to an object.');
+  const errors: string[] = [];
+  validateShape(raw, DEFAULT_CONFIG, '', errors);
+  if (errors.length > 0) throw new Error(`Invalid config: ${errors.join('; ')}`);
   return mergeWithDefaults(raw as Partial<EnumeratorConfig>);
 }
+
+// File-name fields (template_file, bb_file, reagent_file, output_file, delimiter,
+// exclusion_smarts_products_file) were removed from the schema — a YAML saved before that change
+// may still carry them. Object.assign below would otherwise let them tag along as inert extra
+// properties, so an old file loaded then re-saved keeps leaking them forward.
+const LEGACY_ENUMERATION_KEYS = ['template_file', 'bb_file', 'reagent_file', 'output_file', 'delimiter'];
+const LEGACY_PRODUCTS_SPECS_KEYS = ['exclusion_smarts_products_file'];
 
 export function mergeWithDefaults(partial: Partial<EnumeratorConfig> | any): EnumeratorConfig {
   const out = cloneConfig(DEFAULT_CONFIG);
@@ -113,8 +143,7 @@ export function mergeWithDefaults(partial: Partial<EnumeratorConfig> | any): Enu
     else
       (out as any)[k] = v;
   }
-  const rf = out.enumeration.reagent_file;
-  if (typeof rf === 'string' && (rf === 'None' || rf === 'none' || rf.trim() === ''))
-    out.enumeration.reagent_file = null;
+  for (const k of LEGACY_ENUMERATION_KEYS) delete (out.enumeration as any)[k];
+  for (const k of LEGACY_PRODUCTS_SPECS_KEYS) delete (out.products_specs as any)[k];
   return out;
 }

@@ -36,12 +36,25 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TreeWizardEditor', { call });
   }
 
+  /**
+  Launch a compute workflow (pipeline) by its qualified name and open its editor.
+  */
   export async function startWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<any> {
     return await grok.functions.call('Compute2:StartWorkflow', { nqName, version, instanceConfig });
   }
 
+  /**
+  Run parameter optimization (fitting) for a model and return the resulting function calls.
+  */
   export async function runOptimizer(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:RunOptimizer', { params });
+  }
+
+  /**
+  Compare data across model runs: scalars or a single table column
+  */
+  export async function compareRuns(): Promise<void> {
+    return await grok.functions.call('Compute2:CompareRuns', {});
   }
 
   export async function viewerTestApp(): Promise<void> {
@@ -56,10 +69,16 @@ export namespace funcs {
     return await grok.functions.call('Compute2:HistoryTestApp', {});
   }
 
+  /**
+  Sample static two-step workflow configuration used for testing the workflow engine.
+  */
   export async function mockPipeline1(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline1', { params });
   }
 
+  /**
+  Sample sequential workflow configuration with links, actions, and validators for testing.
+  */
   export async function mockPipeline2(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
   }

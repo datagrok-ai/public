@@ -1,5 +1,13 @@
 ---
 title: "Predictive modeling"
+description: Train and apply predictive models using Caret, Chemprop, EDA, or custom engines, then deploy the results.
+keywords:
+  - train model
+  - apply model
+  - model engines
+  - qsar modeling
+  - models browser
+  - predictive models
 ---
 
 Predictive modeling uses statistics to predict outcomes.

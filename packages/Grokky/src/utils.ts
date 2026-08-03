@@ -238,9 +238,33 @@ export function findLast<T, K extends T>(array: T[], predicate: (value: T, index
   return undefined;
 }
 
+/** GFM forbids a table from interrupting a paragraph, and the platform's Dart markdown parser is
+ * spec-strict — but models routinely emit `**Section**` directly followed by `| header |` rows,
+ * which then render as one glued paragraph of pipes. Insert the missing blank line before a table
+ * block (a `|` line whose next line is the `|---|` separator) when it follows a non-table line.
+ * Fence-aware so code blocks with ASCII pipes are untouched. */
+export function normalizeMarkdownTables(text: string): string {
+  if (!text.includes('|'))
+    return text;
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*```/.test(line))
+      inFence = !inFence;
+    const prev = out.length ? out[out.length - 1] : '';
+    if (!inFence && /^\s*\|/.test(line) && prev.trim() !== '' && !/^\s*\|/.test(prev) &&
+        /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1] ?? '') && (lines[i + 1] ?? '').includes('-'))
+      out.push('');
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
 /** Renders markdown content with copy-on-code-blocks behavior and selectable text. */
 export function createStyledMarkdown(content: string): HTMLElement {
-  const markDown = ui.markdown(content);
+  const markDown = ui.markdown(normalizeMarkdownTables(content));
   markDown.style.position = 'relative';
   dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
   if (markDown.querySelector('pre > code')) {

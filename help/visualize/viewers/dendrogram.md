@@ -1,4 +1,13 @@
-# Dendrogram
+---
+title: "Dendrogram"
+description: Visualize phylogenetic trees and hierarchical clustering results from Newick-format tree data.
+keywords:
+  - phylogenetic tree
+  - newick format
+  - hierarchical clustering
+  - tree visualization
+  - large tree rendering
+---
 
 _Dendrogram_ is a [package](../../develop/develop.md#packages) for phylogenetic trees visualization.
 

@@ -435,7 +435,7 @@ function createSummaryPane(semValue: DG.SemanticValue): HTMLElement {
 }
 
 async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLElement> {
-  let { cell, units } = semValue;
+  let { cell } = semValue;
   cell ??= grok.shell.o.cell;
 
   if (!cell)
@@ -447,9 +447,8 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   const gridCol = view.grid.col(column.name);
   const gridCell = view.grid.cell(column.name, rowIndex);
 
-  const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
-  const col = DG.Column.fromStrings('molecules', [parsedValue]);
+  const col = DG.Column.fromStrings('molecules', [value]);
   const result = await PackageFunctions.getAdmeProperties(DG.DataFrame.fromColumns([col]), col, params);
   const pieSettings = createPieSettings(dataFrame, params, properties);
   pieSettings.sectors.values = result.toCsv()!;

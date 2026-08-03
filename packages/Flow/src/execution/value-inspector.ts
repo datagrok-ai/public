@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /** Two views over a node's runtime state, used by different surfaces:
  *
  *  - {@link buildExecutionMeta} — status badge, duration, error/stack trace,
@@ -18,6 +19,57 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NodeExecState, NodeExecStatus, ValueSummary} from './execution-state';
 import {setTid} from '../utils/test-ids';
+import * as rxjs from 'rxjs';
+
+// ---------- preview-cell focus hook (suggestion-engine signal) ----------
+
+/** Host callback fired when the user clicks a cell in a preview grid — the
+ *  suggestion engine treats the clicked value (semType + value) as a context
+ *  signal ("clicked a Molecule → offer similarity/substructure searches"). */
+let _previewCellFocusHandler:
+  ((cell: {semType: string | null; column: string; value: unknown}) => void) | null = null;
+
+export function setPreviewCellFocusHandler(
+  h: ((cell: {semType: string | null; column: string; value: unknown}) => void) | null,
+): void {
+  _previewCellFocusHandler = h;
+}
+
+/** Release the hook only if this owner still holds it — several Flow views can
+ *  be alive at once, and a closing view must not tear down the handler a newer
+ *  view has since installed. */
+export function releasePreviewCellFocusHandler(
+  h: ((cell: {semType: string | null; column: string; value: unknown}) => void) | null,
+): void {
+  if (h !== null && _previewCellFocusHandler === h) {
+    _previewCellFocusHandler = null;
+    previewHookSub?.unsubscribe();
+    previewHookSub = null;
+  }
+}
+
+let previewHookSub: rxjs.Subscription | null = null;
+/** Report current-cell changes of a preview grid's dataframe to the host.
+ *  The df is a preview clone that dies with the panel content, so the
+ *  subscription's lifetime is bounded by it. */
+function hookPreviewCellFocus(df: DG.DataFrame): void {
+  previewHookSub?.unsubscribe();
+  try {
+    previewHookSub = df.onCurrentCellChanged.subscribe(() => {
+      if (!_previewCellFocusHandler) return;
+      try {
+        const cell = df.currentCell;
+        const col = cell?.column;
+        if (!col) return;
+        _previewCellFocusHandler({
+          semType: col.semType ? String(col.semType) : null,
+          column: col.name,
+          value: cell.value,
+        });
+      } catch {/* cell read failed mid-update — skip this signal */}
+    });
+  } catch {/* observable unavailable on odd proxies — no signal, no harm */}
+}
 
 // ---------- property-panel side: status, duration, metadata ----------
 
@@ -25,23 +77,27 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
   const container = setTid(ui.div([], 'funcflow-value-inspector'), 'value-inspector');
   container.appendChild(buildStatusBadge(state));
 
-  if (state.outputs && Object.keys(state.outputs).length > 0) {
+  // `__pt` entries are dims-only bookkeeping for the on-edge count labels
+  // (possibly null when nothing flowed) — never a row in the panel.
+  const shown = Object.entries(state.outputs ?? {})
+    .filter(([name, summary]) => summary != null && !name.endsWith('__pt'));
+  if (shown.length > 0) {
     const header = ui.divText('Outputs');
     header.style.fontWeight = 'bold';
     header.style.marginBottom = '4px';
     container.appendChild(header);
-    for (const [name, summary] of Object.entries(state.outputs))
+    for (const [name, summary] of shown)
       container.appendChild(buildMetaRow(name, summary));
   }
 
   if (state.error) {
     const errorHeader = ui.divText('Error');
     errorHeader.style.fontWeight = 'bold';
-    errorHeader.style.color = '#F44336';
+    errorHeader.style.color = 'var(--red-3, #eb6767)';
     errorHeader.style.marginTop = '8px';
     container.appendChild(errorHeader);
     const errorMsg = ui.divText(state.error);
-    errorMsg.style.color = '#F44336';
+    errorMsg.style.color = 'var(--red-3, #eb6767)';
     errorMsg.style.fontSize = '12px';
     errorMsg.style.whiteSpace = 'pre-wrap';
     errorMsg.style.wordBreak = 'break-word';
@@ -51,7 +107,7 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
       const stackDetails = document.createElement('details');
       const stackSummary = document.createElement('summary');
       stackSummary.textContent = 'Stack trace';
-      stackSummary.style.cssText = 'cursor:pointer;font-size:11px;color:#999;';
+      stackSummary.style.cssText = 'cursor:pointer;font-size:11px;color:var(--grey-4, #9497a0);';
       stackDetails.appendChild(stackSummary);
       const stackPre = document.createElement('pre');
       stackPre.textContent = state.stack;
@@ -66,11 +122,11 @@ export function buildExecutionMeta(state: NodeExecState): HTMLElement {
 
 function buildStatusBadge(state: NodeExecState): HTMLElement {
   const colors: Record<string, string> = {
-    [NodeExecStatus.idle]: '#78909c',
-    [NodeExecStatus.running]: '#1976d2',
-    [NodeExecStatus.completed]: '#43a047',
-    [NodeExecStatus.errored]: '#e53935',
-    [NodeExecStatus.stale]: '#9E9E9E',
+    [NodeExecStatus.idle]: 'var(--grey-4, #9497a0)',
+    [NodeExecStatus.running]: 'var(--blue-1, #2083d5)',
+    [NodeExecStatus.completed]: 'var(--green-2, #3cb173)',
+    [NodeExecStatus.errored]: 'var(--red-3, #eb6767)',
+    [NodeExecStatus.stale]: 'var(--grey-3, #b8bac0)',
   };
   const labels: Record<string, string> = {
     [NodeExecStatus.idle]: 'Idle',
@@ -84,7 +140,7 @@ function buildStatusBadge(state: NodeExecState): HTMLElement {
   badge.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;';
 
   const dot = document.createElement('span');
-  dot.style.cssText = `width:10px;height:10px;border-radius:50%;background-color:${colors[state.status] ?? '#888'};display:inline-block;`;
+  dot.style.cssText = `width:10px;height:10px;border-radius:50%;background-color:${colors[state.status] ?? 'var(--grey-4, #9497a0)'};display:inline-block;`;
   badge.appendChild(dot);
 
   let label = labels[state.status] ?? state.status;
@@ -108,7 +164,7 @@ function buildMetaRow(name: string, summary: ValueSummary): HTMLElement {
       const addBtn = ui.iconFA('plus-circle', () => {
         grok.shell.addTableView(summary.clone as DG.DataFrame);
       }, 'Add to workspace');
-      addBtn.style.cssText = 'cursor:pointer;color:#1976d2;font-size:13px;';
+      addBtn.style.cssText = 'cursor:pointer;color:var(--blue-1, #2083d5);font-size:13px;';
       headerLine.appendChild(addBtn);
     }
     row.appendChild(headerLine);
@@ -193,6 +249,7 @@ async function addViewerToWorkspace(viewer: DG.Viewer): Promise<void> {
 export function hasRenderablePreview(state: NodeExecState): boolean {
   if (!state.outputs) return false;
   for (const summary of Object.values(state.outputs)) {
+    if (summary == null) continue; // `__pt` dims entries can be null
     if (summary.type === 'dataframe' && summary.clone) return true;
     if (summary.type === 'column' && (summary.clone || (Array.isArray(summary.sample) && summary.sample.length > 0))) return true;
     if (summary.type === 'graphics' && typeof summary.value === 'string') return true;
@@ -206,16 +263,32 @@ export function buildValuePreviews(
 ): HTMLElement {
   const container = setTid(ui.div([], 'funcflow-value-previews'), 'value-previews');
   if (!state.outputs) return container;
-  const entries = Object.entries(state.outputs);
+  // `__pt` entries are dims-only bookkeeping for the on-edge count labels —
+  // never previewable, skip them (they may also be null).
+  const entries = Object.entries(state.outputs)
+    .filter(([name, summary]) => summary != null && !name.endsWith('__pt'));
   // When the node's real output is a column, its preview is that column rendered
   // as a one-column DataFrame — so suppress the threaded "<input> (modified)"
   // passthrough table (it's kept in the state for the column picker / inspect,
   // but here it's redundant with, and noisier than, the column itself).
   const hasColumnOutput = entries.some(([, s]) => s.type === 'column');
+  const blocks: HTMLElement[] = [];
   for (const [name, summary] of entries) {
     if (hasColumnOutput && summary.type === 'dataframe' && name.endsWith('(modified)')) continue;
     const preview = buildPreview(name, summary, onEditViewer);
-    if (preview) container.appendChild(preview);
+    if (preview) blocks.push(preview);
+  }
+  // A node can surface several renderable values at once — a multi-output func
+  // (two dataframes), or a mutator with no output but two modified input tables.
+  // Lay them side by side with draggable vertical dividers; a lone value fills
+  // the panel as before.
+  if (blocks.length === 1)
+    container.appendChild(blocks[0]);
+  else if (blocks.length > 1) {
+    const split = ui.splitH(blocks, null, true);
+    split.style.width = '100%';
+    split.style.height = '100%';
+    container.appendChild(split);
   }
   return container;
 }
@@ -234,12 +307,13 @@ export function buildPreview(
     wrap.style.position = 'relative';
     try {
       df.meta.detectSemanticTypes();
+      hookPreviewCellFocus(df);
       const grid = DG.Viewer.grid(df);
-      grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+      grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
       wrap.appendChild(grid.root);
       wrap.appendChild(addWorkspaceButton('Add table to workspace',
         () => grok.shell.addTableView(df.clone())));
-    } catch { /* grid render failed — show nothing rather than a placeholder */ }
+    } catch {/* grid render failed — show nothing rather than a placeholder */}
     return wrap;
   }
   case 'column': {
@@ -253,8 +327,9 @@ export function buildPreview(
       wrap.style.position = 'relative';
       try {
         df.meta.detectSemanticTypes();
+        hookPreviewCellFocus(df);
         const grid = DG.Viewer.grid(df);
-        grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
         wrap.appendChild(grid.root);
         // Scroll to the produced column once the grid has laid out (it isn't
         // attached yet here — defer so the horizontal scroll actually applies).
@@ -277,38 +352,39 @@ export function buildPreview(
       wrap.style.position = 'relative';
       try {
         df.meta.detectSemanticTypes();
+        hookPreviewCellFocus(df);
         const grid = DG.Viewer.grid(df);
-        grid.root.style.cssText = 'width:100%;height: calc(100% - 10px);';
+        grid.root.style.cssText = 'width:100%;height: calc(100% - 16px);';
         wrap.appendChild(grid.root);
         wrap.appendChild(addWorkspaceButton('Add column to workspace',
           () => grok.shell.addTableView(df.clone())));
         return wrap;
-      } catch { /* grid failed — fall back to the text sample below */ }
+      } catch {/* grid failed — fall back to the text sample below */}
     }
     if (!summary.sample || summary.sample.length === 0) return null;
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     const title = ui.divText(`${name}: ${summary.name ?? ''}`);
-    title.style.cssText = 'font-size:12px;color:#444;margin-bottom:4px;';
+    title.style.cssText = 'font-size:12px;color:var(--grey-6, #4d5261);margin-bottom:4px;';
     wrap.appendChild(title);
     const table = document.createElement('table');
-    table.style.cssText = 'font-size:11px;color:#555;border-collapse:collapse;';
+    table.style.cssText = 'font-size:11px;color:var(--grey-5, #717581);border-collapse:collapse;';
     const headerRow = table.insertRow();
     const idxTh = document.createElement('th');
     idxTh.textContent = '#';
-    idxTh.style.cssText = 'padding:2px 8px;text-align:right;color:#999;font-weight:normal;';
+    idxTh.style.cssText = 'padding:2px 8px;text-align:right;color:var(--grey-4, #9497a0);font-weight:normal;';
     headerRow.appendChild(idxTh);
     const valTh = document.createElement('th');
     valTh.textContent = 'Value';
-    valTh.style.cssText = 'padding:2px 8px;text-align:left;font-weight:normal;color:#999;';
+    valTh.style.cssText = 'padding:2px 8px;text-align:left;font-weight:normal;color:var(--grey-4, #9497a0);';
     headerRow.appendChild(valTh);
     for (let i = 0; i < summary.sample.length; i++) {
       const tr = table.insertRow();
       const idxTd = tr.insertCell();
       idxTd.textContent = String(i);
-      idxTd.style.cssText = 'padding:1px 8px;text-align:right;color:#999;';
+      idxTd.style.cssText = 'padding:1px 8px;text-align:right;color:var(--grey-4, #9497a0);';
       const valTd = tr.insertCell();
       valTd.textContent = String(summary.sample[i]);
-      valTd.style.cssText = 'padding:1px 8px;border-bottom:1px solid #eee;';
+      valTd.style.cssText = 'padding:1px 8px;border-bottom:1px solid var(--grey-2, #dbdcdf);';
     }
     wrap.appendChild(table);
     return wrap;
@@ -336,7 +412,7 @@ export function buildPreview(
     const wrap = setTid(ui.div([], 'funcflow-preview-block'), 'preview-block', name);
     wrap.style.position = 'relative';
     obj.root.style.width = '100%';
-    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 10px)';
+    if (!obj.root.style.minHeight) obj.root.style.height = 'calc(100% - 16px)';
     wrap.appendChild(obj.root);
     // A viewer's full settings are editable live: a small gear in the top-right
     // corner (overlaid — no vertical space) hands the viewer to the host

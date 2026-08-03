@@ -8,12 +8,17 @@ export type TemplateFunction = {
     package: string,
     name: string,
     args: IFunctionArgs,
+    // When true, the function is recomputed over the whole molecule column every time a
+    // campaign that uses this compute config is opened (e.g. database lookups that resolve later).
+    rerunOnOpen?: boolean,
 }
 
 export type TemplateScript = {
     name: string,
     args: IFunctionArgs,
     id: string,
+    // See TemplateFunction.rerunOnOpen.
+    rerunOnOpen?: boolean,
 }
 
 export type ComputeQuery = TemplateScript & {
@@ -46,6 +51,12 @@ export type IComputeDialogResult = {
     }
     queries?: {
         [_: string]: IFunctionArgs
+    }
+    // Keyed by the same function key used in externals/scripts/queries; only enabled functions
+    // that are flagged to re-run on campaign open are present. Absent when the caller did not
+    // enable the re-run-on-open option in the dialog.
+    rerunOnOpen?: {
+        [_: string]: boolean
     }
 }
 

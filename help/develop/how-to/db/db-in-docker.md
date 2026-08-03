@@ -1,5 +1,12 @@
 ---
 title: "Connecting to database inside package Docker container"
+description: Configure a Datagrok connection to a database running inside a package's own Docker container.
+keywords:
+  - DockerContainer connection
+  - dockerized database
+  - non-Postgres database
+  - connection JSON
+  - friendly name container
 ---
 
 This document explains how to connect to a database inside a package Docker container. Consider using it

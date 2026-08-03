@@ -8,8 +8,9 @@
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
 
-const COLOR_OUTPUT = '#EF5350';
+const COLOR_OUTPUT = categoricalColor(CAT.red);
 
 export class TableOutputNode extends FlowNode {
   constructor() {

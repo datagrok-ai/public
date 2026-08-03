@@ -1,15 +1,6 @@
 /** Utilities for safely accessing Dart proxy objects (tags, options) from JS side */
 import * as DG from 'datagrok-api/dg';
-
-export function safeGetEntries(obj: any): [string, any][] {
-  try {
-    if (!obj) return [];
-    if (typeof obj !== 'object') return [];
-    return Object.entries(obj);
-  } catch {
-    return [];
-  }
-}
+import {propertyNameToFriendly} from './naming';
 
 export function safeGet(obj: any, key: string): any {
   try {
@@ -41,7 +32,7 @@ export function getRole(func: DG.Func): string | null {
 
 export function getTags(func: DG.Func): string[] {
   try {
-    const tags = (func as any).tags ?? (!!func.dart ? (window as any).grok_Script_Get_Tags?.(func.dart) : null);
+    const tags: unknown = func.tags;
     if (!tags) return [];
     if (Array.isArray(tags)) return tags.map(String);
     if (typeof tags === 'string') return tags.split(',').map((t: string) => t.trim()).filter(Boolean);
@@ -67,9 +58,17 @@ export function getFuncQualifiedName(func: DG.Func): string {
   return pkg ? `${pkg}:${name}` : name;
 }
 
-/** Whether a function input parameter is optional (declared `{optional: true}`).
- *  Read defensively from the Dart-proxy `options` map. */
+/** Whether a function input parameter is optional. Reads, in order: the
+ *  public `Property.isOptional` (backed by `FuncParam.isOptional` — what
+ *  core's own call machinery consults, set for every declared-default param,
+ *  e.g. OpenFile's `sheetName`); `nullable`; and the `options` map's
+ *  `optional` flag (JS-declared `{optional: true}`). */
 export function isInputOptional(prop: DG.Property): boolean {
+  try {
+    if (prop.isOptional) return true;
+  } catch {/* older platform without the getter — fall through */}
+  if (prop.nullable)
+    return true;
   try {
     const opt = safeGet((prop as unknown as {options?: unknown}).options, 'optional');
     return opt === true || opt === 'true';
@@ -114,26 +113,40 @@ export function getParamDefault(prop: DG.Property): unknown {
 }
 
 /** Display label for a function parameter: its `caption` when one is declared
- *  (via `{caption: ...}` / `@grok.decorators.param`), else the property name.
- *  Purely for UI — the internal identity (`prop.name`, used for slot keys,
- *  `inputValues`, connections, compilation) is unchanged. The caption may be
- *  null or empty; both fall back to the name. Reads the raw `options.caption`
- *  first, then `friendlyName` (the Dart caption getter, which itself falls back
- *  to the name). */
+ *  (via `{caption: ...}` / `@grok.decorators.param`), else the **humanized**
+ *  property name (`propertyNameToFriendly`, mirroring what
+ *  `ui.input.forProperty` shows — 'maxNumOfSomething' → 'Max Num Of
+ *  Something'). Purely for UI — the internal identity (`prop.name`, used for
+ *  slot keys, `inputValues`, connections, compilation) is unchanged. Reads the
+ *  raw `options.caption` first, then `friendlyName` (the Dart caption getter)
+ *  when it differs from the raw name — a friendlyName equal to the name is
+ *  just the Dart fallback, which we humanize instead. */
 export function getParamDisplayName(prop: DG.Property): string {
   try {
     const cap = safeGet((prop as unknown as {options?: unknown}).options, 'caption');
     if (typeof cap === 'string' && cap.trim() !== '') return cap.trim();
     const fn = (prop as unknown as {friendlyName?: unknown}).friendlyName;
-    if (typeof fn === 'string' && fn.trim() !== '') return fn.trim();
+    if (typeof fn === 'string' && fn.trim() !== '' && fn.trim() !== prop.name) return fn.trim();
   } catch {/* fall through to name */}
-  return prop.name;
+  return propertyNameToFriendly(prop.name);
 }
 
-/** Returns the display name for a function node header.
- * Prefers friendlyName over name, then splits by '|' and takes the last segment. */
+/** Display name for a function node header: the declared `friendlyName`, split
+ *  by `|` (top-menu paths carry the whole trail) with the last segment taken.
+ *
+ *  When the friendlyName is just the raw name it is **humanized**, exactly as
+ *  {@link getParamDisplayName} does for parameters. Two reasons: the Dart
+ *  getter is `friendlyName ?? name`, so an equal value means "nothing was
+ *  declared"; and a `//friendlyName:` annotation does not reliably survive
+ *  package publishing (verified on a live stand — Flow's own `readUploadedFile`
+ *  registers as `readUploadedFile`), so a camelCase identifier is the common
+ *  case rather than the exception. `Filter Rows` beats `filterRows` on a
+ *  canvas, and core does the same for its own functions. Identity is
+ *  untouched — `func.name` / `nqName` still key everything. */
 export function getFuncDisplayName(func: DG.Func): string {
   const raw = func.friendlyName || func.name || '';
   const parts = raw.split('|');
-  return parts[parts.length - 1].trim();
+  const last = parts[parts.length - 1].trim();
+  const declared = raw.trim() !== (func.name ?? '').trim() || parts.length > 1;
+  return declared ? last : propertyNameToFriendly(last);
 }

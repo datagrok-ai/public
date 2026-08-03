@@ -1,4 +1,14 @@
-# Peptide Generation
+---
+title: "Peptide Generation"
+description: Design and rank new candidate peptides from per-position monomer statistics using an additive activity model.
+keywords:
+  - peptide design
+  - free-wilson model
+  - additive positional model
+  - peptides sar
+  - beam search
+  - de novo sequence generation
+---
 
 The Peptide Generation viewer designs new candidate peptides from your data and ranks them by predicted activity. It reuses the same per-monomer-per-position statistics as the [Sequence Variability Map](sequence-variability-map.md) and [Most Potent Residues](most-potent-residues.md) viewers, so it fits naturally into a [Peptides SAR](../../datagrok/solutions/domains/bio/peptides-sar.md) analysis. It is an optional viewer and is not added by default. Add it like any other viewer from the **Add viewer** menu.
 

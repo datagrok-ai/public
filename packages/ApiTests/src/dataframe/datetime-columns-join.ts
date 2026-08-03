@@ -29,4 +29,4 @@ category('DataFrame', () => {
 
     expect(result != null, true);
   }, {owner: 'aparamonov@datagrok.ai'});
-});
+}, {node: true});

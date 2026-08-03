@@ -32,6 +32,9 @@ test('Chem: Structure Filter — 5 sub-scenarios on spgi-100', async ({page}) =>
     });
     await waitForChemMenu(page);
     await waitForMolecule(page);
+    // Load the Chem package bundle so `Chem:substructureFilter` resolves for the synchronous
+    // filter operations below (fg.updateOrAdd) — the semType detector alone does not load it.
+    await page.evaluate(async () => { await grok.functions.call('Chem:getRdKitModule', {}); });
   });
 
   // ===== Sub-scenario 1: Disable + close+reopen + re-enable =====

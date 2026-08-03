@@ -1,5 +1,13 @@
 ---
 title: Datagrok API overview
+description: Introduces the JavaScript and Python APIs available for building on the Datagrok platform.
+keywords:
+  - js api
+  - javascript api
+  - py api
+  - datagrok-api
+  - client libraries
+  - api reference
 ---
 
 Datagrok provides two primary types of APIs: JavaScript and Python. Each of these APIs allows you to interact with the Datagrok

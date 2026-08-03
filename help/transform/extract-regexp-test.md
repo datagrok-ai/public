@@ -1,7 +1,15 @@
+---
+title: "Tests: Split columns by regular expression"
+description: Testing scenarios for validating column splitting using regular expression matches and groups.
+keywords:
+  - extract regexp test
+  - split column by regex testing
+  - regular expression groups validation
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Split columns by RegExp -->
 <!-- SUBTITLE: -->
-
-# Tests: Split columns by regular expression
 
 Matches the specified regular expression against the content of the specified column. Matched groups are added as new
 columns.

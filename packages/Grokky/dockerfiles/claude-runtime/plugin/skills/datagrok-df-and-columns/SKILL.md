@@ -36,9 +36,9 @@ and `datagrok-selection`.
 | Stats (cached on column)                     | `col.stats.{min,max,avg,stdev,med,q1,q2,q3,sum,valueCount,missingValueCount,uniqueCount}` |
 | Set semType                                  | `col.semType = DG.SEMTYPE.MOLECULE`                             |
 | Set friendly name / units / format / desc    | `col.meta.friendlyName / .units / .format / .description = ...` |
-| Linear color coding (numeric)                | `col.meta.colors.setLinear(range, opts?)`                       |
-| Categorical color coding                     | `col.meta.colors.setCategorical(map, opts?)`                    |
-| Conditional color coding                     | `col.meta.colors.setConditional(rules)`                         |
+| Linear color coding (numeric)                | `col.meta.colors.setLinear()` (default scheme) or `setLinear(range, opts?)` |
+| Categorical color coding                     | `col.meta.colors.setCategorical()` (default palette) or `setCategorical(map, opts?)` |
+| Conditional color coding                     | `col.meta.colors.setConditional()` (auto bins) or `setConditional(rules)` |
 | Disable color coding                         | `col.meta.colors.setDisabled()`                                 |
 
 ## Finding the right column
@@ -293,12 +293,21 @@ col.meta.description = null;
 
 ## Color coding
 
+When the user doesn't name specific colors or rules, call the setter with
+**no arguments** — the platform's default scheme applies. Never invent a
+palette the user didn't ask for.
+
 Lives under `col.meta.colors`. Four shapes:
 
-### Linear (numeric only — throws on string)
+### Linear (numeric only)
 
 ```datagrok-exec
-// Red → yellow → green across the value range, with min/max pinned.
+// Default: no palette — the platform's standard linear scheme is used.
+t.getCol('weight').meta.colors.setLinear();
+```
+
+```datagrok-exec
+// User asked for red → yellow → green, with min/max pinned.
 t.getCol('age').meta.colors.setLinear(
   ['#ff0000', '#ffff00', '#00ff00'],
   {min: 19, max: 70},
@@ -308,9 +317,18 @@ t.getCol('age').meta.colors.setLinear(
 Hex strings and ARGB integers both work in `range`. Optional `belowMinColor`
 / `aboveMaxColor` paint out-of-range values.
 
+Linear on a non-numeric column is a logic error — the setter itself does not
+throw; guard with `col.isNumerical` if uncertain.
+
 ### Categorical
 
 ```datagrok-exec
+// Default: no map — every category gets a color from the platform palette.
+t.getCol('race').meta.colors.setCategorical();
+```
+
+```datagrok-exec
+// User asked for specific colors per category.
 t.getCol('race').meta.colors.setCategorical(
   {'Asian': '#0000FF', 'Black': '#FF0000'},
   {fallbackColor: '#CCCCCC'},
@@ -320,7 +338,13 @@ t.getCol('race').meta.colors.setCategorical(
 ### Conditional (range-based rules)
 
 ```datagrok-exec
-// '20-170' means "value in the range 20..170". '<100' / '>50' also work.
+// Default: no rules — the platform bins the values into 4 ranges automatically.
+t.getCol('height').meta.colors.setConditional();
+```
+
+```datagrok-exec
+// User specified the thresholds. '20-170' means "value in the range 20..170".
+// '<100' / '>50' also work.
 t.getCol('height').meta.colors.setConditional({
   '20-170': '#00FF00',
   '170-190': '#220505',

@@ -1,5 +1,12 @@
 ---
 title: "Density plot"
+description: Visualize the concentration of data points across a 2D area by binning and color-coding point density.
+keywords:
+  - heat density chart
+  - 2d histogram
+  - point density
+  - binned scatter plot
+  - hexbin
 ---
 
 Unlike [scatter plot](scatter-plot.md) that visualizes each individual data point, density plot splits 2D area by bins,

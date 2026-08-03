@@ -3,7 +3,10 @@ feature: charts
 target_layer: playwright
 coverage_type: smoke
 priority: p0
-realizes: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel]
+realizes_atlas: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel]
+realizes: [charts.radar]
+realized_as:
+  - radar-spec.ts
 pyramid_layer: ui-smoke
 ui_coverage_responsibility:
   - add-viewer-radar

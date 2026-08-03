@@ -1,5 +1,9 @@
 ---
 feature: legend
+realizes_atlas: []
+realizes: []
+realized_as:
+  - line-chart-spec.ts
 target_layer: playwright
 coverage_type: regression
 priority: p1
@@ -25,7 +29,7 @@ Verifies Line chart-specific legend behavior: setting **Split** produces a categ
 
 ## Setup
 
-1. Open SPGI (`System:DemoFiles/SPGI.csv`)
+1. Open SPGI (`System:DemoFiles/chem/SPGI.csv`)
 2. Add a **Line chart**
 
 ## Scenarios
@@ -76,5 +80,5 @@ Verifies Line chart-specific legend behavior: setting **Split** produces a categ
 ---
 {
   "order": 6,
-  "datasets": ["System:DemoFiles/SPGI.csv"]
+  "datasets": ["System:DemoFiles/chem/SPGI.csv"]
 }

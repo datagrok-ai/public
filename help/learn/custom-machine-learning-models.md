@@ -1,5 +1,12 @@
 ---
 title: "Custom machine learning models"
+description: Build custom train, apply, and isApplicable functions in Python, R, or Julia to add your own ML models.
+keywords:
+  - custom ml model
+  - train and apply function
+  - isapplicable predicate
+  - script-based model
+  - celery docker task
 ---
 
 Datagrok supports two ML engines out of the box: Caret and Chemprop. In addition, the platform allows users to build

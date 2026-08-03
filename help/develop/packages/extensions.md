@@ -1,5 +1,15 @@
 ---
 title: "Extending Datagrok"
+description: Catalog of the extension points available to Datagrok packages, from viewers and cell renderers to applications and connections.
+keywords:
+  - plugin architecture
+  - custom viewers
+  - cell renderers
+  - semantic type detectors
+  - file viewers
+  - info panels
+  - custom applications
+  - data connections
 ---
 
 Datagrok is built to be highly extensible, composable, and customizable. Many parts of the Datagrok platform can be enhanced by

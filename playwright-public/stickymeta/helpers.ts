@@ -101,7 +101,7 @@ export async function openSpgi(page: Page): Promise<void> {
   await page.evaluate(async () => {
     const g = (window as any).grok;
     g.shell.closeAll();
-    const df = await g.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await g.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     g.shell.addTableView(df);
     await new Promise<void>((resolve) => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });

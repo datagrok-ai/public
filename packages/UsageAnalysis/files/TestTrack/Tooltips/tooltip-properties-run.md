@@ -2,7 +2,7 @@
 
 **Date**: 2026-05-12
 **URL**: https://dev.datagrok.ai
-**Dataset**: `System:DemoFiles/SPGI.csv`
+**Dataset**: `System:DemoFiles/chem/SPGI.csv`
 **Status**: PASS
 
 ## Steps

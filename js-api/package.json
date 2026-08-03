@@ -96,6 +96,7 @@
     "build-js-api": "git clean -f -X -d ./src && tsc && webpack",
     "build": "tsc && webpack",
     "build-docker": "tsc && webpack --config webpack.config.docker.js",
+    "build-node": "webpack --config webpack.config.node.js",
     "build-all": "npm --prefix ./../libraries/chem-meta run build && npm run build"
   }
 }

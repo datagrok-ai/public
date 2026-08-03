@@ -1,4 +1,6 @@
-Quart==0.18.4
+# VEX: Quart>=0.20 is the first line that supports Werkzeug 3.x (needed for the
+# Werkzeug CVE fixes) and also clears Quart CVE-2024-49767; needs py>=3.9 (image is 3.11).
+Quart>=0.20.0
 hypercorn==0.14.4
 websockets==11.0.3
-Werkzeug==2.3.7
+Werkzeug>=3.1.6

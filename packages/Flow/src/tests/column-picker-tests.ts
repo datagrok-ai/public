@@ -6,7 +6,7 @@ import {category, test, expect, before} from '@datagrok-libraries/utils/src/test
 import * as DG from 'datagrok-api/dg';
 import {registerBuiltinNodes, registerAllFunctions, getRegisteredFuncs, createNode} from '../rete/node-factory';
 import {PropertyPanel} from '../panel/property-panel';
-import {ColumnPickRequest} from '../panel/column-picker';
+import {ColumnPickRequest, buildColumnMatchFilter} from '../panel/column-picker';
 import {ExecutionController} from '../execution/execution-controller';
 import {NodeExecStatus} from '../execution/execution-state';
 import {emitScript} from '../compiler/script-emitter';
@@ -162,6 +162,58 @@ category('Flow: column picker', () => {
     } finally {
       destroyEditor(e);
     }
+  });
+
+  test('the pick request carries the icon as its menu anchor', async () => {
+    // The column choice is now a DG.Menu popped next to the picker icon (no
+    // second dialog) — so the request must hand the picker that icon element.
+    const e = makeEditor();
+    const panel = new PropertyPanel(e.flow);
+    document.body.appendChild(panel.root);
+    try {
+      const one = await addNode(e.flow, 'Utilities/Select Column');
+      const reqs: ColumnPickRequest[] = [];
+      panel.onPickColumns = (r) => reqs.push(r);
+      panel.showNode(one);
+      const btn = panel.root.querySelector('[data-param="columnName"] .funcflow-col-pick') as HTMLElement | null;
+      expect(!!btn, true, 'Select Column has a picker icon');
+      btn!.click();
+      expect(reqs.length, 1);
+      expect(reqs[0].anchor === btn, true, 'the request anchors the menu to the clicked icon');
+    } finally {
+      panel.root.remove();
+      destroyEditor(e);
+    }
+  });
+
+  test('buildColumnMatchFilter gates by columnTypeFilter and semType', async () => {
+    const num = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2, 3]);
+    const str = DG.Column.fromStrings('s', ['a', 'b', 'c']);
+    const mol = DG.Column.fromStrings('m', ['CCO', 'c1ccccc1']);
+    mol.semType = 'Molecule';
+
+    // No constraints → no filter (menu shows every column).
+    expect(buildColumnMatchFilter(null, null) === undefined, true, 'neither attribute → undefined');
+    expect(buildColumnMatchFilter('', undefined) === undefined, true, 'empty semType → undefined');
+    // Unrecognized columnTypeFilter is skipped, not applied.
+    expect(buildColumnMatchFilter(null, 'bogus') === undefined, true, 'unknown columnTypeFilter → undefined');
+
+    const numerical = buildColumnMatchFilter(null, 'numerical')!;
+    expect(numerical(num), true, 'numerical admits an int column');
+    expect(numerical(str), false, 'numerical rejects a string column');
+
+    const strings = buildColumnMatchFilter(null, 'string')!;
+    expect(strings(str), true, 'string admits a string column');
+    expect(strings(num), false, 'string rejects an int column');
+
+    const molecules = buildColumnMatchFilter('Molecule', null)!;
+    expect(molecules(mol), true, 'semType admits a matching column');
+    expect(molecules(str), false, 'semType rejects a non-matching column');
+
+    // Both attributes must hold together.
+    const both = buildColumnMatchFilter('Molecule', 'string')!;
+    expect(both(mol), true, 'Molecule string column passes both');
+    expect(both(str), false, 'plain string column fails the semType half');
   });
 
   test('no picker is rendered when the panel has no onPickColumns handler', async () => {

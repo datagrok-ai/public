@@ -1,3 +1,13 @@
+---
+feature: queries
+target_layer: playwright
+coverage_type: edge
+priority: p2
+realizes: []
+realized_as: []
+related_bugs: []
+---
+
 # New Visual Query — manual UI checks
 
 This is the **manual companion** to `new-visual-query.md`. It covers the parts that the

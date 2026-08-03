@@ -3,7 +3,8 @@ feature: peptides
 target_layer: playwright
 coverage_type: edge
 priority: p1
-realizes: [GROK-19145]
+realizes_atlas: [GROK-19145]
+realizes: []
 produced_from: atlas-driven
 related_bugs:
   - GROK-19145

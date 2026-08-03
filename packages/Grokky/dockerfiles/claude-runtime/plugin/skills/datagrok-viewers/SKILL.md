@@ -282,8 +282,9 @@ return sp.root;
 ## Out of scope
 
 - **Row filtering** (`df.filter`) — `datagrok-filtering`.
-- **Grid customization** (visibility, widths, color coding, pinning) —
-  `datagrok-grid-customization`.
+- **Grid customization** (visibility, widths, pinning) —
+  `datagrok-grid-customization`; column color coding —
+  `datagrok-df-and-columns`.
 - **The Filters viewer (`DG.VIEWER.FILTERS`)** — `view.getFiltersGroup()`
   is the right API and is covered by `datagrok-filtering`. Only add a
   Filters viewer here if the user explicitly says "add a filter panel as a

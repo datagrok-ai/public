@@ -1,5 +1,14 @@
 ---
 title: "Routing"
+description: Implement URL-based routing in a Datagrok application to open specific views and states from a shareable link.
+keywords:
+  - deep linking
+  - shareable link
+  - meta.url
+  - view path
+  - URL parameters
+  - app URL alias
+  - path segments
 ---
 
 Sometimes it is useful to share a link with a colleague or business executive that opens an app in a specific state

@@ -534,6 +534,95 @@ export async function splitToMonomersTopMenu(table: DG.DataFrame, sequence: DG.C
   return await PackageFunctions.splitToMonomersTopMenu(table, sequence);
 }
 
+//name: Extract Sequence Region
+//description: Extracts a sub-region of each sequence between the given positions into a new column.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
+//input: string start = 1 { caption: Start; nullable: true; description: Start position name, inclusive. Empty means the sequence start }
+//input: string end = 10 { caption: End; nullable: true; description: End position name, inclusive. Empty means the sequence end }
+//input: string name { optional: true; description: Region column name }
+//output: column result
+//meta.role: transform
+//editor: Bio:GetRegionEditor
+export async function extractRegion(table: DG.DataFrame, sequence: DG.Column<any>, start?: string, end?: string, name?: string) : Promise<any> {
+  return await PackageFunctions.extractRegion(table, sequence, start, end, name);
+}
+
+//name: Convert To Atomic Level
+//description: Converts sequences to molblocks, returning the molecule column.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
+//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
+//input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
+//output: column result
+//meta.role: transform
+export async function toAtomicLevelColumn(table: DG.DataFrame, sequence: DG.Column<any>, nonlinear: boolean, highlight: boolean) : Promise<any> {
+  return await PackageFunctions.toAtomicLevelColumn(table, sequence, nonlinear, highlight);
+}
+
+//name: Molecules to HELM Column
+//description: Converts peptide molecules to HELM notation, returning the sequence column.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column molecules { semType: Molecule; caption: Molecules; nullable: false }
+//output: column result
+//meta.role: transform
+export async function moleculesToHelmColumn(table: DG.DataFrame, molecules: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.moleculesToHelmColumn(table, molecules);
+}
+
+//name: Split to Monomers Columns
+//description: Splits a sequence column into per-position monomer columns, returning them as a table.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
+//output: dataframe result
+//meta.role: transform
+export async function splitToMonomersColumns(table: DG.DataFrame, sequence: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.splitToMonomersColumns(table, sequence);
+}
+
+//name: Convert Sequence Notation
+//description: Converts a macromolecule column to another notation, returning the converted column.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
+//input: string targetNotation = 'helm' { caption: Target notation; nullable: false; choices: ["fasta","separator","helm"] }
+//input: string separator { caption: Separator; nullable: true; description: Monomer separator for the separator notation, "." when left blank }
+//output: column result
+//meta.role: transform
+export async function convertNotation(table: DG.DataFrame, sequence: DG.Column<any>, targetNotation: string, separator?: string) : Promise<any> {
+  return await PackageFunctions.convertNotation(table, sequence, targetNotation, separator);
+}
+
+//name: Tag as Macromolecule
+//description: Runs sequence detection on a string column so semType-dependent bio functions recognise it.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { caption: Sequence; nullable: false; type: string }
+//output: column result
+//meta.role: transform
+export async function tagAsMacromolecule(table: DG.DataFrame, sequence: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.tagAsMacromolecule(table, sequence);
+}
+
+//name: Motif Search
+//description: Returns the rows whose sequence matches the motif.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
+//input: string motif { caption: Motif; nullable: false; description: A monomer run, or a regular expression over the sequence }
+//output: dataframe result
+//meta.role: transform
+export function motifSearch(table: DG.DataFrame, sequence: DG.Column<any>, motif: string) : any {
+  return PackageFunctions.motifSearch(table, sequence, motif);
+}
+
+//name: Apply Antibody Numbering
+//description: Assigns IMGT or Kabat antibody numbering, adding the region annotations and an aligned column to the table.
+//input: dataframe table { caption: Table; nullable: false }
+//input: column sequence { semType: Macromolecule; caption: Sequence; nullable: false }
+//input: string scheme = 'imgt' { caption: Scheme; nullable: false; choices: ["imgt","kabat"] }
+//meta.role: transform
+export async function applyAntibodyNumbering(table: DG.DataFrame, sequence: DG.Column<any>, scheme: string) : Promise<void> {
+  await PackageFunctions.applyAntibodyNumbering(table, sequence, scheme);
+}
+
 //name: Bio: getHelmMonomers
 //input: column sequence { semType: Macromolecule }
 //output: object result

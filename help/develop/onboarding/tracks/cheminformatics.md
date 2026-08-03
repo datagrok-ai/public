@@ -1,5 +1,14 @@
 ---
 title: "Cheminformatics"
+description: Exercises for learning Datagrok's cheminformatics capabilities, including MCS search and activity prediction models.
+keywords:
+  - cheminformatics exercises
+  - FindMCS
+  - maximal common substructure
+  - similarity scoring exercise
+  - trainModel
+  - applyModel
+  - activity prediction
 ---
 
 These programming exercises are designed to introduce developers to the Datagrok platform cheminformatics capabilities.

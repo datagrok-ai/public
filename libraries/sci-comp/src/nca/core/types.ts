@@ -121,11 +121,15 @@ export interface LambdaZStrategy {
   /** When true, the Cmax point is excluded from the lambda_z candidate window. */
   readonly excludeCmax: boolean;
   /**
-   * PKNCA-style tie-breaking factor for adj-R². When two candidate subsets
-   * have adj-R² within this distance, the one with more points wins.
-   * Implemented as an additive score `adjRSquared + adjRSquaredFactor * n`.
-   * PKNCA default is `1e-4`. Set to `0` to disable tie-breaking and use
-   * strict max adj-R² (then the smaller subset wins on ties).
+   * PKNCA-style tie-breaking factor for adj-R². The best-fit search picks the
+   * window with the MOST points whose adj-R² is within this FLAT distance of the
+   * maximum adj-R² across all candidate windows (the PKNCA / WinNonlin best-fit
+   * rule). PKNCA default is `1e-4`. Set to `0` to disable tie-breaking and use
+   * strict max adj-R² (ties → more points).
+   *
+   * NB: this is a flat tolerance off the single global maximum, NOT an additive
+   * `adjRSquared + factor·n` score — the additive form accumulates the bonus with
+   * window length and over-selects long windows (see VAL-01-LZ-R019 in lambda-z.ts).
    */
   readonly adjRSquaredFactor?: number;
   /** Indices of selected points (manual-points mode). */

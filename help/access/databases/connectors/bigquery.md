@@ -1,5 +1,15 @@
 ---
 title: "BigQuery"
+description: Connect Datagrok to Google BigQuery via JDBC using service account or OAuth authentication.
+keywords:
+  - google bigquery
+  - gcp data warehouse
+  - jdbc driver
+  - service account authentication
+  - oauth authentication
+  - google cloud sql
+  - per-user identity
+  - row-level security
 ---
 
 Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) database using SQL queries via a JDBC driver.

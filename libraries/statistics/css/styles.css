@@ -176,6 +176,12 @@
   overflow: hidden;
 }
 
+.statistics-compute-dialog-rerun-input {
+  margin: 4px 0 8px 15px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--grey-2);
+}
+
 .oy-scroll {
   overflow-y: scroll;
 }
