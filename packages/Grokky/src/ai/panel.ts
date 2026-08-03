@@ -45,6 +45,12 @@ const actionButtionValues = {
   stop: 'Stop AI Generation',
 } as const;
 
+const micTooltips = {
+  default: 'Voice Input',
+  accessDenied: 'Microphone access denied. Please enable microphone permissions.',
+  noDevice: 'No microphone found or access denied',
+} as const;
+
 export type UIMessageOptions = {
   /** if set, will add feedback buttons to the message*/
   finalResult?: string,
@@ -131,6 +137,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private isRecognizing: boolean = false;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
+  private micAccessDenied: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   protected _messages: T[] = [];
   protected _uiMessages: UIMessage[] = [];
@@ -214,7 +221,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
-    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), 'Voice Input');
+    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), micTooltips.default);
+    this.checkMicPermission();
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -1049,6 +1057,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ui.dialog('Delete all conversation history').add(ui.divText('This action will permanently delete all saved conversations. Are you sure you want to proceed?'))
           .onOK(async () => {
             await ConversationStorage.clearAll();
+            this.currentConversationId = null;
             grok.shell.info('History cleared');
           }).show();
       });
@@ -1121,6 +1130,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private toggleSpeechRecognition() {
+    if (this.micAccessDenied)
+      return;
     if (this.isRecognizing)
       this.stopRecognition();
     else
@@ -1131,6 +1142,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private syncVoiceCancelHint() {
     if (this._voiceCancelHint)
       this._voiceCancelHint.style.display = this.isRecognizing ? '' : 'none';
+  }
+
+  private async checkMicPermission(): Promise<void> {
+    if (!navigator.permissions?.query)
+      return;
+
+    try {
+      const status = await navigator.permissions.query({name: 'microphone' as PermissionName});
+      this.applyMicPermissionStatus(status.state);
+      status.onchange = () => this.applyMicPermissionStatus(status.state);
+    } catch (error) {
+      console.error('Failed to query microphone permission:', error);
+    }
+  }
+
+  private applyMicPermissionStatus(state: PermissionState): void {
+    this.micAccessDenied = state === 'denied';
+    ui.setDisabled(this.micButton, this.micAccessDenied,
+      this.micAccessDenied ? micTooltips.accessDenied : micTooltips.default);
   }
 
   private startRecognition() {
@@ -1183,10 +1213,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         let errorMessage = 'Speech recognition error';
         switch (event.error) {
         case 'audio-capture':
-          errorMessage = 'No microphone found or access denied';
+          errorMessage = micTooltips.noDevice;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.noDevice);
           break;
         case 'not-allowed':
-          errorMessage = 'Microphone access denied. Please enable microphone permissions.';
+          errorMessage = micTooltips.accessDenied;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.accessDenied);
           break;
         case 'network':
           errorMessage = 'Network error during speech recognition';

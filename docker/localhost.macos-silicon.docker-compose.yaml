@@ -1,3 +1,11 @@
+# Datagrok local stack for Apple Silicon (ARM64 image variants).
+#
+# This file is bound to a single release train. `x-datagrok-release` names it, and every
+# datagrok/* image below defaults to a tag from that train. The compose file and the images
+# it starts must always come from the same train — pairing them across trains makes the
+# server fail to start. See `localhost.docker-compose.yaml` for the full rationale.
+x-datagrok-release: bleeding-edge
+
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
@@ -17,7 +25,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:1.0.0
+    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-bleeding-edge}
     platform: linux/amd64
     container_name: grok_pipe
     ports:
@@ -33,7 +41,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
@@ -90,7 +98,7 @@ services:
     profiles: [ "all", "datagrok" ]
 
   grok_spawner:
-    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-latest}
+    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
     platform: linux/amd64
     user: root
     environment:
@@ -109,7 +117,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-latest}
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
     platform: linux/amd64
     networks:
       datagrok:
@@ -125,7 +133,7 @@ services:
     profiles: [ "all", "grok_connect" ]
 
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
     platform: linux/amd64
     networks:
       datagrok:
