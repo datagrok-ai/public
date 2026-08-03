@@ -28,8 +28,8 @@ category('JS: domain handlers', () => {
   test('DG.DomainRow wrapper exported', async () => {
     expect(typeof DG.DomainRow, 'function', 'DG.DomainRow is not exported');
     const props = Object.getOwnPropertyNames((DG.DomainRow as any).prototype);
-    for (const p of ['schemaName', 'tableName', 'typeName', 'semValue', 'values', 'id'])
-      expect(props.includes(p), true, `DG.DomainRow.${p} getter missing`);
+    for (const p of ['schemaName', 'tableName', 'typeName', 'semValue', 'values', 'id', 'permissions'])
+      expect(props.includes(p), true, `DG.DomainRow.${p} member missing`);
   });
 
   test('grit.issue ObjectHandler resolves', async () => {

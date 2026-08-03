@@ -115,6 +115,59 @@ export interface DomainGrant {
   permission: DomainPermission;
 }
 
+/** Effective capabilities of the CURRENT user on one domain table
+ * (see `DomainTableClient.capabilities`). Composed client-side from server-truth
+ * permission probes on the FINAL securing entity through the master delegate chain,
+ * plus the writable-column mirror of column security — the same predicates the
+ * server enforces on writes, so UI affordances gated on this object never promise
+ * an action the server would 403. */
+export interface DomainTableCapabilities {
+  /** View grant on the securing entity. Row-mode tables may still expose
+   * individually granted rows when false. */
+  canView: boolean;
+  /** Edit grant on the securing entity — the server's insert predicate. */
+  canInsert: boolean;
+  /** {@link canInsert} AND at least one column is writable for the caller —
+   * the built-in grid-editability rule. */
+  canEdit: boolean;
+  canDelete: boolean;
+  canShareTable: boolean;
+  /** Column names the caller may write (Edit on an owning property schema),
+   * in declared column order. */
+  writableColumns: string[];
+  securityMode: 'table' | 'master' | 'row';
+  /** Whether writes leave an in-transaction audit trail. */
+  audit: boolean;
+  hasBusinessKey: boolean;
+}
+
+/** FK-inverted reference to a child (detail) table — drives detail-table links
+ * and entity-view child tabs (see `DomainRegistryClient.tableInfo`). */
+export interface DomainChildTableRef {
+  schema: string;
+  table: string;
+  /** The child table's FK column referencing this table. */
+  fkColumn: string;
+  /** Friendly label of the FK column ('issue_id' → 'Issue') — disambiguates
+   * children referencing the same parent through several columns. */
+  label: string;
+}
+
+/** Registry metadata of one domain table (see `grok.dapi.domains.registry`). */
+export interface DomainTableInfo {
+  /** Primary display-name column; null when the table declares none. */
+  nameColumn: string | null;
+  /** Natural-key columns; empty when the table declares none. */
+  businessKey: string[];
+  /** Effective singular display name (declared, else derived from the table name). */
+  singularName: string;
+  /** Effective plural display name (declared, else derived from the table name). */
+  pluralName: string;
+  securityMode: 'table' | 'master' | 'row';
+  audit: boolean;
+  childTables: DomainChildTableRef[];
+}
+
 /** Per-row outcome inside a {@link DomainBatchReport}. */
 export interface DomainBatchRowResult {
   index: number;

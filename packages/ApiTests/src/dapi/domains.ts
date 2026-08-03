@@ -109,3 +109,106 @@ category('Dapi: domains', () => {
     expect(error.includes('<schema>.<table>'), true);
   });
 }, {owner: 'askalkin@datagrok.ai'});
+
+// Registry reflection (ui-js-api WO-2): grok.dapi.domains.registry — the runtime
+// Property metadata, table info with FK-inverted child tables, and batched
+// display-name resolution. Assertions run against this package's own 'apitests'
+// schema; grit.issue assertions (the dogfood schema with choices/min/nameColumn)
+// skip cleanly where Grit is not deployed.
+category('Dapi: domain registry', () => {
+  const registry = () => grok.dapi.domains.registry;
+  const sku = () => `SKU-REG-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+
+  async function gritDeployed(): Promise<boolean> {
+    const schemas = await grok.dapi.domains.schemas.list();
+    return schemas.some((s) => s.name === 'grit');
+  }
+
+  test('rowProperties: schema.json constraints round-trip', async () => {
+    const props = await registry().rowProperties('apitests.item');
+    const by = (n: string) => props.find((p) => p.name === n);
+    expect(by('sku') != null, true, `sku property missing: ${props.map((p) => p.name).join(',')}`);
+    expect(by('sku')!.nullable, false, 'required column must not be nullable');
+    expect(by('name')!.nullable, true, 'optional column must be nullable');
+    expect(by('quantity')!.min, 0, 'min constraint from schema.json');
+    expect(by('quantity')!.propertyType, 'int');
+  });
+
+  test('rowProperties: grit.issue matches schema.json (choices/min/nullable)', async () => {
+    if (!await gritDeployed()) {
+      console.log('skipped: Grit is not deployed');
+      return;
+    }
+    const props = await registry().rowProperties('grit.issue');
+    const by = (n: string) => props.find((p) => p.name === n)!;
+    expect(JSON.stringify(by('status').choices), JSON.stringify(['open', 'in progress', 'resolved', 'closed']));
+    expect(JSON.stringify(by('priority').choices), JSON.stringify(['low', 'medium', 'high', 'critical']));
+    expect(by('number').min, 1, 'min from schema.json');
+    expect(by('number').nullable, false, 'required column must not be nullable');
+    expect(by('title').nullable, false);
+    expect(by('description').nullable, true);
+    expect(by('project_id').semType, 'grit.project', 'ref column must carry the target row semType');
+  });
+
+  test('rowProperties: unknown table rejects with a typed validation error', async () => {
+    let e: any = null;
+    try {
+      await registry().rowProperties('apitests.nosuch');
+    } catch (x) {
+      e = x;
+    }
+    expect(e instanceof DG.DomainValidationError, true,
+      `expected DomainValidationError, got ${e?.constructor?.name}: ${e?.message}`);
+  });
+
+  test('tableInfo: identity, security, and FK-inverted childTables', async () => {
+    const info = await registry().tableInfo('apitests.item');
+    expect(JSON.stringify(info.businessKey), JSON.stringify(['sku']));
+    // NB: nameColumn is not asserted here — deployed registries may carry an
+    // isName drift on apitests.item (same manifest version, no reapply); the
+    // grit.issue test pins nameColumn against its committed schema.json.
+    expect(info.securityMode, 'row');
+    expect(info.audit, true);
+    expect(info.singularName, 'item', 'effective singular derived from the table name');
+    expect(info.pluralName, 'items');
+    const child = info.childTables.find((c) => c.table === 'item_event');
+    expect(child != null, true, `item_event missing from childTables: ${JSON.stringify(info.childTables)}`);
+    expect(child!.schema, 'apitests');
+    expect(child!.fkColumn, 'item_id');
+    expect(child!.label, 'Item', 'friendly FK label (the _id suffix dropped)');
+  });
+
+  test('tableInfo: grit.issue childTables list comment', async () => {
+    if (!await gritDeployed()) {
+      console.log('skipped: Grit is not deployed');
+      return;
+    }
+    const info = await registry().tableInfo('grit.issue');
+    expect(info.nameColumn, 'title');
+    expect(info.childTables.some((c) => c.table === 'comment' && c.fkColumn === 'issue_id'), true,
+      `comment missing from childTables: ${JSON.stringify(info.childTables)}`);
+  });
+
+  test('resolveNames: display-identity chain, null for unresolvable ids', async () => {
+    const items = grok.dapi.domains.table('apitests.item');
+    const info = await registry().tableInfo('apitests.item');
+    const named = sku();
+    const bare = sku();
+    // One row with a name value, one without: the second proves the
+    // business-key fallback regardless of whether the registry declares a
+    // name column for apitests.item (deployed registries drift on isName).
+    const [insNamed] = await items.insert({sku: named, name: 'Resolve probe'});
+    const [insBare] = await items.insert({sku: bare});
+    const ghost = '00000000-0000-0000-0000-000000000000';
+    try {
+      const names = await registry().resolveNames('apitests.item', [insNamed.id, insBare.id, ghost]);
+      expect(names[insNamed.id], info.nameColumn != null ? 'Resolve probe' : named,
+        `display identity must follow the declared name column (${info.nameColumn})`);
+      expect(names[insBare.id], bare, 'empty name — the business key is the display identity');
+      expect(names[ghost] == null, true, 'unresolvable ids must map to null');
+    } finally {
+      await items.delete(insNamed.id);
+      await items.delete(insBare.id);
+    }
+  });
+}, {owner: 'askalkin@datagrok.ai'});

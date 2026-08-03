@@ -55,7 +55,9 @@ import {
   DomainRestrictError,
   DomainRowInsert,
   DomainSavedFilterInfo,
+  DomainTableCapabilities,
   DomainTableClientOptions,
+  DomainTableInfo,
   DomainTransactionOp,
   DomainUpdateResult,
   DomainValidationError,
@@ -1138,6 +1140,62 @@ export class DomainsDataSource {
   schema(name: string): DomainSchemaClient {
     return new DomainSchemaClient(this.dart, name);
   }
+
+  /** Reflection over the domain registry: the runtime {@link Property} metadata,
+   * table info with FK-inverted child tables, and batched display-name resolution —
+   * what reflective UI components consume to work on any table without codegen. */
+  get registry(): DomainRegistryClient {
+    return new DomainRegistryClient();
+  }
+
+  /** Drops the client-side domain UI caches (table capabilities, row permissions,
+   * writable columns, resolved display names) so the next read re-probes server
+   * truth. Grant changes made through this client invalidate automatically; call
+   * this after out-of-band grant changes (another session, `grok s`, server-side). */
+  invalidateUiCaches(): void {
+    api.grok_Domains_InvalidateUiCaches?.();
+  }
+}
+
+/**
+ * Reflection over the client-side domain registry (see {@link DomainsDataSource.registry}):
+ * schemas → tables → columns → {@link Property} metadata, loaded once per session and
+ * shared with the built-in domain UI. Tables are addressed as `'<schema>.<table>'`. */
+export class DomainRegistryClient {
+  private _split(name: string): [string, string] {
+    const dot = name.indexOf('.');
+    if (dot < 1 || dot === name.length - 1)
+      throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
+    return [name.substring(0, dot), name.substring(dot + 1)];
+  }
+
+  /** {@link Property} objects describing the table's declared columns — the same
+   * runtime metadata (type, semType, choices, min/max, nullable, defaultValue) that
+   * drives the built-in row editor and server-side validation, get/set-bound to
+   * {@link DomainRow} values. Rejects with a {@link DomainValidationError} for
+   * unknown tables. */
+  async rowProperties(table: string): Promise<Property[]> {
+    this._split(table);
+    return toJs(await domainCall(api.grok_DomainRegistry_RowProperties(table)));
+  }
+
+  /** Registry metadata of one table: display identity (nameColumn, businessKey,
+   * singular/plural names), security mode, audit flag, and the FK-inverted
+   * {@link DomainChildTableRef} list that drives detail-table links. */
+  tableInfo(table: string): Promise<DomainTableInfo> {
+    const [schema, t] = this._split(table);
+    return domainCall(api.grok_DomainRegistry_TableInfo(schema, t));
+  }
+
+  /** Batched display-name resolution for row [ids] of [table] (the standard display
+   * identity: name-column value → dash-joined business key → id). Requests coalesce
+   * client-side into one narrow fetch per table, and every id is cached afterwards —
+   * cheap to call per cell/render. Unresolvable ids (invisible, unknown, nameless)
+   * map to null. */
+  resolveNames(table: string, ids: string[]): Promise<{[id: string]: string | null}> {
+    const [schema, t] = this._split(table);
+    return domainCall(api.grok_Domains_ResolveNames(schema, t, ids));
+  }
 }
 
 /**
@@ -1186,13 +1244,15 @@ export class DomainSchemaClient {
    * id). Schema grants gate schema-level operations (apply requires Edit, delete requires
    * Delete, sharing requires Share). They do NOT grant access to row data — use
    * `table('s.t').grant()` per table for that. Requires Share. */
-  grant(group: string, permission: DomainPermission): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_SchemaGrant(this.dart, this.name, group, permission));
+  async grant(group: string, permission: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_SchemaGrant(this.dart, this.name, group, permission));
+    api.grok_Domains_InvalidateUiCaches?.();
   }
 
   /** Revokes [permission] (or all four when omitted) from [group]. Requires Share. */
-  revoke(group: string, permission?: DomainPermission): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_SchemaRevoke(this.dart, this.name, group, permission ?? null));
+  async revoke(group: string, permission?: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_SchemaRevoke(this.dart, this.name, group, permission ?? null));
+    api.grok_Domains_InvalidateUiCaches?.();
   }
 }
 
@@ -1417,20 +1477,32 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_IsWatching(this.dart, this.schema, this.table, id ?? null));
   }
 
+  /** Effective {@link DomainTableCapabilities} of the CURRENT user on this table:
+   * server-truth permission probes on the final securing entity plus the writable-column
+   * mirror of column security. Cached per registry generation + user; grant changes made
+   * through this client drop the cache automatically, out-of-band changes require
+   * {@link DomainsDataSource.invalidateUiCaches}. Rejects with a
+   * {@link DomainValidationError} for unknown tables. */
+  capabilities(): Promise<DomainTableCapabilities> {
+    return domainCall(api.grok_Domains_TableCapabilities(this.schema, this.table));
+  }
+
   /** Direct permission rows on this table's registry entity. Requires Share. */
   grants(): Promise<DomainGrant[]> {
     return domainCall(api.grok_Dapi_Domains_TableGrants(this.dart, this.schema, this.table));
   }
 
   /** Idempotently grants [permission] on this table to [group] (a group id). Requires Share. */
-  grant(group: string, permission: DomainPermission): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_TableGrant(this.dart, this.schema, this.table, group, permission));
+  async grant(group: string, permission: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_TableGrant(this.dart, this.schema, this.table, group, permission));
+    api.grok_Domains_InvalidateUiCaches?.();
   }
 
   /** Revokes [permission] (or all four when omitted) from [group]. Requires Share. */
-  revoke(group: string, permission?: DomainPermission): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_TableRevoke(this.dart, this.schema, this.table,
+  async revoke(group: string, permission?: DomainPermission): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_TableRevoke(this.dart, this.schema, this.table,
       group, permission ?? null));
+    api.grok_Domains_InvalidateUiCaches?.();
   }
 
   /** Restricts [column] to its own single-column property schema and grants [group] View on
@@ -1439,20 +1511,25 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * jsonb columns are managed via their property schema (DomainError). Out of scope on
    * this surface: listing a per-column schema's own grants (keep the returned id), and
    * property-schema grants in general (server-supported; no JS surface yet). */
-  shareColumn(column: TColumn, group: string, permission?: DomainPermission): Promise<{id: string; name: string}> {
-    return domainCall(api.grok_Dapi_Domains_ShareColumn(this.dart, this.schema, this.table,
+  async shareColumn(column: TColumn, group: string, permission?: DomainPermission): Promise<{id: string; name: string}> {
+    const res = await domainCall(api.grok_Dapi_Domains_ShareColumn(this.dart, this.schema, this.table,
       column, group, permission ?? 'View'));
+    api.grok_Domains_InvalidateUiCaches?.();
+    return res;
   }
 
   /** Restricts [column] without granting anyone (inverse: {@link restoreColumnVisibility}). */
-  restrictColumn(column: TColumn): Promise<{id: string; name: string}> {
-    return domainCall(api.grok_Dapi_Domains_RestrictColumn(this.dart, this.schema, this.table, column));
+  async restrictColumn(column: TColumn): Promise<{id: string; name: string}> {
+    const res = await domainCall(api.grok_Dapi_Domains_RestrictColumn(this.dart, this.schema, this.table, column));
+    api.grok_Domains_InvalidateUiCaches?.();
+    return res;
   }
 
   /** Deletes the per-column schema with its grants; the column rejoins the
    * everyone-visible core schema. */
-  restoreColumnVisibility(column: TColumn): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_RestoreColumnVisibility(this.dart, this.schema, this.table, column));
+  async restoreColumnVisibility(column: TColumn): Promise<void> {
+    await domainCall(api.grok_Dapi_Domains_RestoreColumnVisibility(this.dart, this.schema, this.table, column));
+    api.grok_Domains_InvalidateUiCaches?.();
   }
 
   /** Insert-or-update by row identity: no id → insert; id → version-checked partial update

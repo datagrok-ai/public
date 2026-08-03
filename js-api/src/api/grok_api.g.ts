@@ -823,6 +823,12 @@ export interface IDartApi {
   grok_Meta_RenderView(meta: any, x: any): any;
   grok_Meta_RenderGrid(meta: any, grid: any, items: any): any;
   grok_DomainRowMeta_RegisterPerTableMetas(): Promise<any>;
+  grok_DomainRegistry_RowProperties(type: String): Promise<any>;
+  grok_DomainRegistry_TableInfo(schemaName: String, tableName: String): Promise<any>;
+  grok_Domains_ResolveNames(schemaName: String, tableName: String, ids: any): Promise<any>;
+  grok_Domains_TableCapabilities(schemaName: String, tableName: String): Promise<any>;
+  grok_Domains_RowPermissions(row: any): Promise<any>;
+  grok_Domains_InvalidateUiCaches(): any;
   grok_Meta_RenderPreview(meta: any, x: any, params: any, path: String): any;
   grok_MarkupHandler_Register(regexp: String, description: String, renderFromMatches: any): any;
   grok_Route(url: String): any;

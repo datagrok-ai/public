@@ -139,3 +139,105 @@ category('Dapi: domain lifecycle', () => {
     expect(after.length, before);
   });
 });
+
+// Permission-driven capabilities (ui-js-api WO-2): DomainTableClient.capabilities()
+// composes server-truth permission probes on the securing entity with the
+// writable-column mirror of column security, cached until a grant change. The flip
+// test signs up a throwaway restricted user (internal auth) and runs the probes
+// under THAT session against a real grant round-trip — no mocks; the user is
+// blocked in finally (users are not API-deletable). It skips cleanly where
+// self-signup is unavailable (SSO-only or email-confirm setups).
+category('Dapi: domain capabilities', () => {
+  const items = () => grok.dapi.domains.table('apitests.item');
+
+  async function thrown(action: () => Promise<any>): Promise<any> {
+    try {
+      await action();
+      return null;
+    } catch (e) {
+      return e;
+    }
+  }
+
+  test('admin sees full capabilities; cache survives reads, drops on invalidation', async () => {
+    const caps = await items().capabilities();
+    expect(caps.canView && caps.canInsert && caps.canEdit && caps.canDelete && caps.canShareTable,
+      true, JSON.stringify(caps));
+    expect(caps.securityMode, 'row');
+    expect(caps.audit, true);
+    expect(caps.hasBusinessKey, true);
+    for (const c of ['sku', 'name', 'quantity'])
+      expect(caps.writableColumns.includes(c), true, `writableColumns must include ${c}: ${JSON.stringify(caps.writableColumns)}`);
+    grok.dapi.domains.invalidateUiCaches();
+    expect((await items().capabilities()).canEdit, true, 'recompute after invalidation must succeed');
+  });
+
+  test('unknown table rejects with a typed validation error', async () => {
+    const e = await thrown(() => grok.dapi.domains.table('apitests.nosuch').capabilities());
+    expect(e instanceof DG.DomainValidationError, true,
+      `expected DomainValidationError, got ${e?.constructor?.name}: ${e?.message}`);
+  });
+
+  test('capabilities flip on a real grant round-trip for a restricted user', async () => {
+    const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
+    const login = `wo2caps${stamp}`;
+    // Self-signup issues the restricted session token the probes run under.
+    const signup = await (await fetch(`${grok.dapi.root}/users/signup`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({login: login, email: `${login}@test.datagrok.ai`,
+        password: btoa(`Wo2-${stamp}`), firstName: 'WO2', lastName: 'CapsProbe'}),
+    })).json();
+    if (!signup?.token) {
+      console.log(`skipped: self-signup unavailable (${signup?.reason ?? 'no token'})`);
+      return;
+    }
+    const adminToken = grok.dapi.token;
+    // Same-origin sessions authenticate via the 'auth' COOKIE — DelegatingHttpClient
+    // deliberately attaches no Authorization header when dapi.root starts with the
+    // origin — so impersonating the restricted user means swapping the cookie
+    // (grok.dapi.token alone would be a no-op here).
+    const adminCookie = document.cookie.match(/(?:^|; )auth=([^;]*)/)?.[1] ?? null;
+    const setAuth = (t: string | null) => {
+      document.cookie = t == null ? 'auth=; path=/; max-age=0' : `auth=${encodeURIComponent(t)}; path=/`;
+      grok.dapi.token = t ?? adminToken;
+    };
+    const user = await grok.dapi.users.filter(`login = "${login}"`).include('group').first();
+    expect(user != null, true, 'signed-up user not found');
+    // Runs capabilities() under the restricted user's session: the permission probes
+    // are per-call server requests, so they follow the swapped auth; the client-side
+    // cache is dropped first because its user key tracks the SESSION user.
+    const asUser = async () => {
+      setAuth(signup.token);
+      try {
+        grok.dapi.domains.invalidateUiCaches();
+        return await items().capabilities();
+      } finally {
+        setAuth(adminCookie == null ? null : decodeURIComponent(adminCookie));
+      }
+    };
+    try {
+      const before = await asUser();
+      expect(before.canInsert, false, `no grant yet, canInsert must deny: ${JSON.stringify(before)}`);
+      expect(before.canEdit, false, 'no grant yet, canEdit must deny');
+      await items().grant(user!.group.id, 'Edit'); // drops the caches automatically
+      const after = await asUser();
+      expect(after.canInsert, true, `Edit grant must flip canInsert: ${JSON.stringify(after)}`);
+      expect(after.canEdit, true, 'Edit grant must flip canEdit');
+      await items().revoke(user!.group.id, 'Edit');
+      expect((await asUser()).canEdit, false, 'revoke must flip canEdit back');
+    } finally {
+      setAuth(adminCookie == null ? null : decodeURIComponent(adminCookie));
+      try {
+        await items().revoke(user!.group.id, 'Edit');
+      } catch (_) { /* already revoked */ }
+      // Users are not API-deletable — blocking is the platform cleanup for test
+      // users (revokes their sessions too, including the signup session).
+      const blocked = await fetch(`${grok.dapi.root}/users/block`, {
+        method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({'#type': 'User', 'id': user!.id, 'login': login}),
+      });
+      expect(blocked.ok, true, `test user ${login} not blocked: ${blocked.status}`);
+      grok.dapi.domains.invalidateUiCaches();
+    }
+  });
+});

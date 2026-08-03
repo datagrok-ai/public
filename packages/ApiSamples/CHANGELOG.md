@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains-registry-reflection.js — registry reflection (rowProperties/tableInfo/resolveNames) and permission-driven table capabilities
 * GROK-20298: Added dapi/domains-render-grid.js — customizing every grid over a domain table's rows (the built-in Domain View grid included) via ObjectHandler.renderGrid
 * GROK-20298: Added dapi/domains-async-form.js — the "New Grit issue" async form: FK lookup via ui.typeAhead's callback source, server-provided choices, debounced server-side uniqueness validation, and per-field mapping of server rejections
 * GROK-20605: Rewrote the domains samples to the typed patterns — fluent builder + bound-condition helpers (apostrophe teaching), getByKey/first/count/exists, aggregateDf, typed tuple transactions with `opIndex`, typed conflict errors + `updateWithRetry`, schema grants with the no-fan-out truth; NEW dapi/domains-typed-client.js (upsert, save/updateWithRetry, typed errors, bounded deleteWhere cleanup); every remaining per-row delete loop is gone
