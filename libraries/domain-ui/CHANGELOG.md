@@ -2,6 +2,11 @@
 
 ## v.next
 
+* GROK-20298: Added the app framework — `EntityListWidget` (the "list of entities" an app opens on: platform-rendered cards, a brief list or an editable `DomainGrid`, search over the table's identity columns, per-item commands from the handler resolved on demand, the built-in Domain View's row cap and count banner, New gated on `canInsert`) and the view hierarchy `AppView` / `DomainAppView` / `DomainEntityAppView` — a browse/CRUD app whose subclass overrides nothing: list page with the `DomainQuery` ⇄ URL round trip (plus the reserved `view=` / `entity=` params), a row page with the reflective form, a tab per child table (editable `DomainGrid` with the parent FK prefilled), history, and the row's own permission-gated actions
+* GROK-20298: Added the save/discard prompt (`promptUnsavedChanges` / `confirmDiscardChanges`) — the refresh policy the editing controls deliberately do not have: every rebuild an `AppView` or an `EntityListWidget` performs asks first (save / discard / cancel), a failed save cancels the navigation, and a save in flight refuses instead of prompting; the app's status bar carries the pending-change count with Save and Discard
+* GROK-20298: Added `domainHandler(table)` — the registered `DomainObjectHandler` subclass for a table, or the reflective default; `DomainGridOptions.defaults` prefills rows added through the toolbar (how a detail grid sets its parent FK)
+* GROK-20298: A grid built outside the DOM no longer keeps the viewer's default 400x300 size when mounted in a page
+
 * GROK-20298: Initial release — `DomainFrameEditor` (batch editing of domain rows with the
   `~state` / `~changes` / `~errors` service-column state, one-transaction save, standard
   version-conflict dialog, rebuild-on-refresh) and `DomainGrid` (platform-decorated editable

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20298: Added `DomainObjectHandler.rowFrom(values)` — wraps one row of a `query()` result as a `DG.DomainRow` locally, without a round trip: the acquisition path a list, a card or a context panel uses to render, address and act on rows it already fetched (`getById` remains the one that asks the server). `newRow()` is `rowFrom(null)`.
+
 * GROK-20298: `DomainObjectHandler.deepLink`/`openRow`/`copyLink` now reject a foreign object by name like the rest of the row members (they used to silently resolve null / do nothing); an unsaved row of the handler's own table still yields `null` / a no-op. The "not a `<table>` row" message renders the rejected value readably (its class name or JSON) instead of `[object Object]`.
 
 * GROK-20298: `DG.DomainQuery` parity and doc fixes: a `'['`-prefixed filter element whose members are not conditions, nested groups, or `'and'`/`'or'` connectors is now rejected by `toSpec()` with the same message the `DomainQuery` function uses (it used to be handed on as a smart-filter string), and a negative `limit`/`offset` in `fromUrlParams()` throws instead of reaching a server that clamps it to 0 and returns nothing. JSDoc: `run()` states that the result is added to the workspace AND opened in a table view that becomes current, that the creation script is recorded only with `grok.shell.settings.dataHistory` on, and that its failures are the function's raw errors rather than typed `DomainError`s; `DomainQueryBuilder.toQuery()` states that an un-`top()`ed builder awaits 100 rows while its `toQuery().toSpec()` falls back to `DOMAIN_QUERY_ROW_LIMIT`; aggregate mode is documented as REJECTING `columns`/`offset`, not ignoring them.

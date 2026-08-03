@@ -12,6 +12,16 @@ export const _package = new DG.Package();
 // `apitests.domainUi` — library-only surface has no other way into a console or
 // a manual probe (sample scripts run with the platform globals only).
 export * as domainUi from '@datagrok-libraries/domain-ui';
+import {DomainAppView} from '@datagrok-libraries/domain-ui';
+
+//name: Domain Items
+//description: A complete browse/CRUD app over apitests.item, from domain-ui defaults alone
+//meta.role: app
+//input: string path {meta.url: true; optional: true}
+//output: view result
+export function domainItemsApp(): DG.ViewBase {
+  return new DomainAppView(grok.dapi.domains.table('apitests.item'));
+}
 
 //name: getTable
 //input: string name

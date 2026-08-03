@@ -19,6 +19,14 @@ const DOMAIN_UI_CSS = `
   height: 100%;
 }
 
+/* The grid host inside it: a canvas grid has no intrinsic size, so it needs the
+   space the toolbar leaves — in BOTH directions. */
+.domain-ui-grid > .ui-box {
+  flex-grow: 1;
+  min-height: 0;
+  width: 100%;
+}
+
 .domain-ui-grid-toolbar {
   flex: 0 0 auto;
   align-items: center;
@@ -44,6 +52,31 @@ const DOMAIN_UI_CSS = `
 .domain-ui-grid-toolbar button[disabled] {
   color: var(--grey-3);
   cursor: default;
+}
+
+.domain-ui-entity-list,
+.domain-ui-entity-page {
+  height: 100%;
+}
+
+/* The list's content area: whatever the toolbar leaves. min-height:0 is what
+   lets a canvas grid inside it shrink instead of overflowing the page. */
+.domain-ui-list-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+/* The app's status-bar slot: the pending-change count and its actions, on the
+   one line the platform gives a view at the bottom of the window. */
+.domain-ui-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-color-light);
+  font-size: 12px;
+  white-space: nowrap;
 }
 `;
 

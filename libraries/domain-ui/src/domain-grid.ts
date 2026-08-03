@@ -29,6 +29,10 @@ export interface DomainGridOptions extends DomainFrameEditorOptions {
   /** Show the toolbar (unsaved-change count, Save/Cancel, Add/Delete row).
    * Defaults to true; turn it off to drive the editor from your own ribbon. */
   toolbar?: boolean;
+  /** Values every row added through the toolbar starts with — how a detail grid
+   * of a master-detail page prefills the foreign key of its parent, so 'Add row'
+   * produces a saveable row instead of one failing on a required column. */
+  defaults?: {[column: string]: any};
 }
 
 /**
@@ -75,12 +79,18 @@ export class DomainGrid {
   private readonly _editable: boolean;
   /** Every toolbar button, disabled together while a save is in flight. */
   private readonly _buttons: HTMLButtonElement[] = [];
+  private readonly _defaults?: {[column: string]: any};
 
   private constructor(editor: DomainFrameEditor, options: DomainGridOptions) {
     applyDomainUiStyles();
     this.editor = editor;
+    this._defaults = options.defaults;
     this._editable = (options.editable ?? true) && editor.capabilities.canEdit;
     this.grid = DG.Grid.create(editor.dataFrame);
+    // A viewer built outside the DOM carries the default 400x300 inline size it
+    // was born with; it has to fill whatever host it is mounted in instead.
+    this.grid.root.style.width = '100%';
+    this.grid.root.style.height = '100%';
 
     this._count = ui.divText('', 'domain-ui-edit-count');
     this._saveBar = ui.divH([
@@ -282,7 +292,10 @@ export class DomainGrid {
   }
 
   private _addRow(): void {
-    const row = this.editor.addRow();
+    const row = this.editor.addRow(this._defaults);
+    // Refused while a save is in flight (the editor says so itself).
+    if (row < 0)
+      return;
     this.grid.dataFrame.currentRowIdx = row;
     this.editor.beginEdit(row);
   }

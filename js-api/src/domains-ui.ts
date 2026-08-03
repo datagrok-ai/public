@@ -190,7 +190,17 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * called without an object. Insert it with
    * `grok.dapi.domains.table(...).insert(row.values)`. */
   newRow(): DomainRow {
-    return toJs(api.grok_DomainRow_Create(this.schemaName, this.tableName, null));
+    return this.rowFrom(null);
+  }
+
+  /** Wraps [values] — one row of a `query()` result — as a {@link DomainRow} of
+   * this table, locally and WITHOUT a round trip: the acquisition path a list, a
+   * card or a context panel uses to render, address and act on rows it already
+   * fetched ({@link getById} is the one that asks the server). Identity
+   * (`displayName`, `semValue`, deep links) resolves from the registry, so a row
+   * fetched without its business-key columns addresses itself by id. */
+  rowFrom(values: {[key: string]: any} | null): DomainRow {
+    return toJs(api.grok_DomainRow_Create(this.schemaName, this.tableName, values));
   }
 
   /** Permalink to the row's Entity View (business-key URL when unambiguous, id

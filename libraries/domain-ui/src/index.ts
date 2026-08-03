@@ -12,11 +12,23 @@
  * grok.shell.newView('Issues', [grid.root]);
  * ```
  *
+ * A whole browse/CRUD app is the same length — {@link DomainAppView} is the list
+ * page (search, cards/grid, New, deep-linkable query) and opens
+ * {@link DomainEntityAppView} for a row (form, detail tabs, history):
+ *
+ * ```ts
+ * grok.shell.addView(new DomainAppView(grok.dapi.domains.table('grit.issue')));
+ * ```
+ *
  * @module domain-ui
  */
 
 export * from './frame-editor';
 export * from './domain-grid';
+export * from './entity-list';
+export * from './app-view';
+export * from './handler';
+export * from './unsaved';
 export * from './styles';
 
 // The core domain surface, re-exported so apps import from ONE place. These are
