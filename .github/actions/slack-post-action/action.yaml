@@ -19,42 +19,58 @@ runs:
       shell: bash
       env:
         SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
+        SLACK_CHANNEL: ${{ inputs.channel }}
+        SLACK_TEXT: ${{ inputs.message }}
+        # Everything below is attacker-controlled to some degree -- a commit message or a
+        # branch name can contain backticks or $(...). GitHub substitutes ${{ }} into the
+        # script *text* before bash parses it, so interpolating these inline hands the
+        # writer of a commit message arbitrary code execution on the runner, which holds
+        # the Slack token and the deploy credentials. Passing them through the environment
+        # means bash only ever sees a variable reference.
+        HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || github.ref }}
+        COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        COMMIT_SHA: ${{ github.sha }}
+        WORKFLOW_NAME: ${{ github.workflow }}
+        RUN_NUMBER: ${{ github.run_number }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        TREE_URL: ${{ github.server_url }}/${{ github.repository }}/tree
       run: |
-        branch=${{ github.event.workflow_run.head_branch || github.ref }}
-        branch="${branch#refs/heads/}"
+        set -eu
 
-        context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${branch}|${branch}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
-        echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+        branch="${HEAD_BRANCH#refs/heads/}"
+        # First line only, without a pipe: `... | head -n1` makes head close the pipe on a
+        # long message, and the resulting SIGPIPE was itself failing this step.
+        subject="${COMMIT_MESSAGE%%$'\n'*}"
 
-        # Create the JSON payload with blocks
-        SLACK_MESSAGE=$(cat <<EOF
+        context=$(printf '*GitHub Workflow:* <%s|%s %s>\n*Branch:* <%s/%s|%s>\n*Commit:* <%s|%s %s>' \
+          "$RUN_URL" "$WORKFLOW_NAME" "$RUN_NUMBER" \
+          "$TREE_URL" "$branch" "$branch" \
+          "$COMMIT_URL" "${COMMIT_SHA:0:8}" "$subject")
+
+        # jq owns the JSON escaping. The previous `sed 's/"/\\"/g'` covered quotes only, so a
+        # backslash, newline or control character in a commit message produced a payload
+        # Slack could not parse.
+        payload=$(jq -n \
+          --arg channel "$SLACK_CHANNEL" \
+          --arg text "$SLACK_TEXT" \
+          --arg context "$context" \
+          '{channel: $channel,
+            blocks: [
+              {type: "section", text: {type: "mrkdwn", text: $text}},
+              {type: "context", elements: [{type: "mrkdwn", text: $context}]}
+            ]}')
+
+        # Delimiter form, because a newline in the value would otherwise let it declare
+        # further variables for every later step in the job.
         {
-          "channel": "${{ inputs.channel }}",
-          "blocks": [
-            {
-              "type": "section",
-              "text": {
-                "type": "mrkdwn",
-                "text": "${{ inputs.message }}"
-              }
-            },
-            {
-              "type": "context",
-              "elements": [
-                {
-                  "type": "mrkdwn",
-                  "text": "$context"
-                }
-              ]
-            }
-          ]
-        }
-        EOF
-        )
+          echo "SLACK_MESSAGE_CONTEXT<<__GH_CONTEXT_EOF__"
+          printf '%s\n' "$context"
+          echo "__GH_CONTEXT_EOF__"
+        } >> "$GITHUB_ENV"
 
-        # Use the prepared JSON message and call the Slack API
-        RESPONSE=$(bash ./.github/scripts/slack_api_request.sh \
+        bash ./.github/scripts/slack_api_request.sh \
           "https://slack.com/api/chat.postMessage" \
           "POST" \
-          "${{ env.SLACK_BOT_TOKEN }}" \
-          "$SLACK_MESSAGE")
+          "$SLACK_BOT_TOKEN" \
+          "$payload"
