@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: `withRestrictedUser` now runs the signup itself inside the try and resolves the user by login in the finally, so a tokenless or failed signup can no longer leave an unblocked test user behind; the Domain View `refresh()` assertion changes the row on the server first, so it can only pass on a real re-query.
+
 GROK-20298: Widened `Dapi: domain query state` — the URL round trip now carries every list parameter (columns, joins, aggregations, groupBy, offset) and re-checks it through `toParams()`, a lone smart-filter element is asserted to reach the REST spec verbatim, and the malformed-input probe covers the new negative-limit and sub-group shape rejections. The creation-script test forces `grok.shell.settings.dataHistory` on and restores the profile's value, so it no longer depends on the session; row inserts moved inside the try that deletes them.
 
 GROK-20298: Hardened the domain suites — the Domain View test now asserts that the reported `query` carries the invisible `permanentFilter` and the search string, that `refresh()` re-lists, and that assigning `meta` fails with the named registry error; both restricted-user tests run through one `withRestrictedUser` helper (the impersonation harness, cookie mechanics and blocking cleanup in one place) so a setup failure can no longer leave an unblocked test user behind; row inserts moved inside the try that deletes them.

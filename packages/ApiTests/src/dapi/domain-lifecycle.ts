@@ -33,8 +33,9 @@ interface RestrictedUser {
  * alone is a no-op here). The admin session is restored after every `asUser`
  * call and again in the finally, where the user is also BLOCKED: users are not
  * API-deletable, and blocking revokes their sessions including the signup one.
- * Everything after the signup runs inside that try, so no setup failure can
- * leave an unblocked user behind.
+ * The signup itself runs inside that try and the finally resolves the user by
+ * login when the body never did, so neither a failed setup nor a tokenless
+ * signup can leave an unblocked user behind.
  *
  * Resolves to null, reason logged, where the harness cannot support it: an
  * HttpOnly auth cookie (the restore path could only DELETE it and would take the
@@ -57,17 +58,19 @@ async function withRestrictedUser<T>(prefix: string,
   };
   const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
   const login = `${prefix}${stamp}`;
-  const signup = await (await fetch(`${grok.dapi.root}/users/signup`, {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({login: login, email: `${login}@test.datagrok.ai`,
-      password: btoa(`Pw-${stamp}`), firstName: 'ApiTests', lastName: 'Probe'}),
-  })).json();
-  if (!signup?.token) {
-    console.log(`skipped: self-signup unavailable (${signup?.reason ?? 'no token'})`);
-    return null;
-  }
   let user: any = null;
   try {
+    const signup = await (await fetch(`${grok.dapi.root}/users/signup`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({login: login, email: `${login}@test.datagrok.ai`,
+        password: btoa(`Pw-${stamp}`), firstName: 'ApiTests', lastName: 'Probe'}),
+    })).json();
+    // No token, but the signup may still have created the user — the finally
+    // below looks it up by login and blocks it.
+    if (!signup?.token) {
+      console.log(`skipped: self-signup unavailable (${signup?.reason ?? 'no token'})`);
+      return null;
+    }
     user = await grok.dapi.users.filter(`login = "${login}"`).include('group').first();
     expect(user != null, true, 'signed-up user not found');
     return await body({
@@ -86,8 +89,15 @@ async function withRestrictedUser<T>(prefix: string,
     });
   } finally {
     restoreAdmin();
+    if (user?.id == null) {
+      try {
+        user = await grok.dapi.users.filter(`login = "${login}"`).first();
+      } catch (x) {
+        console.error(`test user ${login} could not be looked up — block it manually: ${x}`);
+      }
+    }
     if (user?.id == null)
-      console.error(`test user ${login} was signed up but never resolved — block it manually`);
+      console.log(`no test user ${login} to block`);
     else {
       const blocked = await fetch(`${grok.dapi.root}/users/block`, {
         method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},

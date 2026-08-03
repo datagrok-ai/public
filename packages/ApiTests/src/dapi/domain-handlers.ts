@@ -383,10 +383,14 @@ category('JS: domain handlers', () => {
       await awaitCheck(() => (view!.query.filters ?? []).some((f) => f.includes('quantity > 0')),
         `searchValue never reached the reported query: ${JSON.stringify(view.query)}`, 15000);
       view.searchValue = '';
-      // The inherited CardView refresh() re-runs the query behind the view.
+      // The inherited CardView refresh() re-runs the query behind the view. The
+      // row is changed on the SERVER first, so only a re-query can show the new
+      // value — asserting the row is still listed would pass without one.
+      const renamed = `Renamed ${stamp()}`;
+      await items().update(inserted[0].id, {name: renamed});
       view.refresh();
-      await awaitCheck(() => view!.root.textContent!.includes(mine),
-        'refresh() did not re-list the row', 15000);
+      await awaitCheck(() => view!.root.textContent!.includes(renamed),
+        'refresh() did not re-run the query', 15000);
       view.showFilters();
       await awaitCheck(() => view!.root.querySelector('.grok-domains-filter-panel') != null,
         'showFilters did not dock the filter panel', 15000);

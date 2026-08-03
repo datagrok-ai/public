@@ -117,8 +117,25 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   protected rowOrThrow(x: any): DomainRow {
     const row = this.rowOf(x);
     if (row == null)
-      throw new Error(`not a ${this.table} row: ${x}`);
+      throw new Error(`not a ${this.table} row: ${DomainObjectHandler._describe(x)}`);
     return row;
+  }
+
+  /** A rejected argument, readably: a plain object stringifies to
+   * '[object Object]', which names neither the value nor its type. */
+  private static _describe(x: any): string {
+    if (x == null || typeof x !== 'object')
+      return `${x}`;
+    if (x instanceof DomainRow)
+      return `a ${x.typeName} row`;
+    const type = x.constructor?.name;
+    if (type != null && type !== 'Object')
+      return type;
+    try {
+      return JSON.stringify(x);
+    } catch (_) {
+      return `${x}`;
+    }
   }
 
   /** The platform's per-table meta, as an {@link EntityMetaDartProxy} — what the
@@ -180,13 +197,13 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * URL otherwise — the platform's own rule); null for an unsaved row
    * ({@link newRow}), which has no address yet. */
   deepLink(x: T): string | null {
-    return DomainObjectHandler.deepLink(this.rowOf(x));
+    return DomainObjectHandler.deepLink(this.rowOrThrow(x));
   }
 
   /** Opens the row's Entity View — the platform's default (double-click) action
    * for a domain row. */
   openRow(x: T): void {
-    DomainObjectHandler.openRow(this.rowOf(x));
+    DomainObjectHandler.openRow(this.rowOrThrow(x));
   }
 
   // ─────────────────────── rendering (delegating defaults) ─────────────────────────
@@ -336,7 +353,7 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
   /** Copies the row's {@link deepLink} to the clipboard (with the platform's
    * confirmation balloon). */
   copyLink(x: T): void {
-    DomainObjectHandler.copyLink(this.rowOf(x));
+    DomainObjectHandler.copyLink(this.rowOrThrow(x));
   }
 
   /** Opens the platform's edit dialog for [x] — its create dialog when [x] is
