@@ -1,9 +1,10 @@
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
 import {
-  getEntryStatuses, matchesFilter, bindingSignature, compatibleTargetsFor,
+  getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows,
 } from '../components/RunComparison/selection';
+import {ColumnBinding, ColumnTarget} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
 category('RunComparison: entry statuses', () => {
@@ -77,7 +78,62 @@ category('RunComparison: filters and compatibility', () => {
     expect(matchesFilter('pressure', 'height'), false);
   });
 
-  test('compatibleTargetsFor groups by full signature', async () => {
+  const bind = (entryId: string, tablePath: string): ColumnBinding =>
+    ({entryId, tablePath, tableName: tablePath, columnName: 'v', indexColumnName: 'time'});
+  const columnTarget = (key: string, bindings: ColumnBinding[]): ColumnTarget => ({
+    kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
+    coverage: bindings.length, defaultCoverage: bindings.length, total: 3,
+    candidates: [], bindings,
+  });
+
+  test('multiValueOverlap counts aligned, missing, and conflicting runs', async () => {
+    const anchor = columnTarget('anchor', [bind('a', 't'), bind('b', 't'), bind('c', 't2')]);
+    const other = columnTarget('other', [bind('a', 't'), bind('c', 't3')]);
+    const overlap = multiValueOverlap(anchor, other);
+    expect(overlap.aligned, 1);
+    expectArray(overlap.missing, ['b']);
+    expectArray(overlap.conflicting, ['c']);
+  });
+
+  test('zero aligned runs are not suggested', async () => {
+    const anchor = columnTarget('anchor', [bind('a', 't')]);
+    const other = columnTarget('other', [bind('b', 't')]);
+    expect(compatibleTargetsFor(anchor, [anchor, other], () => 'int').length, 1);
+  });
+
+  test('unchecking a run keeps the co-target suggested', async () => {
+    const table = {path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'},
+    ]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [height] = matchColumnTargets(entries, indexes);
+    const edited = matchColumnTargets(entries, indexes, undefined,
+      {[height.key]: {'b|t|height': false}});
+    const anchor = edited.find((t) => t.displayName === 'height')!;
+    expect(anchor.bindings.length, 1);
+    expect(compatibleTargetsFor(anchor, edited, () => 'int').length, 2);
+  });
+
+  test('cross-table pick becomes conflicting and leaves suggestions', async () => {
+    const full = {path: 't', columns: [
+      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'},
+    ]};
+    const extra = {path: 'u', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const entries = [makeEntry('a', [], [full]), makeEntry('b', [], [full, extra])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time', u: 'time'}});
+    const base = matchColumnTargets(entries, indexes);
+    const heightKey = base.find((t) => t.displayName === 'height')!.key;
+    const edited = matchColumnTargets(entries, indexes, undefined,
+      {[heightKey]: {'b|u|height': true}});
+    const anchor = edited.find((t) => t.displayName === 'height')!;
+    const velocity = edited.find((t) => t.displayName === 'velocity')!;
+    expect(anchor.bindings.find((b) => b.entryId === 'b')!.tablePath, 'u');
+    expectArray(multiValueOverlap(anchor, velocity).conflicting, ['b']);
+    expect(compatibleTargetsFor(anchor, edited, () => 'int').length, 1);
+  });
+
+  test('compatibleTargetsFor groups aligned same-table targets', async () => {
     const table = {path: 't', columns: [
       {name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'}, {name: 'other'},
     ]};
@@ -98,28 +154,6 @@ category('RunComparison: filters and compatibility', () => {
     const targets = matchColumnTargets(entries, indexes);
     expect(compatibleTargetsFor(targets[0], targets, () => 'string').length, 0);
     expect(compatibleTargetsFor(targets[0], targets, () => 'datetime').length, 2);
-  });
-
-  test('split choice changes the bindings signature', async () => {
-    const table = {path: 't', columns: [
-      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'species', type: 'string'},
-    ]};
-    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
-    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
-    const splits = indexMap({a: {t: 'species'}, b: {t: 'species'}});
-    const [withSplit] = matchColumnTargets(entries, indexes, splits);
-    const [withoutSplit] = matchColumnTargets(entries, indexes);
-    expect(bindingSignature(withSplit) === bindingSignature(withoutSplit), false);
-  });
-
-  test('enablement changes the bindings signature', async () => {
-    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
-    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
-    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
-    const [base] = matchColumnTargets(entries, indexes);
-    const [toggled] = matchColumnTargets(entries, indexes, undefined,
-      {[base.key]: {'b|t|height': false}});
-    expect(bindingSignature(base) === bindingSignature(toggled), false);
   });
 
   test('enabling a sibling swaps the pick and keeps multi-value available', async () => {

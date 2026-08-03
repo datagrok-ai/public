@@ -129,9 +129,11 @@ export function buildMultiColumnComparison(
       if (splitColumnName)
         longSplits.push(splits?.[i] == null ? '' : `${splits[i]}`);
     }
+    // a pick from another table cannot share this block's rows — padded like a missing one
     for (const target of targets) {
       const targetBinding = target.bindings.find((b) => b.entryId === entry.id);
-      const values = targetBinding ? df.getCol(targetBinding.columnName).toList() : index.map(() => null);
+      const usable = targetBinding != null && targetBinding.tablePath === binding.tablePath;
+      const values = usable ? df.getCol(targetBinding.columnName).toList() : index.map(() => null);
       longValues.get(labels.get(target.key)!)!.push(...values);
     }
   }

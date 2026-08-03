@@ -17,7 +17,8 @@ import {
 } from './types';
 import {matchScalarTargets, matchColumnTargets} from './matching';
 import {
-  getEntryStatuses, matchesFilter, compatibleTargetsFor, isSplitCandidate, selectionToMap, computeIndexRows,
+  getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
+  isSplitCandidate, selectionToMap, computeIndexRows,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
 import {buildScalarComparison, buildColumnComparison, buildMultiColumnComparison} from './comparison-builders';
@@ -254,13 +255,28 @@ export const RunComparison = Vue.defineComponent({
       }
       if (changed)
         candidateOverrides.value = next;
+      // drop multi-value selections whose target vanished (structural change);
+      // merely-conflicting targets keep their keys so reverting an edit restores them
+      const keys = new Set(list.map((target) => target.key));
+      const keptKeys = multiKeys.value.filter((key) => keys.has(key));
+      if (keptKeys.length !== multiKeys.value.length) {
+        multiKeys.value = keptKeys;
+        if (keptKeys.length === 0)
+          multiMode.value = false;
+      }
     });
 
     const indexFilter = Vue.ref('');
     const targetFilter = Vue.ref('');
 
+    // in multi mode: suggestions plus everything already selected — a selected target
+    // that became conflicting must stay visible so it can be unchecked
     const filteredTargets = Vue.computed(() => {
-      const listed: ComparisonTarget[] = multiMode.value ? compatibleTargets.value : targets.value;
+      const listed: ComparisonTarget[] = multiMode.value ?
+        targets.value.filter((target) => target.kind === 'column' &&
+          (multiKeys.value.includes(target.key) ||
+            compatibleTargets.value.some((item) => item.key === target.key))) :
+        targets.value;
       return listed.filter((target) => matchesFilter(targetFilter.value, target.displayName));
     });
 
@@ -272,11 +288,6 @@ export const RunComparison = Vue.defineComponent({
 
     const compatibleTargets = Vue.computed<ColumnTarget[]>(() =>
       compatibleTargetsFor(selectedTarget.value, targets.value, indexColumnType));
-
-    Vue.watch(compatibleTargets, (list) => {
-      if (multiMode.value && list.length <= 1)
-        multiMode.value = false;
-    });
 
     const chartViewer = Vue.shallowRef<DG.Viewer | null>(null);
     const onChartViewerChanged = (viewer: DG.Viewer | undefined) => {
@@ -325,7 +336,11 @@ export const RunComparison = Vue.defineComponent({
         return Vue.markRaw({kind: 'scalar' as const, target, ...result});
       }
       if (multiMode.value) {
-        const selected = compatibleTargets.value.filter((item) => multiKeys.value.includes(item.key));
+        const selected = targets.value.filter((item): item is ColumnTarget =>
+          item.kind === 'column' && multiKeys.value.includes(item.key));
+        const anchorIndex = selected.findIndex((item) => item.key === target.key);
+        if (anchorIndex > 0)
+          selected.unshift(...selected.splice(anchorIndex, 1));
         if (selected.length === 0)
           return null;
         if (selected.length > 1) {
@@ -624,6 +639,12 @@ export const RunComparison = Vue.defineComponent({
                 multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
+            const anchor = selectedTarget.value;
+            const overlap = multiMode.value && target.kind === 'column' &&
+              anchor?.kind === 'column' && target.key !== anchor.key ?
+              multiValueOverlap(anchor, target) : null;
+            const gapRuns = overlap ? [...overlap.missing, ...overlap.conflicting]
+              .map((id) => entries.value.find((entry) => entry.id === id)?.name ?? id) : [];
             const row = <div
               key={target.key}
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
@@ -656,6 +677,15 @@ export const RunComparison = Vue.defineComponent({
             <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>
               {target.coverage}/{target.total}
             </span>
+            { gapRuns.length > 0 ?
+              <span
+                title={`Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
+                style={{
+                  fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
+                  background: '#8a8a8a', flexShrink: '0', justifySelf: 'start',
+                }}
+              >partial</span> :
+              <span></span> }
           </div>;
             return isExpanded ? [row, renderCandidatePanel(target as ColumnTarget)] : row;
           })}
@@ -667,7 +697,7 @@ export const RunComparison = Vue.defineComponent({
       <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
         <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Results</div>
         <div style={{display: 'flex', alignItems: 'center', gap: '4px 12px', flexWrap: 'wrap'}}>
-          { compatibleTargets.value.length > 1 &&
+          { (multiMode.value || compatibleTargets.value.length > 1) &&
             <ToggleInput
               caption='Multiple values'
               value={multiMode.value}

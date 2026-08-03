@@ -16,17 +16,39 @@ export function matchesFilter(query: string, text: string): boolean {
   return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
 }
 
-// over enabled bindings only (matching guarantees at most one per run)
-export function bindingSignature(target: ColumnTarget): string {
-  return target.bindings
-    .map((b) => `${b.entryId}|${b.tablePath}|${b.indexColumnName}|${b.splitColumnName ?? ''}`)
-    .sort().join(';');
+export interface MultiValueOverlap {
+  // anchor runs the other target charts from the same table
+  aligned: number;
+  // anchor runs (entryIds) the other target has no pick for
+  missing: string[];
+  // anchor runs picked from a different table
+  conflicting: string[];
+}
+
+// per anchor run: the other target's pick either shares the table (rows can be shared),
+// is absent (padded), or points elsewhere (padded, flagged); index/split agreement is
+// automatic for same-table picks since pickers are per (run, table)
+export function multiValueOverlap(anchor: ColumnTarget, other: ColumnTarget): MultiValueOverlap {
+  const otherByRun = new Map(other.bindings.map((b) => [b.entryId, b]));
+  const result: MultiValueOverlap = {aligned: 0, missing: [], conflicting: []};
+  for (const binding of anchor.bindings) {
+    const otherBinding = otherByRun.get(binding.entryId);
+    if (!otherBinding)
+      result.missing.push(binding.entryId);
+    else if (otherBinding.tablePath !== binding.tablePath)
+      result.conflicting.push(binding.entryId);
+    else
+      result.aligned++;
+  }
+  return result;
 }
 
 /**
- * Column targets sharing the anchor's bindings signature (same runs, tables, index and
- * split columns), provided the anchor's index is line-chartable (numeric or datetime).
- * These are the targets a multi-value comparison can combine.
+ * Suggestion predicate for multi-value mode: column targets that chart at least one of
+ * the anchor's runs from the same table and conflict on none, provided the anchor's
+ * index is line-chartable (numeric or datetime) everywhere. Validity of an already
+ * selected combination is enforced by builder padding, not here — selected targets are
+ * never ejected.
  */
 export function compatibleTargetsFor(
   anchor: ComparisonTarget | null,
@@ -41,9 +63,12 @@ export function compatibleTargetsFor(
   });
   if (!lineIndexed)
     return [];
-  const signature = bindingSignature(anchor);
-  return targets.filter((target): target is ColumnTarget =>
-    target.kind === 'column' && bindingSignature(target) === signature);
+  return targets.filter((target): target is ColumnTarget => {
+    if (target.kind !== 'column')
+      return false;
+    const overlap = multiValueOverlap(anchor, target);
+    return overlap.conflicting.length === 0 && overlap.aligned >= 1;
+  });
 }
 
 export const isSplitCandidate = (column: ColumnInfo, indexColumnName: string) =>

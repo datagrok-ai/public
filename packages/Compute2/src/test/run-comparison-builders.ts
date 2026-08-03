@@ -171,6 +171,49 @@ category('RunComparison: multi and split dataframes', () => {
     expect(mixedResult.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
   });
 
+  test('cross-table pick pads that run with nulls', async () => {
+    const r1 = entryFromDataFrame(makeDf('r1', [
+      intCol('time', [1, 2]), floatCol('a', [10, 20]), floatCol('b', [1, 2]),
+    ]));
+    const r2: ComparisonEntry = {
+      id: 'r2',
+      name: 'r2',
+      sourceKind: 'function',
+      modelName: '',
+      nodes: {
+        entryId: 'r2',
+        entryName: 'r2',
+        scalars: [],
+        tables: [
+          {path: 'p1', name: 'p1', rowCount: 3,
+            columns: [{name: 'time', type: 'int'}, {name: 'a', type: 'double'}]},
+          {path: 'p2', name: 'p2', rowCount: 2,
+            columns: [{name: 'time', type: 'int'}, {name: 'b', type: 'double'}]},
+        ],
+      },
+      dataFrames: new Map([
+        ['p1', makeDf('p1', [intCol('time', [1, 2, 3]), floatCol('a', [30, 40, 50])])],
+        ['p2', makeDf('p2', [intCol('time', [1, 2]), floatCol('b', [7, 8])])],
+      ]),
+    };
+    const entries = [r1, r2];
+    const r1Table = r1.nodes.tables[0].path;
+    const bindingFor = (entryId: string, tablePath: string, columnName: string) =>
+      ({entryId, tablePath, tableName: tablePath, columnName, indexColumnName: 'time'});
+    const targetFor = (key: string, bindings: ReturnType<typeof bindingFor>[]): ColumnTarget => ({
+      kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
+      coverage: 2, defaultCoverage: 2, total: 2, candidates: [], bindings,
+    });
+    const anchor = targetFor('a', [bindingFor(r1.id, r1Table, 'a'), bindingFor('r2', 'p1', 'a')]);
+    const co = targetFor('b', [bindingFor(r1.id, r1Table, 'b'), bindingFor('r2', 'p2', 'b')]);
+    const result = buildMultiColumnComparison([anchor, co], entries)!;
+    expect(result.chartDf.rowCount, 5);
+    expect(result.chartDf.getCol('a').toList().join(','), '10,20,30,40,50');
+    const bValues = result.chartDf.getCol('b').toList();
+    expect(bValues.slice(0, 2).join(','), '1,2');
+    expect(bValues.slice(2).every((v: any) => v == null || isNaN(v)), true);
+  });
+
   test('disabled candidates are excluded from the chart', async () => {
     const entries = [
       entryFromDataFrame(makeDf('r1', [intCol('time', [1, 2]), floatCol('value', [10, 20])])),

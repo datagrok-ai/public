@@ -63,7 +63,7 @@ Two design rules keep the model simple:
 ## `selection.ts` — pickers, statuses, and multi-value compatibility
 
 - **`computeIndexRows(...)`** — builds the rows of the "Index columns" picker UI. One row per table, or — with "Merge same functions" on — one row per group of tables that come from the same function (`nqName` + output name), so picking an index once applies to all runs of that model. Merged rows only offer columns present with the same type in *every* group member; stored selections that no longer match candidates are treated as unset rather than kept stale.
-- **`compatibleTargetsFor(anchor, targets, getColumnType)`** — for multi-value mode: returns column targets whose `bindingSignature` (sorted `entryId|tablePath|indexCol|splitCol` tuples over *enabled* bindings; the column name is deliberately excluded) is identical to the anchor's, provided the index is line-chartable (numeric/datetime) in every binding. Only such targets can share one chart. Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV. The signature never revisits that; it only checks that two *targets* inherited the same reconciliation (same source set, table-for-table, index-for-index), which is what lets the multi builder read all value columns from the same physical rows within each source.
+- **`multiValueOverlap(anchor, other)`** / **`compatibleTargetsFor(anchor, targets, getColumnType)`** — multi-value mode is split into a *suggestion* predicate and builder-enforced validity. Per anchor run, the other target's pick is `aligned` (same table — rows can be shared), `missing` (no pick), or `conflicting` (picked from another table). `compatibleTargetsFor` *suggests* column targets with no conflicts and ≥ 1 aligned run, provided the anchor's index is line-chartable (numeric/datetime) everywhere. It never decides validity of an already selected combination: the builder pads missing/conflicting runs with nulls, so editing picks can never eject a selected target. Index/split agreement is automatic for aligned picks — the pickers are per (run, table). Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV; the overlap check only asks whether two *targets* can read their columns from the same physical rows.
 - **`getEntryStatuses`** — per-run participation status for the selected target, so the UI can flag excluded runs with a reason (`'no similar data'`, `'index not set'`, or `'disabled'` — the run has candidates but the user toggled them all off).
 - Small helpers: `matchesFilter` (substring + fuzzy-token filter for the list search boxes), `isSplitCandidate` (string column ≠ index), `selectionToMap` (validated `Record` → `Map` conversion).
 
@@ -81,7 +81,7 @@ Two design rules keep the model simple:
 | `selectedTargetKey` | which target is being charted |
 | `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves |
 | `expandedTargetKeys` | which target rows have their candidate checklist expanded |
-| `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys |
+| `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys; the mode never auto-exits — keys are pruned only when their target vanishes structurally, and the chart pads conflicting/missing runs (`partial` chip on the row) |
 | `indexFilter`, `targetFilter` | list search boxes |
 | `chartViewer` | last-created `DG.Viewer`, kept for the workspace-snapshot export |
 | `historyHeight`, `sidebarWidth`, `chartHeight` | resizable layout dims |
@@ -102,7 +102,7 @@ Everything re-derives from `entries` + the selections:
 - **`addEntry`** dedupes by id and calls `applyAnnotatedDefaults`, which pre-fills index/split pickers from the `comparisonIndex`/`comparisonSplit` annotations — but only where the user hasn't already chosen.
 - **`addSelectedRuns`** reloads each checked history run fully (`historyUtils.loadRun`) before extraction, guarded by `isAddingRuns`.
 - The **table input** (`ui.input.table`) resets its value in a `setTimeout` because doing it synchronously re-enters the Dart stream controller mid-dispatch (fix from `7ddbfc3b`).
-- **Shift+click** on a target row enters multi-value mode grid-style: if the clicked target is signature-compatible with the current selection, both are kept; otherwise the click re-anchors.
+- **Shift+click** on a target row enters multi-value mode grid-style: if the clicked target is suggestion-compatible with the current selection, both are kept; otherwise the click re-anchors.
 - **Chart choice** in `renderComparison`:
 
   | Situation | Chart |

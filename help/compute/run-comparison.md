@@ -82,7 +82,11 @@ Raw workspace tables have no annotations.
 
 ## Multiple values
 
-When the selected column target has compatible siblings (same runs, tables, index and split
-columns, and a line-chartable index), the **Multiple values** toggle (or Shift+click on a
-compare row) enables selecting several values at once. Each value becomes a stacked
-line-chart panel with runs (and split categories) as lines inside.
+When the selected column target has compatible siblings (values sharing at least one run
+from the same tables, with a line-chartable index), the **Multiple values** toggle (or
+Shift+click on a compare row) enables selecting several values at once. Each value becomes
+a stacked line-chart panel with runs (and split categories) as lines inside.
+
+Editing matches never exits the mode: a run that is missing or re-sourced from another
+table in one of the selected values shows as a gap in that panel, and the value's row is
+marked **partial**. Reverting the edit restores the chart exactly.
