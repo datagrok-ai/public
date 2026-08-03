@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fixed: Undo/redo keys are now bound by the editor's own disposable handler instead of rete's `HistoryExtensions.keyboard`, which installed a document listener that was never removed (it kept eating Ctrl+Z after the Flow view was closed) and routed Ctrl+Shift+Z to undo instead of redo. The canvas also claims the platform undo scope, so Ctrl+Z inside Flow no longer reaches the table stack
 * Improved: The drag-out suggestion menu (dragging a socket to empty canvas) now searches the same fields as the toolbox — descriptions, tags, and package, not just the name — so "remove column" finds Delete Columns; and it leads with the same context-ranked picks the toolbox Suggestions pane shows for the drag-source node, each with its reason inline and its prefill (matched column names, etc.) applied on selection
 
 * Fixed: Canceling the run's parameter dialog (or a run that never starts — validation errors, "Nothing to run") left the execution state machine wedged: `isRunning` stuck, autorun spinning in a 1-second retry loop, the save dialog's OK disabled forever, and the column-picker's "Run to load" promise never resolving. Every no-start path now releases the run state and settles its waiters

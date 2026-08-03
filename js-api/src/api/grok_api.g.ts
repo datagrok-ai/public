@@ -976,6 +976,14 @@ export interface IDartApi {
   grok_ClientCache_Stop(): any;
   grok_ClientCache_Get_IsRunning(): any;
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
+  grok_Shell_Undo(): any;
+  grok_Shell_Redo(): any;
+  grok_Shell_Get_CanUndo(): any;
+  grok_Shell_Get_CanRedo(): any;
+  grok_UndoService_Get_UndoName(): any;
+  grok_UndoService_Get_RedoName(): any;
+  grok_UndoService_Clear(): any;
+  grok_UndoService_Push(name: String, undo: any, redo: any, context: any): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
   grok_Shell_OpenLocalFile(file: any): Promise<any>;

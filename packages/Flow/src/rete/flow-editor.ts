@@ -14,7 +14,7 @@ import {
 } from 'rete-connection-plugin';
 import {Presets as ReactPresets, ReactArea2D, ReactPlugin} from 'rete-react-plugin';
 import {
-  HistoryActions, HistoryExtensions, HistoryPlugin,
+  HistoryActions, HistoryPlugin,
   Presets as HistoryPresets,
 } from 'rete-history-plugin';
 import {getDOMSocketPosition} from 'rete-render-utils';
@@ -340,9 +340,11 @@ export class FlowEditor {
     });
 
     // Undo/redo: history-plugin tracks add/remove/drag of nodes & connections.
+    // Keys are bound in installKeyboardShortcuts (scoped and disposable); this canvas owns
+    // Ctrl+Z while focus is inside it, so the platform stack stays untouched.
     this.history.addPreset(HistoryPresets.classic.setup());
     this.area.use(this.history as never);
-    HistoryExtensions.keyboard(this.history); // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
+    DG.UndoService.ownScope(this.container);
 
     this.installPointerDownTracker();
     this.wireEvents();
@@ -3179,6 +3181,15 @@ export class FlowEditor {
       if ((e.key === 'v' || e.key === 'V') && (e.ctrlKey || e.metaKey) && !e.shiftKey && this.clipboard) {
         e.preventDefault();
         void this.pasteClipboard();
+      }
+
+      // Undo / redo. Handled here rather than through rete's HistoryExtensions.keyboard,
+      // which installs a document listener that is never removed and routes
+      // Ctrl+Shift+Z to undo.
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z' || e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        const redo = e.key === 'y' || e.key === 'Y' || e.shiftKey;
+        void (redo ? this.history.redo() : this.history.undo());
       }
     };
     window.addEventListener('keydown', this.keydownHandler);
