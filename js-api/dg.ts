@@ -10,6 +10,7 @@ export * from './src/const';
 export * from './src/events';
 export * from './src/dapi';
 export * from './src/domains';
+export * from './src/domains-ui';
 export * from './src/dataframe';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';

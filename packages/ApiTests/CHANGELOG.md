@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: Added `DomainObjectHandler` coverage to `JS: domain handlers` — an override-nothing handler renders DOM-identically to the platform meta (card/markup/tooltip/caption) and `getById` gives JS its first `DG.DomainRow` acquisition path; registering one keeps the Dart meta (owner of the CRUD commands) while winning `forEntity`; reflective properties/detail tabs/editor (inputs = writable columns); `DomainRow.permissions()` and the ribbon actions flip on a real Delete grant round-trip, and an unsaved row holds no permissions; malformed and unknown table addresses fail with clear/typed errors.
+
 GROK-20298: Added `Dapi: domain registry` (rowProperties constraints round-trip incl. grit.issue choices/min/nullable, tableInfo childTables FK inversion, resolveNames business-key identity + null for unresolvable ids, typed unknown-table rejections) and `Dapi: domain capabilities` (admin full capabilities + cache invalidation; canInsert/canEdit flip on a real Edit grant round-trip probed under a throwaway restricted user's session token, cleaned up in finally).
 
 GROK-20298: Added renderGrid coverage to `JS: domain handlers` — the base no-op is sentinel-marked `isPlatformDefault`, a registered JS handler wins the dispatch and decorates a `queryDf` frame (no `~item` assumption), and the per-table Dart meta's `renderGrid` decorates a JS-created grid (system column hidden, ref caption stamped); the suite forces the per-table meta registration so it passes under `grok test`'s unflagged client profile.

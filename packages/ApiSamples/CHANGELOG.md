@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains-handler.js — DomainObjectHandler: a per-table handler that overrides only renderCard, plus the reflective members every domain table gets for free (properties, capabilities, row permissions, detail tabs, capability-gated actions, editor)
 * GROK-20298: Added dapi/domains-registry-reflection.js — registry reflection (rowProperties/tableInfo/resolveNames) and permission-driven table capabilities
 * GROK-20298: Added dapi/domains-render-grid.js — customizing every grid over a domain table's rows (the built-in Domain View grid included) via ObjectHandler.renderGrid
 * GROK-20298: Added dapi/domains-async-form.js — the "New Grit issue" async form: FK lookup via ui.typeAhead's callback source, server-provided choices, debounced server-side uniqueness validation, and per-field mapping of server rejections

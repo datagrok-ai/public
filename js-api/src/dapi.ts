@@ -64,6 +64,7 @@ import {
   DomainVersionConflictError,
   domainCall,
   retryOnVersionConflict,
+  splitDomainTable,
 } from './domains';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
@@ -1086,15 +1087,6 @@ export class SpaceFilesClient {
   delete(file: FileInfo | string): Promise<void> {
     return api.grok_SpaceFilesClient_Delete(this.dart, file instanceof FileInfo ? file.dart : file);
   }
-}
-
-/** Splits the `'<schema>.<table>'` address every domain client takes, throwing on
- * a malformed one — the single spelling of that contract. */
-function splitDomainTable(name: string): [string, string] {
-  const dot = name.indexOf('.');
-  if (dot < 1 || dot === name.length - 1)
-    throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
-  return [name.substring(0, dot), name.substring(dot + 1)];
 }
 
 /**

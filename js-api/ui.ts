@@ -1878,6 +1878,9 @@ export class EntityMetaDartProxy extends ObjectHandler {
   get type(): string { return api.grok_Meta_Get_Type(this.dart); }
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, toDart(x)); }
+  /** Loads the object by id through the Dart meta (null when it does not exist
+   * or the meta cannot address it). */
+  async getById(id: string): Promise<any> { return await api.grok_Meta_GetById(this.dart, id); }
 
   renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, toDart(x)); }
   renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }

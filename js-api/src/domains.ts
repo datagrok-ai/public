@@ -61,6 +61,15 @@ export type DomainFilter<TColumn extends string = string> =
 /** Runtime list of the system columns (type-level counterpart: {@link DomainSystemColumn}). */
 export const DOMAIN_SYSTEM_COLUMNS = ['id', 'version', 'created_on', 'updated_on', 'author_id'] as const;
 
+/** Splits the `'<schema>.<table>'` address every domain client and UI component
+ * takes, throwing on a malformed one — the single spelling of that contract. */
+export function splitDomainTable(name: string): [string, string] {
+  const dot = name == null ? -1 : name.indexOf('.');
+  if (dot < 1 || dot === name.length - 1)
+    throw new Error(`Domain table name must be '<schema>.<table>', got '${name}'`);
+  return [name.substring(0, dot), name.substring(dot + 1)];
+}
+
 /** One per-column failure of a validation-failed write. */
 export interface DomainColumnError { column: string; code: string; message: string; }
 /** Per-row failure list of a validation-failed write ({@link DomainValidationError.rows}). */
