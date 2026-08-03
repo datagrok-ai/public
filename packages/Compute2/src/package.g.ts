@@ -53,18 +53,28 @@ export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TreeWizardEditor(call);
 }
 
-//input: string nqName 
-//input: string version 
-//input: object instanceConfig 
+//name: Start Workflow
+//description: Launch a compute workflow (pipeline) by its qualified name and open its editor.
+//input: string nqName { description: Qualified name of the workflow function to launch }
+//input: string version { description: Workflow version to run }
+//input: object instanceConfig { description: Optional initial pipeline configuration }
 //output: object result
 export async function StartWorkflow(nqName: string, version: string, instanceConfig?: any) {
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
-//input: object params 
+//name: Run Optimizer
+//description: Run parameter optimization (fitting) for a model and return the resulting function calls.
+//input: object params { description: Optimizer parameters: target function, variables, and objective }
 //output: object result
 export async function RunOptimizer(params: any) {
   return await PackageFunctions.RunOptimizer(params);
+}
+
+//name: Compare Runs
+//description: Compare data across model runs: scalars or a single table column
+export async function CompareRuns() : Promise<void> {
+  await PackageFunctions.CompareRuns();
 }
 
 //name: ViewerTestApp
@@ -82,6 +92,8 @@ export async function HistoryTestApp() : Promise<void> {
   await PackageFunctions.HistoryTestApp();
 }
 
+//name: Mock Pipeline 1
+//description: Sample static two-step workflow configuration used for testing the workflow engine.
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -89,6 +101,8 @@ export async function MockPipeline1(params: any) {
   return await PackageFunctions.MockPipeline1(params);
 }
 
+//name: Mock Pipeline 2
+//description: Sample sequential workflow configuration with links, actions, and validators for testing.
 //input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
@@ -139,9 +153,10 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 }
 
 //name: Custom View (Compute 2 Test)
+//output: object result
 //editor: Compute2:CustomFunctionViewEditor
-export async function TestCustomView() : Promise<void> {
-  await PackageFunctions.TestCustomView();
+export async function TestCustomView() {
+  return await PackageFunctions.TestCustomView();
 }
 
 //description: Test for optimization: multiple scalars output
@@ -165,4 +180,18 @@ export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boole
 //description: Test for optimization: multiple scalars output
 export async function testFittingOutputs() : Promise<void> {
   await PackageFunctions.testFittingOutputs();
+}
+
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestCustomExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestCustomExportModel(a);
+}
+
+//input: funccall funcCall 
+//input: bool startDownload 
+//output: string result
+export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
+  return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
 }

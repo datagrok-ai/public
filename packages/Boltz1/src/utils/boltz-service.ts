@@ -8,6 +8,15 @@ import { _package } from '../package';
 import { getFromPdbs, prop } from './utils';
 
 export class BoltzService {
+  static _container?: DG.DockerContainer;
+
+  static async getBoltzContainer(): Promise<DG.DockerContainer> {
+    this._container ??= await grok.dapi.docker.dockerContainers.filter('boltz').first();
+    if (!this._container)
+      throw new Error('Boltz docker container not found. Make sure it is up and running.');
+    return this._container;
+  }
+
   static async getBoltzConfigFolders(): Promise<string[]> {
     const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(BOLTZ_CONFIG_PATH, true);
     return targetsFiles
@@ -16,7 +25,7 @@ export class BoltzService {
   }
 
   static async runBoltz(config: string, msa: string): Promise<string> {
-    const boltzContainer = await grok.dapi.docker.dockerContainers.filter('boltz').first();
+    const boltzContainer = await this.getBoltzContainer();
 
     const body = {
       yaml: config,

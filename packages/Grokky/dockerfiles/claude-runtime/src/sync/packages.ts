@@ -1,18 +1,26 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import AdmZip from 'adm-zip';
-import {request, requestBinary} from '../shared-api-client';
+import {request, requestBinary, listPackageFolder} from '../shared-api-client';
 import {WORKSPACE} from '../constants';
 import {setInstalledPackages} from '../user/installed-packages';
 
 export interface PackageInfo {
   id: string;
   name: string;
+  version: string;
+  buildHash: string;
+  buildNumber: number;
   updatedOn?: string;
 }
 
-// Per-user package cache: packageName → updatedOn timestamp.
-const packageCache = new Map<string, Map<string, string>>();
+interface CacheEntry {
+  buildHash: string;
+  files: string[];
+}
+
+// Per-user, per-process cache: userId → (packageName → {buildHash, synced files}).
+// In-memory only — /users is container-ephemeral, so persisting it would buy nothing.
+const cache = new Map<string, Map<string, CacheEntry>>();
 
 let workspacePackages: Set<string> | null = null;
 
@@ -29,53 +37,51 @@ async function getWorkspacePackages(): Promise<Set<string>> {
   return workspacePackages;
 }
 
-async function syncSinglePackage(userDir: string, pkg: PackageInfo, cached: Map<string, string>): Promise<void> {
-  if (pkg.updatedOn && cached.get(pkg.name) === pkg.updatedOn) {
-    console.log(`package-agents: ${pkg.name} up-to-date, skipping`);
-    return;
-  }
-  console.log(`package-agents: syncing ${pkg.name}`);
-  const buf = await requestBinary('GET', `/packages/published/${pkg.id}/zip`);
-  if (!buf || buf.length === 0) {
-    console.warn(`package-agents: empty ZIP for ${pkg.name}, skipping`);
+// Syncs one package's agents/ folder. Only fetches when the build changed.
+async function syncSinglePackage(userDir: string, pkg: PackageInfo, userCache: Map<string, CacheEntry>): Promise<void> {
+  const prev = userCache.get(pkg.name);
+  if (prev?.buildHash === pkg.buildHash) {
+    console.log(`package-agents: ${pkg.name} up-to-date (build=${pkg.buildHash}), skipping`);
     return;
   }
 
-  const zip = new AdmZip(buf);
-  const entries = zip.getEntries();
-  const agentEntries = entries.filter((e) => !e.isDirectory && e.entryName.startsWith('agents/'));
-  if (!agentEntries.length) {
+  console.log(`package-agents: syncing ${pkg.name} (build=${pkg.buildHash})`);
+  const base = `/packages/published/files/${pkg.name}/${pkg.version}/${pkg.buildHash}/${pkg.buildNumber}`;
+  const children = await listPackageFolder(`${base}/agents/`);
+  const agentsDir = path.join(userDir, 'agents');
+
+  // Drop the previous build's files before writing the current ones.
+  if (prev?.files.length) {
+    for (const f of prev.files)
+      await fs.rm(path.join(agentsDir, f), {force: true});
+    console.log(`package-agents: removed ${prev.files.length} old file(s) for ${pkg.name}`);
+  }
+
+  if (!children?.length) {
+    userCache.set(pkg.name, {buildHash: pkg.buildHash, files: []});
     console.log(`package-agents: ${pkg.name} has no agents/ files`);
     return;
   }
 
-  const agentsDir = path.join(userDir, 'agents');
-
-  // Clean old files for this package before extracting new ones
-  const prefix = `${pkg.name}-`;
-  try {
-    const existing = await fs.readdir(agentsDir);
-    const removed = existing.filter((f) => f.startsWith(prefix));
-    for (const f of removed)
-      await fs.rm(path.join(agentsDir, f), {force: true});
-    if (removed.length)
-      console.log(`package-agents: removed ${removed.length} old file(s) for ${pkg.name}`);
-  } catch { /* dir may not exist */ }
-
-  // Extract agent files, flattening subdirectory paths with "-"
-  for (const entry of agentEntries) {
-    const rel = entry.entryName.replace(/^agents\//, '').replace(/\//g, '-');
-    const dest = path.join(agentsDir, `${pkg.name}-${rel}`);
-    await fs.writeFile(dest, entry.getData());
+  await fs.mkdir(agentsDir, {recursive: true});
+  const files: string[] = [];
+  for (const child of children) {
+    if (child.endsWith('/')) {
+      console.warn(`package-agents: ${pkg.name} skipping nested agents folder ${child}`);
+      continue;
+    }
+    const buf = await requestBinary('GET', `${base}/agents/${child}`);
+    const dest = `${pkg.name}-${child}`;
+    await fs.writeFile(path.join(agentsDir, dest), buf);
+    files.push(dest);
   }
-  console.log(`package-agents: extracted ${agentEntries.length} file(s) from ${pkg.name}`);
-  if (pkg.updatedOn)
-    cached.set(pkg.name, pkg.updatedOn);
+
+  userCache.set(pkg.name, {buildHash: pkg.buildHash, files});
+  console.log(`package-agents: extracted ${files.length} agent file(s) from ${pkg.name}`);
 }
 
 export async function syncPackages(userDir: string, packageName?: string): Promise<void> {
   const wsPackages = await getWorkspacePackages();
-
   if (packageName && wsPackages.has(packageName.toLowerCase())) {
     console.log(`package-agents: skipping workspace package ${packageName}`);
     return;
@@ -89,28 +95,28 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
 
   const userId = path.basename(userDir);
   setInstalledPackages(userId, packages);
-  if (!packageCache.has(userId))
-    packageCache.set(userId, new Map());
-  const cached = packageCache.get(userId)!;
 
-  const installedNames = new Set(packages.map((p) => p.name));
+  let userCache = cache.get(userId);
+  if (!userCache) {
+    userCache = new Map();
+    cache.set(userId, userCache);
+  }
+
   const agentsDir = path.join(userDir, 'agents');
-  try {
-    const existing = await fs.readdir(agentsDir);
-    const sortedNames = [...installedNames].sort((a, b) => b.length - a.length);
-    const orphans = existing.filter((f) => !sortedNames.some((n) => f.startsWith(`${n}-`)));
-    for (const f of orphans)
-      await fs.rm(path.join(agentsDir, f), {force: true});
-    if (orphans.length)
-      console.log(`package-agents: removed ${orphans.length} orphan file(s)`);
-  } catch {
-    // agents dir may not exist yet
-  }
+  const installed = new Set(packages.map((p) => p.name));
 
-  for (const cachedName of [...cached.keys()]) {
-    if (!installedNames.has(cachedName))
-      cached.delete(cachedName);
+  // Drop files + cache entries for packages no longer installed.
+  let orphans = 0;
+  for (const name of [...userCache.keys()]) {
+    if (!installed.has(name)) {
+      for (const f of userCache.get(name)!.files)
+        await fs.rm(path.join(agentsDir, f), {force: true});
+      userCache.delete(name);
+      orphans++;
+    }
   }
+  if (orphans)
+    console.log(`package-agents: removed ${orphans} orphan package(s)`);
 
   if (packageName) {
     const pkg = packages.find((p) => p.name === packageName);
@@ -118,11 +124,14 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
       console.log(`package-agents: package "${packageName}" not found among published`);
       return;
     }
-    await syncSinglePackage(userDir, pkg, cached);
+    try {
+      await syncSinglePackage(userDir, pkg, userCache);
+    } catch (e: any) {
+      console.warn(`package-agents: failed to sync ${pkg.name}: ${e.message}`);
+    }
     return;
   }
 
-  // Initial sync: fetch all, skip workspace packages
   console.log(`package-agents: syncing ${packages.length} published package(s), skipping ${wsPackages.size} workspace package(s)`);
   for (const pkg of packages) {
     if (wsPackages.has(pkg.name.toLowerCase())) {
@@ -130,9 +139,9 @@ export async function syncPackages(userDir: string, packageName?: string): Promi
       continue;
     }
     try {
-      await syncSinglePackage(userDir, pkg, cached);
+      await syncSinglePackage(userDir, pkg, userCache);
     } catch (e: any) {
-      console.warn(`package-agents: failed to sync ${pkg.name}:`, e.message);
+      console.warn(`package-agents: failed to sync ${pkg.name}: ${e.message}`);
     }
   }
 }

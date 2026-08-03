@@ -42,3 +42,30 @@
   display: none;
 }
 
+.notebooks-action-button {
+  background-color: var(--green-2) !important;
+}
+
+.notebooks-edit-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: auto;
+}
+
+.notebooks-edit-html {
+  overflow: auto;
+}
+
+.notebooks-edit-body {
+  background-color: white;
+  overflow: auto;
+}
+
+.notebooks-edit-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+}
+

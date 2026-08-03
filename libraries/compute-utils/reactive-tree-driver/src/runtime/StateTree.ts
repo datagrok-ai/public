@@ -50,8 +50,8 @@ export class StateTree {
     this.nodeTree = new BaseTree(item);
     this.linksState = new LinksState(defaultValidators, this.logger, batchLinks);
 
-    this.linksState.runningLinks$.pipe(
-      map((links) => !!links?.length),
+    combineLatest([this.linksState.runningLinks$, this.globalROLocked$]).pipe(
+      map(([links, roLocked]) => !!links?.length || roLocked),
       takeUntil(this.closed$),
     ).subscribe(this.treeMutationsLocked$);
   }
@@ -74,6 +74,10 @@ export class StateTree {
 
   public getValidations() {
     return Serializer.getValidations(this.nodeTree);
+  }
+
+  public getPipelineValidations() {
+    return Serializer.getPipelineValidations(this.nodeTree);
   }
 
   public getConsistency() {
@@ -303,7 +307,7 @@ export class StateTree {
     });
   }
 
-  public runSequence(startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean) {
+  public runSequence(startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) {
     return this.withTreeLock(() => {
       const startNode = includeNonNested ? this.nodeTree.root : this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
       if (startNode == null)
@@ -317,7 +321,7 @@ export class StateTree {
           if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length)
             return of(undefined);
           if (rerunWithConsistent) {
-            return node.getStateStore().overrideToConsistent().pipe(
+            return node.getStateStore().overrideToConsistent(includeInfo).pipe(
               concatMap(() => this.linksState.waitForLinks()),
               withLatestFrom(node.getStateStore().isRunable$, node.getStateStore().isOutputOutdated$),
               filter(([, runable, outdated]) => runable && outdated),

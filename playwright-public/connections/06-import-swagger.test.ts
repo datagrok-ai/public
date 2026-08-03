@@ -31,7 +31,12 @@ import {
 // drag-drop visual remains covered by `import-swagger-ui.md`.
 
 const SWAGGER_NAME = 'OpenWeatherMap';
-const API_KEY = process.env.DG_OPENWEATHERMAP_API_KEY ?? '';
+// OpenWeatherMap free-tier API key, default-provided so the CI run
+// (which can't see the dev .env) can still exercise tests 2-3. Override
+// via the DG_OPENWEATHERMAP_API_KEY env var on dev / playwright-tests.
+// The free-tier key is rate-limited (60 calls/min) and not security-
+// sensitive — rotating it costs only a 5-minute OWM sign-up.
+const API_KEY = process.env.DG_OPENWEATHERMAP_API_KEY ?? '940677a955994e7147785652254f1742';
 
 const YAML_PATH = path.resolve(
   __dirname, '..', '..', '..', 'public', 'packages', 'Samples', 'swaggers', 'openweathermap.yaml',

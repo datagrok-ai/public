@@ -4,4 +4,5 @@ import * as DG from 'datagrok-api/dg';
 
 export {ModelCatalogView} from './src/model-catalog-view';
 export {ModelHandler} from './src/model-handler';
-export {startModelCatalog, makeModelTreeBrowser, ModelCatalogConfig, renderRestPanel, setModelCatalogEventHandlers, setModelCatalogHandler} from './src/model-catalog';
+export {startModelCatalog, makeModelTreeBrowser, renderRestPanel, setModelCatalogEventHandlers, setModelCatalogHandler} from './src/model-catalog';
+export type {ModelCatalogConfig} from './src/model-catalog';

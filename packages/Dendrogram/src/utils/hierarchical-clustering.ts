@@ -194,7 +194,8 @@ export async function hierarchicalClusteringUI(
         });
       }, 1000)
     `;
-    const nb = injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+    const nb = injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth, undefined,
+      {colNames: colNameList, distance});
     const s = nb.onClosed.subscribe(() => {
       tv.grid.props.onInitializedScript = '';
       if (tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME] === nb)

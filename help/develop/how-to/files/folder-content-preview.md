@@ -1,5 +1,11 @@
 ---
 title: "Custom folder content preview"
+description: Register a folderViewer function that inspects a folder's files and returns a custom preview widget.
+keywords:
+  - folderViewer role
+  - folder preview
+  - file share folder widget
+  - custom launcher button
 ---
 
 To provide custom folder content preview, register a function with the `folderViewer` role that takes two

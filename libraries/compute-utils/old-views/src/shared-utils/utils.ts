@@ -384,7 +384,9 @@ export async function fcToSerializable(fc: DG.FuncCall, view: FunctionView | Ric
 async function fcInputToSerializable(property: DG.Property, value: any, view: FunctionView | RichFunctionView) {
   if ((property.propertyType as any) === 'file' && (view as any)!.getInput) {
     const fileInput = (view as any).getInput(property.name);
-    return fileInput.value.arrayBuffer();
+    // A freshly uploaded file is a browser File; a loaded historical run holds a DG.FileInfo.
+    const v = fileInput.value;
+    return v instanceof DG.FileInfo ? (await v.readAsBytes()).buffer : await v.arrayBuffer();
   }
   return value;
 }

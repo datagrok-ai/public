@@ -64,3 +64,85 @@ export function isApplicableBoltz(molecule: string) : boolean {
 export async function boltz1App() : Promise<any> {
   return await PackageFunctions.boltz1App();
 }
+
+//name: Boltz Demo
+//description: WDR5 protein-ligand complexes with Boltz-predicted affinity
+//meta.demoPath: Bioinformatics | Boltz
+//meta.isDemoDashboard: true
+export async function demoBoltz() : Promise<void> {
+  await PackageFunctions.demoBoltz();
+}
+
+//output: list<string> result
+export async function getBoltzStructureBindingConfigs() : Promise<string[]> {
+  return await PackageFunctions.getBoltzStructureBindingConfigs();
+}
+
+//output: list<string> result
+export async function getBoltzSmDesignConfigs() : Promise<string[]> {
+  return await PackageFunctions.getBoltzSmDesignConfigs();
+}
+
+//output: list<string> result
+export async function getBoltzSmScreenConfigs() : Promise<string[]> {
+  return await PackageFunctions.getBoltzSmScreenConfigs();
+}
+
+//output: list<string> result
+export async function getBoltzProteinDesignConfigs() : Promise<string[]> {
+  return await PackageFunctions.getBoltzProteinDesignConfigs();
+}
+
+//output: list<string> result
+export async function getBoltzProteinScreenConfigs() : Promise<string[]> {
+  return await PackageFunctions.getBoltzProteinScreenConfigs();
+}
+
+//input: dataframe table 
+//input: column ligands { semType: Molecule }
+//input: string config { choices: Boltz1:getBoltzStructureBindingConfigs }
+//output: dataframe result { action: join(table) }
+//meta.vectorFunc: true
+export async function boltzStructureAndBinding(table: DG.DataFrame, ligands: DG.Column, config: string) : Promise<any> {
+  return await PackageFunctions.boltzStructureAndBinding(table, ligands, config);
+}
+
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//output: dataframe result { action: join(table) }
+//meta.vectorFunc: true
+export async function boltzAdme(table: DG.DataFrame, molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.boltzAdme(table, molecules);
+}
+
+//input: string config { choices: Boltz1:getBoltzSmDesignConfigs }
+//input: double numMolecules 
+//output: dataframe result
+export async function boltzDesignSmallMolecules(config: string, numMolecules: number) : Promise<any> {
+  return await PackageFunctions.boltzDesignSmallMolecules(config, numMolecules);
+}
+
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: string config { choices: Boltz1:getBoltzSmScreenConfigs }
+//output: dataframe result { action: join(table) }
+//meta.vectorFunc: true
+export async function boltzScreenSmallMolecules(table: DG.DataFrame, molecules: DG.Column, config: string) : Promise<any> {
+  return await PackageFunctions.boltzScreenSmallMolecules(table, molecules, config);
+}
+
+//input: string config { choices: Boltz1:getBoltzProteinDesignConfigs }
+//input: double numProteins 
+//output: dataframe result
+export async function boltzDesignProteins(config: string, numProteins: number) : Promise<any> {
+  return await PackageFunctions.boltzDesignProteins(config, numProteins);
+}
+
+//input: dataframe table 
+//input: column proteins { semType: Macromolecule }
+//input: string config { choices: Boltz1:getBoltzProteinScreenConfigs }
+//output: dataframe result { action: join(table) }
+//meta.vectorFunc: true
+export async function boltzScreenProteins(table: DG.DataFrame, proteins: DG.Column, config: string) : Promise<any> {
+  return await PackageFunctions.boltzScreenProteins(table, proteins, config);
+}

@@ -1,5 +1,12 @@
 ---
 title: "Globe"
+description: Plot latitude/longitude data with magnitude and color coding on an interactive rotatable 3D globe.
+keywords:
+  - 3d globe
+  - geospatial visualization
+  - latitude longitude
+  - magnitude beams
+  - color coding
 ---
 
 Visualizes magnitude and color for data on a 3D globe using latitude and longitude.

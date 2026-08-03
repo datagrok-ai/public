@@ -1,6 +1,13 @@
 ---
 title: "Local machine: advanced"
 sidebar_position: 1
+description: Run the canonical docker-compose file directly to select service profiles, run multiple stands, and troubleshoot.
+keywords:
+  - docker compose profiles
+  - multiple stands
+  - demo databases
+  - bleeding-edge images
+  - troubleshoot containers
 ---
 
 import Tabs from '@theme/Tabs';
@@ -26,9 +33,24 @@ Minimal: 60 GB of free disk space, 4 CPUs, 8 GB RAM.
     * [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
     * [Docker Desktop for MacOS](https://docs.docker.com/desktop/install/mac-install/)
     * [Docker Desktop for Linux](https://docs.docker.com/desktop/install/linux-install/)
-2. Clone the
-   [public repository](https://github.com/datagrok-ai/public) (the compose file lives at
-   `docker/localhost.docker-compose.yaml`).
+2. Clone the [public repository](https://github.com/datagrok-ai/public) and check out the
+   branch for the release you want to run (the compose file lives at
+   `docker/localhost.docker-compose.yaml`):
+
+   ```shell
+   git clone --branch release/1.27.7 https://github.com/datagrok-ai/public.git
+   ```
+
+   The branch matters. A compose file and the images it starts are versioned together, so
+   `master`'s compose file is bound to `bleeding-edge` images and will not work against a
+   stable release — see
+   [configuration is versioned with the image](../images.md#release-binding). Each compose
+   file states which release it belongs to in its top-level `x-datagrok-release` field:
+
+   ```shell
+   grep x-datagrok-release docker/localhost.docker-compose.yaml
+   ```
+
 3. Open a terminal and `cd` into the cloned repository.
 
 ## Compose profiles
@@ -188,40 +210,34 @@ stand a different project name and override the host ports it binds.
 
 1. Run the first stand as described above (project name `datagrok`).
 
-2. Pin image versions for the second stand. Any tag from
-   [Docker Hub](https://hub.docker.com/r/datagrok/) is valid — see
-   [Images and versions](../images.md) for the latest pinned set, or
-   [release history](../releases/release-history.md) for older releases.
-
-   Each service has its own environment variable: `DATAGROK_VERSION`,
-   `GROK_PIPE_VERSION`, `GROK_SPAWNER_VERSION`, `GROK_CONNECT_VERSION`,
-   `JKG_VERSION`, `GROK_REGISTRY_PROXY_VERSION`. They all default to
-   `bleeding-edge`. To pin a stand to the latest stable release:
-
-   <Tabs groupId="os" queryString>
-   <TabItem value="win" label="Windows" default>
-
-   ```cmd
-   set DATAGROK_VERSION=1.27.3
-   set GROK_PIPE_VERSION=1.19.0
-   set GROK_SPAWNER_VERSION=2.16.0
-   set GROK_CONNECT_VERSION=2.6.2
-   set JKG_VERSION=1.31.0
-   ```
-
-   </TabItem>
-   <TabItem value="bash" label="MacOS/Linux">
+2. Run the second stand from a different release if you need one. The reliable way is a
+   second checkout on that release's branch — each branch's compose file already defaults
+   every image to the right tag, so there is nothing to set:
 
    ```shell
-   export DATAGROK_VERSION=1.27.3
-   export GROK_PIPE_VERSION=1.19.0
-   export GROK_SPAWNER_VERSION=2.16.0
-   export GROK_CONNECT_VERSION=2.6.2
-   export JKG_VERSION=1.31.0
+   git clone --branch release/1.27.6 https://github.com/datagrok-ai/public.git public-1.27.6
    ```
 
-   </TabItem>
-   </Tabs>
+   Every image tag is also individually overridable, for testing a single service against
+   the rest of a stand:
+
+   | Environment variable                | Overrides                    |
+   |-------------------------------------|------------------------------|
+   | `DATAGROK_VERSION`                  | `datagrok/datagrok`          |
+   | `GROK_PIPE_VERSION`                 | `datagrok/grok_pipe`         |
+   | `GROK_SPAWNER_VERSION`              | `datagrok/grok_spawner`      |
+   | `GROK_CONNECT_VERSION`              | `datagrok/grok_connect`      |
+   | `GROK_CONNECT_ADBC_VERSION`         | `datagrok/grok_connect_adbc` |
+   | `JUPYTER_KERNEL_GATEWAY_VERSION`    | `datagrok/jupyter_kernel_gateway` |
+
+   :::caution
+
+   Overriding these opts out of the release binding. `DATAGROK_VERSION` in particular
+   changes the server image but not the `GROK_PARAMETERS` in the compose file, and a
+   server given configuration from another release can fail to start. To run a different
+   release, take its compose file too.
+
+   :::
 
 3. Override the host ports the second stand binds. Pick values that don't collide with
    the first stand:
@@ -232,6 +248,9 @@ stand a different project name and override the host ports it binds.
    | `DATAGROK_DB_PORT`                       | `5432`  |
    | `GROK_SPAWNER_PORT`                      | `8000`  |
    | `GROK_CONNECT_PORT`                      | `1234`  |
+   | `GROK_CONNECT_ADBC_PORT`                 | `1235`  |
+   | `RABBITMQ_PORT`                          | `5672`  |
+   | `RABBITMQ_MANAGEMENT_PORT`               | `15672` |
    | `DATAGROK_DEMO_POSTGRES_NORTHWIND_PORT`  | `5433`  |
    | `DATAGROK_DEMO_POSTGRES_CHEMBL_PORT`     | `5434`  |
    | `DATAGROK_DEMO_POSTGRES_UNICHEM_PORT`    | `5435`  |
@@ -273,7 +292,16 @@ Several alternative compose files cover specific cases:
 | `docker/localhost.bleeding-edge.docker-compose.yaml`     | Track latest unreleased images                                    |
 | `docker/localhost.bleeding-edge-separate-data.docker-compose.yaml` | Bleeding-edge with persistent data volumes detached     |
 | `docker/localhost.macos-silicon.docker-compose.yaml`     | Apple Silicon (ARM64); pulls `linux/arm64` image variants         |
-| `docker/localhost.js-api.debug.docker-compose.yaml`      | JS API debugging with source maps                                 |
+| `docker/localhost.js-api.debug.docker-compose.yaml`      | JS API debugging with source maps — an overlay, see below         |
+
+The JS API debug file overrides the `datagrok` service to bind-mount a locally built
+`js-api` and is not a stack on its own. Pass it after the base file:
+
+```shell
+docker compose -f docker/localhost.docker-compose.yaml \
+  -f docker/localhost.js-api.debug.docker-compose.yaml \
+  --project-name datagrok --profile all up -d
+```
 
 ## Shutting down Datagrok
 

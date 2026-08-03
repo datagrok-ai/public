@@ -27,6 +27,7 @@ import {
 
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
 import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
+import {markushSettingsEditorWidget} from './polytool/pt-chem-enum-settings';
 import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
@@ -40,6 +41,11 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-lib
 import {getPTCombineDialog} from './polytool/pt-combine-dialog';
 import {PolyToolEnumeratorTypes} from './polytool/types';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
+// hwe editor stylesheet (`.hw-*` classes). hwe ships its CSS only as a bundler
+// import (no runtime injection), so the PolyTool HELM editor dialog renders
+// unstyled unless we import it here. See @datagrok-libraries/hwe editor.css.
+import '@datagrok-libraries/hwe/styles.css';
 
 export * from './package.g';
 
@@ -214,13 +220,15 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'PolyTool: Convert Notation',
+    description: 'Convert a column of sequences in custom notation to HELM and/or molfiles',
     editor: 'SequenceTranslator:getPolyToolConvertEditor',
   })
   static async polyToolConvert2(
     table: DG.DataFrame,
     @grok.decorators.param({options: {caption: 'Sequence'}}) seqCol: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'true'}}) generateHelm: boolean,
-    @grok.decorators.param({options: {initialValue: 'true'}}) chiralityEngine: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Also produce a HELM column alongside the molfiles'}}) generateHelm: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Use the chirality engine when building structures'}}) chiralityEngine: boolean,
     @grok.decorators.param({type: 'object'}) rules: string[]
   ): Promise<DG.Column<string>> {
     const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
@@ -499,7 +507,7 @@ export class PackageFunctions {
 
   // Invoked from the column / cell context menu via detectors.js (no top-menu).
   @grok.decorators.func({
-    name: 'convertHelmToOligoNucleotide',
+    name: 'HELM to Oligonucleotide',
     description: 'Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view',
   })
   static async convertHelmToOligoNucleotide(
@@ -514,7 +522,7 @@ export class PackageFunctions {
   // Invoked from the column / cell context menu via detectors.js — opens the
   // function editor (`.prepare().edit()`) so the user can pick antisense column.
   @grok.decorators.func({
-    name: 'combineSenseAntisenseToOligoNucleotide',
+    name: 'Combine Sense + Antisense to Oligonucleotide',
     description: 'Combine separate sense + antisense HELM columns into one OligoNucleotide column',
   })
   static async combineSenseAntisenseToOligoNucleotide(
@@ -549,6 +557,16 @@ export class PackageFunctions {
   })
   static async harmonizedSequenceNotationProviderConstructor(): Promise<typeof CyclizedNotationProvider> {
     return CyclizedNotationProvider;
+  }
+
+  @grok.decorators.func({
+    name: 'Markush Enumerator package settings editor',
+    meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
+  })
+  static async markushSettingsEditor(
+    @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {
+    return markushSettingsEditorWidget(properties);
   }
 }
 

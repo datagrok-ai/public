@@ -18,33 +18,69 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {canonicalizeHelm} from './helm-parser';
+import {canonicalizeHelm, parseHelmDuplex} from './helm-parser';
 
 const HELM_SECTION_RE = /^(RNA|DNA|PEPTIDE|CHEM|BLOB)\d+\{/;
+const HELM_ID_RE = /^((?:RNA|DNA|PEPTIDE|CHEM|BLOB)\d+)\{/;
+
+/** A single strand to render: its panel label and a standalone, canonicalized
+ * HELM (renumbered to `RNA1{...}`). */
+export interface StrandStructure { label: string; helm: string; }
+
+/** Split a duplex HELM into per-strand standalone HELMs, ordered + labeled by
+ * the *parsed* model so the Sense / Antisense panes follow the real strand
+ * roles. When the HELM carries `strandtype` annotations that flip the strands
+ * (e.g. RNA2 is the sense), the parser swaps them — and this ordering follows,
+ * so the Sense pane always shows the sense strand regardless of chain order. */
+export function splitDuplexToStrandStructures(helm: string): StrandStructure[] {
+  const polymerSection = (helm ?? '').split('$')[0] ?? '';
+  const chains = polymerSection.split('|').map((c) => c.trim()).filter((c) => c.length > 0);
+  if (chains.length === 0) return [];
+
+  const ordered = orderChainsBySenseAntisense(helm, chains);
+  const labels = ordered.length === 1 ? ['Strand'] : ['Sense', 'Antisense'];
+  // Renumber each chain to "RNA1{...}" and canonicalize aliased symbols
+  // (e.g. `mR` → `m`, `fR` → `fl2r`, `LR` → `lna`, `sP` → `sp`) so the central
+  // Bio monomer library — which only knows the canonical HELMCore forms — can
+  // resolve every monomer when assembling the molfile.
+  return ordered.map((c, i) => ({
+    label: labels[i] ?? `Strand ${i + 1}`,
+    helm: canonicalizeHelm(c.replace(HELM_SECTION_RE, '$11{') + '$$$$'),
+  }));
+}
+
+/** Reorder a 2-chain duplex so [sense, antisense] matches the parsed model
+ * (honoring `strandtype` swaps). Falls back to document order when the roles
+ * can't be resolved or there aren't exactly two chains. */
+function orderChainsBySenseAntisense(helm: string, chains: string[]): string[] {
+  if (chains.length !== 2) return chains;
+  const model = parseHelmDuplex(helm);
+  const senseId = model.sense.id;
+  const antiId = model.antisense?.id;
+  if (!senseId || !antiId || senseId === antiId) return chains;
+  const byId = new Map<string, string>();
+  for (const c of chains) {
+    const m = c.match(HELM_ID_RE);
+    if (m) byId.set(m[1], c);
+  }
+  const sense = byId.get(senseId);
+  const anti = byId.get(antiId);
+  return sense && anti ? [sense, anti] : chains;
+}
 
 export function buildOligoStructuresPanel(value: DG.SemanticValue): DG.Widget {
   const helm: string = value.value ?? '';
-  const polymerSection = helm.split('$')[0];
-  const chains = polymerSection.split('|').map((c) => c.trim()).filter((c) => c.length > 0);
+  const strands = splitDuplexToStrandStructures(helm);
 
-  if (chains.length === 0) {
+  if (strands.length === 0) {
     return DG.Widget.fromRoot(ui.divText('No HELM chains found', {
       style: {fontSize: '12px', color: 'var(--grey-4, #888)'},
     }));
   }
 
-  // Renumber each chain to "RNA1{...}" and canonicalize aliased symbols
-  // (e.g. `mR` → `m`, `fR` → `fl2r`, `LR` → `lna`, `sP` → `sp`) so the
-  // central Bio monomer library — which only knows the canonical HELMCore
-  // forms — can resolve every monomer when assembling the molfile.
-  const standaloneHelms = chains.map((c) =>
-    canonicalizeHelm(c.replace(HELM_SECTION_RE, '$11{') + '$$$$'),
-  );
-  const labels = chains.length === 1 ? ['Strand'] : ['Sense', 'Antisense'];
-
   // Build a temp DataFrame whose helm column carries the right tags so
   // Bio:toAtomicLevelPanel sees a real Macromolecule cell.
-  const helmCol = DG.Column.fromStrings('helm', standaloneHelms);
+  const helmCol = DG.Column.fromStrings('helm', strands.map((s) => s.helm));
   helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
   helmCol.meta.units = 'helm';
   helmCol.setTag('aligned', 'SEQ');
@@ -54,7 +90,7 @@ export function buildOligoStructuresPanel(value: DG.SemanticValue): DG.Widget {
 
   const acc = ui.accordion('oligo chemical structures');
   for (let i = 0; i < df.rowCount; i++) {
-    const label = labels[i];
+    const label = strands[i].label;
     const cell = df.cell(i, 'helm');
     // Lazy content: the molfile assembly fires only when the pane expands.
     acc.addPane(label, () => buildStrandPaneContent(cell, label));

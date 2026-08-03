@@ -1,0 +1,50 @@
+{
+  "dataset": "04_iv_infusion",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2,
+    "extrap_warn": 20,
+    "extrap_error": 50
+  },
+  "dataset_meta": {
+    "dose": {
+      "value": 100,
+      "unit": "mg"
+    },
+    "route": "iv-infusion",
+    "infusion_duration": {
+      "value": 1,
+      "unit": "h"
+    },
+    "model": "1-compartment: CL=2 L/h, V=10 L, k=0.2 /h (analytic AUCinf=50, MRT_iv=5, Vss=10)"
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "1",
+        "route": "iv-infusion"
+      },
+      "parameters": {
+        "cmax": 9.063462346101,
+        "tmax": 1,
+        "auclast": 49.535037112842,
+        "aucinf": 49.990559286746,
+        "pct_aucextrap": 0.9112163984614,
+        "lambda_z": 0.2,
+        "half_life": 3.4657359028,
+        "cl": 2.000377699845,
+        "vz": 10.001888499226,
+        "aumclast": 261.879697039817,
+        "aumcinf_obs": 275.089840083015,
+        "mrt": 5.002835815561,
+        "vss": 10.007561201435,
+        "tlag": null,
+        "pct_aumcextrap": 4.802119569088
+      }
+    }
+  ]
+}

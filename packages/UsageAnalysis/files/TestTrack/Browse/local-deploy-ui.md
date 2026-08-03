@@ -17,7 +17,7 @@ Ensure that the platform loads correctly without any issues.
 
 5. Install Dev Tools and API Tests Package. Ensure that the installation completes without errors.
 
-6. Run API Tests ьanually through the Test Manager. Monitor the test execution and ensure that all tests pass without any failures.
+6. Run API Tests manually through the Test Manager. Monitor the test execution and ensure that all tests pass without any failures.
 
 **Expected Results:**
 The platform should deploy locally without errors and be accessible via http://localhost:8080. Initial setup should detect all required resources correctly. "Dev Tools" and "API Tests" packages should install without issues. API Tests should run successfully with all tests passing.

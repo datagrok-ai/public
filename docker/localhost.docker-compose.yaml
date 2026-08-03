@@ -1,3 +1,20 @@
+# Datagrok local stack.
+#
+# This file is bound to a single release train. `x-datagrok-release` names it, and every
+# datagrok/* image below defaults to a tag from that train. The compose file and the images
+# it starts must always come from the same train: GROK_PARAMETERS here is parsed by the
+# datlas build inside datagrok/datagrok, and the two evolve together. Pairing this file with
+# images from another train makes the server fail to start.
+#
+# On master the train is `bleeding-edge`. On a release branch (`release/X.Y.Z`) the release
+# pipeline rewrites the marker and every default tag to that release — see
+# `stamp_release.py`. Download this file from the branch matching the version you want to
+# run; `datagrok-install-local.*` does that for you.
+#
+# Overriding a *_VERSION variable opts out of the binding. Only do it for a service you
+# know is compatible.
+x-datagrok-release: bleeding-edge
+
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
@@ -7,8 +24,8 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     networks:
       datagrok:
         aliases:
@@ -17,7 +34,7 @@ services:
     profiles: [ "all", "rabbitmq", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   grok_pipe:
-    image: datagrok/grok_pipe:latest
+    image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-bleeding-edge}
     platform: linux/amd64
     container_name: grok_pipe
     ports:
@@ -33,7 +50,7 @@ services:
 
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
     platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
@@ -48,15 +65,15 @@ services:
           "adminPassword": "admin",
           "adminDevKey": "admin",
           "isolatesCount": 2,
-          "connectorsSettings": {
-            "dataframeParsingMode":"New Thread",
-            "externalDataFrameCompress":true,
-            "grokConnectHost":"grok_connect",
-            "grokConnectPort":1234,
-            "localFileSystemAccess":false,
-            "sambaSpaceEscape":"none",
-            "sambaVersion":"3.0"
-          },
+          "dataframeParsingMode":"New Thread",
+          "externalDataFrameCompress":true,
+          "localFileSystemAccess":false,
+          "sambaSpaceEscape":"none",
+          "sambaVersion":"3.0",
+          "connectorsSettings": [
+            {"grokConnectHost":"grok_connect","grokConnectPort":1234},
+            {"grokConnectHost":"grok_connect_adbc","grokConnectPort":1235}
+          ],
           "dockerSettings": {
             "grokSpawnerApiKey": "test-x-api-key",
             "grokSpawnerHost": "grok_spawner",
@@ -91,7 +108,7 @@ services:
     profiles: [ "all", "datagrok" ]
 
   grok_spawner:
-    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-latest}
+    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
     platform: linux/amd64
     user: root
     environment:
@@ -110,7 +127,7 @@ services:
     profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
-    image: datagrok/grok_connect:latest
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
     platform: linux/amd64
     environment:
       CONNECTION_POOL_MAXIMUM_SIZE: 50
@@ -125,8 +142,23 @@ services:
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
 
+  grok_connect_adbc:
+    image: datagrok/grok_connect_adbc:${GROK_CONNECT_ADBC_VERSION:-bleeding-edge}
+    platform: linux/amd64
+    environment:
+      GROK_CONNECT_PORT: 1235
+      RUST_LOG: grok_connect_adbc=info
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect_adbc
+    ports:
+      - "${GROK_CONNECT_ADBC_PORT:-1235}:1235/tcp"
+    restart: unless-stopped
+    profiles: [ "all", "grok_connect_adbc" ]
+
   jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-latest}
+    image: datagrok/jupyter_kernel_gateway:${JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge}
     platform: linux/amd64
     networks:
       datagrok:

@@ -19,7 +19,8 @@ keywords:
  - global search
  - routing
  - URL sharing 
-format: mdx
+mdx:
+  format: mdx
 toc_max_heading_level: 5
 sidebar_position: 2
 ---
@@ -194,8 +195,8 @@ These components expose view-specific actions:
 
 * **Top Menu** (fixed at top of view): View-specific commands
 * **Toolbox** (left side, tabs with [Browse](#browse)): Used for placing view-specific UI controls: buttons, fields, icons, links, dropdown menus, etc. For example:
-   * **Table View**: Search, viewer icons, layouts, models, and more
-   * Platform **Settings** view: Links to all settings views 
+  * **Table View**: Search, viewer icons, layouts, models, and more
+  * Platform **Settings** view: Links to all settings views 
 
 In browsing mode, the left panel shows **Browse** only. When a view becomes
 persistent (e.g., on double-click or when you make an edit) or when you open the

@@ -714,7 +714,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
 
       // Remove slot 0. Replacement is spawned and re-primed; budget hits 1.
       // Re-prime is async; wait for it to land by polling.
-      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 1');
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 1', 77);
       const start = Date.now();
       while (pool._primedSlotCountForTest(77) < 2 && Date.now() - start < 2000)
         await new Promise((r) => setTimeout(r, 10));
@@ -724,14 +724,14 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // Remove a second slot. Budget exhausted: replacement spawns but is
       // NOT re-primed for session 77. The count drops to 1 (the surviving
       // previously-primed slot).
-      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 2');
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 2', 77);
       await new Promise((r) => setTimeout(r, 50));
       expect(pool._primedSlotCountForTest(77), 1,
         'budget exhausted: replacement should not re-prime');
 
       // Remove the last primed slot. Now no live slot has session 77.
       const last = pool._slotsArrayForTest().find((s) => s.hasSession(77))!;
-      pool._removeSlotForTest(last, 'test forced remove 3');
+      pool._removeSlotForTest(last, 'test forced remove 3', 77);
       await new Promise((r) => setTimeout(r, 50));
       expect(pool._primedSlotCountForTest(77), 0,
         'no slot should remain primed for the session');
@@ -749,6 +749,78 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       expect(reply.kind, 'failure', 'queued run must resolve as failure');
       expect(reply.kind === 'failure' && /lost all primed slots/i.test(reply.message),
         true, `expected lost-all-primed-slots message, got: ${(reply as any).message}`);
+    } finally {
+      pool.dispose();
+    }
+  });
+
+  test('pool_cross_session_budget_isolated', async () => {
+    // Two sessions A and B share the pool. Slot deaths attributed to B must
+    // NOT consume A's reprime budget — otherwise one bad participant drains
+    // an innocent concurrent session and makes the pool unusable for it.
+    // maxReplacementReprimes=1 so two B-attributed removals exhaust B.
+    const A = 10;
+    const B = 20;
+    const pool = new WorkerPool(2, {maxReplacementReprimes: 1});
+    try {
+      const targets: OutputTargetItem[] = [{
+        propName: 'y', type: DG.TYPE.FLOAT, target: 0,
+      }];
+      const inputBounds: Record<string, ValueBoundsData> = {a: rangeBound(0, 5, 'a')};
+      const mkSetup = (sessionId: number) => buildSetup({
+        sessionId, fnSource: 'y = a + 1;',
+        paramList: ['a'], outputParamNames: ['y'],
+        lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
+        bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
+      }).setup;
+      await pool.setupAll(mkSetup(A));
+      await pool.setupAll(mkSetup(B));
+
+      expect(pool._primedSlotCountForTest(A), 2, 'A primed on both slots');
+      expect(pool._primedSlotCountForTest(B), 2, 'B primed on both slots');
+      expect(pool._replacementAttemptsForTest(A), 0);
+      expect(pool._replacementAttemptsForTest(B), 0);
+
+      const waitForReprime = async () => {
+        const start = Date.now();
+        while (pool._primedSlotCountForTest(A) < 2 && Date.now() - start < 2000)
+          await new Promise((r) => setTimeout(r, 10));
+      };
+
+      // First B-attributed removal: B charged (→1), A re-primed but not charged.
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'B caused remove 1', B);
+      await waitForReprime();
+      expect(pool._replacementAttemptsForTest(B), 1, 'B budget consumed');
+      expect(pool._replacementAttemptsForTest(A), 0, 'A budget untouched');
+      expect(pool._primedSlotCountForTest(A), 2, 'A re-primed despite B failure');
+
+      // Second B-attributed removal: B at cap, skipped; A still re-primed.
+      pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'B caused remove 2', B);
+      await new Promise((r) => setTimeout(r, 50));
+      expect(pool._replacementAttemptsForTest(A), 0, 'A budget still untouched');
+
+      // Drop B's last primed slot so B has no live primed slot.
+      const lastB = pool._slotsArrayForTest().find((s) => s.hasSession(B));
+      if (lastB) {
+        pool._removeSlotForTest(lastB, 'B caused remove 3', B);
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(pool._primedSlotCountForTest(B), 0, 'B lost all primed slots');
+      expect(pool._replacementAttemptsForTest(A), 0, 'A budget never charged for B failures');
+
+      // A must still be fully serviceable; B must drain as a failure.
+      const replyA = await pool.dispatchRun({sessionId: A, seedIndex: 0, seed: new Float64Array([1])});
+      expect(replyA.kind, 'success', 'innocent session A still runs');
+
+      const dispatchB = pool.dispatchRun({sessionId: B, seedIndex: 0, seed: new Float64Array([1])});
+      const replyB = await Promise.race([
+        dispatchB,
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('B dispatchRun stalled')), 2000)),
+      ]);
+      expect(replyB.kind, 'failure', 'B drains as a failure');
+      expect(replyB.kind === 'failure' && /lost all primed slots/i.test(replyB.message),
+        true, `expected lost-all-primed-slots, got: ${(replyB as any).message}`);
     } finally {
       pool.dispose();
     }

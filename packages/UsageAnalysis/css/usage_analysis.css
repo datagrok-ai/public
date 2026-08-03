@@ -25,6 +25,14 @@
   margin-left: 7px !important;
 }
 
+.ua-filters {
+  max-width: 250px;
+}
+
+.ua-errors-reports {
+  align-items: center;
+}
+
 .ua-close-button {
   float: right;
   font-weight: 300 !important;
@@ -232,17 +240,14 @@
   font-size: 12px;
 }
 
-.ua-metrics-btn {
-  min-height: 28px !important;
-  padding: 4px 12px !important;
-  border: 1px solid var(--grey-2) !important;
-  background: var(--white) !important;
-  color: var(--text-color) !important;
-  font-size: 12px !important;
+button.ui-btn.ui-btn-raised.ua-metrics-btn {
+  background: var(--blue-2);
 }
 
-.ua-metrics-btn:hover {
-  background: var(--grey-1) !important;
+button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
+  background: var(--white);
+  color: var(--text-color);
+  border: 1px solid var(--grey-2);
 }
 
 .ua-metrics-cards-row {
@@ -286,6 +291,32 @@
 .ua-metrics-red { color: var(--red-3); }
 .ua-metrics-info { color: var(--grey-5); }
 
+.ua-release-ribbon-refresh {
+  cursor: pointer;
+  color: var(--grey-5);
+  padding: 0 6px;
+}
+.ua-release-ribbon-refresh:hover { color: var(--blue-1); }
+
+.ua-release-open {
+  cursor: pointer;
+  color: var(--grey-5);
+  margin-left: 8px;
+}
+.ua-release-open:hover { color: var(--blue-1); }
+.ua-release-alert-tree { padding: 4px 0; }
+
+.ua-release-alerts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ua-release-alerts > .ua-metrics-grid-host {
+  flex: 1;
+  overflow: auto;
+}
+
 .ua-metrics-panel {
   border: 1px solid var(--grey-2);
   border-radius: 4px;
@@ -313,31 +344,40 @@
   color: var(--blue-2);
 }
 
-.ua-metrics-mode-toggle {
+.ua-metrics-add-icon {
+  color: var(--blue-1);
+  cursor: pointer;
+}
+
+.ua-metrics-reset-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ua-metrics-btn-danger {
+  color: var(--red-3) !important;
+}
+
+.ua-metrics-btn-danger:hover {
+  color: var(--red-4) !important;
+}
+
+.ua-metrics-mode-toggle.d4-toggle-button-group {
   display: inline-flex;
+  flex-direction: row;
+  overflow: hidden;
+  margin-right: 0;
   border: 1px solid var(--grey-2);
   border-radius: 3px;
-  overflow: hidden;
 }
 
-.ua-metrics-mode-btn {
-  min-height: 24px !important;
-  padding: 2px 10px !important;
-  border: none !important;
-  border-radius: 0 !important;
-  background: var(--white) !important;
-  color: var(--text-color) !important;
-  font-size: 12px !important;
-  border-right: 1px solid var(--grey-2) !important;
-}
-
-.ua-metrics-mode-btn:last-child {
-  border-right: none !important;
-}
-
-.ua-metrics-mode-btn.active {
-  background: var(--blue-2) !important;
-  color: var(--white) !important;
+.ua-metrics-mode-toggle .d4-toggle-button {
+  height: 24px;
+  font-size: 12px;
 }
 
 .ua-metrics-grid-host {
@@ -349,6 +389,37 @@
 
 .ua-metrics-grid-host.ua-metrics-queries-host {
   height: 240px;
+}
+
+/* Full-height tab layout: the opted-in panel/host grows to eat the remaining vertical space
+   (used by the Tests tab so its detail grid fills the page instead of the fixed 200px). */
+.ua-metrics-fill {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ua-metrics-fill > .ua-metrics-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ua-metrics-panel-grow {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ua-metrics-panel-grow > .ua-metrics-grid-host {
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Chart hosts must not clip: charts render taller than the fixed 200px grid host (Stress line/box). */
+.ua-metrics-chart-host {
+  height: auto;
+  overflow: visible;
 }
 
 .ua-metrics-tables-row {

@@ -40,18 +40,13 @@ limit 50;
 
 --name: TopErrorSources
 --input: string date { pattern: datetime }
---input: list<string> users
 --connection: System:Datagrok
-select et.error_source, count(1) from event_types et
+select et.error_source, count(1) as count from event_types et
 join events e on e.event_type_id = et.id
-join users_sessions s on e.session_id = s.id
-join users u on u.id = s.user_id
 where @date(e.event_time)
-and (u.login = any(@users) or @users = ARRAY['all'])
 and et.source = 'error'
-and et.is_error = true
 group by et.error_source
-limit 50;
+order by count desc limit 50;
 --end
 
 
@@ -65,7 +60,8 @@ SELECT
 COALESCE(e.description, t.error_source || ': ' || e.friendly_name || E'\\n' || COALESCE(e.error_stack_trace, ''))
 AS error_message,
 e.error_stack_trace,
-EXISTS (SELECT event_id FROM events_reports WHERE event_id = e.id) AS is_reported
+t.error_stack_trace_hash,
+EXISTS (SELECT 1 FROM reports r WHERE r.error_stack_trace_hash = t.error_stack_trace_hash) AS is_reported
 FROM events e
     JOIN event_types t ON e.event_type_id = t.id
     JOIN users_sessions s ON e.session_id = s.id
@@ -78,8 +74,14 @@ WHERE t.source = 'error' AND @date(e.event_time);
 --connection: System:Datagrok
 --input: string event_id
 --output: int count
-SELECT COUNT(report_id) FROM events_reports
-WHERE event_id = @event_id;
+--output: int report_number
+SELECT COUNT(*) AS count, MAX(r.number) AS report_number FROM reports r
+WHERE r.error_stack_trace_hash = (
+    SELECT t.error_stack_trace_hash
+    FROM events e
+    JOIN event_types t ON e.event_type_id = t.id
+    WHERE e.id = @event_id
+);
 --end
 
 --name: SameErrors

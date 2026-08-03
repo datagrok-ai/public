@@ -7,6 +7,8 @@ import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-librar
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {NEWICK_EMPTY} from '@datagrok-libraries/bio/src/trees/consts';
 import {DistanceMatrix, DistanceMatrixService} from '@datagrok-libraries/ml/src/distance-matrix';
+import {DistanceAggregationMethod, DistanceAggregationMethods} from '@datagrok-libraries/ml/src/distance-matrix/types';
+import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
@@ -576,6 +578,70 @@ export class TreeHelper implements ITreeHelper {
       out?.sqrt();
 
     return out;
+  }
+
+  /** For each cluster, ranks members by how representative they are — the medoid (rank 1) minimizes
+   * the mean distance to the other members, and successive ranks are progressively less central, so
+   * the Top-N representatives are `rank <= N`. Features are encoded the same way as in
+   * {@link calcDistanceMatrix} (raw values for numbers, Levenshtein over encoded sequences for
+   * macromolecules, Tanimoto over Morgan fingerprints for molecules). The distance matrix is never
+   * materialized: results are computed per cluster in workers.
+   *
+   * @param df        Source dataframe (row indices in `clusters` index into this frame).
+   * @param colNames  Feature columns the clustering was built on.
+   * @param clusters  Each entry lists the row indices of one cluster's members.
+   * @param method    Distance metric used to aggregate multiple feature columns.
+   * @returns         Row-aligned arrays (length `df.rowCount`): `rankByRow` is the 1-based medoid
+   *                  rank within the row's cluster, `avgDistByRow` is its mean distance to the other
+   *                  cluster members. Rows not present in any cluster stay `null`. */
+  async calcMedoids(
+    df: DG.DataFrame, colNames: string[], clusters: number[][],
+    method: DistanceMetric = DistanceMetric.Euclidean
+  ): Promise<{rankByRow: (number | null)[], avgDistByRow: (number | null)[]}> {
+    if (colNames.length === 0)
+      throw new Error('At least one feature column is required for medoid calculation.');
+
+    const columns = colNames.map((name) => df.getCol(name));
+    const values: ArrayLike<any>[] = [];
+    const fnNames: KnownMetrics[] = [];
+    const opts: {[_: string]: any}[] = [];
+    const weights: number[] = [];
+    for (const col of columns) {
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+        values.push(col.getRawData());
+        fnNames.push(NumberMetricsNames.Difference);
+      } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
+        values.push(await this.encodeSequences(col));
+        fnNames.push(MmDistanceFunctionsNames.LEVENSHTEIN);
+      } else if (col.semType === DG.SEMTYPE.MOLECULE) {
+        const fingerPrintCol: DG.Column<DG.BitSet | null> =
+          await grok.functions.call('Chem:getMorganFingerprints', {molColumn: col});
+        values.push(fingerPrintCol.toList().map((bs: DG.BitSet | null) => bs ? bs.getBuffer() : null));
+        fnNames.push(IntArrayMetricsNames.TanimotoIntArray);
+      } else { throw new TypeError('Unsupported column type'); }
+      opts.push({});
+      weights.push(1);
+    }
+
+    const aggregationMethod: DistanceAggregationMethod = method === DistanceMetric.Manhattan ?
+      DistanceAggregationMethods.MANHATTAN : DistanceAggregationMethods.EUCLIDEAN;
+
+    const service = new DistanceMatrixService(true, true);
+    try {
+      const reps = await service.calcMedoids(values, fnNames, clusters, opts, weights, aggregationMethod);
+      const rankByRow = new Array<number | null>(df.rowCount).fill(null);
+      const avgDistByRow = new Array<number | null>(df.rowCount).fill(null);
+      for (const rep of reps) {
+        for (let k = 0; k < rep.members.length; k++) {
+          const row = rep.members[k];
+          rankByRow[row] = rep.ranks[k];
+          avgDistByRow[row] = rep.meanDistances[k];
+        }
+      }
+      return {rankByRow, avgDistByRow};
+    } finally {
+      service.terminate();
+    }
   }
 
   parseClusterMatrix(clusterMatrix: ClusterMatrix): NodeType {

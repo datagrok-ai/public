@@ -1,5 +1,56 @@
 # Chem changelog
 
+## v.next
+
+* Added `Filter by Substructure`, `Similarity To` and `Diverse Subset` — table-aware twins of `searchSubstructure`, `getSimilarities` and `getDiversities`, which take a bare column. They declare `(table, column {semType: Molecule}, …)` and return rows or a column added to the table, so a caller has something to carry on with instead of a detached frame or a boxed BitSet
+* Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
+* Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
+* Added `Chemical Space Columns` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
+* MPO Score by Profile: Refuses to run when a scored property has no column, naming the ones it couldn't resolve — the underlying `computeMpo` only warns and scores over the rest, which returns a plausible number computed from fewer properties than requested
+* Added `MPO Score by Profile`, `getMpoProfileNames` and `getMpoProfileProperties`: `mpoCalculate` scores columns that already carry desirability tags and `mpoTransformFunction` wants those tags as a JSON blob, so neither could be driven from a profile name. The new function also takes a property→column mapping, so a profile can score a table whose columns are named differently
+* Parameters with a default now declare `initialValue` — the metadata generator reads that, not the TypeScript default, so `aggregation = 'Average'` and friends were registering with no declared default at all
+* Chemical Similarity Search: Added choices and defaults for metric, fingerprint, max hits and min similarity, and tagged the query molecule `semType: Molecule`
+* Substructure Search: Tagged the query `semType: Molecule` and defaulted the molblock fallback
+* Curate: Flipped normalization, reionization, neutralization and main-fragment on by default — with every flag off the function ran and changed nothing
+* Fixed display names that were declared via `//friendlyName:`, which the metadata parser ignores: Remove Water and Salts, Run Reaction, Two-Component Reaction
+* Remove Water and Salts: Its `molecules` parameter never carried `semType: Molecule` — the decorator options were nested one level too shallow, so it accepted any string column
+* Marked genuinely-required parameters non-nullable across the reaction, clustering, scaffold and R-group functions (Two Component Reaction's second table/column, Cluster MCS's cluster column, FindMCS, FindRGroupsWithCore, Murcko, Butina, Curate)
+
+* Docker (chem/chemprop): Cleared reported CVEs — pinned Flask/Werkzeug/gunicorn to fixed releases, upgraded pip/setuptools/wheel (build + runtime tooling), pinned urllib3/idna in chemprop, and added `apt upgrade` to patch base-image OS packages
+* Docker (chem/chemprop): Raised security floors (VEX) — torch/torchvision/torchaudio to 2.6.0+cu118 via PyPI wheels (CVE-2025-32434) and removed padelpy's bundled PaDEL-Descriptor jars (log4j 1.2.15, guava 17.0)
+* Moved the Chem Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+* GROK-20239: Chem: OCL renderer: Structures do not appear in labels in some visualisations
+* Scaffold Tree: Colors/labels columns are now named `<molColumn> colors/labels (<id>)` using a persisted per-viewer id instead of the editable title, avoiding column-name collisions when viewers share a title
+* GROK-20505: Chem: Some descriptors return string values instead of numeric
+* InChI / InChI Keys: Moved the conversion to the parallel RDKit service (web workers) instead of the single-threaded module — `To InchI`, `To InchI Keys`, `getInchis` and `getInchiKeys` are now async
+
+## 1.17.13 (2026-06-08)
+
+* Chem: MPO: Optimized score calculation for large datasets
+* GROK-18818: Chem: MMP: do not allow to choose empty column in dialog
+* GROK-15991: Invalid argument(s): Array lengths differ
+* Chem: Fixed `waitFor` clearing the wrong timer handle, leaving the polling interval running after the condition was met
+* OCL worker: Added missing `break` statements so a drug-likeness or molfile-to-V3K request no longer also runs and posts later cases' results
+* OCL worker: Fixed an off-by-one atom loop that could miscalculate molecule charge
+* RDKit worker: Fixed the R-group analysis handler posting a stray `undefined` result due to a shadowed variable
+* Identifiers: Fixed the UniChem home-page link mapped to the base-ID URL instead of `src_url`
+* Map Identifiers: Fixed `column ids.key does not exist` when converting from InChIKey or via the ChEMBL bridge — `_chemMapViaQuery` now renames a cloned input column to `key` to match the converter SQL parameter name
+* Chem search: Replaced a floating promise with proper `if`/`.catch()` so substructure-search sub-task rejections are handled
+* RDKit service: Worker `terminate()` now rejects in-flight calls instead of leaving callers hung forever; guarded the cluster-MCS timeout path accordingly
+* BitBIRCH clustering: Guaranteed the clustering worker is terminated even if the request fails synchronously
+* Highlight widget: Unsubscribe `ItemsGrid` event subscriptions when the grid is rebuilt or the widget is detached
+
+## 1.17.12 (2026-06-05)
+
+* GROK-20193: SDF import: Preserve molecule name and comment fields
+* MPO: Fixed disabled OK button with no explanation when creating a new profile
+* [#3811](https://github.com/datagrok-ai/public/issues/3811): Chem: Added "Export as SVG" action for molecule cells
+* Scaffold tree: Improved project loading performance for large datasets and trees — child-node substructure searches are now narrowed to the parent scaffold's matching rows (structure→superstructure relationship), avoiding redundant full-column searches
+
+## 1.17.10 (2026-05-28)
+
+* Chem: Record all generated reaction results in the enumerator
+
 ## 1.17.9 (2026-05-26)
 
 * Scaffold tree: Remove the lingering `… colors` fragments column when the last color-coded node is deleted one-by-one (previously only cleaned up on viewer detach or "Drop all trees")

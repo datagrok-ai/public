@@ -1,7 +1,8 @@
 --name: antibodyProfileByOrganismAndTarget
+--friendlyName: Antibody Profile by Organism and Target
 --connection: Biologics:biologics
---input: string organism {choices: query("SELECT DISTINCT name FROM biologics.target_organisms")}
---input: string target {choices: query("SELECT DISTINCT name FROM biologics.targets")}
+--input: string organism {choices: query("SELECT DISTINCT name FROM biologics.target_organisms")} [Target organism name]
+--input: string target {choices: query("SELECT DISTINCT name FROM biologics.targets")} [Target name]
 --description: "Get comprehensive antibody profile filtered by organism and target, including HC/LC chains, dose-response curves, and all assay data."
 --meta.searchPattern: "biologics antibody profile for ${organism} targeting ${target}"
 SELECT

@@ -1,3 +1,15 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p1
+realizes_atlas: [model-hub-run, load-library-ivp-run]
+realizes: [diffstudio.ball-flight, diffstudio.pk-pd, diffstudio.bioreactor, diffstudio.acid-production, diffstudio.pollution, diffstudio]
+realized_as:
+  - catalog.test.ts
+related_bugs: []
+---
+
 #### Catalog (go back to Diff Studio)
 
 1. Open a model from the library:

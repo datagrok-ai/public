@@ -1,3 +1,12 @@
+// @async-source: line-search-sync.ts
+// @codegen-rename: runLineSearchAsync=runLineSearch
+// @codegen-rename: finaliseAsync=finalise
+
+// Re-export the codegen-generated sync sibling so external consumers keep
+// importing `runLineSearch` from `./line-search` without needing to know
+// about the generated file.
+export {runLineSearch} from './line-search-sync';
+
 /**
  * Moré–Thuente line search enforcing the strong Wolfe conditions.
  *
@@ -82,7 +91,7 @@ export interface LineSearchResult {
  * Persistent state of the `dcsrch` state machine. Tracks the uncertainty
  * interval `[stx, sty]`, stage (ψ vs φ), and interval-shrinkage history.
  */
-interface DcsrchState {
+export interface DcsrchState {
   brackt: boolean;
   stage: 1 | 2;
   ginit: number; // φ'(0)
@@ -116,7 +125,7 @@ const P66 = 0.66;
  * interval to zero, which would otherwise be reported as silent
  * convergence at `state.stx`.
  */
-const NAN_CAP = 20;
+export const NAN_CAP = 20;
 
 /* ================================================================== */
 /*  dcstep — safeguarded cubic/quadratic step                          */
@@ -268,7 +277,7 @@ interface DcsrchTick {
   task: LineSearchStatus | 'fg';
 }
 
-function dcsrch(
+export function dcsrch(
   s: DcsrchState,
   stp: number,
   phi: number,
@@ -379,72 +388,12 @@ function dcsrch(
  *
  * Pre-condition: `phiPrime0 < 0` (descent direction). Returns with
  * `status === 'error'` if violated.
+ *
+ * Sync `runLineSearch` is generated from this async source by codegen;
+ * see `line-search-sync.ts`.
  */
-export function runLineSearch(
-  evalFn: PhiEval,
-  phi0: number,
-  phiPrime0: number,
-  alpha0: number,
-  params: LineSearchParams,
-): LineSearchResult {
-  const stpmin = params.stpMin ?? 1e-20;
-  const stpmax = params.stpMax;
-  if (!(phiPrime0 < 0) || !(alpha0 > 0) || !(stpmax >= alpha0) || !(stpmax > stpmin))
-    return {status: 'error', stp: alpha0, phi: phi0, phiPrime: phiPrime0, nfev: 0, ok: false};
-
-  const state = makeState();
-  let stp = alpha0;
-  let phi = phi0;
-  let phiPrime = phiPrime0;
-  let isFirst = true;
-  let nfev = 0;
-
-  for (let k = 0; k <= params.maxSteps; k++) {
-    const tick = dcsrch(
-      state, stp, phi, phiPrime, isFirst,
-      params.ftol, params.gtol, params.xtol, stpmin, stpmax,
-    );
-    isFirst = false;
-    stp = tick.stp;
-
-    if (tick.task !== 'fg')
-      return finalise(tick.task, stp, phi, phiPrime, nfev, evalFn);
-
-    if (nfev >= params.maxSteps)
-      return finalise('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
-
-    // Evaluate φ/φ' at the requested step, bisecting toward stx on
-    // NaN/Inf trials until a finite evaluation is obtained. This keeps
-    // +Infinity out of dcstep arithmetic (the paper spec §9 glosses
-    // over the cancellation that +Inf causes in the cubic formula).
-    // `nanCount` accumulates within a single bisection episode and
-    // resets once a finite value is obtained — matches the Fortran
-    // `iback` semantics scoped to one line-search call.
-    let ev = evalFn(stp);
-    nfev++;
-    let nanCount = 0;
-    while (!Number.isFinite(ev.phi) || !Number.isFinite(ev.phiPrime)) {
-      nanCount++;
-      if (nanCount >= NAN_CAP)
-        return finalise('error', state.stx, state.fx, state.gx, nfev, evalFn);
-      if (nfev >= params.maxSteps)
-        return finalise('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
-      const shrunk = state.stx + 0.5 * (stp - state.stx);
-      if (shrunk === stp || shrunk <= stpmin)
-        return finalise('warning_rounding', state.stx, state.fx, state.gx, nfev, evalFn);
-      stp = shrunk;
-      ev = evalFn(stp);
-      nfev++;
-    }
-    phi = ev.phi;
-    phiPrime = ev.phiPrime;
-  }
-  return finalise('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
-}
-
-/** Async variant of {@link runLineSearch}. */
 export async function runLineSearchAsync(
-  evalFn: PhiEvalAsync,
+  evalFn: (alpha: number) => Promise<{phi: number; phiPrime: number}>,
   phi0: number,
   phiPrime0: number,
   alpha0: number,
@@ -476,8 +425,13 @@ export async function runLineSearchAsync(
     if (nfev >= params.maxSteps)
       return finaliseAsync('max_steps_reached', stp, phi, phiPrime, nfev, evalFn);
 
-    // Same NaN/Inf bisection protocol as the sync path; see comment
-    // above for `nanCount` semantics.
+    // Evaluate φ/φ' at the requested step, bisecting toward stx on
+    // NaN/Inf trials until a finite evaluation is obtained. This keeps
+    // +Infinity out of dcstep arithmetic (the paper spec §9 glosses
+    // over the cancellation that +Inf causes in the cubic formula).
+    // `nanCount` accumulates within a single bisection episode and
+    // resets once a finite value is obtained — matches the Fortran
+    // `iback` semantics scoped to one line-search call.
     let ev = await evalFn(stp);
     nfev++;
     let nanCount = 0;
@@ -504,7 +458,7 @@ export async function runLineSearchAsync(
 /*  Helpers                                                            */
 /* ================================================================== */
 
-function makeState(): DcsrchState {
+export function makeState(): DcsrchState {
   return {
     brackt: false, stage: 1,
     ginit: 0, gtest: 0, finit: 0,
@@ -515,36 +469,16 @@ function makeState(): DcsrchState {
   };
 }
 
-function finalise(
-  status: LineSearchStatus,
-  stp: number,
-  phi: number,
-  phiPrime: number,
-  nfev: number,
-  evalFn: PhiEval,
-): LineSearchResult {
-  // If dcsrch returned a fallback stp (e.g. state.stx on warning) the
-  // stored phi/phiPrime may not correspond to that stp — re-evaluate.
-  if (status !== 'converged' && status !== 'max_steps_reached') {
-    const ev = evalFn(stp);
-    if (Number.isFinite(ev.phi) && Number.isFinite(ev.phiPrime)) {
-      phi = ev.phi;
-      phiPrime = ev.phiPrime;
-      nfev++;
-    }
-  }
-  const ok = status !== 'error' && status !== 'max_steps_reached';
-  return {status, stp, phi, phiPrime, nfev, ok};
-}
-
 async function finaliseAsync(
   status: LineSearchStatus,
   stp: number,
   phi: number,
   phiPrime: number,
   nfev: number,
-  evalFn: PhiEvalAsync,
+  evalFn: (alpha: number) => Promise<{phi: number; phiPrime: number}>,
 ): Promise<LineSearchResult> {
+  // If dcsrch returned a fallback stp (e.g. state.stx on warning) the
+  // stored phi/phiPrime may not correspond to that stp — re-evaluate.
   if (status !== 'converged' && status !== 'max_steps_reached') {
     const ev = await evalFn(stp);
     if (Number.isFinite(ev.phi) && Number.isFinite(ev.phiPrime)) {

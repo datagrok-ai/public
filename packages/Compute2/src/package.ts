@@ -9,16 +9,19 @@ import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
 import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
+import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
-import {PipelineConfiguration, CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
-import {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
+import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
 import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
-import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import type {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {OptimizerParams, runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
@@ -49,8 +52,15 @@ function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   if (view.parentCall?.aux?.view)
     view.parentView = view.parentCall.aux.view;
 
-  if (call?.func?.name)
-    view.basePath = `/${call.func.name}`;
+  if (call?.func?.name) {
+    const pcFunc = view.parentCall?.func;
+    let prefix = '';
+    if (pcFunc?.options?.role === 'app' && pcFunc.package) {
+      const pkgUrl = pcFunc.package.meta?.url ?? `/${pcFunc.package.name}`;
+      prefix = `/apps${pkgUrl}`;
+    }
+    view.basePath = `${prefix}/${call.func.name}`;
+  }
 }
 
 function setVueAppOptions(app: Vue.App<any>) {
@@ -59,14 +69,26 @@ function setVueAppOptions(app: Vue.App<any>) {
     app.config.performance = true;
 }
 
+// Compute2-only extension of the Model Hub view: adds the run comparison tool
+// to the ribbon menu without touching the shared model-catalog code (used by Compute1).
+class Compute2ModelCatalogView extends ModelCatalogView {
+  constructor(viewName: string, roleOnlyFilter = false) {
+    super(viewName, roleOnlyFilter);
+    this.ribbonMenu.group('Tools')
+      .item('Compare Runs...', () => grok.functions.call('Compute2:CompareRuns'))
+      .endGroup();
+  }
+}
+
 const modelCatalogOptions = {
   _package,
-  ViewClass: ModelCatalogView,
+  ViewClass: Compute2ModelCatalogView,
   segment: 'Modelhub',
   viewName: 'Model Hub',
   funcName: 'modelCatalog',
   setStartUriLoaded: () => startUriLoaded = true,
   getStartUriLoaded: () => startUriLoaded,
+  roleOnlyFilter: false,
 };
 
 export class PackageFunctions {
@@ -76,6 +98,8 @@ export class PackageFunctions {
     if (initRunned)
       return;
     initRunned = true;
+
+    modelCatalogOptions.roleOnlyFilter = _package.settings?.['roleOnlyModelFilter'] === true;
 
     setModelCatalogHandler();
     setModelCatalogEventHandlers(modelCatalogOptions);
@@ -110,7 +134,12 @@ export class PackageFunctions {
     outputs: [{type: 'view', name: 'result'}],
   })
   static modelCatalog() {
-    return startModelCatalog(modelCatalogOptions);
+    const view = startModelCatalog(modelCatalogOptions);
+    if (view && Array.from(grok.shell.views).includes(view)) {
+      grok.shell.v = view;
+      return null;
+    }
+    return view;
   }
 
 
@@ -118,7 +147,7 @@ export class PackageFunctions {
     meta: { role: ' ', app: ' '}
   })
   static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
-    makeModelTreeBrowser(treeNode as any);
+    makeModelTreeBrowser(treeNode as any, modelCatalogOptions.roleOnlyFilter);
   }
 
 
@@ -223,11 +252,15 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  @grok.decorators.func({
+    name: 'Start Workflow',
+    description: 'Launch a compute workflow (pipeline) by its qualified name and open its editor.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
   static async StartWorkflow(
-    nqName: string,
-    version: string,
-    @grok.decorators.param({'type': 'object'}) instanceConfig?: PipelineInstanceConfig) {
+    @grok.decorators.param({options: {description: 'Qualified name of the workflow function to launch'}}) nqName: string,
+    @grok.decorators.param({options: {description: 'Workflow version to run'}}) version: string,
+    @grok.decorators.param({'type': 'object', options: {description: 'Optional initial pipeline configuration'}}) instanceConfig?: PipelineInstanceConfig) {
     const func = DG.Func.byName(nqName);
     // @ts-ignore-next-line
     const {promise, resolve} = Promise.withResolvers();
@@ -239,12 +272,39 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  @grok.decorators.func({
+    name: 'Run Optimizer',
+    description: 'Run parameter optimization (fitting) for a model and return the resulting function calls.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
   static async RunOptimizer(
-    @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
+    @grok.decorators.param({'type': 'object', options: {description: 'Optimizer parameters: target function, variables, and objective'}}) params: OptimizerParams,
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Compare Runs',
+    description: 'Compare data across model runs: scalars or a single table column',
+  })
+  static async CompareRuns() {
+    const view = new DG.ViewBase();
+    view.name = 'Run Comparison';
+    view.root.classList.remove('ui-panel');
+    const app = Vue.createApp(RunComparisonAppInstance, {roleOnlyFilter: modelCatalogOptions.roleOnlyFilter});
+    setVueAppOptions(app);
+    app.mount(view.root);
+
+    grok.events.onViewRemoved.pipe(
+      filter((closedView) => closedView === view),
+      take(1),
+    ).subscribe(() => {
+      app.unmount();
+    });
+
+    grok.shell.addView(view);
   }
 
 
@@ -284,6 +344,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'Mock Pipeline 1',
+    description: 'Sample static two-step workflow configuration used for testing the workflow engine.',
     editor: 'Compute2:TreeWizardEditor',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -316,6 +378,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'Mock Pipeline 2',
+    description: 'Sample sequential workflow configuration with links, actions, and validators for testing.',
     editor: 'Compute2:TreeWizardEditor',
     outputs: [{type: 'object', name: 'result'}],
   })
@@ -595,6 +659,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
+    // meta: { role: 'model' },
+    outputs: [{type: 'object', name: 'result'}]
   })
   static async TestCustomView() {
     const view = new MyView();
@@ -693,6 +759,19 @@ export class PackageFunctions {
         },
       },
     });
+  }
+
+  // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
+  @grok.decorators.func({
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+  })
+  static async TestCustomExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
+    return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
   }
 
 }

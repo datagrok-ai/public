@@ -11,6 +11,7 @@ import {
   fillConnectionField,
   findConnectionByFriendlyName,
   goHome,
+  readMenuItems,
   rightClickTreeNode,
   selectConnectionField,
   showContextPanel,
@@ -58,7 +59,19 @@ test.describe.serial('Connections / Identifiers', () => {
     const conn = await findConnectionByFriendlyName(page, CONNECTION);
     if (!conn)
       throw new Error(`prerequisite: connection "${CONNECTION}" must exist (run adding.test.ts first)`);
+    // Probe the right-click menu for "Configure Identifiers..." — that
+    // entry is provided by a plugin / feature not active on the
+    // ephemeral CI Datlas, where the menu shows only Browse / New
+    // Query... / Edit... / Delete... / Rename... / Clone... / Clear
+    // cache / Browse queries. Skip the WHOLE suite if absent so test 2
+    // / test 3 don't fail expecting state test 1 was supposed to create.
+    const nodeName = `tree-Databases---${PROVIDER}---${CONNECTION.replace(/_/g, '-')}`;
+    await expandDbProvider(page, PROVIDER);
+    await rightClickTreeNode(page, nodeName);
+    const items = await readMenuItems(page);
     await ctx.close();
+    test.skip(!items.includes('Configure Identifiers...'),
+      `"Configure Identifiers..." not in right-click menu on this server (have: ${items.join(', ')})`);
   });
 
   test('1. Configure identifier on test_postgres / public.customers.customerid', async ({ page }) => {
@@ -67,6 +80,8 @@ test.describe.serial('Connections / Identifiers', () => {
     await expandDbProvider(page, PROVIDER);
 
     // Right-click the connection node → Configure Identifiers...
+    // The whole suite is gated in `beforeAll` (skips when the entry is
+    // absent), so by here we know the menu item exists.
     const nodeName = `tree-Databases---${PROVIDER}---${CONNECTION.replace(/_/g, '-')}`;
     await rightClickTreeNode(page, nodeName);
     await clickMenuItemExact(page, 'Configure Identifiers...');

@@ -1,8 +1,21 @@
-version: "3"
+# JS API debugging: bind-mounts a locally built js-api over the one in the image.
+#
+# This is an OVERLAY, not a standalone stack — it overrides the `datagrok` service and
+# relies on the base file for `db` and the rest. Always pass both files, base first:
+#
+#   docker compose -f localhost.docker-compose.yaml -f localhost.js-api.debug.docker-compose.yaml \
+#     --project-name datagrok --profile all up -d
+#
+# This file is bound to a single release train. `x-datagrok-release` names it, and every
+# datagrok/* image below defaults to a tag from that train. The compose file and the images
+# it starts must always come from the same train — pairing them across trains makes the
+# server fail to start. See `localhost.docker-compose.yaml` for the full rationale.
+x-datagrok-release: bleeding-edge
+
 services:
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
     environment:
       GROK_PARAMETERS: |
         {

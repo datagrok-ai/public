@@ -6,6 +6,7 @@ import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagr
 import './tests/grid-with-tree-tests';
 import './tests/hierarchical-clustering-tests';
 import './tests/tree-cut-tests';
+import './tests/medoid-tests';
 import './tests/tree-for-grid-tests';
 import './tests/tree-helper-tests';
 import './tests/distance-matrix-tests';

@@ -94,17 +94,66 @@ properties into a 0–6 score that correlates with clinical CNS drug success.
 
 ## Data-driven mode
 
-Instead of designing desirability curves manually, you can train a profile from labeled
-data. Switch to data-driven mode and select a column that defines desirability (boolean,
-numeric, or categorical). MPO automatically shapes all curves to match the labeled data
-and generates a ROC curve and confusion matrix for validation.
+Instead of designing desirability curves by hand, the data-driven approach learns them
+from a labeled dataset. You label each compound as preferred or not — based on assay
+results or expert judgment — and Datagrok finds the properties that best separate the
+preferred compounds from the rest, shapes a desirability curve for each, and weights them
+by how strongly they discriminate. The result is a ready-to-use MPO profile, along with a
+ROC curve and confusion matrix that show how well it separates the two groups.
 
 ![Data-driven mode](img/mpo-data-driven.gif)
 
-:::tip
+Use this when you have a trusted dataset with known outcomes and want a profile without
+tuning each curve by hand. The approach is based on a published
+[probabilistic, data-driven MPO method](https://pmc.ncbi.nlm.nih.gov/articles/PMC4716604/).
 
-Data-driven mode is useful when you have a trusted dataset with known outcomes and want
-to build a profile without manually tuning each curve.
+### How it works
+
+Starting from your labeled data, the method:
+
+1. Splits the compounds into two groups — preferred and not preferred — based on the label
+   column.
+2. Selects the properties that best separate the two groups, and drops properties that are
+   redundant (strongly correlated with a more informative one).
+3. Shapes a desirability curve for each selected property so it peaks where preferred
+   compounds cluster and falls off toward values typical of the rest.
+4. Weights each property by how strongly it distinguishes preferred compounds from the
+   rest, so the most informative properties carry the most influence.
+5. Combines the weighted curves into a single score, then reports a ROC curve, its area
+   under the curve (AUC), and a confusion matrix so you can judge the result.
+
+### Build a data-driven profile
+
+1. Open a table that includes molecular descriptors and a column labeling each compound as
+   preferred or not.
+2. Go to **Apps** > **Chem** > **MPO Profiles** and click **Create Profile**.
+3. Set **Method** to **Data-driven**, choose your **Dataset**, and select the column that
+   defines desirability (boolean, numeric, or categorical).
+4. Review the results: the trained desirability curves, the descriptor statistics, the
+   `pMPO score` column, the ROC curve, and the confusion matrix.
+5. Save the profile. It then appears alongside your other MPO profiles, ready to apply.
+
+To score compounds with a saved profile, use [MPO Score](#scoring), just like any other
+profile.
+
+### Data-driven vs. manual
+
+|                | Manual | Data-driven |
+|:---------------|:-------|:------------|
+| Properties     | You add each one | Selected automatically from the data |
+| Curve shape    | You pick Freeform, Gaussian, or Sigmoid and edit points | Derived from the preferred group's distribution |
+| Weights        | You set each weight | Set automatically from each property's discriminating power |
+| Validation     | Score histogram, best and worst molecules | ROC curve, AUC, confusion matrix, descriptor statistics |
+| Requires       | Any numeric columns, no label | A labeled dataset with at least 10 samples |
+
+:::note
+
+The data-driven approach needs the **EDA** package installed, plus a trusted labeled
+dataset with at least 10 samples and at least one property that separates the groups. If
+no property qualifies, or the label has only one category, you'll see _Data-driven MPO is
+not applicable for this dataset_. A saved data-driven profile is an ordinary MPO profile —
+curves plus weights — so you can edit it and re-score it through [MPO Score](#scoring) like
+any hand-built profile.
 
 :::
 

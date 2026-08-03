@@ -121,11 +121,15 @@ export interface LambdaZStrategy {
   /** When true, the Cmax point is excluded from the lambda_z candidate window. */
   readonly excludeCmax: boolean;
   /**
-   * PKNCA-style tie-breaking factor for adj-R². When two candidate subsets
-   * have adj-R² within this distance, the one with more points wins.
-   * Implemented as an additive score `adjRSquared + adjRSquaredFactor * n`.
-   * PKNCA default is `1e-4`. Set to `0` to disable tie-breaking and use
-   * strict max adj-R² (then the smaller subset wins on ties).
+   * PKNCA-style tie-breaking factor for adj-R². The best-fit search picks the
+   * window with the MOST points whose adj-R² is within this FLAT distance of the
+   * maximum adj-R² across all candidate windows (the PKNCA / WinNonlin best-fit
+   * rule). PKNCA default is `1e-4`. Set to `0` to disable tie-breaking and use
+   * strict max adj-R² (ties → more points).
+   *
+   * NB: this is a flat tolerance off the single global maximum, NOT an additive
+   * `adjRSquared + factor·n` score — the additive form accumulates the bonus with
+   * window length and over-selects long windows (see VAL-01-LZ-R019 in lambda-z.ts).
    */
   readonly adjRSquaredFactor?: number;
   /** Indices of selected points (manual-points mode). */
@@ -147,6 +151,12 @@ export interface NcaRules {
   readonly extrapWarnPct: number;
   /** Hard error threshold for % AUC extrapolated. */
   readonly extrapErrorPct: number;
+  /**
+   * Soft warning threshold for % AUMC extrapolated (first-moment tail).
+   * House heuristic — no regulatory cutoff exists; tune as needed. The
+   * moment tail is weighted by time, so %AUMCextrap ≥ %AUCextrap always.
+   */
+  readonly extrapWarnPctAumc: number;
   /** When true, AUC sums use Neumaier-compensated summation. */
   readonly compensatedSummation: boolean;
 }
@@ -206,6 +216,37 @@ export interface ParameterValues {
   readonly halfLife: number;
   readonly cl: number;
   readonly vz: number;
+  /**
+   * First-moment area to the last measurable time: `∫₀^tlast t·C dt`.
+   * Reported even on `'partial'` profiles (no λz) — mirrors `aucLast`.
+   */
+  readonly aumcLast: number;
+  /**
+   * First-moment area to infinity: `aumcLast + (tlast·Clast)/λz + Clast/λz²`
+   * (two-term tail). `NaN` when λz is not estimable.
+   */
+  readonly aumcInf: number;
+  /**
+   * Mean residence time: `aumcInf/aucInf − T_inf/2`. The `T_inf/2` correction
+   * applies only to IV-infusion (`T_inf` = infusion duration); for IV-bolus
+   * and extravascular routes `T_inf = 0`. Single unified column for all routes
+   * (PKNCA parity); for extravascular this is the absorption-inclusive MRT.
+   */
+  readonly mrt: number;
+  /**
+   * Volume of distribution at steady state: `CL·MRT = dose·MRT/aucInf`.
+   * IV-only — `NaN` for `route ∉ {IV-bolus, IV-infusion}` (a printed Vss for
+   * extravascular data would be `Vss/F` confounded by absorption). Valid only
+   * under linear, time-invariant disposition.
+   */
+  readonly vss: number;
+  /**
+   * Absorption lag time (extravascular): time of the last `C == 0` sample
+   * before the first `C > 0`. `NaN` for IV routes (no absorption phase).
+   */
+  readonly tlag: number;
+  /** Percentage of `aumcInf` contributed by the λz extrapolation tail. */
+  readonly pctExtrapAumc: number;
 }
 
 /**
@@ -215,6 +256,7 @@ export interface ParameterValues {
 export interface ParameterWarning {
   readonly code:
     | 'AUC_EXTRAP_HIGH'
+    | 'AUMC_EXTRAP_HIGH'
     | 'LAMBDAZ_LOW_R2'
     | 'LAMBDAZ_FEW_POINTS'
     | 'BLQ_HIGH_FRACTION'

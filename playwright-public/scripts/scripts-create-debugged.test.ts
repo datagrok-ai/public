@@ -42,13 +42,22 @@ async function resetToScripts(page: Page) {
   }
 }
 
-// Helper: create a new script via NEW dropdown, wait for editor to load
-async function createNewScript(page: Page, menuItem: string) {
+// Helper: create a new script via NEW dropdown, wait for editor to load.
+// Returns `false` when the requested menu item isn't registered on this server
+// (e.g. Pyodide isn't installed on the ephemeral CI Datlas) so callers can
+// `test.skip` instead of timing out on an item that will never appear.
+async function createNewScript(page: Page, menuItem: string): Promise<boolean> {
   await page.locator('[name="button-New"]').click();
   await expect(page.locator('.d4-menu-item').first()).toBeVisible({ timeout: 5_000 });
-  await page.locator('.d4-menu-item', { hasText: menuItem }).click();
+  const item = page.locator('.d4-menu-item', { hasText: menuItem });
+  if (!(await item.isVisible({ timeout: 2_000 }).catch(() => false))) {
+    await page.keyboard.press('Escape').catch(() => null);
+    return false;
+  }
+  await item.click();
   await page.waitForURL(/\/script\//, { timeout: 15_000 });
   await expect(page.locator('i[name="icon-play"]')).toBeVisible({ timeout: 10_000 });
+  return true;
 }
 
 // Helper: load sample table via asterisk icon
@@ -146,8 +155,10 @@ test.describe.serial('Scripts: Create', () => {
     test(`${i + 2}. ${lang.menu}: create, load sample, run without errors`, async () => {
       await resetToScripts(page);
 
-      // Create the script
-      await createNewScript(page, lang.menu);
+      // Create the script. Skip cleanly if the language handler isn't
+      // registered on this server (e.g. Pyodide on ephemeral CI Datlas).
+      const created = await createNewScript(page, lang.menu);
+      test.skip(!created, `${lang.menu} not available on this server`);
 
       // Verify language annotation in editor
       await expect(page.locator('.CodeMirror-code')).toContainText(lang.annotation, { timeout: 10_000 });
@@ -173,14 +184,19 @@ test.describe.serial('Scripts: Create', () => {
             await select.selectOption({ index: 0 });
         }
         const okBtn = dialog.locator('button.ui-btn-ok').first();
-        if (await okBtn.isEnabled({ timeout: 3_000 }).catch(() => false))
-          await okBtn.click();
+        if (await okBtn.isEnabled({ timeout: 3_000 }).catch(() => false)) {
+          // The dialog's .d4-command-bar can briefly intercept pointer events
+          // over the OK button right after render; fall back to a native click
+          // (fires the handler directly, bypassing the overlay hit-test).
+          await okBtn.click({ timeout: 5_000 })
+            .catch(() => okBtn.evaluate((b: HTMLButtonElement) => b.click()));
+        }
         await page.waitForTimeout(500);
       }
 
       // Verify: no error balloon appeared
       const errorBalloon = page.locator('.d4-balloon-error');
-      await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 }).catch(() => {});
+      await expect(errorBalloon).toHaveCount(0, { timeout: 5_000 });
     });
   }
 });

@@ -30,6 +30,7 @@ import {
   TypeAheadConfig,
   ChoiceInput, MultiChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
   EmailDialog, EmailDialogOptions,
+  ITabControlOptions,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -204,16 +205,17 @@ export function accordion(key: any = null): Accordion {
 
 /**
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/tab-control}
- * @param {Object} pages - list of page factories
- * @param {boolean} vertical
- * @param {string} key - when provided, the currently selected pane is persisted across sessions
+ * @param pages - list of page factories
+ * @param options - see {@link ITabControlOptions}. Passing a boolean (`vertical`) is deprecated.
+ * @param key - deprecated, use `options.key` instead.
  * @returns {TabControl} */
-export function tabControl(pages: { [key: string]: any; } | null = null, vertical: boolean = false, key: string | null = null): TabControl {
-  let tabs = TabControl.create(vertical, key);
+export function tabControl(pages: { [key: string]: any; } | null = null,
+                           options: boolean | ITabControlOptions = {}, key: string | null = null): TabControl {
+  let tabs = TabControl.create(options, key);
   if (pages != null) {
-    for (let key of Object.keys(pages)) {
-      let value = pages[key];
-      tabs.addPane(key, value instanceof Function ? value : () => render(value));
+    for (let name of Object.keys(pages)) {
+      let value = pages[name];
+      tabs.addPane(name, value instanceof Function ? value : () => render(value));
     }
   }
   return tabs;
@@ -494,6 +496,27 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
 }
 
 /**
+ * Creates a toggle button (`d4-toggle-button`). When clicked, marks itself as current
+ * (`d4-current`) and clears that class from sibling toggle buttons under the same parent.
+ * Wrap a set of these in {@link toggleButtonGroup} to get the group container styling.
+ * @param caption  Button text.
+ * @param handler  Invoked on click after the active state is updated.
+ * @param tooltip  Tooltip shown on hover.
+ */
+export function toggleButton(caption: string, handler: Function | null = null, tooltip: string | null = null): HTMLDivElement {
+  return api.grok_UI_ToggleButton(caption, handler, tooltip);
+}
+
+/**
+ * Wraps a list of {@link toggleButton}s in a vertical `d4-toggle-button-group` container.
+ * @param buttons      Toggle buttons to group.
+ * @param toggleFirst  If true, marks the first button as `d4-current`.
+ */
+export function toggleButtonGroup(buttons: HTMLDivElement[], toggleFirst: boolean = false): HTMLDivElement {
+  return api.grok_UI_ToggleButtonGroup(buttons, toggleFirst);
+}
+
+/**
  * Creates a combo popup with the specified icons and items.
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/combo-popup}
  * @param {string | HTMLElement} caption
@@ -530,7 +553,7 @@ export function tableFromProperties(items: any[], properties: Property[]) {
 
 /** Creates a visual table based on [items] and [renderer].
  * BE WARE: Indexing in the renderer function, due to HTML being totally awesome starts from 1, not 0.
- * Because... What's a better way to make developers life miserable, right? 
+ * Because... What's a better way to make developers life miserable, right?
 */
 export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
@@ -1110,6 +1133,10 @@ export namespace input {
     return _create(d4.InputType.Files, name, options);
   }
 
+  export function folder(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
+    return _create(d4.InputType.Folder, name, options);
+  }
+
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {
     return _create(d4.InputType.List, name, options);
   }
@@ -1167,7 +1194,7 @@ export namespace input {
     //put tags into items (for backward compatibility)
     if (config?.tags && !config.items)
         config.items = config.tags as any[];
-    return _create(d4.InputType.Tags, name, config);  
+    return _create(d4.InputType.Tags, name, config);
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
@@ -1449,7 +1476,7 @@ export class tools {
       let width = 100;
       if (element.classList.contains('ui-input-bool'))
         width = 30;
-      if (element.classList.contains('ui-input-switch'))
+      if (element.classList.contains('ui-input-bool-switch'))
         width = 50;
       if (element.classList.contains('ui-input-table'))
         width = 200;
@@ -1830,14 +1857,14 @@ export class EntityMetaDartProxy extends ObjectHandler {
 
   get type(): string { return api.grok_Meta_Get_Type(this.dart); }
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
-  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, x); }
+  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, toDart(x)); }
 
-  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, x); }
-  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, x); }
-  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, x); }
-  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, x); }
-  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, x); }
-  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(this.dart, toDart(x)); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(this.dart, toDart(x)); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(this.dart, toDart(x)); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(this.dart, toDart(x)); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(this.dart, toDart(x)); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderView(this.dart, toDart(x)); }
 }
 
 /**
@@ -2567,11 +2594,35 @@ export namespace hints {
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
 
+    let clippers: HTMLElement[] | null = null;
+    function targetClipped(): boolean {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0)
+        return true;
+      if (r.bottom <= 0 || r.right <= 0 || r.top >= window.innerHeight || r.left >= window.innerWidth)
+        return true;
+      if (clippers == null) {
+        clippers = [];
+        for (let p = el.parentElement; p != null && p !== document.body; p = p.parentElement) {
+          const style = getComputedStyle(p);
+          if (/(auto|scroll)/.test(style.overflowY + style.overflowX))
+            clippers.push(p);
+        }
+      }
+      for (const p of clippers) {
+        const pr = p.getBoundingClientRect();
+        if (r.bottom <= pr.top || r.top >= pr.bottom || r.right <= pr.left || r.left >= pr.right)
+          return true;
+      }
+      return false;
+    }
+
     let setPosition = setInterval(function () {
       if ($('body').has(el).length != 0) {
         const indicatorNode = el.getBoundingClientRect();
         hintIndicator.style.left = indicatorNode.left + 'px';
         hintIndicator.style.top = indicatorNode.top + 'px';
+        hintIndicator.style.display = targetClipped() ? 'none' : '';
       } else {
         hintIndicator.remove();
         clearInterval(setPosition);

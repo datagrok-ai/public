@@ -24,8 +24,10 @@ Reactive tree driver propagates data through dynamically created and mutated fun
 
 `type: 'action'` is a config-level step type that gets converted to a `PipelineConfigurationStaticProcessed`
 with `isActionStep: true` during config processing. It has no children, no links, no history. Designed as
-a `visibleOn` target for actions from outer pipelines. The type guard `isPipelineActionConfig()` identifies
-action configs before processing; after processing they are regular static pipeline configs.
+a `visibleOn` target for actions from outer pipelines. It may carry an optional `nqName` pointing at a
+function whose `help`/`readme` option supplies its help panel content (it has no FuncCall of its own).
+The type guard `isPipelineActionConfig()` identifies action configs before processing; after processing
+they are regular static pipeline configs.
 
 ## Testing Rules
 

@@ -12,7 +12,7 @@ import {
   ViewerType,
   JOIN_TYPE
 } from "../const";
-import {__obs, EventData, MapChangeArgs} from "../events";
+import {__obs, EventData, MapChangeArgs, CellRangeArgs, RowChangeArgs, ColumnChangeArgs, CellChangeArgs} from "../events";
 import {toDart, toJs} from "../wrappers";
 import {MapProxy} from "../proxies";
 import {_toJson} from "../utils_convert";
@@ -426,22 +426,22 @@ export class DataFrame {
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
+  get onValuesChanged(): Observable<EventData<CellRangeArgs>> { return this._event('ddt-values-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get onCurrentRowChanged(): Observable<any> { return this._event('ddt-current-row-changed'); }
+  get onCurrentRowChanged(): Observable<EventData<RowChangeArgs>> { return this._event('ddt-current-row-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onMouseOverRowChanged(): Observable<any> { return this._event('ddt-mouse-over-row-changed'); }
+  get onMouseOverRowChanged(): Observable<EventData<RowChangeArgs>> { return this._event('ddt-mouse-over-row-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get onCurrentColChanged(): Observable<any> { return this._event('ddt-current-col-changed'); }
+  get onCurrentColChanged(): Observable<EventData<ColumnChangeArgs>> { return this._event('ddt-current-col-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onMouseOverColChanged(): Observable<any> { return this._event('ddt-mouse-over-col-changed'); }
+  get onMouseOverColChanged(): Observable<EventData<ColumnChangeArgs>> { return this._event('ddt-mouse-over-col-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get onCurrentCellChanged(): Observable<any> { return this._event('ddt-current-cell-changed'); }
+  get onCurrentCellChanged(): Observable<EventData<CellChangeArgs>> { return this._event('ddt-current-cell-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onMouseOverRowGroupChanged(): Observable<any> { return this._event('ddt-mouse-over-row-group-changed'); }

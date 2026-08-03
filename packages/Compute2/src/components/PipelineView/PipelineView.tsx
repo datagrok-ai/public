@@ -142,7 +142,7 @@ export const PipelineView = Vue.defineComponent({
                 }
 
                 <div class={'grok-gallery-grid'}>
-                  { !isActionStep.value && hasContextHelp(currentCall.value?.func) &&
+                  { hasContextHelp(currentCall.value?.func) &&
                     <div
                       class={cardsClasses}
                       onClick={() => {

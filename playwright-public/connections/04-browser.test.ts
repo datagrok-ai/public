@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import {
   AUTH_STATE,
+  PG_DB,
+  PG_PORT,
+  PG_SERVER,
   applyAutomationSetup,
   clickContextPanelSection,
   clickMenuItemExact,
@@ -82,9 +85,13 @@ test.describe.serial('Connections / Browser (Postgres / new_test_postgres)', () 
 
     const { paneTextContent } = await clickContextPanelSection(page, 'Details');
     const text = await paneTextContent();
-    expect(text).toContain('db.datagrok.ai');
-    expect(text).toContain('northwind');
-    expect(text).toContain('54322');
+    // Assert on the values the test actually entered into the dialog (in
+    // 01-adding) rather than hardcoded dev-server values — these come from
+    // env vars / helpers.ts defaults, so the assertions hold whether the
+    // suite is run against dev (db.datagrok.ai) or CI (in-network northwind).
+    expect(text).toContain(PG_SERVER);
+    expect(text).toContain(PG_DB);
+    expect(text).toContain(PG_PORT);
   });
 
   test('3. Share with Admin via context menu; Sharing pane mentions the user', async ({ page }) => {

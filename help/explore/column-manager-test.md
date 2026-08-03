@@ -1,7 +1,12 @@
-<!-- TITLE: Tests: Column Manager -->
-<!-- SUBTITLE: -->
-
-# Tests: Column Manager
+---
+title: "Tests: Column Manager"
+description: Testing scenarios for validating the Column Manager's navigation, selection, and batch column actions.
+keywords:
+  - column manager test
+  - qa testing
+  - test cases
+  - grid column stats
+---
 
 [Column Manager](column-manager.md), available via **View | Columns**, contains a list of columns in the currently open
 tables. Use it to navigate between columns, select them, or perform batch actions. It also allows to view metadata on

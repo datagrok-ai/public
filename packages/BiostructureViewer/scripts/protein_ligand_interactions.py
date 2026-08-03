@@ -1,11 +1,12 @@
 #name: ProteinLigandInteractionDiagram
+#friendlyName: Protein-Ligand Interaction Diagram
 #description: Interactive 2D protein-ligand interaction diagram via ProLIF
 #language: python
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.11, rdkit, mdanalysis, prolif, pdbfixer, openmm, matplotlib, requests, pip, {pip: [openbabel-wheel]}]
 #meta.cache: none
-#input: string protein
-#input: string ligand
-#input: string ligand_resname
+#input: string protein [Protein structure (PDB text or PDB ID)]
+#input: string ligand [Ligand structure (molblock or SMILES)]
+#input: string ligand_resname [Residue name of the ligand in the structure]
 #output: dataframe result
 
 import logging

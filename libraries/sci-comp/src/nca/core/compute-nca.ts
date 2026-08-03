@@ -2,7 +2,7 @@ import type {
   ProfileInputs, NcaRules, ComputeResult, ParameterValues,
   ParameterWarning, AucMethod, BlqProcessingResult, LambdaZResult,
 } from './types';
-import {ROUTE_IV_BOLUS} from './types';
+import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION} from './types';
 import {applyBlqStrategy} from './blq';
 import {findCmax} from './cmax';
 import {insertC0} from './c0';
@@ -13,7 +13,13 @@ import {
   aucExtrapolateToInfinity,
 } from './auc';
 import {
+  aumcLinearNaive, aumcLogLinearNaive, aumcLinearUpLogDownNaive,
+  aumcLinearCompensated, aumcLogLinearCompensated, aumcLinearUpLogDownCompensated,
+  aumcExtrapolateToInfinity,
+} from './aumc';
+import {
   halfLifeFromLambdaZ, clearance, volumeTerminal, pctExtrapolated,
+  meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag as tlagOf,
 } from './derived';
 
 type AucFn = (
@@ -32,9 +38,23 @@ function pickAucFn(method: AucMethod, compensated: boolean): AucFn {
   return aucLinearUpLogDownNaive;
 }
 
+/** Moment-curve kernel matching the same method/summation choice as AUC. */
+function pickAumcFn(method: AucMethod, compensated: boolean): AucFn {
+  if (compensated) {
+    if (method === 'linear') return aumcLinearCompensated;
+    if (method === 'log-linear') return aumcLogLinearCompensated;
+    return aumcLinearUpLogDownCompensated;
+  }
+  if (method === 'linear') return aumcLinearNaive;
+  if (method === 'log-linear') return aumcLogLinearNaive;
+  return aumcLinearUpLogDownNaive;
+}
+
 const NAN_VALUES: ParameterValues = Object.freeze({
   cmax: NaN, tmax: NaN, aucLast: NaN, aucInf: NaN, pctExtrap: NaN,
   lambdaZ: NaN, halfLife: NaN, cl: NaN, vz: NaN,
+  aumcLast: NaN, aumcInf: NaN, mrt: NaN, vss: NaN, tlag: NaN,
+  pctExtrapAumc: NaN,
 });
 
 /**
@@ -132,14 +152,40 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   // ─────────────────────────────────────────────────────────────────────
   const dense = collectMeasurable(augTime, augConc, augBlq);
   let aucLast = NaN;
+  let aumcLast = NaN;
   let cLast = NaN;
+  let tLast = NaN;
   if (dense.time.length >= 2) {
+    const last = dense.time.length - 1;
     const aucFn = pickAucFn(rules.aucMethod, rules.compensatedSummation);
-    aucLast = aucFn(dense.time, dense.conc, 0, dense.time.length - 1);
-    cLast = dense.conc[dense.conc.length - 1];
+    const aumcFn = pickAumcFn(rules.aucMethod, rules.compensatedSummation);
+    aucLast = aucFn(dense.time, dense.conc, 0, last);
+    aumcLast = aumcFn(dense.time, dense.conc, 0, last);
+    cLast = dense.conc[last];
+    tLast = dense.time[last];
   } else if (dense.time.length === 1) {
     aucLast = 0;
+    aumcLast = 0;
     cLast = dense.conc[0];
+    tLast = dense.time[0];
+  }
+
+  // Tlag is an OBSERVED quantity (independent of lambda_z) and an absorption
+  // concept — reported for extravascular routes only; NaN for IV (AD-6/P3).
+  const isIv =
+    inputs.route === ROUTE_IV_BOLUS || inputs.route === ROUTE_IV_INFUSION;
+  let tlag = NaN;
+  if (!isIv && augTime.length >= 1) {
+    // Compute on the BLQ-processed AUGMENTED series with BLQ/excluded points
+    // treated as 0 (below LLOQ), NOT the dense (BLQ-removed) profile — a BLQ
+    // sample before the first measurable point IS the lag boundary, and
+    // dropping it would underestimate Tlag (AD-10, pinned to the AUC start).
+    const tlagConc = new Float64Array(augTime.length);
+    for (let i = 0; i < augTime.length; i++) {
+      tlagConc[i] =
+        (augBlq[i] !== 0 || !Number.isFinite(augConc[i])) ? 0 : augConc[i];
+    }
+    tlag = tlagOf(augTime, tlagConc);
   }
 
   // ─────────────────────────────────────────────────────────────────────
@@ -156,21 +202,38 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   // Step 6: AUCinf and derived parameters.
   // ─────────────────────────────────────────────────────────────────────
   let aucInf = NaN;
+  let aumcInf = NaN;
   let halfLife = NaN;
   let cl = NaN;
   let vz = NaN;
+  let vss = NaN;
+  let mrt = NaN;
   let pctExtrap = NaN;
+  let pctExtrapAumc = NaN;
   let status: 'ok' | 'partial' | 'failed' = 'partial';
 
   if (
     lambdaZRes !== null && lambdaZRes.lambdaZ > 0 &&
     Number.isFinite(aucLast) && Number.isFinite(cLast) && cLast > 0
   ) {
+    // Zero-order infusion correction: only IV-infusion with a known duration
+    // carries a non-zero T_inf. Bolus / extravascular → T_inf = 0.
+    const tInf = (inputs.route === ROUTE_IV_INFUSION &&
+      inputs.infusionDuration !== null && inputs.infusionDuration > 0) ?
+      inputs.infusionDuration : 0;
+
     aucInf = aucLast + aucExtrapolateToInfinity(cLast, lambdaZRes.lambdaZ);
+    aumcInf =
+      aumcLast + aumcExtrapolateToInfinity(tLast, cLast, lambdaZRes.lambdaZ);
     halfLife = halfLifeFromLambdaZ(lambdaZRes.lambdaZ);
     cl = clearance(inputs.dose, aucInf);
     vz = volumeTerminal(inputs.dose, lambdaZRes.lambdaZ, aucInf);
+    mrt = meanResidenceTime(aumcInf, aucInf, tInf);
+    // Vss is IV-only — for extravascular data it would be Vss/F confounded
+    // by absorption (a category error, not a high number).
+    vss = isIv ? volumeSteadyState(inputs.dose, aumcInf, aucInf, tInf) : NaN;
     pctExtrap = pctExtrapolated(aucLast, aucInf);
+    pctExtrapAumc = pctExtrapolatedAumc(aumcLast, aumcInf);
     status = 'ok';
   }
 
@@ -185,6 +248,15 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
       message:
         `% AUC extrapolated (${pctExtrap.toFixed(1)}%) exceeds threshold ` +
         `(${rules.extrapWarnPct}%)`,
+    });
+  }
+  if (status === 'ok' && pctExtrapAumc > rules.extrapWarnPctAumc) {
+    warnings.push({
+      code: 'AUMC_EXTRAP_HIGH',
+      severity: 'warning',
+      message:
+        `% AUMC extrapolated (${pctExtrapAumc.toFixed(1)}%) exceeds threshold ` +
+        `(${rules.extrapWarnPctAumc}%) — MRT/Vss are fragile`,
     });
   }
   if (lambdaZRes !== null &&
@@ -217,6 +289,12 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
       halfLife,
       cl,
       vz,
+      aumcLast,
+      aumcInf,
+      mrt,
+      vss,
+      tlag,
+      pctExtrapAumc,
     },
     provenance: {
       lambdaZ: lambdaZRes,
@@ -240,6 +318,23 @@ function collectMeasurable(
     if (!Number.isFinite(conc[i])) continue;
     tBuf.push(time[i]);
     cBuf.push(conc[i]);
+  }
+  // Drop the TRAILING run of non-positive (≤ 0) concentrations. A trailing
+  // zero is an unflagged below-LLOQ washout sample — common when a dataset
+  // encodes BLQ as conc=0 and carries no LLOQ/BLQ-flag column, so `blqMask`
+  // is all-zeros and the BLQ strategy never sees it. Such a point must NOT
+  // anchor the terminal: as `cLast` it is the λz extrapolation base, so
+  // `cLast = 0` blocks AUCinf/t½/CL/Vz even when λz is perfectly well-formed
+  // (the `cLast > 0` status gate), and in the AUClast trapezoid it adds a
+  // spurious tail-to-zero area. PKNCA's `conc.blq` default excludes trailing
+  // BLQ; this mirrors it. EMBEDDED zeros are intentionally KEPT — PKNCA
+  // set-zeros embedded BLQ into the trapezoid, and `lambdaZBestFit` already
+  // excludes all `conc ≤ 0` from the regression, so the fit is unaffected
+  // either way; only the trailing anchor is corrected here.
+  // (BUG-05 / GROK-20219; verified against PKNCA 0.12.1 rat-IV R005/R013.)
+  while (cBuf.length > 0 && cBuf[cBuf.length - 1] <= 0) {
+    cBuf.pop();
+    tBuf.pop();
   }
   return {time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf)};
 }

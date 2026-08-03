@@ -1,6 +1,15 @@
 ---
 title: "Datagrok: Swiss Army Knife for Data"
-
+description: Introduces Datagrok's core capabilities across data access, governance, transformation, exploration, computation, learning, and collaboration.
+keywords:
+  - data analytics platform overview
+  - in-memory data engine
+  - deepwiki
+  - chembl database
+  - semantic types
+  - data provenance and lineage
+  - who is datagrok for
+  - platform architecture
 ---
 
 :::tip Ask DeepWiki
@@ -101,7 +110,7 @@ No-code modeling. State-of-the-art cheminformatics engines and ML toolkit includ
 * [Train, assess, apply, and share models](../learn/learn.md) (or integrate your own)
 * Native support for R, Python, Julia, Matlab, and Octave
 * Open any dataset with a [Jupyter notebook](../compute/jupyter-notebook.md)
-* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
+* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/group-comparison.md#anova).
 
 #### Collaborate
 

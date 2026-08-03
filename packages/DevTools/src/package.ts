@@ -66,9 +66,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.app({
-    browsePath: 'Admin',
     name: 'Test Manager',
     'top-menu': 'Tools | Dev | Test Manager',
+    meta: {role: 'adminApp'},
   })
   static async testManager(): Promise<void> {
     c = grok.functions.getCurrentCall();

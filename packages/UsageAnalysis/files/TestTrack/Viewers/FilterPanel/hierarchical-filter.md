@@ -1,3 +1,15 @@
+---
+feature: filters
+target_layer: playwright
+coverage_type: regression
+priority: p2
+realizes_atlas: []
+realizes: [viewers.filters]
+realized_as:
+  - hierarchical-filter-spec.ts
+related_bugs: []
+---
+
 1. Open demog.csv
 2. Open the **Filter Panel**
 3. **Hamburger menu** > **Add filter** > **Hierarchical Filter**

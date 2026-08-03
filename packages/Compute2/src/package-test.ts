@@ -5,6 +5,11 @@ import './test/viewers-hook';
 import './test/app-launch';
 import './test/rfv';
 import './test/navigation';
+import './test/float-display';
+import './test/custom-export';
+import './test/run-comparison-matching';
+import './test/run-comparison-selection';
+import './test/run-comparison-builders';
 
 export const _package = new DG.Package();
 export {tests};

@@ -77,7 +77,7 @@ export class Dapi {
     return new FuncsDataSource(api.grok_Dapi_Functions());
   }
 
-  /** Data Connections API (finding, saving, sharing data connections 
+  /** Data Connections API (finding, saving, sharing data connections
    * and folders, getting database schemas) */
   get connections(): DataConnectionsDataSource {
     return new DataConnectionsDataSource(api.grok_Dapi_Connections());
@@ -218,6 +218,12 @@ export class Dapi {
    *  @type {AdminDataSource} */
   get admin(): AdminDataSource {
     return new AdminDataSource(api.grok_Dapi_Admin());
+  }
+
+  /** Server info API endpoint
+   *  @type {InfoDataSource} */
+  get info(): InfoDataSource {
+    return new InfoDataSource(api.grok_Dapi_Info());
   }
 
   /** Logging API endpoint
@@ -425,6 +431,19 @@ export class AdminDataSource {
   }
 }
 
+export class InfoDataSource {
+  dart: any;
+  /** @constructs InfoDataSource */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Returns the latest storage usage snapshot, refreshed hourly on the server. */
+  getStorageStats(): Promise<{[key: string]: any}> {
+    return api.grok_Dapi_Info_GetStorageStats(this.dart);
+  }
+}
+
 /** Attachment for an [Email]. */
 export interface EmailAttachment {
   /** Filename shown in the recipient's mail client. */
@@ -544,6 +563,17 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   /** Looking for groups with similar name */
   async getGroupsLookup(name: string): Promise<Group[]> {
     return toJs(await api.grok_Dapi_Get_GroupsLookup(name));
+  }
+
+  /** Returns all groups the current user belongs to, including transitive parent groups. */
+  async currentUserGroups(): Promise<Group[]> {
+    return toJs(await api.grok_Dapi_Get_CurrentUserGroups());
+  }
+
+  /** Requests that `requester` be added as a member of `group`.
+   *  An admin of `group` must approve before the membership takes effect. */
+  async requestMembership(group: Group, requester: Group): Promise<void> {
+    return api.grok_GroupsDataSource_RequestMembership(group.id, requester.id);
   }
 }
 

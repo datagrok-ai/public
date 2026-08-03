@@ -1,0 +1,82 @@
+{
+  "#type": "ViewLayout",
+  "table": {
+    "id": "dde962d0-8560-11f0-e7f6-cb949007e22c"
+  },
+  "type": "TableView",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 2000,
+      "height": 1000
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 1100,
+          "height": 1000,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 1100,
+              "height": 1000,
+              "element": {
+                "id": "b2000000-0000-0000-0000-000000000001",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "sortByColumnNames": ["started", "threads"],
+                  "sortTypes": [false, true],
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {"columnName": "build", "width": 200},
+                    {"columnName": "started", "width": 150, "cellType": "number", "format": "M/d/yyyy HH:mm:ss"},
+                    {"columnName": "threads", "width": 64},
+                    {"columnName": "runs", "width": 64, "cellType": "number"},
+                    {"columnName": "min_ms", "width": 72, "cellType": "number"},
+                    {"columnName": "avg_ms", "width": 72, "cellType": "number"},
+                    {"columnName": "median_ms", "width": 80, "cellType": "number"},
+                    {"columnName": "p95_ms", "width": 72, "cellType": "number"},
+                    {"columnName": "max_ms", "width": 72, "cellType": "number"},
+                    {"columnName": "pass_rate", "width": 80, "cellType": "number", "isColorCoded": true, "colorCodingType": "Linear"}
+                  ]
+                },
+                "title": "Summary",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 900,
+          "height": 1000,
+          "element": {
+            "id": "b2000000-0000-0000-0000-000000000002",
+            "type": "Line chart",
+            "look": {
+              "#type": "LineChartLook",
+              "xColumnName": "threads",
+              "yColumnNames": ["p95_ms"],
+              "splitColumnName": "build",
+              "title": "p95 duration (ms) vs threads, by build",
+              "legendPosition": "Right"
+            },
+            "title": "p95 duration (ms) vs threads, by build"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": []
+  },
+  "name": "Stress Summary",
+  "friendlyName": "Stress Summary"
+}

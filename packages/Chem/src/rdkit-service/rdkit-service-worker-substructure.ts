@@ -6,6 +6,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
@@ -107,7 +108,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   getMolWithSmilesCheck(molString: string, details?: any): RDMol | null {
     // hasNewLines should be faster, as M END checked by isMolBlock is usually at the end
-    if (molString && !hasNewLines(molString) && molString.length > 5000)
+    if (molString && !hasNewLines(molString) && molString.length > MAX_SMILES_LENGTH)
       return null; // do not attempt to parse very long SMILES, will cause MOB. P.s. passing undefined details fails rdkit
     return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
   }
@@ -138,7 +139,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
           mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
-          if (cachedMol || this.addToCache(mol))
+          // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
+          if (mol && this.addToCache(mol))
             isCached = true;
           if (mol) {
             if (stereoAgnostic)
@@ -343,6 +345,48 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
+  /** Returns InChI identifiers for {@link molecules}, or InChI keys when {@link keys} is set.
+   * Malformed molecules result in an empty string. */
+  async getInchis(molecules: string[], keys = false): Promise<string[]> {
+    if (!molecules || this._requestTerminated)
+      return [];
+    // no need to cache these
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules.length; ++i) {
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item)
+        continue;
+      let isInCache = false;
+      let rdMol = this._molsCache?.get(item);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      } else
+        isInCache = true;
+
+      if (rdMol) {
+        try {
+          const inchi = rdMol.get_inchi();
+          results[i] = keys ? this._rdKitModule.get_inchikey_for_inchi(inchi) : inchi;
+        } catch {
+          // nothing to do, the result is already empty
+        } finally {
+          if (!isInCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
+  }
+
   getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {
     if (this._rdKitMols === null && typeof molecules === 'undefined') {
       console.debug(`getStructuralAlerts: No molecules to process`);
@@ -513,10 +557,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   invalidateCache() {
     this._cacheCounter = 0;
-    if (this._molsCache) {
-      this._molsCache.forEach((it) => it?.delete());
-      this._molsCache.clear();
-    }
   }
 
   mmpGetFragments(molecules: string[]): IMmpFragmentsResult {

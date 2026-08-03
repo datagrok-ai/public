@@ -33,12 +33,52 @@ export interface ParsedConjugate {
   raw: string;
 }
 
-export type ParsedMonomer = ParsedNucleotide | ParsedConjugate;
+/** A standalone backbone linker monomer (`p`, `[sp]`, …) — a phosphate-type
+ * unit with no base of its own. Rendered as an arc (no chip), like the trailing
+ * phosphate of a nucleotide, and counted as a linkage (not a conjugate). */
+export interface ParsedLinker {
+  kind: 'linker';
+  position: number;
+  /** Phosphate HELM symbol, normalized (no brackets) — e.g. `p`, `sp`. */
+  symbol: string;
+  raw: string;
+}
+
+export type ParsedMonomer = ParsedNucleotide | ParsedConjugate | ParsedLinker;
 
 export interface ParsedStrand {
   /** 'RNA' | 'DNA' | 'CHEM' */
   type: string;
   monomers: ParsedMonomer[];
+  /** HELM polymer id this strand came from (e.g. `RNA1`). Undefined for
+   * synthetic strands. Used to map HELM `pair` connections back to a strand. */
+  id?: string;
+}
+
+/** A base-pair connection parsed from the HELM connection section, expressed
+ * in *nucleotide* indices (0-based, 5'→3') on the sense and antisense strands.
+ * Both indices count nucleotides only (conjugates / bare phosphates skipped). */
+export interface DuplexPair {
+  /** Nucleotide index on the sense strand (5'→3'). */
+  senseIdx: number;
+  /** Nucleotide index on the antisense strand (5'→3'). */
+  antiIdx: number;
+}
+
+/** How the sense / antisense strands line up for display.
+ *
+ * `shift` is the column offset of the antisense *display* (rendered 3'→5')
+ * relative to the sense strand. With antisense reversed for display, sense
+ * nucleotide `j` pairs antisense nucleotide `k` when
+ *   `j === (antiLen - 1 - k) + shift`.
+ * `shift === 0` is a blunt duplex with both 5' ends flush. Positive shift
+ * means a 5' sense overhang on the left; negative means a 3' antisense
+ * overhang on the left (and the mirror overhangs on the right). */
+export interface DuplexAlignment {
+  shift: number;
+  /** Where the shift came from: explicit HELM `pair` connections, the
+   * complementary-base auto-aligner, or trivially none (single strand). */
+  source: 'explicit' | 'auto' | 'none';
 }
 
 export interface ParsedDuplex {
@@ -46,6 +86,16 @@ export interface ParsedDuplex {
   antisense: ParsedStrand | null;
   /** Original HELM string (kept verbatim for tooltip / debug). */
   raw: string;
+  /** Base-pair connections parsed from the HELM `$connections$` section, in
+   * nucleotide indices on sense/antisense. Empty / absent when the HELM has
+   * no explicit pairing info. */
+  pairs?: DuplexPair[];
+  /** Per-polymer strand-type annotations from the HELM extended-annotations
+   * section, keyed by polymer id (e.g. `{RNA1: 'ss', RNA2: 'as'}`). */
+  strandTypes?: Record<string, string>;
+  /** Strand alignment derived from explicit pairs when present. Absent when
+   * no explicit info exists — the renderer then auto-aligns by complementarity. */
+  alignment?: DuplexAlignment;
 }
 
 /** Visual classification used for chip coloring. */
@@ -188,6 +238,15 @@ export function canonicalSugarSymbol(sugar: string): string {
 /** Canonicalize a phosphate symbol via the alias map. */
 export function canonicalPhosphateSymbol(phosphate: string): string {
   return PHOSPHATE_ALIASES[phosphate] ?? phosphate;
+}
+
+/** True if `symbol` is a known backbone linker / phosphate (`p`, `sp`, `s2p`,
+ * `mp`, or a legacy alias like `P`, `sP`). Static — no monomer-library lookup.
+ * Library-driven detection (custom symbols whose natural analog is `p`) is
+ * layered on top of this in `alignment.isLinkerMonomer`. */
+export function isLinkerSymbol(symbol: string): boolean {
+  if (!symbol) return false;
+  return canonicalPhosphateSymbol(symbol) in PHOSPHATE_MODS;
 }
 
 /** Resolve a sugar HELM symbol to (color + meta). Accepts canonical or aliased input. */

@@ -107,7 +107,10 @@ export class WorkerPool {
   private onError(slot: Slot, ev: ErrorEvent): void {
     const reason = ev.message ?? 'unknown';
     console.warn(`worker error: ${reason}`);
-    this.removeSlot(slot, `worker errored: ${reason}`);
+    // A crash is only script-attributable when the worker dies mid-run (e.g.
+    // OOM); setup-phase script errors come back as ok:false acks, not onerror.
+    const culprit = slot.runningSessionId() ?? undefined;
+    this.removeSlot(slot, `worker errored: ${reason}`, culprit);
   }
 
   private pump(): void {
@@ -118,7 +121,7 @@ export class WorkerPool {
       slot.claim(job, this.runTimeoutMs, () => {
         if (job.phase !== 'running') return;
         slot.failRunning(`run timed out after ${this.runTimeoutMs}ms`);
-        this.removeSlot(slot, 'run timed out');
+        this.removeSlot(slot, 'run timed out', job.spec.sessionId);
       });
       return true;
     });
@@ -152,7 +155,10 @@ export class WorkerPool {
     return false;
   }
 
-  private removeSlot(slot: Slot, reason: string): void {
+  // `culprit` is the session whose run/setup caused this removal (undefined for
+  // an unattributed infra crash). Only the culprit's reprime budget is charged,
+  // so a misbehaving session can't drain an innocent concurrent session's budget.
+  private removeSlot(slot: Slot, reason: string, culprit?: SessionId): void {
     const idx = this.slots.indexOf(slot);
     if (idx < 0) return;
     this.slots.splice(idx, 1);
@@ -163,10 +169,12 @@ export class WorkerPool {
     if (!this.disposed) {
       const fresh = this.spawnSlot();
       this.slots.push(fresh);
-      // Re-prime for every active session; cap stops the timeout-recurse loop.
-      for (const entry of this.activeSetups.values()) {
+      // Re-prime every active session that hasn't been given up on. Only the
+      // culprit is charged + cap-gated; that cap stops the timeout-recurse loop
+      // for a script that breaks its own workers.
+      for (const [sid, entry] of this.activeSetups) {
         if (entry.replacementAttempts >= this.maxReplacementReprimes) continue;
-        ++entry.replacementAttempts;
+        if (sid === culprit) ++entry.replacementAttempts;
         void this.primeSlot(fresh, entry.setup);
       }
     }
@@ -177,7 +185,7 @@ export class WorkerPool {
   // with the returned ack (await + throw, or fire-and-forget).
   private async primeSlot(slot: Slot, setup: FitSessionSetup): Promise<SetupAck> {
     const ack = await slot.prime(setup, this.setupTimeoutMs);
-    if (ack.ok === false && ack.timedOut) this.removeSlot(slot, 'setup timed out');
+    if (ack.ok === false && ack.timedOut) this.removeSlot(slot, 'setup timed out', setup.sessionId);
     return ack;
   }
 
@@ -234,7 +242,9 @@ export class WorkerPool {
   _ensureWorkersForTest(): void { this.ensureWorkers(); }
   _slotsArrayForTest(): readonly Slot[] { return this.slots; }
   _primedSlotCountForTest(sessionId: SessionId): number { return this.primedSlotCount(sessionId); }
-  _removeSlotForTest(slot: Slot, reason: string): void { this.removeSlot(slot, reason); }
+  _removeSlotForTest(slot: Slot, reason: string, culprit?: SessionId): void {
+    this.removeSlot(slot, reason, culprit);
+  }
   _replacementAttemptsForTest(sessionId: SessionId): number | undefined {
     return this.activeSetups.get(sessionId)?.replacementAttempts;
   }

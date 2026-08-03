@@ -315,8 +315,8 @@ category('Parser: Structure', () => {
 
   // Tests that the Bioreactor model's output column count exceeds MAX_LINE_CHART (= 4).
   // getIVP() populates ivp.outputs (or falls back to ivp.inits.size when #output is absent);
-  // this count is the gating condition in getScriptLines() for injecting multiAxis: "true"
-  // into the viewer annotation — which is what enables the Multiaxis plot tab in the Diff Studio UI.
+  // this count is the gating condition in getScriptLines() for emitting the 'DiffStudio Facet'
+  // viewer in the annotation — which renders the per-variable facet grid in RFV and the Diff Studio UI.
   test('TC-S-04: Bioreactor output column count exceeds MAX_LINE_CHART', async () => {
     let ivp = null;
     try {ivp = getIVP(USE_CASES.BIOREACTOR);} catch (e) {}
@@ -422,16 +422,15 @@ category('Script: Generation', () => {
     expect(hasLang, true, 'Expected //language: javascript in generated script');
   });
 
-  // Tests that getScriptLines() injects multiAxis: "true" into the line-chart viewer annotation
-  // for the Bioreactor model, whose output column count exceeds MAX_LINE_CHART (= 4).
-  // This flag causes the Datagrok line-chart viewer to use separate Y-axes for each output column,
-  // which is the expected visual layout for models with many output curves.
-  test('TC-G-02: multiAxis "true" for model with > MAX_LINE_CHART output columns', async () => {
+  // Tests that getScriptLines() emits the 'DiffStudio Facet' viewer for the Bioreactor model,
+  // whose output column count exceeds MAX_LINE_CHART (= 4). The facet viewer renders one line
+  // chart per output variable — the same view as the standalone Diff Studio app.
+  test('TC-G-02: facet viewer for model with > MAX_LINE_CHART output columns', async () => {
     const ivp = getIVP(USE_CASES.BIOREACTOR);
     const script = getScriptLines(ivp).join('\n');
-    const hasMultiAxis = script.includes('multiAxis: "true"');
-    expect(hasMultiAxis, true,
-      `Expected multiAxis: "true" in viewer annotation for Bioreactor (${ivp.outputs!.size} columns)`);
+    const hasFacet = script.includes('DiffStudio Facet(');
+    expect(hasFacet, true,
+      `Expected 'DiffStudio Facet' viewer in annotation for Bioreactor (${ivp.outputs!.size} columns)`);
   });
 
   // Tests that getScriptLines() injects multiAxis: "false" for a model with few output columns.

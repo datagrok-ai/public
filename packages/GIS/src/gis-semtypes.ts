@@ -138,13 +138,16 @@ export class GisAreaGridCellRenderer extends DG.GridCellRenderer {
   ): void {
     const cellVal = gridCell.cell.value;
     let cellObj: any;
-    if ((cellVal instanceof GisArea))
+    if (cellVal instanceof GisArea)
       cellObj = cellVal;
-    if (typeof cellVal === 'string')
-      cellObj = JSON.parse(cellVal);
-
-    // const objArea = new GisArea(cellObj.coordinates, cellObj.attributes);
-    if (cellObj.coordinates)
+    else if (typeof cellVal === 'string' && cellVal.length > 0) {
+      try {
+        cellObj = JSON.parse(cellVal);
+      } catch (_) {
+        return;
+      }
+    }
+    if (cellObj?.coordinates)
       drawContourByCoords(g, x, y, w, h, cellObj.coordinates);
   }
   //<< end of GisAreaGridCellRenderer class

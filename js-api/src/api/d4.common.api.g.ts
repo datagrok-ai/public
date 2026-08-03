@@ -184,6 +184,8 @@ export class InputType {
 
   static Files = 'Files';
 
+  static Folder = 'Folder';
+
   static List = 'List';
 
   static Color = 'Color';

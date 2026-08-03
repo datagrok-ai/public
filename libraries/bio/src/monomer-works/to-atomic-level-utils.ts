@@ -46,15 +46,35 @@ export function getFormattedMonomerLib(
  * @param {PolymerType} polymerType - Polymer type
  * @param {Array} roles - Optional per-position NucleotideRole tags. When set, RNA assembly
  *   uses per-position sugars/phosphates from monomerSeq directly (HELM triples mode).
+ * @param {number[]} chainStarts - Optional 0-based start positions of disjoint HELM chains.
+ *   When more than one chain is present each chain is assembled independently and the
+ *   chains are stacked vertically into a single molfile (multi-strand HELM support).
  * @return {MolfileWithMap} - Molfile V3000 + per-position monomer index map */
 export function monomerSeqToMolfile(
   monomerSeq: ISeqMonomer[], monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET, polymerType: PolymerType,
-  roles?: NucleotideRole[]
+  roles?: NucleotideRole[], chainStarts?: number[]
 ): MolfileWithMap {
   if (monomerSeq.length === 0) {
     // throw new Error('monomerSeq is empty');
     return MolfileWithMap.createEmpty();
+  }
+
+  // Multi-chain HELM (e.g. RNA1{...}|RNA2{...}): assemble each disjoint chain
+  // on its own, then stack them vertically into a single molfile. Each chain
+  // reuses the exact single-chain assembly below, so its geometry, capping and
+  // per-monomer atom/bond map are unchanged; combineMolfilesVertically shifts
+  // the coordinates and re-bases the atom/bond indices and monomer-map keys.
+  if (chainStarts && chainStarts.length > 1) {
+    const parts: MolfileWithMap[] = new Array(chainStarts.length);
+    for (let c = 0; c < chainStarts.length; ++c) {
+      const s = chainStarts[c];
+      const e = c + 1 < chainStarts.length ? chainStarts[c + 1] : monomerSeq.length;
+      const subSeq = monomerSeq.slice(s, e);
+      const subRoles = roles ? roles.slice(s, e) : undefined;
+      parts[c] = monomerSeqToMolfile(subSeq, monomersDict, alphabet, polymerType, subRoles);
+    }
+    return combineMolfilesVertically(parts, chainStarts);
   }
 
   // Triples mode is on only when the caller flagged the row with roles
@@ -429,9 +449,19 @@ function getResultingAtomBondCounts(
     // 3'-terminal modifier (e.g. GalNAc) that IS the chain end.
     const has3pTerm = !!roles && roles.length > 0 &&
       roles[roles.length - 1] === NucleotideRole.TERMINAL_3P;
-    if (has3pTerm)
+    if (has3pTerm) {
       needsCapping = false;
-    else
+      // Mirror the peptide branch (which does both atomCount-- and bondCount--
+      // when it skips the terminal cap). `bondCount += monomerCount` above
+      // reserves one chain-extending slot per monomer; the LAST monomer's slot
+      // is normally filled by the terminal OH cap bond. With a 3'-terminal
+      // modifier there is no cap, so that last reserved slot stays empty —
+      // leaving the declared bond count one higher than the emitted bond
+      // lines. Drop it so the V3000 COUNTS line matches the bond block exactly
+      // (otherwise the pre-OCL molfile is malformed and only survives because
+      // the OCL chirality pass re-derives the counts).
+      bondCount -= 1;
+    } else
       atomCount += 1; // OH cap atom (rides on trailing P or on last sugar's R2)
   } else { // nucleotides — bases-only legacy path with default sugar/phosphate
     const sugar = (alphabet === ALPHABET.DNA) ?
@@ -463,20 +493,23 @@ function getResultingAtomBondCounts(
   return {atomCount, bondCount, needsCapping};
 }
 
-// Triples-mode RNA assembly. Iterates by NUCLEOTIDE over the row's "core"
-// positions (those tagged SUGAR/BASE/PHOSPHATE), and emits at most one
-// TERMINAL_5P at the head and one TERMINAL_3P at the tail.
+// Role-driven RNA assembly. Walks the monomers in chain order and emits
+// each one according to its NucleotideRole (assigned by `buildRolesForHelmRna`
+// from the library, not from a fixed triple index):
+//   - BASE                                  → branch monomer, attached to the
+//                                             branch point of the sugar most
+//                                             recently emitted.
+//   - SUGAR / PHOSPHATE / TERMINAL_5P / 3P  → backbone monomer, chained to the
+//                                             previous backbone unit.
 //
-// Layout permutations the function handles:
-//   roles = [SUGAR, BASE, PHOSPHATE, ...]                     // standard RNA
-//   roles = [..., SUGAR, BASE]                                // no trailing P
-//   roles = [TERMINAL_5P, SUGAR, BASE, PHOSPHATE, ...]        // 5' modifier
-//   roles = [..., SUGAR, BASE, TERMINAL_3P]                   // 3' modifier (replaces last P)
-//   roles = [TERMINAL_5P, ..., TERMINAL_3P]                   // both
-//
-// When a TERMINAL_3P is present the OH cap MUST be skipped (the last
-// monomer is the chain end, period); the caller takes responsibility for
-// needsCapping=false in `getResultingAtomBondCounts`.
+// Because the role comes from chemistry, this transparently handles every
+// backbone layout — standard [sugar, base, phosphate] triples, a 5'-leading
+// phosphate, several phosphates / linkers in a row, a linker dropped in the
+// middle of the chain, missing trailing phosphate, and 5'/3' terminal
+// modifiers — without any index arithmetic. The first backbone monomer
+// naturally has no incoming chain bond (v.backboneAttachNode starts at 0),
+// and the trailing OH cap is added by the caller via needsCapping (skipped
+// when a TERMINAL_3P ends the chain).
 function runTriplesAssembly(
   monomerSeq: ISeqMonomer[], roles: NucleotideRole[],
   monomersDict: MonomerMolGraphMap,
@@ -485,100 +518,36 @@ function runTriplesAssembly(
   monomers: MonomerMap, steabsCollection: number[],
   addAtoms: (n: number) => void, getAtoms: () => number
 ): void {
-  const has5pTerm = roles.length > 0 && roles[0] === NucleotideRole.TERMINAL_5P;
-  const has3pTerm = roles.length > 0 && roles[roles.length - 1] === NucleotideRole.TERMINAL_3P;
-  const coreStart = has5pTerm ? 1 : 0;
-  const coreEnd = has3pTerm ? roles.length - 1 : roles.length;
-  const coreLen = coreEnd - coreStart;
-  const N = Math.ceil(coreLen / 3); // nucleotide count in the core
-  // coreLen === 3N → trailing P present.  coreLen === 3N - 1 → no trailing P.
-  const hasTrailingP = coreLen === 3 * N;
-
-  // Helper: emit one monomer as a backbone unit and record its atom/bond
-  // ranges in the per-row monomer map.
-  const emitBackbone = (sm: ISeqMonomer, mapKey: number): void => {
+  void LC; // assembly is driven by per-monomer roles, not by LC.seqLength
+  for (let i = 0; i < monomerSeq.length; ++i) {
+    const sm = monomerSeq[i];
+    if (sm.symbol === GAP_SYMBOL) continue;
+    const role = roles[i];
     const mG = getMolGraph(monomersDict,
       {symbol: sm.symbol, polymerType: helmTypeToPolymerType(sm.biotype)})!;
+
     const aFirst = v.nodeShift;
     const bFirst = v.bondShift;
-    addBackboneMonomerToMolblock(mG, molfileAtomBlock, molfileBondBlock, v);
-    mG.stereoAtoms?.forEach((i) => steabsCollection.push(i + getAtoms()));
+    v.i = i; // keep loop counter monotone (unused by nucleotide geometry)
+    if (role === NucleotideRole.BASE)
+      // Branch: attaches to v.branchAttachNode, set when the preceding sugar
+      // was emitted. Does not advance the backbone, so the next backbone unit
+      // still chains from that sugar's 3' side.
+      addBranchMonomerToMolblock(mG, molfileAtomBlock, molfileBondBlock, v);
+    else
+      // Backbone: sugar / phosphate / linker / terminal modifier. Chains from
+      // the previous backbone unit (none for the very first one) and, for a
+      // sugar, sets up the branch attach point for the next base.
+      addBackboneMonomerToMolblock(mG, molfileAtomBlock, molfileBondBlock, v);
+
+    mG.stereoAtoms?.forEach((s) => steabsCollection.push(s + getAtoms()));
     addAtoms(mG.atoms.x.length);
+
     const aList: number[] = [];
     for (let a = aFirst; a < v.nodeShift; ++a) aList.push(a);
     const bList: number[] = [];
     for (let b = bFirst; b < v.bondShift; ++b) bList.push(b);
-    monomers.set(mapKey, {biotype: sm.biotype, symbol: sm.symbol, atoms: aList, bonds: bList});
-  };
-
-  // 1. 5'-end terminal modifier (e.g. Chol).
-  if (has5pTerm) {
-    v.i = 0;
-    emitBackbone(monomerSeq[0], 0);
-  }
-
-  // 2. Core triples loop: each iteration emits [prev-P (if n>=1)] + sugar + base.
-  for (let n = 0; n < N; ++n) {
-    v.i = n + (has5pTerm ? 1 : 0); // keep v.i monotone across emits
-    const sugarSeqIdx = coreStart + 3 * n;
-    const baseSeqIdx = sugarSeqIdx + 1;
-
-    const sugarSm = monomerSeq[sugarSeqIdx];
-    const baseSm = monomerSeq[baseSeqIdx];
-
-    const sugarG = getMolGraph(monomersDict,
-      {symbol: sugarSm.symbol, polymerType: helmTypeToPolymerType(sugarSm.biotype)})!;
-    const baseG = getMolGraph(monomersDict,
-      {symbol: baseSm.symbol, polymerType: helmTypeToPolymerType(baseSm.biotype)})!;
-
-    // Inter-nucleotide phosphate sits at coreStart + 3*(n-1) + 2 for n >= 1.
-    if (n >= 1) {
-      const prevPhosKey = coreStart + 3 * (n - 1) + 2;
-      emitBackbone(monomerSeq[prevPhosKey], prevPhosKey);
-    }
-
-    // Sugar (backbone)
-    const sugarAtomFirst = v.nodeShift;
-    const sugarBondFirst = v.bondShift;
-    addBackboneMonomerToMolblock(sugarG, molfileAtomBlock, molfileBondBlock, v);
-    sugarG.stereoAtoms?.forEach((i) => steabsCollection.push(i + getAtoms()));
-    addAtoms(sugarG.atoms.x.length);
-    const sAList: number[] = [];
-    for (let a = sugarAtomFirst; a < v.nodeShift; ++a) sAList.push(a);
-    const sBList: number[] = [];
-    for (let b = sugarBondFirst; b < v.bondShift; ++b) sBList.push(b);
-    monomers.set(sugarSeqIdx, {
-      biotype: sugarSm.biotype, symbol: sugarSm.symbol,
-      atoms: sAList, bonds: sBList,
-    });
-
-    // Base (branch)
-    const baseAtomFirst = v.nodeShift;
-    const baseBondFirst = v.bondShift;
-    addBranchMonomerToMolblock(baseG, molfileAtomBlock, molfileBondBlock, v);
-    baseG.stereoAtoms?.forEach((i) => steabsCollection.push(i + getAtoms()));
-    addAtoms(baseG.atoms.x.length);
-    const bAList: number[] = [];
-    for (let a = baseAtomFirst; a < v.nodeShift; ++a) bAList.push(a);
-    const bBList: number[] = [];
-    for (let b = baseBondFirst; b < v.bondShift; ++b) bBList.push(b);
-    monomers.set(baseSeqIdx, {
-      biotype: baseSm.biotype, symbol: baseSm.symbol,
-      atoms: bAList, bonds: bBList,
-    });
-  }
-
-  // 3. Trailing phosphate (the LAST nucleotide's P) — only if HELM wrote
-  // one AND there is no 3'-terminal modifier replacing it.
-  if (hasTrailingP) {
-    const lastPhosKey = coreStart + 3 * (N - 1) + 2;
-    emitBackbone(monomerSeq[lastPhosKey], lastPhosKey);
-  }
-
-  // 4. 3'-end terminal modifier (e.g. GalNAc).
-  if (has3pTerm) {
-    v.i = N + (has5pTerm ? 1 : 0);
-    emitBackbone(monomerSeq[roles.length - 1], roles.length - 1);
+    monomers.set(i, {biotype: sm.biotype, symbol: sm.symbol, atoms: aList, bonds: bList});
   }
 }
 
@@ -588,5 +557,180 @@ function runTriplesAssembly(
  */
 export function keepPrecision(x: number): number {
   return Math.round(C.PRECISION_FACTOR * x) / C.PRECISION_FACTOR;
+}
+
+// Vertical gap (in molfile coordinate units) inserted between stacked chains
+// of a multi-strand HELM. Roughly two bond lengths — enough to read the strands
+// as separate without pushing them far apart.
+const CHAIN_VERTICAL_GAP = 3.0;
+
+const STEABS_MARKER = 'M  V30 MDLV30/STEABS ATOMS=(';
+
+type ParsedAtom = { type: string, xStr: string, y: number, tail: string };
+type ParsedBond = { btype: string, a1: number, a2: number, tail: string };
+type ParsedMol = { atoms: ParsedAtom[], bonds: ParsedBond[], steabs: number[] };
+
+/** Split `body` into its first `n` space-separated tokens plus a trailing
+ * remainder token (so the result has n+1 entries). The remainder keeps any
+ * embedded spaces of the tail verbatim.
+ * @param {string} body - the line body to split
+ * @param {number} n - number of leading tokens to peel off
+ * @return {string[]} - the n tokens followed by the remainder */
+function splitLeadingTokens(body: string, n: number): string[] {
+  const out: string[] = [];
+  let s = body;
+  for (let i = 0; i < n; ++i) {
+    const sp = s.indexOf(' ');
+    if (sp === -1) { out.push(s); s = ''; continue; }
+    out.push(s.substring(0, sp));
+    s = s.substring(sp + 1);
+  }
+  out.push(s);
+  return out;
+}
+
+/** Extract the data lines (`M  V30 ...`) between a BEGIN/END marker pair.
+ * @param {string} molfile - the V3000 molfile
+ * @param {string} beginMarker - the block BEGIN marker line
+ * @param {string} endMarker - the block END marker line
+ * @return {string[]} - the data lines of the block, newline stripped */
+function extractBlockDataLines(molfile: string, beginMarker: string, endMarker: string): string[] {
+  const begin = molfile.indexOf(beginMarker);
+  if (begin === -1) return [];
+  const start = molfile.indexOf('\n', begin) + 1;
+  const end = molfile.indexOf(endMarker, start);
+  return molfile.substring(start, end === -1 ? molfile.length : end)
+    .split('\n')
+    .filter((l) => l.startsWith(C.V3K_BEGIN_DATA_LINE))
+    .map((l) => l.substring(C.V3K_BEGIN_DATA_LINE.length));
+}
+
+/** Parse a molfile produced by monomerSeqToMolfile back into atoms / bonds /
+ * stereo-atom indices. Robust because we control the exact serialization
+ * format; only the fields we need to renumber (indices) and shift (y) are
+ * parsed, everything past them is preserved verbatim as an opaque tail.
+ * @param {string} molfile - the V3000 molfile
+ * @return {ParsedMol} - parsed atoms, bonds and STEABS atom indices */
+function parseGeneratedMolfile(molfile: string): ParsedMol {
+  const atoms: ParsedAtom[] = [];
+  for (const body of extractBlockDataLines(molfile, C.V3K_BEGIN_ATOM_BLOCK, C.V3K_END_ATOM_BLOCK)) {
+    // body: "<idx> <type> <x> <y> <z> <...kwargs>"
+    const t = splitLeadingTokens(body, 4); // [idx, type, x, y, tail]
+    atoms.push({type: t[1], xStr: t[2], y: parseFloat(t[3]), tail: t[4]});
+  }
+
+  const bonds: ParsedBond[] = [];
+  for (const body of extractBlockDataLines(molfile, C.V3K_BEGIN_BOND_BLOCK, C.V3K_END_BOND_BLOCK)) {
+    // body: "<idx> <btype> <a1> <a2> <...cfg/kwargs>"
+    const t = splitLeadingTokens(body, 4); // [idx, btype, a1, a2, tail]
+    bonds.push({btype: t[1], a1: parseInt(t[2]), a2: parseInt(t[3]), tail: t[4]});
+  }
+
+  const steabs: number[] = [];
+  let idx = molfile.indexOf(STEABS_MARKER);
+  while (idx !== -1) {
+    idx += STEABS_MARKER.length;
+    const closeIdx = molfile.indexOf(')', idx);
+    // first entry inside the parens is the atom count, not an atom index
+    steabs.push(...molfile.substring(idx, closeIdx).split(' ').slice(1)
+      .map((s) => parseInt(s)).filter((n) => !Number.isNaN(n)));
+    idx = molfile.indexOf(STEABS_MARKER, closeIdx);
+  }
+
+  return {atoms, bonds, steabs};
+}
+
+/** Combine several already-assembled single-chain molfiles into one molfile,
+ * stacking them vertically: the first chain keeps its coordinates, every
+ * subsequent chain is shifted straight down so its top-most atom sits just
+ * below the running bottom of everything placed so far. Atom / bond indices
+ * and per-monomer maps are re-based, STEABS collections merged, and the
+ * monomer-map keys offset by each chain's start position so the combined map
+ * still keys by original flat HELM position.
+ * @param {MolfileWithMap[]} parts - per-chain assembled molfiles (chain order)
+ * @param {number[]} chainStarts - flat start position of each chain
+ * @return {MolfileWithMap} - single combined molfile + merged monomer map */
+export function combineMolfilesVertically(parts: MolfileWithMap[], chainStarts: number[]): MolfileWithMap {
+  const combinedAtomLines: string[] = [];
+  const combinedBondLines: string[] = [];
+  const combinedSteabs: number[] = [];
+  const combinedMap: MonomerMap = new MonomerMap();
+
+  let atomOffset = 0;
+  let bondOffset = 0;
+  let runningBottom = Number.POSITIVE_INFINITY; // lowest y placed so far
+  let anyPlaced = false;
+
+  for (let c = 0; c < parts.length; ++c) {
+    const part = parts[c];
+    if (!part || !part.molfile) continue;
+    const pm = parseGeneratedMolfile(part.molfile);
+    if (pm.atoms.length === 0) continue;
+
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (const a of pm.atoms) {
+      if (a.y < minY) minY = a.y;
+      if (a.y > maxY) maxY = a.y;
+    }
+
+    // First placed chain keeps its coordinates; later chains drop below the
+    // current bottom, leaving CHAIN_VERTICAL_GAP between the strands.
+    const yShift = anyPlaced ? keepPrecision(runningBottom - CHAIN_VERTICAL_GAP - maxY) : 0;
+
+    for (let ai = 0; ai < pm.atoms.length; ++ai) {
+      const a = pm.atoms[ai];
+      const newIdx = atomOffset + ai + 1;
+      const newY = keepPrecision(a.y + yShift);
+      combinedAtomLines.push(
+        C.V3K_BEGIN_DATA_LINE + newIdx + ' ' + a.type + ' ' + a.xStr + ' ' + newY + ' ' + a.tail + '\n');
+    }
+
+    for (let bi = 0; bi < pm.bonds.length; ++bi) {
+      const b = pm.bonds[bi];
+      const newIdx = bondOffset + bi + 1;
+      const tail = b.tail ? ' ' + b.tail : '';
+      combinedBondLines.push(
+        C.V3K_BEGIN_DATA_LINE + newIdx + ' ' + b.btype + ' ' + (b.a1 + atomOffset) + ' ' + (b.a2 + atomOffset) + tail + '\n');
+    }
+
+    for (const s of pm.steabs) combinedSteabs.push(s + atomOffset);
+
+    const posOffset = chainStarts[c] ?? 0;
+    for (const [pos, val] of part.monomers) {
+      combinedMap.set(posOffset + pos, {
+        biotype: val.biotype,
+        symbol: val.symbol,
+        atoms: val.atoms.map((x) => x + atomOffset),
+        bonds: val.bonds.map((x) => x + bondOffset),
+      });
+    }
+
+    const newBottom = keepPrecision(minY + yShift);
+    runningBottom = anyPlaced ? Math.min(runningBottom, newBottom) : newBottom;
+    anyPlaced = true;
+    atomOffset += pm.atoms.length;
+    bondOffset += pm.bonds.length;
+  }
+
+  if (!anyPlaced) return MolfileWithMap.createEmpty();
+
+  let result = '';
+  result += C.V3K_HEADER_FIRST_LINE;
+  result += C.V3K_HEADER_SECOND_LINE;
+  result += C.V3K_BEGIN_CTAB_BLOCK;
+  result += C.V3K_BEGIN_COUNTS_LINE + atomOffset + ' ' + bondOffset + C.V3K_COUNTS_LINE_ENDING;
+  result += C.V3K_BEGIN_ATOM_BLOCK;
+  result += combinedAtomLines.join('');
+  result += C.V3K_END_ATOM_BLOCK;
+  result += C.V3K_BEGIN_BOND_BLOCK;
+  result += combinedBondLines.join('');
+  result += C.V3K_END_BOND_BLOCK;
+  if (combinedSteabs.length > 0)
+    result += getCollectionBlock(combinedSteabs);
+  result += C.V3K_END_CTAB_BLOCK;
+  result += C.V3K_END;
+
+  return {molfile: result, monomers: combinedMap};
 }
 

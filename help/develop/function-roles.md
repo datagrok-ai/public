@@ -1,6 +1,18 @@
 ---
 title: "Function roles"
 sidebar_position: 5
+description: Reference for the special roles a package function can take on, such as app, panel, init, and autostart.
+keywords:
+  - meta.role
+  - "#app"
+  - "#panel"
+  - "#init"
+  - "#autostart"
+  - semTypeDetector
+  - cellRenderer
+  - fileViewer
+  - packageSettingsEditor
+  - DG.FUNC_TYPES
 ---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.

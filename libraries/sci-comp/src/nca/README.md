@@ -9,7 +9,7 @@ Operates on plain `Float64Array` / `Uint8Array` inputs.
 | **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion, extravascular (PO/SC/IM treated uniformly) |
 | **AUC methods** | linear, log-linear, linear-up/log-down — each as both naive Float64 and Neumaier-compensated summation |
 | **BLQ rules**  | `set-zero`, `set-half-lloq`, `exclude`, `missing` — per-phase configurable (`preFirstMeasurable`, `embedded`, `afterLast`, `consecutiveAfterLast`) |
-| **λz**         | auto best-fit (subset search by adjusted R² `adjRSquaredFactor` tie-breaking) + manual point selection |
+| **λz**         | auto best-fit (subset search; PKNCA/WinNonlin flat-tolerance tie-break — most points within `adjRSquaredFactor` of the global-max adjusted R²) + manual point selection |
 
 ## Quickstart
 
@@ -47,15 +47,17 @@ const rules: nca.NcaRules = {
   },
   extrapWarnPct:        20,
   extrapErrorPct:       50,
+  extrapWarnPctAumc:    20,
   compensatedSummation: false,
 };
 
 const result = nca.computeNca(inputs, rules);
 
-// result.values.{cmax, tmax, aucLast, aucInf, pctExtrap, lambdaZ, halfLife, cl, vz}
+// result.values.{cmax, tmax, aucLast, aucInf, pctExtrap, lambdaZ, halfLife, cl, vz,
+//                aumcLast, aumcInf, mrt, vss, tlag, pctExtrapAumc}
 // result.provenance.lambdaZ      → LambdaZResult: pointsUsed, R², tStart, tEnd, intercept
 // result.provenance.blqApplied   → which points were modified by BLQ rules
-// result.provenance.warnings     → AUC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS / BLQ_HIGH_FRACTION
+// result.provenance.warnings     → AUC_EXTRAP_HIGH / AUMC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS / BLQ_HIGH_FRACTION
 // result.status                  → 'ok' | 'partial' | 'failed'
 ```
 

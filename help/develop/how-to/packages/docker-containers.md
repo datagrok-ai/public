@@ -1,5 +1,15 @@
 ---
 title: "Creating a docker container"
+description: Bundle a Docker container with a package, configure its resources, and reach it from plugin code via HTTP or WebSocket.
+keywords:
+  - dockerfiles folder
+  - container.json
+  - grok_spawner
+  - fetchProxy docker
+  - webSocketProxy
+  - docker registry
+  - grok publish --release
+  - Docker Compose AWS ECS Kubernetes
 ---
 
 This document explains how to create a package that is capable of running docker containers on the Datagrok instance.

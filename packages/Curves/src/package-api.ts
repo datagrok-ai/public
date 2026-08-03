@@ -9,8 +9,8 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities.
-  */
+   * Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities.
+   */
   export async function calculateMSR(table: DG.DataFrame , ic50Column: DG.Column , compoundIdColumn: DG.Column , runDateColumn: DG.Column , assayNameColumn: DG.Column , targetEntityColumn: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Curves:CalculateMSR', { table, ic50Column, compoundIdColumn, runDateColumn, assayNameColumn, targetEntityColumn });
   }
@@ -22,22 +22,22 @@ export namespace funcs {
   }
 
   /**
-  A viewer that superimposes multiple in-cell curves on one chart
-  */
+   * A viewer that superimposes multiple in-cell curves on one chart
+   */
   export async function multiCurveViewer(): Promise<any> {
     return await grok.functions.call('Curves:MultiCurveViewer', {});
   }
 
   /**
-  Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
-  */
+   * Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
+   */
   export async function curveFitDemo(): Promise<void> {
     return await grok.functions.call('Curves:CurveFitDemo', {});
   }
 
   /**
-  Dashboard with curves for multiple compounds, assays and targets
-  */
+   * Dashboard with curves for multiple compounds, assays and targets
+   */
   export async function assayCurveFitDemo(): Promise<void> {
     return await grok.functions.call('Curves:AssayCurveFitDemo', {});
   }
@@ -46,6 +46,17 @@ export namespace funcs {
     return await grok.functions.call('Curves:InitCurves', {});
   }
 
+  /**
+   * Group well-level assay data by compound, assay, target, and run, then fit a dose-response curve per group.
+   * @param {DG.Column} concentrationCol - Concentration (dose) column
+   * @param {DG.Column} readoutCol - Readout (response) column
+   * @param {DG.Column} batchIDCol - Batch identifier column
+   * @param {DG.Column} assayCol - Assay name column
+   * @param {DG.Column} runIDCol - Run identifier column
+   * @param {DG.Column} compoundIDCol - Compound identifier column
+   * @param {DG.Column} targetEntityCol - Target entity column
+   * @param {DG.Column} excludeOutliersCol - Boolean column marking points to exclude as outliers
+   */
   export async function dataToCurves(df: DG.DataFrame , concentrationCol: DG.Column , readoutCol: DG.Column , batchIDCol: DG.Column , assayCol: DG.Column , runIDCol: DG.Column , compoundIDCol: DG.Column , targetEntityCol: DG.Column , excludeOutliersCol: DG.Column | null, parentTable: DG.DataFrame | null, fitParamColumns: any | null, reportedIC50Column: string | null, reportedQualifiedIC50Column: string | null, experimentIDColumn: string | null, qualifierColumn: string | null, additionalColumns: any | null, wellLevelJoinCol: string | null, parentLevelJoinCol: string | null, wellLevelAdditionalColumns?: any | null): Promise<DG.DataFrame> {
     return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol, wellLevelAdditionalColumns });
   }
@@ -54,31 +65,71 @@ export namespace funcs {
     return await grok.functions.call('Curves:DataToCurvesTopMenu', {});
   }
 
+  /**
+   * Extract a fit statistic (e.g. IC50, AUC, R²) from a specific curve series into a new column.
+   * @param {string} colName - Name of the curve column to read
+   * @param {string} propName - Fit statistic to extract. interceptX is IC50, top and bottom are max/min Y
+   *   choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]
+   * @param {number} seriesNumber - Zero-based index of the curve series
+   */
   export async function addStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , seriesNumber: number ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddStatisticsColumn', { table, colName, propName, seriesNumber });
   }
 
+  /**
+   * Aggregate a fit statistic across all series of a curve into a new column.
+   * @param {string} colName - Name of the curve column to read
+   * @param {string} propName - Fit statistic to aggregate. interceptX is IC50, top and bottom are max/min Y
+   *   choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]
+   * @param {string} aggrType - Aggregation applied across the series of each curve
+   *   choices: ["min","max","sum","avg","stdev","variance","skew","kurt","med","q1","q2","q3","count","nulls","unique","values"]
+   */
   export async function addAggrStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
   }
 
   /**
-  Returns XML 3DX curve converter function
-  */
+   * Extracts a fit statistic from one series of a curve column into a new column.
+   * @param {DG.Column} curves - Column of fitted curves
+   *   semType: fit
+   * @param {string} statistic - interceptX is IC50, top and bottom are max/min Y
+   *   choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]
+   * @param {number} seriesNumber - Zero-based index of the curve series
+   */
+  export async function addCurveStatistic(table: DG.DataFrame , curves: DG.Column , statistic: string , seriesNumber: number ): Promise<DG.Column> {
+    return await grok.functions.call('Curves:AddCurveStatistic', { table, curves, statistic, seriesNumber });
+  }
+
+  /**
+   * Aggregates a fit statistic across all series of a curve column into a new column.
+   * @param {DG.Column} curves - Column of fitted curves
+   *   semType: fit
+   * @param {string} statistic - interceptX is IC50, top and bottom are max/min Y
+   *   choices: ["rSquared","auc","interceptX","interceptY","slope","top","bottom"]
+   * @param {string} aggregation - Applied across the series of each curve
+   *   choices: ["med","avg","min","max","sum","stdev","variance","q1","q2","q3"]
+   */
+  export async function addAggrCurveStatistic(table: DG.DataFrame , curves: DG.Column , statistic: string , aggregation: string ): Promise<DG.Column> {
+    return await grok.functions.call('Curves:AddAggrCurveStatistic', { table, curves, statistic, aggregation });
+  }
+
+  /**
+   * Returns XML 3DX curve converter function
+   */
   export async function convertXmlCurveToJsonFunc(): Promise<any> {
     return await grok.functions.call('Curves:ConvertXmlCurveToJsonFunc', {});
   }
 
   /**
-  Returns compact dose-response JSON converter function
-  */
+   * Returns compact dose-response JSON converter function
+   */
   export async function convertCompactDrToJsonFunc(): Promise<any> {
     return await grok.functions.call('Curves:ConvertCompactDrToJsonFunc', {});
   }
 
   /**
-  Returns PZFX curve converter function
-  */
+   * Returns PZFX curve converter function
+   */
   export async function convertPzfxToJsonFunc(): Promise<any> {
     return await grok.functions.call('Curves:ConvertPzfxToJsonFunc', {});
   }
@@ -87,6 +138,10 @@ export namespace funcs {
     return await grok.functions.call('Curves:PreviewPzfx', { file });
   }
 
+  /**
+   * Open a GraphPad Prism (.pzfx) file as data tables, fitting XY curve tables.
+   * @param {any} bytes - Raw bytes of the .pzfx file
+   */
   export async function pzfxFileHandler(bytes: any ): Promise<any> {
     return await grok.functions.call('Curves:PzfxFileHandler', { bytes });
   }

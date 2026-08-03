@@ -2,6 +2,14 @@
 
 title: Seamless collaboration
 
+description: Coordinate teams, share data instantly, and get notified about mentions, shares, and project updates.
+keywords:
+  - team collaboration
+  - share data instantly
+  - notifications and mentions
+  - user profile view
+  - cross-pollination of knowledge
+
 ---
 
 Datagrok supports collaboration at every level:

@@ -300,3 +300,13 @@
     gap: 8px;
     margin-bottom: 4px;
 }
+
+.diff-studio-facet-viewer {
+    width: 100%;
+    height: 100%;
+}
+
+.diff-studio-facet-grid {
+    width: 100%;
+    height: 100%;
+}

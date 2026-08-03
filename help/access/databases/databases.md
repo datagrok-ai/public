@@ -1,6 +1,15 @@
 ---
 title: "Databases"
-format: mdx
+mdx:
+  format: mdx
+description: How to connect Datagrok to relational databases, run and share parameterized queries, and build dynamic dashboards.
+keywords:
+  - connect to a database
+  - database manager
+  - parameterized query
+  - visual query editor
+  - schema browser
+  - share database connection
 ---
 
 ```mdx-code-block

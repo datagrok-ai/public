@@ -387,6 +387,14 @@ export class FuncOptions {
   /// Function that returns a Widget that gets added as a tab to the "Inspector" window
   static InspectorPanel = 'inspectorPanel';
 
+  /// Runs a package JS function as a celery task in a docker-based worker.
+  /// 'true' — an auto-created Node worker container; a name — the package's dockerfiles/[name] container.
+  static Queue = 'queue';
+
+  /// When set to 'true', runs a package JS function server-side in the default
+  /// worker queue — an alias of [Queue] = 'true'.
+  static Server = 'server';
+
   /// Function that should be cached
   static Cache = 'cache';
 
@@ -426,6 +434,13 @@ export class FuncOptions {
   /// Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
   /// Defaults to language.
   static ScriptHandlerEditorMode = 'scriptHandler.codeEditorMode';
+
+  /// Specifies a package function (qualified name, e.g. 'Flow:flowScriptEditor')
+  /// that opens a custom editor view for scripts of this [FuncTypes.ScriptHandler]'s
+  /// language. The function takes one script parameter and returns a view.
+  /// When absent, or when the function is not present, the default CodeMirror
+  /// script editor is used.
+  static ScriptHandlerEditorFunc = 'scriptHandler.editorFunction';
 
   /// Allows to add this function results as a column from the context menu
   static AllowAddAsColumn = 'allowAddAsColumn';

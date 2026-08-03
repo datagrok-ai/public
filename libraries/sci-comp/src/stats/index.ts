@@ -51,6 +51,10 @@ export type {
   AdjustedMean, AncovaPairwise, AncovaSlope,
   AncovaSlopeHomogeneity, AncovaEffectDecomposition,
 } from './tests/ancova';
+export {linearFit} from './tests/linear-fit';
+export type {LinearFitOptions, LinearFitResult} from './tests/linear-fit';
+export {oneWayAnova} from './tests/one-way-anova';
+export type {OneWayAnovaResult} from './tests/one-way-anova';
 
 // Multiple comparison
 export {bonferroniCorrect} from './multiple-comparison/bonferroni';

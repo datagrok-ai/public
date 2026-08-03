@@ -458,12 +458,14 @@ export class SensitivityAnalysisView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
+      disableLookupDefault?: boolean,
       ranges?: Record<string, RangeDescription>,
       diffGrok?: DiffGrok,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
+      disableLookupDefault: false,
       ranges: undefined,
       diffGrok: undefined,
     },
@@ -492,6 +494,7 @@ export class SensitivityAnalysisView {
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
       inputsLookup?: string,
+      disableLookupDefault?: boolean,
       ranges?: Record<string, RangeDescription>,
       diffGrok?: DiffGrok,
     } = {
@@ -499,6 +502,7 @@ export class SensitivityAnalysisView {
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
+      disableLookupDefault: false,
       ranges: undefined,
       diffGrok: undefined,
     },
@@ -649,7 +653,7 @@ export class SensitivityAnalysisView {
     const constIputs = new Map<string, DG.InputBase>();
     Object.keys(this.store.inputs).forEach((name) => constIputs.set(name, this.store.inputs[name].constForm[0]));
 
-    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
+    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs, this.options.disableLookupDefault);
 
     if (lookupElement !== null)
       lookupElement.input.root.insertBefore(getSwitchMock(), lookupElement.input.captionLabel);
@@ -658,11 +662,18 @@ export class SensitivityAnalysisView {
   }
 
   private async buildFormWithBtn(inputsLookup?: string) {
+    // The lookup choice input doubles as the scenario selector for the func input of the same
+    // name (e.g. `mode`); skip that input below so it is not rendered twice.
+    const lookupElement = await this.getLookupElement(inputsLookup);
+
     // inputs grouped by categories
     const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
 
     // group inputs by categories
     Object.values(this.store.inputs).forEach((inputConfig) => {
+      if (lookupElement !== null && inputConfig.prop.name === lookupElement.name)
+        return;
+
       const category = inputConfig.prop.category;
       const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
 
@@ -678,7 +689,6 @@ export class SensitivityAnalysisView {
       this.store.analysisInputs.samplesCount.input,
     ], {style: {overflowY: 'scroll', width: '100%'}});
 
-    const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
 
     if (lookupElement !== null) {

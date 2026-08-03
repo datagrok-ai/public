@@ -55,7 +55,8 @@ import {
 
 const PROVIDER = 'Postgres';
 const QUERY_NAME = 'Test_Postprocessing';
-const SQL_BODY = 'select * from products';
+// CI: Datagrok metadata `entities` table (System:Datagrok), always present.
+const SQL_BODY = 'select * from entities';
 const POST_PROCESS_SCRIPT = `//name: postprocess
 //tags: postprocessing
 //input: dataframe result

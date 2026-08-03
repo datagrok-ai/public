@@ -48,7 +48,10 @@ export function showWorkspacePreview(content: HTMLElement, title?: string, onOpe
       const btn = document.createElement('button');
       btn.className = 'pp-workspace-preview-open-btn';
       btn.textContent = 'Open';
-      btn.addEventListener('click', onOpen);
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onOpen();
+      });
       header.appendChild(btn);
     }
     host.appendChild(header);

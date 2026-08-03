@@ -1,9 +1,11 @@
 #name: FindRGroups
+#friendlyName: Find R-Groups
+#description: Decomposes molecules into R-groups around a common core scaffold.
 #language: python
 #input: string molecules
 #input: dataframe df
-#input: string core
-#input: string prefix
+#input: string core [Core scaffold (SMILES/SMARTS) to decompose around]
+#input: string prefix [Prefix for the generated R-group column names]
 #output: dataframe result
 
 from rdkit import Chem

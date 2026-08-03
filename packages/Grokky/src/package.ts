@@ -4,15 +4,16 @@ import './polyfills'; // must run before anything else — Chrome 50 / Dartium s
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {interval} from 'rxjs';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
-import {askWiki, smartExecution, setupAgentScriptsUI, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
+import {askWiki, smartExecution, setupAgentScriptsUI, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI, initAIWindow} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
 import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
+import {listDbCatalogs, listDbSchemas, listDbTables, getDbTableDetails, listDbJoins, getSqlTestResult} from './ai/db-view-functions';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
+import {runBenchmark as runBenchmarkImpl, compareBenchmarks as compareBenchmarksImpl} from './ai/benchmark/benchmark';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
@@ -26,6 +27,7 @@ export class PackageFunctions {
   static async init() {
     await UsageLimiter.getInstance().init();
     setupSearchUI();
+    initAIWindow();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
     setupAgentScriptsUI();
@@ -77,8 +79,10 @@ export class PackageFunctions {
 
   // Subscribes to platform events that should trigger file sync.
   static subscribeToSyncEvents(): void {
+    // Background sync is best-effort: swallow errors (e.g. runtime container not running) so they
+    // don't surface as unhandled rejections that get auto-reported on every package load.
     const sync = (...args: Parameters<ClaudeRuntimeClient['syncUserFiles']>) =>
-      ClaudeRuntimeClient.getInstance().syncUserFiles(...args);
+      ClaudeRuntimeClient.getInstance().syncUserFiles(...args).catch(() => {});
 
     // MyFiles agents: file operations (create, upload, delete, rename, move)
     grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {
@@ -98,15 +102,8 @@ export class PackageFunctions {
 
     // Packages: when a JS bundle is loaded
     grok.events.onPackageLoaded.subscribe((pkg: DG.Package) => {
-      sync('packages', pkg.name);
-    });
-
-    // Poll for shared connections and package updates every 10 minutes.
-    // No reliable push events exist for sharing or other users' publishes.
-    // TODO: think about more efficient strategies here.
-    interval(15 * 60 * 1000).subscribe(() => {
-      sync('shared');
-      sync('packages');
+      if (pkg?.name)
+        sync('packages', pkg.name);
     });
   }
 
@@ -114,9 +111,12 @@ export class PackageFunctions {
   static autostart() {
     if (grok.shell.windows.showAI)
       setupShellAIPanelUI();
+    let prevShowAI = grok.shell.windows.showAI;
     grok.shell.windows.onPanelVisibilityChanged.subscribe(() => {
-      if (grok.shell.windows.showAI)
+      const showAI = grok.shell.windows.showAI;
+      if (showAI && !prevShowAI)
         setupShellAIPanelUI();
+      prevShowAI = showAI;
     });
   }
 
@@ -154,6 +154,27 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
   ): Promise<DG.Widget | null> {
     return await askWiki(prompt, sessionId);
+  }
+
+  @grok.decorators.func({name: 'runBenchmark',
+    description: 'Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.'})
+  static async runBenchmark(
+    @grok.decorators.param({type: 'string', options: {description: 'Config label for this run, e.g. baseline / medium-effort'}}) label: string,
+    @grok.decorators.param({type: 'int', options: {optional: true, description: 'Repetitions per prompt (default 3)'}}) reps?: number,
+    @grok.decorators.param({type: 'string', options: {optional: true, choices: ['haiku', 'sonnet', 'opus'],
+      description: 'Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.'}}) model?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true,
+      description: 'Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.'}}) only?: string,
+  ): Promise<string> {
+    return runBenchmarkImpl(label, reps ?? 3, model, only);
+  }
+
+  @grok.decorators.func({name: 'compareBenchmarks',
+    description: 'Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.'})
+  static async compareBenchmarks(
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated run labels, the first being the reference arm'}}) labels: string,
+  ): Promise<string> {
+    return compareBenchmarksImpl(labels);
   }
 
   @grok.decorators.func({meta: {
@@ -194,6 +215,57 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  // Functions applicable to the database query editor (surfaced via View.getFunctions()
+  // by their meta.viewType). Each takes the view; the AI assistant injects it automatically.
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List the catalogs available on this connection'})
+  static async listDbCatalogs(@grok.decorators.param({type: 'view'}) view: any): Promise<string> {
+    return listDbCatalogs(view);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List schemas of a catalog (defaults to the connection default catalog)'})
+  static async listDbSchemas(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbSchemas(view, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List tables of a schema with row counts'})
+  static async listDbTables(
+    @grok.decorators.param({type: 'view'}) view: any,
+    schemaName: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbTables(view, schemaName, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table'})
+  static async getDbTableDetails(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references to describe'}}) tables: string): Promise<string> {
+    return getDbTableDetails(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Foreign-key relationships involving the given tables — use to build correct JOINs'})
+  static async listDbJoins(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references'}}) tables: string): Promise<string> {
+    return listDbJoins(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun'})
+  static async getSqlTestResult(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'The SQL to test'}}) sql: string,
+    @grok.decorators.param({type: 'string', options: {description: 'One line describing what the query does'}}) description: string): Promise<string> {
+    return getSqlTestResult(view, sql, description);
   }
 
   @grok.decorators.func({})

@@ -159,7 +159,7 @@ Notation enum (used by `convertMolNotation`, `convertMoleculeNotation`,
 | `detectSmiles(col: column, min: int)` | — | Heuristic — tags the column as `SMILES` / `Molecule` if enough cells parse. |
 | `getMolFileHandler(molString)` | — | Returns a low-level molfile parser handler. |
 | `getRdKitModule()` | — | Returns the raw RDKit-JS module (for advanced calls like `mol.get_descriptors()`). |
-| `chemCellRenderer` / `rdKitCellRenderer` / `oclCellRenderer` / `rdKitReactionRenderer` / `rdKitMixtureRenderer` | — | Cell renderers — call only via the grid system, not directly. |
+| `chemCellRenderer` / `rdKitCellRenderer` / `rdKitReactionRenderer` / `rdKitMixtureRenderer` | — | Cell renderers — call only via the grid system, not directly. |
 | `editMoleculeCell(cell)` | — | Pops a sketcher dialog bound to a grid cell. |
 | `openChemLibSketcher()` | — | Returns the OCL sketcher widget. |
 
@@ -310,7 +310,7 @@ on `addChemPropertiesColumns`: `'MW' | 'HBA' | 'HBD' | 'LogP' | 'LogS' | 'PSA' |
 - `split_type`: `'random' | 'scaffold_balanced' | 'cv' | 'cv_no_val' | 'kennard_stone' | 'kmeans' | 'random_with_repeated_smiles'` (default `'random'`)
 - `activation`: `'ReLU' | 'LeakyReLU' | 'PReLU' | 'tanh' | 'SELU' | 'ELU'` (default `'ReLU'`)
 
-For the full numeric-default schema, use the MCP `get_function('Chem:trainChemprop')`
+For the full numeric-default schema, use the MCP `datagrok_functions(op:"get", args:{id:'Chem:trainChemprop'})`
 call before invoking — don't guess param names.
 
 ### Panels (context-panel widgets — show in the right-side panel when a molecule cell is selected)

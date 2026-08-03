@@ -1,33 +1,56 @@
 import { readdir } from 'fs/promises';
 import { writeFileSync } from 'fs';
-import { basename, join } from 'path';
+import { basename, dirname, join } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
-import { startDatagrok } from 'datagrok-api/datagrok';
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 
+import { setTestPackage } from './test-package';
+
 declare let grok: typeof _grok, DG: typeof _DG;
 export let _package: _DG.Package;
 
+// Entries are basenames or dir-qualified paths (e.g. 'shell/events.ts')
 const testsExclude = [
-    'sticky_meta.js',
-    'benchmarks.js',
-    'functions-annotations.js',
-    'vector-functions-and-scripts.js'
+    'sticky_meta.ts',
+    'benchmarks.ts',
+    'functions-annotations.ts',
+    'vector-functions-and-scripts.ts',
+    'cache.ts',          // client function-result cache: IndexedDB + grok.functions.register (browser-only)
+    'shell/events.ts',   // shell workspace events (table/view add) — browser-only
+    'shell/settings.ts', // client shell settings object — browser-only
+    'shell/ml.ts',       // registers client JS funcs at import (grok.functions.register)
+    'dataframe/add-new-column.ts', // dialog-driven (PowerPack addNewColumnDialog)
 ];
+
+// UI-independent test folders that run under Node; grid/, widgets/, ai/, packages/
+// and utils/ stay browser-only (Dart client / DOM dependencies).
+const nodeTestDirs = ['dapi', 'dataframe', 'functions', 'bitset', 'valuematcher', 'property', 'stats', 'shell'];
+
+// 'functional': run every loaded test (UI-dependent ones self-skip via skipReason);
+// 'stress': only stressTest-marked tests — the concurrency-sweep baseline.
+// Defaults to 'stress': `grok stresstest` (the nightly Stress-Tests baseline) invokes
+// this runner without a mode flag, and the curated stress set must not silently widen.
+// Functional runs opt in explicitly (npm run start-node passes --mode=functional).
+let mode: 'functional' | 'stress' = 'stress';
 
 async function main(): Promise<void> {
     const { apiUrl, devKey, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
     console.log('Exchanging devKey for token...');
     const apiToken = await getToken(apiUrl, devKey);
     console.log('Received token.');
+    // Loaded dynamically (not a static import) so Node/tsx resolve datagrok-api's
+    // named exports through cjs-module-lexer instead of failing at link time.
+    const { startDatagrok } = await import('datagrok-api/datagrok');
     await startDatagrok({apiUrl, apiToken});
     _package = await grok.dapi.packages.filter('shortName = "ApiTests"').first();
     if (!_package)
         throw new Error('ApiTests package should be installed.');
+    setTestPackage(_package);
 
     await loadTestFiles();
 
@@ -62,6 +85,10 @@ async function main(): Promise<void> {
 
     await saveResults(results);
     console.log('Finished running tests');
+    if (loadFailures.length > 0) {
+        console.error(`\n❌ ${loadFailures.length} test file(s) failed to load: ${loadFailures.join(', ')}`);
+        process.exit(1);
+    }
     process.exit(0);
 }
 
@@ -111,6 +138,12 @@ function parseArgs() {
             default: false,
             describe: 'If true, continuously repeat tasks with the specified number of concurrent runs',
         })
+        .option('mode', {
+            type: 'string',
+            choices: ['functional', 'stress'] as const,
+            default: 'stress',
+            describe: 'functional: run all loaded tests once; stress: only stressTest-marked tests (concurrency baseline)',
+        })
         .option('step', {
             type: 'number',
             describe: 'Step to use for concurrencyRange'
@@ -131,6 +164,7 @@ function parseArgs() {
         .help()
         .parseSync();
 
+    mode = argv.mode as typeof mode;
     const res: any = {
         apiUrl: argv.apiUrl,
         devKey: argv.devKey,
@@ -156,6 +190,8 @@ function parseArgs() {
 }
 
 async function getToken(url: string, key: string) {
+    // Raw fetch is intentional here: this runs before startDatagrok(), so the grok
+    // client (and grok.dapi) isn't initialized yet — there's no dapi layer to use.
     const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
     const json = await response.json();
     if (json.isSuccess == true)
@@ -164,17 +200,28 @@ async function getToken(url: string, key: string) {
         throw new Error('Unable to login to server. Check your dev key.');
 }
 
+const loadFailures: string[] = [];
+
 async function loadTestFiles(): Promise<void> {
-    const dapiDir = join(__dirname, 'dapi');
-    const files = await readdir(dapiDir);
-    for (const file of files) {
-        const baseName = basename(file);
-        if (testsExclude.includes(baseName)) {
-            console.log(`Skipping tests in ${baseName} because test file marked as unsupported.`);
-            continue;
+    const srcDir = dirname(fileURLToPath(import.meta.url));
+    for (const dir of nodeTestDirs) {
+        const testDir = join(srcDir, dir);
+        const files = await readdir(testDir);
+        for (const file of files) {
+            const baseName = basename(file);
+            if (testsExclude.includes(baseName) || testsExclude.includes(`${dir}/${baseName}`)) {
+                console.log(`Skipping tests in ${dir}/${baseName} because test file marked as unsupported.`);
+                continue;
+            }
+            if (baseName.endsWith('.ts')) {
+                try {
+                    await import(pathToFileURL(join(testDir, file)).href);
+                } catch (e: any) {
+                    loadFailures.push(`${dir}/${baseName}`);
+                    console.error(`❌ Failed to load ${dir}/${baseName} (its tests will not run): ${e?.message ?? e}`);
+                }
+            }
         }
-        if (baseName.endsWith('.js'))
-            require(join(dapiDir, file));
     }
 }
 
@@ -182,16 +229,36 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
     const { runTests, tests} = await import('@datagrok-libraries/test/src/test');
     const data = [];
     const runAll = categories.has('all');
+    // The stress suite is the stressTest-marked tests. Filter the registry directly
+    // (not all installed @datagrok-libraries/test versions honor the stressTest run
+    // option), so only stress-marked tests run and the baseline can be 100%.
+    // Functional mode runs everything that was loaded.
+    if (mode === 'stress') {
+        for (const key of Object.keys(tests)) {
+            const cat: any = (tests as any)[key];
+            if (cat?.tests)
+                cat.tests = cat.tests.filter((t: any) => t.options?.stressTest);
+        }
+    }
+    // Wall-clock window for this task, so stress runs can be correlated with the
+    // container CPU/memory time series (UTC, matching the docker_stats collector).
+    const taskStart = new Date().toISOString();
     for (const key of Object.keys(tests))
-        if (runAll || categories.has(key))
+        if ((runAll || categories.has(key)) && (tests as any)[key]?.tests?.length)
             data.push(...(await runTests({
                 category: key,
                 test: undefined,
                 testContext: undefined,
+                stressTest: mode === 'stress',
                 nodeOptions: {package: _package}
             })));
     if (data.length === 0)
         return null;
+    const taskFinish = new Date().toISOString();
+    for (const row of data as any[]) {
+        row.task_start = taskStart;
+        row.task_finish = taskFinish;
+    }
     const df = DG.DataFrame.fromObjects(data)!;
     await df.columns.addNewCalculated('concurrent_run', `${concurrentRun}`, DG.COLUMN_TYPE.INT, false, false);
     await df.columns.addNewCalculated('total_concurrent_runs', `${concurrency}`, DG.COLUMN_TYPE.INT, false, false);
@@ -232,7 +299,7 @@ async function saveResults(results: _DG.DataFrame[]): Promise<void> {
     const res: _DG.DataFrame = results[0];
     for (let i = 1; i < results.length; i++)
         res.append(results[i], true);
-    await res.columns.addNewCalculated('stress_test', 'true', DG.COLUMN_TYPE.BOOL, false, false);
+    await res.columns.addNewCalculated('stress_test', `${mode === 'stress'}`, DG.COLUMN_TYPE.BOOL, false, false);
     await res.columns.addNewCalculated('benchmark', 'false', DG.COLUMN_TYPE.BOOL, false, false);
     console.log('Writing results in test-report.csv.')
     writeFileSync('test-report.csv', res.toCsv(), 'utf-8')

@@ -75,6 +75,21 @@ export async function requestBinary(
   return Buffer.from(await res.arrayBuffer());
 }
 
+// Lists the immediate children of a published-package folder (path MUST end with '/').
+// Subdirectory names carry a trailing '/'. Returns null on 404 (folder absent).
+export async function listPackageFolder(path: string): Promise<string[] | null> {
+  const ctx = _ctx();
+  const url = `${ctx.apiUrl}/${path.replace(/^\//, '')}`;
+  const res = await fetch(url, {method: 'GET', headers: {'Authorization': ctx.apiKey}});
+  if (res.status === 404)
+    return null;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<string[]>;
+}
+
 export async function listFiles(connector: string, path?: string): Promise<unknown[]> {
   const searchName = connector.includes(':') ? connector.split(':').pop()! : connector;
   const conns = await request<Connection[]>(

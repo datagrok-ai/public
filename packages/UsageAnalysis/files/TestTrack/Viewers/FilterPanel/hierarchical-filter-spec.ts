@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -8,24 +9,7 @@ test('Hierarchical filter', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Phase 2: Open dataset
-  await page.evaluate(async () => {
-    document.body.classList.add('selenium');
-    (grok as any).shell.settings.showFiltersIconsConstantly = true;
-    grok.shell.windows.simpleMode = true;
-    grok.shell.closeAll();
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/demog.csv');
-    const tv = grok.shell.addTableView(df);
-    await new Promise(resolve => {
-      const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-      setTimeout(resolve, 3000);
-    });
-  });
-  await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
-
-  // Phase 3: Test case — open filter panel
-  await page.evaluate(() => (grok.shell as any).tv.getFiltersGroup());
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 10000});
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', withFilterPanel: true});
 
   await softStep('Steps 3-4: Add hierarchical filter with SEX, RACE, SEVERITY', async () => {
     await page.evaluate(async () => {
@@ -195,10 +179,7 @@ test('Hierarchical filter', async ({page}) => {
     expect(result.afterRestore).toBe(339);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

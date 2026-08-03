@@ -1,5 +1,6 @@
 import {test, expect, type Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import * as v from '../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -23,7 +24,7 @@ async function openTable(page: Page, path: string) {
 }
 
 test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme invert', async ({page}) => {
-  test.setTimeout(600000);
+  test.setTimeout(120_000);
   stepErrors.length = 0;
 
   await openTable(page, demogPath);
@@ -109,8 +110,7 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
   });
 
   await softStep('3.2 Re-enable: types and custom colors preserved', async () => {
-    // setDisabled() sets only .color-coding-type to 'Off' without clearing other tags,
-    // so restoring the type brings back the original color configuration.
+    // setDisabled() only sets .color-coding-type='Off'; restoring the type restores the colors.
     const result = await page.evaluate(async () => {
       const df = grok.shell.t;
 
@@ -312,10 +312,7 @@ test('Color Coding: types, disable/re-enable, pick-up/apply, linked, scheme inve
     expect(result.lastChanged).toBe(true);
   });
 
-  await page.evaluate(() => grok.shell.closeAll());
+  await v.cleanupShell(page);
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  v.finishSpec();
 });

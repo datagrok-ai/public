@@ -1,5 +1,13 @@
 ---
 title: "Test Manager"
+description: How to use Test Manager to run, debug, and profile package tests in Datagrok.
+keywords:
+  - test manager
+  - run package tests
+  - debug test
+  - profile test
+  - benchmark mode
+  - test execution
 ---
 
 # Test Manager Tour

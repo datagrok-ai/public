@@ -40,6 +40,7 @@ import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
 import './utils/color';
+import './db/db-browser-tests';
 // import './package/upload';
 import './packages/properties';
 import './packages/docker';
@@ -61,8 +62,10 @@ import './utils/progressIndicator';
 import './ai/ai-tests';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
+import { setTestPackage } from './test-package';
 
 export const _package = new DG.Package();
+setTestPackage(_package);
 export { tests };
 
 //name: test
@@ -73,12 +76,22 @@ export { tests };
 //input: string skipToCategory {optional: true}
 //input: string skipToTest {optional: true}
 //input: bool returnOnFail {optional: true}
+//input: bool excludeNodeTests {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
-                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
-    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
-  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean,
+                           excludeNodeTests?: boolean): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests);
+  const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests });
   return DG.DataFrame.fromObjects(data)!;
+}
+
+/** Headless entry for the `grok test` Node pass — runs only tests marked {node: true}. */
+export async function testNode(pkg: DG.Package,
+    options: {category?: string, test?: string, stressTest?: boolean, verbose?: boolean}): Promise<any[]> {
+  setTestPackage(pkg);
+  return await runTests({category: options.category, test: options.test, stressTest: options.stressTest,
+    verbose: options.verbose, nodeOnly: true, nodeOptions: {package: pkg}});
 }
 
 //name: testPlatform

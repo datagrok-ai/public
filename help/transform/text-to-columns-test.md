@@ -1,7 +1,15 @@
+---
+title: "Tests: Split columns"
+description: Testing scenarios for validating text-to-columns splitting by delimiter, prefix, and character mode.
+keywords:
+  - split columns test
+  - text to columns testing
+  - delimiter splitting validation
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Split columns -->
 <!-- SUBTITLE: -->
-
-# Tests: Split columns
 
 Splits textual data from the specified column into other columns, based on the specified delimiter.
 

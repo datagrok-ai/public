@@ -22,10 +22,11 @@ import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
+  applyCustomExport,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies,
-  reportTree,
+  findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
+  reportTree, resolveChosenUuid,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
@@ -112,7 +113,6 @@ export const TreeWizard = Vue.defineComponent({
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
     const modelName = Vue.computed(() => props.modelName);
-    const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
     const providerFunc = Vue.computed(() => {
       const func = DG.Func.byName(props.providerFunc);
       return func ? Vue.markRaw(func) : undefined;
@@ -155,9 +155,11 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
+      const includeInfoInput = ui.input.bool('Also reset info-typed inputs', {value: false});
       ui.dialog(`Update confirmation`)
         .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
-        .onOK(() => runSequence(startUuid, rerunWithConsistent))
+        .add(includeInfoInput.root)
+        .onOK(() => runSequence(startUuid, rerunWithConsistent, undefined, includeInfoInput.value ?? false))
         .show({center: true, modal: true});
     };
 
@@ -351,25 +353,25 @@ export const TreeWizard = Vue.defineComponent({
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
-      if (!treeState.value)
+      if (!treeState.value || !chosenStepUuid.value)
         return null;
-
-      if (!chosenStepUuid.value)
-        chosenStepUuid.value = treeState.value.uuid;
-
-      const step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
-
-      if (step)
-        return step;
-
-      // step with current uuid is removed from the tree, try setting the current step by the route
-      const currentURL = new URL(window.location.href);
-      const currentStep = currentURL.searchParams.get('currentStep');
-      if (currentStep)
-        setCurrentStepByPath(currentStep, treeState.value);
-
-      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) ?? null;
     });
+
+    // Owns chosenStepUuid: defaults it on first load and repairs it when the
+    // selected node disappears (e.g. the selected step was removed). Falls back
+    // along the old positional path to the nearest surviving ancestor, so a
+    // removed last child resolves to its parent instead of dangling.
+    Vue.watch([treeState, chosenStepUuid], ([treeState]) => {
+      if (!treeState)
+        return;
+      const fallbackPath = searchParams.currentStep ?
+        searchParams.currentStep.split(' ').map((segment) => Number.parseInt(segment)) :
+        undefined;
+      const next = resolveChosenUuid(chosenStepUuid.value, treeState, fallbackPath);
+      if (next !== chosenStepUuid.value)
+        chosenStepUuid.value = next;
+    }, {immediate: true});
 
     Vue.watch(chosenStep, (newStep) => {
       if (newStep)
@@ -441,19 +443,13 @@ export const TreeWizard = Vue.defineComponent({
           return Utils.getCustomExports(fc.func).map(x => x.name);
         },
         runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
-          const exports =  Utils.getCustomExports(fc.func);
-          const item = exports.find(x => x.name === exportName);
-          if (!item)
-            throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
-          const res = await DG.Func.byName(fc.func.nqName).apply({
+          return applyCustomExport(fc, exportName, {
             startDownload: false,
-            funcCall: fc,
             validationState: states.validations?.[uuid],
             consistencyState: states.consistency?.[uuid],
             isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
             runError: states.calls?.[uuid]?.runError,
           });
-          return res;
         },
       };
       return exportData.handler(treeState.value!, utils);
@@ -518,6 +514,24 @@ export const TreeWizard = Vue.defineComponent({
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
     });
+
+    // Ribbon controls key their visibility on tree presence only, not on the transient locks.
+    // treeMutationsLocked/isGlobalLocked cycle on every link-propagation burst and every run,
+    // which would otherwise hide/re-show the controls (flicker). treeState is buffered during
+    // the global lock, so its last-good value keeps the controls' content stable while busy.
+    const isTreeLoaded = Vue.computed(() => !!treeState.value);
+    const treeBusy = Vue.computed(() => treeMutationsLocked.value || isGlobalLocked.value);
+
+    // The ribbon teleports into the view chrome, outside the compositor overlay that covers the
+    // component body while busy, so the buttons stay clickable during a lock. Guard the mutating
+    // actions here with user-facing feedback (the driver otherwise no-ops them with a console warning).
+    const guardTreeAction = (action: string, fn: () => void) => {
+      if (treeBusy.value) {
+        grok.shell.warning(`The workflow is busy — wait for the current run to finish before ${action}.`);
+        return;
+      }
+      fn();
+    };
 
     const menuActions = Vue.computed(() => {
       if (!treeState.value || !chosenStepUuid.value)
@@ -597,6 +611,16 @@ export const TreeWizard = Vue.defineComponent({
         if (oldIndex !== newIndex)
           moveStep(draggedStep.data.uuid, newIndex);
       }
+      // he-tree skips inbound modelValue rebuilds while its `dragNode` data is set. A slow
+      // frame or a debugger pause during drag-end can strand `dragNode` truthy, which then
+      // freezes every later structural update (added/removed steps stop rendering). The
+      // library clears it in its own `dragend` handler, but that path is unreliable under
+      // interruption; `after-drop` fires reliably, so clear it here too.
+      const inst = treeInstance.value as any;
+      if (inst) {
+        inst.dragNode = null;
+        inst.dragOvering = false;
+      }
     };
 
     const isDeletable = (stat: AugmentedStat) => {
@@ -622,33 +646,33 @@ export const TreeWizard = Vue.defineComponent({
             tooltip={treeHidden.value ? 'Show tree': 'Hide tree'}
             onClick={() => treeHidden.value = !treeHidden.value }
           />
-          {isTreeReady.value &&
+          {isTreeLoaded.value &&
             treeState.value &&
             (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
               <IconFA
                 name='sync'
                 tooltip={'Update tree with consistent values'}
                 style={{'padding-right': '3px'}}
-                onClick={() => runSubtreeWithConfirm(treeState.value!.uuid, true)}
+                onClick={() => guardTreeAction('updating the tree', () => runSubtreeWithConfirm(treeState.value!.uuid, true))}
               />:
               <IconFA
                 name='forward'
                 tooltip={'Run ready steps'}
                 style={{'padding-right': '3px'}}
-                onClick={() => runSequence(treeState.value!.uuid, false)}
+                onClick={() => guardTreeAction('running the ready steps', () => runSequence(treeState.value!.uuid, false))}
               />
             )}
-          {isTreeReady.value && <IconFA
+          {isTreeLoaded.value && <IconFA
             name='save'
             tooltip={'Save current state of model'}
             style={{'padding-right': '3px'}}
-            onClick={saveEntireModelState}
+            onClick={() => guardTreeAction('saving', saveEntireModelState)}
           /> }
-          {isTreeReady.value && showReturn.value && <IconFA
+          {isTreeLoaded.value && showReturn.value && <IconFA
             name='check'
             tooltip={'Confirm data'}
             style={{'padding-right': '3px'}}
-            onClick={onReturnClicked}
+            onClick={() => guardTreeAction('confirming', onReturnClicked)}
           />
           }
           <IconFA
@@ -657,7 +681,7 @@ export const TreeWizard = Vue.defineComponent({
             onClick={() => inspectorHidden.value = !inspectorHidden.value }
           />
         </RibbonPanel>
-        {isTreeReady.value && isTreeReportable.value &&
+        {isTreeLoaded.value && isTreeReportable.value &&
           <RibbonMenu groupName='Export' view={currentView.value}>
             {
               exports.value.map((exportData) =>
@@ -684,10 +708,10 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
-        { isTreeReady.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
+        { isTreeLoaded.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
           <RibbonMenu groupName={category} view={currentView.value}>
             {
-              actions.map((action) => Vue.withDirectives(<span onClick={() => runActionWithConfirmation(action.uuid)}>
+              actions.map((action) => Vue.withDirectives(<span onClick={() => guardTreeAction('running this action', () => runActionWithConfirmation(action.uuid))}>
                 <div> { action.icon && <IconFA name={action.icon} style={{width: '15px', display: 'inline-block', textAlign: 'center'}}/> } { action.friendlyName ?? action.id } </div>
               </span>, [[tooltip, action.description]]))
             }
@@ -729,6 +753,7 @@ export const TreeWizard = Vue.defineComponent({
 
                 rootDroppable={false}
                 treeLine
+                updateBehavior='disabled'
                 childrenKey='steps'
                 nodeKey={(stat: AugmentedStat) => stat.data.uuid}
                 statHandler={restoreOpenedNodes}
@@ -755,6 +780,7 @@ export const TreeWizard = Vue.defineComponent({
                         stat={stat}
                         callState={states.calls[stat.data.uuid]}
                         validationStates={states.validations[stat.data.uuid]}
+                        pipelineValidationState={states.pipelineValidations[stat.data.uuid]}
                         consistencyStates={states.consistency[stat.data.uuid]}
                         descriptions={states.descriptions[stat.data.uuid]}
                         style={{
@@ -764,7 +790,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isReadonly={stat.data.isReadonly}
-                        hasInconsistentSubsteps={!!hasSubtreeFixableInconsistencies(stat.data, states.calls, states.consistency)}
+                        hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
@@ -836,7 +862,7 @@ export const TreeWizard = Vue.defineComponent({
                       }
                       { hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
                         <BigButton
-                          onClick={() => runSequence(chosenStepUuid.value!, true)}
+                          onClick={() => runSubtreeWithConfirm(chosenStepUuid.value!, true)}
                         >
                            Update
                         </BigButton>

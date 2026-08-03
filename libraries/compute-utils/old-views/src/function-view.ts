@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {deepCopy, getContextHelp, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
+import {deepCopy, getContextHelp, getCurrentUserGroups, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {RunComparisonView} from '../../function-views';
 import {HistoryPanel} from '../../old-components/src/history-panel';
@@ -615,8 +615,7 @@ export abstract class FunctionView extends DG.ViewBase {
       ribbonMenu.item('Help', () => this.getHelp!());
 
     setTimeout(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+      const userGroups = await getCurrentUserGroups();
 
       if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP)) {
         const testingGroup = ribbonMenu.group('Test runner');

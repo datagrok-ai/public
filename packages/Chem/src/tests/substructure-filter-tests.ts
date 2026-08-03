@@ -307,8 +307,8 @@ M  END
     filter.sketcher.setMolFile(substr2);
     //finish filtering
     await awaitCheck(() => df.filter.trueCount === df.rowCount, 'filter hasn\'t been reset', 10000);
-    const simResults = await chemSimilaritySearch(df, df.col('smiles')!, df.get('smiles', 0),
-      'Tanimoto' as BitArrayMetrics, 12, 0.01, 'Morgan' as Fingerprint, DG.BitSet.create(df.rowCount).setAll(true));
+    const simResults = await chemSimilaritySearch(df.col('smiles')!, df.get('smiles', 0),
+      'Tanimoto' as BitArrayMetrics, 12, 0.01, 'Morgan' as Fingerprint);
     expect(simResults?.get('indexes', 0), 0);
     expect(simResults?.get('indexes', 5), 4002);
     expect(simResults?.get('indexes', 11), 731);

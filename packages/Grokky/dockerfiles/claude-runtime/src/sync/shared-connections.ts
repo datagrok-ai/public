@@ -60,10 +60,13 @@ export async function syncSharedConnections(userDir: string, homeConnId: string 
         const fileName = remote.path.replace(/\//g, '-');
         const dest = path.join(agentsDir, `${prefix}${fileName}`);
         await fs.writeFile(dest, content);
-        cached.set(cacheKey, remote.updatedOn);
       } catch (e: any) {
         console.warn(`shared-connections: failed to download ${cacheKey}:`, e.message);
       }
+      // Record the version seen even on failure: a file that can't be downloaded
+      // (e.g. invalid JSON) must not re-download every poll — retry only when its
+      // updatedOn changes.
+      cached.set(cacheKey, remote.updatedOn);
     }
   }
 

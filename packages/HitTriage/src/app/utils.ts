@@ -186,24 +186,28 @@ export async function loadCampaigns<T extends AppName>(
 }
 
 async function checkPermissions(authorId: string, groupIdList: string[]): Promise<boolean> {
-  const userId = DG.User.current().id;
-  const userGroupId = DG.User.current().group?.id;
-  if (authorId === userId)
-    return true;
-  for (const groupId of groupIdList) {
-    const group = await grok.dapi.groups.find(groupId);
-    if (!group)
-      continue;
-    if (group.personal) {
-      const user = await grok.dapi.groups.getUser(group);
-      if (user?.id === userId)
-        return true;
-    } else if (userGroupId) {
-      if ((group.members?.length ?? 0) > 0 && group.members.some((memberGroup) => memberGroup.id === userGroupId))
-        return true;
-      if ((group.adminMembers?.length ?? 0) > 0 && group.adminMembers.some((memberGroup) => memberGroup.id === userGroupId))
-        return true;
+  try {
+    const userId = DG.User.current().id;
+    const userGroupId = DG.User.current().group?.id;
+    if (authorId === userId)
+      return true;
+    for (const groupId of groupIdList) {
+      const group = await grok.dapi.groups.find(groupId);
+      if (!group)
+        continue;
+      if (group.personal) {
+        const user = await grok.dapi.groups.getUser(group);
+        if (user?.id === userId)
+          return true;
+      } else if (userGroupId) {
+        if ((group.members?.length ?? 0) > 0 && group.members.some((memberGroup) => memberGroup?.id === userGroupId))
+          return true;
+        if ((group.adminMembers?.length ?? 0) > 0 && group.adminMembers.some((memberGroup) => memberGroup?.id === userGroupId))
+          return true;
+      }
     }
+  } catch (e) {
+    _package.logger.error(e);
   }
   return false;
 }

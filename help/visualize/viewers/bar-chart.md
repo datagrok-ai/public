@@ -1,5 +1,13 @@
 ---
 title: "Bar chart"
+description: Display grouped categorical data as rectangular bars with lengths proportional to their values.
+keywords:
+  - column chart
+  - stacked bars
+  - categorical data
+  - relative values
+  - split by category
+  - group by date part
 ---
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent.
@@ -119,18 +127,17 @@ Year - Month' and 'Year - Quarter':
 | Font | string |  |
 | Axis Font | string |  |
 | Min Text Height | number |  |
-| Formula Font | string |  |
-| Annotation Font | string |  |
 | Show Clipped Bar Indicators | boolean | When enabled, shows hatched areas and arrows on bars that are clipped by the value axis range. |
 | Controls Font | string | Viewer controls elements font. |
-| **Lines** | | |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Viewer Formula Lines | boolean | Control the visibility of viewer-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| **Annotation regions** | | |
-| Show Viewer Annotation Regions | boolean |  |
-| Show Dataframe Annotation Regions | boolean |  |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Annotations** | | |
+| Show Viewer Annotation Regions | boolean |  |
+| Show Dataframe Annotation Regions | boolean |  |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 
 See also:
 

@@ -196,14 +196,13 @@ Guard with `t.selection.anyTrue` first for user-facing flows.
 
 | Idiom                                  | Effect                                | Phrasing it answers                                |
 |----------------------------------------|---------------------------------------|----------------------------------------------------|
-| `t.filter.copyFrom(t.selection)`       | hide non-selected rows in place       | "hide the un-selected rows", "filter to the selection" |
+| `t.filter.copyFrom(t.selection)`       | hide non-selected rows in place       | "show only", "filter to the selection"             |
 | `t.selection.copyFrom(t.filter)`       | mark every visible row as selected    | "select all currently-visible rows"                |
 
-**Critical disambiguation — don't confuse with the new-DF idiom:**
+**Critical disambiguation:**
 
-- "show only the selected rows **as a new table**" → `t.clone(t.selection)` (new DF; original unchanged).
-- "copy / subset / extract the selected rows" → `t.clone(t.selection)`.
-- "show only the selected rows" (no "new table") → ambiguous; default to `t.clone(t.selection)` and surface the in-place option, OR ask. `t.filter.copyFrom(t.selection)` MUTATES the current view's filter — it does NOT create a new table.
+- "select rows [by / where / top N]" → set `t.selection` via `t.selection.init(pred)` or index-list pattern.
+- "extract" / "copy" / "open as new table" / "give me a new table" → `t.clone(t.selection)` (new DataFrame; original unchanged).
 
 `t.selection.copyFrom(t.filter)` fires `onSelectionChanged` but does NOT fire
 a filter event; the reverse holds for `t.filter.copyFrom(t.selection)`.

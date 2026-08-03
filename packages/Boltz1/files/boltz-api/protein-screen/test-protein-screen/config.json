@@ -1,0 +1,13 @@
+{
+  "target": {
+    "type": "no_template",
+    "entities": [
+      { "type": "protein", "value": "MKTIIALSYIFCLVFA", "chain_ids": ["A"] },
+      { "type": "ligand_ccd", "value": "ATP", "chain_ids": ["L1"] }
+    ],
+    "epitope_residues": { "A": [10, 11, 12] },
+    "non_binding_residues": { "A": [0, 1, 2] },
+    "epitope_ligand_chains": ["L1"]
+  },
+  "binder_chain_id": "B"
+}

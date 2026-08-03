@@ -5,13 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 import {ALPHABET, ALIGNMENT, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {OrgType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {
   getMonomerLibHelper, IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/types/monomer-library';
-
-declare const org: OrgType;
 export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
 
 export function _setPeptideColumn(col: DG.Column): void {

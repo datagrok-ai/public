@@ -43,6 +43,7 @@ export class MCLViewer extends DG.JsViewer {
         showXSelector: false,
         showYSelector: false,
         title: 'MCL',
+        markerType: DG.MARKER_TYPE.CIRCLE
       });
       this.root.appendChild(this.sc.root);
       this.subs.push(grok.events.onCurrentObjectChanged.subscribe((_) => {

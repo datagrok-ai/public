@@ -42,30 +42,28 @@ export async function bitbirchWorker(
   // Run BitBIRCH on valid fingerprints only
   const validFps = packedFps.slice(0, validCount * nBytesPerFp);
   const worker = new Worker(new URL('./bitbirch-worker.ts', import.meta.url));
-  return new Promise((resolve, reject) => {
-    worker.onmessage = (event: MessageEvent) => {
-      const {assignments, error}: {assignments?: Int32Array, error?: string} = event.data;
-      try {
-        if (error || !assignments) {
-          worker.terminate();
-          reject(new Error(`BitBIRCH worker error: ${error}`));
-          return;
+  // terminate() is in a finally so the worker is released even if postMessage throws synchronously.
+  try {
+    return await new Promise<DG.Column>((resolve, reject) => {
+      worker.onmessage = (event: MessageEvent) => {
+        const {assignments, error}: {assignments?: Int32Array, error?: string} = event.data;
+        try {
+          if (error || !assignments) {
+            reject(new Error(`BitBIRCH worker error: ${error}`));
+            return;
+          }
+          const data = new Int32Array(rowCount).fill(DG.INT_NULL);
+          for (let j = 0; j < validCount; j++)
+            data[validIndices[j]] = assignments[j];
+          resolve(DG.Column.fromInt32Array('Cluster (BitBIRCH)', data));
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error(String(e)));
         }
-        const result = DG.Column.int('Cluster (BitBIRCH)', rowCount);
-        result.init((_i) => DG.INT_NULL);
-        for (let j = 0; j < validCount; j++)
-          result.set(validIndices[j], assignments[j]);
-        worker.terminate();
-        resolve(result);
-      } catch (e) {
-        worker.terminate();
-        reject(e instanceof Error ? e : new Error(String(e)));
-      }
-    };
-    worker.onerror = (err) => {
-      worker.terminate();
-      reject(new Error(`BitBIRCH worker error: ${err.message}`));
-    };
-    worker.postMessage({threshold, branchingFactor, nFeatures, fps: validFps, fpCount: validCount, webRoot: _package.webRoot});
-  });
+      };
+      worker.onerror = (err) => reject(new Error(`BitBIRCH worker error: ${err.message}`));
+      worker.postMessage({threshold, branchingFactor, nFeatures, fps: validFps, fpCount: validCount, webRoot: _package.webRoot});
+    });
+  } finally {
+    worker.terminate();
+  }
 }

@@ -57,6 +57,9 @@ export interface SettingsInterface {
 
   isServer: boolean;
 
+  /// Settings keys locked by a group/All-Users scope: localStorage must not override them.
+  lockedKeys: any;
+
   showRecentlyOpenedViewsInHistory: boolean;
 
   warnOnUnsavedChanges: boolean;
@@ -99,6 +102,8 @@ export interface SettingsInterface {
   showConsole: boolean;
 
   showHelp: boolean;
+
+  showAI: boolean;
 
   enableBetaViewers: boolean;
 

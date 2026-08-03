@@ -3,6 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
+const shallowEqualNodes = (a: HTMLElement[], b: HTMLElement[]): boolean =>
+  a.length === b.length && a.every((el, i) => el === b[i]);
+
 export const RibbonMenu = Vue.defineComponent({
   name: 'RibbonMenu',
   props: {
@@ -27,14 +30,25 @@ export const RibbonMenu = Vue.defineComponent({
 
     const currentView = Vue.computed(() => Vue.markRaw(props.view));
 
+    let lastApplied: HTMLElement[] = [];
+    let lastGroupName: string | undefined = undefined;
+
     Vue.watch(elements, () => {
       const elementsArray = [...elements.values()];
+      // Skip the group rebuild when neither the hosted items nor the group name changed.
+      // onBeforeUpdate clears + re-adds the same DOM nodes every re-render; re-pushing is a no-op.
+      if (props.groupName === lastGroupName && shallowEqualNodes(elementsArray, lastApplied))
+        return;
+
       currentView.value.ribbonMenu
         .group(props.groupName)
         .clear();
 
       currentView.value.ribbonMenu
         .group(props.groupName).items(elementsArray, () => {});
+
+      lastApplied = elementsArray;
+      lastGroupName = props.groupName;
     }, {flush: 'post'});
 
     const addElement = (el: Element | null | any, idx: number) => {

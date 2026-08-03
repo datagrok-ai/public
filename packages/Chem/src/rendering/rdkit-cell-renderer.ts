@@ -24,6 +24,7 @@ import {
   getSyncTag,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
   RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
@@ -244,7 +245,7 @@ M  END
         mol = molCtx.mol;
       } else {
         try {
-          if (!molString.includes('\n') && molString.length > 5000)
+          if (!molString.includes('\n') && molString.length > MAX_SMILES_LENGTH)
             throw new Error('Invalid molecule string'); // do not attempt to parse very long SMILES, will cause MOB.
           mol = this.rdKitModule.get_qmol(molString);
           mol.convert_to_aromatic_form();
@@ -378,9 +379,15 @@ M  END
   }
 
   _addAtomsOrBonds(fromAtomsOrBonds: number[], toAtomsOrBonds: number[]): void {
+    if (!toAtomsOrBonds) return;
+    // Use a Set for O(1) membership checks; the previous .includes() loop was O(n*m).
+    const seen = new Set(toAtomsOrBonds);
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
-      if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
-        toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
+      const item = fromAtomsOrBonds[j];
+      if (!seen.has(item)) {
+        seen.add(item);
+        toAtomsOrBonds.push(item);
+      }
     }
   }
 
@@ -593,12 +600,18 @@ M  END
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
+    const col = gridCell.cell.column;
+    const highlightScaffold = getSyncTag(col, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL) === 'true';
     const filter = this._initScaffoldArray(colTemp, FILTER_SCAFFOLD_TAG, true); //expected molBlock
-    const align = (this._initScaffoldString(gridCell.cell.column, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
+    const align = (this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
       // temporary concatination to support both tags
-      .concat(this._initScaffoldString(gridCell.cell.column, ALIGN_BY_SCAFFOLD_TAG) ?? []);
-    const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
-    const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
+      .concat(this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_TAG) ?? []);
+    if (!highlightScaffold) {
+      for (const s of align)
+        s.color = NO_SCAFFOLD_COLOR;
+    }
+    const highlight = this._initScaffoldArray(col, HIGHLIGHT_BY_SCAFFOLD_TAG);
+    const scaffoldTreeHighlight = this._initScaffoldArray(col, SCAFFOLD_TREE_HIGHLIGHT);
     const alignByStructure = !!(filter.length && filter[0].align || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
     return {scaffolds: scaffolds?.length ? scaffolds : undefined, alignByFirstSubstructure: alignByStructure};
@@ -743,8 +756,8 @@ M  END
     if (hit) return hit;
 
     try {
-      const svgString = this.drawMoleculeToSvg(molString, w, h);
-      if (svgString === null)
+      const svgString = this._molToSvg(molString, w, h);
+      if (!svgString)
         return null;
       // Attach to document so getBBox() works (requires layout context).
       const host = document.createElement('div');
@@ -774,9 +787,11 @@ M  END
     }
   }
 
-  private drawMoleculeToSvg(molString: string, w: number, h: number): string | null {
+  _molToSvg(
+    molString: string, w: number, h: number, scaffolds: IColoredScaffold[] = [], alignByFirstSubstructure = false,
+  ): string | null {
     // Mol is owned by molCache — DO NOT delete it.
-    const molRenderingInfo = this._fetchMol(molString, [], false, false, {}, false);
+    const molRenderingInfo = this._fetchMol(molString, scaffolds, false, false, {}, alignByFirstSubstructure);
     const mol = molRenderingInfo.molCtx.mol;
     if (!mol || !mol.is_valid())
       return null;
@@ -786,10 +801,12 @@ M  END
       details[k] = RDKIT_COMMON_RENDER_OPTS[k];
     details.width = w;
     details.height = h;
-    details.atoms = [];
-    details.bonds = [];
-    details.highlightAtomColors = {};
-    details.highlightBondColors = {};
+    // Scaffold-derived highlights (substructure filter, align, scaffold tree, highlight-by-scaffold).
+    const substruct = scaffolds.length ? molRenderingInfo.substruct : null;
+    details.atoms = substruct?.atoms ?? [];
+    details.bonds = substruct?.bonds ?? [];
+    details.highlightAtomColors = substruct?.highlightAtomColors ?? {};
+    details.highlightBondColors = substruct?.highlightBondColors ?? {};
     // Mirror kekulize / molBlockWedging from drawRdKitMoleculeToOffscreenCanvas
     // so the SVG layout matches the canvas layout exactly.
     if (!molRenderingInfo.molCtx.kekulize)
@@ -803,8 +820,12 @@ M  END
     return mol.get_svg_with_highlights(JSON.stringify(details));
   }
 
-  toSvg(molString: string, w: number, h: number): string | null {
-    return this.drawMoleculeToSvg(molString, w, h);
+  toSvg(gridCell: DG.GridCell, w: number, h: number): string | null {
+    const highlightInfo = gridCell.cell.column != null ?
+      this.getHighlightTagInfo(gridCell.cell.column.temp, gridCell) :
+      undefined;
+    return this._molToSvg(gridCell.cell.value, w, h,
+      highlightInfo?.scaffolds ?? [], highlightInfo?.alignByFirstSubstructure ?? false);
   }
 }
 

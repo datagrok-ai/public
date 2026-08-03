@@ -1,5 +1,9 @@
 # PhyloTree Viewer changelog
 
+## v.next
+
+* GROK-18695: Dependency security updates (bumped deck.gl to ^8.9.36, added uuid and fast-xml-parser overrides to clear npm audit advisories)
+
 ## 1.4.0 (2025-03-29)
 
 * Standardized plugin name to title case in README and changelog

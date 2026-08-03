@@ -71,6 +71,6 @@ async function gzipPostRequest(data: any, path: string): Promise<any> {
     {method: 'POST', body: body, headers: {'Content-Encoding': 'gzip',  'Content-Type': 'application/json',
         'Content-Length': `${body.length}`}});
   if (response.status !== 200)
-    throw new Error(response.statusText);
+    throw new Error(`chem-chem container request to ${path} failed: ${response.status} ${response.statusText || '(no statusText)'}`);
   return await response.json();
 }

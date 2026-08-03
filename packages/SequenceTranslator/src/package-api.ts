@@ -197,4 +197,8 @@ export namespace funcs {
   export async function harmonizedSequenceNotationProviderConstructor(): Promise<any> {
     return await grok.functions.call('SequenceTranslator:HarmonizedSequenceNotationProviderConstructor', {});
   }
+
+  export async function markushSettingsEditor(propList: any ): Promise<any> {
+    return await grok.functions.call('SequenceTranslator:MarkushSettingsEditor', { propList });
+  }
 }

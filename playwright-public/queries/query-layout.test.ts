@@ -67,7 +67,8 @@ import {
 
 const PROVIDER = 'Postgres';
 const QUERY_NAME = 'layout_test_query';
-const SQL_BODY = 'select * from products';
+// CI: Datagrok metadata `entities` table (System:Datagrok), always present.
+const SQL_BODY = 'select * from entities';
 
 test.describe.serial(`Query layout tab smoke (${PROVIDER} / ${POSTGRES_CONNECTION})`, () => {
   test.beforeAll(async ({ browser }) => {

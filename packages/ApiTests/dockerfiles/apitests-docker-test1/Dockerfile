@@ -1,4 +1,4 @@
-FROM python:3.8-alpine3.18 as pip_builder
+FROM python:3.12-alpine as pip_builder
 
 ARG VIRTUAL_ENV=/app/venv
 ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
@@ -6,13 +6,19 @@ ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
 COPY requirements.txt ${VIRTUAL_ENV}/requirements.txt
 
 RUN python -m venv ${VIRTUAL_ENV} && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --timeout 3600 --no-cache-dir --requirement ${VIRTUAL_ENV}/requirements.txt && \
     rm -rf /tmp/*
 
 
-FROM python:3.8-alpine3.18
+FROM python:3.12-alpine
 
 WORKDIR /app
+
+# Patch base-image CVEs: apk upgrade (expat/krb5/openssl/musl/sqlite) and refresh
+# the interpreter's pip/setuptools/wheel (CVE-2022-40897/2024-6345/2025-47273 etc.).
+RUN apk upgrade --no-cache && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel
 
 ARG HOME_DIR=/home/grok
 ARG VIRTUAL_ENV=/app/venv

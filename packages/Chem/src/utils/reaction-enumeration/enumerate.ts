@@ -11,6 +11,13 @@ export interface TemplateInput {
   reactionName: string;
 }
 
+// Templates rows are authored to share one reaction SMARTS with different blocking-group variants
+// (reactant_blocking_groups_per_template_column exists specifically for this) — SMARTS text alone
+// can't tell two such rows apart, so a per-round override needs the full triple to identify a row.
+function templateOverrideKey(t: {smarts: string; blockingSmartsList: string[]; reactionName: string}): string {
+  return `${t.smarts} ${t.blockingSmartsList.join(' ')} ${t.reactionName}`;
+}
+
 export interface RouteStep {
   reactants: string[];
   product: string;
@@ -24,6 +31,9 @@ export interface ProductRecord {
   smiles: string;
   routes: Route[];
   firstRound: number;
+  // Set when this SMILES was also one of the original input building blocks — independent of
+  // whether it also has synthesis routes, so both facts can be shown (see the output loop).
+  isOriginalBB?: boolean;
 }
 
 export interface EnumerationResult {
@@ -41,6 +51,15 @@ export interface EnumerationProgress {
   combosTotal?: number;
 }
 
+// Per-round narrowing of the global pools, indexed by round-1. An undefined field falls back to the
+// global list for that round. `templates` is matched against the global list by the full
+// smarts+blockingSmartsList+reactionName triple (see templateOverrideKey).
+export interface PerRoundOverride {
+  templates?: TemplateInput[];
+  buildingBlocks?: string[];
+  reagents?: string[];
+}
+
 export interface EnumerateOptions {
   rdkit: RDModule;
   config: EnumeratorConfig;
@@ -53,6 +72,9 @@ export interface EnumerateOptions {
   // BB across rounds (P1 = BB + reagents, P2 = P1 + reagents, …). Overrides depth_first /
   // breadth_first slot logic when present.
   reagents?: string[];
+  // Reagents MODE itself stays global (driven by `reagents` presence) — a per-round `reagents`
+  // list here only narrows the pool for that round; see PerRoundOverride for the indexing rule.
+  perRoundOverrides?: PerRoundOverride[];
   onProgress?: (p: EnumerationProgress) => void;
   isCancelled?: () => boolean;
 }
@@ -110,7 +132,7 @@ function tryGetQmol(rdkit: RDModule, smarts: string): RDMol | null {
   }
 }
 
-function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
+export function tryGetRxn(rdkit: RDModule, smarts: string): RDReaction | null {
   try {
     const r = rdkit.get_rxn(smarts);
     return r ?? null;
@@ -128,6 +150,9 @@ interface ParsedTemplate {
   // A BB matches a slot only if it matches every fragment.
   reactantQmols: RDMol[][];
   blockingQmols: RDMol[];
+  // Raw strings, not just the compiled blockingQmols above — needed to recompute templateOverrideKey()
+  // against a per-round override built from the same row's TemplateInput.
+  blockingSmartsList: string[];
   numReactants: number;
 }
 
@@ -179,7 +204,7 @@ function parseTemplate(rdkit: RDModule, t: TemplateInput, idx: number, warnings:
     if (q) blockingQmols.push(q);
   }
   return {
-    index: idx, smarts: t.smarts, reactionName: t.reactionName,
+    index: idx, smarts: t.smarts, reactionName: t.reactionName, blockingSmartsList: t.blockingSmartsList,
     rxn, reactantQmols, blockingQmols, numReactants: slotSmarts.length,
   };
 }
@@ -291,6 +316,20 @@ export function formatRoute(route: Route): string {
   return route.map((s) => `${s.reactants.join('.')}>>${s.product}`).join(BRANCH_DELIMITER);
 }
 
+// The same synthesis can be found more than once for one ProductRecord: breadth-first's eligible
+// pool always includes round 0's raw BBs, so a BB combo already used in an earlier round stays
+// retriable in every later round; a single combo can also match a template's reactant slots in
+// more than one way, producing several structurally-identical result sets. Comparing by the
+// formatted route string (not object identity) catches both, so a rediscovered synthesis is
+// skipped instead of inflating n_routes and emitting a duplicate row. Returns false once `cap` is
+// reached, so callers can stop iterating the same way they did before this check existed.
+function addRouteIfNew(rec: ProductRecord, route: Route, cap: number): boolean {
+  if (cap >= 0 && rec.routes.length >= cap) return false;
+  const key = formatRoute(route);
+  if (!rec.routes.some((r) => formatRoute(r) === key)) rec.routes.push(route);
+  return true;
+}
+
 export interface OutputRow {
   product: string;
   route: string;
@@ -301,8 +340,21 @@ export interface OutputRow {
 }
 
 export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
-  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents, onProgress, isCancelled} = opts;
+  const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents,
+    perRoundOverrides, onProgress, isCancelled} = opts;
   const warnings: string[] = [];
+
+  // Shared canonicalize + dedup, used for both the global BB/reagent pools and per-round overrides,
+  // so an override list matches the canonical SMILES used in the product pools.
+  const canonUnique = (list: string[], label: string): string[] => {
+    const out: string[] = [];
+    for (const s of list) {
+      const c = canonicalize(rdkit, s);
+      if (c) out.push(c);
+      else warnings.push(`Skipped invalid ${label} SMILES: ${s}`);
+    }
+    return Array.from(new Set(out));
+  };
 
   const parsedTemplates: ParsedTemplate[] = [];
   for (let i = 0; i < templates.length; i++) {
@@ -314,40 +366,68 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     return {rows: [], warnings};
   }
 
+  // The per-round loop below silently `continue`s past any template whose arity exceeds this —
+  // computed once here (not inside the loop) so a fixed set of over-arity templates produces one
+  // warning instead of the same message repeated every round.
+  const overArityCount = parsedTemplates.filter((t) => t.numReactants > config.max_num_components).length;
+  if (overArityCount > 0) {
+    warnings.push(`${overArityCount} template(s) need more reactants than Max # components ` +
+      `(${config.max_num_components}) allows and will be skipped in every round.`);
+  }
+
   const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
 
-  const canonBBs: string[] = [];
-  for (const s of buildingBlocks) {
-    const c = canonicalize(rdkit, s);
-    if (c) canonBBs.push(c);
-    else warnings.push(`Skipped invalid BB SMILES: ${s}`);
-  }
-  const uniqueBBs = Array.from(new Set(canonBBs));
+  const uniqueBBs = canonUnique(buildingBlocks, 'BB');
 
   const reagentsMode = !!(reagents && reagents.length > 0);
-  const uniqueReagents: string[] = [];
-  if (reagentsMode) {
-    const canonReagents: string[] = [];
-    for (const s of reagents!) {
-      const c = canonicalize(rdkit, s);
-      if (c) canonReagents.push(c);
-      else warnings.push(`Skipped invalid reagent SMILES: ${s}`);
-    }
-    uniqueReagents.push(...new Set(canonReagents));
-    if (uniqueReagents.length === 0)
-      warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
-  }
+  const uniqueReagents: string[] = reagentsMode ? canonUnique(reagents!, 'reagent') : [];
+  if (reagentsMode && uniqueReagents.length === 0)
+    warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
   const useReagents = reagentsMode && uniqueReagents.length > 0;
+
+  // Precompute per-round override sets, indexed by round-1 (fallback rule: see PerRoundOverride above).
+  const roundAllowedTemplateKeys: (Set<string> | null)[] = [];
+  const roundBBs: (string[] | null)[] = [];
+  const roundReagents: (string[] | null)[] = [];
+  for (let r = 0; r < config.enumeration.num_rounds; r++) {
+    const o = perRoundOverrides?.[r];
+    if (o?.templates && o.templates.length > 0) {
+      const allowed = new Set(o.templates.map(templateOverrideKey));
+      const intersects = parsedTemplates.some((t) => allowed.has(templateOverrideKey(t)));
+      if (intersects)
+        roundAllowedTemplateKeys.push(allowed);
+      else {
+        warnings.push(`Round ${r + 1}: template override matches none of the global reaction templates; ` +
+          `using the global template set instead.`);
+        roundAllowedTemplateKeys.push(null);
+      }
+    } else {
+      if (o?.templates) warnings.push(`Round ${r + 1}: empty template override; using the global template set instead.`);
+      roundAllowedTemplateKeys.push(null);
+    }
+    const bbs = o?.buildingBlocks ? canonUnique(o.buildingBlocks, 'round BB') : null;
+    if (o?.buildingBlocks && (!bbs || bbs.length === 0)) {
+      warnings.push(`Round ${r + 1}: building-block override has no valid SMILES after ` +
+        `canonicalization; using the global building-block pool instead.`);
+    }
+    roundBBs.push(bbs && bbs.length > 0 ? bbs : null);
+    const rgs = o?.reagents ? canonUnique(o.reagents, 'round reagent') : null;
+    if (o?.reagents && (!rgs || rgs.length === 0)) {
+      warnings.push(`Round ${r + 1}: reagent override has no valid SMILES after canonicalization; ` +
+        `using the global reagent pool instead.`);
+    }
+    roundReagents.push(rgs && rgs.length > 0 ? rgs : null);
+  }
 
   const molCache = new MolCache(rdkit);
 
+  // Round 0 ("keep building blocks") must mirror round 1's ACTIVE BB pool, but only in modes where a
+  // round-1 override actually narrows it (useReagents/depth_first) — in breadth-first the override is
+  // a no-op, so seeding round 0 from it would misreport output AND leak into round 1 via allPriorPool.
+  const round1OverrideActive = useReagents || config.enumeration.depth_first;
   const productPools: ProductRecord[][] = [];
-  productPools.push(uniqueBBs.map((s) => ({smiles: s, routes: [], firstRound: 0})));
-
-  const productByRoundProducts = new Map<string, ProductRecord>();
-  uniqueBBs.forEach((s) => {
-    productByRoundProducts.set(s, {smiles: s, routes: [], firstRound: 0});
-  });
+  productPools.push((round1OverrideActive ? (roundBBs[0] ?? uniqueBBs) : uniqueBBs)
+    .map((s) => ({smiles: s, routes: [], firstRound: 0})));
 
   const {max_num_components, max_num_combinations_per_template, max_num_routes_per_compound,
     max_num_routes_per_compound: _maxRoutes} = config;
@@ -358,9 +438,9 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     return false;
   };
 
-  // Time-based yield: surrender to the event loop (and paint) when we've been computing
-  // continuously for more than YIELD_INTERVAL_MS. requestAnimationFrame lets the browser
-  // render between chunks; setTimeout(0) is a fallback for non-browser hosts.
+  // Time-based yield: surrender to the event loop when we've been computing continuously for more
+  // than YIELD_INTERVAL_MS. Use setTimeout(0), NOT requestAnimationFrame — RAF is fully suspended
+  // (not just throttled) in a backgrounded tab, which would hang the run (and Cancel with it).
   const YIELD_INTERVAL_MS = 50;
   let lastYield = performance.now();
   type ProgressCtx = {round: number; ti: number; total: number; combosTotal: number; combosDone: number; productsSoFar: number};
@@ -377,10 +457,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         combosDone: progressContext.combosDone, combosTotal: progressContext.combosTotal,
       });
     }
-    await new Promise<void>((resolve) => {
-      if (typeof requestAnimationFrame !== 'undefined') requestAnimationFrame(() => resolve());
-      else setTimeout(resolve, 0);
-    });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     lastYield = performance.now();
   };
 
@@ -393,6 +470,10 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       const allPriorPool = new Set<string>();
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
 
+      const allowedTemplateKeys = roundAllowedTemplateKeys[round - 1];
+      const activeBBs = roundBBs[round - 1] ?? uniqueBBs;
+      const activeReagents = roundReagents[round - 1] ?? uniqueReagents;
+
       // Pool of SMILES that can fill any reactant slot this round.
       // - depth_first round 1: only original BBs (BBs combine with BBs).
       // - depth_first round R > 1: BBs ∪ R(R-1) products. The combo filter below then enforces
@@ -402,13 +483,27 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       //   from the reagents library and the depth-first combo filter is skipped (the slot pools
       //   already enforce "exactly one from main, rest from reagents").
       const eligibleSmiles = useReagents || config.enumeration.depth_first ?
-        (round === 1 ? uniqueBBs : Array.from(new Set([...uniqueBBs, ...prevRoundProducts]))) :
+        (round === 1 ? activeBBs : Array.from(new Set([...activeBBs, ...prevRoundProducts]))) :
         Array.from(allPriorPool);
+      // eligibleSmiles above never reads activeBBs in breadth-first mode, so without this warning
+      // the override would be silently ignored rather than surfaced to the user.
+      if (!useReagents && !config.enumeration.depth_first && roundBBs[round - 1] != null) {
+        warnings.push(`Round ${round}: building-block override has no effect in breadth-first ` +
+          `mode — a round draws from all earlier products regardless of the per-step BB subset.`);
+      }
+      // activeReagents above is only read inside the useReagents branch, so outside reagents mode
+      // this warning is the only thing that surfaces an otherwise-silent no-op.
+      if (!useReagents && roundReagents[round - 1] != null) {
+        warnings.push(`Round ${round}: reagent override has no effect outside reagents mode — a ` +
+          `round only draws from the reagents library when a reagents file is active.`);
+      }
 
       for (let ti = 0; ti < parsedTemplates.length; ti++) {
         if (isCancelled?.()) break;
         const t = parsedTemplates[ti];
         if (t.numReactants > max_num_components) continue;
+        // Per-step template subset: skip any global template not chosen for this round.
+        if (allowedTemplateKeys && !allowedTemplateKeys.has(templateOverrideKey(t))) continue;
 
         progressContext = {
           round, ti, total: parsedTemplates.length,
@@ -449,7 +544,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             let otherSlotsOk = true;
             for (let i = 0; i < t.numReactants; i++) {
               if (i === mainSlot) continue;
-              for (const smi of uniqueReagents) {
+              for (const smi of activeReagents) {
                 if (isCancelled?.()) break;
                 await yieldIfNeeded();
                 const mol = molCache.get(smi);
@@ -510,7 +605,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
             // round-(R-1) product and reacts it with original BBs only — no merging two
             // complex products in a single step (that would be convergent/breadth-first).
               const prevSet = new Set(prevRoundProducts);
-              const bbSet = new Set(uniqueBBs);
+              const bbSet = new Set(activeBBs);
               let prevCount = 0;
               let bbCount = 0;
               for (const c of combo) {
@@ -641,10 +736,8 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
                       rec = {smiles: productSmiles, routes: [], firstRound: round};
                       newPool.set(productSmiles, rec);
                     }
-                    for (const base of baseRoutes) {
-                      if (max_num_routes_per_compound >= 0 && rec.routes.length >= max_num_routes_per_compound) break;
-                      rec.routes.push([...base, step]);
-                    }
+                    for (const base of baseRoutes)
+                      if (!addRouteIfNew(rec, [...base, step], max_num_routes_per_compound)) break;
                   } finally {
                     try {productMol?.delete();} catch {/* ignore */}
                   }
@@ -676,13 +769,25 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     molCache.dispose();
   }
 
+  // Cap re-applied here because routes accumulate across rounds — each round's own routes were
+  // already capped individually, but a product's combined total could still exceed
+  // max_num_routes_per_compound without this second pass.
+  // Round 0 (raw BBs, empty routes) merges LAST so a BB that's also independently produced by a
+  // real reaction keeps firstRound at the round that actually synthesized it, rather than round 0
+  // winning the first-occurrence race below.
   const finalProducts = new Map<string, ProductRecord>();
-  const startRound = config.keep_building_blocks_in_final_output ? 0 : 1;
-  for (let r = startRound; r < productPools.length; r++) {
+  const roundOrder: number[] = [];
+  for (let r = 1; r < productPools.length; r++) roundOrder.push(r);
+  if (config.keep_building_blocks_in_final_output) roundOrder.push(0);
+  for (const r of roundOrder) {
     for (const p of productPools[r]) {
       const ex = finalProducts.get(p.smiles);
-      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice()});
-      else for (const route of p.routes) ex.routes.push(route);
+      if (!ex) finalProducts.set(p.smiles, {...p, routes: p.routes.slice(), isOriginalBB: r === 0});
+      else {
+        if (r === 0) ex.isOriginalBB = true;
+        for (const route of p.routes)
+          if (!addRouteIfNew(ex, route, max_num_routes_per_compound)) break;
+      }
     }
   }
 
@@ -692,9 +797,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
         round: rec.firstRound, n_routes: 0});
     } else {
-      const cap = max_num_routes_per_compound;
-      const limited = cap >= 0 ? rec.routes.slice(0, cap) : rec.routes;
-      for (const route of limited) {
+      for (const route of rec.routes) {
         const last = route[route.length - 1];
         rows.push({
           product: rec.smiles,
@@ -705,8 +808,19 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           n_routes: rec.routes.length,
         });
       }
+      // Surface isOriginalBB as its own row too (see field doc above).
+      if (rec.isOriginalBB) {
+        rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
+          round: 0, n_routes: 0});
+      }
     }
   }
+
+  // A synthesized product that's also an original building block gets its "round 0, no recipe"
+  // row generated right alongside its synthesis rows (same finalProducts entry, same loop pass),
+  // not grouped with the other round-0-only rows at the end — stable sort fixes the position
+  // without disturbing anything else's relative order.
+  rows.sort((a, b) => (a.round === 0 ? 1 : 0) - (b.round === 0 ? 1 : 0));
 
   return {rows, warnings};
 }

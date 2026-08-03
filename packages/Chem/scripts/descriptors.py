@@ -1,8 +1,10 @@
 #name: Desc
+#friendlyName: Molecular Descriptors
+#description: Computes RDKit molecular descriptors for a set of molecules.
 #language: python
 #input: string smiles
 #input: dataframe df1
-#input: string selected
+#input: string selected [Comma-separated list of descriptors to compute]
 #input: dataframe df2
 #output: dataframe out
 

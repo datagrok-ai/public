@@ -1,5 +1,13 @@
 ---
 title: "Aggregate rows"
+description: Interactively group and summarize table data by rows, columns, and measures with live preview.
+keywords:
+  - pivot table
+  - group by
+  - summarize data
+  - aggregation dialog
+  - rollup data
+  - cross-tabulation
 ---
 
 This tool lets you interactively define aggregation logic and immediately see results in the preview window.

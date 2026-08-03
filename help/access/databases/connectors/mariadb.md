@@ -1,5 +1,15 @@
 ---
 title: "MariaDB"
+description: Connect Datagrok to a MariaDB database and query it using SQL over JDBC.
+keywords:
+  - mariadb database
+  - mariadb jdbc driver
+  - connect to mariadb
+  - sql queries
+  - schema browsing
+  - join db tables
+  - aggregation query
+  - connection test
 ---
 
 Provides access to [MariaDB](https://mariadb.org/) database using SQL queries

@@ -1,7 +1,16 @@
 ---
 title: "Call via REST"
 sidebar_position: 9
-format: 'mdx'
+mdx:
+  format: mdx
+description: Call a Datagrok script from an external application using a REST API endpoint.
+keywords:
+  - rest api
+  - external integration
+  - authentication token
+  - curl sample
+  - remote script execution
+  - context panel
 ---
 
 ```mdx-code-block

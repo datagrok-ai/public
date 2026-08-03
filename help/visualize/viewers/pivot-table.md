@@ -1,5 +1,13 @@
 ---
 title: "Pivot table"
+description: Aggregate, group, and cross-tabulate data by pivoting column values into rows and columns.
+keywords:
+  - pivot viewer
+  - cross-tabulation
+  - group by
+  - aggregation
+  - data summarization
+  - spreadsheet pivot
 ---
 
 Aggregate and summarize your data using a pivot viewer. 
@@ -13,8 +21,8 @@ To add the pivot viewer, click the **Top Menu**, click the **Add a viewer**
 To configure your pivot table, use these fields:
 * **Group by**: Choose one or more columns to group rows 
 * **Aggregate**: Choose both
-   * An aggregation function (e.g., `sum`, `count`, `avg`)
-   * A column to aggregate (e.g., `avg(AGE)`) 
+  * An aggregation function (e.g., `sum`, `count`, `avg`)
+  * A column to aggregate (e.g., `avg(AGE)`) 
 * **Pivot**: Select one or more columns whose unique values will become columns in the pivot table
 
 For general viewer controls and interactions, see the [Table View](../table-view-1.md) page.

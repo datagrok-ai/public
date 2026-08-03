@@ -1,5 +1,12 @@
 ---
 title: "Tests"
+description: Baseline criteria that every Datagrok viewer and function should satisfy, whether tested manually or automatically.
+keywords:
+  - viewer testing criteria
+  - function test cases
+  - layout persistence
+  - cell renderer testing
+  - GridCellRenderer
 ---
 
 ## Testing viewers

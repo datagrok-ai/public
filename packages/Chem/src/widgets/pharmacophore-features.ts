@@ -9,6 +9,7 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 
 let featuresDf: DG.DataFrame | null = null;
@@ -73,8 +74,8 @@ export async function getPharmacophoreFeatures(molecule: string): Promise<PharmF
   const matches: PharmFeatureMatch[] = [];
   let mol: RDMol | null = null;
   try {
-    if (!grok.chem.isMolBlock(molecule) && molecule?.length > 5000)
-      throw new Error('SMILES string longer than 5000 characters not supported');
+    if (!grok.chem.isMolBlock(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+      throw new Error(`SMILES string longer than ${MAX_SMILES_LENGTH} characters not supported`);
     mol = rdKitModule.get_mol(molecule);
 
     const smartsCol = featuresDf!.getCol('smarts');

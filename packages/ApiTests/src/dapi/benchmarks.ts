@@ -9,7 +9,8 @@ category('Benchmarks: Detectors', () => {
   const df = grok.data.demo.demog(100000);
   const detectors: _DG.Func[] = DG.Func.find({meta: {role: DG.FUNC_TYPES.SEM_TYPE_DETECTOR}});
   const cols: _DG.Column[] = df.columns.byNames(['site', 'age', 'started', 'height']);
-  grok.shell.closeTable(df);
+  if (typeof process === 'undefined')
+    grok.shell.closeTable(df);
 
   for (const d of detectors) {
     test(d.friendlyName, async () => {

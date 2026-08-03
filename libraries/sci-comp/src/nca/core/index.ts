@@ -17,6 +17,10 @@ export {
   clearance,
   volumeTerminal,
   pctExtrapolated,
+  meanResidenceTime,
+  volumeSteadyState,
+  pctExtrapolatedAumc,
+  tlag,
 } from './derived';
 export {computeNca} from './compute-nca';
 export {
@@ -29,3 +33,30 @@ export {
   aucExtrapolateToInfinity,
   neumaierSum,
 } from './auc';
+export {
+  aumcLinearNaive,
+  aumcLogLinearNaive,
+  aumcLinearUpLogDownNaive,
+  aumcLinearCompensated,
+  aumcLogLinearCompensated,
+  aumcLinearUpLogDownCompensated,
+  aumcExtrapolateToInfinity,
+} from './aumc';
+export {sparseAuc, buildCompositeProfile} from './sparse';
+export type {
+  SparseInput,
+  SparseAucOptions,
+  SparseAucResult,
+  SparseWarning,
+  SparseWarningCode,
+  SamplingTopology,
+  CompositeTimepoint,
+  CompositeProfileResult,
+} from './sparse';
+export {
+  summarizeBootstrap,
+  DEFAULT_MIN_N_PER_TIMEPOINT,
+  DEFAULT_BOOTSTRAP_ITERATIONS,
+  BOOTSTRAP_DISTINCT_RESAMPLE_FLOOR,
+} from './bootstrap';
+export type {BootstrapOptions, BootstrapSummary} from './bootstrap';

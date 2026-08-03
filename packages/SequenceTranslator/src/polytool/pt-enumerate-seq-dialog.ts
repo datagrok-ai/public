@@ -8,7 +8,8 @@ import $ from 'cash-dom';
 import wu from 'wu';
 import {Unsubscribable} from 'rxjs';
 
-import {GetMonomerResType, HelmAtom, MonomerNumberingTypes} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
+import {GetMonomerResType, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
+import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getHelmHelper, HelmInputBase, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
@@ -37,7 +38,7 @@ import {tagAsOligoNucleotide} from '../oligo-renderer/converters';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
-import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {CyclizedNotationProvider} from '../utils/cyclized';
 import {INotationProvider, NotationProviderBase} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
@@ -495,7 +496,7 @@ async function getPolyToolEnumerateDialog(
         const mol = inputs.macromolecule.molValue;
         const hoveredAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (hoveredAtom) {
-          const hoveredAtomContIdx = hoveredAtom._parent.atoms.indexOf(hoveredAtom);
+          const hoveredAtomContIdx = mol.atoms.indexOf(hoveredAtom);
           const substitutingMonomers = inputs.placeholders.placeholdersValue
             .find((ph) => ph.position === hoveredAtomContIdx)?.monomers;
 
@@ -520,7 +521,7 @@ async function getPolyToolEnumerateDialog(
         const mol = inputs.macromolecule.molValue;
         const clickedAtom = helmHelper.getHoveredAtom(argsX, argsY, mol, inputs.macromolecule.root.clientHeight);
         if (clickedAtom) {
-          const clickedAtomContIdx = clickedAtom._parent.atoms.indexOf(clickedAtom);
+          const clickedAtomContIdx = mol.atoms.indexOf(clickedAtom);
           inputs.placeholders.addPosition(clickedAtomContIdx, '');
         }
       } catch (err: any) {
@@ -546,8 +547,13 @@ async function getPolyToolEnumerateDialog(
       fillForCurrentCell(seqValue, dataRole, cell);
     }));
 
-    inputs.macromolecule.root.style.setProperty('min-width', '250px', 'important');
+    // inputs.macromolecule.root.style.setProperty('min-width', '250px', 'important');
     // inputs.macromolecule.root.style.setProperty('max-height', '300px', 'important');
+    // This dialog wants the editor to FILL the flex-allocated pane (the input's
+    // default is now a fixed 250×250 box), so opt the editor host into fill.
+    inputs.macromolecule.getInput().style.setProperty('width', '100%', 'important');
+    inputs.macromolecule.getInput().style.setProperty('height', '100%', 'important');
+    inputs.macromolecule.getInput().style.removeProperty('min-height');
 
     // === VIEW UPDATE HELPERS ===
 

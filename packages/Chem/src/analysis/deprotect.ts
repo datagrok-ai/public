@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Observable, Subject} from 'rxjs';
 import {hasNewLines} from '../utils/chem-common';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 
 function correctRGroups(smiles: string): string {
   const elementRGroupRegex = /\[R[1-9]\]/g;
@@ -89,7 +90,7 @@ export class DeprotectEditor extends DG.FuncCallEditor {
     const correctedFragment = correctRGroups(grok.chem.convert(this.fragmentInput.value ?? '', grok.chem.Notation.Unknown, grok.chem.Notation.Smiles));
     if (!correctedFragment)
       return 'Fragment must be a valid molecule';
-    if (correctedFragment.indexOf('[*:1]') == -1)
+    if (correctedFragment.indexOf('[*:1]') === -1)
       return 'Fragment must contain R1-group';
     return null;
   };
@@ -138,7 +139,7 @@ export function addDeprotectedColumn(table: DG.DataFrame, molColumn: DG.Column, 
       let mol: RDMol | null = null;
       let rctns: RDReactionResult | null = null;
       try {
-        if (molSmiles && !hasNewLines(molSmiles) && molSmiles.length > 5000)
+        if (molSmiles && !hasNewLines(molSmiles) && molSmiles.length > MAX_SMILES_LENGTH)
           return molSmiles; // do not attempt to parse very long SMILES, will cause MOB.
         mol = rdModule.get_mol(molSmiles);
         if (!mol)

@@ -158,6 +158,11 @@ export type SeqToMolfileWorkerData = {
    * "HELM RNA triples" mode, where each nucleotide contributes 3 entries
    * sugar/base/phosphate). undefined for legacy bases-only rows. */
   rolesList?: (NucleotideRole[] | undefined)[],
+  /** Per-row start positions of disjoint HELM chains (0-based indices into the
+   * flat monomer list). Rows with a single chain carry [0]. When a row has more
+   * than one chain, the assembly builds each chain separately and stacks them
+   * vertically into a single molfile. */
+  chainStartsList?: number[][],
   monomersDict: MonomerMolGraphMap,
   alphabet: ALPHABET,
   polymerType: HELM_POLYMER_TYPE,

@@ -1,7 +1,18 @@
 ---
-format: mdx
+mdx:
+  format: mdx
 title: "Rich Function View"
 sidebar_position: 1
+description: Use the RichFunctionView UI editor to build a full-featured interface with tabs, history, and export for scripts.
+keywords:
+  - richfunctionview editor
+  - input and output viewers
+  - run history comparison
+  - custom export
+  - form layout
+  - runOnInput
+  - sensitivity analysis integration
+  - parameter fitting integration
 ---
 
 ```mdx-code-block
@@ -198,6 +209,7 @@ test2 = demog.clone();
 </TabItem>
 </Tabs>
 ```
+
 ### Group scalar outputs
 
 You can use the `category` keyword to group scalar output parameters.
@@ -479,6 +491,19 @@ The export function will receive the following arguments:
 * `isOutputOutdated`: bool, true if the function output is outdated.
 * `validationState`: `Record<string, ValidationResult>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
 * `consistencyState`: `Record<string, ConsistencyInfo>`, available only if run inside a [workflows](../../workflows/workflows.mdx).
+
+Declare these as `//input:` parameters of the export function. The current call must be
+typed `funccall`:
+
+```javascript
+//name: MyPDFExport
+//input: funccall funcCall
+//input: bool startDownload
+//output: object result
+export function myPDFExport(funcCall, startDownload) {
+  // build the report for funcCall; download it when startDownload is true
+}
+```
 
 Workflows also support a workflow-level `customExports` option with a different handler
 signature (it receives the whole pipeline state, not a single call). See the workflow

@@ -1,3 +1,15 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p1
+realizes_atlas: [open-app-edit-run, model-hub-run]
+realizes: [diffstudio, diffstudio.ball-flight, diffstudio.pk-pd, diffstudio.bioreactor, diffstudio.acid-production, diffstudio.pollution]
+realized_as:
+  - scripting.test.ts
+related_bugs: []
+---
+
 ### Verify Scripting and Model Interaction in Diff Studio
 
 1. Open **Diff Studio**. Open JavaScript Script:

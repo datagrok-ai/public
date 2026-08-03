@@ -41,7 +41,7 @@ enum ERROR_MSG {
 };
 
 /** Per-group statistics produced by the Welford accumulator (see [6]). */
-type GroupStats = {
+export type GroupStats = {
   /** Sample mean. */
   mean: number,
   /** Sum of squared deviations from the mean (M2). */
@@ -108,10 +108,10 @@ export interface OneWayAnovaOptions {
 }
 
 /** Categorical column */
-type CatCol = DG.Column<DG.COLUMN_TYPE.STRING | DG.COLUMN_TYPE.BOOL>;
+export type CatCol = DG.Column<DG.COLUMN_TYPE.STRING | DG.COLUMN_TYPE.BOOL>;
 
 /** Numerical column */
-type NumCol = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
+export type NumCol = DG.Column<DG.COLUMN_TYPE.FLOAT> | DG.Column<DG.COLUMN_TYPE.INT>;
 
 /** Check correctness of significance level. */
 export function checkSignificanceLevel(alpha: number) {
@@ -128,7 +128,7 @@ export function getVariance(data: GroupStats): number {
 } // getVariance
 
 /** Check equality of variances of 2 samples. F-test is performed.*/
-function areVarsEqual(xData: GroupStats, yData: GroupStats, alpha: number): boolean {
+export function areVarsEqual(xData: GroupStats, yData: GroupStats, alpha: number): boolean {
   // The applied approach can be found in [3]
   checkSignificanceLevel(alpha);
 
@@ -153,13 +153,113 @@ function areVarsEqual(xData: GroupStats, yData: GroupStats, alpha: number): bool
  * Identity: P(F > f) = I_x(df2/2, df1/2),  where x = df2 / (df2 + df1 * f),
  * and `jStat.ibeta` retains precision for small x (= large f).
  */
-function fSurvival(f: number, df1: number, df2: number): number {
+export function fSurvival(f: number, df1: number, df2: number): number {
   if (!Number.isFinite(f))
     return f > 0 ? 0 : 1;
   if (f <= 0)
     return 1;
   const x = df2 / (df2 + df1 * f);
   return jStat.ibeta(x, df2 / 2, df1 / 2);
+}
+
+/** Result of factorizing a feature column by a categorical column.
+ *  Per-group Welford accumulators are kept as typed arrays (ANOVA hot path). */
+export interface Factorization {
+  /** Per-group sample means. */
+  means: Float64Array;
+  /** Per-group sum of squared deviations from the mean (M2). */
+  m2: Float64Array;
+  /** Per-group sample sizes. */
+  sizes: Int32Array;
+  /** Number of categories (groups). */
+  catCount: number;
+  /** Count of skipped rows with a null feature or null category. */
+  nullsCount: number;
+}
+
+/** Split `values` by `categories` into per-group Welford stats (mean, M2, size).
+ *
+ *  Single source of truth for the factorization, shared by ANOVA (`FactorizedData`)
+ *  and the t-test. Handles INT/FLOAT features and STRING/BOOL categories; rows with a
+ *  null feature or null category are skipped (counted in `nullsCount`). */
+export function factorize(categories: CatCol, values: NumCol, uniqueCount: number): Factorization {
+  const type = values.type;
+  const size = values.length;
+  const featuresNull = getNullValue(values);
+
+  switch (type) {
+  case DG.COLUMN_TYPE.INT:
+  case DG.COLUMN_TYPE.FLOAT:
+    const catCount = uniqueCount;
+
+    const vals = values.getRawData();
+    const cats = categories.getRawData();
+
+    const means = new Float64Array(catCount).fill(0);
+    const m2 = new Float64Array(catCount).fill(0);
+    const subSampleSizes = new Int32Array(catCount).fill(0);
+    let nullsCount = 0;
+
+    let cat: number;
+
+    if (categories.type == DG.COLUMN_TYPE.BOOL) {
+      let catIdx = 0;
+      let shift = 0;
+      let packed = cats[0];
+      const MAX_SHIFT = 8 * cats.BYTES_PER_ELEMENT - 1;
+
+      for (let i = 0; i < size; ++i) {
+        cat = 1 & (packed >> shift);
+
+        if (vals[i] !== featuresNull) {
+          const x = vals[i];
+          const n = ++subSampleSizes[cat];
+          const delta = x - means[cat];
+          means[cat] += delta / n;
+          const delta2 = x - means[cat];
+          m2[cat] += delta * delta2;
+        } else
+          ++nullsCount;
+
+
+        ++shift;
+
+        if (shift > MAX_SHIFT) {
+          shift = 0;
+          ++catIdx;
+          packed = cats[catIdx];
+        }
+      }
+    } else {
+      const categoriesNull = categories.stats.missingValueCount > 0 ? getNullValue(categories) : -1;
+
+      for (let i = 0; i < size; ++i) {
+        cat = cats[i];
+
+        if ((cat === categoriesNull) || (vals[i] === featuresNull)) {
+          ++nullsCount;
+          continue;
+        }
+
+        const x = vals[i];
+        const n = ++subSampleSizes[cat];
+        const delta = x - means[cat];
+        means[cat] += delta / n;
+        const delta2 = x - means[cat];
+        m2[cat] += delta * delta2;
+      }
+    }
+
+    return {means, m2, sizes: subSampleSizes, catCount, nullsCount};
+
+  default:
+    throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
+  }
+} // factorize
+
+/** Per-group stats for the i-th group of a factorization. */
+export function groupStats(f: Factorization, i: number): GroupStats {
+  return {mean: f.means[i], m2: f.m2[i], size: f.sizes[i]};
 }
 
 export class FactorizedData {
@@ -324,84 +424,15 @@ export class FactorizedData {
     };
   } // getWelchAnova
 
-  /** Compute per-group mean and M2 (sum of squared deviations from the mean) via Welford (see [6]). */
+  /** Compute per-group mean and M2 (sum of squared deviations from the mean) via Welford (see [6]).
+   *  Thin wrapper over the shared `factorize` — single source of truth. */
   private setStats(categories: CatCol, features: NumCol, uniqueCount: number): void {
-    const type = features.type;
-    const size = features.length;
-    const featuresNull = getNullValue(features);
-
-    switch (type) {
-    case DG.COLUMN_TYPE.INT:
-    case DG.COLUMN_TYPE.FLOAT:
-      const catCount = uniqueCount;
-      this.catCount = catCount;
-
-      const vals = features.getRawData();
-      const cats = categories.getRawData();
-
-      const means = new Float64Array(catCount).fill(0);
-      const m2 = new Float64Array(catCount).fill(0);
-      const subSampleSizes = new Int32Array(catCount).fill(0);
-
-      let cat: number;
-
-      if (categories.type == DG.COLUMN_TYPE.BOOL) {
-        let catIdx = 0;
-        let shift = 0;
-        let packed = cats[0];
-        const MAX_SHIFT = 8 * cats.BYTES_PER_ELEMENT - 1;
-
-        for (let i = 0; i < size; ++i) {
-          cat = 1 & (packed >> shift);
-
-          if (vals[i] !== featuresNull) {
-            const x = vals[i];
-            const n = ++subSampleSizes[cat];
-            const delta = x - means[cat];
-            means[cat] += delta / n;
-            const delta2 = x - means[cat];
-            m2[cat] += delta * delta2;
-          } else
-            ++this.nullsCount;
-
-
-          ++shift;
-
-          if (shift > MAX_SHIFT) {
-            shift = 0;
-            ++catIdx;
-            packed = cats[catIdx];
-          }
-        }
-      } else {
-        const categoriesNull = categories.stats.missingValueCount > 0 ? getNullValue(categories) : -1;
-
-        for (let i = 0; i < size; ++i) {
-          cat = cats[i];
-
-          if ((cat === categoriesNull) || (vals[i] === featuresNull)) {
-            ++this.nullsCount;
-            continue;
-          }
-
-          const x = vals[i];
-          const n = ++subSampleSizes[cat];
-          const delta = x - means[cat];
-          means[cat] += delta / n;
-          const delta2 = x - means[cat];
-          m2[cat] += delta * delta2;
-        }
-      }
-
-      this.means = means;
-      this.m2 = m2;
-      this.subSampleSizes = subSampleSizes;
-
-      break;
-
-    default:
-      throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-    }
+    const f = factorize(categories, features, uniqueCount);
+    this.means = f.means;
+    this.m2 = f.m2;
+    this.subSampleSizes = f.sizes;
+    this.catCount = f.catCount;
+    this.nullsCount = f.nullsCount;
   } // setStats
 } // FactorizedData
 

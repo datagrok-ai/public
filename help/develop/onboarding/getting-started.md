@@ -1,5 +1,13 @@
 ---
 title: "Getting started"
+description: A step-by-step introduction for new engineers to start developing with Datagrok, its JS API, and local tooling.
+keywords:
+  - new developer onboarding
+  - datagrok-tools
+  - JavaScript API examples
+  - package scaffolding
+  - community forum
+  - developer resources
 ---
 
 Welcome to Datagrok, the next-generation data platform! This document provides a step-by-step instruction to help you

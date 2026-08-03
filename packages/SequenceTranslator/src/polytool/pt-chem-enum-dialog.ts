@@ -9,23 +9,49 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {
+  addRGroupsFromSmiles,
+  buildExportColumns,
   CHEM_ENUM_MAX_RESULTS,
   ChemEnumCore,
   ChemEnumMode,
   ChemEnumModes,
   ChemEnumRGroup,
+  copyRGroupList,
   enumerateRaw,
   enumerateSampleRaw,
   extractRNumbers,
+  BUILTIN_R_GROUP_TEMPLATES,
+  isValidTemplateSmiles,
   makeCore,
   makeRGroup,
   normalizeRLabels,
+  parseRGroupTemplates,
+  pickDefaultTargetR,
+  RGroupTemplate,
+  RGroupTemplateItem,
+  rGroupTargetWarnings,
+  uniqueKeepMask,
   validateParams,
 } from './pt-chem-enum';
 import {_package} from '../package';
+import {getMarkushDefaults} from './pt-chem-enum-settings';
 import {defaultErrorHandler} from '../utils/err-info';
 
 const DIALOG_TITLE = 'Markush Enumerator';
+
+/** Mirrors `chemEnumerateMarkushTopMenu`'s description in package.ts (the app entry registers none of its own). */
+const MARKUSH_DESCRIPTION = 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)';
+
+const DEFAULT_TABLE_NAME = 'Markush enumeration';
+const DEFAULT_REMOVE_DUPLICATES = true;
+
+const OUTPUT_NEW_TABLE = 'New table';
+const OUTPUT_APPEND_TO = 'Append to…';
+
+/** Single source of truth for the result-table name: a trimmed user value, or the default when blank/missing. */
+function resolveTableName(raw: string | undefined): string {
+  return raw?.trim() || DEFAULT_TABLE_NAME;
+}
 
 const MODE_TOOLTIPS: Record<ChemEnumMode, string> = {
   [ChemEnumModes.Zip]: 'Zip: every R-group list must have the same length N. The i-th result uses the i-th entry from every list. Produces N results per core.',
@@ -40,12 +66,21 @@ const THUMB_H = 72;
 const TOOLTIP_W = 320;
 const TOOLTIP_H = 260;
 
+// ─── R-group color system ───────────────────────────────────────────────────
+
+const R_GROUP_COLORS = ['#1a7fd4', '#e09020', '#0e9f6e', '#7c3aed', '#be185d', '#0891b2', '#b45309'];
+function getRGroupColor(n: number): string {
+  return R_GROUP_COLORS[(n - 1 + R_GROUP_COLORS.length) % R_GROUP_COLORS.length];
+}
+
 // ─── Card primitives ────────────────────────────────────────────────────────
 
 interface CardOpts {
   smiles: string;
   subtitle: string;
   error?: string;
+  /** When provided (and no error), the subtitle row shows colored R# chips. */
+  rNumbers?: number[];
   onEdit?: () => void;
   onDuplicate?: () => void;
   onRemove?: () => void;
@@ -83,11 +118,21 @@ function buildCard(opts: CardOpts): HTMLElement {
     drawMolInto(thumbHost, opts.smiles, THUMB_W, THUMB_H);
   else thumbHost.appendChild(ui.divText('—', {style: {color: 'var(--grey-4)'}}));
 
-  const subtitleEl = ui.divText(opts.subtitle, {style: {
-    fontSize: '10px', color: opts.error ? 'var(--red-3)' : 'var(--grey-5)',
-    textAlign: 'center', padding: '2px 4px', whiteSpace: 'nowrap',
-    overflow: 'hidden', textOverflow: 'ellipsis',
-  }});
+  let subtitleEl: HTMLElement;
+  if (opts.rNumbers?.length && !opts.error) {
+    const chips = opts.rNumbers.map((n) => ui.divText('R' + n, {style: {
+      background: getRGroupColor(n), color: 'white', borderRadius: '2px',
+      fontSize: '9px', fontWeight: '500', lineHeight: '14px', padding: '0 4px',
+    }}));
+    subtitleEl = ui.divH(chips, {style: {gap: '3px', justifyContent: 'center', padding: '2px 4px', flexWrap: 'wrap'}});
+    ui.tooltip.bind(subtitleEl, opts.subtitle);
+  } else {
+    subtitleEl = ui.divText(opts.subtitle, {style: {
+      fontSize: '10px', color: opts.error ? 'var(--red-3)' : 'var(--grey-5)',
+      textAlign: 'center', padding: '2px 4px', whiteSpace: 'nowrap',
+      overflow: 'hidden', textOverflow: 'ellipsis',
+    }});
+  }
 
   const card = ui.divV([thumbHost, subtitleEl], {style: {
     width: `${CARD_W}px`, minWidth: `${CARD_W}px`, height: `${CARD_H}px`,
@@ -413,7 +458,8 @@ async function openImportWizard(
       } else {
         vv.setData(items.length, (i) => buildCard({smiles: items[i].smi, subtitle: items[i].subtitle, error: items[i].err}));
       }
-      if (okButton) okButton.disabled = values.length === 0;
+      // Block import while any entry is invalid.
+      if (okButton) okButton.disabled = values.length === 0 || errs.length > 0;
     };
 
     tableInput.onChanged.subscribe(async () => {
@@ -458,6 +504,204 @@ async function openImportWizard(
   });
 }
 
+// ─── Copy R-group list to another slot ──────────────────────────────────────
+
+/** R#s referenced by at least one valid (non-errored) core — feeds the default target and warnings. */
+function collectCoreRNumbers(state: ChemEnumDialogState): Set<number> {
+  const nums = new Set<number>();
+  for (const c of state.cores) {
+    if (c.error) continue;
+    for (const rn of c.rNumbers) nums.add(rn);
+  }
+  return nums;
+}
+
+
+/**
+ * Opens a dialog to copy R`srcN`'s substituent list into another R-slot — core-aware default
+ * target, Append/Replace, advisory warnings. The copy + re-labeling is done by `copyRGroupList`.
+ */
+function openCopyToRGroupDialog(
+  srcN: number,
+  state: ChemEnumDialogState,
+  rdkit: RDModule,
+  refresh: () => void,
+): void {
+  const srcList = state.rGroupsByNum.get(srcN);
+  if (!srcList || srcList.length === 0) {
+    grok.shell.info(`R${srcN} has no substituents to copy.`);
+    return;
+  }
+
+  // Snapshot (the dialog is modal over a static panel).
+  const coreRNumbers = collectCoreRNumbers(state);
+  const invalidCount = srcList.filter((rg) => rg.error != null).length;
+
+  const defaultTarget = pickDefaultTargetR(new Set(state.rGroupsByNum.keys()), coreRNumbers, srcN);
+
+  const targetInput = ui.input.int('Target R#', {value: defaultTarget, min: 1});
+  const mergeInput = ui.input.choice<string>('Merge policy', {items: ['Append', 'Replace'], value: 'Append'});
+  ui.tooltip.bind(mergeInput.input,
+    'Append: add the copied substituents after any existing entries in the target slot.\n' +
+    'Replace: clear the target slot first, then populate it with the copies.');
+
+  const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
+  let okBtn: HTMLButtonElement | null = null;
+
+  const fail = (m: string) => {
+    status.innerText = m;
+    status.style.color = 'var(--red-3)';
+    if (okBtn) okBtn.disabled = true;
+  };
+
+  const updateStatus = () => {
+    const t = targetInput.value;
+    if (t == null || !Number.isInteger(t) || t < 1) return fail('Enter a valid R-group number (≥ 1).');
+    if (t === srcN) return fail(`Target R# must differ from the source (R${srcN}).`);
+    const existing = state.rGroupsByNum.get(t)?.length ?? 0;
+    const replace = mergeInput.value === 'Replace';
+    const noun = srcList.length === 1 ? 'substituent' : 'substituents';
+    const msg = existing > 0 ?
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing).` :
+      `Copy ${srcList.length} ${noun} R${srcN} → R${t} (new slot).`;
+    const warnings = rGroupTargetWarnings(t, invalidCount, coreRNumbers);
+    if (warnings.length > 0) {
+      status.innerText = `${msg} ⚠ ${warnings.join('; ')}.`;
+      status.style.color = 'var(--orange-2)';
+    } else {
+      status.innerText = msg;
+      status.style.color = 'var(--green-2)';
+    }
+    if (okBtn) okBtn.disabled = false;
+  };
+
+  targetInput.onChanged.subscribe(updateStatus);
+  mergeInput.onChanged.subscribe(updateStatus);
+
+  const dialog = ui.dialog({title: `Copy R${srcN} to…`})
+    .add(ui.divV([targetInput.root, mergeInput.root, status]))
+    .onOK(() => {
+      const t = targetInput.value;
+      if (t == null || !Number.isInteger(t) || t < 1 || t === srcN) return;
+      copyRGroupList(state.rGroupsByNum, srcN, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
+      refresh();
+    });
+  dialog.show({resizable: false, width: 360});
+  okBtn = dialog.getButton('OK') as HTMLButtonElement;
+  updateStatus();
+}
+
+/**
+ * Opens a dialog to insert a ready-made R-group template (e.g. the alkyl series) into an R-slot,
+ * with a target R# and Append/Replace. The substituents are built + re-labeled by `addRGroupsFromSmiles`.
+ */
+// Loads every *.json in files/enumeration/r-group-templates/ once (memoized) and merges them, so the
+// shipped catalogue and any client-dropped template files all show up in the picker. Client files are
+// listed first and our default (DEFAULT_TEMPLATES_FILE) last, so the built-in sets sit at the bottom.
+// A malformed file is skipped, not fatal; if nothing loads, falls back to BUILTIN (never empty).
+const TEMPLATES_DIR = 'enumeration/r-group-templates';
+const DEFAULT_TEMPLATES_FILE = 'r-group-templates.json';
+let templatesPromise: Promise<RGroupTemplate[]> | null = null;
+function loadRGroupTemplates(rdkit: RDModule): Promise<RGroupTemplate[]> {
+  return templatesPromise ??= (async () => {
+    const all: RGroupTemplate[] = [];
+    try {
+      const files = (await _package.files.list(TEMPLATES_DIR)).filter((f) => f.extension.toLowerCase() === 'json');
+      files.sort((a, b) =>
+        (a.fileName === DEFAULT_TEMPLATES_FILE ? 1 : 0) - (b.fileName === DEFAULT_TEMPLATES_FILE ? 1 : 0) ||
+        a.fileName.localeCompare(b.fileName));
+      for (const f of files) {
+        try {
+          for (const t of parseRGroupTemplates(await _package.files.readAsText(f))) {
+            const items = t.items.filter((it) => isValidTemplateSmiles(it.smiles, rdkit));
+            if (items.length > 0) all.push({...t, items});
+          }
+        } catch (e) { _package.logger.warning(`Skipped R-group template file ${f.fileName}: ${e}`); }
+      }
+    } catch { /* fall back to the built-in set below */ }
+    return all.length > 0 ? all : BUILTIN_R_GROUP_TEMPLATES;
+  })();
+}
+
+function openAddTemplateDialog(
+  templates: RGroupTemplate[], state: ChemEnumDialogState, rdkit: RDModule, refresh: () => void,
+): void {
+  const coreRNumbers = collectCoreRNumbers(state);
+
+  const templateInput = ui.input.choice<string>('Template',
+    {items: templates.map((t) => t.name), value: templates[0].name});
+  const defaultTarget = pickDefaultTargetR(new Set(state.rGroupsByNum.keys()), coreRNumbers);
+  const targetInput = ui.input.int('Target R#', {value: defaultTarget, min: 1});
+  const mergeInput = ui.input.choice<string>('Merge policy', {items: ['Append', 'Replace'], value: 'Append'});
+  ui.tooltip.bind(mergeInput.input,
+    'Append: add the template after any existing entries.\nReplace: overwrite the target slot.');
+
+  const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
+  let okBtn: HTMLButtonElement | null = null;
+  const fail = (m: string) => { status.innerText = m; status.style.color = 'var(--red-3)'; if (okBtn) okBtn.disabled = true; };
+
+  // `working` is the curated subset that will be inserted. It starts as the whole template; each
+  // preview card has a hover-revealed ✕ that drops its substituent. Switching templates resets it.
+  let working: RGroupTemplateItem[] = [];
+  const resetWorking = () => {
+    const tmpl = templates.find((x) => x.name === templateInput.value);
+    working = tmpl ? [...tmpl.items] : [];
+  };
+
+  // Thumbnail grid of the working set; hover a card to enlarge or ✕ to remove it before inserting.
+  const previewHost = ui.div([], {style: {display: 'flex', flexWrap: 'wrap', overflowY: 'auto',
+    gap: '4px', padding: '4px 0', maxWidth: '100%', maxHeight: `${CARD_H * 2 + 16}px`, minHeight: `${CARD_H}px`}});
+  const renderPreview = () => {
+    ui.empty(previewHost);
+    for (const item of working) {
+      // Show a generic `*` attachment (not `*:1`) so the preview reads the same for any target R#.
+      const display = item.smiles.replace(/\[\*:\d+\]/g, '[*]');
+      // Remove only this card's node (template items are unique) — no redraw of the survivors.
+      const card = buildCard({smiles: display, subtitle: item.label ?? display, onRemove: () => {
+        const i = working.indexOf(item);
+        if (i >= 0) working.splice(i, 1);
+        card.remove();
+        updateStatus();
+      }});
+      previewHost.appendChild(card);
+    }
+  };
+
+  const updateStatus = () => {
+    const t = targetInput.value;
+    if (t == null || !Number.isInteger(t) || t < 1) return fail('Enter a valid R-group number (≥ 1).');
+    if (working.length === 0) return fail('No substituents selected — keep at least one.');
+    const existing = state.rGroupsByNum.get(t)?.length ?? 0;
+    const replace = mergeInput.value === 'Replace';
+    const msg = existing > 0 ?
+      `Add ${working.length} substituents to R${t} (${replace ? 'replacing' : 'appending to'} ${existing} existing).` :
+      `Add ${working.length} substituents to R${t} (new slot).`;
+    const warnings = rGroupTargetWarnings(t, 0, coreRNumbers);
+    status.innerText = warnings.length > 0 ? `${msg} ⚠ ${warnings.join('; ')}.` : msg;
+    status.style.color = warnings.length > 0 ? 'var(--orange-2)' : 'var(--green-2)';
+    if (okBtn) okBtn.disabled = false;
+  };
+
+  templateInput.onChanged.subscribe(() => { resetWorking(); renderPreview(); updateStatus(); });
+  targetInput.onChanged.subscribe(updateStatus);
+  mergeInput.onChanged.subscribe(updateStatus);
+
+  const dialog = ui.dialog({title: 'Add R-group template'})
+    .add(ui.divV([templateInput.root, previewHost, targetInput.root, mergeInput.root, status]))
+    .onOK(() => {
+      const t = targetInput.value;
+      if (t == null || !Number.isInteger(t) || t < 1 || working.length === 0) return;
+      const smiles = working.map((it) => it.smiles);
+      addRGroupsFromSmiles(state.rGroupsByNum, smiles, t, mergeInput.value === 'Replace' ? 'replace' : 'append', rdkit);
+      refresh();
+    });
+  dialog.show({resizable: true, width: 520});
+  okBtn = dialog.getButton('OK') as HTMLButtonElement;
+  resetWorking();
+  renderPreview();
+  updateStatus();
+}
+
 // ─── Error badge ────────────────────────────────────────────────────────────
 
 function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => void } {
@@ -473,18 +717,33 @@ function makeErrorBadge(): { root: HTMLElement, setErrors: (errs: string[]) => v
       if (errs.length === 0) { root.style.display = 'none'; return; }
       root.style.display = 'inline-flex';
       root.innerText = `⚠ ${errs.length} issue${errs.length === 1 ? '' : 's'}`;
-      ui.tooltip.bind(root, errs.join('\n'));
+      // Collapse duplicate messages and cap the list so the tooltip stays a small box.
+      const byBody = new Map<string, number>();
+      for (const e of errs) {
+        const body = e.replace(/^[^:]+:\s*/, ''); // drop the positional prefix ("R-group 393: ")
+        byBody.set(body, (byBody.get(body) ?? 0) + 1);
+      }
+      const lines = [...byBody.entries()].map(([body, n]) => n > 1 ? `${body} (×${n})` : body);
+      const MAX_LINES = 12;
+      const shown = lines.slice(0, MAX_LINES);
+      if (lines.length > MAX_LINES) shown.push(`…and ${lines.length - MAX_LINES} more`);
+      ui.tooltip.bind(root, () => ui.divText(shown.join('\n'), {style: {
+        maxWidth: '360px', maxHeight: '240px', overflow: 'hidden',
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      }}));
     },
   };
 }
 
 // ─── Main dialog ────────────────────────────────────────────────────────────
 
-interface ChemEnumDialogState {
+export interface ChemEnumDialogState {
   cores: ChemEnumCore[];
   rGroupsByNum: Map<number, ChemEnumRGroup[]>;
   mode: ChemEnumMode;
   appendToTable: DG.DataFrame | null;
+  removeDuplicates: boolean;
+  tableName: string;
 }
 
 // ─── History (localStorage-backed, shared by dialog + app) ──────────────────
@@ -492,7 +751,7 @@ interface ChemEnumDialogState {
 const HISTORY_KEY = 'd4-markush-enumeration-history';
 const HISTORY_MAX = 10;
 
-interface ChemEnumHistoryEntry {
+export interface ChemEnumHistoryEntry {
   /** ISO timestamp of when the enumeration was recorded. */
   date: string;
   /** One-line summary: `"6 cores · R1:6 · R2:4"`. */
@@ -502,6 +761,10 @@ interface ChemEnumHistoryEntry {
   cores: string[];
   /** R-number → list of original R-group SMILES. JSON object so we can round-trip. */
   rGroups: { [rNumber: string]: string[] };
+  /** Optional for backward-compatibility with entries stored before this option existed. */
+  removeDuplicates?: boolean;
+  /** Optional for backward-compatibility with entries stored before this option existed. */
+  tableName?: string;
 }
 
 function readHistory(): ChemEnumHistoryEntry[] {
@@ -531,7 +794,7 @@ function summarizeState(state: ChemEnumDialogState): string {
     (partsR.length ? ' · ' + partsR.join(' · ') : '');
 }
 
-function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
+export function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
   const rGroups: { [n: string]: string[] } = {};
   for (const [n, list] of state.rGroupsByNum)
     rGroups[String(n)] = list.map((rg) => rg.originalSmiles);
@@ -541,6 +804,8 @@ function buildHistoryEntry(state: ChemEnumDialogState): ChemEnumHistoryEntry {
     mode: state.mode,
     cores: state.cores.map((c) => c.originalSmiles),
     rGroups,
+    removeDuplicates: state.removeDuplicates,
+    tableName: resolveTableName(state.tableName),
   };
 }
 
@@ -552,7 +817,7 @@ function recordHistory(state: ChemEnumDialogState): void {
 }
 
 /** Reparses SMILES through `makeCore` / `makeRGroup` so validation runs with the current rdkit. */
-function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
+export function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogState, rdkit: RDModule): void {
   state.cores = entry.cores.map((smi) => makeCore(smi, '', rdkit));
   state.rGroupsByNum = new Map();
   for (const [nStr, list] of Object.entries(entry.rGroups ?? {})) {
@@ -562,6 +827,8 @@ function applyHistoryEntry(entry: ChemEnumHistoryEntry, state: ChemEnumDialogSta
   }
   if (entry.mode === ChemEnumModes.Zip || entry.mode === ChemEnumModes.Cartesian)
     state.mode = entry.mode;
+  state.removeDuplicates = entry.removeDuplicates ?? DEFAULT_REMOVE_DUPLICATES;
+  state.tableName = resolveTableName(entry.tableName);
 }
 
 function formatHistoryDate(iso: string): string {
@@ -701,28 +968,59 @@ export async function polyToolEnumerateChemApp(): Promise<DG.View | null> {
   try {
     const rdkit = await getRdKitModule();
     const panel = buildChemEnumPanel(rdkit, null, 'app');
-    const runBtn = ui.button('Enumerate', async () => { await panel.execute(); });
-    panel.bindActionButton(runBtn as HTMLButtonElement);
-    panel.appActionHost?.appendChild(runBtn);
 
-    // Seed the panel: most-recent history wins; if there is none, fall back to the shipped
-    // demo CSVs so the app never opens to an empty screen. Both paths mutate panel.state and
-    // panel.refresh() picks the changes up.
+    // Seed the panel so it never opens to an empty screen, in precedence order — the user's
+    // most-recent history wins, else the admin-configured package-settings defaults, else the
+    // shipped demo CSVs. Every path mutates panel.state and panel.refresh() picks the changes up.
+    const applyAndRefresh = (entry: ChemEnumHistoryEntry) => {
+      applyHistoryEntry(entry, panel.state, rdkit);
+      panel.refresh();
+    };
     const history = readHistory();
     if (history.length > 0) {
-      applyHistoryEntry(history[0], panel.state, rdkit);
-      panel.refresh();
+      applyAndRefresh(history[0]);
     } else {
-      preloadFromFiles(panel.state, rdkit).then((loaded) => {
-        if (loaded) panel.refresh();
-      });
+      const settingsEntry = await getMarkushDefaults();
+      if (settingsEntry)
+        applyAndRefresh(settingsEntry);
+      else
+        preloadFromFiles(panel.state, rdkit).then((loaded) => { if (loaded) panel.refresh(); });
     }
 
     const view = DG.View.create();
     view.name = DIALOG_TITLE;
     view.box = true;
+    if (panel.ribbonGroups) {
+      view.setRibbonPanels(panel.ribbonGroups);
+      setTimeout(() => {
+        view.root.closest('.d4-root')?.querySelectorAll<HTMLElement>('.d4-ribbon-group, .d4-ribbon-item')
+          .forEach((el) => { el.style.cssText += ';background:transparent!important;box-shadow:none!important;border:none!important;'; });
+      }, 0);
+    }
     view.root.appendChild(ui.div([panel.root],
       {style: {height: '100%', width: '100%', padding: '8px', boxSizing: 'border-box'}}));
+
+    // Fill the toolbox so this view's sidebar isn't empty.
+    const aboutAcc = ui.accordion('markushEnumeratorAbout');
+    aboutAcc.addPane('About', () => ui.divV([
+      ui.divText(MARKUSH_DESCRIPTION),
+      ui.divV([
+        ui.divText('Usage', {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', margin: '0 0 2px'}}),
+        ui.divText('1. Draw or import cores — molecules with R-labels.'),
+        ui.divText('2. Add R-group substituents for each R.'),
+        ui.divText('3. Pick Enumerator Type (Zip — same-length list, Cartesian — all combinations).'),
+        ui.divText('4. Enumerate to build the molecule table.'),
+      ], {style: {gap: '2px'}}),
+      ui.info([
+        ui.divText('An R-group can be a single atom (N, O, Cl, …) drawn without an R-label.'),
+        ui.divText('Import cores or R-groups from any open table with the folder button.'),
+        ui.divText('Save the whole setup (cores + R-groups) as a CSV with the download button.'),
+        ui.divText('Use the Templates button to add ready-made R-group sets.'),
+        ui.divText('Reopen a recent setup from the History (clock) button.'),
+      ], 'Tips'),
+    ], {style: {padding: '8px', gap: '8px'}}), true);
+    view.toolbox = aboutAcc.root;
+
     return view;
   } catch (err: any) {
     defaultErrorHandler(err);
@@ -743,19 +1041,51 @@ interface ChemEnumPanel {
    * Only populated in app layout; undefined in dialog layout.
    */
   appActionHost?: HTMLElement;
+  /** App layout: ribbon panel groups (one inner array per separator group). */
+  ribbonGroups?: HTMLElement[][];
 }
 
 type ChemEnumLayout = 'dialog' | 'app';
 
-function buildChemEnumPanel(
+// Horizontal scroll of a virtualView row lives on the root or its viewport; setData resets it, so
+// callers snapshot with readRowScrollLeft before a rebuild and restore with restoreRowScrollLeft after.
+function readRowScrollLeft(vvRoot: HTMLElement): number {
+  const viewport = vvRoot.firstElementChild as HTMLElement | null;
+  return Math.max(vvRoot.scrollLeft, viewport?.scrollLeft ?? 0);
+}
+
+function restoreRowScrollLeft(vvRoot: HTMLElement, scrollLeft: number) {
+  if (scrollLeft <= 0) return;
+  // Restore after the virtualView lays out (setData resets scroll synchronously).
+  setTimeout(() => {
+    const viewport = vvRoot.firstElementChild as HTMLElement | null;
+    vvRoot.scrollLeft = scrollLeft;
+    if (viewport) viewport.scrollLeft = scrollLeft;
+  }, 0);
+}
+
+export function buildChemEnumPanel(
   rdkit: RDModule, preloadCore: ChemEnumCore | null, layout: ChemEnumLayout = 'dialog',
+  opts: {hideAppendToTable?: boolean} = {},
 ): ChemEnumPanel {
   const state: ChemEnumDialogState = {
     cores: preloadCore ? [preloadCore] : [],
     rGroupsByNum: new Map(),
     mode: ChemEnumModes.Cartesian,
     appendToTable: null,
+    removeDuplicates: DEFAULT_REMOVE_DUPLICATES,
+    tableName: DEFAULT_TABLE_NAME,
   };
+
+  /** Confirm before a bulk removal. */
+  const confirmDelete = (message: string, action: () => void) => {
+    ui.dialog({title: 'Confirm removal'})
+      .add(ui.divText(message))
+      .onOK(action)
+      .show();
+  };
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const rGroupTotal = () => [...state.rGroupsByNum.values()].reduce((sum, l) => sum + l.length, 0);
 
   // ── Cores: single-row horizontal virtualView (dialog) or wrapped flow (app) ─
   const ROW_H = CARD_H + 16; // card height + horizontal scrollbar breathing room
@@ -772,6 +1102,7 @@ function buildChemEnumPanel(
     return buildCard({
       smiles: c.error ? '' : c.smiles,
       subtitle: c.error ? 'invalid' : `core ${i + 1} · ${c.rNumbers.map((n) => 'R' + n).join(', ')}`,
+      rNumbers: c.error ? undefined : c.rNumbers,
       error: c.error,
       onEdit: async () => {
         const edited = await openCoreSketchDialog(rdkit, c.smiles);
@@ -817,7 +1148,10 @@ function buildChemEnumPanel(
       applyHorizontalRowStyle(coresVv.root);
       coresVvHost.appendChild(coresVv.root);
     } else {
+      // setData resets scroll; preserve it.
+      const scrollLeft = readRowScrollLeft(coresVv.root);
       coresVv.setData(state.cores.length, coresRenderer);
+      restoreRowScrollLeft(coresVv.root, scrollLeft);
     }
   };
 
@@ -843,67 +1177,112 @@ function buildChemEnumPanel(
   }});
   const rGroupsEmpty = ui.divText('No R-groups — draw or import for each R number used by your cores.', {style: {color: 'var(--grey-4)', padding: '12px', fontSize: '12px'}});
 
-  const rGroupsRenderers = new Map<number, {row: HTMLElement, vv: DG.VirtualView, header: HTMLElement}>();
+  interface RGroupRow { row: HTMLElement; vv: DG.VirtualView; countEl: HTMLElement; }
+  const rGroupsRenderers = new Map<number, RGroupRow>();
+
+  // Rebuilt each redraw and fed to vv.setData so the same virtualView is reused (recreating resets scroll).
+  const makeRGroupRenderer = (n: number, list: ChemEnumRGroup[]) => (i: number): HTMLElement => {
+    const rg = list[i];
+    const subtitle = rg.error ? 'invalid' :
+      rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
+        `r group ${i + 1} · R${rg.rNumber}`;
+    return buildCard({
+      smiles: rg.error ? '' : rg.smiles,
+      subtitle,
+      error: rg.error,
+      onEdit: async () => {
+        const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+        if (!edited) return;
+        // If the R# changed, move between lists.
+        if (edited.rNumber !== rg.rNumber) {
+          list.splice(i, 1);
+          if (list.length === 0) state.rGroupsByNum.delete(rg.rNumber);
+          const target = state.rGroupsByNum.get(edited.rNumber) ?? [];
+          target.push(edited);
+          state.rGroupsByNum.set(edited.rNumber, target);
+        } else {
+          list[i] = edited;
+        }
+        refresh();
+      },
+      onDuplicate: async () => {
+        const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
+        if (!dup) return;
+        const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
+        target.push(dup);
+        state.rGroupsByNum.set(dup.rNumber, target);
+        refresh();
+      },
+      onRemove: () => {
+        list.splice(i, 1);
+        if (list.length === 0) state.rGroupsByNum.delete(n);
+        refresh();
+      },
+    });
+  };
+
+  // Built once per R# and kept in rGroupsRenderers; redraws update it via setData, not by recreating.
+  const buildRGroupRow = (n: number): RGroupRow => {
+    const color = getRGroupColor(n);
+    const stripIcon = (fa: string, tip: string, onClick: () => void): HTMLElement => {
+      const el = ui.iconFA(fa, onClick, tip);
+      el.style.cssText = 'font-size:13px;color:var(--blue-1);cursor:pointer;padding:3px 0;text-align:center;';
+      return el;
+    };
+    const stripIcons = [
+      stripIcon('pencil', `Draw an R${n} substituent`, () => {
+        openRGroupSketchDialog(rdkit, '', n).then((rg) => {
+          if (!rg) return;
+          const l = state.rGroupsByNum.get(rg.rNumber) ?? [];
+          l.push(rg); state.rGroupsByNum.set(rg.rNumber, l); refresh();
+        });
+      }),
+      stripIcon('copy', `Copy R${n} to another slot`, () => openCopyToRGroupDialog(n, state, rdkit, refresh)),
+      stripIcon('trash-alt', `Remove all R${n}`, () => confirmDelete(`Remove all ${plural(state.rGroupsByNum.get(n)?.length ?? 0, 'substituent')} for R${n}?`, () => { state.rGroupsByNum.delete(n); refresh(); })),
+    ];
+    const countEl = ui.divText('0', {style: {fontSize: '11px', textAlign: 'center', borderRadius: '2px', padding: '0 4px', margin: '0 auto 2px', color: 'var(--grey-5)', background: 'var(--grey-1)', border: '1px solid var(--grey-2)'}});
+    ui.tooltip.bind(countEl, `Number of R${n} substituents`);
+    const strip = ui.divV([
+      ui.div([], {style: {width: '8px', height: '8px', borderRadius: '50%', background: color, margin: '4px auto 1px'}}),
+      ui.divText(`R${n}`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', textAlign: 'center'}}),
+      countEl,
+      ...stripIcons,
+    ], {style: {flex: '0 0 auto', width: '38px', alignItems: 'stretch', gap: '1px', borderLeft: `3px solid ${color}`, paddingLeft: '4px', marginRight: '6px', paddingTop: '2px'}});
+
+    const vv = ui.virtualView(0, () => ui.div(), false, 1);
+    applyHorizontalRowStyle(vv.root);
+    vv.root.style.flex = '1 1 0';
+    const row = ui.divH([strip, vv.root], {style: {alignItems: 'flex-start', padding: '4px 0'}});
+    // Strip icons stay hidden until the R# row is hovered.
+    ui.tools.setHoverVisibility(row, stripIcons);
+    return {row, vv, countEl};
+  };
 
   const redrawRGroups = () => {
-    ui.empty(rGroupsHost);
-    rGroupsRenderers.clear();
-
-    if (state.rGroupsByNum.size === 0) { rGroupsHost.appendChild(rGroupsEmpty); return; }
+    if (state.rGroupsByNum.size === 0) {
+      ui.empty(rGroupsHost);
+      rGroupsRenderers.clear();
+      rGroupsHost.appendChild(rGroupsEmpty);
+      return;
+    }
+    if (rGroupsEmpty.parentElement === rGroupsHost) rGroupsEmpty.remove();
 
     const sortedNums = [...state.rGroupsByNum.keys()].sort((a, b) => a - b);
+    const wanted = new Set(sortedNums);
+    // Drop rows for R#s that no longer exist.
+    for (const [n, entry] of [...rGroupsRenderers]) {
+      if (!wanted.has(n)) { entry.row.remove(); rGroupsRenderers.delete(n); }
+    }
+    // Reuse each row via setData (recreating resets scroll); capture scroll before the move, restore after.
     for (const n of sortedNums) {
       const list = state.rGroupsByNum.get(n)!;
-      const label = ui.divText(`R${n} (${list.length})`, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center'}});
-      const clearBtn = ui.button('Remove all', () => { state.rGroupsByNum.delete(n); refresh(); });
-      clearBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(clearBtn, `Remove all R${n} groups`);
-      const header = ui.divH([label, clearBtn], {style: {alignItems: 'center', justifyContent: 'flex-start', gap: '0', margin: '6px 0 2px'}});
-      const renderer = (i: number): HTMLElement => {
-        const rg = list[i];
-        const remap = rg.sourceRNumber != null && rg.sourceRNumber !== rg.rNumber ? ` (from R${rg.sourceRNumber})` : '';
-        const subtitle = rg.error ? 'invalid' :
-          rg.isSingleAtom ? `r group ${i + 1} · R${rg.rNumber} · atom` :
-            `r group ${i + 1} · R${rg.rNumber}${remap}`;
-        return buildCard({
-          smiles: rg.error ? '' : rg.smiles,
-          subtitle,
-          error: rg.error,
-          onEdit: async () => {
-            const edited = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
-            if (!edited) return;
-            // If the R# changed, move between lists.
-            if (edited.rNumber !== rg.rNumber) {
-              list.splice(i, 1);
-              if (list.length === 0) state.rGroupsByNum.delete(rg.rNumber);
-              const target = state.rGroupsByNum.get(edited.rNumber) ?? [];
-              target.push(edited);
-              state.rGroupsByNum.set(edited.rNumber, target);
-            } else {
-              list[i] = edited;
-            }
-            refresh();
-          },
-          onDuplicate: async () => {
-            const dup = await openRGroupSketchDialog(rdkit, rg.smiles, rg.rNumber);
-            if (!dup) return;
-            const target = state.rGroupsByNum.get(dup.rNumber) ?? [];
-            target.push(dup);
-            state.rGroupsByNum.set(dup.rNumber, target);
-            refresh();
-          },
-          onRemove: () => {
-            list.splice(i, 1);
-            if (list.length === 0) state.rGroupsByNum.delete(n);
-            refresh();
-          },
-        });
-      };
-      const vv = ui.virtualView(list.length, renderer, false, 1);
-      applyHorizontalRowStyle(vv.root);
-      const row = ui.divV([header, vv.root]);
-      rGroupsHost.appendChild(row);
-      rGroupsRenderers.set(n, {row, vv, header});
+      let entry = rGroupsRenderers.get(n);
+      if (!entry) { entry = buildRGroupRow(n); rGroupsRenderers.set(n, entry); }
+      const scrollLeft = readRowScrollLeft(entry.vv.root);
+      rGroupsHost.appendChild(entry.row); // moves the existing node into sorted position
+      entry.countEl.textContent = String(list.length);
+      entry.vv.setData(list.length, makeRGroupRenderer(n, list));
+      restoreRowScrollLeft(entry.vv.root, scrollLeft);
     }
   };
 
@@ -952,6 +1331,42 @@ function buildChemEnumPanel(
     items: grok.shell.tables, nullable: true,
     onValueChanged: (v) => { state.appendToTable = v; },
   });
+  // The defaults editor reuses this panel only to capture cores + R-groups; appending to a
+  // specific open table is meaningless as a saved default, so the caller can hide the input.
+  if (opts.hideAppendToTable) appendToTableInput.root.style.display = 'none';
+
+  const removeDuplicatesInput = ui.input.bool('Remove duplicates', {
+    value: state.removeDuplicates,
+    onValueChanged: (v) => { state.removeDuplicates = !!v; },
+  });
+  ui.tooltip.bind(removeDuplicatesInput.input,
+    'Removes duplicate molecules from the final enumerated output (compared by canonical SMILES). ' +
+    'This is distinct from the import wizard\'s dedup, which collapses identical input cores/R-groups.');
+
+  const tableNameInput = ui.input.string('Table name', {
+    value: state.tableName,
+    onValueChanged: (v) => { state.tableName = v ?? ''; },
+  });
+  ui.tooltip.bind(tableNameInput.input,
+    'Name of the result table created by the enumeration (ignored when appending to an existing table).');
+  // Wider field so longer table names stay fully visible.
+  tableNameInput.input.style.width = '250px';
+
+  // Output destination slot — swaps between tableNameInput and appendToTableInput.
+  const outputSlot = ui.div([tableNameInput.root], {style: {minWidth: '0'}});
+  const outputModeInput = ui.input.choice<string>('Output', {
+    value: OUTPUT_NEW_TABLE, items: [OUTPUT_NEW_TABLE, OUTPUT_APPEND_TO],
+    onValueChanged: (v) => {
+      ui.empty(outputSlot);
+      if (v === OUTPUT_APPEND_TO) {
+        state.appendToTable = appendToTableInput.value ?? null;
+        outputSlot.appendChild(appendToTableInput.root);
+      } else {
+        state.appendToTable = null;
+        outputSlot.appendChild(tableNameInput.root);
+      }
+    },
+  });
 
   let okButton: HTMLButtonElement | null = null;
 
@@ -988,10 +1403,16 @@ function buildChemEnumPanel(
     if (okButton) okButton.disabled = !v.ok;
     if (coresClearBtn) coresClearBtn.disabled = state.cores.length === 0;
     if (rGroupsClearBtn) rGroupsClearBtn.disabled = state.rGroupsByNum.size === 0;
+    // Re-sync the option inputs after external state mutation (e.g. applying a history entry).
+    // Their onValueChanged only writes state (no refresh()), so this can't re-enter; modeInput is
+    // left untouched on purpose — setting its value would re-enter refresh() and loop.
+    removeDuplicatesInput.value = state.removeDuplicates;
+    tableNameInput.value = state.tableName;
     redrawPreview();
   };
 
-  // ── Add/import handlers (dedup now lives in the import wizard, gated by its checkbox) ──
+  // ── Add/import handlers. Input dedup (identical cores/R-groups) is gated by the import
+  //    wizard's checkbox; output dedup (identical products) is the "Remove duplicates" option. ──
   const addCoreFromSketcher = async () => {
     const c = await openCoreSketchDialog(rdkit);
     if (!c) return;
@@ -1022,33 +1443,40 @@ function buildChemEnumPanel(
     }
     refresh();
   };
+  const addRGroupsFromTemplate = () =>
+    loadRGroupTemplates(rdkit).then((templates) => openAddTemplateDialog(templates, state, rdkit, refresh));
+
+  // ── CSV export — one combined file. First column "Core", then one column per R# (R1, R2, …).
+  // The columns have different lengths (cores vs each R# list), so shorter ones are padded with
+  // empty cells. Not the tidiest table, but it carries the whole setup in a single CSV.
+  const exportAllCsv = () => {
+    const cols = buildExportColumns(state.cores, state.rGroupsByNum);
+    if (cols.length === 0) { grok.shell.info('Nothing to export.'); return; }
+    const df = DG.DataFrame.fromColumns(cols.map((c) => DG.Column.fromStrings(c.name, c.values)));
+    DG.Utils.download('markush-enumeration.csv', df.toCsv());
+  };
 
   const sectionHeader = (
     label: string,
-    onDraw?: () => void, onImport?: () => void, onClear?: () => void,
+    onDraw?: () => void, onImport?: () => void, onClear?: () => void, onTemplate?: () => void,
   ): {root: HTMLElement, clearBtn?: HTMLButtonElement} => {
     const parts: HTMLElement[] = [
-      ui.divText(label, {style: {fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
+      ui.divText(label, {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '60px'}}),
     ];
-    if (onDraw) {
-      const drawBtn = ui.button('+ Draw', onDraw);
-      drawBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(drawBtn, `${label}: open sketcher`);
-      parts.push(drawBtn);
-    }
-    if (onImport) {
-      const importBtn = ui.button('↓ Import…', onImport);
-      importBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(importBtn, `${label}: pick a table + column`);
-      parts.push(importBtn);
-    }
+    const iconBtn = (fa: string, onClick: () => void, tip: string): HTMLButtonElement => {
+      const icon = ui.iconFA(fa);
+      icon.style.cssText = 'font-size:inherit;';
+      const btn = ui.button([icon], onClick, tip);
+      btn.style.margin = '0';
+      btn.style.padding = '2px 3px';
+      parts.push(btn);
+      return btn;
+    };
+    if (onDraw) iconBtn('pencil', onDraw, `${label}: open sketcher`);
+    if (onImport) iconBtn('folder-open', onImport, 'Import data');
+    if (onTemplate) iconBtn('swatchbook', onTemplate, 'Employ templates');
     let clearBtn: HTMLButtonElement | undefined;
-    if (onClear) {
-      clearBtn = ui.button('Remove all', onClear) as HTMLButtonElement;
-      clearBtn.style.marginLeft = '4px';
-      ui.tooltip.bind(clearBtn, `Remove all ${label.toLowerCase()}`);
-      parts.push(clearBtn);
-    }
+    if (onClear) clearBtn = iconBtn('trash-alt', onClear, `Remove all ${label.toLowerCase()}`);
     const root = ui.divH(parts, {style: {
       alignItems: 'center', justifyContent: 'flex-start',
       gap: '0', margin: '0 0 2px', flex: '0 0 auto',
@@ -1064,111 +1492,87 @@ function buildChemEnumPanel(
   // ── Section headers (shared between layouts) ──────────────────────────────
   const coresHeader = sectionHeader(
     'Cores', addCoreFromSketcher, addCoresFromImport,
-    () => { state.cores.splice(0, state.cores.length); refresh(); },
+    () => confirmDelete(`Remove all ${plural(state.cores.length, 'core')}?`, () => { state.cores.splice(0, state.cores.length); refresh(); }),
   );
   coresClearBtn = coresHeader.clearBtn;
 
+  // Single combined-export icon — `arrow-to-bottom`, the same glyph the grid's download button uses.
+  const exportBtn = ui.iconFA('arrow-to-bottom', exportAllCsv, 'Download cores + R-groups as one CSV');
+
   const rGroupsHeader = sectionHeader(
     'R-Groups', addRGroupFromSketcher, addRGroupsFromImport,
-    () => { state.rGroupsByNum.clear(); refresh(); },
+    () => confirmDelete(`Remove all ${plural(rGroupTotal(), 'R-group substituent')}?`, () => { state.rGroupsByNum.clear(); refresh(); }),
+    addRGroupsFromTemplate,
   );
   rGroupsClearBtn = rGroupsHeader.clearBtn;
 
   let body: HTMLElement;
   let appActionHost: HTMLElement | undefined;
+  let ribbonGroups: HTMLElement[][] | undefined;
 
   if (layout === 'app') {
-    // ── App: two flex columns. Left = cores + preview. Right = r-groups (grows) + controls (compact). ──
+    // ── App: two flex columns. Left = cores + r-groups. Right = preview (full height).
+    //    Controls live in the view ribbon (ribbonGroups), not in the body. ──
     const cellBaseStyle = {
       display: 'flex', flexDirection: 'column',
       minHeight: '0', minWidth: '0',
       padding: '8px', boxSizing: 'border-box',
-      border: '1px solid var(--grey-2)', borderRadius: '4px',
-      background: 'var(--white)', overflow: 'hidden',
+      overflow: 'hidden',
     } as const;
     const growCellStyle = {...cellBaseStyle, flex: '1 1 0'} as const;
 
-    countText.style.fontSize = '11px';
-    countText.style.color = 'var(--grey-5)';
+    const coresCell = ui.divV([coresHeader.root, coresVvHost, coresEmpty], {style: {...cellBaseStyle, flex: '0 0 auto'}});
+    const rGroupsCell = ui.divV([rGroupsHeader.root, rGroupsHost], {style: growCellStyle});
 
-    const coresCell = ui.divV([
-      coresHeader.root,
-      coresVvHost,
-      coresEmpty,
-    ], {style: growCellStyle});
+    // Preview header: title on left, live count + error badge on right.
+    const previewTitle = ui.divText('Preview', {style: {fontWeight: '600', fontSize: '13px', color: 'var(--grey-6)', alignSelf: 'center'}});
+    countText.style.cssText = 'font-size:11px;color:var(--grey-5);margin-left:auto;align-self:center;';
+    const previewHeaderRow = ui.divH([previewTitle, countText, errorBadge.root],
+      {style: {alignItems: 'center', gap: '8px', margin: '0 0 2px', flex: '0 0 auto'}});
+    const previewCell = ui.box(ui.divV([previewHeaderRow, previewHost], {style: {...growCellStyle, height: '100%'}}), {style: {width: '270px'}});
 
-    const rGroupsCell = ui.divV([
-      rGroupsHeader.root,
-      rGroupsHost,
-    ], {style: growCellStyle});
+    // Ribbon group 1: Enumerate button — opens a popup to pick output options before running.
+    const openRunDialog = () => {
+      const v = validateParams({cores: state.cores, rGroups: state.rGroupsByNum, mode: state.mode});
+      const children: HTMLElement[] = [outputModeInput.root, outputSlot, removeDuplicatesInput.root];
+      if (!v.ok)
+        children.push(ui.divText('Add at least one core and the required R-groups first.',
+          {style: {color: 'var(--red-3)', fontSize: '11px', paddingTop: '4px'}}));
+      const dlg = ui.dialog({title: 'Enumerate'}).add(ui.divV(children, {style: {minWidth: '340px', gap: '4px'}}))
+        .onOK(() => executeEnumeration(state, rdkit));
+      dlg.show();
+      const okBtn = dlg.getButton('OK') as HTMLButtonElement;
+      if (okBtn) { okBtn.textContent = 'Run'; okBtn.disabled = !v.ok; }
+    };
+    const enumerateBtn = ui.bigButton('Enumerate', openRunDialog);
+    okButton = enumerateBtn;
+    appActionHost = enumerateBtn;
 
-    const previewCell = ui.divV([
-      sectionHeader('Preview').root,
-      previewHost,
-    ], {style: growCellStyle});
-
-    // Run header carries the live status — count + issues — inline on the right.
-    const runLabel = ui.divText('Run', {style: {
-      fontWeight: '600', fontSize: '12px', color: 'var(--grey-6)', alignSelf: 'center', minWidth: '40px',
-    }});
-    const runHeaderStats = ui.divH([countText, errorBadge.root], {style: {
-      alignItems: 'center', gap: '8px', marginLeft: 'auto',
-    }});
-    const runHeader = ui.divH([runLabel, runHeaderStats], {style: {
-      alignItems: 'center', gap: '8px', margin: '0 0 6px',
-      flex: '0 0 auto', width: '100%',
-    }});
-
-    // History icon — sits next to Enumerate. Reads localStorage on click and pops a menu.
+    // Ribbon group 2: mode selector.
+    // Ribbon group 3: history, export, clear all.
     const historyBtn = ui.iconFA('history', () => {
-      showHistoryMenu((entry) => {
-        applyHistoryEntry(entry, state, rdkit);
-        refresh();
-      });
+      showHistoryMenu((entry) => { applyHistoryEntry(entry, state, rdkit); refresh(); });
     }, 'Show recent enumerations');
-    historyBtn.style.fontSize = '16px';
-    historyBtn.style.padding = '4px 6px';
-    historyBtn.style.cursor = 'pointer';
-    historyBtn.style.color = 'var(--blue-3)';
+    historyBtn.style.cssText = 'font-size:16px;padding:4px 6px;cursor:pointer;color:var(--blue-3);';
 
-    const clearAllBtn = ui.button('Clear all', () => {
+    const clearAllBtn = ui.button('Clear all', () => confirmDelete(`Remove all ${plural(state.cores.length, 'core')} and ${plural(rGroupTotal(), 'R-group substituent')}?`, () => {
       state.cores.splice(0, state.cores.length);
       state.rGroupsByNum.clear();
       refresh();
-    });
+    }));
     ui.tooltip.bind(clearAllBtn, 'Remove all cores and R-groups');
 
-    appActionHost = ui.div([], {style: {flex: '0 0 auto'}});
-    const actionRow = ui.divH([historyBtn, appActionHost], {style: {
-      alignItems: 'center', gap: '8px', marginTop: '8px', flex: '0 0 auto',
-    }});
+    ribbonGroups = [
+      [appActionHost],
+      [modeInput.root],
+      [historyBtn, exportBtn, clearAllBtn],
+    ];
 
-    const controlsCell = ui.divV([
-      runHeader,
-      modeInput.root,
-      appendToTableInput.root,
-      clearAllBtn,
-      actionRow,
-    ], {style: {
-      ...cellBaseStyle, flex: '0 0 auto', overflow: 'visible',
-    }});
+    const leftColumn = ui.divV([coresCell, rGroupsCell],
+      {style: {display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '0', height: '100%'}});
 
-    const leftColumn = ui.divV([coresCell, previewCell], {style: {
-      flex: '1 1 50%', minWidth: '0',
-      display: 'flex', flexDirection: 'column', gap: '8px',
-    }});
-
-    const rightColumn = ui.divV([rGroupsCell, controlsCell], {style: {
-      flex: '1 1 50%', minWidth: '0',
-      display: 'flex', flexDirection: 'column', gap: '8px',
-    }});
-
-    body = ui.divH([leftColumn, rightColumn], {style: {
-      width: '100%', height: '100%',
-      display: 'flex', flexDirection: 'row',
-      gap: '8px',
-      padding: '4px', boxSizing: 'border-box',
-    }});
+    body = ui.splitH([leftColumn, previewCell], null, true);
+    body.style.cssText = 'width:100%;height:100%;padding:4px;box-sizing:border-box;';
   } else {
     // ── Dialog: horizontal split — cores + r-groups (left 60%) | preview (right 40%) ──
     const coresSection = ui.divV([
@@ -1215,7 +1619,11 @@ function buildChemEnumPanel(
       errorBadge.root,
     ], {style: {alignItems: 'center', gap: '16px', padding: '4px 0'}});
 
-    const footer = ui.div([appendToTableInput.root], {style: {padding: '2px 0'}});
+    const footer = ui.divV([
+      appendToTableInput.root,
+      removeDuplicatesInput.root,
+      ui.divH([tableNameInput.root, exportBtn], {style: {alignItems: 'center', gap: '8px'}}),
+    ], {style: {padding: '2px 0'}});
 
     body = ui.divV([
       split, statusLine, footer,
@@ -1233,6 +1641,7 @@ function buildChemEnumPanel(
     bindActionButton: (btn) => { okButton = btn; refresh(); },
     refresh,
     appActionHost,
+    ribbonGroups,
   };
 }
 
@@ -1263,11 +1672,11 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       DG.Column.fromStrings(`R${n}`, results.map((r) => r.rGroupSmilesByNum.get(n) ?? '')));
     for (const c of rCols) c.semType = DG.SEMTYPE.MOLECULE;
 
-    const df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
-    df.name = 'Chem Enumeration';
+    let df = DG.DataFrame.fromColumns([smilesCol, coreCol, ...rCols]);
 
     // Stage 2 — canonicalize the whole Enumerated column in parallel via Chem workers.
     pi.update(40, `Canonicalizing ${results.length.toLocaleString()} molecule(s)...`);
+    let canonical: string[] | null = null;
     try {
       const res: DG.Column = await grok.functions.call('Chem:convertNotation', {
         data: df,
@@ -1281,9 +1690,21 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       const resArr = res.toList();
       smilesCol.init((i) => resArr[i]);
       smilesCol.meta.units = DG.chem.Notation.Smiles;
+      canonical = resArr;
     } catch (err: any) {
       // Canonicalization is a nice-to-have; the uncanonical SMILES are still valid output.
       _package.logger.warning(`Canonicalization skipped: ${err?.message ?? err}`);
+    }
+
+    // Dedup by canonical SMILES — reuse the array materialized during canonicalization
+    // (falling back to the column only when canonicalization was skipped).
+    if (state.removeDuplicates) {
+      const keep = uniqueKeepMask(canonical ?? smilesCol.toList());
+      const removed = df.rowCount - keep.trueCount;
+      if (removed > 0) {
+        df = df.clone(keep);
+        grok.shell.info(`Removed ${removed} duplicate molecule${removed === 1 ? '' : 's'}.`);
+      }
     }
 
     pi.update(90, 'Finalizing...');
@@ -1293,6 +1714,9 @@ async function executeEnumeration(state: ChemEnumDialogState, _rdkit: RDModule):
       state.appendToTable.append(df, true);
       await state.appendToTable.meta.detectSemanticTypes();
     } else {
+      // Set name on the final frame: `df` may have been reassigned by `clone()` above,
+      // and `name` is a dedicated Dart property that `clone(saveTags)` does not carry.
+      df.name = resolveTableName(state.tableName);
       grok.shell.addTableView(df);
     }
   } catch (err: any) {

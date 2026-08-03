@@ -1,3 +1,43 @@
 .d4-g-cell[semType="Macromolecule"] * {
     pointer-events: none !important;
 }
+
+.hw-pane--extra>div[data-testid="extra-pane-content-molecular-structure"]>div.d4-accordion {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+}
+
+.hw-pane--extra>div[data-testid="extra-pane-content-molecular-structure"]>div.d4-accordion>div.d4-accordion-pane[d4-title="Explore"] {
+    flex-grow: 1;
+    max-height: 280px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    max-width: calc(100% - 400px);
+}
+
+.hw-pane--extra>div[data-testid="extra-pane-content-molecular-structure"] {
+    height: 280px;
+    overflow: hidden;
+}
+
+.hw-pane--extra>div[data-testid="extra-pane-content-molecular-structure"]>div.d4-accordion>div.d4-accordion-pane[d4-title="Explore"] .d4-accordion-pane-header {
+    height: 30px;
+}
+
+.hw-pane--extra>div[data-testid="extra-pane-content-molecular-structure"]>div.d4-accordion>div.d4-accordion-pane[d4-title="Explore"] .d4-accordion {
+    width: 100%;
+}
+
+.hw-pane__extra>.macromolecule-cell-comp-analysis-host>table {
+    margin: 0;
+}
+
+.hw-pane__extra>.macromolecule-cell-comp-analysis-host>table>tbody {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    max-height: 260px;
+    column-gap: 24px;
+}

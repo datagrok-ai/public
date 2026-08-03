@@ -4,7 +4,6 @@ import {runWithContext, request} from '../shared-api-client';
 import {resolveHomeConnection, syncHomeFiles} from './home-files';
 import {syncPackages} from './packages';
 import {syncSharedConnections} from './shared-connections';
-import {loadPackageKnowledge} from '../package-knowledge-tool';
 import {getInstalledPackages} from '../user/installed-packages';
 import {ensureUserDir, getUserDir} from '../user/user-dir';
 import {buildStagedWorkspace} from '../user/staged-workspace';
@@ -95,7 +94,9 @@ async function listAgentFiles(userDir: string): Promise<string[]> {
 // ── Sync orchestration ─────────────────────────────────────────────────
 
 const syncInFlight = new Map<string, Promise<{dir: string; files: string[]}>>();
-const initialSyncDone = new Set<string>();
+// apiKey → epoch ms of the last full ('all') sync. Drives the on-demand TTL refresh.
+const lastFullSync = new Map<string, number>();
+const REFRESH_TTL_MS = 15 * 60 * 1000;
 
 export type SyncScope = 'all' | 'user-files' | 'packages' | 'shared';
 
@@ -104,14 +105,36 @@ export async function syncUserFiles(
 ): Promise<{dir: string; files: string[]}> {
   const dir = getUserDir(apiKey);
 
-  // Fast path: already synced and scope is 'all' (user message) → just return current state
-  if (initialSyncDone.has(apiKey) && scope === 'all') {
-    console.log('user-files: already synced, returning cached state');
-    const files = await listAgentFiles(dir);
-    return {dir, files};
+  // scope 'all' = a Claude query is starting (chat, panel, or search — all route
+  // through handleMessage). After the first full sync, serve disk immediately and
+  // refresh remote sources in the background once the TTL has elapsed, so a turn
+  // never pays sync latency. Freshness lags by at most one turn — fine for
+  // low-churn shared skills / package agents.
+  if (scope === 'all' && lastFullSync.has(apiKey)) {
+    const age = Date.now() - lastFullSync.get(apiKey)!;
+    if (age > REFRESH_TTL_MS && !syncInFlight.has(apiKey)) {
+      console.log('user-files: refresh TTL elapsed — refreshing packages + shared in background');
+      const refresh = (async () => {
+        // This user's own agent-folder edits are caught by the package.ts file
+        // listeners; the recurring refresh only needs remote-actor changes.
+        await doSync(apiUrl, apiKey, 'shared');
+        await doSync(apiUrl, apiKey, 'packages');
+        lastFullSync.set(apiKey, Date.now());
+        return {dir, files: await listAgentFiles(dir)};
+      })();
+      syncInFlight.set(apiKey, refresh);
+      refresh
+        .catch((e: any) => console.warn('user-files: background refresh failed:', e.message))
+        .finally(() => {
+          if (syncInFlight.get(apiKey) === refresh)
+            syncInFlight.delete(apiKey);
+        });
+    }
+    return {dir, files: await listAgentFiles(dir)};
   }
 
-  // If a sync is already running for this key, wait for it
+  // First 'all' sync (blocking, so files exist for this turn) or an explicit
+  // partial scope from an event ('user-files' / 'packages' / 'shared').
   const existing = syncInFlight.get(apiKey);
   if (existing && scope === 'all') {
     console.log('user-files: sync already in flight, awaiting...');
@@ -185,33 +208,9 @@ async function doSync(
   }
 
   if (scope === 'all')
-    initialSyncDone.add(apiKey);
+    lastFullSync.set(apiKey, Date.now());
 
   const files = await listAgentFiles(dir);
   console.log(`user-files: sync complete — ${files.length} total agent file(s)`);
   return {dir, files};
-}
-
-// ── Package index generation ──────────────────────────────────────────
-
-export async function generatePackageIndex(userId?: string): Promise<string | null> {
-  const map = await loadPackageKnowledge();
-  if (map.size === 0)
-    return null;
-
-  const installed = userId ? getInstalledPackages(userId) : undefined;
-  const visible = installed
-    ? [...map.values()].filter((p) => installed.has(p.packageName))
-    : [...map.values()];
-  if (!visible.length)
-    return null;
-
-  visible.sort((a, b) => a.packageName.localeCompare(b.packageName));
-
-  let md = '| Package | Description | Keywords |\n';
-  md += '|---------|-------------|----------|\n';
-  for (const pkg of visible)
-    md += `| ${pkg.packageName} | ${pkg.description} | ${pkg.keywords.join(', ')} |\n`;
-
-  return md;
 }

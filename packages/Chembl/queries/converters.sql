@@ -44,10 +44,10 @@ inner join
 
 
 --name: namesToSmiles
---friendlyName: Converters | Names to SMILES
---description: Converts a list of compound names in chembl database to SMILES.
+--friendlyName: Converters | Names To SMILES
+--description: Converts a list of compound names in the ChEMBL database to SMILES.
 --connection: ChemblSql
---input: list<string> names
+--input: list<string> names [Compound names to look up, e.g. aspirin, ibuprofen]
 WITH names AS (
     SELECT unnest as name FROM unnest(@names)
 )
@@ -64,10 +64,10 @@ on t1.name = t2.name
 
 
 --name: inchiKeyToChembl
---friendlyName: Converters | Inchi Key to ChEMBL
---description: Converts InChI Keys to ChEMBL identifiers using a dataframe input.
+--friendlyName: Converters | InChIKey To ChEMBL ID
+--description: Converts InChIKeys to ChEMBL identifiers using a dataframe input.
 --connection: ChemblSql
---input: dataframe ids
+--input: dataframe ids [Table with a 'key' column of InChIKeys]
 select
   molecule_dictionary.chembl_id
 from
@@ -79,10 +79,10 @@ from
 
 
 --name: inchiKeyToSmiles
---friendlyName: Converters | Inchi Key to SMILES
---description: Converts InChI Keys to canonical SMILES using a dataframe input.
+--friendlyName: Converters | InChIKey To SMILES
+--description: Converts InChIKeys to canonical SMILES using a dataframe input.
 --connection: ChemblSql
---input: dataframe ids
+--input: dataframe ids [Table with a 'key' column of InChIKeys]
 select
   compound_structures.canonical_smiles
 from
@@ -93,10 +93,10 @@ from
 
 
 --name: inchiKeyToInchi
---friendlyName: Converters | Inchi Key to Inchi
---description: Converts InChI Keys to standard InChI strings using a dataframe input.
+--friendlyName: Converters | InChIKey To InChI
+--description: Converts InChIKeys to standard InChI strings using a dataframe input.
 --connection: ChemblSql
---input: dataframe ids
+--input: dataframe ids [Table with a 'key' column of InChIKeys]
 select
   compound_structures.standard_inchi
 from
@@ -106,10 +106,10 @@ from
 --end
 
 --name: chemblToSmiles
---friendlyName: Converters | ChEMBL to SMILES
---description: Converts a dataframe with ChEMBL IDs to SMILES.
+--friendlyName: Converters | ChEMBL ID To SMILES
+--description: Converts a dataframe of ChEMBL IDs to canonical SMILES.
 --connection: ChemblSql
---input: dataframe ids
+--input: dataframe ids [Table with a 'key' column of ChEMBL IDs]
 select
   compound_structures.canonical_smiles
 from
@@ -121,10 +121,10 @@ from
 
 
 --name: chemblToInchi
---friendlyName: Converters | ChEMBL to Inchi
---description: Converts a dataframe with ChEMBL IDs to Inchi.
+--friendlyName: Converters | ChEMBL ID To InChI
+--description: Converts a dataframe of ChEMBL IDs to standard InChI strings.
 --connection: ChemblSql
---input: dataframe ids
+--input: dataframe ids [Table with a 'key' column of ChEMBL IDs]
 select
   compound_structures.standard_inchi
 from
@@ -136,10 +136,10 @@ from
 
 
 --name: chemblToInchiKey
---friendlyName: Converters | ChEMBL to Inchi Key
---description: Converts a dataframe with ChEMBL IDs to Inchi Keys.
+--friendlyName: Converters | ChEMBL ID To InChIKey
+--description: Converts a dataframe of ChEMBL IDs to standard InChIKeys.
 --connection: ChemblSql
---input: dataframe ids
+--input: dataframe ids [Table with a 'key' column of ChEMBL IDs]
 select
   compound_structures.standard_inchi_key
 from

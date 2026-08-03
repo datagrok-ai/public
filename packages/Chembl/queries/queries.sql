@@ -6,11 +6,11 @@ select protein_class_id, parent_id, pref_name, definition, class_level from prot
 --end
 
 --name: _compounds which are selective to one target over a second target
---friendlyName: Browse | Compounds selective to one target over a second target
+--friendlyName: Browse | Compounds Selective For One Target Over Another
 --description: Identifies compounds with selective activity, showing high potency for one target and low potency for another target.
 --connection: Chembl
---input: string selectiveFor = "CHEMBL301"
---input: string over = "CHEMBL4036"
+--input: string selectiveFor = "CHEMBL301" [ChEMBL target the compound should be potent against]
+--input: string over = "CHEMBL4036" [ChEMBL target the compound should be inactive against]
 SELECT md.chembl_id,
 cs.canonical_smiles
 FROM target_dictionary td
@@ -39,10 +39,10 @@ AND td.chembl_id              = @over;
 --end
 
 --name: compound activity details for all targets containing @protein
---friendlyName: Browse | Compound activity details for all targets containing @protein
+--friendlyName: Browse | Compound Activity For Targets Containing Protein
 --description: Retrieves compound bioactivity data for all targets containing a specified protein accession identifier.
 --connection: Chembl
---input: string protein = "P08172"
+--input: string protein = "P08172" [UniProt protein accession, e.g. P08172]
 SELECT DISTINCT
   m.chembl_id                      AS compound_chembl_id,
   s.canonical_smiles,
@@ -80,7 +80,7 @@ select count(from_id) from src10src11
 
 
 --name: FracClassification
---friendlyName: Search | FRAC classification
+--friendlyName: Search | By FRAC Classification
 --description: Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.
 --connection: Chembl
 --input: string level1 = 'MITOSIS AND CELL DIVISION' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
@@ -102,7 +102,7 @@ WHERE
 
 
 --name: QueryBySubstructure
---friendlyName: Search | By substructure, country and action type
+--friendlyName: Search | By Substructure, Country And Action Type
 --description: Complex search combining molecular similarity, drug mechanism action type, and company research location.
 --connection: Chembl
 --meta.batchMode: true
@@ -133,10 +133,10 @@ AND r.company IN (
 
 
 --name: ByChemblIds
---friendlyName: Search | By ChEMBL ids
+--friendlyName: Search | By ChEMBL IDs
 --description: Retrieves molecule dictionary information for a list of ChEMBL identifiers.
 --connection: Chembl
---input: list<string> chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea}
+--input: list<string> chemblIds = ['CHEMBL1185', 'CHEMBL1186'] {inputType: TextArea} [List of public ChEMBL compound identifiers]
 SELECT *
 FROM molecule_dictionary
 WHERE chembl_id IN (
@@ -145,10 +145,11 @@ WHERE chembl_id IN (
 --end
 
 --name: MolregnoInfo
+--friendlyName: Misc | Compound Info by Molregno
 --description: Retrieves compound SMILES and research company country information for a given molregno identifier.
 --connection: Chembl
 --tags: panel, widget
---input: int molregno {semType: molregno}
+--input: int molregno {semType: molregno} [ChEMBL internal compound registration number]
 SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
 FROM compound_structures s
 LEFT JOIN drug_mechanism d
@@ -161,10 +162,11 @@ WHERE s.molregno = CAST(@molregno as INTEGER)
 --end
 
 --name: ChemblInfo
+--friendlyName: Misc | Compound Info by ChEMBL ID
 --description: Retrieves compound SMILES and research company country information for a given ChEMBL identifier.
 --connection: Chembl
 --tags: panel, widget
---input: string chemblId {semType: CHEMBL_ID}
+--input: string chemblId {semType: CHEMBL_ID} [Public ChEMBL compound identifier, e.g. CHEMBL1185]
 SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
 FROM molecule_dictionary md
 LEFT JOIN compound_structures s
@@ -180,7 +182,7 @@ WHERE md.chembl_id = @chemblId
 
 
 --name: FracClassificationWithSubstructure
---friendlyName: Search | FRAC classification with substructure search
+--friendlyName: Search | By FRAC Classification And Substructure
 --description: Combines FRAC classification hierarchy search with molecular substructure matching.
 --connection: Chembl
 --input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}

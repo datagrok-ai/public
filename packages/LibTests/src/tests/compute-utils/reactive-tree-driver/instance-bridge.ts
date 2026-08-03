@@ -339,6 +339,60 @@ category('ComputeUtils: Driver instance bridge', async () => {
     });
   });
 
+  test('overrideToConsistent default skips info-typed inputs', async () => {
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const adapter = new FuncCallMockAdapter(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
+      bridge.setPreInitialData({
+        initialRestrictions: {
+          arg1: {assignedValue: 1, type: 'restricted'},
+          arg2: {assignedValue: 3, type: 'info'},
+        },
+        initialValues: {arg1: 1, arg2: 3},
+      });
+      cold('-a').subscribe(() => {
+        bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: true});
+      });
+      cold('--a').subscribe(() => {
+        bridge.editState('arg1', 100);
+        bridge.editState('arg2', 200);
+      });
+      cold('---a').subscribe(() => {
+        bridge.overrideToConsistent().subscribe();
+      });
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abcd', {a: undefined, b: 1, c: 100, d: 1});
+      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('abc', {a: undefined, b: 3, c: 200});
+    });
+  });
+
+  test('overrideToConsistent with includeInfo resets info-typed inputs', async () => {
+    testScheduler.run((helpers) => {
+      const {expectObservable, cold} = helpers;
+      const adapter = new FuncCallMockAdapter(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
+      bridge.setPreInitialData({
+        initialRestrictions: {
+          arg1: {assignedValue: 1, type: 'restricted'},
+          arg2: {assignedValue: 3, type: 'info'},
+        },
+        initialValues: {arg1: 1, arg2: 3},
+      });
+      cold('-a').subscribe(() => {
+        bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: true});
+      });
+      cold('--a').subscribe(() => {
+        bridge.editState('arg1', 100);
+        bridge.editState('arg2', 200);
+      });
+      cold('---a').subscribe(() => {
+        bridge.overrideToConsistent(true).subscribe();
+      });
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abcd', {a: undefined, b: 1, c: 100, d: 1});
+      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('abcd', {a: undefined, b: 3, c: 200, d: 3});
+    });
+  });
+
   test('Runnable miltiple validators', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;

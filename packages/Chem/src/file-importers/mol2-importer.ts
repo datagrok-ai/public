@@ -117,7 +117,6 @@ class TriposToMolfileConverter {
   }
 
   /** Returns 'true' if there is a next Tripos molecule to parse */
-  /* todo: delete as unnecessary */
   public next(): boolean {
     return this.getNextMolIdx() !== -1;
   }

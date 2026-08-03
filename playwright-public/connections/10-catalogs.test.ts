@@ -46,7 +46,15 @@ const CATALOG = 'datagrok';
 const CATALOGS_ROOT = `tree-Databases---${PROVIDER}---${CONNECTION}---Catalogs`;
 const CATALOG_NODE = `${CATALOGS_ROOT}---${CATALOG}`;
 
-test.describe.serial('Connections / Catalogs (Postgres / Datagrok substitution)', () => {
+// CI: the System:Datagrok connection on the ephemeral test Datlas points to
+// the single per-build platform DB (`datagrok_<network>`), so the platform
+// doesn't render a "Catalogs" section under the connection at all (it
+// appears only when the connection enumerates multiple catalog DBs as it
+// does on dev). Skip the whole describe on the CI server; the dev-targeted
+// playwright-tests/ copy still runs there against dev's multi-catalog
+// Postgres > Datagrok connection.
+test.describe.skip('Connections / Catalogs (Postgres / Datagrok substitution)', () => {
+  test.describe.configure({ mode: 'serial' });
   test('1. Catalogs node visible; expand catalog → schema → tables', async ({ page }) => {
     await goHome(page);
     await applyAutomationSetup(page);

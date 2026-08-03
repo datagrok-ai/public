@@ -9,7 +9,8 @@ import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
   DEMO_INTRO_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
   MAX_ROWS_IN_PREDICTION_TOOLTIP, DELAY} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
-import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
+// PLS1 migrated to Rust + WASM (sci-comp-ml).
+import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/eda-api';
 import {carsDataframe} from '../data-generators';
 
 const min = Math.min;

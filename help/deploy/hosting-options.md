@@ -2,6 +2,12 @@
 title: "Hosting options"
 sidebar_position: 11
 unlisted: true
+description: Compare SaaS, on-premise, and hybrid hosting models for running Datagrok.
+keywords:
+  - saas hosting
+  - on-premise hosting
+  - hybrid deployment model
+  - self-hosted
 ---
 
 Choose the hosting option that best fits your organization's needs.

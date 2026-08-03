@@ -1,34 +1,28 @@
-import {defineConfig, devices} from '@playwright/test';
+import {defineConfig} from '@playwright/test';
+import {baseConfig} from '@datagrok-libraries/test/src/playwright/base-config';
 
+// playwright-public hosts the core/platform E2E suites. All general config lives in
+// the shared base (@datagrok-libraries/test/src/playwright/base-config); here we only
+// set what is specific to this run dir.
 export default defineConfig({
+  ...baseConfig,
   testDir: '.',
-  testMatch: '**/*.test.ts',
-  // Many specs share UI/server state across tests in a file (connection lifecycle,
-  // query lifecycle, scripts CRUD). Keep one worker by default — the suite is
-  // designed to be sequential. CI can opt into parallelism per-file via
-  // `test.describe.parallel` if/when specs are made independent.
-  fullyParallel: false,
-  workers: 1,
-  retries: process.env.CI ? 1 : 0,
-  // Per-test default timeout (2 minutes). Some Browse-tree drill-downs and
-  // identifier-config flows wait on cold-cache server fetches.
-  timeout: 120_000,
-  expect: {timeout: 15_000},
-  globalSetup: './e2e/global-setup.ts',
-  reporter: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME
-    ? [['list'], ['json', {outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME}]]
-    : [['list']],
-  outputDir: 'test-output',
-  use: {
-    baseURL: process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai',
-    storageState: 'e2e/.auth.json',
-    viewport: {width: 1920, height: 1080},
-    actionTimeout: 15_000,
-    navigationTimeout: 60_000,
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-  },
-  projects: [
-    {name: 'chromium', use: {...devices['Desktop Chrome']}},
-  ],
+  // `helpers/` still holds the headed-only `session-helpers.test.ts` (manual second
+  // user, not CI-runnable). Exclude the folder from discovery.
+  testIgnore: ['**/helpers/**'],
+  // This is a nightly *measurement* run (feeds dashboards, not a merge gate) of ~360
+  // sequential specs. The CI pipeline passes `grok test --no-retry`, but that flag is
+  // silently dropped before it reaches Playwright (minimist parses `--no-retry` as
+  // `{retry:false}`, so the runner's `args['no-retry']` check is never true), leaving
+  // baseConfig's `retries: CI ? 1 : 0` in force. On the shared Build-Deploy stand many
+  // specs fail for environmental reasons (stand pollution + CPU contention), and each
+  // failure was being re-run once — ~30% wasted wall time on a good run and enough to
+  // push a degraded run past the 240-min stage kill (SIGKILL → no report at all).
+  // Retries recovered 2 of 361 specs, so force them off here for this suite.
+  retries: 0,
+  // Kill-switch so a degraded run stops itself and still writes its JSON report + CSV
+  // instead of being SIGKILL-aborted at the 240-min Jenkins stage timeout (which loses
+  // all results). A healthy no-retry run is ~65 min; 150 min leaves >2x headroom for a
+  // slow/contended stand while capping waste well under the stage kill.
+  globalTimeout: 150 * 60 * 1000,
 });

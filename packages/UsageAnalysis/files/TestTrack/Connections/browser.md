@@ -1,3 +1,15 @@
+---
+feature: connections
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: []
+realizes: [views.connections]
+realized_as:
+  - 04-browser.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse** > **Databases**
 2. Near the search field, click the **Filter templates** icon (magic wand) and check all templates for the search.
 3. Type `new_test` in the search field to search for the connection from the previous step (2.2).

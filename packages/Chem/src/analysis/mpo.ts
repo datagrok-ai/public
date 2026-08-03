@@ -4,10 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
 import {
-  createDefaultNumerical,
-  DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
-  PropertyDesirability,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {MPO_SCORE_CHANGED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -18,6 +15,7 @@ import {PackageFunctions} from '../package';
 import {
   computeMpo, MpoProfileInfo, deepEqual, findSuitableProfiles,
   isEdaPackageInstalled, MpoMethod, UNTITLED_PROFILE,
+  createProfileForDf,
 } from '../mpo/utils';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 
@@ -177,11 +175,11 @@ export class MpoProfileDialog {
   }
 
   private listenForProfileChanges(): void {
-    this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(async () => {
+    this.subs.push(grok.events.onCustomEvent(MPO_SCORE_CHANGED_EVENT).subscribe(() => {
       this.updateSaveButtonVisibility();
       this.updateOkButtonState();
       if (this.currentProfile && this.mpoContextPanel) {
-        await this.mpoContextPanel.render(
+        this.mpoContextPanel.render(
           this.currentProfile,
           this.mpoProfileEditor.columnMapping,
           this.mpoProfileEditor.aggregationInput.value ?? undefined,
@@ -214,8 +212,8 @@ export class MpoProfileDialog {
 
   private async startNewProfile(): Promise<void> {
     this.isNewProfile = true;
-    this.pmpoSettingsOpened = false;
-    this.pmpoSettingsContainer.classList.add('chem-mpo-d-none');
+    this.pmpoSettingsOpened = true;
+    this.pmpoSettingsContainer.classList.remove('chem-mpo-d-none');
     this.methodInput.value = MpoMethod.Manual;
 
     this.pmpoSettingsIcon.classList.remove('chem-mpo-d-none');
@@ -224,6 +222,7 @@ export class MpoProfileDialog {
 
     this.nameInput.value = this.currentProfile!.name;
     this.descriptionInput.value = this.currentProfile!.description ?? '';
+    this.updateOkButtonState();
   }
 
   private applyNameAndDescription(profile: DesirabilityProfile): void {
@@ -232,11 +231,7 @@ export class MpoProfileDialog {
   }
 
   private createManualProfile(): void {
-    const props: {[key: string]: PropertyDesirability} = {};
-    for (const col of this.dataFrame.columns.numerical)
-      props[col.name] = createDefaultNumerical(1, col.min, col.max);
-
-    this.currentProfile = {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+    this.currentProfile = createProfileForDf(this.dataFrame);
     this.applyNameAndDescription(this.currentProfile);
     this.currentProfileFileName = null;
     this.originalProfile = null;
@@ -315,18 +310,25 @@ export class MpoProfileDialog {
     const okButton = this.dialog?.getButton('OK');
     if (okButton)
       okButton.disabled = !isApplicable || !nameValid;
-    this.updateFooterWarning(!isApplicable);
+    if (!isApplicable)
+      this.updateFooterWarning('⚠️ Some profile properties are not mapped');
+    else if (!nameValid)
+      this.updateFooterWarning('⚠️ Enter a valid profile name');
+    else
+      this.updateFooterWarning(null);
   }
 
-  private updateFooterWarning(show: boolean): void {
+  private updateFooterWarning(message: string | null): void {
     if (!this.footerWarning) {
       const commandBar = this.dialog?.root.querySelector('.d4-command-bar');
       if (!commandBar)
         return;
-      this.footerWarning = ui.divText('⚠️ Some profile properties are not mapped', 'chem-mpo-footer-warning');
+      this.footerWarning = ui.divText('', 'chem-mpo-footer-warning');
       commandBar.append(this.footerWarning);
     }
-    this.footerWarning.classList.toggle('chem-mpo-d-none', !show);
+    if (message)
+      this.footerWarning.textContent = message;
+    this.footerWarning.classList.toggle('chem-mpo-d-none', message == null);
   }
 
   private async saveProfile(): Promise<void> {

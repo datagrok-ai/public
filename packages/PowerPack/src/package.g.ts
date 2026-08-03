@@ -69,6 +69,14 @@ export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
 }
 
+//description: Formula editor bound to a table, editing an expression as a value
+//input: funccall call 
+//output: widget result
+//meta.includeInFlow: false
+export function expressionEditorWidget(call: DG.FuncCall) : any {
+  return PackageFunctions.expressionEditorWidget(call);
+}
+
 //input: dynamic func 
 //input: dynamic inputParams 
 //output: widget result
@@ -122,9 +130,9 @@ export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.markdownFileViewer(file);
 }
 
-//description: Opens Excel file
-//input: list bytes 
-//input: string sheetName { optional: true }
+//description: Opens an Excel (.xlsx) file as one or more tables (one per sheet)
+//input: list bytes { description: Raw bytes of the .xlsx file }
+//input: string sheetName { optional: true; description: Name of a single sheet to open opens all sheets if omitted }
 //output: list<dataframe> result
 //meta.role: fileHandler
 //meta.ext: xlsx
@@ -132,14 +140,16 @@ export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : P
   return await PackageFunctions.xlsxFileHandler(bytes, sheetName);
 }
 
-//input: dynamic conn 
-//input: string schema 
-//input: string table 
-//input: string column 
-//input: string name 
-//input: dataframe df 
-//input: string db 
-//input: string localColumn { optional: true }
+//name: Enrich Data
+//description: Enriches a table with values looked up from a database column via a linked key
+//input: dynamic conn { description: Data connection to the enrichment database }
+//input: string schema { description: Database schema name }
+//input: string table { description: Source table name in the database }
+//input: string column { description: Source column to pull enrichment values from }
+//input: string name { description: Name for the new enriched column }
+//input: dataframe df { description: Table to enrich }
+//input: string db { description: Database name }
+//input: string localColumn { optional: true; description: Local column used as the join key (defaults to the matching column) }
 //meta.role: transform
 export async function runEnrichment(conn: any, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string, localColumn?: string) : Promise<void> {
   await PackageFunctions.runEnrichment(conn, schema, table, column, name, df, db, localColumn);

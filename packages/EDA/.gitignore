@@ -32,3 +32,6 @@ dist/
 src/**/*.js
 test-console-output.log
 
+
+# XGBoost wasm build intermediates (build.ps1 builds in TEMP; guard anyway)
+wasm/xgboost/build/

@@ -45,9 +45,9 @@ category('ComputeUtils: Driver pipeline validators: self target', async () => {
         handler({controller}) {
           const a = controller.getFirst<number>('a');
           if (a && a < 0)
-            controller.setValidation({errors: [{description: 'a must be >= 0'}]});
+            controller.setValidation('check', {errors: [{description: 'a must be >= 0'}]});
           else
-            controller.setValidation();
+            controller.setValidation('check');
         },
       }],
     };
@@ -166,7 +166,7 @@ category('ComputeUtils: Driver pipeline validators: descendant routing', async (
         from: 'a:first(inner)/first(inStep)/a',
         to: 'check:first(inner)',
         handler({controller}) {
-          controller.setValidation({warnings: [{description: 'inner-warn'}]});
+          controller.setValidation('check', {warnings: [{description: 'inner-warn'}]});
         },
       }],
     };
@@ -213,7 +213,8 @@ category('ComputeUtils: Driver pipeline validators: multi-target `to`', async ()
         from: 'a:first(innerA)/first(sA)/a',
         to: ['ta:first(innerA)', 'tb:first(innerB)'],
         handler({controller}) {
-          controller.setValidation({warnings: [{description: 'shared'}]});
+          controller.setValidation('ta', {warnings: [{description: 'shared'}]});
+          controller.setValidation('tb', {warnings: [{description: 'shared'}]});
         },
       }],
     };
@@ -232,6 +233,44 @@ category('ComputeUtils: Driver pipeline validators: multi-target `to`', async ()
           const valsB = Object.values(innerB.pipelineValidations$.value);
           expectDeepEqual(valsA, [{warnings: [{description: 'shared'}]}], {prefix: 'innerA got result'});
           expectDeepEqual(valsB, [{warnings: [{description: 'shared'}]}], {prefix: 'innerB got result'});
+        },
+      });
+    });
+  });
+
+  test('Named `to` writes a result to a single target, leaving the sibling untouched', async () => {
+    const config: PipelineConfiguration = {
+      id: 'outer',
+      type: 'static',
+      steps: [
+        {id: 'innerA', type: 'static', steps: [{id: 'sA', nqName: 'LibTests:TestAdd2'}]},
+        {id: 'innerB', type: 'static', steps: [{id: 'sB', nqName: 'LibTests:TestAdd2'}]},
+      ],
+      links: [{
+        id: 'onlyA',
+        type: 'pipelineValidator',
+        from: 'a:first(innerA)/first(sA)/a',
+        to: ['ta:first(innerA)', 'tb:first(innerB)'],
+        handler({controller}) {
+          // set only one of the two matched targets
+          controller.setValidation('ta', {warnings: [{description: 'only-a'}]});
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const innerA = getPipelineNode(tree, [{idx: 0}]);
+      const innerB = getPipelineNode(tree, [{idx: 1}]);
+      cold('-a').subscribe(() => {
+        tree.nodeTree.getNode([{idx: 0}, {idx: 0}]).getItem().getStateStore().setState('a', 7);
+      });
+      cold('400ms a').subscribe({
+        next: () => {
+          const valsA = Object.values(innerA.pipelineValidations$.value);
+          expectDeepEqual(valsA, [{warnings: [{description: 'only-a'}]}], {prefix: 'innerA got result'});
+          expectDeepEqual(Object.keys(innerB.pipelineValidations$.value).length, 0, {prefix: 'innerB untouched'});
         },
       });
     });
@@ -284,7 +323,7 @@ category('ComputeUtils: Driver pipeline validators: action step target', async (
         from: 'a:step1/a',
         to: 'check:first(myAction)',
         handler({controller}) {
-          controller.setValidation({warnings: [{description: 'action-warn'}]});
+          controller.setValidation('check', {warnings: [{description: 'action-warn'}]});
         },
       }],
     };
@@ -343,7 +382,7 @@ category('ComputeUtils: Driver pipeline validators: tree mutation rerun', async 
         to: 'check',
         handler({controller}) {
           callCount++;
-          controller.setValidation({warnings: [{description: `call ${callCount}`}]});
+          controller.setValidation('check', {warnings: [{description: `call ${callCount}`}]});
         },
       }],
       actions: [{
@@ -424,7 +463,7 @@ category('ComputeUtils: Driver pipeline validators: funccall target rejection', 
         from: 'a:step1/a',
         to: 'check:first(step1)',                  // FuncCall node — invalid target
         handler({controller}) {
-          controller.setValidation({errors: [{description: 'should not appear'}]});
+          controller.setValidation('check', {errors: [{description: 'should not appear'}]});
         },
       }],
     };
@@ -468,7 +507,7 @@ category('ComputeUtils: Driver pipeline validators: cancelled controller', async
       let outlineThrew = false;
       let setValThrew = false;
       try { controller.getOutline(); } catch (e) { outlineThrew = e instanceof ControllerCancelled; }
-      try { controller.setValidation({errors: [{description: 'x'}]}); } catch (e) { setValThrew = e instanceof ControllerCancelled; }
+      try { controller.setValidation('check', {errors: [{description: 'x'}]}); } catch (e) { setValThrew = e instanceof ControllerCancelled; }
       expectDeepEqual(outlineThrew, true, {prefix: 'getOutline throws'});
       expectDeepEqual(setValThrew, true, {prefix: 'setValidation throws'});
     });
@@ -502,7 +541,7 @@ category('ComputeUtils: Driver pipeline validators: getOutline', async () => {
           const outline = controller.getOutline();
           observedConfigId = outline.configId;
           observedStepCount = (outline as any).steps?.length;
-          controller.setValidation();
+          controller.setValidation('check');
         },
       }],
     };
@@ -541,7 +580,7 @@ category('ComputeUtils: Driver pipeline validators: getOutline', async () => {
         to: 'check:first(inner)',                   // result lands on inner
         handler({controller}) {
           observedConfigId = controller.getOutline().configId;
-          controller.setValidation();
+          controller.setValidation('check');
         },
       }],
     };

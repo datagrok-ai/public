@@ -1,7 +1,8 @@
 
 --name: assaysByOrganism
+--friendlyName: Assays by Organism
 --connection: Biologics:biologics
---input: string organism {choices: query("SELECT distinct name FROM biologics.target_organisms")}
+--input: string organism {choices: query("SELECT distinct name FROM biologics.target_organisms")} [Target organism name]
 --description: "Find biologics assays for a specified organism."
 --meta.searchPattern: "biologics assays for ${organism}"
 SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS assay_type,
@@ -27,9 +28,10 @@ AND (seq.heavy_chain IS NOT NULL OR seq.light_chain IS NOT NULL)
 -- end
 
 --name: ADCsWithCapsazeActivityHigherThan
+--friendlyName: ADCs by Minimum Caspase Activity
 --connection: Biologics:biologics
 --description: "Find biologics ADCs with caspase activity higher than a specified value."
---input: double minActivity
+--input: double minActivity [Minimum caspase activity threshold]
 --meta.searchPattern: "biologics ADCs with caspase activity higher than ${minActivity}"
 SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS assay_type,
     ar.result_value, ar.units,
@@ -53,10 +55,11 @@ AND (seq.heavy_chain IS NOT NULL OR seq.light_chain IS NOT NULL);
 -- end
 
 --name: ADCsWithIC50HLThan
+--friendlyName: ADCs by IC50 Threshold
 --connection: Biologics:biologics
 --description: "Find biologics ADCs with IC50 higher or lower than a specified value. Use 'higher' or 'lower' for valueTarget to indicate the comparison direction."
---input: double value
---input: string valueTarget {choices: ['higher', 'lower']}
+--input: double value [IC50 threshold value]
+--input: string valueTarget {choices: ['higher', 'lower']} [Comparison direction relative to the threshold]
 --meta.searchPattern: "biologics ADCs with IC50 ${valueTarget} than ${value}"
 SELECT org.name AS organism, org.identifier as organism_identifier, at.name AS assay_type,
     ar.result_value, ar.units,
@@ -83,8 +86,9 @@ WHERE at.name ILIKE 'IC50' AND (
 
 
 --name: adcsLinkedToDrug
+--friendlyName: ADCs Linked to Drug
 --connection: Biologics:biologics
---input: string drugID {choices: query("SELECT distinct identifier FROM biologics.drugs")}
+--input: string drugID {choices: query("SELECT distinct identifier FROM biologics.drugs")} [Drug identifier]
 --description: "Find ADCs in biologics database linked to a specified drug identifier."
 --meta.searchPattern: "adcs linked to ${drugID}"
 SELECT adc.identifier AS adc_identifier, adc.name AS adc_name, adc.glyph AS glyph,

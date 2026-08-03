@@ -41,6 +41,7 @@ import './tests/compute-utils/fitting/cross-executor-parity';
 import './tests/compute-utils/fitting/can-handle';
 import './tests/compute-utils/fitting/pool-multi-session';
 import './tests/compute-utils/fitting/formula-resolver';
+import './tests/compute-utils/history-file-inputs';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
 

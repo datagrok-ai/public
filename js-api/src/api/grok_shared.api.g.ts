@@ -136,6 +136,8 @@ export class Permission {
 
   static EDIT_GLOBAL_PERMISSIONS = 'EditGlobalPermissions';
 
+  static EDIT_SETTINGS = 'EditSettings';
+
   static START_ADMIN_SESSION = 'StartAdminSession';
 
   static EDIT_PLUGINS_SETTINGS = 'EditPluginsSettings';
@@ -263,6 +265,8 @@ export class ScriptLanguage {
   static Octave = 'octave';
 
   static PythonDocker = 'docker';
+
+  static Flow = 'flow';
 
 }
 import {Entity} from '../entities'

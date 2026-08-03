@@ -136,7 +136,7 @@ const dun = stats.dunnettPairwise(control, treated);
 
 See [statistics docs](./src/stats/README.md) for
 
-* full method list (14 tests across 8 domains)
+* full method list (16 methods across 9 domains, incl. linear regression + one-way ANOVA)
 * input types (`number[]`, `Float32Array`, `Float64Array`, `Int32Array`, …)
 * NaN handling (NaN as missing-value sentinel, stripped per-method)
 * worked examples reproducing published references (Dunnett 1955, NIST Iris, Williams 1971/1972, Young 1985, Montgomery 15.10 vs SAS PROC GLM)

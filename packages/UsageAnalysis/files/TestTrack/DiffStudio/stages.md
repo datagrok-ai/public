@@ -1,3 +1,15 @@
+---
+feature: diffstudio
+target_layer: playwright
+coverage_type: smoke
+priority: p1
+realizes_atlas: [load-library-ivp-run]
+realizes: [diffstudio]
+realized_as:
+  - stages.test.ts
+related_bugs: []
+---
+
 ### Stages in Diff Studio
 
 1. Open **Diff Studio** and Load **Acid Production**:

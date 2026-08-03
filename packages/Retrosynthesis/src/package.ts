@@ -29,10 +29,11 @@ export class PackageFunctions {
   @grok.decorators.panel({
     'meta': {'allowAddAsColumn': 'false', 'role': 'widgets', 'domain': 'chem'},
     'name': 'Chemistry | Retrosynthesis',
+    'description': 'Predict retrosynthesis routes for a molecule using AiZynthFinder.',
     'condition': 'true',
   })
   static retroSynthesisPath(
-    @grok.decorators.param({'name': 'smiles', 'options': {'semType': 'Molecule'}}) molecule: string): DG.Widget {
+    @grok.decorators.param({'name': 'smiles', 'options': {'semType': 'Molecule', 'description': 'Target molecule to plan a synthesis route for'}}) molecule: string): DG.Widget {
     if (!currentWidget)
       currentWidget = new DG.Widget(ui.div('', 'retrosynthesis-widget-div'));
     ui.setUpdateIndicator(currentWidget.root, true, 'Calculating paths...');

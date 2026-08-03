@@ -218,7 +218,17 @@ export class RadarViewer extends EChartViewer {
       this.render();
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe((ev) => {
+      if (ev?.args?.key?.includes('color-coding'))
+        this.refreshLegendOnColorCodingChange();
+      this.render();
+    }));
+
+    // Color edits made from the grid header fire this event rather than onMetadataChanged.
+    this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe((_) => {
+      this.refreshLegendOnColorCodingChange();
+      this.render();
+    }));
     this.subs.push(this.dataFrame.onMouseOverRowGroupChanged.subscribe((_) => {
       if (!this.showMouseOverRowGroup)
         return;
@@ -247,13 +257,28 @@ export class RadarViewer extends EChartViewer {
     this.render();
   }
 
+  // The column colors derive from: the linked source column, or the column itself when not linked.
+  get colorSourceColumn(): DG.Column | null {
+    const column = this.dataFrame?.col(this.colorColumnName);
+    if (!column)
+      return null;
+    const linkedName = column.getTag(DG.Tags.ColorCodingLinkedColumnName);
+    return linkedName ? (this.dataFrame.col(linkedName) ?? column) : column;
+  }
+
   updateLegend(): void {
-    const colorColumn = this.dataFrame?.col(this.colorColumnName);
-    if (colorColumn) {
-      this.legendHelper.update(colorColumn);
-      this.legendHelper.switchVisibility(this.legendVisibility, colorColumn);
-    } else
+    const legendColumn = this.colorSourceColumn;
+    if (!legendColumn) {
       this.legendHelper.hide();
+      return;
+    }
+    this.legendHelper.update(legendColumn);
+    this.legendHelper.switchVisibility(this.legendVisibility, legendColumn);
+  }
+
+  refreshLegendOnColorCodingChange(): void {
+    if (this.colorSourceColumn !== this.legendHelper.column)
+      setTimeout(() => this.updateLegend(), 0);
   }
 
   getSeriesData(indexes?: number[]): void {
@@ -283,14 +308,14 @@ export class RadarViewer extends EChartViewer {
 
   createSeriesData(filter?: number[]): any[] {
     const seriesData = [];
-    const colorColumn = this.dataFrame.col(this.colorColumnName);
+    const colorSourceColumn = this.colorSourceColumn;
     const selectedCategories = this.legendHelper.selectedCategories;
 
     for (let i = 0; i < this.filter.length && seriesData.length < MAXIMUM_ROW_NUMBER; i++) {
       if (!this.filter.get(i)) continue;
 
-      if (selectedCategories && colorColumn) {
-        const category = colorColumn.get(i);
+      if (selectedCategories && colorSourceColumn) {
+        const category = colorSourceColumn.get(i);
         if (!selectedCategories.includes(category))
           continue;
       }
@@ -302,7 +327,7 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const color = colorColumn ? DG.Color.getRowColor(colorColumn, i) : this.lineColor;
+      const color = colorSourceColumn ? DG.Color.getRowColor(colorSourceColumn, i) : this.lineColor;
 
       seriesData.push({
         value: value,

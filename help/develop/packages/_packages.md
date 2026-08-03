@@ -1,7 +1,18 @@
+---
+title: "Packages"
+description: Step-by-step guide to creating a Datagrok package, its file structure, and naming conventions.
+keywords:
+  - grok create
+  - datagrok-tools
+  - package.json structure
+  - package.js entry point
+  - detectors.js
+  - webpack.config.js
+  - naming conventions
+---
+
 <!-- TITLE: Packages -->
 <!-- ORDER: 1 -->
-
-# Packages
 
 A Datagrok package is a JavaScript or TypeScript application that introduces a new functionality to Datagrok or extends
 the existing one. You can extend Datagrok with _packages_ that you build using the [JavaScript API].

@@ -1,3 +1,15 @@
+---
+feature: scripts
+target_layer: playwright
+coverage_type: smoke
+priority: p0
+realizes_atlas: []
+realizes: [views.scripts]
+realized_as:
+  - scripts-run-debugged.test.ts
+related_bugs: []
+---
+
 1. Go to **Browse > Platform > Functions > Scripts**.
 2. Find the `testRscript` script from previous test and right-click it.
 3. Select **Run** from the context menu.

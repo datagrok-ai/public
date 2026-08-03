@@ -1,5 +1,11 @@
 ---
 title: "Treemap"
+description: Show hierarchical data as nested rectangles sized by a chosen aggregation, useful for spotting patterns and outliers.
+keywords:
+  - hierarchical rectangles
+  - part-to-whole hierarchy
+  - nested rectangles
+  - proportional area chart
 ---
 
 Treemap displays hierarchical (tree-structured) data as nested rectangles. The
@@ -81,6 +87,8 @@ example, you can:
 | **Style** | | |
 | Auto Layout | boolean |  |
 | Controls Font | string | Viewer controls elements font. |
+| **Selection** | | |
+| Show Selected Rows | boolean | When checked, selected rows are highlighted using the selected rows color. When unchecked, cells keep their regular color coding. |
 | **Data** | | |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |

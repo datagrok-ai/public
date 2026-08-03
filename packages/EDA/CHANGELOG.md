@@ -1,5 +1,41 @@
 # EDA changelog
 
+## 1.7.0 (2026-07-17)
+
+Upgrade XGBoost
+
+* XGBoost v3.3.0, minimal build
+* Fixed classification objectives
+* Training 1.3 - 2.2× faster
+* Prediction 1.4 - 3.4× faster
+* Input validation in TypeScript
+* Breaking: models saved by earlier EDA versions (v1 container) are no longer
+  loadable — retrain and re-save them
+* Moved the EDA Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright
+
+## 1.6.2 (2026-06-23)
+
+Fix the package build
+
+## 1.6.1 (2026-06-22)
+
+Update Datagrok tools
+
+## 1.6.0 (2026-06-17)
+
+Migrate ML kernels to Rust + WebAssembly; remove LS-SVM
+
+* PCA, PLS, softmax and linear regression now run on the Rust + WASM
+  `sci-comp-ml` backend (XGBoost unchanged).
+* Linear regression adds Elastic Net (L1/L2) and gradient-descent
+  hyperparameters; defaults remain ordinary least squares.
+* Removed LS-SVM and the legacy C++/Emscripten backend.
+
+## 1.5.6 (2026-06-01)
+
+* Add two-sample t-test (Welch and Student)
+* Add Control comparisons (Dunnett's test and Holm-corrected Welch's t-tests)
+
 ## 1.5.5 (2026-05-26)
 
 Implement Welch ANOVA

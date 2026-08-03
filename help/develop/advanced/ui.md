@@ -1,5 +1,16 @@
 ---
 title: "Datagrok UI"
+description: Reference for building user interfaces with the ui namespace, covering layouts, views, viewers, dialogs, and components.
+keywords:
+  - ui namespace
+  - layouts and boxes
+  - table view
+  - dialogs
+  - accordion
+  - inputs
+  - ribbon and toolbox
+  - context panel
+  - figma uikit
 ---
 
 This article describes the routines for building a user interface in Datagrok.
@@ -1017,6 +1028,13 @@ ui.tabControl({
       'First Tab': ui.panel('First panel'),
       'Second Tab': () => ui.panel('Second panel')
   })
+```
+
+Pass an options object to render the header vertically, or to remember the selected tab across
+sessions under the given `key`:
+
+```javascript
+ui.tabControl(pages, {vertical: true, key: 'my-widget'})
 ```
 
 ### Tag editor

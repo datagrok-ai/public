@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../../spec-login';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import {finishSpec} from '../../helpers/viewers';
 
 test.use(specTestOptions);
 
@@ -14,7 +15,7 @@ test('Chem: Scaffold Tree filter + viewer smoke', async ({page}) => {
     try { grok.shell.windows.simpleMode = true; } catch (e) {}
     grok.shell.closeAll();
     await new Promise(r => setTimeout(r, 500));
-    const df = await grok.dapi.files.readCsv('System:DemoFiles/SPGI.csv');
+    const df = await grok.dapi.files.readCsv('System:DemoFiles/chem/SPGI.csv');
     grok.shell.addTableView(df);
     await new Promise(resolve => {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(undefined); });
@@ -64,8 +65,5 @@ test('Chem: Scaffold Tree filter + viewer smoke', async ({page}) => {
 
   await page.evaluate(() => grok.shell.closeAll());
 
-  if (stepErrors.length > 0) {
-    const summary = stepErrors.map(e => `  - ${e.step}: ${e.error}`).join('\n');
-    throw new Error(`${stepErrors.length} step(s) failed:\n${summary}`);
-  }
+  finishSpec();
 });

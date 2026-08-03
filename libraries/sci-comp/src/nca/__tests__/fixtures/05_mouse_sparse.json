@@ -1,0 +1,69 @@
+{
+  "dataset": "05_mouse_sparse",
+  "pknca_version": "0.12.1",
+  "description": "Sparse / destructive-sampling NCA oracle (UC-04). Destructive blocks are PKNCA pk.calc.sparse_auclast; the batch block is hand-derived Holder A1+A3 + Nedelman-Jia df (PKNCA returns df=NA for batch), cross-checked against PKNCA on auc+se.",
+  "config": {
+    "auc_method": "linear",
+    "blq_rule": "set-zero",
+    "sparse_mean_method": "arithmetic mean, <=50% BLQ",
+    "t0_anchor": "conc=0 at t=0 (required by PKNCA for extravascular profiles)",
+    "weight": "c(0, diff(t)/2) + c(diff(t)/2, 0) over all design timepoints"
+  },
+  "destructive": [
+    {
+      "dose_mg_kg": 10,
+      "sparse_auclast": 3.821001666667,
+      "sparse_auc_se": 0.7250832770253,
+      "sparse_auc_df": 4.295270822263,
+      "composite": {
+        "nominal_time": [0.25, 0.5, 1, 2, 4, 8, 12, 24],
+        "n": [3, 3, 3, 3, 3, 3, 3, 3],
+        "n_blq": [0, 0, 0, 0, 0, 1, 1, 3],
+        "mean": [1.293163333333, 1.57286, 1.975033333333, 0.5163866666667, 0.1513066666667, 0.01212, 0.07481666666667, 0],
+        "sd": [0.7709193878307, 0.3540896077266, 0.5905766867506, 0.3149430663363, 0.08684430455323, 0.01551087360531, 0.1269454506209, 0],
+        "cv_pct": [59.615005155117, 22.512468225184, 29.902112373662, 60.989775039958, 57.396218201374, 127.977504994333, 169.675362825833, "NA"]
+      }
+    },
+    {
+      "dose_mg_kg": 50,
+      "sparse_auclast": 28.918660416667,
+      "sparse_auc_se": 6.460554470767,
+      "sparse_auc_df": 2.718928824789,
+      "composite": {
+        "nominal_time": [0.25, 0.5, 1, 2, 4, 8, 12, 24],
+        "n": [3, 3, 3, 3, 3, 3, 3, 3],
+        "n_blq": [0, 0, 0, 0, 0, 0, 3, 2],
+        "mean": [6.031613333333, 9.863543333333, 7.583066666667, 9.257843333333, 1.321043333333, 0.08736666666667, 0, 0.004383333333333],
+        "sd": [0.6880617549561, 5.177808201984, 2.317383191929, 6.885423426517, 1.128413889507, 0.1283314740558, 0, 0.007592156039844],
+        "cv_pct": [11.407590588634, 52.494403147051, 30.559973870668, 74.373946270251, 85.418385683093, 146.888371677752, "NA", 173.205080756888]
+      }
+    }
+  ],
+  "batch": {
+    "description": "6 animals x 3 timepoints, each animal sampled twice; r_i=4, r_ij=2 all pairs",
+    "times": [1, 2, 4],
+    "samples": [
+      {
+        "time": 1,
+        "animal": ["A", "B", "C", "F"],
+        "conc": [10, 12, 11, 9.5]
+      },
+      {
+        "time": 2,
+        "animal": ["A", "B", "D", "E"],
+        "conc": [6, 7, 8, 9]
+      },
+      {
+        "time": 4,
+        "animal": ["C", "D", "E", "F"],
+        "conc": [2, 3, 2.5, 1.5]
+      }
+    ],
+    "sparse_auclast": 24.125,
+    "sparse_auc_se": 1.341252524073,
+    "sparse_auc_df": 8.807642370377,
+    "weights": [1, 1.5, 1],
+    "means": [10.625, 7.5, 2.25],
+    "n": [4, 4, 4]
+  }
+}

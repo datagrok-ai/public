@@ -1,5 +1,15 @@
 ---
 title: "Quality assurance"
+description: Overview of Datagrok's CI/CD pipeline, automated and manual testing practices, and issue tracking tools.
+keywords:
+  - ci/cd flow
+  - jenkins pipeline
+  - unit and integration tests
+  - selenium ui tests
+  - stress testing
+  - grok tester
+  - test tracking system
+  - usage analysis
 ---
 
 Datagrok is an incredibly powerful platform. To give users the best possible
@@ -39,8 +49,13 @@ is made to the codebase in Git. It automatically executes the following tasks:
   2. Unit tests
   3. Compilation
   4. Packaging the platform in Docker containers
-  5. [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/)
-  check for vulnerabilities
+  5. Vulnerability scanning: container images via
+  [Google Cloud Artifact Analysis](https://cloud.google.com/artifact-analysis/docs/container-scanning-overview)
+  (published openly as [VEX](https://data.datagrok.ai/vex/index.html)); source code and
+  dependencies via [CodeQL](https://codeql.github.com/) and
+  [Grype](https://github.com/anchore/grype/). See
+  [vulnerability remediation](../../datagrok/solutions/teams/it/security.md#vulnerability-remediation)
+  for details
 * Docker Hub stores built artifacts, such as compiled code and packages that
 are generated during the build process.
 * Ansible automates the process of provisioning and configuring servers for

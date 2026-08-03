@@ -11,10 +11,10 @@ import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {addSubstructProvider, getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
 
 import {IMonomerLibBase} from '../types/monomer-library';
-import {ISeqMonomer} from '../helm/types';
-import {PolymerTypes} from '../helm/consts';
+import {HelmType, ISeqMonomer, PolymerType} from '../helm/types';
+import {HelmTypes, PolymerTypes} from '../helm/consts';
 import {ALPHABET} from '../utils/macromolecule';
-import {getMonomersDictFromLib} from './to-atomic-level';
+import {buildRolesForHelmRna, getMonomersDictFromLib} from './to-atomic-level';
 import {monomerSeqToMolfile} from './to-atomic-level-utils';
 import {MonomerHoverLink} from './utils';
 import {getMolHighlight} from './seq-to-molfile';
@@ -48,10 +48,15 @@ export async function buildMonomerHoverLink(
 
   const getSeqMonomerCorrectedPosition = (pos?: number) => {
     if (pos == undefined) return null;
-    // if its dna or rna, we need to correct position as it will contain sugar and phosphate
-    // toAtomicLevel returns 15 monomers for 15 nucleotides (r(n)p is one monmer), while helm converter returns 45
+    // HELM RNA is split into per-position sugar/base/phosphate monomers, so the
+    // renderer reports a flat monomer index and the monomer map is keyed by that
+    // same flat index — both for the POM converter and (since the map is now
+    // built with roles) for the linear path. No division needed in either case.
     if (isNucleotideHelmSequence)
-      return throughPOM ? pos : Math.floor(pos / 3);
+      return pos;
+    // Non-HELM DNA/RNA: the linear map keys by base position; the POM converter
+    // expands each base into a sugar/base/phosphate triple, so map the base to
+    // its base entry (the middle of its triple).
     if (isNucleotideNonHelmSequence)
       return throughPOM ? pos * 3 + 1 : pos;
     return pos;
@@ -62,16 +67,43 @@ export async function buildMonomerHoverLink(
     const seqSH = seqHelper.getSeqHandler(seqCol);
     if (!throughPOM) {
       const seqSS = seqSH.getSplitted(tableRowIdx);
-      const biotype = seqSH.defaultBiotype;
+      const gi = seqSS.graphInfo;
+
+      // Polymer type: for HELM read it from the parsed graph rather than the
+      // alphabet — modified RNA can mis-detect as ALPHABET.UN. The whole row is
+      // assumed to be the first chain's type. Non-HELM falls back to the alphabet.
+      let polymerType: PolymerType;
+      if (seqSH.isHelm() && gi?.polymerTypes && gi.polymerTypes.length > 0)
+        polymerType = gi.polymerTypes[0];
+      else {
+        const a = seqSH.alphabet as ALPHABET;
+        polymerType = (a === ALPHABET.RNA || a === ALPHABET.DNA) ? PolymerTypes.RNA : PolymerTypes.PEPTIDE;
+      }
+
+      // Coerce a UN alphabet to RNA for the RNA polymer path (only used for the
+      // bases-only default sugar/phosphate selection; irrelevant in triples mode).
+      let alphabet = seqSH.alphabet as ALPHABET;
+      if (polymerType === PolymerTypes.RNA && alphabet !== ALPHABET.RNA && alphabet !== ALPHABET.DNA)
+        alphabet = ALPHABET.RNA;
+
+      // HELM RNA is assembled from per-position sugar/base/phosphate triples;
+      // the monomer map must be built with the same roles (and multi-chain
+      // stacking) the real conversion uses, otherwise every monomer is treated
+      // as a base and the atom map does not match the rendered molfile.
+      const isHelmRna = seqSH.isHelm() && polymerType === PolymerTypes.RNA;
+      const biotype: HelmType = isHelmRna ? (HelmTypes.NUCLEOTIDE as HelmType) : seqSH.defaultBiotype;
       const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
         .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
         .toArray();
 
-      const alphabet = seqSH.alphabet as ALPHABET;
-      const polymerType = alphabet == ALPHABET.RNA || alphabet == ALPHABET.DNA ? PolymerTypes.RNA : PolymerTypes.PEPTIDE;
-      const monomersDict = getMonomersDictFromLib([seqMList], [undefined], polymerType, alphabet, monomerLib, rdKitModule);
+      const chainStarts = (gi?.disjointSeqStarts && gi.disjointSeqStarts.length > 0) ?
+        gi.disjointSeqStarts.slice() : [0];
+      const roles = isHelmRna ?
+        buildRolesForHelmRna([seqMList], monomerLib, polymerType, [chainStarts])[0] : undefined;
+
+      const monomersDict = getMonomersDictFromLib([seqMList], [roles], polymerType, alphabet, monomerLib, rdKitModule);
       // Call seq-to-molfile worker core directly
-      const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType);
+      const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType, roles, chainStarts);
       return molWM.monomers;
     } else {
       const helm = seqSH.getHelm(tableRowIdx);

@@ -1,5 +1,14 @@
 ---
 title: "Develop custom cell renderers"
+description: Register a cellRenderer function or class to define custom drawing for grid cells of a given summary type.
+keywords:
+  - cellRenderer role
+  - DG.GridCellRenderer
+  - grid cell renderer
+  - summary column
+  - sparklines
+  - piechart cell
+  - grok.decorators.cellRenderer
 ---
 
 Datagrok provides an opportunity to use custom visualization for cells in data

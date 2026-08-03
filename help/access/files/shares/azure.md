@@ -1,5 +1,13 @@
 ---
 title: "Azure Blob"
+description: Connect Datagrok to Azure Blob Storage as a file share using shared tokens or SAS authorization.
+keywords:
+  - azure blob storage
+  - blob storage
+  - azure file share
+  - sas token
+  - shared access signature
+  - cloud storage connector
 ---
 
 Provides access to the

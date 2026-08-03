@@ -65,6 +65,7 @@ export interface RunSequence {
   startUuid: string;
   rerunWithConsistent?: boolean;
   includeNonNested?: boolean;
+  includeInfo?: boolean;
 }
 
 export interface SavePipeline extends ItemMetadata {

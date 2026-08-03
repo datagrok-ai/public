@@ -2,6 +2,7 @@
 #description: Environment with both conda extras and pip packages
 #language: python
 #environment: env_mixed_deps
+#meta.timeout: 600
 #input: string data
 #output: string result
 

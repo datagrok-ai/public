@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription, createStyledMarkdown, isEnterKey, copyToClipboard} from '../utils';
-import {buildViewContext, renderEntityBlocks} from '../claude/exec-blocks';
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, isEnterKey, copyToClipboard, SHORTCUT_HINT} from '../utils';
+import {buildWorkspaceContext} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
-import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {resolveScopes, showSuggestionsMenu, runSuggestionAction, Suggestion, ChoiceOption} from './prompt-suggestions';
 
 export type MessageType = {role: string; content: any};
 
@@ -17,16 +17,7 @@ type AIPanelInputs = {
     prompt: string,
 }
 
-type DBAIPanelInputs = AIPanelInputs & {
-    catalogName: string,
-}
 
-export type ScriptingAIPanelInputs = AIPanelInputs & {
-  language: DG.ScriptingLanguage
-};
-
-
-type TVAIPanelInputs = AIPanelInputs;
 
 export interface AskUserOption {
   label: string;
@@ -52,6 +43,12 @@ interface AskUserResponse {
 const actionButtionValues = {
   run: 'Run AI Prompt',
   stop: 'Stop AI Generation',
+} as const;
+
+const micTooltips = {
+  default: 'Voice Input',
+  accessDenied: 'Microphone access denied. Please enable microphone permissions.',
+  noDevice: 'No microphone found or access denied',
 } as const;
 
 export type UIMessageOptions = {
@@ -105,13 +102,20 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   clearStreaming(): void;
   showInputRequest(input: any): Promise<any>;
   cancelInputRequest(): void;
+  /** Shows the turn's loader again (e.g. right after the user answers an input request),
+   * so the wait for the assistant's next move is visibly "working", not dead air. */
+  showWaitingIndicator(loader: HTMLElement): void;
+  /** One-shot transcript of a history-restored conversation the runtime has never seen. */
+  flushRestoredContext(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
   enableNoPrompt(): void;
+  pushNativeContext(prompt: string): void;
+  flushNativeContext(): string;
 }
 
 export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInputs = AIPanelInputs> implements StreamingPanel<T> {
-  private root: HTMLElement;
+  readonly root: HTMLElement;
   protected view: DG.View | DG.ViewBase;
   private inputArea: HTMLElement;
   protected header: HTMLElement;
@@ -128,10 +132,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private wandButton: HTMLElement;
   private _rawRender: boolean = false;
   private _noPrompt: boolean = false;
+  private _pendingNativeContext: string[] = [];
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
+  private micAccessDenied: boolean = false;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
   protected _messages: T[] = [];
   protected _uiMessages: UIMessage[] = [];
@@ -155,10 +161,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
+  private _loaderPauseTimer: number | null = null;
   private _sessionId: string;
   private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
+  /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
+  private _emptyStateSeq = 0;
   /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
@@ -212,7 +221,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
-    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), 'Voice Input');
+    this.micButton = ui.iconFA('microphone', () => this.toggleSpeechRecognition(), micTooltips.default);
+    this.checkMicPermission();
     this.copyConversationButton = ui.iconFA('copy', async () => {
       const success = await this.copyConversationToClipboard();
       if (success)
@@ -231,6 +241,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       } finally {
         ui.setUpdateIndicator(this.root, false);
       }
+      this.resetSession();
       this.handleClear();
       this.currentConversationId = null;
     }, 'Start New Chat');
@@ -240,8 +251,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.root.classList.toggle('d4-ai-raw-mode', this._rawRender);
     }, 'Toggle raw console');
     this.wandButton = ui.iconFA('magic', async (e) => {
-      const scopes = await resolveScopes('panel', this.view);
-      showSuggestionsMenu(scopes, (prompt) => this.runSuggestion(prompt), e);
+      const scopes = await resolveScopes('panel', this.view ?? grok.shell.v);
+      showSuggestionsMenu(scopes, (s) => this.runSuggestion(s), e);
     }, 'Prompt suggestions');
     this.wandButton.classList.add('grokky-search-wand');
     this.setWandVisible(true);
@@ -272,70 +283,19 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
     if (this._inline)
       this.root.classList.add('d4-ai-inline-mode');
-
-    this.setupSubscriptions();
-  }
-
-  protected setupSubscriptions() {
-    if (this._inline)
-      return;
-    let wasShown = false;
-    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
-      if (grok.shell.v != this.view) {
-        wasShown = this.isShown;
-        if (wasShown)
-          this.hide();
-      } else if (wasShown)
-        this.show();
-    });
-
-    const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
-      if (rv == this.view)
-        this.toggle();
-    });
-    const that = this;
-    function onKeyDownHandler(event: KeyboardEvent) {
-      if (grok.shell.v === that.view && event.ctrlKey && event.key === 'i') {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        that.toggle();
-      }
-    }
-    document.addEventListener('keydown', onKeyDownHandler);
-
-    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
-      if (view == this.view) {
-        sub.unsubscribe();
-        closeSub.unsubscribe();
-        this.hide();
-        this.dispose();
-        toggleSub.unsubscribe();
-        document.removeEventListener('keydown', onKeyDownHandler);
-      }
-    });
   }
 
   mountInto(parent: HTMLElement) {
     parent.appendChild(this.root);
   }
 
-  show(focus: boolean = false) {
-    // Opening the AI panel steals focus from the active element (e.g., query editor)
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    const aiContainer = grok.shell.windows.ai;
-    if (!aiContainer.contains(this.root))
-      aiContainer.appendChild(this.root);
-    grok.shell.windows.showAI = true;
+  get contextView(): DG.View | DG.ViewBase { return this.view; }
+  setContextView(view: DG.View | DG.ViewBase): void { this.view = view; }
+
+  activate(focus: boolean = false): void {
     this.renderEmptyState();
     if (focus)
       this.textArea.focus();
-    else
-      previouslyFocused?.focus();
-  }
-
-  hide() {
-    if (grok.shell.windows.ai.contains(this.root))
-      grok.shell.windows.showAI = false;
   }
 
   formatConversation() {
@@ -354,11 +314,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return copyToClipboard(this.formatConversation());
   }
 
-  toggle() {
-    this.isShown ? this.hide() : this.show(true);
-  }
-
   dispose() {
+    this.clearStreamingLoaderTimer();
     this.stopRecognition();
     this.root.remove();
     this._messages = [];
@@ -485,6 +442,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }, loader?: HTMLElement
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
+    this.removeChoiceBlocks();
     const emptyState = this.outputArea.querySelector('.grokky-empty-state');
     if (emptyState) {
       emptyState.remove();
@@ -608,13 +566,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.runButtonTooltip = actionButtionValues.run;
         this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
+        this.clearStreamingLoaderTimer();
         loader.remove();
       }
     };
-  }
-
-  get isShown(): boolean {
-    return grok.shell.windows.showAI && grok.shell.windows.ai.contains(this.root);
   }
 
   get rawRender(): boolean { return this._rawRender; }
@@ -623,6 +578,46 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   public appendArtifact(node: HTMLElement): void {
     this.outputArea.appendChild(ui.divV([node], 'd4-ai-assistant-response-container'));
     this.showContentIcons();
+  }
+
+  /** Removes any pending inline choice blocks — they're transient and shouldn't linger once
+   * the user moves on (submits a prompt, gets a new message, or opens another picker). */
+  private removeChoiceBlocks(): void {
+    const blocks = this.outputArea.querySelectorAll('.grokky-choice-container');
+    for (let i = 0; i < blocks.length; i++)
+      blocks[i].remove();
+  }
+
+  /** Renders an inline choice block that reads like an assistant reply (used by suggestion actions).
+   * Picking an option removes the block; the option's handler adds its own follow-up message. */
+  public addChoice(prompt: string | null, options: ChoiceOption[]): void {
+    const emptyState = this.outputArea.querySelector('.grokky-empty-state');
+    if (emptyState) {
+      emptyState.remove();
+      this.setWandVisible(true);
+    }
+    this.removeChoiceBlocks();
+    const container = ui.divV([], 'd4-ai-assistant-response-container grokky-choice-container');
+    const cards = options.map((o) => {
+      const card = ui.div(ui.divText(o.label), 'grokky-choice-card');
+      card.onclick = () => {
+        container.remove();
+        o.onSelect();
+      };
+      return card;
+    });
+    const children: HTMLElement[] = [];
+    if (prompt)
+      children.push(this.createStyledMarkdown(prompt));
+    children.push(ui.divH(cards, 'grokky-choice-row'));
+    container.appendChild(ui.divV(children, 'grokky-choice-block'));
+    this.outputArea.appendChild(container);
+    this.showContentIcons();
+  }
+
+  /** Appends a short assistant-style note (e.g. an action's result confirmation) to the transcript. */
+  public addNote(markdown: string): void {
+    this.appendMessage('' as any, {title: '', content: markdown, fromUser: false, uiOnly: true});
   }
 
   enableNoPrompt(): void {
@@ -636,14 +631,55 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.handleClear();
   }
 
+  pushNativeContext(prompt: string): void {
+    this._pendingNativeContext.push(prompt);
+  }
+
+  /** Set when a conversation is loaded from history: the runtime's session is fresh (or belongs
+   * to another conversation), so the first prompt after a load carries this transcript. */
+  private _restoredContext: string | null = null;
+
+  flushRestoredContext(): string {
+    const ctx = this._restoredContext;
+    this._restoredContext = null;
+    return ctx ?? '';
+  }
+
+  /** Serializes the restored messages into a compact transcript the model can act on
+   * ("reproduce what we did") — includes executed code blocks recorded as engine messages. */
+  private buildRestoredTranscript(): string {
+    const parts: string[] = [];
+    for (const m of this._messages) {
+      const c: any = (m as any).content;
+      const text = typeof c === 'string' ? c :
+        Array.isArray(c) ? c.map((x: any) => x?.text ?? '').filter((x: string) => x).join('\n') : '';
+      if (!text.trim())
+        continue;
+      const role = (m as any).role === 'user' ? 'USER' : 'ASSISTANT';
+      parts.push(`${role}: ${text.length > 1500 ? text.slice(0, 1500) + ' …[truncated]' : text}`);
+    }
+    let out = parts.join('\n');
+    if (out.length > 9000)
+      out = out.slice(0, 4500) + '\n[... middle of the conversation truncated ...]\n' + out.slice(-4500);
+    return out;
+  }
+
+  flushNativeContext(): string {
+    if (this._pendingNativeContext.length === 0)
+      return '';
+    const items = `- "${this._pendingNativeContext.join('"\n- "')}"`;
+    this._pendingNativeContext = [];
+    return `[The user previously asked:]\n${items}\n\n`;
+  }
+
   resetSession(): void {
     this._sessionId = `claude-${crypto.randomUUID()}`;
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
   }
 
-  prependViewContext(prompt: string, view: DG.ViewBase): string {
-    const ctx = buildViewContext(view);
+  prependViewContext(prompt: string, _view: DG.ViewBase): string {
+    const ctx = buildWorkspaceContext();
     if (!ctx)
       return prompt;
     return ctx + '\n---\n\n' + prompt;
@@ -656,27 +692,45 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       pre.style.cssText = 'white-space:pre-wrap;user-select:text;margin:0';
       return pre;
     }
-    const md = ui.markdown(content);
+    const md = ui.markdown(normalizeMarkdownTables(content));
     dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
     return md;
   }
 
   updateStreaming(content: string, loader: HTMLElement): void {
     if (!this._streamingContainer) {
-      loader.style.display = 'none';
       this.ensureResponseBlock();
       this._streamingMarkdownEl = this.createStreamingEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
+      this.outputArea.appendChild(loader);
     } else {
       const el = this.createStreamingEl(content);
       this._streamingMarkdownEl!.replaceWith(el);
       this._streamingMarkdownEl = el;
     }
+    this.refreshStreamingLoader(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
+  refreshStreamingLoader(loader: HTMLElement): void {
+    loader.style.display = 'none';
+    this.clearStreamingLoaderTimer();
+    this._loaderPauseTimer = window.setTimeout(() => {
+      loader.style.display = '';
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    }, 600);
+  }
+
+  clearStreamingLoaderTimer(): void {
+    if (this._loaderPauseTimer != null) {
+      clearTimeout(this._loaderPauseTimer);
+      this._loaderPauseTimer = null;
+    }
+  }
+
   async finalizeStreaming(displayContent: string, _execContent: string, _view: DG.ViewBase): Promise<void> {
+    this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
@@ -689,6 +743,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   public appendStreamedElement(el: HTMLElement): void {
     this.ensureResponseBlock();
     this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
+    this._streamingContainer = null;
+    this._streamingMarkdownEl = null;
   }
 
   public appendUiMessage(content: string): void {
@@ -696,15 +752,15 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected renderFinalContent(content: string): void {
+    this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
-    renderEntityBlocks(markDown);
     this.appendFeedbackButtons(markDown);
 
     if (this._streamingMarkdownEl) {
       this._streamingMarkdownEl.replaceWith(markDown);
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
-    } else {
+    } else if (content) {
       this.ensureResponseBlock();
       this._aiMessagesAccordionPane!.appendChild(ui.divV([markDown], 'd4-ai-assistant-response-container'));
     }
@@ -713,6 +769,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   clearStreaming(): void {
+    this.clearStreamingLoaderTimer();
     this._streamingContainer?.remove();
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
@@ -730,6 +787,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
 
     return new Promise<AskUserResponse | null>((resolve) => {
+      const submitButton = ui.button('Submit', () => {
+        const answers: Record<string, string> = {};
+        for (let i = 0; i < questions.length; i++)
+          answers[questions[i].question] = choiceInputs[i].value!;
+        doResolve({questions, answers});
+      }) as HTMLButtonElement;
+
       const doResolve = (value: AskUserResponse | null) => {
         if (resolved)
           return;
@@ -737,15 +801,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this._pendingInputResolve = null;
         for (const inp of choiceInputs)
           (inp.input as HTMLSelectElement).disabled = true;
+        // Instant feedback on click — the assistant's next event can be seconds away.
+        submitButton.disabled = true;
+        if (value)
+          submitButton.textContent = 'Submitted';
         resolve(value);
       };
 
-      form.appendChild(ui.button('Submit', () => {
-        const answers: Record<string, string> = {};
-        for (let i = 0; i < questions.length; i++)
-          answers[questions[i].question] = choiceInputs[i].value!;
-        doResolve({questions, answers});
-      }));
+      form.appendChild(submitButton);
 
       this._pendingInputResolve = doResolve;
       this.ensureResponseBlock();
@@ -760,6 +823,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._pendingInputResolve(null);
       this._pendingInputResolve = null;
     }
+  }
+
+  showWaitingIndicator(loader: HTMLElement): void {
+    this.clearStreamingLoaderTimer();
+    loader.style.display = '';
+    this.outputArea.appendChild(loader);
+    this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
   private tryAgain() {
@@ -878,8 +948,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleClear() {
+    this.clearStreamingLoaderTimer();
     this._messages = [];
     this._uiMessages = [];
+    this._pendingNativeContext = [];
+    this._restoredContext = null;
     this._promptHistoryIndex = null;
     this._lastUserPromptContainer = null;
     this.outputArea.innerHTML = '';
@@ -888,27 +961,50 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.renderEmptyState();
   }
 
-  protected runSuggestion(prompt: string): void {
-    this.textArea.value = prompt;
+  protected runSuggestion(s: Suggestion): void {
+    if (runSuggestionAction(s.action, this))
+      return;
+    // Ask-for-a-detail suggestions: post the question as the assistant's reply without calling the
+    // AI, and carry the task forward so the user's answer runs it with full context.
+    if (s.immediateResponse) {
+      this.appendMessage('' as any, {title: '', content: s.immediateResponse, fromUser: false, uiOnly: true});
+      if (s.prompt)
+        this.pushNativeContext(s.prompt);
+      this.textArea.focus();
+      return;
+    }
+    this.textArea.value = s.prompt ?? '';
     this.handleRun();
   }
 
+  /** The view the panel currently works against: the pinned one for owned panels, else the live current view. */
+  protected get liveView(): DG.View | DG.ViewBase | null {
+    return this.view ?? grok.shell.v;
+  }
+
   protected shouldShowEmptyState(): boolean {
-    return this.view instanceof DG.TableView &&
-      this._uiMessages.length === 0 &&
-      !this.outputArea.querySelector('.grokky-empty-state');
+    // Global suggestions (Anywhere, Code generation) apply on any view, so show the empty state
+    // and wand everywhere — not just on table views (view/column blocks self-add when applicable).
+    return this._uiMessages.length === 0;
   }
 
   private setWandVisible(visible: boolean): void {
-    this.wandButton.style.display = visible && this.view instanceof DG.TableView ? '' : 'none';
+    this.wandButton.style.display = visible ? '' : 'none';
   }
 
+  /** Rebuilds the suggestion cards for the current view; removes them when they no longer apply. */
   protected async renderEmptyState(): Promise<void> {
-    if (!this.shouldShowEmptyState())
+    const seq = ++this._emptyStateSeq;
+    const removeExisting = () => this.outputArea.querySelector('.grokky-empty-state')?.remove();
+    if (!this.shouldShowEmptyState()) {
+      removeExisting();
+      this.setWandVisible(true);
       return;
-    const scopes = await resolveScopes('panel', this.view);
-    if (!this.shouldShowEmptyState())
+    }
+    const scopes = await resolveScopes('panel', this.liveView);
+    if (seq !== this._emptyStateSeq || !this.shouldShowEmptyState())
       return;
+    removeExisting();
 
     const blocks = scopes.map((s) => {
       const icon = ui.iconFA(s.icon ?? 'circle');
@@ -917,8 +1013,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         icon.classList.add(`grokky-scope-${s.key}`);
       const header = ui.h3(ui.span([icon, s.label]));
       const cards = s.suggestions.slice(0, 2).map((sg) => {
-        const card = ui.card(ui.divText(sg.label ?? sg.prompt));
-        card.onclick = () => this.runSuggestion(sg.prompt);
+        const card = ui.card(ui.divText(sg.label ?? sg.prompt ?? ''));
+        card.onclick = () => this.runSuggestion(sg);
         return card;
       });
       return ui.divV([header, ui.divH(cards)]);
@@ -961,6 +1057,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ui.dialog('Delete all conversation history').add(ui.divText('This action will permanently delete all saved conversations. Are you sure you want to proceed?'))
           .onOK(async () => {
             await ConversationStorage.clearAll();
+            this.currentConversationId = null;
             grok.shell.info('History cleared');
           }).show();
       });
@@ -990,6 +1087,16 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       conv.uiMessages.forEach((msg) => {
         this.appendMessage(null as any, {title: msg.title ?? '', content: msg.text, fromUser: msg.fromUser, uiOnly: true, messageOptions: msg.messageOptions}); // no loader
       });
+      // The runtime never saw this conversation (page reloads drop its session; a live session
+      // holds a DIFFERENT conversation). Start a fresh session and hand the transcript to the
+      // first prompt so follow-ups ("reproduce this", "continue") have the actual history.
+      this.resetSession();
+      const transcript = this.buildRestoredTranscript();
+      this._restoredContext = transcript ?
+        '[Conversation restored from saved history — you have no memory of it. ' +
+        'The transcript below is what happened earlier; treat it as this conversation\'s history. ' +
+        'ASSISTANT entries starting with "[executed datagrok_exec]" are code that actually ran.]\n' +
+        transcript : null;
       this.afterConversationLoad(conv);
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
@@ -1023,6 +1130,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private toggleSpeechRecognition() {
+    if (this.micAccessDenied)
+      return;
     if (this.isRecognizing)
       this.stopRecognition();
     else
@@ -1033,6 +1142,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private syncVoiceCancelHint() {
     if (this._voiceCancelHint)
       this._voiceCancelHint.style.display = this.isRecognizing ? '' : 'none';
+  }
+
+  private async checkMicPermission(): Promise<void> {
+    if (!navigator.permissions?.query)
+      return;
+
+    try {
+      const status = await navigator.permissions.query({name: 'microphone' as PermissionName});
+      this.applyMicPermissionStatus(status.state);
+      status.onchange = () => this.applyMicPermissionStatus(status.state);
+    } catch (error) {
+      console.error('Failed to query microphone permission:', error);
+    }
+  }
+
+  private applyMicPermissionStatus(state: PermissionState): void {
+    this.micAccessDenied = state === 'denied';
+    ui.setDisabled(this.micButton, this.micAccessDenied,
+      this.micAccessDenied ? micTooltips.accessDenied : micTooltips.default);
   }
 
   private startRecognition() {
@@ -1077,19 +1205,22 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       };
 
       this.recognition.onerror = (event) => {
+        if (event.error === 'no-speech')
+          return; // silence timeout — onend restarts the mic, no user action needed
         console.error('Speech recognition error:', event.error);
         ui.setUpdateIndicator(this.textAreaDiv, false);
 
         let errorMessage = 'Speech recognition error';
         switch (event.error) {
-        case 'no-speech':
-          errorMessage = 'No speech detected. Please try again.';
-          break;
         case 'audio-capture':
-          errorMessage = 'No microphone found or access denied';
+          errorMessage = micTooltips.noDevice;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.noDevice);
           break;
         case 'not-allowed':
-          errorMessage = 'Microphone access denied. Please enable microphone permissions.';
+          errorMessage = micTooltips.accessDenied;
+          this.micAccessDenied = true;
+          ui.setDisabled(this.micButton, true, micTooltips.accessDenied);
           break;
         case 'network':
           errorMessage = 'Network error during speech recognition';
@@ -1149,118 +1280,4 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
 function receiveFeedback(userPrompt: string, aiResponse: string, contextId: string, helpful: boolean) {
   // not implemented yet
-}
-
-
-export class DBAIPanel extends AIPanel<MessageType, DBAIPanelInputs> {
-  protected get placeHolder() { return 'Ask your database, like "Total sales by regions"'; }
-  protected catalogInput: DG.InputBase<string>;
-  private setAndRunFunc: (query: string) => void;
-
-  constructor(catalogs: string[], defaultCatalog: string, connectionID: string, view: DG.View | DG.ViewBase, setAndRunFunc: (query: string) => void) {
-    super(connectionID, view); // context ID is connection ID
-    this.setAndRunFunc = setAndRunFunc;
-    this.catalogInput = ui.input.choice('Catalog', {
-      items: catalogs,
-      value: defaultCatalog,
-      nullable: false,
-      tooltipText: 'Select the database catalog to use for AI-assisted query generation.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.catalogInput.input);
-    ui.tooltip.bind(this.catalogInput.input, 'Select the database catalog to use for AI-assisted query generation.');
-  }
-
-  public getCurrentInputs(): DBAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      catalogName: this.catalogInput.value!,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract SQL from fenced code blocks and inject into query editor
-    const sqlMatch = /```(?:sql)?\n([\s\S]*?)```/.exec(execContent);
-    if (sqlMatch) {
-      const sql = sqlMatch[1].trimEnd().replace(/;+$/, '');
-      this.setAndRunFunc(sql);
-    }
-  }
-}
-
-export class TVAIPanel extends AIPanel<MessageType, TVAIPanelInputs> {
-  protected get placeHolder() { return 'Ask Claude about your data...'; }
-  protected tableView: DG.TableView;
-
-  constructor(view: DG.TableView) {
-    super(view.dataFrame?.name ?? view.name ?? 'AI-Table-context', view);
-    this.tableView = view;
-  }
-
-  protected getConversationMeta() {
-    return {viewState: this.tableView.saveLayout().viewState, sessionId: this.sessionId};
-  }
-
-  protected afterConversationLoad(conversation: StoredConversationWithContext<MessageType>) {
-    if (conversation.meta?.sessionId)
-      (this as any)._sessionId = conversation.meta.sessionId;
-    const viewState = conversation.meta?.viewState ?? conversation.meta;
-    const currentViewers = Array.from(this.tableView.viewers);
-    if (!!viewState && currentViewers.length === 1 && currentViewers[0].type === DG.VIEWER.GRID) {
-      const layout = DG.ViewLayout.fromViewState(viewState);
-      this.tableView.loadLayout(layout, true);
-    }
-  }
-}
-
-export class ShellAIPanel extends AIPanel {
-  protected get placeHolder() { return 'Ask AI anything...'; }
-
-  constructor() {
-    super('shell-ai-panel', null as any);
-  }
-
-  protected setupSubscriptions(): void {
-    // Shell panel is not tied to a view — no view-change tracking needed
-  }
-}
-
-export class ScriptingAIPanel extends AIPanel<MessageType, ScriptingAIPanelInputs> {
-  protected get placeHolder() { return 'Ask AI to generate a script...'; }
-  protected languageInput: DG.InputBase<string>;
-
-  constructor(view: DG.View | DG.ViewBase) {
-    super('scripting-ai-panel', view); // context ID is fixed for scripting panel
-    this.languageInput = ui.input.choice('Language', {
-      items: Object.values(DG.SCRIPT_LANGUAGE),
-      value: DG.SCRIPT_LANGUAGE.JAVASCRIPT,
-      nullable: false,
-      tooltipText: 'Select scripting language for the generated script.',
-    }) as DG.InputBase<string>;
-    this.inputControlsDiv.appendChild(this.languageInput.input);
-    ui.tooltip.bind(this.languageInput.input, 'Select scripting language for the generated script.');
-  }
-
-  public getCurrentInputs(): ScriptingAIPanelInputs {
-    const baseInputs = super.getCurrentInputs();
-    return {
-      ...baseInputs,
-      language: this.languageInput.value as DG.ScriptingLanguage,
-    };
-  }
-
-  async finalizeStreaming(displayContent: string, execContent: string, _view: DG.ViewBase): Promise<void> {
-    this.renderFinalContent(displayContent);
-    // Extract code from datagrok-exec blocks and set on the script editor
-    const codeMatch = /```datagrok-exec\n([\s\S]*?)```/.exec(execContent);
-    if (codeMatch) {
-      ui.setUpdateIndicator(this.view.root, true, 'Updating script...');
-      const indicator = this.view.root.querySelector('.d4-update-shadow') as HTMLElement;
-      if (indicator)
-        indicator.style.zIndex = '1000';
-      (this.view as DG.ScriptView).code = codeMatch[1].trimEnd();
-      ui.setUpdateIndicator(this.view.root, false);
-    }
-  }
 }

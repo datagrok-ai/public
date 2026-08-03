@@ -82,6 +82,37 @@ const BIOCHEM_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
     tooltip: 'Chem Similarity Search viewer needs at least 1 sequence column'},
   'Sequence Diversity Search': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
     tooltip: 'Chem Diversity Search viewer needs at least 1 sequence column'},
+  'WebLogo': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
+    tooltip: 'WebLogo viewer needs at least 1 macromolecule column'},
+  'VdRegions': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null,
+    tooltip: 'VdRegions viewer needs at least 1 macromolecule column'},
+  'Sequence Variability Map': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null &&
+    [...table.columns.numerical].length >= 1,
+    tooltip: 'Sequence Variability Map viewer needs a macromolecule and a numeric column'},
+  'Most Potent Residues': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null &&
+    [...table.columns.numerical].length >= 1,
+    tooltip: 'Most Potent Residues viewer needs a macromolecule and a numeric column'},
+  'Sequence Mutation Cliffs': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null &&
+    [...table.columns.numerical].length >= 1,
+    tooltip: 'Sequence Mutation Cliffs viewer needs a macromolecule and a numeric column'},
+  'Sequence Position Statistics': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null &&
+    [...table.columns.numerical].length >= 1,
+    tooltip: 'Sequence Position Statistics viewer needs a macromolecule and a numeric column'},
+  'Logo Summary Table': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null &&
+    [...table.columns.numerical].length >= 1 &&
+    ([...table.columns.numerical].length >= 2 || [...table.columns.categorical].length >= 2),
+    tooltip: 'Logo Summary Table viewer needs a macromolecule, a numeric, and a numeric or categorical column'},
+  'Active peptide selection': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE) !== null &&
+    [...table.columns.numerical].length >= 1 &&
+    ([...table.columns.numerical].length >= 2 || [...table.columns.categorical].length >= 2),
+    tooltip: 'Active peptide selection viewer needs a macromolecule, a numeric, and a numeric or categorical column'},
+};
+
+const TREE_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
+  'Dendrogram': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.NEWICK) !== null || table.getTag('.newick') != null,
+    tooltip: 'Dendrogram viewer needs a phylogenetic tree (a Newick column or tree tag)'},
+  'PhylocanvasGL': {checkFunc: (table) => table.columns.bySemType(DG.SEMTYPE.NEWICK) !== null || table.getTag('.newick') != null,
+    tooltip: 'PhylocanvasGL viewer needs a phylogenetic tree (a Newick column or tree tag)'},
 };
 
 const CURVES_VIEWERS_TEST_DATA: {[key: string] : ViewersTestData} = {
@@ -234,8 +265,10 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
       }
       else
         isViewerEnabled = false;
-    } else if ((v.package.name === 'Chem' || v.package.name === 'Bio') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
+    } else if ((v.package.name === 'Chem' || v.package.name === 'Bio' || v.package.name === 'Peptides') && BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
+    else if ((v.package.name === 'Dendrogram' || v.package.name === 'PhyloTreeViewer') && TREE_VIEWERS_TEST_DATA[v.friendlyName])
+      isViewerEnabled = TREE_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
     else if (v.package.name === 'Curves' && CURVES_VIEWERS_TEST_DATA[v.friendlyName])
       isViewerEnabled = CURVES_VIEWERS_TEST_DATA[v.friendlyName].checkFunc(table);
     else {
@@ -248,7 +281,8 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         enabled: isViewerEnabled,
         tooltip: isViewerEnabled ? '' : CHARTS_VIEWERS_TEST_DATA[v.friendlyName] ?
           CHARTS_VIEWERS_TEST_DATA[v.friendlyName].tooltip : BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName] ?
-          BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : CURVES_VIEWERS_TEST_DATA[v.friendlyName] ?
+          BIOCHEM_VIEWERS_TEST_DATA[v.friendlyName].tooltip : TREE_VIEWERS_TEST_DATA[v.friendlyName] ?
+          TREE_VIEWERS_TEST_DATA[v.friendlyName].tooltip : CURVES_VIEWERS_TEST_DATA[v.friendlyName] ?
           CURVES_VIEWERS_TEST_DATA[v.friendlyName].tooltip : 'Viewer cannot be created from viewer gallery',
         icon: (v.options['icon'] != undefined) ? `${v.package.webRoot.endsWith('/') ?
           v.package.webRoot : v.package.webRoot + '/'}${v.options['icon']}` : 'svg-project',

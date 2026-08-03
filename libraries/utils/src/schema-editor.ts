@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {merge, Observable, Subject} from "rxjs";
-import {IProperty, ValueMatcher} from "datagrok-api/dg";
+import {merge, Observable, Subject} from 'rxjs';
+import {IProperty, ValueMatcher} from 'datagrok-api/dg';
 
 function isNumeric(type: string) {
   return type == DG.TYPE.INT || type == DG.TYPE.FLOAT || type == DG.TYPE.BIG_INT || type == DG.TYPE.QNUM;
@@ -45,14 +45,14 @@ export class SchemaEditor extends DG.Widget {
     this.table.onSelected.subscribe((item) => {
       ui.empty(this.extraPropertiesDiv);
       const excludedKeys = ['type', 'name', 'defaultValue', 'valueValidators'];
-      const propKeys = this.extraProperties.length > 0 
-        ? this.extraProperties
-        : Object.keys(DG.Property.propertyOptions).filter(key => !excludedKeys.includes(key));
+      const propKeys = this.extraProperties.length > 0 ?
+        this.extraProperties :
+        Object.keys(DG.Property.propertyOptions).filter((key) => !excludedKeys.includes(key));
 
       const extraProperties = propKeys
-        .map(k => DG.Property.propertyOptions[k as keyof typeof DG.Property.propertyOptions]!)
-        .filter(p => p.applicableTo == null || (p.applicableTo == DG.TYPE.NUMERICAL && (isNumeric(p.type!))))
-        .map(p => DG.Property.fromOptions(p));
+        .map((k) => DG.Property.propertyOptions[k as keyof typeof DG.Property.propertyOptions]!)
+        .filter((p) => p.applicableTo == null || (p.applicableTo == DG.TYPE.NUMERICAL && (isNumeric(p.type!))))
+        .map((p) => DG.Property.fromOptions(p));
       const form = ui.input.form(item, extraProperties);
 
       this.extraPropertiesDiv.appendChild(ui.divV([
@@ -108,21 +108,23 @@ export class PropertyTable<T = any> extends DG.Widget {
           return input.input;
         });
 
-      if (this.data.allowAdd ?? false)
+      if (this.data.allowAdd ?? false) {
         elements.push(ui.iconFAB('plus', () => {
           const newItem = this.data.createNew ? this.data.createNew() : {};
           this.data.items.splice(this.data.items.indexOf(item) + 1, 0, newItem);
           this.refresh();
           this.onItemAdded.next(newItem);
         }, 'Add'));
-      if (this.data.allowRemove ?? false)
+      }
+      if (this.data.allowRemove ?? false) {
         elements.push(ui.iconFAB('times', () => {
           this.data.items.splice(this.data.items.indexOf(item), 1);
           this.refresh();
           this.onItemRemoved.next(item);
         }, 'Remove'));
+      }
       return elements;
-    }
+    };
 
     this.table = ui.table(this.data.items, createRow);
     ui.empty(this.root);
@@ -135,8 +137,8 @@ export class PropertyValidator {
   static NOT_EMPTY = 'not empty';
 
   static validators: {[name: string]: (value: any) => string | null} = {
-    NOT_EMPTY: (s: any) => s == null || s === '' ? "Can't be empty" : null
-  }
+    NOT_EMPTY: (s: any) => s == null || s === '' ? 'Can\'t be empty' : null
+  };
 
   static getValidator(obj: any, prop: DG.IProperty, expression: string): ((value: any) => string | null) {
     if (this.validators[expression] !== null)

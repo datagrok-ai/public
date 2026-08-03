@@ -166,6 +166,7 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedI
   return {
     id: conf.id,
     type: 'static',
+    nqName: conf.nqName,
     friendlyName: conf.friendlyName,
     description: conf.description,
     tags: conf.tags,

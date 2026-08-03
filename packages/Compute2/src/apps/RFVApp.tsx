@@ -6,12 +6,12 @@ import {Subject, BehaviorSubject, of, from} from 'rxjs';
 import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getViewersHook, historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
-import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
-import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {catchError, debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {compositorOverlay} from '../directives/compositor-overlay';
+import {canUseResults} from '../utils';
 
 const RUN_DEBOUNCE_TIME = 250;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -44,7 +44,13 @@ export const RFVApp = Vue.defineComponent({
       switchMap(([, isValid]) => {
         if (!isValid || currentCallState.value.isRunning)
           return of(null);
-        return from(run());
+        // Contain run() failures: an error reaching the outer subscription terminates it and kills autorun.
+        return from(run()).pipe(
+          catchError((err) => {
+            grok.shell.error(err instanceof Error ? err.message : `${err}`);
+            return of(null);
+          }),
+        );
       }),
     ).subscribe();
 
@@ -142,6 +148,10 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const saveRun = async () => {
+      // Invoked by RichFunctionView's shared save-to-history icon (onSaveToHistory). Block
+      // saving a stale/in-flight run with a shell message.
+      if (!canUseResults(currentCallState.value, 'saving'))
+        return;
       const dialog = new EditRunMetadataDialog({
         title: currentFuncCall.value.options['title'] ?? '',
         description: currentFuncCall.value.options['description'] ?? '',
@@ -154,7 +164,13 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.newId();
         await historyUtils.saveRun(currentFuncCall.value);
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
-        Vue.triggerRef(currentFuncCall);
+        // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
+        // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
+        // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
+        const fc = currentFuncCall.value;
+        const modelName = fc.func?.friendlyName ?? fc.func?.name;
+        setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
+        searchParams.id = fc.id;
       });
       dialog.show({center: true, width: 500});
     };
@@ -176,14 +192,6 @@ export const RFVApp = Vue.defineComponent({
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full flex'>
-        <RibbonPanel view={currentView.value}>
-          {!currentCallState.value.isOutputOutdated &&
-            <IconFA
-              name='save'
-              tooltip={'Save'}
-              onClick={saveRun}
-            />}
-        </RibbonPanel>
         <RichFunctionView
           funcCall={currentFuncCall.value}
           callState={currentCallState.value}
@@ -193,10 +201,12 @@ export const RFVApp = Vue.defineComponent({
           onFormReplaced={onUpdateForm}
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
+          onSaveToHistory={() => saveRun()}
           historyEnabled={true}
           localValidation={true}
           skipInit={false}
           showRunButton={!isRunningOnInput.value}
+          keepExportsVisible={isRunningOnInput.value}
           view={currentView.value}
         />
       </div>, [[compositorOverlay, overlayActive.value]])

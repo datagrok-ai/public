@@ -216,7 +216,12 @@ export async function runPlaywrightTests(
       testDirFinal = candidate;
   }
   if (testDirFinal !== testDir)
-    cliArgs.push(testDirFinal);
+    // Normalize Windows backslashes to forward slashes — Playwright CLI on Windows
+    // treats backslash positional args as regex patterns and emits "No tests found"
+    // when the resolved path contains backslashes. Linux path.join already emits
+    // forward slashes; this no-ops there. Per
+    // .claude/plan/investigator-handback-autocomplete-no-tests-2026-05-24.md.
+    cliArgs.push(testDirFinal.replace(/\\/g, '/'));
 
   const env: NodeJS.ProcessEnv = {
     ...process.env,

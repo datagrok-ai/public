@@ -35,7 +35,13 @@ const RENAMED_QUERY_NAME = 'new_test_query_ms_sql';
 const SQL_PRODUCTS = 'select * from products';
 const SQL_ORDERS = 'select * from orders';
 
-test.describe.serial(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () => {
+// CI: no MS SQL service is provisioned in the ephemeral test compose
+// (deps.docker-compose.ci.yaml ships only Postgres demo containers), and
+// there is no MS SQL > Northwind connection on the platform. Skip the
+// whole describe on the CI server; the dev-targeted playwright-tests/
+// copy still runs there against a real MS SQL connection.
+test.describe.skip(`Query lifecycle (${PROVIDER} / ${MS_SQL_CONNECTION})`, () => {
+  test.describe.configure({ mode: 'serial' });
   test.beforeAll(async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH_STATE });
     const page = await ctx.newPage();

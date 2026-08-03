@@ -7,12 +7,13 @@
 import {ClassicPreset} from 'rete';
 import {FlowNode} from '../scheme';
 import {getSocket} from '../sockets';
+import {categoricalColor, CAT} from '../../types/type-map';
 
-const COLOR_UTILITY = '#78909C';
-const COLOR_INFO = '#66BB6A';
-const COLOR_WARNING = '#FFA726';
-const COLOR_VIEW = '#42A5F5';
-const COLOR_CONST = '#66BB6A';
+const COLOR_UTILITY = categoricalColor(CAT.gray);
+const COLOR_INFO = categoricalColor(CAT.green);
+const COLOR_WARNING = categoricalColor(CAT.orange);
+const COLOR_VIEW = categoricalColor(CAT.blue);
+const COLOR_CONST = categoricalColor(CAT.green);
 
 // ---------- helpers ----------
 
@@ -24,6 +25,9 @@ export class SelectColumnNode extends FlowNode {
     (this as unknown as {color: string}).color = COLOR_UTILITY;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
     this.addOutput('column', new ClassicPreset.Output(getSocket('column'), 'column'));
+    // Needs a table to select from and a column name to select.
+    this.requiredInputs = ['table'];
+    this.requiredProps = ['columnName'];
   }
 }
 
@@ -35,6 +39,23 @@ export class SelectColumnsNode extends FlowNode {
     (this as unknown as {color: string}).color = COLOR_UTILITY;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
     this.addOutput('columns', new ClassicPreset.Output(getSocket('column_list'), 'columns'));
+    // Needs a table to select from and at least one column name.
+    this.requiredInputs = ['table'];
+    this.requiredProps = ['columnNames'];
+  }
+}
+
+/** Resolves an open table by name — `grok.shell.tableByName(name)`. Stands in
+ *  for the platform `ResolveTable` function in imported creation scripts. */
+export class SelectTableNode extends FlowNode {
+  constructor() {
+    super('Select Table');
+    this.dgNodeType = 'utility';
+    this.properties = {tableName: ''};
+    (this as unknown as {color: string}).color = COLOR_UTILITY;
+    this.addOutput('table', new ClassicPreset.Output(getSocket('dataframe'), 'table'));
+    // Resolves a table by name — that name must be set.
+    this.requiredProps = ['tableName'];
   }
 }
 
@@ -46,6 +67,8 @@ export class AddTableViewNode extends FlowNode {
     (this as unknown as {color: string}).color = COLOR_VIEW;
     this.addInput('table', new ClassicPreset.Input(getSocket('dataframe'), 'table'));
     this.addOutput('view', new ClassicPreset.Output(getSocket('view'), 'view'));
+    // Needs a table to open a view for.
+    this.requiredInputs = ['table'];
   }
 }
 
@@ -120,10 +143,25 @@ export class ConstStringNode extends FlowNode {
 
     const control = new ClassicPreset.InputControl('text', {
       initial: '',
-      change: (v) => {this.properties['value'] = v ?? '';},
+      change: (v) => {
+        this.properties['value'] = v ?? '';
+        // Title mirrors the value (refreshes on the next node re-render —
+        // forcing one here would remount the control and steal focus).
+        this.label = constLabel('String', v);
+      },
     });
     this.addControl('value', control);
   }
+}
+
+/** Constant nodes title themselves after their value; empty values fall back
+ *  to the type name so a freshly added node isn't titled `const: `. Long
+ *  values (e.g. column-name lists) are truncated — the full value lives in
+ *  `properties.value`, the title is just a hint. */
+export function constLabel(kind: string, value: unknown): string {
+  const s = String(value ?? '').trim();
+  if (s === '') return kind;
+  return `const: ${s.length > 28 ? `${s.slice(0, 27)}…` : s}`;
 }
 
 export class ConstIntNode extends FlowNode {

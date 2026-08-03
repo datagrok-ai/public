@@ -136,6 +136,7 @@ export class PackageFunctions {
 
   /* The Chem package is opening formats 'mol2', 'sdf', 'mol' for small molecules */
   @grok.decorators.fileHandler({
+    name: 'Import PDB',
     description: 'Opens PDB file',
     ext: 'mmcif, cifCore, pdb, gro'
   })
@@ -153,6 +154,7 @@ export class PackageFunctions {
   /* as file is handled as string we don't know its extension, thus we need a separate handler **/
 
   @grok.decorators.fileHandler({
+    name: 'Import XYZ',
     description: 'Opens XYZ file',
     ext: 'xyz'
   })
@@ -162,6 +164,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({
+    name: 'Import Structure (NGL)',
     description: 'Opens biostructure files supported with NGL',
     ext: 'mmtf, cns, top, prmtop, ply, obj, ccp4'
   })
@@ -171,6 +174,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({
+    name: 'Import PDBQT (Docking Poses)',
     description: 'Opens .pdbqt file with docking result ligand poses',
     ext: 'pdbqt'
   })

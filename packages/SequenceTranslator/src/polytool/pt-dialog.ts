@@ -31,7 +31,7 @@ import {MonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/utils'
 import {MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
 import wu from 'wu';
-import {PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {_toAtomicLevel, getMonomersDictFromLib} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {monomerSeqToMolfile} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level-utils';
 import {LRUCache} from 'lru-cache';

@@ -1,5 +1,13 @@
 ---
 title: "Show formula lines"
+description: Add reference lines and bands to scatter plots, line charts, and other viewers using the formulaLines API.
+keywords:
+  - formulaLines API
+  - reference line
+  - band chart
+  - meta.formulaLines
+  - addLine addBand
+  - formula-lines tag
 ---
 
 Dataframe and viewer can contain information about lines and bands.

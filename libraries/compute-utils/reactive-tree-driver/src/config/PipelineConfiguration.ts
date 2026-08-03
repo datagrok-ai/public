@@ -244,6 +244,7 @@ export type NestedItemContext = {
 export type AbstractPipelineActionConfiguration = {
   type: 'action';
   id: ItemId;
+  nqName?: NqName;
   friendlyName?: string;
   description?: string;
   tags?: string[];

@@ -30,7 +30,6 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean): Promise<IFpResult> {
     if (!molecules || this._requestTerminated)
       return {fps: [], smiles: null};
-    let addedToCache = false;
     const fpLength = molecules.length;
     const fps = new Array<Uint8Array | null>(fpLength).fill(null);
     const morganFpParams = fingerprintType === Fingerprint.Morgan ?
@@ -54,6 +53,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
           rdMol.is_qmol = mol?.isQMol;
       }
       if (rdMol) {
+        let addedToCache = false;
         try {
           if (canonicalSmilesArr)
             canonicalSmilesArr[i] = rdMol.get_smiles();

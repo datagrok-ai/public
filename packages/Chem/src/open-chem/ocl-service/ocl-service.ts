@@ -51,7 +51,8 @@ export class OCLService {
     const molList = molCol;
     const colLenght = molList.length;
     const chunkSize = Math.ceil(colLenght / this._threadCount);
-    const result = new Array<T>().fill(null as T);
+    // Pre-allocate to the total output length; workers' results are written at their offset below.
+    const result = new Array<T>(colLenght);
     const promises: Promise<{res:Array<T>, errors: string[]}>[] = new Array(this._threadCount);
     for (let i = 0; i < this._threadCount; i++) {
       const chunk = molList.slice(i * chunkSize, (i === (this._threadCount - 1)) ? colLenght : (i + 1) * chunkSize);

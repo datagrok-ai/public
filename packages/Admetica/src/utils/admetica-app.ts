@@ -11,6 +11,15 @@ import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
   protected STORAGE_NAME: string = 'admetica-sketcher-values';
+  private _gen = 0;
+
+  private get _stale(): boolean {
+    return !this.tableView?.root.isConnected;
+  }
+
+  private _outdated(gen: number): boolean {
+    return gen !== this._gen || this._stale;
+  }
 
   constructor(parentCall: DG.FuncCall | null) {
     super(parentCall);
@@ -22,10 +31,16 @@ export class AdmeticaViewApp extends BaseViewApp {
   }
 
   protected async processFileData(): Promise<void> {
+    const gen = ++this._gen;
     await grok.data.detectSemanticTypes(this.tableView!.dataFrame);
+    if (this._outdated(gen))
+      return;
     const models = properties.subgroup.flatMap((subg: Subgroup) => subg.models).map((model: Model) => model);
     const queryParams = models.map((model: Model) => model.name);
-    const molColName = this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
+    const molCol = this.tableView!.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    if (!molCol)
+      return;
+    const molColName = molCol.name;
     const molIdx = this.tableView!.dataFrame.columns.names().findIndex((c) => c === molColName);
     let i = molIdx + 2;
 
@@ -36,6 +51,9 @@ export class AdmeticaViewApp extends BaseViewApp {
 
     for (const model of models)
       updateColumnProperties(this.tableView?.grid.col(model.name)!, model);
+
+    if (this._outdated(gen))
+      return;
 
     const uniqueSubgroupNames: string[] = Array.from(
       new Set(properties.subgroup.map((subg: any) => subg.name)),
@@ -50,11 +68,16 @@ export class AdmeticaViewApp extends BaseViewApp {
       i += 1;
     }
 
+    if (this._outdated(gen))
+      return;
     this.tableView!.grid.scrollToCell(molColName, 0);
   }
 
-  private async customFormGenerator(cached: boolean = false): Promise<HTMLElement> {
+  private async customFormGenerator(cached: boolean = false): Promise<HTMLElement | null> {
+    const gen = ++this._gen;
     const models = await getQueryParams();
+    if (this._outdated(gen))
+      return null;
 
     if (cached)
       await this.loadCachedData();
@@ -76,9 +99,13 @@ export class AdmeticaViewApp extends BaseViewApp {
       }
     }
 
+    if (this._outdated(gen))
+      return null;
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
     await addSparklines(this.tableView!.dataFrame, models, molIdx! + 1);
 
+    if (this._outdated(gen))
+      return null;
     const form = createDynamicForm(this.tableView!.dataFrame, models, 'smiles', true);
     const ribbon = form.root.querySelector('.d4-ribbon');
     if (ribbon)

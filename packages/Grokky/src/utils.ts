@@ -152,6 +152,12 @@ export function isEnterKey(e: KeyboardEvent): boolean {
   return e.key === 'Enter' || e.keyCode === 13;
 }
 
+export const SHORTCUT_HINT = 'Ctrl+I';
+
+export function isToggleKey(e: KeyboardEvent): boolean {
+  return e.ctrlKey && (e.key === 'i' || e.keyCode === 73);
+}
+
 /** Copies text to the clipboard, resolving to whether it succeeded (never rejects).
  * Falls back to `document.execCommand('copy')` when `navigator.clipboard` is unavailable —
  * Dartium / Chrome ≤ 65 / insecure contexts. */
@@ -232,9 +238,33 @@ export function findLast<T, K extends T>(array: T[], predicate: (value: T, index
   return undefined;
 }
 
+/** GFM forbids a table from interrupting a paragraph, and the platform's Dart markdown parser is
+ * spec-strict — but models routinely emit `**Section**` directly followed by `| header |` rows,
+ * which then render as one glued paragraph of pipes. Insert the missing blank line before a table
+ * block (a `|` line whose next line is the `|---|` separator) when it follows a non-table line.
+ * Fence-aware so code blocks with ASCII pipes are untouched. */
+export function normalizeMarkdownTables(text: string): string {
+  if (!text.includes('|'))
+    return text;
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*```/.test(line))
+      inFence = !inFence;
+    const prev = out.length ? out[out.length - 1] : '';
+    if (!inFence && /^\s*\|/.test(line) && prev.trim() !== '' && !/^\s*\|/.test(prev) &&
+        /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1] ?? '') && (lines[i + 1] ?? '').includes('-'))
+      out.push('');
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
 /** Renders markdown content with copy-on-code-blocks behavior and selectable text. */
 export function createStyledMarkdown(content: string): HTMLElement {
-  const markDown = ui.markdown(content);
+  const markDown = ui.markdown(normalizeMarkdownTables(content));
   markDown.style.position = 'relative';
   dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
   if (markDown.querySelector('pre > code')) {

@@ -1,5 +1,12 @@
 ---
 title: "Markup viewer"
+description: Host arbitrary text, HTML content, or Markdown-formatted text as a viewer, including embedded iframes.
+keywords:
+  - html viewer
+  - markdown viewer
+  - text widget
+  - iframe embedding
+  - rich text panel
 ---
 
 Use this viewer to host any text, arbitrary HTML content, or [Markdown-formatted text](https://en.wikipedia.org/wiki/Markdown). In

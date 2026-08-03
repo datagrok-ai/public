@@ -351,7 +351,7 @@ export class MpoProfileCreateView {
     } finally {
       this.updatingLayout = false;
     }
-    await this.renderContextPanel();
+    this.renderContextPanel();
   }
 
   // --- Layout ---
@@ -416,7 +416,7 @@ export class MpoProfileCreateView {
     if (this.df!.currentRowIdx === -1 && this.df!.rowCount > 0)
       this.df!.currentCell = this.df!.cell(0, this.df!.columns.byIndex(0).name);
 
-    await this.renderContextPanel();
+    this.renderContextPanel();
   }
 
   private setTableViewVisible(visible: boolean, ratio = 0.78): void {
@@ -440,8 +440,8 @@ export class MpoProfileCreateView {
     }
   }
 
-  private async renderContextPanel(): Promise<void> {
-    await this.mpoContextPanel?.render(
+  private renderContextPanel(): void {
+    this.mpoContextPanel?.render(
       this.profile,
       this.editor.columnMapping,
       this.editor.aggregationInput.value ?? undefined,
@@ -592,7 +592,7 @@ export class MpoProfileCreateView {
         this.setModified(true);
       if (!this.df || !this.profile || !this.mpoContextPanel || !isOwnView(grok.shell.v as DG.View))
         return;
-      await this.renderContextPanel();
+      this.renderContextPanel();
     }));
 
     this.subs.push(grok.events.onCustomEvent(MPO_PROFILE_DELETED_EVENT).subscribe((data) => {

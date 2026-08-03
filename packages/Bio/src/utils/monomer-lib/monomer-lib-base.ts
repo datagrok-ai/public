@@ -50,6 +50,9 @@ export class MonomerLibBase implements IMonomerLibBase {
 
   get onChanged(): Observable<any> { return this._onChanged; }
 
+  fireChanged(value?: any) {
+    this._onChanged.next(value);
+  }
 
   constructor(
     protected _monomers: MonomerLibData,
@@ -72,7 +75,9 @@ export class MonomerLibBase implements IMonomerLibBase {
 
   // smiles to symbol Mapping cache
   private _smilesMonomerCache: {[polymerType: string]: {[smiles: string]: string}} = {};
-
+  public clearSmilesMonomerCache() {
+    this._smilesMonomerCache = {};
+  }
   /** Creates missing {@link Monomer} */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
     let mSet = this._monomers[polymerType];

@@ -1,5 +1,14 @@
 ---
 title: "Line chart"
+description: Track trends and changes over time by connecting data points into one or more line series.
+keywords:
+  - trend chart
+  - time series
+  - multiple series comparison
+  - regression line
+  - moving average
+  - statistical process control
+  - control limits
 ---
 
 Line chart shows data points as connected line segments. It is commonly used to track trends, changes over time, and compare multiple data series. 
@@ -98,8 +107,6 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Outer Chart Margin Top | number |  |
 | Outer Chart Margin Right | number |  |
 | Outer Chart Margin Bottom | number |  |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | Legend Visibility | visibilitymode |  |
 | Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
@@ -144,13 +151,15 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
 | Markers Size Column Name | string |  |
 | Markers Size Aggr Type | string |  |
+| Marker Size Scaling | string | Linear or logarithmic scale for the marker *Size* column. |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
 | Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
+| Show Selected Rows | boolean | When checked, selected points and line segments are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
-| **Statistical process control** | | |
-| Show Statical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
+| **SPC** | | |
+| Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
 | Show Sigma1 | boolean |  |
 | Show Sigma2 | boolean |  |
@@ -177,27 +186,21 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Overview Height | number | Height of the overview chart |
 | Histogram Width | number |  |
 | Auto Axis Size | boolean | If true, *X Axis Height* is calculated automatically to fit the required precision. If false, the specified *X Axis Height* |
-| Annotation Font | string |  |
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
 | Line Coloring Type | string |  |
 | Axis Font | string |  |
 | Grid Line Color | number |  |
 | Selected Rows Color | number |  |
-| Regression Line Color | number |  |
-| Regression Line Transparency | number |  |
-| Formula Font | string |  |
 | Statistical Process Line Color | number |  |
 | Statistical Process Area Color | number |  |
 | Statistical Process Rule Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
-| **Lines** | | |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
-| Show Regression Line Equation | boolean |  |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Splits the regression by the *Split* column(s). Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Regression Line Color | number |  |
+| Regression Line Transparency | number |  |
+| Moving Average Line Color | number |  |
+| Moving Average Line Transparency | number |  |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -205,12 +208,27 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Row Group Tooltip | string |  |
 | **Legend** | | |
 | Add Y Columns To Legend | boolean | When selected, column names are added to the legend. Requires *Multi Axis* to be enabled. |
-| **Annotation regions** | | |
+| **Annotations** | | |
+| Lasso Tool | boolean | Enables lasso region drawing mode (instead of polygon drawing default one). |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Lasso Tool | boolean | Enables lasso region drawing mode (instead of polygon drawing default one). |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Lines** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 
 See also:
 

@@ -1,5 +1,13 @@
 ---
 title: "Custom script handler"
+description: Register a scriptHandler function to add support for a scripting language not natively supported by Datagrok.
+keywords:
+  - scriptHandler role
+  - meta.scriptHandler.language
+  - meta.scriptHandler.extensions
+  - custom scripting language
+  - FuncCall handler
+  - CodeMirror mode
 ---
 
 If the Datagrok platform does not support a scripting language you are familiar with, you can create a custom script handler within your [package](../packages/create-package.md). 

@@ -18,6 +18,25 @@ newParam <- "test"`;
 // Navigate to Scripts via Browse > Platform > Functions > Scripts
 export async function openScriptsBrowser(page: Page) {
   await page.goto(`${BASE}/browse`);
+  // Wait for #grok-preloader to detach. On a cold CI Datlas the Browse tree
+  // becomes visible BEFORE the preloader is dismissed; while present, it covers
+  // rootDiv and intercepts clicks (incl. on dropdown menu items like "Pyodide
+  // Script..."), surfacing as "subtree intercepts pointer events" timeouts.
+  await page.waitForFunction(
+    () => document.querySelector('#grok-preloader, .grok-preloader') == null,
+    undefined, { timeout: 30_000 },
+  ).catch(() => { /* tolerate a lingering preloader — neutralised by addStyleTag below */ });
+  // Also neutralise pointer events on the preloader — it can re-appear after
+  // dialog-opening clicks while the platform fetches data, and intercept the
+  // next interaction. Platform JS still drives it; only the click-intercept
+  // is disabled for the page lifetime. The same `display: none` for
+  // `.d4-tooltip` mirrors connections/queries helpers — hover-tooltips
+  // (e.g. the "After you save the project ..." hint that pops up next to
+  // the Save-project dialog's OK button) can also overlap actionability.
+  await page.addStyleTag({ content: `
+    #grok-preloader, .grok-preloader { pointer-events: none !important; }
+    .d4-tooltip { display: none !important; }
+  ` });
 
   // Expand Platform node (only if collapsed)
   const platformExpander = page.locator('[name="tree-expander-Platform"]');
@@ -43,7 +62,7 @@ export async function openScriptsBrowser(page: Page) {
   // Wait for the gallery to actually render at least one card — ensures data
   // is loaded before tests start searching. Without this, searching immediately
   // after the search bar appears can filter against an empty dataset.
-  await expect(page.locator('.grok-gallery-grid-item').first()).toBeVisible({ timeout: 15_000 });
+  await page.locator('.grok-gallery-grid-item').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => { /* fresh CI stack has no scripts yet — gallery legitimately empty; tests create their own below */ });
 }
 
 // Close all open views and return to the Scripts gallery without a full page
@@ -65,7 +84,7 @@ export async function resetToScripts(page: Page) {
   // Gallery cards are populated asynchronously after the search bar appears.
   // Without this wait, an immediate searchScript() call filters against an
   // empty dataset (debounced search caches "no results") and times out.
-  await expect(page.locator('.grok-gallery-grid-item').first()).toBeVisible({ timeout: 15_000 });
+  await page.locator('.grok-gallery-grid-item').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => { /* fresh CI stack has no scripts yet — gallery legitimately empty; tests create their own below */ });
 }
 
 // Idempotent: create the testRscript only if it does not exist.

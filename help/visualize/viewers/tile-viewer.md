@@ -1,5 +1,11 @@
 ---
 title: "Tile viewer"
+description: Visualize table rows as a grid of editable form-based tiles.
+keywords:
+  - card view
+  - tile grid
+  - form-based rows
+  - gallery layout
 ---
 
 Visualizes rows as a collection of forms that are positioned as tiles.
@@ -36,11 +42,14 @@ To edit the form, right-click and select "Edit form...".
 | Help | string | Help to be shown when user clicks on the ''?'' icon on top. Could either be in markdown, or a URL (starting with ''/'' or ''http''). |
 | Description Position | flexposition |  |
 | Description Visibility Mode | visibilitymode |  |
-| **Style** | | |
-| Tiles Font | string |  |
 | **Data** | | |
+| Show Empty Lanes | boolean | When unchecked, lanes that contain no tiles (for instance, when the corresponding category is filtered out) are hidden. |
 | Filter | string | Formula that filters out rows to show. Examples: `${AGE}` > 20 or `${WEIGHT / 2)}` > 100, `${SEVERITY}` == ''Medium'', `${RACE}`.endsWith(''sian'') |
 | Table | string |  |
+| **Style** | | |
+| Tiles Font | string |  |
+| **Selection** | | |
+| Show Selected Rows | boolean | When checked, selected tiles are highlighted using the selected rows color. When unchecked, selected tiles keep their regular appearance. |
 | **Description** | | |
 | Show Title | boolean |  |
 

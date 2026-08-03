@@ -1,5 +1,4 @@
-// @ts-ignore
-import archiver from 'archiver-promise';
+import archiver from 'archiver';
 import crypto from 'crypto';
 import fs from 'fs';
 // @ts-ignore
@@ -15,6 +14,7 @@ import {loadPackages} from '../utils/test-utils';
 import * as color from '../utils/color-utils';
 import {check} from './check';
 import {generateCeleryArtifacts} from '../utils/python-celery-gen';
+import {generateQueueArtifacts} from '../utils/queue-worker-gen';
 
 const {exec, execSync} = require('child_process');
 
@@ -106,6 +106,33 @@ function localImageExists(fullName: string, checkPlatform: boolean = true): bool
   } catch {
     return false;
   }
+}
+
+function imageExistsInRegistry(ref: string): boolean {
+  try {
+    execSync(`docker manifest inspect ${ref}`, {stdio: ['pipe', 'pipe', 'pipe']});
+    return true;
+  }
+  catch {
+    return false;
+  }
+}
+
+// Looks for an already-published image in the configured registry and on Docker Hub,
+// without pulling it. Prefers the content-hashed release tag (exact dockerfile match),
+// then the plain version tag. Returns the canonical `datagrok/<name>:<tag>` reference
+// for image.json, or null when nothing usable is published.
+function resolveRegistryImage(imageName: string, registryTag: string, versionTag: string,
+  registry: string | undefined): string | null {
+  const tags = registryTag === versionTag ? [versionTag] : [registryTag, versionTag];
+  for (const tag of tags) {
+    const canonical = `datagrok/${imageName}:${tag}`;
+    if (registry && imageExistsInRegistry(`${registry}/${canonical}`))
+      return canonical;
+    if (imageExistsInRegistry(canonical))
+      return canonical;
+  }
+  return null;
 }
 
 function dockerLogin(registry: string, devKey: string): boolean {
@@ -272,6 +299,7 @@ async function processDockerImages(
   localTimestamps: Indexable,
   debug: boolean,
   skipDockerRebuild: boolean = false,
+  generatedDirs: string[] = [],
 ): Promise<void> {
   const dockerImages = discoverDockerfiles(packageName, version, debug);
   if (dockerImages.length === 0)
@@ -317,6 +345,14 @@ async function processDockerImages(
         dockerRemove(`${registry}/datagrok/${remoteFullName}`);
       result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
     }
+    else if (generatedDirs.includes(img.dirName)) {
+      // Generated worker dirs are just FROM the stock base: a cached local tag
+      // pins whatever base the daemon had when it was first built (CI served a
+      // day-old worker this way). Always run docker build — the layer cache
+      // makes an unchanged rebuild near-instant, and a refreshed base lands.
+      color.log(`Rebuilding generated image ${img.fullLocalName} against the current base...`);
+      result = buildAndPush() ?? await fallbackImage(img, host, devKey, registry, version, contentHash);
+    }
     else {
       // Look for registry-qualified image first, then unqualified
       let foundLocalName: string | null = null;
@@ -341,6 +377,17 @@ async function processDockerImages(
           color.log(`  Tagged as ${canonicalTag}`);
         }
         result = pushImage(img.imageName, registryTag, registry);
+        if (!result) {
+          const fallback = await fallbackImage(img, host, devKey, registry, version, contentHash);
+          if (fallback.serverError)
+            color.error(`Cannot resolve fallback: ${fallback.serverError}`);
+          else if (fallback.image)
+            color.warn(`Falling back to ${fallback.image}` +
+              `${fallback.hashMatch === false ? ' (hash mismatch — container will run older code)' : ''}`);
+          else
+            color.error(`No published image available for ${img.imageName}. No container will be available.`);
+          result = fallback;
+        }
       }
       else {
         color.warn(`Local image not found. Expected: ${img.fullLocalName}`);
@@ -358,21 +405,31 @@ async function processDockerImages(
           color.warn(`Dockerfile folder has changed. Rebuilding image...`);
           result = buildAndPush() ?? {image: fallback.image, fallback: true, requestedVersion: registryTag};
           if (!result || result.fallback)
-            color.warn(`Build failed. Falling back to ${fallback.image} (hash mismatch)`);
-        }
-        else if (skipDockerRebuild) {
-          color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
-          result = {image: null, fallback: true, requestedVersion: registryTag};
+            color.warn(`Could not publish a new image. Falling back to ${fallback.image} (hash mismatch)`);
         }
         else {
-          // No fallback and no local image — must build
-          color.warn(`No fallback available. Building ${img.fullLocalName}...`);
-          const built = buildAndPush();
-          if (built)
-            result = built;
-          else {
+          // The server has no compatible record, but the image may already be
+          // published in the configured registry / Docker Hub (e.g. pushed by an
+          // earlier CI run). Use it directly rather than failing or rebuilding.
+          const registryImage = resolveRegistryImage(img.imageName, registryTag, img.imageTag, registry);
+          if (registryImage) {
+            result = {image: registryImage, fallback: true, requestedVersion: registryTag};
+            color.success(`Falling back to registry image ${registryImage}`);
+          }
+          else if (skipDockerRebuild) {
+            color.warn(`No fallback available. Skipping docker build (--skip-docker-rebuild).`);
             result = {image: null, fallback: true, requestedVersion: registryTag};
-            color.error(`Failed to build ${img.fullLocalName}. No container will be available.`);
+          }
+          else {
+            // No fallback and no local image — must build
+            color.warn(`No fallback available. Building ${img.fullLocalName}...`);
+            const built = buildAndPush();
+            if (built)
+              result = built;
+            else {
+              result = {image: null, fallback: true, requestedVersion: registryTag};
+              color.error(`Failed to publish ${img.fullLocalName}. No container will be available.`);
+            }
           }
         }
       }
@@ -385,15 +442,20 @@ async function processDockerImages(
   }
 }
 
-function pushImage(imageName: string, tag: string, registry: string | undefined): DockerImageResult {
+// Returns null when the push failed. Never claim a tag that was not published: the server
+// records it as the container's image and the spawner then fails validation forever
+// ("not found in any registry") with no way back except another publish.
+// With no registry configured the local tag is all there is — dev stacks share the host
+// docker daemon and the spawner resolves local images, so that stays a warning.
+function pushImage(imageName: string, tag: string, registry: string | undefined): DockerImageResult | null {
   const canonicalImage = `datagrok/${imageName}:${tag}`;
   if (registry) {
     const remoteTag = `${registry}/${canonicalImage}`;
     // Image should already be tagged from build or retag step
     if (dockerPush(remoteTag))
       return {image: canonicalImage, fallback: false};
-    color.warn(`Push failed, image tagged locally only: ${remoteTag}`);
-    return {image: canonicalImage, fallback: false};
+    color.error(`${remoteTag} was not published — check \`docker login ${registry}\` and your developer key.`);
+    return null;
   }
   color.warn(`No registry configured. Image tagged locally only. Run \`grok config --registry\` to configure.`);
   return {image: canonicalImage, fallback: false};
@@ -433,9 +495,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     }
     if (debug)
       timestamps = checkData;
-  } catch (error) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${host}`);
+  } catch (error: any) {
+    color.error(utils.isConnectivityError(error) ? `Server is possibly offline: ${host}`
+      : `Failed to validate package on ${host}: ${error?.message ?? error}`);
     if (color.isVerbose())
       console.error(error);
     return 1;
@@ -444,6 +506,13 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   const zip = archiver('zip', {store: false});
   const chunks = [];
   zip.on('data', (chunk: any) => chunks.push(chunk));
+
+  // Generate Celery / Node-worker Docker artifacts BEFORE gathering files: the
+  // generated dockerfiles/<dir>/Dockerfile must land in the zip, or the server
+  // never binds the queue funcs to the client-built image and falls back to a
+  // differently-named server-side container that never starts
+  // (<pkg>-queue-celery vs the built <pkg>-queue).
+  const generatedDockerDirs = [...generateCeleryArtifacts(curDir), ...generateQueueArtifacts(curDir)];
 
   // Gather the files
   const localTimestamps: Indexable = {};
@@ -539,9 +608,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     return 1;
   }
 
-  // Generate Celery Docker artifacts from python/ if present
-  generateCeleryArtifacts(curDir);
-
   // Process Docker images and inject image.json into the ZIP
   let dockerVersion = json.version;
   if (debug) {
@@ -549,7 +615,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (userInfo)
       dockerVersion = userInfo.login;
   }
-  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false);
+  await processDockerImages(packageName, dockerVersion, registry, devKey, host, rebuildDocker ?? false, zip, localTimestamps, debug, skipDockerRebuild ?? false, generatedDockerDirs);
 
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
@@ -567,7 +633,6 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     });
     const log = JSON.parse(await body.text());
 
-    fs.unlinkSync('zip');
     if (log != undefined) {
       if (log['#type'] === 'ApiError') {
         color.error(log['message']);
@@ -580,9 +645,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         color.success(`✓ Published to ${hostAlias || new URL(host).hostname}`);
       }
     }
-  } catch (error) {
-    if (utils.isConnectivityError(error))
-      color.error(`Server is possibly offline: ${url}`);
+  } catch (error: any) {
+    color.error(utils.isConnectivityError(error) ? `Server is possibly offline: ${url}`
+      : `Publish failed: ${error?.message ?? error}`);
     if (color.isVerbose())
       console.error(error);
     return 1;

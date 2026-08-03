@@ -221,6 +221,8 @@ function buildSearchWidget(molecule: string, searchType: SearchType): DG.Widget 
 
 export class PackageFunctions {
   @grok.decorators.func({
+    'name': 'SureChEMBL Substructure Search',
+    'description': 'Searches SureCHEMBL patents for molecules containing the query structure as a substructure.',
     'meta': {
       'cache': 'all',
       'cache.invalidateOn': '0 0 * * *',
@@ -228,12 +230,14 @@ export class PackageFunctions {
   })
   static async sureChemblSubstructureSearch(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string,
-    @grok.decorators.param({'type': 'int'}) limit: number): Promise<DG.DataFrame | null> {
+    @grok.decorators.param({'type': 'int', 'options': {'description': 'Maximum number of matching molecules to return'}}) limit: number): Promise<DG.DataFrame | null> {
     return patentDataSearch(molecule, limit, SearchType.substructure);
   }
 
 
   @grok.decorators.func({
+    'name': 'SureChEMBL Similarity Search',
+    'description': 'Searches SureCHEMBL patents for molecules similar to the query structure.',
     'meta': {
       'cache': 'all',
       'cache.invalidateOn': '0 0 * * *',
@@ -241,8 +245,8 @@ export class PackageFunctions {
   })
   static async sureChemblSimilaritySearch(
     @grok.decorators.param({'options': {'semType': 'Molecule'}}) molecule: string,
-    @grok.decorators.param({'type': 'int'}) limit: number,
-      similarityThreshold?: number): Promise<DG.DataFrame | null> {
+    @grok.decorators.param({'type': 'int', 'options': {'description': 'Maximum number of matching molecules to return'}}) limit: number,
+    @grok.decorators.param({'options': {'description': 'Minimum Tanimoto similarity, 0-1 (default 0.6)'}}) similarityThreshold?: number): Promise<DG.DataFrame | null> {
     return patentDataSearch(molecule, limit, SearchType.similarity, similarityThreshold);
   }
 

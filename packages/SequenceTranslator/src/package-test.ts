@@ -12,12 +12,14 @@ import './tests/polytool-detectors-custom-notation-test';
 import './tests/polytool-convert-tests';
 import './tests/polytool-unrule-tests';
 import './tests/polytool-enumerate-tests';
+import './tests/polytool-enumerate-interaction-tests';
 import './tests/polytool-enumerate-breadth-tests';
 import './tests/polytool-enumerate-chem-tests';
 import './tests/polytool-chain-parse-notation-tests';
 import './tests/polytool-chain-from-notation-tests';
 import './tests/toAtomicLevel-tests';
 import './tests/oligo-renderer-tests';
+import './tests/oligo-linkers-tests';
 import './tests/oligo-cell-editor-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';

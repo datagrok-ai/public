@@ -1,7 +1,7 @@
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {WORKSPACE} from '../constants';
-import {invalidatePackageKnowledgeCache} from '../package-knowledge-tool';
+import {buildHelpIndex} from '../help-index';
 
 const exec = promisify(execFile);
 const SYNC_INTERVAL_MS = 30 * 60 * 1000;
@@ -48,13 +48,12 @@ async function syncWorkspace(): Promise<void> {
       return;
     }
 
-    const {stdout} = await exec('git', ['-C', WORKSPACE, 'diff', '--name-only', oldSha, newSha]);
-    const changed = stdout.split('\n');
-    if (changed.some((f) => /^packages\/[^/]+\/agents\/package-knowledge\.yaml$/.test(f))) {
-      invalidatePackageKnowledgeCache();
-      console.log('workspace: knowledge cache invalidated');
-    }
     console.log(`workspace: synced ${oldSha.slice(0, 7)} → ${newSha.slice(0, 7)}`);
+    try {
+      buildHelpIndex(WORKSPACE);
+    } catch (e: any) {
+      console.warn('help-index: rebuild failed:', e.message);
+    }
   } catch (e: any) {
     console.warn('workspace: sync failed:', e.message);
   } finally {

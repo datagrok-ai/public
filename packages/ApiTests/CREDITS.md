@@ -51,5 +51,5 @@ redistributed as part of the published ApiTests plugin and impose no
 obligation on users of the plugin.
 
 The `yargs` package is declared as an `optionalDependencies` entry; it is
-used by the Node-based offline test runner (`tsconfig.node.json` build), not
+used by the Node-based offline test runner (`start-node`/`stress-node`), not
 by the webpack bundle.

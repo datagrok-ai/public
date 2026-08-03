@@ -3,7 +3,7 @@ FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
 SHELL ["/bin/bash","-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt update && \
+RUN apt update && apt upgrade -y && \
     apt install -y --no-install-recommends \
         curl bzip2 ca-certificates ; \
      apt clean
@@ -41,8 +41,14 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba remove -n base awscli -y && \
     micromamba clean -afy
 
+# Create env, then drop padelpy's bundled PaDEL-Descriptor Java tool
+# (cdk-1.4.15.jar embeds log4j 1.2.15, plus guava-17.0.jar) — pulled via
+# chemprop -> astartes[molecules] -> aimsim -> padelpy, unused at inference.
+# Verify at smoke time: micromamba run -n myenv python -c "import padelpy, chemprop".
 RUN set -ex ; \
     micromamba env create -f environment.yml -y ; \
+    micromamba run -n myenv pip install --no-cache-dir --upgrade pip setuptools wheel ; \
+    rm -rf $MAMBA_ROOT_PREFIX/envs/myenv/lib/python*/site-packages/padelpy/PaDEL-Descriptor ; \
     micromamba clean -afy
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app

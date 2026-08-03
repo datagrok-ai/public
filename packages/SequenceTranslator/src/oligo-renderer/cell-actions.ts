@@ -108,6 +108,7 @@ export async function openOligoHelmEditorDialog(value: DG.SemanticValue): Promis
   // semType=OligoNucleotide, so we drive the HELM Web Editor directly.
   const helmHelper = await getHelmHelper();
   const view = ui.div();
+  view.style.height = '100%';
   const app = helmHelper.createWebEditorApp(view, String(cell.value ?? ''));
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
