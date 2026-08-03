@@ -19,7 +19,9 @@ import {DomainAppView} from '@datagrok-libraries/domain-ui';
 //meta.role: app
 //input: string path {meta.url: true; optional: true}
 //output: view result
-export function domainItemsApp(): DG.ViewBase {
+export function domainItemsApp(_path?: string): DG.ViewBase {
+  // The declared `path` input is what makes the app URL-addressable; the view
+  // reads the deep link itself (restoreFromUrl), so the parameter is unused.
   return new DomainAppView(grok.dapi.domains.table('apitests.item'));
 }
 

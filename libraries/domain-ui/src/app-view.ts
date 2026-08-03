@@ -9,10 +9,15 @@
  * //meta.role: app
  * //input: string path {meta.url: true; optional: true}
  * //output: view result
- * export function issuesApp(): DG.ViewBase {
+ * export function issuesApp(_path?: string): DG.ViewBase {
  *   return new DomainAppView(grok.dapi.domains.table('grit.issue'));
  * }
  * ```
+ *
+ * The declared `path` input is what makes the app URL-addressable; the view reads
+ * the deep link itself (`restoreFromUrl`), so the parameter stays unused — but a
+ * function whose signature does not match its annotation is a `grok check`
+ * finding waiting to happen.
  *
  * Routing rides the platform's own `#app` + `meta.url` convention: no new
  * registration mechanism, no router. The page publishes its state as URL
@@ -28,8 +33,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {DomainFrameEditor} from './frame-editor';
 import {DomainGrid} from './domain-grid';
-import {EntityListWidget, EntityListMode, EntityListOptions} from './entity-list';
-import {domainHandler} from './handler';
+import {EntityListWidget, EntityListMode, EntityListOptions,
+  ENTITY_LIST_ROW_CAP} from './entity-list';
+import {actionChangesRow, domainHandler, isDeleteAction} from './handler';
 import {confirmDiscardChanges} from './unsaved';
 import {applyDomainUiStyles} from './styles';
 
@@ -68,6 +74,9 @@ export class AppView extends DG.ViewBase {
   private readonly _statusButtons: HTMLElement;
   private readonly _tracked: DomainFrameEditor[] = [];
   private _editorSubs: {unsubscribe(): void}[] = [];
+  /** The prompt currently up, if any — see {@link confirmDiscard}. */
+  private _prompting: Promise<boolean> | null = null;
+  private _beforeUnload: ((e: BeforeUnloadEvent) => any) | null = null;
 
   constructor(options?: AppViewOptions) {
     super(null, '', true);
@@ -86,6 +95,8 @@ export class AppView extends DG.ViewBase {
     this.syncStatusBar();
   }
 
+  /** Distinct per page kind: the platform keys saved layouts and view lookups on
+   * it, and a row page is not a list page. */
   get type(): string { return 'domain-app'; }
 
   /** Every editor whose pending changes this page answers for. Subclasses widen
@@ -109,9 +120,26 @@ export class AppView extends DG.ViewBase {
    * caller may proceed; see {@link confirmDiscardChanges} for the outcomes
    * (including the mid-save refusal: an editor is closed while its transaction
    * is in flight, so nothing is prompted and nothing proceeds).
+   *
+   * Re-entrant by design: two gestures racing each other (a double-clicked Back,
+   * a Back landing on top of a search) must ask ONCE and both act on the same
+   * answer — a second dialog would offer a save of a batch the first one has
+   * already discarded.
    */
   confirmDiscard(action: string = 'continue'): Promise<boolean> {
-    return confirmDiscardChanges(this.editors, {action: action, subject: this.name});
+    if (this._prompting != null)
+      return this._prompting;
+    const done = () => this._prompting = null;
+    const prompting = confirmDiscardChanges(this.editors, {action: action, subject: this.name})
+      .then((proceed) => {
+        done();
+        return proceed;
+      }, (e) => {
+        done();
+        throw e;
+      });
+    this._prompting = prompting;
+    return prompting;
   }
 
   /** Saves every pending batch (one transaction each). */
@@ -154,6 +182,30 @@ export class AppView extends DG.ViewBase {
     ui.setDisplay(this._statusButtons, !saving);
     this._statusText.textContent = saving ? 'Saving...'
       : `${changes} unsaved change${changes === 1 ? '' : 's'}`;
+    this._syncBeforeUnload(changes > 0);
+  }
+
+  /** Closing the tab, reloading the page and following a link OUT of the client
+   * never reach {@link confirmDiscard} — the browser owns that gesture, and the
+   * only thing it takes is a `beforeunload` handler while something is pending.
+   * Registered exactly while the page is dirty (an always-on one makes every
+   * reload of a clean page ask). */
+  private _syncBeforeUnload(dirty: boolean): void {
+    if (typeof window === 'undefined')
+      return;
+    if (dirty && this._beforeUnload == null) {
+      this._beforeUnload = (e: BeforeUnloadEvent) => {
+        // The wording is the browser's own — the text a page supplies is ignored.
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      };
+      window.addEventListener('beforeunload', this._beforeUnload);
+    }
+    else if (!dirty && this._beforeUnload != null) {
+      window.removeEventListener('beforeunload', this._beforeUnload);
+      this._beforeUnload = null;
+    }
   }
 
   // ─────────────────────── routing ─────────────────────────
@@ -201,13 +253,16 @@ export class AppView extends DG.ViewBase {
     for (const sub of this._editorSubs)
       sub.unsubscribe();
     this._editorSubs = [];
+    this._syncBeforeUnload(false);
     super.detach();
   }
 }
 
 
-/** Options of {@link DomainAppView} — the list options plus the view's own. */
-export interface DomainAppViewOptions extends AppViewOptions, EntityListOptions {
+/** Options of {@link DomainAppView} — the list options plus the view's own.
+ * `confirmDiscard` is NOT among them: the page IS the gate, and it passes its own
+ * to the list so one prompt covers every editor on the page. */
+export interface DomainAppViewOptions extends AppViewOptions, Omit<EntityListOptions, 'confirmDiscard'> {
   /** What opening an item does (default: the table's {@link DomainEntityAppView},
    * kept inside the app). */
   onOpen?: (row: DG.DomainRow) => void;
@@ -241,6 +296,9 @@ export class DomainAppView extends AppView {
   private readonly _host = ui.box();
   private _query: DG.DomainQuery;
   private _listSub: {unsubscribe(): void} | null = null;
+  /** Two loads can overlap (a Back landing on a slow one): the newest wins and
+   * the older one drops whatever it built. */
+  private _loading = 0;
 
   constructor(client: DG.DomainTableClient, options?: DomainAppViewOptions) {
     super(options);
@@ -250,7 +308,7 @@ export class DomainAppView extends AppView {
     this.name = options?.name ?? this.client.table;
     this.box = true;
     this.root.appendChild(this._host);
-    this._query = new DG.DomainQuery({schema: client.schema, table: client.table});
+    this._query = this._seedQuery();
     this._host.appendChild(ui.divText('Loading...'));
     this.load();
   }
@@ -268,20 +326,41 @@ export class DomainAppView extends AppView {
     return super.editors.concat(this.list?.editors ?? []);
   }
 
-  /** Builds (or rebuilds) the page from the URL. */
+  /**
+   * Builds (or rebuilds) the page from the URL.
+   *
+   * NOTHING here happens behind the unsaved-changes gate: building the new list
+   * runs it, and a CANCEL leaves the page exactly as it was — the current (dirty)
+   * list stays mounted, its batch untouched, and the URL is republished from what
+   * is actually on screen, because a browser Back has already changed it.
+   */
   async load(): Promise<void> {
+    const generation = ++this._loading;
     const params = this.urlParams();
-    this._query = this._queryFromParams(params);
+    // Applied only once the load has committed: a refused one must not leave the
+    // page reporting a query it does not show.
+    const query = this._queryFromParams(params);
     const entity = params[ENTITY_PARAM];
     try {
       const list = await EntityListWidget.create(this.client, Object.assign({}, this.options, {
-        query: this._spec(this._query),
+        query: this._spec(query),
         mode: this._modeFromParams(params),
         // ONE gate for the whole page: the list's own rebuilds (search, mode,
         // query) prompt for every editor the page owns, not just its grid's.
         confirmDiscard: () => this.confirmDiscard('reload the list'),
         onOpen: (row: DG.DomainRow) => this.open(row),
       }));
+      if (generation !== this._loading) {
+        list?.detach();
+        return;
+      }
+      // Refused: keep everything — the list, its pending batch, and the URL of
+      // the state the user chose to stay in.
+      if (list == null) {
+        this.syncUrl();
+        return;
+      }
+      this._query = query;
       this.list?.detach();
       this.list = list;
       this.name = this.options.name ?? list.info.pluralName;
@@ -302,6 +381,8 @@ export class DomainAppView extends AppView {
       if (entity != null && entity !== '')
         this.open(entity);
     } catch (e: any) {
+      if (generation !== this._loading)
+        return;
       this._host.innerHTML = '';
       this._host.appendChild(ui.divText(`Cannot open ${this.table}: ${e?.message ?? e}`));
       grok.shell.error(`${this.table}: ${e?.message ?? e}`);
@@ -389,13 +470,44 @@ export class DomainAppView extends AppView {
     super.detach();
   }
 
+  /** The page's query for the URL it was opened with: the deep link when it
+   * carries one, `options.query` otherwise — so `new DomainAppView(client,
+   * {query})` (the "my campaigns" page) lists what it was asked for, while a
+   * pasted link still wins over the default. */
   private _queryFromParams(params: {[key: string]: string}): DG.DomainQuery {
+    let query: DG.DomainQuery;
     try {
-      return DG.DomainQuery.fromUrlParams(this.client.schema, this.client.table, params);
+      query = DG.DomainQuery.fromUrlParams(this.client.schema, this.client.table, params);
     } catch (e: any) {
       grok.shell.warning(`Ignoring the URL query: ${e?.message ?? e}`);
-      return new DG.DomainQuery({schema: this.client.schema, table: this.client.table});
+      return this._seedQuery();
     }
+    return Object.keys(query.toUrlParams()).length === 0 ? this._seedQuery() : query;
+  }
+
+  /** `options.query` as a {@link DG.DomainQuery} — the inverse of
+   * {@link DG.DomainQuery.toSpec}, so the seeded page publishes the URL a deep
+   * link would restore it from. */
+  private _seedQuery(): DG.DomainQuery {
+    const query = new DG.DomainQuery({schema: this.client.schema, table: this.client.table});
+    const spec = this.options?.query;
+    if (spec == null)
+      return query;
+    if (spec.filter != null)
+      // A grammar string travels as itself; a condition node or tree as the
+      // per-element JSON escape hatch `toSpec()` decodes back.
+      query.filters = [typeof spec.filter === 'string' ? spec.filter : JSON.stringify(spec.filter)];
+    if (spec.sort != null && spec.sort !== '')
+      query.orderBy = `${spec.sort}`.split(',');
+    if (spec.columns != null)
+      query.columns = spec.columns.slice();
+    if (spec.expand != null)
+      query.joins = spec.expand.slice();
+    if (spec.limit != null)
+      query.limit = spec.limit;
+    if (spec.offset != null)
+      query.offset = spec.offset;
+    return query;
   }
 
   private _modeFromParams(params: {[key: string]: string}): EntityListMode | undefined {
@@ -474,6 +586,8 @@ export class DomainEntityAppView extends AppView {
     return view;
   }
 
+  get type(): string { return 'domain-entity-app'; }
+
   get table(): string { return `${this.client.schema}.${this.client.table}`; }
 
   /** Effective capabilities of the current user on the row's table (null until
@@ -517,10 +631,19 @@ export class DomainEntityAppView extends AppView {
     const row = this.row;
     if (row == null)
       return;
-    const icons: HTMLElement[] = [ui.iconFA('arrow-left', () => this.close(), 'Back')];
+    const icons: HTMLElement[] = [ui.iconFA('arrow-left', () => this.back(), 'Back')];
     for (const action of await this.handler.getRibbonActions(row as any))
       icons.push(ui.iconFA(action.icon ?? 'bolt', () => this._run(action), action.name));
     this.setRibbonPanels([icons]);
+  }
+
+  /** Leaves the page — through the gate, because closing it drops every detail
+   * grid and `detach()` cannot ask anything. Resolves to whether it closed. */
+  async back(): Promise<boolean> {
+    if (!(await this.confirmDiscard('leave this page')))
+      return false;
+    this.close();
+    return true;
   }
 
   /** Re-reads the row from the server and rebuilds the page. Prompts first when
@@ -550,7 +673,11 @@ export class DomainEntityAppView extends AppView {
       grok.shell.info('No changes to save');
       return false;
     }
-    return await this._update(changes, row.version);
+    // `_loaded` — not the row — is what the page knows about the server, and a
+    // successful save keeps it current even when the reload behind it is
+    // cancelled.
+    const version = this._loaded['version'];
+    return await this._update(changes, typeof version === 'number' ? version : row.version);
   }
 
   detach(): void {
@@ -562,8 +689,15 @@ export class DomainEntityAppView extends AppView {
 
   private async _update(changes: {[key: string]: any}, version?: number): Promise<boolean> {
     try {
-      await this.client.update(this._id, changes as any,
+      const result = await this.client.update(this._id, changes as any,
         version == null ? undefined : {version: version});
+      // What the server now holds, from its own answer: the reload below goes
+      // through the gate and may be CANCELLED, and a page left claiming the
+      // pre-save values would re-send them against a stale version — a phantom
+      // conflict on the next Save.
+      Object.assign(this._loaded, changes);
+      if (result?.version != null)
+        this._loaded['version'] = result.version;
       grok.shell.info('Saved');
       // Through the gate: rebuilding the page rebuilds the detail grids, whose
       // pending edits are none of this save's business.
@@ -589,8 +723,11 @@ export class DomainEntityAppView extends AppView {
     const row = this.row!;
     const tabs = ui.tabControl();
     tabs.addPane('Details', () => ui.wait(async () => await this._detailsPane()));
+    // waitBox, not wait: a canvas grid has no intrinsic size, so its host has to
+    // BE a sized box — inside a plain div it renders at the viewer's default
+    // 400x300 whatever the pane's width.
     for (const tab of await this.handler.getDetailTabs(row as any))
-      tabs.addPane(tab.name, () => ui.wait(async () => await this._detailPane(tab)));
+      tabs.addPane(tab.name, () => ui.waitBox(async () => await this._detailPane(tab)));
     if (info.audit)
       tabs.addPane('History', () => DG.DomainObjectHandler.auditPane(row));
     return tabs.root;
@@ -613,27 +750,53 @@ export class DomainEntityAppView extends AppView {
    * prefilled with the foreign key, saving its own transaction. */
   private async _detailPane(tab: DG.DomainDetailTab): Promise<HTMLElement> {
     const client = grok.dapi.domains.table(tab.table);
-    const grid = await DomainGrid.create(client, {
-      query: {filter: tab.filter},
-      editable: this.options.editableDetails ?? true,
-      defaults: {[tab.fkColumn]: this.row?.id},
-    });
+    // An explicit cap, the list's own: without one the server applies its default
+    // page size (100) and the pane quietly shows a fraction of the children.
+    const [grid, total] = await Promise.all([
+      DomainGrid.create(client, {
+        query: {filter: tab.filter, limit: ENTITY_LIST_ROW_CAP},
+        editable: this.options.editableDetails ?? true,
+        defaults: {[tab.fkColumn]: this.row?.id},
+      }),
+      client.count(tab.filter).catch(() => null),
+    ]);
     this._details.push(grid);
     this.rebindEditors();
-    return grid.root;
+    const shown = grid.dataFrame.rowCount;
+    if (total == null || total <= shown)
+      return ui.box(grid.root);
+    // Same words as the list's banner — the same situation.
+    return ui.divV([
+      ui.divText(`Showing the first ${shown} of ${total} rows — refine the filter to ` +
+        'narrow the results.', 'grok-domains-cap-banner'),
+      ui.box(grid.root),
+    ]);
   }
 
   private async _run(action: DG.DomainAction): Promise<void> {
     const result = await action.run();
     // Delete closes the page (the row it shows is gone); everything else may
     // have changed the row, so the page re-reads it.
-    if (action.name === 'Delete') {
+    if (isDeleteAction(action)) {
       if (result !== false)
-        this.close();
+        this._closeDeleted();
       return;
     }
-    if (action.name !== 'Copy link' && action.name !== 'Open' && action.name !== 'History')
+    if (actionChangesRow(action))
       await this.reload();
+  }
+
+  /** The row is gone: its child rows went with it, so their pending edits can
+   * never be saved. They are dropped EXPLICITLY, and said out loud — letting
+   * `detach()` swallow them is exactly the silence the gate exists to prevent. */
+  private _closeDeleted(): void {
+    const changes = this.editors.reduce((n, e) => n + (e.isDirty ? e.changeCount : 0), 0);
+    if (changes > 0) {
+      this.discardAll();
+      grok.shell.warning(
+        `Discarded ${changes} unsaved change${changes === 1 ? '' : 's'} — the row was deleted.`);
+    }
+    this.close();
   }
 
   private _detachDetails(): void {

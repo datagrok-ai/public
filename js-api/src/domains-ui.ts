@@ -26,6 +26,17 @@ import {toDart, toJs} from './wrappers';
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
+/** Whether [x] is a plain values map — the shape ONE row of a `query()` result
+ * has. A string, an array or a wrapped platform object would be read key by key
+ * into nonsense values (`'abc'` becomes `{0: 'a', 1: 'b', 2: 'c'}`) instead of
+ * failing, so {@link DomainObjectHandler.rowFrom} rejects them. */
+function _isValuesMap(x: any): boolean {
+  if (x == null || typeof x !== 'object' || Array.isArray(x))
+    return false;
+  const proto = Object.getPrototypeOf(x);
+  return proto === null || proto === Object.prototype;
+}
+
 /** One FK-inverted child ("detail") table of a domain row — what the built-in
  * Entity View shows as a child tab (see {@link DomainObjectHandler.getDetailTabs}). */
 export interface DomainDetailTab {
@@ -198,8 +209,14 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * card or a context panel uses to render, address and act on rows it already
    * fetched ({@link getById} is the one that asks the server). Identity
    * (`displayName`, `semValue`, deep links) resolves from the registry, so a row
-   * fetched without its business-key columns addresses itself by id. */
+   * fetched without its business-key columns addresses itself by id. Anything
+   * but a plain values map (or null, for a new row) is REJECTED by name: read
+   * key by key, a string or an array produces a row of nonsense values that only
+   * shows up much later, as a card with no identity. */
   rowFrom(values: {[key: string]: any} | null): DomainRow {
+    if (values != null && !_isValuesMap(values))
+      throw new Error(`${this.table}: rowFrom() takes one row of a query() result, not ` +
+        DomainObjectHandler._describe(values));
     return toJs(api.grok_DomainRow_Create(this.schemaName, this.tableName, values));
   }
 

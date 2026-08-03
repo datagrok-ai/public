@@ -168,7 +168,9 @@ export class DomainGrid {
    *
    * Which is not a one-liner, because `forEntity` resolves plenty of handlers
    * that must NOT be decorated through. It applies the collapse rule of the
-   * built-in Domain View (`DomainView.refreshGrid`), member for member:
+   * built-in Domain View (`DomainView.refreshGrid`) branch for branch — with the
+   * Dart one widened, since the Dart rule names `DomainRowMeta` while every Dart
+   * meta reaches JS as one wrapping proxy:
    * - a DART meta collapses — the resolved proxy may be the inert GENERIC
    *   `'DomainRow'` fallback (no per-table meta registered, e.g. a session with
    *   domain databases not enabled), whose `renderGrid` early-returns into a raw

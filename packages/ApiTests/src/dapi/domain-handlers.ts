@@ -523,6 +523,26 @@ category('JS: domain handlers', () => {
       ctor = e;
     }
     expect(ctor instanceof Error, true, 'a malformed address must throw at construction');
+
+    // rowFrom takes ONE row of a query() result. Anything else is read key by
+    // key into a row of nonsense values that only surfaces much later, as a card
+    // with no identity — so it is rejected by name, right where it was passed.
+    const handler = new DG.DomainObjectHandler('apitests.item');
+    for (const garbage of ['garbage', 42, [{id: 1}], new Date()] as any[]) {
+      let rejected: any = null;
+      try {
+        handler.rowFrom(garbage);
+      } catch (e) {
+        rejected = e;
+      }
+      expect(rejected instanceof Error, true, `rowFrom accepted ${JSON.stringify(garbage)}`);
+      expect(`${rejected?.message}`.includes('apitests.item'), true,
+        `the rejection does not name the table: ${rejected?.message}`);
+    }
+    // The legal shapes still pass: a values map, and null (a new row).
+    expect(handler.rowFrom({sku: 'x'}).values['sku'], 'x', 'a values map was rejected');
+    expect(handler.newRow().id == null, true, 'newRow() stopped working');
+
     const unknown = new DG.DomainObjectHandler('apitests.nosuch');
     for (const [member, action] of [['getProperties', () => unknown.getProperties()],
       ['capabilities', () => unknown.capabilities()]] as [string, () => Promise<any>][]) {

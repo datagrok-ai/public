@@ -46,7 +46,12 @@ export function promptUnsavedChanges(editors: DomainFrameEditor[],
     // notification arriving after a decision) must repeat the first answer, not
     // overwrite it.
     let decided = false;
+    let closed: {unsubscribe(): void} | null = null;
     const decide = (outcome: UnsavedOutcome) => {
+      // The onClose subscription outlives the dialog otherwise: its subject is
+      // the platform's, not this promise's.
+      closed?.unsubscribe();
+      closed = null;
       if (!decided) {
         decided = true;
         resolve(outcome);
@@ -70,7 +75,7 @@ export function promptUnsavedChanges(editors: DomainFrameEditor[],
     dlg.onCancel(() => decide('cancel'));
     // A dismissal (the X, Esc, a programmatic close) is a cancel — and `onClose`
     // fires for the decided paths too, where the guard keeps the first answer.
-    dlg.onClose.subscribe(() => decide('cancel'));
+    closed = dlg.onClose.subscribe(() => decide('cancel'));
     dlg.show();
   });
 }

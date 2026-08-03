@@ -476,8 +476,12 @@ export class DomainFrameEditor {
 
   /** Re-runs every cell validator over the pending batch; returns the number of
    * blocking (`kind: 'error'`) cells. Call it before offering Save when values
-   * arrived from outside {@link setValue}. */
+   * arrived from outside {@link setValue}. Refused (reporting the CURRENT count)
+   * while a {@link save} is in flight — it writes the state columns like every
+   * other mutator. */
   validate(): number {
+    if (this._busy('validating'))
+      return this.errorCount;
     for (let row = 0; row < this._df.rowCount; row++)
       if (this.stateOf(row) !== '')
         this._validateRow(row);
@@ -591,7 +595,9 @@ export class DomainFrameEditor {
    *
    * Resolves to the NEW frame, which also arrives on {@link onRefreshed}: a grid
    * bound to the old one must rebind. Refused (resolving to the CURRENT frame,
-   * with a warning) while a {@link save} is in flight.
+   * with a warning) while a {@link save} is in flight — the resolved value alone
+   * does not tell a refusal from a rebuild, so check {@link isSaving} first (or
+   * compare the frame identity) when it matters.
    */
   async refresh(query?: DG.DomainQuerySpec): Promise<DG.DataFrame> {
     if (this._busy('refreshing'))
@@ -632,6 +638,12 @@ export class DomainFrameEditor {
     // refresh() produces (a subscriber that saw `true` would stay stale forever).
     this._resetCaches();
     this._subs.push(df.onRowsFiltering.subscribe(() => this._maskDeleted()));
+    // The per-row caches are keyed by ROW INDEX, so anything that adds or removes
+    // rows invalidates every index below it. The editor's own removals pass
+    // `notify: false` and reset the caches themselves; these two cover the frame's
+    // OTHER consumers (a grid's Remove-rows command, a co-owner of the frame).
+    this._subs.push(df.onRowsRemoved.subscribe(() => this._resetCaches()));
+    this._subs.push(df.onRowsAdded.subscribe(() => this._resetCaches()));
     df.rows.requestFilter();
   }
 
@@ -734,7 +746,7 @@ export class DomainFrameEditor {
   }
 
   private _track(row: number, column: string, original: any): void {
-    const message = this._cellProblem(row, column);
+    const invalid = this._invalidValue(row, column);
     if (this.stateOf(row) !== 'new') {
       const changes = this.changesOf(row);
       if (!(column in changes)) {
@@ -744,24 +756,46 @@ export class DomainFrameEditor {
       // Back to the original AND valid: the cell is clean again (an invalid cell
       // stays pending so its marker survives) — the platform's own semantics.
       if (column in changes && !_isUnknown(changes[column]) &&
-          message == null && wireEquals(changes[column], this._wire(row, column)))
+          invalid == null && wireEquals(changes[column], this._wire(row, column)))
         delete changes[column];
       this._setJson(CHANGES_COLUMN, row, changes);
     }
+    // Read after the bookkeeping: whether the value would be DROPPED depends on
+    // the change entry this call has just recorded (or removed).
+    const message = this._droppedValue(row, column) ?? invalid;
     this._setError(row, column, message == null ? null : {message: message, kind: 'error'});
     this._recomputeState(row);
     this._fire();
   }
 
-  /** Why the cell cannot be saved as it stands: the registry constraints, plus
-   * column security. A change to a column the user may not write would be
-   * dropped from the payload by {@link buildOps} and leave the row pending after
-   * a "successful" save — marking it blocks the save instead, loudly. */
+  /** Why the cell cannot be saved as it stands: column security first, then the
+   * registry constraints. */
   private _cellProblem(row: number, column: string): string | null {
-    if (this.stateOf(row) !== 'new' && !this.capabilities.writableColumns.includes(column))
-      return `Column '${column}' is read-only`;
+    return this._droppedValue(row, column) ?? this._invalidValue(row, column);
+  }
+
+  /** The cell against its registry {@link DG.Property} alone. */
+  private _invalidValue(row: number, column: string): string | null {
     const property = this._propByName.get(column);
     return property == null ? null : validateCellValue(property, this._df.get(column, row));
+  }
+
+  /**
+   * Whether the cell holds a pending value {@link buildOps} would DROP.
+   *
+   * It sends writable columns ONLY — for a modified row it drops the change, for
+   * a NEW row it drops the value (a prefilled parent FK on a column the caller
+   * cannot write included, which would insert a child row with a null FK).
+   * Either way the value would vanish without a word, so the cell is marked
+   * instead and the save refuses loudly. Untouched cells are not a problem:
+   * nothing of theirs would be dropped.
+   */
+  private _droppedValue(row: number, column: string): string | null {
+    if (this.capabilities.writableColumns.includes(column))
+      return null;
+    const pending = this.stateOf(row) === 'new'
+      ? this._wire(row, column) != null : column in this.changesOf(row);
+    return pending ? `Column '${column}' is read-only` : null;
   }
 
   private _setError(row: number, column: string, error: DomainCellError | null): void {
@@ -777,7 +811,10 @@ export class DomainFrameEditor {
     for (const p of this._properties) {
       if (!this._df.columns.contains(p.name))
         continue;
-      const message = validateCellValue(p, this._df.get(p.name, row));
+      // The same predicate the per-cell path uses, so a prefilled value on a
+      // non-writable column is marked here too (and stays marked: a re-validation
+      // never clears a problem the cell still has).
+      const message = this._cellProblem(row, p.name);
       const existing = this.errorOf(row, p.name);
       if (message != null)
         this._setError(row, p.name, {message: message, kind: 'error'});

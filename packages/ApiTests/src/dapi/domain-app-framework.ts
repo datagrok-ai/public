@@ -3,8 +3,8 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test, awaitCheck} from '@datagrok-libraries/test/src/test';
-import {DomainAppView, DomainEntityAppView, EntityListWidget, ENTITY_LIST_ROW_CAP,
-  confirmDiscardChanges, domainHandler} from '@datagrok-libraries/domain-ui';
+import {DomainAppView, DomainEntityAppView, DomainFrameEditor, EntityListWidget,
+  ENTITY_LIST_ROW_CAP, confirmDiscardChanges, domainHandler} from '@datagrok-libraries/domain-ui';
 import {withRestrictedUser} from './domain-lifecycle';
 
 // ui-js-api WO-9: the app framework — EntityListWidget (the "list of entities"
@@ -40,6 +40,16 @@ category('Dapi: domain app framework', () => {
   const query = (prefix: string): any =>
     ({filter: {property: 'sku', operator: 'like', value: `${prefix}%`}, sort: 'sku'});
 
+  /** A list over the fixture table. `create` resolves NULL when the first load
+   * was refused by the unsaved-changes gate — which cannot happen for a fresh
+   * list with no gate of its own, so it is a failure here, not a branch. */
+  async function listOf(options: any): Promise<EntityListWidget> {
+    const list = await EntityListWidget.create(items() as any, options);
+    if (list == null)
+      throw new Error('EntityListWidget.create was refused by the unsaved-changes gate');
+    return list;
+  }
+
   /** Buttons of a widget, by their caption. */
   const buttons = (root: HTMLElement): string[] =>
     Array.from(root.querySelectorAll('button')).map((b) => `${b.textContent}`.trim());
@@ -56,7 +66,7 @@ category('Dapi: domain app framework', () => {
     await seed(prefix, 3);
     let list: EntityListWidget | null = null;
     try {
-      list = await EntityListWidget.create(items() as any, {query: query(prefix)});
+      list = await listOf({query: query(prefix)});
       expect(list.rows.length, 3, 'the list did not show the fixture rows');
       // Rendering goes through the platform: one gallery card per row, carrying
       // the row's own identity.
@@ -99,7 +109,7 @@ category('Dapi: domain app framework', () => {
     await seed(prefix, 2);
     let list: EntityListWidget | null = null;
     try {
-      list = await EntityListWidget.create(items() as any, {query: query(prefix), editable: true});
+      list = await listOf({query: query(prefix), editable: true});
       expect(list.mode, 'cards', 'the default mode is not cards');
       expect(list.grid, null, 'a card list must not build a grid');
 
@@ -231,18 +241,102 @@ category('Dapi: domain app framework', () => {
     return null;
   }
 
+  test('DomainAppView: options.query seeds the page, and a CANCEL leaves it untouched',
+    async () => {
+      const prefix = `wo9-gate-${stamp()}`;
+      await seed(prefix, 2);
+      let view: DomainAppView | null = null;
+      try {
+        // Seeded from the options, not the URL — the "my campaigns" page. The
+        // seed also reaches the URL, so the deep link reopens the same page.
+        view = new DomainAppView(items() as any, {query: query(prefix), mode: 'grid'});
+        await awaitCheck(() => view!.list != null, 'the app view never loaded its list', 20000);
+        expect(view.list!.rows.length + view.list!.grid!.dataFrame.rowCount, 2,
+          'options.query was ignored — the page listed the whole table');
+        expect((view.query.filters ?? []).length, 1, 'the seeded query never became the page query');
+        expect(`${view.path}`.includes('filters'), true,
+          `the seeded query was not published: ${view.path}`);
+
+        const list = view.list!;
+        const editor = list.grid!.editor;
+        editor.setValue(0, 'name', 'Pending across the rebuild');
+        expect(view.isDirty, true, 'the page does not see its list as dirty');
+
+        // What a browser BACK does: the page reloads itself from the URL. A
+        // CANCEL must leave EVERYTHING — the list, its editor, the batch.
+        const reloading = view.load();
+        (await prompt()).getButton('CANCEL').click();
+        await reloading;
+        expect(view.list === list, true, 'a cancelled prompt rebuilt the list anyway');
+        expect(view.list!.grid!.editor === editor, true, 'the editor was replaced behind the cancel');
+        expect(editor.isDirty, true, 'a cancelled prompt dropped the pending batch');
+        expect(editor.changeCount, 1, 'a cancelled prompt changed the pending batch');
+        expect(editor.dataFrame.get('name', 0), 'Pending across the rebuild',
+          'the cancelled rebuild reverted the edited cell');
+
+        // Two gestures racing (a double-clicked Back) ask ONCE: a second dialog
+        // would offer to save a batch the first answer has already discarded.
+        const first = view.confirmDiscard('leave');
+        const second = view.confirmDiscard('leave');
+        const open = await prompt();
+        expect(DG.Dialog.getOpenDialogs().filter((d) => `${d.title}` === 'Unsaved changes').length, 1,
+          'two concurrent gestures opened two prompts');
+        open.getButton('DISCARD').click();
+        expect(await first, true, 'the first gesture was refused');
+        expect(await second, true, 'the second gesture got a different answer');
+        expect(editor.isDirty, false, 'DISCARD left the batch pending');
+      } finally {
+        DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+        view?.detach();
+        await cleanup(prefix);
+      }
+    });
+
+  test('DomainEntityAppView: Back is gated on the pending changes of the page', async () => {
+    const prefix = `wo9-back-${stamp()}`;
+    const ids = await seed(prefix, 1);
+    let view: DomainEntityAppView | null = null;
+    let editor: DomainFrameEditor | null = null;
+    try {
+      view = new DomainEntityAppView(items() as any, ids[0]);
+      await awaitCheck(() => view!.row != null, 'the entity page never loaded its row', 20000);
+      // A dirty editor of the page — what a detail grid is once the user types
+      // into it (the page answers for every editor it tracks, wherever it lives).
+      editor = await DomainFrameEditor.create(items() as any, {query: query(prefix)});
+      view.track(editor);
+      editor.setValue(0, 'name', 'Pending on the entity page');
+      expect(view.isDirty, true, 'the page does not answer for the editor it tracks');
+
+      // Back prompts, and a CANCEL keeps the page open with its changes.
+      const leaving = view.back();
+      (await prompt()).getButton('CANCEL').click();
+      expect(await leaving, false, 'a cancelled Back left the page anyway');
+      expect(editor.isDirty, true, 'a cancelled Back dropped the pending changes');
+
+      // DISCARD lets it go.
+      const leavingAgain = view.back();
+      (await prompt()).getButton('DISCARD').click();
+      expect(await leavingAgain, true, 'Back never left after a DISCARD');
+      expect(editor.isDirty, false, 'DISCARD left the changes pending');
+    } finally {
+      DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+      editor?.detach();
+      view?.detach();
+      await cleanup(prefix);
+    }
+  });
+
   test('unsaved changes: the navigation prompt cancels, discards, or saves', async () => {
     const prefix = `wo9-dirty-${stamp()}`;
     await seed(prefix, 2);
     let list: EntityListWidget | null = null;
     try {
-      list = await EntityListWidget.create(items() as any,
-        {query: query(prefix), mode: 'grid', editable: true});
+      list = await listOf({query: query(prefix), mode: 'grid', editable: true});
       const editor = list.grid!.editor;
-      if (!editor.capabilities.canEdit) {
-        console.log('skipped: the fixture table is not editable for this caller');
-        return;
-      }
+      // Not a branch: the package OWNS apitests.item, so a caller who cannot edit
+      // it is a broken fixture, not a reason to report a green run that asserted
+      // nothing.
+      expect(editor.capabilities.canEdit, true, 'the fixture table is not editable for this caller');
 
       // CANCEL — the rebuild does not happen and the changes survive.
       editor.setValue(0, 'name', 'Pending 1');
@@ -294,8 +388,7 @@ category('Dapi: domain app framework', () => {
             grok.dapi.domains.invalidateUiCaches();
             let list: EntityListWidget | null = null;
             try {
-              list = await EntityListWidget.create(grok.dapi.domains.table('apitests.item') as any,
-                {query: query(prefix), mode: 'grid', editable: true});
+              list = await listOf({query: query(prefix), mode: 'grid', editable: true});
               expect(list.capabilities.canInsert, false, 'a View-only user reports canInsert');
               expect(buttons(list.root).some((b) => b.startsWith('New')), false,
                 `a View-only user is offered New: ${buttons(list.root).join(', ')}`);

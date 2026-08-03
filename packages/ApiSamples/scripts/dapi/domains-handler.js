@@ -21,7 +21,9 @@ const handler = new DG.DomainObjectHandler('grit.issue');
 const issue = (await grok.dapi.domains.table('grit.issue').query({limit: 1}))[0];
 if (issue == null)
   throw new Error('grit.issue has no rows — create one first (/domains/grit/issue).');
-const row = await handler.getById(issue.id);                 // DG.DomainRow
+const row = await handler.getById(issue.id);                 // DG.DomainRow, one round trip
+// ...or, for rows a query already returned (a list rendering a thousand cards):
+const local = handler.rowFrom(issue);                        // same DomainRow, no round trip
 
 const props = await handler.getProperties();                 // registry Property metadata
 const caps = await handler.capabilities();                   // server-truth capabilities
@@ -30,7 +32,7 @@ const tabs = await handler.getDetailTabs(row);               // FK-inverted chil
 const actions = await handler.getRibbonActions(row);         // only what this user may do
 
 grok.shell.newView('grit.issue handler', [
-  ui.h2(handler.getCaption(row)),
+  ui.h2(handler.getCaption(local)),
   handler.renderCard(row),
   ui.tableFromMap({
     'Columns': props.map((p) => p.name).join(', '),

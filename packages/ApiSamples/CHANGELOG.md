@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20298: Added dapi/domains-app-view.js — the domain app framework in two views: a one-expression DomainAppView list page and the DomainEntityAppView page of one row (rowFrom wrapping a row the query already returned)
 * GROK-20298: Added dapi/domains-query-state.js — DomainQuery as the one serializable view state: deep-link URL parameters (one key per filter element) round-tripped back, the silent REST spec, the recorded run, and the query behind a live Domain View
 * GROK-20298: Added dapi/domains-embedded-view.js and dapi/domains-row-editor.js — DG.DomainView created programmatically and embedded with a permanent filter, and the platform row dialogs as one-line openers (create/edit/picker/conflict/audit/grants); dapi/domains-async-form.js now opens the REAL lookup picker instead of routing to /domains
 * GROK-20298: Added dapi/domains-handler.js — DomainObjectHandler: a per-table handler that overrides only renderCard, plus the reflective members every domain table gets for free (properties, capabilities, row permissions, detail tabs, capability-gated actions, editor)

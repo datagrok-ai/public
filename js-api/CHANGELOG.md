@@ -2,7 +2,7 @@
 
 ## v.next
 
-* GROK-20298: Added `DomainObjectHandler.rowFrom(values)` — wraps one row of a `query()` result as a `DG.DomainRow` locally, without a round trip: the acquisition path a list, a card or a context panel uses to render, address and act on rows it already fetched (`getById` remains the one that asks the server). `newRow()` is `rowFrom(null)`.
+* GROK-20298: Added `DomainObjectHandler.rowFrom(values)` — wraps one row of a `query()` result as a `DG.DomainRow` locally, without a round trip: the acquisition path a list, a card or a context panel uses to render, address and act on rows it already fetched (`getById` remains the one that asks the server). `newRow()` is `rowFrom(null)`. Anything but a plain values map (or null) is rejected by name — read key by key, a string or an array used to produce a row of nonsense values that only surfaced later, as a card with no identity.
 
 * GROK-20298: `DomainObjectHandler.deepLink`/`openRow`/`copyLink` now reject a foreign object by name like the rest of the row members (they used to silently resolve null / do nothing); an unsaved row of the handler's own table still yields `null` / a no-op. The "not a `<table>` row" message renders the rejected value readably (its class name or JSON) instead of `[object Object]`.
 

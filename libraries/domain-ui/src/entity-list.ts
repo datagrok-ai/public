@@ -12,9 +12,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 
-import {DomainFrameEditor} from './frame-editor';
+import {DomainFrameEditor, isReferenceProperty} from './frame-editor';
 import {DomainGrid} from './domain-grid';
-import {domainHandler} from './handler';
+import {actionChangesRow, domainHandler} from './handler';
 import {confirmDiscardChanges} from './unsaved';
 import {applyDomainUiStyles} from './styles';
 
@@ -31,6 +31,13 @@ export type EntityListMode = 'cards' | 'brief' | 'grid';
  * View) bypass it by running the query themselves.
  */
 export const ENTITY_LIST_ROW_CAP = 1000;
+
+/** Escapes the LIKE metacharacters of a literal search term, exactly as the
+ * platform's own filter compiler does (`FilterStatesCompiler.escapeLike`) — a
+ * user typing `50%` searches for `50%`, not for "50 followed by anything". */
+export function escapeLike(text: string): string {
+  return `${text}`.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
 
 /** Options of {@link EntityListWidget.create}. */
 export interface EntityListOptions {
@@ -102,7 +109,9 @@ export class EntityListWidget {
   private readonly _onItemOpened = new rxjs.Subject<DG.DomainRow>();
   private readonly _onRefreshed = new rxjs.Subject<EntityListWidget>();
   private readonly _options: EntityListOptions;
-  private readonly _searchColumns: string[];
+  /** The columns the search box COULD match on — fixed, from the registry. */
+  private readonly _identityColumns: string[];
+  private readonly _searchInput: DG.InputBase<string> | null;
   private _mode: EntityListMode;
   private _query: DG.DomainQuerySpec;
   private _search = '';
@@ -111,12 +120,16 @@ export class EntityListWidget {
   private _elements: HTMLElement[] = [];
   private _current: DG.DomainRow | null = null;
   private _grid: DomainGrid | null = null;
+  private _searchBox: HTMLElement | null = null;
   /** Guards against a slow response of an abandoned query overwriting a newer
    * one — every keystroke in the search box starts one. */
   private _generation = 0;
+  /** Same, for the per-item command menu: only the LAST right-click may open one,
+   * and a detached list opens none. */
+  private _menuGeneration = 0;
 
   private constructor(client: DG.DomainTableClient, capabilities: DG.DomainTableCapabilities,
-    info: DG.DomainTableInfo, options: EntityListOptions) {
+    info: DG.DomainTableInfo, properties: DG.Property[], options: EntityListOptions) {
     applyDomainUiStyles();
     this.client = client;
     this.capabilities = capabilities;
@@ -125,10 +138,7 @@ export class EntityListWidget {
     this._options = options;
     this._mode = options.mode ?? 'cards';
     this._query = options.query ?? {};
-    // The search box ANDs a condition into the query's filter, which a raw
-    // smart-filter string cannot take (it is parsed server-side, as one whole) —
-    // such a list is not searchable, and says so by not offering the box.
-    this._searchColumns = typeof this._query.filter === 'string' ? [] : this._searchNames();
+    this._identityColumns = this._searchNames(properties);
 
     this._newButton = capabilities.canInsert
       ? ui.button(`New ${info.singularName}...`, () => this.createRow(),
@@ -136,31 +146,49 @@ export class EntityListWidget {
     for (const mode of ['cards', 'brief', 'grid'] as EntityListMode[])
       this._modeIcons[mode] = ui.iconFA(EntityListWidget._MODE_ICONS[mode],
         () => this.setMode(mode), `Switch to ${mode === 'cards' ? 'card' : mode} view`);
+    this._searchInput = this._identityColumns.length === 0 ? null : this._buildSearchInput();
+    if (this._searchInput != null)
+      this._searchBox = ui.div([this._searchInput.root], 'd4-search-bar');
     this._toolbar = ui.divH([
       this._newButton,
       ui.div(Object.values(this._modeIcons), 'grok-items-view-commands,grok-items-view-toggle'),
       this._counts,
-      this._searchColumns.length === 0 ? null : ui.div([this._searchInput().root], 'd4-search-bar'),
-    ], 'grok-gallery-search-bar');
+      this._searchBox,
+    // A null child renders as an empty div, which the gallery bar styles like a
+    // real one — leave the absent affordances out instead.
+    ].filter((e) => e != null), 'grok-gallery-search-bar');
     ui.setDisplay(this._toolbar, options.toolbar ?? true);
     this.root = ui.divV([this._toolbar, this._banner, this._body], 'domain-ui-entity-list');
     this._syncModeIcons();
+    this._syncSearchBox();
   }
 
   /** Icons of the mode switch — the platform's own (`DataSourceCardView`). */
   private static readonly _MODE_ICONS: {[mode: string]: string} =
     {cards: 'grip-horizontal', brief: 'grip-lines', grid: 'table'};
 
-  /** Builds the list: probes the table's capabilities and metadata, then loads
-   * the first page. */
+  /**
+   * Builds the list: probes the table's capabilities and metadata, then loads
+   * the first page.
+   *
+   * Resolves to NULL when the first load was REFUSED — building a list is
+   * building an editor, so it goes through
+   * {@link EntityListOptions.confirmDiscard} like every other rebuild, and the
+   * caller (a page replacing its list) must then keep what it already has
+   * mounted instead of dropping it. Nothing is left behind: the half-built widget
+   * detaches itself.
+   */
   static async create(client: DG.DomainTableClient,
-    options?: EntityListOptions): Promise<EntityListWidget> {
+    options?: EntityListOptions): Promise<EntityListWidget | null> {
     const address = `${client.schema}.${client.table}`;
-    const [capabilities, info] = await Promise.all([
-      client.capabilities(), grok.dapi.domains.registry.tableInfo(address)]);
-    const list = new EntityListWidget(client, capabilities, info, options ?? {});
-    await list.refresh();
-    return list;
+    const [capabilities, info, properties] = await Promise.all([
+      client.capabilities(), grok.dapi.domains.registry.tableInfo(address),
+      grok.dapi.domains.registry.rowProperties(address)]);
+    const list = new EntityListWidget(client, capabilities, info, properties, options ?? {});
+    if (await list.refresh())
+      return list;
+    list.detach();
+    return null;
   }
 
   /** `'<schema>.<table>'`. */
@@ -217,6 +245,10 @@ export class EntityListWidget {
     if (!(await this._confirm('change the query')))
       return false;
     this._query = query ?? {};
+    // Whether the list is searchable depends on the query it shows, so it is
+    // re-decided here: a term the new filter cannot take is dropped rather than
+    // left in a box that no longer applies it.
+    this._syncSearchBox();
     await this._reload();
     return true;
   }
@@ -282,6 +314,8 @@ export class EntityListWidget {
     if (this._searchTimer != null)
       clearTimeout(this._searchTimer);
     this._searchTimer = null;
+    // Nothing in flight may still open a menu over a list that is gone.
+    this._menuGeneration++;
     this._detachGrid();
   }
 
@@ -289,14 +323,43 @@ export class EntityListWidget {
 
   /** The columns the search box matches on — the row's identity as the platform
    * defines it: the display-name column and the business key (what the built-in
-   * gallery searches). Empty means nothing identifies a row by text, and the box
-   * is not offered. */
-  private _searchNames(): string[] {
+   * gallery searches), narrowed to DECLARED, NON-REFERENCE STRING columns, as
+   * `DomainView._computeSearchFields` does. A ref / user / group column holds
+   * uuids, and `like` against one errors server-side (`uuid ~~*`). Empty means
+   * nothing identifies a row by text, and the box is not offered. */
+  private _searchNames(properties: DG.Property[]): string[] {
+    const byName = new Map<string, DG.Property>();
+    for (const p of properties)
+      byName.set(p.name, p);
     const columns = this.info.nameColumn == null ? [] : [this.info.nameColumn];
     for (const key of this.info.businessKey)
       if (!columns.includes(key))
         columns.push(key);
-    return columns;
+    return columns.filter((name) => {
+      const p = byName.get(name);
+      return p != null && p.propertyType === DG.TYPE.STRING && !isReferenceProperty(p);
+    });
+  }
+
+  /** The columns the search box matches on RIGHT NOW. The box ANDs a condition
+   * into the query's filter, which a raw smart-filter string cannot take (it is
+   * parsed server-side, as one whole) — such a list is not searchable, and says
+   * so by not offering the box. */
+  private get _searchColumns(): string[] {
+    return typeof this._query.filter === 'string' ? [] : this._identityColumns;
+  }
+
+  /** Shows the search box only while the current query can take a term, and
+   * forgets a term it can no longer apply. */
+  private _syncSearchBox(): void {
+    const searchable = this._searchColumns.length > 0;
+    if (!searchable && this._search !== '') {
+      this._search = '';
+      if (this._searchInput != null)
+        this._searchInput.value = '';
+    }
+    if (this._searchBox != null)
+      ui.setDisplay(this._searchBox, searchable);
   }
 
   /** The query as run: the caller's, with the row cap and the search term. A
@@ -307,18 +370,20 @@ export class EntityListWidget {
     const cap = this._options.limit ?? ENTITY_LIST_ROW_CAP;
     spec.limit = Math.min(this._query.limit ?? cap, cap);
     const text = this._search.trim();
-    if (text !== '' && this._searchColumns.length > 0) {
+    const columns = this._searchColumns;
+    if (text !== '' && columns.length > 0) {
       // Any identity column matching is a hit; the caller's own filter still has
-      // to hold, so the two are ANDed.
-      const match = DG.or(...this._searchColumns.map((c) => DG.cond(c, 'like', `%${text}%`)));
+      // to hold, so the two are ANDed. The term is a LITERAL: its own `%` and `_`
+      // are escaped, only the wildcards around it match anything.
+      const match = DG.or(...columns.map((c) => DG.cond(c, 'like', `%${escapeLike(text)}%`)));
       spec.filter = spec.filter == null ? match : DG.and(spec.filter as any, match);
     }
     return spec;
   }
 
-  private _searchInput(): DG.InputBase<string> {
+  private _buildSearchInput(): DG.InputBase<string> {
     const input = ui.input.search('', {
-      placeholder: `Search ${this.info.pluralName} by ${this._searchColumns.join(' or ')}`,
+      placeholder: `Search ${this.info.pluralName} by ${this._identityColumns.join(' or ')}`,
       onValueChanged: (value) => {
         // Debounced: every keystroke would otherwise be a query, and the last
         // one to arrive would not necessarily be the last one typed.
@@ -353,6 +418,10 @@ export class EntityListWidget {
   }
 
   private async _showGrid(spec: DG.DomainQuerySpec, generation: number): Promise<void> {
+    // The cap banner needs the FULL count, exactly as the gallery modes do —
+    // started up front so it costs no extra wait, and never a rejection of its
+    // own (a missing count only means no banner).
+    const counting = this.client.count(spec.filter).catch(() => null);
     // A live grid re-runs its own query (rebuilding the frame and its editing
     // state); only the first one is built from scratch.
     if (this._grid != null)
@@ -366,6 +435,7 @@ export class EntityListWidget {
       }
       this._grid = grid;
     }
+    const total = await counting;
     if (generation !== this._generation)
       return;
     this._rows = [];
@@ -373,7 +443,7 @@ export class EntityListWidget {
     this._setCurrent(null);
     this._body.innerHTML = '';
     this._body.appendChild(this._grid!.root);
-    this._setCounts(this._grid!.dataFrame.rowCount, null);
+    this._setCounts(this._grid!.dataFrame.rowCount, total);
   }
 
   private async _showItems(spec: DG.DomainQuerySpec, generation: number): Promise<void> {
@@ -444,24 +514,31 @@ export class EntityListWidget {
    * permission-probed per row, so building them for every listed item would be
    * a round trip per item. */
   private _showMenu(row: DG.DomainRow, e: MouseEvent): void {
+    // The probes are a round trip: by the time they land the user may have
+    // right-clicked another item (or left the page), and only the last gesture
+    // may open a menu.
+    const generation = ++this._menuGeneration;
     const pending = DG.Menu.popup().item('Loading...', () => {});
     pending.show({causedBy: e});
     this.handler.getRibbonActions(row as any).then((actions) => {
       pending.hide();
+      if (generation !== this._menuGeneration)
+        return;
       const menu = DG.Menu.popup();
       for (const action of actions)
         menu.item(action.name, () => this._run(action));
       menu.show({causedBy: e});
     }).catch((x) => {
       pending.hide();
-      grok.shell.error(`${x?.message ?? x}`);
+      if (generation === this._menuGeneration)
+        grok.shell.error(`${x?.message ?? x}`);
     });
   }
 
   /** Runs an item command and reloads when it may have changed the list. */
   private async _run(action: DG.DomainAction): Promise<void> {
     const changed = await action.run();
-    if (changed !== false && action.name !== 'Open' && action.name !== 'Copy link')
+    if (changed !== false && actionChangesRow(action))
       await this.refresh();
   }
 

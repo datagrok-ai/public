@@ -59,6 +59,18 @@ const DOMAIN_UI_CSS = `
   height: 100%;
 }
 
+/* The row page is a header plus a tab host, and a tab host inside a plain div
+   keeps the platform's default 400x300 box (the div.ui-div > div.ui-box rule in
+   ui.css) — a child grid in it then renders 400 px wide in a page a thousand
+   wide. Element+class selectors on both sides: the rule being overridden is
+   itself specific. */
+div.ui-div.domain-ui-entity-page > div.ui-box.d4-tab-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: auto;
+  height: auto;
+}
+
 /* The list's content area: whatever the toolbar leaves. min-height:0 is what
    lets a canvas grid inside it shrink instead of overflowing the page. */
 .domain-ui-list-body {

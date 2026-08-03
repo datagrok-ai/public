@@ -41,8 +41,28 @@ category('Dapi: domain frame editor', () => {
 
   /** An editor over exactly the rows of [prefix], oldest first. */
   async function editorFor(prefix: string): Promise<DomainFrameEditor> {
-    const query = {filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any, sort: 'sku'};
-    return await DomainFrameEditor.create(items() as any, {query: query});
+    return await DomainFrameEditor.create(items() as any, {query: specFor(prefix)});
+  }
+
+  const specFor = (prefix: string): any =>
+    ({filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any, sort: 'sku'});
+
+  /** {@link DomainFrameEditor.changeCount} recomputed from the frame state alone —
+   * the running counter is incremental, and only a full recount proves it did not
+   * drift (a stale per-row cache, a shifted row index). */
+  function recount(editor: DomainFrameEditor): number {
+    let n = 0;
+    for (let row = 0; row < editor.dataFrame.rowCount; row++) {
+      const state = editor.stateOf(row);
+      n += state === 'new' || state === 'deleted' ? 1 : Object.keys(editor.changesOf(row)).length;
+    }
+    return n;
+  }
+
+  /** Asserts the counter against the recount at a named point. */
+  function expectCounted(editor: DomainFrameEditor, where: string): void {
+    expect(editor.changeCount, recount(editor),
+      `the running change counter drifted from the frame state ${where}`);
   }
 
   test('service columns: attached, tagged, and absent from csv/binary exports', async () => {
@@ -120,6 +140,7 @@ category('Dapi: domain frame editor', () => {
       const added = editor.addRow({sku: `${prefix}-added`, name: 'Added'});
       expect(editor.stateOf(added), 'new', 'addRow did not mark the row new');
       expect(editor.isChanged(added, 'name'), true, 'every cell of a new row counts as changed');
+      expectCounted(editor, 'after addRow');
 
       // Deleted rows stay in the frame and leave the filter.
       const rowsBefore = df.rowCount;
@@ -127,15 +148,42 @@ category('Dapi: domain frame editor', () => {
       expect(df.rowCount, rowsBefore, 'markDeleted removed the row from the frame');
       expect(editor.stateOf(0), 'deleted', 'markDeleted did not set the state');
       expect(df.filter.get(0), false, 'a deleted row is still in the filter');
+      expectCounted(editor, 'after markDeleted');
       editor.unmarkDeleted(0);
       expect(editor.stateOf(0), '', 'unmarkDeleted did not restore the state');
       expect(df.filter.get(0), true, 'unmarkDeleted did not bring the row back');
+      expectCounted(editor, 'after unmarkDeleted');
 
       // discard() takes everything back to the loaded state.
       editor.discard();
       expect(editor.isDirty, false, 'discard left the editor dirty');
+      expectCounted(editor, 'after discard');
       expect(df.rowCount, rowsBefore - 1, 'discard did not remove the new row');
       expect(df.get('name', 0), original, 'discard did not restore the cell');
+      editor.detach();
+    } finally {
+      await cleanup(prefix);
+    }
+  });
+
+  test('an out-of-band row removal does not desync the per-row state', async () => {
+    const prefix = `fe-shift-${stamp()}`;
+    await seed(prefix, 3);
+    try {
+      const editor = await editorFor(prefix);
+      const df = editor.dataFrame;
+      editor.setValue(2, 'name', 'Edited on the last row');
+      expectCounted(editor, 'after the edit');
+
+      // A co-consumer of the frame (the grid's own Remove-rows command, another
+      // widget) removes a row ABOVE the edited one: every index below it shifts,
+      // and the editor's caches are keyed on exactly those indices.
+      df.rows.removeAt(0, 1);
+      expect(df.rowCount, 2, 'the row was not removed from the frame');
+      expectCounted(editor, 'after an external row removal');
+      expect(editor.isChanged(1, 'name'), true, 'the change entry did not follow its row');
+      expect(editor.isChanged(0, 'name'), false, 'another row reports the moved change');
+      expect(editor.changesOf(1)['name'], 'Item 2', 'the moved row lost its ORIGINAL value');
       editor.detach();
     } finally {
       await cleanup(prefix);
@@ -435,7 +483,47 @@ category('Dapi: domain frame editor', () => {
       expect(server[0].name, 'Saved under the lock', 'the edit did not reach the server');
       grid.detach();
     } finally {
+      // Before anything else: a failed assertion above would otherwise leave the
+      // paused transaction — and the editor holding it — hanging for the run.
+      release();
       proto.transaction = realTransaction;
+      await cleanup(prefix);
+    }
+  });
+
+  test('column security: a value that would be dropped blocks the save loudly', async () => {
+    const prefix = `fe-rocol-${stamp()}`;
+    await seed(prefix, 1);
+    try {
+      const caps = await items().capabilities();
+      // A caller who may not write `quantity`. Capabilities are an INPUT of the
+      // editor (a grid passes its own), so the case is exercised without a
+      // second session — what matters is that buildOps would drop the value.
+      const capabilities = Object.assign({}, caps,
+        {writableColumns: caps.writableColumns.filter((c) => c !== 'quantity')});
+      const editor = await DomainFrameEditor.create(items() as any,
+        {query: specFor(prefix), capabilities: capabilities as any});
+
+      editor.setValue(0, 'name', 'A writable column');
+      expect(editor.errorOf(0, 'name'), null, 'a writable column was refused');
+      editor.setValue(0, 'quantity', 9);
+      expect(editor.errorOf(0, 'quantity')?.kind, 'error',
+        'an edit the payload would drop was not marked');
+      expect(await editor.save(), false, 'the save accepted a change it would have dropped');
+
+      // The NEW-row shape: a parent FK prefilled on a column the caller cannot
+      // write would insert a child row with a null FK — silently, before.
+      editor.revertCell(0, 'quantity');
+      const added = editor.addRow({sku: `${prefix}-child`, name: 'Child', quantity: 3});
+      expect(editor.errorOf(added, 'quantity')?.kind, 'error',
+        'a prefilled non-writable value on a new row was not marked');
+      // Untouched non-writable cells are NOT a problem: nothing of theirs is lost.
+      expect(editor.errorOf(0, 'quantity'), null, 'an untouched read-only cell was marked');
+      expect(await editor.save(), false, 'the insert with a dropped value was accepted');
+      expect(await items().count({property: 'sku', operator: 'like', value: `${prefix}%`} as any), 1,
+        'the refused batch reached the server anyway');
+      editor.detach();
+    } finally {
       await cleanup(prefix);
     }
   });
@@ -533,11 +621,23 @@ category('Dapi: domain frame editor', () => {
         grid.columns.byName('quantity')!.visible = false;
       }
     }
+    // The SAME shape without an override — the collapse branch: it must fall
+    // through to the platform decoration, not to the base no-op.
+    class QuietHandler extends DG.ObjectHandler {
+      retired = false;
+      get type() { return this.retired ? 'apitests.quiet-retired' : 'apitests.quiet'; }
+      isApplicable(x: any) {
+        return !this.retired && x instanceof DG.DomainRow && x.typeName === 'apitests.item';
+      }
+    }
     const handler = new ForeignHandler();
-    DG.ObjectHandler.register(handler);
+    const quiet = new QuietHandler();
     const prefix = `fe-sentinel-${stamp()}`;
-    await seed(prefix, 1);
+    // Registered and seeded INSIDE the try: a throw before it would leave a
+    // handler claiming every apitests.item row for the rest of the session.
     try {
+      DG.ObjectHandler.register(handler);
+      await seed(prefix, 1);
       const df = await items().queryDf({filter: {property: 'sku', operator: 'like',
         value: `${prefix}%`} as any});
       const grid = DG.Grid.create(df);
@@ -545,15 +645,26 @@ category('Dapi: domain frame editor', () => {
       expect(seen.length, 1, 'the overriding handler was collapsed away');
       expect(grid.columns.byName('quantity')!.visible, false, 'its decoration did not land');
 
+      // A foreign-typed handler that overrides NOTHING wins dispatch (registered
+      // last) and must collapse: its inherited renderGrid is the platform no-op.
+      handler.retired = true;
+      DG.ObjectHandler.register(quiet);
+      const collapsed = DG.Grid.create(df);
+      DomainGrid.decorate(collapsed, 'apitests.item', df);
+      expect(seen.length, 1, 'the retired handler decorated again');
+      expect(collapsed.col('id')?.visible, false,
+        'a non-overriding handler of another type swallowed the platform decoration');
+
       // Retired: nothing claims the table, and the platform decoration is back
       // (the id column is a system column renderGrid hides).
-      handler.retired = true;
+      quiet.retired = true;
       const plain = DG.Grid.create(df);
       DomainGrid.decorate(plain, 'apitests.item', df);
       expect(seen.length, 1, 'a retired handler still decorated');
       expect(plain.col('id')?.visible, false, 'the platform decoration did not run');
     } finally {
       handler.retired = true;
+      quiet.retired = true;
       await cleanup(prefix);
     }
   });
