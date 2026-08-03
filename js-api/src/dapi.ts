@@ -39,6 +39,7 @@ import {
   DomainBatchOptions,
   DomainBatchReport,
   DomainDeleteReport,
+  DomainError,
   DomainFacetKind,
   DomainFacetResultOf,
   DomainFacetsSpec,
@@ -1116,7 +1117,7 @@ export class DomainsDataSource {
       this.dart, name.substring(0, dot), name.substring(dot + 1), options);
   }
 
-  /** Executes ordered [ops] atomically within domain schema [schema]; any failure rolls the
+  /** Executes ordered [ops] (≤1000) atomically within domain schema [schema]; any failure rolls the
    * whole transaction back (the error carries `opIndex`). Resolves to ordered per-op results
    * shaped like the corresponding single-op endpoints — a tuple ops literal gets per-op
    * result types (`[{op: 'update', ...}, {op: 'insert', ...}]` →
@@ -1266,7 +1267,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_QueryDf(this.dart, this.schema, this.table, spec));
   }
 
-  /** Grouped aggregation over the rows and columns visible to the caller;
+  /** Grouped aggregation over the rows and columns visible to the caller (10k row cap);
    * resolves to result rows named by group column / measure alias. Alias measures with `as`
    * (and pass literal groupBy) to get typed result keys; without them, cast or use `aggregateDf`. */
   aggregate<TGroup extends string = never, TAlias extends string = never>(
@@ -1461,7 +1462,10 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
    * row. An id-less save whose business key matches an existing row is a TRUE
    * insert-or-update: the values are applied to the existing row as a versioned update
-   * (retried on conflict), so save() never resolves a version-less row. The unversioned
+   * (retried on conflict), so save() never resolves a version-less row. An idempotency-key
+   * replay applies nothing — the original insert already did — and resolves the existing
+   * row's fresh version (rejects {@link DomainNotFoundError} when that row is no longer
+   * visible). The unversioned
    * (last-write-wins) update remains available ONLY by deliberately constructing
    * `{id}` without a version — never as a side effect of a duplicate. */
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
@@ -1480,7 +1484,10 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
       if (res.status === 'idempotent-replay') {
         // The ORIGINAL insert already applied these values; report its state.
         const fresh = await this.get(res.id);
-        return {...(row as any), id: res.id, version: (fresh as any)?.version};
+        if (fresh == null)
+          throw new DomainNotFoundError(`Row "${res.id}" not found in ${this.schema}.${this.table}`,
+            404, {error: 'not-found', id: res.id});
+        return {...(row as any), id: res.id, version: (fresh as any).version};
       }
       return {...(row as any), id: res.id, version: res.version};
     }
@@ -1492,7 +1499,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * with the fresh version; retries on DomainVersionConflictError (`maxRetries` counts
    * retries after the initial attempt — default 5 retries = up to 6 attempts, no backoff).
    * [mutate] returning null skips the write (resolves null). Rejects
-   * {@link DomainNotFoundError} when the row is invisible/absent. For multi-op flows
+   * {@link DomainNotFoundError} when the row is invisible/absent, and {@link DomainError}
+   * (code 'no-version') when the fresh row carries no version — the write never silently
+   * degrades to an unversioned (last-write-wins) update. For multi-op flows
    * (e.g. a guarded transaction), use `DG.retryOnVersionConflict` directly with the fresh
    * read inside the action. */
   updateWithRetry(id: string, mutate: (fresh: TRow) => Partial<TRow> | null,
@@ -1503,9 +1512,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
         throw new DomainNotFoundError(`Row "${id}" not found in ${this.schema}.${this.table}`,
           404, {error: 'not-found', id: id});
       const version = (fresh as any).version;
-      // Guard: never silently degrade to an unversioned (last-write-wins) update.
       if (version == null)
-        throw new Error(`updateWithRetry: row "${id}" carries no version — cannot update optimistically`);
+        throw new DomainError(`updateWithRetry: row "${id}" carries no version — cannot update optimistically`,
+          0, {error: 'no-version'});
       const values = mutate(fresh);
       if (values == null)
         return null;

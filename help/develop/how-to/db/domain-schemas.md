@@ -381,7 +381,7 @@ interfaces, column-name unions, expand maps, a typed transaction union, and a la
 per-schema client:
 
 ```ts
-import {gritDb, IssueRow, IssueStatus} from './generated/db';
+import {gritDb, IssueStatus} from './generated/db';
 
 const projects = await gritDb.project.query({sort: 'name'});   // ProjectRow[]
 await gritDb.issue.insert({project_id: projects[0].id, number: 7, title: 'Typed!'});
@@ -451,19 +451,23 @@ transaction carries `.opIndex` — the index of the failing op.
 
 ```ts
 const saved = await gritDb.project.save({key: 'GRIT', name: 'Grit'}); // insert-or-update
-await gritDb.issue.updateWithRetry(id, (fresh) => ({votes: (fresh.votes ?? 0) + 1}));
+await gritDb.issue.updateWithRetry(id, (fresh) =>
+  fresh.status === 'open' ? {priority: 'high'} : null);   // null skips the write
 await DG.retryOnVersionConflict(async () => {/* fresh read + transaction write */});
 ```
 
 `save` addresses rows by identity — a business-key duplicate applies your values to the
-existing row under a versioned update. `updateWithRetry` re-reads and retries on conflict
+existing row under a versioned update. An idempotency-key replay applies nothing — the
+original insert already did — and resolves the existing row's fresh version.
+`updateWithRetry` re-reads and retries on conflict
 (default five retries after the initial attempt). Typed transactions get per-op result
 types from a tuple ops literal: `const [upd, ins] = await gritDb.transaction([...]);`.
 
 ### Bulk delete
 
 ```ts
-while ((await items.deleteWhere(`sku starts "${stamp}"`)).hasMore);
+const stamp = `test-${Date.now()}`;
+while ((await gritDb.issue.deleteWhere(DG.cond('title', 'like', stamp + '%'))).hasMore);
 ```
 
 Soft-deletes up to 1000 matching rows you may delete per call, oldest first, in one

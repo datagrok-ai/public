@@ -19,8 +19,10 @@ import type {Dayjs} from 'dayjs';
 export type DomainSystemColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id';
 
 /** Column reference: a declared column of the table, a system column, or a dotted FK path
- * ('project_id.name', up to 3 forward hops). System columns are accepted even when a
- * hand-written [TColumn] union omits them (generated `<Table>Column` unions include them). */
+ * ('project_id.name', up to 3 forward hops). Used by the condition, sort, and aggregate
+ * column slots — those accept system columns even when a hand-written [TColumn] union omits
+ * them (generated `<Table>Column` unions include them). Other slots (equality-map `where`,
+ * `columns`, `select()`, `fetchFields()`, column security) stay TColumn-typed. */
 export type DomainColumnRef<TColumn extends string = string> =
   TColumn | DomainSystemColumn | `${string}.${string}`;
 
@@ -188,8 +190,7 @@ export async function domainCall<T>(p: Promise<T>): Promise<T> {
 export interface DomainQuerySpec<TColumn extends string = string, TExpandKey extends string = string> {
   /** Smart-filter string (same grammar as entity search, e.g. `barcode starts "P-1"`),
    * a single condition, or the canonical condition tree — values are bound server-side.
-   * Row caps: JSON `query` 10k, d42 `queryDf` 10M, `aggregate` 10k (both formats),
-   * `deleteWhere` 1000 per call, ≤32 facets per request, ≤1000 transaction ops. */
+   * Row caps: JSON `query` 10k, d42 `queryDf` 10M. */
   filter?: DomainFilter<TColumn>;
   /** Comma-separated column list; `!` prefix for descending, e.g. `'name,!created_on'`. */
   sort?: string;
@@ -502,7 +503,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
    * fields at runtime but drops them from the compile-time type. */
   select<K extends TColumn & keyof TRow & string>(...columns: K[]):
       DomainQueryBuilder<TRow, TColumn, TExpand,
-        Pick<TRow, K | Extract<keyof TRow, 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id'>>, TDf> {
+        Pick<TRow, K | Extract<keyof TRow, DomainSystemColumn>>, TDf> {
     this._columns = columns;
     return this as any;
   }
