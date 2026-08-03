@@ -49,15 +49,10 @@ function pickFile(accept: string): Promise<File | null> {
     };
     input.onchange = () => cleanup(input.files?.[0] ?? null);
     // 'cancel' fires reliably on an actual dismiss in every evergreen browser — authoritative, no
-    // timing guesswork needed, and it's what onFocus below used to race against and could lose:
-    // window focus can return (and a blind timeout fire) before 'change' has actually populated
-    // input.files, which resolved null and permanently discarded a real, in-flight file selection
-    // (cleanup's `done` guard blocks the real 'change' from ever landing once that happens).
+    // timing guesswork needed.
     input.addEventListener('cancel', () => cleanup(null));
-    // Fallback ONLY for browsers that don't support the 'cancel' event at all — skipped entirely
-    // elsewhere, so there's nothing left to race against. The 1500ms delay (vs. the old 300ms) is
-    // deliberately generous: it only needs to outlast 'change' in browsers that lack 'cancel', not
-    // win a photo finish against it.
+    // Fallback for browsers without the 'cancel' event: the delay must outlast 'change' firing,
+    // since cleanup's `done` guard silently drops a change that arrives after the timeout resolves.
     const onFocus = (): void => {
       setTimeout(() => cleanup(input.files?.[0] ?? null), 1500);
     };
@@ -223,7 +218,7 @@ export class EnumeratorConfigForm {
     this.config = cloneConfig(DEFAULT_CONFIG);
 
     // Fields are built eagerly (syncQuickInputsToConfig needs .inputs before the accordion exists);
-    // their ui.form() wrapper is built lazily instead (see lazyFilterForm below).
+    // their ui.form() wrapper is built lazily instead by lazyFilterForm in enumerator-nav.ts.
     this.combinationLimitFields = buildCombinationLimitFields(this.config);
     this.productFilterFields = buildProductFilterFields(this.config);
 

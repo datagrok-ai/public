@@ -53,8 +53,7 @@ export interface EnumerationProgress {
 
 // Per-round narrowing of the global pools, indexed by round-1. An undefined field falls back to the
 // global list for that round. `templates` is matched against the global list by the full
-// smarts+blockingSmartsList+reactionName triple (see templateOverrideKey) — two rows sharing one
-// SMARTS but differing in blocking group or name are authored as distinct template variants.
+// smarts+blockingSmartsList+reactionName triple (see templateOverrideKey).
 export interface PerRoundOverride {
   templates?: TemplateInput[];
   buildingBlocks?: string[];
@@ -73,8 +72,8 @@ export interface EnumerateOptions {
   // BB across rounds (P1 = BB + reagents, P2 = P1 + reagents, …). Overrides depth_first /
   // breadth_first slot logic when present.
   reagents?: string[];
-  // Round r (1-based) narrows templates/BBs/reagents to perRoundOverrides[r-1]; reagents MODE itself
-  // stays global (driven by `reagents` presence) — a per-round `reagents` list only narrows the pool.
+  // Reagents MODE itself stays global (driven by `reagents` presence) — a per-round `reagents`
+  // list here only narrows the pool for that round; see PerRoundOverride for the indexing rule.
   perRoundOverrides?: PerRoundOverride[];
   onProgress?: (p: EnumerationProgress) => void;
   isCancelled?: () => boolean;
@@ -372,8 +371,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     warnings.push('Reagents mode: no valid reagents after canonicalization; falling back to BB-only mode.');
   const useReagents = reagentsMode && uniqueReagents.length > 0;
 
-  // Precompute per-round override sets, indexed by round-1. An empty/non-matching override falls
-  // back to the global pool (rather than zeroing the round silently) and warns.
+  // Precompute per-round override sets, indexed by round-1 (fallback rule: see PerRoundOverride above).
   const roundAllowedTemplateKeys: (Set<string> | null)[] = [];
   const roundBBs: (string[] | null)[] = [];
   const roundReagents: (string[] | null)[] = [];
@@ -458,7 +456,6 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       const allPriorPool = new Set<string>();
       for (let r = 0; r < round; r++) for (const p of productPools[r]) allPriorPool.add(p.smiles);
 
-      // Per-round narrowing; each falls back to the global list when this round has no override.
       const allowedTemplateKeys = roundAllowedTemplateKeys[round - 1];
       const activeBBs = roundBBs[round - 1] ?? uniqueBBs;
       const activeReagents = roundReagents[round - 1] ?? uniqueReagents;
@@ -474,14 +471,14 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
       const eligibleSmiles = useReagents || config.enumeration.depth_first ?
         (round === 1 ? activeBBs : Array.from(new Set([...activeBBs, ...prevRoundProducts]))) :
         Array.from(allPriorPool);
-      // A per-round BB override is a no-op in breadth-first mode (eligibleSmiles above never reads
-      // activeBBs there) — surface that at run time, not just via the UI's dot indicator.
+      // eligibleSmiles above never reads activeBBs in breadth-first mode, so without this warning
+      // the override would be silently ignored rather than surfaced to the user.
       if (!useReagents && !config.enumeration.depth_first && roundBBs[round - 1] != null) {
         warnings.push(`Round ${round}: building-block override has no effect in breadth-first ` +
           `mode — a round draws from all earlier products regardless of the per-step BB subset.`);
       }
-      // Mirror of the above: a per-round reagent override is only ever read via `activeReagents`
-      // inside the `useReagents` branch further down — outside reagents mode it's a silent no-op.
+      // activeReagents above is only read inside the useReagents branch, so outside reagents mode
+      // this warning is the only thing that surfaces an otherwise-silent no-op.
       if (!useReagents && roundReagents[round - 1] != null) {
         warnings.push(`Round ${round}: reagent override has no effect outside reagents mode — a ` +
           `round only draws from the reagents library when a reagents file is active.`);
@@ -760,17 +757,12 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
     molCache.dispose();
   }
 
-  // Cap re-applied here too, not just per-round — a product spanning multiple rounds would
-  // otherwise merge each round's own (already-capped) routes with no limit on the total, so
-  // n_routes (read off rec.routes.length below) would count more than the rows actually shown.
-  //
-  // Round 0 (raw building blocks, routes: []) is merged LAST, not first — a BB whose SMILES is
-  // ALSO independently produced by a real reaction would otherwise have round 0's empty-route
-  // record win the "first occurrence" race (below), permanently stamping firstRound=0 on it even
-  // once a real route gets appended. Real rounds first means firstRound already correctly reflects
-  // the earliest round that actually synthesized it; round 0's own (empty) routes then merge in as
-  // a no-op for anything already found, and still seed the plain "no route" row for anything that
-  // wasn't.
+  // Cap re-applied here because routes accumulate across rounds — each round's own routes were
+  // already capped individually, but a product's combined total could still exceed
+  // max_num_routes_per_compound without this second pass.
+  // Round 0 (raw BBs, empty routes) merges LAST so a BB that's also independently produced by a
+  // real reaction keeps firstRound at the round that actually synthesized it, rather than round 0
+  // winning the first-occurrence race below.
   const finalProducts = new Map<string, ProductRecord>();
   const roundOrder: number[] = [];
   for (let r = 1; r < productPools.length; r++) roundOrder.push(r);
@@ -806,8 +798,7 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
           n_routes: rec.routes.length,
         });
       }
-      // Also independently one of the original building blocks — show that fact as its own row too,
-      // instead of it being invisible once the molecule is recognized as a synthesized product.
+      // Surface isOriginalBB as its own row too (see field doc above).
       if (rec.isOriginalBB) {
         rows.push({product: rec.smiles, route: '', template: '', reaction_name: '',
           round: 0, n_routes: 0});

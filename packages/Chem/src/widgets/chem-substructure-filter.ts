@@ -90,7 +90,6 @@ export class SubstructureFilter extends DG.Filter {
   currentMolecule: string = '';
   modifiedRows = new Set<number>(); // edited row indexes (received from chem-searches via event), awaiting re-check
   initListeners = false;
-  //searchTypeLink: HTMLButtonElement;
   searchType: SubstructureSearchType = SubstructureSearchType.CONTAINS;
   similarityCutOff = 0.8;
   fp: Fingerprint = Fingerprint.Morgan;
@@ -233,18 +232,6 @@ export class SubstructureFilter extends DG.Filter {
     this.root.classList.add('chem-filter');
   }
 
-  get _debounceTime(): number {
-    if (this.column == null)
-      return 1000;
-    const length = this.column.length;
-    const minLength = 500;
-    const maxLength = 10000;
-    const msecMax = 1000;
-    if (length < minLength) return 0;
-    if (length > maxLength) return msecMax;
-    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
-  }
-
   attach(dataFrame: DG.DataFrame): void {
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
       ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
@@ -283,7 +270,7 @@ export class SubstructureFilter extends DG.Filter {
       .pipe(filter((_) => this.column != null && !this.isFiltering))
       .subscribe((_: any) => {
         delete this.column!.temp[FILTER_SCAFFOLD_TAG];
-        //in case filter filter is disabled during active search, we finish current search
+        //in case filter is disabled during active search, we finish current search
         if (this.batchResultObservable && !this.batchResultObservable?.closed) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.terminatePreviousSearch();
@@ -372,7 +359,6 @@ export class SubstructureFilter extends DG.Filter {
     }
 
     const onChangedEvent: any = this.sketcher.onChanged;
-    //onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs?.push(onChangedEvent.subscribe(async (_: any) => {
       _package.logger.debug(`in filter onChangedEvent, sync event: ${this.syncEvent} , ${this.filterId}`);
       if (this.syncEvent === true)
@@ -502,8 +488,7 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to load filter state. */
   applyState(state: any): void {
     // The platform calls applyState() twice per mount for a filter constructed with a pre-specified
-    // column — once with the legacy `columnName` field populated, again with the "canonical" `column`
-    // field (js-api's own convention: column is canonical, columnName is a backwards-compat alias) but
+    // column — once with the legacy `columnName` field populated, again with the `column` field but
     // no `columnName`. Base Filter.applyState() only reads `state.columnName`, so without this the
     // second call would silently overwrite a correctly-resolved column back to undefined, leaving a
     // sketched substructure query filtering nothing with no error shown.

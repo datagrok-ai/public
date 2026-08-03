@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
-import {clampRounds, DataKey, detectChemSemTypes, Mode, OVERRIDE_DOT_COLOR} from './enumerator-app';
+import {CHANGED_DOT_STYLE, clampRounds, DataKey, detectChemSemTypes, Mode} from './enumerator-app';
 
 export type TabBadge = {el: HTMLSpanElement; refresh: (n: number | null) => void};
 export const makeTabBadge = (): TabBadge => {
@@ -106,13 +106,13 @@ export interface DataPanelDeps {
 }
 
 /** Single-grid per-component panel with a per-step strip. Each data tab shows ONE grid plus a
- * horizontal step strip: "All steps" shows the full library (with the global "Subset by
- * selection"); "Step k" shows a display-only clone whose row selection is that round's subset.
- * Switching chips swaps what the single grid displays — no second grid. */
+ * horizontal step strip, rendered as a ui.tabControl: "All rounds" shows the full library (with
+ * the global "Subset by selection"); "Round k" shows a display-only clone whose row selection is
+ * that round's subset. Switching tabs swaps what the single grid displays — no second grid. */
 export class DataPanel {
   readonly panel: HTMLElement;
 
-  private selStep = 0; // 0 = All steps (full library); 1..rounds = that round's subset
+  private selStep = 0; // 0 = All rounds (full library); 1..rounds = that round's subset
   private filtersOn = false; // funnel toggle: show the standard Datagrok filters panel next to the grid
   // host -> last (table identity, filtersOn) successfully mounted there. "Subset by selection"/"Use
   // all" both trigger a render twice (see the comment above assignTableInput) — renderGrid no-ops
@@ -193,8 +193,8 @@ export class DataPanel {
     return true;
   }
 
-  // Capped defensively regardless of validation state — an invalid (too-high) input value still
-  // blocks Run via `validate()`, but must not make buildStepTabs try to build hundreds of tabs.
+  // Defensive clamp — see clampRounds()'s own comment for why; an over-max value still reaches
+  // here even though validate() blocks Run for it.
   private roundCount(): number {
     return clampRounds(this.deps.currentRounds());
   }
@@ -262,10 +262,9 @@ export class DataPanel {
   // that is the SAME tracked table as it (doSubsetBySelection's "don't close what's still showing"
   // guard); omitted, both previous tables always close (doRestoreFullTable's case).
   //
-  // assignTableInput's null-then-real two-step assignment does NOT reliably re-render via the
-  // input's own onChanged -> onTableChanged reaction alone — relying on that path alone left the
-  // grid empty after "Subset by selection". The explicit renderGrid() call is intentionally
-  // redundant with onTableChanged's own re-render — correctness over the extra render.
+  // assignTableInput's null-then-real two-step assignment doesn't reliably reach here via the
+  // input's own onChanged -> onTableChanged reaction alone, so renderGrid() is called explicitly —
+  // intentionally redundant with onTableChanged's own re-render, in favor of correctness.
   private commitTableSwap(
     newDf: DG.DataFrame, prev: DG.DataFrame | null, prevFresh: DG.DataFrame | null,
     keepIfSameAs?: DG.DataFrame | null,
@@ -374,15 +373,14 @@ export class DataPanel {
       // label). Positive left offset only — a negative one bleeds into the adjacent tab, since tabs
       // sit flush. Fixed top offset, not top:50% — the header's box shrinks ~7px when selected
       // (underline indicator), so a percentage-based center drifts on selection.
-      const dot = ui.div([], {style: {position: 'absolute', left: '5px', top: '12px',
-        width: '6px', height: '6px', borderRadius: '50%',
-        background: OVERRIDE_DOT_COLOR, display: 'none'}});
+      const dot = ui.div([], {style: {...CHANGED_DOT_STYLE, position: 'absolute', left: '5px', top: '12px',
+        display: 'none'}});
       pane.header.style.position = 'relative';
       pane.header.appendChild(dot);
       this.stepDots.push(dot);
     }
     this.stepTabsSub = tc.onTabChanged.subscribe(() => {
-      // Index into tc.panes IS selStep (0 = "All steps", k = "Step k", by insertion order above)
+      // Index into tc.panes IS selStep (0 = "All rounds", k = "Round k", by insertion order above)
       // — no need to parse the pane's label, which would break if it were ever reworded.
       const idx = tc.currentPane ? tc.panes.indexOf(tc.currentPane) : -1;
       this.selStep = idx < 0 ? 0 : idx;

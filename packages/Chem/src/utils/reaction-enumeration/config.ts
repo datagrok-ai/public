@@ -80,16 +80,14 @@ export function cloneConfig(c: EnumeratorConfig): EnumeratorConfig {
 }
 
 export function configToYaml(c: EnumeratorConfig): string {
-  const dump: any = JSON.parse(JSON.stringify(c));
-  return yaml.dump(dump, {lineWidth: 120, noRefs: true, sortKeys: false});
+  return yaml.dump(cloneConfig(c), {lineWidth: 120, noRefs: true, sortKeys: false});
 }
 
 // Walks `partial` against `defaults`' own shape — DEFAULT_CONFIG already has every field with its
-// correct type, so this needs no separately-maintained schema. A field absent from `partial` is left
-// to mergeWithDefaults' own fallback, not flagged here. Catches the case a hand-edited or corrupted
-// YAML silently carries a wrong-typed value all the way into a numeric comparison at filter time
-// (e.g. a string in a product-filter field makes that filter's `>= 0` check permanently false,
-// disabling it with no indication anything's wrong).
+// correct type, so this needs no separately-maintained schema. Catches the case a hand-edited or
+// corrupted YAML silently carries a wrong-typed value all the way into a numeric comparison at
+// filter time (e.g. a string in a product-filter field makes that filter's `>= 0` check
+// permanently false, disabling it with no indication anything's wrong).
 function validateShape(partial: any, defaults: any, path: string, errors: string[]): void {
   for (const k of Object.keys(defaults)) {
     if (!(k in partial)) continue;
@@ -99,7 +97,14 @@ function validateShape(partial: any, defaults: any, path: string, errors: string
       if (!Array.isArray(actual) || !actual.every((x: unknown) => typeof x === 'string'))
         errors.push(`'${path}${k}' must be a list of strings.`);
     } else if (typeof expected === 'object') {
-      validateShape(actual ?? {}, expected, `${path}${k}.`, errors);
+      // Same reason as configFromYaml's own top-level guard: an array or primitive here would
+      // otherwise recurse as if it were the section's object (silently validating nothing, since
+      // `k in partial` never matches a named key against an array/primitive) or throw a raw
+      // `TypeError: Cannot use 'in' operator...` instead of this function's own clean message.
+      if (actual != null && (typeof actual !== 'object' || Array.isArray(actual)))
+        errors.push(`'${path}${k}' must be an object.`);
+      else
+        validateShape(actual ?? {}, expected, `${path}${k}.`, errors);
     } else if (typeof actual !== typeof expected || (typeof expected === 'number' && !Number.isFinite(actual))) {
       errors.push(`'${path}${k}' must be a ${typeof expected}.`);
     }

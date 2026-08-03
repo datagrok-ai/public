@@ -85,7 +85,8 @@ export class EnumeratorNav {
 
   constructor(private readonly deps: EnumeratorNavDeps) {
     // Strategy cards replace the depth-first checkbox: depth/breadth drive the hidden `depthFirstInput`
-    // (existing sync/validation keeps working); reagents card is active only when a reagents file is set.
+    // (existing sync/validation keeps working). Depth/breadth are disabled (reagentsModeNote shown
+    // instead) whenever a reagents file is loaded, since reagents mode makes strategy irrelevant.
     const buildStratCard = (icon: string, title: string, desc: string): StratCard => {
       const ic = ui.iconFA(icon);
       ic.style.marginTop = '2px';
@@ -183,14 +184,9 @@ export class EnumeratorNav {
         },
       };
     };
-    // Shared label-column width across all three forms in this section (rounds, combination limits,
-    // product filters) — so Product filters renders with the exact same column Combination limits
-    // does, not its own wider one. Fixed constant, comfortably wider than the longest current caption
-    // ("Max unsaturated non-aromatic bonds", ~200px in the platform's own label font) — these captions
-    // are static app text, not user data, so there's no need to measure them at runtime; widen this if
-    // a future caption ends up longer. Set via a CSS custom property + stylesheet !important rule, not
-    // a plain inline style: the platform's own per-form label auto-sizing runs asynchronously after
-    // mount and would silently overwrite a plain inline style outright.
+    // Shared label-column width across all three "How to combine" forms so their columns align.
+    // Set via a CSS custom property (not inline style) — the platform's own async label
+    // auto-sizing would otherwise overwrite a plain inline style after mount.
     const CHEM_ENUM_LABEL_WIDTH = 220;
     // Editors need pinning too, not just labels: the platform widens an editor from its normal ~150px
     // to ~176px on whichever of the three forms it currently considers .ui-form-condensed, so without
@@ -328,7 +324,6 @@ export class EnumeratorNav {
     setChip(this.chipBbsC, s.bbsText, s.bbsOverride);
     this.chipExtrasC.textEl.textContent = s.extrasText;
     this.chipExtrasC.dot.style.display = s.extrasOverride ? '' : 'none';
-    // "Strategy:" prefix only on the ribbon chip — the accordion pane itself already says "How to combine".
     this.chipCombineC.textEl.textContent = s.combineChipText;
     this.chipCombineC.dot.style.display = (s.limitsChanged || s.filtersChanged) ? '' : 'none';
     this.cfgEstEl.textContent = s.estimateText;

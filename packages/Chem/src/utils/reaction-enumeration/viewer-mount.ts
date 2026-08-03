@@ -82,8 +82,8 @@ export class MountedViewerRegistry {
   }
 
   // ChemicalReaction has no meaningful substructure-filter semantics for a whole reaction template,
-  // so it's simply left out of the filters below (not a workaround for anything — DG.Viewer.filters
-  // only builds filters for the columns it's explicitly given).
+  // so it's simply left out of the filters below — DG.Viewer.filters only builds filters for the
+  // columns it's explicitly given.
   mountDf(host: HTMLElement, df: DG.DataFrame, withFilters: boolean,
     opts?: {rowHeight?: number; extendLastColumn?: boolean}): void {
     this.close(host);
@@ -106,9 +106,8 @@ export class MountedViewerRegistry {
         // A numeric column with zero variance (every value equal — common right after subsetting to
         // the exact value it was filtered on) makes the histogram filter widget clobber the whole
         // dataframe's .filter to all-false, both on construction and again if the user later toggles
-        // it histogram<->categorical — a separate bug from, and not fixed by, the subset-clone filter
-        // reset above. A categorical filter has no degenerate-range code path, so route zero-variance
-        // numeric columns there instead of ever constructing the buggy histogram widget.
+        // it histogram<->categorical. A categorical filter has no degenerate-range code path, so route
+        // zero-variance numeric columns there instead of ever constructing the buggy histogram widget.
         type: col.isNumerical ?
           (col.stats.min === col.stats.max ? DG.FILTER_TYPE.CATEGORICAL : DG.FILTER_TYPE.HISTOGRAM) :
           col.semType === 'Molecule' ? DG.FILTER_TYPE.SUBSTRUCTURE : DG.FILTER_TYPE.CATEGORICAL,
@@ -120,9 +119,9 @@ export class MountedViewerRegistry {
     filtersViewer.root.style.height = '100%';
     filtersViewer.root.style.overflow = 'auto';
     const gridBox = ui.div([grid.root], {style: {flex: '1 1 0', minWidth: '0', height: '100%', overflow: 'hidden'}});
-    // width must track the wrapper sizeSplitOnceLaidOut resizes below (split.children[0]), not a fixed
-    // px value — a fixed width here left a dead gap between this box and the divider whenever the
-    // wrapper's computed width (total * 0.25, capped 260) exceeded it.
+    // width tracks the resizable wrapper (split.children[0], resized below by sizeSplitOnceLaidOut) —
+    // must stay relative (100%), since the wrapper's computed width (total * 0.25, capped 260) varies
+    // and a fixed px value would drift out of sync with it, opening a gap against the divider.
     const filtersBox = ui.div([filtersViewer.root], {style: {flex: '0 0 auto', width: '100%', height: '100%',
       overflow: 'auto', borderRight: '1px solid var(--grey-2)'}});
     const split = ui.splitH([filtersBox, gridBox], {style: {width: '100%', height: '100%', minHeight: '0'}}, true);
@@ -154,10 +153,8 @@ export class MountedViewerRegistry {
   }
 
   // Rebuilding the quick inputs from a loaded YAML config (see syncConfigToQuickInputs) cascades
-  // into a full remount of the Reactions/BBs/Reagents grids — and each freshly-mounted Filters
-  // viewer can silently reapply a stale, much-earlier categorical selection instead of the table's
-  // actual current filter, since the reapply happens in the filter widget's own async
-  // post-construction step (same root cause as deferredFilterReset above). Snapshot each table's
+  // into a full remount of the Reactions/BBs/Reagents grids, triggering the same freshly-mounted-
+  // Filters clobber that FILTER_REMOUNT_SETTLE_MS guards against above. Snapshot each table's
   // filter before the cascade and restore it after, once that async reapply has had time to fire.
   withPreservedFilters(dfs: DG.DataFrame[], fn: () => void): void {
     const saved = dfs.map((d) => ({df: d, mask: d.filter.clone()}));

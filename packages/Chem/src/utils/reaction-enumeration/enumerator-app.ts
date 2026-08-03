@@ -37,8 +37,8 @@ export function combinationLimitsChanged(cfg: EnumeratorConfig): boolean {
     cfg.keep_building_blocks_in_final_output !== DEFAULT_CONFIG.keep_building_blocks_in_final_output;
 }
 
-// Shared naive product-count estimate — used by the ribbon chip and the Strategy summary so they
-// can't drift out of sync (e.g. one estimate rounding differently from the other).
+// Shared naive product-count estimate — used by the ribbon chip and the Strategy summary so
+// neither one computes it separately and drifts out of sync with the other.
 export function estimateProductCount(tDf: DG.DataFrame | null, bDf: DG.DataFrame | null): number {
   return (tDf && bDf) ? tDf.rowCount * bDf.rowCount : 0;
 }
@@ -59,13 +59,9 @@ export const panelHeader = (hint: string, status?: HTMLElement): HTMLElement => 
   }});
 };
 
-// `scrollable` is for plain content hosts (e.g. the Strategy summary card) that can outgrow a
-// short window — unlike a grid, which manages its own internal scroll, so its host stays
-// overflow:hidden with the bottom fade. min-height:0 is unconditional: without it this wrapper
-// (a flex child of the platform's own .d4-tab-content, itself fixed up to min-height:0 in
-// chem.css) refuses to shrink below its content's natural height, so a narrow window makes
-// .d4-tab-content overflow and get silently clipped further up instead of ever asking this pane
-// — or gridHost's own overflow below — to actually engage.
+// `scrollable` is for plain content hosts (e.g. Strategy summary) that can outgrow the window;
+// grids keep overflow:hidden with a bottom fade since they scroll internally instead. min-height:0
+// is unconditional — without it this flex child can't shrink below its content's natural height.
 export const tabPanel = (header: HTMLElement, gridHost: HTMLElement, scrollable = false): HTMLElement => {
   // display:flex on the host turns the grid's inline-flex outer display into a block-level
   // flex item, eliminating the 12px baseline-alignment gap that block+inline-flex produces.
@@ -242,15 +238,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   const validationDiv = ui.divText('', {style: {color: 'var(--red-3)', fontSize: '12px', flex: '0 0 auto'}});
 
   // ---- Late-bound refresh mediators ----
-  // refreshValidation/refreshCfgRibbon are threaded into every class below as a constructor dep, but
-  // their real implementations need templatesCtl/bbsCtl/reagentsCtl/strategySummary/previewPanel/
-  // runControls/tabs/strategyPane/previewPane — all constructed AFTER those deps are handed out.
-  // Every class calls `ctx.refreshValidation()`/`ctx.refreshCfgRibbon()` (never captures the
-  // function itself at construction time, or it would freeze on today's no-op) — so a premature
-  // synchronous call (e.g. a DG input auto-selecting a value during its own construction, firing
-  // onChanged inline) is now a harmless no-op instead of a "Cannot access 'X' before
-  // initialization" crash. Reassigned to the real implementations once everything they coordinate
-  // exists — see the bottom of this function.
+  // refreshValidation/refreshCfgRibbon start as no-ops, reassigned to their real implementations
+  // once everything they coordinate exists — see that reassignment, near the bottom of this
+  // function, for why.
   const ctx: {
     refreshValidation: () => void; refreshCfgRibbon: () => void; hasAnyPerRoundOverride: () => boolean;
   } = {
@@ -259,9 +249,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     hasAnyPerRoundOverride: () => false,
   };
 
-  // switchTabForAccPane/chipForPane/openAccPaneAndSyncTab stay plain hoisted function statements
-  // (not part of `ctx`): they're only ever invoked from explicit click handlers, never from a
-  // widget's own synchronous construction-time event, so they don't share refreshValidation's risk.
+  // switchTabForAccPane/openAccPaneAndSyncTab stay plain hoisted function declarations, and
+  // chipForPane a plain const arrow (not part of `ctx`): all three are only ever invoked from
+  // explicit click handlers, never from a widget's own synchronous construction-time event, so
+  // none of them share refreshValidation's TDZ risk.
   // Right-pane tab references — assigned when tabs are built; used by section-open handlers for
   // context-sensitive tab switching. Declared here so openAccPaneAndSyncTab can close over them.
   let templatesPane: DG.TabPane | undefined;
@@ -324,8 +315,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   configForm.chipBbsC.root.onclick = () => openAccPaneAndSyncTab(configForm.accBbsPane);
   configForm.chipExtrasC.root.onclick = () => openAccPaneAndSyncTab(configForm.accExtrasPane);
   configForm.chipCombineC.root.onclick = () => openAccPaneAndSyncTab(configForm.accCombinePane);
-  // Initial pane selection must happen near the end of this function, after `tabs`/`strategyPane`
-  // exist (switchTabForAccPane reads them) — calling it earlier crashes with a TDZ error.
+  // Do not open a pane here — tabs/strategyPane don't exist until construction reaches the end
+  // of this function; see openAccPaneAndSyncTab(configForm.accCombinePane) below.
 
   // Tab row-count badge. Reactions/BBs already show their row count via the always-visible ribbon
   // chips (chipReactionsC/chipBbsC) and the accordion pane subtitles — a tab badge there would just
@@ -478,6 +469,9 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
       configForm.chipBbsC.root, mkRibbonArrow(), configForm.chipExtrasC.root, mkRibbonArrow(), configForm.cfgEstEl],
     [configForm.loadYamlBtn, configForm.saveYamlBtn],
   ]);
+  // Ribbon group/item shadow-background and the chips panel's scroll are handled declaratively in
+  // chem.css via :has(.chem-enum-chip) — a CSS rule matches by class name regardless of how many
+  // times the platform recreates the ribbon DOM, so nothing here needs to reassert it in JS.
   view.append(root);
 
   // ---- Bind the real mediator implementations ----
@@ -506,15 +500,10 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     if (tabs.currentPane === previewPane) previewPanel.renderRecap();
   };
 
-  // The ribbon's own group/item shadow-background and the chips panel's scroll are both handled
-  // declaratively in chem.css via :has(.chem-enum-chip) — no JS reacting to the platform's ribbon
-  // re-renders (that pattern leaked onto other views' ribbons and had to keep "winning a race"
-  // against re-renders; a plain CSS rule matches by class name regardless of how many times the
-  // platform recreates the DOM, and never needs reasserting).
   runControls.setValidation(configForm.validate());
 
-  // Looks redundant with buildStepTabs(0)'s own render, but isn't: removing it left the
-  // initial grid rendered into a not-yet-sized host and empty on some loads.
+  // Must run after view.append(root) so each tab's grid host has real layout dimensions —
+  // rendering into an unsized host produces an empty grid.
   templatesCtl.render();
   bbsCtl.render();
   reagentsCtl.render();

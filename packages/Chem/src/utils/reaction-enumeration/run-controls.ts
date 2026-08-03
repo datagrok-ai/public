@@ -21,7 +21,7 @@ export interface RunControlsDeps {
 }
 
 /** Ribbon Enumerate/Cancel/progress chrome, mirrored by a second Enumerate button at the end of the
- * Preview pane's nav chain. Both buttons share one run: `running` blocks a second concurrent run,
+ * Preview pane's nav chain. Both buttons drive the same run, guarded by runWithUi (see below) —
  * `cancelled` is checked by enumerate()'s own isCancelled callback. */
 export class RunControls {
   readonly runBtn: HTMLButtonElement;
@@ -91,7 +91,7 @@ export class RunControls {
   }
 
   // Shared run chrome: validate, disable both Run buttons, show Cancel + progress, restore on finish.
-  // `running` blocks a second concurrent run — previewEnumerateBtn isn't otherwise disabled while one is in progress.
+  // `running` blocks a second concurrent run in addition to the disabled state applied below.
   private async runWithUi(fn: () => Promise<void>): Promise<void> {
     if (this.running || this.deps.validate() != null) return;
     this.deps.syncQuickInputsToConfig();

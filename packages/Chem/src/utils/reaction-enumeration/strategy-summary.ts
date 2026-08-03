@@ -4,7 +4,7 @@ import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {
   CHANGED_DOT_STYLE, clampRounds, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode,
-  MODE_LABEL, OVERRIDE_DOT_COLOR, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
+  MODE_LABEL, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
 } from './enumerator-app';
 
 export interface StrategySummaryDeps {
@@ -34,27 +34,22 @@ export class StrategySummary {
       this.host, true);
   }
 
-  // Optional params let refreshCfgRibbon() pass in already-computed values; falls back to
-  // computing fresh otherwise.
-  render(
-    combChanged: boolean = combinationLimitsChanged(this.deps.getConfig()),
-    prodChangedCount: number = productFiltersChangedCount(this.deps.getConfig()),
-  ): void {
+  render(): void {
     this.host.innerHTML = '';
     const config = this.deps.getConfig();
+    const combChanged = combinationLimitsChanged(config);
+    const prodChangedCount = productFiltersChangedCount(config);
     const tDf = this.deps.templatesInput.value;
     const bDf = this.deps.bbsInput.value;
     const mode = this.deps.currentMode();
-    // Kept raw (not clamped) for anything just displaying the number, so it can't drift from what's
-    // literally typed into "Number of rounds" (see currentRounds()'s own doc comment) — but a round
-    // count this large must never drive a per-round DOM-building loop directly, or typing enough
-    // digits to exceed MAX_ROUNDS freezes the tab rendering thousands of row elements per keystroke.
+    // Raw (not clamped) so the displayed number can't drift from what's literally typed — see
+    // currentRounds()'s own doc comment. displayRounds below is the clamped value that actually
+    // drives the per-round rows; see clampRounds() for why that clamp exists.
     const rounds = this.deps.currentRounds();
     const displayRounds = clampRounds(rounds);
     const n = estimateProductCount(tDf, bDf);
 
-    // Per-round subset overrides, computed once for both the round diagram and the per-component
-    // sections below.
+    // Per-round subset overrides, computed once and shared by every per-component section below.
     const overrides = this.deps.buildPerRoundOverrides(config);
     const overrideCount = (r: number, key: DataKey): number | null =>
       this.deps.overrideCountFor(overrides, mode, r, key);
@@ -82,10 +77,8 @@ export class StrategySummary {
             ui.divText(oc != null ? `${oc} of ${total} (custom subset)` : `all ${total}`,
               oc != null ? {style: {fontWeight: '600'}} : undefined),
           ];
-          if (oc != null) {
-            rowChildren.push(ui.div([], {style: {width: '6px', height: '6px', borderRadius: '50%',
-              background: OVERRIDE_DOT_COLOR, flex: '0 0 auto'}}));
-          }
+          if (oc != null)
+            rowChildren.push(ui.div([], {style: {...CHANGED_DOT_STYLE, flex: '0 0 auto'}}));
           section.appendChild(ui.divH(rowChildren, {style: {gap: '8px', alignItems: 'center', padding: '2px 0'}}));
         }
         return section;

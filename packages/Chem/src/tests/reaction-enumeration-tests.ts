@@ -35,8 +35,8 @@ function colAsStrings(df: DG.DataFrame, name: string): string[] {
   return out;
 }
 
-// (parseMultiStepReaction and BRANCH_DELIMITER are imported from the renderer above so the
-// test can't drift out of sync with the implementation.)
+// (parseMultiStepReaction is imported from the renderer above so the test can't drift out of
+// sync with the implementation.)
 
 // Per-step (per-round) override tests assert equivalence: narrowing a round via perRoundOverrides
 // must yield exactly the same OUTPUT ROWS as running globally with that narrowed list — not just
@@ -379,7 +379,6 @@ category('Reaction Enumeration', () => {
     // Disulfide: only Cys-Cys can react (only Cys has a thiol). Expect exactly one canonical product.
     const disulfideRows = rows.filter((r) => r.reaction_name === 'Disulfide formation');
     expect(disulfideRows.length > 0, true, 'Disulfide formation produced no rows — Cys + Cys should match');
-    // The product should contain an S-S bond.
     expect(disulfideRows[0].product.includes('SS') || /S.{0,3}S/.test(disulfideRows[0].product), true,
       `Disulfide product missing SS link: ${disulfideRows[0].product}`);
   }, {timeout: 120000});
@@ -644,7 +643,7 @@ category('Reaction Enumeration', () => {
   //
   // Shared helpers for the reagents-mode tests. We split the AA library into a disjoint BB-pool
   // and reagent-pool, then use peptide coupling (a symmetric 2-slot template that yields chain-
-  // extendable dipeptides). The structural invariant we verify is the spec from the email:
+  // extendable dipeptides). The structural invariant we verify:
   //   every step uses EXACTLY ONE reactant from the "main pool" (BBs in round 1, or any earlier
   //   product / BB in round R > 1), and EVERY remaining slot is filled from reagents.
   async function loadAaSplit(rdkit: any, bbCount: number) {
@@ -728,7 +727,7 @@ category('Reaction Enumeration', () => {
   }, {timeout: 300000});
 
   test('reagents mode: multi-round — every step is one main-pool reactant plus reagents only', async () => {
-    // Spec from the email:
+    // Reagents-mode invariant, round by round:
     //   round 1: BB + reagent(s)               → P1
     //   round 2: P1 + reagent(s)               → P2
     //   ...
@@ -783,9 +782,9 @@ category('Reaction Enumeration', () => {
 
   test('reagents mode: empty reagents array behaves like standard depth-first', async () => {
     // The reagentsMode branch must be skipped when no reagents are provided so existing setups
-    // keep working without surprises. Run the same template/BBs once with reagents=[] and once
-    // with reagents undefined; both should produce identical product sets to a baseline that
-    // doesn't pass the field at all.
+    // keep working without surprises. Compare a baseline run (reagents field omitted entirely)
+    // against the same run with reagents explicitly set to an empty array — both must produce
+    // identical product sets.
     const rdkit = getRdKitModule();
     const bbsDf = await loadCsv('enumerations/aa_bb.csv');
     const rxnsDf = await loadCsv('enumerations/aa_reactions.csv');
@@ -955,10 +954,7 @@ category('Reaction Enumeration', () => {
   }, {timeout: 300000});
 
   test('per-step: keep_building_blocks_in_final_output respects a round-1 BB override', async () => {
-    // Round 0's output (the "keep building blocks" rows) was previously seeded from the GLOBAL BB
-    // pool unconditionally, ignoring any round-1 BB override — so a BB the user explicitly excluded
-    // from round 1 would still leak into the output as an unreacted round-0 row, contradicting the
-    // override.
+    // A BB excluded by the round-1 override must not reappear as an unreacted round-0 row.
     const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
     config.enumeration.num_rounds = 1;
     config.enumeration.depth_first = true;
@@ -993,16 +989,8 @@ category('Reaction Enumeration', () => {
   }, {timeout: 300000});
 
   test('per-step: breadth-first round-1 BB override has zero effect — round 0 AND round 1 stay full', async () => {
-    // Breadth-first twin of the depth-first "keep_building_blocks_in_final_output respects a
-    // round-1 BB override" test above. In breadth-first mode a round-1 BB override is documented
-    // (and separately warned about) as a no-op: `eligibleSmiles` never reads `activeBBs` there —
-    // the pool is the union of all prior products instead. Round-0 seeding used to ignore that and
-    // narrow the "keep BBs in output" rows to the override subset regardless of mode, which (a)
-    // misreported round 0's output as narrower than what round 1 actually draws from, and (b) — via
-    // `allPriorPool`, which folds in every prior round including round 0 — silently leaked the
-    // override into round 1's own reaction pool despite the override supposedly having no effect
-    // there. Assert both are now closed: an override run and a no-override run must produce
-    // IDENTICAL rows (round 0 and round 1 alike) in breadth-first mode.
+    // Breadth-first mode: `eligibleSmiles` never reads `activeBBs`, so a round-1 BB override must
+    // have zero effect — override and no-override runs must produce IDENTICAL rows, round 0 and 1 alike.
     const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
     config.enumeration.num_rounds = 1;
     config.enumeration.depth_first = false;
@@ -1068,9 +1056,9 @@ category('Reaction Enumeration', () => {
 
   test('per-step: BB override in breadth-first mode emits a "no effect" warning', async () => {
     // BB overrides do nothing in breadth-first mode (a round draws from the union of all earlier
-    // products, never from the per-round BB override) — this was previously silent at run time,
-    // discoverable only via the UI's dot indicator, which a user could easily miss after switching
-    // strategy without revisiting the step tab. Assert the engine now surfaces it as a warning.
+    // products, never from the per-round BB override). A silent no-op here is easy for a user to
+    // miss after switching strategy without revisiting the step tab, so the engine must surface
+    // it as a warning.
     const {rdkit, templates, buildingBlocks, exclusionSmarts, config} = await runFullSetup();
     config.enumeration.num_rounds = 1;
     config.enumeration.depth_first = false;
