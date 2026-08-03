@@ -313,7 +313,11 @@ export const RunComparison = Vue.defineComponent({
         .show({center: true});
     };
 
+    // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
+    // echoes back through the toggle — a no-op update must not clobber multiKeys
     const setMultiMode = (val: boolean) => {
+      if (val === multiMode.value)
+        return;
       if (val)
         multiKeys.value = selectedTargetKey.value ? [selectedTargetKey.value] : [];
       else if (multiKeys.value.length > 0)
