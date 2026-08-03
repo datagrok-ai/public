@@ -148,6 +148,8 @@ category('Dapi: domain registry', () => {
     expect(by('title').nullable, false);
     expect(by('description').nullable, true);
     expect(by('project_id').semType, 'grit.project', 'ref column must carry the target row semType');
+    expect(by('project_id').friendlyName, 'Project',
+      'ref columns must carry the label the platform renders, not the wire name');
   });
 
   test('rowProperties: unknown table rejects with a typed validation error', async () => {
@@ -194,21 +196,24 @@ category('Dapi: domain registry', () => {
     const info = await registry().tableInfo('apitests.item');
     const named = sku();
     const bare = sku();
-    // One row with a name value, one without: the second proves the
-    // business-key fallback regardless of whether the registry declares a
-    // name column for apitests.item (deployed registries drift on isName).
-    const [insNamed] = await items.insert({sku: named, name: 'Resolve probe'});
-    const [insBare] = await items.insert({sku: bare});
     const ghost = '00000000-0000-0000-0000-000000000000';
+    let inserted: {id: string}[] = [];
     try {
+      // One row with a name value, one without: the second proves the
+      // business-key fallback regardless of whether the registry declares a
+      // name column for apitests.item (deployed registries drift on isName).
+      // A single insert inside the try so no partial pair can leak.
+      inserted = await items.insert([{sku: named, name: 'Resolve probe'}, {sku: bare}]);
+      const [insNamed, insBare] = inserted;
       const names = await registry().resolveNames('apitests.item', [insNamed.id, insBare.id, ghost]);
       expect(names[insNamed.id], info.nameColumn != null ? 'Resolve probe' : named,
         `display identity must follow the declared name column (${info.nameColumn})`);
       expect(names[insBare.id], bare, 'empty name — the business key is the display identity');
+      expect(Object.keys(names).includes(ghost), true, 'every requested id must be a key');
       expect(names[ghost] == null, true, 'unresolvable ids must map to null');
     } finally {
-      await items.delete(insNamed.id);
-      await items.delete(insBare.id);
+      for (const r of inserted)
+        await items.delete(r.id);
     }
   });
 }, {owner: 'askalkin@datagrok.ai'});

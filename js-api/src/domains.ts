@@ -118,18 +118,33 @@ export interface DomainGrant {
 /** Effective capabilities of the CURRENT user on one domain table
  * (see `DomainTableClient.capabilities`). Composed client-side from server-truth
  * permission probes on the FINAL securing entity through the master delegate chain,
- * plus the writable-column mirror of column security — the same predicates the
- * server enforces on writes, so UI affordances gated on this object never promise
- * an action the server would 403. */
+ * plus the writable-column mirror of column security.
+ *
+ * These are TABLE-level affordances, and they drift toward denial: every flag is
+ * derived from grants on the securing entity, so grants that reach individual ROWS
+ * (a master row of a master-mode table, a promoted row of a row-mode table) are not
+ * counted. A false flag therefore means "no table-wide right" — the caller may still
+ * succeed on a particular row, and per-row truth comes from
+ * {@link DomainRow.permissions}. A true flag mirrors a predicate the server also
+ * enforces, so gating UI on it avoids the common 403s (but never assume it removes
+ * them: grants can change between the probe and the write, and column-level
+ * restrictions are checked per value). */
 export interface DomainTableCapabilities {
   /** View grant on the securing entity. Row-mode tables may still expose
    * individually granted rows when false. */
   canView: boolean;
-  /** Edit grant on the securing entity — the server's insert predicate. */
+  /** Edit grant on the securing entity — the server's insert predicate
+   * (`_checkInsertAllowed`). False negative on master-mode tables where the caller
+   * holds the grant on an individual MASTER ROW rather than the master table. */
   canInsert: boolean;
-  /** {@link canInsert} AND at least one column is writable for the caller —
-   * the built-in grid-editability rule. */
+  /** {@link canInsert} AND at least one column is writable for the caller (the
+   * built-in grid-editability rule) AND the table grant actually reaches rows —
+   * for non-table security modes that needs the securing table's rows to default
+   * to table visibility, otherwise access is per-row. Same false-negative shape as
+   * {@link canInsert}. */
   canEdit: boolean;
+  /** Delete grant on the securing entity, under the same reaches-rows rule as
+   * {@link canEdit}; same false-negative shape. */
   canDelete: boolean;
   canShareTable: boolean;
   /** Column names the caller may write (Edit on an owning property schema),

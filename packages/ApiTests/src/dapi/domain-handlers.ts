@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test, before} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, before, after} from '@datagrok-libraries/test/src/test';
 
 // DG.DomainRow JS wrapper + ObjectHandler dispatch for domain-table rows (§8.1),
 // including ObjectHandler.renderGrid (ui-js-api WO-1) — the grid-customization
@@ -17,12 +17,21 @@ category('JS: domain handlers', () => {
   const events = () => grok.dapi.domains.table('apitests.item_event');
   const typeOf = (h: any) => { try { return h.type; } catch { return null; } };
 
+  // enableDomainDatabases is a client-profile setting shared with the rest of the
+  // session — capture and restore it (precedent: domain_filters_test.dart).
+  let flagBefore: any;
+
   before(async () => {
     // grok test's fresh client profile boots with enableDomainDatabases off, so
     // the per-table Dart metas never registered — set the flag and force the
     // registration so dispatch sees the same session state as a flagged client.
+    flagBefore = (grok.shell.settings as any).enableDomainDatabases;
     (grok.shell.settings as any).enableDomainDatabases = true;
     await (window as any).grok_DomainRowMeta_RegisterPerTableMetas();
+  });
+
+  after(async () => {
+    (grok.shell.settings as any).enableDomainDatabases = flagBefore;
   });
 
   test('DG.DomainRow wrapper exported', async () => {
@@ -77,8 +86,10 @@ category('JS: domain handlers', () => {
       expect(seen[0] != null, true, 'options.items not delivered');
       expect(grid.columns.byName('quantity')!.visible, false, 'grid customization did not land');
     } finally {
-      // There is no unregister API — retire the handler's type so later
-      // type-keyed resolution in this session can never pick it up again.
+      // There is no unregister API — retire the handler's type and applicability
+      // so later type-keyed resolution and forEntity skip it. NB retirement does
+      // not undo registration side effects (ElementRenderer.renderers keys on the
+      // type captured AT registration time).
       handler.retired = true;
       await items().delete(ins.id);
     }

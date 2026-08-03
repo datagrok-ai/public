@@ -1786,9 +1786,11 @@ export class ObjectHandler<T = any> {
    * column; never assume one. Interactivity that needs the object goes through
    * the semType renderer/context machinery.
    *
-   * Dispatch: defining this member takes FULL responsibility for grid decoration
-   * of the built-in views (e.g. the Domain View grid); handlers that predate the
-   * member fall through to the platform default. Default: no-op. */
+   * Dispatch: OVERRIDING this member takes FULL responsibility for grid decoration
+   * of the built-in views (e.g. the Domain View grid). Any handler that does not
+   * override it — including one written against this version of the API — inherits
+   * the sentinel-marked base no-op and falls through to the platform default; to
+   * opt out of decoration entirely, override it with an empty body. */
   renderGrid(grid: Grid, options?: {items?: DataFrame}): void { }
 
   /** Converts object to its markup description */

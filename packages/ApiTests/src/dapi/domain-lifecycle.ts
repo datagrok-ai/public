@@ -4,6 +4,17 @@ declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
+// Resolves to the thrown error (null when the action succeeded) — shared by both
+// categories in this file for typed-error assertions.
+async function thrown(action: () => Promise<any>): Promise<any> {
+  try {
+    await action();
+    return null;
+  } catch (e) {
+    return e;
+  }
+}
+
 // WO-4a (GROK-20601): schema lifecycle handle (grok.dapi.domains.schema(name):
 // manifest/apply/audit/delete + createSchema) and table-scoped admin surface
 // (grants/grant/revoke, shareColumn/restrictColumn/restoreColumnVisibility).
@@ -11,15 +22,6 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 // cleanly without it; grants/column tests ride the package's own 'apitests'
 // schema and grant only to 'All users' with finally-cleanup.
 category('Dapi: domain lifecycle', () => {
-  async function thrown(action: () => Promise<any>): Promise<any> {
-    try {
-      await action();
-      return null;
-    } catch (e) {
-      return e;
-    }
-  }
-
   const allUsers = async () => (await grok.dapi.groups.filter('friendlyName = "All users"').first());
 
   test('schema lifecycle: create → apply (dryRun first) → data → audit → typed errors → delete', async () => {
@@ -150,15 +152,6 @@ category('Dapi: domain lifecycle', () => {
 category('Dapi: domain capabilities', () => {
   const items = () => grok.dapi.domains.table('apitests.item');
 
-  async function thrown(action: () => Promise<any>): Promise<any> {
-    try {
-      await action();
-      return null;
-    } catch (e) {
-      return e;
-    }
-  }
-
   test('admin sees full capabilities; cache survives reads, drops on invalidation', async () => {
     const caps = await items().capabilities();
     expect(caps.canView && caps.canInsert && caps.canEdit && caps.canDelete && caps.canShareTable,
@@ -179,6 +172,17 @@ category('Dapi: domain capabilities', () => {
   });
 
   test('capabilities flip on a real grant round-trip for a restricted user', async () => {
+    // Same-origin sessions authenticate via the 'auth' COOKIE — DelegatingHttpClient
+    // deliberately attaches no Authorization header when dapi.root starts with the
+    // origin — so impersonating the restricted user means swapping the cookie
+    // (grok.dapi.token alone would be a no-op here). Where the cookie is unreadable
+    // (HttpOnly deployments) the restore path could only DELETE it and would take the
+    // admin session down with it: skip before signing anyone up or swapping anything.
+    const adminCookie = document.cookie.match(/(?:^|; )auth=([^;]*)/)?.[1] ?? null;
+    if (adminCookie == null) {
+      console.log('skipped: the auth cookie is not readable (HttpOnly) — impersonation is not restorable');
+      return;
+    }
     const stamp = `${Date.now()}${Math.floor(Math.random() * 1e4)}`;
     const login = `wo2caps${stamp}`;
     // Self-signup issues the restricted session token the probes run under.
@@ -191,16 +195,11 @@ category('Dapi: domain capabilities', () => {
       console.log(`skipped: self-signup unavailable (${signup?.reason ?? 'no token'})`);
       return;
     }
-    const adminToken = grok.dapi.token;
-    // Same-origin sessions authenticate via the 'auth' COOKIE — DelegatingHttpClient
-    // deliberately attaches no Authorization header when dapi.root starts with the
-    // origin — so impersonating the restricted user means swapping the cookie
-    // (grok.dapi.token alone would be a no-op here).
-    const adminCookie = document.cookie.match(/(?:^|; )auth=([^;]*)/)?.[1] ?? null;
-    const setAuth = (t: string | null) => {
-      document.cookie = t == null ? 'auth=; path=/; max-age=0' : `auth=${encodeURIComponent(t)}; path=/`;
-      grok.dapi.token = t ?? adminToken;
+    const setAuth = (token: string) => {
+      document.cookie = `auth=${encodeURIComponent(token)}; path=/`;
+      grok.dapi.token = token;
     };
+    const restoreAdmin = () => setAuth(decodeURIComponent(adminCookie));
     const user = await grok.dapi.users.filter(`login = "${login}"`).include('group').first();
     expect(user != null, true, 'signed-up user not found');
     // Runs capabilities() under the restricted user's session: the permission probes
@@ -212,13 +211,20 @@ category('Dapi: domain capabilities', () => {
         grok.dapi.domains.invalidateUiCaches();
         return await items().capabilities();
       } finally {
-        setAuth(adminCookie == null ? null : decodeURIComponent(adminCookie));
+        restoreAdmin();
       }
     };
     try {
       const before = await asUser();
       expect(before.canInsert, false, `no grant yet, canInsert must deny: ${JSON.stringify(before)}`);
       expect(before.canEdit, false, 'no grant yet, canEdit must deny');
+      // KNOWN LIMITATION, asserted so it cannot drift unnoticed: writableColumns is
+      // admin-fast-pathed off the SESSION's Auth.adminMode, which a cookie swap does
+      // not change — under an admin session it stays full even for the ungranted
+      // user. So the flip below is proven by canInsert (canEdit only rides on it);
+      // a genuinely restricted browser session is what makes writableColumns empty.
+      expect(before.writableColumns.length > 0, true,
+        `writableColumns is admin-fast-pathed here: ${JSON.stringify(before.writableColumns)}`);
       await items().grant(user!.group.id, 'Edit'); // drops the caches automatically
       const after = await asUser();
       expect(after.canInsert, true, `Edit grant must flip canInsert: ${JSON.stringify(after)}`);
@@ -226,7 +232,7 @@ category('Dapi: domain capabilities', () => {
       await items().revoke(user!.group.id, 'Edit');
       expect((await asUser()).canEdit, false, 'revoke must flip canEdit back');
     } finally {
-      setAuth(adminCookie == null ? null : decodeURIComponent(adminCookie));
+      restoreAdmin();
       try {
         await items().revoke(user!.group.id, 'Edit');
       } catch (_) { /* already revoked */ }
@@ -240,4 +246,4 @@ category('Dapi: domain capabilities', () => {
       grok.dapi.domains.invalidateUiCaches();
     }
   });
-});
+}, {owner: 'askalkin@datagrok.ai'});
