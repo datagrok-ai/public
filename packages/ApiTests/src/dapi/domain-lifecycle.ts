@@ -41,7 +41,7 @@ interface RestrictedUser {
  * HttpOnly auth cookie (the restore path could only DELETE it and would take the
  * admin session down with it) or unavailable self-signup (SSO-only or
  * email-confirm setups). */
-async function withRestrictedUser<T>(prefix: string,
+export async function withRestrictedUser<T>(prefix: string,
   body: (user: RestrictedUser) => Promise<T>): Promise<T | null> {
   const adminCookie = document.cookie.match(/(?:^|; )auth=([^;]*)/)?.[1] ?? null;
   if (adminCookie == null) {

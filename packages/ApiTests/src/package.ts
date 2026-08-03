@@ -8,6 +8,11 @@ import dayjs from "dayjs";
 
 export const _package = new DG.Package();
 
+// The domain-ui library this package tests, reachable from the browser as
+// `apitests.domainUi` — library-only surface has no other way into a console or
+// a manual probe (sample scripts run with the platform globals only).
+export * as domainUi from '@datagrok-libraries/domain-ui';
+
 //name: getTable
 //input: string name
 //input: string path {optional: true}

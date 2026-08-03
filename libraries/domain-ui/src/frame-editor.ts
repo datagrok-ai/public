@@ -1,0 +1,877 @@
+/**
+ * {@link DomainFrameEditor} — batch editing of domain-table rows on a DataFrame,
+ * with the editing state living in the frame itself (the `~state` / `~changes` /
+ * `~errors` service columns) rather than in a side store.
+ *
+ * @module frame-editor
+ */
+
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import * as rxjs from 'rxjs';
+
+/** Row state column: `'' | 'new' | 'modified' | 'deleted'`. */
+export const STATE_COLUMN = '~state';
+/** JSON column holding the ORIGINAL values of changed cells only (sparse). */
+export const CHANGES_COLUMN = '~changes';
+/** JSON column holding per-cell {@link DomainCellError}s. */
+export const ERRORS_COLUMN = '~errors';
+
+/** The three service columns {@link DomainFrameEditor} attaches — every one of
+ * them tagged out of binary AND csv export, so the editing state can never reach
+ * a saved project, an export, an upload, or a `batch()` fed from the frame. */
+export const SERVICE_COLUMNS: string[] = [STATE_COLUMN, CHANGES_COLUMN, ERRORS_COLUMN];
+
+/** Per-row editing state, as stored in {@link STATE_COLUMN}. */
+export type DomainRowState = '' | 'new' | 'modified' | 'deleted';
+
+/** One cell-level problem, as stored in {@link ERRORS_COLUMN}: `'error'` blocks
+ * {@link DomainFrameEditor.save}, `'conflict'` (a dismissed version conflict)
+ * only marks the cell. */
+export interface DomainCellError {
+  message: string;
+  kind: 'error' | 'conflict';
+}
+
+/** What one {@link DomainFrameEditor.save} wrote (all of it in ONE transaction). */
+export interface DomainSaveResult {
+  inserted: number;
+  updated: number;
+  deleted: number;
+}
+
+/** Options of {@link DomainFrameEditor.attach} / {@link DomainFrameEditor.create}. */
+export interface DomainFrameEditorOptions {
+  /** The query the frame came from — what {@link DomainFrameEditor.refresh}
+   * re-runs, and what {@link DomainFrameEditor.create} runs to build it. */
+  query?: DG.DomainQuerySpec;
+  /** Pre-probed capabilities, to avoid a second round trip when the caller
+   * already has them (a {@link DomainGrid} passes its own). */
+  capabilities?: DG.DomainTableCapabilities;
+}
+
+/** Marks a first-touch whose original value could not be captured (see
+ * {@link DomainFrameEditor.beginEdit}) — the cell still saves, it just cannot be
+ * reverted. Object-shaped on purpose: no scalar wire value can collide with it. */
+const UNKNOWN_ORIGINAL = {'~unknownOriginal': true};
+
+/** How many pre-edit row snapshots {@link DomainFrameEditor.beginEdit} keeps.
+ * One would do for the grid (a cell is edited only while it is current), a
+ * handful covers an editor that commits after the focus already moved on. */
+const SNAPSHOT_LIMIT = 8;
+
+function _isUnknown(x: any): boolean {
+  return x != null && typeof x === 'object' && x['~unknownOriginal'] === true;
+}
+
+/** A value as it travels on the wire: dayjs/Date become ISO-8601, non-finite
+ * numbers and DG's null sentinels become null. Comparisons and `~changes`
+ * entries use this form, so a revert compares like the server would. */
+function toWire(v: any): any {
+  if (v == null)
+    return null;
+  if (typeof v === 'object' && typeof v.toISOString === 'function')
+    return v.toISOString();
+  if (typeof v === 'number' && !isFinite(v))
+    return null;
+  return v;
+}
+
+function wireEquals(a: any, b: any): boolean {
+  if (a === b)
+    return true;
+  if (a == null || b == null)
+    return a == null && b == null;
+  if (typeof a === 'object' || typeof b === 'object')
+    return JSON.stringify(a) === JSON.stringify(b);
+  return false;
+}
+
+/** The value's platform type name, resolved the dart2js-safe way (`1` is an int
+ * here, not the `double` a dart2js `is` check reports) — see
+ * {@link validateCellValue}. */
+function valueTypeOf(v: any): string {
+  if (typeof v === 'string')
+    return DG.TYPE.STRING;
+  if (typeof v === 'boolean')
+    return DG.TYPE.BOOL;
+  if (typeof v === 'number')
+    return Number.isInteger(v) ? DG.TYPE.INT : DG.TYPE.FLOAT;
+  if (Array.isArray(v))
+    return DG.TYPE.LIST;
+  if (v != null && typeof v === 'object' && typeof v.toISOString === 'function')
+    return DG.TYPE.DATE_TIME;
+  return DG.TYPE.MAP;
+}
+
+/** Numbers formatted the way the server VM prints them, so the messages below
+ * match the server's byte-for-byte (the VM prints whole doubles as '1.0'). */
+function vmNum(v: number): string {
+  return v % 1 === 0 ? v.toFixed(1) : `${v}`;
+}
+
+function isNumerical(p: DG.Property): boolean {
+  const t = p.propertyType;
+  return t === DG.TYPE.INT || t === DG.TYPE.FLOAT || t === DG.TYPE.NUM || t === DG.TYPE.BIG_INT;
+}
+
+function validateNumeric(p: DG.Property, v: number): string | null {
+  if (p.propertyType === DG.TYPE.INT && v % 1 !== 0)
+    return 'Types differ. Expected: int, passed: double';
+  const passed = p.propertyType === DG.TYPE.INT ? `${v}` : vmNum(v);
+  if (p.min != null && v < p.min)
+    return `Value should not be less than ${vmNum(p.min)}, passed: ${passed}`;
+  if (p.max != null && v > p.max)
+    return `Value should not be more than ${vmNum(p.max)}, passed: ${passed}`;
+  return null;
+}
+
+/**
+ * Validates one cell value against its registry {@link DG.Property} — the same
+ * constraints the server re-runs on write, producing the server's exact message
+ * texts so an inline marker and a rejected save read identically.
+ *
+ * Numeric properties take a dart2js-safe path (under dart2js every whole number
+ * `is double`, which would reject every integer), and `string_list` values are
+ * left to the server, which coerces them. Returns null when the value is fine.
+ */
+export function validateCellValue(p: DG.Property, value: any): string | null {
+  if (!p.nullable && (value == null || value === ''))
+    return "Value can't be empty";
+  if (value == null || p.propertyType === DG.TYPE.STRING_LIST)
+    return null;
+  const type = valueTypeOf(value);
+  if (isNumerical(p))
+    return typeof value === 'number' ? validateNumeric(p, value)
+      : `Numerical value expected, passed: ${type}`;
+  const expected = p.propertyType === DG.TYPE.NUM ? DG.TYPE.FLOAT : p.propertyType;
+  if (type !== expected)
+    return `Types differ. Expected: ${p.propertyType}, passed: ${type}`;
+  const choices = p.choices;
+  if (choices != null && choices.length > 0 && !choices.includes(value))
+    return `"${value}" is not one of (${choices.join(', ')})`;
+  return null;
+}
+
+/** Whether [p] addresses another row rather than carrying a value of its own — a
+ * `ref` column (semType `'<schema>.<table>'`) or a `user`/`group` column. Those
+ * hold uuids: a picker is their editing path, not a text cell. */
+export function isReferenceProperty(p: DG.Property): boolean {
+  const semType = `${p.semType ?? ''}`;
+  return semType === 'User' || semType === 'Group' || /^[^.]+\.[^.]+$/.test(semType);
+}
+
+/** One pending write of {@link DomainFrameEditor.buildOps}, with the frame row it
+ * came from (how a failing `opIndex` finds its row). */
+export interface DomainPendingOp {
+  op: DG.DomainTransactionOp;
+  row: number;
+}
+
+/**
+ * THE single writer of a domain frame's editing state.
+ *
+ * It wraps a DataFrame produced by `table.queryDf(...)` and attaches three
+ * invisible service columns — {@link STATE_COLUMN}, {@link CHANGES_COLUMN},
+ * {@link ERRORS_COLUMN} — that hold everything about the pending batch: which
+ * rows are new/modified/deleted, the ORIGINAL value of every changed cell, and
+ * the per-cell validation errors. Grids, forms and the save pipeline all read
+ * that one state; nothing keeps a parallel store.
+ *
+ * ```ts
+ * const editor = await DomainFrameEditor.create(grok.dapi.domains.table('grit.issue'));
+ * editor.setValue(0, 'title', 'New title');     // tracked, validated, highlighted
+ * await editor.save();                          // ONE /transaction
+ * ```
+ *
+ * Every service column is tagged out of binary AND csv export, so the state is
+ * memory-only: a saved project, `toByteArray()`, `toCsv()`, an export or a
+ * `batch()` upload built from the frame never carry it.
+ *
+ * **Writing.** Go through {@link setValue} (programmatic) or
+ * {@link beginEdit} + {@link commitEdit} (an in-grid edit, where the grid has
+ * already written the cell). Writing a cell directly on the DataFrame bypasses
+ * the tracking and the value is silently NOT saved.
+ *
+ * **Deleted rows stay in the frame** and are hidden by ANDing them out of the
+ * filter bitset on every filter recomputation, so undoing a delete
+ * ({@link unmarkDeleted}) is trivial and row order never moves.
+ *
+ * **Refreshing discards edits — BY DESIGN.** {@link refresh} re-runs the query
+ * and rebuilds the frame and its state from scratch; there is no merge and never
+ * will be. Deciding whether it is safe to refresh is the CALLER's job: read
+ * {@link isDirty} / subscribe to {@link onDirtyChanged} and prompt (save /
+ * discard / cancel) before calling it. A component that refreshes on a timer or
+ * on a route change without that check WILL eat a user's batch edits.
+ */
+export class DomainFrameEditor {
+  private _df: DG.DataFrame;
+  private _subs: rxjs.Subscription[] = [];
+  private _properties: DG.Property[] = [];
+  private _propByName = new Map<string, DG.Property>();
+  private _snapshots = new Map<number, {[column: string]: any}>();
+  private _suspend = false;
+  private _saving = false;
+  private _saveDepth = 0;
+  private _dirty = false;
+  private _query?: DG.DomainQuerySpec;
+
+  private readonly _onChanged = new rxjs.Subject<DomainFrameEditor>();
+  private readonly _onDirtyChanged = new rxjs.Subject<boolean>();
+  private readonly _onSaved = new rxjs.Subject<DomainSaveResult>();
+  private readonly _onConflict = new rxjs.Subject<DG.DomainVersionConflictError>();
+  private readonly _onRefreshed = new rxjs.Subject<DG.DataFrame>();
+
+  private constructor(
+    /** The table the frame's rows belong to. */
+    public readonly client: DG.DomainTableClient,
+    /** Effective capabilities of the current user — what read-only degradation
+     * and the writable-column payload filter derive from. */
+    public readonly capabilities: DG.DomainTableCapabilities,
+    df: DG.DataFrame, properties: DG.Property[], query?: DG.DomainQuerySpec) {
+    this.capabilities = capabilities;
+    this._properties = properties;
+    for (const p of properties)
+      this._propByName.set(p.name, p);
+    this._query = query;
+    this._df = df;
+    this._bind(df);
+  }
+
+  /** Attaches the editing state to an EXISTING frame of [client]'s rows (a
+   * `queryDf` result). Pass `options.query` so {@link refresh} knows what to
+   * re-run. */
+  static async attach(dataFrame: DG.DataFrame, client: DG.DomainTableClient,
+    options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
+    const address = `${client.schema}.${client.table}`;
+    const [properties, capabilities] = await Promise.all([
+      grok.dapi.domains.registry.rowProperties(address),
+      options?.capabilities != null ? Promise.resolve(options.capabilities) : client.capabilities(),
+    ]);
+    return new DomainFrameEditor(client, capabilities, dataFrame, properties, options?.query);
+  }
+
+  /** Runs `options.query` (everything the caller may see, by default) and
+   * attaches to the resulting frame. */
+  static async create(client: DG.DomainTableClient,
+    options?: DomainFrameEditorOptions): Promise<DomainFrameEditor> {
+    const df = await client.queryDf(options?.query ?? {});
+    return DomainFrameEditor.attach(df, client, options);
+  }
+
+  /** The frame being edited. It is REPLACED by {@link refresh} — re-read it (or
+   * subscribe to {@link onRefreshed}) instead of caching it. */
+  get dataFrame(): DG.DataFrame { return this._df; }
+
+  /** `'<schema>.<table>'`. */
+  get table(): string { return `${this.client.schema}.${this.client.table}`; }
+
+  /** Registry {@link DG.Property} metadata of the table's declared columns. */
+  get properties(): DG.Property[] { return this._properties; }
+
+  /** The query {@link refresh} re-runs. */
+  get query(): DG.DomainQuerySpec | undefined { return this._query; }
+
+  /** Whether anything is pending (a changed cell, a new row, a deleted row). */
+  get isDirty(): boolean { return this._dirty; }
+
+  /** Number of pending cell changes — what a "N unsaved changes" bar shows. */
+  get changeCount(): number {
+    let n = 0;
+    for (let i = 0; i < this._df.rowCount; i++) {
+      const state = this.stateOf(i);
+      if (state === 'new' || state === 'deleted')
+        n++;
+      else
+        n += Object.keys(this.changesOf(i)).length;
+    }
+    return n;
+  }
+
+  /** Fires on every service-state write — the repaint hook for a grid. */
+  get onChanged(): rxjs.Observable<DomainFrameEditor> { return this._onChanged; }
+  /** Fires when {@link isDirty} flips — what a caller's refresh policy listens to. */
+  get onDirtyChanged(): rxjs.Observable<boolean> { return this._onDirtyChanged; }
+  /** Fires after a successful {@link save}. */
+  get onSaved(): rxjs.Observable<DomainSaveResult> { return this._onSaved; }
+  /** Fires when a save hits a version conflict, BEFORE the standard dialog. */
+  get onConflict(): rxjs.Observable<DG.DomainVersionConflictError> { return this._onConflict; }
+  /** Fires with the NEW frame after {@link refresh} rebuilt it. */
+  get onRefreshed(): rxjs.Observable<DG.DataFrame> { return this._onRefreshed; }
+
+  // ─────────────────────── state accessors ─────────────────────────
+
+  /** Editing state of [row]. */
+  stateOf(row: number): DomainRowState {
+    return (this._col(STATE_COLUMN).get(row) ?? '') as DomainRowState;
+  }
+
+  /** ORIGINAL values of [row]'s changed cells, keyed by column (empty when the
+   * row is unchanged; always empty for a `'new'` row — all of its values are
+   * new). */
+  changesOf(row: number): {[column: string]: any} {
+    return this._json(CHANGES_COLUMN, row);
+  }
+
+  /** Per-cell problems of [row], keyed by column. */
+  errorsOf(row: number): {[column: string]: DomainCellError} {
+    return this._json(ERRORS_COLUMN, row);
+  }
+
+  /** Whether the cell carries a pending change (what highlighting keys on). */
+  isChanged(row: number, column: string): boolean {
+    return this.stateOf(row) === 'new' || column in this.changesOf(row);
+  }
+
+  /** The cell's problem, or null. */
+  errorOf(row: number, column: string): DomainCellError | null {
+    return this.errorsOf(row)[column] ?? null;
+  }
+
+  // ─────────────────────── writing (single writer) ─────────────────────────
+
+  /** Snapshots [row]'s current values so a following {@link commitEdit} knows
+   * what the cell held BEFORE the edit. A grid calls this when the cell becomes
+   * current — an edit can only start there. Without a snapshot the edit is still
+   * tracked and saved, it just cannot be reverted. */
+  beginEdit(row: number): void {
+    if (row < 0 || row >= this._df.rowCount || this._snapshots.has(row))
+      return;
+    const values: {[column: string]: any} = {};
+    for (const p of this._properties)
+      if (this._df.columns.contains(p.name))
+        values[p.name] = this._wire(row, p.name);
+    if (this._snapshots.size >= SNAPSHOT_LIMIT)
+      this._snapshots.delete(this._snapshots.keys().next().value as number);
+    this._snapshots.set(row, values);
+  }
+
+  /** Writes [value] into the cell AND tracks it — the programmatic write path
+   * (a form field, a paste, a fill-down). */
+  setValue(row: number, column: string, value: any): void {
+    const original = column in this.changesOf(row) ? undefined : this._wire(row, column);
+    this._write(() => this._df.set(column, row, value));
+    this._track(row, column, original);
+  }
+
+  /** Tracks a cell the GRID already wrote (its `onCellValueEdited` path); the
+   * original comes from the {@link beginEdit} snapshot. */
+  commitEdit(row: number, column: string): void {
+    if (this._suspend)
+      return;
+    const snapshot = this._snapshots.get(row);
+    const original = snapshot != null && column in snapshot ? snapshot[column] : UNKNOWN_ORIGINAL;
+    this._track(row, column, original);
+  }
+
+  /** Appends a new, unsaved row (state `'new'`), optionally prefilled;
+   * returns its index. */
+  addRow(values?: {[column: string]: any}): number {
+    const row = this._df.rowCount;
+    this._write(() => {
+      this._df.rows.addNew();
+      if (values != null)
+        for (const name of Object.keys(values))
+          if (this._df.columns.contains(name))
+            this._df.set(name, row, values[name]);
+    });
+    this._col(STATE_COLUMN).set(row, 'new', false);
+    this._validateRow(row);
+    this._fire();
+    return row;
+  }
+
+  /** Marks rows deleted: they stay in the frame (order untouched) and are
+   * excluded from the filter until {@link save} removes them for real. */
+  markDeleted(rows: number | number[]): void {
+    this._setDeleted(rows, true);
+  }
+
+  /** Undoes {@link markDeleted}, restoring whatever the row was before. */
+  unmarkDeleted(rows: number | number[]): void {
+    this._setDeleted(rows, false);
+  }
+
+  /** Restores one cell to its original value and drops its change entry. */
+  revertCell(row: number, column: string): void {
+    const changes = this.changesOf(row);
+    if (!(column in changes))
+      return;
+    const original = changes[column];
+    if (_isUnknown(original)) {
+      grok.log.warning(`${this.table}: cannot revert ${column} — its original value was not captured`);
+      return;
+    }
+    this._write(() => this._df.set(column, row, original));
+    delete changes[column];
+    this._setJson(CHANGES_COLUMN, row, changes);
+    this._setError(row, column, null);
+    this._recomputeState(row);
+    this._fire();
+  }
+
+  /** {@link revertCell} for every changed cell of [row]. */
+  revertRow(row: number): void {
+    for (const column of Object.keys(this.changesOf(row)))
+      this.revertCell(row, column);
+  }
+
+  /** Drops the whole pending batch: changed cells go back to their originals,
+   * new rows are removed, deleted rows are restored. */
+  discard(): void {
+    this._write(() => {
+      for (let row = this._df.rowCount - 1; row >= 0; row--) {
+        if (this.stateOf(row) === 'new') {
+          this._df.rows.removeAt(row, 1, false);
+          continue;
+        }
+        const changes = this.changesOf(row);
+        for (const column of Object.keys(changes))
+          if (!_isUnknown(changes[column]))
+            this._df.set(column, row, changes[column]);
+        this._clearRowState(row);
+      }
+    });
+    this._snapshots.clear();
+    this._df.rows.requestFilter();
+    this._fire();
+  }
+
+  /** Re-runs every cell validator over the pending batch; returns the number of
+   * blocking (`kind: 'error'`) cells. Call it before offering Save when values
+   * arrived from outside {@link setValue}. */
+  validate(): number {
+    for (let row = 0; row < this._df.rowCount; row++)
+      if (this.stateOf(row) !== '')
+        this._validateRow(row);
+    this._fire();
+    return this.errorCount;
+  }
+
+  /** Number of cells whose problem blocks {@link save}. */
+  get errorCount(): number {
+    let n = 0;
+    for (let row = 0; row < this._df.rowCount; row++) {
+      const errors = this.errorsOf(row);
+      for (const column of Object.keys(errors))
+        if (errors[column].kind === 'error')
+          n++;
+    }
+    return n;
+  }
+
+  // ─────────────────────── saving ─────────────────────────
+
+  /** The pending batch as transaction ops, in row order: `'new'` rows insert
+   * their writable values, `'modified'` rows update ONLY their changed columns
+   * with the row's `expectedVersion`, `'deleted'` rows delete. Exposed so a
+   * caller can inspect or extend the payload (a master-detail save appends its
+   * own ops to one transaction). */
+  buildOps(): DomainPendingOp[] {
+    const table = this.client.table;
+    const writable = this.capabilities.writableColumns;
+    const pending: DomainPendingOp[] = [];
+    for (let row = 0; row < this._df.rowCount; row++) {
+      const state = this.stateOf(row);
+      const id = this._wire(row, 'id');
+      if (state === 'deleted') {
+        // A row that was added and then deleted never reached the server.
+        if (id != null)
+          pending.push({row: row, op: {op: 'delete', table: table, id: `${id}`}});
+      }
+      else if (state === 'new') {
+        const values: {[column: string]: any} = {};
+        for (const name of writable) {
+          const v = this._wire(row, name);
+          if (v != null)
+            values[name] = v;
+        }
+        pending.push({row: row, op: {op: 'insert', table: table, values: values}});
+      }
+      else if (state === 'modified') {
+        const values: {[column: string]: any} = {};
+        for (const name of Object.keys(this.changesOf(row)))
+          if (writable.includes(name))
+            values[name] = this._wire(row, name);
+        if (Object.keys(values).length === 0)
+          continue;
+        const op: DG.DomainTransactionOp = {op: 'update', table: table, id: `${id}`, values: values};
+        const version = this._wire(row, 'version');
+        if (typeof version === 'number')
+          op.expectedVersion = version;
+        pending.push({row: row, op: op});
+      }
+    }
+    return pending;
+  }
+
+  /**
+   * Writes the whole pending batch as ONE `/transaction`: audit rows share a
+   * `tx_id`, and any failure rolls every op back. Resolves to whether the batch
+   * landed.
+   *
+   * Blocking cell errors refuse the save (naming the first one). A version
+   * conflict goes through the platform's standard reload/overwrite dialog and
+   * the chosen outcome is applied and retried. Server validation errors land on
+   * the offending cells as {@link ERRORS_COLUMN} entries and everything stays
+   * pending.
+   */
+  async save(): Promise<boolean> {
+    if (this._saving)
+      return false;
+    const blocking = this._firstBlockingError();
+    if (blocking != null) {
+      grok.shell.error(`Cannot save: ${blocking}`);
+      return false;
+    }
+    const pending = this.buildOps();
+    if (pending.length === 0)
+      return true;
+    this._saving = true;
+    this._saveDepth = 0;
+    try {
+      return await this._runSave(pending);
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  /**
+   * Rebuilds the frame from the server: re-runs [query] (the attached one by
+   * default) and re-attaches the service columns from scratch.
+   *
+   * **Pending edits do NOT survive this — by design.** There is no merge: the
+   * control is refresh-agnostic and this method never reconciles old and new
+   * state. Deciding WHETHER to refresh while edits are pending is the caller's
+   * responsibility — check {@link isDirty} (or subscribe to
+   * {@link onDirtyChanged}) and prompt the user to save or discard first.
+   *
+   * Resolves to the NEW frame, which also arrives on {@link onRefreshed}: a grid
+   * bound to the old one must rebind.
+   */
+  async refresh(query?: DG.DomainQuerySpec): Promise<DG.DataFrame> {
+    const spec = query ?? this._query;
+    const df = await this.client.queryDf(spec ?? {});
+    this._query = spec;
+    this._unsubscribe();
+    this._snapshots.clear();
+    this._df = df;
+    this._bind(df);
+    this._onRefreshed.next(df);
+    this._fire();
+    return df;
+  }
+
+  /** Releases the frame subscriptions. The service columns stay on the frame —
+   * drop the frame, or remove them, if it outlives the editor. */
+  detach(): void {
+    this._unsubscribe();
+    this._snapshots.clear();
+  }
+
+  // ─────────────────────── internals ─────────────────────────
+
+  private _bind(df: DG.DataFrame): void {
+    for (const name of SERVICE_COLUMNS) {
+      let col = df.columns.byName(name);
+      if (col == null)
+        col = df.columns.addNewString(name).init('');
+      // Both tags, both writers: the d42 serializer skips one, the CSV writer
+      // the other — the state must reach neither.
+      col.meta.includeInBinaryExport = false;
+      col.meta.includeInCsvExport = false;
+    }
+    this._dirty = false;
+    this._subs.push(df.onRowsFiltering.subscribe(() => this._maskDeleted()));
+    df.rows.requestFilter();
+  }
+
+  private _unsubscribe(): void {
+    for (const sub of this._subs)
+      sub.unsubscribe();
+    this._subs = [];
+  }
+
+  private _col(name: string): DG.Column<string> {
+    return this._df.columns.byName(name) as DG.Column<string>;
+  }
+
+  private _json(name: string, row: number): any {
+    const raw = this._col(name).get(row);
+    if (raw == null || raw === '')
+      return {};
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  private _setJson(name: string, row: number, value: any): void {
+    const empty = value == null || Object.keys(value).length === 0;
+    this._col(name).set(row, empty ? '' : JSON.stringify(value), false);
+  }
+
+  /** Runs [action] with the tracking latch closed, so writes the editor makes
+   * itself (reverts, version bumps, reloaded server values) are not tracked as
+   * user edits. */
+  private _write(action: () => void): void {
+    const was = this._suspend;
+    this._suspend = true;
+    try {
+      action();
+    } finally {
+      this._suspend = was;
+    }
+  }
+
+  private _wire(row: number, column: string): any {
+    const col = this._df.columns.byName(column);
+    if (col == null || col.isNone(row))
+      return null;
+    return toWire(col.get(row));
+  }
+
+  private _track(row: number, column: string, original: any): void {
+    const property = this._propByName.get(column);
+    const message = property == null ? null : validateCellValue(property, this._df.get(column, row));
+    if (this.stateOf(row) !== 'new') {
+      const changes = this.changesOf(row);
+      if (!(column in changes)) {
+        if (original !== undefined)
+          changes[column] = original;
+      }
+      // Back to the original AND valid: the cell is clean again (an invalid cell
+      // stays pending so its marker survives) — the platform's own semantics.
+      if (column in changes && !_isUnknown(changes[column]) &&
+          message == null && wireEquals(changes[column], this._wire(row, column)))
+        delete changes[column];
+      this._setJson(CHANGES_COLUMN, row, changes);
+    }
+    this._setError(row, column, message == null ? null : {message: message, kind: 'error'});
+    this._recomputeState(row);
+    this._fire();
+  }
+
+  private _setError(row: number, column: string, error: DomainCellError | null): void {
+    const errors = this.errorsOf(row);
+    if (error == null)
+      delete errors[column];
+    else
+      errors[column] = error;
+    this._setJson(ERRORS_COLUMN, row, errors);
+  }
+
+  private _validateRow(row: number): void {
+    for (const p of this._properties) {
+      if (!this._df.columns.contains(p.name))
+        continue;
+      const message = validateCellValue(p, this._df.get(p.name, row));
+      const existing = this.errorOf(row, p.name);
+      if (message != null)
+        this._setError(row, p.name, {message: message, kind: 'error'});
+      else if (existing != null && existing.kind === 'error')
+        this._setError(row, p.name, null);
+    }
+  }
+
+  private _recomputeState(row: number): void {
+    const state = this.stateOf(row);
+    if (state === 'new' || state === 'deleted')
+      return;
+    const changed = Object.keys(this.changesOf(row)).length > 0;
+    this._col(STATE_COLUMN).set(row, changed ? 'modified' : '', false);
+  }
+
+  private _clearRowState(row: number): void {
+    this._col(STATE_COLUMN).set(row, '', false);
+    this._col(CHANGES_COLUMN).set(row, '', false);
+    this._col(ERRORS_COLUMN).set(row, '', false);
+  }
+
+  private _setDeleted(rows: number | number[], deleted: boolean): void {
+    const list = Array.isArray(rows) ? rows : [rows];
+    const state = this._col(STATE_COLUMN);
+    for (const row of list) {
+      if (row < 0 || row >= this._df.rowCount)
+        continue;
+      if (deleted)
+        state.set(row, 'deleted', false);
+      else if (state.get(row) === 'deleted')
+        state.set(row, Object.keys(this.changesOf(row)).length > 0 ? 'modified' : '', false);
+    }
+    this._df.rows.requestFilter();
+    this._fire();
+  }
+
+  /** Cooperative filtering: every participant ANDs its own exclusions into the
+   * frame filter while it is being recomputed, so deleted rows stay hidden no
+   * matter which other filter runs. */
+  private _maskDeleted(): void {
+    const state = this._df.columns.byName(STATE_COLUMN);
+    if (state == null)
+      return;
+    for (let row = 0; row < this._df.rowCount; row++)
+      if (state.get(row) === 'deleted')
+        this._df.filter.set(row, false, false);
+  }
+
+  private _firstBlockingError(): string | null {
+    for (let row = 0; row < this._df.rowCount; row++) {
+      if (this.stateOf(row) === 'deleted')
+        continue;
+      const errors = this.errorsOf(row);
+      for (const column of Object.keys(errors))
+        if (errors[column].kind === 'error')
+          return errors[column].message;
+    }
+    return null;
+  }
+
+  private _fire(): void {
+    this._onChanged.next(this);
+    const dirty = this.changeCount > 0;
+    if (dirty !== this._dirty) {
+      this._dirty = dirty;
+      this._onDirtyChanged.next(dirty);
+    }
+  }
+
+  private async _runSave(pending: DomainPendingOp[]): Promise<boolean> {
+    if (pending.length === 0)
+      return true;
+    // Each conflict outcome resolves exactly one row, so the chain is finite;
+    // the cap only guards against a server that keeps reporting the same op.
+    if (this._saveDepth++ > 32) {
+      grok.shell.error('Cannot save: too many version conflicts in a row');
+      return false;
+    }
+    let results: any[];
+    try {
+      results = await grok.dapi.domains.transaction(this.client.schema, pending.map((p) => p.op));
+    } catch (e: any) {
+      return await this._onTransactionError(e, pending);
+    }
+    this._applyResults(pending, results);
+    return true;
+  }
+
+  private _applyResults(pending: DomainPendingOp[], results: any[]): void {
+    const removed: number[] = [];
+    const result: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0};
+    this._write(() => {
+      for (let i = 0; i < pending.length; i++) {
+        const {op, row} = pending[i];
+        const r = results[i] ?? {};
+        if (op.op === 'delete') {
+          removed.push(row);
+          result.deleted++;
+          continue;
+        }
+        if (op.op === 'insert') {
+          result.inserted++;
+          if (r.id != null && this._df.columns.contains('id'))
+            this._df.set('id', row, `${r.id}`);
+        }
+        else
+          result.updated++;
+        if (r.version != null && this._df.columns.contains('version'))
+          this._df.set('version', row, r.version);
+        this._clearRowState(row);
+      }
+      removed.sort((a, b) => b - a);
+      for (const row of removed)
+        this._df.rows.removeAt(row, 1, false);
+    });
+    this._snapshots.clear();
+    this._df.rows.requestFilter();
+    this._fire();
+    this._onSaved.next(result);
+    const n = result.inserted + result.updated + result.deleted;
+    grok.shell.info(`Saved ${n} row${n === 1 ? '' : 's'}`);
+  }
+
+  private async _onTransactionError(e: any, pending: DomainPendingOp[]): Promise<boolean> {
+    const index = e?.opIndex;
+    const failing = typeof index === 'number' && index >= 0 && index < pending.length
+      ? pending[index] : null;
+    if (e instanceof DG.DomainVersionConflictError && failing != null)
+      return await this._resolveConflict(e, failing);
+    if (e instanceof DG.DomainValidationError && failing != null) {
+      this._mapValidationError(e, failing);
+      grok.shell.error(e.message);
+      return false;
+    }
+    grok.shell.error(e?.message ?? `${e}`);
+    return false;
+  }
+
+  /** The platform's standard reload/overwrite dialog, with the outcome applied:
+   * RELOAD takes the server's values for that ONE row (dropping its edits) and
+   * retries the rest; OVERWRITE retries it against the current version. */
+  private async _resolveConflict(e: DG.DomainVersionConflictError,
+    failing: DomainPendingOp): Promise<boolean> {
+    this._onConflict.next(e);
+    const row = failing.row;
+    const id = `${failing.op.id ?? this._wire(row, 'id')}`;
+    const subject = `${this._displayOf(row) ?? id}`;
+    const decision = await DG.DomainObjectHandler.showConflictDialog(subject);
+    if (decision === 'reload') {
+      let fresh: any = null;
+      try {
+        fresh = await this.client.get(id);
+      } catch (_) { /* gone or invisible — reported below */ }
+      if (fresh == null)
+        grok.shell.error(`${subject} no longer exists.`);
+      else
+        this._write(() => {
+          for (const name of Object.keys(fresh))
+            if (this._df.columns.contains(name))
+              this._df.set(name, row, fresh[name]);
+        });
+      this._clearRowState(row);
+      this._fire();
+      return await this._runSave(this.buildOps());
+    }
+    if (decision === 'overwrite') {
+      if (e.currentVersion != null)
+        this._write(() => this._df.set('version', row, e.currentVersion));
+      return await this._runSave(this.buildOps());
+    }
+    // Dismissed: nothing is written, and the row's changed cells say why.
+    for (const column of Object.keys(this.changesOf(row)))
+      this._setError(row, column, {message: e.message, kind: 'conflict'});
+    this._fire();
+    return false;
+  }
+
+  /** `rows[0].errors[{column, message}]` of a rejected op onto that row's cells;
+   * an error naming no known column marks every changed cell of the row. */
+  private _mapValidationError(e: DG.DomainValidationError, failing: DomainPendingOp): void {
+    const row = failing.row;
+    const errors = e.rows?.[0]?.errors ?? [];
+    let mapped = false;
+    for (const columnError of errors)
+      if (columnError.column != null && this._df.columns.contains(columnError.column)) {
+        this._setError(row, columnError.column, {message: columnError.message, kind: 'error'});
+        mapped = true;
+      }
+    if (!mapped)
+      for (const column of Object.keys(this.changesOf(row)))
+        this._setError(row, column, {message: e.message, kind: 'error'});
+    this._fire();
+  }
+
+  /** The row's display value for a dialog caption: the table's name column when
+   * the frame carries it, else the id. */
+  private _displayOf(row: number): string | null {
+    for (const p of this._properties) {
+      if (`${p.semType ?? ''}` !== '' || p.propertyType !== DG.TYPE.STRING)
+        continue;
+      const v = this._wire(row, p.name);
+      if (v != null && `${v}` !== '')
+        return `${v}`;
+    }
+    return null;
+  }
+}
