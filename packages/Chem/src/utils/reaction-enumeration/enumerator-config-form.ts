@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import {Subscription} from 'rxjs';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -184,6 +185,11 @@ export class EnumeratorConfigForm {
 
   private combinationLimitFields: ReturnType<typeof buildCombinationLimitFields>;
   private productFilterFields: ReturnType<typeof buildProductFilterFields>;
+  // Tracks ONLY combinationLimitFields/productFilterFields' own subscriptions (rebuilt wholesale on
+  // every YAML load) — unsubscribed and cleared right before each rebuild, so the previous
+  // generation's inputs stop being pinned alive. Deliberately separate from view.subs, which every
+  // input (including the permanent ones) also gets pushed into as a session-close safety net.
+  private limitFieldSubs: Subscription[] = [];
   private pushingConfigToInputs = false;
 
   readonly appInfoIcon: HTMLElement;
@@ -349,8 +355,11 @@ export class EnumeratorConfigForm {
     [this.smartsColInput, this.blockingColInput, this.rxnNameColInput, this.bbColInput, this.reagentsColInput,
       this.exclusionInput, this.exclusionColInput, this.numRoundsInput, this.depthFirstInput,
       this.maxComponentsInput, this.maxRoutesInput,
-      ...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs,
     ].forEach((inp) => this.wireValidationOne(inp));
+    // Tracked separately (see limitFieldSubs) — these two field groups get rebuilt wholesale on
+    // every YAML load, unlike the permanent inputs above.
+    [...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs].forEach((inp) =>
+      this.limitFieldSubs.push(this.wireValidationOne(inp)));
 
     // ---- Buttons ----
     // Icon buttons in the ribbon: 'folder-open' for import, 'arrow-to-bottom' for export.
@@ -511,21 +520,26 @@ export class EnumeratorConfigForm {
         if (c) this.setAndFire(this.exclusionColInput, c);
       }
       // Neither field group has a "set value" hook — rebuild from the loaded config; the rebuilt
-      // inputs are brand new objects, so they need their own revalidation wiring too.
+      // inputs are brand new objects, so they need their own revalidation wiring too. Unsubscribe
+      // the previous generation first, or every YAML load leaks the old inputs/subscriptions.
+      this.limitFieldSubs.forEach((s) => s.unsubscribe());
+      this.limitFieldSubs = [];
       this.combinationLimitFields = buildCombinationLimitFields(config);
       this.productFilterFields = buildProductFilterFields(config);
       this.nav.invalidateLimitForms();
-      this.combinationLimitFields.inputs.forEach((inp) => this.wireValidationOne(inp));
-      this.productFilterFields.inputs.forEach((inp) => this.wireValidationOne(inp));
+      this.combinationLimitFields.inputs.forEach((inp) => this.limitFieldSubs.push(this.wireValidationOne(inp)));
+      this.productFilterFields.inputs.forEach((inp) => this.limitFieldSubs.push(this.wireValidationOne(inp)));
     } finally {
       this.pushingConfigToInputs = false;
     }
   }
 
-  private wireValidationOne(input: DG.InputBase<unknown>): void {
-    this.deps.view.subs.push(input.onChanged.subscribe(() => {
+  private wireValidationOne(input: DG.InputBase<unknown>): Subscription {
+    const sub = input.onChanged.subscribe(() => {
       this.deps.refreshValidation();
-    }));
+    });
+    this.deps.view.subs.push(sub);
+    return sub;
   }
 
   validate = (): string | null => {
@@ -689,14 +703,11 @@ export class EnumeratorConfigForm {
     const prodChangedCount = productFiltersChangedCount(config);
     this.nav.applyRibbonState({
       reactionsText: tDf ? `${tDf.rowCount} reactions` : 'No reaction table',
-      reactionsErr: !tDf || !this.smartsColInput.value,
       reactionsOverride: overrides.templatesOverride,
       reactionsSubtitle: tDf ? `${tDf.rowCount} reactions` : 'No table selected',
       bbsText: bDf ? `${bDf.rowCount} BBs` : 'No BBs table',
-      bbsErr: !bDf || !this.bbColInput.value,
       bbsOverride: overrides.bbsOverride,
       bbsSubtitle: bDf ? `${bDf.rowCount} building blocks` : 'No table selected',
-      // Extras is fully optional — never flagged as an error state.
       extrasText: rDf ? `${rDf.rowCount} reagents` : 'Reagents (None)',
       extrasOverride: overrides.reagentsOverride,
       extrasSubtitle: rDf ? `${rDf.rowCount} reagents` : 'Optional',
