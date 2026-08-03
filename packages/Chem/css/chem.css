@@ -1422,11 +1422,6 @@
   border-color: var(--blue-2);
 }
 
-.chem-enum-chip--err {
-  background: var(--red-1);
-  border-color: var(--red-3);
-}
-
 .chem-enum-chip--active {
   background: #e9f3fb;
   border-color: var(--blue-1);

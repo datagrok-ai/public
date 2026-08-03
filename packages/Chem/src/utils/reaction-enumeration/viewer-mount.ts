@@ -11,9 +11,11 @@ const FILTER_REMOUNT_SETTLE_MS = 200;
 
 /**
  * Owns every mounted Grid/Filters viewer for one Reaction Enumerator view instance, plus every
- * deferred filter-reset timer scheduled against them. `view.subs` does not unsubscribe for this
+ * deferred filter-reset timer scheduled against them, and drains `view.subs` itself. `View.detach()`
+ * (js-api) never calls `ViewBase.detach()`, so `view.subs` never unsubscribes on its own for this
  * app-hosted view type — cleanup runs off `grok.events.onViewRemoved` instead (filtered by
  * `view.id`, so multiple open Reaction Enumerator tabs never cancel each other's timers/viewers).
+ * Every `view.subs.push(...)` call anywhere in this module relies on this one drain to ever unsubscribe.
  */
 export class MountedViewerRegistry {
   private readonly mountedViewers = new Map<HTMLElement, DG.Viewer[]>();
@@ -28,6 +30,7 @@ export class MountedViewerRegistry {
       for (const id of this.pendingTimers) clearTimeout(id);
       this.pendingTimers.clear();
       for (const cb of this.closeCallbacks) cb();
+      this.view.subs.forEach((s) => s.unsubscribe());
       this.closeSub.unsubscribe();
     });
   }
@@ -46,7 +49,8 @@ export class MountedViewerRegistry {
     if (!prev) return;
     this.mountedViewers.delete(host);
     for (const v of prev) {
-      // close() no-ops for standalone viewers (see /ui skill) — detach() + root.remove() instead.
+      // Viewer.close() is a no-op for a viewer that was never docked in a TableView — only
+      // detach() (unsubscribes from the DataFrame) plus removing the DOM node actually releases it.
       try {v.detach(); v.root.remove();} catch (e) {
         if (!(e instanceof TypeError)) console.warn('Could not close previous viewer:', e);
       }

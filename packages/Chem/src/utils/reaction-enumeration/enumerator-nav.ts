@@ -10,8 +10,8 @@ type StratCard = {root: HTMLElement; icon: HTMLElement};
 // computed by EnumeratorConfigForm (which owns EnumeratorConfig) and handed in wholesale, so this
 // class never needs to read EnumeratorConfig itself.
 export interface RibbonChipState {
-  reactionsText: string; reactionsErr: boolean; reactionsOverride: boolean; reactionsSubtitle: string;
-  bbsText: string; bbsErr: boolean; bbsOverride: boolean; bbsSubtitle: string;
+  reactionsText: string; reactionsOverride: boolean; reactionsSubtitle: string;
+  bbsText: string; bbsOverride: boolean; bbsSubtitle: string;
   extrasText: string; extrasOverride: boolean; extrasSubtitle: string;
   combineChipText: string; combineSubtitle: string;
   estimateText: string;
@@ -314,13 +314,12 @@ export class EnumeratorNav {
   }
 
   applyRibbonState(s: RibbonChipState): void {
-    const setChip = (chip: ChipEl, text: string, err: boolean, override: boolean): void => {
+    const setChip = (chip: ChipEl, text: string, override: boolean): void => {
       chip.textEl.textContent = text;
-      chip.root.classList.toggle('chem-enum-chip--err', err);
       chip.dot.style.display = override ? '' : 'none';
     };
-    setChip(this.chipReactionsC, s.reactionsText, s.reactionsErr, s.reactionsOverride);
-    setChip(this.chipBbsC, s.bbsText, s.bbsErr, s.bbsOverride);
+    setChip(this.chipReactionsC, s.reactionsText, s.reactionsOverride);
+    setChip(this.chipBbsC, s.bbsText, s.bbsOverride);
     // Extras is fully optional — never flagged as an error state.
     this.chipExtrasC.textEl.textContent = s.extrasText;
     this.chipExtrasC.dot.style.display = s.extrasOverride ? '' : 'none';

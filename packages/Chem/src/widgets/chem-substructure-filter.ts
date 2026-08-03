@@ -504,9 +504,9 @@ export class SubstructureFilter extends DG.Filter {
     // The platform calls applyState() twice per mount for a filter constructed with a pre-specified
     // column — once with the legacy `columnName` field populated, again with the "canonical" `column`
     // field (js-api's own convention: column is canonical, columnName is a backwards-compat alias) but
-    // no `columnName`. Base Filter.applyState() only reads `state.columnName`, so the second call
-    // silently overwrites a correctly-resolved column back to undefined — live-observed via a console
-    // diagnostic as the root cause of "sketching a substructure query does nothing, no error shown".
+    // no `columnName`. Base Filter.applyState() only reads `state.columnName`, so without this the
+    // second call would silently overwrite a correctly-resolved column back to undefined, leaving a
+    // sketched substructure query filtering nothing with no error shown.
     state.columnName ??= state.column;
     super.applyState(state);
     _package.logger.debug(`applying state: ${state.molBlock}, filter id: ${this.filterId}`);
@@ -694,10 +694,10 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   // `this.column` can end up null here even after attach() ran, if applyState() fired with
-  // `this.dataFrame` not yet set (a mount-timing race — live-observed: sketching a query silently
-  // no-oped instead of filtering, with `this.column!.temp` throwing under the hood). Re-resolve by
-  // name instead of trusting the cached, possibly-stale reference — null (not some other molecule
-  // column found by semtype) is the correct result when the configured column no longer exists.
+  // `this.dataFrame` not yet set (a mount-timing race) — trusting that stale null reference would
+  // make sketching a query silently no-op instead of filtering, since `this.column!.temp` throws
+  // under the hood. Re-resolve by name instead — null (not some other molecule column found by
+  // semtype) is the correct result when the configured column no longer exists.
   private resolveColumn(): DG.Column | null {
     this.column ??= this.dataFrame && this.columnName ? this.dataFrame.col(this.columnName) : null;
     return this.column;

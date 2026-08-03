@@ -279,7 +279,7 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   }
 
   // Maps a left-navigator pane to its ribbon chip, so the chip for the currently shown section can
-  // be marked active — same `--<state>` modifier convention as chem-enum-chip--err.
+  // be marked active via the chem-enum-chip--active modifier.
   const chipForPane = (pane: DG.AccordionPane): HTMLElement | undefined => {
     if (pane === configForm.accReactionsPane) return configForm.chipReactionsC.root;
     if (pane === configForm.accBbsPane) return configForm.chipBbsC.root;
@@ -445,10 +445,13 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     {style: {flex: '1 1 0', minHeight: '0', width: '100%'}}, true);
 
   // Redundant with the ribbon title and the app-info icon's tooltip — dropped rather than moved.
+  // overflowX auto (not hidden) is what actually delivers the rightPane comment's "holds a floor and
+  // scrolls instead": left + right pane min-widths combined can exceed a narrow window, and without a
+  // scrollbar here that excess would be invisibly clipped with no way to reach it.
   const root = ui.divV([
     mainRow,
     validationDiv,
-  ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflow: 'hidden'},
+  ], {style: {padding: '0 0 0 16px', height: '100%', boxSizing: 'border-box', overflowX: 'auto', overflowY: 'hidden'},
     classes: 'chem-enumerator'});
 
   // A separate arrow node per gap — one DOM node can't be reused in three places at once.
