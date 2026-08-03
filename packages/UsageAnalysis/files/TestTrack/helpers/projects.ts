@@ -1207,19 +1207,37 @@ export async function saveProjectViaUI(
   if (await cancel.count() > 0)
     await cancel.click({force: true});
   await page.waitForTimeout(800);
+  // The ribbon save commits the project asynchronously; its server-side search
+  // INDEX lags entity creation by a variable amount (the Gate B flake root cause:
+  // 1/3 attempts the filter()-by-name index had not committed inside a 12s window,
+  // so the poll returned null and the save was falsely reported as failed). Poll
+  // BOTH lookup paths per iteration — filter()-by-name (fast when the index is
+  // fresh) AND a direct list() scan (sees the freshly-created entity before its
+  // search index commits) — over a wider window so a slow-commit server still
+  // resolves rather than throwing. Same-paradigm reliability widening, not a
+  // paradigm change: the ribbon-Save UI flow above is unchanged.
   const found = await page.evaluate(async (n) => {
     const grok = (window as any).grok;
-    for (let a = 0; a < 10; a++) {
+    for (let a = 0; a < 25; a++) {
       try {
         const p = await grok.dapi.projects.filter(`name = "${n}"`).first();
         if (p) return {id: String(p.id), name: String(p.name)};
+      } catch (_) { /* transient index lag — retry */ }
+      try {
+        // Fallback: scan the recent project list directly. list() does not depend
+        // on the search index, so it can surface the entity a few seconds before
+        // filter()-by-name does on a slow-commit server.
+        const recent = await grok.dapi.projects.list({pageSize: 50});
+        const hit = (recent || []).find((p: any) =>
+          p && (p.friendlyName === n || p.name === n));
+        if (hit) return {id: String(hit.id), name: String(hit.name)};
       } catch (_) { /* transient — retry */ }
       await new Promise((r) => setTimeout(r, 1200));
     }
     return null;
   }, name);
   if (!found)
-    throw new Error(`saveProjectViaUI: project "${name}" not visible server-side after ribbon save`);
+    throw new Error(`saveProjectViaUI: project "${name}" not visible server-side after ribbon save (polled filter()-by-name + list() scan for ~30s)`);
   return {projectId: found.id, resolvedName: found.name};
 }
 
