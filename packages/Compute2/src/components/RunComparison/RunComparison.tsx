@@ -12,7 +12,7 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 
 import {History} from '../History/History';
 import {
-  ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
+  ComparisonTarget, ScalarTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
   ComparisonEntry, EntrySourceKind, RUN_COLUMN, candidateId,
 } from './types';
 import {matchScalarTargets, matchColumnTargets} from './matching';
@@ -21,7 +21,9 @@ import {
   isSplitCandidate, selectionToMap, computeIndexRows,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
-import {buildScalarComparison, buildColumnComparison, buildMultiColumnComparison} from './comparison-builders';
+import {
+  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
+} from './comparison-builders';
 import './RunComparison.css';
 
 const SOURCE_BADGES: Record<EntrySourceKind, {label: string, color: string}> = {
@@ -273,9 +275,9 @@ export const RunComparison = Vue.defineComponent({
     // that became conflicting must stay visible so it can be unchecked
     const filteredTargets = Vue.computed(() => {
       const listed: ComparisonTarget[] = multiMode.value ?
-        targets.value.filter((target) => target.kind === 'column' &&
-          (multiKeys.value.includes(target.key) ||
-            compatibleTargets.value.some((item) => item.key === target.key))) :
+        targets.value.filter((target) =>
+          multiKeys.value.includes(target.key) ||
+            compatibleTargets.value.some((item) => item.key === target.key)) :
         targets.value;
       return listed.filter((target) => matchesFilter(targetFilter.value, target.displayName));
     });
@@ -286,12 +288,24 @@ export const RunComparison = Vue.defineComponent({
     const multiMode = Vue.ref(false);
     const multiKeys = Vue.ref<string[]>([]);
 
-    const compatibleTargets = Vue.computed<ColumnTarget[]>(() =>
+    const scalarChartType = Vue.ref<'radar' | 'pcplot'>('radar');
+    const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
+      .some((f) => f.friendlyName === 'Radar');
+    const effectiveScalarChartType = Vue.computed(() =>
+      radarAvailable ? scalarChartType.value : 'pcplot');
+
+    const compatibleTargets = Vue.computed(() =>
       compatibleTargetsFor(selectedTarget.value, targets.value, indexColumnType));
 
     const chartViewer = Vue.shallowRef<DG.Viewer | null>(null);
     const onChartViewerChanged = (viewer: DG.Viewer | undefined) => {
       chartViewer.value = viewer ? Vue.markRaw(viewer) : null;
+      // JsViewer roots (ui.box) expect the host to size them; without this the
+      // radar collapses to 0x0 and echarts renders an empty chart
+      if (viewer) {
+        viewer.root.style.width = '100%';
+        viewer.root.style.height = '100%';
+      }
     };
 
     // snapshot export: clone of the chart data plus the chart with its current options
@@ -336,6 +350,21 @@ export const RunComparison = Vue.defineComponent({
       if (!target || entries.value.length < 2)
         return null;
       if (target.kind === 'scalar') {
+        if (multiMode.value) {
+          const selected = targets.value.filter((item): item is ScalarTarget =>
+            item.kind === 'scalar' && multiKeys.value.includes(item.key));
+          const anchorIndex = selected.findIndex((item) => item.key === target.key);
+          if (anchorIndex > 0)
+            selected.unshift(...selected.splice(anchorIndex, 1));
+          if (selected.length === 0)
+            return null;
+          if (selected.length > 1) {
+            const result = buildMultiScalarComparison(selected, entries.value);
+            return result ? Vue.markRaw({kind: 'multi-scalar' as const, target, ...result}) : null;
+          }
+          const result = buildScalarComparison(selected[0], entries.value);
+          return Vue.markRaw({kind: 'scalar' as const, target: selected[0], ...result});
+        }
         const result = buildScalarComparison(target, entries.value);
         return Vue.markRaw({kind: 'scalar' as const, target, ...result});
       }
@@ -644,8 +673,8 @@ export const RunComparison = Vue.defineComponent({
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
             const anchor = selectedTarget.value;
-            const overlap = multiMode.value && target.kind === 'column' &&
-              anchor?.kind === 'column' && target.key !== anchor.key ?
+            const overlap = multiMode.value && anchor && target.kind === anchor.kind &&
+              target.key !== anchor.key ?
               multiValueOverlap(anchor, target) : null;
             const gapRuns = overlap ? [...overlap.missing, ...overlap.conflicting]
               .map((id) => entries.value.find((entry) => entry.id === id)?.name ?? id) : [];
@@ -683,7 +712,9 @@ export const RunComparison = Vue.defineComponent({
             </span>
             { gapRuns.length > 0 ?
               <span
-                title={`Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
+                title={anchor!.kind === 'scalar' ?
+                  `Missing value on: ${gapRuns.join(', ')}` :
+                  `Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
                 style={{
                   fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
                   background: '#8a8a8a', flexShrink: '0', justifySelf: 'start',
@@ -766,12 +797,36 @@ export const RunComparison = Vue.defineComponent({
           Nothing to show: no data points across the selected runs
         </div>;
       }
-      const chartMinHeight = 'valueColumnNames' in currentComparison ?
-        250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
+      const chartMinHeight = currentComparison.kind === 'multi-scalar' ? 300 :
+        'valueColumnNames' in currentComparison ?
+          250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
       const effectiveChartHeight = Math.max(chartMinHeight, chartHeight.value);
       const chartStyle = {width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'};
       let chart;
-      if (currentComparison.kind === 'scalar') {
+      if (currentComparison.kind === 'multi-scalar') {
+        chart = effectiveScalarChartType.value === 'radar' ?
+          <Viewer
+            type='Radar'
+            dataFrame={currentComparison.chartDf}
+            style={chartStyle}
+            onViewerChanged={onChartViewerChanged}
+            options={{
+              valuesColumnNames: currentComparison.valueColumnNames,
+              colorColumnName: RUN_COLUMN,
+              showCurrentRow: false,
+            }}
+          /> :
+          <Viewer
+            type={DG.VIEWER.PC_PLOT}
+            dataFrame={currentComparison.chartDf}
+            style={chartStyle}
+            onViewerChanged={onChartViewerChanged}
+            options={{
+              columnNames: currentComparison.valueColumnNames,
+              colorColumnName: RUN_COLUMN,
+            }}
+          />;
+      } else if (currentComparison.kind === 'scalar') {
         chart = <Viewer
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
@@ -821,6 +876,22 @@ export const RunComparison = Vue.defineComponent({
           reverse={true}
           onUpdate:size={(size) => chartHeight.value = size}
         />
+        { currentComparison.kind === 'multi-scalar' && radarAvailable &&
+          <div style={{display: 'flex', gap: '4px', padding: '2px 0px', flexShrink: '0'}}>
+            { ([['radar', 'Radar'], ['pcplot', 'PC Plot']] as const).map(([value, label]) =>
+              <span
+                key={value}
+                onClick={() => scalarChartType.value = value}
+                style={{
+                  cursor: 'pointer', fontSize: '11px', borderRadius: '3px', padding: '1px 8px',
+                  border: '1px solid var(--grey-2)',
+                  background: effectiveScalarChartType.value === value ?
+                    'var(--blue-1, #2083d5)' : 'transparent',
+                  color: effectiveScalarChartType.value === value ? 'white' : 'var(--grey-5)',
+                }}
+              >{label}</span>,
+            )}
+          </div> }
         { Vue.withDirectives(chart, [[wheelGuard]]) }
       </div>;
     };

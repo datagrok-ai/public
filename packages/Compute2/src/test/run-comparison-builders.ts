@@ -2,17 +2,17 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN} from '../components/RunComparison/types';
-import {matchColumnTargets} from '../components/RunComparison/matching';
+import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
 import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
 import {
-  buildScalarComparison, buildColumnComparison, buildMultiColumnComparison,
+  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
 } from '../components/RunComparison/comparison-builders';
 
 // Regression: run/index columns must be created with an enforced string type.
 // Column.fromStrings infers the type from values, so numeric-looking run names
 // used to produce a numeric column and break chart legends (getUsedCategories).
 
-function scalarEntry(id: string, name: string, value: number): ComparisonEntry {
+function scalarsEntry(id: string, name: string, scalars: {name: string, value: number}[]): ComparisonEntry {
   return {
     id,
     name,
@@ -21,11 +21,15 @@ function scalarEntry(id: string, name: string, value: number): ComparisonEntry {
     nodes: {
       entryId: id,
       entryName: name,
-      scalars: [{path: 'x', name: 'x', valueType: 'double', value}],
+      scalars: scalars.map((s) => ({path: s.name, name: s.name, valueType: 'double', value: s.value})),
       tables: [],
     },
     dataFrames: new Map(),
   };
+}
+
+function scalarEntry(id: string, name: string, value: number): ComparisonEntry {
+  return scalarsEntry(id, name, [{name: 'x', value}]);
 }
 
 category('RunComparison: comparison dataframes', () => {
@@ -84,6 +88,65 @@ category('RunComparison: comparison dataframes', () => {
     const single: ColumnTarget = {...(target as ColumnTarget), bindings: [target.bindings[0]]};
     expect(buildColumnComparison(single, entries), null);
     expect(buildMultiColumnComparison([single], entries), null);
+  });
+});
+
+category('RunComparison: multi-scalar dataframes', () => {
+  const scalarTargetsFor = (entries: ComparisonEntry[]) =>
+    matchScalarTargets(entries.map((e) => e.nodes)).filter((t): t is ScalarTarget => t.kind === 'scalar');
+
+  test('one row per run, string run column, values in entry order', async () => {
+    const entries = [
+      scalarsEntry('a', '1', [{name: 'x', value: 10}, {name: 'y', value: 1}]),
+      scalarsEntry('b', '2', [{name: 'x', value: 20}, {name: 'y', value: 2}]),
+      scalarsEntry('c', '3', [{name: 'x', value: 30}, {name: 'y', value: 3}]),
+    ];
+    const targets = scalarTargetsFor(entries);
+    const result = buildMultiScalarComparison(targets, entries)!;
+    expect(result.chartDf.rowCount, 3);
+    expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
+    expect(result.chartDf.getCol(RUN_COLUMN).toList().join('|'), '1|2|3');
+    expect(result.valueColumnNames.join('|'), 'x|y');
+    expect(result.chartDf.getCol('x').toList().join(','), '10,20,30');
+    expect(result.chartDf.getCol('y').toList().join(','), '1,2,3');
+  });
+
+  test('run missing a scalar is padded with null, unmatched run excluded', async () => {
+    const entries = [
+      scalarsEntry('a', 'r1', [{name: 'x', value: 10}, {name: 'y', value: 1}]),
+      scalarsEntry('b', 'r2', [{name: 'x', value: 20}, {name: 'y', value: 2}]),
+      scalarsEntry('c', 'r3', [{name: 'x', value: 30}]),
+      scalarsEntry('d', 'r4', [{name: 'unrelated', value: 0}]),
+    ];
+    const targets = scalarTargetsFor(entries);
+    const result = buildMultiScalarComparison(targets, entries)!;
+    expect(result.chartDf.rowCount, 3);
+    expect(result.chartDf.getCol(RUN_COLUMN).toList().join('|'), 'r1|r2|r3');
+    const yValues = result.chartDf.getCol('y').toList();
+    expect(yValues.slice(0, 2).join(','), '1,2');
+    expect(yValues[2] == null || isNaN(yValues[2]), true);
+  });
+
+  test('duplicate display names get deduplicated value columns', async () => {
+    const entries = [
+      scalarsEntry('a', 'r1', [{name: 'x', value: 10}]),
+      scalarsEntry('b', 'r2', [{name: 'x', value: 20}]),
+    ];
+    const [target] = scalarTargetsFor(entries);
+    const twin: ScalarTarget = {...target, key: 'scalar:x:2'};
+    const result = buildMultiScalarComparison([target, twin], entries)!;
+    expect(result.valueColumnNames.join('|'), 'x|x (2)');
+    expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20');
+  });
+
+  test('returns null when fewer than two runs participate', async () => {
+    const entries = [
+      scalarsEntry('a', 'r1', [{name: 'x', value: 10}, {name: 'y', value: 1}]),
+      scalarsEntry('b', 'r2', [{name: 'x', value: 20}, {name: 'y', value: 2}]),
+    ];
+    const targets = scalarTargetsFor(entries);
+    const singles = targets.map((t) => ({...t, bindings: t.bindings.slice(0, 1)}));
+    expect(buildMultiScalarComparison(singles, entries), null);
   });
 });
 

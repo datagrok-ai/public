@@ -27,6 +27,44 @@ export function buildScalarComparison(
   return {chartDf};
 }
 
+function dedupeLabels(targets: {key: string, displayName: string}[]): Map<string, string> {
+  const labels = new Map<string, string>();
+  const seenNames = new Map<string, number>();
+  for (const target of targets) {
+    const count = (seenNames.get(target.displayName) ?? 0) + 1;
+    seenNames.set(target.displayName, count);
+    labels.set(target.key, count > 1 ? `${target.displayName} (${count})` : target.displayName);
+  }
+  return labels;
+}
+
+export interface MultiScalarComparisonResult {
+  chartDf: DG.DataFrame;
+  valueColumnNames: string[];
+}
+
+/** One row per run, one value column per target — wide shape for radar/PC plot axes. */
+export function buildMultiScalarComparison(
+  targets: ScalarTarget[],
+  entries: ComparisonEntry[],
+): MultiScalarComparisonResult | null {
+  const labels = dedupeLabels(targets);
+  const participating = entries.filter((entry) =>
+    targets.some((target) => target.bindings.some((b) => b.entryId === entry.id)));
+  if (participating.length < 2)
+    return null;
+
+  const valueColumnNames = targets.map((target) => labels.get(target.key)!);
+  const chartDf = DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, participating.map((entry) => entry.name)),
+    ...targets.map((target) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, labels.get(target.key)!,
+      participating.map((entry) =>
+        target.bindings.find((b) => b.entryId === entry.id)?.value ?? null))),
+  ]);
+  chartDf.name = 'Comparison: multiple values';
+  return {chartDf, valueColumnNames};
+}
+
 export interface ColumnComparisonResult {
   chartDf: DG.DataFrame;
   indexColumnName: string;
@@ -99,14 +137,7 @@ export function buildMultiColumnComparison(
   targets: ColumnTarget[],
   entries: ComparisonEntry[],
 ): MultiColumnComparisonResult | null {
-  const labels = new Map<string, string>();
-  const seenNames = new Map<string, number>();
-  for (const target of targets) {
-    const count = (seenNames.get(target.displayName) ?? 0) + 1;
-    seenNames.set(target.displayName, count);
-    labels.set(target.key, count > 1 ? `${target.displayName} (${count})` : target.displayName);
-  }
-
+  const labels = dedupeLabels(targets);
   const participating = getParticipating(targets[0], entries);
   if (participating.length < 2)
     return null;

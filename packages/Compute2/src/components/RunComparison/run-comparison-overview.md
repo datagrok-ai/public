@@ -21,8 +21,8 @@ FuncCall runs / open tables
    → ComparisonEntryNodes       (plain-data description: scalars + tables)
    → ComparisonTarget[]         (matching: name-clustered candidates)
    → user picks a target        (selection: pickers, statuses, compatibility)
-   → chartDf                    (comparison-builders: long-format DataFrame)
-   → DG.Viewer                  (bar chart or line chart)
+   → chartDf                    (comparison-builders: long- or wide-format DataFrame)
+   → DG.Viewer                  (bar/line chart; radar or PC plot for multi-scalar)
 ```
 
 ## `entry-extraction.ts` — turning runs into entries
@@ -40,6 +40,7 @@ FuncCall runs / open tables
 All builders produce a *long/concatenated* DataFrame — there is deliberately no row alignment or delta computation (dropped in commit `2b73683a`); the chart's split-by-Run does the visual comparison:
 
 - **`buildScalarComparison`** — one row per run: `Run | Path | <value>` columns. Run names are forced to string type so numeric-looking names don't break legends.
+- **`buildMultiScalarComparison(targets, entries)`** — the one *wide*-format exception: one row per run, `Run` plus one float column per selected scalar target (null where a run lacks that scalar), because radar and PC plot consume axes as columns. A run participates if it has a binding in at least one selected target; returns `null` when fewer than two runs participate. Shares the display-name dedupe (`(2)`, `(3)` suffixes) with the column builder.
 - **`buildMultiColumnComparison(targets, entries)`** — the workhorse. Consumes each target's *enabled* bindings (matching guarantees at most one per run). Concatenates raw rows of every participating run into one frame: index column (typed float/datetime/string via `getIndexKind`), optional split column, a `Run` column, and one float value column per target (nulls where a target has no binding for that run). Duplicate display names get `(2)`, `(3)` suffixes. Returns `null` when fewer than two runs participate.
 - **`buildColumnComparison`** — the single-target special case, delegating to the multi version and stripping `valueColumnNames` (whose presence is the downstream marker for "multi-value result").
 
@@ -63,7 +64,7 @@ Two design rules keep the model simple:
 ## `selection.ts` — pickers, statuses, and multi-value compatibility
 
 - **`computeIndexRows(...)`** — builds the rows of the "Index columns" picker UI. One row per table, or — with "Merge same functions" on — one row per group of tables that come from the same function (`nqName` + output name), so picking an index once applies to all runs of that model. Merged rows only offer columns present with the same type in *every* group member; stored selections that no longer match candidates are treated as unset rather than kept stale.
-- **`multiValueOverlap(anchor, other)`** / **`compatibleTargetsFor(anchor, targets, getColumnType)`** — multi-value mode is split into a *suggestion* predicate and builder-enforced validity. Per anchor run, the other target's pick is `aligned` (same table — rows can be shared), `missing` (no pick), or `conflicting` (picked from another table). `compatibleTargetsFor` *suggests* column targets with no conflicts and ≥ 1 aligned run, provided the anchor's index is line-chartable (numeric/datetime) everywhere. It never decides validity of an already selected combination: the builder pads missing/conflicting runs with nulls, so editing picks can never eject a selected target. Index/split agreement is automatic for aligned picks — the pickers are per (run, table). Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV; the overlap check only asks whether two *targets* can read their columns from the same physical rows.
+- **`multiValueOverlap(anchor, other)`** / **`compatibleTargetsFor(anchor, targets, getColumnType)`** — multi-value mode is split into a *suggestion* predicate and builder-enforced validity. Per anchor run, the other target's pick is `aligned` (same table — rows can be shared), `missing` (no pick), or `conflicting` (picked from another table); scalar bindings carry no table, so scalars are aligned or missing, never conflicting. `compatibleTargetsFor` never mixes kinds: for a scalar anchor every scalar target is compatible (all scalars are numeric by construction); for a column anchor it *suggests* column targets with no conflicts and ≥ 1 aligned run, provided the anchor's index is line-chartable (numeric/datetime) everywhere. It never decides validity of an already selected combination: the builder pads missing/conflicting runs with nulls, so editing picks can never eject a selected target. Index/split agreement is automatic for aligned picks — the pickers are per (run, table). Note the layering: cross-source reconciliation (which run/step/raw table holds the same quantity) is already settled by the clusterer and recorded in each target's bindings — so a single target freely mixes a workflow step's table with a plain CSV; the overlap check only asks whether two *targets* can read their columns from the same physical rows.
 - **`getEntryStatuses`** — per-run participation status for the selected target, so the UI can flag excluded runs with a reason (`'no similar data'`, `'index not set'`, or `'disabled'` — the run has candidates but the user toggled them all off).
 - Small helpers: `matchesFilter` (substring + fuzzy-token filter for the list search boxes), `isSplitCandidate` (string column ≠ index), `selectionToMap` (validated `Record` → `Map` conversion).
 
@@ -82,6 +83,7 @@ Two design rules keep the model simple:
 | `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves |
 | `expandedTargetKeys` | which target rows have their candidate checklist expanded |
 | `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys; the mode never auto-exits — keys are pruned only when their target vanishes structurally, and the chart pads conflicting/missing runs (`partial` chip on the row) |
+| `scalarChartType` | radar/PC-plot switch for multi-scalar charts; `radarAvailable` (Charts package deployed?) forces PC plot and hides the switch when radar can't render |
 | `indexFilter`, `targetFilter` | list search boxes |
 | `chartViewer` | last-created `DG.Viewer`, kept for the workspace-snapshot export |
 | `historyHeight`, `sidebarWidth`, `chartHeight` | resizable layout dims |
@@ -108,10 +110,11 @@ Everything re-derives from `entries` + the selections:
   | Situation | Chart |
   |---|---|
   | scalar target | bar chart, split by `Run` |
+  | multiple scalar targets | radar (default, Charts package `Radar` viewer — axes = targets, one polygon per run) or PC plot, via a small switch above the chart; PC plot is the silent fallback when Charts isn't deployed |
   | column target, key (string) index | bar chart, split by index, stacked by `Run` |
   | column target, numeric/datetime index | line chart: x = index, y = value column(s), split by `Run` (+ inner split column), `multiAxis: false` |
 
-  Multi-value mode scales the minimum chart height by the number of value columns (`250px` per value).
+  Column multi-value mode scales the minimum chart height by the number of value columns (`250px` per value); multi-scalar uses a flat minimum (one chart, not stacked series).
 - **`openInWorkspace`** snapshots: clones `chartDf` into a new table view and re-adds a viewer using `chartViewer.getOptions()`, so user tweaks to the chart carry over.
 
 ### UI color coding

@@ -191,6 +191,49 @@ category('RunComparison: filters and compatibility', () => {
     expect(compatibleTargetsFor(anchor, targets, () => 'int').length >= 1, true);
   });
 
+  test('scalar anchor suggests all scalars and no columns', async () => {
+    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const entries = [
+      makeEntry('a', [{name: 'x'}, {name: 'y'}], [table]),
+      makeEntry('b', [{name: 'x'}, {name: 'y'}], [table]),
+    ];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const targets = [...matchScalarTargets(entries), ...matchColumnTargets(entries, indexes)];
+    const anchor = targets.find((t) => t.kind === 'scalar')!;
+    const compatible = compatibleTargetsFor(anchor, targets, () => 'int');
+    expect(compatible.length, 2);
+    expect(compatible.every((t) => t.kind === 'scalar'), true);
+  });
+
+  test('column anchor never suggests scalars', async () => {
+    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'}]};
+    const entries = [
+      makeEntry('a', [{name: 'x'}], [table]),
+      makeEntry('b', [{name: 'x'}], [table]),
+    ];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const targets = [...matchScalarTargets(entries), ...matchColumnTargets(entries, indexes)];
+    const anchor = targets.find((t) => t.kind === 'column')!;
+    const compatible = compatibleTargetsFor(anchor, targets, () => 'int');
+    expect(compatible.length, 2);
+    expect(compatible.every((t) => t.kind === 'column'), true);
+  });
+
+  test('multiValueOverlap on scalars is missing-only, never conflicting', async () => {
+    const entries = [
+      makeEntry('a', [{name: 'x'}, {name: 'y'}]),
+      makeEntry('b', [{name: 'x'}]),
+      makeEntry('c', [{name: 'x'}, {name: 'y'}]),
+    ];
+    const targets = matchScalarTargets(entries);
+    const anchor = targets.find((t) => t.displayName === 'x')!;
+    const other = targets.find((t) => t.displayName === 'y')!;
+    const overlap = multiValueOverlap(anchor, other);
+    expect(overlap.aligned, 2);
+    expectArray(overlap.missing, ['b']);
+    expectArray(overlap.conflicting, []);
+  });
+
   test('isSplitCandidate requires a string column that is not the index', async () => {
     expect(isSplitCandidate({name: 'species', type: 'string'}, 'time'), true);
     expect(isSplitCandidate({name: 'time', type: 'string'}, 'time'), false);

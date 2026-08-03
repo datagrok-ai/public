@@ -25,10 +25,15 @@ export interface MultiValueOverlap {
   conflicting: string[];
 }
 
+interface OverlapTarget {
+  bindings: {entryId: string, tablePath?: string}[];
+}
+
 // per anchor run: the other target's pick either shares the table (rows can be shared),
 // is absent (padded), or points elsewhere (padded, flagged); index/split agreement is
-// automatic for same-table picks since pickers are per (run, table)
-export function multiValueOverlap(anchor: ColumnTarget, other: ColumnTarget): MultiValueOverlap {
+// automatic for same-table picks since pickers are per (run, table); scalar bindings
+// have no tablePath, so they are aligned or missing, never conflicting
+export function multiValueOverlap(anchor: OverlapTarget, other: OverlapTarget): MultiValueOverlap {
   const otherByRun = new Map(other.bindings.map((b) => [b.entryId, b]));
   const result: MultiValueOverlap = {aligned: 0, missing: [], conflicting: []};
   for (const binding of anchor.bindings) {
@@ -44,19 +49,22 @@ export function multiValueOverlap(anchor: ColumnTarget, other: ColumnTarget): Mu
 }
 
 /**
- * Suggestion predicate for multi-value mode: column targets that chart at least one of
- * the anchor's runs from the same table and conflict on none, provided the anchor's
- * index is line-chartable (numeric or datetime) everywhere. Validity of an already
- * selected combination is enforced by builder padding, not here — selected targets are
- * never ejected.
+ * Suggestion predicate for multi-value mode. Scalar anchors: every scalar target is
+ * compatible (all scalars are numeric by construction), never mixed with columns.
+ * Column anchors: column targets that chart at least one of the anchor's runs from the
+ * same table and conflict on none, provided the anchor's index is line-chartable
+ * (numeric or datetime) everywhere. Validity of an already selected combination is
+ * enforced by builder padding, not here — selected targets are never ejected.
  */
 export function compatibleTargetsFor(
   anchor: ComparisonTarget | null,
   targets: ComparisonTarget[],
   getColumnType: (entryId: string, tablePath: string, columnName: string) => string | undefined,
-): ColumnTarget[] {
-  if (!anchor || anchor.kind !== 'column')
+): ComparisonTarget[] {
+  if (!anchor)
     return [];
+  if (anchor.kind === 'scalar')
+    return targets.filter((target) => target.kind === 'scalar');
   const lineIndexed = anchor.bindings.every((b) => {
     const type = getColumnType(b.entryId, b.tablePath, b.indexColumnName);
     return type != null && (isNumericType(type) || type === 'datetime');
