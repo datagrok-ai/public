@@ -27,8 +27,17 @@ const projectInput = ui.typeAhead('Project', {
     probeNumber();
   },
 });
-// full picker: the target table's Domain View (an in-dialog picker opener arrives with the core exposure)
-projectInput.addOptions(ui.icons.search(() => grok.shell.route('/domains/grit/project'), 'Open the project list'));
+// full picker: the platform's own lookup dialog — the target table's Domain View
+// with search and single select, resolving to the picked row (null on cancel)
+projectInput.addOptions(ui.icons.search(async () => {
+  const picked = await DG.DomainObjectHandler.pickRow('grit.project');
+  if (picked == null)
+    return;
+  project = picked.values;
+  projectInput.value = `${project.key} — ${project.name}`;
+  delete fieldErrors.project_id;
+  projectInput.validate();
+}, 'Pick a project'));
 // project_id is required — a nullable ref would also get ui.icons.close(() => {...}) to clear the value
 
 // 2) server-provided choices: assignee loads async (disabled until then); priority choices

@@ -263,6 +263,25 @@ export async function domainCall<T>(p: Promise<T>): Promise<T> {
   }
 }
 
+/** Parameter values of the `DomainQuery` function — the serializable representation of
+ * what a domain view is showing (filter elements, ordering, cap), as
+ * {@link DomainView.query} reports it. Passing it to
+ * `grok.functions.call('DomainQuery', params)` reproduces the subset as a DataFrame,
+ * with the creation script recorded.
+ *
+ * Grammar strings, not condition trees: each element is one `DomainQuery` filter
+ * expression (`'status = "open"'`) with the per-element JSON escape hatch. Use
+ * {@link DomainQuerySpec} for the REST surface instead. */
+export interface DomainQueryParams {
+  schema: string;
+  table: string;
+  /** Filter elements, AND-combined. */
+  filters?: string[];
+  /** Sort elements; a `'!'` prefix means descending. */
+  orderBy?: string[];
+  limit?: number;
+}
+
 /** Query options for domain table `query`/`queryDf`. */
 export interface DomainQuerySpec<TColumn extends string = string, TExpandKey extends string = string> {
   /** Smart-filter string (same grammar as entity search, e.g. `barcode starts "P-1"`),

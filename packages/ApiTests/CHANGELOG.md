@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-20298: Added `DG.DomainView` and dialog-opener coverage to `JS: domain handlers` — an embedded Domain View lists exactly the rows its `permanentFilter` allows and reports its `query`, `showFilters()` docks the filter panel, and the platform dialogs are driven for real (create cancelled -> false, edit saved -> true with a server-side version bump, picker cancelled -> null, conflict dialog resolving reload/overwrite/dismiss, delete confirmation cancelled -> false), plus the audit and grants panes and `openRow` navigation through the platform's routing.
+
 GROK-20298: Added JS-side renderGrid fall-through coverage (a plain, non-overriding handler decorates a queryDf grid identically to the platform meta) and a `defaultRowVisibility: "none"` fixture table (`apitests.hidden_item`, schema 1.2.0) with a restricted-session probe proving a table grant does NOT reach its rows — the server semantics `capabilities()`' reaches-rows rule mirrors. Ribbon-action assertions follow the new gating (Open always, Share... only with the row's Share permission, nothing at all for an unsaved row).
 
 GROK-20298: Added `DomainObjectHandler` coverage to `JS: domain handlers` — an override-nothing handler renders DOM-identically to the platform meta (card/markup/tooltip/caption) and `getById` gives JS its first `DG.DomainRow` acquisition path; registering one keeps the Dart meta (owner of the CRUD commands) while winning `forEntity`; reflective properties/detail tabs/editor (inputs = writable columns); `DomainRow.permissions()` and the ribbon actions flip on a real Delete grant round-trip, and an unsaved row holds no permissions; malformed and unknown table addresses fail with clear/typed errors.

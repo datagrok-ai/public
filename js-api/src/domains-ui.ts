@@ -1,7 +1,9 @@
 /**
  * UI surface for entity-mapped domain tables: {@link DomainObjectHandler} — the
- * reflective, per-table {@link ObjectHandler} every domain table gets for free —
- * and the declarative types its members return.
+ * reflective, per-table {@link ObjectHandler} every domain table gets for free,
+ * whose statics also open the platform's row dialogs, picker, conflict dialog
+ * and audit/grants panes — plus {@link DomainView}, the built-in Domain View as
+ * an embeddable, programmatically created view.
  *
  * The data-plane counterpart is `src/domains.ts` + `grok.dapi.domains`
  * (see {@link DomainTableCapabilities}, `grok.dapi.domains.registry`).
@@ -12,11 +14,13 @@
 import * as ui from '../ui';
 import {EntityMetaDartProxy, ObjectHandler} from '../ui';
 import {DomainRegistryClient, DomainTableClient} from './dapi';
-import {DomainConditionTree, DomainTableCapabilities, splitDomainTable} from './domains';
+import {domainCall, DomainConditionTree, DomainQueryParams, DomainTableCapabilities,
+  splitDomainTable} from './domains';
 import {DomainRow} from './entities/domain';
 import {Property} from './entities/property';
 import {SemanticValue} from './grid';
 import {View} from './views/view';
+import {CardView} from './views/card_view';
 import {IDartApi} from './api/grok_api.g';
 import {toDart, toJs} from './wrappers';
 
@@ -167,16 +171,13 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * URL otherwise — the platform's own rule); null for an unsaved row
    * ({@link newRow}), which has no address yet. */
   deepLink(x: T): string | null {
-    const row = this.rowOf(x);
-    return row?.id == null ? null : api.grok_DomainMeta_DeepLink(toDart(row));
+    return DomainObjectHandler.deepLink(this.rowOf(x));
   }
 
   /** Opens the row's Entity View — the platform's default (double-click) action
    * for a domain row. */
   openRow(x: T): void {
-    const link = this.deepLink(x);
-    if (link != null)
-      api.grok_Route(link);
+    DomainObjectHandler.openRow(this.rowOf(x));
   }
 
   // ─────────────────────── rendering (delegating defaults) ─────────────────────────
@@ -262,8 +263,9 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
         fkColumn: c.fkColumn,
         filter: [{property: c.fkColumn, operator: '=', value: row.id}] as DomainConditionTree,
         // The path (and its `q` smart filter) comes from the platform's own
-        // builder — the /domains URL scheme has ONE encode side.
-        open: () => api.grok_Route(
+        // builder, and opens through the platform's own navigation — the
+        // /domains URL scheme has ONE encode side and ONE open side.
+        open: () => DomainObjectHandler.openPath(
           api.grok_DomainMeta_ChildTablePath(c.schema, c.table, c.fkColumn, row.id!)),
       };
     });
@@ -278,8 +280,8 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
    * permissions until it is inserted.
    *
    * The dialog-backed runs delegate to {@link editRow} / {@link cloneRow} /
-   * {@link deleteRow} / {@link shareRow} / {@link showHistory}, which land with
-   * the core openers (`DG.DomainView`) — override them until then. */
+   * {@link deleteRow} / {@link shareRow} / {@link showHistory} — override one of
+   * those to replace a flow, the action list stays the platform's. */
   async getRibbonActions(x: T): Promise<DomainAction[]> {
     const row = this.rowOf(x);
     if (row?.id == null)
@@ -322,38 +324,213 @@ export class DomainObjectHandler<T = DomainRow> extends ObjectHandler<T> {
       : !(await this.client.unwatch(row.id));
   }
 
-  /** Copies the row's {@link deepLink} to the clipboard. */
-  async copyLink(x: T): Promise<void> {
-    const link = this.deepLink(x);
-    if (link != null)
-      await navigator.clipboard.writeText(`${window.location.origin}${link}`);
+  /** Copies the row's {@link deepLink} to the clipboard (with the platform's
+   * confirmation balloon). */
+  copyLink(x: T): void {
+    DomainObjectHandler.copyLink(this.rowOf(x));
   }
 
-  /** Opens the platform's create/edit dialog; resolves to whether a row was saved. */
-  editRow(x?: T): Promise<boolean> { return this._opener('editRow'); }
+  /** Opens the platform's edit dialog for [x] — its create dialog when [x] is
+   * omitted or unsaved; resolves to whether a row was saved. */
+  editRow(x?: T): Promise<boolean> {
+    const row = x == null ? null : this.rowOf(x);
+    return row?.id == null ? DomainObjectHandler.createRow(this.table) : DomainObjectHandler.editRow(row);
+  }
 
   /** Opens the platform's create dialog prefilled from [x]. */
-  cloneRow(x: T): Promise<boolean> { return this._opener('cloneRow'); }
+  cloneRow(x: T): Promise<boolean> { return DomainObjectHandler.cloneRow(this.rowOf(x)!); }
 
   /** Deletes [x] after the standard confirmation. */
-  deleteRow(x: T): Promise<boolean> { return this._opener('deleteRow'); }
+  deleteRow(x: T): Promise<boolean> { return DomainObjectHandler.deleteRow(this.rowOf(x)!); }
 
   /** Opens the standard sharing flow for [x] (row-mode tables). */
-  shareRow(x: T): Promise<boolean> { return this._opener('shareRow'); }
+  shareRow(x: T): Promise<void> { return DomainObjectHandler.shareRow(this.rowOf(x)!); }
 
-  /** Shows the row's audit history. */
-  showHistory(x: T): Promise<void> { return this._opener('showHistory'); }
+  /** Shows the row's audit history in the platform's History dialog. */
+  showHistory(x: T): void { DomainObjectHandler.showHistory(this.rowOf(x)!); }
+
+  /** The row's audit history as an embeddable element (the History pane of the
+   * built-in context panel). */
+  auditPane(x: T): HTMLElement { return DomainObjectHandler.auditPane(this.rowOf(x)!); }
 
   /** Opens the platform's row picker for this table; resolves to the picked row
    * or null. */
-  pickRow(): Promise<DomainRow | null> { return this._opener('pickRow'); }
+  pickRow(): Promise<DomainRow | null> { return DomainObjectHandler.pickRow(this.table); }
 
-  /** The dialog openers land with `DG.DomainView` (ui-js-api WO-5); until then a
-   * subclass must provide its own. Rejecting (rather than silently doing nothing)
-   * keeps a half-wired action visible in the console instead of dead in the UI. */
-  private _opener(member: string): Promise<never> {
-    return Promise.reject(new Error(
-      `DomainObjectHandler.${member}() is not available yet — the core dialog openers ship with ` +
-      `DG.DomainView. Override it, or navigate to /domains/${this.schemaName}/${this.tableName}.`));
+  // ─────────────────────── openers (platform dialogs and panes) ─────────────────────────
+  // Canonical as STATICS: each one enters the SAME Dart flow the built-in
+  // surfaces use, so there is one implementation of every dialog, and no
+  // handler instance is needed to open one (a picker for a table nobody wrote a
+  // handler for, a conflict dialog inside a save loop). The instance members
+  // above delegate here — a subclass customizing a flow overrides ONE of them.
+
+  /** Opens the platform's create dialog for [table] (`'<schema>.<table>'`);
+   * resolves to whether a row was saved. Inputs come from the registry, values
+   * are validated with the same code the server re-runs, columns the caller
+   * cannot write are absent from the form AND the payload. */
+  static createRow(table: string): Promise<boolean> {
+    const [schema, name] = splitDomainTable(table);
+    return domainCall(api.grok_DomainRowEditor_OpenCreate(schema, name));
+  }
+
+  /** Opens the platform's edit dialog for [row]; resolves to whether it was
+   * saved. A version conflict goes through the standard reload/overwrite dialog
+   * — reloading and saving in the reopened dialog still resolves true. */
+  static editRow(row: DomainRow): Promise<boolean> {
+    return domainCall(api.grok_DomainRowEditor_OpenEdit(toDart(row)));
+  }
+
+  /** Opens the create dialog prefilled from [row] (writable columns only). */
+  static cloneRow(row: DomainRow): Promise<boolean> {
+    return domainCall(api.grok_DomainRowEditor_OpenClone(toDart(row)));
+  }
+
+  /** Deletes [row] after the platform's confirmation; resolves to whether it was
+   * deleted (false on cancel, and on a failed delete — the dialog stays open
+   * with the server's message). */
+  static deleteRow(row: DomainRow): Promise<boolean> {
+    return domainCall(api.grok_DomainMeta_ConfirmDelete(toDart(row)));
+  }
+
+  /** Opens the standard sharing flow for [row]: the row is promoted to an entity
+   * (idempotent, needs Share on it) and the platform sharing dialog follows.
+   * Row-mode tables only — elsewhere access comes from the securing table, whose
+   * grants are {@link grantsPane}'s subject. */
+  static shareRow(row: DomainRow): Promise<void> {
+    return domainCall(api.grok_DomainMeta_ShareRow(toDart(row)));
+  }
+
+  /** Opens the platform's lookup picker for [table] (`'<schema>.<table>'`) — the
+   * target table's Domain View in a dialog, with search and single select;
+   * resolves to the picked row, or null on cancel. */
+  static pickRow(table: string): Promise<DomainRow | null> {
+    const [schema, name] = splitDomainTable(table);
+    return domainCall(api.grok_DomainRowPicker_Pick(schema, name));
+  }
+
+  /** The standard optimistic-concurrency dialog for a 409, naming [subject] (the
+   * row's display value). Resolves to the user's decision — `'reload'` (discard
+   * my changes, take the server's), `'overwrite'` (retry against the current
+   * version), or null when the dialog is dismissed. The caller applies it; the
+   * platform's own editors resolve their conflicts through this same dialog. */
+  static showConflictDialog(subject: string): Promise<'reload' | 'overwrite' | null> {
+    return api.grok_DomainConflictDialog_Show(subject);
+  }
+
+  /** The row's audit trail as an embeddable element: who / when / what, newest
+   * first, with the field diff in each row's tooltip and a link opening the full
+   * event list as a table. Explains itself when the table has no audit trail. */
+  static auditPane(row: DomainRow): HTMLElement {
+    return api.grok_Domains_AuditPane(toDart(row));
+  }
+
+  /** {@link auditPane} in the platform's History dialog. */
+  static showHistory(row: DomainRow): void {
+    api.grok_DomainMeta_ShowHistory(toDart(row));
+  }
+
+  /** Read-only grants pane of a REGISTRY entity — a schema, table or property
+   * schema id (`DomainTable.id`, `grok.dapi.domains.registry`), NOT a domain row:
+   * rows are shared through {@link shareRow}. Lists the direct permission rows
+   * plus a 'Manage access...' link ([options.readOnly] drops the link); listing
+   * requires Share, and non-Share callers get an explanation instead. */
+  static grantsPane(entityId: string, name?: string, options?: {readOnly?: boolean}): HTMLElement {
+    return api.grok_Domains_GrantsPane(entityId, name ?? null, options?.readOnly === true);
+  }
+
+  /** The editable grants dialog for a registry entity (grant/revoke per group);
+   * resolves when it is shown. */
+  static showGrantsDialog(entityId: string, name?: string): Promise<void> {
+    return api.grok_Domains_GrantsDialog(entityId, name ?? null);
+  }
+
+  /** Permalink to [row]'s Entity View — the business-key URL when unambiguous,
+   * the id URL otherwise; null for an unsaved row, which has no address yet. */
+  static deepLink(row: DomainRow | null): string | null {
+    return row?.id == null ? null : api.grok_DomainMeta_DeepLink(toDart(row));
+  }
+
+  /** Opens [row]'s Entity View — the platform's default (double-click) action. */
+  static openRow(row: DomainRow | null): void {
+    const link = DomainObjectHandler.deepLink(row);
+    if (link != null)
+      DomainObjectHandler.openPath(link);
+  }
+
+  /** Opens a `/domains` address through the platform's own navigation: row deep
+   * links, table views, and the scoped child-table views {@link getDetailTabs}
+   * produces. THE navigation entry point for domain addresses — do not re-spell
+   * it with `grok.shell.route`, which pushes history differently. */
+  static openPath(path: string): void {
+    api.grok_DomainMeta_Open(path);
+  }
+
+  /** Copies [row]'s {@link deepLink} to the clipboard, with the platform's
+   * confirmation balloon; a no-op for an unsaved row. */
+  static copyLink(row: DomainRow | null): void {
+    if (DomainObjectHandler.deepLink(row) != null)
+      api.grok_DomainMeta_CopyLink(toDart(row));
+  }
+}
+
+
+/** Options of {@link DomainView.create}. */
+export interface DomainViewOptions {
+  /** Domain schema name. */
+  schema: string;
+  /** Table name within {@link schema}. */
+  table: string;
+  /** Invisible {@link https://datagrok.ai/help/datagrok/smart-search | smart filter}
+   * AND-combined with everything the user does — the way to scope an embedded
+   * view to a subset (`'project_id = "..."'`). */
+  permanentFilter?: string;
+  /** Hosted inside another view: brief list, no breadcrumbs, no export ribbon. */
+  embedded?: boolean;
+}
+
+
+/**
+ * The platform's Domain View for one domain table — the `/domains/<schema>/<table>`
+ * page, creatable programmatically and embeddable: card / brief / grid modes,
+ * search, sort, paging, the server-backed filter panel, in-grid editing with
+ * one-transaction save, and the per-table {@link ObjectHandler}'s rendering and
+ * commands. Show it with `grok.shell.addView(v)`, or mount `v.root` anywhere.
+ *
+ * ```ts
+ * const v = DG.DomainView.create({schema: 'grit', table: 'issue'});
+ * grok.shell.addView(v);
+ * v.showFilters();
+ * ```
+ *
+ * Rows are capped at 1000 (a banner invites refining the filter); {@link query}
+ * reports the full current query, so a caller can re-run the uncapped subset.
+ * The inherited {@link CardView} members that need a JS-defined data source —
+ * `meta`, `objectType`, `searchFields` — do not apply here: the view takes them
+ * from the domain registry.
+ */
+export class DomainView extends CardView {
+  declare dart: any;
+
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  /** Creates the Domain View for a table; the rows load asynchronously. */
+  static create(options: DomainViewOptions): DomainView {
+    return new DomainView(api.grok_DomainView_Create(options));
+  }
+
+  /** Docks the filter panel (server-backed facets and histograms) — the 'Toggle
+   * filters' icon; idempotent. Needs the view to be docked. */
+  showFilters(): void {
+    api.grok_DomainView_ShowFilters(this.dart);
+  }
+
+  /** What the user is looking at right now, as `DomainQuery` parameters: the
+   * panel facets AND the search string merged into filter elements, the current
+   * ordering, and the view's row cap. Serializable — the shape a deep link, a
+   * saved filter or an "open in Table View" carries. */
+  get query(): DomainQueryParams {
+    return toJs(api.grok_DomainView_Get_Query(this.dart));
   }
 }

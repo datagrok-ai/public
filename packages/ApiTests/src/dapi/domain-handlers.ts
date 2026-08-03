@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test, before, after} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, before, after, awaitCheck} from '@datagrok-libraries/test/src/test';
 
 // DG.DomainRow JS wrapper + ObjectHandler dispatch for domain-table rows (§8.1),
 // including ObjectHandler.renderGrid (ui-js-api WO-1) — the grid-customization
@@ -331,6 +331,158 @@ category('JS: domain handlers', () => {
       if (group != null && !hadDelete)
         await items().revoke(group, 'Delete');
       grok.dapi.domains.invalidateUiCaches();
+    }
+  });
+
+  // ─────────── DG.DomainView + the dialog openers (ui-js-api WO-5) ───────────
+  // Every opener enters the SAME Dart flow the built-in surfaces use, so these
+  // tests drive the real platform dialogs (find them by title, click their
+  // buttons) instead of asserting that a method exists.
+
+  /** The open dialog whose title contains [fragment]. */
+  const openDialog = async (fragment: string): Promise<_DG.Dialog> => {
+    const find = () => DG.Dialog.getOpenDialogs().find((d) => `${d.title}`.includes(fragment));
+    await awaitCheck(() => find() != null, `dialog "${fragment}" did not open`, 10000);
+    return find()!;
+  };
+  const click = (dlg: _DG.Dialog, text: string) => dlg.getButton(text).click();
+  /** Closes anything still on screen — a half-open dialog fails every later test. */
+  const closeDialogs = () => DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+
+  test('DomainView: lists rows, honors permanentFilter, reports its query', async () => {
+    const mine = `SKU-DV-${stamp()}`;
+    const other = `SKU-DV-${stamp()}`;
+    // sku and name carry the same stamp: whichever the table's name column is,
+    // the rendered row text contains it.
+    const [a] = await items().insert({sku: mine, name: mine});
+    const [b] = await items().insert({sku: other, name: other});
+    // Embedded: a brief DOM list instead of the canvas grid, so the rendered
+    // rows are readable from the test (and the render mode is not remembered).
+    const view = DG.DomainView.create({schema: 'apitests', table: 'item',
+      permanentFilter: `sku = "${mine}"`, embedded: true});
+    grok.shell.addView(view);
+    try {
+      expect(view instanceof DG.DomainView, true, 'create must resolve a DG.DomainView');
+      expect(view.permanentFilter, `sku = "${mine}"`, 'permanentFilter did not round-trip');
+      await awaitCheck(() => view.root.textContent!.includes(mine),
+        'the permanently filtered row never appeared in the view', 15000);
+      expect(view.root.textContent!.includes(other), false,
+        'a row outside permanentFilter is listed');
+      const q = view.query;
+      expect(q.schema, 'apitests');
+      expect(q.table, 'item');
+      expect(q.limit! > 0, true, `query must carry the view's row cap: ${JSON.stringify(q)}`);
+      view.showFilters();
+      await awaitCheck(() => view.root.querySelector('.grok-domains-filter-panel') != null,
+        'showFilters did not dock the filter panel', 15000);
+      view.showFilters();      // idempotent
+    } finally {
+      view.close();
+      await items().delete(a.id);
+      await items().delete(b.id);
+    }
+  });
+
+  test('openers: create dialog opens, cancel resolves false', async () => {
+    const info = await grok.dapi.domains.registry.tableInfo('apitests.item');
+    const pending = DG.DomainObjectHandler.createRow('apitests.item');
+    try {
+      const dlg = await openDialog(`New ${info.singularName}`);
+      click(dlg, 'CANCEL');
+      expect(await pending, false, 'a cancelled create must resolve false');
+    } finally {
+      closeDialogs();
+    }
+  });
+
+  test('openers: edit dialog saves and resolves true', async () => {
+    const handler = new DG.DomainObjectHandler('apitests.item');
+    const [ins] = await items().insert({sku: `SKU-ED-${stamp()}`, name: 'Editor probe'});
+    try {
+      const row = await handler.getById(ins.id) as _DG.DomainRow;
+      // The instance member delegates to the static: exercising it covers both.
+      const pending = handler.editRow(row as any);
+      const dlg = await openDialog('Edit apitests.item');
+      // Captions are the platform's column labels, not the wire names.
+      const input = dlg.inputs.find((i) => `${i.caption}`.toLowerCase() === 'name');
+      expect(input != null, true,
+        `the editor has no input for the name column: ${JSON.stringify(dlg.inputs.map((i) => i.caption))}`);
+      const edited = `Edited ${stamp()}`;
+      input!.value = edited;
+      click(dlg, 'OK');
+      expect(await pending, true, 'saving the edit dialog must resolve true');
+      // A real versioned update went through the platform's own save path.
+      const fresh = await items().get(ins.id);
+      expect(fresh!.name, edited, 'the edited value did not reach the server');
+      expect(fresh!.version > ins.version!, true,
+        `version not bumped (${ins.version} -> ${fresh!.version})`);
+    } finally {
+      closeDialogs();
+      await items().delete(ins.id);
+    }
+  });
+
+  test('openers: picker hosts the target Domain View, cancel resolves null', async () => {
+    const pending = DG.DomainObjectHandler.pickRow('apitests.item');
+    try {
+      const dlg = await openDialog('Select apitests.item');
+      click(dlg, 'CANCEL');
+      expect(await pending, null, 'a cancelled pick must resolve null');
+    } finally {
+      closeDialogs();
+    }
+  });
+
+  test('openers: conflict dialog resolves the decision', async () => {
+    for (const [button, expected] of [['RELOAD', 'reload'], ['OVERWRITE', 'overwrite'],
+      ['CANCEL', null]] as [string, string | null][]) {
+      const pending = DG.DomainObjectHandler.showConflictDialog('SKU-CONFLICT');
+      try {
+        click(await openDialog('Conflicting changes'), button);
+        expect(await pending, expected, `${button} must resolve ${expected}`);
+      } finally {
+        closeDialogs();
+      }
+    }
+  });
+
+  test('openers: delete confirmation, audit pane, grants pane, navigation', async () => {
+    const handler = new DG.DomainObjectHandler('apitests.item');
+    const [ins] = await items().insert({sku: `SKU-OP-${stamp()}`, name: 'Openers probe'});
+    const previous = grok.shell.v;
+    try {
+      const row = await handler.getById(ins.id) as _DG.DomainRow;
+      const pending = handler.deleteRow(row as any);
+      click(await openDialog('Are you sure?'), 'CANCEL');
+      expect(await pending, false, 'a cancelled delete must resolve false');
+
+      // The audit trail of a just-inserted row: one 'insert' event.
+      const audit = handler.auditPane(row as any);
+      expect(audit instanceof HTMLElement, true, 'auditPane must return an element');
+      await awaitCheck(() => audit.textContent!.includes('insert'),
+        `the audit pane did not render the insert event: "${audit.textContent}"`, 10000);
+
+      // Grants of the table's REGISTRY entity (rows share through shareRow).
+      const schema = await grok.dapi.domains.schemas.include('tables').filter('name = "apitests"').first();
+      const table = schema.tables.find((t) => t.name === 'item')!;
+      const grants = DG.DomainObjectHandler.grantsPane(table.id, 'apitests.item', {readOnly: true});
+      expect(grants instanceof HTMLElement, true, 'grantsPane must return an element');
+      await awaitCheck(() => grants.textContent!.length > 0, 'the grants pane stayed empty', 10000);
+
+      // Navigation goes through the platform's own routing (one spelling).
+      expect(DG.DomainObjectHandler.deepLink(row), handler.deepLink(row as any),
+        'the static and instance deep links disagree');
+      handler.openRow(row as any);
+      await awaitCheck(() => `${grok.shell.v?.path ?? ''}`.startsWith('/domains/apitests/item/'),
+        `openRow did not open the Entity View (at "${grok.shell.v?.path}")`, 15000);
+    } finally {
+      closeDialogs();
+      if (grok.shell.v !== previous) {
+        grok.shell.v.close();
+        if (previous != null)
+          grok.shell.v = previous;
+      }
+      await items().delete(ins.id);
     }
   });
 
