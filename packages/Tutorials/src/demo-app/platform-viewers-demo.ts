@@ -58,15 +58,10 @@ that automatically update when the data changes.
 * Current cell value: **#{t.currentCell}**`;
 
 
-async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
-  const layout = await _package.files.readAsText(VIEWER_LAYOUTS_FILE_NAMES[viewerName]);
-  return DG.ViewLayout.fromJson(layout.replaceAll("tableName", df.name));
-}
-
 async function loadViewerDemoLayout(tableView: DG.TableView, viewerName: string): Promise<void> {
-  const layout = await getLayout(viewerName, tableView.dataFrame);
-  tableView.loadLayout(layout);
-  const viewer = Array.from(tableView.viewers)?.find((viewer) => viewer.type === viewerName);
+  const layoutText = await _package.files.readAsText(VIEWER_LAYOUTS_FILE_NAMES[viewerName]);
+  tableView.loadLayout(DG.ViewLayout.fromJson(layoutText.replaceAll("tableName", tableView.dataFrame.name)));
+  const viewer = Array.from(tableView.viewers)?.find((v) => v.type === viewerName);
   if (viewer)
     grok.shell.windows.help.showHelp(viewer.helpUrl);
 }
@@ -78,6 +73,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   await grok.data.detectSemanticTypes(df);
 
   const tableView = grok.shell.addTableView(df);
+  tableView.root.style.visibility = 'hidden';
 
   grok.shell.windows.showContextPanel = false;
   grok.shell.windows.showHelp = true;
@@ -85,6 +81,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   if (['Form', 'Trellis plot', 'Grid', 'Filters'].includes(viewerName)) {
     await loadViewerDemoLayout(tableView, viewerName);
+    tableView.root.style.visibility = '';
     return;
   }
 
@@ -93,6 +90,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
       const viewer = tableView.addViewer(viewerName, options);
       grok.shell.windows.help.showHelp(viewer.helpUrl);
       dockViewers(tableView, viewer, viewerName);
+      tableView.root.style.visibility = '';
     });
     return;
   }
@@ -111,6 +109,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   grok.shell.windows.help.showHelp(viewer.helpUrl);
 
   dockViewers(tableView, viewer, viewerName);
+  tableView.root.style.visibility = '';
 }
 
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {

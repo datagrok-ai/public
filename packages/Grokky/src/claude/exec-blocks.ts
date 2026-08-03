@@ -1,34 +1,81 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {widgetBriefings} from '../ai/view-tools';
 
-export async function executeDatagrokBlocks(content: string, view: DG.ViewBase): Promise<HTMLElement[]> {
-  const re = /```datagrok-exec\n([\s\S]*?)```/g;
-  const results: HTMLElement[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(content)) !== null) {
-    const code = match[1];
-    try {
-      const t = view.type === DG.VIEW_TYPE.TABLE_VIEW ? (view as DG.TableView).dataFrame : undefined;
-      const result = await new Function('grok', 'ui', 'DG', 'view', 't',
-        'return (async () => {' + code + '})()',
-      )(grok, ui, DG, view, t);
-      if (result instanceof HTMLElement)
-        results.push(result);
-    } catch (e: any) {
-      grok.shell.error(`datagrok-exec error: ${e.message}`);
-    }
+export interface ExecError {
+  blockIndex: number;
+  error: string;
+}
+
+export async function executeSingleBlock(
+  code: string, view: DG.ViewBase, blockIndex: number,
+): Promise<{element: HTMLElement | null; value: any; error: ExecError | null}> {
+  try {
+    // Prefer the live current view: Claude may have opened a new view earlier in the same turn.
+    const liveView = grok.shell.v ?? view;
+    const t = liveView?.type === DG.VIEW_TYPE.TABLE_VIEW ? (liveView as DG.TableView).dataFrame : undefined;
+    const result = await new Function('grok', 'ui', 'DG', 'view', 't',
+      'return (async () => {' + code + '})()',
+    )(grok, ui, DG, liveView, t);
+    const element = result instanceof HTMLElement ? result : null;
+    return {element, value: element ? undefined : result, error: null};
+  } catch (e: any) {
+    return {element: null, value: undefined, error: {blockIndex, error: e?.message ?? String(e)}};
   }
-  return results;
+}
+
+const VERIFY_TIMEOUT_MS = 30000;
+
+export interface VerificationResult {
+  passed: boolean;
+  observed: any;
+  error: string | null;
+}
+
+/** Models routinely write assertions as bare expressions ("view.viewers.length >= 5"); inside the
+ * async IIFE that evaluates to undefined, and a successful action then reads as a failed verify —
+ * which sends the model into a redo loop that duplicates the action. Wrap single-expression
+ * assertions in a return; multi-statement code is left as written. */
+function wrapAssertion(assertion: string): string {
+  if (/\breturn\b/.test(assertion))
+    return assertion;
+  try {
+    new Function('return (' + assertion + '\n)');
+    return 'return (' + assertion + '\n)';
+  } catch (_) {
+    return assertion;
+  }
+}
+
+export async function runVerification(
+  assertion: string, view: DG.ViewBase,
+): Promise<VerificationResult> {
+  const liveView = grok.shell.v ?? view;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), VERIFY_TIMEOUT_MS));
+  const res = await Promise.race([executeSingleBlock(wrapAssertion(assertion), liveView, 0), timeout]);
+  if (res === null)
+    return {passed: false, observed: undefined, error: `Verification timed out after ${VERIFY_TIMEOUT_MS / 1000}s`};
+  if (res.element)
+    return {passed: false, observed: undefined, error: 'Assertion must return the observed value, not a DOM element'};
+  if (res.error == null && res.value === undefined) {
+    return {passed: false, observed: undefined,
+      error: 'assertion returned undefined — it must `return` the observed value. ' +
+        'This says nothing about the action itself, which may well have succeeded: ' +
+        're-read the live state with a corrected read-only assertion before redoing anything.'};
+  }
+  return {passed: res.error == null && !!res.value, observed: res.value, error: res.error?.error ?? null};
+}
+
+function describeTable(df: DG.DataFrame): string {
+  const cols = df.columns.toList().map((c) => `${c.name}(${c.type})`).join(', ');
+  return `Table "${df.name}" (${df.rowCount} rows): ${cols}`;
 }
 
 export function buildViewContext(view: DG.ViewBase): string {
   if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
     const df = (view as DG.TableView).dataFrame;
-    if (!df)
-      return '';
-    const cols = df.columns.toList().map((c) => `${c.name}(${c.type})`).join(', ');
-    return `Table "${df.name}" (${df.rowCount} rows): ${cols}`;
+    return df ? describeTable(df) : '';
   }
   if (view.type === 'ScriptView') {
     const scriptView = view as DG.ScriptView;
@@ -40,8 +87,38 @@ export function buildViewContext(view: DG.ViewBase): string {
   return '';
 }
 
-interface DgEntityRef {
-  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space';
+/** Snapshot of everything the user has open: current view (detailed), other views, and workspace tables. */
+export function buildWorkspaceContext(): string {
+  const lines: string[] = [];
+  const current = grok.shell.v;
+  if (current) {
+    lines.push(`Current view: "${current.name}" (${current.type})`);
+    const ai = (current as any).aiDescription;
+    if (ai)
+      lines.push(`About this view: ${ai}`);
+    const briefed = widgetBriefings(current);
+    if (briefed.length > 0)
+      lines.push('Widgets here, including open dialogs (drill in with list_view_widgets / list_view_functions): ' +
+        briefed.map((w) => `${w.type} — ${w.aiDescription}`).join('; '));
+    const details = buildViewContext(current);
+    if (details)
+      lines.push(details);
+  }
+  const others = Array.from(grok.shell.views).filter((v) => v !== current);
+  if (others.length > 0) {
+    lines.push('Other open views: ' + others.map((v) => {
+      const df = v.type === DG.VIEW_TYPE.TABLE_VIEW ? (v as DG.TableView).dataFrame : null;
+      return `"${v.name}" (${v.type}${df ? `, table "${df.name}"` : ''})`;
+    }).join(', '));
+  }
+  const currentTable = current?.type === DG.VIEW_TYPE.TABLE_VIEW ? (current as DG.TableView).dataFrame : null;
+  for (const t of grok.shell.tables.filter((t) => t !== currentTable))
+    lines.push(describeTable(t));
+  return lines.length > 0 ? 'Workspace state (live, changes as the user navigates):\n' + lines.join('\n') : '';
+}
+
+export interface DgEntityRef {
+  type: 'file' | 'script' | 'query' | 'connection' | 'project' | 'space' | 'group' | 'user';
   name: string;
   id?: string;
   connector?: string;
@@ -69,6 +146,10 @@ async function fetchEntity(ref: DgEntityRef): Promise<any> {
     return ref.id ? grok.dapi.projects.find(ref.id) : null;
   case 'space':
     return ref.id ? grok.dapi.spaces.find(ref.id) : null;
+  case 'group':
+    return ref.id ? grok.dapi.groups.find(ref.id) : null;
+  case 'user':
+    return ref.id ? grok.dapi.users.find(ref.id) : null;
   }
 }
 
@@ -81,22 +162,8 @@ function renderEntityRef(ref: DgEntityRef): HTMLElement | null {
   return placeholder;
 }
 
-export function renderEntityBlocks(container: HTMLElement): void {
-  for (const block of Array.from(container.querySelectorAll('code.language-datagrok-entities'))) {
-    const pre = block.parentElement;
-    if (!pre || pre.tagName !== 'PRE')
-      continue;
-    try {
-      const refs: DgEntityRef[] = JSON.parse(block.textContent ?? '[]');
-      if (!Array.isArray(refs) || refs.length === 0)
-        continue;
-      const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
-      if (cards.length === 0)
-        continue;
-      const cardsContainer = ui.divV(cards, 'grokky-entity-cards');
-      pre.replaceWith(cardsContainer);
-    } catch (e) {
-      console.warn('Failed to parse datagrok-entities block:', e);
-    }
-  }
+export function renderEntityRefList(refs: DgEntityRef[]): HTMLElement {
+  const cards = refs.map(renderEntityRef).filter((c): c is HTMLElement => c !== null);
+  return ui.divV(cards, 'grokky-entity-cards');
 }
+

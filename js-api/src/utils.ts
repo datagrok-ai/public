@@ -331,9 +331,8 @@ export class Utils {
         const skipped = row.get("skipped");
         row["flaking"] = success && DG.Test.isReproducing;
 
-        df.changeColumnType('result', COLUMN_TYPE.STRING);
-        df.changeColumnType('logs', COLUMN_TYPE.STRING);
-        df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
+        df.changeColumnsType(['result', 'logs'], COLUMN_TYPE.STRING);
+        df.changeColumnsType(['memoryDelta'], COLUMN_TYPE.BIG_INT);
 
         if (resultDF === undefined)
           resultDF = df;
@@ -406,6 +405,18 @@ export class Utils {
       return resultDF.toCsv();
     }
     return '';
+  }
+
+  /** Formats a duration in seconds as a compact human string: `45s`, `3m 12s`, `2h 5m`. */
+  static formatDuration(seconds: number): string {
+    if (seconds < 60) return `${seconds}s`;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m < 60)
+      return s === 0 ? `${m}m` : `${m}m ${s}s`;
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    return rm === 0 ? `${h}h` : `${h}h ${rm}m`;
   }
 
   static randomString(length: number): string {

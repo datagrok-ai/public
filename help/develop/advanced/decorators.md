@@ -1,5 +1,13 @@
 ---
 title: "Decorators"
+description: How to use TypeScript decorators to register package functions, viewers, filters, and cell renderers.
+keywords:
+  - "@grok.decorators"
+  - FuncGeneratorPlugin
+  - package.g.ts
+  - experimentalDecorators
+  - typed function annotation
+  - class decorators
 ---
 
 # Decorators

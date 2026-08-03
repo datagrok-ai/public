@@ -38,7 +38,10 @@ export interface RDMol {
   is_valid(): boolean;
   has_coords(): number;
 
-  get_smiles(): string;
+  // details: JSON with doIsomericSmiles: bool, doKekule: bool, canonical: bool, cleanStereo: bool,
+  //   allBondsExplicit: bool, allHsExplicit: bool, doRandom: bool, rootedAtAtom: int,
+  //   includeDativeBonds: bool, ignoreAtomMapNumbers: bool
+  get_smiles(details?: string): string;
   get_cxsmiles(): string;
   get_smarts(): string;
   get_cxsmarts(): string;
@@ -108,7 +111,7 @@ export interface RDMol {
   straighten_depiction(minimizeRotation?: boolean): void;
   get_num_atoms(heavyOnly?: boolean): number;
   get_num_bonds(): number;
-  get_copy(): RDMol;
+  copy(): RDMol;
 
   /** Reclaims the memory used for that molecule. */
   delete(): void;
@@ -140,7 +143,7 @@ export interface RDReaction {
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
   draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
-  is_valid(): boolean;
+  // is_valid(): boolean;
   get_svg(width?: number, height?: number): string;
   get_svg_with_highlights(options: string): string;
   run_reactants(reactants: MolList, maxProducts: number): RDReactionResult;
@@ -173,7 +176,8 @@ export interface RDSubstructLibrary {
   get_trusted_smiles(i: number): string;
   add_trusted_smiles_and_pattern_fp(smiles: string, patternFp: Uint8Array): number;
   get_pattern_fp_as_uint8array(i: number): Uint8Array;
-  get_matches_as_uint32array(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): Uint32Array;
+  get_matches_as_uint32array(qmol: RDMol, useChirality?: boolean, numThreads?: number,
+    maxResults?: number): Uint32Array;
   get_mol(i: number): RDMol;
   get_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): string;
   count_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number): number;

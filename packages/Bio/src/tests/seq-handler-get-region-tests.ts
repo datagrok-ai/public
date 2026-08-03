@@ -27,9 +27,9 @@ category('SeqHandler: getRegion', () => {
   } = {
     'fastaDna': {
       srcCsv: `seq
-ATTCGT
-ACTGCTC
-ATTCCGTA`,
+ATTCGTCGT
+ACTGCTCCGT
+ATTCCGTACGT`,
       startIdx: 2,
       endIdx: 4,
       tgtCsv: `seq
@@ -79,7 +79,6 @@ PEPTIDE1{[Cys_SEt].T.*.*}$$$$`,
     test(`${testName}-idx`, async () => {
       const srcDf = DG.DataFrame.fromCsv(testData.srcCsv);
       const srcSeqCol = srcDf.getCol('seq');
-
       const semType: string | null = await grok.functions.call('Bio:detectMacromolecule', {col: srcSeqCol});
       if (semType) srcSeqCol.semType = semType;
 

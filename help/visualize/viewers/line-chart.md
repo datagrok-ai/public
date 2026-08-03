@@ -1,5 +1,14 @@
 ---
 title: "Line chart"
+description: Track trends and changes over time by connecting data points into one or more line series.
+keywords:
+  - trend chart
+  - time series
+  - multiple series comparison
+  - regression line
+  - moving average
+  - statistical process control
+  - control limits
 ---
 
 Line chart shows data points as connected line segments. It is commonly used to track trends, changes over time, and compare multiple data series. 
@@ -98,8 +107,6 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Outer Chart Margin Top | number |  |
 | Outer Chart Margin Right | number |  |
 | Outer Chart Margin Bottom | number |  |
-| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
-| Show Viewer Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | Legend Visibility | visibilitymode |  |
 | Legend Position | flexautoposition |  |
 | Row Source | string | Determines the rows shown on the plot. |
@@ -144,12 +151,14 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Markers | visibilitymode | A boolean column that determines whether to show markers. |
 | Markers Size Column Name | string |  |
 | Markers Size Aggr Type | string |  |
+| Marker Size Scaling | string | Linear or logarithmic scale for the marker *Size* column. |
 | Markers Visibility Column Name | string |  |
 | **Selection** | | |
 | Show Current Row Line | boolean | Show vertical line reflecting the position of the current row See also *Current Line Color* |
 | Show Mouse Over Category | boolean | Determines whether the line is highlighted when you hover over the corresponding category. Example: Split by = SEX and you hover over the Male category in the filter. |
+| Show Selected Rows | boolean | When checked, selected points and line segments are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
 | Show Mouse Over Row Line | boolean | Show vertical line reflecting the position of the mouse-over row See also *Mouse Over Line Color* |
-| **Statistical process control** | | |
+| **SPC** | | |
 | Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
 | Show Sigma1 | boolean |  |
@@ -157,12 +166,12 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Average | boolean |  |
 | Lower Control Limit | number |  |
 | Upper Control Limit | number |  |
-| Show Outlier | boolean | Rule 1: One point is more than 3 standard deviations from the mean. When sample(s) is grossly out of control. |
+| Show Outlier | boolean | Rile 1: One point is more than 3 standard deviations from the mean. When sample(s) is grossly out of control. |
 | Show Bias | boolean | Rule 2: Nine (or more) points in a row are on the same side of the mean. Some prolonged bias exists. |
 | Show Consistent Trend | boolean | Rule 3: Six (or more) points in a row are continually increasing (or decreasing). When a trend exists. |
 | Show Oscillation | boolean | Rule 4: Fourteen (or more) points in a row alternate in direction, increasing then decreasing. This much oscillation is beyond noise. Note that the rule is considered with directionality only. The position of the mean and the size of the standard deviation have no bearing. |
-| Show Medium Shift | boolean | Rule 5: Two (or three) out of the three points in a row are more than 2 standard deviations from the mean in the same direction. There is a medium tendency for samples to be moderately out of control. The side of the mean for the third point is unspecified. |
-| Show Sustained Shift | boolean | Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean in the same direction. There is a strong tendency for samples to be slightly out of control. The side of the mean for the fifth point is unspecified. |
+| Show Medium Shift | boolean | Rule 5:Two (or three) out of the three points in a row are more than 2 standard deviations from the mean in the same direction. There is a medium tendency for samples to be mediumly out of control. The side of the mean for the third point is unspecified. |
+| Show Sustained Shift | boolean | Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean in the same direction. There is strong tendency for samples to be slightly out of control. The side of the mean for the fifth point is unspecified. |
 | Show Suppressed Variation | boolean | Rule 7: Fifteen points in a row are all within 1 standard deviation of the mean on either side of the mean. With 1 standard deviation, greater variation would be expected. |
 | **Misc** | | |
 | Axes Use Column Format | boolean | Use column format for axis labels, where possible |
@@ -177,7 +186,6 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Overview Height | number | Height of the overview chart |
 | Histogram Width | number |  |
 | Auto Axis Size | boolean | If true, *X Axis Height* is calculated automatically to fit the required precision. If false, the specified *X Axis Height* |
-| Annotation Font | string |  |
 | X Axis Height | number | Requires *Auto Axis Size* to be turned off. |
 | Line Coloring Type | string |  |
 | Axis Font | string |  |
@@ -187,6 +195,12 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Statistical Process Area Color | number |  |
 | Statistical Process Rule Color | number |  |
 | Controls Font | string | Viewer controls elements font. |
+| Regression Line Color | number |  |
+| Regression Line Transparency | number |  |
+| Moving Average Line Color | number |  |
+| Moving Average Line Transparency | number |  |
+| Annotation Font | string |  |
+| Formula Font | string |  |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -194,12 +208,27 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Row Group Tooltip | string |  |
 | **Legend** | | |
 | Add Y Columns To Legend | boolean | When selected, column names are added to the legend. Requires *Multi Axis* to be enabled. |
-| **Annotation regions** | | |
+| **Annotations** | | |
+| Lasso Tool | boolean | Enables lasso region drawing mode (instead of polygon drawing default one). |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
-| Lasso Tool | boolean | Enables lasso region drawing mode (instead of polygon drawing default one). |
+| Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
+| Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting Tools \| Formula Lines from the popup menu. Requires the PowerPack plugin. |
 | **Description** | | |
 | Show Title | boolean |  |
+| **Lines** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 
 See also:
 

@@ -1,5 +1,13 @@
 ---
 title: "Creating a package"
+description: Step-by-step walkthrough of creating, building, and publishing a simple Datagrok package with an info panel.
+keywords:
+  - grok create
+  - scaffold a package
+  - package.ts
+  - grok publish dev
+  - debug mode publish
+  - PascalCase package name
 ---
 
 This document explains how to create a simple package that contains an
@@ -34,7 +42,7 @@ Add the actual panel's code at `TextStats/src/package.ts`:
 
 ```typescript
 //name: TextStats
-//tags: panel, widgets
+//meta.role: panel, widgets
 //input: string str {semType: text}
 //output: widget result
 export function textStats(str: string) {

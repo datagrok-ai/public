@@ -9,7 +9,7 @@ import $ from 'cash-dom';
 import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, checkEditPermissions,
-  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, getSavedCampaignsSorting, getSavedCampaignTableColumns, modifyUrl, popRibbonPannels,
+  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, getSavedCampaignsSorting, getSavedCampaignTableColumns, loadTemplate, modifyUrl, popRibbonPannels,
   processGroupingTable,
   SavedCampaignsTableSorting,
   setSavedCampaignsGrouping,
@@ -25,9 +25,14 @@ export class HitDesignInfoView
   <T extends HitDesignTemplate = HitDesignTemplate, K extends HitDesignApp = HitDesignApp>
   extends HitBaseView<T, K> {
   currentGroupping: string = 'None';
+  protected _appHeader: HTMLElement | null = null;
+  protected _contentRoot: HTMLElement = ui.div([], {classes: 'hit-triage-info-view-container'});
   constructor(app: K) {
     super(app);
     this.name = 'Hit Design';
+    this._appHeader = this.getAppHeader();
+    this.root.appendChild(ui.div([this._appHeader], {style: {marginLeft: '10px'}}));
+    this.root.appendChild(this._contentRoot);
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp(_package.webRoot + 'README_HD.md'); // TODO: Separate readme for Hit Design
     this.checkCampaign().then((c) => {this.app.campaign = c; this.init();});
@@ -76,7 +81,6 @@ export class HitDesignInfoView
       const continueCampaignsHeader = ui.h1(i18n.continueCampaigns);
 
       const createNewCampaignHeader = ui.h1(i18n.createNewCampaignHeader, {style: {marginLeft: '10px'}});
-      const appHeader = this.getAppHeader();
 
       const campaignAccordionDiv = ui.div();
       const templatesDiv = ui.divH([]);
@@ -109,7 +113,7 @@ export class HitDesignInfoView
         });
 
         menu.show({element: sortingHeader, x: 120, y: sortingHeader.offsetTop + 30});
-      });
+      }, 'Group by');
       groupIcon.style.marginBottom = '9px';
       groupIcon.style.marginLeft = '8px';
       groupIcon.style.fontSize = '15px';
@@ -152,7 +156,7 @@ export class HitDesignInfoView
 
         // then add the custom fields
         menu.show({element: sortingHeader, x: 100, y: sortingHeader.offsetTop + 30});
-      });
+      }, 'View');
       ui.tooltip.bind(editColumnsIcon, 'Edit visible columns in campaigns table');
       editColumnsIcon.style.marginBottom = '9px';
       editColumnsIcon.style.marginLeft = '8px';
@@ -161,19 +165,17 @@ export class HitDesignInfoView
 
       const refreshIcon = ui.iconFA('sync', async () => {
         await this.refreshCampaignsTable();
-      });
+      }, 'Refresh');
       refreshIcon.style.marginBottom = '9px';
       refreshIcon.style.marginLeft = '8px';
       refreshIcon.style.color = 'var(--blue-1)';
       ui.tooltip.bind(refreshIcon, () => 'Refresh campaigns table');
       const sortingHeader = ui.divH([continueCampaignsHeader, editColumnsIcon, groupIcon, refreshIcon], {style: {alignItems: 'center'}});
-      $(this.root).empty();
-      this.root.appendChild(ui.div([
-        ui.divV([appHeader, sortingHeader], {style: {marginLeft: '10px'}}),
-        this.campaignsTableRoot,
-        createNewCampaignHeader,
-        contentDiv,
-      ], {classes: 'hit-triage-info-view-container'}));
+      $(this._contentRoot).empty();
+      this._contentRoot.appendChild(ui.divV([sortingHeader], {style: {marginLeft: '10px'}}));
+      this._contentRoot.appendChild(this.campaignsTableRoot);
+      this._contentRoot.appendChild(createNewCampaignHeader);
+      this._contentRoot.appendChild(contentDiv);
       await this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate);
     } finally {
       ui.setUpdateIndicator(this.root, false);
@@ -197,7 +199,7 @@ export class HitDesignInfoView
         return;
       const templateName = templatesInput.value;
       const template: T = presetTemplate && presetTemplate.name === templateName ? presetTemplate :
-        JSON.parse(await _package.files.readAsText(`${this.app.appName}/templates/${templateName}.json`));
+        await loadTemplate<T>(`${this.app.appName}/templates/${templateName}.json`);
       selectedTemplate = template;
       const newCampaignAccordeon = await this.getNewCampaignAccordeon(template);
       $(containerDiv).empty();
@@ -274,8 +276,8 @@ export class HitDesignInfoView
       this.app.campaign = campaign;
     }
     // Load the template and modify it
-    const template: T = campaign.template ?? JSON.parse(
-      await _package.files.readAsText(`${this.app.appName}/templates/${campaign.templateName}.json`),
+    const template: T = (campaign.template as T) ?? await loadTemplate<T>(
+      `${this.app.appName}/templates/${campaign.templateName}.json`,
     );
     // modify the template with path to the campaign's precalculated table
     await this.app.setTemplate(template, campaignId!);

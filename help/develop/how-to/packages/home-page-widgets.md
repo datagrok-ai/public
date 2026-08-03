@@ -1,5 +1,12 @@
 ---
 title: "Develop widgets for home page"
+description: Register a dashboard-role function to add a custom widget to the Datagrok home page.
+keywords:
+  - dashboard role
+  - home page widget
+  - DG.Widget
+  - recent projects widget
+  - custom home page panel
 ---
 
 When you start Datagrok, the [Home page](../../../datagrok/navigation/views/browse.md#home-page)
@@ -9,13 +16,13 @@ Here we see two of them, "Recent projects" and "Usage":
 ![](home-page-widgets.png)
 
 You can develop custom widgets. To do that, write a function
-that would return `widget` and mark it with the `dashboard` tag. It can reside either 
+that would return `widget` and mark it with the `dashboard` role. It can reside either 
 in a package, or in a stand-alone script. Here is the real example of the 
 "Recent projects" widget from the 
 [PowerPack plugin](https://github.com/datagrok-ai/public/blob/2e76a30ca11764c269c9e24654eace8e8ca4cf8b/packages/PowerPack/src/package.ts#L44):
 ```js
 //output: widget result
-//tags: dashboard
+//meta.role: dashboard
 export function recentProjectsWidget(): DG.Widget {
   return new RecentProjectsWidget();
 }

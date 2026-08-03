@@ -51,6 +51,7 @@
                 },
                 {
                   "isColorCoded": true,
+                  "isTextBackgroundColorCoded": true,
                   "width": 96,
                   "columnName": "ExactMolWt",
                   "customFormat": "0.0000000",

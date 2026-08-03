@@ -20,8 +20,8 @@ export interface Scores {
 }
 
 export interface TreeNode {
-    type: string;
-    hide: boolean;
+    type: 'mol' | 'reaction';
+    hide?: boolean;
     smiles: string;
     is_chemical?: boolean;
     is_reaction?: boolean;
@@ -36,11 +36,11 @@ export interface TreeMetadata {
 }
 
 export interface Tree {
-    type: string;
-    hide: boolean;
+    type: 'mol' | 'reaction';
+    hide?: boolean;
     smiles: string;
-    is_chemical: boolean;
-    in_stock: boolean;
+    is_chemical?: boolean;
+    in_stock?: boolean;
     children?: TreeNode[];
     scores: Scores;
     metadata: TreeMetadata;

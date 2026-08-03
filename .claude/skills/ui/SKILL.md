@@ -1,7 +1,7 @@
 ---
 name: ui
-description: UI building guidelines for Datagrok TypeScript components and viewers
-when-to-use: When creating or modifying UI components, viewers, dialogs, file viewers, layouts, or grids
+description: UI building guidelines for Datagrok TypeScript components, viewers, and drag-and-drop
+when-to-use: When creating or modifying UI components, viewers, dialogs, file viewers, layouts, grids, or drag-and-drop
 effort: low
 ---
 
@@ -47,9 +47,33 @@ const tabs = ui.tabControl({
 ## Dialogs and Inputs
 
 - Use `ui.dialog()` for modal interactions
-- Use `ui.input.choice()`, `ui.input.int()`, etc. for typed inputs
+- Use `ui.input.choice()`, `ui.input.int()`, `ui.input.bool()`, etc. for typed inputs - full set of input functions is in `js-api/ui.ts`.
+Prefer `onValueChanged` in the options object over `.onChanged.subscribe()`:
+```typescript
+  ui.input.bool('Debug', {value: DG.Test.isInDebug, onValueChanged: (v) => DG.Test.isInDebug = v});
+```
+Use `ui.form([...inputs])` to render a labeled list of inputs inside a dialog
 - For property panels, prefer `DG.JsViewer` properties (`this.string(...)`, `this.int(...)`)
   which automatically appear in the context panel
+
+## Toggle Settings in Popup Menus
+
+For toggleable settings in a `DG.Menu.popup()`, use `menu.items()` with `isChecked` — **never** use text-prefix hacks like `` `${flag ? '✓ ' : ''}Label` ``:
+
+```typescript
+const toggles = [
+  {label: 'Debug', get: () => DG.Test.isInDebug, set: (v: boolean) => { DG.Test.isInDebug = v; }},
+  {label: 'Benchmark', get: () => DG.Test.isInBenchmark, set: (v: boolean) => { DG.Test.isInBenchmark = v; }},
+];
+const menu = DG.Menu.popup();
+menu.closeOnClick = false;
+const refresh = () => {
+  menu.clear();
+  menu.items(toggles, (t) => { t.set(!t.get()); refresh(); }, {isChecked: (t) => t.get()});
+};
+refresh();
+menu.show();
+```
 
 ## Performance
 
@@ -66,6 +90,15 @@ const acc = ui.accordion();
 acc.addPane('Details', () => buildDetailsPanel());
 acc.addPane('Statistics', () => buildStatsPanel());
 ```
+
+## Drag and Drop
+
+- `ui.makeDroppable(el, IDragAndDropOptions<T>)` — receive entities dragged from the browse tree, grid, or other sources.
+  - `acceptDrop(obj)` — fast predicate for showing the zone.
+  - `doDrop(args)` — handle the drop. `args` is a `DragDropArgs<T>` with `dragObject`, `dragSource`, `dragObjectType`, `copying` (Ctrl/Cmd), `link` (Alt), `handled`.
+  - Rich hooks: `acceptDrag`, `onBeginDrag`, `onEndDrag`, `onMouseEnter/Over/Leave/Out`, `dropSuggestion`, `makeDropZone`, `dropZoneRectTransformation`, `dropIndication`.
+- `ui.makeDraggable(el, {getDragObject, getDragCaption})` — make your own UI a drag source.
+- Sample: `ApiSamples/scripts/ui/interactivity/drag-and-drop.js`.
 
 ## Common Anti-Patterns
 

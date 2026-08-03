@@ -33,7 +33,7 @@ export function drugLikenessWidget(molString: DG.SemanticValue): DG.Widget {
   const descriptionHost = renderDescription(description);
   descriptionHost.style.overflow = 'hidden';
   descriptionHost.style.maxHeight = '400px';
-  const calcFowWholeButton = ui.icons.add(async () => {
+  const calcForWholeButton = ui.icons.add(async () => {
     const pi = DG.TaskBarProgressIndicator.create('Calculating drug likeness scores');
     try {
       const oclService = new OCLService();
@@ -48,13 +48,13 @@ export function drugLikenessWidget(molString: DG.SemanticValue): DG.Widget {
       pi.close();
     }
   }, 'Calculate drug likeness for the whole table');
-  const scoreDiv = ui.divH([ui.label(`Score: ${score.toFixed(2)}`), calcFowWholeButton],
+  const scoreDiv = ui.divH([ui.label(`Score: ${score.toFixed(2)}`), calcForWholeButton],
     {classes: 'chem-drug-likeness-widget-score-div'});
-  calcFowWholeButton.classList.add('chem-drug-likeness-calc-all-button');
+  calcForWholeButton.classList.add('chem-drug-likeness-calc-all-button');
 
   const host = ui.divV([scoreDiv,
     ui.label(` ${description[0].value}`), descriptionHost], {classes: 'ui-box'});
-  ui.tools.setHoverVisibility(host, [calcFowWholeButton]);
+  ui.tools.setHoverVisibility(host, [calcForWholeButton]);
 
   return new DG.Widget(host);
 }

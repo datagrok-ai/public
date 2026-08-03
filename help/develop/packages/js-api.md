@@ -1,9 +1,20 @@
 ---
 title: "JavaScript API"
+description: Tour of the grok, ui, and DG entry points of the Datagrok JS API, covering data manipulation, views, events, and registering functions.
+keywords:
+  - grok namespace
+  - ui namespace
+  - DG namespace
+  - data manipulation
+  - registering functions
+  - dockable views
+  - rest api via dapi
+  - machine learning api
+  - cheminformatics api
 
 ---
 
-[Datagrok JS API](https://datagrok.ai/api/js/api) lets you control all aspects of the Datagrok platform. The API can be
+[Datagrok JS API](https://datagrok.ai/api/js/) lets you control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../../compute/scripting/scripting.mdx) (`Functions | Scripts | New JavaScript Script`)
 or from [packages](../develop.md#packages).
 
@@ -24,9 +35,9 @@ This document covers the following areas:
 
 There are three entry points to the API:
 
-* [**grok**](https://datagrok.ai/api/js/api/grok) for easy discoverability of the functionality,
-* [**ui**](https://datagrok.ai/api/js/api/ui) for building user interfaces, and
-* [**DG**](https://datagrok.ai/api/js/api/dg) for instantiating classes directly.
+* [**grok**](https://datagrok.ai/api/js/grok) for easy discoverability of the functionality,
+* [**ui**](https://datagrok.ai/api/js/ui) for building user interfaces, and
+* [**DG**](https://datagrok.ai/api/js/dg) for instantiating classes directly.
 
 ### Grok
 
@@ -42,7 +53,7 @@ For example, to import a dataframe from a CSV file:
 
 :::note
 
-When you need more control, use the [DG namespace](https://datagrok.ai/api/js/api/dg#namespaces).
+When you need more control, use the [DG namespace](https://datagrok.ai/api/js/dg#namespaces).
 
 :::
 
@@ -61,20 +72,20 @@ ui.dialog('Windows')
 
 ### DG
 
-Check out [JS API Class Reference](https://datagrok.ai/api/js/api/)
+Check out [JS API Class Reference](https://datagrok.ai/api/js/)
 
 ### Shell
 
 Datagrok visual shell is used to get access to top-level views, tables, methods, and platform states.
 
-Learn more here: [Datagrok Shell reference](https://datagrok.ai/api/js/api/dg/classes/Shell)
+Learn more here: [Datagrok Shell reference](https://datagrok.ai/api/js/dg/classes/Shell)
 
 ## Data manipulation
 
 ### Dataframe
 
-Use [DataFrame](https://datagrok.ai/api/js/api/dg/classes/DataFrame), [Column](https://datagrok.ai/api/js/api/dg/classes/Column)
-, [ColumnList](https://datagrok.ai/api/js/api/dg/classes/ColumnList), and [Row](https://datagrok.ai/api/js/api/dg/classes/Row)
+Use [DataFrame](https://datagrok.ai/api/js/dg/classes/DataFrame), [Column](https://datagrok.ai/api/js/dg/classes/Column)
+, [ColumnList](https://datagrok.ai/api/js/dg/classes/ColumnList), and [Row](https://datagrok.ai/api/js/dg/classes/Row)
 classes for table manipulation.
 
 ```javascript
@@ -94,8 +105,8 @@ demog.set('age', 1, 44);
 
 ### BitSet
 
-Each [DataFrame](https://datagrok.ai/api/js/api/dg/classes/DataFrame) is associated with
-two [bitsets](https://datagrok.ai/api/js/api/dg/classes/BitSet): selection and filter.
+Each [DataFrame](https://datagrok.ai/api/js/dg/classes/DataFrame) is associated with
+two [bitsets](https://datagrok.ai/api/js/dg/classes/BitSet): selection and filter.
 
 ```javascript
 // bit set (same applies to filter)
@@ -164,7 +175,7 @@ grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {
-    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
+    let response = await fetch('https://restcountries.com/v3.1/name/' + text);
     return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
   }
 });
@@ -235,7 +246,7 @@ Docking code snippets:
 Use `grok.dapi` entry point for managing server-based objects, such as datasets, connection, users, credentials, jobs,
 packages, etc.
 
-See also [HttpDataSource](https://datagrok.ai/api/js/api/dg/classes/HttpDataSource) subclasses.
+See also [HttpDataSource](https://datagrok.ai/api/js/dg/classes/HttpDataSource) subclasses.
 
 Code snippets:
 

@@ -1,5 +1,13 @@
 ---
 title: "Custom script handler"
+description: Register a scriptHandler function to add support for a scripting language not natively supported by Datagrok.
+keywords:
+  - scriptHandler role
+  - meta.scriptHandler.language
+  - meta.scriptHandler.extensions
+  - custom scripting language
+  - FuncCall handler
+  - CodeMirror mode
 ---
 
 If the Datagrok platform does not support a scripting language you are familiar with, you can create a custom script handler within your [package](../packages/create-package.md). 
@@ -24,7 +32,7 @@ export async function myCustomScriptHandler(call: DG.FuncCall): Promise<void> {
 Annotations are multi-line comments placed above the function declaration. They provide metadata about the function, allowing the Datagrok platform to recognize and utilize them appropriately.
 There are four mandatory annotations that must be present to register a function as a script handler:
 
-* `tags: scriptHandler` - marks the function as a script handler, so the Datagrok platform will attempt to register it.
+* `meta.role: scriptHandler` - marks the function as a script handler, so the Datagrok platform will attempt to register it.
 * `meta.scriptHandler.language` - defines language name.
 * `meta.scriptHandler.extensions` - defines file extensions separated by commas that are supported by this handler. For instance, `py` for Python, `js` for JavaScript.
 * `input: funccall scriptCall` - defines input. Handler should have only one input parameter of type `funccall`.
@@ -38,7 +46,7 @@ There are other optional annotations as well:
 Let's say we want to register handler for [Clojure](https://clojure.org/) language. The function could be annotated as follows:
 
 ```typescript
-//tags: scriptHandler
+//meta.role: scriptHandler
 //meta.scriptHandler.language: clojure
 //meta.scriptHandler.extensions: clj,cljs,cljr 
 //meta.scriptHandler.commentStart: ;

@@ -1,5 +1,6 @@
 #name: GenerateScaffoldTree
-#description: generation scaffold tree from dataset
+#friendlyName: Generate Scaffold Tree
+#description: Builds a hierarchical scaffold tree from the molecules in a dataset.
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG==1.1.8, networkx]}]
 #input: dataframe data [Input data table]

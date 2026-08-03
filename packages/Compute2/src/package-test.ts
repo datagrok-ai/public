@@ -2,6 +2,14 @@ import * as DG from 'datagrok-api/dg';
 import {TestContext, runTests, tests, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 
 import './test/viewers-hook';
+import './test/app-launch';
+import './test/rfv';
+import './test/navigation';
+import './test/float-display';
+import './test/custom-export';
+import './test/run-comparison-matching';
+import './test/run-comparison-selection';
+import './test/run-comparison-builders';
 
 export const _package = new DG.Package();
 export {tests};

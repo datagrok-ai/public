@@ -146,6 +146,47 @@ export type AbortPointer = {
   aborted: boolean;
 }
 
+/** True for the Enter / numpad-Enter key. Falls back to `keyCode` because Dartium and
+ * Chrome ≤ 50 predate the `KeyboardEvent.key` property (it returns `undefined` there). */
+export function isEnterKey(e: KeyboardEvent): boolean {
+  return e.key === 'Enter' || e.keyCode === 13;
+}
+
+export const SHORTCUT_HINT = 'Ctrl+I';
+
+export function isToggleKey(e: KeyboardEvent): boolean {
+  return e.ctrlKey && (e.key === 'i' || e.keyCode === 73);
+}
+
+/** Copies text to the clipboard, resolving to whether it succeeded (never rejects).
+ * Falls back to `document.execCommand('copy')` when `navigator.clipboard` is unavailable —
+ * Dartium / Chrome ≤ 65 / insecure contexts. */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      console.warn('clipboard.writeText failed, falling back to execCommand', e);
+    }
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.setAttribute('readonly', '');
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    console.error('copyToClipboard failed', e);
+    return false;
+  }
+}
+
 export function dartLike<T extends any>(obj: T) {
   return {
     set: function<K extends keyof T>(key: K, value: T[K]) {
@@ -195,4 +236,57 @@ export function findLast<T, K extends T>(array: T[], predicate: (value: T, index
       return value;
   }
   return undefined;
+}
+
+/** GFM forbids a table from interrupting a paragraph, and the platform's Dart markdown parser is
+ * spec-strict — but models routinely emit `**Section**` directly followed by `| header |` rows,
+ * which then render as one glued paragraph of pipes. Insert the missing blank line before a table
+ * block (a `|` line whose next line is the `|---|` separator) when it follows a non-table line.
+ * Fence-aware so code blocks with ASCII pipes are untouched. */
+export function normalizeMarkdownTables(text: string): string {
+  if (!text.includes('|'))
+    return text;
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*```/.test(line))
+      inFence = !inFence;
+    const prev = out.length ? out[out.length - 1] : '';
+    if (!inFence && /^\s*\|/.test(line) && prev.trim() !== '' && !/^\s*\|/.test(prev) &&
+        /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1] ?? '') && (lines[i + 1] ?? '').includes('-'))
+      out.push('');
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
+/** Renders markdown content with copy-on-code-blocks behavior and selectable text. */
+export function createStyledMarkdown(content: string): HTMLElement {
+  const markDown = ui.markdown(normalizeMarkdownTables(content));
+  markDown.style.position = 'relative';
+  dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
+  if (markDown.querySelector('pre > code')) {
+    const copyButton = ui.icons.copy(() => {}, 'Copy Code');
+    copyButton.classList.add('d4-ai-copy-code-button');
+    markDown.appendChild(copyButton);
+    copyButton.addEventListener('click', () => {
+      const codeElement = markDown.querySelector('pre > code');
+      if (codeElement) {
+        const header = markDown.children[0];
+        if (header && header.tagName?.toLowerCase() !== 'pre')
+          (header as HTMLElement).style.marginRight = '16px';
+        copyToClipboard(codeElement.textContent || '').then((ok) => {
+          if (!ok) {
+            grok.shell.error('Failed to copy code to clipboard.');
+            return;
+          }
+          copyButton.classList.add('d4-ai-copy-code-button-copied');
+          setTimeout(() => copyButton.classList.remove('d4-ai-copy-code-button-copied'), 600);
+        });
+      }
+    });
+  }
+  return markDown;
 }

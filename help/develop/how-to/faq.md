@@ -2,6 +2,14 @@
 title: "Developer FAQ"
 sidebar_label: "FAQ: Developers" 
 sidebar_position: 14
+description: Answers to common developer questions about debugging setup, datagrok-tools installation, publishing, and filter synchronization.
+keywords:
+  - troubleshooting
+  - debugging setup
+  - datagrok-tools install
+  - grok publish --release
+  - filter synchronization
+  - common errors
 ---
 
 *Question:*

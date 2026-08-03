@@ -196,12 +196,12 @@ export class GridTutorial extends Tutorial {
 
     this.title('Summary columns');
 
-    await this.action('Add a summary column with inline bar chart', interval(1000).pipe(filter(() => grid.col('barchart') !==
+    await this.action('Add a summary column with inline bar chart', interval(1000).pipe(filter(() => grid.col('Bar Chart') !==
       null)), null, 'Summary columns is a way to visualize multiple numerical values across the row. To add one, right-click ' +
       'on any cell in the grid and select <b>Add > Summary Columns > Bar Chart</b>.');
 
-    await this.action('Click the "barchart" column header', interval(1000).pipe(filter(() => grok.shell.o instanceof
-      DG.GridColumn && grok.shell.o.name === 'barchart')), null, 'Summary columns contain an inline viewer that visualizes by ' +
+    await this.action('Click the "Bar Chart" column header', interval(1000).pipe(filter(() => grok.shell.o instanceof
+      DG.GridColumn && grok.shell.o.name === 'Bar Chart')), null, 'Summary columns contain an inline viewer that visualizes by ' +
       'default up to 3 columns. When you click the column header, you can see which columns are used for a summary in the ' +
       'context panel on the right.');
   }

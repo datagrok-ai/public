@@ -22,7 +22,9 @@ import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
 import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
 import * as api from '../package-api';
-import {registerMol, registerMolsBatch} from './utils/molreg';
+import {registerMol} from './utils/molreg';
+import {autoMergeOnCampaignOpen, mergeIntoCampaign} from './utils/merge-table';
+import {openMergeTableDialog} from './dialogs/merge-table-dialog';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -58,7 +60,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
   }
 
   /**
-   * Correctly joins the incoming dataframe with the existing campaign dataframe
+   * Correctly joins the incoming dataframe with the existing campaign dataframe.
+   * Drag-n-drop entry point — uses SMILES-based join with the historical defaults.
    * @param df Dataframe to be joined into existing campaign dataframe
    */
   async handleJoiningDataframe(df: DG.DataFrame) {
@@ -89,49 +92,19 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     } else
       chosenMolColName = molCols[0]!.name!;
 
-
-    const molCol = df.col(chosenMolColName);
-    if (!molCol) { // should not happen, but oh well
+    if (!df.col(chosenMolColName)) {
       grok.shell.error('No molecule column found');
       return;
     }
 
-    const compute = this.campaign?.template?.compute ?? this.template?.compute;
-    if (!compute) {
-      grok.shell.warning('No compute functions found');
-      return;
-    }
-    const mols = molCol.toList();
-    const descriptors = compute.descriptors.enabled ? compute.descriptors.args ?? [] : [];
-    const calcDf = await calculateCellValues(mols, descriptors, compute.functions, compute.scripts, compute.queries);
-    //merge  into adding dataframe
-    this.unionDataframes(calcDf, df, HitDesignMolColName, molCol.name);
-
-    if (this.stages.length > 0 && this.dataFrame!.columns.contains(TileCategoriesColName)) {
-      const newTilesCol = df.columns.getOrCreate(TileCategoriesColName, DG.TYPE.STRING);
-      for (let i = 0; i < df.rowCount; i++) {
-        if (newTilesCol.isNone(i))
-          newTilesCol.set(i, this.stages[0], false);
-      }
-    }
-
-    // handle the VID column for new table
-    // joining data is not allowed to have the VID column, so remove it if it exists
-    if (df.columns.contains(ViDColName))
-      df.columns.remove(ViDColName);
-
-    const vidCol = df.columns.addNewString(ViDColName);
-    // batch register the molecules
-    const registeredVids = await registerMolsBatch(mols, this._campaignId!, this.appName);
-    for (let i = 0; i < df.rowCount; i++) {
-      const mol = molCol.get(i);
-      const vid = registeredVids.get(mol);
-      if (vid)
-        vidCol.set(i, vid);
-    }
-    //merge changes into existing dataframe
-    this.unionDataframes(df, this.dataFrame!, molCol.name, this.molColName);
-    this.saveCampaign(false);
+    await mergeIntoCampaign(this, df, {
+      mode: 'smiles',
+      molColName: chosenMolColName,
+      addNewRows: true,
+      runComputeOnNewRows: true,
+      clashStrategy: 'overwrite',
+    });
+    await this.saveCampaign(false);
   }
 
   public get submitParams() {
@@ -346,6 +319,18 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       await this.setCanEdit(this.campaign);
     else
       this.hasEditPermission = true; // if the campaign is new, obviously the user can edit it
+
+    // Implicit merge pass before the view is shown: only runs when the campaign carries a
+    // mergeConfig with autoMergeOnOpen and a remembered fileshare path. Compute is forced off
+    // and we deliberately do not save — the user can save manually after the merge.
+    if (campaignId && this.campaign?.mergeConfig?.autoMergeOnOpen && this.campaign.mergeConfig.filePath)
+      await autoMergeOnCampaignOpen(this);
+
+    // Recompute any compute functions flagged "re-run when campaign opens" over the whole molecule
+    // column. Like the auto-merge pass, this runs only for existing campaigns and is not auto-saved.
+    if (campaignId && this.campaign)
+      await this.reComputeOnCampaignOpen();
+
     const designV = this.designView;
     this.currentDesignViewId = designV.name;
     this.setBaseUrl();
@@ -471,6 +456,55 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           this.saveCampaign(false);
   }
 
+  /**
+   * Recomputes the compute functions/scripts/queries flagged with `rerunOnOpen` over the whole
+   * molecule column. Called once when an existing campaign is opened, before the design view is
+   * shown. Mirrors the auto-merge-on-open pass: values are updated in memory but the campaign is
+   * not auto-saved, and failures never bubble up so the campaign still opens.
+   */
+  private async reComputeOnCampaignOpen(): Promise<void> {
+    const compute = this.template?.compute;
+    if (!compute || !this.dataFrame || !this.molColName)
+      return;
+
+    // Descriptors are deterministic from structure, so they are intentionally never re-run on open.
+    const functions = (compute.functions ?? []).filter((f) => f.rerunOnOpen);
+    const scripts = (compute.scripts ?? []).filter((s) => s.rerunOnOpen);
+    const queries = (compute.queries ?? []).filter((q) => q.rerunOnOpen);
+    if (!functions.length && !scripts.length && !queries.length)
+      return;
+
+    const molCol = this.dataFrame.col(this.molColName);
+    if (!molCol)
+      return;
+
+    try {
+      // Compute against a temporary molecule-only table, then merge the results back in. Merging by
+      // column name lets us overwrite an existing column in place instead of appending a duplicate
+      // "<name> (2)" column — e.g. a query that re-resolves a ChEMBL molregno already in the table.
+      const values = molCol.toList();
+      const calcDf = await calculateCellValues(values, [], functions, scripts, queries);
+      for (const resCol of calcDf.columns.toList()) {
+        if (resCol.name === this.molColName || resCol.name === HitDesignMolColName)
+          continue;
+        let targetCol = this.dataFrame.col(resCol.name);
+        if (!targetCol || targetCol.type !== resCol.type) {
+          if (targetCol) // existing column of a different type: replace it wholesale
+            this.dataFrame.columns.remove(resCol.name);
+          targetCol = this.dataFrame.columns.addNew(resCol.name, resCol.type);
+        }
+        targetCol.semType = resCol.semType;
+        const rows = Math.min(resCol.length, targetCol.length);
+        for (let i = 0; i < rows; i++)
+          targetCol.set(i, resCol.isNone(i) ? null : resCol.get(i), false);
+      }
+      this.dataFrame.fireValuesChanged();
+    } catch (e) {
+      _package.logger.error(e);
+      grok.shell.warning('Re-run on open failed for some functions; opening the campaign anyway.');
+    }
+  }
+
   private _refreshCampaignIcon: HTMLElement | null = null;
   protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[], addDesignerButton = false) {
     const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
@@ -509,6 +543,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
                   name: splitFunc[1],
                   package: splitFunc[0],
                   args: args,
+                  rerunOnOpen: !!resultMap?.rerunOnOpen?.[funcName],
                 });
               }),
               scripts: Object.entries(resultMap?.scripts ?? {})
@@ -519,6 +554,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
                     name: scriptNameParts[1] ?? '',
                     id: scriptNameParts[2] ?? '',
                     args: args,
+                    rerunOnOpen: !!resultMap?.rerunOnOpen?.[scriptId],
                   });
                 }),
               queries: Object.entries(resultMap?.queries ?? {})
@@ -529,6 +565,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
                     name: queryNameParts[1] ?? '',
                     id: queryNameParts[2] ?? '',
                     args: args,
+                    rerunOnOpen: !!resultMap?.rerunOnOpen?.[queryName],
                   });
                 }),
             };
@@ -571,13 +608,15 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
               ui.setUpdateIndicator(view.grid.root, false);
               this.saveCampaign(false);
             }
-          }, () => null, this.campaign?.template!, true);
+          }, () => null, this.campaign?.template!, true, true);
         };
 
         const calculateRibbon = ui.iconFA('wrench', getComputeDialog, 'Calculate additional properties');
+        const mergeTableButton = ui.iconFA('code-merge', () => {openMergeTableDialog(this);},
+          'Merge another table into the campaign');
         const addNewRowButton = ui.icons.add(() => {this.dataFrame?.rows.addNew(null, true);}, 'Add new row');
         const applyLayoutButton = ui.iconSvg('view-layout', () => {this.applyTemplateLayout(view);}, `Apply template layout ${this.template?.localLayoutPath ? '(Loaded from mounted file storage)' : '(Static)'}`);
-        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();});
+        this._refreshCampaignIcon = ui.icons.sync(async () => {this.refreshCampaign();}, 'Refresh');
         ui.tooltip.bind(this._refreshCampaignIcon, () => this._refreshIconTooltip);
         const permissionsButton = ui.iconFA('share', async () => {
           await (new PermissionsDialog(this.campaign?.permissions)).show((res) => {
@@ -647,6 +686,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           ribbonButtons.unshift(designerButton);
         }
         ribbonButtons.unshift(calculateRibbon);
+        ribbonButtons.unshift(mergeTableButton);
         ribbonButtons.unshift(addNewRowButton);
         ribbonButtons.unshift(this._refreshCampaignIcon);
 
@@ -1062,6 +1102,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       authorUserFriendlyName: authorName,
       lastModifiedUserName: grok.shell.user.friendlyName,
       permissions,
+      mergeConfig: this.campaign?.mergeConfig,
     };
     if (!this.hasEditPermission) {
       grok.shell.error('You do not have permission to modify this campaign');

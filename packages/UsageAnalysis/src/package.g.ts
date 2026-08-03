@@ -33,11 +33,19 @@ export async function TestAnalysisReportForCurrentDay(date: any) : Promise<any> 
 //input: string categories { optional: true }
 //input: string projects { optional: true }
 //output: view result
-//meta.role: app
+//meta.role: adminApp,app
 //meta.url: /
-//meta.browsePath: Admin
 export function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string) : any {
   return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
+}
+
+//name: Release
+//input: string path { optional: true; meta.url: true }
+//output: view result
+//meta.role: adminApp,app
+//meta.url: /release
+export function releaseDashboardApp(path?: string) : any {
+  return PackageFunctions.releaseDashboardApp(path);
 }
 
 //input: column<string> ticketColumn 
@@ -47,10 +55,34 @@ export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: D
   await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
+//output: dataframe result
+export async function vexImages() : Promise<any> {
+  return await PackageFunctions.vexImages();
+}
+
+//output: dataframe result
+export async function stressSummaryDashboard() : Promise<any> {
+  return await PackageFunctions.stressSummaryDashboard();
+}
+
+//output: dataframe result
+export async function stressRawDashboard() : Promise<any> {
+  return await PackageFunctions.stressRawDashboard();
+}
+
+//name: Metrics
+//output: view result
+//meta.role: adminApp,app
+//meta.url: /metrics
+//meta.icon: images/icons/metrics.svg
+export function metricsApp() : any {
+  return PackageFunctions.metricsApp();
+}
+
 //name: Test Track
-//meta.role: app
+//meta.role: adminApp,app
 //meta.url: /tests/manager
-//meta.browsePath: Admin
+//meta.icon: images/icons/test-track.svg
 export function testTrackApp() : void {
   PackageFunctions.testTrackApp();
 }
@@ -58,9 +90,9 @@ export function testTrackApp() : void {
 //name: Reports
 //input: string path { optional: true; meta.url: true }
 //output: view result
-//meta.role: app
+//meta.role: adminApp,app
 //meta.url: /reports
-//meta.browsePath: Admin
+//meta.icon: images/icons/reports.svg
 export async function reportsApp(path?: string) : Promise<any> {
   return await PackageFunctions.reportsApp(path);
 }
@@ -70,9 +102,9 @@ export async function reportsApp(path?: string) : Promise<any> {
 //input: map params { optional: true }
 //input: int limit { optional: true }
 //output: view result
-//meta.role: app
+//meta.role: adminApp,app
 //meta.url: /service-logs
-//meta.browsePath: Admin
+//meta.icon: images/icons/service-logs.svg
 export function serviceLogsApp(path?: string, params?: any, limit?: number) : any {
   return PackageFunctions.serviceLogsApp(path, params, limit);
 }

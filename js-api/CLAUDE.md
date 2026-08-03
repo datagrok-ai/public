@@ -146,6 +146,16 @@ For JS API method questions, check these files first:
 | Shell (views, tables, windows)  | `src/shell.ts`                     |
 | Constants and enums             | `src/const.ts`                     |
 
+## Calling functions (`grok.functions.call`)
+
+`await grok.functions.call(name, params)` resolves to a value whose **shape depends on the number of declared outputs** (decided Dart-side in `grok_CallFunc`):
+
+- **exactly one output** → the awaited output value itself (e.g. a `DataFrame`).
+- **more than one output** → an **object keyed by the declared output names** — `{result1, result2}` for a func annotated `//output: dataframe result1` / `//output: dataframe result2`. Read them as `res.result1`, `res.result2`; there are **no** separate per-output variables.
+- **no outputs** → `undefined`/null.
+
+So a code generator emitting `let r = await grok.functions.call('F', …)` must read a multi-output func's results as `r.<outputName>`.
+
 ## Filter Panel (`FilterGroup`)
 
 Access via `tv.getFiltersGroup()` on a `TableView`. Use `{ createDefaultFilters: false }` in plugins to avoid adding unwanted default filters.
@@ -161,6 +171,23 @@ await DG.delay(200); // wait for the filter to be applied
 - `fg.setEnabled(f, false)` — disable one filter; `fg.setActive(false)` — disable the whole group
 - `column` is the canonical state field (`columnName` is a backwards-compat alias)
 - Use `DG.delay` for timing
+
+## Menu (`DG.Menu`)
+
+Source: `src/widgets/menu.ts`. Option interfaces: `src/widgets/types.ts`.
+
+```typescript
+DG.Menu.popup()
+  .item('Action', () => grok.shell.info('clicked'))
+  .separator()
+  .group('Sub').item('Inner', () => {}).endGroup()
+  .items(['A', 'B'], (s) => use(s), { radioGroup: 'grp', isChecked: (s) => s === cur })
+  .show();
+```
+
+- All methods return `Menu` (fluent chain) — read `menu.ts` for the full API
+- Viewer context menu: `viewer.onContextMenu.subscribe((menu) => { menu.item(...); })`
+- Samples: `ApiSamples/scripts/ui/components/popup-menu.js`, `menu-customization.js`, `menu-advanced.js`
 
 ## Server API Usage (grok.dapi)
 

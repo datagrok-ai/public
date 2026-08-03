@@ -1,0 +1,14 @@
+node_modules/
+test-output/
+test-playwright-report.json
+test-playwright-output/
+test-report-playwright.csv
+.auth.json
+e2e/.auth.json
+auth-dev.json
+*.log
+
+# Local env files (credentials/config — never commit)
+.env
+.env.test
+.env.local

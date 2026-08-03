@@ -1,55 +1,88 @@
 <!-- markdownlint-disable first-line-h1 -->
 
-import Card from '@site/src/components/careers/position.jsx';
-
 export const meta = {
-    id: 'engineering-manager',
-    name: 'Engineering Manager',
-    type: 'Full time',
-    location: 'Remote'
+  id: 'engineering-manager',
+  name: 'Engineering Manager',
+  type: 'Full time',
+  location: 'Remote (Europe)'
 }
 
-<Card meta={meta}>
+We're a 20-person team building a browser-native scientific data platform used by Novartis, J&J, Daiichi-Sankyo,
+and other top pharma and biotech companies. Our platform was already 10x faster than the competition and delivered
+more value for less — even before the AI era. Now, we're taking it to the next level.
 
-Datagrok is looking for a talented leader to help us scale and continue to build innovative products. We are a US-based startup working in the biotech area. Our product can analyze millions of data points right in the browser and use AI to learn from data.
+We're competing with Spotfire, Certara, Dotmatics, and Schrödinger — and winning. How? By building faster and smarter.
+Our engineering team has fully embraced AI-driven development (Claude Code, agentic workflows, AI-assisted testing),
+and it's become our biggest force multiplier. We ship in weeks what used to take quarters.
 
-Check out the video from our CEO, Andrew Skalkin, to learn about the company, product, and what it’s like to work here: [https://youtu.be/AxiY2xhudwE](https://youtu.be/AxiY2xhudwE)
+We're looking for an engineering leader who's already living this way — someone who has hands-on experience with
+agentic development tools and can help lead a team that's pushing the boundaries of what a small,
+focused group can deliver. You'll report directly to the CEO and have real authority to shape how we build.
 
-## Responsibilities
+---
 
-- Have a large amount of impact and autonomy.
-- Establish and lead initiatives like code review, unit testing, documentation, etc.
-- Lead the engineering team of ~ 20 people and manage/train junior staff.
-- Work with highly technical clients in the life science space.
-- Drive multiple projects and deliver reliable, scalable, and high-quality solutions.
-- Build, own, and deploy critical parts of the product.
-- Cultivate best engineering and coding practices.
-- Manage a remote team on GMT +2/+3 time zone.
+## What you'll build and lead
 
-## Requirements
+This isn't a "manage meetings and write status reports" role. You'll own critical product areas and ship alongside the team. Here's what's on the roadmap:
 
-- B.S. or more advanced degrees in Computer Science or equivalent engineering degree.
-- 5+ years as an engineer and 2+ years of experience leading a team of at least 5 people.
-- Very strong engineer with a passion for performance, capable to lead by example.
-- Expert in any: (C++, C#, JS, TS, Dart). Comfortable with new languages.
-- You get things done, no bs and no excuses.
-- Experience with software architecture and DevOps.
-- Strong soft, verbal, and written communication skills. Fluent in English.
+- **AI-powered agentic workflows** — Autonomous scientific agents that utilize Datagrok's plugins and integrations as tools.
+- **Automated testing at scale** — Automatic scenarios using Playwright + AI, AI-driven bug reproduction and fixing, stress tests, unit tests, system health tests, plugin tests - everything integrated into CI-CD and managed by AI
+- **Platform evolution** — Cross-application integration and eventing mechanicm, ClickHouse as an analytical backbone, high-performance computations
+- **Enterprise integrations** — Databricks connectivity (ADBC/Arrow for 2–10x speedups), HuggingFace model integration, and dashboard importers for Tableau and Spotfire migrations
+- **DevOps and infrastructure** — ArgoCD deployments, Docker image management, containerized dev environments, and OpenTelemetry observability across a multi-layer stack
+- **AI-powered knowledge graph** — mapping source code, features, tests, docs, and Jira tickets to enable impact analysis and agentic development workflows across the entire codebase
+- **Process improvements** - code reviews, better planning/outcome system, DX improvements, onboarding for new developers
 
-## Nice to have
+---
 
-- Life sciences/academia background / Ph.D. is a strong plus.
-- Start-up experience and passion for building things from the ground up.
-- Algorithms, data processing, high-performance computing, ML.
-- UX and good aesthetic taste, interactive visualizations, web development.
+## What we're looking for
 
-## We offer
+**Must have:**
 
-- A chance to revolutionize the space of data analytics.
-- Fully remote work.
-- Zero bureaucracy, flexible working hours, unlimited vacations / PTO.
-- Excellent growth opportunities in a highly dynamic, unique product company.
-- Paid training and certifications.
-- Competitive compensation.
+- You've already adopted autonomous agentic development in your own workflow (harnesses, tool-use architectures, AI-driven testing, etc)
+- 5+ years as a strong engineer who still codes. This is a hands-on position
+- Experience leading a team (formal title matters less than demonstrated leadership)
+- Proficiency in TypeScript or Dart; comfort picking up new languages fast. Our core stack is Dart and TypeScript, with C++/WASM, Python, R, Julia, and Matlab in scientific plugins
+- Track record of delivering complex software products — not just managing people who do
+- You see a problem, you fix it. You don't write a proposal about fixing it. You don't wait for permission
+- Strong communication skills and fluent English — you'll work directly with technical clients at pharma companies and present to enterprise IT teams
 
-</Card>
+**Strong pluses:**
+
+- Life sciences, cheminformatics, or bioinformatics background (or genuine curiosity about this space)
+- Experience building agentic AI systems — not just prompting LLMs, but designing autonomous pipelines, harnesses, tool-use architectures, or AI-driven testing frameworks
+- Background in high-performance computing, data visualization, or scientific computing
+- Startup DNA — you've built things from zero, worn multiple hats, and thrive without a playbook
+
+---
+
+## What we offer
+
+- **Real ownership** — reporting directly to the CEO, you'll lead critical product areas for a platform deployed at top-10 pharma companies, not maintain someone else's legacy code
+- **An AI-first engineering culture** — we're not "exploring AI adoption." We've already made the transition. You'll help take it further
+- **Direct client impact** — your work will be used daily by scientists doing drug discovery at companies you've heard of
+- **Startup speed, enterprise clients** — the autonomy and pace of a small team, with the validation of Fortune 500 deployments
+- Fully remote, zero bureaucracy, flexible hours, unlimited PTO
+- Competitive compensation with growth equity opportunity
+- Paid training and certifications
+
+---
+
+## About Datagrok
+
+Datagrok is a browser-native scientific data platform that outperforms competing products by an order of magnitude —
+because we made a fundamentally different architectural bet, and a philosophy that prioritizes total value to the customer.
+While others ship bloated server-side apps, we push
+scientific computation to the client using WebAssembly, WebGPU, and custom-built high-performance data and rendering engines.
+The result: millions of data points analyzed and visualized interactively in the browser.
+We provide integrated cheminformatics, bioinformatics, and data science capabilities in a single platform —
+replacing or augmenting fragmented stacks of dozens of other tools that pharma companies currently stitch together.
+
+Our clients include Novartis, J&J, Daiichi-Sankyo, and other major pharmaceutical companies. We're actively expanding
+into new therapeutic areas, enterprise use cases, and AI-powered scientific workflows.
+
+Check out a walkthrough from our CEO, Andrew Skalkin: https://youtu.be/AxiY2xhudwE
+
+**→ Apply: hr@datagrok.ai** (subject: Engineering Manager)
+
+We don't care about your pedigree. We care about what you can build.

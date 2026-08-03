@@ -1,0 +1,780 @@
+{
+  "metadata": {
+    "source": "validate_ancova.py",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Montgomery 15.10] / [Purdue/SAS] — fiber strength by machine, diameter as covariate",
+      "category": "published_dataset",
+      "inputs": {
+        "organ_values": [
+          36,
+          41,
+          39,
+          42,
+          49,
+          40,
+          48,
+          39,
+          45,
+          44,
+          35,
+          37,
+          42,
+          34,
+          32
+        ],
+        "body_weights": [
+          20,
+          25,
+          24,
+          25,
+          32,
+          22,
+          28,
+          22,
+          30,
+          28,
+          21,
+          23,
+          26,
+          21,
+          15
+        ],
+        "groups": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "control_group": 1,
+        "use_organ_free_bw": false,
+        "alpha": 0.05
+      },
+      "expected": {
+        "adjusted_means": [
+          {
+            "group": 1,
+            "raw_mean": 41.4,
+            "adjusted_mean": 40.3824,
+            "n": 5,
+            "se": 0.7236
+          },
+          {
+            "group": 2,
+            "raw_mean": 43.2,
+            "adjusted_mean": 41.4192,
+            "n": 5,
+            "se": 0.7444
+          },
+          {
+            "group": 3,
+            "raw_mean": 36.0,
+            "adjusted_mean": 38.7984,
+            "n": 5,
+            "se": 0.7879
+          }
+        ],
+        "pairwise": [
+          {
+            "group": 2,
+            "difference": 1.0368,
+            "se": 1.0129,
+            "t_statistic": 1.0236,
+            "p_value": 0.328012,
+            "significant": false
+          },
+          {
+            "group": 3,
+            "difference": -1.584,
+            "se": 1.1071,
+            "t_statistic": -1.4307,
+            "p_value": 0.180292,
+            "significant": false
+          }
+        ],
+        "slope": {
+          "estimate": 0.953988,
+          "se": 0.114048,
+          "t_statistic": 8.3648,
+          "p_value": 4e-06
+        },
+        "slope_homogeneity": {
+          "f_statistic": 0.4878,
+          "p_value": 0.62929,
+          "homogeneous": true
+        },
+        "effect_decomposition": [
+          {
+            "group": 2,
+            "total_effect": 1.8,
+            "direct_effect": 1.0368,
+            "indirect_effect": 0.7632,
+            "proportion_direct": 0.576,
+            "direct_g": 0.6047,
+            "direct_p": 0.328012
+          },
+          {
+            "group": 3,
+            "total_effect": -5.4,
+            "direct_effect": -1.584,
+            "indirect_effect": -3.816,
+            "proportion_direct": 0.2933,
+            "direct_g": 0.9238,
+            "direct_p": 0.180292
+          }
+        ],
+        "model_r_squared": 0.9192,
+        "mse": 2.544172,
+        "use_organ_free_bw": false,
+        "covariate_mean": 24.1333
+      },
+      "published": {
+        "sas_r_squared": 0.919209,
+        "sas_mse": 2.5441718,
+        "sas_ls_means": {
+          "1": 40.3824131,
+          "2": 41.4192229,
+          "3": 38.798364
+        },
+        "sas_slope_t": 8.365,
+        "sas_homogeneity_f": 0.49,
+        "sas_homogeneity_p": 0.6293,
+        "df_error": 11,
+        "df_interaction": 9,
+        "tol_r2": 0.001,
+        "tol_mse": 0.001,
+        "tol_ls_mean": 0.001,
+        "tol_slope_t": 0.01,
+        "tol_homog_f": 0.01,
+        "tol_homog_p": 0.001
+      }
+    },
+    {
+      "name": "[ESS] p.128 — apple trees CRD",
+      "category": "published_dataset",
+      "inputs": {
+        "organ_values": [
+          287,
+          290,
+          254,
+          307,
+          271,
+          209,
+          243,
+          348,
+          234,
+          210,
+          286,
+          371,
+          189,
+          205,
+          312,
+          375,
+          210,
+          276,
+          279,
+          344,
+          222,
+          301,
+          238,
+          357
+        ],
+        "body_weights": [
+          8.2,
+          9.4,
+          7.7,
+          8.5,
+          8.2,
+          6.0,
+          9.1,
+          10.1,
+          6.8,
+          7.0,
+          9.7,
+          9.9,
+          5.7,
+          5.5,
+          10.2,
+          10.3,
+          6.1,
+          7.0,
+          8.7,
+          8.1,
+          7.6,
+          10.1,
+          9.0,
+          10.5
+        ],
+        "groups": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          4,
+          4,
+          4,
+          4,
+          5,
+          5,
+          5,
+          5
+        ],
+        "control_group": 0,
+        "use_organ_free_bw": false,
+        "alpha": 0.05
+      },
+      "expected": {
+        "adjusted_means": [
+          {
+            "group": 0,
+            "raw_mean": 284.5,
+            "adjusted_mean": 279.8319,
+            "n": 4,
+            "se": 15.8906
+          },
+          {
+            "group": 1,
+            "raw_mean": 267.75,
+            "adjusted_mean": 266.377,
+            "n": 4,
+            "se": 15.879
+          },
+          {
+            "group": 2,
+            "raw_mean": 275.25,
+            "adjusted_mean": 273.877,
+            "n": 4,
+            "se": 15.879
+          },
+          {
+            "group": 3,
+            "raw_mean": 270.25,
+            "adjusted_mean": 282.8812,
+            "n": 4,
+            "se": 15.9712
+          },
+          {
+            "group": 4,
+            "raw_mean": 277.25,
+            "adjusted_mean": 304.7091,
+            "n": 4,
+            "se": 16.3141
+          },
+          {
+            "group": 5,
+            "raw_mean": 279.5,
+            "adjusted_mean": 246.8236,
+            "n": 4,
+            "se": 16.4923
+          }
+        ],
+        "pairwise": [
+          {
+            "group": 1,
+            "difference": -13.4549,
+            "se": 22.4592,
+            "t_statistic": -0.5991,
+            "p_value": 0.557018,
+            "significant": false
+          },
+          {
+            "group": 2,
+            "difference": -5.9549,
+            "se": 22.4592,
+            "t_statistic": -0.2651,
+            "p_value": 0.794087,
+            "significant": false
+          },
+          {
+            "group": 3,
+            "difference": 3.0493,
+            "se": 22.5785,
+            "t_statistic": 0.1351,
+            "p_value": 0.894157,
+            "significant": false
+          },
+          {
+            "group": 4,
+            "difference": 24.8772,
+            "se": 22.8788,
+            "t_statistic": 1.0873,
+            "p_value": 0.29206,
+            "significant": false
+          },
+          {
+            "group": 5,
+            "difference": -33.0083,
+            "se": 22.7777,
+            "t_statistic": -1.4491,
+            "p_value": 0.165492,
+            "significant": false
+          }
+        ],
+        "slope": {
+          "estimate": 32.950968,
+          "se": 4.497016,
+          "t_statistic": 7.3273,
+          "p_value": 1e-06
+        },
+        "slope_homogeneity": {
+          "f_statistic": 0.1946,
+          "p_value": 0.9587,
+          "homogeneous": true
+        },
+        "effect_decomposition": [
+          {
+            "group": 1,
+            "total_effect": -16.75,
+            "direct_effect": -13.4549,
+            "indirect_effect": -3.2951,
+            "proportion_direct": 0.8033,
+            "direct_g": 0.4047,
+            "direct_p": 0.557018
+          },
+          {
+            "group": 2,
+            "total_effect": -9.25,
+            "direct_effect": -5.9549,
+            "indirect_effect": -3.2951,
+            "proportion_direct": 0.6438,
+            "direct_g": 0.1791,
+            "direct_p": 0.794087
+          },
+          {
+            "group": 3,
+            "total_effect": -14.25,
+            "direct_effect": 3.0493,
+            "indirect_effect": -17.2993,
+            "proportion_direct": -0.214,
+            "direct_g": 0.0917,
+            "direct_p": 0.894157
+          },
+          {
+            "group": 4,
+            "total_effect": -7.25,
+            "direct_effect": 24.8772,
+            "indirect_effect": -32.1272,
+            "proportion_direct": -3.4313,
+            "direct_g": 0.7483,
+            "direct_p": 0.29206
+          },
+          {
+            "group": 5,
+            "total_effect": -5.0,
+            "direct_effect": -33.0083,
+            "indirect_effect": 28.0083,
+            "proportion_direct": 6.6017,
+            "direct_g": 0.9929,
+            "direct_p": 0.165492
+          }
+        ],
+        "model_r_squared": 0.762,
+        "mse": 1008.42736,
+        "use_organ_free_bw": false,
+        "covariate_mean": 8.3083
+      },
+      "published": {
+        "x_overall_mean": 8.308,
+        "tol_x_mean": 0.001
+      }
+    },
+    {
+      "name": "[Lazic 2020] organ-free body weight covariate",
+      "category": "lazic_variant",
+      "inputs": {
+        "organ_values": [
+          36,
+          41,
+          39,
+          42,
+          49,
+          40,
+          48,
+          39,
+          45,
+          44,
+          35,
+          37,
+          42,
+          34,
+          32
+        ],
+        "body_weights": [
+          20,
+          25,
+          24,
+          25,
+          32,
+          22,
+          28,
+          22,
+          30,
+          28,
+          21,
+          23,
+          26,
+          21,
+          15
+        ],
+        "groups": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "control_group": 1,
+        "use_organ_free_bw": true,
+        "alpha": 0.05
+      },
+      "expected": {
+        "adjusted_means": [
+          {
+            "group": 1,
+            "raw_mean": 41.4,
+            "adjusted_mean": 41.3089,
+            "n": 5,
+            "se": 1.875
+          },
+          {
+            "group": 2,
+            "raw_mean": 43.2,
+            "adjusted_mean": 42.4258,
+            "n": 5,
+            "se": 2.0729
+          },
+          {
+            "group": 3,
+            "raw_mean": 36.0,
+            "adjusted_mean": 36.8653,
+            "n": 5,
+            "se": 2.12
+          }
+        ],
+        "pairwise": [
+          {
+            "group": 2,
+            "difference": 1.1169,
+            "se": 2.7615,
+            "t_statistic": 0.4045,
+            "p_value": 0.693634,
+            "significant": false
+          },
+          {
+            "group": 3,
+            "difference": -4.4437,
+            "se": 2.8668,
+            "t_statistic": -1.5501,
+            "p_value": 0.149402,
+            "significant": false
+          }
+        ],
+        "slope": {
+          "estimate": -0.683099,
+          "se": 0.785488,
+          "t_statistic": -0.8696,
+          "p_value": 0.40307
+        },
+        "slope_homogeneity": {
+          "f_statistic": 0.8417,
+          "p_value": 0.462279,
+          "homogeneous": true
+        },
+        "effect_decomposition": [
+          {
+            "group": 2,
+            "total_effect": 1.8,
+            "direct_effect": 1.1169,
+            "indirect_effect": 0.6831,
+            "proportion_direct": 0.6205,
+            "direct_g": 0.2482,
+            "direct_p": 0.693634
+          },
+          {
+            "group": 3,
+            "total_effect": -5.4,
+            "direct_effect": -4.4437,
+            "indirect_effect": -0.9563,
+            "proportion_direct": 0.8229,
+            "direct_g": 0.9875,
+            "direct_p": 0.149402
+          }
+        ],
+        "model_r_squared": 0.4436,
+        "mse": 17.522535,
+        "use_organ_free_bw": true,
+        "covariate_mean": -16.0667
+      },
+      "expected_covariate_mean": -16.066666666666666
+    },
+    {
+      "name": "insufficient data (n=2, k=2)",
+      "category": "edge_none",
+      "inputs": {
+        "organ_values": [
+          1.0,
+          2.0
+        ],
+        "body_weights": [
+          3.0,
+          4.0
+        ],
+        "groups": [
+          0,
+          1
+        ],
+        "control_group": 0
+      },
+      "expected": null
+    },
+    {
+      "name": "single group → None",
+      "category": "edge_none",
+      "inputs": {
+        "organ_values": [
+          1.0,
+          2.0,
+          3.0
+        ],
+        "body_weights": [
+          4.0,
+          5.0,
+          6.0
+        ],
+        "groups": [
+          0,
+          0,
+          0
+        ],
+        "control_group": 0
+      },
+      "expected": null
+    },
+    {
+      "name": "seeded equal means (np.random.seed=99, n=30) → no significant differences",
+      "category": "seeded_property",
+      "data_origin": "np.random.seed(99); normal(100,5,30); normal(50,10,30); groups [0]*10+[1]*10+[2]*10",
+      "inputs": {
+        "organ_values": [
+          99.28820578649027,
+          110.28610868790747,
+          101.41630970553017,
+          106.64905989128272,
+          99.22689074476285,
+          99.65484570434957,
+          103.77590242538959,
+          104.12823324256311,
+          99.43465395149339,
+          88.16081202635947,
+          99.16475283696734,
+          103.42698983756367,
+          100.11750054242465,
+          102.28100639745558,
+          101.35246391033209,
+          92.82495928066783,
+          104.41408573092384,
+          97.09959168029864,
+          97.49217348025196,
+          102.95476647228762,
+          96.34191874773565,
+          101.30877730685779,
+          95.72102210492092,
+          99.0623704384845,
+          98.13256855282525,
+          97.69014516670511,
+          95.91766947897807,
+          99.77438348743298,
+          100.60663888152159,
+          104.6297638976125
+        ],
+        "body_weights": [
+          44.26180303720038,
+          50.52703110045961,
+          72.07310586916049,
+          53.91821869474063,
+          54.82713427725519,
+          54.333340211063664,
+          32.957083057809584,
+          47.56091933650978,
+          28.602962087158524,
+          58.613226530440585,
+          67.00284397637608,
+          44.712151969007586,
+          67.634779174486,
+          38.78392172494685,
+          38.0806583317096,
+          55.52731917750563,
+          41.84019051134386,
+          45.03353150771741,
+          60.86225563306773,
+          40.25324723321841,
+          47.17864182089416,
+          48.82785850062279,
+          53.785472663608175,
+          57.32194647178274,
+          48.96428965383147,
+          38.01293719842545,
+          60.100355762792645,
+          78.75360329874223,
+          58.203126436149105,
+          55.606115059345015
+        ],
+        "groups": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "control_group": 0,
+        "alpha": 0.05
+      },
+      "expected": {
+        "adjusted_means": [
+          {
+            "group": 0,
+            "raw_mean": 101.2021,
+            "adjusted_mean": 101.0905,
+            "n": 10,
+            "se": 1.3621
+          },
+          {
+            "group": 1,
+            "raw_mean": 100.1128,
+            "adjusted_mean": 100.0147,
+            "n": 10,
+            "se": 1.3608
+          },
+          {
+            "group": 2,
+            "raw_mean": 98.9185,
+            "adjusted_mean": 99.1282,
+            "n": 10,
+            "se": 1.3755
+          }
+        ],
+        "pairwise": [
+          {
+            "group": 1,
+            "difference": -1.0758,
+            "se": 1.9187,
+            "t_statistic": -0.5607,
+            "p_value": 0.579802,
+            "significant": false
+          },
+          {
+            "group": 2,
+            "difference": -1.9624,
+            "se": 1.9499,
+            "t_statistic": -1.0064,
+            "p_value": 0.323503,
+            "significant": false
+          }
+        ],
+        "slope": {
+          "estimate": -0.065449,
+          "se": 0.070844,
+          "t_statistic": -0.9238,
+          "p_value": 0.36406
+        },
+        "slope_homogeneity": {
+          "f_statistic": 0.6011,
+          "p_value": 0.556232,
+          "homogeneous": true
+        },
+        "effect_decomposition": [
+          {
+            "group": 1,
+            "total_effect": -1.0893,
+            "direct_effect": -1.0758,
+            "indirect_effect": -0.0135,
+            "proportion_direct": 0.9876,
+            "direct_g": 0.2435,
+            "direct_p": 0.579802
+          },
+          {
+            "group": 2,
+            "total_effect": -2.2836,
+            "direct_effect": -1.9624,
+            "indirect_effect": -0.3212,
+            "proportion_direct": 0.8594,
+            "direct_g": 0.4441,
+            "direct_p": 0.323503
+          }
+        ],
+        "model_r_squared": 0.0803,
+        "mse": 18.406018,
+        "use_organ_free_bw": false,
+        "covariate_mean": 51.472
+      },
+      "expected_property": "all_pairwise_p_above_0.05"
+    }
+  ]
+}

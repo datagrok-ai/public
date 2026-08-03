@@ -1,5 +1,11 @@
 ---
 title: "Word cloud"
+description: Show word frequency in text data using font size and color, useful for spotting popular terms.
+keywords:
+  - tag cloud
+  - text frequency visualization
+  - keyword cloud
+  - text data exploration
 ---
 
 Word cloud (a tag cloud) shows the frequency of individual words using font size

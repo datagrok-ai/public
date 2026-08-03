@@ -20,16 +20,16 @@ import {getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getEarlyStoppingInputs,
   makeGetCalledFuncCall,
   getRowIndex} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput, ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
+import {ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from 'diff-grok';
-import {getFittedParams} from './fitting/diff-studio/nelder-mead';
-import {getNonSimilar} from './fitting/similarity-utils';
+import {getFittedParamsFinalized} from './fitting/diff-studio/nelder-mead';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
 import {getPropViewers} from '../../shared-utils/utils';
 import {runFormula} from './fitting/formulas-resolver';
-import {runOptimizer} from './fitting/optimizer-api';
+import {runOptimizerFinalized} from './fitting/optimizer-api';
+import {FinalizedFitting} from './fitting/finalize';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
@@ -231,7 +231,7 @@ export class FittingView {
         ui.showPopup(ui.div([ui.divText(popupHeader), varsGrid], {
           style: {maxWidth: '500px', maxHeight: '800px', overflowY: 'auto', userSelect: 'text', padding: '10px'},
         }), icon);
-      });
+      }, 'Help');
       boolInput.addOptions(icon);
       return boolInput;
     };
@@ -562,7 +562,7 @@ export class FittingView {
 
             ui.tooltip.bind(input.captionLabel, 'Column with values of the independent variable');
 
-            const infoIcon = ui.icons.info(() => alert('Hello!'));
+            const infoIcon = ui.icons.info(() => alert('Hello!'), 'Info');
             infoIcon.classList.add('sa-switch-input');
             input.nullable = false;
             input.addValidator(validator);
@@ -609,19 +609,18 @@ export class FittingView {
 
       this.isFittingRunning = false;
       this.updateApplicabilityState();
+      this.updateAcceptIconState();
     }
-  });
+  }, 'Run');
 
-  private acceptIcon = ui.iconFA('ballot-check', async () => {
+  private acceptIcon = ui.iconFA('check-double', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
-    if (choiceItems.length === 0) {
-      grok.shell.warning('No fittings');
+    if (choiceItems.length === 0) // disabled state: nothing to apply yet
       return;
-    }
     let chosenItem = 1;
     const input = ui.input.choice('Select fitting', {items: choiceItems, value: chosenItem, onValueChanged: (x) => chosenItem = x});
     const confirmed = await new Promise((resolve, _reject) => {
-      ui.dialog({title: 'Accept fitting'})
+      ui.dialog({title: 'Select fitted parameters'})
         .add(ui.div([input]))
         .onOK(() => resolve(true))
         .onCancel(() => resolve(false))
@@ -635,7 +634,7 @@ export class FittingView {
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
     this.baseView.close();
-  });
+  }, 'Apply fitted parameters to the model');
 
   private helpIcon = getHelpIcon();
 
@@ -729,6 +728,7 @@ export class FittingView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
+      disableLookupDefault?: boolean,
       ranges?: Record<string, RangeDescription>,
       targets?: Record<string, TargetDescription>,
       acceptMode?: boolean,
@@ -737,6 +737,7 @@ export class FittingView {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
+      disableLookupDefault: false,
       ranges: undefined,
       targets: undefined,
       acceptMode: false,
@@ -767,6 +768,7 @@ export class FittingView {
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
       inputsLookup?: string,
+      disableLookupDefault?: boolean,
       ranges?: Record<string, RangeDescription>,
       targets?: Record<string, TargetDescription>,
       acceptMode?: boolean,
@@ -776,6 +778,7 @@ export class FittingView {
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
+      disableLookupDefault: false,
       ranges: undefined,
       targets: undefined,
       acceptMode: false,
@@ -834,6 +837,7 @@ export class FittingView {
 
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
+      this.updateAcceptIconState();
       this.fittingSettingsDiv.hidden = true;
 
       this.comparisonView.name = this.comparisonView.name.replace('comparison', 'fitting');
@@ -1005,7 +1009,7 @@ export class FittingView {
     const constIputs = new Map<string, DG.InputBase>();
     Object.keys(this.store.inputs).forEach((name) => constIputs.set(name, this.store.inputs[name].constForm[0]));
 
-    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
+    const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs, this.options.disableLookupDefault);
 
     return lookupElement;
   }
@@ -1101,10 +1105,18 @@ export class FittingView {
 
     //1. Inputs of the function
 
+    // The lookup choice input doubles as the scenario selector for the func input of the same
+    // name (e.g. `mode`); skip that input below so it is not rendered twice.
+    const lookupElement = await this.getLookupElement(inputsLookup);
+
     // group inputs by categories
     Object.values(this.store.inputs).forEach((inputConfig) => {
       const category = inputConfig.prop.category;
       const propName = inputConfig.prop.name;
+
+      if (lookupElement !== null && propName === lookupElement.name)
+        return;
+
       const roots = [
         ...(inputConfig.isChangingInput ? [inputConfig.isChangingInput.root] : []),
         ...inputConfig.constForm.map((input) => input.root),
@@ -1120,7 +1132,6 @@ export class FittingView {
         inputsByCategories.set(category, roots);
     });
 
-    const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
 
     if (lookupElement !== null) {
@@ -1281,6 +1292,22 @@ export class FittingView {
     } else
       this.runIcon.style.color = 'var(--grey-3)';
   } // updateRunIconStyle
+
+  /** Reflect fitting availability on the accept icon: green/enabled when there are fitted results
+   *  to apply, grey/disabled otherwise. Mirrors the run (play) icon convention. */
+  private updateAcceptIconState(): void {
+    if (this.currentFuncCalls.length > 0) {
+      this.acceptIcon.style.color = 'var(--green-2)';
+      ui.tooltip.bind(this.acceptIcon, 'Apply fitted parameters to the model');
+    } else {
+      this.acceptIcon.style.color = 'var(--grey-3)';
+      ui.tooltip.bind(this.acceptIcon, () => {
+        const label = ui.label('Run fitting first to apply parameters');
+        label.style.color = '#FF0000';
+        return label;
+      });
+    }
+  } // updateAcceptIconState
 
   private getInputValue(input: DG.InputBase) {
     return input.inputType === 'Choice' ? input.stringValue : input.value;
@@ -1589,36 +1616,39 @@ export class FittingView {
 
       const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
 
-      let optResult: OptimizationResult;
+      let fin: FinalizedFitting;
 
       if (this.method !== METHOD.NELDER_MEAD)
         throw new Error(`Not implemented the '${this.method}' method`);
 
-      // Perform optimization
+      // Perform optimization. Both arms return a FinalizedFitting (sorted +
+      // similarity-filtered + materialized FuncCalls) — no post-processing here.
       if (this.diffGrok !== undefined) {
         try {
           const index = INDICES.DIFF_STUDIO_OUTPUT;
-          optResult = await getFittedParams(
-            {
-              loss: this.loss,
-              ivp: this.diffGrok.ivp,
-              ivp2ww: this.diffGrok.ivpWW,
-              pipelineCreator: this.diffGrok.pipelineCreator,
-              settings: this.nelderMeadSettings,
-              variedInputNames,
-              bounds: inputBounds,
-              fixedInputs: inputs,
-              argColName: outputsOfInterest[index].argName,
-              funcCols: outputsOfInterest[index].funcColsInput.value,
-              target: outputsOfInterest[index].target as DG.DataFrame,
-              samplesCount: this.samplesCount,
-              reproSettings: this.randInputs.settings,
-              earlyStoppingSettings: this.earlyStoppingInputs.settings,
-            },
-          );
+          fin = await getFittedParamsFinalized({
+            loss: this.loss,
+            ivp: this.diffGrok.ivp,
+            ivp2ww: this.diffGrok.ivpWW,
+            pipelineCreator: this.diffGrok.pipelineCreator,
+            settings: this.nelderMeadSettings,
+            variedInputNames,
+            bounds: inputBounds,
+            fixedInputs: inputs,
+            argColName: outputsOfInterest[index].argName,
+            funcCols: outputsOfInterest[index].funcColsInput.value,
+            target: outputsOfInterest[index].target as DG.DataFrame,
+            samplesCount: this.samplesCount,
+            reproSettings: this.randInputs.settings,
+            earlyStoppingSettings: this.earlyStoppingInputs.settings,
+            func: this.func,
+            inputBounds,
+            outputTargets,
+            similarity: this.similarity,
+          });
         } catch (err) { // run fitting in the main thread if in-webworker run failed
           console.error(err);
-          [optResult] = await runOptimizer({
+          fin = await runOptimizerFinalized({
             lossType: this.loss,
             func: this.func,
             inputBounds,
@@ -1631,7 +1661,7 @@ export class FittingView {
           });
         }
       } else {
-        [optResult] = await runOptimizer({
+        fin = await runOptimizerFinalized({
           lossType: this.loss,
           func: this.func,
           inputBounds,
@@ -1644,12 +1674,12 @@ export class FittingView {
         });
       }
 
-      const extrema = optResult.extremums;
+      const extrema = fin.allExtremums;
       const allExtrCount = extrema.length;
 
       // Process fails
-      if (optResult.fails != null) {
-        this.failsDF = optResult.fails;
+      if (fin.fails != null) {
+        this.failsDF = fin.fails;
         const cols = this.failsDF.columns;
 
         variedInputsCaptions.forEach((cap, idx) => cols.byIndex(idx).name = cols.getUnusedName(cap));
@@ -1668,24 +1698,13 @@ export class FittingView {
         });
       }
 
-      // Sort all extrema with respect to the loss function
-      extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
-
-      // Extract target dataframes
-      const targetDfs: TargetTableOutput[] = outputsOfInterest
-        .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
-        .map((output) => {
-          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.argName};
-        });
-
-      // Get non-similar points
-      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
+      const nonSimilarExtrema = fin.selectedExtremums;
       const rowCount = nonSimilarExtrema.length;
 
       this.clearPrev();
 
       // Show info/warning reporting results
-      if (optResult.fails != null) {
+      if (fin.fails != null) {
         if (allExtrCount < 1) {
           grok.shell.warning(ui.divV([
             ui.label(`Failed to find ${this.samplesCount} point${this.samplesCount > 1 ? 's' : ''}`),

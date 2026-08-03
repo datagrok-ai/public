@@ -34,7 +34,7 @@ function dgTypeToKnimeType(dgType: string): string {
 }
 
 /** Convert KNIME output (array of flat objects) to a Datagrok DataFrame. */
-export function knimeTableToDataFrame(data: any[], name?: string): DG.DataFrame {
+export function knimeTableToDataFrame(data: any[]): DG.DataFrame {
   if (!data || data.length === 0)
     return DG.DataFrame.create();
   return DG.DataFrame.fromObjects(data)!;
@@ -44,8 +44,17 @@ export function knimeTableToDataFrame(data: any[], name?: string): DG.DataFrame 
 export function knimeSpecDataToDataFrame(tableSpec: any[], tableData: any[][]): DG.DataFrame {
   if (!tableSpec || tableSpec.length === 0)
     return DG.DataFrame.create();
-  // Each spec entry is {columnName: type} — extract column names
-  const colNames = tableSpec.map((s) => Object.keys(s)[0]);
+  // Each spec entry is {columnName: type}. KNIME may emit duplicate column names
+  // (e.g. via Joiner / Column Appender); dedupe via columns.getUnusedName so we
+  // don't silently drop columns when building objects below.
+  const dedupeDf = DG.DataFrame.create();
+  const colNames: string[] = [];
+  for (const s of tableSpec) {
+    const original = Object.keys(s)[0];
+    const unique = dedupeDf.columns.getUnusedName(original);
+    dedupeDf.columns.addNew(unique, DG.COLUMN_TYPE.STRING);
+    colNames.push(unique);
+  }
   const objects: any[] = [];
   for (const row of tableData) {
     const obj: any = {};
@@ -54,19 +63,6 @@ export function knimeSpecDataToDataFrame(tableSpec: any[], tableData: any[][]): 
     objects.push(obj);
   }
   return DG.DataFrame.fromObjects(objects)!;
-}
-
-/** Convert a File to a base64 string for KNIME Container Input (File). */
-export function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(',')[1]);
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
 }
 
 /** Map a KNIME column type string to the compatible Datagrok column types. */
@@ -82,13 +78,4 @@ export function knimeTypeToDgColumnTypes(knimeType: string): string[] {
     case 'zoneddatetime': return [DG.COLUMN_TYPE.DATE_TIME];
     default: return [DG.COLUMN_TYPE.STRING];
   }
-}
-
-/** Decode a base64 string to a Blob. */
-export function base64ToBlob(base64: string, mimeType: string = 'application/octet-stream'): Blob {
-  const bytes = atob(base64);
-  const buffer = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++)
-    buffer[i] = bytes.charCodeAt(i);
-  return new Blob([buffer], {type: mimeType});
 }

@@ -80,11 +80,11 @@ export class StringListSeqSplitted implements ISeqSplitted {
  *
  */
 export class HelmSplitted extends StringListSeqSplitted {
-  private polymerTypes: PolymerTypes[];
+  private polymerTypes: PolymerType[];
   constructor(
     protected mListSeparated: string[][], // list of lists of monomers (separated by | in helm notation
     private readonly connections: string, // string part of helm defining connections between monomers
-    polymerTypes: PolymerTypes[], // polymer types for each disjoint sequence part
+    polymerTypes: PolymerType[], // polymer types for each disjoint sequence part
     gapOriginalMonomer: string,
   ) {
     super(mListSeparated.flat(), gapOriginalMonomer);
@@ -102,13 +102,18 @@ export class HelmSplitted extends StringListSeqSplitted {
       disjointSeqStarts: [],
       polymerTypes: this.polymerTypes
     };
+    // Start positions of each disjoint sequence part (chain). This is
+    // independent of connections: a HELM like RNA1{...}|RNA2{...}$$$$ has two
+    // disjoint chains even though it declares no inter-chain connections.
+    // Always record the chain boundaries so downstream consumers (multi-chain
+    // atomic-level assembly, the '|' chain separator in the cell renderer)
+    // can see them.
+    let seqStart = 0;
+    for (let i = 0; i < this.mListSeparated.length; ++i) {
+      graphInfo.disjointSeqStarts.push(seqStart);
+      seqStart += this.mListSeparated[i].length;
+    }
     if ((this.connections?.length ?? 0) > 0) {
-    // parse helm connections
-      let seqStart = 0;
-      for (let i = 0; i < this.mListSeparated.length; ++i) {
-        graphInfo.disjointSeqStarts.push(seqStart);
-        seqStart += this.mListSeparated[i].length;
-      };
       // parse connections like PEPTIDE2,PEPTIDE2,16:R2-1:R1
       const connectionParts = (this.connections ?? '').split('|').filter((cp) => (cp?.length ?? 0) > 0);
       const sequenceConSeqIdxRe = /^(PEPTIDE|RNA|BLOB|CHEM)\d{1,2}$/;
@@ -119,8 +124,8 @@ export class HelmSplitted extends StringListSeqSplitted {
           continue;
         const seq1 = parseInt(cpParts[0].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
         const seq2 = parseInt(cpParts[1].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
-        const seq1Type = cpParts[0].replace(/\d{1,2}$/, '') as PolymerTypes;
-        const seq2Type = cpParts[1].replace(/\d{1,2}$/, '') as PolymerTypes;
+        const seq1Type = cpParts[0].replace(/\d{1,2}$/, '') as PolymerType;
+        const seq2Type = cpParts[1].replace(/\d{1,2}$/, '') as PolymerType;
         if (seq1 < 0 || seq1 >= this.mListSeparated.length || seq2 < 0 || seq2 >= this.mListSeparated.length)
           continue;
         const conParts = cpParts[2].split('-');
@@ -135,8 +140,8 @@ export class HelmSplitted extends StringListSeqSplitted {
         if (con1 < 0 || con1 >= this.mListSeparated[seq1].length || con2 < 0 || con2 >= this.mListSeparated[seq2].length)
           continue;
         graphInfo.connections.push({
-          seq1Type: seq1Type as PolymerTypes,
-          seq2Type: seq2Type as PolymerTypes,
+          seq1Type: seq1Type as PolymerType,
+          seq2Type: seq2Type as PolymerType,
           seqIndex1: seq1,
           seqIndex2: seq2,
           monomerIndex1: con1,
@@ -352,6 +357,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
   };
 }
 
+// this scary thing is a pattern for matching HELM RNA notation with most complex cases like [Sug(smt)]([NNs])[pm()].
+export const RNA_HELM_TRIPLET_MONOMER_REG = /^((?:[^\[\]()]|\[[^\[\]]*\])+)\(((?:[^\[\]()]|\[[^\[\]]*\])+)\)((?:[^\[\]()]|\[[^\[\]]*\])+)$/;
+// this one matches the terminal phosphate-less monomer in RNA HELM notation, e.g. [dR](A) or [R](A)
+export const RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG = /^((?:[^\[\]()]|\[[^\[\]]*\])+)\(((?:[^\[\]()]|\[[^\[\]]*\])+)\)$/;
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * EG byciclic helm: PEPTIDE1{F}|PEPTIDE2{[dI].[Trp_Ome].[Asp_OMe].[Cys_Bn].[meG].[Phe_3Cl].[dD].T.[dI].T.[dK].[aG].[3Pal].[xiIle].[meD].[Ala_tBu]}|PEPTIDE3{L.[Pro_4Me3OH].S.[NMe2Abz].Q.[3Pal].[xiIle].[D-Hyp].[Ala_tBu].[dI].[Trp_Ome].[Asp_OMe].N.[meG].[Phe_34diCl].[Phe_34diCl]}$PEPTIDE2,PEPTIDE2,16:R2-1:R1|PEPTIDE3,PEPTIDE3,16:R2-1:R1|PEPTIDE3,PEPTIDE2,10:R3-1:R3|PEPTIDE1,PEPTIDE2,1:R2-9:R3$$$V2.0
@@ -371,10 +380,20 @@ export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
   for (let i = 0; i < spList.length - 1; i++)
     spList[i] = spList[i] + '}';
 
+  const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerType[];
   const mListSplit = spList
-    .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
-      .map((m) => cleanupHelmSymbol(m)));
-  const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerTypes[];
+    .map((sp: string, i) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
+      .flatMap((m) => {
+        if (polymerTypes[i] === PolymerTypes.RNA) {
+          const match = RNA_HELM_TRIPLET_MONOMER_REG.exec(m)!;
+          if (match != null)
+            return [cleanupHelmSymbol(match[1]), cleanupHelmSymbol(match[2]), cleanupHelmSymbol(match[3])];
+          const terminalMatch = RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG.exec(m);
+          if (terminalMatch != null)
+            return [cleanupHelmSymbol(terminalMatch[1]), cleanupHelmSymbol(terminalMatch[2])];
+        }
+        return [cleanupHelmSymbol(m)];
+      }));
   const res = new HelmSplitted(mListSplit, connectionsPart ?? '', polymerTypes, GapOriginals[NOTATION.HELM]);
 
   return res;

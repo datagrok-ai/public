@@ -4,14 +4,79 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_fitLinearRegressionParamsWithDataNormalizing} from '../wasm/EDAAPI';
+// Linear regression migrated to Rust + WASM (sci-comp-ml); now async.
+import {_fitLinearRegressionParamsWithDataNormalizing} from '../wasm/eda-api';
 import {getPlsAnalysis} from './pls/pls-tools';
+
+export const TOLERANCE = 1e-7;
 
 // Default PLS components count
 const PLS_COMPONENTS_COUNT = 10;
 
-/** Compute coefficients of linear regression */
-export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column): Promise<Float32Array> {
+/** Default OLS epochs (OLS_EPOCHS in eda-api); worst case, loss tol may early-stop sooner. */
+const GD_EPOCHS = 1000;
+
+/** Applicability and interactivity thresholds for linear regression.
+ * OLS now fits via full-batch gradient descent on the Rust+WASM backend (no closed-form
+ * normal equations), so the cost model is GD: time ≈ epochs·N·M, memory ≈ N·M Float64
+ * (no M×M term). The fit runs synchronously on the UI thread, so the time budget is a
+ * UI-freeze duration — sized off a conservative ~5e8 units/s (≈2× margin over the raw
+ * ~1e9 units/s measured on 100K×100×1000). */
+enum LIN_REG_LIMITS {
+  // isApplicable: hard bounds — fit must complete without exhausting browser memory
+  MAX_FEATURES = 1000,
+  MAX_FEATURES_X_SAMPLES = 1e7,      // ≈80 MB Float64 flatX (~160 MB peak); ~10 s synchronous at 1000 GD epochs
+  // isInteractive: responsive (~0.5 s) full-batch GD budgets
+  INTERACTIVE_MEMORY_BUDGET = 2.5e6, // Float64 flatX elements (≈20 MB TS-side, ~40 MB peak)
+  INTERACTIVE_TIME_BUDGET = 2.5e8,   // N·M·epochs work units (≈0.5 s at conservative 5e8 units/s)
+}
+
+/** Check whether linear regression can be applied to the given data */
+export function isLinearRegressionApplicable(features: DG.ColumnList, target: DG.Column): boolean {
+  for (const col of features) {
+    if (!col.matches('numerical'))
+      return false;
+  }
+  if (!target.matches('numerical'))
+    return false;
+
+  const featuresCount = features.length;
+  const samplesCount = target.length;
+
+  if (featuresCount > LIN_REG_LIMITS.MAX_FEATURES)
+    return false;
+
+  if (featuresCount * samplesCount > LIN_REG_LIMITS.MAX_FEATURES_X_SAMPLES)
+    return false;
+
+  return true;
+}
+
+/** Check whether linear regression training is fast enough for interactive use */
+export function isLinearRegressionInteractive(features: DG.ColumnList, target: DG.Column): boolean {
+  const M = features.length;
+  const N = target.length;
+
+  // Standardised design matrix N×M (Float64, TS flatX); GD forms no M×M normal matrix. Real peak ~2×.
+  const memory = N * M;
+  if (memory > LIN_REG_LIMITS.INTERACTIVE_MEMORY_BUDGET)
+    return false;
+
+  // Full-batch GD: ~N·M work per epoch × epochs; budget = main-thread freeze duration
+  const time = GD_EPOCHS * N * M;
+  if (time > LIN_REG_LIMITS.INTERACTIVE_TIME_BUDGET)
+    return false;
+
+  return true;
+}
+
+/** Compute coefficients of linear regression.
+ * `l1`/`l2` add Elastic Net regularisation; both `0` (default) give plain OLS.
+ * `lr`/`epochs`/`tol` are the gradient-descent controls; omit them to use the
+ * OLS preset (left `undefined` -> the eda-api defaults apply). */
+export async function getLinearRegressionParams(features: DG.ColumnList, targets: DG.Column,
+  l1: number = 0, l2: number = 0,
+  lr?: number, epochs?: number, tol?: number): Promise<Float32Array> {
   const featuresCount = features.length;
   const samplesCount = targets.length;
 
@@ -57,7 +122,7 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
       return params;
 
     // Compute parameters of linear regression
-    const tempParams = _fitLinearRegressionParamsWithDataNormalizing(
+    const tempParams = (await _fitLinearRegressionParamsWithDataNormalizing(
       DG.DataFrame.fromColumns(nonConstFeatureCols).columns,
       DG.Column.fromFloat32Array('xAvgs', nonConstFeatureAvgs, nonConstFeaturesCount),
       DG.Column.fromFloat32Array('xStdevs', nonConstFeatureStdevs, nonConstFeaturesCount),
@@ -65,7 +130,12 @@ export async function getLinearRegressionParams(features: DG.ColumnList, targets
       yAvg,
       yStdev,
       nonConstFeaturesCount + 1,
-    ).getRawData();
+      l1,
+      l2,
+      lr,
+      epochs,
+      tol,
+    )).getRawData();
 
     // Extract params taking into account non-constant columns
     for (let i = 0; i < nonConstFeaturesCount; ++i)

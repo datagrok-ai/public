@@ -12,35 +12,39 @@ export namespace funcs {
     return await grok.functions.call('Helm:InitHelm', {});
   }
 
-  /**
-  Helm renderer service
-  */
-  export async function getHelmService(): Promise<any> {
-    return await grok.functions.call('Helm:GetHelmService', {});
-  }
-
   export async function helmCellRenderer(): Promise<any> {
     return await grok.functions.call('Helm:HelmCellRenderer', {});
   }
 
   /**
-  Macromolecule
-  */
+   * Macromolecule
+   */
   export async function editMoleculeCell(cell: any ): Promise<void> {
     return await grok.functions.call('Helm:EditMoleculeCell', { cell });
   }
 
   /**
-  Adds editor
-  */
+   * Adds editor
+   * @param {any} mol
+   *   semType: Macromolecule
+   */
   export async function openEditor(mol: any ): Promise<void> {
     return await grok.functions.call('Helm:OpenEditor', { mol });
   }
 
+  /**
+   * @param {any} sequence
+   *   semType: Macromolecule
+   */
   export async function propertiesWidget(sequence: any ): Promise<any> {
     return await grok.functions.call('Helm:PropertiesWidget', { sequence });
   }
 
+  /**
+   * Convert a column of HELM macromolecules into a column of molfiles
+   * @param {DG.Column} col
+   *   semType: Macromolecule
+   */
   export async function getMolfiles(col: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('Helm:GetMolfiles', { col });
   }

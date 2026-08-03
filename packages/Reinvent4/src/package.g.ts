@@ -6,6 +6,7 @@ export function info() : void {
   PackageFunctions.info();
 }
 
+//description: Lists available optimization targets.
 //output: list<string> result
 export async function getFolders() : Promise<string[]> {
   return await PackageFunctions.getFolders();
@@ -28,8 +29,9 @@ export async function runReinvent(ligand: string, optimize: string) : Promise<st
 }
 
 //name: Reinvent
-//input: string ligand = 'OC(CN1CCCC1)NC(CCC1)CC1Cl' { semType: Molecule }
-//input: string optimize { choices: Reinvent4:getFolders }
+//description: Generates molecules from a seed ligand.
+//input: string ligand = 'OC(CN1CCCC1)NC(CCC1)CC1Cl' { semType: Molecule; description: Seed molecule (SMILES). }
+//input: string optimize { choices: Reinvent4:getFolders; description: Optimization target. }
 //output: dataframe result
 //meta.role: hitDesignerFunction
 //editor: Reinvent4:ReinventEditor
@@ -37,6 +39,7 @@ export async function reinvent(ligand: string, optimize: string) : Promise<any> 
   return await PackageFunctions.reinvent(ligand, optimize);
 }
 
+//description: Generates molecules from a seed ligand.
 //input: string ligand = 'OC(CN1CCCC1)NC(CCC1)CC1Cl' { semType: Molecule }
 //input: string optimize { choices: Reinvent4:getFolders }
 //top-menu: Chem | Generate molecules...

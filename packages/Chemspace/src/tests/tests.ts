@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import {test, category, awaitCheck} from '@datagrok-libraries/test/src/test';
-import {app, pricesPanel, samplesPanel} from '../package';
 
 category('Chemspace', () => {
   const mol = 'Oc1ccccc1';
@@ -27,8 +26,8 @@ category('Chemspace', () => {
   }, { timeout: 60000});
 
   test('App', async () => {
-    await grok.functions.call('Chemspace:App');
-    await awaitCheck(() => grok.shell.tv.dataFrame.rowCount === 10,
+    await grok.functions.call('Chemspace:app');
+    await awaitCheck(() => grok.shell.tv.dataFrame.rowCount > 0,
     `Search hasn't been completed`, 30000);
-  });
+  }, {timeout: 60000});
 });

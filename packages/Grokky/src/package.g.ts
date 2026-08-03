@@ -22,31 +22,51 @@ export function combinedLLMSearchProvider() : any {
 //name: Help
 //description: Get answers from AI assistant based on Datagrok documentation and public code.
 //input: string prompt 
+//input: string sessionId { optional: true }
 //output: widget result
 //meta.role: aiSearchProvider
 //meta.useWhen: If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?
-export async function askHelpLLMProvider(prompt: string) : Promise<any> {
-  return await PackageFunctions.askHelpLLMProvider(prompt);
+export async function askHelpLLMProvider(prompt: string, sessionId?: string) : Promise<any> {
+  return await PackageFunctions.askHelpLLMProvider(prompt, sessionId);
+}
+
+//description: Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.
+//input: string label { description: Config label for this run, e.g. baseline / medium-effort }
+//input: int reps { optional: true; description: Repetitions per prompt (default 3) }
+//input: string model { optional: true; choices: ["haiku","sonnet","opus"]; description: Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default. }
+//input: string only { optional: true; description: Run only part of the suite: comma-separated categories, difficulties, or prompt substrings. }
+//output: string result
+export async function runBenchmark(label: string, reps?: number, model?: string, only?: string) : Promise<string> {
+  return await PackageFunctions.runBenchmark(label, reps, model, only);
+}
+
+//description: Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.
+//input: string labels { description: Comma-separated run labels, the first being the reference arm }
+//output: string result
+export async function compareBenchmarks(labels: string) : Promise<string> {
+  return await PackageFunctions.compareBenchmarks(labels);
 }
 
 //name: Execute
 //description: Plans and executes function steps to achieve needed results
 //input: string prompt 
+//input: string sessionId { optional: true }
 //output: widget result
 //meta.role: aiSearchProvider
 //meta.useWhen: If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function
-export async function smartChainExecutionProvider(prompt: string) : Promise<any> {
-  return await PackageFunctions.smartChainExecutionProvider(prompt);
+export async function smartChainExecutionProvider(prompt: string, sessionId?: string) : Promise<any> {
+  return await PackageFunctions.smartChainExecutionProvider(prompt, sessionId);
 }
 
 //name: Query
 //description: Tries to find a query which has the similar pattern as the prompt user entered and executes it
 //input: string prompt 
+//input: string sessionId { optional: true }
 //output: widget result
 //meta.role: aiSearchProvider
 //meta.useWhen: if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating
-export async function llmSearchQueryProvider(prompt: string) : Promise<any> {
-  return await PackageFunctions.llmSearchQueryProvider(prompt);
+export async function llmSearchQueryProvider(prompt: string, sessionId?: string) : Promise<any> {
+  return await PackageFunctions.llmSearchQueryProvider(prompt, sessionId);
 }
 
 //input: string prompt 
@@ -64,6 +84,61 @@ export async function findMatchingPatternQuery(prompt: string) : Promise<string>
 //output: bool result
 export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: any, setAndRunFunc: any) : Promise<boolean> {
   return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
+}
+
+//description: List the catalogs available on this connection
+//input: view view 
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbCatalogs(view: any) : Promise<string> {
+  return await PackageFunctions.listDbCatalogs(view);
+}
+
+//description: List schemas of a catalog (defaults to the connection default catalog)
+//input: view view 
+//input: string catalogName { optional: true }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbSchemas(view: any, catalogName?: string) : Promise<string> {
+  return await PackageFunctions.listDbSchemas(view, catalogName);
+}
+
+//description: List tables of a schema with row counts
+//input: view view 
+//input: string schemaName 
+//input: string catalogName { optional: true }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbTables(view: any, schemaName: string, catalogName?: string) : Promise<string> {
+  return await PackageFunctions.listDbTables(view, schemaName, catalogName);
+}
+
+//description: Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table
+//input: view view 
+//input: string tables { description: Comma-separated table references to describe }
+//output: string result
+//meta.viewType: DataQueryView
+export async function getDbTableDetails(view: any, tables: string) : Promise<string> {
+  return await PackageFunctions.getDbTableDetails(view, tables);
+}
+
+//description: Foreign-key relationships involving the given tables — use to build correct JOINs
+//input: view view 
+//input: string tables { description: Comma-separated table references }
+//output: string result
+//meta.viewType: DataQueryView
+export async function listDbJoins(view: any, tables: string) : Promise<string> {
+  return await PackageFunctions.listDbJoins(view, tables);
+}
+
+//description: Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun
+//input: view view 
+//input: string sql { description: The SQL to test }
+//input: string description { description: One line describing what the query does }
+//output: string result
+//meta.viewType: DataQueryView
+export async function getSqlTestResult(view: any, sql: string, description: string) : Promise<string> {
+  return await PackageFunctions.getSqlTestResult(view, sql, description);
 }
 
 //input: string dbName { choices: ["biologics","chembl"] }

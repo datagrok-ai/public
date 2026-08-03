@@ -1,10 +1,11 @@
 #name: diffdockPython
-#description: Predicts the 3D structure of how a molecule interacts with a protein
+#friendlyName: DiffDock
+#description: Predicts the 3D structure of how a small molecule ligand docks into a protein
 #language: python
-#input: string protein
-#input: string ligand
-#input: int num_poses
-#input: string api_key
+#input: string protein [Protein receptor structure (PDB text)]
+#input: string ligand [Ligand structure (SDF/molblock or SMILES)]
+#input: int num_poses [Number of docking poses to generate]
+#input: string api_key [NVIDIA BioNeMo API key (blank uses the local endpoint)]
 #output: blob result
 
 import requests

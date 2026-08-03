@@ -93,8 +93,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     const seqHandler = seqHelper.getSeqHandler(sequenceColumn);
     const maxPos = seqHandler.maxLength;
 
-    const canonicals = positions.map((p) => seqHandler.getMonomersAtPosition(p - 1, true));
-    this._positionColumn.init((i) => canonicals.map((c) => c[i]).join(MONOMER_MOTIF_SPLITTER));
+    const originals = positions.map((p) => seqHandler.getMonomersAtPosition(p - 1, false));
+    this._positionColumn.init((i) => originals.map((c) => c[i]).join(MONOMER_MOTIF_SPLITTER));
 
     this._boxPlotViewer = this.dataFrame.plot.box({categoryColumnNames: [this._positionColumn.name], plotStyle: 'violin',
       valueColumnName: this.valueColumnName, colorColumnName: this._positionColumn.name, showColorSelector: false, showSizeSelector: false, showCategorySelector: false,

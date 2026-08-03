@@ -26,8 +26,7 @@ export function _IconTool() : void {
 }
 
 //name: Test Manager
-//meta.role: app
-//meta.browsePath: Admin
+//meta.role: adminApp,app
 //top-menu: Tools | Dev | Test Manager
 export async function testManager() : Promise<void> {
   await PackageFunctions.testManager();

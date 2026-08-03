@@ -68,6 +68,15 @@ export class DockContainer {
     return api.grok_DockContainer_Get_ContainerElement(this.dart);
   }
 
+  /** Title (name) of the docked panel. */
+  get title(): string {
+    return api.grok_DockContainer_Get_Title(this.dart);
+  }
+
+  set title(s: string) {
+    api.grok_DockContainer_Set_Title(this.dart, s);
+  }
+
   /** Destroys and detaches the container. */
   destroy(): void {
     api.grok_DockContainer_Destroy(this.dart);
@@ -122,6 +131,12 @@ export class DockManager {
   get documentContainer(): DockContainer {
     return new DockContainer(api.grok_DockManager_Get_DocumentContainer(this.dart));
   }
+
+  /** Serializes the current dock layout (panel tree, sizes, orientations) to a JSON string. */
+  saveState(): string { return api.grok_DockManager_SaveState(this.dart); }
+
+  /** Restores a dock layout previously produced by {@link saveState}. */
+  loadState(state: string): void { api.grok_DockManager_LoadState(this.dart, state); }
 
   /**
    * Docks the element relative to the reference node.

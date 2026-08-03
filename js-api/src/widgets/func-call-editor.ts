@@ -15,6 +15,8 @@ import type {InputBase} from "./inputs-base";
 export abstract class FuncCallEditor extends Widget {
   abstract get isValid(): boolean;
   abstract get onInputChanged(): Observable<any>;
+  getHistoryString(): string { return ''; }
+  loadHistoryString(historyString: string): void {};
 
   inputFor?(propertyName: string): InputBase;
 }

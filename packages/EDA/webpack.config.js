@@ -11,13 +11,27 @@ module.exports = {
   mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
-    package: './src/package.ts'
+    // The sci-comp-ml wasm binary is listed so webpack emits it to dist/
+    // (via the .wasm file-loader rule below) for the runtime init URL.
+    package: ['./wasm/sci_comp_ml_bg.wasm', './src/package.ts']
+  },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true,
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
+      // Emit the wasm-bindgen binary to dist/ with its original name so the
+      // loader can fetch `${webRoot}/dist/sci_comp_ml_bg.wasm` (mirrors Chem).
+      {
+        test: /\.wasm$/i,
+        type: 'javascript/auto',
+        loader: 'file-loader',
+        options: {publicPath: 'dist/', name: '[name].[ext]'},
+      },
       {test: /\.js$/, enforce: 'pre', use: ['source-map-loader'], exclude: /node_modules/},
       {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
       {

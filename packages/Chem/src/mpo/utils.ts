@@ -2,17 +2,37 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import {checkPackage} from '../utils/elemental-analysis-utils';
+
 import {
   DEFAULT_AGGREGATION,
   DESIRABILITY_PROFILE_TYPE,
   DesirabilityProfile,
+  MpoCalculator,
+  MpoResult,
   PropertyDesirability,
   WeightedAggregation,
   createDefaultNumerical,
+  isMpoNumericColumn,
   migrateProfile,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
+
+export const UNTITLED_PROFILE = 'Untitled Profile';
+
+export enum MpoMethod {
+  Manual = 'Manual',
+  DataDriven = 'Data-driven',
+}
+
+export function isEdaPackageInstalled(): boolean {
+  if (!checkPackage('EDA', 'getPmpoAppItems')) {
+    grok.shell.warning('EDA package is not installed');
+    return false;
+  }
+  return true;
+}
 
 export type MpoProfileInfo = DesirabilityProfile & {
   fileName: string;
@@ -26,10 +46,16 @@ export enum MpoPathMode {
   Create = 'create',
 }
 
+export enum MpoUploadConflictAction {
+  Replace = 'replace',
+  KeepBoth = 'keep-both',
+  Cancel = 'cancel',
+}
+
 export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'MPOProfiles';
 export const MPO_PROFILES_NAME = 'MPO Profiles';
-export const MAX_MPO_PROPERTIES = 20;
+export const MAX_MPO_PROPERTIES = 10;
 
 export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
   const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
@@ -69,6 +95,8 @@ export async function computeMpo(
   silent: boolean = false,
   processed: boolean = false,
   createDesirabilityColumns: boolean = false,
+  preview: boolean = false,
+  calculator?: MpoCalculator,
 ): Promise<string[]> {
   const mappedProperties: Record<string, PropertyDesirability> = {};
   for (const [propName, prop] of Object.entries(profile.properties)) {
@@ -84,6 +112,25 @@ export async function computeMpo(
   }
 
   const resolvedAggregation = aggregation ?? profile.aggregation ?? DEFAULT_AGGREGATION;
+
+  // Preview path: compute directly via the shared helpers, skipping the two DG.Func.call() round-trips that the
+  // OK path below uses to stay recorded/replayable. A passed-in calculator caches desirability across edits.
+  if (preview) {
+    const columns = applyDesirabilityTags(df, mappedProperties, true);
+    if (columns.length > 0) {
+      const isDifferent = df.rowCount !== columns[0].length;
+      const result = (calculator ?? new MpoCalculator())
+        .compute(df, columns, profileName, resolvedAggregation, isDifferent, createDesirabilityColumns);
+      for (const c of collectMpoResultColumns(df, result, isDifferent)) {
+        const existing = df.col(c.name);
+        if (existing)
+          df.columns.remove(existing.name);
+        df.columns.add(c);
+      }
+    }
+    return df.col(profileName) ? [profileName] : [];
+  }
+
   const call = await DG.Func.find({package: 'Chem', name: 'mpoTransformFunction'})[0].prepare({
     df,
     profileName,
@@ -99,6 +146,41 @@ export async function computeMpo(
   }).call(undefined, undefined, {processed});
 
   return df.col(profileName) ? [profileName] : [];
+}
+
+/// Sets the `desirabilityTemplate` tag on each column named in `properties` and returns the tagged
+/// columns. Shared by Chem:mpoTransformFunction (the recorded transform) and the interactive preview.
+export function applyDesirabilityTags(
+  df: DG.DataFrame,
+  properties: Record<string, PropertyDesirability>,
+  silent: boolean = false,
+): DG.Column[] {
+  const columns: DG.Column[] = [];
+  for (const [columnName, desirability] of Object.entries(properties)) {
+    const column = df.col(columnName);
+    if (!column) {
+      if (!silent)
+        grok.shell.warning(`Column "${columnName}" not found. Skipping.`);
+      continue;
+    }
+    column.setTag('desirabilityTemplate', JSON.stringify(desirability));
+    columns.push(column);
+  }
+  if (columns.length === 0 && !silent)
+    grok.shell.error('No valid columns found matching the profile properties.');
+  return columns;
+}
+
+/// Picks the columns to join back into `df` from an mpo() / MpoCalculator result: the score column when
+/// it's new (or the row count differs), plus all desirability columns. Shared by Chem:mpoCalculate
+/// (the recorded transform) and the interactive preview.
+export function collectMpoResultColumns(df: DG.DataFrame, result: MpoResult, isDifferent: boolean): DG.Column[] {
+  const columns: DG.Column[] = [];
+  if (result.scoreColumn && (!df.col(result.scoreColumn.name) || isDifferent))
+    columns.push(result.scoreColumn);
+  if (result.desirabilityColumns)
+    columns.push(...result.desirabilityColumns);
+  return columns;
 }
 
 export function findSuitableProfiles(df: DG.DataFrame, profiles: MpoProfileInfo[]): MpoProfileInfo[] {
@@ -153,7 +235,7 @@ export function updateMpoPath(
 export function createDefaultProfile(): DesirabilityProfile {
   return {
     type: DESIRABILITY_PROFILE_TYPE,
-    name: '',
+    name: UNTITLED_PROFILE,
     description: '',
     properties: {},
   };
@@ -163,12 +245,14 @@ export function createProfileForDf(df: DG.DataFrame): DesirabilityProfile {
   const props: {[key: string]: PropertyDesirability} = {};
   let count = 0;
   for (const col of df.columns.numerical) {
+    if (!isMpoNumericColumn(col))
+      continue;
     if (count >= MAX_MPO_PROPERTIES)
       break;
     props[col.name] = createDefaultNumerical(1, col.min, col.max);
-    count++;
+    ++count;
   }
-  return {type: DESIRABILITY_PROFILE_TYPE, name: '', description: '', properties: props};
+  return {type: DESIRABILITY_PROFILE_TYPE, name: UNTITLED_PROFILE, description: '', properties: props};
 }
 
 export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFrame): DesirabilityProfile {
@@ -179,6 +263,8 @@ export function mergeProfileWithDf(existing: DesirabilityProfile, df: DG.DataFra
 
   const existingLower = new Set(Object.keys(merged.properties).map((n) => n.toLowerCase()));
   for (const col of df.columns.numerical) {
+    if (!isMpoNumericColumn(col))
+      continue;
     if (Object.keys(merged.properties).length >= MAX_MPO_PROPERTIES)
       break;
     if (!existingLower.has(col.name.toLowerCase()))
@@ -192,13 +278,14 @@ export function deepEqual<T>(current: T, original: T): boolean {
   if (current === original)
     return true;
 
-  if (typeof original !== 'object')
+  if (typeof original !== 'object' || original === null ||
+      typeof current !== 'object' || current === null)
     return false;
 
   if (Array.isArray(original)) {
     if (!Array.isArray(current) || current.length !== original.length)
       return false;
-    for (let i = 0; i < original.length; i++) {
+    for (let i = 0; i < original.length; ++i) {
       if (!deepEqual(current[i], original[i]))
         return false;
     }
@@ -228,7 +315,7 @@ export function setupMpoBreadcrumbs(view: DG.ViewBase, lastSegment: string): voi
 
   const homeEl = breadcrumbs.root.firstElementChild;
   if (homeEl) {
-    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME));
+    const homeIcon = ui.iconFA('home', () => grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME), 'Home');
     homeEl.replaceWith(homeIcon);
   }
 

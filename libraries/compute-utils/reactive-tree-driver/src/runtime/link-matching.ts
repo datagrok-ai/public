@@ -88,7 +88,7 @@ function matchLinkInstance(
 
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
-    const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call'));
+    const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call')) || (spec.type === 'pipelineValidator' && kind === 'outputs');
     const useDescriptionsStore = ((spec.type === 'nodemeta' || spec.type === 'selector') && kind === 'outputs');
     const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
     if (paths.length == 0) {
@@ -157,6 +157,23 @@ function getRefOrigin(
   if (!BaseTree.isNodeChildOrEq(path, refOrigin.path))
     return;
   return refOrigin;
+}
+
+export function isActionVisible(
+  rnode: TreeNode<StateTreeNode>,
+  spec: ActionSpec,
+): boolean {
+  const currentIO: Record<string, MatchedNodePaths> = {};
+  for (const io of spec.hideWhen ?? []) {
+    const paths = matchLinkIO(rnode, currentIO, io, true, false);
+    if (paths.length > 0) return false;
+  }
+  for (const io of spec.showWhen ?? []) {
+    if (io.flags?.includes('optional')) continue;
+    const paths = matchLinkIO(rnode, currentIO, io, true, false);
+    if (paths.length === 0) return false;
+  }
+  return true;
 }
 
 function matchLinkIO(
@@ -282,6 +299,8 @@ function matchRefSegment(
     if (originIdx == null)
       return [];
     const target = allNodeEntries[originIdx];
+    if (ids.length > 0 && !idsSet.has(target[1].id))
+      return [];
     return [target];
   }
 

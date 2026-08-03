@@ -19,6 +19,7 @@ import {LSTPieChartRenderer} from './utils/cell-renderer';
 import {PeptideUtils} from './peptideUtils';
 import {SequencePositionStatsViewer} from './viewers/position-statistics-viewer';
 import {MutationCliffsViewer} from './viewers/mutation-cliffs-viewer';
+import {PeptideGenerationViewer} from './viewers/peptide-generation-viewer';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -237,6 +238,18 @@ export class PackageFunctions {
   })
   static clusterMaxActivity(): DG.Viewer {
     return new ClusterMaxActivityViewer();
+  }
+
+
+  @grok.decorators.func({
+    name: 'Peptide Generation',
+    description: 'Generates new candidate peptides from monomer-position statistics, ranked by predicted activity',
+    outputs: [{type: 'viewer', name: 'result'}],
+    meta: {role: 'viewer', icon: 'files/icons/peptide-sar-vertical-viewer.svg'},
+    tags: ['viewer'],
+  })
+  static peptideGeneration(): DG.Viewer {
+    return new PeptideGenerationViewer();
   }
 
 

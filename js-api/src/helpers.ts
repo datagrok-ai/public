@@ -35,6 +35,7 @@ export interface FormulaLine {
  * Represents a core annotation region parameters.
  */
 export interface AnnotationRegion {
+  id?: string;
   type?: string;
   header?: string;
   headerColor?: string;
@@ -47,6 +48,7 @@ export interface AnnotationRegion {
   description?: string;
   opacity?: number;
   isDataFrameRegion?: boolean;
+  zIndex?: number;
 }
 
 /**

@@ -1,5 +1,14 @@
 ---
 title: "Neo4j"
+description: Connect Datagrok to a Neo4j graph database and query it using Cypher over JDBC.
+keywords:
+  - neo4j graph database
+  - cypher query language
+  - neo4j jdbc driver
+  - connect to neo4j
+  - graph database
+  - data augmentation panels
+  - connection test
 ---
 
 This [connector](./connectors.md) provides access to the [Neo4j](https://neo4j.com/) graph

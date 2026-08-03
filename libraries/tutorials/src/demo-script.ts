@@ -78,7 +78,7 @@ export class DemoScript {
         const homeIcon = ui.iconFA('home', () => {
           grok.shell.v.close();
           grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
-        });
+        }, 'Home');
         homeIcon.classList.add('demo-breadcrumbs-home-element');
         breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
       }

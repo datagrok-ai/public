@@ -202,7 +202,7 @@ class TranslatorAppLayout {
     const formatChoiceInput = ui.div([this.formatChoiceInput]);
 
     const clearButton = ui.button(
-      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = ''; }),
+      ui.icons.delete(() => { sequenceColoredInput.inputBase.value = ''; }, 'Delete'),
       () => {}
     );
     ui.tooltip.bind(clearButton, 'Clear input');

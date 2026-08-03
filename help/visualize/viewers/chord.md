@@ -1,5 +1,12 @@
 ---
 title: "Chord"
+description: Visualize flows and inter-relationships between categories as arcs connecting points on a circle.
+keywords:
+  - chord diagram
+  - flow diagram
+  - network of relationships
+  - source and target
+  - circular graph
 ---
 A chord diagram is a graphical method of displaying the inter-relationships
 between data.

@@ -5,7 +5,8 @@ keywords:
  - file explorer
  - hierarchical tree
  - data catalog
-format: 'mdx'
+mdx:
+  format: mdx
 sidebar_position: 2
 unlisted: true
 ---
@@ -26,14 +27,14 @@ preview, manage, and access anything in Datagrok. To open **Browse**, click the 
 
 * **Scratchpad** (<FAIcon icon="fa-solid fa-display" size="1x"/>): Located in the upper section, [Scratchpad](#scratchpad) shows all open entities. It's used to manage and save your work in progress.
 * **Main tree** (<FAIcon icon="fa-solid fa-cloud" size="1x"/>): The lower section shows all entities saved to the server and is your primary navigation and data management tool, organized as follows:
-   * **My stuff**: This is your personal directory. In addition to entities you create or others share with you, it contains entities relevant to you like your favorites or recent items.
-   * **Spaces**: Here, entities are organized by _space_, typically aligned with organizational use, such as by project or department. To learn how to create projects and add entities to them, see [Spaces](../../concepts/project/space.md).
-   * The rest of the tree is grouped by entity type:
-      * [Dashboards](../../concepts/project/dashboard.md)
-      * Apps
-      * [Files](../../../access/files/files.md)
-      * [Databases](../../../access/databases/databases.md) (includes available connections, queries, database schemas, tables, and columns)
-      * **Platform**: Contains galleries for [plugins](../../plugins.md), [functions](../../concepts/functions/functions.md) (queries, scripts, [OpenAPI](../../../access/open-api.md)), [users](../../../govern/access-control/users-and-groups.md#users), [groups](../../../govern/access-control/users-and-groups.md#groups), [connectors](../../../access/databases/connectors/connectors.md), notebooks, predictive models, repositories, dockers, [layouts](../../../visualize/view-layout.md), as well as schemas and entity types for [sticky meta](../../../govern/catalog/sticky-meta.md)
+  * **My stuff**: This is your personal directory. In addition to entities you create or others share with you, it contains entities relevant to you like your favorites or recent items.
+  * **Spaces**: Here, entities are organized by _space_, typically aligned with organizational use, such as by project or department. To learn how to create projects and add entities to them, see [Spaces](../../concepts/project/space.md).
+  * The rest of the tree is grouped by entity type:
+    * [Dashboards](../../concepts/project/dashboard.md)
+    * Apps
+    * [Files](../../../access/files/files.md)
+    * [Databases](../../../access/databases/databases.md) (includes available connections, queries, database schemas, tables, and columns)
+    * **Platform**: Contains galleries for [plugins](../../plugins.md), [functions](../../concepts/functions/functions.md) (queries, scripts, [OpenAPI](../../../access/open-api.md)), [users](../../../govern/access-control/users-and-groups.md#users), [groups](../../../govern/access-control/users-and-groups.md#groups), [connectors](../../../access/databases/connectors/connectors.md), notebooks, predictive models, repositories, dockers, [layouts](../../../visualize/view-layout.md), as well as schemas and entity types for [sticky meta](../../../govern/catalog/sticky-meta.md)
    
 Above the **Scratchpad**, is a **Top Menu**. From here, you can do the following:
 
@@ -273,8 +274,9 @@ Above the main area, there is a search ribbon for searching anything both within
 ![](../img/home-page.png)
 
 You can choose which widgets to display<!--, arrange their order, and assign custom names-->.
-To do this, hover over the widget's top to access its controls. You can close
-a widget or adjust its settings using the [Context Panel](../panels/panels.md#context-panel). To manage hidden widgets, go to **Sidebar** > **Settings** > **Panels**.
+To hide a widget, hover over it and click the **close** (**✕**) icon in its top-right corner.
+To show or hide any widget — including ones you previously closed — click the
+**Customize widgets...** link below the widgets and toggle them in the **Context Panel**.
 
 :::note developers
 

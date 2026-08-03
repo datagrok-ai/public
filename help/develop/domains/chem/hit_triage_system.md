@@ -1,5 +1,14 @@
 ---
 title: "Building light-weighted hit triage system"
+description: How to build a lightweight hit triage system in Datagrok using database queries and molecule screening.
+keywords:
+  - hit triage
+  - compound screening
+  - ChEMBL query
+  - column edit permissions
+  - tableView
+  - layouts
+  - drug discovery workflow
 ---
 
 With Datagrok, creating a light-weighted hit triage system using your database as source is easy and efficient. By applying main Datagrok features, you can effectively screen molecules.

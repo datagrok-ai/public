@@ -12,7 +12,7 @@ import {
   ViewerType,
   JOIN_TYPE
 } from "../const";
-import {__obs, EventData, MapChangeArgs} from "../events";
+import {__obs, EventData, MapChangeArgs, CellRangeArgs, RowChangeArgs, ColumnChangeArgs, CellChangeArgs} from "../events";
 import {toDart, toJs} from "../wrappers";
 import {MapProxy} from "../proxies";
 import {_toJson} from "../utils_convert";
@@ -330,12 +330,23 @@ export class DataFrame {
 
   /** Converts a column with the specified name to [newType],
    * removes the original column from its dataframe and adds the new column to it.
+   * @deprecated Use {@link changeColumnsType} instead.
    * @param {string|Column} column
    * @param {string} newType - @see {@link COLUMN_TYPE}
    * @param {string=} format - number format
    * @returns {Column} */
   changeColumnType(column: string | Column, newType: ColumnType, format: string | null = null): Column {
-    return toJs(api.grok_DataFrame_ChangeColumnType(this.dart, toDart(column), newType, format));
+    return this.changeColumnsType([column], newType, format)[0];
+  }
+
+  /** Converts columns with the specified names to [newType],
+   * removes the original columns from the dataframe and adds the new columns to it.
+   * @param {(string | Column)[]} columns
+   * @param {string} newType - @see {@link COLUMN_TYPE}
+   * @param {string=} format - number format
+   * @returns {Column[]} */
+  changeColumnsType(columns: (string | Column)[], newType: ColumnType, format: string | null = null): Column[] {
+    return toJs(api.grok_DataFrame_ChangeColumnsType(this.dart, columns.map(toDart), newType, format));
   }
 
   /**
@@ -386,6 +397,11 @@ export class DataFrame {
     return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
+  /** Clears all active filters and unsets the filter bitset. */
+  resetFilter(): void {
+    api.grok_DataFrame_ResetFilter(this.dart);
+  }
+
   /**
    * Appends two tables ('union' in SQL).
    * @param {DataFrame} t2
@@ -410,22 +426,22 @@ export class DataFrame {
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
+  get onValuesChanged(): Observable<EventData<CellRangeArgs>> { return this._event('ddt-values-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get onCurrentRowChanged(): Observable<any> { return this._event('ddt-current-row-changed'); }
+  get onCurrentRowChanged(): Observable<EventData<RowChangeArgs>> { return this._event('ddt-current-row-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onMouseOverRowChanged(): Observable<any> { return this._event('ddt-mouse-over-row-changed'); }
+  get onMouseOverRowChanged(): Observable<EventData<RowChangeArgs>> { return this._event('ddt-mouse-over-row-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get onCurrentColChanged(): Observable<any> { return this._event('ddt-current-col-changed'); }
+  get onCurrentColChanged(): Observable<EventData<ColumnChangeArgs>> { return this._event('ddt-current-col-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onMouseOverColChanged(): Observable<any> { return this._event('ddt-mouse-over-col-changed'); }
+  get onMouseOverColChanged(): Observable<EventData<ColumnChangeArgs>> { return this._event('ddt-mouse-over-col-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get onCurrentCellChanged(): Observable<any> { return this._event('ddt-current-cell-changed'); }
+  get onCurrentCellChanged(): Observable<EventData<CellChangeArgs>> { return this._event('ddt-current-cell-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onMouseOverRowGroupChanged(): Observable<any> { return this._event('ddt-mouse-over-row-group-changed'); }

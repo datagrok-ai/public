@@ -6,10 +6,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
-  DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
-  MAX_ROWS_IN_PREDICTION_TOOLTIP} from './pls-constants';
+  DEMO_INTRO_MD, DEMO_RESULTS, NUMS_AFTER_COMMA,
+  MAX_ROWS_IN_PREDICTION_TOOLTIP, DELAY} from './pls-constants';
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
-import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
+// PLS1 migrated to Rust + WASM (sci-comp-ml).
+import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/eda-api';
 import {carsDataframe} from '../data-generators';
 
 const min = Math.min;
@@ -358,13 +359,14 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
 
   // emphasize viewers in the demo case
   if (analysisType === PLS_ANALYSIS.DEMO) {
-    grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD));
-
-    describeElements(
-      [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
-      DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
-      ['left', 'left', 'right', 'right', 'left'],
-    );
+    setTimeout(() => {
+      describeElements(
+        [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
+        DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
+        ['left', 'left', 'right', 'right', 'left'],
+        view.root,
+      );
+    }, DELAY);
   }
 
   // Add formula tooltip to the prediction column
@@ -573,13 +575,28 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
 
 /** Run multivariate analysis demo */
 export async function runDemoMVA(): Promise<void> {
-  grok.shell.addTableView(carsDataframe());
+  const table = carsDataframe();
+  grok.shell.addTableView(table);
   grok.shell.windows.help.visible = true;
   grok.shell.windows.help.showHelp(ui.markdown(DEMO_INTRO_MD));
   grok.shell.windows.showContextPanel = false;
   grok.shell.windows.showProperties = false;
 
-  await runMVA(PLS_ANALYSIS.DEMO);
+  const cols = table.columns.toList();
+  const numCols = cols.filter((col) =>
+    ((col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)) &&
+    (col.stats.missingValueCount === 0));
+  const names = cols.find((col) =>
+    (col.type === DG.COLUMN_TYPE.STRING) && (col.stats.uniqueCount === table.rowCount));
+
+  await performMVA({
+    table: table,
+    features: DG.DataFrame.fromColumns(numCols.slice(0, -1)).columns,
+    predict: numCols[numCols.length - 1],
+    components: min(numCols.length - 1, COMPONENTS.DEFAULT as number),
+    isQuadratic: false,
+    names: names,
+  }, PLS_ANALYSIS.DEMO);
 }
 
 function setPredictionTooltip(view: DG.TableView, predCol: DG.Column, modelTerms: Map<string, number>): void {

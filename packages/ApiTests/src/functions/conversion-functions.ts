@@ -62,4 +62,4 @@ category('Functions: Conversions', () => {
     'ToString(3.14)': '3.14',
     'ToString(true)': 'true',
   }));
-});
+}, {node: true});

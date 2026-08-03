@@ -1,9 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {getProcessedConfig, PipelineConfigurationStaticProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {snapshotCompare} from '../../../test-utils';
 import {LoadedPipeline} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {PipelineStepConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-utils';
 
 category('ComputeUtils: Driver config processing', async () => {
   before(async () => {});
@@ -74,6 +76,25 @@ category('ComputeUtils: Driver config processing', async () => {
     };
     const pconf = await getProcessedConfig(config);
     await snapshotCompare(pconf, 'Process static config with dynamic pipelines');
+  });
+
+  test('Normalize states shorthand', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'LibTests:TestAdd2',
+          states: ['stepMeta1', {id: 'stepMeta2'}],
+        },
+      ],
+      states: ['meta1', {id: 'meta2'}],
+    };
+    const pconf = await getProcessedConfig(config) as PipelineConfigurationStaticProcessed;
+    expectDeepEqual(pconf.states, [{id: 'meta1'}, {id: 'meta2'}]);
+    const step = pconf.steps[0] as PipelineStepConfigurationProcessed;
+    expectDeepEqual(step.states, [{id: 'stepMeta1'}, {id: 'stepMeta2'}]);
   });
 
   test('Process config with globalId ref', async () => {

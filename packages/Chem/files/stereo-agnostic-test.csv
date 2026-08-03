@@ -1,0 +1,16 @@
+smiles,name,group
+C[C@@H](O)F,R-fluoroethanol,fluoroethanol
+C[C@H](O)F,S-fluoroethanol,fluoroethanol
+CC(O)F,flat-fluoroethanol,fluoroethanol
+F/C=C/Cl,trans-1-chloro-2-fluoroethene,chlorofluoroethene
+F/C=C\Cl,cis-1-chloro-2-fluoroethene,chlorofluoroethene
+FC=CCl,flat-chlorofluoroethene,chlorofluoroethene
+O[C@@H]1CC[C@H](O)CC1,trans-cyclohexane-1-4-diol,cyclohexanediol
+O[C@@H]1CC[C@@H](O)CC1,cis-cyclohexane-1-4-diol,cyclohexanediol
+OC1CCC(O)CC1,flat-cyclohexane-1-4-diol,cyclohexanediol
+C([C@H]1[C@@H]([C@@H]([C@H]([C@H](O1)O)O)O)O)O,D-glucose,glucose
+C([C@@H]1[C@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O)O,L-glucose,glucose
+C(C1C(C(C(C(O1)O)O)O)O)O,flat-glucose,glucose
+CCO,ethanol,other
+c1ccccc1,benzene,other
+CC(=O)O,acetic-acid,other

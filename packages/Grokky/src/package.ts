@@ -1,15 +1,19 @@
 /* eslint-disable max-len */
+import './polyfills'; // must run before anything else — Chrome 50 / Dartium support, see polyfills.ts
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findBestMatchingQuery, tableQueriesFunctionsSearchLlm} from './ai/search/query-matching';
-import {askWiki, smartExecution, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI} from './ai/ui';
+import {askWiki, smartExecution, setupAgentScriptsUI, setupAIQueryEditorUI, setupScriptsAIPanelUI, setupSearchUI, setupShellAIPanelUI, setupTableViewAIPanelUI, initAIWindow} from './ai/ui';
 import {CombinedAISearchAssistant} from './ai/search/combined-search';
 import {UsageLimiter} from './ai/usage-limiter';
+import {ClaudeRuntimeClient} from './claude/runtime-client';
 import {genDBConnectionMeta, moveDBMetaToStickyMetaOhCoolItEvenRhymes} from './db/db-index-tools';
+import {listDbCatalogs, listDbSchemas, listDbTables, getDbTableDetails, listDbJoins, getSqlTestResult} from './ai/db-view-functions';
 import {biologicsIndex} from './db/indexes/biologics-index';
 import {chemblIndex} from './db/indexes/chembl-index';
+import {runBenchmark as runBenchmarkImpl, compareBenchmarks as compareBenchmarksImpl} from './ai/benchmark/benchmark';
 export * from './package.g';
 
 export class ChatGPTPackage extends DG.Package {
@@ -23,18 +27,96 @@ export class PackageFunctions {
   static async init() {
     await UsageLimiter.getInstance().init();
     setupSearchUI();
+    initAIWindow();
     setupTableViewAIPanelUI();
     setupScriptsAIPanelUI();
+    setupAgentScriptsUI();
+    PackageFunctions.ensureAgentsFolder();
+    // Warm the WebSocket to claude-runtime so the first user turn doesn't pay container-lookup + WS handshake cost.
+    ClaudeRuntimeClient.getInstance().ensureConnected().catch(() => {});
+    PackageFunctions.subscribeToSyncEvents();
   }
 
+  // Creates agents/ folder in My Files if it doesn't exist yet, and seeds agents/scripts/
+  // with any demo files from the package's files/scripts/ folder.
+  static async ensureAgentsFolder(): Promise<void> {
+    try {
+      const conn = await grok.dapi.connections.filter('name = "My files"').first();
+      if (!conn)
+        return;
+      const agentsPath = `${conn.nqName}/agents`;
+      const exists = await grok.dapi.files.exists(agentsPath);
+      if (!exists) {
+        await grok.dapi.files.writeAsText(`${agentsPath}/README.md`,
+          'Place your personal knowledge files here. Claude will use them as context.');
+        console.log('Grokky: created agents/ folder');
+      }
+      await PackageFunctions.seedScriptsFolder(`${agentsPath}/scripts`);
+    } catch (e: any) {
+      console.warn('Grokky: failed to ensure agents folder:', e.message);
+    }
+  }
+
+  // Copies demo files from the package's files/scripts/ into MyFiles agents/scripts/.
+  // Existing files are left untouched so user edits are preserved.
+  static async seedScriptsFolder(destPath: string): Promise<void> {
+    const sourceFiles: DG.FileInfo[] = await _package.files.list('scripts', false);
+    for (const fi of sourceFiles) {
+      if (fi.isDirectory)
+        continue;
+      const destFilePath = `${destPath}/${fi.name}`;
+      if (await grok.dapi.files.exists(destFilePath))
+        continue;
+      const content = await fi.readAsString();
+      await grok.dapi.files.writeAsText(destFilePath, content);
+      console.log(`Grokky: seeded ${fi.name} into agents/scripts/`);
+    }
+  }
+
+  static isAgentsFile(fi: DG.FileInfo): boolean {
+    return (fi.fullPath ?? fi.path ?? fi.name ?? '').includes('agents');
+  }
+
+  // Subscribes to platform events that should trigger file sync.
+  static subscribeToSyncEvents(): void {
+    // Background sync is best-effort: swallow errors (e.g. runtime container not running) so they
+    // don't surface as unhandled rejections that get auto-reported on every package load.
+    const sync = (...args: Parameters<ClaudeRuntimeClient['syncUserFiles']>) =>
+      ClaudeRuntimeClient.getInstance().syncUserFiles(...args).catch(() => {});
+
+    // MyFiles agents: file operations (create, upload, delete, rename, move)
+    grok.events.onEvent('d4-file-event').subscribe((eventData: any) => {
+      const dartFiles = eventData?.dart?.files;
+      if (!dartFiles)
+        return;
+      const files: DG.FileInfo[] = Array.from({length: dartFiles.length}, (_: any, i: number) => DG.toJs(dartFiles[i]));
+      if (files.some(PackageFunctions.isAgentsFile))
+        sync('user-files');
+    });
+
+    // MyFiles agents: in-place file edits (save)
+    grok.events.onFileEdited.subscribe((fi: DG.FileInfo) => {
+      if (PackageFunctions.isAgentsFile(fi))
+        sync('user-files');
+    });
+
+    // Packages: when a JS bundle is loaded
+    grok.events.onPackageLoaded.subscribe((pkg: DG.Package) => {
+      if (pkg?.name)
+        sync('packages', pkg.name);
+    });
+  }
 
   @grok.decorators.autostart({tags: ['autostart']})
   static autostart() {
     if (grok.shell.windows.showAI)
       setupShellAIPanelUI();
+    let prevShowAI = grok.shell.windows.showAI;
     grok.shell.windows.onPanelVisibilityChanged.subscribe(() => {
-      if (grok.shell.windows.showAI)
+      const showAI = grok.shell.windows.showAI;
+      if (showAI && !prevShowAI)
         setupShellAIPanelUI();
+      prevShowAI = showAI;
     });
   }
 
@@ -64,20 +146,47 @@ export class PackageFunctions {
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?'
+    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?',
   }, name: 'Help',
   description: 'Get answers from AI assistant based on Datagrok documentation and public code.', result: {type: 'widget', name: 'result'}})
-  static async askHelpLLMProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await askWiki(prompt);
+  static async askHelpLLMProvider(
+    @grok.decorators.param({type: 'string'}) prompt: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+  ): Promise<DG.Widget | null> {
+    return await askWiki(prompt, sessionId);
+  }
+
+  @grok.decorators.func({name: 'runBenchmark',
+    description: 'Run the Grokky latency/accuracy benchmark suite (files/benchmark/suite.yaml) and download a JSON + Markdown report tagged with the given label. Run after logging in; open no special view.'})
+  static async runBenchmark(
+    @grok.decorators.param({type: 'string', options: {description: 'Config label for this run, e.g. baseline / medium-effort'}}) label: string,
+    @grok.decorators.param({type: 'int', options: {optional: true, description: 'Repetitions per prompt (default 3)'}}) reps?: number,
+    @grok.decorators.param({type: 'string', options: {optional: true, choices: ['haiku', 'sonnet', 'opus'],
+      description: 'Pin every turn to this model — produces the control arms for a model comparison. Omit for the runtime default.'}}) model?: string,
+    @grok.decorators.param({type: 'string', options: {optional: true,
+      description: 'Run only part of the suite: comma-separated categories, difficulties, or prompt substrings.'}}) only?: string,
+  ): Promise<string> {
+    return runBenchmarkImpl(label, reps ?? 3, model, only);
+  }
+
+  @grok.decorators.func({name: 'compareBenchmarks',
+    description: 'Compare two or more saved benchmark runs (comma-separated labels) into one Markdown report and download it.'})
+  static async compareBenchmarks(
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated run labels, the first being the reference arm'}}) labels: string,
+  ): Promise<string> {
+    return compareBenchmarksImpl(labels);
   }
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function'
+    useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. This relates to functions that analyse or mutate data, not get it. for example, adme properties of CHEMBL1234, enumerate some peptide, etc... Also, if the tone of the prompt sounds like "Do something to something", use this function',
   }, name: 'Execute',
   description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
-  static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await smartExecution(prompt);
+  static async smartChainExecutionProvider(
+    @grok.decorators.param({type: 'string'}) prompt: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+  ): Promise<DG.Widget | null> {
+    return await smartExecution(prompt, sessionId);
   }
 
   @grok.decorators.func({meta: {
@@ -85,8 +194,11 @@ export class PackageFunctions {
     useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc. Always use this function when user wants to get the data without any further processing or calculating'
   }, name: 'Query',
   description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
- static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-   return await tableQueriesFunctionsSearchLlm(prompt);
+ static async llmSearchQueryProvider(
+   @grok.decorators.param({type: 'string'}) prompt: string,
+   @grok.decorators.param({type: 'string', options: {optional: true}}) sessionId?: string
+ ): Promise<DG.Widget | null> {
+   return await tableQueriesFunctionsSearchLlm(prompt, sessionId);
  }
 
   @grok.decorators.func({
@@ -103,6 +215,57 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  // Functions applicable to the database query editor (surfaced via View.getFunctions()
+  // by their meta.viewType). Each takes the view; the AI assistant injects it automatically.
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List the catalogs available on this connection'})
+  static async listDbCatalogs(@grok.decorators.param({type: 'view'}) view: any): Promise<string> {
+    return listDbCatalogs(view);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List schemas of a catalog (defaults to the connection default catalog)'})
+  static async listDbSchemas(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbSchemas(view, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'List tables of a schema with row counts'})
+  static async listDbTables(
+    @grok.decorators.param({type: 'view'}) view: any,
+    schemaName: string,
+    @grok.decorators.param({type: 'string', options: {optional: true}}) catalogName?: string): Promise<string> {
+    return listDbTables(view, schemaName, catalogName);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Detailed column info (types, comments, ranges, sample values) for the given tables. Table refs: catalog.schema.table, schema.table, or table'})
+  static async getDbTableDetails(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references to describe'}}) tables: string): Promise<string> {
+    return getDbTableDetails(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Foreign-key relationships involving the given tables — use to build correct JOINs'})
+  static async listDbJoins(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'Comma-separated table references'}}) tables: string): Promise<string> {
+    return listDbJoins(view, tables);
+  }
+
+  @grok.decorators.func({meta: {viewType: 'DataQueryView'},
+    description: 'Test-execute a SELECT (auto-LIMITed) and report row count, columns, and a sample row. Use to validate SQL before setQueryAndRun'})
+  static async getSqlTestResult(
+    @grok.decorators.param({type: 'view'}) view: any,
+    @grok.decorators.param({type: 'string', options: {description: 'The SQL to test'}}) sql: string,
+    @grok.decorators.param({type: 'string', options: {description: 'One line describing what the query does'}}) description: string): Promise<string> {
+    return getSqlTestResult(view, sql, description);
   }
 
   @grok.decorators.func({})

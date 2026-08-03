@@ -39,9 +39,9 @@ category('DataFrame: Methods', () => {
     expect(df1.cell(1, 'countries').toString(), 'countries : 1');
   });
 
-  test('changeColumnType', async () => {
+  test('changeColumnsType', async () => {
     const df1 = createDf();
-    df1.changeColumnType('countries', 'int');
+    df1.changeColumnsType(['countries'], 'int');
     expect(typeof(df1.get('countries', 1)), 'number');
   });
 
@@ -156,7 +156,7 @@ category('DataFrame: Methods', () => {
     expect(t2.columns.byName('x').getNumber(0) === 9);
     expect(t2.columns.byName('z').getNumber(1) === 7);
     expect(t2.columns.byName('y').getNumber(2) === 6);
-  });
+  }, {node: false, skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('toJson | fromJson', async () => {
     const t = createDf();
@@ -218,7 +218,7 @@ Canada,4`;
     expect(df.columns.length, 2);
     expect(df.rowCount, 4);
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 // Column
 
@@ -463,7 +463,7 @@ category('DataFrame: Column', () => {
     col.init((_: any) => 'val');
     expect(col.get(0), 'val');
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 // ColumnList
 
@@ -526,6 +526,33 @@ category('DataFrame: ColumnList', () => {
     const df = createDf2();
     df.columns.addNewQnum('newColumnQnum');
     expect(typeof(df.get('newColumnQnum', 1)), 'number');
+  });
+
+  test('addNewQnum from qualifier+value columns', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('q', ['<', '', '>', '=']),
+      DG.Column.fromList(DG.TYPE.FLOAT, 'v', [10, 20, 30, 40]),
+    ]);
+
+    const qnum = df.columns.addNewQnum('result', {
+      qualifierColumn: 'q',
+      valueColumn: df.col('v')!,
+    });
+
+    expect(qnum.type, DG.TYPE.QNUM);
+    expect(qnum.length, 4);
+
+    expect(DG.Qnum.getQ(qnum.get(0)!), DG.QNUM_LESS);
+    expectFloat(DG.Qnum.getValue(qnum.get(0)!), 10);
+
+    expect(DG.Qnum.getQ(qnum.get(1)!), DG.QNUM_EXACT);
+    expectFloat(DG.Qnum.getValue(qnum.get(1)!), 20);
+
+    expect(DG.Qnum.getQ(qnum.get(2)!), DG.QNUM_GREATER);
+    expectFloat(DG.Qnum.getValue(qnum.get(2)!), 30);
+
+    expect(DG.Qnum.getQ(qnum.get(3)!), DG.QNUM_EXACT);
+    expectFloat(DG.Qnum.getValue(qnum.get(3)!), 40);
   });
 
   test('addNewString', async () => {
@@ -643,7 +670,7 @@ category('DataFrame: ColumnList', () => {
     const df1 = createDf();
     df1.columns.toString();
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 // Row
 
@@ -658,7 +685,7 @@ category('DataFrame: Row', () => {
   test('toDart', async () => {
     expect(typeof row.toDart(), 'object');
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});
 
 // RowList
 
@@ -759,4 +786,4 @@ category('DataFrame: RowList', () => {
     const str: string = createDf().rows.toString();
     expect(str.startsWith('(Instance of '), true);
   });
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});

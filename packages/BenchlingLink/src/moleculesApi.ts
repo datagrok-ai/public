@@ -23,7 +23,6 @@ export interface Molecule {
   registrationOrigin?: any;
   registryId?: string | null;
   schema?: any;
-  smiles: string;
   webURL?: string;
 }
 
@@ -64,7 +63,6 @@ export async function getMockMolecules(): Promise<MoleculesPaginatedList> {
         registrationOrigin: null,
         registryId: null,
         schema: null,
-        smiles: smiles,
         webURL: `https://benchling.com/benchling/f/lib_55UxcIps-registry/mol_${String(i+1).padStart(3, '0')}/edit`,
       };
     }),
@@ -85,13 +83,13 @@ export interface MoleculesQueryParams {
   name?: string;
   nameIncludes?: string;
   folderId?: string;
-  mentionedIn?: string;
+  mentionedIn?: string[];
   projectId?: string;
   registryId?: string;
   schemaId?: string;
   schemaFields?: string;
   archiveReason?: string;
-  mentions?: string;
+  mentions?: string[];
   ids?: string;
   entityRegistryIds_anyOf?: string;
   names_anyOf?: string;
@@ -115,14 +113,23 @@ export async function queryMolecules(params: MoleculesQueryParams = {}): Promise
   // const data = await response.json();
   // const df = dataFrameFromObjects(data.molecules ?? []) ?? DG.DataFrame.create();
   // return df;
-  const df = dataFrameFromObjects(await getMockMolecules().then(m => m.molecules));
-  return df;
+  return dataFrameFromObjects((await getMockMolecules()).molecules);
+}
+
+export interface MoleculeStructure {
+  structureFormat: 'smiles' | 'molfile';
+  value: string;
 }
 
 export interface MoleculeCreateRequest {
   name: string;
-  smiles: string;
-  formula?: string;
+  chemicalStructure: MoleculeStructure;
+  aliases?: string[];
+  authorIds?: string[];
+  customFields?: any;
+  fields?: any;
+  folderId?: string;
+  schemaId?: string;
 }
 
 export async function postMolecule(body: MoleculeCreateRequest): Promise<Molecule> {

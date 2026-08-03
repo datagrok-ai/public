@@ -175,9 +175,11 @@ export class DockLayoutEngine {
             referenceNode = referenceNode.parent;
 
         if (direction === 'fill' && referenceNode.container.containerType === 'fill') {
+            const wasEmpty = referenceNode.children.length === 0;
             referenceNode.addChild(newNode);
             referenceNode.performLayout(false);
-            referenceNode.container.setActiveChild(newNode.container);
+            if (wasEmpty || this.dockManager.config.activatePanelOnAdd !== false)
+                referenceNode.container.setActiveChild(newNode.container);
             this.dockManager.invalidate();
             this.dockManager.notifyOnDock(newNode);
             return;

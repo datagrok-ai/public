@@ -1,5 +1,13 @@
 ---
 title: "Parallel computing"
+description: Best practices for using Web Workers to run heavy computations off the main UI thread in Datagrok packages.
+keywords:
+  - web workers
+  - multithreading
+  - thread pool
+  - unblock ui thread
+  - background computation
+  - server-side parallelism
 ---
 
 In this section we bring the best practices of using Web Workers in JavaScript/TypeScript code of your Datagrok

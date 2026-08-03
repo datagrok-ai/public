@@ -1,5 +1,13 @@
 ---
 title: "Position Statistics"
+description: Show violin and box plot distributions of values at specific sequence positions, with optional motif context.
+keywords:
+  - violin plot
+  - box plot
+  - sequence position analysis
+  - monomer distribution
+  - peptides sar
+  - macromolecule statistics
 ---
 
 The Position Statistics viewer displays statistical distributions of values at specific sequence positions using violin/box plots. This viewer helps analyze how values vary across different monomers at a selected position, with optional motif context visualization.

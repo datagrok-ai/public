@@ -1,4 +1,6 @@
 ---
+mdx:
+  format: mdx
 title: "Bioinformatics"
 keywords:
   - bioinformatics
@@ -449,27 +451,27 @@ The dialog has the following inputs:
 * **Table**: The table containing the column of sequences.
 * **Column**: The column containing the sequences.
 * **Encoding function**: The encoding function that will be used for pre-processing of sequences. For non-helm notation sequences, only one encoding function is available, that will encode them in single character form and calculate the substitution matrix for each individual monomer. For [Helm](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules) sequences, apart from prior function, another one is offered that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each macromolecule to calculate distance matrix. The `Encode sequences` function has 3 parameters which you can adjust using the gear (⚙️) button next to the encoding function selection: 
-    * Gap open penalty: The penalty for opening a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorithm).
-    * Gap extend penalty: The penalty for extending a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorithm).
-    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix.
+  * Gap open penalty: The penalty for opening a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorithm).
+  * Gap extend penalty: The penalty for extending a gap in the alignment (used for [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) algorithm).
+  * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix.
 * **Method**: The dimensionality reduction method that will be used. The options are:
-    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
-    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+  * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
+  * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
 
     Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
 
 * **Similarity**: The similarity/distance function that will be used to calculate pairwise distances. The options are:
-    * Needleman-Wunsch: [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) is a dynamic programming algorithm that performs a global alignment on two sequences. It is commonly used in bioinformatics to align protein or nucleotide sequences.
-    * Hamming: [Hamming distance](https://en.wikipedia.org/wiki/Hamming_distance) is a metric for comparing two macromolecules of same length. Hamming distance is the number of positions in which the two monomers are different.
-    * Monomer chemical distance: Similar to Hamming distance, but instead of penalizing the mismatch of monomers with -1, the penalty will be based on the chemical distance between the two monomers. The chemical distance is calculated using the [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) of the monomers.
-    * Levenshtein: [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) is a string metric for measuring the difference between two sequences. Informally, the Levenshtein distance between two sequences is the minimum number of single-monomer edits (insertions, deletions or substitutions) required to change one sequence into the other.
+  * Needleman-Wunsch: [Needleman-Wunsch](https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm) is a dynamic programming algorithm that performs a global alignment on two sequences. It is commonly used in bioinformatics to align protein or nucleotide sequences.
+  * Hamming: [Hamming distance](https://en.wikipedia.org/wiki/Hamming_distance) is a metric for comparing two macromolecules of same length. Hamming distance is the number of positions in which the two monomers are different.
+  * Monomer chemical distance: Similar to Hamming distance, but instead of penalizing the mismatch of monomers with -1, the penalty will be based on the chemical distance between the two monomers. The chemical distance is calculated using the [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) of the monomers.
+  * Levenshtein: [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) is a string metric for measuring the difference between two sequences. Informally, the Levenshtein distance between two sequences is the minimum number of single-monomer edits (insertions, deletions or substitutions) required to change one sequence into the other.
 * **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
 * **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
-    * **None**: No postprocessing will be applied.
-    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
-        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
-        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
-    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+  * **None**: No postprocessing will be applied.
+  * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+    * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+    * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+  * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
 
 **WebGPU Acceleration**
 
@@ -510,20 +512,27 @@ To add a dendrogram viewer, do the following:
 
 ### Multiple sequence alignment (MSA)
 
-[Multiple Sequence Alignment](https://en.wikipedia.org/wiki/Multiple_sequence_alignment) aligns sequences for macromolecules in both FASTA and HELM formats. For DNA, RNA, and natural peptides, we use
-[KAlign](https://github.com/TimoLassmann/kalign), which can be modified to work with custom substitution matrices for
-sequences. For non-natural sequences, we use [PepSeA](https://github.com/Merck/PepSeA), which enables alignment of multiple linear peptide sequences in HELM notation, with lengths of up to 256 non-natural amino acids. <!--PepSeA uses a substitution matrix calculated with Rapid Overlay of Chemical Structures Similarities Across ChEMBL 28 HELM Monomers.-->
+[Multiple Sequence Alignment](https://en.wikipedia.org/wiki/Multiple_sequence_alignment) aligns sequences for macromolecules in any format (fasta, separator, HELM, biln, etc). Datagrok automatically picks an alignment mode based on the sequence column and exposes a choice of engines for non-canonical peptides.
+
+For DNA, RNA, and natural peptides, Datagrok uses [KAlign](https://github.com/TimoLassmann/kalign), which can be modified to work with custom substitution matrices.
+
+For non-canonical sequences, the MSA dialog discovers all installed engines and lets you select one. The following engines are available out of the box:
+
+* **HELM MSA**. An in-browser progressive aligner built from scratch for arbitrary HELM topologies. It aligns linear, cyclic (head-to-tail, lariat), stapled, CHEM-bridged macrocyclic, branched, and multi-chain sequences with any number of non-canonical monomers. Cyclic peptides are automatically rotated to a common frame before alignment, and connection positions are remapped after gap insertion so the output HELM remains valid. The engine uses UPGMA-guided progressive alignment for small sets and center-star alignment for large ones, with affine gap penalties and separate terminal-gap control. Because it runs entirely in the browser, no Docker container is required and thousands of sequences align in under a second.
+* **PepSeA**. [PepSeA](https://github.com/Merck/PepSeA) aligns multiple linear peptide sequences in HELM notation of up to 256 non-natural amino acids. It runs in a Docker container and is best suited for linear peptides where a chemistry-aware substitution matrix is desirable.<!--PepSeA uses a substitution matrix calculated with Rapid Overlay of Chemical Structures Similarities Across ChEMBL 28 HELM Monomers.-->
+
+Each engine exposes its own parameters (gap penalties, alignment method, and engine-specific options) directly in the MSA dialog.
 
 <details>
 <summary>How to use</summary>
 
 To perform MSA, do the following:
 
-1. In the Top Menu, select **Bio** > **MSA...**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **MSA...**. A dialog opens.
 
-   ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
+   ![Multiple Sequence Alignment dialog](img/msa_dialog.png)<!--replace png with a GIF file showing the steps-->
 
-1. In the dialog, select the sequence column (**Sequence**) and set other parameters.
+1. In the dialog, select the sequence column (**Sequence**). For non-canonical sequences, select an **Engine** (for example, **Datagrok MSA** or **PepSeA**) and adjust engine-specific parameters using the **Alignment parameters** button.
    If your data has been clustered already, you can align sequences only within the same cluster. To do so, specify a column containing clusters (**Cluster**).
 1. Click **OK** to execute. A new column containing the aligned sequences is added to the table.
 

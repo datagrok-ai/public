@@ -266,7 +266,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {initialValue: 'euclidean', choices:['euclidean', 'manhattan']}}) distance: DistanceMetric = DistanceMetric.Euclidean,
     @grok.decorators.param({options: {initialValue: 'ward', choices:['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}})linkage: string,
   ): Promise<void> {
-    await hierarchicalClusteringUI(df, colNameList.names(), distance, linkage);
+    const names = Array.isArray(colNameList) ? (colNameList as unknown as DG.Column[]).map((a) => a.name) : colNameList.names();
+    await hierarchicalClusteringUI(df, names, distance, linkage);
   }
 
 
@@ -278,11 +279,11 @@ export class PackageFunctions {
     'type': 'list'
     }
     ],
-    'name': 'importNwk',
-    'description': 'Opens Newick file'
+    'name': 'Import Newick',
+    'description': 'Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.'
     })
   static async importNewick(
-    @grok.decorators.param({'name':'fileContent', 'type':'string'}) fileContent: string): Promise<DG.DataFrame[]> {
+    @grok.decorators.param({'name':'fileContent', 'type':'string', 'options': {'description': 'Newick file contents'}}) fileContent: string): Promise<DG.DataFrame[]> {
     const th: ITreeHelper = new TreeHelper();
     const df: DG.DataFrame = th.newickToDf(fileContent, '');
 

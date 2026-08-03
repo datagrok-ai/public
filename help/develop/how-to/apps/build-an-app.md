@@ -1,5 +1,14 @@
 ---
 title: "Build an application"
+description: Build a Datagrok application in JavaScript/TypeScript, covering data access, dataframes, scripting, viewers, privileges, and lifecycle.
+keywords:
+  - app development
+  - app entry point
+  - AppTreeBrowser
+  - datagrok-tools
+  - grok add app
+  - main view
+  - table view
 ---
 
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a particular
@@ -11,11 +20,11 @@ executing database queries, accessing web services, or running
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
 
 From the technical perspective, an app is a [function](../../../datagrok/concepts/functions/functions.md)
-that resides in a [package](../../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
+that resides in a [package](../../develop.md#packages) and has the `#app` role. Similarly to the `main` function
 in C++, this is an entry point that gets executed when the app is [launched](#launching-applications).
 
 A [Datagrok package](../../develop.md#packages) may contain any number of applications; an application is just a function
-tagged as `app`. To get the template for an `app` function, use the following `datagrok-tools` command from your package
+with the `app` role. To get the template for an `app` function, use the following `datagrok-tools` command from your package
 directory:
 
 ```
@@ -364,12 +373,12 @@ There we create a new dataframe from columns, add a column and a row, delete a r
 
 A good overview of dataframes capabilities is available in our
 [API Samples](https://dev.datagrok.ai/js/samples/data-frame/). Also check the API reference
-at [this link](https://datagrok.ai/api/js/api/dg/classes/DataFrame).
+at [this link](https://datagrok.ai/api/js/dg/classes/DataFrame).
 
 *References:*
 
 * [Dataframe API samples](https://dev.datagrok.ai/js/samples/data-frame/)
-* [Dataframe API reference](https://datagrok.ai/api/js/api/dg/classes/DataFrame)
+* [Dataframe API reference](https://datagrok.ai/api/js/dg/classes/DataFrame)
 * [Datagrok JavaScript playground](https://public.datagrok.ai/js)
 
 #### Iterating over a dataframe
@@ -835,13 +844,13 @@ import {TestUI2} from './test-app-02.js';
 export let _package = new DG.Package();
 
 //name: Test 1
-//tags: app
+//meta.role: app
 export function test01() {
     return makeTest01();
 }
 
 //name: Test 2
-//tags: app
+//meta.role: app
 export function test02() {
     return makeTest02();
 }

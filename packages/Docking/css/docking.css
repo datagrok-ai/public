@@ -1,0 +1,54 @@
+/* Demo app */
+.docking-target-row {
+  overflow: visible !important;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.docking-structure-viewer {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Property panel */
+.docking-add-property-icon {
+  color: #2083d5;
+  position: absolute;
+  top: 2px;
+  left: -12px;
+  margin-right: 5px;
+}
+
+.docking-property-value {
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.docking-property-cell {
+  position: relative;
+}
+
+/* Hover comparison table */
+.docking-comparison-row {
+  display: grid;
+  grid-template-columns: 42px 16px 42px auto;
+  align-items: baseline;
+  column-gap: 12px;
+}
+
+.docking-score-current,
+.docking-score-hovered {
+  text-align: right;
+}
+
+.docking-score-separator {
+  text-align: center;
+  color: var(--grey-4);
+}
+
+.docking-score-delta {
+  text-align: left;
+  font-size: 11px;
+}

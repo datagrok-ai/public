@@ -1,6 +1,15 @@
 ---
 title: "Developer exercises"
 sidebar_position: 0
+description: Progressive programming exercises for learning Datagrok development by building nucleotide sequence support.
+keywords:
+  - semantic type detector
+  - scripting exercise
+  - custom cell renderer
+  - info panel tutorial
+  - query database exercise
+  - dna_nucleotide
+  - hands-on exercises
 ---
 
 These programming exercises are designed to help developers get proficient with the Datagrok platform. The exercises are
@@ -121,7 +130,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     ```javascript
    class <yourFirstName>SequencePackageDetectors extends DG.Package {
 
-     //tags: semTypeDetector
+     //meta.role: semTypeDetector
      //input: column col
      //output: string semType
      detectNucleotides(col) {
@@ -165,13 +174,13 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    ```javascript
     //name: complementWidget
-    //tags: panel, widgets
+    //meta.role: panel, widgets
     //input: string nucleotides {semType: dna_nucleotide}
     //output: widget result
     //condition: true
    ```
 
-   The `panel` and `widgets` tags and output type `widget` allows Datagrok to determine how the result of
+   The `panel` and `widgets` roles and output type `widget` allows Datagrok to determine how the result of
    `complementWidget` function will appear in the system. Listed above block of comments will instruct the platform to
    use the `complementWidget` function for providing additional information for string values of the `dna_nucleotide`
    semantic type. To test it, simply open our test file, click on any cell in the `sequence` column, and find the
@@ -518,10 +527,10 @@ from our server.
    ```
 
    There are several methods you can use to open a table. For demo files, the simplest way is
-   [grok.data.getDemoTable](https://datagrok.ai/api/js/api/dg/classes/Data#getdemotable). For files outside of the
+   [grok.data.getDemoTable](https://datagrok.ai/api/js/dg/classes/Data#getdemotable). For files outside of the
    `Demo:Files` [file share](../../access/files/files.md), you can use
-   [grok.data.files.openTable](https://datagrok.ai/api/js/api/dg/classes/Files#opentable), or execute a command
-   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/api/js/api/dg/classes/Functions#eval) (to see how it
+   [grok.data.files.openTable](https://datagrok.ai/api/js/dg/classes/Files#opentable), or execute a command
+   `OpenServerFile` via [grok.functions.eval](https://datagrok.ai/api/js/dg/classes/Functions#eval) (to see how it
    works, open a file from the UI and find the last console command, it will look similar to
    `OpenServerFile("Demo:Files/bio/sars-cov-2.csv")`).
    
@@ -756,8 +765,8 @@ Viewers | New Scripting Viewer`.
 
    ![exercises-transforming-dataframes](exercises-transforming-dataframes.png).
 
-If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
-of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
+   If the result is not the same as expected, fix the test so it reflects the correct behavior. After that, fix the implementation
+   of the `fuzzyJoin` function and run the test again. Repeat this process until the test passes.
 
 9. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
@@ -805,7 +814,7 @@ of the `fuzzyJoin` function and run the test again. Repeat this process until th
 
    ```typescript
     //name: nucleotideBoxCellRenderer
-    //tags: cellRenderer
+    //meta.role: cellRenderer
     //meta.cellType: dna_nucleotide
     //output: grid_cell_renderer result
     export function nucleotideBoxCellRenderer() {
@@ -831,7 +840,7 @@ connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) a
 coronavirus.
 
 1. Obtain a ENA's Swagger JSON file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
-   following [this link](https://www.ebi.ac.uk/ena/browser/api/v2/api-docs). It usually takes you some effort to reach
+   following [this link](https://www.ebi.ac.uk/ena/browser/api/). It usually takes you some effort to reach
    the JSON Swagger at the API Browser link. The rule of thumb there is to use the browser's "Network" tab in the
    Developers Console (available by F12), and identify there a resource called "
    api-docs". Usually, when there's an [API Navigator][018], there's also a JSON Swagger. It's also possible to
@@ -882,7 +891,7 @@ contained in a currently selected grid cell.
    form and sets a proper semantic type to column:
 
    ```javascript
-   //tags: semTypeDetector
+   //meta.role: semTypeDetector
    //input: column col
    //output: string semType
    detectENAID(col) {
@@ -897,7 +906,7 @@ contained in a currently selected grid cell.
 
    ```typescript
     //name: ENA Sequence
-    //tags: panel, widgets
+    //meta.role: panel, widgets
     //input: string cellText {semType: EnaID}
     //output: widget result
     //condition: true
@@ -1025,6 +1034,6 @@ A simple keyword search in the ENA database (with navigation)
 
 [020]: ../../access/open-api#troubleshooting "OpenAPI connections troubleshooting"
 
-<!--[021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"-->
+<!--[021]: https://github.com/datagrok-ai/public/tree/master/packages/Samples/swaggers "Datagrok Swaggers samples"-->
 
 [022]: #exercise-9-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"

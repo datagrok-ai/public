@@ -1,5 +1,12 @@
 ---
 title: "Datagrok package repository"
+description: Browse the public GitHub repository of open-source Datagrok packages, connectors, and extensions.
+keywords:
+  - open-source packages
+  - github repository
+  - academic license
+  - package extensions
+  - community forum
 ---
 
 This is a public repository for the API, tools, and [packages](https://datagrok.ai/help/develop/develop#packages)

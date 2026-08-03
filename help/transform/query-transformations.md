@@ -1,5 +1,12 @@
 ---
 title: "Query transformations"
+description: Apply and record post-run data transformation steps after retrieving data from a data provider.
+keywords:
+  - query post-processing
+  - transformation steps
+  - recorded macros
+  - data query editing
+  - toolbox transformation
 ---
 
 After data is retrieved from the data provider, you can transform it using functions.

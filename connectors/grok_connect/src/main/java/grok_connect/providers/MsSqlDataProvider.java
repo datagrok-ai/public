@@ -3,6 +3,7 @@ package grok_connect.providers;
 import java.sql.*;
 import java.util.*;
 
+import grok_connect.GrokConnect;
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.DataConnection;
@@ -161,7 +162,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals("list")) {
-            queryBuffer.append("SELECT value FROM STRING_SPLIT(?, ',')");
+            queryBuffer.append("SELECT value FROM OPENJSON(?)");
         } else {
             queryBuffer.append("?");
         }
@@ -170,9 +171,8 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     @Override
     protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
         @SuppressWarnings("unchecked")
-        List<String> list = ((ArrayList<String>) param.value);
-        String values = String.join(",", list);
-        statement.setObject(n, values);
+        List<String> list = (ArrayList<String>) param.value;
+        statement.setString(n, GrokConnect.gson.toJson(list == null ? Collections.emptyList() : list));
         return 0;
     }
 
@@ -226,7 +226,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+    public String getCommentsQuery(DataConnection connection) {
         return "--input: string schema\n" +
                 "SELECT\n" +
                 "    s.name AS table_schema,\n" +

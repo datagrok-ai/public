@@ -28,7 +28,7 @@ export class PowerPackSettingsEditor extends DG.Widget {
 
         const items = Object.keys(settings)
           .map((widgetName) => ui.span([
-            ui.icons.close(() => enable(widgetName)),
+            ui.icons.close(() => enable(widgetName), 'Close'),
             widgetName,
           ]));
 

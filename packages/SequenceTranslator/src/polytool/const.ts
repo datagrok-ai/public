@@ -36,9 +36,9 @@ export const PT_UI_LINEARIZE = 'Linearize';
 export const PT_UI_LINEARIZE_TT = 'Make representation linear if possible';
 export const PT_UI_USE_CHIRALITY = 'Chirality engine';
 export const PT_UI_HIGHLIGHT_MONOMERS = 'Highlight monomers';
-export const PT_UI_DIALOG_CONVERSION = 'Poly Tool Conversion';
-export const PT_UI_DIALOG_UNRULE = 'Poly Tool Unrule';
-export const PT_UI_DIALOG_ENUMERATION = 'Poly Tool Enumeration';
+export const PT_UI_DIALOG_CONVERSION = 'PolyTool Conversion';
+export const PT_UI_DIALOG_UNRULE = 'PolyTool Unrule';
+export const PT_HELM_UI_DIALOG_ENUMERATION = 'PolyTool Helm Enumeration';
 export const PT_UI_RULES_USED = 'Rules used';
 
 export const PT_ENUM_TYPE_TOOLTIPS: Record<string, string> = {

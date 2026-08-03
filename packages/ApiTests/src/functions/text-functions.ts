@@ -159,4 +159,4 @@ category('Functions: Text', () => {
     'Trim("   ")': '',
     'Trim("")': '',
   }));
-});
+}, {node: true});

@@ -1,0 +1,5 @@
+{
+  "name": "grokky-runtime",
+  "version": "1.0.0",
+  "description": "Datagrok output formats — fenced blocks for rendering interactive UI back to the browser chat panel."
+}

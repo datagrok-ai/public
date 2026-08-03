@@ -121,7 +121,7 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
   col.cellType = 'html';
   additionaModifsGrid.onCellPrepare(function(gc) {
     if (gc.isTableCell && gc.gridColumn.name == ADDITIONAL_MODS_COL_NAMES.ACTION)
-      gc.style.element = ui.button(ui.iconFA('trash-alt'), () => deleteModification(additionalModsDf, gc.gridRow));
+      gc.style.element = ui.button(ui.iconFA('trash-alt'), () => deleteModification(additionalModsDf, gc.gridRow), 'Delete');
   });
 
   // tempValue should be deleted after completion of task 'GROK-10650: Add event OnBeforeValueChanged'

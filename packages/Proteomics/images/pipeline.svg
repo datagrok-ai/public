@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="248" viewBox="0 0 1000 248" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" role="img" aria-label="Proteomics analysis pipeline: Import, Annotate Experiment, Normalize, Impute, Differential Expression, then branch to Visualize, Enrich, and Share. Each step sets a proteomics.* tag that gates the next.">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#6b7785"/>
+    </marker>
+  </defs>
+
+  <!-- ===== Stage boxes (main pipeline) ===== -->
+  <g fill="#eaf2fb" stroke="#2c6fb5" stroke-width="1.5">
+    <rect x="20"  y="24" width="150" height="54" rx="7"/>
+    <rect x="198" y="24" width="150" height="54" rx="7"/>
+    <rect x="376" y="24" width="150" height="54" rx="7"/>
+    <rect x="554" y="24" width="150" height="54" rx="7"/>
+    <rect x="732" y="24" width="150" height="54" rx="7"/>
+  </g>
+  <g fill="#14324f" font-size="13.5" font-weight="600" text-anchor="middle">
+    <text x="95"  y="55">Import</text>
+    <text x="273" y="48">Annotate</text>
+    <text x="273" y="64">Experiment</text>
+    <text x="451" y="55">Normalize</text>
+    <text x="629" y="55">Impute</text>
+    <text x="807" y="48">Differential</text>
+    <text x="807" y="64">Expression</text>
+  </g>
+
+  <!-- Arrows between stages -->
+  <g stroke="#6b7785" stroke-width="1.6" marker-end="url(#arrow)">
+    <line x1="170" y1="51" x2="196" y2="51"/>
+    <line x1="348" y1="51" x2="374" y2="51"/>
+    <line x1="526" y1="51" x2="552" y2="51"/>
+    <line x1="704" y1="51" x2="730" y2="51"/>
+  </g>
+
+  <!-- Down-ticks from each box to its tag chip -->
+  <g stroke="#b7a7d8" stroke-width="1.4">
+    <line x1="95"  y1="78" x2="95"  y2="92"/>
+    <line x1="273" y1="78" x2="273" y2="92"/>
+    <line x1="451" y1="78" x2="451" y2="92"/>
+    <line x1="629" y1="78" x2="629" y2="92"/>
+    <line x1="807" y1="78" x2="807" y2="92"/>
+  </g>
+
+  <!-- ===== Tag chips (the proteomics.* tag each step sets) ===== -->
+  <g fill="#f3f0fa" stroke="#7a5fb0" stroke-width="1">
+    <rect x="20"  y="92" width="150" height="21" rx="10.5"/>
+    <rect x="198" y="92" width="150" height="21" rx="10.5"/>
+    <rect x="376" y="92" width="150" height="21" rx="10.5"/>
+    <rect x="554" y="92" width="150" height="21" rx="10.5"/>
+    <rect x="732" y="92" width="150" height="21" rx="10.5"/>
+  </g>
+  <g fill="#4b3b73" font-size="9.5" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" text-anchor="middle">
+    <text x="95"  y="106">proteomics.source</text>
+    <text x="273" y="106">proteomics.groups</text>
+    <text x="451" y="106">proteomics.normalized</text>
+    <text x="629" y="106">proteomics.imputed</text>
+    <text x="807" y="106">proteomics.de_complete</text>
+  </g>
+
+  <!-- ===== Fan from de_complete to the three outputs (the branch) ===== -->
+  <g stroke="#6b7785" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
+    <path d="M807,113 C807,150 565,140 565,172"/>
+    <path d="M807,113 C807,150 740,140 740,172"/>
+    <path d="M807,113 C807,150 915,140 915,172"/>
+  </g>
+
+  <!-- Output boxes -->
+  <g fill="#eaf7ee" stroke="#2e8b57" stroke-width="1.5">
+    <rect x="490" y="174" width="150" height="50" rx="7"/>
+    <rect x="665" y="174" width="150" height="50" rx="7"/>
+    <rect x="840" y="174" width="150" height="50" rx="7"/>
+  </g>
+  <g fill="#14432a" font-size="13.5" font-weight="600" text-anchor="middle">
+    <text x="565" y="204">Visualize</text>
+    <text x="740" y="204">Enrich</text>
+    <text x="915" y="204">Share</text>
+  </g>
+
+  <!-- Footnote -->
+  <text x="20" y="240" fill="#6b7785" font-size="11" font-style="italic">Each step sets a proteomics.* tag; the next is enabled only once its prerequisite tag is present — so the menu greys out steps that don't yet apply.</text>
+</svg>

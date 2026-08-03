@@ -7,11 +7,18 @@ on:
         required: true
         type: string
   push:
+    branches:
+      - master
+      - 'release/**'
     paths:
       - 'packages/**'
   pull_request:
     paths:
       - 'packages/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/heads/release/') }}
 
 jobs:
   common-check:
@@ -117,11 +124,13 @@ jobs:
                 fi
               fi
               runner='ubuntu-22.04'
-              if [[ "${job_test_env}" == *"JKG"* ]] || \
+              # Only reserve the (billed) larger runner when tests actually run — a
+              # build-only chem/admetica-dependent package fits the free standard runner.
+              if [ -n "${job_test_env}" ] && { [[ "${job_test_env}" == *"JKG"* ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "admetica" ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${PACKAGE})" == "chem" ]] || \
                  [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
-                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; then
+                 [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"admetica"* ]]; }; then
                 runner='ubuntu-latest-m'
               fi
 
@@ -208,6 +217,7 @@ jobs:
       - common-check
     if: needs.matrix.outputs.publish == 'yes' && needs.common-check.outputs.continue == 'true'
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
     env:
       HOST: GitHubAction
     strategy:
@@ -260,9 +270,54 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+
+      - name: Get docker image version
+        if: matrix.docker != '' && (matrix.test == 'test' || matrix.build_docker == 'true')
+        id: docker_name_ver
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          image_ver=$(jq -r .version package.json)
+          base_ver=$image_ver
+          if [[ "${{ matrix.publish }}" != "publish" ]]; then
+            image_ver+="-${{ steps.info.outputs.commit_sha }}"
+          fi
+          echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
+          echo "base_ver=$base_ver" >> $GITHUB_OUTPUT
+          echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        if: steps.docker_name_ver.outcome == 'success'
+
+      - name: Build package Docker image
+        if: steps.docker_name_ver.outcome == 'success'
+        id: build-docker
+        run: |
+          for dockerfile in $(echo -e ${{ matrix.docker }}); do
+            image_name=${{ steps.docker_name_ver.outputs.package_name }}
+            if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
+              image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
+            fi
+            cache_args="--cache-from type=registry,ref=datagrok/${image_name}:cache"
+            if [ '${{ github.ref }}' == 'refs/heads/master' ]; then
+              cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
+            fi
+            docker buildx create --use 2>/dev/null || true
+            docker buildx build $(dirname $dockerfile) --load \
+              --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} \
+              --tag ${image_name}:${{ steps.docker_name_ver.outputs.base_ver }} \
+              $cache_args
+            images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"
+          done
+          echo "images=$images" >> $GITHUB_OUTPUT
+
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 15
         run: |
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
@@ -282,7 +337,7 @@ jobs:
           #   fi
           # else
 
-          profiles='--profile datagrok --profile db --profile grok_connect'
+          profiles='--profile datagrok --profile db --profile grok_connect --profile grok_connect_adbc'
           echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
@@ -315,14 +370,16 @@ jobs:
 
           # docker system prune -af --volumes
 
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
-            DATAGROK_VERSION='latest'
-          else
-            DATAGROK_VERSION='bleeding-edge'
-            export GROK_SPAWNER_VERSION='bleeding-edge'
-            export GROK_JUPYTER_KERNEL_GATEWAY_VERSION='bleeding-edge'
-          fi
+          # TODO: revert to 'latest' after next release (bleeding-edge needed for docker 'changed' status fix)
+          DATAGROK_VERSION='bleeding-edge'
+          # if [[ "${{ matrix.unpublished_deps }}" == "" ]] && [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" != *"tests"* ]]; then
+          #   DATAGROK_VERSION='latest'
+          # else
+          #   DATAGROK_VERSION='bleeding-edge'
+          # fi
           export DATAGROK_VERSION
+          export GROK_SPAWNER_VERSION="$DATAGROK_VERSION"
+          export GROK_JUPYTER_KERNEL_GATEWAY_VERSION="$DATAGROK_VERSION"
 
           # Skip initial setup in CI
           sed -i '/"dbServer": "database"/a\ \ \ \ \ \ \ \ \ \ "initialSetupCompleted": true,' docker/localhost.docker-compose.yaml
@@ -345,6 +402,28 @@ jobs:
       - if: ${{ matrix.unpublished_deps != '' }}
         run: grok link
         working-directory: packages/${{ matrix.package }}
+      - name: Build unpublished dependencies
+        # `grok link` above symlinks EVERY in-repo dependency to its local source, including
+        # the PUBLISHED @datagrok-libraries version deps. Those libraries ship no compiled
+        # .js/.d.ts, and js-api is not built either, so the package build fails: `datagrok-api/dg`
+        # resolves to the raw js-api/dg.ts and crashes tsc ("Debug Failure" on TS 5.9.x),
+        # library src/*.ts hit "Module parse failed", and a nested datagrok-api causes
+        # duplicate-type (TS2345) errors. Only the unpublished PATH deps (js-api) need to be
+        # local — restore the published (compiled) libraries, then build the path deps so their
+        # declarations exist before the package's webpack/ts-loader build.
+        if: ${{ matrix.unpublished_deps != '' }}
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          rm -rf node_modules/@datagrok-libraries
+          npm install --no-audit --no-fund
+          for dep in ${{ matrix.unpublished_deps }}; do
+            dir="$(cd "${dep#*=}" 2>/dev/null && pwd)" || continue
+            [ -d "$dir" ] || continue
+            echo "::group::Build unpublished dependency $dir"
+            ( cd "$dir" && npm install --no-audit --no-fund && npx tsc ) \
+              || echo "::warning::Failed to build unpublished dependency $dir"
+            echo "::endgroup::"
+          done
       - name: webpack cache
         uses: actions/cache@v4
         with:
@@ -355,6 +434,7 @@ jobs:
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build
+        timeout-minutes: 25
         run: |
           if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
             npm run build -- --mode=production
@@ -396,6 +476,7 @@ jobs:
           grok config add --default --alias ${{ steps.datagrok-image.outputs.alias }} --server '${{ steps.datagrok-image.outputs.apiUrl }}' --key "$key"
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 20
         run: |
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
           if [ -n "$grok_deps" ]; then
@@ -405,7 +486,7 @@ jobs:
               count=0
               retries=5
               echo "Publishing $dep to ${{ steps.datagrok-image.outputs.alias }}..."
-              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release; do
+              until grok publish ${{ steps.datagrok-image.outputs.alias }} --release --skip-docker-rebuild; do
                 exit=$?
                 wait=$((2 ** count))
                 count=$((count + 1))
@@ -423,6 +504,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'test' }}
+        timeout-minutes: 20
         run: |
           count=0
           retries=5
@@ -487,12 +569,27 @@ jobs:
             else
               key='admin'
             fi
-            token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+            for i in $(seq 1 30); do
+              token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/login/dev/$key | jq -r .token)
+              if [[ "$token" != "null" && -n "$token" ]]; then
+                break
+              fi
+              echo "Token is null, retrying login ($i/30)..."
+              sleep 10
+            done
+            if [[ "$token" == "null" || -z "$token" ]]; then
+              echo "::error::Failed to obtain auth token after 30 retries"
+              exit 1
+            fi
             long_term_token=$(curl -s -X POST ${{ steps.datagrok-image.outputs.apiUrl }}/users/sessions/current/refresh -H "Authorization: ${token}" | jq -r .token)
+            if [[ "$long_term_token" == "null" || -z "$long_term_token" ]]; then
+              echo "::warning::Failed to refresh token, falling back to short-lived token"
+              long_term_token="$token"
+            fi
             until .github/scripts/check-output.sh "curl -s -H 'Authorization: $long_term_token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
             do
-              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;"
-              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}'
+              docker compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all exec db psql -U postgres -d datagrok -c "SELECT * FROM docker_containers;" || true
+              .github/scripts/check-output.sh "curl -s -H 'Authorization: $token' '${{ steps.datagrok-image.outputs.apiUrl }}/docker/containers'" '${{ matrix.package }}' || true
               sleep 1
               echo -e "\nContainer for ${{ matrix.package }} did not start yet..."
               echo -e "\nRetrying '/api/docker/containers'..."
@@ -513,6 +610,17 @@ jobs:
           sudo chown root:root chrome_sandbox
           sudo chmod 4755 chrome_sandbox
           sudo cp -p chrome_sandbox /usr/local/sbin/chrome-devel-sandbox
+      - name: Install ffmpeg
+        # `grok test --record` records the run via Puppeteer page.screencast(),
+        # which spawns ffmpeg. The runner image doesn't ship it, so install it
+        # here — otherwise the whole Puppeteer pass fails with `spawnSync ffmpeg ENOENT`.
+        if: ${{ matrix.test == 'test' }}
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -version | head -n 1
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples' }}
@@ -534,10 +642,10 @@ jobs:
         with:
           name: ${{ matrix.package }}.test-results
           path: packages/${{ matrix.package }}/test-*
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: warn
       - name: Create error notification
-        if: failure() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure')
+        if: ${{ !cancelled() && (steps.test-package.outcome == 'failure' || steps.docker-wait.outcome == 'failure') }}
         run: |
           if [[ "${{ steps.datagrok-image.outputs.apiUrl }}" == *"127.0.0.1"* ]]; then
             docker compose -p datagrok logs --no-color --timestamps
@@ -546,48 +654,6 @@ jobs:
           fi
           echo "::error title=${{ matrix.package }}: failed tests::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
-
-      - name: Get docker image version
-        if: matrix.build_docker == 'true'
-        id: docker_name_ver
-        working-directory: packages/${{ matrix.package }}
-        run: |
-          image_ver=$(jq -r .version package.json)
-          if [[ "${{ matrix.publish }}" != "publish" ]]; then
-            image_ver+="-${{ steps.info.outputs.commit_sha }}"
-          fi
-          echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
-          echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: steps.docker_name_ver.outcome == 'success'
-
-      - name: Build package Docker image
-        if: steps.docker_name_ver.outcome == 'success'
-        id: build-docker
-        run: |
-          docker ps -q | xargs -r docker rm -f
-          docker system prune -af
-          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-            image_name=${{ steps.docker_name_ver.outputs.package_name }}
-            if [[ $(dirname $dockerfile) != *"dockerfiles" ]]; then
-              image_name+="-$(dirname $dockerfile | awk -F/ '{print $NF}')"
-            fi
-            cache_args="--cache-from type=registry,ref=datagrok/${image_name}:cache"
-            if [ '${{ github.ref }}' == 'refs/heads/master' ]; then
-              cache_args+=" --cache-to type=registry,ref=datagrok/${image_name}:cache"
-            fi
-            
-            docker buildx create --use
-            docker buildx build $(dirname $dockerfile) --load \
-              --tag datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }} 
-            images+=" datagrok/${image_name}:${{ steps.docker_name_ver.outputs.image_ver }}"        
-          done
-          echo "images=$images" >> $GITHUB_OUTPUT
 
       - name: General checks
         run: |
@@ -667,7 +733,7 @@ jobs:
         with:
           path: /tmp/${{ matrix.package }}.docker.tar
           name: ${{ matrix.package }}.docker.tar
-          retention-days: 14
+          retention-days: 3
           if-no-files-found: warn
 
       - name: Publish package Docker image
@@ -677,6 +743,76 @@ jobs:
           for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
             docker push $image
           done
+
+      # Vulnerability scan of the published package image(s) via GCP Container
+      # Analysis — the same scan as the weekly Vulnerability-Scan Jenkins job
+      # (GROK-18695): push to Artifact Registry, poll the scan, publish OpenVEX +
+      # CSV to the public datagrok-data S3 bucket, then delete the GAR copy.
+      # Report-only: continue-on-error never blocks the publish.
+      # See core/docs/VULNERABILITY_MANAGEMENT.md.
+      - name: Scan published Docker image for vulnerabilities
+        if: steps.publish-docker.outcome == 'success'
+        id: scan-docker
+        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-vuln-sa.json
+          GCP_SA_KEY: ${{ secrets.GCP_VULN_SA_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.VULN_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VULN_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+        run: |
+          printf '%s' "$GCP_SA_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod +x ./.github/scripts/gcp-vuln-scan.sh
+          for image in $(echo -e ${{ steps.build-docker.outputs.images }}); do
+            repo="${image#datagrok/}"; repo="${repo%%:*}"; tag="${image##*:}"
+            echo "::group::GCP vuln scan $image"
+            ./.github/scripts/gcp-vuln-scan.sh "$image" "$repo" "$tag" || echo "scan failed for $image"
+            echo "::endgroup::"
+          done
+          rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      # Vulnerability audit of the just-published package's PRODUCTION npm
+      # dependency tree (npm audit) — published as OpenVEX + CSV + HTML to the
+      # same public VEX surface as the docker scans (vex/npm/<safe>/…), so the
+      # package's npm VEX is available the moment it is published. Report-only:
+      # continue-on-error never blocks the publish.
+      # See core/docs/VULNERABILITY_MANAGEMENT.md.
+      - name: Scan published package npm dependencies
+        if: steps.publish.outcome == 'success'
+        id: scan-npm
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.VULN_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.VULN_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-2
+        run: |
+          chmod +x ./.github/scripts/npm-audit-vex.sh
+          ./.github/scripts/npm-audit-vex.sh "packages/${{ matrix.package }}"
+
+      # Refresh the browsable VEX summary (index.html/json + composites) so it
+      # reflects this just-published image immediately, instead of waiting for
+      # the weekly Track A pass. Fires the ops Jenkins Vulnerability-Scan job in
+      # REINDEX_ONLY mode — reusing the single index-builder (vex-report.sh) so
+      # there is no duplicated aggregation logic here. Skips cleanly when the
+      # trigger secret is not configured. See core/docs/VULNERABILITY_MANAGEMENT.md.
+      - name: Refresh VEX summary index
+        if: steps.scan-docker.outcome == 'success' || steps.scan-npm.outcome == 'success'
+        continue-on-error: true
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_VEX_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_VEX_USER }}
+          JENKINS_VEX_TOKEN: ${{ secrets.JENKINS_VEX_TOKEN }}
+        run: |
+          if [ -z "${JENKINS_VEX_TOKEN}" ]; then
+            echo "JENKINS_VEX_TOKEN not set — skipping index refresh (weekly pass will catch up)."
+            exit 0
+          fi
+          code=$(curl -sg -o /dev/null -w '%{http_code}' -X POST \
+            --user "${JENKINS_USER}:${JENKINS_VEX_TOKEN}" \
+            "${JENKINS_URL%/}/job/Vulnerability-Scan/buildWithParameters" \
+            --data-urlencode "REINDEX_ONLY=true")
+          echo "REINDEX_ONLY trigger -> HTTP ${code}"
+          [ "$code" = "201" ] || echo "::warning::VEX index refresh not queued (HTTP ${code})"
 
       - name: Commit package-lock.json
         id: git
@@ -723,4 +859,14 @@ jobs:
         run: gh workflow run docusaurus.yaml --ref ${{ github.ref }}
         env:
           GH_TOKEN: ${{ github.token }}
+
+      # `Test Package` is continue-on-error for *Tests / Chemspace / DevTools / ApiSamples
+      # so that publishing and notifications still run after a red test run. That used to
+      # leave the whole job green — failing tests were invisible at the workflow level.
+      # This final gate keeps the publish path intact but fails the job.
+      - name: Fail job on test failures
+        if: ${{ !cancelled() && steps.test-package.outcome == 'failure' }}
+        run: |
+          echo "::error title=${{ matrix.package }}: failed tests::'Test Package' step failed - see job output"
+          exit 1
 

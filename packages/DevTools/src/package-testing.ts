@@ -339,41 +339,34 @@ export class TestManager extends DG.ViewBase {
     return {testsTree: this.tree, ribbonPanelDiv};
   }
 
-  createButtons(): {runAll: HTMLButtonElement, run: HTMLButtonElement, settings: HTMLButtonElement} {
-    const runAll = ui.button([ui.iconFA('forward'), ' Run All'], async () => {
-      const nodes = this.tree.items;
+  createButtons(includeText: boolean = true): {runAll: HTMLButtonElement, run: HTMLButtonElement, settings: HTMLButtonElement} {
+    const runAll = ui.button([ui.iconFA('forward'), includeText ? ' Run All' : ''], async () => {
+      const nodes = this.tree ? this.tree.items : this.packNodes.map(([, node]) => node);
       for (const node of nodes) {
         this.selectedNode = node;
         await this.runTestsForSelectedNode();
       }
     }, 'Run all tests');
 
-    const run = ui.button([ui.iconFA('play'), ' Run'], async () => {
+    const run = ui.button([ui.iconFA('play'), includeText ? ' Run' : ''], async () => {
       this.runTestsForSelectedNode();
     }, 'Run selected');
 
     const settings = ui.button(ui.iconFA('cog'), () => {
+      const toggles = [
+        {label: 'Debug', tooltip: 'Trigger a debugger breakpoint at the start of each test', get: () => DG.Test.isInDebug, set: (v: boolean) => {DG.Test.isInDebug = v;}},
+        {label: 'Benchmark', tooltip: 'Run only tests marked as benchmarks; all other tests are skipped', get: () => DG.Test.isInBenchmark, set: (v: boolean) => {DG.Test.isInBenchmark = v;}},
+        {label: 'Run skipped', tooltip: 'Force-run tests that are normally skipped due to a skipReason', get: () => this.runSkippedMode, set: (v: boolean) => {this.runSkippedMode = v;}},
+        {label: 'Keep views open', tooltip: 'Do not close views and balloons after each test - lets you inspect the state they leave behind', get: () => this.keepViewsOpen, set: (v: boolean) => {this.keepViewsOpen = v;}},
+      ];
       const menu = DG.Menu.popup();
       menu.closeOnClick = false;
       const refresh = () => {
         menu.clear();
-        menu
-          .item(`${DG.Test.isInDebug ? '✓ ' : ''}Debug`, () => {
-            DG.Test.isInDebug = !DG.Test.isInDebug;
-            refresh();
-          })
-          .item(`${DG.Test.isInBenchmark ? '✓ ' : ''}Benchmark`, () => {
-            DG.Test.isInBenchmark = !DG.Test.isInBenchmark;
-            refresh();
-          })
-          .item(`${this.runSkippedMode ? '✓ ' : ''}Run skipped`, () => {
-            this.runSkippedMode = !this.runSkippedMode;
-            refresh();
-          })
-          .item(`${this.keepViewsOpen ? '✓ ' : ''}Keep views open`, () => {
-            this.keepViewsOpen = !this.keepViewsOpen;
-            refresh();
-          });
+        menu.items(toggles, (t) => {
+          t.set(!t.get());
+          refresh();
+        }, {isChecked: (t) => t.get(), toString: (t) => t.label, getTooltip: (t) => t.tooltip});
       };
       refresh();
       menu.show();
@@ -421,6 +414,7 @@ export class TestManager extends DG.ViewBase {
       e.stopPropagation();
     };
     node.captionLabel.onclick = () => {
+      this.selectedNode = node;
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
     };
     if (nodeType === NODE_TYPE.TEST) {
@@ -553,6 +547,7 @@ export class TestManager extends DG.ViewBase {
     const currentPath = this.getPath(tests, nodeType);
     if (this.testManagerView)
       this.testManagerView.path = currentPath;
+    window.history.replaceState(null, '', `/apps/DevTools${currentPath}`);
     let catsValuesSorted: ICategory[];
     localStorage.setItem('TMState', currentPath);
     switch (nodeType) {

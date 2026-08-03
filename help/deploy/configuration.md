@@ -1,6 +1,14 @@
 ---
 title: "Server configuration"
 sidebar_position: 13
+description: Reference for GROK_MODE and GROK_PARAMETERS environment variables that configure the Datlas server.
+keywords:
+  - grok_parameters
+  - grok_mode
+  - environment variable overrides
+  - queue settings
+  - docker settings
+  - connectors settings
 ---
 
 Datagrok supports several deployment schemas which can be configured using `GROK_MODE` and `GROK_PARAMETERS` environment variables.
@@ -24,6 +32,7 @@ Datagrok supports several deployment schemas which can be configured using `GROK
 | amazonStorageBucket      | Optional     |                                                 | S3 bucket name                                                                                                                                              |
 | amazonStorageId          | Optional     |                                                 | S3 credential ID, Datagrok will resolve EC2 role if empty                                                                                                   |
 | amazonStorageKey         | Optional     |                                                 | S3 credential secret key, Datagrok will resolve EC2 role if empty                                                                                           |
+| amazonStorageEndpoint    | Optional     |                                                 | Custom S3-compatible endpoint host (e.g. eu2.contabostorage.com); uses path-style addressing when set                                                       |
 | googleStorageBucket      | Optional     |                                                 | Google Cloud Storage bucket name                                                                                                                            |
 | googleStorageCredentials | Optional     |                                                 | Google Cloud Storage credentials                                                                                                                            |
 | googleStorageProject     | Optional     |                                                 | Google Cloud Storage project ID                                                                                                                             |

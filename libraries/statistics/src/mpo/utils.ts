@@ -13,7 +13,7 @@ export function getNextAvailable(
 
   let num = 2;
   while (existing.has(format(base, num)))
-    num++;
+    ++num;
 
   return format(base, num);
 }

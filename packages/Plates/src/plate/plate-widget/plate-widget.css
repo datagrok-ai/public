@@ -151,3 +151,7 @@
     min-height: 200px;
     overflow: auto;
 }
+
+.grok-prop-panel .assay-plates--plate-widget__main-container {
+    flex-direction: column  !important;
+}

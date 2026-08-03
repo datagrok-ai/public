@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import { RevvityData, RevvityUser } from "./revvity-api";
+import { RevvityData } from "./revvity-api";
 import { openRevvityNode } from './view-utils';
 import { getAppHeader } from './utils';
 import { funcs } from './package-api';
@@ -60,7 +59,7 @@ export async function getLibrariesWithEntityTypes(): Promise<RevvityLibrary[]> {
         },
         "field": "type"
       }
-      const entityTypesResponse: RevvityData[] = await JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
+      const entityTypesResponse: RevvityData[] = JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
 
       types = entityTypesResponse.map((it) => {
         return { name: it.id, count: it.attributes?.count };

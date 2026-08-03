@@ -6,7 +6,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomerHover, getSubstructProviders} from '@datagrok-libraries/chem-meta/src/types';
+import {getMonomerHover, getSubstructProviders, mergeSubstructs as mergeSubstructsLib}
+  from '@datagrok-libraries/chem-meta/src/types';
 import {ChemTags, ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
@@ -23,10 +24,22 @@ import {
   getSyncTag,
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
-import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
+import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
+  RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
+import {extractAtomPositionsFromSvg} from '../utils/chem-atom-picker-utils';
+import {AtomPickerController, CellInteractiveInfo} from './atom-picker-controller';
+
+// Re-exported for cross-package consumers (BiostructureViewer, tests).
+// `AtomPickerProvider` lives in `@datagrok-libraries/chem-meta/src/types` so
+// BSV can read it without depending on Chem; consumers should import it
+// directly from chem-meta rather than re-importing here.
+export {AtomPickerController} from './atom-picker-controller';
+export type {ChemSelectionEvent, CellInteractiveInfo}
+  from './atom-picker-controller';
 
 import {_package} from '../package';
 
@@ -48,7 +61,7 @@ export interface IColoredScaffold {
 
 export interface IHighlightTagInfo {
   scaffolds?: IColoredScaffold[],
-  alighByFirstSubtruct: boolean,
+  alignByFirstSubstructure: boolean,
 }
 
 export const NO_SCAFFOLD_COLOR = 'none';
@@ -101,6 +114,46 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
   }
+
+  // -- Interaction event forwarding ----------------------------------------
+  // Datagrok dispatches events to this proxy instance, not to the wrapped
+  // renderer. Forward all overrides so RDKitCellRenderer's handlers fire.
+
+  override onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseEnter(gridCell, e);
+  }
+
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseLeave(gridCell, e);
+  }
+
+  override onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseDown(gridCell, e);
+  }
+
+  override onMouseUp(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseUp(gridCell, e);
+  }
+
+  override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onMouseMove(gridCell, e);
+  }
+
+  override onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onClick(gridCell, e);
+  }
+
+  override onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.renderer.onDoubleClick(gridCell, e);
+  }
+
+  override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    this.renderer.onKeyDown(gridCell, e);
+  }
+
+  override onKeyPress(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    this.renderer.onKeyPress(gridCell, e);
+  }
 }
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
@@ -115,6 +168,9 @@ M  END
   sortedScaffoldsCache: DG.LruCache<String, IColoredScaffold[]> = new DG.LruCache<String, IColoredScaffold[]>();
   canvasReused: OffscreenCanvas;
 
+  /** Interactive 2D↔3D atom-picker state and event handling. */
+  picker: AtomPickerController;
+
   constructor(rdKitModule: RDModule) {
     super();
     this.rdKitModule = rdKitModule;
@@ -123,6 +179,40 @@ M  END
     this.molCache.onItemEvicted = function(obj: { [_: string]: any }) {
       obj.mol?.delete();
     };
+    this.picker = new AtomPickerController({
+      rdKitModule: this.rdKitModule,
+      _getCellAtomPositions: this._getCellAtomPositions.bind(this),
+    });
+  }
+
+  // -- Test/external accessors for picker state -----------------------------
+  // Tests cast `RDKitCellRenderer` to a structural alias that names these
+  // members directly — so we proxy them to the controller via getter/setter
+  // pairs. Same applies to event handler shims further down.
+
+  get atomPositionsCache(): DG.LruCache<string, CellInteractiveInfo> {
+    return this.picker.atomPositionsCache;
+  }
+
+  private get _lastHoveredAtom(): {col: string, rowIdx: number, atomIdx: number, erase?: boolean} | null {
+    return this.picker._lastHoveredAtom;
+  }
+  private set _lastHoveredAtom(v: {col: string, rowIdx: number, atomIdx: number, erase?: boolean} | null) {
+    this.picker._lastHoveredAtom = v;
+  }
+
+  private get _previewAtomIdx(): number | null {return this.picker._previewAtomIdx;}
+  private set _previewAtomIdx(v: number | null) {this.picker._previewAtomIdx = v;}
+
+  private get _previewRowIdx(): number {return this.picker._previewRowIdx;}
+  private set _previewRowIdx(v: number) {this.picker._previewRowIdx = v;}
+
+  private get _previewFrom3D(): boolean {return this.picker._previewFrom3D;}
+  private set _previewFrom3D(v: boolean) {this.picker._previewFrom3D = v;}
+
+  private _trackHoveredAtom(colName: string, rowIdx: number, atomIdx: number,
+    erase?: boolean): boolean {
+    return this.picker._trackHoveredAtom(colName, rowIdx, atomIdx, erase);
   }
 
   ensureCanvasSize(w: number, h: number): OffscreenCanvas {
@@ -155,7 +245,7 @@ M  END
         mol = molCtx.mol;
       } else {
         try {
-          if (!molString.includes('\n') && molString.length > 5000)
+          if (!molString.includes('\n') && molString.length > MAX_SMILES_LENGTH)
             throw new Error('Invalid molecule string'); // do not attempt to parse very long SMILES, will cause MOB.
           mol = this.rdKitModule.get_qmol(molString);
           mol.convert_to_aromatic_form();
@@ -289,9 +379,15 @@ M  END
   }
 
   _addAtomsOrBonds(fromAtomsOrBonds: number[], toAtomsOrBonds: number[]): void {
+    if (!toAtomsOrBonds) return;
+    // Use a Set for O(1) membership checks; the previous .includes() loop was O(n*m).
+    const seen = new Set(toAtomsOrBonds);
     for (let j = 0; j < fromAtomsOrBonds.length; j++) {
-      if (!toAtomsOrBonds?.includes(fromAtomsOrBonds[j]))
-        toAtomsOrBonds?.push(fromAtomsOrBonds[j]);
+      const item = fromAtomsOrBonds[j];
+      if (!seen.has(item)) {
+        seen.add(item);
+        toAtomsOrBonds.push(item);
+      }
     }
   }
 
@@ -365,7 +461,6 @@ M  END
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
       ((details as any).haveReferenceSmarts || false).toString() + ' || ' + JSON.stringify(substructureObj) + ' || ' + JSON.stringify(renderOptions);
-
     return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffolds, molRegenerateCoords, scaffoldRegenerateCoords,
       alignByFirstSubstructure, details, substructureObj, renderOptions));
@@ -457,6 +552,8 @@ M  END
 
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
+    this.picker.ensureGlobalListeners();
+
     const molString = gridCell.cell.value;
     if (molString == null || molString === '')
       return;
@@ -495,23 +592,29 @@ M  END
     if (mhSubstruct) {
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, [], false, false, cellStyle, false, undefined, mhSubstruct, renderOpts);
-    } else if (highlightInfo.scaffolds && highlightInfo.alighByFirstSubtruct) {
+    } else if (highlightInfo.scaffolds && highlightInfo.alignByFirstSubstructure) {
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alighByFirstSubtruct, undefined, undefined, renderOpts);
+        molString, highlightInfo.scaffolds, false, false, cellStyle, highlightInfo.alignByFirstSubstructure, undefined, undefined, renderOpts);
     } else
       this.highlightByScaffoldCol(g, x, y, w, h, gridCell, cellStyle, colTemp, molString, highlightInfo.scaffolds, renderOpts);
   }
 
   getHighlightTagInfo(colTemp: any, gridCell: DG.GridCell): IHighlightTagInfo {
+    const col = gridCell.cell.column;
+    const highlightScaffold = getSyncTag(col, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL) === 'true';
     const filter = this._initScaffoldArray(colTemp, FILTER_SCAFFOLD_TAG, true); //expected molBlock
-    const align = (this._initScaffoldString(gridCell.cell.column, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
+    const align = (this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
       // temporary concatination to support both tags
-      .concat(this._initScaffoldString(gridCell.cell.column, ALIGN_BY_SCAFFOLD_TAG) ?? []);
-    const highlight = this._initScaffoldArray(gridCell.cell.column, HIGHLIGHT_BY_SCAFFOLD_TAG);
-    const scaffoldTreeHighlight = this._initScaffoldArray(gridCell.cell.column, SCAFFOLD_TREE_HIGHLIGHT);
+      .concat(this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_TAG) ?? []);
+    if (!highlightScaffold) {
+      for (const s of align)
+        s.color = NO_SCAFFOLD_COLOR;
+    }
+    const highlight = this._initScaffoldArray(col, HIGHLIGHT_BY_SCAFFOLD_TAG);
+    const scaffoldTreeHighlight = this._initScaffoldArray(col, SCAFFOLD_TREE_HIGHLIGHT);
     const alignByStructure = !!(filter.length && filter[0].align || align.length);
     const scaffolds = filter.concat(align).concat(scaffoldTreeHighlight).concat(highlight);
-    return {scaffolds: scaffolds?.length ? scaffolds : undefined, alighByFirstSubtruct: alignByStructure};
+    return {scaffolds: scaffolds?.length ? scaffolds : undefined, alignByFirstSubstructure: alignByStructure};
   }
 
   highlightByScaffoldCol(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
@@ -605,6 +708,125 @@ M  END
         scaffoldRegenerateCoords, cellStyle, true, details, substructObj, renderOpts);
     }
   }
+
+  // -- Atom picker event hooks ----------------------------------------------
+  // Slim shims that delegate to AtomPickerController. State and logic live
+  // in `./atom-picker-controller.ts`; the renderer only proxies grid events.
+
+  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
+    this.picker.onMouseLeave(gridCell, e);
+  }
+
+  override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void {
+    this.picker.onKeyDown(gridCell, e);
+  }
+
+  override onClick(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    this.onMouseDown(gridCell, e);
+  }
+
+  override onMouseDown(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    this.picker.onMouseDown(gridCell, e);
+  }
+
+  override onMouseUp(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    e.preventDefault();
+  }
+
+  override onMouseMove(gridCell: DG.GridCell<any>, e: MouseEvent): void {
+    if (e.shiftKey || e.ctrlKey || e.metaKey)
+      this.onMouseDown(gridCell, e);
+  }
+
+  /**
+   * Returns atom positions in cell-local CSS pixels, cached by "molString|WxH".
+   *
+   * Uses the same `IMolContext` as the renderer (via `_fetchMol`) so the SVG
+   * layout matches the canvas-rasterized layout exactly — a different mol
+   * instance can produce different 2D coords (kekulize / molBlockWedging).
+   * Scales by DPR to match `render()`, then divides SVG coords back by DPR.
+   */
+  private _getCellAtomPositions(molString: string, cssWidth: number, cssHeight: number):
+      CellInteractiveInfo | null {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(cssWidth * dpr);
+    const h = Math.round(cssHeight * dpr);
+    const key = molString + '|' + w + 'x' + h;
+    const hit = this.atomPositionsCache.get(key);
+    if (hit) return hit;
+
+    try {
+      const svgString = this._molToSvg(molString, w, h);
+      if (!svgString)
+        return null;
+      // Attach to document so getBBox() works (requires layout context).
+      const host = document.createElement('div');
+      host.style.position = 'absolute';
+      host.style.left = '-9999px';
+      host.style.top = '-9999px';
+      host.style.width = w + 'px';
+      host.style.height = h + 'px';
+      host.innerHTML = svgString;
+      document.body.appendChild(host);
+      try {
+        const svgEl = host.querySelector('svg') as SVGSVGElement | null;
+        if (!svgEl) return null;
+        const extracted = extractAtomPositionsFromSvg(svgEl);
+        // Divide SVG coords by DPR to get cell-local CSS pixels.
+        const positions = new Map<number, {x: number, y: number}>();
+        for (const [idx, p] of extracted.positions.entries())
+          positions.set(idx, {x: p.x / dpr, y: p.y / dpr});
+        const info: CellInteractiveInfo = {positions, bondAtoms: extracted.bondAtoms};
+        this.atomPositionsCache.set(key, info);
+        return info;
+      } finally {
+        if (host.parentNode) host.parentNode.removeChild(host);
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  _molToSvg(
+    molString: string, w: number, h: number, scaffolds: IColoredScaffold[] = [], alignByFirstSubstructure = false,
+  ): string | null {
+    // Mol is owned by molCache — DO NOT delete it.
+    const molRenderingInfo = this._fetchMol(molString, scaffolds, false, false, {}, alignByFirstSubstructure);
+    const mol = molRenderingInfo.molCtx.mol;
+    if (!mol || !mol.is_valid())
+      return null;
+
+    const details: {[k: string]: any} = {};
+    for (const k of Object.keys(RDKIT_COMMON_RENDER_OPTS))
+      details[k] = RDKIT_COMMON_RENDER_OPTS[k];
+    details.width = w;
+    details.height = h;
+    // Scaffold-derived highlights (substructure filter, align, scaffold tree, highlight-by-scaffold).
+    const substruct = scaffolds.length ? molRenderingInfo.substruct : null;
+    details.atoms = substruct?.atoms ?? [];
+    details.bonds = substruct?.bonds ?? [];
+    details.highlightAtomColors = substruct?.highlightAtomColors ?? {};
+    details.highlightBondColors = substruct?.highlightBondColors ?? {};
+    // Mirror kekulize / molBlockWedging from drawRdKitMoleculeToOffscreenCanvas
+    // so the SVG layout matches the canvas layout exactly.
+    if (!molRenderingInfo.molCtx.kekulize)
+      details.kekulize = false;
+    if (molRenderingInfo.molCtx.useMolBlockWedging) {
+      details.useMolBlockWedging = true;
+      details.wedgeBonds = false;
+      details.addChiralHs = false;
+    }
+
+    return mol.get_svg_with_highlights(JSON.stringify(details));
+  }
+
+  toSvg(gridCell: DG.GridCell, w: number, h: number): string | null {
+    const highlightInfo = gridCell.cell.column != null ?
+      this.getHighlightTagInfo(gridCell.cell.column.temp, gridCell) :
+      undefined;
+    return this._molToSvg(gridCell.cell.value, w, h,
+      highlightInfo?.scaffolds ?? [], highlightInfo?.alignByFirstSubstructure ?? false);
+  }
 }
 
 function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
@@ -644,11 +866,10 @@ function hasNonZeroZCoords(molfile: string, numAtoms: number): boolean {
 }
 
 function mergeSubstructs(substructList: (ISubstruct | undefined)[]): ISubstruct | undefined {
-  if (substructList.length === 0)
-    return undefined;
-  else if (substructList.length === 1)
-    return substructList[0];
-  else
-    throw new Error('Multiple substruct providers are not supported.');
-    // TODO: Average colors for atoms and bonds (or just merge lists)
+  // Filter out undefined entries from providers that don't apply to this row.
+  const defined = substructList.filter((s): s is ISubstruct => s !== undefined);
+  if (defined.length === 0) return undefined;
+  if (defined.length === 1) return defined[0];
+  // Delegate to chem-meta: unions atoms/bonds/colors; later providers win on collisions.
+  return mergeSubstructsLib(defined);
 }

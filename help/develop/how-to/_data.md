@@ -1,6 +1,15 @@
-<!-- TITLE: Efficiently work with data -->
+---
+title: "Efficiently work with data"
+description: Key concepts and best practices for working programmatically with Datagrok dataframes, columns, tags, and detectors.
+keywords:
+  - dataframe best practices
+  - columnar in-memory database
+  - column tags
+  - hidden tags dot prefix
+  - semantic type detectors
+---
 
-# Efficiently work with data
+<!-- TITLE: Efficiently work with data -->
 
 As Datagrok is centralized around data, it's pivotal to know key means and best practices for working with data
 programmatically on the platform. This document addresses various topics related to that.

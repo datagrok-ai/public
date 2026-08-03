@@ -1,0 +1,53 @@
+packageName: Bio
+description: Bioinformatics for macromolecules — sequence similarity/diversity/subsequence/substructure search, notation conversion (FASTA, HELM, BILN, separator), MSA (kalign, MAFFT/PepSeA), WebLogo, composition analysis, sequence space, activity cliffs, antibody numbering (IMGT/Kabat/Chothia/AHo), liability scanning, HELM↔atomic-level conversion, and monomer library management
+keywords:
+  - bioinformatics
+  - macromolecule
+  - sequence
+  - peptide
+  - protein
+  - dna
+  - rna
+  - sar
+  - fasta
+  - helm
+  - biln
+  - separator notation
+  - notation conversion
+  - bam import
+  - sequence similarity search
+  - sequence diversity search
+  - subsequence search
+  - substructure search
+  - identity
+  - msa
+  - multiple sequence alignment
+  - kalign
+  - pepsea
+  - mafft
+  - weblogo
+  - composition analysis
+  - sequence space
+  - activity cliffs
+  - region extraction
+  - vd regions
+  - compare sequences
+  - antibody numbering
+  - IMGT
+  - Kabat
+  - Chothia
+  - AHo
+  - liability scanning
+  - deamidation
+  - oxidation
+  - annotations
+  - immunum
+  - atomic level
+  - molecules to helm
+  - sequence to molecule
+  - monomer library
+  - monomer collection
+  - monomer rendering
+  - sequence cell renderer
+apiRef: src/package-api.ts
+docsRef: ../../help/datagrok/solutions/domains/bio/bio.md

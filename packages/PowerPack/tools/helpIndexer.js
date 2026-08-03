@@ -4,7 +4,7 @@ const yaml = require('yaml');
 
 console.log('Starting help indexer...');
 
-// Function to recursively find all .md files
+// Function to recursively find all .md and .mdx files
 function findMarkdownFiles(dir, fileList = []) {
   if (path.basename(dir??'')?.startsWith('_'))
     return fileList; // Skip directories starting with '_'
@@ -15,8 +15,11 @@ function findMarkdownFiles(dir, fileList = []) {
 
     if (stat.isDirectory())
       findMarkdownFiles(filePath, fileList);
-    else if (path.extname(file) === '.md')
-      fileList.push(filePath);
+    else {
+      const ext = path.extname(file);
+      if (ext === '.md' || ext === '.mdx')
+        fileList.push(filePath);
+    }
   });
 
   return fileList;
@@ -92,9 +95,13 @@ function main() {
         keywords: result.frontmatter.keywords});
     } else {
       console.warn(`No valid frontmatter found in file: ${filePath}`);
+      const base = path.basename(filePath);
+      const stem = base.endsWith('.mdx') ? base.slice(0, -4)
+        : base.endsWith('.md') ? base.slice(0, -3)
+        : base;
       results.push({
         helpURL: transformToLink(targetFolder, filePath),
-        title: path.basename(filePath).endsWith('.md') ? path.basename(filePath, '.md') : path.basename(filePath),
+        title: stem,
       });
     }
   });

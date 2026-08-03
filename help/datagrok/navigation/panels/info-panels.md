@@ -3,7 +3,8 @@ title: "Info panes"
 keywords:
  - info panel
  - info pane
-format: mdx
+mdx:
+  format: mdx
 sidebar_position: 2
 unlisted: true
 ---

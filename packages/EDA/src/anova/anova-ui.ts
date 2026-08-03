@@ -1,20 +1,24 @@
+/* eslint-disable max-len */
 // Analysis of Variances (ANOVA) - UI
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {oneWayAnova, OneWayAnovaReport} from './anova-tools';
+import {FactorizedData, oneWayAnova, OneWayAnovaReport, WelchAnova} from './anova-tools';
+import {
+  CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP, conclusionColumn, styleConclusionColumn,
+} from '../group-comparison/conclusion-column';
 
 const FEATURE_TYPES = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as string[];
 const FACTOR_TYPES = [DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.BOOL] as string[];
 
-const ANOVA_HELP_URL = '/help/explore/anova';
+const ANOVA_HELP_URL = '/help/explore/group-comparison#anova';
 
 /** Significance const */
 enum SIGNIFICANCE {
   DEFAULT = 0.05,
-  MIN = 0.01,
+  MIN = 0.0001,
   MAX = 0.99,
   INFIMUM = 0,
   SUPREMUM = 1,
@@ -26,84 +30,108 @@ enum DEFAULT {
   FEATURE = 'age',
 };
 
-/** Add one-way ANOVA results */
-function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string, report: OneWayAnovaReport): void {
+type Method = 'Welch' | 'Fisher';
+
+// --- Conclusion column (see ttest-results-table-spec.md; shared infra in conclusion-column.ts) ---
+
+/** Null-hypothesis-testing tooltip for the conclusion cell (H0 / H1 / Conclusion + verdict). */
+function conclusionTooltip(significant: boolean, factorName: string, featureName: string): HTMLElement {
+  return ui.divV([
+    ui.markdown(`**H0:** mean "${featureName}" is equal across all "${factorName}" groups.`),
+    ui.markdown(`**H1:** mean "${featureName}" differs in at least one "${factorName}" group.`),
+    ui.markdown(`**Conclusion:** ${significant ?
+      'Reject the null hypothesis.' :
+      'Fail to reject the null hypothesis.'}`),
+    ui.markdown(significant ?
+      '**There is a significant difference among the group means.**' :
+      '**There is no significant difference among the group means.**'),
+  ]);
+}
+
+// --- Box plot description (mirrors the two-sample t-test; see boxplot-description-spec.md) ---
+
+/** Separator between the phrase and the p-value in the box plot description (placed directly after the phrase). */
+const DESCRIPTION_SEPARATOR = ',';
+
+/** Format a p-value for the box plot description: clamp at the extremes, else round to 3 digits without trailing zeros. */
+function formatPForDescription(p: number): string {
+  if (p < 0.001)
+    return 'p < 0.001';
+  if (p > 0.99)
+    return 'p > 0.99';
+  // Round to 3 decimals; Number() drops trailing zeros (0.420 → 0.42, 0.005 → 0.005).
+  return `p = ${Number(p.toFixed(3))}`;
+}
+
+/** Display format for a p-value column cell: scientific notation below 0.001, fixed "0.000" otherwise. */
+function pValueColumnFormat(p: number): string {
+  return p < 0.001 ? 'scientific' : '0.000';
+}
+
+
+/** Add one-way ANOVA results. When `showReport` is false, only the box plot is shown (no results table). */
+function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string,
+  report: OneWayAnovaReport, showReport: boolean): void {
   const view = grok.shell.getTableView(df.name);
   grok.shell.v = view;
-  
+
   const test = report.anovaTable.fStat > report.fCritical;
-  const shortConclusion = test ?
+  // ANOVA compares 3+ groups, so only the long (category-free) phrase applies.
+  const phrase = test ?
     `"${factorsName}" affects the "${featuresName}"` :
     `"${factorsName}" doesn't affect the "${featuresName}"`;
+  const description = `${phrase}${DESCRIPTION_SEPARATOR} ${formatPForDescription(report.anovaTable.pValue)}`;
 
   const chart = DG.Viewer.boxPlot(df, {
     categoryColumnNames: [factorsName],
     valueColumnName: featuresName,
+    // No on-plot statistics or p-value; all numbers live in the Analysis/Conclusion tabs.
     showPValue: false,
     showStatistics: false,
-    description: shortConclusion,
+    description: description,
+    // Always show the description, pinned to the top of the box plot.
+    descriptionVisibilityMode: 'Always',
+    descriptionPosition: 'Top',
     showColorSelector: false,
+    showSizeSelector: false,
     autoLayout: false,
   });
 
-  let node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
+  const node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
 
-  const nullHypoMd = ui.markdown(`**Null Hypothesis:** all group means are equal.`);  
-  ui.tooltip.bind(nullHypoMd, `The "${factorsName}" factor does not produce a significant difference in the "${featuresName}" feature.`);
+  if (!showReport)
+    return;
 
-  const altHypoMd = ui.markdown(`**Alternative Hypothesis:** at least one group mean differs significantly.`);
-  ui.tooltip.bind(altHypoMd, `The "${factorsName}" factor produces a significant difference in the "${featuresName}" feature.`);
+  const analysisTitle = report.method === 'Welch' ?
+    'One-Way ANOVA (Welch\'s)' :
+    'One-Way ANOVA (Fisher\'s)';
+  const reportViewer = getAnovaGrid(report, factorsName, featuresName);
 
-  const testMd = ui.markdown(`**Conclusion:** ${test ?
-    'significant differences exist between groups.' :
-    'no significant differences detected.'}`,
-  );
+  // Register the results table in the workspace, then dock the grid under the box plot.
+  reportViewer.dataFrame.name = 'ANOVA result';
+  grok.shell.addTable(reportViewer.dataFrame);
 
-  const tooltipDiv = test ?
-    ui.divV([
-      ui.p(`Reject the null hypothesis, since F > F-critical: 
-      ${report.anovaTable.fStat.toFixed(2)} > ${report.fCritical.toFixed(2)}.`),
-      ui.h2('There is a significant difference among sample averages.'),
-    ]) :
-    ui.divV([
-      ui.p(`Fail to reject the null hypothesis, since F < F-critical: 
-      ${report.anovaTable.fStat.toFixed(2)} < ${report.fCritical.toFixed(2)}.`),
-      ui.h2('There is no significant difference among sample averages.'),
-    ]);
-
-  ui.tooltip.bind(testMd, () => tooltipDiv);
-
-  const divResult = ui.divV([
-    nullHypoMd,
-    altHypoMd,
-    testMd,
-    ui.link('Learn more',
-      () => window.open('https://en.wikipedia.org/wiki/F-test', '_blank'),
-      'Click to open in a new tab.',
-    ),
-  ]);
-  divResult.style.marginLeft = '20px';
-
-  const reportViewer = getAnovaGrid(report);  
-  const tabControl = ui.tabControl({    
-    'Analysis': ui.panel([reportViewer.root]),
-    'F-test': ui.panel([divResult]),
-  });
-
-  ui.tooltip.bind(tabControl.getPane('Analysis').header, 'ANOVA results summary.');
-  ui.tooltip.bind(tabControl.getPane('F-test').header, 'Null hypothesis testing.');
-
-
-  view.dockManager.dock(tabControl.root, DG.DOCK_TYPE.DOWN, node, '', 0.25);
+  view.dockManager.dock(reportViewer, DG.DOCK_TYPE.DOWN, node, analysisTitle, 0.25);
 
   reportViewer.root.style.width = '100%';
 } // addVizualization
 
-/** Create dataframe with one-way ANOVA results. */
-function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
+/** Create grid with one-way ANOVA results, dispatched by method. */
+function getAnovaGrid(report: OneWayAnovaReport, factorName: string, featureName: string): DG.Grid {
+  if (report.method === 'Fisher')
+    return getFisherGrid(report, factorName, featureName);
+  return getWelchGrid(report.anovaTable, report.fCritical, report.significance, factorName, featureName);
+}
+
+/** Classical Fisher ANOVA table (3x7: Between/Within/Total x SS/DF/MS/F/F-critical/p-value). */
+function getFisherGrid(report: OneWayAnovaReport & {method: 'Fisher'},
+  factorName: string, featureName: string): DG.Grid {
   const anova = report.anovaTable;
+  const significant = anova.fStat > report.fCritical;
 
   const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    // Verdict only on the "Between groups" row (first), which carries F / F-critical / p-value.
+    conclusionColumn(significant, 3, 0),
     DG.Column.fromStrings('Source of variance', ['Between groups', 'Within groups', 'Total']),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'SS', [anova.ssBn, anova.ssWn, anova.ssTot]),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'DF', [anova.dfBn, anova.dfWn, anova.dfTot]),
@@ -113,37 +141,98 @@ function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue, null, null]),
   ]));
 
+  grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(anova.pValue);
+  styleConclusionColumn(grid);
+
   const tooltip = new Map([
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
     ['Source of variance', 'List of the explored variation sources.'],
     ['SS', 'Sum of squares (SS). Measure of total variation in the data.'],
     ['DF', 'Degrees of freedom (DF). Number of independent values that can vary.'],
     ['MS', 'Mean square (MS). Sum of squares divided by degrees of freedom.'],
-    ['F', 'F-statistics (F). Ratio of between-group to within-group variance.'],
-    ['F-critical', `${report.significance}-critical value of F-statistics.`],
-    ['p-value', `Probability of observing this result if groups have equal means.`],
+    ['F', 'F-statistic (F). Ratio of between-group to within-group variance.'],
+    ['F-critical', `Critical F-value at α = ${report.significance}.`],
+    ['p-value', `Probability of seeing an F-statistic at least as large as the observed one, assuming all group means are equal. Smaller p = stronger evidence against equality.`],
   ]);
 
   grid.onCellTooltip(function(cell, x, y) {
     if (cell.isColHeader) {
-      ui.tooltip.show(ui.divV([ui.p(tooltip.get(cell.tableColumn!.name)!)]), x, y);
+      const t = tooltip.get(cell.tableColumn!.name);
+      if (t != null) {
+        ui.tooltip.show(ui.divV([ui.p(t)]), x, y);
+        return true;
+      }
+    } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.value) {
+      ui.tooltip.show(conclusionTooltip(significant, factorName, featureName), x, y);
       return true;
     }
+    return false;
   });
 
   grid.helpUrl = ANOVA_HELP_URL;
 
   return grid;
-} // getOneWayAnovaDF
+} // getFisherGrid
+
+/** Welch ANOVA results (1x6: Source / F / df₁ / df₂ / F-critical / p-value).
+ *  Welch's W-test does not have a SS/MS decomposition. */
+function getWelchGrid(anova: WelchAnova, fCritical: number, significance: number,
+  factorName: string, featureName: string): DG.Grid {
+  const DF1 = 'df₁';
+  const DF2 = 'df₂';
+  const significant = anova.fStat > fCritical;
+
+  const grid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    conclusionColumn(significant),
+    DG.Column.fromStrings('Source of variance', ['Between groups']),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F', [anova.fStat]),
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, DF1, [anova.dfBn]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, DF2, [anova.dfWn]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'F-critical', [fCritical]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p-value', [anova.pValue]),
+  ]));
+
+  grid.dataFrame.col('p-value')!.meta.format = pValueColumnFormat(anova.pValue);
+  styleConclusionColumn(grid);
+
+  const tooltip = new Map([
+    [CONCLUSION_COL_NAME, CONCLUSION_HEADER_TOOLTIP],
+    ['Source of variance', 'List of the explored variation sources.'],
+    ['F', `F-statistic. Ratio of weighted between-group variance to within-group variance (Welch's W).`],
+    [DF1, 'Numerator degrees of freedom (k − 1, where k is the number of groups).'],
+    [DF2, 'Welch–Satterthwaite-adjusted denominator degrees of freedom. Fractional by design.'],
+    ['F-critical', `Critical F-value at α = ${significance}, with Welch's df.`],
+    ['p-value', `Probability of seeing an F-statistic at least as large as the observed one, assuming all group means are equal. Smaller p = stronger evidence against equality.`],
+  ]);
+
+  grid.onCellTooltip(function(cell, x, y) {
+    if (cell.isColHeader) {
+      const t = tooltip.get(cell.tableColumn!.name);
+      if (t != null) {
+        ui.tooltip.show(ui.divV([ui.p(t)]), x, y);
+        return true;
+      }
+    } else if (cell.isTableCell && cell.tableColumn?.name === CONCLUSION_COL_NAME && cell.value) {
+      ui.tooltip.show(conclusionTooltip(significant, factorName, featureName), x, y);
+      return true;
+    }
+    return false;
+  });
+
+  grid.helpUrl = ANOVA_HELP_URL;
+
+  return grid;
+} // getWelchGrid
 
 /** Return warning div */
 function getWarning(msg: string): HTMLElement {
   return ui.divV([
     ui.markdown(`ANOVA cannot be performed:
-        
+
     ${msg}`),
     ui.link('Learn more',
       () => window.open('https://en.wikipedia.org/wiki/Analysis_of_variance#Assumptions', '_blank'),
-      'Click to open in a new tab',
+      'Click to open in a new tab.',
     ),
   ]);
 }
@@ -173,7 +262,7 @@ export function runOneWayAnova(): void {
   if (factorColsCount < 1) {
     grok.shell.warning(ui.markdown(`No acceptable factor columns:
 
-    - type: ${FACTOR_TYPES.join(', ')} 
+    - type: ${FACTOR_TYPES.join(', ')}
     - at least two categories`,
     ));
     return;
@@ -199,19 +288,38 @@ export function runOneWayAnova(): void {
 
   if (featureColNames.length < 1) {
     grok.shell.warning(ui.markdown(`No acceptable feature columns:
-    
+
     - type: ${FEATURE_TYPES.join(', ')}`,
     ));
     return;
   }
 
+  const ALL_UNIQUE_MSG =
+    'Every value is unique — no groups to compare. ' +
+    'Pick a column with at least one repeated category.';
+
+  /** True when every non-null value in `col` appears exactly once
+   *  (each potential group has size 1 — ANOVA is impossible). */
+  const isFactorAllUnique = (col: DG.Column): boolean => {
+    const uniqueCount = col.stats.uniqueCount;
+    const nonNullCount = col.length - col.stats.missingValueCount;
+    return uniqueCount >= 2 && uniqueCount === nonNullCount;
+  };
+
   const factorInput = ui.input.column('Category', {
     table: df,
     value: factor,
     tooltipText: 'Column with factor values',
-    onValueChanged: (col) => factor = col,
+    onValueChanged: (col) => {factor = col; updateRunButtonState();},
     filter: (col: DG.Column) => factorColNames.includes(col.name),
     nullable: false,
+  });
+
+  factorInput.addValidator(() => {
+    const col = factorInput.value;
+    if (col != null && isFactorAllUnique(col))
+      return ALL_UNIQUE_MSG;
+    return null;
   });
 
   let feature = df.col(DEFAULT.FEATURE);
@@ -222,10 +330,43 @@ export function runOneWayAnova(): void {
     table: df,
     value: feature,
     tooltipText: 'Column with feature values',
-    onValueChanged: (col) => feature = col,
+    onValueChanged: (col) => {feature = col; updateRunButtonState();},
     filter: (col: DG.Column) => featureColNames.includes(col.name),
     nullable: false,
   });
+
+  let currentMethod: Method = 'Welch';
+  const methodSource = {method: currentMethod};
+  const methodProp = DG.Property.fromOptions({
+    name: 'method',
+    caption: 'Method',
+    inputType: 'Radio',
+    choices: ['Welch', 'Fisher'],
+    defaultValue: 'Welch',
+  });
+  const methodInput = ui.input.forProperty(methodProp, methodSource);
+  methodInput.onChanged.subscribe(() => {
+    currentMethod = (methodSource.method as Method) ?? 'Welch';
+    updateRunButtonState();
+  });
+
+  const methodTooltip = ui.markdown(
+    'Set the method for analysis:\n\n' +
+    '* **Welch** — robust to **unequal variances** across groups. ' +
+      'Recommended as the default when group variances are unknown or differ.\n\n' +
+    '* **Fisher** — classical ANOVA. Assumes **equal variances** across groups; ' +
+      'more powerful when this assumption holds.\n\n',
+  );
+  ui.tooltip.bind(methodInput.captionLabel, () => methodTooltip);
+
+  const FISHER_UNEQUAL_VAR_MSG =
+    'Variances differ significantly between groups. ' +
+    `Fisher's ANOVA requires equal variances — switch Method to Welch.`;
+  const fisherWarningIcon = ui.iconFA('info-circle', null, FISHER_UNEQUAL_VAR_MSG);
+  fisherWarningIcon.style.color = 'var(--red-3, #EB6767)';
+  fisherWarningIcon.style.marginLeft = '12px';
+  fisherWarningIcon.style.display = 'none';
+  methodInput.root.append(fisherWarningIcon);
 
   let significance = SIGNIFICANCE.DEFAULT;
   const signInput = ui.input.float('Alpha', {
@@ -236,8 +377,13 @@ export function runOneWayAnova(): void {
     tooltipText: 'Significance level',
     onValueChanged: (value) => {
       significance = value;
-      runBtn.disabled = (significance <= SIGNIFICANCE.INFIMUM) || (significance >= SIGNIFICANCE.SUPREMUM);
+      updateRunButtonState();
     },
+  });
+
+  const fullReportInput = ui.input.bool('Full report', {
+    value: true,
+    tooltipText: 'Add a table with the full test statistics and conclusion',
   });
 
   const dlg = ui.dialog({title: 'ANOVA', helpUrl: ANOVA_HELP_URL});
@@ -247,8 +393,11 @@ export function runOneWayAnova(): void {
     dlg.close();
 
     try {
-      const res = oneWayAnova(factor!, feature!, significance);
-      addVizualization(df, factor!.name, feature!.name, res);
+      const res = oneWayAnova(factor!, feature!, significance, {
+        method: currentMethod,
+        toValidate: false,
+      });
+      addVizualization(df, factor!.name, feature!.name, res, fullReportInput.value!);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));
@@ -266,8 +415,59 @@ export function runOneWayAnova(): void {
 
   const runBtn = dlg.getButton('Run');
 
+  function updateRunButtonState(): void {
+    fisherWarningIcon.style.display = 'none';
+
+    if (significance <= SIGNIFICANCE.INFIMUM || significance >= SIGNIFICANCE.SUPREMUM) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, 'Alpha must be strictly between 0 and 1');
+      return;
+    }
+
+    if (factor != null && isFactorAllUnique(factor)) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, ALL_UNIQUE_MSG);
+      return;
+    }
+
+    let varEqual: boolean;
+    try {
+      const uniqueCount = factor!.stats.uniqueCount;
+      if (uniqueCount < 2)
+        throw new Error('At least two categories required.');
+      const factorized = new FactorizedData(factor!, feature!, uniqueCount);
+      varEqual = factorized.areVarsEqual(significance);
+    } catch (err) {
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, (err as Error).message);
+      return;
+    }
+
+    if (currentMethod === 'Fisher' && !varEqual) {
+      fisherWarningIcon.style.display = '';
+      runBtn.disabled = true;
+      ui.tooltip.bind(runBtn, FISHER_UNEQUAL_VAR_MSG);
+      return;
+    }
+
+    runBtn.disabled = false;
+    ui.tooltip.bind(runBtn, 'Perform analysis of variances');
+  }
+
   dlg.add(factorInput)
     .add(featureInput)
+    .add(methodInput)
     .add(signInput)
-    .show();
+    .add(fullReportInput);
+
+  updateRunButtonState();
+  factorInput.validate();
+
+  dlg.show();
+
+  // Strip auto-focus from the Method radio: when the dialog opens, focus
+  // lands on the first focusable input and a focus-ring is drawn around
+  // the selected Welch option — visually distracting since the user
+  // hasn't interacted yet.
+  setTimeout(() => (document.activeElement as HTMLElement | null)?.blur(), 0);
 } // runOneWayAnova

@@ -1,6 +1,14 @@
 ---
 title: "AWS Terraform"
-sidebar_position: 2
+sidebar_position: 3
+description: Deploy Datagrok on an AWS ECS cluster with RDS and S3 using a Terraform module.
+keywords:
+  - terraform module
+  - aws ecs
+  - infrastructure as code
+  - aws rds
+  - amazon s3
+  - iam role
 ---
 
 The deployment consists of several Docker containers, a [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
@@ -22,7 +30,7 @@ More information about Datagrok design and components:
 ### Prerequisites
 
 1. Check that you
-   have the [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/iam.list)
+   have the [required permissions](https://github.com/datagrok-ai/public/blob/master/help/deploy/iam.list)
    on the AWS account to perform Terraform deployment to ECS.
 2. Check that you
    have the required [S3 permissions](https://www.terraform.io/language/settings/backends/s3#s3-bucket-permissions)

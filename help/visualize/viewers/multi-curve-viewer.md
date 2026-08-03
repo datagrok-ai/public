@@ -1,5 +1,12 @@
 ---
 title: "Multi curve viewer"
+description: Overlay multiple in-cell fitted curves on one chart to compare dose-response data across rows or columns.
+keywords:
+  - dose-response curves
+  - curve overlay
+  - fitted curve comparison
+  - plate reader data
+  - trellis plot integration
 ---
   
  Multi curve viewer displays multiple in-cell curves on one chart, making it easy to compare fitted curves from different data series.

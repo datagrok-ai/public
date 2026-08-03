@@ -20,6 +20,15 @@ export async function appSearch(s: string): Promise<DG.Func[]> {
     val.description?.toLowerCase().includes(s) || val.friendlyName?.toLowerCase().includes(s));
 }
 
+export async function demosSearch(s: string): Promise<DG.Func[]> {
+  s = s.toLowerCase().trim();
+  return DG.Func.find({meta: {demoPath: null}}).filter((f) => {
+    const path = (f.options[DG.FUNC_OPTIONS.DEMO_PATH] as string) ?? '';
+    return path.toLowerCase().includes(s) || f.name.toLowerCase().includes(s) ||
+      f.description?.toLowerCase()?.includes(s);
+  });
+}
+
 export function exactAppFuncSearch(s: string): DG.Func | null {
   s = s.toLowerCase().trim();
   const apps = DG.Func.find({meta: {role: DG.FUNC_TYPES.APP}, returnType: 'view'}).filter((val) => val.name?.toLowerCase() === s ||
@@ -107,6 +116,26 @@ export async function dockerSearch(s: string): Promise<DG.DockerContainer[]> {
   return await grok.dapi.docker.dockerContainers.filter(s).list();
 }
 
+export async function spacesSearch(s: string): Promise<DG.Project[]> {
+  s = s.toLowerCase().trim();
+  return (await grok.dapi.spaces.filter(s).list());
+}
+
+export async function pluginsSearch(s: string): Promise<DG.Package[]> {
+  s = s.toLowerCase().trim();
+  return (await grok.dapi.packages.filter(s).list());
+}
+
+export async function notebooksSearch(s: string): Promise<DG.Notebook[]> {
+  s = s.toLowerCase().trim();
+  return (await grok.dapi.notebooks.filter(s).list());
+}
+
+export async function modelsSearch(s: string): Promise<DG.Model[]> {
+  s = s.toLowerCase().trim();
+  return (await grok.dapi.models.filter(s).list());
+}
+
 function iframe(src: string, caption?: string): DG.Widget {
   const vw = new WebWidget({
     src: src,
@@ -167,7 +196,7 @@ export async function denialSearch(s: string, w?: DG.Widget): Promise<DG.Widget 
     if (json?.reason) {
       const widget = w ?? DG.Widget.fromRoot(ui.div([], {style: {display: 'flex'}}));
       Array.from(widget.root.children).forEach((c) => c.remove());
-      const refreshIcon = ui.icons.sync(() => denialSearch(s, widget));
+      const refreshIcon = ui.icons.sync(() => denialSearch(s, widget), 'Refresh');
       refreshIcon.style.marginLeft = '10px';
       const content =
         ui.divH([ui.h1(json.reason, {style: {textAlign: 'center', margin: 'auto'}}),

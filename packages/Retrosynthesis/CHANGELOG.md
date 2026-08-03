@@ -1,6 +1,15 @@
 # Retrosynthesis changelog
 
-## 1.0.6 (2025-03-16)
+## v.next
+
+* Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the build stage
+* Docker: Raised security floors (VEX) — pinned protobuf/wheel/jaraco.context; torch/pytorch-lightning/pillow/pymongo stay pinned by aizynthfinder[all]==4.3.2's transitive caps (route-distances torch<2.6, pillow<10)
+
+## 1.1.0 (2026-05-18)
+
+* Demo fix
+
+## 1.0.6 (2026-03-16)
 
 * Re-calculate on config change
 * Use celery for aizynthfinder

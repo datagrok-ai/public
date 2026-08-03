@@ -6,6 +6,7 @@ import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {createTestScheduler} from '../../../test-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -38,10 +39,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
   let testScheduler: TestScheduler;
 
   before(async () => {
-    testScheduler = new TestScheduler((actual, expected) => {
-      // console.log(actual, expected);
-      expectDeepEqual(actual, expected);
-    });
+    testScheduler = createTestScheduler();
   });
 
   test('Propagate validations info to view state', async () => {
@@ -225,12 +223,13 @@ category('ComputeUtils: Driver instance additional states', async () => {
         id: 'selector',
         type: 'selector',
         from: 'in:step1/a',
-        to: ['out1:title', 'out2:description', 'out3:tags'],
+        to: ['out1:title', 'out2:description', 'out3:tags', 'out4:body'],
         handler({controller}) {
           const val = controller.getFirst('in');
           controller.setDescriptionItem('out1', `Title ${val}`);
           controller.setDescriptionItem('out2', `Description ${val}`);
           controller.setDescriptionItem('out3', [`tag ${val}`]);
+          controller.setDescriptionItem('out4', `**Body** ${val}`);
         },
       }],
     };
@@ -252,6 +251,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'title': undefined,
           'description': undefined,
           'tags': [],
+          'body': undefined,
         },
         b: {
           'title': 'Title 1',
@@ -259,6 +259,7 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'tags': [
             'tag 1',
           ],
+          'body': '**Body** 1',
         },
         c: {
           'title': 'Title 2',
@@ -266,8 +267,65 @@ category('ComputeUtils: Driver instance additional states', async () => {
           'tags': [
             'tag 2',
           ],
+          'body': '**Body** 2',
         },
       });
+    });
+  });
+
+  test('Propagate body to an action step node description', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'myAction', type: 'action'},
+      ],
+      links: [{
+        id: 'bodyToAction',
+        type: 'selector',
+        from: 'in:step1/a',
+        to: 'out:first(myAction)/body',
+        handler({controller}) {
+          const val = controller.getFirst('in');
+          controller.setDescriptionItem('out', `# heading ${val}`);
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run((helpers) => {
+      const {cold, expectObservable} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const stepNode = tree.nodeTree.getNode([{idx: 0}]);
+      const actionNode = tree.nodeTree.getNode([{idx: 1}]);
+      cold('--a').subscribe(() => {
+        stepNode.getItem().getStateStore().setState('a', 7);
+      });
+      expectObservable(actionNode.getItem().nodeDescription.getStateChanges('body')).toBe('a-b', {
+        a: undefined,
+        b: '# heading 7',
+      });
+    });
+  });
+
+  test('Propagate nqName to an action step node state', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'myAction', type: 'action', nqName: 'LibTests:TestActionHelp'},
+      ],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(() => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const actionNode = tree.nodeTree.getNode([{idx: 1}]);
+      const state = (actionNode.getItem() as any).toState({disableNodesUUID: true});
+      expectDeepEqual(state.nqName, 'LibTests:TestActionHelp');
+      expectDeepEqual(state.isActionStep, true);
     });
   });
 

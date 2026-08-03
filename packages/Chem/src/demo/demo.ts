@@ -71,6 +71,10 @@ export async function _demoChemOverview(): Promise<void> {
       table = tv.dataFrame;
     }, {description: 'Load dataset with molecule columns', delay: 3000})
     .step('Calculate molecule properties', async () => {
+      if (!grok.shell.windows.context.visible)
+        grok.shell.windows.context.visible = true;
+      await awaitCheck(() => document.getElementsByClassName('grok-entity-prop-panel').length > 0,
+        'Property panel did not appear', 5000);
       propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
       closeAllAccordionPanes(propPanel!);
       const molColumnName = table.columns.bySemType(DG.SEMTYPE.MOLECULE)!.name;
@@ -101,6 +105,11 @@ export async function _demoChemOverview(): Promise<void> {
       grok.shell.o = tv.dataFrame.col('smiles');
       await DG.delay(2000);
       grok.shell.windows.showHelp = false;
+      if (!grok.shell.windows.context.visible)
+        grok.shell.windows.context.visible = true;
+      await awaitCheck(() => document.getElementsByClassName('grok-entity-prop-panel').length > 0,
+        'Property panel did not appear', 5000);
+      propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
       closeAllAccordionPanes(propPanel!);
       const chemistryPaneContent = getAccordionPane('Chemistry', propPanel!);
       const renderingPaneContent = getAccordionPane('Rendering', chemistryPaneContent!) as HTMLElement;
@@ -208,34 +217,6 @@ export async function _demoMMPA(): Promise<void> {
     // grok.shell.windows.showHelp = true;
     // grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/#matched-molecular-pairs');
   });
-}
-
-
-export async function _demoMoleculesVisualizations(): Promise<void> {
-  const demoScript = new DemoScript('Demo', 'Creating various viewers on molecule columns');
-  let tv: DG.TableView;
-  await demoScript
-    .step('Loading table', async () => {
-      tv = await openMoleculeDataset('r-groups.csv');
-      grok.shell.windows.showContextPanel = false;
-      grok.shell.windows.showHelp = false;
-    }, {description: 'Load dataset with molecule columns', delay: 2000})
-    .step('Adding scatter plot', async () => {
-      await DG.delay(1000);
-      tv.scatterPlot({x: 'R2', y: 'R1', jitterSize: 4, size: 'MolWt'});
-    }, {description: 'Adding a scatter plot with molecule columns for x and y axes', delay: 2000})
-    .step('Filtering data', async () => {
-      tv.getFiltersGroup();
-      await DG.delay(1000);
-      const startMolwt = 240;
-      const stopMolWt = 350;
-      for (let i = startMolwt; i < stopMolWt; i + 20) {
-        tv.dataFrame.rows.match(`ExactMolWt > ${i}`).filter();
-        await DG.delay(500);
-      }
-    }, {description: 'Results of filtering are interactively shown on scatter plot', delay: 3000})
-    .step('Final', async () => console.log('Finished'))
-    .start();
 }
 
 

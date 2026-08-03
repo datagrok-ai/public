@@ -1,0 +1,46 @@
+packageName: Charts
+description: Extra Datagrok viewers (Timelines, Chord, Sankey, Sunburst, Tree, Radar, Globe, Surface, Word Cloud, ...) built on ECharts, D3, and three.js
+keywords:
+  - viewer
+  - chart
+  - timelines
+  - chord
+  - sankey
+  - sunburst
+  - tree
+  - radar
+  - globe
+  - surface plot
+  - word cloud
+  - group analysis
+  - multi plot
+  - hierarchy
+  - flow
+  - multivariate
+  - sdtm
+  - echarts
+  - d3
+  - three.js
+  - visualization
+overview: |
+  Adds a suite of viewers on top of Datagrok's built-in set, built on
+  ECharts, D3.js, and three.js (Globe).
+
+  Adding a viewer: open a table, click the viewer gallery in the toolbox
+  (or View > Add Viewer), and pick one. Viewers respond to filters and
+  row selection the same way native viewers do.
+
+  Hierarchy: Tree, Sunburst, Group Analysis.
+  Flow and relationships: Chord, Sankey.
+  Time: Timelines — SDTM-aware, auto-picks subject/start/end/term columns
+  for SDTM datasets, type-based heuristics otherwise.
+  Multivariate: Radar.
+  Spatial and 3D: Globe, Surface Plot.
+  Text: Word Cloud.
+  Composite: Multi Plot.
+
+  Demos: each viewer has its own demo under Top Menu > Demo > Visualization
+  > General (Tree lives under Data Flow and Hierarchy). Each demo opens a
+  sample dataset and adds the viewer preconfigured.
+apiRef: src/package-api.ts
+docsRef: ../../help/visualize/viewers/viewers.md

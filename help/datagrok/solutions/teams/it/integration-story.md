@@ -1,5 +1,14 @@
 ---
 title: "Integration"
+description: Overview of Datagrok's integration mechanisms, including custom scripts, data connectors, OpenAPI, and the JS API.
+keywords:
+  - custom data connectors
+  - grok connect
+  - openapi integration
+  - javascript api
+  - web api
+  - grok server cli
+  - scripting integration
 ---
 
 Datagrok was designed to be as extensible and customizable as possible. The platform exposes a number of integration
@@ -69,9 +78,13 @@ etc.
 Datagrok's server provides a REST API that lets you programmatically invoke server-side methods.
 (OpenAPI is work in progress)
 
-## Grok SDK
+## Grok server CLI
 
-A number of command-line utilities for server management. (Work in progress)
+[`grok s`](../../../../develop/server-management.md) is the CLI for managing a
+running Datagrok server — creating users and groups, sharing entities, running
+functions, browsing files, hitting raw API endpoints. It is the recommended
+automation surface for IT integrations such as syncing Active Directory groups
+with Datagrok groups, provisioning data connections, and scripting bulk imports.
 
 ## Client-side settings
 

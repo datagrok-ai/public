@@ -1,5 +1,15 @@
 ---
 title: "Function annotations"
+description: Reference for annotating function parameters in Datagrok scripts and queries to auto-generate validated UI.
+keywords:
+  - function header
+  - parameter annotation
+  - input output annotation
+  - choices and validators
+  - autocomplete suggestions
+  - lookup tables
+  - complex calculated columns
+  - custom function editor
 ---
 
 # Function annotations
@@ -124,6 +134,9 @@ Datagrok supports the following types in all scripting languages:
 * `file`: when the script is executed, contains a string with the path to a file
 * `blob`: array of bytes
 
+For the native equivalent of each type in Python, R, Octave, Julia, and JavaScript,
+see [Data types](../../../compute/scripting/scripting-features/data-types.md).
+
 Some of the options apply to all parameters, while other are type-specific. 
 
 <details> 
@@ -134,11 +147,13 @@ For all parameters:
 
 | Option     | Value  | Description                                                               |
 |------------|--------|---------------------------------------------------------------------------|
+| validator  | string | Single [validator](#validation): a Grok expression or a regex literal     |
 | validators | string | Comma-separated list of [validators](#validation)                         |
 | caption    | string | Custom field caption                                                      |
 | postfix    | string | Field postfix                                                             |
 | units      | string | Value unit name                                                           |
 | nullable   | bool   | Makes it an [optional parameter](#initial-values-and-optional-parameters) |
+| category   | string | Groups the parameter under a named section in the function dialog. See [parameter groups](#parameter-groups). |
 
 For `dataframe` type:
 
@@ -207,6 +222,87 @@ WHERE lastName in (SELECT unnest(@employee))
 
 </div>
 </details>
+
+### Parameter groups
+
+Use `category` to group related parameters under a shared section header in the function dialog:
+
+```js
+//input: double learningRate {category: Hyperparameters}
+//input: double momentum {category: Hyperparameters}
+//input: int epochs {category: Training}
+```
+
+For functions with many parameter groups, use `meta.categoryGroups` to organize categories into a
+hierarchy of collapsible sections. The value is a JSON object where keys are section headers and
+values are lists of category names:
+
+```js
+//meta.categoryGroups: {"Model": ["Input Data", "Architecture"], "Training": ["Hyperparameters", "Optimizer"]}
+//input: dataframe data {category: Input Data}
+//input: int layers {category: Architecture}
+//input: double learningRate {category: Hyperparameters}
+//input: string optimizer {category: Optimizer}
+```
+
+This renders as:
+
+```
+▸ Model
+  ▸ Input Data
+    data
+  ▸ Architecture
+    layers
+▸ Training
+  ▸ Hyperparameters
+    learningRate
+  ▸ Optimizer
+    optimizer
+```
+
+A group header category can also contain direct inputs alongside sub-groups. Assign an input the
+same category name as the group header, and it appears directly under that header before any
+sub-groups:
+
+```js
+//meta.categoryGroups: {"All Params": ["Group A", "Group B"]}
+//input: double a {category: Group A}
+//input: double b {category: Group A}
+//input: double c {category: Group B}
+//input: double d {category: Group B}
+//input: double e {category: All Params}
+```
+
+```
+▸ All Params
+  e
+  ▸ Group A
+    a, b
+  ▸ Group B
+    c, d
+```
+
+When all parameters in a category are hidden programmatically (via `input.visible = false`),
+the category header hides automatically. If all sub-categories under a section header are also
+hidden, that header hides too.
+
+### Output parameter groups
+
+Use `meta.outputCategoryGroups` to organize scalar **output** categories into super-categories.
+The format mirrors `meta.categoryGroups` but applies only to scalar outputs rendered by
+Compute2's Rich Function View. DataFrame and viewer outputs are unaffected; the annotation
+is deliberately separate so the two can coexist on the same function.
+
+```js
+//output: double rmse {category: Metrics}
+//output: double r2 {category: Metrics}
+//output: double trainTime {category: Performance}
+//meta.outputCategoryGroups: {"Summary": ["Metrics", "Performance"]}
+```
+
+Each top-level key produces one scalar-output tab; nested `{label: [...]}` entries appear
+as indented sub-sections inside that tab. Referenced categories that don't exist, or that
+contain non-scalar outputs, are silently skipped — their original tabs are left in place.
 
 ### Initial values and optional parameters
 
@@ -376,6 +472,9 @@ Result `true` or `null` means that the input is valid. `false` or a string error
 it gets highlighted and the validation message is shown in the tooltip. Note that the expression can depend not only on the
 value of the parameter the expression applied to, but on other parameters as well.
 
+Inside the expression, `value` always refers to the current input's value, so the same validator can be reused across
+parameters without rewriting the parameter name.
+
 <details>
 <summary> Example: Inline validation dependent on the value of other parameters </summary>
 <div>
@@ -383,6 +482,7 @@ value of the parameter the expression applied to, but on other parameters as wel
 ```js
 //input: int foo = 5 { validator: bar > 3 }
 //input: double bar = 2 { min: 0; max: 10 }
+//input: string code = "1234" { validator: startsWith(value, "12") }
 ```
 
 ![](param-visible-enabled-expressions.gif)
@@ -391,11 +491,18 @@ value of the parameter the expression applied to, but on other parameters as wel
 </details>
 
 
-The second option involves using a custom validation function and referencing it.
-Usually it's a JavaScript function that gets executed right in the browser, but you can use other languages as well.
-A validation function accepts one parameter
-(a string that user enters), and returns null if the string is valid, or the reason for being invalid,
-otherwise.
+The second option involves using a custom validation function and referencing it. A validation
+function accepts one parameter (the value the user enters) and returns either `null` (valid) or
+the reason it's invalid (a string). It can also return a `boolean` — `true` is valid, `false`
+shows a generic message naming the function.
+
+To reference a function from another package, prefix the name with the package: `Pkg:FuncName`.
+
+:::important
+Validators must be synchronous. Only `package.ts` exports and `grok.functions.register({...})`
+qualify. Scripts (UI-saved or shipped under `scripts/`, any language) don't — they're async and
+will throw at dialog open. For server-side validation, validate inside the function body and `throw`.
+:::
 
 <details>
 <summary> Example: Functions as validators </summary>
@@ -421,7 +528,29 @@ valid = input < 11 ? null : "Error val1";
 #input: int count1 {validators: ["jsval1"]
 ```
 
+Cross-package, bool-returning predicates work directly:
+
+```
+//input: string smiles = "CCO"  {validators: ["Chem:isSmiles"]}
+//input: string smarts = "[#6]" {validators: ["Chem:isSmarts"]}
+```
+
 ![Script Parameter Validators](../../../uploads/features/script-param-validators.gif "Script Parameter Validators")
+
+</div>
+</details>
+
+The third option is a regex literal in JavaScript form `/pattern/flags`. The input is valid when
+the value matches the pattern. Supported flags are `i` (case-insensitive) and `m` (multi-line).
+
+<details>
+<summary> Example: Regex validator </summary>
+<div>
+
+```
+//input: string code = "1234" {validator: /^[0-9]{4}$/}
+//input: string country = "US"  {validator: /^[A-Z]{2}$/i}
+```
 
 </div>
 </details>
@@ -509,6 +638,11 @@ SELECT * FROM public.starbucks_us WHERE (city = @city)
 Datagrok does the rest, and turns it into an interactive experience:
 
 ![](dependent-parameters.gif)
+
+:::warning 
+At the moment, parameter referencing is implemented only for SQL queries.
+The implementation for JavaScript and other languages is in progress.
+:::
 
 </div>
 </details>
@@ -688,7 +822,7 @@ The annotation works with different output types:
 
 #### Example: Murcko scaffolds (Python)
 
-The [Murcko Scaffolds](https://datagrok.ai/help/domains/chem/functions/murcko-scaffolds) function from the Chem package
+The [Murcko Scaffolds](https://datagrok.ai/help/datagrok/solutions/domains/chem/scripts/murcko-scaffolds) function from the Chem package
 extracts molecular scaffolds and joins them to the input table:
 
 ```python
@@ -894,7 +1028,7 @@ Custom editors enhance the user experience by allowing you to tailor how functio
 A custom editor is a function that:
 - Accepts a `DG.FuncCall` object as input
 - Returns a `DG.Widget`
-- Is marked with `//tags: editor` and an `//output: widget <name>` annotation
+- Is marked with `//meta.role: editor` and an `//output: widget <name>` annotation
 
 > **Note:** While extending `DG.FuncCallEditor` is optional, the returned widget must expose certain properties to support validation and input change tracking.
 
@@ -946,7 +1080,7 @@ class MyDummyEditor extends DG.FuncCallEditor {
 }
 
 //name: dummyEditor
-//tags: editor
+//meta.role: editor
 //input: funccall call
 //output: widget dialog
 export function dummyEditor(call: DG.FuncCall): DG.Widget {
@@ -1013,7 +1147,7 @@ The `meta` object can contain both dataframe-level and column-level tags:
 ```
   This sets a dataframe-level tag:
 
-  - `.data-connection = "System:Datagrok"`
+- `.data-connection = "System:Datagrok"`
 
 - **Column-level tags**  
   If a key in the `meta` object matches a column name and its value **is** a JSON object, that object is interpreted as metadata for the corresponding column. All nested key–value pairs are applied as column tags.
@@ -1024,9 +1158,9 @@ The `meta` object can contain both dataframe-level and column-level tags:
 ```
   This applies the following tags to the `mol` column:
 
-  - `DbTable = "structures"`
-  - `DbSchema = "public"`
-  - `DbColumn = "mol"`
+- `DbTable = "structures"`
+- `DbSchema = "public"`
+- `DbColumn = "mol"`
 
 Dataframe-level and column-level metadata can be combined within a single `meta` block:
 ```javascript 
@@ -1060,7 +1194,6 @@ export function getLength(s: string): number {
 #name: Template
 #description: Calculates number of cells in the table
 #language: python
-#tags: template, demo
 #sample: cars.csv
 #input: dataframe table [Data table]
 #output: int count [Number of cells in table]

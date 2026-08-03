@@ -1,5 +1,14 @@
 ---
 title: "Routing"
+description: Implement URL-based routing in a Datagrok application to open specific views and states from a shareable link.
+keywords:
+  - deep linking
+  - shareable link
+  - meta.url
+  - view path
+  - URL parameters
+  - app URL alias
+  - path segments
 ---
 
 Sometimes it is useful to share a link with a colleague or business executive that opens an app in a specific state
@@ -17,7 +26,7 @@ We start off by getting the path and splitting it in segments:
 //name: Test
 //input: string path {meta.url: true}
 //input: string searchParam
-//tags: app
+//meta.role: app
 export function test(url, searchParam) {
   const pathSegments = url.split('/').filter((s) => s != '');
   // etc.
@@ -109,7 +118,7 @@ Also, you can specify app URL alias with `meta.url` tag:
 //input: string path {meta.url: true}
 //input: string searchParam
 //meta.url: /application
-//tags: app
+//meta.role: app
 export function test(url, searchParam) {
   const pathSegments = url.split('/').filter((s) => s != '');
   // etc.
@@ -143,7 +152,7 @@ type testData = "wells" | "demog" | "biosensor" | "random walk" | "geo" | "molec
 //name: Test
 //input: string path {meta.url: true}
 //input: string filter
-//tags: app
+//meta.role: app
 export function test(path: string, filter: string) {
   const pathSegments = url.split('/').filter((s) => s != '');
 

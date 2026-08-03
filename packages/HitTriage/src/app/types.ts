@@ -1,61 +1,30 @@
 import * as DG from 'datagrok-api/dg';
 
+// Re-export shared compute-function types from the statistics library
+export type {TemplateFunction, TemplateScript, ComputeQuery, TemplateCompute,
+  ComputeFunctions, IComputeDialogResult, IFunctionArgs,
+  IDescriptorTree, Descriptor, IChemFunctionsDialogResult} from '@datagrok-libraries/statistics/src/compute-functions/types';
+import type {TemplateFunction, TemplateScript, TemplateCompute} from '@datagrok-libraries/statistics/src/compute-functions/types';
+
+// Backward-compatible aliases
+export type HitTriageTemplateFunction = TemplateFunction;
+export type HitTriageTemplateScript = TemplateScript;
+export type HitTriageComputeQuery = TemplateScript & { inputName: string };
+export type HitTriageTemplateCompute = TemplateCompute;
+
 export type AppName = keyof CampaignsType;
 
 export type CampaignsType = {
     'Hit Triage': HitTriageCampaign,
     'Hit Design': HitDesignCampaign,
     'PeptiHit': HitDesignCampaign,
-}
-
-export type IDescriptorTree = {
-    [key: string]: {
-      descriptors: Array<Descriptor>,
-    } & Descriptor;
-}
-
-export type Descriptor = {
-    name: string,
-    description: string,
-};
-
-export type IFunctionArgs<T = any> = {
-    [key: string]: T,
-}
-
-export type HitTriageTemplateFunction = {
-    package: string,
-    name: string,
-    args: IFunctionArgs,
-}
-
-export type HitTriageTemplateScript = {
-    name: string,
-    args: IFunctionArgs,
-    id: string,
-}
-
-export type HitTriageComputeQuery = HitTriageTemplateScript & {
-    inputName: string,
-}
-
-export type IComputeDialogResult = {
-    descriptors: string[],
-    externals: {
-        [_: string]: IFunctionArgs
-    },
-    scripts?: {
-        [_: string]: IFunctionArgs
-    }
-    queries?: {
-        [_: string]: IFunctionArgs
-    }
+    'PepTriage': HitTriageCampaign,
 }
 
 export type HitTriageTemplate = {
     name: string,
     key: string,
-    compute: HitTriageTemplateCompute,
+    compute: TemplateCompute,
     submit?: HitTriageTemplateSubmit,
     campaignFields: HitTriageCampaignField[],
     dataSourceType: IngestType,
@@ -84,16 +53,6 @@ export type HitTriageTemplateIngest = {
     type: IngestType,
     query: string,
     molColName: string,
-};
-
-export type HitTriageTemplateCompute = {
-    descriptors: {
-        enabled: boolean,
-        args: string[],
-    }
-    functions: HitTriageTemplateFunction[],
-    scripts?: HitTriageTemplateScript[],
-    queries?: HitTriageTemplateScript[],
 };
 
 export type HitTriageTemplateSubmit = {
@@ -132,11 +91,6 @@ export type TriagePermissions = {
     view: string[],
 };
 
-export type IChemFunctionsDialogResult = {
-    okProxy: () => void,
-    root: HTMLElement,
-};
-
 export type INewTemplateResult<T> = {
     template: Promise<T>,
     root: HTMLElement,
@@ -148,13 +102,37 @@ export type INewTemplateResult<T> = {
 export type HitDesignTemplate = Omit<HitTriageTemplate, 'dataSourceType' | 'queryFunctionName'> &
     {stages: string[]};
 
-export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {tilesViewerFormSketch?: string};
+export type HitDesignMergeMode = 'smiles' | 'vid';
+export type HitDesignMergeClashStrategy = 'skip' | 'overwrite';
+
+export type HitDesignMergeConfig = {
+    mode: HitDesignMergeMode,
+    // Only set when the source file lives on the Datagrok file share, so it can be reopened later
+    filePath?: string,
+    // Incoming column name to use as molecule source (required for SMILES mode, optional for VID mode)
+    molColName?: string,
+    // Incoming column name carrying V-iD values (only used in VID mode)
+    vidColName?: string,
+    addNewRows: boolean,
+    runComputeOnNewRows: boolean,
+    clashStrategy: HitDesignMergeClashStrategy,
+    // When true AND filePath is set, the file is automatically re-read and merged into the
+    // campaign every time the campaign is opened, before the design view is shown. Compute is
+    // never run for this implicit pass, and the campaign is not auto-saved.
+    autoMergeOnOpen?: boolean,
+}
+
+export type HitDesignCampaign = Omit<HitTriageCampaign, 'filters' | 'ingest'> & {
+    tilesViewerFormSketch?: string,
+    mergeConfig?: HitDesignMergeConfig,
+};
 
 // todo: probably add some more stuff
 export type PeptiHitTemplate = HitDesignTemplate & {toAtomiLevelProps?: {[key: string]: any}}
 
-export type ComputeFunctions = {
-    functions: DG.Func[],
-    scripts: DG.Script[],
-    queries: DG.DataQuery[],
-};
+// ##################### PEP TRIAGE TYPES #####################
+
+export type PepTriageTemplate = HitTriageTemplate & {
+    sequenceColumnName: string,
+    moleculeColumnName?: string,
+}

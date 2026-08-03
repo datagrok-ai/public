@@ -5,14 +5,14 @@ import * as DG from 'datagrok-api/dg';
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryLibraries, queryStructureById, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
-import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
+import { asArray, reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
 import { addMoleculeStructures, getConditionForLibAndType } from './compounds';
 import { createInitialSatistics, getRevvityLibraries, refreshStats, resetRevvityLibraries, RevvityLibrary } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
 import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVITY_SEARCH_RES_TOTAL_COUNT, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
-import { getRevvityUsers, getUsersAllowed, updateRevvityUsers } from './users';
+import { getRevvityUsers, usersEndpointAllowed, updateRevvityUsers } from './users';
 import { convertIdentifierFormatToRegexp } from './detectors';
 
 
@@ -43,7 +43,6 @@ export function init() {
 //meta.browsePath: Chem
 export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase> {
 
-  console.log(path);
   const initViewDiv = ui.divV([], {style: {flexGrow: '0'}});
   const view = DG.View.fromRoot(initViewDiv);
   view.name = 'Revvity';
@@ -95,12 +94,6 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       const viewName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
       typeNode.onSelected.subscribe(async () => {
-
-        // //need woraround with nodeToDeselect to deselect node which was selected via routing (openRevvityNode function)
-        // const nodeToDeselect = treeNode.items
-        //   .find((node) => node.text.toLowerCase() !== viewName.toLowerCase() && node.root.classList.contains('d4-tree-view-node-selected'));
-        // nodeToDeselect?.root.classList.remove('d4-tree-view-node-selected');
-
         await createViewFromPreDefinedQuery(treeNode, [lib.name, getViewNameByCompoundType(libType.name)], lib.name, libType.name);
       });
     }
@@ -142,10 +135,10 @@ export async function searchEntities(query: string, params: string, libId: strin
   const queryJson: SignalsSearchQuery = JSON.parse(query);
   const paramsJson: SignalsSearchParams = JSON.parse(params);
   const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const data = asArray(response.data) as Record<string, any>[];
 
   //in case /users endpoint is not allowed, extract users from included section
-  if (!getUsersAllowed) {
+  if (!usersEndpointAllowed) {
     const newUsers = response.included?.filter((it) => it.type === 'user').map((it) => it.attributes);
     if (newUsers?.length)
       updateRevvityUsers(newUsers);
@@ -211,7 +204,7 @@ export async function getUsers(): Promise<string> {
   const response = await queryUsers();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
-  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const data = asArray(response.data) as Record<string, any>[];
   for (const user of data)
     users.push(user.attributes);
   return JSON.stringify(users);
@@ -226,23 +219,24 @@ export async function getLibraries(): Promise<string> {
   const response = await queryLibraries();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
-  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const data = asArray(response.data) as Record<string, any>[];
   return JSON.stringify(data);
 }
 
 
-//name Register Revvity Ids Formats
 export async function registerRevvityIdsFormats() {
   const data = JSON.parse(await funcs.getLibraries());
   const formats: string[] = [];
   for (const lib of data) {
-    if (lib.attributes?.assets?.numbering?.format) {
-      formats.push(lib.attributes?.assets?.numbering?.format);
-      if (lib.attributes?.batches?.numbering?.format)
-        formats.push(`${formats[0]}-${lib.attributes?.batches?.numbering?.format}`);
+    const assetFormat = lib.attributes?.assets?.numbering?.format;
+    if (assetFormat) {
+      formats.push(assetFormat);
+      const batchFormat = lib.attributes?.batches?.numbering?.format;
+      if (batchFormat)
+        formats.push(`${assetFormat}-${batchFormat}`);
     }
   }
-  const regexp = convertIdentifierFormatToRegexp(Object.values(formats));
+  const regexp = convertIdentifierFormatToRegexp(formats);
   if (regexp)
     DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
 }
@@ -282,7 +276,7 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
   const response = await queryTags(query);
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '{}';
-  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const data = asArray(response.data) as Record<string, any>[];
   const tags: { [key: string]: string } = {};
   for (const tag of data) {
     if (tag?.attributes?.types && Array.isArray(tag?.attributes?.types) && tag?.attributes?.types.length > 0)
@@ -300,7 +294,7 @@ export async function searchTerms(query: string): Promise<string> {
   const response = await queryTerms(JSON.parse(query));
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
-  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const data = asArray(response.data) as RevvityData[];
   return JSON.stringify(data);
 }
 

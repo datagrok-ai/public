@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {Fingerprint} from './utils/chem-common';
 
 export const V2000_ATOM_NAME_POS = 30;
@@ -23,16 +24,19 @@ export enum MOL_FORMAT {
 };
 
 export const EMPTY_MOLECULE_MESSAGE = 'Molecule is empty';
-export const SMARTS_MOLECULE_MESSAGE = 'Not applicable for smarts or moleculer fragments';
+export const SMARTS_MOLECULE_MESSAGE = 'Not applicable for smarts or molecular fragments';
 export const MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT = 1000000000;
 export const MAX_MCS_ROW_COUNT = 50000;
 export const MESSAGE_MALFORMED = 'MALFORMED_INPUT_VALUE';
 const TERMINATE_SEARCH = 'terminate_substructure_search';
 const SUBSTRUCTURE_SEARCH_PROGRESS = 'substructure_search_progress';
+const MOL_COLUMN_VALUES_CHANGED = 'chem_mol_column_values_changed';
 export const getTerminateEventName =
   (tableName: string, colName: string) => `${TERMINATE_SEARCH}-${tableName}-${colName}`;
 export const getSearchProgressEventName =
   (tableName: string, colName: string) => `${SUBSTRUCTURE_SEARCH_PROGRESS}-${tableName}-${colName}`;
+export const getValuesChangedEventName =
+  (tableName: string, colName: string) => `${MOL_COLUMN_VALUES_CHANGED}-${tableName}-${colName}`;
 export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number) =>
   molecule ? type !== SubstructureSearchType.IS_SIMILAR ?
     `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';
@@ -41,6 +45,7 @@ export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove thi
 export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const FIXED_SCALE_TAG = '.%chem-fixed-scale';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
+
 export const SCAFFOLD_COL = 'scaffold-col';
 export const SCAFFOLD_COL_SYNC = '%scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
@@ -66,6 +71,7 @@ export function setSyncTag(col: {tags: Record<string, string>},
 export const MALFORMED_DATA_WARNING_CLASS = 'malformed-data-warning';
 export enum SubstructureSearchType {
   EXACT_MATCH = 'Exact',
+  STEREO_AGNOSTIC = 'Stereo agnostic',
   CONTAINS = 'Contains',
   INCLUDED_IN = 'Included in',
   IS_SIMILAR = 'Similar',

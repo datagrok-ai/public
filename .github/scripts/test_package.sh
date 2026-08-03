@@ -147,7 +147,7 @@ for dep in $grok_deps; do
   count=0
   retries=5
   echo "Publishing $dep to ${alias}..."
-  until grok publish ${alias}; do
+  until grok publish ${alias} --skip-docker-rebuild; do
     exit=$?
     wait=$((2 ** count))
     count=$((count + 1))

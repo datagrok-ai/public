@@ -1,61 +1,36 @@
 # CLAUDE.md
 
-## Overview
-
 `@datagrok-libraries/sci-comp` is a pure TypeScript library of numerical methods for the Datagrok platform. It has **no dependency on datagrok-api**.
 
-## Architecture
-
-The library is organized by numerical domain, currently **optimization**:
+## Domains
 
 ```
-index.ts                          # Entry point: re-exports {singleObjective, multiObjective} namespaces
-src/optimization/
-  single-objective/
-    types.ts                      # ObjectiveFunction, AsyncObjectiveFunction, OptimizationResult, Constraint, CommonSettings
-    optimizer.ts                  # Abstract Optimizer<S> base class (validation, penalty wiring, minimize/maximize + async variants)
-    penalty.ts                    # applyPenalty(), applyPenaltyAsync(), boxConstraints() — constraint → penalized objective
-    registry.ts                   # registerOptimizer/getOptimizer/listOptimizers — name-based lookup
-    optimizers/
-      nelder-mead.ts              # NelderMead extends Optimizer<NelderMeadSettings>
-      pso.ts                      # PSO extends Optimizer<PSOSettings>
-      gradient-descent.ts         # GradientDescent extends Optimizer<GradientDescentSettings>
-      adam.ts                     # Adam extends Optimizer<AdamSettings>
-    __tests__/                    # Jest tests per optimizer + registry (sync & async)
-      helpers.ts                  # Test utilities: rosenbrock, sphere, gaussian, quadratic3d, etc.
-    examples/                     # Runnable examples (npx tsx src/optimization/single-objective/examples/*.ts)
-      unconstrained.ts            # Rosenbrock, Sphere, Gaussian examples
-      constrained.ts              # Box constraints example
-      async-and-callbacks.ts      # Async objective functions + iteration callbacks
-      gradient-descent.ts         # Gradient descent specific example
-      adam.ts                     # Adam specific example
-      registry.ts                 # Registry lookup example
-    benchmarks/
-      unconstrained-benchmarks.ts # 15 standard test functions (Sphere, Rosenbrock, Ackley, etc.) with comparison runner
-  multi-objectives/
-    moead/                        # MOEA/D multi-objective optimizer (defs.ts, moead.ts, utils.ts)
+index.ts                      # Re-exports {singleObjective, multiObjective, timeSeries, stats, nca} namespaces
+src/optimization/             # Single- and multi-objective solvers — see src/optimization/CLAUDE.md
+src/stats/                    # Statistical tests, distributions, multiple-comparison — see src/stats/CLAUDE.md
+src/time-series/              # Time-series feature extraction — see src/time-series/CLAUDE.md
+src/nca/                      # Non-compartmental analysis (PK) — see src/nca/CLAUDE.md
 ```
 
-### Key design patterns
+Domain-specific architecture trees, design patterns, and conventions live in the per-domain `CLAUDE.md`. Open the relevant one when working in that subtree — Claude Code loads nested `CLAUDE.md` files automatically.
 
-- **Optimizer base class** (`optimizer.ts`): All solvers extend `Optimizer<S>`. Subclasses implement `runInternal()`, `runInternalAsync()`, and `withDefaults()`. The base class handles input validation, constraint penalty wrapping, and the minimize/maximize inversion.
-- **Sync + async API**: Each optimizer exposes `minimize`/`maximize` (sync) and `minimizeAsync`/`maximizeAsync` (for async objective functions). Penalty wrappers have sync (`applyPenalty`) and async (`applyPenaltyAsync`) variants.
-- **Namespace re-exports**: The public API uses namespace re-exports (`singleObjective`, `multiObjective`) to avoid name collisions between submodules. Consumers import as `import {singleObjective} from '@datagrok-libraries/sci-comp'`.
-- **Float64Array everywhere**: All point vectors use `Float64Array`, not `number[]`.
-- **Registry pattern**: Optimizers self-register at import time via side-effect imports in `single-objective/index.ts`.
-- **Iteration callbacks**: `onIteration` callback in settings allows progress monitoring and early stopping (return `true` to stop).
+## Cross-cutting invariants
 
-### Test structure
+- **No `datagrok-api` dependency**: this library stays platform-agnostic. DataFrame adapters, UI, worker pools belong in the consuming package (e.g. `packages/NCA/`), not here.
+- **`Float64Array` for vectors**: all numeric point vectors use `Float64Array`, never `number[]`. Internal accumulators also stay in `Float64Array`.
+- **Namespace re-exports** (`index.ts`): the public API exposes one namespace per domain to avoid name collisions. Consumers import as `import {singleObjective, stats, timeSeries, nca} from '@datagrok-libraries/sci-comp'`. New domains follow the same pattern.
 
-Tests are grouped by problem, each containing `sync` and `async` variants:
+## Adding a new method
 
-```
-describe('minimize Rosenbrock 2D → min ≈ 0 at (1, 1)', () => {
-  it('sync', () => { ... });
-  it('async', async () => { ... });
-});
-```
+Follow [`.claude/rules/new-method-checklist.md`](.claude/rules/new-method-checklist.md) — every item is required:
+
+1. Tests in the relevant `__tests__/` (sync + async where applicable).
+2. TSDoc on every public type, interface, function, class.
+3. Section README in the same directory (or nearest parent).
+4. Top-level `README.md`.
+5. **The CLAUDE.md for the relevant domain** — update the architecture tree.
+6. `npm run lint-fix && npm run build && npm test` all pass.
 
 ## Skills
 
-- `/add-optimizer <algorithm name>` — scaffold a new single-objective optimizer (class, tests, registration, exports)
+- `/add-optimizer <algorithm name>` — scaffold a new single-objective optimizer (see [`src/optimization/CLAUDE.md`](src/optimization/CLAUDE.md)).

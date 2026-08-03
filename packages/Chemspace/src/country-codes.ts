@@ -26,7 +26,7 @@ export enum COUNTRY_CODES {
     "Bermuda"= "BM",
     "Bhutan"= "BT",
     "Bolivia"= "BO",
-    "Bonaire, Saint Eustatius and Saba "= "BQ",
+    "Bonaire, Saint Eustatius and Saba"= "BQ",
     "Bosnia and Herzegovina"= "BA",
     "Botswana"= "BW",
     "Bouvet Island"= "BV",

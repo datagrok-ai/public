@@ -180,7 +180,7 @@ This is what it looks like for the `PKPD` `R`-based model:
 ```python
 #name: pkpd
 #language: r
-#tags: model
+#meta.role: model
 #meta.domain: PKPD
 #input: double dosage = 1000 {category: Dosing options}
 #input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']}
@@ -200,7 +200,7 @@ After that, let's proceed to [deploying](#deployment) this model.
 
 ### Deployment
 
-In the simplest case, deploying a model is saving a script with the `#model` tag - the platform takes care of the rest.
+In the simplest case, deploying a model is saving a script with the `meta.role: model` annotation - the platform takes care of the rest.
 It could be done either manually via the UI or automatically:
 
 * **Manual** deployment: choose `Functions | Scripts | New R script`, paste the script in the editor area, and
@@ -297,7 +297,8 @@ body. Here is the corresponding section from the Lotka-Volterra model
 
 ```js
 //name: Lotka-Volterra
-//tags: model, simulation
+//meta.role: model
+//tags: simulation
 //meta.domain: Nonlinear dynamics
 ```
 

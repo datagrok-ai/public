@@ -34,9 +34,9 @@ export class SdiscRuleViolationCellRenderer extends DG.GridCellRenderer {
     if (!value)
       return;
 
-    let errors;
+    let errors: Array<Record<string, any>> | null = null;
     try {
-      errors = typeof value === 'string' ? JSON.parse(value) : value;
+      errors = JSON.parse(value);
     }
     catch (e) {
       g.font = '12px sans-serif';
@@ -44,7 +44,7 @@ export class SdiscRuleViolationCellRenderer extends DG.GridCellRenderer {
       return;
     }
 
-    if (!Array.isArray(errors) || errors.length === 0)
+    if (!errors || !Array.isArray(errors) || errors.length === 0)
       return;
 
     if (!isTooltip) {
@@ -123,7 +123,7 @@ export class SdiscRuleViolationCellRenderer extends DG.GridCellRenderer {
       const rowsByKey = array[errorIndex];
 
       Object.keys(error).forEach((key) => {
-        if (!key && !error[key] || !mandatoryKeys.includes(key))
+        if (!mandatoryKeys.includes(key) || error[key] == null)
           return;
 
         currentY += lineHeight;

@@ -1,7 +1,16 @@
+---
+title: "JavaScript development overview"
+description: High-level overview of the workflow for developing, debugging, and publishing JavaScript packages on Datagrok.
+keywords:
+  - package workflow
+  - development environments
+  - public and dev servers
+  - datagrok inspector
+  - javascript code samples
+---
+
 <!-- TITLE: JavaScript Development Overview -->
 <!-- ORDER: 0 -->
-
-# JavaScript development overview
 
 This document provides a high-level overview of JavaScript development on the Datagrok platform.
 Using [our feature-rich JavaScript API], you can develop packages to perform various tasks on Datagrok, namely:
@@ -86,15 +95,15 @@ Here are a few sources that you might want to run through to learn more about Da
 
 * [Packages](./_packages.md)
 
-[Manipulate data]: https://datagrok.ai/api/js/api#data-manipulation
+[Manipulate data]: https://datagrok.ai/api/js/#data-manipulation
 
-[Add views]: https://datagrok.ai/api/js/api#views
+[Add views]: https://datagrok.ai/api/js/#views
 
-[viewers]: https://datagrok.ai/help/develop/how-to/manipulate-viewers
+[viewers]: https://datagrok.ai/help/develop/how-to/viewers/manipulate-viewers
 
-[Develop custom viewers]: https://datagrok.ai/help/develop/how-to/develop-custom-viewer
+[Develop custom viewers]: https://datagrok.ai/help/develop/how-to/viewers/develop-custom-viewer
 
-[Register functions]: https://datagrok.ai/api/js/api#registering-functions
+[Register functions]: https://datagrok.ai/api/js/#registering-functions
 
 [Train and apply predictive models]: https://datagrok.ai/help/learn/
 
@@ -106,9 +115,9 @@ Here are a few sources that you might want to run through to learn more about Da
 
 [JavaScript code samples]: https://public.datagrok.ai/js
 
-[JavaScript API]: https://datagrok.ai/api/js/api
+[JavaScript API]: https://datagrok.ai/api/js/
 
-[reference]: https://datagrok.ai/api/js/api/
+[reference]: https://datagrok.ai/api/js/
 
 [Datagrok community]: https://community.datagrok.ai/
 

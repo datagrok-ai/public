@@ -3,12 +3,12 @@ import {Observable} from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
 import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
-import {FileInfo, Package} from './entities';
+import {Entity, FileInfo, Package, Property} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode, Widget} from "./widgets";
 import {View} from './views/view';
 import {ViewInfo} from './entities';
 import {Viewer} from "./viewer";
-import {Column, DataFrame} from "./dataframe";
+import {Cell, Column, DataFrame} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 import {LogMessage} from './logger';
@@ -108,11 +108,11 @@ export class Events {
   }
 
   /** Observes events with the specified eventId.
-   * To see which events are getting fired, use the Inspector tool. 
-   * Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want to 
+   * To see which events are getting fired, use the Inspector tool.
+   * Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want to
    * intercept. In the panel, you will see one or more of the events,
-   *  click on them to inspect event parameters. To simplify the development process, 
-   * we also generate JavaScript code for handling this particular event, 
+   *  click on them to inspect event parameters. To simplify the development process,
+   * we also generate JavaScript code for handling this particular event,
    * copy-paste it from the context panel into your code if needed.
    * Sample: {@link https://public.datagrok.ai/js/samples/events/custom-events}
    * @param {string} eventId - such as 'd4-current-view-changed'
@@ -128,7 +128,7 @@ export class Events {
 
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_CLOSED); }
 
-  get onCurrentViewChanged(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGED); }
+  get onCurrentViewChanged(): rxjs.Observable<EventData<ViewChangeArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGED); }
 
   get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs(EVENT_TYPE.CURRENT_VIEW_CHANGING); }
 
@@ -214,6 +214,14 @@ export class Events {
   /** You can use it to override the default implementation of file import. */
   get onFileImportRequest(): rxjs.Observable<EventData<FileImportArgs>> { return __obs(EVENT_TYPE.FILE_IMPORT_REQUEST); }
 
+  /** Occurs when files are dragged into the application window, before the platform shows its
+   * drop overlay. Call {@link EventData.preventDefault} to suppress the overlay and handle the
+   * drop yourself (attach your own DOM `dragover`/`drop` handlers to your view). */
+  get onFileDragEnter(): rxjs.Observable<EventData> { return __obs(EVENT_TYPE.FILE_DRAG_ENTER); }
+
+  /** Occurs when an entity is shared with users or groups via the share dialog. */
+  get onEntityShared(): rxjs.Observable<Entity> { return __obs(EVENT_TYPE.ENTITY_SHARED); }
+
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs(EVENT_TYPE.GRID_CELL_LINK_CLICKED); }
 
   get onBrowseNodeCreated(): rxjs.Observable<TreeViewNode> {
@@ -236,6 +244,25 @@ export class StreamSubscription {
   unsubscribe(): void { this.cancel(); }
 
   cancel(): void { api.grok_Subscription_Cancel(this.dart); }
+}
+
+/** Descriptor for a named event that can be fired on an {@link EventBus}.
+ * Wraps a Dart `EventType<T>` instance. */
+export class EventType {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Internal event identifier, e.g. `'d4-scatterplot-point-clicked'`. */
+  get name(): string { return api.grok_EventType_Get_Name(this.dart); }
+
+  /** UI-facing event name, e.g. `'OnPointClicked'`. */
+  get eventName(): string { return api.grok_EventType_Get_EventName(this.dart); }
+
+  /** Human-readable description of the event. */
+  get description(): string { return api.grok_EventType_Get_Description(this.dart); }
 }
 
 /** @see Event arguments. {@link args} contains event details.
@@ -277,6 +304,44 @@ export class EventData<TArgs = any> {
         result[property] = toJs(x[property]);
     return result;
   }
+}
+
+/** Arguments passed to drag-and-drop callbacks (see {@link DG.ui.makeDroppable}).
+ * Wraps the Dart `DragDropArgs` handle exposed via the {@link GrokJsObject} mixin. */
+export class DragDropArgs<T = any> {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** The object being dragged (e.g. `DG.Column`, `DG.DataFrame`, or an `HTMLElement`). */
+  get dragObject(): T { return toJs(api.grok_DragDropArgs_Get_DragObject(this.dart)); }
+
+  /** Source context of the drag (e.g. parent DataFrame for a column drag). */
+  get dragSource(): any { return toJs(api.grok_DragDropArgs_Get_DragSource(this.dart)); }
+
+  /** Type tag supplied by the drag source (e.g. `'column'`, `'row'`, `'markup'`). */
+  get dragObjectType(): string { return api.grok_DragDropArgs_Get_DragObjectType(this.dart); }
+
+  /** True when the drop should copy rather than move (Ctrl / Cmd held). */
+  get copying(): boolean { return !!api.grok_DragDropArgs_Get_Copying(this.dart); }
+
+  /** True when the drop should create a link rather than copy/move (Alt held). */
+  get link(): boolean { return !!api.grok_DragDropArgs_Get_Link(this.dart); }
+
+  /** Original drag-start event. */
+  get event(): Event { return api.grok_DragDropArgs_Get_Event(this.dart); }
+
+  /** Mouse-up event on the drop zone (set when the drop actually happens). */
+  get dropEvent(): MouseEvent { return api.grok_DragDropArgs_Get_DropEvent(this.dart); }
+
+  /** Element the drag originated from. */
+  get dragFromElement(): Element | null { return api.grok_DragDropArgs_Get_DragFromElement(this.dart); }
+
+  /** When true, further handling of the drop is suppressed. */
+  get handled(): boolean { return api.grok_DragDropArgs_Get_Handled(this.dart); }
+  set handled(v: boolean) { api.grok_DragDropArgs_Set_Handled(this.dart, v); }
 }
 
 /** Central event hub. */
@@ -346,6 +411,31 @@ export interface ViewArgs {
   view: View;
 }
 
+export interface ViewChangeArgs {
+  previous: View;
+  current: View;
+}
+
+export interface CellRangeArgs {
+  column: Column;
+  indexes: Int32Array | number[];
+}
+
+export interface RowChangeArgs {
+  previousRow: number;
+  currentRow: number;
+}
+
+export interface ColumnChangeArgs {
+  previous: Column;
+  current: Column;
+}
+
+export interface CellChangeArgs {
+  previous: Cell;
+  current: Cell;
+}
+
 export class ColumnsArgs extends EventData {
   get columns(): Column[] {
     return toJs(api.grok_ColumnsArgs_Get_Columns(this.dart));
@@ -367,6 +457,13 @@ export interface DataFrameArgs {
 
 export interface InputArgs {
   input: InputBase;
+}
+
+export interface PropertyChangeArgs {
+  property: Property;
+  object: any;
+  newValue: any;
+  oldValue: any;
 }
 
 export interface EventArgs {

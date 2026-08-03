@@ -58,8 +58,26 @@ export class PreclinicalDomains {
   supp: DG.DataFrame[] = [];
 
   all(): DG.DataFrame[] {
-    const dfs = Object.keys(this).filter((it) => it !== 'supp').map((k) => (this as any)[k]).filter((v) => v != null);
+    const self = this as unknown as Record<string, DG.DataFrame | null>;
+    const dfs = Object.keys(this)
+      .filter((k) => k !== 'supp')
+      .map((k) => self[k])
+      .filter((v): v is DG.DataFrame => v != null);
     return dfs.concat(this.supp);
+  }
+
+  get(domainName: string): DG.DataFrame | null {
+    if (domainName === 'supp')
+      return null;
+    return (this as unknown as Record<string, DG.DataFrame | null>)[domainName] ?? null;
+  }
+
+  set(domainName: string, df: DG.DataFrame): void {
+    (this as unknown as Record<string, DG.DataFrame>)[domainName] = df;
+  }
+
+  has(domainName: string): boolean {
+    return this.get(domainName) != null;
   }
 }
 
@@ -140,21 +158,26 @@ export class PreclinicalStudy {
   }
 
   async validate(): Promise<void> {
-    let validationResStr = '';
-    if (await grok.dapi.files
-      .exists(`System:AppData/Preclinicalcase/SEND/${this.studyId}/validation_results.json`)) {
-      validationResStr = await grok.dapi.files
-        .readAsText(`System:AppData/Preclinicalcase/SEND/${this.studyId}/validation_results.json`);
-    } else {
-      validationResStr = await funcs.runCoreValidate(
-        'sendig', `Preclinicalcase/SEND/${this.studyId}`, '3.1', 'json', undefined);
-      grok.dapi.files
-        .writeAsText(`System:AppData/Preclinicalcase/SEND/${this.studyId}/validation_results.json`,
-          validationResStr);
+    try {
+      let validationResStr = '';
+      if (await grok.dapi.files
+        .exists(`System:AppData/Preclinicalcase/SEND/${this.studyId}/validation_results.json`)) {
+        validationResStr = await grok.dapi.files
+          .readAsText(`System:AppData/Preclinicalcase/SEND/${this.studyId}/validation_results.json`);
+      } else {
+        validationResStr = await funcs.runCoreValidate(
+          'sendig', `Preclinicalcase/SEND/${this.studyId}`, '3.1', 'json', undefined);
+        grok.dapi.files
+          .writeAsText(`System:AppData/Preclinicalcase/SEND/${this.studyId}/validation_results.json`,
+            validationResStr);
+      }
+      this.validationResults = JSON.parse(validationResStr) as ValidationResult;
+      this.validated = true;
+      this.validationCompleted.next(true);
+    } catch (e: any) {
+      grok.shell.error(`Validation failed for study ${this.studyId}:`, e);
+      this.validationCompleted.next(false);
     }
-    this.validationResults = JSON.parse(validationResStr) as ValidationResult;
-    this.validated = true;
-    this.validationCompleted.next(true);
   }
 
   ensureValidationColumnsAdded(): void {

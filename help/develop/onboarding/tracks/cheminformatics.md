@@ -1,5 +1,14 @@
 ---
 title: "Cheminformatics"
+description: Exercises for learning Datagrok's cheminformatics capabilities, including MCS search and activity prediction models.
+keywords:
+  - cheminformatics exercises
+  - FindMCS
+  - maximal common substructure
+  - similarity scoring exercise
+  - trainModel
+  - applyModel
+  - activity prediction
 ---
 
 These programming exercises are designed to introduce developers to the Datagrok platform cheminformatics capabilities.
@@ -82,10 +91,10 @@ _Prerequisites:_  ["Molecular fingerprints"](../../../datagrok/solutions/domains
 
    Here the training and test dataframes are our datasets for training and prediction, respectively.
 
-3. Using [grok.chem.descriptors](https://datagrok.ai/api/js/api/dg/namespaces/chem/functions/descriptors)  create fingerprint of all
+3. Using [grok.chem.descriptors](https://datagrok.ai/api/js/dg/namespaces/chem/functions/descriptors)  create fingerprint of all
    molecules.
 4. Use grok.ml.trainModel your model (using fingerprint) to predict activity of molecule. You can use
    dataset [example](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/chem/activity_cliffs.csv)
-5. Using [grok.ml.applyModel](https://datagrok.ai/api/js/api/dg/namespaces/ml/functions/applyModel) apply on the test and train
+5. Using [grok.ml.applyModel](https://datagrok.ai/api/js/dg/namespaces/ml/functions/applyModel) apply on the test and train
    datasets. Check the accuracy of the model.
 6. Using grok.shell.addTableView(datasetName) output test dataset

@@ -5,21 +5,111 @@ position: 6 # float position is supported
 hide_search: true
 hide_sidebar: true
 unlisted: true
+description: Version-by-version list of Datagrok service Docker image tags and their release dates.
+keywords:
+  - release history
+  - docker image tags
+  - service versions
+  - upgrade version
 ---
 
 ## Latest version
 
 | Service                                                                   | Docker Image                                                                                      |
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.0](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.6.0](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                                              | [datagrok/grok_spawner:1.12.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.17.0](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.27.7](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.6.5](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                                              | [datagrok/grok_spawner:2.22.0](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.34.1](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+| Grok Pipe | [datagrok/grok_pipe:1.22.0](https://hub.docker.com/r/datagrok/grok_pipe) |
+| Grok Registry Proxy | [datagrok/grok_registry_proxy:1.30.0](https://hub.docker.com/r/datagrok/grok_registry_proxy) |
 
 
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
-- [Docker-Compose](../docker-compose/docker-compose.md)
+- [Docker-Compose](../../deploy/docker-compose/docker-compose.mdx)
+
+## 2026-07-02 Datagrok 1.27.7 release
+
+### Improvements:
+
+* [#3857](https://github.com/datagrok-ai/public/issues/3857): Filters: regular expression search now supports pasting lists of compounds
+* Date inputs: Added a calendar icon
+* Formats: Introduced the `G<N>` number format to eliminate floating-point conversion artifacts
+* Server settings can now be propagated from service parameters
+* JS API:
+  * Added support for `categoryGroups` in forms, enabling developers to build complex category hierarchies
+  * Exposed the `Project.close()` method.
+  * Added the `DG.SpaceView` wrapper and the `Project.isSpace` getter
+  * Exposed `InputForm.validateInputs` and the `onFormPropertyChanged` event
+  * Added `InputForm.showInput()` and `hideInput()` methods
+  * Added the visible property to `InputBase`.
+  * Added support for custom history definitions in custom editors
+  * Added a DAPI endpoint for retrieving favorites across multiple groups
+  * `nullable` is now a setter and automatically revalidates inputs when changed
+  * Function annotation `nullable` is now respected for input parameters
+  * Table and choice inputs now correctly support null values, no longer auto-select data frames, and can be cleared manually.
+  * Optional inputs are no longer pre-filled when they shouldn't be.
+  * Fixed styling of boolean and switch inputs in compact forms.
+ 
+### Fixed:
+
+* Filters added from the column menu are now correctly disabled
+* Search: Fixed parsing of numeric filter range expressions
+* Queries now resolve relative date/time patterns using the client's time zone
+* Refreshing doesn't break copy/paste behavior
+* Toolbox: Fixed query parameter search fields collapsing in narrow Source pane layouts
+* [#3830](https://github.com/datagrok-ai/public/issues/3830): Projects now keep the Save button visible after saving personal view customizations
+* Model Hub: Fixed errors when switching between views and  preview rendering for models
+
+## 2026-05-20 Datagrok 1.27.5 release
+
+### Improvements:
+
+* OAuth: 
+  * Token-based connections now work across providers with different OAuth dialects (Azure AD, Google, Okta, etc.) 
+  * For Databricks connections using the OAuth (user-consent) method, Datagrok now automatically exchanges the identity provider's token for a Databricks workspace token
+* GCP: Cloud Storage connections can now authenticate via Task Role
+* Browse: **Shared with me** now contains **By users** submenu that groups shared entities by who shared them
+* JS API: Project now exposes a writable `meta` map (`metaParams`), so plugins can set and read project metadata such as `project.meta.demoPath`
+* Layouts: Entity markup now shows the entity icon
+* Trellis plot: Improved Summary rendering — added text padding and value-on-top labels with automatic rotation
+
+### Fixed:
+
+* GCP/AWS: Authentication Method choice now appears for secret connections
+* Layouts: Now save and apply correctly when tags contain a `null` value
+
+## 2026-04-27 Datagrok 1.27.3 release
+
+### Platform
+
+* Auth:
+  * Added configurable SAML Entity ID for Azure AD integration
+* Infrastructure:
+  * Helm: Introduced per-service Secret overrides with autogenerated credentials, plus a unified chart with IRSA support for S3 storage
+  * Datlas: Added the POST /docker/token endpoint for Docker OAuth2 refresh flow
+  * Datlas: Implemented RDS IAM passwordless authentication for PostgreSQL with SigV4 token generation and pool refresh
+  * Spawner: Improved support for huge Docker images
+  * Spawner: Now resolves the Docker registry via Kubernetes API
+* Fixed: 
+  * Groups: Properties dialog no longer resets deduplicated group names; saving group relations no longer raises a false 'duplicate name' error
+* Projects:
+  * [#3655](https://github.com/datagrok-ai/public/issues/3655) Introduced passing parameter values 
+via URL
+  * Creation script editor: Added syntax verification
+  * Fixed:
+    * Query parameter edits now persist with the project on save
+    * Table view: Refreshing a left join with an in-place table no longer produces UI errors
+    * Multi-choice inputs: Cascading refresh, progress indicator, and styling now work correctly
+
+### Viewers
+
+* [Filter Panel](../../visualize/viewers/filters.md): [#3731](https://github.com/datagrok-ai/public/issues/3731) Added hierarchy search in hierarchical filter
+* [Correlation plot](../../visualize/viewers/correlation-plot.md): [#3400](https://github.com/datagrok-ai/public/issues/3400) Implemented row name pinning
+* Fixed:
+  * [Trellis plot](../../visualize/viewers/trellis-plot.md): Inner viewer settings now persist on query re-run, and refresh errors are resolved
+  * [#3692](https://github.com/datagrok-ai/public/issues/3692) MMP: Trellis plot Summary viewer now displays all values
 
 ## 2026-03-26 Datagrok 1.27.2 release
 
@@ -141,7 +231,7 @@ This release introduces non-backward-compatible database changes. You can upgrad
 * Fixed:
   * [#3668](https://github.com/datagrok-ai/public/issues/3668): Scrolling in plugin Credentials frame
 
-### [JS API](https://datagrok.ai/help/develop/js-api)
+### [JS API](https://datagrok.ai/help/develop/packages/js-api)
 
 * Views and UI:
   * Added `Shell.preview` getter/setter
@@ -455,7 +545,7 @@ running Python functions as Celery tasks in isolated containers while the platfo
 * Browse tree navigation improvements: the selected directory is now sticky, so it stays in view when you navigate between sections, making it easier to keep your context while browsing
 * Redesigned Docker UX with added **Resources**, **Logs**, and **Build logs** sections for easier container management and monitoring
 
-### [JS API](https://datagrok.ai/help/develop/js-api)
+### [JS API](https://datagrok.ai/help/develop/packages/js-api)
 
 * Added the alias for 'memberships', addressing the previous limitation that required using group.parents in the JavaScript API. For details, see [how to get a list of users](https://community.datagrok.ai/t/how-to-delete-users-from-grok-server/613/7)
 
@@ -1800,7 +1890,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * The ability to configure the platform through the **Settings** wizard.
 * Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
 * Function view now shows function signature if parameters are not user-editable.
-* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/function_results_cache#client-side-cache)
+* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/functions/cache-function-results#client-side-cache)
 * Summary viewer that aggregates the numeric attributes of features.
 * Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
 * **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.

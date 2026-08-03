@@ -1,5 +1,15 @@
 ---
 title: "Inspector"
+description: How to use the Inspector developer tool to view platform internals like events, storage, and serialization.
+keywords:
+  - Alt+I
+  - developer tool
+  - debug panel
+  - client events
+  - local storage viewer
+  - project JSON
+  - memory leaks
+  - widget inspector
 ---
 
 Inspector is a tool for developers that lets you see and interact with the platform internals. 

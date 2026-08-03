@@ -3,6 +3,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
 import * as DG from 'datagrok-api/dg';
+import {MAX_SMILES_LENGTH} from './chem-constants';
 
 export function renderDescription(description: OCL.IParameterizedString[]): HTMLDivElement {
   const host = ui.div([]);
@@ -44,7 +45,7 @@ function _molToCanvas(mol: OCL.Molecule, width = 200, height = 100): HTMLCanvasE
 
 export function oclMol(molStr: string): OCL.Molecule {
   const isMolFile = DG.chem.isMolBlock(molStr);
-  if (!isMolFile && molStr.length > 5000)
+  if (!isMolFile && molStr.length > MAX_SMILES_LENGTH)
     throw new Error('Invalid molecule string');
   return isMolFile ? OCL.Molecule.fromMolfile(molStr) : OCL.Molecule.fromSmiles(molStr);
 }

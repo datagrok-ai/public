@@ -12,12 +12,15 @@
   "paths": {
     "/molecule.json": {
       "get": {
+        "summary": "Get Molecule by ChEMBL ID",
+        "description": "Retrieves a ChEMBL molecule record (structure and properties) for an exact ChEMBL ID.",
         "parameters": [
           {
             "name": "molecule_chembl_id__exact",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "description": "Exact ChEMBL ID to look up (e.g. CHEMBL25)."
           }
         ],
         "responses": {
@@ -281,12 +284,15 @@
     },
     "/substructure/{smile}": {
       "get": {
+        "summary": "ChEMBL Substructure Search",
+        "description": "Finds ChEMBL molecules that contain the given SMILES as a substructure.",
         "parameters": [
           {
             "name": "smile",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Query structure as a SMILES string."
           }
         ],
         "responses": {
@@ -550,18 +556,22 @@
     },
     "/similarity/{smile}/{score}": {
       "get": {
+        "summary": "ChEMBL Similarity Search",
+        "description": "Finds ChEMBL molecules similar to the given SMILES above a minimum similarity score.",
         "parameters": [
           {
             "name": "smile",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "description": "Query structure as a SMILES string."
           },
           {
             "name": "score",
             "in": "path",
             "required": true,
-            "type": "integer"
+            "type": "integer",
+            "description": "Minimum Tanimoto similarity score, 0-100."
           }
         ],
         "responses": {

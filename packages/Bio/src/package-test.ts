@@ -36,8 +36,10 @@ import './tests/to-atomic-level-ui-tests';
 import './tests/mm-distance-tests';
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
+import './tests/editor-loop-tests';
 import './tests/scoring';
 import './tests/projects-tests';
+import './tests/antibody-numbering-tests';
 
 
 export const _package = new DG.Package();

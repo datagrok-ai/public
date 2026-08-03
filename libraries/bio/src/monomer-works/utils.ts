@@ -5,14 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {ISubstructProvider} from '@datagrok-libraries/chem-meta/src/types';
-import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 
-import {OrgType} from '../helm/types';
+import {PolymerType} from '../helm/types';
 import {ISeqMonomer} from '../helm/types';
 import {HELM_POLYMER_TYPE} from '../utils/const';
 import {ALPHABET} from '../utils/macromolecule';
-
-declare const org: OrgType;
 
 export type MonomerHoverLink = {
   targetCol: DG.Column,

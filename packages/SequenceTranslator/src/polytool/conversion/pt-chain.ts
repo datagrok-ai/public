@@ -1,21 +1,20 @@
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {Linkage} from './pt-misc';
 import {Rules} from './pt-rules';
-import {HelmMol} from '@datagrok-libraries/bio/src/helm/types';
 import {fromObjectsToHelm, handleDuplicated, handleLinkRules,
   handleReactionRules, parseHelm, parseSeparator} from './pt-tools-parse';
-import {getHelmMol, helmMolToNotation} from './pt-tools-helmmol';
+import {getHelmMol, helmMolToNotation, PtMol} from './pt-tools-helmmol';
 
 
 export class Chain {
   linkages: Linkage[];
   monomers: string[][];
-  mol: HelmMol;
+  mol: PtMol;
 
   underRules: boolean = false;
   linkagesUnderRules: Linkage[];
   monomersUnderRules: string[][];
-  molUnderRules: HelmMol;
+  molUnderRules: PtMol;
   posToPosUnderRules: number[][] = [];
 
   constructor(monomers: string[][], linkages: Linkage[], protected helmHelper: IHelmHelper) {

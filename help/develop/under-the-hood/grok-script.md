@@ -1,5 +1,13 @@
 ---
 title: "Grok script"
+description: Reference for Grok script, the console scripting language used to automate actions in Datagrok.
+keywords:
+  - console commands
+  - macro recording
+  - grok script syntax
+  - math and logical operators
+  - variables and objects
+  - automation language
 ---
 
 Grok script language is used to control or automate everything within the Datagrok platform. Use it to transform data,

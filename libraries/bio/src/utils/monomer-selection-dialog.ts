@@ -127,7 +127,7 @@ export class MonomerSelectionWidget {
           this.renderTags();
           this.updateCountLabel();
         }
-      });
+      }, 'Remove');
       removeBtn.style.marginLeft = '4px';
       removeBtn.style.cursor = 'pointer';
 

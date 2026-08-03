@@ -1,5 +1,12 @@
 ---
 title: "Network diagram"
+description: Visualize graphs where column values become nodes and rows become edges, with color and size coding.
+keywords:
+  - node-link graph
+  - network visualization
+  - graph diagram
+  - nodes and edges
+  - force-directed layout
 ---
 
 Network diagram visualizes graphs, where values of the specified two columns become nodes and rows become
@@ -90,6 +97,8 @@ General:
 | Node1 Categorical Color Scheme | list |  |
 | Node2 Linear Color Scheme | list |  |
 | Node2 Categorical Color Scheme | list |  |
+| **Selection** | | |
+| Show Selected Rows | boolean | When checked, selected nodes and edges are highlighted using the selected rows color. When unchecked, they keep their regular color coding. |
 | **Description** | | |
 | Show Title | boolean |  |
 | **Data** | | |

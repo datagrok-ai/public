@@ -108,7 +108,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap chem-diversity-search'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
-      progressBar?.close();
     }
   }
 }

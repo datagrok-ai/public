@@ -1,5 +1,13 @@
 ---
 title: "3D Scatter plot"
+description: Plot data points on X, Y, and Z axes to explore relationships between three variables.
+keywords:
+  - xyz chart
+  - three-dimensional plot
+  - color coding
+  - size coding
+  - point labels
+  - multivariate relationship
 ---
 
 Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the

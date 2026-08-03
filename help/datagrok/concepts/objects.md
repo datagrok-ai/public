@@ -1,6 +1,14 @@
 ---
 title: "Entities"
 sidebar_position: 3
+description: Explains what entities are in Datagrok, the operations common to all of them, and how to search using metadata.
+keywords:
+  - entity metadata
+  - tags parameters properties
+  - entity search
+  - smart search syntax
+  - privileges and sharing
+  - audit record
 ---
 
 Certain classes of objects in Datagrok have a common set of operations and

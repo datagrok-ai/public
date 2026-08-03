@@ -1,5 +1,13 @@
 ---
 title: "Work with package files"
+description: Read and access data bundled with a package via webRoot URLs or the _package.files API.
+keywords:
+  - webRoot property
+  - package files folder
+  - package tables folder
+  - _package.files.readAsText
+  - FilesDataSource
+  - bundled demo data
 ---
 
 There are multiple ways to access your data in the Datagrok platform. To learn more about them,
@@ -49,7 +57,7 @@ root.style.backgroundImage = `url(${_package.webRoot}images/night-sky.png)`;
 
 These methods work with any URL, be it a link to an external resource or a file from a package.
 Data under `files`, however, can be accessed via standard file methods exposed in Datagrok JS
-API (check out the [FileSource](https://datagrok.ai/api/js/dg/classes/FileSource) class):
+API (check out the [FilesDataSource](https://datagrok.ai/api/js/dg/classes/FilesDataSource) class):
 
 ```js
 // `_package` is defined in package.js

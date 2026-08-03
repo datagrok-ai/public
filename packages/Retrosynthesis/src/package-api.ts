@@ -8,17 +8,17 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  /**
+   * @param {string} smiles
+   *   semType: Molecule
+   */
   export async function retroSynthesisPath(smiles: string ): Promise<any> {
     return await grok.functions.call(':RetroSynthesisPath', { smiles });
   }
 
-  export async function retrosynthesisTopMenu(): Promise<void> {
-    return await grok.functions.call(':RetrosynthesisTopMenu', {});
-  }
-
   /**
-  Generate retrosynthesis paths
-  */
+   * Generate retrosynthesis paths
+   */
   export async function retrosynthesisDemo(): Promise<void> {
     return await grok.functions.call(':RetrosynthesisDemo', {});
   }

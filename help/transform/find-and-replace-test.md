@@ -1,7 +1,16 @@
+---
+title: "Tests: Find and replace"
+description: Testing scenarios for validating the Find and replace dialog, search patterns, and column scoping.
+keywords:
+  - find and replace test
+  - search and replace testing
+  - search patterns validation
+  - match case whole word testing
+  - qa test scenarios
+---
+
 <!-- TITLE: Tests: Find and replace -->
 <!-- SUBTITLE: -->
-
-# Tests: find and replace
 
 This typical ["Find and Replace"](find-and-replace-test.md) dialog that you see in every text editor, except that it
 supports specifying the columns to run against, and [search patterns](../visualize/table-view-1.md#search-patterns) for matching non-textual columns.

@@ -1,10 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, delay, expect, testEvent} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 
 export const CONTAINER_TIMEOUT = 90000;
+
+/** Waits for the grid to complete a draw pass. */
+export async function awaitGrid(grid: DG.Grid, timeout: number = 5000): Promise<void> {
+  await delay(0);
+  await testEvent(grid.onAfterDrawContent, () => {},
+    () => {grid.invalidate();}, timeout);
+}
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -122,7 +129,7 @@ Accelrys05311914342D 1   1.00000     0.00000     0
  15 12  2  0     0  0
  14 10  1  0     0  0
 M  END
-`
+`;
 
 export const molV2000 = `
 Accelrys05311914342D 1   1.00000     0.00000     0

@@ -1,5 +1,15 @@
 ---
 title: "MS SQL"
+description: Connect Datagrok to a Microsoft SQL Server database and query it using SQL over JDBC.
+keywords:
+  - ms sql
+  - mssql database
+  - sql server
+  - microsoft sql server jdbc driver
+  - connect to sql server
+  - schema browsing
+  - join db tables
+  - aggregation query
 ---
 
 Provides access to [Microsoft SQL](https://www.microsoft.com/en-us/sql-server) database using SQL queries via a JDBC

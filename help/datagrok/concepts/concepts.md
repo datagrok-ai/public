@@ -1,6 +1,15 @@
 ---
 title: "Core Datagrok concepts"
-format: mdx
+description: Overview of foundational Datagrok concepts, including dataframes, functions, entities, views, layouts, and projects.
+keywords:
+  - dataframe
+  - entities
+  - views and layouts
+  - projects and dashboards
+  - platform fundamentals
+  - exploratory data analysis
+mdx:
+  format: mdx
 ---
 
 ```mdx-code-block

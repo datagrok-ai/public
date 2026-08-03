@@ -1,0 +1,77 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 2000,
+      "height": 1000
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 800,
+          "height": 1000,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 800,
+              "height": 1000,
+              "element": {
+                "id": "a1000000-0000-0000-0000-000000000001",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "sortByColumnNames": ["test", "threads", "concurrent_run"],
+                  "sortTypes": [true, true, true],
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {"columnName": "test", "width": 240},
+                    {"columnName": "threads", "width": 64},
+                    {"columnName": "concurrent_run", "width": 90},
+                    {"columnName": "ms", "width": 80, "cellType": "number"},
+                    {"columnName": "passed", "width": 64, "cellType": "bool",
+                     "colorCodingCategorical": {"false": 4292224808, "true": 4281114668}},
+                    {"columnName": "started", "width": 150, "cellType": "number", "format": "M/d/yyyy HH:mm:ss"}
+                  ]
+                },
+                "title": "Raw runs",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1200,
+          "height": 1000,
+          "element": {
+            "id": "a1000000-0000-0000-0000-000000000002",
+            "type": "Box plot",
+            "look": {
+              "#type": "BoxPlotLook",
+              "categoryColumnNames": ["test"],
+              "valueColumnName": "ms",
+              "markerColorColumnName": "passed",
+              "title": "Duration (ms) by test",
+              "legendPosition": "Auto"
+            },
+            "title": "Duration (ms) by test"
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableName": "StressTestsRaw"
+  },
+  "columns": [],
+  "name": "StressTestsRaw",
+  "friendlyName": "Stress Tests Raw"
+}

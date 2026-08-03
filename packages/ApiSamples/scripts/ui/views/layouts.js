@@ -43,5 +43,5 @@ acc.addPane('Layouts demo', () => {
 }, true, acc.panes[0]);
 
 view.setRibbonPanels([[
-  ui.iconFA('broom', () => view.resetLayout()),
+  ui.iconFA('broom', () => view.resetLayout(), 'Reset layout'),
 ]]);

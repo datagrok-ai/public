@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, NOTATION, NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {OligoToolkitPackage} from './apps/common/model/oligo-toolkit-package';
@@ -16,8 +16,18 @@ import {demoOligoPatternUI, demoOligoStructureUI, demoOligoTranslatorUI} from '.
 import {getExternalAppViewFactories} from './plugins/mermade';
 import {defaultErrorHandler} from './utils/err-info';
 
+import {OligoNucleotideCellRenderer} from './oligo-renderer/cell-renderer';
+import {buildOligoPanel} from './oligo-renderer/legend-panel';
+import {buildOligoStructuresPanel} from './oligo-renderer/structures-panel';
+import {combineSenseAntisenseToOligo, convertHelmColumnToOligo} from './oligo-renderer/converters';
+import {
+  openOligoCanvasDialog, openOligoHelmEditorDialog,
+  copyHelmToClipboard, copyDuplexImageToClipboard,
+} from './oligo-renderer/cell-actions';
+
 import {polyToolConvert, polyToolConvertUI} from './polytool/pt-dialog';
-import {polyToolEnumerateChemUI} from './polytool/pt-dialog';
+import {polyToolEnumerateChemApp, polyToolEnumerateChemUI} from './polytool/pt-chem-enum-dialog';
+import {markushSettingsEditorWidget} from './polytool/pt-chem-enum-settings';
 import {polyToolEnumerateHelmUI, polyToolEnumerateSeq} from './polytool/pt-enumerate-seq-dialog';
 import {_setPeptideColumn} from './polytool/utils';
 import {PolyToolCsvLibHandler} from './polytool/csv-to-json-monomer-lib-converter';
@@ -27,9 +37,15 @@ import {CyclizedNotationProvider} from './utils/cyclized';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {PolyToolDataRole, PolyToolTags} from './consts';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getPTCombineDialog} from './polytool/pt-combine-dialog';
 import {PolyToolEnumeratorTypes} from './polytool/types';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
+// hwe editor stylesheet (`.hw-*` classes). hwe ships its CSS only as a bundler
+// import (no runtime injection), so the PolyTool HELM editor dialog renders
+// unstyled unless we import it here. See @datagrok-libraries/hwe editor.css.
+import '@datagrok-libraries/hwe/styles.css';
 
 export * from './package.g';
 
@@ -69,10 +85,11 @@ export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: tru
 let initSequenceTranslatorPromise: Promise<void> | null = null;
 
 async function initSequenceTranslatorInt(): Promise<void> {
-  const [helmHelper] = await Promise.all([
+  const [helmHelper, bioLibHelper] = await Promise.all([
     getHelmHelper(),
+    getMonomerLibHelper(),
   ]);
-  _package.completeInit(helmHelper);
+  _package.completeInit(helmHelper, bioLibHelper.getMonomerLib());
 }
 
 export class PackageFunctions {
@@ -177,45 +194,6 @@ export class PackageFunctions {
     return linkStrandsV3000(strands, true);
   }
 
-
-  @grok.decorators.func({
-    meta: {
-      demoPath: 'Bioinformatics | Oligo Toolkit | Translator',
-      path: '/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate',
-      demoSkip: 'GROK-14320'
-    },
-    name: 'demoOligoTranslator',
-    description: 'Translate oligonucleotide sequences across various formats accepted by different synthesizers'
-  })
-  static async demoTranslateSequence(): Promise<void> {
-    await demoOligoTranslatorUI();
-  }
-
-
-  @grok.decorators.func({
-    meta: {
-      demoPath: 'Bioinformatics | Oligo Toolkit | Pattern',
-      path: '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex'
-    },
-    description: 'Design a modification pattern for an oligonucleotide sequence'
-  })
-  static async demoOligoPattern(): Promise<void> {
-    await demoOligoPatternUI();
-  }
-
-
-  @grok.decorators.func({
-    meta: {
-      demoPath: 'Bioinformatics | Oligo Toolkit | Structure',
-      path: '%20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex'
-    },
-    description: 'Visualize duplex and save SDF'
-  })
-  static async demoOligoStructure(): Promise<void> {
-    await demoOligoStructureUI();
-  }
-
-
   @grok.decorators.func()
   static async translateOligonucleotideSequence(
     sequence: string, sourceFormat: string, targetFormat: string
@@ -242,13 +220,15 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'PolyTool: Convert Notation',
+    description: 'Convert a column of sequences in custom notation to HELM and/or molfiles',
     editor: 'SequenceTranslator:getPolyToolConvertEditor',
   })
   static async polyToolConvert2(
     table: DG.DataFrame,
     @grok.decorators.param({options: {caption: 'Sequence'}}) seqCol: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'true'}}) generateHelm: boolean,
-    @grok.decorators.param({options: {initialValue: 'true'}}) chiralityEngine: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Also produce a HELM column alongside the molfiles'}}) generateHelm: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', description: 'Use the chirality engine when building structures'}}) chiralityEngine: boolean,
     @grok.decorators.param({type: 'object'}) rules: string[]
   ): Promise<DG.Column<string>> {
     const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
@@ -267,12 +247,15 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'Bio | PolyTool | Enumerate Chem...',
-    'name': 'polyToolEnumerateChem',
-    'description': 'Perform enumeration of a molecule using different fragments at specified positions'
+    'top-menu': 'Chem | Transform | Markush Enumeration...',
+    'name': 'Markush Enumerator',
+    'description': 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)'
   })
-  static async polyToolEnumerateChemTopMenu(): Promise<void> {
-    polyToolEnumerateChemUI();
+  static async chemEnumerateMarkushTopMenu(): Promise<void> {
+    let cell: DG.Cell | undefined = undefined;
+    if (grok.shell.tv?.dataFrame && grok.shell.tv.dataFrame.currentCell && grok.shell.tv.dataFrame.currentCell.column.semType === DG.SEMTYPE.MOLECULE)
+      cell = grok.shell.tv.dataFrame.currentCell;
+    polyToolEnumerateChemUI(cell);
   }
 
 
@@ -314,14 +297,15 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       icon: 'img/icons/structure.png',
-      browsePath: 'Peptides | PolyTool',
+      browsePath: 'Chem',
       role: 'app'
     },
-    name: 'Chem Enumerator',
-    tags: ['app']
+    name: 'Markush Enumerator',
+    tags: ['app'],
+    outputs: [{type: 'view', name: 'result'}]
   })
-  static async ptEnumeratorChemApp(): Promise<void> {
-    polyToolEnumerateChemUI();
+  static async ptEnumeratorChemApp() {
+    return await polyToolEnumerateChemApp();
   }
 
 
@@ -340,6 +324,34 @@ export class PackageFunctions {
   static async getPtChemEnumeratorDialog(
     @grok.decorators.param({type: 'object', options: {nullable: true}}) cell?: DG.Cell) {
     return polyToolEnumerateChemUI(cell);
+  }
+
+
+  /** Enumerator entry for OligoNucleotide cells.
+   *
+   * The cell value is HELM (under the hood). The enumerator dialog is built
+   * around `Macromolecule` cells, so we wrap the oligo HELM in a temp
+   * Macromolecule column and pass that cell in. The `outputAsOligo` flag
+   * makes the dialog tag the enumerated result column as OligoNucleotide so
+   * the duplex renderer picks it up automatically. */
+  @grok.decorators.func({
+    name: 'Polytool Oligo Enumerator dialog'
+  })
+  static async getPtOligoEnumeratorDialog(
+    @grok.decorators.param({type: 'object', options: {nullable: true}}) cell?: DG.Cell) {
+    if (!cell || cell.value == null)
+      return polyToolEnumerateHelmUI(undefined, true);
+
+    const helm = String(cell.value);
+    const tempCol = DG.Column.fromStrings('helm', [helm]);
+    tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    tempCol.meta.units = 'helm';
+    tempCol.setTag('aligned', 'SEQ');
+    tempCol.setTag('alphabet', 'RNA');
+    tempCol.setTag('cell.renderer', 'helm');
+    const tempDf = DG.DataFrame.fromColumns([tempCol]);
+    const tempCell = tempDf.cell(0, 'helm');
+    return polyToolEnumerateHelmUI(tempCell, true);
   }
 
   @grok.decorators.func({
@@ -387,6 +399,142 @@ export class PackageFunctions {
   }
 
 
+  // ---- OligoNucleotide cell renderer + panel + converters ----
+
+  @grok.decorators.func({
+    name: 'oligoNucleotideCellRenderer',
+    description: 'Renders OligoNucleotide (siRNA / ASO) duplex view in grid cells',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'OligoNucleotide',
+      columnTags: 'quality=OligoNucleotide',
+      role: 'cellRenderer',
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}],
+  })
+  static oligoNucleotideCellRenderer(): DG.GridCellRenderer {
+    return new OligoNucleotideCellRenderer();
+  }
+
+  /** Double-click cell editor: opens a full-screen modal with a nicely-rendered
+   * canvas view of the duplex. Hover interactions (monomer/linkage tooltip
+   * with cached RDKit structures) mirror what works in the grid cell. Editing
+   * the HELM itself happens through the separate `Open HELM Editor` action. */
+  @grok.decorators.func({
+    name: 'editOligoNucleotideCell',
+    description: 'OligoNucleotide',
+    tags: ['cellEditor'],
+    meta: {
+      role: 'cellEditor',
+    },
+  })
+  static editOligoNucleotideCell(
+    @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell,
+  ): void {
+    openOligoCanvasDialog(cell);
+  }
+
+  /** Cell context-menu action: open the HELM Web Editor for the cell's
+   * sequence and write the edited HELM back on OK. Lives in the "Actions"
+   * group on the cell's context menu (same surfacing convention as
+   * `Copy as HELM`). */
+  @grok.decorators.func({
+    name: 'Open HELM Editor',
+    description: 'Edit the oligonucleotide HELM in the HELM Web Editor',
+    meta: {'action': 'Edit HELM'},
+  })
+  static openOligoHelmEditor(
+    @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): Promise<void> {
+    return openOligoHelmEditorDialog(value);
+  }
+
+  @grok.decorators.func({
+    name: 'Oligo-Nucleotide',
+    description: 'Modifications, lengths, conjugates and color legend for an OligoNucleotide cell',
+    tags: ['panel', 'widgets'],
+    outputs: [{type: 'widget', name: 'result'}],
+  })
+  static oligoNucleotidePanel(
+    @grok.decorators.param({type: 'semantic_value', options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): DG.Widget {
+    return buildOligoPanel(value);
+  }
+
+  @grok.decorators.func({
+    name: 'Oligo Structures',
+    description: 'Sense and antisense full molecular structures rendered separately',
+    tags: ['panel', 'widgets'],
+    outputs: [{type: 'widget', name: 'result'}],
+  })
+  static oligoNucleotideStructuresPanel(
+    @grok.decorators.param({type: 'semantic_value', options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): DG.Widget {
+    return buildOligoStructuresPanel(value);
+  }
+
+  /** Cell context-menu action: copy the raw HELM string. Surfaced automatically
+   * by the platform under the cell's "Copy" submenu because of `meta.action:
+   * 'Copy as HELM'`; we set `exclude-actions-panel` so it doesn't also show up
+   * in the right-side actions panel. */
+  @grok.decorators.func({
+    name: 'Copy as HELM',
+    description: 'Copy the HELM string of an oligo cell to the clipboard',
+    meta: {'action': 'Copy as HELM'},
+  })
+  static copyOligoAsHelm(
+    @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): void {
+    copyHelmToClipboard(value);
+  }
+
+  /** Cell context-menu action: render the duplex to a high-resolution PNG with
+   * transparent background and copy it to the system clipboard. Canvas pixel
+   * dimensions are scaled up but the logical layout sees the original
+   * gridCell bounds — so chip sizes match what's on-screen, just at higher
+   * pixel density. drawDuplex itself never paints a backdrop, which keeps
+   * the alpha channel clean. */
+  @grok.decorators.func({
+    name: 'Copy as Image',
+    description: 'Copy a high-resolution image of the oligo duplex',
+    meta: {'action': 'Copy as Image'},
+  })
+  static copyOligoAsImage(
+    @grok.decorators.param({options: {semType: 'OligoNucleotide'}}) value: DG.SemanticValue,
+  ): void {
+    copyDuplexImageToClipboard(value);
+  }
+
+  // Invoked from the column / cell context menu via detectors.js (no top-menu).
+  @grok.decorators.func({
+    name: 'HELM to Oligonucleotide',
+    description: 'Create a new column tagged as OligoNucleotide so HELM duplex cells render with the oligo view',
+  })
+  static async convertHelmToOligoNucleotide(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'HELM column', semType: 'Macromolecule'}}) helmCol: DG.Column,
+  ): Promise<DG.Column> {
+    const out = convertHelmColumnToOligo(table, helmCol);
+    await grok.data.detectSemanticTypes(table);
+    return out;
+  }
+
+  // Invoked from the column / cell context menu via detectors.js — opens the
+  // function editor (`.prepare().edit()`) so the user can pick antisense column.
+  @grok.decorators.func({
+    name: 'Combine Sense + Antisense to Oligonucleotide',
+    description: 'Combine separate sense + antisense HELM columns into one OligoNucleotide column',
+  })
+  static async combineSenseAntisenseToOligoNucleotide(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Sense', semType: 'Macromolecule'}}) senseCol: DG.Column,
+    @grok.decorators.param({options: {caption: 'Antisense', semType: 'Macromolecule'}}) antiCol: DG.Column,
+  ): Promise<DG.Column> {
+    const out = combineSenseAntisenseToOligo(table, senseCol, antiCol);
+    await grok.data.detectSemanticTypes(table);
+    return out;
+  }
+
   @grok.decorators.func({
     name: 'applyNotationProviderForHarmonizedSequence'
   })
@@ -397,6 +545,8 @@ export class PackageFunctions {
     col.setTag('alphabet', 'UN');
     col.setTag('.alphabetIsMultichar', 'true');
     col.meta.units = NOTATION.CUSTOM;
+    if (separator && !col.tags[BioTags.separator])
+      col.tags[BioTags.separator] = separator;
     col.tags[PolyToolTags.dataRole] = 'template';
     col.temp[SeqTemps.notationProvider] = new CyclizedNotationProvider(separator, _package.helmHelper);
   }
@@ -407,6 +557,16 @@ export class PackageFunctions {
   })
   static async harmonizedSequenceNotationProviderConstructor(): Promise<typeof CyclizedNotationProvider> {
     return CyclizedNotationProvider;
+  }
+
+  @grok.decorators.func({
+    name: 'Markush Enumerator package settings editor',
+    meta: {role: 'packageSettingsEditor'},
+    tags: ['packageSettingsEditor'],
+  })
+  static async markushSettingsEditor(
+    @grok.decorators.param({'name': 'propList', 'type': 'object'}) properties: DG.Property[]) : Promise<DG.Widget> {
+    return markushSettingsEditorWidget(properties);
   }
 }
 

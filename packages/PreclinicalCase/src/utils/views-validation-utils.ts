@@ -31,8 +31,10 @@ export function setupValidationErrorColumns(df: DG.DataFrame) {
     }
   }
 
-  if (Object.keys(columnsWithErrors).length === 0)
+  if (Object.keys(columnsWithErrors).length === 0) {
     df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, '');
+    return;
+  }
 
   df.setTag(COLUMNS_WITH_VALIDATION_ERRORS_TAG, JSON.stringify(columnsWithErrors));
 }

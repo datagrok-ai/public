@@ -35,6 +35,7 @@ category('TreeViewer', () => {
       symbol: 'emptyCircle',
       symbolSize: 7,
       fontSize: 12,
+      moleculeSize: 'fit',
       labelRotate: 45,
       showCounts: false,
       mouseOverLineColor: 7102046,

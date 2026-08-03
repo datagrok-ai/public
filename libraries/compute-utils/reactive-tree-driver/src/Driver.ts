@@ -12,7 +12,7 @@ import {PipelineConfiguration} from './config/PipelineConfiguration';
 import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
-import {DriverLogger} from './data/Logger';
+import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
 import {getStartedOrNull} from '../../shared-utils/utils';
 
@@ -22,6 +22,7 @@ export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
   public currentValidations$ = new BehaviorSubject<Record<string, Observable<Record<string, ValidationResult>>>>({});
+  public currentPipelineValidations$ = new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
   public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
@@ -42,12 +43,12 @@ export class Driver {
   constructor(private mockMode = false) {
     this.commands$.pipe(
       withLatestFrom(this.states$),
-      concatMap(([msg, state]) => this.executeCommand(msg, state)),
-      catchError((error) => {
-        console.error(error);
-        grok.shell.error(error?.message);
-        return EMPTY;
-      }),
+      concatMap(([msg, state]) => this.executeCommand(msg, state).pipe(
+        catchError((error) => {
+          reportError('recoverable', `command:${msg.event}`, error, this.logger);
+          return EMPTY;
+        }),
+      )),
       takeUntil(this.closed$),
     ).subscribe();
 
@@ -93,6 +94,11 @@ export class Driver {
       map((state) => state ? state.getValidations() : {}),
       takeUntil(this.closed$),
     ).subscribe(this.currentValidations$);
+
+    stateUpdates$.pipe(
+      map((state) => state ? state.getPipelineValidations() : {}),
+      takeUntil(this.closed$),
+    ).subscribe(this.currentPipelineValidations$);
 
     stateUpdates$.pipe(
       map((state) => state ? state.getFuncCallStates() : {}),
@@ -227,7 +233,7 @@ export class Driver {
 
   private runSequence(msg: RunSequence, state?: StateTree) {
     this.checkState(msg, state);
-    return state.runSequence(msg.startUuid, msg.rerunWithConsistent, msg.includeNonNested);
+    return state.runSequence(msg.startUuid, msg.rerunWithConsistent, msg.includeNonNested, msg.includeInfo);
   }
 
   private resetToConsistent(msg: ResetToConsistent, state?: StateTree) {
@@ -261,7 +267,7 @@ export class Driver {
         if (msg.config)
           return of([stateLoaded, msg.config] as const);
         return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
-          concatMap((conf) => from(getProcessedConfig(conf))),
+          concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
           map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
         );
       }),
@@ -271,6 +277,7 @@ export class Driver {
           config,
           isReadonly: !!msg.readonly,
           defaultValidators: true,
+          batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
         }), metaCall, isFavorite] as const),
@@ -292,13 +299,14 @@ export class Driver {
 
   private initPipeline(msg: InitPipeline) {
     return callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
-      concatMap((conf) => from(getProcessedConfig(conf))),
+      concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
       map((config) => msg.instanceConfig ?
         StateTree.fromInstanceConfig({
           config,
           instanceConfig: msg.instanceConfig,
           isReadonly: false,
           defaultValidators: true,
+          batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
         }) :
@@ -306,6 +314,7 @@ export class Driver {
           config,
           isReadonly: false,
           defaultValidators: true,
+          batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
         })),

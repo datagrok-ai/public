@@ -1,7 +1,15 @@
+---
+title: "Tests: audit"
+description: Manual test scenarios verifying that Datagrok's audit log captures actions on connections, queries, and other entities.
+keywords:
+  - audit testing
+  - activity log test
+  - test scenarios
+  - entity audit trail
+---
+
 <!-- TITLE: Tests: Audit -->
 <!-- SUBTITLE: -->
-
-# Tests: audit
 
 Audit system is intended to store all meaningful user activity for future analysis.
 

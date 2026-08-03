@@ -1,0 +1,7 @@
+# GrokHelper configuration template
+
+general:
+  cache_path: 'tmp'
+  host: '0.0.0.0'
+  port: 5005
+#  ssl_keys: 'certificate.crt private.key'

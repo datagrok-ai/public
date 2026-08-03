@@ -1,14 +1,52 @@
 import * as DG from 'datagrok-api/dg';
 
+// Translate TS-friendly underscore suffixes (_anyOf, _anyOf_caseSensitive, _gt/_gte/_lt/_lte,
+// _mol, _smiles) into Benchling's dotted query-param names (names.anyOf, emptyPositions.gt, …).
+// Only the documented suffixes are mapped; ordinary keys pass through unchanged.
+const SUFFIX_TRANSLATIONS: Array<[RegExp, string]> = [
+  [/_anyOf_caseSensitive$/, '.anyOf.caseSensitive'],
+  [/_anyOf$/, '.anyOf'],
+  [/_gte$/, '.gte'],
+  [/_gt$/, '.gt'],
+  [/_lte$/, '.lte'],
+  [/_lt$/, '.lt'],
+  [/_mol$/, '.mol'],
+  [/_smiles$/, '.smiles'],
+];
+
+function translateParamName(key: string): string {
+  for (const [re, repl] of SUFFIX_TRANSLATIONS) {
+    if (re.test(key))
+      return key.replace(re, repl);
+  }
+  return key;
+}
+
+export function buildQueryString(params: Record<string, any>): string {
+  const esc = encodeURIComponent;
+  return Object.entries(params)
+    .filter(([_, v]) => {
+      if (v === undefined || v === null || v === '') return false;
+      if (Array.isArray(v) && v.length === 0) return false;
+      return true;
+    })
+    .map(([k, v]) => `${esc(translateParamName(k))}=${esc(Array.isArray(v) ? v.join(',') : v)}`)
+    .join('&');
+}
+
+export function randomDnaSequence(length: number): string {
+  const dna = 'ATGC';
+  let seq = '';
+  for (let i = 0; i < length; i++)
+    seq += dna[Math.floor(Math.random() * dna.length)];
+  return seq;
+}
+
 function inferColumnType(value: any): DG.COLUMN_TYPE {
   if (typeof value === 'boolean') return DG.COLUMN_TYPE.BOOL;
   if (typeof value === 'bigint') return DG.COLUMN_TYPE.BIG_INT;
-  if (typeof value === 'number') {
-    if (Number.isInteger(value)) return DG.COLUMN_TYPE.INT;
-    return DG.COLUMN_TYPE.FLOAT;
-  }
-  // All strings become STRING type, no number inference
-  if (typeof value === 'string') return DG.COLUMN_TYPE.STRING;
+  if (typeof value === 'number')
+    return Number.isInteger(value) ? DG.COLUMN_TYPE.INT : DG.COLUMN_TYPE.FLOAT;
   return DG.COLUMN_TYPE.STRING;
 }
 
@@ -45,7 +83,7 @@ export function dataFrameFromObjects(objects: Record<string, any>[]): DG.DataFra
         const value = obj[key];
         const newKey = prefix ? `${prefix}.${key}` : key;
         
-        if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+        if (Array.isArray(value) && value.some((v) => v !== null && typeof v === 'object')) {
           // Handle array of objects specially
           result[newKey] = processObjectArray(value);
         }

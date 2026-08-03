@@ -16,7 +16,7 @@ Read the table from the top, do not skip any steps until it is intentional, and 
 
 | Step No. | Action                                                                                  | Expected result               | Description |
 |:--------:|:----------------------------------------------------------------------------------------|:---------------------------|:------------|
-|    1     | Find the "openweathermap.yaml" file in the Swaggers package                             |                            | (https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers) | 
+|    1     | Find the "openweathermap.yaml" file in the Swaggers package                             |                            | (https://github.com/datagrok-ai/public/tree/master/packages/Samples/swaggers) | 
 |    2     | Drag-and-drop  "openweathermap.yaml" file from your to "Datagrok"                       | New Web connection created |             |
 |    3     | Click on "Data" section on sidebar and then click on "Webservices"                      | "Webservices" view is open |             |
 |    4     | Make sure the new connection is created and follows the description in the Swagger File |                            | compare the structure in swagger file and the created connection in the platform |

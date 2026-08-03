@@ -13,6 +13,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {getClusterMatrixWorker} from '@datagrok-libraries/math';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 
 const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
@@ -117,25 +118,37 @@ export async function demoActivityCliffsCyclic() {
   ui.setUpdateIndicator(tv.root, true);
   try {
     const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
-    const activityCliffsViewer = (await PackageFunctions.activityCliffs(
+    await PackageFunctions.activityCliffs(
       df, df.getCol('Sequence'), df.getCol('Activity'),
       96, DimReductionMethods.UMAP, MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
-      seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
-    tv.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.65);
-    await DG.delay(100);
-    const cliffsLink: HTMLButtonElement = $(activityCliffsViewer.root)
-      .find('button.scatter_plot_link,cliffs_grid').get()[0] as HTMLButtonElement;
-    cliffsLink.click();
-    await DG.delay(100);
+      seqEncodingFunc, {}, true);
+
+    let scatterPlot: DG.Viewer | undefined;
+    await awaitCheck(() => {
+      for (const v of tv.viewers) {
+        if (v.type === DG.VIEWER.SCATTER_PLOT) {
+          scatterPlot = v;
+          return true;
+        }
+      }
+      return false;
+    }, '', 10000);
+
+    let link: HTMLCollectionOf<Element> | undefined;
+    await awaitCheck(() => {
+      link = scatterPlot!.root.getElementsByClassName('scatter_plot_link');
+      return link.length > 0;
+    }, '', 5000);
+    (link![0] as HTMLElement).click();
+    await DG.delay(500);
+
     tv.grid.props.rowHeight = 180;
     tv.grid.col('sequence') && (tv.grid.col('sequence')!.width = 300);
     tv.grid.col('structure') && (tv.grid.col('structure')!.width = 300);
     const cliffsGrid = Array.from(tv.viewers).find((v) => v !== tv.grid && v.type === DG.VIEWER.GRID) as DG.Grid;
     if (cliffsGrid) {
       cliffsGrid.props.rowHeight = 40;
-      cliffsGrid.col('seq_diff')!.width = 600;
-      tv.dockManager.dock(cliffsGrid, DG.DOCK_TYPE.DOWN, null, 'Cliffs', 0.35);
-      tv.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.55);
+      cliffsGrid.col('seq_diff') && (cliffsGrid.col('seq_diff')!.width = 600);
     }
   } catch (err: any) {
     handleError(err);
@@ -143,4 +156,29 @@ export async function demoActivityCliffsCyclic() {
     ui.setUpdateIndicator(tv.root, false);
   }
   grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#activity-cliffs');
+}
+
+
+export async function demoActivityCliffsCyclicLayout(): Promise<void> {
+  grok.shell.windows.showContextPanel = true;
+  const p = await grok.functions.eval('Bio:BioDemoActivityCliffs');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  let scatterPlot: DG.Viewer | null = null;
+  for (const i of grok.shell.tv.viewers) {
+    if (i.type == DG.VIEWER.SCATTER_PLOT)
+      scatterPlot = i;
+  }
+  let cliffsLink;
+  try {
+    await awaitCheck(() => {
+      const link = scatterPlot?.root.getElementsByClassName('scatter_plot_link');
+      if (link?.length) {
+        cliffsLink = link[0];
+        return true;
+      }
+      return false;
+    }, '', 10000);
+    (cliffsLink as any as HTMLElement).click();
+  } catch (e) {}
 }

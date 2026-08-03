@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController} from '../RuntimeControllers';
-import {ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
-import {PipelineOutline, PipelineState, StepParallelInitialConfig, StepSequentialInitialConfig} from './PipelineInstance';
+import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
+import {DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {PipelineState, StepDynamicInitialConfig} from './PipelineInstance';
+import {LinkIOParsed} from './LinkSpec';
 import type ExcelJS from 'exceljs';
 import {ConsistencyInfo} from '../runtime/StateTreeNodes';
 import {Zippable} from 'fflate';
@@ -32,12 +33,13 @@ export type PipelineSelfRef = {
 
 // handlers
 
-export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial) & LoadedPipelineToplevelNode;
+export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial) & LoadedPipelineToplevelNode;
 
 export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorController;
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) | NqName;
 export type Handler = HandlerBase<{ controller: IRuntimeLinkController }, void>;
 export type Validator = HandlerBase<{ controller: IRuntimeValidatorController }, void>;
+export type PipelineValidator = HandlerBase<{ controller: IRuntimePipelineValidatorController }, void>;
 export type MetaHandler = HandlerBase<{ controller: IRuntimeMetaController }, void>;
 export type MutationHandler = HandlerBase<{ controller: IRuntimePipelineMutationController }, void>;
 export type SelectorHandler = HandlerBase<{ controller: INameSelectorController }, void>;
@@ -68,7 +70,6 @@ export type ExportUtils = {
 }
 export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<any>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
-export type StructureCheckHook = (data: PipelineOutline) => ValidationResult | undefined;
 
 // link-like
 
@@ -95,6 +96,8 @@ export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P>
   type: 'validator'
   handler: Validator;
   runOnInit?: undefined;
+  sequential?: boolean;
+  debounce?: number;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -102,6 +105,7 @@ export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   actions?: undefined;
   handler: MetaHandler;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
 export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -125,11 +129,22 @@ export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> 
   actions?: undefined;
   handler: SelectorHandler;
   runOnInit?: undefined;
+  sequential?: boolean;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
+export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'pipelineValidator';
+  handler: PipelineValidator;
+  runOnInit?: undefined;
+  sequential?: boolean;
+  debounce?: number;
+};
 
-export type ActionInfo = {
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
+
+/** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
+ *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
+export type ActionInfoBase = {
   id: string;
   position: ActionPositions;
   friendlyName?: string;
@@ -137,39 +152,58 @@ export type ActionInfo = {
   menuCategory?: string;
   confirmationMessage?: string;
   icon?: string;
+  /** Show this action on a specific child step instead of where it's defined.
+   *  Uses configId of the target step. The action's from/to still resolve at definition scope. */
+  visibleOn?: string;
+};
+
+export type ActionInfo<P> = ActionInfoBase & {
   runOnInit?: undefined;
+  /** LQL string or array. Action's ViewAction.visible is true only when all
+   *  required entries match. (optional) entries are ignored. Empty / absent => no positive gate. */
+  showWhen?: P;
+  /** LQL string or array. Action's ViewAction.visible is false when any entry matches.
+   *  Mirrors the link-level `not` field. Empty / absent => no negative gate. */
+  hideWhen?: P;
 };
 
 export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
   type?: 'data',
   handler: Handler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 export type PipelineMutationConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'pipeline',
   handler: MutationHandler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'funccall',
   handler: FunccallActionHandler;
-} & ActionInfo;
+} & ActionInfo<P>;
 
 const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
+type LinkOf<S> = [S] extends [never] ? LinkSpecString : LinkIOParsed[];
+type RefOf<S> = [S] extends [never] ? PipelineRefInitial : PipelineSelfRef;
+type StatesOf<S> = [S] extends [never] ? Array<ItemId | StateItem> : StateItem[];
+
 // static steps config
-export type PipelineStepConfiguration<P, S> = {
+export type PipelineStepConfiguration<S> = {
   id: ItemId;
   type?: 'step',
   nqName: NqName;
   friendlyName?: string;
-  actions?: (DataActionConfiguraion<P> | FuncCallActionConfiguration<P>)[];
-  states?: StateItem[];
+  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  actions?: (DataActionConfiguraion<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
+  states?: StatesOf<S>;
   tags?: string[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
   viewersHook?: ViewersHook;
+  // Per-step opt-in: when true, TreeWizard shows save-to-history and a history panel for this step.
+  enableHistory?: boolean;
   io?: S;
 };
 
@@ -179,18 +213,18 @@ export interface CustomExport {
   handler: PipelineExport,
 }
 
-export type PipelineConfigurationBase<P> = {
+export type PipelineConfigurationBase<S> = {
   id: ItemId;
   nqName?: NqName;
   version?: string;
   friendlyName?: string;
-  links?: PipelineLinkConfiguration<P>[];
-  actions?: (DataActionConfiguraion<P> | PipelineMutationConfiguration<P> | FuncCallActionConfiguration<P>)[];
-  onInit?: PipelineInitConfiguration<P>;
-  onReturn?: PipelineReturnConfiguration<P>;
-  states?: StateItem[];
+  description?: string;
+  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
+  onInit?: PipelineInitConfiguration<LinkOf<S>>;
+  onReturn?: PipelineReturnConfiguration<LinkOf<S>>;
+  states?: StatesOf<S>;
   tags?: string[];
-  structureCheck?: StructureCheckHook;
   forceNavigate?: boolean;
   customExports?: CustomExport[];
   disableHistory?: boolean;
@@ -205,43 +239,43 @@ export type NestedItemContext = {
   disableUIDragging?: boolean;
 };
 
+// action step (lightweight placeholder for displaying actions via visibleOn)
+
+export type AbstractPipelineActionConfiguration = {
+  type: 'action';
+  id: ItemId;
+  nqName?: NqName;
+  friendlyName?: string;
+  description?: string;
+  tags?: string[];
+};
+
 // fixed pipeline
 
-export type PipelineStaticItem<P, S, R> =
-PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R;
+export type PipelineStaticItem<S> =
+PipelineStepConfiguration<S> | AbstractPipelineConfiguration<S> | AbstractPipelineActionConfiguration | RefOf<S>;
 
-export type AbstractPipelineStaticConfiguration<P, S, R> = {
-  steps: PipelineStaticItem<P, S, R>[];
+export type AbstractPipelineStaticConfiguration<S> = {
+  steps: PipelineStaticItem<S>[];
   type: 'static';
-} & PipelineConfigurationBase<P>;
+  isActionStep?: boolean;
+} & PipelineConfigurationBase<S>;
 
-// parallel pipeline
+// dynamic pipeline (unified type for parallel and sequential)
 
-export type PipelineParallelItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
+export type PipelineDynamicItem<S> = ((PipelineStepConfiguration<S> | AbstractPipelineConfiguration<S> | AbstractPipelineActionConfiguration | RefOf<S>) & NestedItemContext);
 
-export type AbstractPipelineParallelConfiguration<P, S, R> = {
-  initialSteps?: StepParallelInitialConfig[];
-  stepTypes: PipelineParallelItem<P, S, R>[];
-  type: 'parallel';
-} & PipelineConfigurationBase<P>;
-
-// sequential pipeline
-
-
-export type PipelineSequentialItem<P, S, R> = ((PipelineStepConfiguration<P, S> | AbstractPipelineConfiguration<P, S, R> | R) & NestedItemContext);
-
-export type AbstractPipelineSequentialConfiguration<P, S, R> = {
-  initialSteps?: StepSequentialInitialConfig[];
-  stepTypes: PipelineSequentialItem<P, S, R>[];
-  type: 'sequential';
-} & PipelineConfigurationBase<P>;
+export type AbstractPipelineDynamicConfiguration<S> = {
+  initialSteps?: Array<ItemId | StepDynamicInitialConfig>;
+  stepTypes: PipelineDynamicItem<S>[];
+  type: DynamicPipelineType;
+} & PipelineConfigurationBase<S>;
 
 // pipeline config
 
-export type AbstractPipelineConfiguration<P, S, R> =
-AbstractPipelineStaticConfiguration<P, S, R> |
-AbstractPipelineParallelConfiguration<P, S, R> |
-AbstractPipelineSequentialConfiguration<P, S, R>;
+export type AbstractPipelineConfiguration<S> =
+AbstractPipelineStaticConfiguration<S> |
+AbstractPipelineDynamicConfiguration<S>;
 
 export type PipelineRefInitial = {
   id?: string;
@@ -250,10 +284,9 @@ export type PipelineRefInitial = {
   type: 'ref';
 }
 
-export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<LinkSpecString, never, PipelineRefInitial>;
-export type PipelineConfigurationParallelInitial = AbstractPipelineParallelConfiguration<LinkSpecString, never, PipelineRefInitial>;
-export type PipelineConfigurationSequentialInitial = AbstractPipelineSequentialConfiguration<LinkSpecString, never, PipelineRefInitial>;
+export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<never>;
+export type PipelineConfigurationDynamicInitial = AbstractPipelineDynamicConfiguration<never>;
 
-export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationParallelInitial | PipelineConfigurationSequentialInitial | PipelineRefInitial;
+export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial | PipelineRefInitial;
 
 export type PipelineConfiguration = PipelineConfigurationInitial;

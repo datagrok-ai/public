@@ -149,8 +149,13 @@ export namespace historyUtils {
 
     await Promise.all(fileInputs
       .map(async (input) => {
-        const fileInfo = callCopy.inputs[input.name] as DG.FileInfo;
-        const filledFileInfo = DG.FileInfo.fromBytes(fileInfo.name, await fileInfo.readAsBytes());
+        // Compute2 stores file inputs as DG.FileInfo; compute1 stores a browser File.
+        const value = callCopy.inputs[input.name];
+        const bytes = value instanceof DG.FileInfo ?
+          await value.readAsBytes() :
+          new Uint8Array(await (value as File).arrayBuffer());
+        const name = value instanceof DG.FileInfo ? (value.fileName ?? value.name) : (value as File).name;
+        const filledFileInfo = DG.FileInfo.fromBytes(name, bytes);
         await grok.dapi.files.write(filledFileInfo);
         callCopy.inputs[input.name] = {id: filledFileInfo.id, name: filledFileInfo.name};
 

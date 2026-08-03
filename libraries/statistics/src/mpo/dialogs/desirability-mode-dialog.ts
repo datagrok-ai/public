@@ -4,14 +4,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
 import {
-  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode,
-  createDefaultCategorical, createDefaultNumerical, isNumerical,
+  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode, MpoScale,
+  convertScaleParams, createDefaultCategorical, createDefaultNumerical, isNumerical,
 } from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 import {MpoCategoricalEditor} from '../editors/mpo-categorical-editor';
 
-const DESIRABILITY_MODES: DesirabilityMode[] = ['freeform', 'gaussian', 'sigmoid'];
+const DESIRABILITY_MODES: DesirabilityMode[] = [DesirabilityMode.Freeform, DesirabilityMode.Gaussian, DesirabilityMode.Sigmoid];
 const PROPERTY_TYPES = ['numerical', 'categorical'] as const;
+
+type DesirabilityPatch = Partial<NumericalDesirability> | Partial<CategoricalDesirability>;
 
 type ParamConfig = {
   key: 'min' | 'max' | 'mean' | 'sigma' | 'x0' | 'k';
@@ -28,7 +30,7 @@ export class DesirabilityModeDialog {
   constructor(
     private propertyName: string,
     private prop: PropertyDesirability,
-    private onUpdate: (patch: Partial<PropertyDesirability>) => void,
+    private onUpdate: (patch: DesirabilityPatch) => void,
     private onTypeChanged?: (newProp: PropertyDesirability) => void,
     private mappedCol?: DG.Column | null,
   ) {}
@@ -63,7 +65,7 @@ export class DesirabilityModeDialog {
         else
           prop.missingValues = {strategy: 'exclude'};
         scoreInput.root.style.display = use ? '' : 'none';
-        this.onUpdate({missingValues: prop.missingValues} as any);
+        this.onUpdate({missingValues: prop.missingValues});
       },
     });
     choiceInput.setTooltip(
@@ -111,15 +113,29 @@ export class DesirabilityModeDialog {
 
     const buildNumericalContent = () => {
       const prop = this.prop as NumericalDesirability;
-      prop.mode ??= 'freeform';
+      prop.mode ??= DesirabilityMode.Freeform;
 
       const previewEditor = new MpoDesirabilityLineEditor(prop, 355, 103);
       if (this.mappedCol?.isNumerical)
         previewEditor.setColumn(this.mappedCol);
 
+      const materializeParams = () => {
+        if (prop.mode === DesirabilityMode.Gaussian) {
+          prop.mean ??= previewEditor.getDefaultMean();
+          prop.sigma ??= previewEditor.getDefaultSigma();
+          this.onUpdate({mean: prop.mean, sigma: prop.sigma});
+        }
+        else if (prop.mode === DesirabilityMode.Sigmoid) {
+          prop.x0 ??= previewEditor.getDefaultX0();
+          prop.k ??= previewEditor.getDefaultK();
+          this.onUpdate({x0: prop.x0, k: prop.k});
+        }
+      };
+
       const modeInput = ui.input.choice('Mode', {items: DESIRABILITY_MODES, value: prop.mode, onValueChanged: (v) => {
         prop.mode = v as DesirabilityMode;
-        this.onUpdate({mode: prop.mode} as any);
+        materializeParams();
+        this.onUpdate({mode: prop.mode});
         updateParams();
         previewEditor.redrawAll(false);
       }});
@@ -138,14 +154,18 @@ export class DesirabilityModeDialog {
         inputs.set(cfg.key, ui.input.float(cfg.label, {value: prop[cfg.key] ?? cfg.fallback(), format: '#0.000', onValueChanged: (v) => {
           const value = cfg.transform ? cfg.transform(v ?? cfg.fallback()) : (v ?? cfg.fallback());
           prop[cfg.key] = value;
-          this.onUpdate({[cfg.key]: value} as any);
+          this.onUpdate({[cfg.key]: value} as Partial<NumericalDesirability>);
           previewEditor.redrawAll(false);
         }}));
       }
 
       const syncInputs = () => {
-        for (const cfg of configs)
-          inputs.get(cfg.key)!.value = prop[cfg.key] ?? cfg.fallback();
+        for (const cfg of configs) {
+          const inp = inputs.get(cfg.key)!;
+          inp.notify = false;
+          inp.value = prop[cfg.key] ?? cfg.fallback();
+          inp.notify = true;
+        }
       };
 
       inputs.get('min')!.setTooltip('Minimum property value');
@@ -159,29 +179,80 @@ export class DesirabilityModeDialog {
       paramForm.classList.add('statistics-mpo-param-grid');
 
       const updateParams = () => {
-        inputs.get('mean')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'gaussian');
-        inputs.get('sigma')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'gaussian');
-        inputs.get('x0')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'sigmoid');
-        inputs.get('k')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== 'sigmoid');
+        inputs.get('mean')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Gaussian);
+        inputs.get('sigma')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Gaussian);
+        inputs.get('x0')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Sigmoid);
+        inputs.get('k')!.root.classList.toggle('statistics-mpo-hidden', prop.mode !== DesirabilityMode.Sigmoid);
       };
 
       updateParams();
+      materializeParams();
 
       previewEditor.onParamsChanged = (p) => {
         Object.assign(prop, p);
         syncInputs();
-        this.onUpdate(p as any);
+        this.onUpdate(p);
       };
 
       subs.push(previewEditor.onChanged.subscribe((line) => {
         prop.line = line;
-        if (prop.mode === 'freeform')
-          this.onUpdate({line} as any);
+        if (prop.mode === DesirabilityMode.Freeform)
+          this.onUpdate({line});
       }));
+
+      const updateScaleLabels = () => {
+        inputs.get('sigma')!.caption = prop.scale === MpoScale.Log ? 'Sigma (dec)' : 'Sigma';
+        inputs.get('k')!.caption = prop.scale === MpoScale.Log ? 'k (per dec)' : 'k';
+      };
+      updateScaleLabels();
+
+      const noPositives = !!this.mappedCol?.isNumerical && this.mappedCol.max <= 0;
+
+      const curveToggle = (content: string | HTMLElement, active: boolean, tooltipMsg: string, onToggle: (on: boolean) => void) => {
+        const btn = ui.div(content, 'statistics-mpo-curve-btn');
+        btn.classList.toggle('statistics-mpo-toggle-on', active);
+        btn.onclick = () => {
+          const on = !btn.classList.contains('statistics-mpo-toggle-on');
+          btn.classList.toggle('statistics-mpo-toggle-on', on);
+          onToggle(on);
+        };
+        ui.tooltip.bind(btn, tooltipMsg);
+        return btn;
+      };
+
+      const toolbar: HTMLElement[] = [];
+      if (!noPositives) {
+        toolbar.push(curveToggle('log₁₀', prop.scale === MpoScale.Log,
+          'Log₁₀ axis — for values spanning orders of magnitude',
+          (on) => {
+            // Freeze min/max first so a line-derived domain isn't re-derived from the log-floored resampled line
+            // on the way back (a negative min never returns otherwise).
+            const patch: Partial<NumericalDesirability> = {};
+            patch.min = prop.min ??= previewEditor.getMinX();
+            patch.max = prop.max ??= previewEditor.getMaxX();
+            convertScaleParams(prop, on);
+            prop.scale = on ? MpoScale.Log : MpoScale.Linear;
+            patch.scale = prop.scale;
+            patch.sigma = prop.sigma;
+            patch.k = prop.k;
+            updateScaleLabels();
+            this.onUpdate(patch);
+            previewEditor.redrawAll(false);
+            syncInputs();
+          }));
+      }
+      toolbar.push(curveToggle(ui.iconFA('arrows-alt-v'), !!prop.inverted,
+        'Invert desirability (d → 1 − d)',
+        (on) => {
+          prop.inverted = on;
+          this.onUpdate({inverted: on});
+          previewEditor.redrawAll(false);
+        }));
 
       modeInputRoot = modeInput.root;
       previewEditor.root.classList.add('statistics-mpo-plot');
-      contentPanel.append(previewEditor.root, sectionHeader('PARAMETERS'), paramForm);
+      contentPanel.append(ui.divH([previewEditor.root, ui.divV(toolbar)], 'statistics-mpo-plot-wrap'),
+        sectionHeader('PARAMETERS'), paramForm);
     };
 
     const buildCategoricalContent = () => {

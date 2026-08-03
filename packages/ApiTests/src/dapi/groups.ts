@@ -81,13 +81,42 @@ category('Dapi: groups', () => {
     }
   }, {stressTest: true});
 
+  test('request membership', async () => {
+    let target: _DG.Group | undefined;
+    try {
+      target = await grok.dapi.groups.createNew(`js-api-test-target_${DG.Utils.randomString(6)}`);
+      await grok.dapi.groups.requestMembership(target, grok.shell.user.group);
+    } finally {
+      try {
+        if (target)
+          await grok.dapi.groups.delete(target);
+      } catch (_) {}
+    }
+  });
+
+  test('current user groups', async () => {
+    const groups = await grok.dapi.groups.currentUserGroups();
+    expect(Array.isArray(groups) && groups.length > 0, true);
+    expect(groups.some((g) => g.friendlyName === 'All users'), true);
+  });
+
   test('delete group', async () => {
-    const localTestGroupName = 'js-api-test-group1';
-    const countBefore = await grok.dapi.groups.filter(localTestGroupName).count;
-    const localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
-    expect((await grok.dapi.groups.filter(localTestGroupName).first())?.name, localTestGroupName);
-    await grok.dapi.groups.delete(localTestGroup);
-    expect((await grok.dapi.groups.filter(localTestGroupName)).count == countBefore);
+    // Random name + exact-name filter so concurrent stress runs never collide
+    // on the group name (a hard-coded name caused "already exists" / wrong-group
+    // assertions under load); always delete it afterwards.
+    const localTestGroupName = `js-api-test-delete_${DG.Utils.randomString(8)}`;
+    let localTestGroup: _DG.Group | null = await grok.dapi.groups.createNew(localTestGroupName);
+    try {
+      expect((await grok.dapi.groups.filter(`shortName="${localTestGroupName}"`).first())?.name, localTestGroupName);
+      await grok.dapi.groups.delete(localTestGroup);
+      localTestGroup = null;
+      expect((await grok.dapi.groups.filter(`shortName="${localTestGroupName}"`).first()) == undefined);
+    } finally {
+      try {
+        if (localTestGroup)
+          await grok.dapi.groups.delete(localTestGroup);
+      } catch (_) {}
+    }
   }, {stressTest: true});
 
-}, {owner: 'aparamonov@datagrok.ai'});
+}, {owner: 'aparamonov@datagrok.ai', node: true});

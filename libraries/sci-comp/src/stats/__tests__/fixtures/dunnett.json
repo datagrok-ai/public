@@ -1,0 +1,167 @@
+{
+  "metadata": {
+    "source": "validate_dunnett.py",
+    "generated_at": "2026-04-29T10:25:25+00:00",
+    "python_version": "3.13.12",
+    "numpy_version": "2.4.3",
+    "scipy_version": "1.17.1",
+    "tolerances": {
+      "p_value": 0.001,
+      "statistic": 0.01
+    }
+  },
+  "cases": [
+    {
+      "name": "[Dunnett 1955] blood counts (millions cells/mm³)",
+      "category": "published_dataset",
+      "inputs": {
+        "control": [
+          7.4,
+          8.5,
+          7.2,
+          8.24,
+          9.84,
+          8.32
+        ],
+        "treated": [
+          {
+            "dose_level": 1,
+            "values": [
+              9.76,
+              8.8,
+              7.68,
+              9.36
+            ]
+          },
+          {
+            "dose_level": 2,
+            "values": [
+              12.8,
+              9.68,
+              12.16,
+              9.2,
+              10.55
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 1,
+          "p_value": 0.6200769777606123,
+          "statistic": 0.8570321259343803
+        },
+        {
+          "dose_level": 2,
+          "p_value": 0.0058540018515012004,
+          "statistic": 3.693752311235726
+        }
+      ]
+    },
+    {
+      "name": "3 treated, balanced",
+      "category": "scipy_synthetic",
+      "inputs": {
+        "control": [
+          1.0,
+          2.0,
+          3.0,
+          2.5,
+          1.5
+        ],
+        "treated": [
+          {
+            "dose_level": 10,
+            "values": [
+              3.0,
+              4.0,
+              5.0,
+              4.5
+            ]
+          },
+          {
+            "dose_level": 50,
+            "values": [
+              5.0,
+              6.0,
+              7.0,
+              6.5
+            ]
+          },
+          {
+            "dose_level": 100,
+            "values": [
+              7.0,
+              8.0,
+              9.0,
+              8.5
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 10,
+          "p_value": 0.006095222685964408,
+          "statistic": 3.7940263593345884
+        },
+        {
+          "dose_level": 50,
+          "p_value": 1.0626325918750013e-05,
+          "statistic": 7.364874697531849
+        },
+        {
+          "dose_level": 100,
+          "p_value": 5.261925783983656e-09,
+          "statistic": 10.93572303572911
+        }
+      ]
+    },
+    {
+      "name": "2 treated, unbalanced",
+      "category": "scipy_synthetic",
+      "inputs": {
+        "control": [
+          10.0,
+          11.0,
+          9.5,
+          10.5,
+          10.2,
+          11.3,
+          9.8
+        ],
+        "treated": [
+          {
+            "dose_level": 25,
+            "values": [
+              12.0,
+              11.5,
+              13.0
+            ]
+          },
+          {
+            "dose_level": 75,
+            "values": [
+              14.0,
+              15.0,
+              14.5,
+              13.5
+            ]
+          }
+        ]
+      },
+      "expected": [
+        {
+          "dose_level": 25,
+          "p_value": 0.004172949665478098,
+          "statistic": 3.9784013687041444
+        },
+        {
+          "dose_level": 75,
+          "p_value": 7.816759652889971e-07,
+          "statistic": 9.34453984503784
+        }
+      ]
+    }
+  ]
+}

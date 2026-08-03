@@ -85,7 +85,7 @@ async function buildRecursive(baseDir: string, args: BuildArgs, buildCmd: string
 
   console.log(`Found ${filtered.length} package(s): ${filtered.map((p) => p.friendlyName).join(', ')}`);
 
-  if (!args.silent) {
+  if (!args.silent && !(args as any).s) {
     const confirmed = await confirm(`\nBuild ${filtered.length} package(s)?`);
     if (!confirmed) {
       console.log('Aborted.');

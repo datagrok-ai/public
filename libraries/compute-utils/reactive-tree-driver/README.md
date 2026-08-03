@@ -36,6 +36,8 @@ There are several roles of links:
 
 - `data` - propagates values between FuncCalls inputs/outputs.
 - `validator` - propagates validations result for inputs/outputs.
+- `pipelineValidator` - attaches a validation result to a pipeline node
+  (self or descendant), reactive on `from` ports and on tree mutations.
 - `meta` - propagates metadata for visual ui element and visual hooks.
 
 For data links, if node is readonly or is already evaluated, instead of

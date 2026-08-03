@@ -1,5 +1,11 @@
 ---
 title: "Gasteiger Partial Charges"
+description: Explains how Datagrok visualizes Gasteiger-Marsili empirical atomic partial charges on a molecule.
+keywords:
+  - Gasteiger-Marsili partial charges
+  - atomic charge visualization
+  - electrostatic descriptor
+  - RDKit charge calculation
 ---
 
 Visualizes atomic charges in a molecule.

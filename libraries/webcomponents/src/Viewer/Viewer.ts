@@ -43,7 +43,7 @@ export class Viewer<T = any> extends HTMLElement {
       if (type !== this.typeSetted$.value)
         this.dispatchEvent(new CustomEvent('viewer-type-changed', {detail: type}));
       if (df !== this.dfSetted$.value)
-        this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: type}));
+        this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: df}));
     });
 
     const settedParams$ = combineLatest([
