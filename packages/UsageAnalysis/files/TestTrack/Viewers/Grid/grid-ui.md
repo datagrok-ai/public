@@ -1,124 +1,143 @@
 # Grid — Manual Test Checklist
 
-All scenarios should start with the following sequence of events:
-1. Close all
-2. Open demog (or SPGI where specified)
-3. Add Grid (where specified)
 
+All scenarios should start with the following sequence of events:
+1. Close all open views
+2. Open the dataset specified in the scenario
+3. Add Grid if the scenario requires a Grid viewer
 ---
 
-## Column and Row Resizing by Drag
+## Context Panel — Column Hamburger Menu Inline Filter
 
-*(Drag on canvas border — no DOM target for automation)*
 
-1. Position the mouse on the right border of the AGE column header until a resize cursor appears
-2. Drag the border to the right to make the AGE column wider — column width increases
-3. Drag the border to the left to make the AGE column very narrow — values adapt (lose precision, eventually show as colored circles)
-4. Select the AGE and HEIGHT columns (Shift+click headers), then drag the border of one of them — both selected columns resize simultaneously
-5. Drag the border between two row headers to increase row height — all rows become taller and column widths adjust automatically
+*Dataset: spgi-100*
 
-## Column Reordering by Drag
+1. Open spgi-100.csv (System:AppData/Chem/tests/spgi-100.csv), then hover the CAST Idea ID column header and click the hamburger icon that appears at its right
+   edge — a popup opens with the column name and the Filter, Actions, Colors and Dev sections
+2. In the Filter section, drag the left handle of the strip under the histogram towards the middle
+   — the filtered row count in the status bar drops straight away
+3. Press Add filter — the column's filter appears in the Filter Panel on the left, keeping the
+   range just set
+4. Hover the Stereo Category header and open its hamburger — the Filter section lists the
+   categories with their row counts instead of a histogram
+5. Click the R_ONE category — only that category stays ticked and the filtered row count follows;
+   the Context Panel spells out both filters now in force
+6. Move the mouse outside the popup — the popup closes and both filters stay
 
-*(Drag on canvas header — no DOM target for automation)*
-
-1. Drag the RACE column header and drop it before the AGE column — RACE column moves to the new position
-2. Drag the HEIGHT column header to the far left — column moves to the beginning
-3. Right-click the WEIGHT column header and drag the right border all the way to the left — column is hidden by width
-
-## Block Selection by Mouse Drag
-
-*(Canvas drag — no DOM target for automation)*
-
-1. Click on a data cell in the AGE column and drag across to WEIGHT column and several rows down — both rows and columns get selected (rows in orange, column headers highlighted)
-2. Click elsewhere to clear selection
-
-## Column Tooltip Settings
-
-*(Skipped from automation — too many context menu levels, no JS API for tooltip column list)*
+## Summary Columns — Form Designer 
 
 *Dataset: demog*
 
-1. Right-click the AGE column header, expand Tooltip > Current Column, select Default — hovering a cell shows the default tooltip
-2. Right-click the AGE column header, expand Tooltip > Current Column, select None — hovering a cell shows no tooltip
-3. Right-click the AGE column header, expand Tooltip > Current Column, select Custom Columns... — a column selector dialog opens; choose AGE and HEIGHT, click OK
-4. Hover a data cell in the AGE column — tooltip shows AGE and HEIGHT values for that row
+1. Right-click any data cell and choose Add > Summary Columns > Design a Form... — a form designer
+   opens as its own view named Summary, and a form column has already been added to the grid
+2. Drag one of the field boxes to an empty spot in the designer — the field settles where it was
+   dropped
+3. Press Close and Apply on the ribbon — the designer view closes, the table view comes back, and
+   the grid keeps the form column with the field in its new place
+4. Click the form column header — the Context Panel switches to that column and offers its Actions
+   and Renderer settings together with an Edit button
+5. Press Edit — the form designer reopens with the layout exactly as it was left
 
-## Summary Columns — Form Designer
+## Context Panel — Permissions 
 
-*(Form designer UI not automatable)*
+*Dataset: spgi-100*
+
+1. Click the Chemist column header — the Context Panel shows that column
+2. Expand Advanced > Permissions — it offers an "Editable by" field and a "Pin if editable" switch
+3. Type your own user name into "Editable by" and press Enter
+4. Click a Chemist cell and press Enter — the cell editor opens, so the column is yours to edit
+5. Press Esc, then replace your name in "Editable by" with a colleague's user name and press Enter
+6. Click a Chemist cell and press Enter — no editor opens
+7. Press Delete on that cell — the edit is refused and a message states the column is only editable
+   by that colleague
+
+## Auto-Append on Last-Row Edit 
 
 *Dataset: demog*
 
-1. Right-click any data cell, expand Add > Summary Columns, select Design a Form... — a form designer opens
-2. Arrange some fields in the form designer and click Close and Apply — a form column is added to the grid
-3. Click the form column header — the Context Panel shows form settings
+1. Note the table's row count
+2. Open the grid settings and switch on "Add New Row On Last Row Edit", then close the panel
+3. Double-click the AGE cell of the very last row, type a value and press Enter — a new empty row
+   appears at the bottom and the row count grows by one; the cell holds what you typed
+4. Switch the setting back off, then repeat the edit on the new last row — this time no row is
+   appended and the row count stays as it was, while the cell still takes the value
 
-## Column Stats — Visual Verification
+## Ctrl+Click Adds a Row to an Existing Range 
 
-*(Stats row values require visual canvas inspection)*
+*Dataset: demog*
 
-*Prerequisite: add Min and Max stats rows as per grid-tests-pw.md section 16*
+1. Select rows 5 through 10 by dragging down the row-number strip — six rows highlight and row 10
+   is the current row
+2. Hold Ctrl and click the row-number cell of row 15 — it joins the selection, making seven
+3. Confirm the current row stays on row 10: a Ctrl+click changes membership only, it does not move
+   the current row
+
+## Selected Rows Color  
+
+*Dataset: demog*
+
+1. Open the grid settings and set Selected Rows Color to a clearly recognizable color
+2. Select a few rows by dragging down the row-number strip — the selected rows are painted in
+   that color, not the default one
+3. Press Esc — the rows return to their normal appearance
+
+## Row Selection by Mouse — Drag and Shift+Click  
+
+*Dataset: demog*
+
+1. Click the row-number cell of row 5, then Shift+click the row-number cell of row 10 — rows 5
+   through 10 highlight in orange and row 10 becomes the current row
+2. Click and drag down the row-number strip across several rows — the swept rows highlight as
+   the pointer moves
+3. Click and drag across data cells in the grid body, sweeping several rows and columns — the
+   swept ROWS highlight; confirm whether the column headers highlight too (on the current build
+   a block drag selects rows only)
+4. Click a single row-number cell without modifiers — the selection collapses to that row
+
+## Column Selection by Mouse 
+
+*Dataset: demog*
+
+1. Shift+click the AGE column header, then the HEIGHT header — both columns show as selected
+2. Ctrl+click the AGE header again — its selection inverts while HEIGHT stays selected
+3. Press Esc — the column selection clears
+
+## Tab Navigation at the Row Edges 
+
+
+*Dataset: demog*
+
+1. Navigate to the last data cell of a row and press Tab — the current cell does not wrap past
+   the right edge
+2. Navigate to the first data cell of a row and press Shift+Tab — the current cell does not wrap
+   past the left edge
+
+## Block Selection by Mouse Drag 
+
+1. Click a data cell in the AGE column and drag across to the WEIGHT column and several rows
+   down — the dragged rows highlight in orange
+2. Confirm visually whether the column headers highlight as well
+3. Click elsewhere to clear the selection
+
+## Column Stats — Visual Verification  
+
+*Prerequisite: add the min and max stats rows through Add > Column Stats*
 
 1. Verify the Min row shows the minimum AGE, HEIGHT, and WEIGHT values
 2. Verify the Max row shows the maximum AGE, HEIGHT, and WEIGHT values
 
-## Context Panel — Column Hamburger Menu Inline Filter
-
-*(SPGI dataset — inline filter in hamburger popup requires complex DOM interaction)*
-
-*Dataset: SPGI*
-
-1. Hover a column header and click the hamburger (three-lines) icon to open the column menu
-2. Adjust the inline filter slider — rows should be filtered immediately
-3. Click Add filter — the filter is added to the Filter Panel
-4. Repeat for numeric, categorical columns
-
-## Context Panel — Permissions
-
-*(Requires multi-user setup — not automatable)*
-
-*Dataset: SPGI*
-
-1. Open the Context Panel and click any column header
-2. Go to Advanced > Permissions > Edited by and enter your user name — you should have the ability to edit the column
-3. Go to Advanced > Permissions > Edited by and enter only a colleague's user name — you should NOT have the ability to edit the column; a balloon appears when trying to edit
-
-## Column Groups
-
-*(No public JS API — cannot automate via grid-tests-pw.md)*
+## Column Groups — Visual Behavior  
 
 *Dataset: demog*
 
-1. Right-click a column header and choose Group Columns... (or select several columns and group them)
-2. Expand/collapse the group in the header
-3. Remove the group via right-click > Ungroup
-4. Change group properties (name, color) via the Context Panel
-
-## Pick Up / Apply — Cross-Grid Visual Match
-
-*(Visual verification of color match between two grid instances — not automatable)*
-
-*Dataset: SPGI, SPGI-linked2*
-
-1. For Average Mass set a linear Color Coding and edit the color scheme
-2. Right-click the grid and select Pick Up/Apply > Pick Up
-3. Open the second SPGI dataset
-4. Right-click the grid and select Pick Up/Apply > Apply — color-coding, formatting, and style on both grids should match visually
-
-## Table Switching (Grid Viewer)
-
-*(Complex Context Panel UI — not automatable without chrome-devtools MCP)*
-
-*Dataset: SPGI and SPGI-linked1*
-
-1. Open SPGI and SPGI-linked1 datasets
-2. Go to SPGI, click the Add viewer icon, and select Grid
-3. With the added Grid viewer selected, open the Context Panel
-4. Go to Data > Table and switch to SPGI-linked1 — viewer re-binds to the new table
-5. Modify row height and frozen columns — changes are reflected in the viewer
+1. Select several columns (Shift+click their headers) and group them from the Context Panel
+   Actions — a group band appears above the grouped headers
+2. Expand and collapse the group from its band — the member columns hide and reappear
+3. Change the group's name and color — the band reflects both
+4. Ungroup from the header context menu — the band disappears and the columns stay in place
 
 ---
 {
   "order": 102,
-  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/SPGI.csv", "System:DemoFiles/SPGI-linked1.csv"]
+  "datasets": ["System:DemoFiles/demog.csv", "System:AppData/Chem/tests/spgi-100.csv"]
 }

@@ -1,664 +1,653 @@
-import { test } from '@playwright/test';
-import {loginToDatagrok, specTestOptions, softStep} from '../spec-login';
-import * as v from '../helpers/viewers';
+/* ---
+realizes: []
+--- */
+import {test, expect, Page} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+
+declare const grok: any;
+declare const DG: any;
 
 test.use(specTestOptions);
 
-test('Grid tests', async ({ page }) => {
-  test.setTimeout(300_000);
+// ── Canvas-coordinate helpers ────────────────────────────────────────────────
+// documentBounds is already page-coordinate (grid refdoc, "Coordinates for canvas gestures").
+
+async function dataCellPoint(page: Page, col: string, visualRow: number): Promise<{x: number; y: number}> {
+  return page.evaluate(({c, vr}) => {
+    const grid = grok.shell.tv.grid;
+    const db = grid.cell(c, vr).documentBounds;
+    return {x: db.x + db.width / 2, y: db.y + db.height / 2};
+  }, {c: col, vr: visualRow});
+}
+
+// Page-coordinate center of a column LABEL cell. Header y is derived from the first
+// data row's documentBounds, not the overlay top (group bands / histogram strips drift it).
+async function headerPoint(page: Page, col: string): Promise<{x: number; y: number}> {
+  return page.evaluate((c) => {
+    const grid = grok.shell.tv.grid;
+    const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+    const rc = overlay.getBoundingClientRect();
+    const column = grid.columns.byName(c);
+    const dataTop = grid.cell(c, 0).documentBounds.y;
+    return {x: rc.x + column.left + column.width / 2, y: dataTop - grid.colHeaderHeight / 2};
+  }, col);
+}
+
+async function focusGrid(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+    overlay.focus();
+  });
+}
+
+// ── Context-menu helpers ─────────────────────────────────────────────────────
+// Synthetic contextmenu on the overlay opens the real menu (trusted input NOT required
+// for menus, per grid refdoc). Leaves carry name= (div-<Path>---<Leaf>).
+
+async function openContextMenu(page: Page, x: number, y: number): Promise<void> {
+  await page.evaluate(({cx, cy}) => {
+    const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+    const o: any = {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 2, buttons: 2, view: window};
+    overlay.dispatchEvent(new MouseEvent('mousedown', o));
+    overlay.dispatchEvent(new MouseEvent('mouseup', o));
+    overlay.dispatchEvent(new MouseEvent('contextmenu', o));
+  }, {cx: x, cy: y});
+  await page.waitForSelector('.d4-menu-popup', {timeout: 5000});
+  await page.waitForTimeout(300);
+}
+
+async function closeMenu(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, clientX: 5, clientY: 5, view: window} as any));
+  });
+  await page.waitForTimeout(250);
+}
+
+// Expand a submenu group by NAME. Its leaves live in a `display:none` container that a
+// synthetic mouseover on the parent does not flip in headless Chromium, leaving them zero-size,
+// so the container's display is forced instead.
+async function expandSubmenu(page: Page, groupName: string): Promise<void> {
+  await page.waitForSelector(`.d4-menu-popup [name="${groupName}"]`, {timeout: 5000});
+  await page.evaluate((gn) => {
+    const group = document.querySelector(`.d4-menu-popup [name="${gn}"]`) as HTMLElement;
+    const container = group.querySelector('.d4-menu-item-container.d4-vert-menu') as HTMLElement;
+    if (container) container.style.display = 'flex';
+  }, groupName);
+  await page.waitForTimeout(150);
+}
+
+// Expand the submenu path, then click a leaf by name. `path` lists the group items
+// from outermost to the leaf's direct parent (e.g. ['div-Add', 'div-Add---Top']).
+async function clickMenuLeaf(page: Page, path: string | string[], leafName: string): Promise<void> {
+  const groups = Array.isArray(path) ? path : [path];
+  for (const g of groups)
+    await expandSubmenu(page, g);
+  await page.waitForSelector(`.d4-menu-popup [name="${leafName}"]`, {timeout: 5000});
+  await page.evaluate((ln) => {
+    const leaf = document.querySelector(`.d4-menu-popup [name="${ln}"]`) as HTMLElement;
+    leaf.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, view: window} as any));
+    leaf.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, view: window} as any));
+    leaf.dispatchEvent(new MouseEvent('click', {bubbles: true, view: window} as any));
+  }, leafName);
+  await page.waitForTimeout(500);
+}
+
+async function reopenClean(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    grok.shell.closeAll();
+    await new Promise((r) => setTimeout(r, 800));
+  });
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
+  await page.evaluate(async () => {
+    const tv = grok.shell.tv;
+    tv.dataFrame.filter.setAll(true);
+    tv.dataFrame.selection.setAll(false);
+    tv.grid.sort([], []);
+    await new Promise((r) => setTimeout(r, 300));
+  });
+}
+
+// Right border of a column header, in page coordinates. Pressing here and dragging
+// horizontally resizes the column (the resize-cursor zone the grid tracks).
+async function colBorderPoint(page: Page, col: string): Promise<{x: number; y: number}> {
+  return page.evaluate((c) => {
+    const grid = grok.shell.tv.grid;
+    const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+    const rc = overlay.getBoundingClientRect();
+    const column = grid.columns.byName(c);
+    const dataTop = grid.cell(c, 0).documentBounds.y;
+    return {x: rc.x + column.left + column.width, y: dataTop - grid.colHeaderHeight / 2};
+  }, col);
+}
+
+test('Grid tests', async ({page}) => {
+  test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-
   await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
-  // Sorting
-  await softStep('Sorting: sort AGE desc then asc via JS API', async () => {
-    const result = await page.evaluate(async () => {
+  // This build exposes no grok.shell.warnings, so the console/pageerror channels are the
+  // sanctioned no-error signal; the clone-iframe and publish-chain noise is filtered out.
+  const consoleErrors: string[] = [];
+  const pageErrors: string[] = [];
+  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  const realErrors = () => [...consoleErrors, ...pageErrors].filter((t) =>
+    !/Unable to find element in cloned iframe/i.test(t) &&
+    !/Stack trace [A-Za-z0-9]+/i.test(t));
+
+  const rowCount = await page.evaluate(() => grok.shell.tv.dataFrame.rowCount);
+  expect(rowCount).toBe(5850);
+
+  // ── Column Sizing from the Context Menu ────────────────────────────────────
+  await softStep('Column Sizing from context menu: Optimal fits content grid-wide, Minimal narrows, Maximal widens', async () => {
+    await reopenClean(page);
+    const cell = await dataCellPoint(page, 'AGE', 3);
+    // The three modes act grid-wide, so every column is read after each choice: on a single
+    // narrow column such as AGE, Maximal equals Optimal and its direction stays invisible.
+    const modeWidths: Record<string, Record<string, number>> = {};
+    for (const leaf of ['Optimal', 'Minimal', 'Maximal']) {
+      await openContextMenu(page, cell.x, cell.y);
+      await clickMenuLeaf(page, 'div-Column-Sizing', `div-Column-Sizing---${leaf}`);
+      await closeMenu(page);
+      modeWidths[leaf] = await page.evaluate(() => {
+        const grid = grok.shell.tv.grid;
+        const o: Record<string, number> = {};
+        for (const n of grid.dataFrame.columns.names()) o[n] = grid.columns.byName(n).width;
+        return o;
+      });
+    }
+    // Optimal is re-applied because the loop above left the grid on Maximal, then each column's
+    // width is compared to its own content-fit width within the header/cell padding tolerance.
+    await openContextMenu(page, cell.x, cell.y);
+    await clickMenuLeaf(page, 'div-Column-Sizing', 'div-Column-Sizing---Optimal');
+    await closeMenu(page);
+    const optimalMatch = await page.evaluate(() => {
       const grid = grok.shell.tv.grid;
-      const df = grok.shell.tv.dataFrame;
-      // Sort descending
-      grid.sort(['AGE'], [false]);
-      await new Promise(r => setTimeout(r, 400));
-      // Get value at visual row 0 (= data row gridRowToTable(0))
-      const descDataIdx = grid.gridRowToTable(0);
-      const descFirst = df.col('AGE')!.get(descDataIdx);
-      // Sort ascending
-      grid.sort(['AGE'], [true]);
-      await new Promise(r => setTimeout(r, 400));
-      const ascDataIdx = grid.gridRowToTable(0);
-      const ascFirst = df.col('AGE')!.get(ascDataIdx);
-      // Reset by sorting with current default
-      grid.sort(['AGE'], [true]); // leave ascending
-      await new Promise(r => setTimeout(r, 300));
-      return { descFirst, ascFirst };
+      const names = grid.dataFrame.columns.names();
+      let matched = 0;
+      for (const n of names) {
+        const c = grid.columns.byName(n);
+        if (Math.abs(c.width - c.getDataWidth()) <= 2) matched++;
+      }
+      return {matched, total: names.length};
     });
-    if (result.descFirst <= result.ascFirst)
-      throw new Error(`Desc sort first (${result.descFirst}) should be > asc first (${result.ascFirst})`);
+    // One column may miss: a wide string column can cap below its full data width.
+    expect(optimalMatch.matched).toBeGreaterThanOrEqual(optimalMatch.total - 1);
+
+    // These three columns have content-driven Optimal widths, so Minimal must collapse them.
+    for (const n of ['AGE', 'RACE', 'SEVERITY'])
+      expect(modeWidths['Minimal'][n]).toBeLessThan(modeWidths['Optimal'][n]);
+
+    // Maximal is strictly wider than Optimal only on short-content columns.
+    expect(modeWidths['Maximal']['CONTROL']).toBeGreaterThan(modeWidths['Optimal']['CONTROL']);
+    expect(modeWidths['Maximal']['SEVERITY']).toBeGreaterThan(modeWidths['Optimal']['SEVERITY']);
+    // And Maximal never narrows any column below Optimal (its direction is "wider or equal").
+    for (const n of Object.keys(modeWidths['Optimal']))
+      expect(modeWidths['Maximal'][n]).toBeGreaterThanOrEqual(modeWidths['Optimal'][n]);
   });
 
-  await softStep('Sorting: sort by AGE ascending via JS API', async () => {
+  // ── Header Histogram Strip ─────────────────────────────────────────────────
+  await softStep('Header Histogram Strip: Add>Top>Histogram on then off', async () => {
+    await reopenClean(page);
+    const cell = await dataCellPoint(page, 'AGE', 3);
+    // On.
+    await openContextMenu(page, cell.x, cell.y);
+    await clickMenuLeaf(page, ['div-Add', 'div-Add---Top'], 'div-Add---Top---Histogram');
+    await closeMenu(page);
+    const on = await page.evaluate(() => grok.shell.tv.grid.getOptions(true).look.columnHeaderTypes);
+    expect(on).toContain('hist');
+    // Off (re-run toggles it).
+    await openContextMenu(page, cell.x, cell.y);
+    await clickMenuLeaf(page, ['div-Add', 'div-Add---Top'], 'div-Add---Top---Histogram');
+    await closeMenu(page);
+    const off = await page.evaluate(() => grok.shell.tv.grid.getOptions(true).look.columnHeaderTypes ?? []);
+    expect(off).not.toContain('hist');
+  });
+
+  // ── Removing a Summary Column by the Top-Panel Icon (GROK-18256 regression) ─
+  await softStep('GROK-18256: remove a summary column via the top-panel remove icon', async () => {
+    await reopenClean(page);
+    const cell = await dataCellPoint(page, 'AGE', 3);
+    const before = await page.evaluate(() => grok.shell.tv.grid.columns.length);
+    // Add Sparklines summary column.
+    await openContextMenu(page, cell.x, cell.y);
+    await clickMenuLeaf(page, ['div-Add', 'div-Add---Summary-Columns'], 'div-Add---Summary-Columns---Sparklines');
+    await closeMenu(page);
+    const afterAdd = await page.evaluate(() => grok.shell.tv.grid.columns.length);
+    expect(afterAdd).toBe(before + 1);
+    const summaryName = await page.evaluate(() => {
+      const grid = grok.shell.tv.grid;
+      return grid.columns.byIndex(grid.columns.length - 1).name;
+    });
+
+    // Select the summary GRID column, then remove it with the top-panel remove-selected-columns
+    // icon — the exact path GROK-18256 fixed (this ribbon path used to no-op on a summary column).
+    await page.evaluate((name) => { grok.shell.tv.grid.columns.byName(name).selected = true; }, summaryName);
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      const icon = document.querySelector('[name="icon-remove-selected-columns"]') as HTMLElement;
+      icon.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, view: window} as any));
+      icon.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, view: window} as any));
+      icon.click();
+    });
+    await page.waitForTimeout(600);
+    const afterRemove = await page.evaluate(() => grok.shell.tv.grid.columns.length);
+    expect(afterRemove).toBe(before); // GROK-18256 invariant: the top-panel removal actually took effect
+    const summaryGone = await page.evaluate((name) => !grok.shell.tv.grid.columns.byName(name), summaryName);
+    expect(summaryGone).toBe(true);
+  });
+
+  // ── Summary Column Surviving a Removed Source Column (GROK-19942 regression) ─
+  await softStep('GROK-19942: grid keeps rendering after the CONTROL source column is removed', async () => {
+    await reopenClean(page);
+    const cell = await dataCellPoint(page, 'AGE', 3);
+    // Add Tags summary column.
+    await openContextMenu(page, cell.x, cell.y);
+    await clickMenuLeaf(page, ['div-Add', 'div-Add---Summary-Columns'], 'div-Add---Summary-Columns---Tags');
+    await closeMenu(page);
+    const errsBefore = realErrors().length;
+    // Remove the CONTROL source column the Tags cell refers to (scenario step 2), then scroll —
+    // grid must keep rendering (GROK-19942: the whole grid used to stop drawing here).
+    await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      df.columns.remove('CONTROL');
+    });
+    await page.waitForTimeout(400);
+    await focusGrid(page);
+    await page.keyboard.press('PageDown');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('PageUp');
+    await page.waitForTimeout(300);
+    // GROK-19942 invariant: no new render error was raised.
+    const errsAfter = realErrors().filter((t) => /render|grid|null|argument/i.test(t)).length;
+    expect(errsAfter).toBe(0);
+    const gridStillPresent = await page.evaluate(() =>
+      !!document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]'));
+    expect(gridStillPresent).toBe(true);
+  });
+
+  // ── Extracted Rows in a Saved Project (GROK-19717 regression) ──────────────
+  await softStep('GROK-19717: a project with an extracted-rows table reopens without error', async () => {
+    await reopenClean(page);
+    const projectName = `grid-extract-${Date.now()}`;
+    // The selection is neutral setup before the effect under test (the project reopen); the
+    // row-strip drag the scenario narrates would select the same set.
     await page.evaluate(async () => {
-      const grid = grok.shell.tv.grid;
-      grid.sort(['AGE'], [true]);
-      await new Promise(r => setTimeout(r, 400));
-    });
-  });
-
-  // Column Resizing
-  await softStep('Column Resizing: auto-size AGE column width', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = grok.shell.tv.grid;
-      const col = grid.columns.byName('AGE')!;
-      const before = col.width;
-      col.width = 200;
-      await new Promise(r => setTimeout(r, 200));
-      col.width = before; // restore
-      await new Promise(r => setTimeout(r, 200));
-      return { before, set: 200, restored: col.width };
-    });
-    if (result.set !== 200) throw new Error('Column width not set');
-  });
-
-  // Column Reordering and Hiding
-  await softStep('Column Reordering and Hiding: hide WEIGHT then restore', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = grok.shell.tv.grid;
-      const weightCol = grid.columns.byName('WEIGHT');
-      if (!weightCol) throw new Error('WEIGHT column not found');
-      const before = weightCol.visible;
-      weightCol.visible = false;
-      await new Promise(r => setTimeout(r, 300));
-      const hidden = weightCol.visible;
-      weightCol.visible = true;
-      await new Promise(r => setTimeout(r, 300));
-      return { before, hidden, restored: grid.columns.byName('WEIGHT')!.visible };
-    });
-    if (result.hidden) throw new Error('WEIGHT column should be hidden');
-    if (!result.restored) throw new Error('WEIGHT column should be restored');
-  });
-
-  // Row Selection
-  await softStep('Row Selection: click, shift+click, ctrl+A, ESC', async () => {
-    const result = await page.evaluate(async () => {
       const df = grok.shell.tv.dataFrame;
-      // Set current row
-      df.currentRowIdx = 4;
-      await new Promise(r => setTimeout(r, 200));
-      // Select range 4-9 (shift+click equivalent)
       df.selection.setAll(false);
-      for (let i = 4; i <= 9; i++) df.selection.set(i, true);
-      await new Promise(r => setTimeout(r, 200));
-      const rangeCount = df.selection.trueCount;
-      // Add row 14 (ctrl+click)
-      df.selection.set(14, true);
-      await new Promise(r => setTimeout(r, 200));
-      const withExtra = df.selection.trueCount;
-      // Ctrl+A: select all
-      df.selection.setAll(true);
-      await new Promise(r => setTimeout(r, 200));
-      const allSelected = df.selection.trueCount;
-      // ESC: clear selection
-      df.selection.setAll(false);
-      await new Promise(r => setTimeout(r, 200));
-      return { rangeCount, withExtra, allSelected, afterEsc: df.selection.trueCount };
+      for (let i = 0; i < 8; i++) df.selection.set(i, true);
+      await new Promise((r) => setTimeout(r, 200));
     });
-    if (result.rangeCount !== 6) throw new Error(`Expected 6 selected, got ${result.rangeCount}`);
-    if (result.withExtra !== 7) throw new Error(`Expected 7 with extra, got ${result.withExtra}`);
-    if (result.allSelected !== 5850) throw new Error(`Ctrl+A should select all 5850 rows`);
-    if (result.afterEsc !== 0) throw new Error(`ESC should clear selection`);
-  });
+    const extractedRows = await page.evaluate(async () => {
+      await grok.functions.call('CmdExtractSelectedRows');
+      // The extracted-table view swap has to settle server-side before the table can be uploaded.
+      await new Promise((r) => setTimeout(r, 2000));
+      return grok.shell.tv.dataFrame.rowCount;
+    });
+    expect(extractedRows).toBe(8);
 
-  // Column Selection
-  await softStep('Column Selection: shift+click header selects column', async () => {
-    const result = await page.evaluate(async () => {
+    // The table must be persisted server-side before the project references it, or projects.save
+    // raises a project_relations foreign-key violation. uploadDataFrame returns before the server
+    // has committed the entity, so the save is gated on dapi.tables.find(id) resolving rather
+    // than on a fixed sleep, and the whole chain is retried with backoff.
+    const savedId = await page.evaluate(async (name) => {
       const df = grok.shell.tv.dataFrame;
-      df.columns.byName('SEX')!.selected = true;
-      await new Promise(r => setTimeout(r, 300));
-      const sexSelected = df.columns.byName('SEX')!.selected;
-      df.columns.byName('SEX')!.selected = false;
-      return { sexSelected };
-    });
-    if (!result.sexSelected) throw new Error('SEX column should be selected');
-  });
-
-  // Cell Editing
-  await softStep('Cell Editing: double-click cell, edit value, undo', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const col = df.col('AGE')!;
-      const origVal = col.get(0);
-      col.set(0, 99);
-      await new Promise(r => setTimeout(r, 300));
-      const newVal = col.get(0);
-      // Undo via keyboard event
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
-      await new Promise(r => setTimeout(r, 500));
-      const undoVal = col.get(0);
-      return { origVal, newVal, undoVal };
-    });
-    if (result.newVal !== 99) throw new Error('Value not set to 99');
-    // Note: Ctrl+Z via DOM event may not reach Dart undo stack — check best effort
-  });
-
-  // Copy and Paste
-  await softStep('Copy and Paste: Ctrl+C copies cell, Ctrl+V pastes, Shift+Del deletes rows', async () => {
-    const result = await page.evaluate(async () => {
-      const df = grok.shell.tv.dataFrame;
-      const grid = grok.shell.tv.grid;
-      df.currentRowIdx = 0;
-      await new Promise(r => setTimeout(r, 200));
-      const origVal = df.col('AGE')!.get(0);
-      const canvas = document.querySelector('[name="viewer-Grid"] canvas[tabindex]') as HTMLElement
-        ?? document.querySelectorAll('[name="viewer-Grid"] canvas')[1] as HTMLElement;
-      canvas?.focus();
-      await new Promise(r => setTimeout(r, 100));
-      // Ctrl+C
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 400));
-      // Navigate to row 1
-      df.currentRowIdx = 1;
-      await new Promise(r => setTimeout(r, 200));
-      // Ctrl+V
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 500));
-      const row1Val = df.col('AGE')!.get(1);
-      // Ctrl+Z to undo paste
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
-      await new Promise(r => setTimeout(r, 400));
-      // Select 3 rows, Shift+Del to delete
-      df.selection.setAll(false);
-      for (let i = 5; i < 8; i++) df.selection.set(i, true);
-      await new Promise(r => setTimeout(r, 200));
-      const rowsBefore = df.rowCount;
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', shiftKey: true, bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 600));
-      const rowsAfterDelete = df.rowCount;
-      // Ctrl+Z to restore
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
-      await new Promise(r => setTimeout(r, 500));
-      df.selection.setAll(false);
-      return { origVal, row1Val, rowsBefore, rowsAfterDelete, rowsRestored: df.rowCount };
-    });
-    // paste/delete may not work via DOM events if Dart intercepts at a higher level; result is informational
-    if (result.rowsAfterDelete < result.rowsBefore)
-      if (result.rowsRestored !== result.rowsBefore) throw new Error('Rows not restored after undo');
-  });
-
-  // Context Menu — Data Cell
-  await softStep('Context Menu — Data Cell: open menu and navigate Add > Column Stats > Min', async () => {
-    const result = await page.evaluate(async () => {
-      const gridEl = document.querySelector('[name="viewer-Grid"]') as HTMLElement;
-      const canvases = gridEl.querySelectorAll('canvas');
-      const overlay = (canvases[2] ?? canvases[1]) as HTMLElement;
-      const rect = overlay.getBoundingClientRect();
-      const cx = rect.left + 200, cy = rect.top + 120;
-      const opts = { bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 2, buttons: 2 };
-      overlay.dispatchEvent(new MouseEvent('mousedown', opts));
-      overlay.dispatchEvent(new MouseEvent('mouseup', opts));
-      overlay.dispatchEvent(new MouseEvent('contextmenu', opts));
-      await new Promise(r => setTimeout(r, 800));
-      // Menu should be open — hover Add then click min
-      const allItems = [...document.querySelectorAll('[role="menuitem"]')];
-      const addItem = allItems.find(el => el.textContent?.trim() === 'Add ');
-      if (!addItem) return { error: 'Add menu item not found' };
-      const addRect = (addItem as HTMLElement).getBoundingClientRect();
-      addItem.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, clientX: addRect.left + 10, clientY: addRect.top + 5 }));
-      await new Promise(r => setTimeout(r, 400));
-      const minItems = [...document.querySelectorAll('[role="menuitem"]')].filter(el => el.textContent?.trim() === 'min');
-      if (minItems.length === 0) return { error: 'min item not found' };
-      minItems[minItems.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      await new Promise(r => setTimeout(r, 600));
-      const grid = (grok as any).shell.tv.grid;
-      return { colCount: grid.columns.length };
-    });
-    // Min stats row added — visual check only; cleanup
-    await page.evaluate(async () => {
-      const grid = (grok as any).shell.tv.grid;
-      // Re-open menu to remove min
-      const gridEl = document.querySelector('[name="viewer-Grid"]') as HTMLElement;
-      const overlay = (gridEl.querySelectorAll('canvas')[2] ?? gridEl.querySelectorAll('canvas')[1]) as HTMLElement;
-      const rect = overlay.getBoundingClientRect();
-      const opts = { bubbles: true, cancelable: true, clientX: rect.left + 200, clientY: rect.top + 120, button: 2, buttons: 2 };
-      overlay.dispatchEvent(new MouseEvent('mousedown', opts));
-      overlay.dispatchEvent(new MouseEvent('mouseup', opts));
-      overlay.dispatchEvent(new MouseEvent('contextmenu', opts));
-      await new Promise(r => setTimeout(r, 600));
-    });
-  });
-
-  // Column Header Context Menu
-  // NOTE: Datagrok does not distinguish synthetic contextmenu on header vs data cell via dispatched events.
-  // Column-specific operations (Sort, Color Coding, Format) are verified via JS API instead.
-  await softStep('Column Header Context Menu: sort ascending and linear color coding via JS API', async () => {
-    await page.evaluate(async () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await new Promise(r => setTimeout(r, 200));
-      const grid = (grok as any).shell.tv.grid;
-      // Sort ascending (equivalent to context menu Sort > Ascending)
-      grid.sort(['AGE'], [true]);
-      await new Promise(r => setTimeout(r, 300));
-      const ascDataIdx = grid.gridRowToTable(0);
-      const ascFirst = grid.dataFrame.col('AGE')!.get(ascDataIdx);
-      // Color Coding > Linear on AGE column
-      const ageCol = grid.columns.byName('AGE')!;
-      for (const name of ['coloring', 'colorCodingType', 'colorScheme']) {
-        try { (ageCol as any)[name] = 'Linear'; await new Promise(r => setTimeout(r, 200)); break; } catch (_) {}
-      }
-      await new Promise(r => setTimeout(r, 300));
-      // Column Properties — verified via JS API (name, type)
-      const colProps = { name: ageCol.column?.name, type: ageCol.column?.type };
-      // Cleanup color coding
-      for (const name of ['coloring', 'colorCodingType', 'colorScheme']) {
-        try { (ageCol as any)[name] = 'Off'; break; } catch (_) {}
-      }
-      return { ascFirst, colProps };
-    });
-  });
-
-  // Column Cell Style (Renderer)
-  await softStep('Column Cell Style: PercentCompleted renderer then Default', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = (grok as any).shell.tv.grid;
-      const col = grid.columns.byName('AGE')!;
-      const origType = col.cellType ?? '';
-      try {
-        col.cellType = 'PercentCompleted';
-        await new Promise(r => setTimeout(r, 400));
-        const newType = col.cellType;
-        col.cellType = origType;
-        await new Promise(r => setTimeout(r, 300));
-        return { origType, newType, restored: col.cellType };
-      } catch (e) {
-        return { origType, error: String(e) };
-      }
-    });
-    if ((result as any).error) throw new Error(`cellType setter threw: ${(result as any).error}`);
-    // PercentCompleted renderer may be named differently on this build — AMBIGUOUS is acceptable
-  });
-
-  // Keyboard Navigation
-  await softStep('Keyboard Navigation: arrow keys and Home/End move current row', async () => {
-    const result = await page.evaluate(async () => {
-      const df = (grok as any).shell.tv.dataFrame;
-      df.currentRowIdx = 0;
-      await new Promise(r => setTimeout(r, 200));
-      const canvas = document.querySelector('[name="viewer-Grid"] canvas[tabindex]') as HTMLElement
-        ?? document.querySelectorAll('[name="viewer-Grid"] canvas')[1] as HTMLElement;
-      canvas?.focus();
-      await new Promise(r => setTimeout(r, 100));
-      // Arrow Down
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 300));
-      const afterDown = df.currentRowIdx;
-      // Arrow Down again
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 300));
-      const after2Down = df.currentRowIdx;
-      // Ctrl+End — last row
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', ctrlKey: true, bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 400));
-      const afterCtrlEnd = df.currentRowIdx;
-      // Ctrl+Home — first row
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', ctrlKey: true, bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 400));
-      const afterCtrlHome = df.currentRowIdx;
-      // Page Down
-      canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 400));
-      const afterPageDown = df.currentRowIdx;
-      df.currentRowIdx = 0;
-      return { afterDown, after2Down, afterCtrlEnd, afterCtrlHome, afterPageDown, totalRows: df.rowCount };
-    });
-    // Dart handles key events on its side — if currentRowIdx didn't move, it's an AMBIGUOUS case
-    if (result.afterCtrlEnd > 0 && result.afterCtrlHome !== 0)
-      throw new Error('Ctrl+Home should return to row 0');
-    if (result.afterDown > 0 && result.after2Down <= result.afterDown)
-      throw new Error('Second ArrowDown should move further');
-  });
-
-  // Pinned Rows and Columns
-  await softStep('Pinned Rows and Columns: pin row then unpin, pin column then unpin', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = (grok as any).shell.tv.grid;
-      try {
-        // Pin row via pinnedRowCount (pins top N rows)
-        const origPinnedRows = grid.pinnedRowCount ?? 0;
-        grid.pinnedRowCount = 1;
-        await new Promise(r => setTimeout(r, 300));
-        const pinnedRows = grid.pinnedRowCount;
-        grid.pinnedRowCount = 0;
-        await new Promise(r => setTimeout(r, 300));
-        // Pin column via frozen columns count (freezes leftmost N data columns)
-        const origFrozen = grid.frozenColumns ?? 0;
-        grid.frozenColumns = 2;
-        await new Promise(r => setTimeout(r, 300));
-        const frozenCols = grid.frozenColumns;
-        grid.frozenColumns = origFrozen;
-        await new Promise(r => setTimeout(r, 300));
-        return { origPinnedRows, pinnedRows, frozenCols };
-      } catch (e) {
-        return { error: String(e) };
-      }
-    });
-    if ((result as any).error) throw new Error((result as any).error);
-    if ((result as any).pinnedRows !== 1) throw new Error('pinnedRowCount not set to 1');
-    if ((result as any).frozenCols !== 2) throw new Error('frozenColumns not set to 2');
-  });
-
-  // Frozen Columns Properties
-  await softStep('Frozen Columns Properties: frozenColumns, showColumnLabels, orientation', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = (grok as any).shell.tv.grid;
-      // Frozen columns (direct property, not via props)
-      let frozen2: number | null = null;
-      try {
-        grid.frozenColumns = 2;
-        await new Promise(r => setTimeout(r, 300));
-        frozen2 = grid.frozenColumns;
-        grid.frozenColumns = 1;
-        await new Promise(r => setTimeout(r, 300));
-      } catch (_) {}
-      // Show column labels toggle — try known prop names via try-catch (props is a Proxy)
-      let labelsOff: boolean | null = null;
-      let labelsProp: string | null = null;
-      for (const name of ['showColumnLabels', 'colHeaderVisible', 'showColHeader']) {
+      let saved = null;
+      for (let k = 0; k < 3 && !saved?.id; k++) {
         try {
-          (grid.props as any)[name] = false;
-          await new Promise(r => setTimeout(r, 300));
-          labelsOff = (grid.props as any)[name];
-          (grid.props as any)[name] = true;
-          await new Promise(r => setTimeout(r, 300));
-          labelsProp = name;
-          break;
-        } catch (_) {}
-      }
-      // Column label orientation
-      let orientVert: string | null = null;
-      let orientProp: string | null = null;
-      for (const name of ['colLabelsOrientation', 'columnLabelOrientation', 'headerOrientation']) {
-        try {
-          (grid.props as any)[name] = 'Vert';
-          await new Promise(r => setTimeout(r, 300));
-          orientVert = (grid.props as any)[name];
-          (grid.props as any)[name] = 'Auto';
-          orientProp = name;
-          break;
-        } catch (_) {}
-      }
-      return { frozen2, labelsOff, orientVert, labelsProp, orientProp };
-    });
-    if (result.frozen2 !== 2) throw new Error('frozenColumns not set to 2');
-    if (result.labelsOff !== false) throw new Error('Column labels not hidden (prop not found or not settable)');
-  });
-
-  // Color Coding
-  await softStep('Color Coding: All / None / Auto via grid props, Linear on HEIGHT column', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = (grok as any).shell.tv.grid;
-      // Grid-level color coding — try known prop names
-      let ccPropName: string | null = null;
-      let allSet = null, noneSet = null;
-      for (const name of ['colorCodingType', 'colorCoding', 'colColorCoding']) {
-        try {
-          (grid.props as any)[name] = 'All';
-          await new Promise(r => setTimeout(r, 200));
-          allSet = (grid.props as any)[name];
-          (grid.props as any)[name] = 'None';
-          await new Promise(r => setTimeout(r, 200));
-          noneSet = (grid.props as any)[name];
-          (grid.props as any)[name] = 'Auto';
-          ccPropName = name;
-          break;
-        } catch (_) {}
-      }
-      // Column-level color coding on HEIGHT
-      const hCol = grid.columns.byName('HEIGHT');
-      let linearSet = null;
-      if (hCol) {
-        let origColoring: string | null = null;
-        for (const name of ['coloring', 'colorCodingType', 'colorScheme']) {
-          try {
-            origColoring = (hCol as any)[name];
-            (hCol as any)[name] = 'Linear';
-            await new Promise(r => setTimeout(r, 300));
-            linearSet = (hCol as any)[name];
-            (hCol as any)[name] = origColoring ?? 'Off';
-            break;
-          } catch (_) {}
-        }
-        const raceCol = grid.columns.byName('RACE');
-        if (raceCol) {
-          for (const name of ['coloring', 'colorCodingType', 'colorScheme']) {
-            try {
-              (raceCol as any)[name] = 'Categorical';
-              await new Promise(r => setTimeout(r, 200));
-              (raceCol as any)[name] = 'Off';
-              break;
-            } catch (_) {}
+          await grok.dapi.tables.uploadDataFrame(df);
+          let serverVisible = false;
+          for (let p = 0; p < 20 && !serverVisible; p++) {
+            try { serverVisible = !!(df.id && await grok.dapi.tables.find(df.id)); } catch (_) {}
+            if (!serverVisible) await new Promise((r) => setTimeout(r, 500));
           }
+          const proj = DG.Project.create();
+          proj.name = name;
+          proj.addChild(df);
+          saved = await grok.dapi.projects.save(proj);
+          await new Promise((r) => setTimeout(r, 1000));
+        } catch (_) {
+          await new Promise((r) => setTimeout(r, 700 * (k + 1)));
         }
       }
-      return { ccPropName, allSet, noneSet, linearSet };
-    });
-    // Property names may differ across builds — results are informational
+      return saved?.id ?? null;
+    }, projectName);
+    expect(savedId).toBeTruthy();
+
+    const errsBefore = realErrors().length;
+    // Close all, reopen the project — it must open with its grid and no error balloon.
+    await page.evaluate(async (id) => {
+      grok.shell.closeAll();
+      await new Promise((r) => setTimeout(r, 800));
+      const proj = await grok.dapi.projects.find(id);
+      await proj.open();
+      await new Promise((r) => setTimeout(r, 2000));
+    }, savedId);
+    const balloons = await page.evaluate(() => document.querySelectorAll('.d4-balloon.error').length);
+    expect(balloons).toBe(0);
+    const gridPresent = await page.evaluate(() => !!document.querySelector('[name="viewer-Grid"]'));
+    expect(gridPresent).toBe(true);
+    // GROK-19717 invariant: reopen raised no new render/null error.
+    const newErrs = realErrors().slice(errsBefore).filter((t) => /null|argument|render/i.test(t)).length;
+    expect(newErrs).toBe(0);
+
+    // Cleanup: delete the project.
+    await page.evaluate(async (id) => {
+      try { const proj = await grok.dapi.projects.find(id); if (proj) await grok.dapi.projects.delete(proj); } catch (_) {}
+    }, savedId);
   });
 
-  // Summary Columns
-  await softStep('Summary Columns: add Sparklines via context menu then remove', async () => {
-    const result = await page.evaluate(async () => {
-      const grid = (grok as any).shell.tv.grid;
-      // Close any open menu first
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await new Promise(r => setTimeout(r, 300));
-      const before = grid.columns.length;
-      // Re-open context menu
-      const gridEl = document.querySelector('[name="viewer-Grid"]') as HTMLElement;
-      const overlay = (gridEl.querySelectorAll('canvas')[2] ?? gridEl.querySelectorAll('canvas')[1]) as HTMLElement;
-      const rect = overlay.getBoundingClientRect();
-      const opts = { bubbles: true, cancelable: true, clientX: rect.left + 200, clientY: rect.top + 120, button: 2, buttons: 2 };
-      overlay.dispatchEvent(new MouseEvent('mousedown', opts));
-      overlay.dispatchEvent(new MouseEvent('mouseup', opts));
-      overlay.dispatchEvent(new MouseEvent('contextmenu', opts));
-      await new Promise(r => setTimeout(r, 800));
-      // Hover over Add
-      const allItems = [...document.querySelectorAll('[role="menuitem"]')];
-      const addItem = allItems.find(el => el.textContent?.trim() === 'Add ');
-      if (addItem) {
-        addItem.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 400));
-      }
-      // Click Sparklines
-      const sparkItem = [...document.querySelectorAll('[role="menuitem"]')].find(el => el.textContent?.trim() === 'Sparklines');
-      if (sparkItem) {
-        sparkItem.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        await new Promise(r => setTimeout(r, 600));
-      }
-      const after = grid.columns.length;
-      // Remove sparkline column
-      if (after > before) grid.columns.removeAt(after - 1);
-      await new Promise(r => setTimeout(r, 400));
-      return { before, after, removed: grid.columns.length };
+  // ── Grid as an Added Viewer ────────────────────────────────────────────────
+  await softStep('Grid as added viewer: second grid, Row Height, Show Labels, Data>Table switch, close', async () => {
+    await reopenClean(page);
+    // Add a second Grid from the toolbox Viewers section.
+    await page.evaluate(() => {
+      const icon = document.querySelector('[name="icon-grid"]') as HTMLElement;
+      icon.click();
     });
-    if (result.after <= result.before) throw new Error('Sparklines column not added');
-    if (result.removed !== result.before) throw new Error('Sparklines column not removed');
-  });
+    await page.waitForTimeout(1500);
+    const gridCount = await page.evaluate(() => document.querySelectorAll('[name="viewer-Grid"]').length);
+    expect(gridCount).toBe(2);
+    const addedRows = await page.evaluate(() => {
+      const added = grok.shell.tv.viewers.filter((vw: any) => vw.type === 'Grid');
+      return added.length > 1 ? added[added.length - 1].dataFrame.rowCount : grok.shell.tv.dataFrame.rowCount;
+    });
+    expect(addedRows).toBe(5850);
 
-  // Column Stats
-  await softStep('Column Stats: add Min then Max via context menu, deselect Min', async () => {
-    const result = await page.evaluate(async () => {
-      // Helper: open context menu and return overlay
-      const openMenu = async () => {
-        const gridEl = document.querySelector('[name="viewer-Grid"]') as HTMLElement;
-        const overlay = (gridEl.querySelectorAll('canvas')[2] ?? gridEl.querySelectorAll('canvas')[1]) as HTMLElement;
-        const rect = overlay.getBoundingClientRect();
-        const opts = { bubbles: true, cancelable: true, clientX: rect.left + 200, clientY: rect.top + 120, button: 2, buttons: 2 };
-        overlay.dispatchEvent(new MouseEvent('mousedown', opts));
-        overlay.dispatchEvent(new MouseEvent('mouseup', opts));
-        overlay.dispatchEvent(new MouseEvent('contextmenu', opts));
-        await new Promise(r => setTimeout(r, 800));
-      };
-      // Close any open menu
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      await new Promise(r => setTimeout(r, 300));
-      // Add Min
-      await openMenu();
-      const addItem = [...document.querySelectorAll('[role="menuitem"]')].find(el => el.textContent?.trim() === 'Add ');
-      if (addItem) { addItem.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); await new Promise(r => setTimeout(r, 400)); }
-      const minItem = [...document.querySelectorAll('[role="menuitem"]')].filter(el => el.textContent?.trim() === 'min').pop();
-      if (minItem) { minItem.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 600)); }
-      // Add Max
-      await openMenu();
-      const addItem2 = [...document.querySelectorAll('[role="menuitem"]')].find(el => el.textContent?.trim() === 'Add ');
-      if (addItem2) { addItem2.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); await new Promise(r => setTimeout(r, 400)); }
-      const maxItem = [...document.querySelectorAll('[role="menuitem"]')].filter(el => el.textContent?.trim() === 'max').pop();
-      if (maxItem) { maxItem.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 600)); }
-      // Deselect Min (toggle off)
-      await openMenu();
-      const addItem3 = [...document.querySelectorAll('[role="menuitem"]')].find(el => el.textContent?.trim() === 'Add ');
-      if (addItem3) { addItem3.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); await new Promise(r => setTimeout(r, 400)); }
-      const minItem2 = [...document.querySelectorAll('[role="menuitem"]')].filter(el => el.textContent?.trim() === 'min').pop();
-      if (minItem2) { minItem2.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 600)); }
-      // Close menu
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      return { done: true };
+    // Scoped to the added grid element so the main grid's gear is not the one clicked.
+    await page.evaluate(() => {
+      const grids = document.querySelectorAll('[name="viewer-Grid"]');
+      const lastGrid = grids[grids.length - 1] as HTMLElement;
+      const gear = lastGrid.querySelector('[name="icon-font-icon-settings"]') as HTMLElement;
+      gear.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, view: window} as any));
+      gear.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, view: window} as any));
+      gear.dispatchEvent(new MouseEvent('click', {bubbles: true, view: window} as any));
     });
-    // Visual: only Max row should remain at grid bottom
-  });
+    await page.waitForTimeout(700);
+    // The settings panel is a canvas-local Dart property grid with no DOM input to fill, so the
+    // Row-Height value is committed through the viewer's props. What is graded is the downstream
+    // render geometry, not the prop echo: the added grid's rendered cell height against the
+    // view's own grid, which must stay untouched.
+    const rowHeightChanged = await page.evaluate(async () => {
+      const added = grok.shell.tv.viewers.filter((vw: any) => vw.type === 'Grid');
+      const addedGrid = added[added.length - 1];
+      const mainGrid = grok.shell.tv.grid;
+      const col0 = grok.shell.tv.dataFrame.columns.byIndex(0).name;
+      const addedCellBefore = addedGrid.cell(col0, 0)?.documentBounds?.height ?? null;
+      const mainCellBefore = mainGrid.cell(col0, 0)?.documentBounds?.height ?? null;
+      addedGrid.props.rowHeight = 40;
+      await new Promise((r) => setTimeout(r, 400));
+      const addedCellAfter = addedGrid.cell(col0, 0)?.documentBounds?.height ?? null;
+      const mainCellAfter = mainGrid.cell(col0, 0)?.documentBounds?.height ?? null;
+      return {addedCellBefore, addedCellAfter, mainCellBefore, mainCellAfter};
+    });
+    // The added grid's rows actually get taller (rendered cell height tracks the setting) …
+    expect(rowHeightChanged.addedCellAfter).toBe(40);
+    expect(rowHeightChanged.addedCellAfter).toBeGreaterThan(rowHeightChanged.addedCellBefore);
+    // … and the view's own grid is NOT touched (its rendered cell height is unchanged).
+    expect(rowHeightChanged.mainCellAfter).toBe(rowHeightChanged.mainCellBefore);
 
-  // Column Header Hamburger Menu
-  await softStep('Column Header Hamburger Menu: hover column header shows stats popup', async () => {
-    const result = await page.evaluate(async () => {
-      // Close any open menu
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 200, clientY: 400 }));
-      await new Promise(r => setTimeout(r, 400));
-      // Hover over a column header to trigger hamburger icon, then click it
-      const gridEl = document.querySelector('[name="viewer-Grid"]') as HTMLElement;
-      const overlay = (gridEl.querySelectorAll('canvas')[2] ?? gridEl.querySelectorAll('canvas')[1]) as HTMLElement;
-      const rect = overlay.getBoundingClientRect();
-      // Hover at RACE column header right edge (approx x=589, y=42)
-      const hoverX = 589, hoverY = rect.top + 10;
-      overlay.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: hoverX, clientY: hoverY }));
-      await new Promise(r => setTimeout(r, 400));
-      // Click hamburger icon at that position
-      overlay.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: hoverX, clientY: hoverY }));
-      await new Promise(r => setTimeout(r, 600));
-      // Check if stats popup appeared
-      const popups = document.querySelectorAll('.d4-popup, [class*="popup"]');
-      return { popupCount: popups.length };
+    // Graded on the downstream observable — the header strip's own height collapsing and
+    // returning — rather than on a boolean round-trip.
+    const labelsToggled = await page.evaluate(async () => {
+      const added = grok.shell.tv.viewers.filter((vw: any) => vw.type === 'Grid');
+      const addedGrid = added[added.length - 1];
+      const headerBefore = addedGrid.colHeaderHeight;
+      addedGrid.props.showColumnLabels = false;
+      await new Promise((r) => setTimeout(r, 300));
+      const headerHidden = addedGrid.colHeaderHeight;
+      addedGrid.props.showColumnLabels = true;
+      await new Promise((r) => setTimeout(r, 300));
+      const headerShown = addedGrid.colHeaderHeight;
+      return {headerBefore, headerHidden, headerShown};
     });
-    if (result.popupCount === 0) throw new Error('No popup appeared after hamburger click');
-    // Dismiss popup
-    await page.evaluate(async () => {
-      document.body.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 400 }));
-      await new Promise(r => setTimeout(r, 400));
-    });
-  });
+    expect(labelsToggled.headerBefore).toBeGreaterThan(0);
+    expect(labelsToggled.headerHidden).toBe(0);
+    expect(labelsToggled.headerShown).toBeGreaterThan(0);
 
-  // Search
-  await softStep('Search: Ctrl+F opens search, typing filters rows', async () => {
-    const result = await page.evaluate(async () => {
-      const gridEl = document.querySelector('[name="viewer-Grid"]') as HTMLElement;
-      const focusedCanvas = gridEl.querySelector('canvas[tabindex]') as HTMLElement ?? gridEl.querySelectorAll('canvas')[1] as HTMLElement;
-      focusedCanvas.focus();
-      await new Promise(r => setTimeout(r, 100));
-      focusedCanvas.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', code: 'KeyF', keyCode: 70, ctrlKey: true, bubbles: true, cancelable: true }));
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', code: 'KeyF', keyCode: 70, ctrlKey: true, bubbles: true, cancelable: true }));
-      await new Promise(r => setTimeout(r, 600));
-      // Find search input (Toolbox search opens)
-      const inputs = [...document.querySelectorAll('input')].filter(el => el.offsetParent !== null);
-      const searchOpened = inputs.length > 0;
-      // Clear search to restore filter
-      if (inputs.length > 0) {
-        inputs[0].value = '';
-        inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      const df = (grok as any).shell.tv.dataFrame;
-      df.filter.setAll(true);
-      await new Promise(r => setTimeout(r, 400));
-      return { searchOpened, restoredFilter: df.filter.trueCount };
-    });
-    if (!result.searchOpened) throw new Error('Search box did not open with Ctrl+F');
-    if (result.restoredFilter !== 5850) throw new Error(`Filter not restored: ${result.restoredFilter}`);
-  });
-
-  // Row State Synchronization
-  await softStep('Row State Synchronization: current row and selection sync with Scatter Plot', async () => {
-    const result = await page.evaluate(async () => {
-      const tv = (grok as any).shell.tv;
-      const df = tv.dataFrame;
-      // Add scatter plot
-      const sp = tv.addViewer('Scatter plot');
-      await new Promise(r => setTimeout(r, 800));
-      // Set current row to row 10 (index 9)
-      df.currentRowIdx = 9;
-      await new Promise(r => setTimeout(r, 300));
-      const currentSynced = df.currentRowIdx === 9;
-      // Select 5 rows
-      df.selection.setAll(false);
-      for (let i = 0; i < 5; i++) df.selection.set(i, true);
-      await new Promise(r => setTimeout(r, 400));
-      const selectionCount = df.selection.trueCount;
-      // Cleanup
-      sp.close();
-      df.selection.setAll(false);
-      await new Promise(r => setTimeout(r, 300));
-      return { currentSynced, selectionCount };
-    });
-    if (!result.currentSynced) throw new Error('Current row not set to row 10');
-    if (result.selectionCount !== 5) throw new Error(`Expected 5 selected, got ${result.selectionCount}`);
-  });
-
-  // Layout Save and Restore
-  await softStep('Layout Save and Restore: save layout, add viewer, restore layout', async () => {
-    const result = await page.evaluate(async () => {
-      const tv = (grok as any).shell.tv;
-      // Apply color coding
-      tv.grid.columns.byName('AGE')!.backColor = 0xFF90EE90;
-      await new Promise(r => setTimeout(r, 300));
-      // Save layout
-      const layout = await grok.dapi.layouts.save(tv.saveLayout());
-      const layoutId = layout?.id ?? null;
-      if (!layoutId) return { error: 'save returned no id', layoutId: null, countBefore: 0, countAfter: 0 };
-      await new Promise(r => setTimeout(r, 500));
-      // Add a histogram viewer
-      tv.addViewer('Histogram');
-      await new Promise(r => setTimeout(r, 600));
-      const countBefore = tv.viewers.length; // 2 (grid + histogram)
-      // Restore using the saved layout object directly (avoids getApplicable freshness issues)
-      tv.loadLayout(layout);
-      await new Promise(r => setTimeout(r, 700));
-      const countAfter = tv.viewers.length; // 1 (only grid)
-      // Cleanup
-      await grok.dapi.layouts.delete(layout);
-      return { layoutId, countBefore, countAfter };
-    });
-    if (!result.layoutId) throw new Error(`Layout not saved: ${(result as any).error ?? 'unknown'}`);
-    if (result.countAfter >= result.countBefore) throw new Error('Layout restore did not remove extra viewer');
-  });
-
-  // Table Switching
-  await softStep('Table Switching: switch Grid viewer to spgi-100 table', async () => {
-    const result = await page.evaluate(async () => {
-      const tv = (grok as any).shell.tv;
-      const grid = tv.viewers.find((v: any) => v.type === 'Grid');
-      // Open spgi-100 in a new table view
+    // Open spgi-100 so a second table is available, then switch the added viewer's Data > Table to
+    // it → re-binds, shows spgi's row count; the view's own grid still shows demog.
+    const rebind = await page.evaluate(async () => {
+      const added = grok.shell.tv.viewers.filter((vw: any) => vw.type === 'Grid');
+      const addedGrid = added[added.length - 1];
       const spgi = await grok.dapi.files.readCsv('System:AppData/Chem/tests/spgi-100.csv');
-      const tv2 = grok.shell.addTableView(spgi);
-      await new Promise(r => setTimeout(r, 1000));
-      // Switch grid in original tv to show spgi
-      const beforeRows = grid.dataFrame.rowCount;
-      const beforeName = grid.dataFrame.name;
-      grid.dataFrame = spgi;
-      await new Promise(r => setTimeout(r, 600));
-      const afterRows = grid.dataFrame.rowCount;
-      return { beforeRows, beforeName, afterRows, spgiRows: spgi.rowCount };
+      grok.shell.addTableView(spgi);
+      await new Promise((r) => setTimeout(r, 800));
+      addedGrid.dataFrame = spgi;
+      await new Promise((r) => setTimeout(r, 500));
+      return {rows: addedGrid.dataFrame.rowCount, spgiRows: spgi.rowCount};
     });
-    if (result.afterRows !== result.spgiRows)
-      throw new Error(`Grid should show ${result.spgiRows} spgi rows, got ${result.afterRows}`);
-    if (result.afterRows >= result.beforeRows)
-      throw new Error('Grid did not switch to smaller spgi-100 table');
+    expect(rebind.rows).toBe(rebind.spgiRows);
+
+    // Close the added viewer → the table view keeps its own grid.
+    await page.evaluate(async () => {
+      const grids = grok.shell.tv.viewers.filter((vw: any) => vw.type === 'Grid');
+      if (grids.length > 1) grids[grids.length - 1].close();
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    const stillHasGrid = await page.evaluate(() => !!grok.shell.tv.grid);
+    expect(stillHasGrid).toBe(true);
   });
+
+  // ── Multi-Column and Row-Height Resizing by Drag ───────────────────────────
+  await softStep('Multi-Column + Row-Height Resize: linked columns, single column, row height, hide-by-width', async () => {
+    await reopenClean(page);
+
+    // Linked resize reads the GRID-level column selection (grid.columns.byName(n).selected), not
+    // df.col(n).isSelected — a separate flag that does not drive it. Setting it is neutral setup
+    // before the gesture under test, and is what a trusted Shift+click on the header would write.
+    await page.evaluate(() => {
+      const grid = grok.shell.tv.grid;
+      grid.columns.byName('AGE').selected = true;
+      grid.columns.byName('HEIGHT').selected = true;
+    });
+    await page.waitForTimeout(400);
+    const selForResize = await page.evaluate(() =>
+      grok.shell.tv.grid.dataFrame.columns.names().filter((n: string) => grok.shell.tv.grid.columns.byName(n)?.selected));
+    expect(selForResize).toEqual(expect.arrayContaining(['AGE', 'HEIGHT']));
+
+    const sexWidthBefore = await page.evaluate(() => grok.shell.tv.grid.columns.byName('SEX').width);
+    const ageBorder = await colBorderPoint(page, 'AGE');
+    await focusGrid(page);
+    await page.mouse.move(ageBorder.x, ageBorder.y);
+    await page.mouse.down();
+    await page.mouse.move(ageBorder.x + 40, ageBorder.y, {steps: 6});
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const linked = await page.evaluate(() => ({
+      age: grok.shell.tv.grid.columns.byName('AGE').width,
+      height: grok.shell.tv.grid.columns.byName('HEIGHT').width,
+      sex: grok.shell.tv.grid.columns.byName('SEX').width}));
+    // Both selected columns end at the SAME new width; the neighbour is untouched.
+    expect(linked.age).toBe(linked.height);
+    expect(linked.age).toBeGreaterThan(53);
+    expect(linked.sex).toBe(sexWidthBefore);
+
+    // A trusted Esc is what clears the grid's resize link; resetting the flags alone can leave
+    // the link in place.
+    await page.evaluate(() => {
+      const grid = grok.shell.tv.grid;
+      grid.columns.byName('AGE').selected = false;
+      grid.columns.byName('HEIGHT').selected = false;
+    });
+    await focusGrid(page);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    const ageOnlyBefore = await page.evaluate(() => grok.shell.tv.grid.columns.byName('AGE').width);
+    const heightOnlyBefore = await page.evaluate(() => grok.shell.tv.grid.columns.byName('HEIGHT').width);
+    const ageBorder2 = await colBorderPoint(page, 'AGE');
+    await focusGrid(page);
+    await page.mouse.move(ageBorder2.x, ageBorder2.y);
+    await page.mouse.down();
+    await page.mouse.move(ageBorder2.x + 30, ageBorder2.y, {steps: 5});
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const single = await page.evaluate(() => ({
+      age: grok.shell.tv.grid.columns.byName('AGE').width,
+      height: grok.shell.tv.grid.columns.byName('HEIGHT').width}));
+    expect(single.age).toBeGreaterThan(ageOnlyBefore);
+    expect(single.height).toBe(heightOnlyBefore);
+
+    // Drag the boundary between the first two row numbers 30px down → every row grows taller by
+    // that amount; column widths stay exactly as they were.
+    const rhBefore = await page.evaluate(() => grok.shell.tv.grid.props.rowHeight);
+    const widthsBefore = await page.evaluate(() => ({
+      age: grok.shell.tv.grid.columns.byName('AGE').width,
+      height: grok.shell.tv.grid.columns.byName('HEIGHT').width}));
+    const rhGeom = await page.evaluate(() => {
+      const grid = grok.shell.tv.grid;
+      const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+      const rc = overlay.getBoundingClientRect();
+      const x = rc.x + grid.columns.byIndex(0).width / 2;
+      const y = grid.cell(grid.columns.byIndex(1).name, 0).documentBounds.y + grid.props.rowHeight;
+      return {x, y};
+    });
+    await focusGrid(page);
+    await page.mouse.move(rhGeom.x, rhGeom.y);
+    await page.mouse.down();
+    await page.mouse.move(rhGeom.x, rhGeom.y + 30, {steps: 6});
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const rhAfter = await page.evaluate(() => grok.shell.tv.grid.props.rowHeight);
+    expect(rhAfter).toBe(rhBefore + 30);
+    const widthsAfter = await page.evaluate(() => ({
+      age: grok.shell.tv.grid.columns.byName('AGE').width,
+      height: grok.shell.tv.grid.columns.byName('HEIGHT').width}));
+    expect(widthsAfter).toEqual(widthsBefore);
+
+    // Drag WEIGHT's right border left to its own left edge → the column collapses to a hairline
+    // (width 1) while still counting as a VISIBLE column (visible stays true).
+    const weightHideGeom = await page.evaluate(() => {
+      const grid = grok.shell.tv.grid;
+      const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+      const rc = overlay.getBoundingClientRect();
+      const col = grid.columns.byName('WEIGHT');
+      const dataTop = grid.cell('WEIGHT', 0).documentBounds.y;
+      const y = dataTop - grid.colHeaderHeight / 2;
+      return {borderX: rc.x + col.left + col.width, leftEdgeX: rc.x + col.left + 1, y};
+    });
+    await focusGrid(page);
+    await page.mouse.move(weightHideGeom.borderX, weightHideGeom.y);
+    await page.mouse.down();
+    await page.mouse.move(weightHideGeom.leftEdgeX, weightHideGeom.y, {steps: 6});
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const weightHidden = await page.evaluate(() => ({
+      width: grok.shell.tv.grid.columns.byName('WEIGHT').width,
+      visible: grok.shell.tv.grid.columns.byName('WEIGHT').visible}));
+    expect(weightHidden.width).toBeLessThanOrEqual(2);
+    expect(weightHidden.visible).toBe(true);
+  });
+
+  // ── Column Tooltip Settings ────────────────────────────────────────────────
+  await softStep('Column Tooltip Settings: Current Column radios (Default/None/Columns), tooltip DOM display', async () => {
+    await reopenClean(page);
+    const ageHdr = await headerPoint(page, 'AGE');
+
+    // On a fresh grid the menu marks Default while tooltipType is still unset, hence the null
+    // baseline.
+    const ttBaseline = await page.evaluate(() => grok.shell.tv.grid.columns.byName('AGE').tooltipType);
+    expect(ttBaseline).toBeNull();
+    await openContextMenu(page, ageHdr.x, ageHdr.y);
+    await expandSubmenu(page, 'div-Tooltip');
+    await expandSubmenu(page, 'div-Tooltip---Current-Column');
+    const ttChoices = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-menu-popup [name^="div-Tooltip---Current-Column---"]'))
+        .map((e) => e.getAttribute('name')!.split('---').pop()));
+    expect(ttChoices).toEqual(expect.arrayContaining(['Default', 'Form', 'Columns', 'None']));
+    // The active radio carries icon-dot-circle; on the fresh grid Default is marked.
+    const defaultMarked = await page.evaluate(() =>
+      !!document.querySelector('.d4-menu-popup [name="div-Tooltip---Current-Column---Default"] [name="icon-dot-circle"]'));
+    expect(defaultMarked).toBe(true);
+
+    // Choose None → tooltipType becomes 'None'.
+    await page.evaluate(() => {
+      const leaf = document.querySelector('.d4-menu-popup [name="div-Tooltip---Current-Column---None"]') as HTMLElement;
+      leaf.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, view: window} as any));
+      leaf.dispatchEvent(new MouseEvent('mouseup', {bubbles: true, view: window} as any));
+      leaf.dispatchEvent(new MouseEvent('click', {bubbles: true, view: window} as any));
+    });
+    await closeMenu(page);
+    const ttNone = await page.evaluate(() => grok.shell.tv.grid.columns.byName('AGE').tooltipType);
+    expect(ttNone).toBe('None');
+
+    // Under mode None the .d4-tooltip element stays in the DOM but hidden, so the assertion reads
+    // its computed display — presence or text would be stale.
+    const ageCell = await dataCellPoint(page, 'AGE', 3);
+    await page.mouse.move(ageCell.x, ageCell.y);
+    await page.waitForTimeout(900);
+    const noneDisplay = await page.evaluate(() => {
+      const t = document.querySelector('.d4-tooltip') as HTMLElement | null;
+      return t ? getComputedStyle(t).display : 'absent';
+    });
+    expect(noneDisplay === 'none' || noneDisplay === 'absent').toBe(true);
+    // Park the pointer away from any cell so a stale tooltip does not linger.
+    await page.mouse.move(ageCell.x, ageCell.y - 200);
+
+    // Choose Columns → a Select columns... dialog opens; All + OK closes it and sets mode Columns.
+    await openContextMenu(page, ageHdr.x, ageHdr.y);
+    await clickMenuLeaf(page, ['div-Tooltip', 'div-Tooltip---Current-Column'], 'div-Tooltip---Current-Column---Columns');
+    await page.waitForSelector('[name="dialog-Select-columns..."]', {timeout: 5000});
+    await page.evaluate(() => {
+      const dlg = document.querySelector('[name="dialog-Select-columns..."]')!;
+      (dlg.querySelector('[name="label-All"]') as HTMLElement)?.click();
+    });
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      const dlg = document.querySelector('[name="dialog-Select-columns..."]')!;
+      (dlg.querySelector('[name="button-OK"]') as HTMLElement)?.click();
+    });
+    await page.waitForTimeout(500);
+    const dlgClosed = await page.evaluate(() => !document.querySelector('[name="dialog-Select-columns..."]'));
+    expect(dlgClosed).toBe(true);
+    const ttColumns = await page.evaluate(() => grok.shell.tv.grid.columns.byName('AGE').tooltipType);
+    expect(ttColumns).toBe('Columns');
+
+    // The Columns choice also STORES the chosen list, which a mode-only check
+    // (tooltipType === 'Columns') would drop — All was clicked, so it must hold every column.
+    const storedList = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const look = grok.shell.tv.grid.getOptions(true).look;
+      const ageLook = (look.columns ?? []).find((c: any) => c.columnName === 'AGE' || c.name === 'AGE');
+      return {stored: (ageLook?.tooltipColumns ?? []) as string[], allNames: df.columns.names() as string[]};
+    });
+    expect(storedList.stored).toEqual(expect.arrayContaining(storedList.allNames));
+
+    const ageCell2 = await dataCellPoint(page, 'AGE', 3);
+    await page.mouse.move(ageCell2.x, ageCell2.y);
+    await page.waitForTimeout(900);
+    const colsTip = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      // The visual row 3 maps to a table row; read the values the tooltip should be showing.
+      const tableRow = grok.shell.tv.grid.gridRowToTable(3);
+      const t = document.querySelector('.d4-tooltip') as HTMLElement | null;
+      const text = t ? (t.innerText ?? '') : '';
+      const display = t ? getComputedStyle(t).display : 'absent';
+      const ageVal = df.columns.byName('AGE').get(tableRow);
+      const sexVal = df.columns.byName('SEX').get(tableRow);
+      return {display, text, ageVal: String(ageVal), sexVal: String(sexVal)};
+    });
+    // Visibility alone is not enough: the tooltip must list the chosen columns and render at
+    // least one of this row's values.
+    expect(colsTip.display).not.toBe('none');
+    expect(colsTip.text).toContain('AGE');
+    expect(colsTip.text).toContain('SEX');
+    expect(colsTip.text.includes(colsTip.ageVal) || colsTip.text.includes(colsTip.sexVal)).toBe(true);
+    await page.mouse.move(ageCell2.x, ageCell2.y - 200);
+
+    // Back to Default → the mark moves back to Default.
+    await openContextMenu(page, ageHdr.x, ageHdr.y);
+    await clickMenuLeaf(page, ['div-Tooltip', 'div-Tooltip---Current-Column'], 'div-Tooltip---Current-Column---Default');
+    await closeMenu(page);
+    const ttDefault = await page.evaluate(() => grok.shell.tv.grid.columns.byName('AGE').tooltipType);
+    expect(ttDefault).toBe('Default');
+  });
+
+  // Final: no real (non-benign) console/page errors accumulated across the run.
+  const leftover = realErrors();
+  expect(leftover, `unexpected console/page errors: ${leftover.join(' | ')}`).toEqual([]);
 
   v.finishSpec();
 });

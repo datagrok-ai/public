@@ -1,0 +1,734 @@
+/* ---
+realizes: [grid.cp.appearance-summary-persist]
+--- */
+import {test, expect, Page} from '@playwright/test';
+import {loginToDatagrok, specTestOptions, softStep} from '../../spec-login';
+import * as v from '../../helpers/viewers';
+import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects';
+
+declare const grok: any;
+
+// The ribbon Save renders a publication preview by cloning the live view into an offscreen
+// iframe; that publish chain emits a benign clone-iframe message plus a Dart NullError whose
+// minified symbol drifts per build, so the pattern stays LETTER-AGNOSTIC. Apply this filter
+// ONLY inside the save window — the same class outside it is a regression signal, and every
+// other console error counts (Steps 13 and 17 guard errors carrying no /grid/ token).
+const isBenignSaveWindowError = (text: string): boolean =>
+  /Unable to find element in cloned iframe/.test(text) ||
+  /Stack trace [A-Za-z]+/.test(text) ||
+  /NullError: method not found: '\w+' on null/.test(text);
+
+test.use(specTestOptions);
+
+// Page-coordinate center of a column header from the grid geometry.
+async function headerCenter(page: Page, col: string): Promise<{x: number; y: number}> {
+  return page.evaluate((c) => {
+    const grid = grok.shell.tv.grid;
+    const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+    const rc = overlay.getBoundingClientRect();
+    const gc = grid.columns.byName(c);
+    const dataTop = grid.cell(c, 0).documentBounds.y;
+    const headerY = dataTop - grid.colHeaderHeight / 2;
+    return {x: rc.x + gc.left + gc.width / 2, y: headerY};
+  }, col);
+}
+
+// Rendered rect (page coords) of a menu element whose `name` matches, or null while no such
+// copy exists. A d4 nested submenu keeps a detached zero-rect TEMPLATE copy of every leaf
+// alongside the laid-out copy in the open popup, and a query by name hits the template first —
+// hence the filter on a non-null offsetParent plus a real bounding box.
+async function laidOutRect(
+  page: Page, name: string,
+): Promise<{x: number; y: number; w: number; h: number} | null> {
+  return page.evaluate((n) => {
+    const els = Array.from(document.querySelectorAll('[name="' + n + '"]')) as HTMLElement[];
+    for (const el of els) {
+      if (el.offsetParent === null) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return {x: r.x, y: r.y, w: r.width, h: r.height};
+    }
+    return null;
+  }, name);
+}
+
+// Open a grid context menu at (clientX, clientY) on the overlay canvas, then walk a chain of
+// nested menu groups to one of their leaves and click it.
+//
+// The nested submenus use slope-based hover protection: a leaf stays a zero-rect detached
+// template until its parent group receives a TRAJECTORY-BEARING, TRUSTED pointer movement, which
+// no synthetic MouseEvent chain satisfies. Only the submenu expansions need that trusted input —
+// the ROOT menu still opens on synthetic events dispatched on the overlay canvas.
+async function clickMenuLeaf(
+  page: Page, at: {x: number; y: number}, groupNames: string[], leafName: string,
+): Promise<boolean> {
+  for (let open = 0; open < 5; open++) {
+    await page.evaluate(({x, y}) => {
+      const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
+      const cm = {bubbles: true, cancelable: true, clientX: x, clientY: y, button: 2, buttons: 2} as any;
+      overlay.dispatchEvent(new MouseEvent('mousedown', cm));
+      overlay.dispatchEvent(new MouseEvent('mouseup', cm));
+      overlay.dispatchEvent(new MouseEvent('contextmenu', cm));
+    }, {x: at.x, y: at.y});
+    await page.waitForTimeout(550);
+
+    // Approach each group from its left edge inward — that trajectory is what the slope
+    // tracker reads.
+    let ok = true;
+    for (const g of groupNames) {
+      const gr = await laidOutRect(page, g);
+      if (!gr) { ok = false; break; }
+      const gcx = gr.x + gr.w / 2; const gcy = gr.y + gr.h / 2;
+      await page.mouse.move(gr.x + 4, gcy, {steps: 4});
+      await page.mouse.move(gcx, gcy, {steps: 8});
+      await page.waitForTimeout(450);
+    }
+
+    const leaf = ok ? await laidOutRect(page, leafName) : null;
+    if (!leaf) {
+      // Dismiss and retry from a clean state.
+      await page.evaluate(() => (document.body as HTMLElement).click());
+      await page.waitForTimeout(250);
+      continue;
+    }
+    await page.mouse.move(leaf.x + leaf.w / 2, leaf.y + leaf.h / 2, {steps: 4});
+    await page.mouse.click(leaf.x + leaf.w / 2, leaf.y + leaf.h / 2);
+    await page.waitForTimeout(800);
+    return true;
+  }
+  return false;
+}
+
+// Open the grid's property panel and wait for its rows to exist. The gear's CSS visibility
+// flickers with viewer hover/focus, so a plain Playwright click times out on actionability and a
+// lone synthetic click can land before the viewer takes focus; four real gestures are tried in
+// order and the first that reveals the rows wins.
+async function openGridSettings(page: Page): Promise<boolean> {
+  const rows = page.locator('[name="prop-row-height"]');
+  if (await rows.count() > 0) return true;
+  const gestures: Array<() => Promise<void>> = [
+    // Trusted pointer first: a real hover is what reveals the gear.
+    async () => {
+      const box = await page.evaluate(() => {
+        const gear = document.querySelector('.d4-grid-settings-icon') as HTMLElement | null;
+        if (!gear) return null;
+        const r = gear.getBoundingClientRect();
+        return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+      });
+      if (box === null) return;
+      await page.mouse.move(box.x - 40, box.y + 20);
+      await page.mouse.move(box.x, box.y, {steps: 6});
+      await page.waitForTimeout(250);
+      await page.mouse.click(box.x, box.y);
+    },
+    async () => {
+      await page.evaluate(() => {
+        const gear = document.querySelector('.d4-grid-settings-icon') as HTMLElement | null;
+        if (!gear) return;
+        const r = gear.getBoundingClientRect();
+        const cx = r.x + r.width / 2; const cy = r.y + r.height / 2;
+        const host = gear.parentElement ?? gear;
+        host.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, clientX: cx, clientY: cy}));
+        gear.dispatchEvent(new MouseEvent('mouseover', {bubbles: true, clientX: cx, clientY: cy}));
+        for (const type of ['mousedown', 'mouseup', 'click'])
+          gear.dispatchEvent(new MouseEvent(type, {bubbles: true, cancelable: true, clientX: cx, clientY: cy, button: 0}));
+      });
+    },
+    // The registered helper, scoped to the Grid panel so multiple viewers cannot be confused.
+    async () => { await v.openViewerGear(page, 'Grid'); },
+    async () => {
+      await page.locator('[name="viewer-Grid"] canvas[name="overlay"]').first().click({position: {x: 60, y: 60}, force: true});
+      await page.keyboard.press('F4');
+    },
+  ];
+  for (const gesture of gestures) {
+    try {
+      await gesture();
+    } catch {
+      continue;
+    }
+    try {
+      // 'attached', not 'visible': the panel can be rendered while the Context Panel is
+      // collapsed or scrolled out of the headless viewport, and its rows are still drivable.
+      await rows.first().waitFor({state: 'attached', timeout: 6000});
+      return true;
+    } catch {
+      // panel did not appear — fall through to the next gesture
+    }
+  }
+  return false;
+}
+
+test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => {
+  test.setTimeout(360_000);
+
+  await loginToDatagrok(page);
+  await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
+
+  // Setup: identify a null cell for the missing-value-color read (HEIGHT has many nulls in
+  // demog). grid.cell(col, tableRowIdx).color resolves the rendered colour without scrolling.
+  const setup = await page.evaluate(() => {
+    const df = grok.shell.tv.dataFrame;
+    const grid = grok.shell.tv.grid;
+    const hc = df.col('HEIGHT');
+    let nullHeightRow = -1;
+    for (let i = 0; i < df.rowCount; i++) if (hc.isNone(i)) { nullHeightRow = i; break; }
+    const ac = df.col('AGE');
+    let minAgeRow = -1; let maxAgeRow = -1; let minV = Infinity; let maxV = -Infinity;
+    for (let i = 0; i < df.rowCount; i++) {
+      if (ac.isNone(i)) continue;
+      const val = ac.get(i);
+      if (val < minV) { minV = val; minAgeRow = i; }
+      if (val > maxV) { maxV = val; maxAgeRow = i; }
+    }
+    return {
+      nullHeightRow,
+      minAgeRow, maxAgeRow, minV, maxV,
+      defaultRowHeight: grid.props.rowHeight,
+      defaultBg: grid.cell('AGE', 0).color, // white background (no colour coding yet)
+    };
+  });
+  expect(setup.nullHeightRow).toBeGreaterThanOrEqual(0); // a null HEIGHT cell exists
+  expect(setup.minAgeRow).not.toBe(setup.maxAgeRow); // distinct min/max AGE rows
+
+  // --- Scenario 1: Linear color coding on AGE --------------------------------
+
+  // These four steps own the GRID's actuation path — applying each type through the column
+  // header menu — while the per-type color VALUES belong to the flat Viewers/color-coding
+  // section. The full color battery still runs once, in the persistence tail.
+  await softStep('Step 4 — Linear colour coding on AGE: min/max cells differ, both differ from background', async () => {
+    const c = await headerCenter(page, 'AGE');
+    const applied = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Linear');
+    expect(applied).toBe(true); // the Linear leaf was reached and clicked via the header menu
+    await page.waitForTimeout(600);
+    const r = await page.evaluate((s) => {
+      const df = grok.shell.tv.dataFrame;
+      const grid = grok.shell.tv.grid;
+      return {
+        ccType: df.col('AGE').getTag('.color-coding-type'),
+        minColor: grid.cell('AGE', s.minAgeRow).color,
+        maxColor: grid.cell('AGE', s.maxAgeRow).color,
+        // an uncolored column's cell on the same rows = plain background
+        bgMinRow: grid.cell('DEMOG', s.minAgeRow).color,
+        bgMaxRow: grid.cell('DEMOG', s.maxAgeRow).color,
+      };
+    }, setup);
+    expect(r.ccType).toBe('Linear'); // Linear color coding is active on AGE
+    // Min-AGE and max-AGE cells differ from each other and both from a plain cell.
+    expect(r.minColor).not.toBe(r.maxColor);
+    expect(r.minColor).not.toBe(r.bgMinRow);
+    expect(r.maxColor).not.toBe(r.bgMaxRow);
+  });
+
+  // --- Scenario 2: Conditional color coding on HEIGHT ------------------------
+  // Each in-range cell must resolve the color CONFIGURED for its range, not merely differ from
+  // its neighbours. Conditional mode is turned on through the real header menu; the ranges
+  // themselves are written with meta.colors.setConditional — the call the Conditional Edit
+  // dialog's range editor makes, whose own controls are undocumented.
+  const condRanges = {'<160': '#0000FF', '>180': '#FF0000'};
+
+  await softStep('Step 5 — Conditional colour coding on HEIGHT: each in-range cell resolves its configured colour', async () => {
+    const c = await headerCenter(page, 'HEIGHT');
+    const applied = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Conditional');
+    expect(applied).toBe(true); // the Conditional leaf was reached and clicked
+    await page.waitForTimeout(600);
+    const r = await page.evaluate((ranges) => {
+      const df = grok.shell.tv.dataFrame;
+      const grid = grok.shell.tv.grid;
+      const hc = df.col('HEIGHT');
+      hc.meta.colors.setConditional(ranges);
+      grid.invalidate();
+      // The mid-range (160..180) sample is the non-round-trip witness: the renderer maps each
+      // value THROUGH the range logic, so a cell in neither band resolves the plain background.
+      let lowRow = -1; let highRow = -1; let midRow = -1;
+      for (let i = 0; i < df.rowCount; i++) {
+        if (hc.isNone(i)) continue;
+        const val = hc.get(i);
+        if (lowRow < 0 && val < 160) lowRow = i;
+        if (highRow < 0 && val > 180) highRow = i;
+        if (midRow < 0 && val >= 160 && val <= 180) midRow = i;
+        if (lowRow >= 0 && highRow >= 0 && midRow >= 0) break;
+      }
+      return {
+        ccType: hc.getTag('.color-coding-type'),
+        cond: hc.getTag('.color-coding-conditional'),
+        lowColor: grid.cell('HEIGHT', lowRow).color >>> 0,
+        highColor: grid.cell('HEIGHT', highRow).color >>> 0,
+        midRow,
+        midColor: midRow >= 0 ? grid.cell('HEIGHT', midRow).color >>> 0 : -1,
+        bg: grid.cell('DEMOG', midRow >= 0 ? midRow : lowRow).color >>> 0,
+      };
+    }, condRanges);
+    expect(r.ccType).toBe('Conditional'); // Conditional colour coding is active on HEIGHT
+    expect(r.cond).toBe(JSON.stringify(condRanges)); // the explicit named ranges are configured
+    expect(r.lowColor).toBe(0xff0000ff); // below-160 cell resolves the configured blue
+    expect(r.highColor).toBe(0xffff0000); // above-180 cell resolves the configured red
+    expect(r.lowColor).not.toBe(r.highColor); // different ranges report different colours
+    if (r.midRow >= 0) {
+      expect(r.midColor).not.toBe(r.lowColor); // an in-neither cell matches no configured colour
+      expect(r.midColor).not.toBe(r.highColor);
+    }
+  });
+
+  // --- Scenario 3: Categorical colour coding on SEX ---------------------------
+
+  await softStep('Step 6 — Categorical colour coding on SEX: distinct SEX values get distinct colours', async () => {
+    const c = await headerCenter(page, 'SEX');
+    const applied = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Categorical');
+    expect(applied).toBe(true); // the Categorical leaf was reached and clicked
+    await page.waitForTimeout(600);
+    const r = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const grid = grok.shell.tv.grid;
+      const sc = df.col('SEX');
+      let mRow = -1; let fRow = -1;
+      for (let i = 0; i < df.rowCount && (mRow < 0 || fRow < 0); i++) {
+        const val = sc.get(i);
+        if (val === 'M' && mRow < 0) mRow = i;
+        if (val === 'F' && fRow < 0) fRow = i;
+      }
+      return {
+        ccType: sc.getTag('.color-coding-type'),
+        mColor: grid.cell('SEX', mRow).color,
+        fColor: grid.cell('SEX', fRow).color,
+      };
+    });
+    expect(r.ccType).toBe('Categorical'); // Categorical colour coding is active on SEX
+    expect(r.mColor).not.toBe(r.fColor); // the M row and the F row get distinct colours
+  });
+
+  // --- Scenario 4: Linked colour coding on WEIGHT with source SEX -------------
+  // Categorical on SEX (Step 6) is the precondition source. The source column is committed
+  // through the Edit... dialog's d4-column-selector popup, which only takes real keystrokes.
+
+  await softStep('Step 7 — Linked colour coding on WEIGHT (source SEX): WEIGHT cell colour equals SEX cell colour', async () => {
+    const c = await headerCenter(page, 'WEIGHT');
+    // Open the Color-coding Edit dialog for WEIGHT.
+    const opened = await clickMenuLeaf(page, c, ['div-Color-Coding'], 'div-Color-Coding---Edit...');
+    expect(opened).toBe(true); // the Edit... leaf was reached and clicked
+    await page.locator('.d4-dialog[name="dialog-Color-coding--WEIGHT"]').waitFor({timeout: 8000});
+    // Set Type = Linked (reveals the Source-column selector).
+    await page.evaluate(() => {
+      const dlg = document.querySelector('.d4-dialog[name="dialog-Color-coding--WEIGHT"]') as HTMLElement;
+      const typeSel = dlg.querySelector('[name="input-Type"]') as HTMLSelectElement;
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value')!.set!;
+      setter.call(typeSel, 'Linked');
+      typeSel.dispatchEvent(new Event('change', {bubbles: true}));
+      typeSel.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    await page.locator('.d4-dialog[name="dialog-Color-coding--WEIGHT"] [name="input-Source-column"]')
+      .waitFor({timeout: 5000});
+    await page.evaluate(() => {
+      const dlg = document.querySelector('.d4-dialog[name="dialog-Color-coding--WEIGHT"]') as HTMLElement;
+      const src = dlg.querySelector('[name="input-Source-column"]') as HTMLElement;
+      const label = (src.querySelector('.d4-column-selector-column') as HTMLElement) ?? src;
+      const r = label.getBoundingClientRect();
+      label.dispatchEvent(new MouseEvent('mousedown', {bubbles: true, button: 0, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2}));
+    });
+    await page.waitForTimeout(600);
+    await page.keyboard.press('s');
+    await page.waitForTimeout(120);
+    await page.keyboard.type('ex');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    // Close the dialog (applies live via CLOSE).
+    await page.locator('.d4-dialog[name="dialog-Color-coding--WEIGHT"] [name="button-CLOSE"]')
+      .first().click({timeout: 5000}).catch(() => {});
+    await page.waitForTimeout(700);
+    const r = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const grid = grok.shell.tv.grid;
+      const sc = df.col('SEX');
+      // two rows with different SEX values
+      let mRow = -1; let fRow = -1;
+      for (let i = 0; i < df.rowCount && (mRow < 0 || fRow < 0); i++) {
+        const val = sc.get(i);
+        if (val === 'M' && mRow < 0) mRow = i;
+        if (val === 'F' && fRow < 0) fRow = i;
+      }
+      return {
+        ccType: df.col('WEIGHT').getTag('.color-coding-type'),
+        src: df.col('WEIGHT').getTag('.%color-coding-linked-column-name'),
+        mWeight: grid.cell('WEIGHT', mRow).color, mSex: grid.cell('SEX', mRow).color,
+        fWeight: grid.cell('WEIGHT', fRow).color, fSex: grid.cell('SEX', fRow).color,
+      };
+    });
+    expect(r.ccType).toBe('Linked'); // Linked colour coding is active on WEIGHT
+    expect(r.src).toBe('SEX'); // the linked source column is SEX
+    expect(r.mWeight).toBe(r.mSex); // WEIGHT cell colour equals SEX cell colour (M row)
+    expect(r.fWeight).toBe(r.fSex); // WEIGHT cell colour equals SEX cell colour (F row)
+    expect(r.mWeight).not.toBe(r.fWeight); // holds across two rows with different SEX
+  });
+
+  // --- Scenario 5: Style settings via the gear panel --------------------------
+
+  await softStep('Step 9 — Row height via the gear panel: cell bounds height reflects the new value', async () => {
+    const before = await page.evaluate(() => grok.shell.tv.grid.cell('AGE', 0).bounds.height);
+    expect(await openGridSettings(page)).toBe(true);
+    await page.evaluate(() => {
+      const rh = document.querySelector('[name="prop-row-height"] input.property-grid-slider-textbox') as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(rh, '48');
+      rh.dispatchEvent(new Event('input', {bubbles: true}));
+      rh.dispatchEvent(new Event('change', {bubbles: true}));
+      rh.dispatchEvent(new KeyboardEvent('keydown', {bubbles: true, key: 'Enter'}));
+    });
+    await page.waitForTimeout(800);
+    const after = await page.evaluate(() => grok.shell.tv.grid.cell('AGE', 0).bounds.height);
+    expect(after).not.toBe(before); // cell bounds height changed from the default
+    expect(after).toBe(48); // and reflects the new row height
+  });
+
+  await softStep('Step 10 — Missing value colour via the gear panel: a null cell resolves the configured colour', async () => {
+    const defaultNullColor = await page.evaluate((s) =>
+      grok.shell.tv.grid.cell('HEIGHT', s.nullHeightRow).color, setup);
+    expect(await openGridSettings(page)).toBe(true);
+    await page.locator('[name="prop-missing-value-color"]').waitFor({state: 'attached', timeout: 8000});
+    // The panel row can be attached with a zero box, which force:true still refuses, so the
+    // click is dispatched on the node itself — the same handler a user hits.
+    await page.evaluate(() => {
+      const view = document.querySelector('[name="prop-view-missing-value-color"]') as HTMLElement | null;
+      if (!view) return;
+      const r = view.getBoundingClientRect();
+      const at = {bubbles: true, cancelable: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 0} as any;
+      for (const type of ['mouseover', 'mousedown', 'mouseup', 'click'])
+        view.dispatchEvent(new MouseEvent(type, at));
+    });
+    await page.locator('.property-grid-item-editor-color-picker-host').waitFor({state: 'attached', timeout: 5000});
+    await page.evaluate(() => {
+      const host = document.querySelector('.property-grid-item-editor-color-picker-host') as HTMLElement;
+      const hex = host.querySelector('input.ui-input-editor[type="text"]') as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(hex, '#FFAAAA');
+      hex.dispatchEvent(new Event('input', {bubbles: true}));
+      hex.dispatchEvent(new Event('change', {bubbles: true}));
+    });
+    await page.waitForTimeout(800);
+    const r = await page.evaluate((s) => {
+      const grid = grok.shell.tv.grid;
+      return {
+        nullColor: grid.cell('HEIGHT', s.nullHeightRow).color,
+        configured: grid.props.missingValueColor,
+      };
+    }, setup);
+    expect(r.nullColor).toBe(r.configured); // the null cell resolves the configured missing-value colour
+    expect(r.nullColor >>> 0).toBe(0xffffaaaa); // which is the #FFAAAA that was set
+    expect(r.nullColor).not.toBe(defaultNullColor); // and differs from the default background
+  });
+
+  // --- Scenario 6: Summary columns — all one-click types ----------------------
+
+  const summaryTypes: {leaf: string; cellType: string}[] = [
+    {leaf: 'Sparklines', cellType: 'sparkline'},
+    {leaf: 'Bar-Chart', cellType: 'barchart'},
+    {leaf: 'Pie-Chart', cellType: 'piechart'},
+    {leaf: 'Radar', cellType: 'radar'},
+    {leaf: 'Smart-Form', cellType: 'smartform'},
+    {leaf: 'Tags', cellType: 'tags'},
+    {leaf: 'Confidence-Interval', cellType: 'confidenceinterval'},
+  ];
+  let colsAfterSummary = 0;
+
+  await softStep('Step 12 — Summary columns: add all seven one-click types; column count and cellType track each add', async () => {
+    const before = await page.evaluate(() => grok.shell.tv.grid.columns.length);
+    let count = before;
+    const results: {leaf: string; added: boolean; cellType: string}[] = [];
+    for (const t of summaryTypes) {
+      const cellCoord = await page.evaluate(() => {
+        const db = grok.shell.tv.grid.cell('AGE', 0).documentBounds;
+        return {x: db.x + db.width / 2, y: db.y + db.height / 2};
+      });
+      const added = await clickMenuLeaf(page, cellCoord, ['div-Add', 'div-Add---Summary-Columns'],
+        `div-Add---Summary-Columns---${t.leaf}`);
+      await page.waitForTimeout(500);
+      const state = await page.evaluate(() => {
+        const grid = grok.shell.tv.grid;
+        return {len: grid.columns.length, lastType: grid.columns.byIndex(grid.columns.length - 1).cellType};
+      });
+      results.push({leaf: t.leaf, added, cellType: state.lastType});
+      if (added && state.len === count + 1) count = state.len;
+    }
+    colsAfterSummary = count;
+    // Every type added, incrementing the count and matching its cellType.
+    for (let i = 0; i < summaryTypes.length; i++) {
+      expect(results[i].added).toBe(true); // the leaf was clicked
+      expect(results[i].cellType).toBe(summaryTypes[i].cellType); // and the new column's cellType matches
+    }
+    expect(colsAfterSummary).toBe(before + summaryTypes.length); // count grew by the number of types added
+  });
+
+  // --- Scenario 7: Stats rows — no-error floor (GROK-19809) -------------------
+
+  await softStep('Step 13 — Stats rows: add min and max; summary columns survive and no console error (GROK-19809)', async () => {
+    // No save happens here, so nothing is benign and the channel is not narrowed to a /grid/
+    // token — that would silently drop a regression logged without one.
+    const consoleErrors: string[] = [];
+    const onErr = (msg: any) => {
+      if (msg.type() === 'error' && !isBenignSaveWindowError(msg.text())) consoleErrors.push(msg.text());
+    };
+    page.on('console', onErr);
+    for (const stat of ['min', 'max']) {
+      // Column Stats live under the Add group of the CELL menu — the header menu has no Add group.
+      const cellCoord = await page.evaluate(() => {
+        const db = grok.shell.tv.grid.cell('AGE', 0).documentBounds;
+        return {x: db.x + db.width / 2, y: db.y + db.height / 2};
+      });
+      const added = await clickMenuLeaf(page, cellCoord, ['div-Add', 'div-Add---Column-Stats'],
+        `div-Add---Column-Stats---${stat}`);
+      expect(added).toBe(true); // the stats-row leaf was reached and clicked
+      await page.waitForTimeout(500);
+    }
+    page.off('console', onErr);
+    const colsAfter = await page.evaluate(() => grok.shell.tv.grid.columns.length);
+    // GROK-19809: adding stats rows must NOT drop the summary (virtual) columns.
+    expect(colsAfter).toBe(colsAfterSummary); // every summary column from Step 12 stays in place
+    expect(consoleErrors).toEqual([]); // adding stats rows raises no console error (unfiltered channel)
+  });
+
+  // --- Scenario 8: The arrangement survives a layout and a project round-trip -
+
+  await softStep('Step 15 — Persistence: save layout, add a foreign viewer, re-apply the layout (GROK-19769)', async () => {
+    const r = await page.evaluate(async (s) => {
+      const tv = grok.shell.tv;
+      const df = tv.dataFrame;
+      const grid = tv.grid;
+      const rows = (() => {
+        const hc = df.col('HEIGHT'); const ac = df.col('AGE'); const scol = df.col('SEX');
+        let lowRow = -1; let highRow = -1; let midRow = -1;
+        for (let i = 0; i < df.rowCount; i++) {
+          if (hc.isNone(i)) continue;
+          const val = hc.get(i);
+          if (lowRow < 0 && val < 160) lowRow = i;
+          if (highRow < 0 && val > 180) highRow = i;
+          if (midRow < 0 && val >= 160 && val <= 180) midRow = i;
+          if (lowRow >= 0 && highRow >= 0 && midRow >= 0) break;
+        }
+        let minAgeRow = -1; let maxAgeRow = -1; let minV = Infinity; let maxV = -Infinity;
+        for (let i = 0; i < df.rowCount; i++) {
+          if (ac.isNone(i)) continue;
+          const val = ac.get(i);
+          if (val < minV) { minV = val; minAgeRow = i; }
+          if (val > maxV) { maxV = val; maxAgeRow = i; }
+        }
+        let mRow = -1; let fRow = -1;
+        for (let i = 0; i < df.rowCount && (mRow < 0 || fRow < 0); i++) {
+          const val = scol.get(i);
+          if (val === 'M' && mRow < 0) mRow = i;
+          if (val === 'F' && fRow < 0) fRow = i;
+        }
+        return {lowRow, highRow, midRow, minAgeRow, maxAgeRow, mRow, fRow};
+      })();
+      const battery = (g: any) => ({
+        // AGE gradient: min endpoint, max endpoint, and a plain (uncolored) cell.
+        ageMinColor: g.cell('AGE', rows.minAgeRow).color >>> 0,
+        ageMaxColor: g.cell('AGE', rows.maxAgeRow).color >>> 0,
+        agePlainColor: g.cell('DEMOG', rows.minAgeRow).color >>> 0,
+        // HEIGHT conditional: in-range low, in-range high, out-of-range (plain).
+        heightLowColor: g.cell('HEIGHT', rows.lowRow).color >>> 0,
+        heightHighColor: g.cell('HEIGHT', rows.highRow).color >>> 0,
+        heightMidColor: rows.midRow >= 0 ? g.cell('HEIGHT', rows.midRow).color >>> 0 : -1,
+        // SEX categorical: an M row and an F row (distinct categories).
+        sexMColor: g.cell('SEX', rows.mRow).color >>> 0,
+        sexFColor: g.cell('SEX', rows.fRow).color >>> 0,
+        // WEIGHT linked: each cell matches the SEX cell of its own row.
+        weightMEqualsSexM: g.cell('WEIGHT', rows.mRow).color === g.cell('SEX', rows.mRow).color,
+        weightFEqualsSexF: g.cell('WEIGHT', rows.fRow).color === g.cell('SEX', rows.fRow).color,
+      });
+      const before = {
+        cols: grid.columns.length,
+        ageCC: df.col('AGE').getTag('.color-coding-type'),
+        heightCC: df.col('HEIGHT').getTag('.color-coding-type'),
+        heightCond: df.col('HEIGHT').getTag('.color-coding-conditional'),
+        sexCC: df.col('SEX').getTag('.color-coding-type'),
+        weightCC: df.col('WEIGHT').getTag('.color-coding-type'),
+        weightSrc: df.col('WEIGHT').getTag('.%color-coding-linked-column-name'),
+        ageBounds: grid.cell('AGE', 0).bounds.height,
+        nullColor: grid.cell('HEIGHT', s.nullHeightRow).color,
+        cellTypes: Array.from({length: grid.columns.length}, (_: any, i: number) => grid.columns.byIndex(i).cellType),
+        battery: battery(grid),
+      };
+      const layout = await grok.dapi.layouts.save(tv.saveLayout());
+      await new Promise((res) => setTimeout(res, 800));
+      tv.addViewer('Scatter plot');
+      await new Promise((res) => setTimeout(res, 900));
+      const hadScatter = tv.viewers.some((x: any) => x.type === 'Scatter plot');
+      tv.loadLayout(layout);
+      await new Promise((res) => setTimeout(res, 2800));
+      const g2 = grok.shell.tv.grid;
+      const df2 = grok.shell.tv.dataFrame;
+      const after = {
+        cols: g2.columns.length,
+        ageCC: df2.col('AGE').getTag('.color-coding-type'),
+        heightCC: df2.col('HEIGHT').getTag('.color-coding-type'),
+        heightCond: df2.col('HEIGHT').getTag('.color-coding-conditional'),
+        sexCC: df2.col('SEX').getTag('.color-coding-type'),
+        weightCC: df2.col('WEIGHT').getTag('.color-coding-type'),
+        weightSrc: df2.col('WEIGHT').getTag('.%color-coding-linked-column-name'),
+        ageBounds: g2.cell('AGE', 0).bounds.height,
+        nullColor: g2.cell('HEIGHT', s.nullHeightRow).color,
+        cellTypes: Array.from({length: g2.columns.length}, (_: any, i: number) => g2.columns.byIndex(i).cellType),
+        battery: battery(g2),
+        scatterGone: !grok.shell.tv.viewers.some((x: any) => x.type === 'Scatter plot'),
+      };
+      await grok.dapi.layouts.delete(layout);
+      return {before, after, hadScatter};
+    }, setup);
+    expect(r.hadScatter).toBe(true); // the foreign viewer was actually added
+    expect(r.after.scatterGone).toBe(true); // gone after re-apply
+    // The battery reads colours through the renderer (grid.cell.color), not just the types.
+    expect(r.after.ageCC).toBe('Linear');
+    expect(r.after.battery.ageMinColor).not.toBe(r.after.battery.ageMaxColor);
+    expect(r.after.battery.ageMinColor).not.toBe(r.after.battery.agePlainColor);
+    expect(r.after.battery.ageMaxColor).not.toBe(r.after.battery.agePlainColor);
+    expect(r.after.heightCC).toBe('Conditional');
+    expect(r.after.heightCond).toBe(r.before.heightCond); // the configured conditional ranges survive
+    expect(r.after.battery.heightLowColor).toBe(0xff0000ff); // below-160 cell still resolves the configured blue
+    expect(r.after.battery.heightHighColor).toBe(0xffff0000); // above-180 cell still resolves the configured red
+    // Out-of-range (160..180) cell stays plain — the renderer maps through the ranges.
+    expect(r.after.battery.heightMidColor).not.toBe(0xff0000ff);
+    expect(r.after.battery.heightMidColor).not.toBe(0xffff0000);
+    expect(r.after.sexCC).toBe('Categorical');
+    // Two different SEX values give two different colours.
+    expect(r.after.battery.sexMColor).not.toBe(r.after.battery.sexFColor);
+    expect(r.after.weightCC).toBe('Linked');
+    expect(r.after.weightSrc).toBe('SEX');
+    // Each WEIGHT cell matches the SEX cell of its own row (both an M row and an F row).
+    expect(r.after.battery.weightMEqualsSexM).toBe(true);
+    expect(r.after.battery.weightFEqualsSexF).toBe(true);
+    expect(r.after.ageBounds).toBe(r.before.ageBounds); // cell bounds height restored
+    expect(r.after.nullColor).toBe(r.before.nullColor); // missing-value cell colour restored
+    // GROK-19769: a layout carrying summary columns re-applies without dropping them.
+    expect(r.after.cols).toBe(r.before.cols); // column count matches Step 12
+    expect(r.after.cellTypes).toEqual(r.before.cellTypes); // every summary column's cellType survives
+  });
+
+  const projectName = 'grid-appearance-summary-persist-' + Date.now();
+  let savedProjectId: string | null = null;
+  // Captured right before the save: the summary columns' renderers also influence row height,
+  // so the reopen must compare against the saved state and never a hardcoded pixel value.
+  let peakCellHeight: number | null = null;
+
+  await softStep('Step 16 — Persistence: save the view as a project via the ribbon Save button', async () => {
+    peakCellHeight = await page.evaluate(() => grok.shell.tv.grid.cell('AGE', 0).bounds.height);
+    // The real ribbon Save, not grok.dapi.projects.save — only this path runs the serialization
+    // a user's save goes through.
+    const saved = await saveProjectViaUI(page, projectName);
+    savedProjectId = saved.projectId;
+    expect(savedProjectId).not.toBeNull();
+    // Only a NON-benign balloon may fail here. Error balloons never auto-hide, so an unfiltered
+    // save-window one would still be on screen after the reopen and be mis-read there.
+    const saveBalloons = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.d4-balloon.error, .d4-balloon-error'))
+        .map((b) => (b.textContent ?? '').trim()));
+    const realSaveBalloons = saveBalloons.filter((t) => !isBenignSaveWindowError(t));
+    expect(realSaveBalloons).toEqual([]); // the save raised no NON-benign error balloon
+  });
+
+  await softStep('Step 17 — Persistence: Close All and reopen the project; the full battery holds, error delta 0', async () => {
+    // The channel stays unnarrowed: the GROK-17720 reopen regression surfaces as "Invalid
+    // argument (index): null" from the current-cell restore, which a /grid/ filter would drop.
+    const consoleErrors: string[] = [];
+    const onErr = (msg: any) => {
+      if (msg.type() === 'error' && !isBenignSaveWindowError(msg.text())) consoleErrors.push(msg.text());
+    };
+    page.on('console', onErr);
+    const r = await page.evaluate(async (args) => {
+      grok.shell.closeAll();
+      await new Promise((res) => setTimeout(res, 1500));
+      const proj = await grok.dapi.projects.find(args.pid);
+      await proj.open();
+      await new Promise((res) => setTimeout(res, 4500));
+      const grid = grok.shell.tv?.grid;
+      const df = grok.shell.tv?.dataFrame;
+      const loadFailureBalloons = Array.from(
+        document.querySelectorAll('.d4-balloon.error, .d4-balloon-error'))
+        .map((b) => (b.textContent ?? '').trim())
+        .filter((t) => /error loading/i.test(t));
+      // Same full per-cell colour battery as Step 15, recomputed after reopen.
+      const battery = (() => {
+        if (!grid) return null;
+        const hc = df.col('HEIGHT'); const ac = df.col('AGE'); const scol = df.col('SEX');
+        let lowRow = -1; let highRow = -1; let midRow = -1;
+        for (let i = 0; i < df.rowCount; i++) {
+          if (hc.isNone(i)) continue;
+          const val = hc.get(i);
+          if (lowRow < 0 && val < 160) lowRow = i;
+          if (highRow < 0 && val > 180) highRow = i;
+          if (midRow < 0 && val >= 160 && val <= 180) midRow = i;
+          if (lowRow >= 0 && highRow >= 0 && midRow >= 0) break;
+        }
+        let minAgeRow = -1; let maxAgeRow = -1; let minV = Infinity; let maxV = -Infinity;
+        for (let i = 0; i < df.rowCount; i++) {
+          if (ac.isNone(i)) continue;
+          const val = ac.get(i);
+          if (val < minV) { minV = val; minAgeRow = i; }
+          if (val > maxV) { maxV = val; maxAgeRow = i; }
+        }
+        let mRow = -1; let fRow = -1;
+        for (let i = 0; i < df.rowCount && (mRow < 0 || fRow < 0); i++) {
+          const val = scol.get(i);
+          if (val === 'M' && mRow < 0) mRow = i;
+          if (val === 'F' && fRow < 0) fRow = i;
+        }
+        return {
+          ageMinColor: grid.cell('AGE', minAgeRow).color >>> 0,
+          ageMaxColor: grid.cell('AGE', maxAgeRow).color >>> 0,
+          agePlainColor: grid.cell('DEMOG', minAgeRow).color >>> 0,
+          heightLowColor: grid.cell('HEIGHT', lowRow).color >>> 0,
+          heightHighColor: grid.cell('HEIGHT', highRow).color >>> 0,
+          heightMidColor: midRow >= 0 ? grid.cell('HEIGHT', midRow).color >>> 0 : -1,
+          sexMColor: grid.cell('SEX', mRow).color >>> 0,
+          sexFColor: grid.cell('SEX', fRow).color >>> 0,
+          weightMEqualsSexM: grid.cell('WEIGHT', mRow).color === grid.cell('SEX', mRow).color,
+          weightFEqualsSexF: grid.cell('WEIGHT', fRow).color === grid.cell('SEX', fRow).color,
+        };
+      })();
+      return {
+        reopened: !!grid,
+        loadFailureBalloons,
+        ageCC: grid ? df.col('AGE').getTag('.color-coding-type') : null,
+        heightCC: grid ? df.col('HEIGHT').getTag('.color-coding-type') : null,
+        sexCC: grid ? df.col('SEX').getTag('.color-coding-type') : null,
+        weightCC: grid ? df.col('WEIGHT').getTag('.color-coding-type') : null,
+        weightSrc: grid ? df.col('WEIGHT').getTag('.%color-coding-linked-column-name') : null,
+        battery,
+        ageBounds: grid ? grid.cell('AGE', 0).bounds.height : -1,
+        nullColor: grid ? grid.cell('HEIGHT', args.nullHeightRow).color : -1,
+        cols: grid ? grid.columns.length : -1,
+        cellTypes: grid ? Array.from({length: grid.columns.length}, (_: any, i: number) => grid.columns.byIndex(i).cellType) : [],
+      };
+    }, {pid: savedProjectId, nullHeightRow: setup.nullHeightRow});
+    page.off('console', onErr);
+    expect(r.reopened).toBe(true); // the project reopened with a grid
+    expect(r.loadFailureBalloons).toEqual([]); // no "Error loading" balloon
+    expect(consoleErrors).toEqual([]); // console-error delta is 0 since the reopen
+    expect(r.ageCC).toBe('Linear');
+    expect(r.battery!.ageMinColor).not.toBe(r.battery!.ageMaxColor); // AGE gradient endpoints differ
+    expect(r.battery!.ageMinColor).not.toBe(r.battery!.agePlainColor); // and both differ from a plain cell
+    expect(r.battery!.ageMaxColor).not.toBe(r.battery!.agePlainColor);
+    expect(r.heightCC).toBe('Conditional');
+    expect(r.battery!.heightLowColor).toBe(0xff0000ff); // below-160 cell resolves the configured blue after reopen
+    expect(r.battery!.heightHighColor).toBe(0xffff0000); // above-180 cell resolves the configured red after reopen
+    expect(r.battery!.heightMidColor).not.toBe(0xff0000ff); // out-of-range cell stays plain
+    expect(r.battery!.heightMidColor).not.toBe(0xffff0000);
+    expect(r.sexCC).toBe('Categorical');
+    expect(r.battery!.sexMColor).not.toBe(r.battery!.sexFColor); // two SEX values give two colours
+    expect(r.weightCC).toBe('Linked');
+    expect(r.weightSrc).toBe('SEX');
+    expect(r.battery!.weightMEqualsSexM).toBe(true); // each WEIGHT cell matches the SEX cell of its row
+    expect(r.battery!.weightFEqualsSexF).toBe(true);
+    expect(r.ageBounds).toBe(peakCellHeight); // cell height as saved at peak
+    expect(r.nullColor >>> 0).toBe(0xffffaaaa); // missing-value cell colour restored
+    expect(r.cols).toBe(colsAfterSummary); // every summary column present
+    expect(r.cellTypes).toContain('sparkline');
+    expect(r.cellTypes).toContain('confidenceinterval');
+  });
+
+  // Teardown: delete the probe project so nothing leaks across runs.
+  await softStep('Step 18 — Teardown: delete the probe project', async () => {
+    if (savedProjectId)
+      await deleteProjectWithCleanup(page, {projectId: savedProjectId});
+  });
+
+  v.finishSpec();
+});

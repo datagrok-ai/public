@@ -6,192 +6,181 @@ priority: p2
 realizes_atlas: []
 realizes: []
 realized_as:
-  - grid-spec.ts
-related_bugs: []
+- grid-spec.ts
+related_bugs:
+- id: GROK-18256
+  status: fixed
+- id: GROK-19942
+  status: fixed
+- id: GROK-19717
+  status: fixed
+expected_results:
+- anchor: Column Sizing
+  expectation: Choosing Optimal from the Column Sizing submenu resizes every column to fit its content,
+    and Minimal and Maximal each change the widths again in their own direction.
+- anchor: Header Histogram
+  expectation: Adding Top > Histogram puts a miniature histogram strip in the column header area; repeating
+    the path removes it.
+- anchor: GROK-18256
+  expectation: Removing a summary column with the top-panel icon takes it out of the grid — the GROK-18256
+    guard, where only the menu path worked.
+- anchor: GROK-19942
+  expectation: After the column a Tags summary cell refers to is removed, the grid keeps rendering and
+    raises no error — the GROK-19942 guard, where the whole grid stopped drawing.
+- anchor: GROK-19717
+  expectation: A project holding a table of extracted rows reopens with its grid and no error balloon
+    — the GROK-19717 guard.
+- anchor: Added Viewer
+  expectation: A second Grid added from the toolbox shows the table's row count, takes its own row-height
+    and column-label settings without touching the view's own grid, re-binds to spgi-100 when Data >
+    Table is switched, and leaves the view's grid intact when closed.
+- anchor: Multi-Column + Row-Height Resize
+  expectation: With two columns selected, dragging one border resizes both; dragging the boundary between
+    two row headers changes the row height; dragging a border far left shrinks the column until its
+    values stop being legible.
+- anchor: Tooltip Settings
+  expectation: The Tooltip submenu switches the column tooltip between Default, None, Form and Columns,
+    and the Columns choice stores the chosen column list and shows exactly those values on hover.
 ---
 
 # Grid tests (Playwright)
 
-All scenarios should start with the following sequence of events:
-1. Close all
-2. Open demog
+## Setup
 
-## Sorting
-
-1. Double-click the AGE column header — column sorts descending
-2. Double-click the AGE column header again — column sorts ascending
-3. Double-click the AGE column header a third time — sort resets, no arrow icon
-4. Right-click the grid and select Sort... — the Sort dialog opens
-5. In the Sort dialog, set first sort by SEX ascending, click the plus icon and add second sort by AGE descending, click OK
-6. Right-click the RACE column header, expand Sort, select Natural — RACE values are sorted in natural string order
-
-## Column Resizing
-
-1. Double-click the right border of the AGE column header — column auto-sizes to fit content
-2. Right-click the grid, expand Column Sizing, select Optimal — all columns resize to optimal width
-
-## Column Reordering and Hiding
-
-1. Right-click any cell and select Order or Hide Columns... — the dialog opens
-2. Uncheck the WEIGHT column checkbox and click OK — WEIGHT column disappears from the grid
-3. Double-click the bold separator where WEIGHT was hidden — WEIGHT column reappears
-
-## Row Selection
-
-1. Click row 5 — row 5 becomes the current row
-2. Hold Shift and click row 10 — rows 5 through 10 are selected
-3. Hold Ctrl and click row 15 — row 15 is added to the selection
-4. Hold Ctrl+Shift and click row 8 — row 8 is removed from the selection
-5. Press Ctrl+A — all rows are selected
-6. Click any single row without modifiers — selection clears, clicked row becomes current
-7. Hold Shift and press Down arrow several times — rows are selected one by one downward
-8. Press ESC — selection is cleared
-
-## Column Selection
-
-1. Shift+click the SEX column header — SEX column is selected
-2. Shift+drag across the RACE and DIS_POP column headers — all three columns are selected
-3. Ctrl+click the SEX column header — SEX column selection is inverted
-
-## Cell Editing
-
-1. Double-click a cell in the AGE column — an inline editor appears with the current value
-2. Type a new numeric value and press Enter — the value is updated in the grid
-3. Press Ctrl+Z — the edit is undone, original value is restored
-4. Double-click a cell in the SEX column — an inline editor appears
-5. Change the value and press Escape — the edit is cancelled, original value remains
-6. Double-click a cell in the STARTED column — a date editor appears, change the value and press Enter
-7. Press Ctrl+Shift+Z — redo brings back the last edit
-
-## Copy and Paste
-
-1. Click a cell in the AGE column to make it current
-2. Press Ctrl+C — the cell value is copied to the clipboard
-3. Navigate to another cell in the AGE column and press Ctrl+V — the copied value is pasted
-4. Select multiple rows using Shift+click, then press Ctrl+C — "Block copied" message appears
-5. Press Ctrl+Z to undo the paste — the original value is restored
-6. Select several rows and press Shift+Del — the selected rows are deleted
-7. Press Ctrl+Z — the deleted rows are restored
-
-## Context Menu — Data Cell
-
-1. Right-click on a data cell — context menu appears
-2. Expand Column Sizing submenu, select Optimal — all columns resize to optimal width
-3. Right-click again, expand Grid Color Coding, select All — all numeric columns become color-coded
-4. Right-click again, expand Grid Color Coding, select None — all color coding is removed
-5. Right-click again, expand Add > Top, select Histogram — a histogram miniature appears in the column header area
-
-## Column Header Context Menu
-
-1. Right-click the AGE column header — context menu appears with column-specific options
-2. Expand Sort submenu, select Ascending — column sorts ascending
-3. Right-click the AGE column header, expand Color Coding, select Linear — AGE column cells become color-coded with a gradient
-4. Right-click the SEX column header, expand Color Coding, select Categorical — each category gets a distinct color
-5. Right-click the HEIGHT column header, expand Color Coding, select Pick Up Coloring
-6. Right-click the WEIGHT column header, expand Color Coding, select Apply Coloring — WEIGHT column gets the same color scheme as HEIGHT
-7. Right-click the AGE column header, expand Format submenu — verify format options are shown
-8. Right-click the AGE column header, select Column Properties... — the column properties dialog opens
-
-## Column Cell Style (Renderer)
-
-1. Right-click the AGE column header, expand Style, select Percent Completed — each AGE cell renders as a progress bar proportional to its value
-2. Right-click the AGE column header, expand Style, select Default — cells revert to plain numeric text
-3. Right-click the SEX column header, expand Style — only Default option is available for a categorical column
-
-## Keyboard Navigation
-
-1. Click any cell to set focus
-2. Press Down arrow — current cell moves one row down
-3. Press Right arrow — current cell moves to the next column
-4. Press Ctrl+Home — current cell jumps to the first row, first column
-5. Press Ctrl+End — current cell jumps to the last row
-6. Press Home — current cell jumps to the first column in the current row
-7. Press End — current cell jumps to the last column
-8. Press Page Down — grid scrolls down one page
-9. Press Page Up — grid scrolls back up
-10. Press Tab — current cell moves one cell to the right, wrapping to the next row at row end
-11. Press Shift+Tab — current cell moves one cell to the left, wrapping to the previous row
-
-## Pinned Rows and Columns
-
-1. Right-click on a data cell in row 3, expand Pin, select Pin Row — the row appears pinned at the top of the grid
-2. Select several rows, right-click one of them, expand Pin, select Pin Selected Rows — all selected rows are pinned
-3. Right-click any pinned row, expand Pin, select Unpin All Rows — all rows are unpinned
-4. Right-click the AGE column header, expand Pin, select Pin Column — AGE column moves to the frozen area on the left
-5. Right-click the pinned AGE column header, expand Pin, select Unpin Column — column returns to its original position
-
-## Frozen Columns Properties
-
-1. Open Grid settings via the gear icon
-2. Set Frozen Columns to 2 — the first two columns become frozen
-3. Set Frozen Columns back to 1 — only the row header column is frozen
-4. Toggle Show Column Labels off — column header text disappears
-5. Toggle Show Column Labels back on — headers reappear
-6. Change Col Labels Orientation to Vert — column header text rotates to vertical
-7. Change Col Labels Orientation back to Auto
-
-## Color Coding
-
-1. Open Grid settings via the gear icon, set Color Coding to All — all numerical columns become color-coded
-2. Set Color Coding to None — all color coding is removed
-3. Set Color Coding back to Auto
-4. Right-click the HEIGHT column header, expand Color Coding, select Linear — cells show a gradient based on values
-5. Right-click the RACE column header, expand Color Coding, select Categorical — each category gets a distinct color
-6. Right-click the HEIGHT column header, expand Color Coding, select Pick Up Coloring
-7. Right-click the WEIGHT column header, expand Color Coding, select Apply Coloring — WEIGHT column gets the same color scheme as HEIGHT
-8. Right-click the RACE column header, expand Color Coding, select Off — color coding is removed from RACE
-
-## Summary Columns
-
-1. Right-click any data cell, expand Add > Summary Columns, select Sparkline — a new summary column appears with sparkline charts for each row
-2. Click the sparkline column header — the Context Panel shows renderer settings
-3. Right-click the sparkline column header and select Remove — the summary column is deleted
-
-## Column Stats
-
-1. Right-click any data cell, expand Add > Column Stats, select Min — a stats row labeled "Min" appears below the data
-2. Right-click any data cell, expand Add > Column Stats, select Max — a Max stats row is added
-3. Right-click any data cell, expand Add > Column Stats, deselect Min — the Min stats row is removed
-
-## Column Header Hamburger Menu
-
-1. Hover over the AGE column header until the hamburger (≡) icon appears in the top-right of the header
-2. Click the hamburger icon — a popup panel opens with column statistics and action items
-3. Move the mouse away — the popup dismisses
-
-## Search
-
-1. Press Ctrl+F — a search box appears at the top of the grid
-2. Type "Asian" — matching cells in the RACE column are highlighted
-3. Press Down arrow in the search box — cursor moves to the next match
-4. Clear the search text and type "AGE > 50" — rows matching the expression are highlighted
-5. Close the search box — grid returns to normal display
-
-## Row State Synchronization
-
-1. Add a Scatter Plot viewer alongside the Grid (both should be visible)
-2. Click row 10 in the Grid — the corresponding point is highlighted as current in the Scatter Plot
-3. Click a different data point in the Scatter Plot — the current row in the Grid updates accordingly
-4. Select several rows in the Grid using Shift+click — the selected points are highlighted in the Scatter Plot
-5. Select several rows in the Scatter Plot — the corresponding rows are highlighted in the Grid
+1. Close all open views.
+2. Open demog.csv. Every section below starts from this state unless it names a different table,
+   in which case its own first step opens it.
 
 
-## Layout and Project Save / Restore — Full Cycle with Visual Check
+## Column Sizing from the Context Menu
 
-1. Apply color coding, resize some columns, adjust row height
-2. Save the layout
-3. Add additional viewers (scatter plot, histogram)
-4. Apply the saved layout — verify all formatting, styling, coloring, and column order are preserved
-5. Save the project
-6. Close All
-7. Open the saved project — verify all settings are intact
+1. Right-click a data cell, expand Column Sizing, and choose Optimal — every column resizes to fit
+   its content
+2. Repeat with Minimal, then Maximal — the widths follow each choice
 
-## Table Switching (Grid Viewer)
+## Header Histogram Strip
 
-1. Open spgi-100
-2. Add a Grid viewer
-3. With the added Grid viewer selected, open the Context Panel
-4. Go to Data > Table and switch to spgi-100 — viewer re-binds to the new table
+1. Right-click a data cell, expand Add > Top, and choose Histogram — a miniature histogram strip
+   appears in the column header area
+2. Repeat the path and turn it off — the strip disappears
+
+## Removing a Summary Column by the Top-Panel Icon
+
+*Regression guard for GROK-18256, where this removal path did nothing while the menu path worked.*
+
+1. Right-click a data cell, expand Add > Summary Columns, and add Sparklines
+2. Select the new summary column and remove it with the remove icon on the top panel — the column
+   disappears from the grid
+
+## Summary Column Surviving a Removed Source Column
+
+*Regression guard for GROK-19942, where the whole grid stopped rendering.*
+
+1. Right-click a data cell, expand Add > Summary Columns, and add Tags
+2. Right-click the CONTROL column header and choose Remove — the Tags cell was referring to it
+3. Scroll the grid — it keeps rendering and raises no error
+
+## Extracted Rows in a Saved Project
+
+*Regression guard for GROK-19717, where such a project failed to reopen.*
+
+1. Ctrl+click the row-number cells of rows 1 through 5 so each joins the selection
+2. Use Select > Extract Selected Rows — a new table opens
+3. Save the view as a project with the ribbon Save button, then Close All
+4. Reopen the project — it opens with its grid and no error balloon
+
+## Grid as an Added Viewer
+
+*The rest of this section's coverage acts on the table view's own grid. This subsection is the
+only place a SECOND, explicitly added Grid viewer is exercised — it has a narrower surface (its
+column menu is off by default) and is not a substitute for the main grid.*
+
+1. Add a Grid from the toolbox Viewers section — a second grid appears alongside the first and
+   shows the same number of rows as the table
+2. Open the added viewer's settings with its own gear icon and change Row Height — only the added
+   viewer's rows change height
+3. Toggle Show Column Labels off and back on in the same panel — the added viewer's headers hide
+   and reappear
+4. Open spgi-100.csv so a second table is available, go back to the demog view, then open the
+   Context Panel for the added viewer and switch Data > Table to spgi-100 — the viewer re-binds
+   and shows spgi-100's row count while the view's own grid still shows demog
+5. Close the added viewer — the table view keeps its own grid
+
+## Multi-Column and Row-Height Resizing by Drag
+
+*Dataset: demog*
+
+1. Put AGE and HEIGHT into the column selection — selecting columns BY MOUSE is a manual case
+   (see the manual checklist), so a test may establish the selection directly — then drag the right
+   border of the AGE header 40 pixels to the
+   right — both selected columns end up at the same new width, and the columns around them keep
+   the width they had
+2. Press Esc to drop the column selection, then drag the AGE border again — this time only AGE
+   changes width
+3. Drag the border between the first two row numbers 30 pixels downwards — every row grows taller
+   by that amount; the column widths stay exactly as they were
+4. Drag the AGE right border far to the left until the column is only a few pixels wide — the
+   values stop being drawn as numbers and appear as small circles instead
+5. Drag the WEIGHT right border left as far as the column's own left edge — the column collapses
+   to a hairline showing no content, while still counting as a visible column
+
+## Column Tooltip Settings
+
+*Dataset: demog*
+
+1. Right-click the AGE column header and open Tooltip > Current Column — the choices are Default,
+   Form, Columns and None, and the one in force is marked
+2. Choose None, then hover a cell in the AGE column — no tooltip is shown
+3. Right-click the AGE header again, open Tooltip > Current Column and choose Columns — a
+   "Select columns..." dialog opens
+4. Press All in that dialog and confirm with OK — the dialog closes
+5. Hover a cell in the AGE column — the tooltip now lists every chosen column with this row's
+   values
+6. Right-click the AGE header, open Tooltip > Current Column and choose Default — the mark moves
+   back to Default
+
+
+
+## Automation notes
+
+- The hamburger inline filter went back to grid-ui.md. Recon drives it — the handles are painted on
+  the histogram's bottom strip and a drag there does move the filtered row count — but a spec could
+  not reproduce that grab reliably. Two of the three sections recon recovered stayed here; this one
+  did not.
+
+- The spec must cover THIS file's sections and nothing else. Steps left over from the sections that
+  moved into focused scenarios — row and column selection, cell editing, clipboard, both context
+  menus, cell renderers, frozen-column properties, the hamburger stats popup and search — are to be
+  deleted from the spec, not kept "just in case": each of them is already driven by a focused
+  scenario, and a second copy here means two places to fix when the UI moves.
+
+- Three sections returned here from the manual checklist after a live recon refuted their old
+  "not automatable" reasons: linked multi-column resize with the row-height drag, the tooltip
+  settings, and the hamburger inline filter. Two others were refuted as behaviour but stayed manual
+  because a driver could not reach them — the form designer and the column permissions — and they
+  live in grid-ui.md, not here.
+- Clearing a column selection with the property alone leaves the grid's resize LINK in place: a
+  later border drag still resizes the previously selected columns. Only a trusted Escape clears it.
+- The sections this file used to carry for row/column selection, cell editing, clipboard, keyboard
+  navigation, the two context menus, cell renderers, frozen-column properties, the hamburger menu
+  and search were removed once their focused scenarios landed — this file must not restate what a
+  focused scenario already drives. What stays here is the residue no focused scenario owns.
+
+
+- Two of the sections here came back from the manual checklist after a live recon refuted their old
+  "not automatable" reasons: the linked multi-column resize with the row-height drag, and the
+  tooltip settings. The form designer, the column permissions and the hamburger inline filter were
+  refuted as BEHAVIOUR too, but stayed manual because a driver could not reach them — they live in
+  grid-ui.md and their sections there say exactly which path failed.
+
+
+- Cross-viewer row-state synchronisation was dropped deliberately: current row and selection are
+  dataframe state shared by every viewer, so there is nothing grid-specific to prove.
+
+- grid-spec.ts still carries the legacy end-to-end walkthrough written against the pre-split
+  sections and must be regenerated for the shape above. Its import depth was repaired
+  ('../../spec-login', '../../helpers/viewers') — the nested-section form — so it can at least be
+  collected and run.
 
 ---
 {

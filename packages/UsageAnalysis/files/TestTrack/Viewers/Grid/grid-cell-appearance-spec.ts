@@ -10,14 +10,10 @@ declare const grok: any;
 
 test.use(specTestOptions);
 
-// Page-coordinate center of a column header from the grid geometry.
-// X is derived from the first data cell's documentBounds (true page coords),
-// NOT from `overlay.rect.x + gridColumn.left`: gridColumn.left is an offset in the
-// grid's virtual coordinate space and does NOT align with the overlay canvas'
-// page-left, so `rc.x + gc.left` lands on a DIFFERENT column
-//: AGE gc.left=189 → rc.x+gc.left+w/2=523 hitTests RACE, while the AGE
-// cell documentBounds.x=348 → center 378 hitTests AGE). documentBounds returns page
-// coords directly and mirrors cellCenter, which was always correct.
+// Page-coordinate center of a column header. X comes from the first data cell's documentBounds,
+// which is already in page coordinates; `overlay.rect.x + gridColumn.left` would land on a
+// DIFFERENT column, because gridColumn.left is an offset in the grid's virtual coordinate space
+// and does not align with the overlay canvas' page-left.
 async function headerCenter(page: Page, col: string): Promise<{x: number; y: number}> {
   return page.evaluate((c) => {
     const grid = grok.shell.tv.grid;
@@ -35,13 +31,10 @@ async function cellCenter(page: Page, col: string, row: number): Promise<{x: num
   }, {c: col, r: row});
 }
 
-// Rendered rect (page coords) of a menu element whose `name` matches, filtered to
-// the actually-laid-out copy: a d4 nested submenu keeps a detached zero-rect
-// TEMPLATE copy of every leaf inside the parent group's
-// `.d4-menu-item-container-fixed` (display:none until opened) AND, once opened, a
-// laid-out copy in a separate `.d4-menu-popup`; querying by name alone hits the
-// template first, so filter to the copy with a real bounding box + non-null
-// offsetParent. Returns null when no laid-out copy exists yet.
+// Rendered rect (page coords) of a menu element whose `name` matches, or null while no such
+// copy exists. A d4 nested submenu keeps a detached zero-rect TEMPLATE copy of every leaf
+// alongside the laid-out copy in the open popup, and a query by name hits the template first —
+// hence the filter on a non-null offsetParent plus a real bounding box.
 async function laidOutRect(
   page: Page, name: string,
 ): Promise<{x: number; y: number; w: number; h: number} | null> {
@@ -56,20 +49,13 @@ async function laidOutRect(
   }, name);
 }
 
-// Open a grid context menu at (clientX, clientY) on the overlay canvas, then walk
-// a chain of nested menu groups to one of their leaves and click it.
+// Open a grid context menu at (clientX, clientY) on the overlay canvas, then walk a chain of
+// nested menu groups to one of their leaves and click it.
 //
-// The nested vertical submenus (Color-Coding, Grid-Color-Coding) use slope-based
-// hover protection: a leaf stays a zero-rect detached template until its parent
-// group receives a TRAJECTORY-BEARING, TRUSTED pointer movement. Synthetic
-// MouseEvent dispatch never satisfies the slope tracker, so the
-// submenu never renders and the leaf click is silently dropped (recon-verified
-// live. Real trusted input via page.mouse.move with steps DOES lay the
-// leaves out, and a trusted page.mouse.click on the rendered leaf actuates the
-// real menu command — the effect under test is produced ONLY by real user input.
-//
-// The ROOT context menu is opened synthetically on the overlay canvas (that path
-// is trusted-input-independent); only the submenu expansions need trusted input.
+// The nested submenus (Color-Coding, Grid-Color-Coding) use slope-based hover protection: a leaf
+// stays a zero-rect detached template until its parent group receives a TRAJECTORY-BEARING,
+// TRUSTED pointer movement, which no synthetic MouseEvent chain satisfies. Only the submenu
+// expansions need that trusted input — the ROOT menu still opens on synthetic events.
 async function clickMenuLeaf(
   page: Page, at: {x: number; y: number}, groupNames: string[], leafName: string,
 ): Promise<boolean> {
@@ -107,11 +93,9 @@ async function clickMenuLeaf(
   return false;
 }
 
-// Open the grid's property panel and wait for its rows to exist. The gear's CSS
-// visibility flickers with viewer hover/focus, so a plain Playwright click times
-// out on actionability. Trusted hover-then-click on the gear is tried first, then
-// the viewer-scoped settings icon, then F4 on the focused grid. No JS-API
-// substitution — every gesture drives the real settings-panel open.
+// Open the grid's property panel and wait for its rows to exist. The gear's CSS visibility
+// flickers with viewer hover/focus, so a plain Playwright click times out on actionability; four
+// real gestures are tried in order and the first that reveals the rows wins.
 async function openGridSettings(page: Page): Promise<boolean> {
   const rows = page.locator('[name="prop-color-coding"]');
   if (await rows.count() > 0) return true;
@@ -164,10 +148,9 @@ async function openGridSettings(page: Page): Promise<boolean> {
   return false;
 }
 
-// Per-color snapshot + diff of the grid's DATA canvas (canvas[name="canvas"] — the
-// one that renders cell text). The viewers-helper snapshot reads root.querySelector
-// ('canvas') which is the grid's first (unnamed) canvas, not the data canvas, so a
-// grid-specific reader is used for the font-size render delta.
+// Snapshot of the grid's DATA canvas (canvas[name="canvas"], the one that renders cell text).
+// The viewers-helper snapshot reads the grid's first, unnamed canvas instead, which carries no
+// cell text and so shows no font-size delta.
 async function snapGridCanvas(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const cv = document.querySelector('[name="viewer-Grid"] canvas[name="canvas"]') as HTMLCanvasElement | null;
@@ -211,10 +194,9 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
-  // Setup: baseline console-error count + the min/max/null AGE rows and the min/max
-  // HEIGHT rows used throughout for per-cell colour reads. grid.cell(col, tableRowIdx)
-  //.color resolves the per-cell rendered colour directly (recon-verified — no scroll
-  // needed). White background is 0xffffffff.
+  // Setup: baseline console-error count plus the min/max/null AGE and min/max HEIGHT rows used
+  // for the per-cell colour reads. grid.cell(col, tableRowIdx).color resolves the rendered
+  // colour without scrolling; the plain background is 0xffffffff.
   const WHITE = 0xffffffff;
   const consoleErrors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
@@ -247,10 +229,8 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   expect(setup.minHRow).not.toBe(setup.maxHRow); // distinct min/max HEIGHT rows
 
   // --- Scenario 1: Grid-wide colour coding overrides per-column coding ----------
-  // The core of grid.color-resolution-order. Per-column Linear on AGE is applied
-  // through the AGE header context menu (trusted submenu driver). Then Grid Color
-  // Coding None / All / Auto is switched through the CELL context menu's Grid-Color-
-  // Coding submenu, and the resolved per-cell colours are read at each transition.
+  // The core of grid.color-resolution-order: per-column Linear is applied from the AGE header
+  // menu, then None / All / Auto from the cell menu, reading the resolved colours at each step.
 
   await softStep('Step 1-2 — Per-column Linear on AGE via the header menu: min/max cells differ, both differ from background', async () => {
     const c = await headerCenter(page, 'AGE');
@@ -340,20 +320,13 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   });
 
   // --- Scenario 2: Column coding overrides explicit style colour (GROK-18638) ---
-  // The explicit content-style colour is set through the AGE column's Column
-  // Properties > Style > Content colour picker — a Dart-internal editor that does
-  // not render under headless Playwright (recon-verified: the Style >
-  // Content editors do not lay out; no readable tag surfaces the explicit style
-  // colour). The "coding beats explicit style" invariant therefore cannot be driven
-  // headless in the presence of a set explicit style, so it is waived
-  // (gesture-uncontrollable-headless) rather than falsely asserted. What IS driven
-  // here is the coding-application half through the real header menu.
+  // The explicit content-style colour lives in Column Properties > Style > Content, a
+  // Dart-internal editor that does not lay out under headless Playwright and surfaces no readable
+  // tag. The "coding beats explicit style" half is therefore waived
+  // (gesture-uncontrollable-headless); only the coding-application half is driven here.
 
   await softStep('Step 9-14 — Coding-application half of the style-vs-coding order (GROK-18638): Linear coding on AGE resolves to the coding colour', async () => {
-    // AGE already carries Linear from Scenario 1; confirm the resolved colour is the
-    // coding colour (not the plain background), which is the readable half of the
-    // resolution-order invariant. The explicit-style precondition is un-drivable
-    // headless and is waived below.
+    // AGE already carries Linear from Scenario 1.
     const r = await page.evaluate((s) => {
       const df = grok.shell.tv.dataFrame; const grid = grok.shell.tv.grid;
       return {
@@ -370,9 +343,6 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   // --- Scenario 3: Adaptive rendering does not change resolved colour (GROK-19113)
 
   await softStep('Step 15-17 — Narrow the AGE column sharply under Grid Coding All: the resolved cell colour is unchanged', async () => {
-    // Put AGE under grid-wide All auto-colouring, record the resolved colour, then
-    // shrink the column with a REAL trusted resize drag on the header right border,
-    // and re-read the colour at the SAME row.
     const c = await cellCenter(page, 'AGE', 0);
     const toAll = await clickMenuLeaf(page, c, ['div-Grid-Color-Coding'], 'div-Grid-Color-Coding---All');
     expect(toAll).toBe(true);
@@ -382,12 +352,8 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
       width: grok.shell.tv.grid.columns.byName('AGE').width,
       valueString: grok.shell.tv.grid.cell('AGE', s.targetRow).cell.valueString,
     }), setup);
-    // Trusted resize drag: press at the AGE header right border, release far left.
-    // Geometry is derived from the AGE cell's documentBounds (page coords) — the
-    // right border is db.x + db.width; targetX pulls it far left. Using
-    // `overlay.rect.x + gridColumn.left` would land on the WRONG column's border
-    // (recon-verified: rc.x+gc.left+width=553 hitTests DIS_POP, while the
-    // AGE cell right border db.x+db.width=408 is the real AGE resize handle).
+    // Trusted resize drag from the AGE header right border. The geometry comes from the cell's
+    // documentBounds; `overlay.rect.x + gridColumn.left` would grab another column's border.
     const drag = await page.evaluate(() => {
       const grid = grok.shell.tv.grid;
       const db = grid.cell('AGE', 0).documentBounds;
@@ -413,13 +379,9 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   // --- Scenario 4: Column format tag propagates to valueString ------------------
 
   await softStep('Step 18-20 — Apply a numeric format on AGE via the header menu: the format tag is set and valueString honours it', async () => {
-    // Restore AGE width so the header menu geometry is clean, then apply a 2-decimal
-    // format through the header context menu's Format submenu. AGE is an int column,
-    // whose preset list carries no plain two-decimal leaf (only int / money / compact /
-    // percent / thousand-separator / full-precision / money(<sym>) variants — the money
-    // presets embed ".00", which is why a text-match on ".00" wrongly picks "money").
-    // The two-decimal format is applied through Format > Custom..., typing 0.00 into
-    // the dialog's Custom field — the real menu-plus-dialog actuation of record.
+    // AGE is an int column, and its preset list carries no plain two-decimal leaf (the money
+    // presets merely embed ".00"), so the format goes through Format > Custom... instead.
+    // The width is restored first so the header menu geometry is clean.
     await page.evaluate(() => { grok.shell.tv.grid.columns.byName('AGE').width = 60; grok.shell.tv.grid.invalidate(); });
     await page.waitForTimeout(300);
     const c = await headerCenter(page, 'AGE');
@@ -433,7 +395,6 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
     }, c);
     expect(opened).toBe(true);
     await page.waitForTimeout(550);
-    // Trusted glide onto the Format group to lay out its leaves, then click Custom...
     const grp = await laidOutRect(page, 'div-Format');
     if (grp) {
       await page.mouse.move(grp.x + 4, grp.y + grp.h / 2, {steps: 4});
@@ -445,13 +406,9 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
     await page.mouse.move(custom!.x + custom!.w / 2, custom!.y + custom!.h / 2, {steps: 4});
     await page.mouse.click(custom!.x + custom!.w / 2, custom!.y + custom!.h / 2);
     await page.waitForTimeout(700);
-    // Fill the Format dialog's Custom field with 0.00 and confirm — the format is applied
-    // ONLY through the real dialog, never via a JS-API meta.format write.
-    // dev.datagrok.ai server 1.28.0):
-    //   [name="dialog-Format-AGE"]  — dialog root; name pattern is dialog-Format-<COLNAME> [DOM]
-    //   [name="input-Custom"]       — free-text format-pattern <INPUT type="text"> [DOM]
-    //   [name="button-OK"]          — applies format, closes dialog; writes df col 'format' tag [DOM]
-    // Reference:.claude/skills/grok-browser/references/viewers/grid.md §Format > Custom... dialog
+    // The format is applied only through the real dialog, never a JS-API meta.format write.
+    // The dialog root's name follows the pattern dialog-Format-<COLNAME>; see
+    // .claude/skills/grok-browser/references/viewers/grid.md §Format > Custom... dialog.
     await page.locator('[name="dialog-Format-AGE"] [name="input-Custom"]').waitFor({state: 'attached', timeout: 6000});
     await page.evaluate(() => {
       const inp = document.querySelector('[name="dialog-Format-AGE"] [name="input-Custom"]') as HTMLInputElement;
@@ -464,8 +421,7 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
     await page.waitForTimeout(700);
     const r = await page.evaluate((s) => {
       const df = grok.shell.tv.dataFrame; const grid = grok.shell.tv.grid;
-      // Narrow AGE so the displayed text loses characters, then confirm valueString
-      // is still the full-precision formatted value.
+      // Narrow AGE so the displayed text loses characters — valueString must stay full-precision.
       grid.columns.byName('AGE').width = 26; grid.invalidate();
       return {
         formatTag: df.col('AGE').getTag('format'),
@@ -517,8 +473,8 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   await softStep('Step 25-27 — Font size via the gear panel produces a settle-gated canvas render delta (GROK-17767)', async () => {
     expect(await openGridSettings(page)).toBe(true);
     await page.locator('[name="prop-default-cell-font"]').waitFor({state: 'attached', timeout: 8000});
-    // Settle-precheck: snapshot, let late renders drain, and assert the residual
-    // idle delta is small so a stale repaint cannot satisfy the font-change ceiling.
+    // Settle-precheck: a small residual idle delta is required so that a stale repaint cannot
+    // satisfy the font-change threshold on its own.
     await page.waitForTimeout(900);
     await snapGridCanvas(page);
     await page.waitForTimeout(700);
@@ -526,7 +482,6 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
     expect(idleDelta).toBeGreaterThanOrEqual(0); // fault guard before the ceiling
     console.log('idle grid canvas delta (px):', idleDelta);
     expect(idleDelta).toBeLessThan(2000); // threshold validated on dev
-    // Baseline for the real change, then increase the default cell font size.
     await snapGridCanvas(page);
     const beforeFont = await page.evaluate(() => grok.shell.tv.grid.props.defaultCellFont);
     await page.evaluate(() => {
@@ -548,13 +503,9 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
     expect(afterFont).not.toBe(beforeFont); // and the default cell font actually changed
   });
 
-  // The Selected Rows Colour case is owned by grid-ui.md (a manual [TESTED] section):
-  // the only mouse gesture that selects rows is a strip drag that is refuted for
-  // automation, and the selection overlay is a canvas paint that grid.cell.color does
-  // not surface. Asserting a row-selection driven by that gesture here would be a
-  // false-RED (assert-then-can't-drive), so it stays in the companion. Do not re-add it.
+  // The Selected Rows Colour case stays in the manual companion grid-ui.md: the selection
+  // overlay is a canvas paint that grid.cell.color does not surface. Do not re-add it here.
 
-  // Whole-scenario console-error floor: no console error was raised across the run.
   const gridErrors = consoleErrors.slice(baselineErrors).filter((e) => /grid|column|index|color/i.test(e));
   expect(gridErrors).toEqual([]); // the appearance flows raised no grid console error
 
