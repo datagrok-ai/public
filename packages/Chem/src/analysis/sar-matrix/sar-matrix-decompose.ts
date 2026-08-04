@@ -95,17 +95,56 @@ async function computeAnchor(molIdx: number[], molCol: DG.Column<string>, scaffo
   return {anchor: (await getMCS(molCol, false, true)) || null, anchorIsQuery: true};
 }
 
+/** Every miss here is a main-thread RDKit parse, and both keys recur heavily: the coverage median
+ *  parses each cluster member, and clusters share members across the run, while one cluster's records
+ *  collapse to a handful of distinct cores. Cleared wholesale past the cap so neither map can grow
+ *  unbounded across a session. */
+const heavyAtomCache = new Map<string, number>();
+const canonicalCoreCache = new Map<string, string>();
+const DECOMPOSE_CACHE_MAX = 10000;
+
 /** Heavy-atom count of a SMILES, or 0 if it can't be parsed. */
 function heavyAtomCount(rdkit: ReturnType<typeof getRdKitModule>, smiles: string): number {
+  const cached = heavyAtomCache.get(smiles);
+  if (cached !== undefined)
+    return cached;
   let mol = null;
+  let count = 0;
   try {
     mol = rdkit.get_mol(smiles);
-    return mol && mol.is_valid() ? mol.get_num_atoms() : 0;
+    count = mol && mol.is_valid() ? mol.get_num_atoms() : 0;
   } catch {
-    return 0;
+    count = 0;
   } finally {
     mol?.delete();
   }
+  if (heavyAtomCache.size >= DECOMPOSE_CACHE_MAX)
+    heavyAtomCache.clear();
+  heavyAtomCache.set(smiles, count);
+  return count;
+}
+
+/** Canonical SMILES of a matched core (the matrix row key), or the raw string when RDKit can't parse
+ *  it. Memoized: the record loop canonicalizes the same few cores once per matched molecule. */
+function canonicalCore(rdkit: ReturnType<typeof getRdKitModule>, coreRaw: string): string {
+  const cached = canonicalCoreCache.get(coreRaw);
+  if (cached !== undefined)
+    return cached;
+  let coreSmiles = coreRaw;
+  let coreMol = null;
+  try {
+    coreMol = rdkit.get_mol(coreRaw);
+    if (coreMol?.is_valid())
+      coreSmiles = coreMol.get_smiles();
+  } catch {
+    // keep the raw string
+  } finally {
+    coreMol?.delete();
+  }
+  if (canonicalCoreCache.size >= DECOMPOSE_CACHE_MAX)
+    canonicalCoreCache.clear();
+  canonicalCoreCache.set(coreRaw, coreSmiles);
+  return coreSmiles;
 }
 
 /**
@@ -188,17 +227,7 @@ export async function decomposeCluster(molIdx: number[], molecules: string[], sc
     if (!clean || coreRaw.includes('.'))
       continue;
 
-    let coreSmiles = coreRaw;
-    let coreMol = null;
-    try {
-      coreMol = rdkit.get_mol(coreRaw);
-      if (coreMol?.is_valid())
-        coreSmiles = coreMol.get_smiles();
-    } catch {
-      // keep the raw string
-    } finally {
-      coreMol?.delete();
-    }
+    const coreSmiles = canonicalCore(rdkit, coreRaw);
     records.push({molIdx: molIdx[i], coreSmiles, values});
   }
 
