@@ -16,6 +16,16 @@ import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
  * Build the structure of every virtual analog by linking its row core to its column
  * substituent, reusing the same `mmpLinkFragments` call the MMP Generations tab uses.
  * All matrices are linked in one batched worker call.
+ *
+ * Single-cut matrices only: `mmpLinkFragments` substitutes `[*:1]` alone, so a core carrying more than
+ * one attachment point would come back with unresolved `[*:2]…` dummies — a structurally wrong molecule
+ * that then flows into the export and the make-list. Decomposed matrices are linked during assembly
+ * (`linkVirtualCellStructures`, multi-attachment); a cell still null there failed that linking and must
+ * stay null, which every consumer already handles.
+ *
+ * The discriminator is `refValues`, not `positions`: `positions` holds only the VARYING positions, so a
+ * core decomposed at R1/R2 that varies at R1 alone still carries a `[*:2]`. Only the single-cut
+ * assembler leaves `refValues` empty.
  */
 async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   const cores: string[] = [];
@@ -23,6 +33,8 @@ async function linkVirtualStructures(matrices: SarMatrix[]): Promise<void> {
   const targets: SarMatrixCell[] = [];
 
   for (const matrix of matrices) {
+    if (Object.keys(matrix.refValues).length > 0)
+      continue;
     for (let ri = 0; ri < matrix.rows.length; ri++) {
       for (let ci = 0; ci < matrix.columns.length; ci++) {
         const cell = matrix.cells[ri][ci];
