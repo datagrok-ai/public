@@ -65,6 +65,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -230,9 +231,6 @@ export class PackageFunctions {
     await _initChemPromise;
     DG.ObjectHandler.register(new MpoProfileHandler());
   }
-
-  @grok.decorators.autostart()
-  static async initChemAutostart(): Promise<void> { }
 
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
@@ -2499,6 +2497,56 @@ export class PackageFunctions {
       scalings: scalings, fragmentCutoff,
     });
     viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#matched-molecular-pairs';
+  }
+
+  @grok.decorators.func({
+    name: 'SAR Matrix Viewer',
+    description: 'SAR Matrix viewer',
+    outputs: [{name: 'result', type: 'viewer'}],
+    meta: {showInGallery: 'false', role: 'viewer'},
+  })
+  static sarMatrixViewer(): SarMatrixViewer {
+    return new SarMatrixViewer();
+  }
+
+  @grok.decorators.func({
+    'name': 'SAR Matrix',
+    'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
+    'top-menu': 'Chem | Analyze | SAR Matrix...',
+  })
+  static async sarMatrixAnalysis(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activity: DG.Column,
+    @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['none', 'lg', '-lg'], initialValue: '-lg', description: 'Activity scaling before assembly'},
+    }) scaling: string = '-lg',
+    @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
+        initialValue: 'Auto (from scaling)',
+        description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
+    }) activityDirection: string = 'Auto (from scaling)',
+    @grok.decorators.param({
+      type: 'double',
+      options: {initialValue: '0.4', description: 'Maximum fragment size relative to core'},
+    }) fragmentCutoff: number = 0.4,
+    @grok.decorators.param({
+      type: 'double',
+      options: {initialValue: '0.5', description: 'Core-similarity clustering threshold (lower groups more distant cores)'},
+    }) threshold: number = 0.5,
+    @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
+  ): Promise<void> {
+    checkCurrentView(table);
+    const view = grok.shell.tv as DG.TableView;
+    const viewer = view.addViewer('SAR Matrix Viewer');
+    viewer.setOptions({
+      moleculesColumnName: molecules.name,
+      activityColumnName: activity.name,
+      scaling, activityDirection, fragmentCutoff, threshold, predictVirtual,
+    });
+    viewer.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
   }
 
   @grok.decorators.func({
