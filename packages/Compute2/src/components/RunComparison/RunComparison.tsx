@@ -320,8 +320,6 @@ export const RunComparison = Vue.defineComponent({
     const scalarChartType = Vue.ref<'radar' | 'pcplot'>('radar');
     const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
       .some((f) => f.friendlyName === 'Radar');
-    const effectiveScalarChartType = Vue.computed(() =>
-      radarAvailable ? scalarChartType.value : 'pcplot');
 
     const compatibleTargets = Vue.computed(() =>
       compatibleTargetsFor(selectedTarget.value, targets.value, indexColumnType));
@@ -423,6 +421,14 @@ export const RunComparison = Vue.defineComponent({
       const result = buildColumnComparison(target, entries.value, resolvedAxisModes.value);
       return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
     });
+
+    // a 2-axis radar degenerates to a line; force the PC plot (a slopegraph) until a 3rd value is added
+    const radarEligible = Vue.computed(() => {
+      const current = comparison.value;
+      return radarAvailable && current?.kind === 'multi-scalar' && current.valueColumnNames.length >= 3;
+    });
+    const effectiveScalarChartType = Vue.computed(() =>
+      radarEligible.value ? scalarChartType.value : 'pcplot');
 
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
@@ -973,7 +979,7 @@ export const RunComparison = Vue.defineComponent({
           reverse={true}
           onUpdate:size={(size) => chartHeight.value = size}
         />
-        { currentComparison.kind === 'multi-scalar' && radarAvailable &&
+        { currentComparison.kind === 'multi-scalar' && radarEligible.value &&
           <div style={{display: 'flex', gap: '4px', padding: '2px 0px', flexShrink: '0'}}>
             { ([['radar', 'Radar'], ['pcplot', 'PC Plot']] as const).map(([value, label]) =>
               <span
