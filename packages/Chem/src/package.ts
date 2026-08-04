@@ -185,6 +185,13 @@ async function initChemInt(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+
+  const excludedRaw: string = _properties.ExcludedSketchers ?? '';
+  DG.chem.excludedSketchers = excludedRaw
+    .split(',')
+    .map((s: string) => s.trim())
+    .filter((s: string) => s.length > 0);
+
   let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '';
   if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
     storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
@@ -202,6 +209,14 @@ async function initChemInt(): Promise<void> {
     }
 
     DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
+  }
+
+  if (DG.chem.excludedSketchers.includes(DG.chem.currentSketcherType)) {
+    const fallback = sketcherFunctions.find(
+      (f) => !DG.chem.excludedSketchers.includes(f.friendlyName)
+    );
+    if (fallback)
+      DG.chem.currentSketcherType = fallback.friendlyName;
   }
 }
 

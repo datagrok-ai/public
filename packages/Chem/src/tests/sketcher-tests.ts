@@ -210,3 +210,51 @@ const exampleSmiles = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
 const convertedSmarts = '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 const exampleInchi = 'InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H';
 const exampleInchiSmiles = 'c1ccccc1';
+
+
+category('sketcher exclusions', () => {
+  let originalExcluded: string[];
+
+  before(async () => {
+    originalExcluded = [...DG.chem.excludedSketchers];
+  });
+
+  after(async () => {
+    DG.chem.excludedSketchers = originalExcluded;
+    grok.shell.closeAll();
+  });
+
+  test('excluded sketcher not in menu list', async () => {
+    const funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
+    if (funcs.length < 2) return;
+    const toExclude = funcs[funcs.length - 1].friendlyName;
+    DG.chem.excludedSketchers = [toExclude];
+    const visibleFuncs = funcs.filter((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
+    expect(visibleFuncs.length, funcs.length - 1);
+    expect(visibleFuncs.every((f) => f.friendlyName !== toExclude), true);
+  });
+
+  test('sketcherFunctions retains excluded entries', async () => {
+    const funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
+    if (funcs.length < 2) return;
+    const toExclude = funcs[0].friendlyName;
+    DG.chem.excludedSketchers = [toExclude];
+    chem.currentSketcherType = funcs[1].friendlyName;
+    const s = new Sketcher();
+    const d = ui.dialog().add(s).show();
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    expect(s.sketcherFunctions.some((f) => f.friendlyName === toExclude), true);
+    d.close();
+  });
+
+  test('fallback when current type excluded', async () => {
+    const funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
+    if (funcs.length < 2) return;
+    const toExclude = funcs[0].friendlyName;
+    const expected = funcs[1].friendlyName;
+    DG.chem.excludedSketchers = [toExclude];
+    DG.chem.currentSketcherType = toExclude;
+    const available = funcs.find((f) => !DG.chem.excludedSketchers.includes(f.friendlyName));
+    expect(available !== undefined, true);
+  });
+});

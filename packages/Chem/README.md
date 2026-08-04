@@ -51,6 +51,20 @@ You can set the default Sketcher in the package property so that new users won't
 
 ![default sketcher](../../help/uploads/gifs/default-sketcher.gif)
 
+### Excluding sketchers from the menu
+
+Administrators can hide specific sketchers from the selection menu (☰ icon) without
+uninstalling them. Excluded sketchers remain available programmatically.
+
+1. Go to **Manage > Packages** > **Chem** > **Context Pane > Settings**.
+2. In **ExcludedSketchers**, enter a comma-separated list of sketcher names to hide
+   (e.g., `OpenChemLib, ChemDraw`).
+
+Valid names: `OpenChemLib`, `Ketcher`, `Marvin`, `ChemDraw`. Names are case-sensitive.
+
+If the user's current sketcher is excluded, the system automatically switches to
+the first available non-excluded sketcher.
+
 ## Favorite and recent structures
 
 Access the recently sketched structures from the `☰ -> Recent` menu.

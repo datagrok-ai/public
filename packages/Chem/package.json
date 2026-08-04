@@ -25,6 +25,13 @@
       ],
       "defaultValue": "",
       "nullable": true
+    },
+    {
+      "name": "ExcludedSketchers",
+      "propertyType": "string",
+      "defaultValue": "",
+      "nullable": true,
+      "description": "Comma-separated list of sketcher names to hide from the selection menu"
     }
   ],
   "dependencies": {

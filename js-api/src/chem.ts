@@ -64,6 +64,7 @@ export namespace chem {
   }
 
   export let currentSketcherType = DEFAULT_SKETCHER;
+  export let excludedSketchers: string[] = [];
 
   export function isMolBlock(s: string | null) {
     return s != null && s.includes('M  END');
@@ -573,7 +574,7 @@ export namespace chem {
           .items(Sketcher.getCollection(Sketcher.FAVORITES_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
           .separator()
-          .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
+          .items(this.sketcherFunctions.filter((f) => !excludedSketchers.includes(f.friendlyName)).map((f) => f.friendlyName), (friendlyName: string) => {
             if (currentSketcherType === friendlyName)
               return;
             currentSketcherType = friendlyName;
