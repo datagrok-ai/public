@@ -15,12 +15,9 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 const TOL = 1e-3;
 const PAIRS: [string, string][] = [['AGE', 'HEIGHT'], ['AGE', 'WEIGHT'], ['HEIGHT', 'WEIGHT']];
 
-// The Correlation plot mounts THREE canvases; the first (v.root.querySelector('canvas'))
-// is a 0x0 sizing canvas whose getImageData throws IndexSizeError — the shared
-// v.snapshotCanvasColors/v.diffCanvasColors return the -1 fault sentinel on it. The
-// painted matrix lives on the first NON-zero-sized canvas. These CP-local helpers pick
-// that canvas so the render diff is real, not the -1 fault. (Same per-color histogram
-// diff contract as the shared helpers.)
+// The CP mounts three canvases; the first is a 0x0 sizing canvas (getImageData throws, so the
+// shared v.snapshotCanvasColors returns the -1 fault on it). These helpers pick the first
+// non-zero canvas; same per-color histogram diff contract as the shared helpers.
 async function cpSnapshot(page: import('@playwright/test').Page): Promise<boolean> {
   return await page.evaluate(() => {
     const w = window as any;
@@ -103,11 +100,9 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     const r = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const df = grok.shell.tv.dataFrame;
-      // The correlation loop skips xCol == yCol (correlation_plot_core.dart:255): a diagonal
-      // pair gets no off-diagonal FloatColumn entry and renders a histogram. Via the JS API
-      // getCorrelation(col, col) is the degenerate self-correlation 1.0, distinct from a real
-      // off-diagonal coefficient which is finite AND not exactly 1. The histogram RENDER
-      // itself is canvas-drawn (waived below); the readable structural signal is diag === 1.
+      // The correlation loop skips xCol == yCol (correlation_plot_core.dart:255): the diagonal
+      // renders a histogram (canvas-drawn); the readable structural signal is
+      // getCorrelation(col, col) === 1 vs a finite non-1 off-diagonal.
       const diag = cp.getCorrelation(df.col('AGE'), df.col('AGE'));
       const offDiag = cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'));
       return {diag, offDiag};
@@ -119,11 +114,9 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
   });
 
   await softStep('Scenario 1 Step 5 — X Columns are numerical only; SEX and RACE absent', async () => {
-    // Realizes correlationplot.int.numerical-columns-only. DOM-driven: right-click the
-    // viewer canvas to open the context menu that carries the Columns > X/Y Columns pickers,
-    // then assert the authoritative signal — the auto()-seeded X axis is EXACTLY the
-    // numerical columns (the picker offers only isNumerical columns,
-    // correlation_plot_core.dart:131), so non-numerical columns never enter the axis.
+    // Realizes correlationplot.int.numerical-columns-only. Right-click opens the Columns > X/Y
+    // pickers; authoritative signal: the auto()-seeded X axis is EXACTLY the numerical columns
+    // (the picker offers only isNumerical, correlation_plot_core.dart:131).
     const menuHasColumns = await page.evaluate(async () => {
       const viewer = document.querySelector('[name="viewer-Correlation-plot"]')!;
       const canvas = viewer.querySelector('canvas')! as HTMLElement;
@@ -224,12 +217,9 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       return {showR: cp.props.showPearsonR, after: cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'))};
     });
     console.log(`[S2] showPearsonR=${r.showR} settlePrecheck=${settlePrecheck.deltaPx} flipDiff=${flipDiff.deltaPx} before=${before} after=${r.after}`);
-    // PRIMARY signal (render, T1): disabling Show Pearson R repaints the matrix — the in-cell
-    // R digits vanish and the value columns narrow (correlation_plot_core.dart:197-198), which
-    // shifts the painted layout. Assert the settle-gated canvas diff is materially non-zero and
-    // clearly exceeds the pre-flip settle noise. (The gridCol.showValue/width 40→20 flips are the
-    // Dart-side CAUSE; the inner ColumnGrid is not JS-exposed — the canvas diff is the readable
-    // observable of that structural change.)
+    // PRIMARY signal (render, T1): disabling Show Pearson R removes the in-cell digits and narrows
+    // the value columns (correlation_plot_core.dart:197-198). The inner ColumnGrid is not
+    // JS-exposed — the settle-gated canvas diff is the readable observable.
     expect(flipDiff.deltaPx).toBeGreaterThan(0);
     expect(flipDiff.deltaPx).toBeGreaterThan(settlePrecheck.deltaPx);
     // Backing value stays readable and unchanged — the property affects DISPLAY, not the data.
@@ -262,11 +252,8 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       console.log(`[S2] narrowed ${c.pair}: cell=${c.cell} ref=${c.ref}`);
       expect(Math.abs(c.cell - c.ref)).toBeLessThanOrEqual(TOL);
     }
-    // GROK-17480 regression guard (status: fixed): after narrow/reorder the column names
-    // remain the configured set — the values are correct for the NEW set and order, which
-    // requires the names to still resolve (a hidden/dropped name would break getCorrelation
-    // for the narrowed pair, which stayed within tolerance above). Assert the axis names are
-    // exactly the requested, visible set.
+    // GROK-17480 regression guard (status: fixed): after narrow/reorder the axis names remain
+    // exactly the configured, visible set.
     expect(r.xCols).toContain('AGE');
     expect(r.xCols).toContain('HEIGHT');
     expect(r.xCols).toContain('WEIGHT');
@@ -304,9 +291,8 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       df.selection.setAll(false);
       cp.props.rowSource = 'Filtered';
       cp.props.filter = '${AGE} > 40';
-      // The formula filter recomputes ASYNC (formula parse -> combinedFilter rebuild ->
-      // _refreshValues), unlike correlationType/rowSource which recompute synchronously.
-      // A synchronous getCorrelation here returns the stale full-set value; settle first.
+      // The formula filter recomputes ASYNC (unlike correlationType/rowSource) — a synchronous
+      // getCorrelation returns the stale full-set value; settle first.
       await new Promise((res) => setTimeout(res, 700));
       const type = cp.props.correlationType;
       const cell = cp.getCorrelation(df.col('AGE'), df.col('HEIGHT'));
@@ -356,11 +342,9 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
     await page.waitForTimeout(700);
     const restoreDiff = await cpDiff(page);
     console.log(`[S4] defaultCellFont=${r.applied} settlePrecheck=${settlePrecheck.deltaPx} largerDiff=${largerDiff.deltaPx} restoreDiff=${restoreDiff.deltaPx} value ${before}→${r.after}`);
-    // PRIMARY signal (render, T1): the larger cell font visibly repaints the matrix — taller
-    // rows / larger digits — so the before/after canvas diff is materially non-zero and clearly
-    // exceeds the pre-change settle noise. rowHeight = parseSize×1.4 (correlation_plot_core.dart:
-    // 172-173) is the Dart-internal CAUSE (not JS-readable); the canvas diff is its readable
-    // observable, per the render-signal-index corr_font_row_height family.
+    // PRIMARY signal (render, T1): the larger cell font repaints the matrix. rowHeight =
+    // parseSize×1.4 (correlation_plot_core.dart:172-173) is Dart-internal — the canvas diff is
+    // its readable observable (render-signal-index corr_font_row_height).
     expect(largerDiff.deltaPx).toBeGreaterThan(0);
     expect(largerDiff.deltaPx).toBeGreaterThan(settlePrecheck.deltaPx);
     // No-error floor: the font is accepted and the matrix keeps computing (backing value stable).
@@ -416,20 +400,15 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       return result;
     });
     console.log(`[S5] before=${JSON.stringify(r.viewerSetBefore)} after=${JSON.stringify(r.viewerSetAfter)} spot=${r.spot} spearmanRef=${r.ref} pearsonRef=${r.pearsonRef}`);
-    // PRIMARY persistence signals (different-property / cross-channel, T2):
-    // (a) the viewer SET is restored — the re-armed Scatter plot is gone and the
-    //     Correlation plot is back (a channel independent of any viewer prop);
-    // (b) the reloaded backing VALUE matches the runtime Spearman reference over the
-    //     full row set. This is the value channel (getCorrelation), not a prop
-    //     re-read: a config that failed to re-hydrate would not produce a matrix that
-    //     recomputes the Spearman coefficient for the restored pair.
+    // PRIMARY persistence signals (cross-channel, T2): (a) the viewer SET is restored — the
+    // re-armed Scatter plot is gone, the Correlation plot is back; (b) the reloaded backing VALUE
+    // matches the runtime Spearman reference — the value channel, not a prop re-read.
     expect(r.present).toBe(true);
     expect(r.viewerSetAfter).toEqual(r.viewerSetBefore);
     expect(Number.isFinite(r.spot)).toBe(true);
     expect(Math.abs((r.spot as number) - (r.ref as number))).toBeLessThanOrEqual(TOL);
-    // Auxiliary confirmation that the persisted configuration re-hydrated (these
-    // prop re-reads corroborate the value-channel evidence above; they are NOT the
-    // realizing assertion — see expected_results_coverage realized_by).
+    // Auxiliary prop re-reads corroborate the value channel; NOT the realizing assertion
+    // (see expected_results_coverage realized_by).
     expect(r.type).toBe('Spearman');
     expect(r.showR).toBe(false);
     expect(r.xCols).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);
@@ -480,16 +459,13 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
         };
       }, {id: savedProjectId});
       console.log(`[S6] present=${r.present} spot=${r.spot} spearmanRef=${r.ref}`);
-      // PRIMARY persistence signal (different-property, T2): the reloaded backing
-      // VALUE matches the runtime Spearman reference over the full row set across the
-      // project save→closeAll→reopen round-trip. This is the value channel
-      // (getCorrelation), not a prop re-read — a matrix that failed to re-hydrate the
-      // persisted configuration would not recompute the Spearman coefficient here.
+      // PRIMARY persistence signal (T2): across the project save→closeAll→reopen round-trip the
+      // reloaded backing VALUE matches the runtime Spearman reference — the value channel, not a
+      // prop re-read.
       expect(r.present).toBe(true);
       expect(Number.isFinite(r.spot)).toBe(true);
       expect(Math.abs((r.spot as number) - (r.ref as number))).toBeLessThanOrEqual(TOL);
-      // Auxiliary confirmation the persisted configuration re-hydrated (corroborates
-      // the value-channel evidence above; NOT the realizing assertion).
+      // Auxiliary prop re-reads corroborate the value channel; NOT the realizing assertion.
       expect(r.type).toBe('Spearman');
       expect(r.showR).toBe(false);
       expect(r.xCols).toEqual(['AGE', 'HEIGHT', 'WEIGHT']);

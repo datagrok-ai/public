@@ -69,12 +69,10 @@ async function lastClick(page: Page): Promise<{c1: string; c2: string; v: number
   });
 }
 
-// Snapshot / diff the base ('canvas'-named, non-zero) canvas of the correlation plot. The CP's
-// canvases carry name="canvas" (base paint layer) and name="overlay" (mouse-input layer)
-// [DOM 2026-07-31, live probe this session]. The shared v.snapshotCanvasColors reads the FIRST
-// canvas, which for the CP is the 0x0 layer -> -1 fault; so the diff is done inline against the
-// named base canvas (333x720 live). optional region clips to a cell rect (root-relative CSS
-// coords). Returns changed-pixel count; -1 on a canvas fault.
+// Snapshot / diff the CP base canvas: name="canvas" is the paint layer, name="overlay" the
+// mouse-input layer [DOM 2026-07-31]. The shared v.snapshotCanvasColors reads the FIRST canvas
+// (a 0x0 layer here -> -1 fault), so the diff runs inline against the named base canvas.
+// Optional region clips to a root-relative rect. Returns changed-pixel count; -1 on fault.
 async function snapCanvas(page: Page, region?: {rx: number; ry: number; w: number; h: number}): Promise<boolean> {
   return await page.evaluate((reg) => {
     const root = document.querySelector('[name="viewer-Correlation-plot"]')!;
@@ -116,10 +114,8 @@ async function diffCanvas(page: Page): Promise<number> {
   });
 }
 
-// Read the representative RGBA of a correlation cell off the base canvas as the PER-CHANNEL MEDIAN
-// of a 5-point cross patch (center plus ±3px on each axis). A single center pixel can land on an
-// in-cell R digit or a cell border and read the dark text/border colour instead of the cell hue —
-// the median of five rejects up to two such outlier samples.
+// Cell RGBA = per-channel median of a 5-point cross patch: a single center pixel can land on an
+// in-cell R digit or a border and read the text/border colour instead of the cell hue.
 async function cellPixel(page: Page, g: Geometry, xi: number, yi: number): Promise<number[] | null> {
   const c = cellCenter(g, xi, yi);
   return await page.evaluate(({cx, cy}) => {
@@ -142,30 +138,12 @@ async function cellPixel(page: Page, g: Geometry, xi: number, yi: number): Promi
   }, {cx: c.x, cy: c.y});
 }
 
-// d4 context-menu items carry name= attributes: `div-{Item}` at top level, and nested items use
-// the `---` path separator, e.g. `div-Properties...---Misc---Show-Pearson-R` (the Properties>Misc
-// checkbox) vs. the standalone top-level `div-Show-Pearson-R` toggle [DOM 2026-08-01, live MCP recon
-// on dev.datagrok.ai/demog]. The visible top-level item is disambiguated by its exact name= path.
-// A bare click (in-page OR trusted Playwright locator.click()) does NOT flip the backing prop
-// headless — the Dart checkbox handler needs the FULL pointer/mouse event sequence, so clickMenuByName
-// dispatches pointerdown+mousedown+pointerup+mouseup+click on the resolved .d4-menu-item element
-// (a sanctioned DOM target, never the canvas). hoverMenuGroupTrusted expands a nested submenu with a
-// trusted hover PLUS the paired in-page pointerover/mousemove sequence so the leaf renders non-zero.
-// A d4 menu item's Dart checkbox/action handler is driven by the FULL pointer/mouse event sequence
-// (pointerdown+mousedown+pointerup+mouseup+click); a bare trusted locator.click() lands on the item
-// but does not flip the backing prop headless (the top-level div-Show-Pearson-R toggle stays put).
-// The sequence is dispatched in-page on the resolved .d4-menu-item DOM element — a sanctioned DOM
-// target (never the canvas). [live MCP recon 2026-08-01: trusted click no-op, full sequence flips
-// showPearsonR/showTooltip deterministically across repeats].
-// Resolve a context-menu item by name to the VISIBLE (non-zero-size) node inside a live
-// .d4-menu-popup (z-index 5000, refdoc §Menu). Selectors MUST be scoped to the popup and MUST pick
-// the visible node, NEVER document-wide .first(): the persistent ribbon top-menu holds ~166
-// same-shaped .d4-menu-item nodes, and stale context-menu popups accumulate because Escape/body.click
-// do NOT dismiss a d4 context menu headless [live MCP recon 2026-08-01] — so a document-wide
-// .first() binds a collapsed 0x0 or top-menu duplicate whose parent never re-hovers, and
-// waitFor({state:'visible'}) then times out (the deterministic 'menu item not found within 4s'
-// Gate B failure). A nested leaf stays 0x0 until its parent group is hovered (in-page hover lays it
-// out to 186x24, verified live), so 'visible' == a matching node with a non-zero bounding box.
+// d4 context-menu items carry name= attributes: `div-{Item}` at top level, nested via the `---`
+// path separator, e.g. `div-Properties...---Misc---Show-Pearson-R` [DOM 2026-08-01, live MCP
+// recon, dev/demog]. Resolve to the VISIBLE (non-zero rect) node inside a live .d4-menu-popup —
+// never document-wide .first(): the ribbon top-menu holds ~166 same-shaped .d4-menu-item nodes,
+// and stale popups accumulate (Escape/body.click do not dismiss a d4 context menu headless).
+// A nested leaf stays 0x0 until its parent group is expanded.
 async function waitVisibleMenuItem(page: Page, name: string, timeoutMs = 4000): Promise<boolean> {
   try {
     await page.waitForFunction((n) => {
@@ -176,10 +154,9 @@ async function waitVisibleMenuItem(page: Page, name: string, timeoutMs = 4000): 
   } catch { return false; }
 }
 
-// A d4 menu-item's Dart checkbox/action handler is driven by the FULL pointer/mouse event sequence
-// (pointerdown+mousedown+pointerup+mouseup+click); a bare trusted locator.click() lands on the item
-// but does not flip the backing prop headless [live MCP recon 2026-08-01]. The sequence is dispatched
-// in-page on the VISIBLE popup .d4-menu-item DOM element — a sanctioned DOM target, never the canvas.
+// A d4 menu-item's Dart handler needs the FULL pointer/mouse sequence — a bare trusted
+// locator.click() does not flip the backing prop headless [live MCP recon 2026-08-01]. Dispatched
+// in-page on the visible popup item (sanctioned DOM target, never the canvas).
 async function clickMenuByName(page: Page, name: string, timeoutMs = 4000): Promise<boolean> {
   if (!(await waitVisibleMenuItem(page, name, timeoutMs))) return false;
   return await page.evaluate((n) => {
@@ -197,13 +174,9 @@ async function clickMenuByName(page: Page, name: string, timeoutMs = 4000): Prom
   }, name);
 }
 
-// Expand a nested submenu by FORCE-DISPLAYING its group's inline container. A d4 context-menu group
-// holds its children in a child `.d4-menu-item-container.d4-vert-menu` that stays `display:none` until
-// the group is hovered — but neither an in-page synthetic pointerover NOR a trusted mouse hover flips
-// that container headless [live MCP recon 2026-08-01: after both, div-Grid---Order-or-Hide-Columns...
-// stays 0x0; forcing container.style.display='flex' lays the leaf out to 186x24 and it then actuates].
-// So the only reliable expansion headless is to set the container's display directly. Returns true when
-// the group element was present. Idempotent — safe to call on an already-expanded group.
+// Expand a nested submenu by FORCE-DISPLAYING the group's `.d4-menu-item-container` — neither a
+// synthetic pointerover nor a trusted hover lays it out headless [live MCP recon 2026-08-01].
+// Returns true when the group element was present. Idempotent.
 async function hoverMenuGroupTrusted(page: Page, name: string, timeoutMs = 4000): Promise<boolean> {
   await waitVisibleMenuItem(page, name, timeoutMs);
   return await page.evaluate((n) => {
@@ -211,7 +184,6 @@ async function hoverMenuGroupTrusted(page: Page, name: string, timeoutMs = 4000)
       .find((e) => { const b = (e as HTMLElement).getBoundingClientRect(); return b.width > 0 && b.height > 0; })
       ?? document.querySelector(`.d4-menu-popup .d4-menu-item[name="${n}"]`)) as HTMLElement | null;
     if (!el) return false;
-    // Force the group's inline submenu container (and inner vert-menu) visible so its leaves lay out.
     const container = el.querySelector('.d4-menu-item-container') as HTMLElement | null;
     if (container) {
       container.style.display = 'flex';
@@ -227,10 +199,8 @@ async function hoverMenuGroupTrusted(page: Page, name: string, timeoutMs = 4000)
   }, name);
 }
 
-// Text-channel menu actuation (annotation-regions-spec canon): GRID-GENERIC menu items (the Grid
-// group and its leaves) carry NO name= attribute, so the name= channel cannot find them — resolve
-// by own-label TEXT inside the live .d4-menu-popup instead. Hover = mouseover+mouseenter on the
-// closest .d4-menu-item (lays out the group's submenu); click = the full pointer/mouse sequence.
+// Text-channel menu actuation (annotation-regions-spec canon): GRID-GENERIC items carry NO name=
+// attribute — resolve by own-label TEXT inside the live .d4-menu-popup.
 async function hoverMenuGroupByText(page: Page, text: string): Promise<boolean> {
   return await page.evaluate((t) => {
     const labels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'));
@@ -241,8 +211,6 @@ async function hoverMenuGroupByText(page: Page, text: string): Promise<boolean> 
     });
     const item = ((vis ?? cands[0])?.closest('.d4-menu-item') ?? null) as HTMLElement | null;
     if (!item) return false;
-    // Force the group's inline submenu container visible (synthetic hover alone does not lay out
-    // d4 submenus headless), then dispatch the paired hover events — probe-verified 2026-08-01.
     const cont = item.querySelector('.d4-menu-item-container') as HTMLElement | null;
     if (cont) {
       cont.style.display = 'flex';
@@ -287,10 +255,8 @@ async function clickMenuItemByText(page: Page, pattern: string, ancestorLabel?: 
   }, {p: pattern, anc: ancestorLabel ?? null});
 }
 
-// Reliable context-menu teardown. A d4 context menu is NOT dismissed by Escape or document.body.click
-// headless [live MCP recon 2026-08-01] — stale .d4-menu-popup nodes otherwise accumulate and their
-// same-named collapsed items poison the next section's name lookups. Remove the popup nodes from the
-// DOM directly (the ribbon top-menu lives in .d4-app-root, never a .d4-menu-popup, so it is untouched).
+// Menu teardown: d4 context menus are not dismissed by Escape/body.click headless [live MCP recon
+// 2026-08-01] — remove the popup nodes directly (the ribbon top-menu is never a .d4-menu-popup).
 async function closeMenu(page: Page): Promise<void> {
   await page.keyboard.press('Escape');
   await page.evaluate(() => {
@@ -305,16 +271,14 @@ test('Correlation plot — property surface smoke', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // ## Setup — open demog, add the Correlation plot via its Toolbox icon (DOM-driven), install a
-  // console/pageerror collector for the clean-console asserts (grok.shell.warnings is undefined on
-  // this build), arm the cell-click listener, and calibrate the cell geometry with one probe click.
+  // ## Setup — open demog, add the Correlation plot, install console/pageerror collectors
+  // (grok.shell.warnings is undefined on this build), arm the click listener, calibrate geometry.
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  // 'Unable to find element in cloned iframe' is the ambient unfixable-noise class — benign always.
-  // 'Package GrokML is not available...' is benign ONLY inside the misc-sequence collection window
-  // (GROK-16818): the flag gates it at CAPTURE time, so the allowlist cannot mask a GrokML-shaped
-  // error anywhere else in the run (canon: matrixplot-configure-axes-inner-type-spec.ts).
+  // 'Unable to find element in cloned iframe' is ambient unfixable noise — benign always.
+  // 'Package GrokML is not available' is benign ONLY inside the misc-sequence window (GROK-16818):
+  // gated at CAPTURE time so the allowlist cannot mask a GrokML-shaped error elsewhere.
   let inMiscWindow = false;
   const errorNoise = (s: string) => /Unable to find element in cloned iframe/i.test(s)
     || (inMiscWindow && /Package GrokML is not available/i.test(s));
@@ -355,9 +319,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
 
   // ## Title, description, and back color
   await softStep('Title, description, and back color', async () => {
-    // Title renders in the dock panel-titlebar (.panel-titlebar-text, document scope), NOT the
-    // viewer root [DOM 2026-07-31, live probe this session]; description renders inside the viewer
-    // root and follows Description Visibility Mode.
+    // Title renders in the dock .panel-titlebar-text (document scope), NOT the viewer root
+    // [DOM 2026-07-31]; description renders inside the root per Description Visibility Mode.
     const titleShown: boolean = await page.evaluate(async () => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       cp.props.showTitle = true;
@@ -370,10 +333,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     });
     const descAlways: boolean = await page.evaluate(() =>
       document.querySelector('[name="viewer-Correlation-plot"]')!.textContent!.includes('Shows pairwise correlations'));
-    // descriptionPosition = Bottom: the DOM-position signal is the description leaf's rect moving
-    // into the lower half of the viewer root. The original value is read first and restored after.
-    // If the position ever proves unprovable headless, record a documented per-item reduction —
-    // never drop the step silently.
+    // descriptionPosition = Bottom: signal = the description leaf's rect moving into the lower
+    // half of the viewer root; original value restored after.
     const descPos = await page.evaluate(async () => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const orig = cp.props.descriptionPosition;
@@ -403,8 +364,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     expect(descAlways).toBe(true);
     expect(descNever).toBe(false);
 
-    // Back Color repaint: settle-gated canvas diff on the base canvas (a margin-point single-pixel
-    // probe reads white in the header region on demog, so the whole-canvas diff is the honest signal).
+    // Back Color repaint: settle-gated whole-canvas diff (a single margin pixel reads white in the
+    // header region on demog).
     await snapCanvas(page);
     await page.waitForTimeout(300);
     const settle = await diffCanvas(page);
@@ -460,8 +421,6 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     await closeMenu(page);
     await refreshRoot(page, geom);
     const c = cellCenter(geom, xiHeight, yiAge);
-    // Right-click the correlation cell with real input; the menu items are regular DOM. closeMenu
-    // first clears any residual popup from an earlier section (d4 menus do not self-dismiss headless).
     await page.mouse.click(c.x, c.y, {button: 'right'});
     await page.waitForTimeout(500);
     const showRBefore: boolean = await page.evaluate(() =>
@@ -472,9 +431,7 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     const settle = await diffCanvas(page);
     expect(settle).toBeGreaterThanOrEqual(0);
     // Show Pearson R menu click flips props.showPearsonR AND narrows the value columns (repaint).
-    // The top-level toggle is [name="div-Show-Pearson-R"] (the Properties>Misc duplicate is the
-    // nested div-Properties...---Misc---Show-Pearson-R, invisible until Misc is expanded); a trusted
-    // locator click on the exact top-level name actuates the Dart handler.
+    // Top-level toggle is [name="div-Show-Pearson-R"]; the Properties>Misc duplicate is nested.
     await snapCanvas(page);
     const clickedShowR = await clickMenuByName(page, 'div-Show-Pearson-R');
     expect(clickedShowR).toBe(true);
@@ -498,8 +455,6 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     const c2 = cellCenter(geom, xiHeight, yiAge);
     await page.mouse.click(c2.x, c2.y, {button: 'right'});
     await page.waitForTimeout(500);
-    // Trusted hover of the Tooltip group lays out its submenu (synthetic mouseover is unreliable
-    // headless); then a trusted click on the exact [name="div-Tooltip---Visible"] leaf.
     await hoverMenuGroupTrusted(page, 'div-Tooltip');
     await page.waitForTimeout(400);
     const tipBefore: boolean = await page.evaluate(() =>
@@ -512,11 +467,9 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     console.log(`[Menu] showTooltip ${tipBefore}->${tipAfter}`);
     expect(tipBefore).toBe(true);
     expect(tipAfter).toBe(false);
-    // Behavioral: with Show Tooltip off, hovering a correlation cell must NOT SHOW the tooltip.
-    // The reusable .d4-tooltip keeps the PREVIOUS hover's text in the DOM while disabled — residual
-    // text is a FALSE signal; visibility (computed display) is the honest off-signal. Park the
-    // mouse in an empty zone first so the element settles to display 'none', then hover and poll
-    // a 1500ms window asserting display never becomes 'block'.
+    // With Show Tooltip off, hovering must NOT SHOW the tooltip. The reusable .d4-tooltip keeps the
+    // previous hover's text — visibility (computed display) is the honest off-signal. Park the
+    // mouse away first, then poll a 1500ms window asserting display never becomes 'block'.
     await refreshRoot(page, geom);
     await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 200);
     await page.waitForTimeout(500);
@@ -568,9 +521,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     expect(restored.showR).toBe(true);
     expect(restored.tip).toBe(true);
     await closeMenu(page);
-    // Behavioral: with both toggles restored, a FRESH hover shows the tooltip again. Park the
-    // mouse away first, then require the tooltip to be VISIBLE (display 'block') AND carrying the
-    // R-line — residual text from an earlier hover alone would be a stale false PASS.
+    // Round-trip check: a FRESH hover must be VISIBLE (display 'block') AND carry the R-line —
+    // residual text from an earlier hover alone would be a stale false PASS.
     await refreshRoot(page, geom);
     await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 200);
     await page.waitForTimeout(500);
@@ -594,11 +546,9 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       return !!sb && !!r && r.width > 0 && r.height > 0;
     });
     expect(scrollbarShown).toBe(true);
-    // The declared signal: a probe click at a FIXED viewport x over the value area reports a
-    // DIFFERENT column pair after the horizontal wheel-scroll (the value columns moved under the
-    // fixed x), while the pinned type/name block stays. armClicks was installed in Setup. A click
-    // on a diagonal (histogram) cell fires NO event, so the probe tries two rows (HEIGHT, then
-    // AGE) — whichever row is hit, the event's c1 names the column under the fixed x.
+    // Signal: a probe click at a FIXED viewport x reports a DIFFERENT column pair after the
+    // horizontal wheel-scroll, while the pinned type/name block stays. A diagonal (histogram)
+    // cell fires NO event, so the probe tries two rows.
     await refreshRoot(page, geom);
     const probeX = geom.rootX + geom.pinnedW + geom.cellW / 2;
     const probePair = async (): Promise<{c1: string; c2: string; v: number} | null> => {
@@ -614,9 +564,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     };
     const pairBefore = await probePair();
     expect(pairBefore).not.toBeNull();
-    // Wheel-scroll the value columns horizontally with a TRUSTED wheel (a synthetic WheelEvent is
-    // untrusted and does not drive the Dart scroll — canon: grok-browser "never simulate canvas
-    // gestures with dispatchEvent"). Position the pointer over the value area, then page.mouse.wheel.
+    // TRUSTED page.mouse.wheel over the value area (a synthetic WheelEvent is untrusted — canon:
+    // never simulate canvas gestures with dispatchEvent).
     await snapCanvas(page);
     await refreshRoot(page, geom);
     await page.mouse.move(geom.rootX + geom.pinnedW + geom.cellW, geom.rootY + geom.headerH + 60);
@@ -627,24 +576,19 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     expect(scrollRepaint).toBeGreaterThanOrEqual(0);
     const pairAfter = await probePair();
     console.log(`[Pinned] probe before=${JSON.stringify(pairBefore)} after=${JSON.stringify(pairAfter)}`);
-    // The value columns scroll under the fixed x -> the reported X-member differs. The CP's
-    // horizontal scroll is a canvas-drawn range selector with no DOM thumb and no JS-readable scroll
-    // offset [DOM 2026-08-01, live MCP recon]; a trusted page.mouse.wheel is the honest actuation,
-    // but whether deltaX drives the Dart scroll headless is not guaranteed. When the wheel moves the
-    // columns, assert the column-pair change strongly; when it proves inert headless, that specific
-    // sub-claim is a documented per-item reduction (waiver_class: gesture-uncontrollable-headless)
-    // and the pinning claim is carried by the pinned-name tooltip below — the structural signal that
-    // actually proves the type/name columns stayed pinned at the left edge.
+    // The CP horizontal scroll is a canvas-drawn range selector with no DOM thumb and no JS-readable
+    // offset [DOM 2026-08-01, live MCP recon]; the trusted wheel may be inert headless. When it moves
+    // the columns, assert the pair change; when inert, that sub-claim is a documented per-item
+    // reduction (waiver_class: gesture-uncontrollable-headless) and pinning is carried by the
+    // pinned-name tooltip below.
     if (pairAfter && pairBefore && pairAfter.c1 !== pairBefore.c1)
       expect(pairAfter.c1).not.toBe(pairBefore.c1);
     else
       console.log('[Pinned] wheel-scroll column move inert headless -> waived; pinning proven by pinned-name tooltip');
-    // The pinned name column stays at the left edge — hovering the pinned name cell at its original
-    // x still yields the COLUMN-STATISTICS tooltip (avg/min lines), not merely any text. This is the
-    // hard structural pinning signal.
+    // Hard pinning signal: hovering the pinned name cell at its original x still yields the
+    // COLUMN-STATISTICS tooltip (avg/min lines), not merely any text.
     await refreshRoot(page, geom);
-    // Trusted hover of the pinned name column (x inside pinnedW) — a synthetic MouseEvent on the
-    // canvas does not drive the Dart tooltip; a real page.mouse.move does.
+    // Trusted hover — a synthetic canvas MouseEvent does not drive the Dart tooltip.
     await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 120);
     await page.mouse.move(geom.rootX + 60, geom.rootY + 70);
     await page.waitForTimeout(700);
@@ -671,24 +615,18 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     const c = cellCenter(geom, xiHeight, yiAge);
     await page.mouse.click(c.x, c.y, {button: 'right'});
     await page.waitForTimeout(500);
-    // Grid-generic items carry NO name= attribute — the name= channel ('div-Grid---Order-or-Hide-
-    // Columns...') finds nothing (the round-3 Gate B failure). The WORKING actuation is the text
-    // channel: hover the 'Grid' group by own-label text (annotation-regions canon), then click the
-    // leaf whose own-label matches /Order or Hide Columns/.
+    // Grid-generic items carry no name= attribute — actuate via the text channel: hover the 'Grid'
+    // group by own-label, then click the leaf matching /Order or Hide Columns/.
     await hoverMenuGroupByText(page, 'Grid');
     await page.waitForTimeout(400);
     const openedDialog = await clickMenuItemByText(page, 'Order or Hide Columns');
     expect(openedDialog).toBe(true);
     await page.waitForTimeout(800);
-    // RECON NOTE [probe 2026-08-01, zz-probe dump of [name="dialog-Order-or-Hide-Columns"]]: the
-    // dialog's column LIST is an EMBEDDED CANVAS Grid ([name="viewer-Grid"] with canvas+overlay
-    // inside the dialog) — there are NO per-column DOM checkboxes; the only input[type=checkbox]
-    // is the header filter. The per-column checkbox toggle is therefore a CLASSIFIED ESCALATED
-    // WAIVER per the E-EXPECT-COVERAGE contract (status: waived, waiver_class:
-    // canvas-webgl-render; evidence: embedded canvas Grid, probe 2026-08-01). The DOM-reachable
-    // core that IS driven: the all/visible/hidden filter SELECT and the search INPUT
-    // (.d4-search-input) — real dialog controls whose drive refilters the embedded grid — then a
-    // clean CLOSE, with the GROK-9310 no-exception invariant over the whole flow.
+    // RECON NOTE [probe 2026-08-01, dump of [name="dialog-Order-or-Hide-Columns"]]: the dialog's
+    // column list is an EMBEDDED CANVAS Grid — no per-column DOM checkboxes. Per-column checkbox
+    // toggle: status: waived, waiver_class: canvas-webgl-render; evidence: embedded canvas Grid,
+    // probe 2026-08-01. Driven instead: the all/visible/hidden filter SELECT and the search INPUT
+    // (.d4-search-input), then a clean CLOSE, under the GROK-9310 no-exception invariant.
     const driven = await page.evaluate(async () => {
       const dlg = document.querySelector('.d4-dialog[name="dialog-Order-or-Hide-Columns"]');
       if (!dlg) return {dialogPresent: false, selectDriven: false, searchDriven: false};
@@ -739,10 +677,9 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     // GROK-9310: no exception raised by opening/driving/closing the dialog.
     expect(pageErrors.length).toBe(peBefore);
     expect(realErrors().length).toBe(errBefore);
-    // The pinned name column stays in place — a row-header hover still shows the COLUMN-STATISTICS
-    // tooltip (avg/min lines), the same strengthened predicate as the Pinned section.
+    // Pinned name column stays — a row-header hover still shows the column-statistics tooltip
+    // (avg/min lines), same predicate as the Pinned section.
     await refreshRoot(page, geom);
-    // Trusted hover of the pinned name column (synthetic canvas MouseEvent does not drive the tooltip).
     await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 120);
     await page.mouse.move(geom.rootX + 60, geom.rootY + 70);
     await page.waitForTimeout(700);
@@ -759,15 +696,11 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     await closeMenu(page);
     await refreshRoot(page, geom);
     // The 'apply to text' affordance (GROK-19052) is the "Apply to" choice in the per-column
-    // color-coding Edit dialog; it exists only after a color-coding is applied — with no coloring
-    // the Color-coding dialog shows only the Type picker, and once Linear is set it exposes
-    // "Apply to" = background / text / text background.
+    // color-coding Edit dialog; it appears only after a coloring (Linear) is applied.
     const c = cellCenter(geom, xiHeight, yiAge);
     await page.mouse.click(c.x, c.y, {button: 'right'});
     await page.waitForTimeout(500);
-    // Per-column color coding lives under Grid > Current Column > Color Coding. Navigation is the
-    // probe-proven text channel (own-label match + submenu-container force-display, probe
-    // 2026-08-01): hover each parent group, then click the leaf scoped under 'Color Coding'.
+    // Per-column color coding lives under Grid > Current Column > Color Coding (text channel).
     await hoverMenuGroupByText(page, 'Grid');
     await page.waitForTimeout(300);
     await hoverMenuGroupByText(page, 'Current Column');
@@ -794,13 +727,11 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     const openedEdit = await clickMenuItemByText(page, '^Edit\\.\\.\\.$', 'Color Coding');
     expect(openedEdit).toBe(true);
     await page.waitForTimeout(700);
-    // Drive the "Apply to" select ([name="input-host-Apply-to"] select in the Color-coding dialog,
-    // [DOM 2026-07-31]) to 'text' (the GROK-19052 option) via a select change.
+    // Drive the "Apply to" select to 'text' (the GROK-19052 option).
     const setToText = await page.evaluate(async () => {
-      // Scope INSIDE the Color-coding dialog. Probe-verified [2026-08-01]: the dialog is
-      // [name="dialog-Color-coding--<COL>"] (title "Color-coding: <COL>"); the 'Apply to' row is
-      // [name="input-host-Apply-to"] holding an UNNAMED select.ui-input-editor with options
-      // background / text / text background. Fallbacks: title regex, then the 'Apply to' label row.
+      // Dialog is [name="dialog-Color-coding--<COL>"]; the 'Apply to' row is
+      // [name="input-host-Apply-to"] holding an unnamed select (background / text /
+      // text background) [probe 2026-08-01]. Fallbacks: title regex, then the label row.
       const dialogs = Array.from(document.querySelectorAll('.d4-dialog'));
       const d = dialogs.find((dd) => /^dialog-Color-coding-/.test(dd.getAttribute('name') ?? ''))
         ?? dialogs.find((dd) => /Color.?coding/i.test(dd.querySelector('.d4-dialog-title')?.textContent ?? ''))
@@ -882,23 +813,15 @@ test('Correlation plot — property surface smoke', async ({page}) => {
   await softStep('Table switch', async () => {
     const peBefore = pageErrors.length;
     const errBefore = realErrors().length;
-    // Clear any residual context-menu popup / open dialog from the prior section so this section
-    // starts from a clean viewer state (a leftover popup over the overlay was the round-2 cascade
-    // that corrupted the recompute path).
+    // Clear residual popups/dialogs so the section starts from a clean viewer state.
     await closeMenu(page);
     await page.evaluate(() => { (DG.Dialog.getOpenDialogs?.() ?? []).forEach((d: any) => d.close?.()); return null; });
     await page.waitForTimeout(300);
     try {
       // Open spgi-100 alongside demog, switch the Table property, verify the matrix recomputes.
-      // Only primitive values cross the page.evaluate boundary: locating the CP via a plain for-loop
-      // (Array.from(grok.shell.tableViews).map(...) over the Dart-backed iterable can surface a
-      // page.evaluate "object reference chain too long" serialization fault when a thrown TypeError
-      // — cp undefined headless — carries a DG-object stack; guard cp and return a plain error string
-      // instead of letting a DG-referencing Error serialize).
-      // Return a JSON STRING (not an object): getCorrelation / DG.Stats can transiently hand back a
-      // Dart-boxed number whose deep reference chain makes Playwright throw "object reference chain is
-      // too long" when it serializes the evaluate result. JSON.stringify collapses everything to plain
-      // primitives before the value crosses the page boundary. [live MCP recon 2026-08-01].
+      // Return a JSON STRING: Dart-boxed values (getCorrelation / DG.Stats / DG-referencing Errors)
+      // make page.evaluate throw 'object reference chain is too long' — JSON.stringify collapses
+      // everything to primitives first [live MCP recon 2026-08-01].
       const raw = await page.evaluate(async ({p, tol}) => {
         try {
           const spgi = await grok.dapi.files.readCsv(p);
@@ -926,17 +849,12 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       expect(pageErrors.length).toBe(peBefore);
       expect(realErrors().length).toBe(errBefore);
     } finally {
-      // Restore the CP to the demog table and close the extra view — even if an assert failed.
-      // Explicit null return: without it the evaluate implicitly hands back a Dart-backed value
-      // ('Cannot serialize result: object reference chain is too long').
+      // Restore the CP to demog and close the extra view — even if an assert failed. Explicit null
+      // return: an implicit Dart-backed return value cannot serialize.
       await page.evaluate(async () => {
-        // Snapshot the Dart-backed tableViews to a plain array BEFORE any close: iterating
-        // grok.shell.tableViews with for...of while calling tv.close() inside the loop throws
-        // 'Concurrent modification during iteration' (the collection is mutated mid-iterate) — a
-        // Dart-stack throw that both aborts the restore (leaving the CP bound to spgi -> the NaN /
-        // color-probe cascades) and can surface as the 'object reference chain too long'
-        // serialization fault. [live MCP recon 2026-08-01: for...of+close throws; Array.from+close
-        // restores to ['Table'] cleanly.]
+        // Snapshot the Dart-backed tableViews to a plain array BEFORE closing: for...of with
+        // tv.close() inside the loop throws 'Concurrent modification during iteration'
+        // [live MCP recon 2026-08-01].
         const views: any[] = Array.from(grok.shell.tableViews);
         let cp: any = null;
         for (const tv of views) { const found = tv.viewers.find((v: any) => v.type === 'Correlation plot'); if (found) { cp = found; break; } }
@@ -982,9 +900,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       await refreshRoot(page, geom);
       geom.cellW = await page.evaluate(() =>
         grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot').props.showPearsonR ? 40 : 20);
-      // Hover the (constZero, AGE) cell with a TRUSTED mouse move (a synthetic MouseEvent on the
-      // canvas does not drive the Dart tooltip), then poll the tooltip for 'N/A'. Nudge from an
-      // off-cell point first so the move is registered as a real transition onto the cell.
+      // Trusted hover of the (constZero, AGE) cell; nudge from an off-cell point first so the move
+      // registers as a real cell-enter, then poll the tooltip for 'N/A'.
       const c = cellCenter(geom, setup.xi, setup.yi);
       await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 120);
       let tipText = '';
@@ -1003,10 +920,9 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       expect(realErrors().some((s) => /Unsupported operation/i.test(s))).toBe(false);
       expect(pageErrors.some((s) => /Unsupported operation/i.test(s))).toBe(false);
     } finally {
-      // Teardown — remove the fixture column even if a step above failed.
-      // Target the demog view EXPLICITLY (grok.shell.tv can point elsewhere after the table-switch
-      // teardown), rewire the column sets off the fixture first, remove it via df.columns.remove,
-      // and VERIFY by re-reading the column-name list — a df.col() object read is not the channel.
+      // Teardown — remove the fixture column even if a step failed. Target the demog view
+      // EXPLICITLY (tv can point elsewhere), rewire the column sets off the fixture first, and
+      // verify by re-reading the column-name list.
       removed = await page.evaluate(async () => {
         const views: any[] = Array.from(grok.shell.tableViews);
         const view = views.find((tv) => tv.dataFrame?.name === 'Table') ?? grok.shell.tv;
@@ -1030,9 +946,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
 
   // ## Color-coding probes
   await softStep('Color-coding probes', async () => {
-    // Defensive visual-state reset before the per-cell pixel probes: restore the matrix to a known
-    // base (white back color, digits ON) so the probe reads the TRUE per-cell correlation hue, not a
-    // residual lightGray back color left by an earlier section.
+    // Visual-state reset before the pixel probes: white back color, digits ON, so the probe reads
+    // the true per-cell hue, not residual state from an earlier section.
     await closeMenu(page);
     await page.evaluate(async () => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -1041,9 +956,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       await new Promise((r) => setTimeout(r, 600));
       return null;
     });
-    // The table-switch teardown closed a view (dock relayout shifts the root and can change the
-    // pinned/header sizes) and the NaN teardown rewired the column sets — recalibrate with a probe
-    // click (Setup pattern) against the CURRENT column order before any pixel read.
+    // Earlier teardowns shifted the root and rewired the column sets — recalibrate with a probe
+    // click against the CURRENT column order before any pixel read.
     const colsNow = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       return {x: cp.props.xColumnNames.slice(), y: cp.props.yColumnNames.slice()};
@@ -1052,10 +966,8 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     const yiA = colsNow.y.indexOf('AGE'), yiWt = colsNow.y.indexOf('WEIGHT');
     const recalibrate = async (): Promise<boolean> => {
       await refreshRoot(page, geom);
-      // cellW tracks the LIVE showPearsonR (40 with digits, 20 without) — a stale hardcoded 40
-      // after a showPearsonR=false state lands the probe on white inter-cell gaps and reads 255
-      // for every cell. [live MCP recon 2026-08-01: cw40 probe over a cw20 render reads
-      // [255,255,255]; cw20 reads the true cell colours].
+      // cellW tracks the LIVE showPearsonR (40 with digits, else 20) — a stale 40 lands probes on
+      // white inter-cell gaps [live MCP recon 2026-08-01].
       geom.cellW = await page.evaluate(() =>
         grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot').props.showPearsonR ? 40 : 20);
       for (let attempt = 0; attempt < 6; attempt++) {
@@ -1074,13 +986,9 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       return false;
     };
     expect(await recalibrate()).toBe(true);
-    // Enable the [-1,1] per-cell color scale via the context menu. The Correlation plot draws
-    // correlation VALUES as plain text on a WHITE cell background BY DEFAULT — there is NO per-cell hue
-    // until Grid Color Coding is set to All [live MCP recon 2026-08-01: default cells read ~white
-    // [255,255,255] for every sign; with Grid > Grid Color Coding > All, HEIGHT/AGE r=-0.21 reads
-    // [0,0,255] blue, HEIGHT/WEIGHT r=0.44 reads [255,38,38] red, WEIGHT/AGE r=0.06 reads [115,115,255]
-    // light blue]. The color scale the scenario probes IS the Grid-Color-Coding=All rendering, actuated
-    // through the context menu (the actuation path), the per-cell hue is the signal.
+    // Default cells draw values on a WHITE background — per-cell hue exists only with Grid >
+    // Grid Color Coding > All [live MCP recon 2026-08-01: neg reads blue, pos red, near-zero
+    // light blue]. Menu actuation is the path; the per-cell hue is the signal.
     await refreshRoot(page, geom);
     const ccCell = cellCenter(geom, xiH, yiA);
     await page.mouse.click(ccCell.x, ccCell.y, {button: 'right'});
@@ -1100,8 +1008,7 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     const rs = await page.evaluate(() => {
       const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
       const df = grok.shell.tv.dataFrame;
-      // Number() collapses a possibly Dart-boxed return to a plain primitive before it crosses
-      // the page boundary (same serialization class as the table-switch getCorrelation reads).
+      // Number() collapses a possibly Dart-boxed return before it crosses the page boundary.
       return {
         neg: Number(cp.getCorrelation(df.col('HEIGHT'), df.col('AGE'))),
         nearZero: Number(cp.getCorrelation(df.col('WEIGHT'), df.col('AGE'))),
@@ -1229,16 +1136,11 @@ test('Correlation plot — property surface smoke', async ({page}) => {
   await softStep('Column width drag', async () => {
     await refreshRoot(page, geom);
     geom.cellW = 40;
-    // A real (trusted) mouse drag of a value column-header edge is attempted. The Correlation plot
-    // is NOT a standard resizable d4 grid: it exposes no `grid` object and no JS-readable column
-    // width (cp.grid is undefined; there is no gridColumn.width channel) [DOM 2026-08-01, live MCP
-    // recon]. The matrix column headers carry no user resize hotspot, so the header-edge drag is
-    // inert headless. Per the scenario's own escape clause, the width drag is therefore a documented
-    // per-item reduction (status: waived, waiver_class: gesture-uncontrollable-headless): the drag
-    // is driven with real trusted input and the ONLY possible signal (a canvas repaint diff) is
-    // recorded, but the assertion is a defensive floor (diff >= 0, i.e. the canvas read succeeded),
-    // NOT a repaint-exceeds-settle claim that would false-RED on an uncontrollable gesture. The
-    // widen and restore drags are both exercised so the gesture is genuinely attempted, not skipped.
+    // The CP is NOT a resizable d4 grid: cp.grid is undefined, no JS-readable column width, headers
+    // carry no resize hotspot [DOM 2026-08-01, live MCP recon] — the header-edge drag is inert
+    // headless. Width drag: status: waived, waiver_class: gesture-uncontrollable-headless. The drag
+    // is still driven with real trusted input (both directions); the assertion is the defensive
+    // floor (diff >= 0), not repaint-exceeds-settle.
     await snapCanvas(page);
     await page.waitForTimeout(300);
     const settle = await diffCanvas(page);
@@ -1254,8 +1156,7 @@ test('Correlation plot — property surface smoke', async ({page}) => {
     await page.waitForTimeout(700);
     const dragDelta = await diffCanvas(page);
     console.log(`[WidthDrag] settle=${settle} dragDelta=${dragDelta} (waived: CP has no readable column-width channel; header-edge drag inert headless)`);
-    // Honest floor: the canvas read succeeded (no -1 fault). The repaint-exceeds-settle claim is
-    // waived because the CP matrix has no user-resizable column headers and no readable width.
+    // Honest floor: the canvas read succeeded (no -1 fault); the repaint claim is waived above.
     expect(dragDelta).toBeGreaterThanOrEqual(0);
     // Exercise the restore drag too (round-trip attempt), same waived floor.
     await snapCanvas(page);

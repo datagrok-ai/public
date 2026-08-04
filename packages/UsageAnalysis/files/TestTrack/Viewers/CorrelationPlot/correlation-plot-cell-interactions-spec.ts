@@ -14,11 +14,9 @@ test.use(specTestOptions);
 const datasetPath = 'System:DemoFiles/demog.csv';
 const TOL = 1e-3;
 
-// Compute the CSS-pixel center of a correlation cell from the viewer root rect plus the
-// documented grid arithmetic (refdoc §Cell Geometry and Mouse Clicks): pinned type/name
-// block width + vertical column-label header + cellW (40 when showPearsonR, else 20) + rowH.
-// pinnedW/headerH are auto-sized per dataset, so a probe click in Setup calibrates them by
-// reading the pair back from the d4-correlation-plot-corr-cell-click event.
+// CSS-pixel center of a correlation cell from the root rect + grid arithmetic (refdoc §Cell
+// Geometry and Mouse Clicks); cellW is 40 with showPearsonR, else 20. pinnedW/headerH are
+// auto-sized per dataset — the Setup probe click calibrates them.
 interface Geometry {rootX: number; rootY: number; pinnedW: number; headerH: number; cellW: number; rowH: number}
 
 async function readGeometry(page: Page): Promise<{rootX: number; rootY: number; cellW: number; xCols: string[]; yCols: string[]}> {
@@ -42,10 +40,8 @@ function cellCenter(g: Geometry, xi: number, yi: number): {x: number; y: number}
   };
 }
 
-// Re-read the viewer root's bounding rect into the calibrated geometry. Dock relayout
-// (any viewer add/remove, e.g. the Scenario 2 scatter) SHIFTS the correlation plot's root,
-// so rootX/rootY must be refreshed immediately before every hover/click group that follows
-// a change in the viewer set; pinnedW/headerH/cellW/rowH stay valid (only the rect moves).
+// Dock relayout (any viewer add/remove) SHIFTS the CP root — refresh rootX/rootY before every
+// hover/click group that follows a viewer-set change; the cell metrics stay valid.
 async function refreshRoot(page: Page, g: Geometry): Promise<void> {
   const r = await page.evaluate(() => {
     const R = document.querySelector('[name="viewer-Correlation-plot"]')!.getBoundingClientRect();
@@ -55,50 +51,29 @@ async function refreshRoot(page: Page, g: Geometry): Promise<void> {
   g.rootY = r.y;
 }
 
-// The correlation cell tooltip is fired by grid_tooltip.dart on `onCellMouseEnter` DEBOUNCED
-// 200ms, and only when the mouse still rests over the SAME cell 200ms after entering it
-// (`.where((gcd) => gcd.gridCell == grid.mouseOverCell)`). So a single stationary move — or a
-// move + a sub-200ms dwell + a same-cell nudge — never satisfies the debounce and the
-// 'Pearson R:' tooltip never mounts (the Gate B failure: R-regex matches empty text). The gesture
-// must (a) produce a genuine cell-ENTER transition by walking IN from an ADJACENT cell with a
-// trusted mousemove stream, then (b) REST on the target cell longer than the 200ms debounce.
-// The dismiss target must be OUTSIDE the correlation viewer: a point inside its root just lands
-// on another cell and shows its tooltip, and the reusable .d4-tooltip retains stale text on
-// mouse-away regardless.
+// The cell tooltip fires on onCellMouseEnter DEBOUNCED 200ms and only while the mouse still rests
+// on the SAME cell (grid_tooltip.dart) — the gesture must walk IN from an adjacent cell with a
+// trusted mousemove stream, then REST past the debounce. The dismiss target must be OUTSIDE the
+// viewer root (an inner point lands on another cell; the reusable .d4-tooltip retains stale text
+// on mouse-away).
 async function dismissTooltip(page: Page, g: Geometry): Promise<void> {
-  // Move well left of the viewer root (into the grid / empty area) to leave every corr cell,
-  // firing onCellMouseLeave -> tooltip.hide().
   await page.mouse.move(Math.max(4, g.rootX - 60), g.rootY + g.headerH + 100);
   await page.waitForTimeout(400);
 }
 
 async function hoverCell(page: Page, g: Geometry, xi: number, yi: number): Promise<void> {
   const c = cellCenter(g, xi, yi);
-  // Approach the target from the neighbouring cell to its LEFT (one cellW over) so the pointer
-  // crosses a cell boundary INTO the target — this fires onCellMouseEnter with the target as
-  // mouseOverCell. `steps` makes Playwright emit interpolated trusted mousemove events along the
-  // path (d4 tracks the pointer stream, not a single teleport).
+  // Walk in from the left neighbour (interpolated trusted moves cross a cell boundary INTO the
+  // target), then rest past the 200ms debounce.
   await page.mouse.move(c.x - g.cellW, c.y, {steps: 3});
   await page.mouse.move(c.x, c.y, {steps: 4});
-  // Rest on the target longer than the 200ms cell-enter debounce so the tooltip actually mounts.
   await page.waitForTimeout(300);
 }
 
-// The correlation R-line is rendered by correlation_plot_core.dart into a `tooltipRoot`
-// DivElement, which Tooltip.showElement re-parents INTO the singleton `content` div
-// (class d4-tooltip). But the platform can hold MORE THAN ONE .d4-tooltip node at once
-// (the singleton `content`, plus per-TooltipInfo hosts `div('d4-tooltip', [element])`,
-// plus the `_superTooltipContent` node) — so a query that reads only the FIRST
-// .d4-tooltip can land on a stale/empty sibling that lacks the R-line even while the
-// live tooltip carries it (the Gate B failure: non-empty text, no 'Pearson R:' match).
-// Read the R-line across the COMBINED textContent of EVERY .d4-tooltip node.
-// enumName(CorrelationType.Pearson) == 'Pearson' and value == toStringAsFixed(3), so the
-// exact text is 'Pearson R: -0.210' — the regex below matches it as a substring.
-//
-// Poll until SOME .d4-tooltip node carries the correlation 'Pearson R: <value>' line in the
-// exact format the assertion reads. Require the strict format — not a loose /R:/ — so a stale
-// prior tooltip cannot satisfy the wait before the fresh content mounts. Match against the
-// combined text of all .d4-tooltip nodes so a sibling empty node cannot mask the live R-line.
+// The platform can hold MORE THAN ONE .d4-tooltip node (singleton content + per-TooltipInfo hosts
+// + _superTooltipContent) — a first-node read can land on a stale/empty sibling, so poll the
+// COMBINED text of every node. Require the strict 'Pearson R: <d.ddd>' format (toStringAsFixed(3))
+// so a stale prior tooltip cannot satisfy the wait.
 async function waitForRTooltip(page: Page, timeoutMs = 6000): Promise<void> {
   await page.waitForFunction(() => {
     const text = Array.from(document.querySelectorAll('.d4-tooltip'))
@@ -107,9 +82,8 @@ async function waitForRTooltip(page: Page, timeoutMs = 6000): Promise<void> {
   }, undefined, {timeout: timeoutMs});
 }
 
-// Attach a listener that records the last d4-correlation-plot-corr-cell-click event.
-// The event args column1/column2 are the column NAME strings (live recon: NOT DG.Column
-// objects — the refdoc's "read .name" note is stale for this build), value is the coefficient.
+// Record the last d4-correlation-plot-corr-cell-click event; args column1/column2 are column
+// NAME strings (live recon), value is the coefficient.
 async function armClickListener(page: Page): Promise<void> {
   await page.evaluate(() => {
     const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');
@@ -200,11 +174,9 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
   });
 
   await softStep('Scenario 1 Step 4 — context panel shows columnsCorrelation "<c1> vs <c2>" with a Scatter plot pane', async () => {
-    // The click above sets AppEvents.currentObject to a columnsCorrelation SemanticValue
-    // (correlation_plot_core.dart: on cell click with no separate plot). The context panel then
-    // re-renders ASYNCHRONOUSLY, so poll (up to ~3s) for the "<col1> vs <col2>" header and the
-    // Scatter plot accordion pane rather than reading once immediately (the single read raced
-    // the panel push — intermittent vsHeaders=[]). Re-hover/re-click if the panel is still cold.
+    // The click sets AppEvents.currentObject to a columnsCorrelation SemanticValue; the context
+    // panel re-renders ASYNC — poll (~3s) for the "<col1> vs <col2>" header and the Scatter plot
+    // pane, re-clicking if the panel is still cold.
     const readPanel = () => page.evaluate(() => {
       const vsHeaders = Array.from(document.querySelectorAll('*'))
         .filter((e) => e.children.length === 0 && /\bvs\b/.test(e.textContent ?? '') && (e.textContent ?? '').length < 40)
@@ -291,22 +263,15 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
       const df = grok.shell.tv.dataFrame;
       return DG.Stats.fromColumn(df.col('HEIGHT')).corr(df.col('AGE'));
     });
-    // Scenario 2 added and closed a Scatter plot — the dock relayout shifted the corr-plot
-    // root, so re-read the rect before hovering (stale coordinates miss the 40x20 cell).
     await refreshRoot(page, geom);
-    // Leave the viewer to reset the hover state, then dwell-hover Cell A (HEIGHT/AGE) so d4's
-    // pointer tracker fires and mounts the 'Pearson R:' tooltip.
+    // Leave the viewer to reset hover state, then dwell-hover Cell A (HEIGHT/AGE).
     await dismissTooltip(page, geom);
     await hoverCell(page, geom, xiHeight, yiAge);
     await waitForRTooltip(page);
     const r = await page.evaluate(() => {
       const tips = Array.from(document.querySelectorAll('.d4-tooltip'));
-      // The corr R-line (correlation_plot_core.dart -> tooltipRoot -> Tooltip.showElement's
-      // `content` div) plus an embedded scatter <canvas> live in a .d4-tooltip node. The
-      // platform may hold more than one .d4-tooltip node at once, so read the R-line from the
-      // COMBINED textContent of every node (a lone tips[0] read can land on a stale/empty
-      // sibling and miss the R-line — the Gate B failure). An entirely EMPTY set means the hover
-      // missed the cell (idle state), NOT that the text lives on a hidden layer.
+      // Combined read across all .d4-tooltip nodes (see waitForRTooltip); an entirely EMPTY set
+      // means the hover missed the cell, not that the text lives on a hidden layer.
       const combined = tips.map((t) => t.textContent ?? '').join(' ').replace(/\s+/g, ' ').trim();
       return {
         totalCount: tips.length,
@@ -352,8 +317,6 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
     // Cell B = WEIGHT (X) vs STARTED (Y): a distinct column pair.
     const xiWeightB = base.xCols.indexOf('WEIGHT');
     const yiStarted = base.yCols.indexOf('STARTED');
-    // leave the viewer, then dwell-hover Cell B (WEIGHT/STARTED) — a distinct pair whose embedded
-    // scatter canvas differs from Cell A's.
     await dismissTooltip(page, geom);
     await hoverCell(page, geom, xiWeightB, yiStarted);
     await waitForRTooltip(page);
@@ -387,31 +350,25 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
   });
 
   await softStep('Scenario 3 Step 6 — hover the pinned row-header name column shows a column-statistics tooltip (not an R tooltip)', async () => {
-    // Leave the viewer, then dwell-hover the pinned NAME column (x well inside the pinned block,
-    // left of the first value column) at a row that carries a column name. The tooltip there is the
-    // column-statistics tooltip (min/avg/max/std/nulls labels), distinguishable from the
-    // correlation tooltip by the absence of an '<Type> R:' line.
+    // Dwell-hover the pinned NAME column at a data row: the tooltip there is the column-statistics
+    // tooltip (min/avg/max/std/nulls), distinguished by the ABSENCE of an '<Type> R:' line.
     await refreshRoot(page, geom);
     await dismissTooltip(page, geom);
     const nameX = geom.rootX + geom.pinnedW - 45; // inside the pinned name column
     const nameY = geom.rootY + geom.headerH + geom.rowH * 1.5; // second data row
-    // Same cell-enter debounce contract as hoverCell: walk in from the row below with a trusted
-    // mousemove stream to fire onCellMouseEnter on the name cell, then rest past the 200ms debounce.
+    // Same cell-enter debounce contract as hoverCell: walk in from the row below, rest past 200ms.
     await page.mouse.move(nameX, nameY + geom.rowH, {steps: 3});
     await page.mouse.move(nameX, nameY, {steps: 4});
     await page.waitForTimeout(300);
-    // Poll until a NON-EMPTY tooltip carrying stats labels appears (never the correlation R line —
-    // require an actual stats marker so a stale corr tooltip cannot satisfy the wait).
+    // Poll for a stats marker (a stale corr tooltip cannot satisfy the wait).
     await page.waitForFunction(() => {
       const t = Array.from(document.querySelectorAll('.d4-tooltip'))
         .map((tip) => tip.textContent ?? '').join(' ');
       return /(min:|avg:|max:|std:|nulls:)/.test(t);
     }, undefined, {timeout: 6000});
     const r = await page.evaluate(() => {
-      // Read the combined .d4-tooltip content (nodes stay display:none / zero-rect, so no rect
-      // filter — see Scenario 3 Step 3; and the live content may not be the first node).
-      // Non-empty text means the row-header hover produced a tooltip; the column-statistics
-      // tooltip has no '<Type> R:' line, which distinguishes it from the correlation-cell tooltip.
+      // Combined .d4-tooltip read (nodes stay display:none / zero-rect — no rect filter). The
+      // stats tooltip has no '<Type> R:' line.
       const text = Array.from(document.querySelectorAll('.d4-tooltip'))
         .map((tip) => tip.textContent ?? '').join(' ').replace(/\s+/g, ' ').trim();
       return {hasText: text.length > 0, text: text.slice(0, 200), hasRLine: /\bR:\s*-?\d/.test(text)};
@@ -448,11 +405,9 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
     expect(menu.yColumns).toBe(true);
     expect(menu.tooltip).toBe(true);
 
-    // Step 3-4: expand the Tooltip group and confirm its submenu contains Edit..., Visible, and
-    // Properties... The submenu is pre-rendered but ZERO-SIZE until the group is hovered, so lay it
-    // out with a trusted move onto the Tooltip group node, then read the items belonging to the
-    // tooltip submenu — disambiguated by the sibling 'Use as Group Tooltip' (a second Edit.../
-    // Properties... pair lives under the Grid Color Coding group).
+    // Step 3-4: the Tooltip submenu is pre-rendered but ZERO-SIZE until the group is hovered.
+    // Its items are disambiguated by the sibling 'Use as Group Tooltip' (a second
+    // Edit.../Properties... pair lives under the Grid Color Coding group).
     const sub = await page.evaluate(async () => {
       const items = Array.from(document.querySelectorAll('.d4-menu-item'));
       let ttNode: Element | null = null;
@@ -482,10 +437,8 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
   });
 
   await softStep('Scenario 4 Step 4 — Tooltip > Edit... opens the "Edit Tooltip" modal; CANCEL closes it cleanly (GROK-19054)', async () => {
-    // The context menu is still open from the previous step. Hover the Tooltip group to lay out
-    // its submenu (the submenu is pre-rendered but zero-size until the group is hovered), then click
-    // the tooltip-group's own Edit... — disambiguated by sibling context ('Use as Group Tooltip'),
-    // since a second Edit... exists under the Grid Color Coding group.
+    // The context menu is still open from the previous step. Hover the Tooltip group, then click
+    // its own Edit... (disambiguated by the 'Use as Group Tooltip' sibling).
     const opened = await page.evaluate(async () => {
       const items = Array.from(document.querySelectorAll('.d4-menu-item'));
       let ttNode: Element | null = null;
