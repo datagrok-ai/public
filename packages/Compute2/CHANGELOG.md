@@ -2,7 +2,6 @@
 
 ## v.next
 
-* Run comparison: chart two compared scalar values as a PC plot; the Radar option now requires three
 * Fixed context help not showing for functions annotated with `readme` instead of `help`
 
 ## 1.5.8 (2026-07-07)

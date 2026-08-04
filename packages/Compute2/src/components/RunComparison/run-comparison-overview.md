@@ -97,7 +97,7 @@ Two design rules keep the model simple:
 Everything re-derives from `entries` + the selections:
 
 1. `indexColumnsMap` / `splitColumnsMap` — validated Map form of the selections (a pick becomes invisible if its type toggle is off, unless it's the annotated default).
-2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted by `defaultCoverage` (coverage under default enablement) so toggling candidates never reorders the list; the row still displays the live enabled `coverage`. Changing an index selection immediately re-runs matching.
+2. `targets` — `matchScalarTargets` + `matchColumnTargets`, sorted scalars first, then columns, alphabetically by display name — stable, so toggling candidates never reorders the list; the row displays the live enabled `coverage`. Changing an index selection immediately re-runs matching.
 3. `selectedTarget`, `compatibleTargets` (multi-value candidates for the current anchor), `filteredTargets`.
 4. `comparison` — the final result object: calls the right builder based on `target.kind` and `multiMode`, wrapped in `markRaw` (DataFrames must not be made reactive).
 5. `indexRows` / `filteredIndexRows` — via `computeIndexRows` for the picker UI.

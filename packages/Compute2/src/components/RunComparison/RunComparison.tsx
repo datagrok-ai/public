@@ -206,7 +206,9 @@ export const RunComparison = Vue.defineComponent({
       return [
         ...matchScalarTargets(nodes),
         ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value),
-      ].sort((a, b) => b.defaultCoverage - a.defaultCoverage);
+      ].sort((a, b) => a.kind !== b.kind ?
+        (a.kind === 'scalar' ? -1 : 1) :
+        a.displayName.localeCompare(b.displayName));
     });
 
     // radio semantics: checking an item makes it the run's pick and unchecks the
