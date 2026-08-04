@@ -306,6 +306,20 @@
   padding: 10px;
 }
 
+/* Host for the virtualized matrix grid — a plain flex fill (not ui.box, which would pin a fixed
+   pixel width) so the grid gets a real height to virtualize against and grows with the pane. */
+.chem-sar-grid-host {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+.chem-sar-grid-host > * {
+  flex: 1;
+  min-width: 0;
+}
+
 /* matrix table.
    Auto layout (not table-layout:fixed) is required: fixed derives every column width from the
    first row, which breaks the rowSpan/colSpan model and shifts the substituent header row a

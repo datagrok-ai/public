@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {merge} from 'rxjs';
 
 import '../../../css/sar-matrix.css';
-import {drawMoleculeToCanvas, drawRdKitMoleculeToOffscreenCanvas, getRdKitModule} from '../../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas, drawRdKitMoleculeToOffscreenCanvas, getRdKitModule, getRdKitService}
+  from '../../utils/chem-common-rdkit';
 import {getMolSafe} from '../../utils/mol-creation_rdkit';
 import {renderMolecule} from '../../rendering/render-molecule';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
@@ -53,6 +55,11 @@ const COLSORT_FREQUENCY = 'None';
 const COLSORT_POTENCY = 'Potency';
 const COLSORT_MW = 'Molecular weight';
 const COLUMN_SORTS = [COLSORT_FREQUENCY, COLSORT_POTENCY, COLSORT_MW];
+
+/** Properties that only reorder/recolor the already-assembled matrices. Changing one must NOT re-run
+ *  fragmentation and decomposition — those cost seconds of RDKit worker time and produce identical
+ *  matrices. Every other property (columns, scaling, cutoffs, prediction) does change the assembly. */
+const RERANK_ONLY_PROPS = ['rankScheme', 'activityDirection'];
 
 /** Which end of the activity scale is "more potent". Auto derives it from scaling (only −lg is
  *  higher-is-better); the explicit options cover pre-computed pIC50/pKi/%-inhibition left on `none`. */
@@ -210,14 +217,107 @@ function renderAlignedOnColor(molStr: string, w: number, h: number, argb: number
     const offscreen = new OffscreenCanvas(nW, nH);
     drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreen, null,
       {clearBackground: true, backgroundColour: argbToRgba(argb)});
-    const image = offscreen.getContext('2d')!.getImageData(0, 0, nW, nH);
-    canvas.getContext('2d')!.putImageData(image, 0, 0);
+    // Blit the offscreen across directly. getImageData/putImageData would walk every pixel through
+    // an unpremultiplied byte array on the CPU, which is both slower and lossy on anti-aliased edges.
+    canvas.getContext('2d')!.drawImage(offscreen, 0, 0);
   } catch (e) {
     // leave the canvas blank on a malformed structure
   } finally {
     molCtx?.mol?.delete();
   }
   return canvas;
+}
+
+/** Rendered-depiction cache for the grid path, keyed by molecule + alignment template + rounded CSS
+ *  size + baked background. `onCellRender` fires per visible cell on every repaint (scroll, selection,
+ *  invalidate), so a scrolled/re-highlighted matrix reuses the produced canvas instead of re-running
+ *  RDKit. Bounded by BYTES, not entries: the canvases are device-pixel sized, so at devicePixelRatio 2
+ *  one body cell already costs a quarter of a megabyte and an entry cap would let the cache reach
+ *  hundreds of megabytes. Least-recently-used entries are evicted first (Map insertion order, refreshed
+ *  on every hit). */
+const cellCanvasCache = new Map<string, HTMLCanvasElement>();
+const CELL_CANVAS_CACHE_MAX_BYTES = 64 * 1024 * 1024;
+let cellCanvasCacheBytes = 0;
+
+/** Backing-store size of a cached canvas: 4 bytes (RGBA) per device pixel. */
+function canvasBytes(canvas: HTMLCanvasElement): number {
+  return canvas.width * canvas.height * 4;
+}
+
+/** Drop every rendered depiction and the aligned-molblock layouts behind them. Called when the
+ *  matrices are rebuilt: none of the cached keys can be hit again, and the canvases hold tens of
+ *  megabytes of device-pixel bitmaps until they are released. */
+export function clearDepictionCaches(): void {
+  cellCanvasCache.clear();
+  cellCanvasCacheBytes = 0;
+  alignCache.clear();
+}
+
+/** Depiction canvas for a grid cell/header. A null template gives a straightened standalone depiction
+ *  (substituent headers); a template aligns to the shared core (cells, cores). The returned canvas is
+ *  intrinsically device-pixel sized (the render helpers multiply by devicePixelRatio), so drawing it
+ *  into the grid context at CSS size stays crisp under that context's own DPR scale. */
+function cachedCellCanvas(smiles: string, template: string | null, w: number, h: number,
+  argb: number): HTMLCanvasElement {
+  const key = `${smiles}|${template ?? ''}|${Math.round(w)}x${Math.round(h)}|${argb}`;
+  const cached = cellCanvasCache.get(key);
+  if (cached !== undefined) {
+    // Re-insert so this key moves to the end of the Map's insertion order: eviction takes the front,
+    // which is then the least recently used entry.
+    cellCanvasCache.delete(key);
+    cellCanvasCache.set(key, cached);
+    return cached;
+  }
+  const canvas = renderAlignedOnColor(smiles, w, h, argb, template) as HTMLCanvasElement;
+  cellCanvasCache.set(key, canvas);
+  cellCanvasCacheBytes += canvasBytes(canvas);
+  // Never evict the entry just inserted — the caller is about to draw it.
+  while (cellCanvasCacheBytes > CELL_CANVAS_CACHE_MAX_BYTES && cellCanvasCache.size > 1) {
+    const oldest = cellCanvasCache.keys().next();
+    if (oldest.done)
+      break;
+    const evicted = cellCanvasCache.get(oldest.value);
+    cellCanvasCache.delete(oldest.value);
+    if (evicted !== undefined)
+      cellCanvasCacheBytes -= canvasBytes(evicted);
+  }
+  return canvas;
+}
+
+/** Resolve a Datagrok CSS palette variable (e.g. `--grey-6`) to a color string for canvas painting,
+ *  memoized by name so per-cell paints don't re-run `getComputedStyle`. Falls back to `fallback` when
+ *  the variable is unset. */
+const cssColorCache = new Map<string, string>();
+function cssColor(root: HTMLElement, name: string, fallback: string): string {
+  const cached = cssColorCache.get(name);
+  if (cached !== undefined)
+    return cached;
+  let value = '';
+  try {
+    value = getComputedStyle(root).getPropertyValue(name).trim();
+  } catch {
+    value = '';
+  }
+  const resolved = value || fallback;
+  cssColorCache.set(name, resolved);
+  return resolved;
+}
+
+const GRID_FONT = 'Roboto, "Segoe UI", sans-serif';
+
+/** Canonical SMILES for display. The cell's structure is the raw molecule-column value, which for a
+ *  molblock/SDF-format column is a V2000 block — this converts it so the "SMILES" row never shows raw
+ *  molblock text. Returns '' when the structure can't be parsed. */
+function toDisplaySmiles(molStr: string): string {
+  let molCtx = null;
+  try {
+    molCtx = getMolSafe(molStr, {}, getRdKitModule());
+    return molCtx.mol ? molCtx.mol.get_smiles() : '';
+  } catch {
+    return '';
+  } finally {
+    molCtx?.mol?.delete();
+  }
 }
 
 /** Identity of a transfer's source core within its section (same- and cross-series kept apart). The
@@ -230,6 +330,22 @@ function transferSourceKey(t: Transfer): string {
 /** Leave-one-out R² as text: two decimals, or "<0" when the additive model is worse than the mean. */
 function formatR2(r2: number): string {
   return r2 >= 0 ? r2.toFixed(2) : '<0';
+}
+
+/** The rendered matrix grid plus the per-render header state. `onCellRender` fires for every visible
+ *  header cell on every repaint, so the visible-column list, the group boundaries and the column
+ *  captions are computed once when the grid is built instead of per cell per repaint. */
+interface MatrixGridState {
+  grid: DG.Grid;
+  colKeyToCi: Map<string, number>;
+  matrix: SarMatrix;
+  /** Visible column indices, in display order. */
+  colIdxs: number[];
+  /** Visible column indices that begin an R-position group — only those draw the position label. */
+  firstOfGroup: Set<number>;
+  /** `columnSortCaption` per visible column index; recomputed whenever the grid is rebuilt, which is
+   *  what the Label control does, so a caption can never outlive the metric it was computed for. */
+  captions: Map<number, string>;
 }
 
 export class SarMatrixViewer extends DG.JsViewer {
@@ -272,11 +388,24 @@ export class SarMatrixViewer extends DG.JsViewer {
   /** Set when a recompute is requested while one is already running, so it is re-queued after. */
   private dirty = false;
   private computeTimer = 0;
+  /** Set in `detach`, so an in-flight compute can't render into a closed viewer. */
+  private detached = false;
   /** Cell width for the current render, fitted to the pane by `fitCellWidth`. */
   private cellW = CELL_W;
   /** Molblock template for the current matrix; cells and cores are aligned to it so the shared
-   *  core points the same way everywhere. Set per matrix in buildMatrixTable/buildTransferPane. */
+   *  core points the same way everywhere. Set per row by the grid painters, and per side by the
+   *  transfer pane. */
   private alignTemplate: string | null = null;
+  /** The virtualized matrix grid currently on screen (null while a transfer pane is shown). Held so
+   *  selection / current-row changes can repaint it with a cheap `invalidate()` — the highlight is
+   *  drawn per-cell in `paintBodyCell`, so no DOM rebuild is needed. */
+  private matrixGrid: MatrixGridState | null = null;
+  /** Subscriptions owned by the current matrix grid (render/click/tooltip/overlay), unsubscribed and
+   *  rebuilt whenever a new grid is created so repeated renders don't leak into detached grids. */
+  private matrixGridSubs: {unsubscribe(): void}[] = [];
+  /** Last pointer event over the matrix grid overlay, so a cell click can honor ctrl/shift for the
+   *  host-grid selection extend (`onCellClick` carries no DOM event). */
+  private lastGridMouseEvent: MouseEvent | null = null;
 
   constructor() {
     super();
@@ -295,6 +424,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   onTableAttached(): void {
+    this.detached = false; // the flag tracks the CURRENT attachment, not whether one ever ended
     // Cells are fitted to the pane width, so a resize needs a re-render (not a recompute).
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 200).subscribe(() => {
       if (!this.computing && this.matrices.length)
@@ -303,8 +433,11 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.subs.push(this.onContextMenu.subscribe((menu) => this.buildContextMenu(menu)));
     // Two-way link with the host grid: a selection or current-row change there highlights the
     // matching matrix cells (subscribed in onTableAttached, per the chem-search-base-viewer idiom).
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.syncSelection()));
-    this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(() => this.syncSelection()));
+    // Both streams feed one debounced subscription: as separate streams they cannot coalesce, so a
+    // single click that moves the current row AND changes the selection repaints the matrix twice.
+    this.subs.push(DG.debounce(
+      merge(this.dataFrame.selection.onChanged, this.dataFrame.onCurrentRowChanged), 50)
+      .subscribe(() => this.syncSelection()));
     // Capture-phase reset runs before a cell's own bubbling handler, so contextCell reflects only a
     // right-click that actually landed on a virtual cell (stale otherwise).
     this.host.addEventListener('contextmenu', () => this.contextCell = null, true);
@@ -319,15 +452,35 @@ export class SarMatrixViewer extends DG.JsViewer {
       const build = this.analogPanels.get(smiles)!;
       acc.addPane('SAR analysis', () => build(), true, acc.panes.length ? acc.panes[0] : null);
     }));
+    // Start the RDKit workers now so their spawn + WASM instantiation overlaps the compute debounce
+    // instead of being paid serially once the first fragmentation call arrives. A failure here is not
+    // actionable — compute() re-enters the same init and reports it properly.
+    getRdKitService().catch(() => {});
     this.scheduleCompute();
   }
 
   /** Base `detach` unsubscribes `this.subs`; also stop a pending compute and drop the analog-panel
    *  builders so a closed viewer leaves no timer firing or stale entries injecting panes. */
   detach(): void {
+    this.detached = true;
     window.clearTimeout(this.computeTimer);
     this.analogPanels.clear();
+    this.releaseMatrixGrid();
     super.detach();
+  }
+
+  /** Let go of the matrix grid currently on screen. Dropping the DOM is not enough: the
+   *  render/click/tooltip subscriptions keep the grid — and through it its scaffold DataFrame and the
+   *  whole SarMatrix — reachable, and a Dart-backed grid is only released when it is closed. */
+  private releaseMatrixGrid(): void {
+    this.matrixGridSubs.forEach((s) => s.unsubscribe());
+    this.matrixGridSubs = [];
+    try {
+      this.matrixGrid?.grid?.close?.();
+    } catch (e) {
+      // A standalone (view-less) grid may not support close; dropping the reference is enough.
+    }
+    this.matrixGrid = null;
   }
 
   /** Move the single "current" ring to `td` (real or virtual), clearing it from the previous cell. */
@@ -346,6 +499,9 @@ export class SarMatrixViewer extends DG.JsViewer {
   private syncSelection(): void {
     if (!this.dataFrame)
       return;
+    // The virtualized matrix grid draws the selection/current ring per cell in `paintBodyCell`, so a
+    // host-grid change only needs a repaint of the visible cells.
+    this.matrixGrid?.grid.invalidate();
     const selection = this.dataFrame.selection;
     this.cellByMolIdx.forEach((td, molIdx) => td.classList.toggle('chem-sar-cell-selected', selection.get(molIdx)));
     const current = this.dataFrame.currentRowIdx;
@@ -461,7 +617,28 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
+    // Ranking and potency direction don't change the fragmentation, so they must not trigger a full
+    // rebuild — re-fragmenting to reorder cards or flip the color direction costs seconds of RDKit
+    // worker time for a result the already-assembled matrices can produce directly.
+    if (property !== null && RERANK_ONLY_PROPS.includes(property.name)) {
+      this.reRank();
+      return;
+    }
     this.scheduleCompute();
+  }
+
+  /** Re-rank the assembled matrices and redraw, without re-fragmenting. Used by the properties that
+   *  only affect ordering/direction, and by the navigator's "Rank by" control. */
+  private reRank(): void {
+    if (!this.matrices.length) {
+      this.scheduleCompute(); // nothing assembled yet — the first build still has to run
+      return;
+    }
+    this.matrices = rankMatrices(this.matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
+    this.computeTransfers();
+    this.selKind = 'matrix';
+    this.selIndex = 0;
+    this.render();
   }
 
   /** Coalesce rapid property changes (e.g. from setOptions) into a single compute. */
@@ -486,6 +663,10 @@ export class SarMatrixViewer extends DG.JsViewer {
 
     this.computing = true;
     this.analogPanels.clear(); // drop stale analog-panel closures from the previous matrices
+    clearDepictionCaches(); // the previous matrices' depictions can never be hit again
+    // Emptying the host detaches the grid's DOM but does not release the Dart-backed grid or its
+    // subscriptions; without this the failure path below would leave one live and repainting forever.
+    this.releaseMatrixGrid();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
     const progress = DG.TaskBarProgressIndicator.create('Building SAR matrices...');
@@ -497,12 +678,19 @@ export class SarMatrixViewer extends DG.JsViewer {
         threshold: this.threshold,
         rankScheme: this.rankScheme as SarRankScheme,
       };
-      this.matrices = await runSarMatrix(molecules, activity as DG.Column<number>, params);
+      const matrices = await runSarMatrix(molecules, activity as DG.Column<number>, params);
+      // The viewer may have been closed while the workers were running; rendering into it now would
+      // build a grid nothing will ever release.
+      if (this.detached)
+        return;
+      this.matrices = matrices;
       this.computeTransfers();
       this.selKind = 'matrix';
       this.selIndex = 0;
       this.render();
     } catch (e) {
+      if (this.detached)
+        return; // a viewer the user already closed must not report its own teardown as a failure
       const message = e instanceof Error ? e.message : String(e);
       ui.empty(this.host);
       this.host.appendChild(ui.divText(`SAR Matrix failed: ${message}`));
@@ -512,7 +700,8 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.computing = false;
       if (this.dirty) {
         this.dirty = false;
-        this.scheduleCompute();
+        if (!this.detached)
+          this.scheduleCompute();
       }
     }
   }
@@ -736,13 +925,11 @@ export class SarMatrixViewer extends DG.JsViewer {
     const rankInput = ui.input.choice('Rank by', {
       value: rankValue,
       items: [SarRankScheme.Potency, SarRankScheme.Discontinuity, SarRankScheme.Preferred],
+      // A field assignment raises no onPropertyChanged — the property has no accessor on the viewer —
+      // so re-rank explicitly here. The property-panel path reaches the same method via that event.
       onValueChanged: (value) => {
         this.rankScheme = value!;
-        this.matrices = rankMatrices(this.matrices, value! as SarRankScheme, this.higherIsBetter);
-        this.computeTransfers();
-        this.selKind = 'matrix';
-        this.selIndex = 0;
-        this.render();
+        this.reRank();
       },
     });
 
@@ -908,75 +1095,358 @@ export class SarMatrixViewer extends DG.JsViewer {
     return td;
   }
 
-  private buildMatrixTable(matrix: SarMatrix): HTMLElement {
-    const table = ui.element('table', 'chem-sar-table') as HTMLTableElement;
-    // Rows must live in a single <tbody>: appending <tr> straight to <table> puts each row in its
-    // own anonymous row group, and rowSpan cannot cross row groups — the corner's rowSpan=2 would
-    // be clamped and the substituent header row would render a column left of the body cells.
-    const tbody = ui.element('tbody') as HTMLTableSectionElement;
-    table.appendChild(tbody);
+  /**
+   * Virtualized matrix render: a scaffold DataFrame (one row per core, one string column per visible
+   * substituent plus a pinned 'Core' column) backs a DG.Grid whose every cell — body, core, and
+   * R-group header — is hand-painted in `onCellRender`. Only viewport cells draw, so a large matrix no
+   * longer renders every core×substituent up front, and selection/current-row changes repaint via
+   * `invalidate` instead of rebuilding the DOM.
+   */
+  private buildMatrixGrid(matrix: SarMatrix): HTMLElement {
     const colIdxs = this.visibleColIdxs(matrix);
-    const groups = this.groupColumns(matrix, colIdxs);
     this.cellW = this.fitCellWidth(colIdxs.length);
-    // Each row is aligned to ITS OWN core so every cell in the row shows that core the same way
-    // (a shared row-0 template would misalign the other cores, e.g. isoxazole against a pyrazole).
-    // The corner shows row 0's core, so it uses row 0's template.
-    const cornerTemplate = buildAlignmentTemplate(matrix.rows[0]?.coreSmiles ?? '');
-    this.alignTemplate = cornerTemplate;
+    // Header state is computed here, once per grid: `onCellRender` runs for every visible header cell
+    // on every repaint, and rebuilding the column list (or rescanning rows for a column's mean
+    // potency) there is quadratic in the column count for a result that cannot change until rebuild.
+    const firstOfGroup = new Set(this.groupColumns(matrix, colIdxs).map((group) => group.colIdxs[0]));
+    const captions = new Map<number, string>();
+    for (const ci of colIdxs)
+      captions.set(ci, this.columnSortCaption(matrix, ci));
 
-    // Header row 1: corner (aligned core) + spanned position-group headers.
-    const headRow1 = ui.element('tr') as HTMLTableRowElement;
-    const corner = ui.element('td') as HTMLTableCellElement;
-    corner.className = 'chem-sar-corner';
-    corner.rowSpan = 2;
-    corner.appendChild(ui.divText('Aligned core', 'chem-sar-corner-label'));
-    corner.appendChild(renderAlignedOnColor(matrix.rows[0]?.coreSmiles ?? '',
-      CORE_W, CORE_H, CORE_BG_ARGB, this.alignTemplate));
-    headRow1.appendChild(corner);
-
-    for (const group of groups) {
-      const th = ui.element('th') as HTMLTableCellElement;
-      th.className = 'chem-sar-cgroup';
-      th.colSpan = group.colIdxs.length;
-      th.appendChild(ui.divText(group.position, 'chem-sar-cgroup-title'));
-      const otherRefs = matrix.positions.filter((p) => p !== group.position);
-      if (otherRefs.length)
-        th.appendChild(ui.divText(`${otherRefs.join(', ')} at ref`, 'chem-sar-cgroup-cap'));
-      headRow1.appendChild(th);
-    }
-    tbody.appendChild(headRow1);
-
-    // Header row 2: one drawn-substituent header per visible column, with the active sort key when
-    // sorting by potency or weight so the left-to-right gradient is legible.
-    const headRow2 = ui.element('tr') as HTMLTableRowElement;
+    const df = DG.DataFrame.create(matrix.rows.length);
+    df.columns.addNewString('Core');
+    const colKeyToCi = new Map<string, number>();
+    // Stable string keys (never the grid column idx, which pinning and the hidden row header shift).
     for (const ci of colIdxs) {
-      const th = ui.element('th') as HTMLTableCellElement;
-      th.className = 'chem-sar-chd';
-      th.style.width = `${this.cellW}px`;
-      th.appendChild(renderMoleculeOnColor(matrix.columns[ci].substSmiles,
-        Math.min(this.cellW, HEADER_W * 2), HEADER_H, HEADER_ARGB));
-      const caption = this.columnSortCaption(matrix, ci);
-      if (caption)
-        th.appendChild(ui.divText(caption, 'chem-sar-chd-sort'));
-      headRow2.appendChild(th);
+      const key = `c${ci}`;
+      df.columns.addNewString(key);
+      colKeyToCi.set(key, ci);
     }
-    tbody.appendChild(headRow2);
 
-    // Body: one row per core, each aligned to its own core template.
-    matrix.rows.forEach((row, ri) => {
-      this.alignTemplate = buildAlignmentTemplate(row.coreSmiles) ?? cornerTemplate;
-      const tr = ui.element('tr') as HTMLTableRowElement;
-      const rhd = ui.element('td') as HTMLTableCellElement;
-      rhd.className = 'chem-sar-rhd';
-      rhd.appendChild(renderAlignedOnColor(row.coreSmiles, CORE_W, CORE_H, CORE_BG_ARGB, this.alignTemplate));
-      rhd.appendChild(ui.divText(row.label, 'chem-sar-row-label'));
-      tr.appendChild(rhd);
-      for (const ci of colIdxs)
-        tr.appendChild(this.buildMatrixCell(matrix, matrix.cells[ri][ci], ri, ci));
-      tbody.appendChild(tr);
-    });
+    const grid = DG.Grid.create(df);
+    // A fixed header height fits the position band + R-group depiction + sort caption; the built-in
+    // row-number column is hidden because the cores live in the pinned 'Core' column.
+    grid.setOptions({colHeaderHeight: HEADER_H + 36, rowHeight: CELL_H, showRowHeader: false});
+    grid.col('Core')!.width = CORE_W;
+    colKeyToCi.forEach((_ci, key) => grid.col(key)!.width = this.cellW);
+    grid.col('Core')!.pin();
+    const state: MatrixGridState = {grid, colKeyToCi, matrix, colIdxs, firstOfGroup, captions};
 
-    return table;
+    // Owned by this grid instance; unsubscribed when the next grid replaces it (or on detach) so
+    // repeated renders can't leak render/click/tooltip handlers into detached grids.
+    this.matrixGridSubs.forEach((s) => s.unsubscribe());
+    this.matrixGridSubs = [];
+
+    this.matrixGridSubs.push(grid.onCellRender.subscribe((args) => {
+      const c = args.cell;
+      const isColHeader = c.isColHeader;
+      if (!isColHeader && !c.isTableCell)
+        return;
+      const b = args.bounds;
+      if (!b || b.width < 1 || b.height < 1)
+        return;
+      const g = args.g;
+      // The grid's render context already carries a devicePixelRatio scale, so paint in CSS
+      // coordinates; save/restore isolates the fillStyle/font/lineDash changes from other cells.
+      g.save();
+      try {
+        const name = c.gridColumn.name;
+        if (isColHeader)
+          this.paintHeader(g, b, name, state);
+        else {
+          const ri = grid.gridRowToTable(c.gridRow);
+          if (ri >= 0 && ri < matrix.rows.length) {
+            if (name === 'Core')
+              this.paintCore(g, b, matrix, ri);
+            else {
+              const ci = colKeyToCi.get(name);
+              if (ci !== undefined)
+                this.paintBodyCell(g, b, matrix, ri, ci);
+            }
+          }
+        }
+      } finally {
+        g.restore();
+      }
+      args.preventDefault();
+    }));
+
+    this.matrixGridSubs.push(grid.onCellClick.subscribe((c) => this.onGridCellClick(grid, matrix, colKeyToCi, c)));
+    this.matrixGridSubs.push(grid.onCellTooltip((c, x, y) =>
+      this.onGridCellTooltip(grid, matrix, colKeyToCi, c, x, y)));
+
+    // Track the pointer for ctrl/shift selection extend, and decode right-clicks to the assembled
+    // virtual cell so the viewer's context menu can offer a per-cell make-list add.
+    const overlay = grid.overlay;
+    const onMouseDown = (e: MouseEvent): void => {this.lastGridMouseEvent = e;};
+    const onContextMenu = (e: MouseEvent): void => {
+      this.contextCell = null;
+      const rect = overlay.getBoundingClientRect();
+      const hit = grid.hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      if (!hit || !hit.isTableCell)
+        return;
+      const name = hit.gridColumn.name;
+      if (name === 'Core')
+        return;
+      const ci = colKeyToCi.get(name);
+      if (ci === undefined)
+        return;
+      const ri = grid.gridRowToTable(hit.gridRow);
+      if (ri < 0 || ri >= matrix.rows.length)
+        return;
+      const cell = matrix.cells[ri][ci];
+      if (cell.kind === 'virtual' && cell.smiles)
+        this.contextCell = {matrix, ri, ci};
+    };
+    overlay.addEventListener('mousedown', onMouseDown);
+    overlay.addEventListener('contextmenu', onContextMenu);
+    this.matrixGridSubs.push({unsubscribe: () => overlay.removeEventListener('mousedown', onMouseDown)});
+    this.matrixGridSubs.push({unsubscribe: () => overlay.removeEventListener('contextmenu', onContextMenu)});
+
+    this.matrixGrid = state;
+
+    // The grid virtualizes off its own height, so give it a plain flex host that fills the pane (not
+    // ui.box, which would pin a fixed pixel width and stop the matrix growing with the pane).
+    grid.root.style.width = '100%';
+    grid.root.style.height = '100%';
+    return ui.div([grid.root], 'chem-sar-grid-host');
+  }
+
+  /** Click on a grid body cell: open the platform Molecule context, set the host grid's current row /
+   *  selection, and register the cell's SAR panel — mirrors `buildMatrixCell`'s click handler. */
+  private onGridCellClick(grid: DG.Grid, matrix: SarMatrix, colKeyToCi: Map<string, number>,
+    c: DG.GridCell): void {
+    if (!c.isTableCell)
+      return;
+    const name = c.gridColumn.name;
+    if (name === 'Core')
+      return;
+    const ci = colKeyToCi.get(name);
+    if (ci === undefined)
+      return;
+    const ri = grid.gridRowToTable(c.gridRow);
+    if (ri < 0 || ri >= matrix.rows.length)
+      return;
+    const cell = matrix.cells[ri][ci];
+    if (cell.kind === 'empty' || cell.value === null)
+      return;
+    grok.shell.windows.showContextPanel = true;
+    // A real compound becomes the host grid's current row and (ctrl/shift) extends its selection; a
+    // virtual analog has no row, so park the current row at -1 to drop any previous real-cell ring.
+    if (cell.molIdx !== null) {
+      this.dataFrame.currentRowIdx = cell.molIdx;
+      const event = this.lastGridMouseEvent ?? new MouseEvent('click');
+      this.dataFrame.selection.handleClick((i) => i === cell.molIdx, event, true);
+    } else
+      this.dataFrame.currentRowIdx = -1;
+    // Any assembled cell opens the platform Molecule context; its SAR context is registered for the
+    // gated "SAR analysis" pane. An unassembled virtual falls back to the standalone SAR panel.
+    if (cell.smiles) {
+      this.analogPanels.set(cell.smiles, () => this.buildCellPanel(matrix, ri, ci));
+      grok.shell.o = DG.SemanticValue.fromValueType(cell.smiles, DG.SEMTYPE.MOLECULE);
+    } else
+      grok.shell.o = this.buildCellPanel(matrix, ri, ci);
+    // Repaint so the freshly-set current/selection ring shows immediately.
+    grid.invalidate();
+  }
+
+  /** Hover text for a grid cell: substituent/position for an R-group header, potency detail for a body
+   *  cell. Returns true to suppress the default tooltip. */
+  private onGridCellTooltip(grid: DG.Grid, matrix: SarMatrix, colKeyToCi: Map<string, number>,
+    c: DG.GridCell, x: number, y: number): boolean {
+    const name = c.gridColumn.name;
+    if (c.isColHeader) {
+      if (name === 'Core')
+        return true;
+      const ci = colKeyToCi.get(name);
+      if (ci === undefined)
+        return false;
+      const col = matrix.columns[ci];
+      const otherRefs = matrix.positions.filter((p) => p !== col.position);
+      const parts = [`${col.position}: ${col.substSmiles}`];
+      if (otherRefs.length)
+        parts.push(`${otherRefs.join(', ')} at ref`);
+      ui.tooltip.show(ui.divText(parts.join(' · ')), x, y);
+      return true;
+    }
+    if (!c.isTableCell || name === 'Core')
+      return false;
+    const ci = colKeyToCi.get(name);
+    if (ci === undefined)
+      return false;
+    const ri = grid.gridRowToTable(c.gridRow);
+    if (ri < 0 || ri >= matrix.rows.length)
+      return false;
+    const cell = matrix.cells[ri][ci];
+    if (cell.kind === 'empty' || cell.value === null)
+      return false;
+    ui.tooltip.show(ui.divText(this.cellTooltipText(matrix, cell)), x, y);
+    return true;
+  }
+
+  /** Cell hover text — mirrors the HTML matrix: predicted (+ support) for a virtual analog, observed
+   *  (+ additive-fit check) for a real one. */
+  private cellTooltipText(matrix: SarMatrix, cell: SarMatrixCell): string {
+    const value = cell.value!;
+    const support = cell.support ?? 0;
+    if (cell.kind === 'virtual') {
+      return `Predicted ${this.formatActivity(value)} · local Free-Wilson · support n=${support}` +
+        (support <= 1 ? ' (low)' : '');
+    }
+    if (cell.fit === undefined)
+      return `Observed ${this.formatActivity(value)}`;
+    const range = matrix.maxActivity - matrix.minActivity;
+    const matches = range === 0 || Math.abs(value - cell.fit) <= MATCH_FRACTION * range;
+    return `Observed ${this.formatActivity(value)} · Free-Wilson fit ${this.formatActivity(cell.fit)} · ` +
+      (matches ? '✓ matches' : 'non-additive');
+  }
+
+  /** Paint an R-group column header (position band + straightened substituent depiction + sort
+   *  caption) or the 'Core' column's "Aligned core" label. The header band is pinned on top natively. */
+  private paintHeader(g: CanvasRenderingContext2D, b: DG.Rect, name: string, state: MatrixGridState): void {
+    const grey6 = cssColor(this.root, '--grey-6', '#4a4a4a');
+    const grey5 = cssColor(this.root, '--grey-5', '#7d7d7d');
+    if (name === 'Core') {
+      g.fillStyle = grey5;
+      g.font = `italic 11px ${GRID_FONT}`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('Aligned core', b.x + b.width / 2, b.y + b.height / 2, b.width - 6);
+      return;
+    }
+    const ci = state.colKeyToCi.get(name);
+    if (ci === undefined)
+      return;
+    const matrix = state.matrix;
+    g.fillStyle = DG.Color.toHtml(HEADER_ARGB);
+    g.fillRect(b.x, b.y, b.width, b.height);
+
+    // Draw the position label only on the first column of a group — per-cell clipping can't paint a
+    // true cross-column spanner, so this reads as the group header (the "at ref" detail is on hover).
+    const posBandH = 16;
+    if (state.firstOfGroup.has(ci)) {
+      g.fillStyle = grey6;
+      g.font = `600 11px ${GRID_FONT}`;
+      g.textAlign = 'left';
+      g.textBaseline = 'top';
+      g.fillText(matrix.columns[ci].position, b.x + 5, b.y + 2, b.width - 10);
+    }
+
+    const caption = state.captions.get(ci) ?? '';
+    const captionBandH = caption ? 14 : 0;
+    const depH = Math.max(1, b.height - posBandH - captionBandH);
+    const depW = Math.min(b.width, HEADER_W * 2);
+    const depCanvas = cachedCellCanvas(matrix.columns[ci].substSmiles, null, depW, depH, HEADER_ARGB);
+    g.drawImage(depCanvas, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH);
+
+    if (caption) {
+      g.fillStyle = grey5;
+      g.font = `10px ${GRID_FONT}`;
+      g.textAlign = 'center';
+      g.textBaseline = 'top';
+      g.fillText(caption, b.x + b.width / 2, b.y + posBandH + depH, b.width);
+    }
+  }
+
+  /** Paint the pinned-left core cell: the core aligned to its own template + the row label beneath. */
+  private paintCore(g: CanvasRenderingContext2D, b: DG.Rect, matrix: SarMatrix, ri: number): void {
+    const row = matrix.rows[ri];
+    // Each core aligns to its OWN template so every cell in the row shows that core the same way.
+    this.alignTemplate = buildAlignmentTemplate(row.coreSmiles);
+    const labelH = 16;
+    const molH = Math.max(1, b.height - labelH);
+    const canvas = cachedCellCanvas(row.coreSmiles, this.alignTemplate, b.width, molH, CORE_BG_ARGB);
+    g.drawImage(canvas, b.x, b.y, b.width, molH);
+    g.fillStyle = cssColor(this.root, '--grey-6', '#4a4a4a');
+    g.font = `600 11px ${GRID_FONT}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'top';
+    g.fillText(row.label, b.x + b.width / 2, b.y + molH + 1, b.width);
+  }
+
+  /** Paint one core×substituent cell: potency tint (over white), aligned assembled molecule, value
+   *  chip, virtual/deviant markers, and the host-grid selection/current ring — the grid analogue of
+   *  `buildMatrixCell`. */
+  private paintBodyCell(g: CanvasRenderingContext2D, b: DG.Rect, matrix: SarMatrix, ri: number,
+    ci: number): void {
+    const cell = matrix.cells[ri][ci];
+    if (cell.kind === 'empty' || cell.value === null) {
+      g.fillStyle = cssColor(this.root, '--white', '#ffffff');
+      g.fillRect(b.x, b.y, b.width, b.height);
+      return;
+    }
+    const value = cell.value;
+    const isVirtual = cell.kind === 'virtual';
+    const support = cell.support ?? 0;
+    // Thin predictions read fainter than well-supported ones; real cells are solid.
+    const alpha = isVirtual ?
+      Math.round(VIRTUAL_ALPHA_MIN + (VIRTUAL_ALPHA - VIRTUAL_ALPHA_MIN) * Math.min(1, support / FULL_SUPPORT)) :
+      REAL_ALPHA;
+    // White base + the semi-transparent tint reproduces the HTML cell's "tint over the pane" without
+    // depending on how the grid clears cells; the molecule then draws on a transparent canvas over it.
+    g.fillStyle = cssColor(this.root, '--white', '#ffffff');
+    g.fillRect(b.x, b.y, b.width, b.height);
+    g.fillStyle = DG.Color.toHtml(this.tint(matrix, value, alpha));
+    g.fillRect(b.x, b.y, b.width, b.height);
+    if (cell.smiles !== null) {
+      this.alignTemplate = buildAlignmentTemplate(matrix.rows[ri].coreSmiles);
+      const canvas = cachedCellCanvas(cell.smiles, this.alignTemplate, b.width, b.height, CORE_BG_ARGB);
+      g.drawImage(canvas, b.x, b.y, b.width, b.height);
+    }
+
+    // '~value' chip, top-left, fainter for a single-observation prediction.
+    this.paintChip(g, b, `${isVirtual ? '~' : ''}${this.formatActivity(value)}`, isVirtual,
+      isVirtual && support <= 1);
+
+    // A real cell whose observed value departs from the additive fit gets an amber corner dot.
+    const range = matrix.maxActivity - matrix.minActivity;
+    const fitMatches = (fit: number): boolean => range === 0 || Math.abs(value - fit) <= MATCH_FRACTION * range;
+    if (!isVirtual && cell.fit !== undefined && !fitMatches(cell.fit)) {
+      g.fillStyle = cssColor(this.root, '--orange-2', '#e8853a');
+      g.beginPath();
+      g.arc(b.x + b.width - 8, b.y + 8, 3.5, 0, Math.PI * 2);
+      g.fill();
+    }
+
+    // Cell outline: dashed for a virtual analog, a light solid frame otherwise.
+    g.lineWidth = 1;
+    if (isVirtual) {
+      g.setLineDash([3, 2]);
+      g.strokeStyle = cssColor(this.root, '--grey-4', '#b5b5b5');
+    } else {
+      g.setLineDash([]);
+      g.strokeStyle = cssColor(this.root, '--grey-2', '#e0e0e0');
+    }
+    g.strokeRect(b.x + 0.5, b.y + 0.5, b.width - 1, b.height - 1);
+    g.setLineDash([]);
+
+    // Host-grid link: a selected row's cell gets a blue ring; the current row a stronger one.
+    if (cell.molIdx !== null && this.dataFrame.selection.get(cell.molIdx)) {
+      g.lineWidth = 2;
+      g.strokeStyle = cssColor(this.root, '--blue-1', '#2083d5');
+      g.strokeRect(b.x + 1, b.y + 1, b.width - 2, b.height - 2);
+    }
+    if (cell.molIdx !== null && cell.molIdx === this.dataFrame.currentRowIdx) {
+      g.lineWidth = 3;
+      g.strokeStyle = cssColor(this.root, '--blue-3', '#0d5ba6');
+      g.strokeRect(b.x + 1.5, b.y + 1.5, b.width - 3, b.height - 3);
+    }
+  }
+
+  /** Draw the potency chip (a translucent white pill + text) at the cell's top-left. */
+  private paintChip(g: CanvasRenderingContext2D, b: DG.Rect, text: string, isVirtual: boolean,
+    weak: boolean): void {
+    g.font = `${isVirtual ? 'italic ' : ''}600 10px ${GRID_FONT}`;
+    g.textAlign = 'left';
+    g.textBaseline = 'top';
+    const padX = 3;
+    const chipW = g.measureText(text).width + padX * 2;
+    g.globalAlpha = weak ? 0.65 : 1;
+    g.fillStyle = 'rgba(255, 255, 255, 0.82)';
+    g.fillRect(b.x + 3, b.y + 3, chipW, 13);
+    g.fillStyle = cssColor(this.root, isVirtual ? '--grey-5' : '--grey-6', isVirtual ? '#7d7d7d' : '#4a4a4a');
+    g.fillText(text, b.x + 3 + padX, b.y + 5, b.width - 6);
+    g.globalAlpha = 1;
   }
 
   /** Format an activity value: no decimals at ≥100, one decimal below. */
@@ -1034,8 +1504,9 @@ export class SarMatrixViewer extends DG.JsViewer {
         'chem-sar-cp-structbox'));
     }
 
-    if (cell.smiles)
-      panel.appendChild(this.cpRow('SMILES', ui.divText(cell.smiles, 'chem-sar-cp-smiles')));
+    const displaySmiles = cell.smiles ? toDisplaySmiles(cell.smiles) : '';
+    if (displaySmiles)
+      panel.appendChild(this.cpRow('SMILES', ui.divText(displaySmiles, 'chem-sar-cp-smiles')));
     const substs = matrix.positions
       .map((p) => (p === column.position ? column.substSmiles : matrix.refValues[p])).filter((v) => v);
     panel.appendChild(this.cpRow(isVirtual ? 'Core × R' : 'Core',
@@ -1296,15 +1767,22 @@ export class SarMatrixViewer extends DG.JsViewer {
     controls.push(labelInput.root);
     const controlBar = ui.divH(controls, 'chem-sar-control-bar');
 
-    const scroll = ui.div([this.buildMatrixTable(matrix)], 'chem-sar-main-scroll');
-    return ui.divV([infoBar, controlBar, scroll], 'chem-sar-main');
+    // The grid scrolls and virtualizes internally, so it goes in a flex host that fills the pane (no
+    // outer .chem-sar-main-scroll, which would add a second scroll container and its own padding).
+    return ui.divV([infoBar, controlBar, this.buildMatrixGrid(matrix)], 'chem-sar-main');
   }
 
   private render(): void {
     // Keep the navigator scrolled where it was — selecting a card lower down must not jump it to the top.
     const prevNav = this.host.querySelector('.chem-sar-nav-list');
     const navScroll = prevNav instanceof HTMLElement ? prevNav.scrollTop : 0;
+    // Before the DOM goes: a transfer pane leaves no grid behind, and buildMatrixGrid installs a new
+    // one, so the previous grid (and everything its handlers close over) has to be let go here.
+    this.releaseMatrixGrid();
     ui.empty(this.host);
+    // Palette values are memoized by variable name only, so a theme switch would otherwise keep
+    // painting the previous theme's colors for the life of the session.
+    cssColorCache.clear();
     this.cellByMolIdx.clear(); // rebuilt as this render's cells are created
     this.currentCellEl = null; // its DOM element is gone; syncSelection re-points it from currentRowIdx
     if (this.matrices.length === 0) {
