@@ -2,7 +2,7 @@ import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/
 import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
 import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
-  isSplitCandidate, selectionToMap, computeIndexRows,
+  isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
 } from '../components/RunComparison/selection';
 import {ColumnBinding, ColumnTarget} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -314,5 +314,89 @@ category('RunComparison: index rows', () => {
     expect(map.get('a')!.get('t'), 'time');
     expect(map.get('a')!.has('u'), false);
     expect(map.get('b')!.size, 0);
+  });
+});
+
+category('RunComparison: equal values', () => {
+  const scalarTarget = (values: (number | null)[]) => {
+    const entries = values.map((value, i) => makeEntry(`e${i}`, [{name: 'x', value}]));
+    return matchScalarTargets(entries)[0];
+  };
+
+  const binding = (
+    entryId: string, columnName = 'height', splitColumnName?: string,
+  ): ColumnBinding => ({
+    entryId, tablePath: 't', tableName: 't', columnName, indexColumnName: 'time', splitColumnName,
+  });
+  const columnTarget = (bindings: ColumnBinding[]): ColumnTarget => ({
+    kind: 'column', key: 'k', displayName: 'height', confidence: 'exact', unitsWarning: false,
+    coverage: bindings.length, defaultCoverage: bindings.length, total: bindings.length,
+    candidates: [], bindings,
+  });
+  const getter = (data: Record<string, Record<string, unknown[]>>) =>
+    (entryId: string, _tablePath: string, columnName: string) => data[entryId]?.[columnName];
+
+  test('scalar target with identical values is equal', async () => {
+    expect(isTargetEqualAcrossRuns(scalarTarget([5, 5, 5]), () => undefined), true);
+    expect(isTargetEqualAcrossRuns(scalarTarget([5, 6]), () => undefined), false);
+    expect(isTargetEqualAcrossRuns(scalarTarget([null, null]), () => undefined), true);
+  });
+
+  test('numbers within 0.1% relative tolerance are equal', async () => {
+    expect(isTargetEqualAcrossRuns(scalarTarget([1000, 1000.5]), () => undefined), true);
+    expect(isTargetEqualAcrossRuns(scalarTarget([1000, 1002]), () => undefined), false);
+    expect(isTargetEqualAcrossRuns(scalarTarget([-1000, -1000.5]), () => undefined), true);
+    expect(isTargetEqualAcrossRuns(scalarTarget([0, 1e-9]), () => undefined), false);
+    expect(isTargetEqualAcrossRuns(scalarTarget([5, null]), () => undefined), false);
+    const target = columnTarget([binding('a'), binding('b')]);
+    expect(isTargetEqualAcrossRuns(target, getter({
+      a: {height: [1000, 2000], time: [0, 1]}, b: {height: [1000.5, 1999], time: [0, 1]},
+    })), true);
+    expect(isTargetEqualAcrossRuns(target, getter({
+      a: {height: [1000, 2000], time: [0, 1]}, b: {height: [1000.5, 1990], time: [0, 1]},
+    })), false);
+  });
+
+  test('single-run target is never equal', async () => {
+    const target = columnTarget([binding('a')]);
+    expect(isTargetEqualAcrossRuns(target, getter({a: {height: [1], time: [0]}})), false);
+  });
+
+  test('column target with identical value and index data is equal', async () => {
+    const target = columnTarget([binding('a'), binding('b', 'height2')]);
+    const data = {
+      a: {height: [1, 2, null], time: [0, 1, 2]},
+      b: {height2: [1, 2, null], time: [0, 1, 2]},
+    };
+    expect(isTargetEqualAcrossRuns(target, getter(data)), true);
+  });
+
+  test('differing values, index, or length break equality', async () => {
+    const target = columnTarget([binding('a'), binding('b')]);
+    expect(isTargetEqualAcrossRuns(target, getter({
+      a: {height: [1, 2], time: [0, 1]}, b: {height: [1, 3], time: [0, 1]},
+    })), false);
+    expect(isTargetEqualAcrossRuns(target, getter({
+      a: {height: [1, 2], time: [0, 1]}, b: {height: [1, 2], time: [0, 2]},
+    })), false);
+    expect(isTargetEqualAcrossRuns(target, getter({
+      a: {height: [1, 2], time: [0, 1]}, b: {height: [1], time: [0]},
+    })), false);
+  });
+
+  test('unfetchable column data counts as differing', async () => {
+    const target = columnTarget([binding('a'), binding('b')]);
+    expect(isTargetEqualAcrossRuns(target, getter({a: {height: [1], time: [0]}})), false);
+  });
+
+  test('split columns must match on both sides', async () => {
+    const withSplit = columnTarget([binding('a', 'height', 'species'), binding('b', 'height', 'species')]);
+    const same = {height: [1, 2], time: [0, 1], species: ['s1', 's2']};
+    expect(isTargetEqualAcrossRuns(withSplit, getter({a: same, b: same})), true);
+    expect(isTargetEqualAcrossRuns(withSplit, getter({
+      a: same, b: {...same, species: ['s1', 's3']},
+    })), false);
+    const mixed = columnTarget([binding('a', 'height', 'species'), binding('b')]);
+    expect(isTargetEqualAcrossRuns(mixed, getter({a: same, b: same})), false);
   });
 });

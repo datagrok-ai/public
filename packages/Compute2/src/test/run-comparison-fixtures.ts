@@ -18,7 +18,7 @@ export function makeEntry(
       name: s.name,
       valueType: s.valueType ?? 'double',
       units: s.units,
-      value: s.value ?? 0,
+      value: s.value === undefined ? 0 : s.value,
     })),
     tables: tables.map((t) => ({
       path: t.path,

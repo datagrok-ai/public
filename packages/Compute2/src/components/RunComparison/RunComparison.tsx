@@ -18,7 +18,7 @@ import {
 import {matchScalarTargets, matchColumnTargets} from './matching';
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
-  isSplitCandidate, selectionToMap, computeIndexRows,
+  isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
 import {
@@ -58,6 +58,7 @@ export const RunComparison = Vue.defineComponent({
     const allowFloatIndex = Vue.ref(false);
     const allowDatetimeIndex = Vue.ref(false);
     const mergeSameFuncs = Vue.ref(true);
+    const hideEqual = Vue.ref(true);
 
     const historySelection = Vue.shallowRef<DG.FuncCall[]>([]);
     const entries = Vue.shallowRef<ComparisonEntry[]>([]);
@@ -271,6 +272,35 @@ export const RunComparison = Vue.defineComponent({
     const indexFilter = Vue.ref('');
     const targetFilter = Vue.ref('');
 
+    // dayjs and other value objects collapse to primitives so cross-run compares work
+    const columnValues = (entryId: string, tablePath: string, columnName: string) => {
+      const entry = entries.value.find((item) => item.id === entryId);
+      const col = entry?.dataFrames.get(tablePath)?.col(columnName);
+      if (!col)
+        return undefined;
+      const values = new Array(col.length);
+      for (let i = 0; i < col.length; i++) {
+        const value = col.isNone(i) ? null : col.get(i);
+        values[i] = value instanceof Object ? value.valueOf() : value;
+      }
+      return values;
+    };
+
+    const equalTargetKeys = Vue.computed(() => {
+      if (!hideEqual.value)
+        return new Set<string>();
+      const cache = new Map<string, unknown[] | undefined>();
+      const cached = (entryId: string, tablePath: string, columnName: string) => {
+        const key = `${entryId}|${tablePath}|${columnName}`;
+        if (!cache.has(key))
+          cache.set(key, columnValues(entryId, tablePath, columnName));
+        return cache.get(key);
+      };
+      return new Set(targets.value
+        .filter((target) => isTargetEqualAcrossRuns(target, cached))
+        .map((target) => target.key));
+    });
+
     // in multi mode: suggestions plus everything already selected — a selected target
     // that became conflicting must stay visible so it can be unchecked
     const filteredTargets = Vue.computed(() => {
@@ -279,7 +309,10 @@ export const RunComparison = Vue.defineComponent({
           multiKeys.value.includes(target.key) ||
             compatibleTargets.value.some((item) => item.key === target.key)) :
         targets.value;
-      return listed.filter((target) => matchesFilter(targetFilter.value, target.displayName));
+      return listed.filter((target) =>
+        (!equalTargetKeys.value.has(target.key) ||
+          (multiMode.value && multiKeys.value.includes(target.key))) &&
+        matchesFilter(targetFilter.value, target.displayName));
     });
 
     const selectedTarget = Vue.computed(() =>
@@ -630,7 +663,14 @@ export const RunComparison = Vue.defineComponent({
       <div>
         <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
           <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Compare</div>
-          { renderListFilter(targetFilter, 'Filter values...') }
+          <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 12px'}}>
+            { renderListFilter(targetFilter, 'Filter values...') }
+            <ToggleInput
+              caption='Hide equal values'
+              value={hideEqual.value}
+              onUpdate:value={(val) => hideEqual.value = val}
+            />
+          </div>
         </div>
         { targets.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>
@@ -638,7 +678,10 @@ export const RunComparison = Vue.defineComponent({
             Add more runs, or set index columns to compare table columns.
           </div> }
         { targets.value.length > 0 && filteredTargets.value.length === 0 &&
-          <div style={{color: 'var(--grey-4)'}}>No values match the filter</div> }
+          <div style={{color: 'var(--grey-4)'}}>
+            { !targetFilter.value && equalTargetKeys.value.size > 0 ?
+              'All values are equal across the selected runs' : 'No values match the filter' }
+          </div> }
         <div class='c2-comparison-rows c2-comparison-table'
           style={{
             gridTemplateColumns: 'max-content max-content fit-content(400px) max-content max-content max-content 1fr',

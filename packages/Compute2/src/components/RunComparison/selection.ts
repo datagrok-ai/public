@@ -79,6 +79,54 @@ export function compatibleTargetsFor(
   });
 }
 
+export type ColumnValuesGetter =
+  (entryId: string, tablePath: string, columnName: string) => ArrayLike<unknown> | undefined;
+
+export const EQUALITY_REL_TOL = 1e-3;
+
+// PEP 485 (math.isclose) with zero absolute tolerance: relative closeness only,
+// so near-zero values are never conflated with zero at an arbitrary scale
+const isClose = (a: number, b: number) =>
+  Number.isFinite(a) && Number.isFinite(b) &&
+  Math.abs(a - b) <= EQUALITY_REL_TOL * Math.max(Math.abs(a), Math.abs(b));
+
+const sameValue = (x: unknown, y: unknown) => {
+  if (x === y || (x !== x && y !== y))
+    return true;
+  return typeof x === 'number' && typeof y === 'number' && isClose(x, y);
+};
+
+/**
+ * True when every bound run carries the same data for the target: scalar values or
+ * element-wise value/index/split columns, with numbers compared to within
+ * EQUALITY_REL_TOL relative tolerance. Unfetchable column data counts as differing.
+ */
+export function isTargetEqualAcrossRuns(target: ComparisonTarget, getColumnValues: ColumnValuesGetter): boolean {
+  if (target.bindings.length < 2)
+    return false;
+  if (target.kind === 'scalar')
+    return target.bindings.every((b) => sameValue(b.value, target.bindings[0].value));
+  const sameValues = (a: ArrayLike<unknown> | null | undefined, b: ArrayLike<unknown> | null | undefined) => {
+    if (a == null || b == null || a.length !== b.length)
+      return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!sameValue(a[i], b[i]))
+        return false;
+    }
+    return true;
+  };
+  const series = target.bindings.map((b) => ({
+    value: getColumnValues(b.entryId, b.tablePath, b.columnName),
+    index: getColumnValues(b.entryId, b.tablePath, b.indexColumnName),
+    split: b.splitColumnName ? getColumnValues(b.entryId, b.tablePath, b.splitColumnName) : null,
+  }));
+  const [first, ...rest] = series;
+  if (!first.value || !first.index || first.split === undefined)
+    return false;
+  return rest.every((s) => sameValues(s.value, first.value) && sameValues(s.index, first.index) &&
+    (s.split === first.split || sameValues(s.split, first.split)));
+}
+
 export const isSplitCandidate = (column: ColumnInfo, indexColumnName: string) =>
   column.type === 'string' && column.name !== indexColumnName;
 

@@ -24,6 +24,11 @@ Columns additionally require their tables to be comparable: the index columns mu
 name-match, and the split columns must either both be unset or name-match. Beyond that,
 matching stays per column — the tables don't need to share their full column sets.
 
+Matched values whose data is the same in every run (equal scalar values, or equal
+value, index, and split column contents) are hidden from the compare list by default.
+Numbers count as equal when they differ by less than 0.1%. Turn off
+**Hide equal values** to show them.
+
 ## Fine-tuning matches
 
 Each compare row maps the same value across runs: one item per run. To chart several
