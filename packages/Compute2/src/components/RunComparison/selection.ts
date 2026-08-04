@@ -4,6 +4,8 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
+  TimeUnit, TIME_UNIT_MS, TimeSeriesSelection, TimeSeriesConfigMap,
+  isTimeIndexType, isIndexCandidateType,
 } from './types';
 import {normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD} from './matching';
 
@@ -127,6 +129,84 @@ export function isTargetEqualAcrossRuns(target: ComparisonTarget, getColumnValue
     (s.split === first.split || sameValues(s.split, first.split)));
 }
 
+const UNIT_ALIASES: Record<string, TimeUnit> = {
+  ms: 'ms', millis: 'ms', millisecond: 'ms', milliseconds: 'ms',
+  s: 's', sec: 's', secs: 's', second: 's', seconds: 's',
+  min: 'min', mins: 'min', minute: 'min', minutes: 'min',
+  h: 'h', hr: 'h', hrs: 'h', hour: 'h', hours: 'h',
+  d: 'days', day: 'days', days: 'days',
+};
+
+// bare 'm' is deliberately not recognized — ambiguous with meters
+export function parseTimeUnit(units?: string): TimeUnit | undefined {
+  return units ? UNIT_ALIASES[units.trim().toLowerCase()] : undefined;
+}
+
+/**
+ * Enabled-only view of the stored time-series picks: tables whose current index column
+ * is numeric or datetime. Stale picks (index switched away) don't resolve but are kept.
+ */
+export function resolveTimeSeries(
+  entries: ComparisonEntryNodes[],
+  indexColumns: Map<string, Map<string, string>>,
+  timeSeriesSelection: TimeSeriesSelection,
+): TimeSeriesConfigMap {
+  const map: TimeSeriesConfigMap = new Map();
+  for (const entry of entries) {
+    for (const table of entry.tables) {
+      const stored = timeSeriesSelection[entry.entryId]?.[table.path];
+      if (!stored?.enabled)
+        continue;
+      const indexName = indexColumns.get(entry.entryId)?.get(table.path);
+      const column = indexName ? table.columns.find((col) => col.name === indexName) : undefined;
+      if (!column || !isTimeIndexType(column.type))
+        continue;
+      const tables = map.get(entry.entryId) ?? new Map<string, {units?: TimeUnit}>();
+      tables.set(table.path, isNumericType(column.type) ?
+        {units: stored.units ?? parseTimeUnit(column.units) ?? 's'} : {});
+      map.set(entry.entryId, tables);
+    }
+  }
+  return map;
+}
+
+/** Require-all gate: a target charts as a time series only when every bound table is configured. */
+export function targetTimeSeriesMode(
+  target: ColumnTarget,
+  timeSeries: TimeSeriesConfigMap,
+): 'full' | 'partial' | 'none' {
+  if (target.bindings.length === 0)
+    return 'none';
+  const configured = target.bindings
+    .filter((b) => timeSeries.get(b.entryId)?.has(b.tablePath)).length;
+  if (configured === 0)
+    return 'none';
+  return configured === target.bindings.length ? 'full' : 'partial';
+}
+
+// display unit of the elapsed axis: the first numeric binding's units in participation
+// order; datetime-only targets have no units selector anywhere, so the unit is auto-picked
+export function resolveDisplayUnit(
+  bindings: {entryId: string, tablePath: string}[],
+  timeSeries: TimeSeriesConfigMap,
+): TimeUnit | 'auto' {
+  for (const binding of bindings) {
+    const units = timeSeries.get(binding.entryId)?.get(binding.tablePath)?.units;
+    if (units)
+      return units;
+  }
+  return 'auto';
+}
+
+/** Largest of days/h/min/s spanning at least two whole units; sub-2s ranges fall to ms. */
+export function pickAutoUnit(maxElapsedMs: number): TimeUnit {
+  for (const unit of ['days', 'h', 'min', 's'] as TimeUnit[]) {
+    if (maxElapsedMs >= 2 * TIME_UNIT_MS[unit])
+      return unit;
+  }
+  return 'ms';
+}
+
 export const isSplitCandidate = (column: ColumnInfo, indexColumnName: string) =>
   column.type === 'string' && column.name !== indexColumnName;
 
@@ -158,6 +238,8 @@ export interface IndexRow {
   current: string;
   splitCandidates: ColumnInfo[];
   currentSplit: string;
+  // set when the current index column is numeric or datetime; units for numeric only
+  timeSeries?: {enabled: boolean, units?: TimeUnit};
 }
 
 /**
@@ -170,7 +252,7 @@ export function computeIndexRows(
   indexSelection: Record<string, Record<string, string>>,
   splitSelection: Record<string, Record<string, string>>,
   mergeSameFuncs: boolean,
-  isAllowedIndexType: (type?: string) => boolean,
+  timeSeriesSelection: TimeSeriesSelection,
 ): IndexRow[] {
   const perTable = entries.flatMap((entry) =>
     entry.tables.map((table) => ({entry, table})));
@@ -186,24 +268,46 @@ export function computeIndexRows(
   const splitCandidatesOf = (columns: ColumnInfo[], currentIndex: string) =>
     columns.filter((col) => isSplitCandidate(col, currentIndex));
 
-  // an explicitly annotated default index is always offered, even when its type is toggled off
+  // an explicitly annotated default index is always offered, even for exotic types
   const indexCandidatesOf = (columns: ColumnInfo[], defaultIndexColumn?: string) =>
-    columns.filter((col) => isAllowedIndexType(col.type) || col.name === defaultIndexColumn);
+    columns.filter((col) => isIndexCandidateType(col.type) || col.name === defaultIndexColumn);
+
+  // merged rows agree like current/currentSplit: enabled only when every member is,
+  // shared units when members agree, else metadata prefill (index column of the seed table)
+  const timeSeriesOf = (
+    members: {entryId: string, tablePath: string}[],
+    indexColumn?: ColumnInfo,
+  ): IndexRow['timeSeries'] => {
+    if (!indexColumn || !isTimeIndexType(indexColumn.type))
+      return undefined;
+    const stored = members.map(({entryId, tablePath}) => timeSeriesSelection[entryId]?.[tablePath]);
+    const enabled = stored.every((config) => config?.enabled === true);
+    if (!isNumericType(indexColumn.type))
+      return {enabled};
+    const units = new Set(stored.map((config) => config?.units)
+      .filter((unit): unit is TimeUnit => unit != null));
+    return {
+      enabled,
+      units: units.size === 1 ? [...units][0] : parseTimeUnit(indexColumn.units) ?? 's',
+    };
+  };
 
   const singleRow = ({entry, table}: typeof perTable[number]): IndexRow => {
     const candidates = indexCandidatesOf(table.columns, table.defaultIndexColumn);
     const current = validCurrent(indexSelection, entry.entryId, table.path, candidates);
     const splitCandidates = splitCandidatesOf(table.columns, current);
+    const members = [{entryId: entry.entryId, tablePath: table.path}];
     return {
       key: `${entry.entryId}:${table.path}`,
       entryName: entry.entryName,
       label: table.friendlyPath ?? table.path,
       title: `${entry.entryName} · ${table.path}`,
-      members: [{entryId: entry.entryId, tablePath: table.path}],
+      members,
       candidates,
       current,
       splitCandidates,
       currentSplit: validCurrent(splitSelection, entry.entryId, table.path, splitCandidates),
+      timeSeries: timeSeriesOf(members, candidates.find((col) => col.name === current)),
     };
   };
 
@@ -246,16 +350,18 @@ export function computeIndexRows(
     const splitCandidates = splitCandidatesOf(sharedColumns, current);
     const currentSplits = new Set(group.map(({entry, table}) =>
       validCurrent(splitSelection, entry.entryId, table.path, splitCandidates)));
+    const members = group.map(({entry, table}) => ({entryId: entry.entryId, tablePath: table.path}));
     rows.push({
       key: `merged:${key}`,
       coverage: {count: entryIds.size, total: entries.length},
       label,
       title: group.map(({entry, table}) => `${entry.entryName} · ${table.path}`).join('\n'),
-      members: group.map(({entry, table}) => ({entryId: entry.entryId, tablePath: table.path})),
+      members,
       candidates,
       current,
       splitCandidates,
       currentSplit: currentSplits.size === 1 ? [...currentSplits][0] : '',
+      timeSeries: timeSeriesOf(members, candidates.find((col) => col.name === current)),
     });
   }
   return rows;
@@ -270,6 +376,8 @@ export interface EntryStatus {
   entryId: string;
   matched: boolean;
   reason?: ExclusionReason;
+  // the run still charts — its table just lacks time-series settings on a partial target
+  warning?: 'time series not set';
 }
 
 /** Per-entry participation status for a selected target. */
@@ -277,13 +385,21 @@ export function getEntryStatuses(
   entries: ComparisonEntryNodes[],
   target: ComparisonTarget | null,
   indexColumns: Map<string, Map<string, string>>,
+  timeSeries?: TimeSeriesConfigMap,
 ): EntryStatus[] {
+  const tsMode = target?.kind === 'column' && timeSeries ?
+    targetTimeSeriesMode(target, timeSeries) : 'none';
   return entries.map((entry) => {
     if (!target)
       return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
-    const binding = (target.bindings as {entryId: string}[]).find((b) => b.entryId === entry.entryId);
-    if (binding)
+    const binding = (target.bindings as {entryId: string, tablePath?: string}[])
+      .find((b) => b.entryId === entry.entryId);
+    if (binding) {
+      if (tsMode === 'partial' && binding.tablePath != null &&
+        !timeSeries!.get(entry.entryId)?.has(binding.tablePath))
+        return {entryId: entry.entryId, matched: true, warning: 'time series not set'};
       return {entryId: entry.entryId, matched: true};
+    }
     if (target.kind === 'column' &&
       target.candidates.some((candidate) => candidate.binding.entryId === entry.entryId))
       return {entryId: entry.entryId, matched: false, reason: 'disabled'};

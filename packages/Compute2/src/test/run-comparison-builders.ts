@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN} from '../components/RunComparison/types';
+import {
+  ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN, TimeUnit,
+} from '../components/RunComparison/types';
 import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
 import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
 import {
@@ -299,5 +301,137 @@ category('RunComparison: multi and split dataframes', () => {
     const result = buildMultiColumnComparison([target as ColumnTarget, twin], entries)!;
     expect(result.valueColumnNames.join('|'), 'x|x (2)');
     expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20,30,40');
+  });
+});
+
+category('RunComparison: time series dataframes', () => {
+  const makeDf = (name: string, cols: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(cols);
+    df.name = name;
+    return df;
+  };
+  const floatCol = (name: string, values: (number | null)[]) =>
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+  const dtCol = (name: string, values: string[]) =>
+    DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, name, values.map((v) => dayjs(v)));
+  const indexesFor = (entries: ComparisonEntry[], column: string) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, column]])]));
+  const targetFor = (entries: ComparisonEntry[], column: string) =>
+    matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, column))
+      .find((t): t is ColumnTarget => t.kind === 'column')!;
+  const tsFor = (entries: ComparisonEntry[], units: (TimeUnit | undefined)[]) =>
+    new Map(entries.map((e, i) => [e.id,
+      new Map([[e.nodes.tables[0].path, units[i] === undefined ? {} : {units: units[i]}]])]));
+  // Array.from: toList() returns sparse arrays for null cells, and map() would skip the holes
+  const numbers = (values: any[]) => Array.from(values, (v) => v == null || isNaN(v) ? null : v);
+
+  test('aligned numeric indexes with heterogeneous units share one axis', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [1, 2]), floatCol('v', [3, 4])])),
+    ];
+    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+      tsFor(entries, ['s', 'min']))!;
+    expect(result.isKeyIndex, false);
+    expect(result.timeSeriesUnit, 's');
+    expect(result.indexColumnName, 'time (s)');
+    expect(result.chartDf.getCol('time (s)').type, DG.COLUMN_TYPE.FLOAT);
+    expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '0,10,0,60');
+  });
+
+  test('bigint indexes convert through the elapsed path', async () => {
+    const bigintCol = (name: string, values: bigint[]) =>
+      DG.Column.fromBigInt64Array(name, new BigInt64Array(values));
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [bigintCol('time', [BigInt(10), BigInt(20)]), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [bigintCol('time', [BigInt(5), BigInt(15)]), floatCol('v', [3, 4])])),
+    ];
+    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+      tsFor(entries, ['s', 's']))!;
+    expect(result.timeSeriesUnit, 's');
+    expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '0,10,0,10');
+  });
+
+  test('unsorted index aligns to its minimum', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [30, 10, 20]), floatCol('v', [1, 2, 3])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [5, 15]), floatCol('v', [4, 5])])),
+    ];
+    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+      tsFor(entries, ['s', 's']))!;
+    expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '20,0,10,0,10');
+  });
+
+  test('mixed datetime and float tables chart as an aligned line', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [dtCol('ts', ['2026-01-01', '2026-01-02']), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('ts', [0, 60]), floatCol('v', [3, 4])])),
+    ];
+    const aligned = buildColumnComparison(targetFor(entries, 'ts'), entries,
+      tsFor(entries, [undefined, 'min']))!;
+    expect(aligned.isKeyIndex, false);
+    expect(aligned.timeSeriesUnit, 'min');
+    expect(numbers(aligned.chartDf.getCol('ts (min)').toList()).join(','), '0,1440,0,60');
+  });
+
+  test('datetime-only comparison picks an auto unit from the range', async () => {
+    const cols = () => [dtCol('ts', ['2026-01-01', '2026-01-04']), floatCol('v', [1, 2])];
+    const entries = [
+      entryFromDataFrame(makeDf('r1', cols())),
+      entryFromDataFrame(makeDf('r2', cols())),
+    ];
+    const result = buildColumnComparison(targetFor(entries, 'ts'), entries,
+      tsFor(entries, [undefined, undefined]))!;
+    expect(result.timeSeriesUnit, 'days');
+    expect(numbers(result.chartDf.getCol('ts (days)').toList()).join(','), '0,3,0,3');
+  });
+
+  test('partially configured targets fall back to the legacy axis', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [dtCol('ts', ['2026-01-01', '2026-01-02']), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('ts', [0, 60]), floatCol('v', [3, 4])])),
+    ];
+    const partial = new Map([[entries[0].id,
+      new Map([[entries[0].nodes.tables[0].path, {}]])]]);
+    const result = buildColumnComparison(targetFor(entries, 'ts'), entries, partial)!;
+    expect(result.isKeyIndex, true);
+    expect(result.timeSeriesUnit === undefined, true);
+    expect(result.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
+  });
+
+  test('null index cells are skipped for the start and stay null', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [null, 5, 10]), floatCol('v', [1, 2, 3])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 5]), floatCol('v', [4, 5])])),
+    ];
+    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+      tsFor(entries, ['s', 's']))!;
+    const values = numbers(result.chartDf.getCol('time (s)').toList());
+    expect(values[0], null);
+    expect(values.slice(1).join(','), '0,5,0,5');
+  });
+
+  test('elapsed axis label avoids value column collisions', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [0, 1]), floatCol('time (s)', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 1]), floatCol('time (s)', [3, 4])])),
+    ];
+    const result = buildColumnComparison(targetFor(entries, 'time'), entries,
+      tsFor(entries, ['s', 's']))!;
+    expect(result.indexColumnName, 'time (s) (2)');
+    expect(numbers(result.chartDf.getCol('time (s) (2)').toList()).join(','), '0,1,0,1');
+  });
+
+  test('multi-value comparison shares the elapsed axis', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('a', [1, 2]), floatCol('b', [5, 6])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 10]), floatCol('a', [3, 4]), floatCol('b', [7, 8])])),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'))
+      .filter((t): t is ColumnTarget => t.kind === 'column');
+    const result = buildMultiColumnComparison(targets, entries, tsFor(entries, ['s', 's']))!;
+    expect(result.timeSeriesUnit, 's');
+    expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '0,10,0,10');
+    expect(result.valueColumnNames.join('|'), 'a|b');
   });
 });

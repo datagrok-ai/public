@@ -5,6 +5,7 @@ keywords:
   - compare runs
   - comparison index column
   - comparison split column
+  - time series comparison
 ---
 
 The run comparison tool compares outputs of model runs side by side: pick a model, add
@@ -55,14 +56,32 @@ reflects the checked items.
 Column comparison requires an index (x axis) column per table. An optional split column
 marks a categorical column whose values are separate series within one run.
 
-* By default only **int, bigint, and string** columns are offered as indexes; float and
-  datetime indexes are enabled with the **Float indexes** / **Datetime indexes** toggles.
+* Numeric (int, bigint, float), datetime, and string columns are offered as indexes.
 * Split columns must be string-typed and different from the index.
 * With **Merge same functions** (on by default), tables produced by the same function
   collapse into one picker row; a selection applies to all runs.
 * Charts are built by concatenating raw rows of all runs into one long dataframe; the line
   chart splits by run and, when set, by the split column. There is no row alignment or
   tolerance logic — differing grids simply chart as separate lines.
+
+## Time series
+
+When a table's index column is numeric or datetime, a **time series** checkbox appears
+next to its pickers (off by default — plain axes are used). Enabling it charts the table
+on an elapsed-time axis, which lets runs with different time representations — a datetime
+column in a workflow dataframe, plain float seconds in a CSV — share one line chart.
+
+* Numeric indexes get a **units** selector (ms, s, min, h, days) saying what the numbers
+  mean. It is prefilled from the column's units metadata when recognizable. Datetime
+  indexes need no units.
+* Time series are aligned automatically: each table's earliest time point is treated
+  as 0, so runs overlay for shape comparison regardless of when they were recorded.
+* The chart axis is a float column labeled with its unit, for example `time (s)`. The
+  unit comes from the first participating numeric index; a comparison of only datetime
+  indexes picks a readable unit from the data range automatically.
+* A value charts as a time series only when **every** participating table has time
+  series enabled. Until then it charts with plain axes, and the runs whose tables lack
+  the setting are flagged with an amber chip under Results.
 
 ## Default index/split annotations
 

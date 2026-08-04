@@ -122,3 +122,29 @@ const NUMERIC_TYPES = new Set(['int', 'double', 'float', 'number', 'bigint']);
 export function isNumericType(type: string): boolean {
   return NUMERIC_TYPES.has(type);
 }
+
+export type TimeUnit = 'ms' | 's' | 'min' | 'h' | 'days';
+
+export const TIME_UNITS: TimeUnit[] = ['ms', 's', 'min', 'h', 'days'];
+
+export const TIME_UNIT_MS: Record<TimeUnit, number> =
+  {ms: 1, s: 1000, min: 60_000, h: 3_600_000, days: 86_400_000};
+
+// stored per-table pick (same Record shape as index/split selections);
+// units are absent when enabled on a datetime index — a unit the user never saw
+// must not outrank the metadata prefill if the index later moves to a numeric column
+export interface TimeSeriesConfig {
+  enabled: boolean;
+  units?: TimeUnit;
+}
+
+export type TimeSeriesSelection = Record<string, Record<string, TimeSeriesConfig>>;
+
+// resolved, enabled-only view: entryId -> tablePath; units absent <=> datetime index
+export type TimeSeriesConfigMap = Map<string, Map<string, {units?: TimeUnit}>>;
+
+export const isTimeIndexType = (type?: string) =>
+  type != null && (isNumericType(type) || type === 'datetime');
+
+export const isIndexCandidateType = (type?: string) =>
+  type != null && (isNumericType(type) || type === 'string' || type === 'datetime');
