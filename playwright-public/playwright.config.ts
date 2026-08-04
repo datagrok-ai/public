@@ -31,12 +31,15 @@ export default defineConfig({
   retries: 0,
   // ~360 specs used to run strictly serially (~150 min) — the whole reason a Build-Deploy
   // Playwright stage sat for three hours. `fullyParallel` stays false, so ordering WITHIN
-  // a file is untouched and only separate files run side by side. Test-Playwright owns a
-  // 32-vCPU agent, so 8 browsers is still a modest ask; PLAYWRIGHT_WORKERS overrides it
-  // per run. If this surfaces cross-file interference (two suites creating the same
-  // project name, one toggling shares another reads), the fix is to isolate that state
-  // per file, not to go back to serial.
-  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 8),
+  // a file is untouched and only separate files run side by side.
+  //
+  // Measured on the 32-vCPU agent: 4 workers = 61 min / 55 failures, 8 = 47 min / 59.
+  // The extra four land in browse, connections and projects, and projects tracks
+  // concurrency directly (2 serial, 5 at four, 6 at eight), so those files share
+  // server-side state. Fourteen minutes is not worth four phantom failures in a suite
+  // whose whole job is signal; the way to 8 is isolating that state, not this knob.
+  // PLAYWRIGHT_WORKERS still overrides per run.
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 4),
   // Kill-switch so a degraded run stops itself and still writes its JSON report + CSV
   // instead of being SIGKILL-aborted at the 240-min Jenkins stage timeout (which loses
   // all results). A healthy no-retry run is ~65 min; 150 min leaves >2x headroom for a
