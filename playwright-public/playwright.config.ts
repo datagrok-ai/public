@@ -29,14 +29,14 @@ export default defineConfig({
   // push a degraded run past the 240-min stage kill (SIGKILL → no report at all).
   // Retries recovered 2 of 361 specs, so force them off here for this suite.
   retries: 0,
-  // baseConfig runs one worker, so ~360 specs go strictly serially and the suite takes
-  // ~150 min — the whole reason a Build-Deploy Playwright stage sits for three hours.
-  // `fullyParallel` stays false, so ordering WITHIN a file is untouched and only separate
-  // files run side by side. Test-Playwright owns a 32-vCPU agent; 4 browsers is a small
-  // ask of it. If this surfaces cross-file interference (two suites creating the same
+  // ~360 specs used to run strictly serially (~150 min) — the whole reason a Build-Deploy
+  // Playwright stage sat for three hours. `fullyParallel` stays false, so ordering WITHIN
+  // a file is untouched and only separate files run side by side. Test-Playwright owns a
+  // 32-vCPU agent, so 8 browsers is still a modest ask; PLAYWRIGHT_WORKERS overrides it
+  // per run. If this surfaces cross-file interference (two suites creating the same
   // project name, one toggling shares another reads), the fix is to isolate that state
   // per file, not to go back to serial.
-  workers: 4,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 8),
   // Kill-switch so a degraded run stops itself and still writes its JSON report + CSV
   // instead of being SIGKILL-aborted at the 240-min Jenkins stage timeout (which loses
   // all results). A healthy no-retry run is ~65 min; 150 min leaves >2x headroom for a
