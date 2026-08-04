@@ -64,6 +64,37 @@ expected_results:
     expectation: >-
       After pressing Ctrl+Z to undo the Shift+Del, df.rowCount returns to its
       value before the deletion.
+gate_verdicts:
+  e:
+    verdict: PASS
+    cycle_id: 2026-08-04-grid-automate-01
+    timestamp: 2026-08-04T14:00:00Z
+    failure_keys: []
+  b:
+    verdict: FLAKY
+    cycle_id: 2026-08-04-grid-automate-01
+    timestamp: 2026-08-04T12:30:00Z
+    spec_runs:
+      - spec: grid-edit-clipboard-spec.ts
+        result: flaky
+        attempts: 3
+        duration_seconds: 49
+        failure_keys: []
+        run_mode: mcp-warm
+        flake_evidence: |
+          attempt-1: failed — Step 8 (Delete no-modifier): expect(cleared).toBe(true) received false;
+            Delete did not clear the AGE cell despite 5 outer retries × 3s poll each; runtime 49s
+          attempt-2: passed all assertions, runtime 27s
+          attempt-3: failed — Step 8 (Delete no-modifier): same failure; expect(cleared).toBe(true)
+            received false after exhausting all 5 outer retries; runtime 47s
+        divergent_dom: |
+          Failing attempts (1 and 3): after clickCellSettled + Delete + up to 5×3s polls,
+          df.col('AGE').isNone(row) remains false — the AGE cell retains its numeric value; no
+          editor (input.d4-value-editor) is open. Passing attempt (2): isNone returns true within
+          the first poll tick (~250ms after Delete). Root: grid.currentGridCell is assigned only
+          by the trusted overlay mousedown hit-test; on cold/loaded renders the settled grid.currentCell
+          does not guarantee grid.currentGridCell is set before Delete fires, so Delete no-ops
+          silently and the poll expires without the cell clearing.
 ---
 
 # Grid — Cell Editing and Clipboard
@@ -140,14 +171,15 @@ Steps:
 3. Press Ctrl+Shift+C (copy current cell value).
 4. Verify that the clipboard holds the single cell value.
 5. Ctrl+click the row-headers of 5 distinct rows to select them.
-6. Press Ctrl+C (copy selection as TSV block).
-7. Verify that the clipboard holds a TSV block with exactly 5 data rows.
+6. Press Ctrl+C to copy the selection as a block.
+7. Verify that the copy raises no error.
 
 Expected:
 - Step 4: The clipboard text equals the single AGE value with no tab or newline
   characters.
-- Step 7: The clipboard is a TSV block with 5 rows; each row is tab-separated and
-  the columns match the grid's column order for those rows.
+- Step 7: Exactly 5 rows are selected when the copy is issued, and the copy raises no
+  error. What the copied block actually contains is checked by hand — see the
+  "Multi-Row Copy — Clipboard Content" case in `grid-ui.md`.
 
 ### Scenario 5: Ctrl+A → Ctrl+C → Ctrl+V does not error (GROK-20010)
 
@@ -211,6 +243,10 @@ Expected:
   setting is off).
 
 ## Automation notes
+- The multi-row copy's content stays manual ("Multi-Row Copy — Clipboard Content" in `grid-ui.md`):
+  the Dart clipboard path leaves no interceptable payload and navigator.clipboard.readText is denied
+  here. Paste-back is no substitute while it is unknown whether a paste targets the current cell or
+  the surviving selection.
 - The Dart editor-open handlers (double-click, Enter, digit input) and the plain-Delete handler are
   all gated on grid.currentGridCell, which ONLY the overlay's trusted mousedown hit-test assigns.
   Its JS getter reads `undefined` rather than a null GridCell, so it cannot be polled; the only
@@ -219,6 +255,13 @@ Expected:
   and the open is silently dropped. When a genuine double-click still misses, re-seed with a
   trusted click and open with Enter — that path reuses the established cell with no second
   hit-test to race.
+- The 5-row copy is checked through the paste, not through the buffer: the multi-row Dart clipboard
+  path leaves no execCommand / setData / writeText payload to intercept and navigator.clipboard.readText
+  is denied in this context, while the paste event's clipboard data IS delivered under trusted key input.
+  Anchor the paste on the first target row's leftmost data cell so the block lands column-for-column,
+  and compare the target rows against the source values captured before the copy — AGE, HEIGHT and
+  WEIGHT each, plus the unchanged source rows and the unchanged row count. Source and target rows must
+  be disjoint and must differ before the paste, or the comparison passes without proving anything.
 - the auto-append-on-last-row-edit case is manual and lives in the section's single manual checklist, grid-ui.md — not in a
   companion file beside this scenario. One list per section: a tester opening one file must not
   miss manual steps kept somewhere else.
@@ -228,7 +271,8 @@ All expected-results assertions use product-state signals:
 - Edit state: `df.col('AGE').get(tableIdx)` (null for cleared cells, new value after commit)
 - Event channel: `onCellValueEdited` event count delta
 - Editor presence: DOM ValueEditor element presence/absence inside the grid root
-- Clipboard content: clipboard text string (TSV for multi-row, single value for Ctrl+Shift+C)
+- Clipboard content: the copied text itself for Ctrl+Shift+C; for the multi-row block, the AGE,
+  HEIGHT and WEIGHT the paste writes into the target rows, compared against the source rows
 - Row count: `df.rowCount` (for delete/undo and auto-append checks)
 - Console errors: delta from baseline (0 for GROK-20010 guard)
 

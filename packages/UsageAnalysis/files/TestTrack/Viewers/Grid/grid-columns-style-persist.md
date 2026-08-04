@@ -139,6 +139,8 @@ close-and-reopen.
   the live view into an offscreen iframe, and the detached view emits a "cloned iframe" message plus
   a Dart NullError PAIR. Gate a benign filter to the SAVE window only, with a LETTER-AGNOSTIC
   pattern (the minified symbol drifts), and keep everything else in that window failing.
+- The pinned-row count is `Array.from(grid.pinnedRows).length`. `grid.props.pinnedRowColumnNames`
+  stays ['AGE'] however many rows are pinned — it is NOT a count signal.
 - The reopen step deliberately asserts STATE ONLY, not the error channel. Reopening this rich layout
   does log a grid index error, but no open ticket owns that behaviour: the ticket this step used to
   cite was about the recent-projects widget, which the platform no longer supports, so the label did

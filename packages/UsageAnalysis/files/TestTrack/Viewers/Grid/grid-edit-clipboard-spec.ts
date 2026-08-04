@@ -31,11 +31,7 @@ async function focusGrid(page: Page): Promise<void> {
   });
 }
 
-// Trusted single click on a data cell, settled on df.currentRowIdx / df.currentCol landing on
-// that cell. The Dart editor-open handlers are gated on grid.currentGridCell, which only the
-// overlay's trusted mousedown hit-test assigns, and whose JS getter reads `undefined` rather than
-// a null GridCell — so it cannot be polled and the dataframe current cell is the only proxy for
-// "the click registered". Without settling on it a follow-up gesture outraces the assignment.
+// Trusted single click on a data cell, settled on the df channel reporting that cell as current.
 async function clickCellSettled(page: Page, col: string, visualRow: number): Promise<{x: number; y: number}> {
   const p = await dataCellPoint(page, col, visualRow);
   const tableRow = await page.evaluate((vr) => grok.shell.tv.grid.gridRowToTable(vr), visualRow);
@@ -51,14 +47,9 @@ async function clickCellSettled(page: Page, col: string, visualRow: number): Pro
   return p;
 }
 
-// Double-click a data cell to open (or, when allowEdit=false, to attempt) the inline editor.
-// Used where the SCENARIO exercises the double-click gesture itself.
-//
-// The dblclick-open handler is gated on grid.currentGridCell (grid_editors.dart L169), and on a
-// cold render the double-click's own mousedowns can outrace that assignment, so the gate drops
-// the open. The retry re-establishes the cell with a trusted click and opens it with Enter
-// (grid_editors.dart L180), which needs no second hit-test. The read-only path passes attempts=0:
-// there the editor never opens by design, and retrying would only churn the balloon.
+// Double-click a data cell to open (or, when allowEdit=false, to attempt) the inline editor. On a
+// cold render the double-click can outrace the current-cell assignment the open gates on, so the
+// retry re-seeds with a trusted click and opens with Enter; the read-only path passes attempts=0.
 async function dblClickCell(page: Page, col: string, visualRow: number, attempts = 6): Promise<void> {
   const p = await clickCellSettled(page, col, visualRow);
   await page.waitForTimeout(150);
@@ -78,10 +69,8 @@ async function editorCount(page: Page): Promise<number> {
 }
 
 // Install the clipboard-copy interceptor. The single-cell copy runs through
-// document.execCommand('copy') over a selection plus a hidden textarea; neither the async
-// Clipboard API nor the copy event's clipboardData carries the payload, and
-// navigator.clipboard.readText is denied in the test browser context — so patching execCommand
-// is the only permission-free way to see the copied content.
+// document.execCommand('copy'); the copy event's clipboardData carries no payload and
+// navigator.clipboard.readText is denied here, so patching execCommand is the only way to read it.
 async function installCopyInterceptor(page: Page): Promise<void> {
   await page.evaluate(() => {
     const w = window as any;
@@ -209,15 +198,12 @@ test('Grid — Cell Editing and Clipboard', async ({page}) => {
 
   await softStep('Step 8 — Delete (no modifier) clears the cell, opens no editor', async () => {
     // The plain-Delete handler acts on grid.currentGridCell, so seed it with a settled click.
+    // The keystroke reaches the grid only while the overlay holds focus, and a re-seat can land on
+    // a different row — so the row under test is read inside the retry loop, not before it.
     await clickCellSettled(page, 'AGE', 4);
-    // Re-seat the current cell and press again if the first Delete did not land: the keystroke
-    // reaches the grid only while its overlay canvas holds focus, and focus is not always settled
-    // by the time the click returns. The gesture stays the real one — only its delivery is retried.
     let cleared = false;
     for (let attempt = 0; attempt < 3 && !cleared; attempt++) {
       if (attempt > 0) await clickCellSettled(page, 'AGE', 4);
-      // Read the row the grid considers current INSIDE the loop: a re-seat can land on a
-      // different row, and checking the row captured before the retry asked about the wrong cell.
       const row = await page.evaluate(() => grok.shell.tv.dataFrame.currentRowIdx);
       await page.keyboard.press('Delete');
       for (let waited = 0; waited < 3000 && !cleared; waited += 250) {
@@ -307,9 +293,8 @@ test('Grid — Cell Editing and Clipboard', async ({page}) => {
   });
 
   await softStep('Step 18 — Ctrl+C on a 5-row selection copies without error', async () => {
-    // The multi-row TSV content is not interceptable — the Dart clipboard path leaves no
-    // execCommand/setData/writeText payload — so it is a manual-only check in the -ui companion
-    // and the automated guard here is the error channel.
+    // The copied block's content is checked manually (grid-ui.md): the Dart clipboard path leaves
+    // no execCommand/setData/writeText payload, so the automated guard here is the error channel.
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;
       df.selection.setAll(false);
@@ -401,10 +386,9 @@ test('Grid — Cell Editing and Clipboard', async ({page}) => {
     expect(rowsAfter).toBe(rowsBefore); // undo restored the row count (Command.runUndoable)
   });
 
-  // Scenario 8 (addNewRowOnLastRowEdit auto-append) lives in the manual-only companion
-  // grid-edit-clipboard-ui.md: the append fires only from a last-row edit that commits while the
-  // editor is still attached, and the editor's post-open teardown (grid_editors.dart L110)
-  // detaches it on the next redraw, ahead of every commit path automation can drive.
+  // Scenario 8 (addNewRowOnLastRowEdit auto-append) is manual-only and lives in grid-ui.md: the
+  // append needs the editor still attached at commit, and its post-open teardown detaches it on
+  // the next redraw, ahead of every commit path automation can drive.
 
   v.finishSpec();
 });

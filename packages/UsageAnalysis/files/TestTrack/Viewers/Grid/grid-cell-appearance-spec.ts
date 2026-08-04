@@ -11,9 +11,8 @@ declare const grok: any;
 test.use(specTestOptions);
 
 // Page-coordinate center of a column header. X comes from the first data cell's documentBounds,
-// which is already in page coordinates; `overlay.rect.x + gridColumn.left` would land on a
-// DIFFERENT column, because gridColumn.left is an offset in the grid's virtual coordinate space
-// and does not align with the overlay canvas' page-left.
+// already in page coordinates; `overlay.rect.x + gridColumn.left` would land on a DIFFERENT
+// column — gridColumn.left is an offset in the grid's virtual coordinate space.
 async function headerCenter(page: Page, col: string): Promise<{x: number; y: number}> {
   return page.evaluate((c) => {
     const grid = grok.shell.tv.grid;
@@ -31,10 +30,9 @@ async function cellCenter(page: Page, col: string, row: number): Promise<{x: num
   }, {c: col, r: row});
 }
 
-// Rendered rect (page coords) of a menu element whose `name` matches, or null while no such
-// copy exists. A d4 nested submenu keeps a detached zero-rect TEMPLATE copy of every leaf
-// alongside the laid-out copy in the open popup, and a query by name hits the template first —
-// hence the filter on a non-null offsetParent plus a real bounding box.
+// Rendered rect (page coords) of the laid-out copy of a menu element, or null. A d4 nested
+// submenu also keeps a detached zero-rect TEMPLATE copy of every leaf, which a query by name hits
+// first — hence the filter on a non-null offsetParent plus a real bounding box.
 async function laidOutRect(
   page: Page, name: string,
 ): Promise<{x: number; y: number; w: number; h: number} | null> {
@@ -49,13 +47,9 @@ async function laidOutRect(
   }, name);
 }
 
-// Open a grid context menu at (clientX, clientY) on the overlay canvas, then walk a chain of
-// nested menu groups to one of their leaves and click it.
-//
-// The nested submenus (Color-Coding, Grid-Color-Coding) use slope-based hover protection: a leaf
-// stays a zero-rect detached template until its parent group receives a TRAJECTORY-BEARING,
-// TRUSTED pointer movement, which no synthetic MouseEvent chain satisfies. Only the submenu
-// expansions need that trusted input — the ROOT menu still opens on synthetic events.
+// Open a grid context menu at (clientX, clientY) on the overlay canvas, walk a chain of nested
+// menu groups to a leaf and click it. Slope-based hover protection keeps a leaf a zero-rect
+// template until its parent gets TRUSTED movement; only the ROOT menu opens on synthetic events.
 async function clickMenuLeaf(
   page: Page, at: {x: number; y: number}, groupNames: string[], leafName: string,
 ): Promise<boolean> {
@@ -320,10 +314,8 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
   });
 
   // --- Scenario 2: Column coding overrides explicit style colour (GROK-18638) ---
-  // The explicit content-style colour lives in Column Properties > Style > Content, a
-  // Dart-internal editor that does not lay out under headless Playwright and surfaces no readable
-  // tag. The "coding beats explicit style" half is therefore waived
-  // (gesture-uncontrollable-headless); only the coding-application half is driven here.
+  // The explicit content-style colour editor does not lay out headless and surfaces no readable
+  // tag, so the "coding beats explicit style" half is waived; only coding-application is driven.
 
   await softStep('Step 9-14 — Coding-application half of the style-vs-coding order (GROK-18638): Linear coding on AGE resolves to the coding colour', async () => {
     // AGE already carries Linear from Scenario 1.
@@ -352,8 +344,7 @@ test('Grid — Cell Appearance and Color Resolution Order', async ({page}) => {
       width: grok.shell.tv.grid.columns.byName('AGE').width,
       valueString: grok.shell.tv.grid.cell('AGE', s.targetRow).cell.valueString,
     }), setup);
-    // Trusted resize drag from the AGE header right border. The geometry comes from the cell's
-    // documentBounds; `overlay.rect.x + gridColumn.left` would grab another column's border.
+    // Trusted resize drag from the AGE header right border, geometry from documentBounds.
     const drag = await page.evaluate(() => {
       const grid = grok.shell.tv.grid;
       const db = grid.cell('AGE', 0).documentBounds;

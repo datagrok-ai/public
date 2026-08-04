@@ -240,6 +240,9 @@ Expected:
 - The column-group dialog ALWAYS pre-fills [name="input-Group"] with the literal "Group". Two
   groups left on that default share one key in the df's `.columnGroups` map and the second silently
   clobbers the first, so fill a distinct name per group before OK.
+- The group colour picker is [name="dialog-Color"], opened from [name="div-Color"] .d4-color-bar in
+  the column-group dialog; its OK/CANCEL carry name=, the hex/HSV inputs do not (grok-browser
+  reference viewers/grid.md, "Color picker dialog").
 - The hamburger popup's Colors Type control is a Datagrok ChoiceInput whose real
   <select name="input-Type"> is laid out at 0x0 (the visible affordance is the CSS chrome around
   it). Playwright's selectOption / waitFor({state:'visible'}) can never satisfy actionability on

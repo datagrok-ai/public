@@ -8,10 +8,9 @@ import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects
 
 declare const grok: any;
 
-// The ribbon Save renders a publication preview by cloning the live view into an offscreen
-// iframe; that publish chain emits a benign clone-iframe message plus a Dart NullError whose
-// minified symbol drifts per build, so the pattern stays LETTER-AGNOSTIC. Apply this filter
-// ONLY inside the save window — the same class outside it is a regression signal.
+// The ribbon Save's publish chain (an offscreen-iframe clone of the view) emits a clone-iframe
+// message plus a Dart NullError whose minified symbol drifts per build, hence the LETTER-AGNOSTIC
+// pattern. Apply ONLY inside the save window — the same class outside it is a regression signal.
 const isBenignSaveWindowError = (text: string): boolean =>
   /Unable to find element in cloned iframe/.test(text) ||
   /Stack trace [A-Za-z]+/.test(text) ||
@@ -33,16 +32,9 @@ async function headerCenter(page: Page, col: string): Promise<{x: number; y: num
   }, col);
 }
 
-// The grok-browser reference documents the `div-Pin` group and its submenu labels but not the
-// leaf `name` strings: [name="div-Pin---Pin-Column"] lives on the header menu and
-// [name="div-Pin---Pin-Row"] on the data-cell menu.
-//
 // Open a grid context menu at (clientX, clientY) on the overlay canvas, expand the nested Pin
-// submenu and click the given leaf; returns false if the leaf never becomes clickable. The
-// overlay menu opens on synthetic input, but the nested submenu is guarded by slope/hover-intent
-// tracking: it expands only for mouseover + mouseenter + mousemove carrying real coordinates at
-// the group's own center, and the guard collapses it again if the hover is disturbed — hence the
-// retry loops around both the menu open and the hover trio.
+// submenu and click the given leaf; false if the leaf never becomes clickable. The submenu is
+// hover-intent guarded and collapses again when the hover is disturbed — hence the retry loops.
 async function pinViaMenu(
   page: Page, at: {x: number; y: number}, leafName: string,
 ): Promise<boolean> {
@@ -218,9 +210,6 @@ test('Grid — Column Geometry: Sort, Order, Visibility, Width, Pinning and Pers
   });
 
   // --- Scenario 3: Hide WEIGHT via the Order or Hide Columns dialog ------------
-  // The dialog's per-column checkboxes are drawn on an embedded canvas, so the uncheck falls
-  // back to setVisible; the hidden-column signals are `visible === false` plus absence from
-  // the enumerated visible columns (GridColumn exposes no `visibleWidth`).
 
   await softStep('Step 9 — Hide: open Order or Hide Columns and hide WEIGHT', async () => {
     await page.evaluate(() => {
@@ -346,14 +335,9 @@ test('Grid — Column Geometry: Sort, Order, Visibility, Width, Pinning and Pers
   });
 
   await softStep('Step 12 — Pin: pin two rows via the row Pin menu', async () => {
-    // The pinned-row count is Array.from(grid.pinnedRows).length; grid.props.pinnedRowColumnNames
-    // stays ['AGE'] however many rows are pinned and is NOT a count signal.
-    //
-    // A layout persists pinned rows by (sort-column, sort-column-value), not by table index, so
-    // two rows sharing that value collapse into one descriptor and only one is restored. Under
-    // the ascending-AGE sort the top rows all hold the lowest AGE, so the rows are pinned in
-    // default order (distinct AGE values) and the sort is re-applied afterwards — descriptors are
-    // captured at pin time, so the re-sort does not collapse them.
+    // A layout persists pinned rows by (sort column, sort-column value), so two rows sharing that
+    // value collapse into one descriptor. The sort is cleared before pinning to get distinct AGE
+    // values and re-applied after — descriptors are captured at pin time.
     await page.evaluate(async () => {
       const grid = grok.shell.tv.grid;
       // Step 10 left the grid scrolled right and clearing the sort does not reset that, so the
@@ -504,8 +488,7 @@ test('Grid — Column Geometry: Sort, Order, Visibility, Width, Pinning and Pers
       await proj.open();
       await new Promise((res) => setTimeout(res, 4500));
       const grid = grok.shell.tv?.grid;
-      // Text-keyed, not a raw count: balloons from earlier steps are still in the container
-      // (they never auto-hide and closeAll does not clear them).
+      // Text-keyed, not a raw count: balloons from earlier steps are still in the container.
       const loadFailureBalloons = Array.from(
         document.querySelectorAll('.d4-balloon.error, .d4-balloon-error'))
         .map((b) => (b.textContent ?? '').trim())

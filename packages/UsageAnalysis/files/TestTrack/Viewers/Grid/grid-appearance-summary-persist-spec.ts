@@ -8,11 +8,9 @@ import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects
 
 declare const grok: any;
 
-// The ribbon Save renders a publication preview by cloning the live view into an offscreen
-// iframe; that publish chain emits a benign clone-iframe message plus a Dart NullError whose
-// minified symbol drifts per build, so the pattern stays LETTER-AGNOSTIC. Apply this filter
-// ONLY inside the save window — the same class outside it is a regression signal, and every
-// other console error counts (Steps 13 and 17 guard errors carrying no /grid/ token).
+// The ribbon Save's publish chain (an offscreen-iframe clone of the view) emits a clone-iframe
+// message plus a Dart NullError whose minified symbol drifts per build, hence the LETTER-AGNOSTIC
+// pattern. Apply ONLY inside the save window — the same class outside it is a regression signal.
 const isBenignSaveWindowError = (text: string): boolean =>
   /Unable to find element in cloned iframe/.test(text) ||
   /Stack trace [A-Za-z]+/.test(text) ||
@@ -33,10 +31,9 @@ async function headerCenter(page: Page, col: string): Promise<{x: number; y: num
   }, col);
 }
 
-// Rendered rect (page coords) of a menu element whose `name` matches, or null while no such
-// copy exists. A d4 nested submenu keeps a detached zero-rect TEMPLATE copy of every leaf
-// alongside the laid-out copy in the open popup, and a query by name hits the template first —
-// hence the filter on a non-null offsetParent plus a real bounding box.
+// Rendered rect (page coords) of the laid-out copy of a menu element, or null. A d4 nested
+// submenu also keeps a detached zero-rect TEMPLATE copy of every leaf, which a query by name hits
+// first — hence the filter on a non-null offsetParent plus a real bounding box.
 async function laidOutRect(
   page: Page, name: string,
 ): Promise<{x: number; y: number; w: number; h: number} | null> {
@@ -51,13 +48,9 @@ async function laidOutRect(
   }, name);
 }
 
-// Open a grid context menu at (clientX, clientY) on the overlay canvas, then walk a chain of
-// nested menu groups to one of their leaves and click it.
-//
-// The nested submenus use slope-based hover protection: a leaf stays a zero-rect detached
-// template until its parent group receives a TRAJECTORY-BEARING, TRUSTED pointer movement, which
-// no synthetic MouseEvent chain satisfies. Only the submenu expansions need that trusted input —
-// the ROOT menu still opens on synthetic events dispatched on the overlay canvas.
+// Open a grid context menu at (clientX, clientY) on the overlay canvas, walk a chain of nested
+// menu groups to a leaf and click it. Slope-based hover protection keeps a leaf a zero-rect
+// template until its parent gets TRUSTED movement; only the ROOT menu opens on synthetic events.
 async function clickMenuLeaf(
   page: Page, at: {x: number; y: number}, groupNames: string[], leafName: string,
 ): Promise<boolean> {
@@ -99,9 +92,8 @@ async function clickMenuLeaf(
 }
 
 // Open the grid's property panel and wait for its rows to exist. The gear's CSS visibility
-// flickers with viewer hover/focus, so a plain Playwright click times out on actionability and a
-// lone synthetic click can land before the viewer takes focus; four real gestures are tried in
-// order and the first that reveals the rows wins.
+// flickers with viewer hover/focus, so four real gestures are tried in order and the first that
+// reveals the rows wins.
 async function openGridSettings(page: Page): Promise<boolean> {
   const rows = page.locator('[name="prop-row-height"]');
   if (await rows.count() > 0) return true;
@@ -220,10 +212,8 @@ test('Grid — Appearance, Summary Columns, and Persistence', async ({page}) => 
   });
 
   // --- Scenario 2: Conditional color coding on HEIGHT ------------------------
-  // Each in-range cell must resolve the color CONFIGURED for its range, not merely differ from
-  // its neighbours. Conditional mode is turned on through the real header menu; the ranges
-  // themselves are written with meta.colors.setConditional — the call the Conditional Edit
-  // dialog's range editor makes, whose own controls are undocumented.
+  // Conditional mode is turned on through the real header menu; the ranges go through
+  // meta.colors.setConditional — the call the Edit dialog's undocumented range editor makes.
   const condRanges = {'<160': '#0000FF', '>180': '#FF0000'};
 
   await softStep('Step 5 — Conditional colour coding on HEIGHT: each in-range cell resolves its configured colour', async () => {

@@ -35,8 +35,7 @@ async function dataCellPoint(page: Page, col: string, visualRow: number): Promis
 
 // Page-coordinate center of the ROW-HEADER STRIP (grid column 0) at a visual row. The strip is
 // the ONLY column with isSelectionDragStart, so a trusted drag starting here selects the crossed
-// range with no modifier (grid_row_selection.dart line 29). A drag over DATA cells matches
-// neither selection path — they lack that flag and the areaSelector rubber-band needs shiftKey.
+// range with no modifier.
 async function rowStripPoint(page: Page, visualRow: number): Promise<{x: number; y: number}> {
   return page.evaluate((vr) => {
     const grid = grok.shell.tv.grid;
@@ -61,10 +60,8 @@ async function stripDragSelect(page: Page, startVisualRow: number, endVisualRow:
 }
 
 // Open a grid context menu at (clientX, clientY), expand the nested Pin submenu and click the
-// given leaf; returns false if the leaf never becomes clickable. The submenu is slope/hover-intent
-// guarded and expands only for coordinate-bearing mouseover+mouseenter+mousemove on the group
-// center — a bare bubbling move leaves the leaf a zero-rect template. There is no JS-API pin, so
-// this menu is the only actuator of the pinned-row state.
+// given leaf; false if the leaf never becomes clickable. The submenu is hover-intent guarded, and
+// there is no JS-API pin — this menu is the only actuator of the pinned-row state.
 async function pinViaMenu(page: Page, at: {x: number; y: number}, leafName: string): Promise<boolean> {
   return page.evaluate(async ({x, y, leaf}) => {
     const overlay = document.querySelector('[name="viewer-Grid"] canvas[name="overlay"]') as HTMLElement;
@@ -215,7 +212,7 @@ test('Grid — Row Selection, Filter, and Keyboard Navigation', async ({page}) =
   });
 
   // Step 5 (Ctrl+click disjoint toggle-add on the row-number strip) produces no selection change
-  // headless, so the gesture is verified manually in grid-rows-select-filter-navigate-ui.md.
+  // headless, so the gesture is verified manually in the section's checklist, grid-ui.md.
   // The toggle-membership channel it exercises is covered automatically by Step 17 below.
 
   await softStep('Step 6 — Ctrl+A: select all rows', async () => {
@@ -255,7 +252,7 @@ test('Grid — Row Selection, Filter, and Keyboard Navigation', async ({page}) =
 
   // A header Ctrl+click writes through to df.columns.selected under headed input but leaves it
   // EMPTY headless, so the visible selection outcome is delegated to the manual checklist
-  // (grid-rows-select-filter-navigate-ui.md). The guard below needs the clicks only to FIRE.
+  // (grid-ui.md). The guard below needs the clicks only to FIRE.
 
   await softStep('Step 10 — rapid Ctrl+clicks across 5+ column headers: no console error (GROK-17455)', async () => {
     const errBefore = consoleErrors.length + pageErrors.length;
@@ -656,10 +653,9 @@ test('Grid — Row Selection, Filter, and Keyboard Navigation', async ({page}) =
     });
     expect(setup.selCount).toBe(5);
 
-    // No grid.rowsCount / visibleRowsCount property exists, so the visible rows are counted by
-    // walking gridRowToTable until its negative sentinel. The walk is capped at df.rowCount:
-    // under rowSource 'All' the mapping is the identity with no sentinel at all, so a larger
-    // bound would count phantom rows past the end.
+    // No visible-row-count property exists, so the rows are counted by walking gridRowToTable to
+    // its negative sentinel. The cap is df.rowCount: under rowSource 'All' the mapping is the
+    // identity with no sentinel, so a larger bound would count phantom rows past the end.
     async function visibleCount(): Promise<number> {
       return page.evaluate(() => {
         const grid = grok.shell.tv.grid;

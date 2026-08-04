@@ -9,11 +9,6 @@ import {saveProjectViaUI, deleteProjectWithCleanup} from '../../helpers/projects
 declare const grok: any;
 declare const DG: any;
 
-// class-1 — viewers/grid.md "Color picker dialog":
-//   [name="dialog-Color"] — the palette picker opened from [name="div-Color"] .d4-color-bar
-//     in the column-group dialog. OK/CANCEL carry name=; the hex/HSV inputs do not.
-//
-
 test.use(specTestOptions);
 
 // Page-coordinate center of a column header from the grid geometry. The header y
@@ -107,11 +102,9 @@ async function openHamburger(page: Page, col: string): Promise<boolean> {
   return page.evaluate(() => !!document.querySelector('.d4-popup-host'));
 }
 
-// Set the hamburger popup's Colors Type <select> to `value`. The ChoiceInput's real
-// <select name="input-Type"> is laid out at 0x0, so Playwright's actionability check can
-// never pass on it and the tag is committed by a native value-set + input dispatch instead.
-// The fires are separate page.evaluate calls spaced by real waits: the Dart binding attaches
-// a few frames after pane-Colors mounts, and an in-page tight loop would starve that attach.
+// Set the hamburger popup's Colors Type <select> to `value`. Its real <select name="input-Type">
+// is laid out at 0x0, so the value is committed by a native value-set + input dispatch, fired from
+// SEPARATE evaluate calls: the Dart binding attaches a few frames after pane-Colors mounts.
 async function driveColorCodingSelect(page: Page, value: string): Promise<void> {
   for (let attempt = 0; attempt < 40; attempt++) {
     const committed = await page.evaluate((v) => {
@@ -149,18 +142,15 @@ async function driveColorCodingSelect(page: Page, value: string): Promise<void> 
   ).catch(() => { /* call-site assertion surfaces the real Expected/Received */ });
 }
 
-// Create a column group over `cols` through the real Context Panel Actions flow and return
-// the resulting .columnGroups JSON. The columns are focused via grok.shell.o (a synthetic
-// header Ctrl+click does not write Column.isSelected). Every group dialog pre-fills
-// [name="input-Group"] with the literal "Group", so each group needs a DISTINCT name or the
-// two share one `.columnGroups` key and the second silently clobbers the first.
+// Create a column group over `cols` through the real Context Panel Actions flow and return the
+// resulting .columnGroups JSON. Every group dialog pre-fills [name="input-Group"] with the literal
+// "Group", so each group needs a DISTINCT name or the second silently clobbers the first.
 async function createColumnGroup(
   page: Page, cols: string[], groupName: string, swatchRgb: string,
 ): Promise<string> {
   // Focus the columns and click "Group columns..." (a label.d4-link-action, no name=).
-  // grok.shell.o is debounced and first-value-wins inside a window, so a tight re-assert loop
-  // collapses back to the PRIOR focus and the "N columns" Actions pane never rebuilds. Read
-  // only after a settle, and re-assign at most once per iteration.
+  // grok.shell.o is debounced and first-value-wins: a tight re-assert loop collapses back to the
+  // PRIOR focus and the "N columns" Actions pane never rebuilds.
   const opened = await page.evaluate((names) => {
     const df = grok.shell.tv.dataFrame;
     const wanted = names.map((n: string) => df.col(n));
@@ -252,12 +242,9 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
   await loginToDatagrok(page);
   await v.openTable(page, {path: 'System:DemoFiles/demog.csv', semTypeTimeoutMs: 3000});
 
-  // Baseline console-error counter. The ribbon Save renders a publication preview by cloning
-  // the live view into an offscreen iframe, and only that publish chain emits this trio:
-  // the clone-iframe message, a minified Dart NullError, and a bare "Stack trace <symbol>".
-  // The minified symbols drift build-to-build and may lead with a digit, so both patterns stay
-  // token-agnostic. A real reopen regression ("Invalid argument (index): null") carries none of
-  // these markers and still fails the Step 36 assertion.
+  // Baseline console-error counter. Only the ribbon Save's publish chain (an offscreen-iframe
+  // clone of the view) emits this trio, and its minified symbols drift build-to-build, so the
+  // patterns stay token-agnostic; a real reopen regression carries none of these markers.
   const benignConsoleNoise = (t: string): boolean =>
     /Unable to find element in cloned iframe/i.test(t) ||
     /NullError: method not found: '[a-zA-Z]+' on null/i.test(t) ||
@@ -424,10 +411,9 @@ test('Grid — Dialogs, Hamburger Menu, and Column Groups', async ({page}) => {
       Array.from(document.querySelectorAll('.d4-popup-host')).forEach((e) => e.remove());
     });
     await page.waitForTimeout(300);
-    // GROK-19288 asserts the hamburger coding reaches the Context Panel without a manual
-    // refresh. The asserted signal is the `.color-coding-type` tag the Colors editor renders
-    // FROM, plus the pane rebuilding; the editor's own <select> VALUE is waived — it can latch
-    // on the prior column's value after a debounced focus rebuild and never converges headless.
+    // GROK-19288: the hamburger coding must reach the Context Panel without a manual refresh. The
+    // signal is the `.color-coding-type` tag the Colors editor renders FROM plus the pane
+    // rebuilding; the editor's own <select> VALUE is waived — it never converges headless.
     const before = errorsAt();
     const r = await page.evaluate(async () => {
       const age = grok.shell.tv.dataFrame.col('AGE');
@@ -655,8 +641,7 @@ async function dismissTypeFilterPopup(page: Page): Promise<void> {
 }
 
 // Close every open Order-or-Hide-Columns dialog through the DG Dialog registry: closing by
-// title is headless-independent, unlike a synthetic button-CLOSE click. The sweep afterwards is
-// unconditional — a stuck dialog that is still VISIBLE is exactly the case that must be removed.
+// title is headless-independent, unlike a synthetic button-CLOSE click.
 async function closeColumnsDialog(page: Page): Promise<void> {
   await dismissTypeFilterPopup(page);
   await page.evaluate(() => {
@@ -672,9 +657,8 @@ async function closeColumnsDialog(page: Page): Promise<void> {
 }
 
 // Lay out the nested div-Types submenu and return the named leaf's rect. The submenu container
-// stays display:none behind a d4 hover machine that neither a synthetic nor a trusted hover
-// slope flips reliably headless, leaving the leaf a zero-rect template; forcing the container's
-// display lays the leaves out regardless of hover state.
+// stays display:none behind a d4 hover machine that no hover flips reliably headless, so the
+// container's display is forced instead.
 async function typeMenuLeafRect(
   page: Page, leafName: string,
 ): Promise<{x: number; y: number} | null> {

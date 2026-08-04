@@ -72,6 +72,18 @@ All scenarios should start with the following sequence of events:
 3. Confirm the current row stays on row 10: a Ctrl+click changes membership only, it does not move
    the current row
 
+## Multi-Row Copy — Clipboard Content
+
+*Dataset: demog*
+
+1. Select 5 rows by dragging down the row-number strip, noting the values you see in them
+2. Press Ctrl+C, then paste into a plain-text editor (Notepad or any text field outside the
+   platform)
+3. Confirm the pasted text holds 5 data lines, one per selected row, in the order the rows appear
+   in the grid
+4. Confirm each line is tab-separated and its values follow the grid's current column order,
+   matching what the selected rows show — including any column you moved or hid before copying
+
 ## Selected Rows Color  
 
 *Dataset: demog*

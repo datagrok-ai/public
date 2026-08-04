@@ -288,10 +288,8 @@ test('Grid tests', async ({page}) => {
     });
     expect(extractedRows).toBe(8);
 
-    // The table must be persisted server-side before the project references it, or projects.save
-    // raises a project_relations foreign-key violation. uploadDataFrame returns before the server
-    // has committed the entity, so the save is gated on dapi.tables.find(id) resolving rather
-    // than on a fixed sleep, and the whole chain is retried with backoff.
+    // projects.save raises a project_relations foreign-key violation until the table is committed
+    // server-side, so the save waits on dapi.tables.find(id) resolving, not on a fixed sleep.
     const savedId = await page.evaluate(async (name) => {
       const df = grok.shell.tv.dataFrame;
       let saved = null;
@@ -367,9 +365,7 @@ test('Grid tests', async ({page}) => {
     });
     await page.waitForTimeout(700);
     // The settings panel is a canvas-local Dart property grid with no DOM input to fill, so the
-    // Row-Height value is committed through the viewer's props. What is graded is the downstream
-    // render geometry, not the prop echo: the added grid's rendered cell height against the
-    // view's own grid, which must stay untouched.
+    // Row-Height value is committed through the viewer's props.
     const rowHeightChanged = await page.evaluate(async () => {
       const added = grok.shell.tv.viewers.filter((vw: any) => vw.type === 'Grid');
       const addedGrid = added[added.length - 1];
