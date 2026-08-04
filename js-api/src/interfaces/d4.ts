@@ -1933,6 +1933,14 @@ export interface IHistogramSettings {
 
   showYAxis: boolean;
 
+  /// Lower bound of the vertical axis. Empty means zero.
+  /// Set *Y Min* and *Y Max* to put different histograms on the same scale.
+  yMin: number;
+
+  /// Upper bound of the vertical axis. Empty means the biggest bin count.
+  /// Bins that do not fit are clipped.
+  yMax: number;
+
   /// Whether the horizontal axis should be zoomed to the range of the visible bins.
   zoomToRange: boolean;
 

@@ -75,6 +75,8 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Show Markers | boolean | Whether markers should be drown when multiple histograms are shown. Requires *Split Column Name* to be set. |
 | **Misc** | | |
 | Show Y Axis | boolean |  |
+| Y Min | number | Lower bound of the vertical axis. Empty means zero. Set *Y Min* and *Y Max* to put different histograms on the same scale. |
+| Y Max | number | Upper bound of the vertical axis. Empty means the biggest bin count. Bins that do not fit are clipped. |
 | Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
 | **General** | | |
 | Zoom To Range | boolean | Whether the horizontal axis should be zoomed to the range of the visible bins. |
