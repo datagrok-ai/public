@@ -4,6 +4,15 @@ import {baseConfig} from '@datagrok-libraries/test/src/playwright/base-config';
 // playwright-public hosts the core/platform E2E suites. All general config lives in
 // the shared base (@datagrok-libraries/test/src/playwright/base-config); here we only
 // set what is specific to this run dir.
+// Refuse to run without an explicit target. baseConfig falls back to
+// https://dev.datagrok.ai when DATAGROK_URL is unset, so a harness that forgot to export
+// it would point the whole suite at a live environment — creating projects, editing
+// shares and deleting entities there — and nothing in the output would say so. Tests
+// belong on the ephemeral CI stand; failing loudly is the only safe default.
+if (!process.env.DATAGROK_URL)
+  throw new Error('DATAGROK_URL is not set. Run via `grok test --host <ci-stand>`; ' +
+    'this suite must never fall back to a deployed environment.');
+
 export default defineConfig({
   ...baseConfig,
   testDir: '.',

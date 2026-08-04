@@ -9,7 +9,11 @@ import * as path from 'path';
 //
 // Put only genuinely package-specific overrides in the consumer config; everything
 // general lives here.
-const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai').replace(/\/$/, '');
+// Falling back to a deployed environment is not a safe default: specs create projects,
+// edit shares and delete entities, so a harness that forgot to export DATAGROK_URL would
+// do all of that against dev while the output still looked like a normal run. `grok test`
+// always sets it; anything else should say where it is pointing.
+const DATAGROK_URL = (process.env.DATAGROK_URL ?? 'http://localhost:8888').replace(/\/$/, '');
 
 export const baseConfig = defineConfig({
   testMatch: '**/*.test.ts',

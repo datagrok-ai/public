@@ -6,7 +6,9 @@
 // login page ("Login or Email / Token is empty").
 import {Page, expect} from '@playwright/test';
 
-export const BASE_URL = process.env.DATAGROK_URL ?? 'https://dev.datagrok.ai';
+// No deployed-environment fallback: these specs create, share and delete projects, and a
+// missing DATAGROK_URL used to aim all of that at dev.
+export const BASE_URL = process.env.DATAGROK_URL!;
 
 export const projectsTestOptions = {
   viewport: {width: 1920, height: 1080},
