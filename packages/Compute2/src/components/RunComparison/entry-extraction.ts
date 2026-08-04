@@ -10,9 +10,40 @@ import {
   PipelineSerializedState, isFuncCallSerializedState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {buildTraverseD} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/graph-traverse-utils';
-import {ComparisonEntry, ScalarNodeInfo, TableNodeInfo} from './types';
+import {
+  ComparisonEntry, ScalarNodeInfo, TableNodeInfo, AxisMode, TimeUnit, TIME_UNITS,
+} from './types';
 
 const SCALAR_PROPERTY_TYPES = new Set<string>([DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BIG_INT]);
+
+const AXIS_MODES = new Set<AxisMode>(['series', 'timeseries', 'points']);
+
+export interface ComparisonDefaults {
+  index?: string;
+  split?: string;
+  mode?: AxisMode;
+  units?: TimeUnit;
+}
+
+/** Index defaults of a dataframe IO: the {comparison: {...}} JSON annotation,
+ * with {comparisonIndex}/{comparisonSplit} as legacy aliases it overrides. */
+export function parseComparisonDefaults(options?: Record<string, any>): ComparisonDefaults {
+  const raw = options?.['comparison'];
+  let parsed: any = {};
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      console.warn(`Run comparison: malformed comparison annotation: ${raw}`, e);
+    }
+  }
+  return {
+    index: typeof parsed.index === 'string' ? parsed.index : (options?.['comparisonIndex'] || undefined),
+    split: typeof parsed.split === 'string' ? parsed.split : (options?.['comparisonSplit'] || undefined),
+    ...AXIS_MODES.has(parsed.mode) ? {mode: parsed.mode as AxisMode} : {},
+    ...TIME_UNITS.includes(parsed.units) ? {units: parsed.units as TimeUnit} : {},
+  };
+}
 
 const columnInfos = (df: DG.DataFrame) => [...df.columns].map((col) => ({
   name: col.name,
@@ -48,13 +79,16 @@ function extractCallNodes(
       });
     } else if (prop.propertyType === DG.TYPE.DATA_FRAME && value != null) {
       const df = value as DG.DataFrame;
+      const defaults = parseComparisonDefaults(prop.options);
       tables.push({
         path,
         name,
         friendlyPath,
         nqName: call.func?.nqName,
-        defaultIndexColumn: prop.options?.['comparisonIndex'] || undefined,
-        defaultSplitColumn: prop.options?.['comparisonSplit'] || undefined,
+        defaultIndexColumn: defaults.index,
+        defaultSplitColumn: defaults.split,
+        defaultAxisMode: defaults.mode,
+        defaultTimeUnits: defaults.units,
         columns: columnInfos(df),
         rowCount: df.rowCount,
       });

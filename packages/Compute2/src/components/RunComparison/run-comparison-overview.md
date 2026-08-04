@@ -31,7 +31,7 @@ FuncCall runs / open tables
 
 `collectWorkflowSteps` is a typed walk built on RTD primitives: `buildTraverseD` (the same DFS traversal RTD's `StateTreeFactory` uses) over `PipelineSerializedState`, with `isFuncCallSerializedState` as the leaf guard — so the serialized format pinned by the LibTests persistence tests is enforced at compile time here. Each leaf gets a stable slash `path` from the `configId` chain (root included) and a ` · `-joined `friendlyPath` from friendly names (root name elided, since it's shared by every step). The walk is wrapped in a try/catch: a legacy or malformed serialized config degrades to an entry with no steps instead of breaking the dialog.
 
-**`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). It also reads two function-annotation options off DataFrame outputs — `{comparisonIndex: ...}` and `{comparisonSplit: ...}` — which become default picker values later.
+**`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). It also reads the `{comparison: {...}}` function-annotation option off DataFrame outputs (index/split/mode/units, with `{comparisonIndex}`/`{comparisonSplit}` as legacy aliases) — these become default picker values later.
 
 **`entryFromDataFrame(df)`** wraps an open workspace table as a "raw" entry with one table and no scalars, so ad-hoc data can join the comparison.
 
@@ -105,7 +105,7 @@ Everything re-derives from `entries` + the selections:
 
 ### Notable mechanics
 
-- **`addEntry`** dedupes by id and calls `applyAnnotatedDefaults`, which pre-fills index/split pickers from the `comparisonIndex`/`comparisonSplit` annotations — but only where the user hasn't already chosen.
+- **`addEntry`** dedupes by id and calls `applyAnnotatedDefaults`, which pre-fills the index/split pickers and the axis mode/units from the `comparison` annotation — but only where the user hasn't already chosen.
 - **`addSelectedRuns`** reloads each checked history run fully (`historyUtils.loadRun`) before extraction, guarded by `isAddingRuns`.
 - The **table input** (`ui.input.table`) resets its value in a `setTimeout` because doing it synchronously re-enters the Dart stream controller mid-dispatch (fix from `7ddbfc3b`).
 - **Shift+click** on a target row enters multi-value mode grid-style: if the clicked target is suggestion-compatible with the current selection, both are kept; otherwise the click re-anchors.

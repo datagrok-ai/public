@@ -29,9 +29,12 @@ export interface TableNodeInfo {
   friendlyPath?: string;
   // nqName of the producing function; used to merge same-function tables in index selection
   nqName?: string;
-  // from the {comparisonIndex: ...} / {comparisonSplit: ...} output annotations
+  // from the {comparison: {...}} output annotation (or its legacy
+  // {comparisonIndex: ...} / {comparisonSplit: ...} aliases)
   defaultIndexColumn?: string;
   defaultSplitColumn?: string;
+  defaultAxisMode?: AxisMode;
+  defaultTimeUnits?: TimeUnit;
   columns: ColumnInfo[];
   rowCount: number;
 }

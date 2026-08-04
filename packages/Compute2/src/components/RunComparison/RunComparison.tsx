@@ -119,6 +119,16 @@ export const RunComparison = Vue.defineComponent({
         if (splitDefault && !splitSelection.value[entry.id]?.[table.path] &&
           splitColumn && isSplitCandidate(splitColumn, indexSelection.value[entry.id]?.[table.path] ?? ''))
           setSplitColumn(member, splitDefault);
+        const modeDefault = table.defaultAxisMode;
+        if (modeDefault && !axisModeSelection.value[entry.id]?.[table.path]) {
+          setAxisMode(member, {
+            mode: modeDefault,
+            // units matter only on the elapsed axis; storing them elsewhere would let a
+            // unit the user never saw outrank the column-meta prefill later
+            ...modeDefault === 'timeseries' && table.defaultTimeUnits ?
+              {units: table.defaultTimeUnits} : {},
+          });
+        }
       }
     };
 

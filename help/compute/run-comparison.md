@@ -104,26 +104,38 @@ against another across runs.
   sharing the y axis, colored by value name with runs as marker shapes. Whether the
   values are comparable on one scale (units, magnitude) is up to you.
 
-## Default index/split annotations
+## Default index annotations
 
-A model can declare the default index and split columns on its dataframe output:
+A model can declare how its dataframe output should be indexed in a comparison with the
+`comparison` option — a small JSON object on the output:
 
 ```javascript
-//output: dataframe result {comparisonIndex: time; comparisonSplit: species}
+//output: dataframe result {comparison: {"index": "time", "split": "species", "mode": "timeseries", "units": "s"}}
 ```
 
-When a run is added to the comparison:
+| Key | Value | Pre-fills |
+|-----|-------|-----------|
+| `index` | column name | the index (x axis) picker |
+| `split` | column name | the split picker |
+| `mode` | `series`, `timeseries`, or `points` | the [row semantics](#row-semantics) selector |
+| `units` | `ms`, `s`, `min`, `h`, or `days` | the time units selector |
 
-* `comparisonIndex` pre-fills the index picker, and the column is offered even when its
+All keys are optional. When a run is added to the comparison:
+
+* `index` pre-fills the index picker, and the column is offered even when its
   type is behind a toggle (an explicit annotation outranks the type gating);
-* `comparisonSplit` pre-fills the split picker, provided the column is a valid split
+* `split` pre-fills the split picker, provided the column is a valid split
   (string-typed, not the index);
-* annotations never overwrite a selection the user has already made, and a missing column
-  name is silently ignored;
+* `mode` pre-fills the row semantics selector. `units` applies only together with
+  `mode: timeseries` on a numeric index and outranks the column's units metadata;
+* annotations never overwrite a selection the user has already made; a missing column
+  name or an unknown mode or units value is silently ignored;
 * merged rows work naturally: all merged tables come from the same function, so they carry
   the same annotation and agree on the default.
 
-Raw workspace tables have no annotations.
+The legacy `{comparisonIndex: time; comparisonSplit: species}` options are still
+recognized as aliases for `index` and `split`. The `comparison` object wins when both
+are present. Raw workspace tables have no annotations.
 
 ## Multiple values
 
