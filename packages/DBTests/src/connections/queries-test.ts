@@ -45,9 +45,13 @@ category('Docker connection', () => {
     testConnection = await grok.functions.eval('DbTests:PostgresDocker');
   });
 
+  // Datlas waits containerStatusTimeout (5 min) for an on-demand container, so a 5-min
+  // budget here races it: a container that reports ready at 4:50 leaves nothing for the
+  // connection test and the call dies as EXECUTION TIMEOUT instead (Build-Deploy #1209,
+  // 300s exactly, where #1202-#1208 took 13-31s). Outlast the server's own wait.
   test('Connection test', async () => {
     await testConnection!.test();
-  }, {timeout: 300000 /* on-demand start: image pull on a fresh CI agent takes minutes */});
+  }, {timeout: 420000});
 
   test('Connection getSchemas', async () => {
     const schemas: string[] = await grok.dapi.connections.getSchemas(testConnection!);
