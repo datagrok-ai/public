@@ -3,9 +3,9 @@ import {matchScalarTargets, matchColumnTargets} from '../components/RunCompariso
 import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
-  parseTimeUnit, resolveTimeSeries, targetTimeSeriesMode, resolveDisplayUnit, pickAutoUnit,
+  parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit,
 } from '../components/RunComparison/selection';
-import {ColumnBinding, ColumnTarget, TimeSeriesConfigMap, TimeUnit} from '../components/RunComparison/types';
+import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
 category('RunComparison: entry statuses', () => {
@@ -410,7 +410,7 @@ category('RunComparison: equal values', () => {
   });
 });
 
-category('RunComparison: time series selection', () => {
+category('RunComparison: axis mode selection', () => {
   const floatTable = (units?: string) => ({path: 't', columns: [
     {name: 'time', type: 'double', units}, {name: 'height'},
   ]});
@@ -423,8 +423,12 @@ category('RunComparison: time series selection', () => {
     coverage: bindings.length, defaultCoverage: bindings.length, total: bindings.length,
     candidates: [], bindings,
   });
-  const config = (spec: Record<string, Record<string, {units?: TimeUnit}>>): TimeSeriesConfigMap =>
-    new Map(Object.entries(spec).map(([entryId, tables]) => [entryId, new Map(Object.entries(tables))]));
+  const config = (
+    spec: Record<string, Record<string, {mode?: 'timeseries' | 'points', units?: TimeUnit}>>,
+  ): AxisConfigMap =>
+    new Map(Object.entries(spec).map(([entryId, tables]) => [entryId,
+      new Map(Object.entries(tables).map(([path, {mode, units}]) =>
+        [path, {mode: mode ?? 'timeseries', units}]))]));
 
   test('parseTimeUnit recognizes aliases and rejects ambiguity', async () => {
     expect(parseTimeUnit('s'), 's');
@@ -438,36 +442,36 @@ category('RunComparison: time series selection', () => {
     expect(parseTimeUnit(undefined) === undefined, true);
   });
 
-  test('index rows carry time-series controls for numeric and datetime indexes', async () => {
+  test('index rows carry axis controls for numeric and datetime indexes', async () => {
     const entries = [makeEntry('a', [], [floatTable()]), makeEntry('b', [], [dtTable])];
     const rows = computeIndexRows(entries, {a: {t: 'time'}, b: {t: 'stamp'}}, {}, false, {});
     const floatRow = rows.find((row) => row.entryName === 'a')!;
-    expect(floatRow.timeSeries!.enabled, false);
-    expect(floatRow.timeSeries!.units, 's');
+    expect(floatRow.axis!.mode, 'series');
+    expect(floatRow.axis!.units, 's');
     const dtRow = rows.find((row) => row.entryName === 'b')!;
-    expect(dtRow.timeSeries!.enabled, false);
-    expect(dtRow.timeSeries!.units === undefined, true);
+    expect(dtRow.axis!.mode, 'series');
+    expect(dtRow.axis!.units === undefined, true);
   });
 
   test('no controls for string or unset indexes', async () => {
     const table = {path: 't', columns: [{name: 'key', type: 'string'}, {name: 'height'}]};
     const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [floatTable()])];
     const rows = computeIndexRows(entries, {a: {t: 'key'}}, {}, false, {});
-    expect(rows.find((row) => row.entryName === 'a')!.timeSeries === undefined, true);
-    expect(rows.find((row) => row.entryName === 'b')!.timeSeries === undefined, true);
+    expect(rows.find((row) => row.entryName === 'a')!.axis === undefined, true);
+    expect(rows.find((row) => row.entryName === 'b')!.axis === undefined, true);
   });
 
   test('units prefill from column metadata, stored pick wins', async () => {
     const entries = [makeEntry('a', [], [floatTable('hours')]), makeEntry('b', [], [floatTable('sec')])];
     const selection = {a: {t: 'time'}, b: {t: 'time'}};
     const rows = computeIndexRows(entries, selection, {}, false, {});
-    expect(rows.find((row) => row.entryName === 'a')!.timeSeries!.units, 'h');
-    expect(rows.find((row) => row.entryName === 'b')!.timeSeries!.units, 's');
+    expect(rows.find((row) => row.entryName === 'a')!.axis!.units, 'h');
+    expect(rows.find((row) => row.entryName === 'b')!.axis!.units, 's');
     const stored = computeIndexRows(entries, selection, {}, false,
-      {a: {t: {enabled: true, units: 'min'}}});
+      {a: {t: {mode: 'timeseries', units: 'min'}}});
     const rowA = stored.find((row) => row.entryName === 'a')!;
-    expect(rowA.timeSeries!.enabled, true);
-    expect(rowA.timeSeries!.units, 'min');
+    expect(rowA.axis!.mode, 'timeseries');
+    expect(rowA.axis!.units, 'min');
   });
 
   test('stale config is ignored on a non-time index and resurfaces later', async () => {
@@ -475,75 +479,94 @@ category('RunComparison: time series selection', () => {
       {name: 'time'}, {name: 'key', type: 'string'}, {name: 'height'},
     ]};
     const entries = [makeEntry('a', [], [table])];
-    const ts = {a: {t: {enabled: true, units: 'min' as const}}};
-    const onString = computeIndexRows(entries, {a: {t: 'key'}}, {}, false, ts);
-    expect(onString[0].timeSeries === undefined, true);
-    const back = computeIndexRows(entries, {a: {t: 'time'}}, {}, false, ts);
-    expect(back[0].timeSeries!.enabled, true);
-    expect(back[0].timeSeries!.units, 'min');
+    const stored = {a: {t: {mode: 'points' as const, units: 'min' as const}}};
+    const onString = computeIndexRows(entries, {a: {t: 'key'}}, {}, false, stored);
+    expect(onString[0].axis === undefined, true);
+    const back = computeIndexRows(entries, {a: {t: 'time'}}, {}, false, stored);
+    expect(back[0].axis!.mode, 'points');
+    expect(back[0].axis!.units, 'min');
   });
 
-  test('enabling on a datetime index stores no units, so the prefill wins after an index switch', async () => {
+  test('elapsed on a datetime index stores no units, so the prefill wins after an index switch', async () => {
     const table = {path: 't', columns: [
       {name: 'stamp', type: 'datetime'}, {name: 'time', type: 'double', units: 'hours'}, {name: 'height'},
     ]};
     const entries = [makeEntry('a', [], [table])];
-    const ts = {a: {t: {enabled: true}}};
-    const onDatetime = computeIndexRows(entries, {a: {t: 'stamp'}}, {}, false, ts);
-    expect(onDatetime[0].timeSeries!.enabled, true);
-    expect(onDatetime[0].timeSeries!.units === undefined, true);
-    const onNumeric = computeIndexRows(entries, {a: {t: 'time'}}, {}, false, ts);
-    expect(onNumeric[0].timeSeries!.units, 'h');
-    const resolved = resolveTimeSeries(entries, indexMap({a: {t: 'time'}}), ts);
+    const stored = {a: {t: {mode: 'timeseries' as const}}};
+    const onDatetime = computeIndexRows(entries, {a: {t: 'stamp'}}, {}, false, stored);
+    expect(onDatetime[0].axis!.mode, 'timeseries');
+    expect(onDatetime[0].axis!.units === undefined, true);
+    const onNumeric = computeIndexRows(entries, {a: {t: 'time'}}, {}, false, stored);
+    expect(onNumeric[0].axis!.units, 'h');
+    const resolved = resolveAxisModes(entries, indexMap({a: {t: 'time'}}), stored);
     expect(resolved.get('a')!.get('t')!.units, 'h');
   });
 
-  test('merged rows agree on enablement like index picks', async () => {
+  test('merged rows agree on the mode like index picks', async () => {
     const table = {path: 's/df', nqName: 'Pkg:Sim', columns: [{name: 'time'}, {name: 'height'}]};
     const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
     const selection = {a: {'s/df': 'time'}, b: {'s/df': 'time'}};
     const both = computeIndexRows(entries, selection, {}, true, {
-      a: {'s/df': {enabled: true, units: 's'}}, b: {'s/df': {enabled: true, units: 's'}},
+      a: {'s/df': {mode: 'points'}}, b: {'s/df': {mode: 'points'}},
     });
-    expect(both[0].timeSeries!.enabled, true);
+    expect(both[0].axis!.mode, 'points');
     const one = computeIndexRows(entries, selection, {}, true, {
-      a: {'s/df': {enabled: true, units: 's'}},
+      a: {'s/df': {mode: 'points'}},
     });
-    expect(one[0].timeSeries!.enabled, false);
+    expect(one[0].axis!.mode, 'series');
+    const mixed = computeIndexRows(entries, selection, {}, true, {
+      a: {'s/df': {mode: 'points'}}, b: {'s/df': {mode: 'timeseries', units: 's'}},
+    });
+    expect(mixed[0].axis!.mode, 'series');
   });
 
-  test('resolveTimeSeries keeps only enabled tables with a time-typed index', async () => {
+  test('resolveAxisModes keeps only non-series tables with a time-typed index', async () => {
     const entries = [
       makeEntry('a', [], [floatTable()]),
       makeEntry('b', [], [dtTable]),
       makeEntry('c', [], [floatTable()]),
       makeEntry('d', [], [floatTable()]),
+      makeEntry('e', [], [floatTable('sec')]),
     ];
-    const map = resolveTimeSeries(entries, indexMap({a: {t: 'time'}, b: {t: 'stamp'}, d: {t: 'time'}}), {
-      a: {t: {enabled: true, units: 'min'}},
-      b: {t: {enabled: true, units: 's'}},
-      c: {t: {enabled: true, units: 's'}},
-      d: {t: {enabled: false, units: 's'}},
-    });
+    const map = resolveAxisModes(entries,
+      indexMap({a: {t: 'time'}, b: {t: 'stamp'}, d: {t: 'time'}, e: {t: 'time'}}), {
+        a: {t: {mode: 'timeseries', units: 'min'}},
+        b: {t: {mode: 'timeseries', units: 's'}},
+        c: {t: {mode: 'timeseries', units: 's'}},
+        d: {t: {mode: 'series', units: 's'}},
+        e: {t: {mode: 'points'}},
+      });
+    expect(map.get('a')!.get('t')!.mode, 'timeseries');
     expect(map.get('a')!.get('t')!.units, 'min');
     expect(map.get('b')!.get('t')!.units === undefined, true);
     expect(map.has('c'), false);
     expect(map.has('d'), false);
+    // scatter resolves without units even on a numeric index with metadata
+    expect(map.get('e')!.get('t')!.mode, 'points');
+    expect(map.get('e')!.get('t')!.units === undefined, true);
   });
 
-  test('targetTimeSeriesMode: full, partial, none', async () => {
+  test('targetAxisMode reports full, partial, none per mode', async () => {
     const tgt = target([bind('a'), bind('b')]);
-    expect(targetTimeSeriesMode(tgt, config({a: {t: {units: 's'}}, b: {t: {}}})), 'full');
-    expect(targetTimeSeriesMode(tgt, config({a: {t: {units: 's'}}})), 'partial');
-    expect(targetTimeSeriesMode(tgt, config({})), 'none');
-    expect(targetTimeSeriesMode(target([]), config({a: {t: {units: 's'}}})), 'none');
+    expect(targetAxisMode(tgt, config({a: {t: {units: 's'}}, b: {t: {}}}), 'timeseries'), 'full');
+    expect(targetAxisMode(tgt, config({a: {t: {units: 's'}}}), 'timeseries'), 'partial');
+    expect(targetAxisMode(tgt, config({}), 'timeseries'), 'none');
+    expect(targetAxisMode(target([]), config({a: {t: {units: 's'}}}), 'timeseries'), 'none');
+    const scatter = config({a: {t: {mode: 'points'}}, b: {t: {mode: 'points'}}});
+    expect(targetAxisMode(tgt, scatter, 'points'), 'full');
+    expect(targetAxisMode(tgt, scatter, 'timeseries'), 'none');
+    const mixed = config({a: {t: {mode: 'points'}}, b: {t: {units: 's'}}});
+    expect(targetAxisMode(tgt, mixed, 'points'), 'partial');
+    expect(targetAxisMode(tgt, mixed, 'timeseries'), 'partial');
   });
 
-  test('resolveDisplayUnit: first numeric binding wins, datetime-only is auto', async () => {
+  test('resolveDisplayUnit prefers the first numeric elapsed binding, datetime-only is auto', async () => {
     const bindings = [bind('a'), bind('b')];
     expect(resolveDisplayUnit(bindings, config({a: {t: {}}, b: {t: {units: 'min'}}})), 'min');
     expect(resolveDisplayUnit(bindings, config({a: {t: {units: 'h'}}, b: {t: {units: 'min'}}})), 'h');
     expect(resolveDisplayUnit(bindings, config({a: {t: {}}, b: {t: {}}})), 'auto');
+    expect(resolveDisplayUnit(bindings,
+      config({a: {t: {mode: 'points', units: 'min'}}, b: {t: {units: 'h'}}})), 'h');
   });
 
   test('pickAutoUnit boundaries', async () => {
@@ -561,7 +584,9 @@ category('RunComparison: time series selection', () => {
     const [tgt] = matchColumnTargets(entries, indexes);
     const partial = getEntryStatuses(entries, tgt, indexes, config({a: {t: {units: 's'}}}));
     expect(partial.find((s) => s.entryId === 'a')!.warning === undefined, true);
-    expect(partial.find((s) => s.entryId === 'b')!.warning, 'time series not set');
+    expect(partial.find((s) => s.entryId === 'b')!.warning, 'relative timeseries not set');
+    const partialScatter = getEntryStatuses(entries, tgt, indexes, config({a: {t: {mode: 'points'}}}));
+    expect(partialScatter.find((s) => s.entryId === 'b')!.warning, 'independent points not set');
     const full = getEntryStatuses(entries, tgt, indexes,
       config({a: {t: {units: 's'}}, b: {t: {units: 's'}}}));
     expect(full.every((s) => s.warning === undefined), true);

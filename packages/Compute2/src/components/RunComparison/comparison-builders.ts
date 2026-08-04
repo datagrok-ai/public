@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import {
   ComparisonEntry, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType,
-  TimeUnit, TIME_UNIT_MS, TimeSeriesConfigMap,
+  TimeUnit, TIME_UNIT_MS, AxisConfigMap,
 } from './types';
 import {resolveDisplayUnit, pickAutoUnit} from './selection';
 
@@ -75,12 +75,16 @@ export interface ColumnComparisonResult {
   // display name of the inner split column, when set on any participating table
   splitColumnName?: string;
   isKeyIndex: boolean;
+  // every participating table is in independent-points mode — chart rows as points, not lines
+  isScatter: boolean;
+  // multi-value scatter melts values into one column keyed by target name
+  melted?: {seriesColumnName: string, valueColumnName: string};
   // display unit of the elapsed axis; set only when the target charted in time-series mode
   timeSeriesUnit?: TimeUnit;
 }
 
 export interface MultiColumnComparisonResult extends ColumnComparisonResult {
-  // chart y-columns, one per selected target
+  // chart y-columns, one per selected target; not present in the melted frame
   valueColumnNames: string[];
 }
 
@@ -104,18 +108,18 @@ type IndexAxis =
 
 // time-series mode requires every participating table to be configured (require-all) and
 // every index column to actually be numeric or datetime; otherwise the legacy rules apply
-function getIndexAxis(participating: ParticipatingRun[], timeSeries?: TimeSeriesConfigMap): IndexAxis {
+function getIndexAxis(participating: ParticipatingRun[], axisModes?: AxisConfigMap): IndexAxis {
   const indexTypes = participating.map(({entry, binding}) =>
     entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
   const isDatetimeOnly = indexTypes.every((type) => type === DG.TYPE.DATE_TIME);
   const timeChartable = indexTypes.every((type) =>
     type != null && (isNumericType(type) || type === DG.TYPE.DATE_TIME));
-  const configured = timeSeries != null && participating.every(({binding}) =>
-    timeSeries.get(binding.entryId)?.has(binding.tablePath));
+  const configured = axisModes != null && participating.every(({binding}) =>
+    axisModes.get(binding.entryId)?.get(binding.tablePath)?.mode === 'timeseries');
   if (configured && timeChartable) {
     return {
       kind: 'elapsed',
-      unit: resolveDisplayUnit(participating.map(({binding}) => binding), timeSeries!),
+      unit: resolveDisplayUnit(participating.map(({binding}) => binding), axisModes!),
     };
   }
   if (isDatetimeOnly)
@@ -150,7 +154,7 @@ const makeIndexColumn = (name: string, list: any[], axis: IndexAxis) => {
 // declared units; nulls preserved
 function indexMsValues(
   {entry, binding}: ParticipatingRun,
-  configs: TimeSeriesConfigMap,
+  configs: AxisConfigMap,
 ): (number | null)[] {
   const col = entry.dataFrames.get(binding.tablePath)!.getCol(binding.indexColumnName);
   const isDatetime = col.type === DG.TYPE.DATE_TIME;
@@ -176,9 +180,9 @@ function indexMsValues(
 export function buildColumnComparison(
   target: ColumnTarget,
   entries: ComparisonEntry[],
-  timeSeries?: TimeSeriesConfigMap,
+  axisModes?: AxisConfigMap,
 ): ColumnComparisonResult | null {
-  const multi = buildMultiColumnComparison([target], entries, timeSeries);
+  const multi = buildMultiColumnComparison([target], entries, axisModes);
   if (!multi)
     return null;
   // the presence of valueColumnNames is what marks a multi-value result downstream
@@ -194,14 +198,19 @@ export function buildColumnComparison(
 export function buildMultiColumnComparison(
   targets: ColumnTarget[],
   entries: ComparisonEntry[],
-  timeSeries?: TimeSeriesConfigMap,
+  axisModes?: AxisConfigMap,
 ): MultiColumnComparisonResult | null {
   const labels = dedupeLabels(targets);
   const participating = getParticipating(targets[0], entries);
   if (participating.length < 2)
     return null;
-  const axis = getIndexAxis(participating, timeSeries);
+  const axis = getIndexAxis(participating, axisModes);
   const isKeyIndex = axis.kind === 'key';
+  // same require-all shape as the elapsed axis; a mixed numeric/datetime index falls
+  // back to the key axis above, which a scatterplot cannot chart
+  const isScatter = axisModes != null && !isKeyIndex &&
+    participating.every(({binding}) =>
+      axisModes.get(binding.entryId)?.get(binding.tablePath)?.mode === 'points');
   const splitColumnName = getSplitName(participating);
 
   // elapsed axis: convert every run's index to ms, subtract its own start,
@@ -209,7 +218,7 @@ export function buildMultiColumnComparison(
   let displayUnit: TimeUnit | undefined;
   let elapsedByRun: Map<ParticipatingRun, (number | null)[]> | undefined;
   if (axis.kind === 'elapsed') {
-    const msByRun = participating.map((run) => ({run, ms: indexMsValues(run, timeSeries!)}));
+    const msByRun = participating.map((run) => ({run, ms: indexMsValues(run, axisModes!)}));
     let maxElapsedMs = 0;
     const shifted = msByRun.map(({run, ms}) => {
       // per-table start: min of non-null values (rows may be unsorted); all-null -> 0
@@ -263,16 +272,56 @@ export function buildMultiColumnComparison(
   }
 
   const valueColumnNames = targets.map((target) => labels.get(target.key)!);
-  const chartDf = DG.DataFrame.fromColumns([
-    makeIndexColumn(indexColumnName, longIndex, axis),
-    ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
-    ...valueColumnNames.map((label) =>
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, longValues.get(label)!)),
-  ]);
+
+  // multi-value scatter: one point cloud per target on a shared y axis, keyed by
+  // the target name — the scatterplot charts a single y column
+  let melted: {seriesColumnName: string, valueColumnName: string} | undefined;
+  let chartDf: DG.DataFrame;
+  if (isScatter && targets.length > 1) {
+    const taken = new Set([indexColumnName, RUN_COLUMN, ...splitColumnName ? [splitColumnName] : []]);
+    const unique = (base: string) => {
+      let name = base;
+      for (let n = 2; taken.has(name); n++)
+        name = `${base} (${n})`;
+      taken.add(name);
+      return name;
+    };
+    melted = {seriesColumnName: unique('Data'), valueColumnName: unique('Value')};
+    const meltedIndex: any[] = [];
+    const meltedSplits: string[] = [];
+    const meltedRuns: string[] = [];
+    const meltedSeries: string[] = [];
+    const meltedValues: (number | null)[] = [];
+    for (const label of valueColumnNames) {
+      meltedIndex.push(...longIndex);
+      meltedRuns.push(...longRuns);
+      if (splitColumnName)
+        meltedSplits.push(...longSplits);
+      for (const value of longValues.get(label)!) {
+        meltedSeries.push(label);
+        meltedValues.push(value);
+      }
+    }
+    chartDf = DG.DataFrame.fromColumns([
+      makeIndexColumn(indexColumnName, meltedIndex, axis),
+      ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, meltedSplits)] : [],
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, meltedRuns),
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, melted.seriesColumnName, meltedSeries),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, melted.valueColumnName, meltedValues),
+    ]);
+  } else {
+    chartDf = DG.DataFrame.fromColumns([
+      makeIndexColumn(indexColumnName, longIndex, axis),
+      ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
+      ...valueColumnNames.map((label) =>
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, longValues.get(label)!)),
+    ]);
+  }
   chartDf.name = 'Comparison: multiple values';
   return {
-    chartDf, indexColumnName, splitColumnName, isKeyIndex, valueColumnNames,
+    chartDf, indexColumnName, splitColumnName, isKeyIndex, isScatter, valueColumnNames,
+    ...melted ? {melted} : {},
     ...displayUnit ? {timeSeriesUnit: displayUnit} : {},
   };
 }

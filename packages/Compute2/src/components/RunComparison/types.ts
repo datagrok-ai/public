@@ -130,18 +130,24 @@ export const TIME_UNITS: TimeUnit[] = ['ms', 's', 'min', 'h', 'days'];
 export const TIME_UNIT_MS: Record<TimeUnit, number> =
   {ms: 1, s: 1000, min: 60_000, h: 3_600_000, days: 86_400_000};
 
+// row semantics of a table: 'series' (default — an indexed series, charts as lines),
+// 'timeseries' (a series on a run-relative elapsed-time axis), 'points' (independent
+// observations, chart as unconnected points)
+export type AxisMode = 'series' | 'timeseries' | 'points';
+
 // stored per-table pick (same Record shape as index/split selections);
-// units are absent when enabled on a datetime index — a unit the user never saw
-// must not outrank the metadata prefill if the index later moves to a numeric column
-export interface TimeSeriesConfig {
-  enabled: boolean;
+// units are meaningful only for 'timeseries' on a numeric index — a unit the user never
+// saw must not outrank the metadata prefill if the index later moves to a numeric column
+export interface AxisModeConfig {
+  mode: AxisMode;
   units?: TimeUnit;
 }
 
-export type TimeSeriesSelection = Record<string, Record<string, TimeSeriesConfig>>;
+export type AxisModeSelection = Record<string, Record<string, AxisModeConfig>>;
 
-// resolved, enabled-only view: entryId -> tablePath; units absent <=> datetime index
-export type TimeSeriesConfigMap = Map<string, Map<string, {units?: TimeUnit}>>;
+// resolved view with 'series' entries omitted: entryId -> tablePath;
+// units absent <=> datetime index or points mode
+export type AxisConfigMap = Map<string, Map<string, {mode: 'timeseries' | 'points', units?: TimeUnit}>>;
 
 export const isTimeIndexType = (type?: string) =>
   type != null && (isNumericType(type) || type === 'datetime');

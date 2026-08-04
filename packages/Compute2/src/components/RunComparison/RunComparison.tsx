@@ -14,12 +14,12 @@ import {History} from '../History/History';
 import {
   ComparisonTarget, ScalarTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
   ComparisonEntry, EntrySourceKind, RUN_COLUMN, candidateId,
-  TimeSeriesSelection, TimeSeriesConfig, TimeUnit, TIME_UNITS, isIndexCandidateType,
+  AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
 import {matchScalarTargets, matchColumnTargets} from './matching';
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
-  isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveTimeSeries,
+  isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
 import {
@@ -65,8 +65,8 @@ export const RunComparison = Vue.defineComponent({
     const indexSelection = Vue.ref<Record<string, Record<string, string>>>({});
     // entryId -> tablePath -> split (category) column name
     const splitSelection = Vue.ref<Record<string, Record<string, string>>>({});
-    // entryId -> tablePath -> time-series pick; stale picks are ignored, not deleted
-    const timeSeriesSelection = Vue.ref<TimeSeriesSelection>({});
+    // entryId -> tablePath -> axis-mode pick; stale picks are ignored, not deleted
+    const axisModeSelection = Vue.ref<AxisModeSelection>({});
     const selectedTargetKey = Vue.ref('');
     const candidateOverrides = Vue.ref<CandidateOverrides>({});
     const expandedTargetKeys = Vue.ref<Record<string, boolean>>({});
@@ -135,8 +135,8 @@ export const RunComparison = Vue.defineComponent({
       indexSelection.value = restIndex;
       const {[id]: _removedSplit, ...restSplit} = splitSelection.value;
       splitSelection.value = restSplit;
-      const {[id]: _removedTs, ...restTs} = timeSeriesSelection.value;
-      timeSeriesSelection.value = restTs;
+      const {[id]: _removedAxis, ...restAxis} = axisModeSelection.value;
+      axisModeSelection.value = restAxis;
     };
 
     const addSelectedRuns = async () => {
@@ -176,8 +176,8 @@ export const RunComparison = Vue.defineComponent({
       splitSelection.value = updatedSelection(splitSelection.value, members, columnName);
     };
 
-    const setTimeSeries = (members: {entryId: string, tablePath: string}[], config: TimeSeriesConfig) => {
-      timeSeriesSelection.value = updatedSelection(timeSeriesSelection.value, members, config);
+    const setAxisMode = (members: {entryId: string, tablePath: string}[], config: AxisModeConfig) => {
+      axisModeSelection.value = updatedSelection(axisModeSelection.value, members, config);
     };
 
     const indexColumnType = (entryId: string, tablePath: string, columnName: string) => {
@@ -368,18 +368,18 @@ export const RunComparison = Vue.defineComponent({
       multiMode.value = val;
     };
 
-    // enabled-only time-series view; tables whose index moved off a time type drop out
-    const resolvedTimeSeries = Vue.computed(() => resolveTimeSeries(
+    // non-default axis modes only; tables whose index moved off a time type drop out
+    const resolvedAxisModes = Vue.computed(() => resolveAxisModes(
       entries.value.map((entry) => entry.nodes),
       indexColumnsMap.value,
-      timeSeriesSelection.value,
+      axisModeSelection.value,
     ));
 
     const entryStatuses = Vue.computed(() => getEntryStatuses(
       entries.value.map((entry) => entry.nodes),
       selectedTarget.value,
       indexColumnsMap.value,
-      resolvedTimeSeries.value,
+      resolvedAxisModes.value,
     ));
 
     const comparison = Vue.computed(() => {
@@ -414,13 +414,13 @@ export const RunComparison = Vue.defineComponent({
         if (selected.length === 0)
           return null;
         if (selected.length > 1) {
-          const result = buildMultiColumnComparison(selected, entries.value, resolvedTimeSeries.value);
+          const result = buildMultiColumnComparison(selected, entries.value, resolvedAxisModes.value);
           return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
         }
-        const result = buildColumnComparison(selected[0], entries.value, resolvedTimeSeries.value);
+        const result = buildColumnComparison(selected[0], entries.value, resolvedAxisModes.value);
         return result ? Vue.markRaw({kind: 'column' as const, target: selected[0], ...result}) : null;
       }
-      const result = buildColumnComparison(target, entries.value, resolvedTimeSeries.value);
+      const result = buildColumnComparison(target, entries.value, resolvedAxisModes.value);
       return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
     });
 
@@ -431,7 +431,7 @@ export const RunComparison = Vue.defineComponent({
       indexSelection.value,
       splitSelection.value,
       mergeSameFuncs.value,
-      timeSeriesSelection.value,
+      axisModeSelection.value,
     ));
 
     const filteredIndexRows = Vue.computed(() => indexRows.value.filter((row) =>
@@ -564,7 +564,7 @@ export const RunComparison = Vue.defineComponent({
           style={{gridTemplateColumns: 'fit-content(480px) max-content max-content max-content max-content 1fr'}}>
           { filteredIndexRows.value.map((row) => {
             const suggestion = suggestedIndex(row.candidates);
-            const timeSeries = row.timeSeries;
+            const axis = row.axis;
             return <div key={row.key} class='c2-comparison-row' style={{padding: '2px 6px'}}>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
               title={row.title}>
@@ -581,23 +581,25 @@ export const RunComparison = Vue.defineComponent({
               renderColumnSelect(row.currentSplit, row.splitCandidates, '— split —',
                 (value) => setSplitColumn(row.members, value)) :
               <span></span> }
-            { timeSeries ?
-              <label style={{display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer'}}
-                title='Chart this table on an elapsed-time axis'>
-                <input
-                  type='checkbox'
-                  checked={timeSeries.enabled}
-                  onChange={(e: Event) => setTimeSeries(row.members,
-                    {enabled: (e.target as HTMLInputElement).checked, units: timeSeries.units})}
-                />
-                <span style={{fontSize: '11px', color: 'var(--grey-5)'}}>time series</span>
-              </label> :
-              <span></span> }
-            { timeSeries?.enabled && timeSeries.units != null ?
+            { axis ?
               <select
-                value={timeSeries.units}
-                onChange={(e: Event) => setTimeSeries(row.members,
-                  {enabled: true, units: (e.target as HTMLSelectElement).value as TimeUnit})}
+                value={axis.mode}
+                onChange={(e: Event) => setAxisMode(row.members,
+                  {mode: (e.target as HTMLSelectElement).value as AxisMode, units: axis.units})}
+                title={'How the table rows relate across runs: an indexed series, a timeseries ' +
+                  'relative to each run\'s start, or independent points'}
+                style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px'}}
+              >
+                <option value='series'>series</option>
+                <option value='timeseries'>relative timeseries</option>
+                <option value='points'>independent points</option>
+              </select> :
+              <span></span> }
+            { axis?.mode === 'timeseries' && axis.units != null ?
+              <select
+                value={axis.units}
+                onChange={(e: Event) => setAxisMode(row.members,
+                  {mode: 'timeseries', units: (e.target as HTMLSelectElement).value as TimeUnit})}
                 title='Time units of the index column values'
                 style={{border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 4px'}}
               >
@@ -825,8 +827,8 @@ export const RunComparison = Vue.defineComponent({
       const target = selectedTarget.value;
       if (!target)
         return null;
-      // excluded runs get red chips; matched runs on a partially-configured time-series
-      // target get amber ones — they still chart, just without the conversion
+      // excluded runs get red chips; matched runs on a partially-configured axis-mode
+      // target get amber ones — they still chart, just as a plain series
       const chips = entryStatuses.value
         .map((status) => {
           const entry = entries.value.find((item) => item.id === status.entryId);
@@ -846,8 +848,8 @@ export const RunComparison = Vue.defineComponent({
           <span
             key={entry.id}
             title={warning ?
-              'The value charts without time-series conversion until every participating table ' +
-              'has Time series enabled' :
+              `The value charts as a plain series until every participating table has the ` +
+              `${text === 'independent points not set' ? 'independent points' : 'relative timeseries'} mode set` :
               entry.name}
             style={{
               fontSize: '11px', borderRadius: '3px', padding: '1px 6px',
@@ -870,8 +872,9 @@ export const RunComparison = Vue.defineComponent({
         </div>;
       }
       const chartMinHeight = currentComparison.kind === 'multi-scalar' ? 300 :
-        'valueColumnNames' in currentComparison ?
-          250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
+        currentComparison.kind === 'column' && currentComparison.isScatter ? 300 :
+          'valueColumnNames' in currentComparison ?
+            250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
       const effectiveChartHeight = Math.max(chartMinHeight, chartHeight.value);
       const chartStyle = {width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'};
       let chart;
@@ -921,6 +924,28 @@ export const RunComparison = Vue.defineComponent({
             valueAggrType: 'avg',
             splitColumnName: currentComparison.indexColumnName,
             stackColumnName: RUN_COLUMN,
+          }}
+        />;
+      } else if (currentComparison.isScatter) {
+        // color: value name (multi-value melt) > split > Run; run identity moves to
+        // marker shapes whenever color is taken
+        const melted = currentComparison.melted;
+        const splitColumnName = currentComparison.splitColumnName;
+        chart = <Viewer
+          type={DG.VIEWER.SCATTER_PLOT}
+          dataFrame={currentComparison.chartDf}
+          style={chartStyle}
+          onViewerChanged={onChartViewerChanged}
+          options={ melted ? {
+            xColumnName: currentComparison.indexColumnName,
+            yColumnName: melted.valueColumnName,
+            colorColumnName: melted.seriesColumnName,
+            markersColumnName: RUN_COLUMN,
+          } : {
+            xColumnName: currentComparison.indexColumnName,
+            yColumnName: currentComparison.target.displayName,
+            colorColumnName: splitColumnName ?? RUN_COLUMN,
+            ...splitColumnName ? {markersColumnName: RUN_COLUMN} : {},
           }}
         />;
       } else {

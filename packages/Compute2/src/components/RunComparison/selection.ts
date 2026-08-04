@@ -4,7 +4,7 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, TimeSeriesSelection, TimeSeriesConfigMap,
+  TimeUnit, TIME_UNIT_MS, AxisMode, AxisModeSelection, AxisConfigMap,
   isTimeIndexType, isIndexCandidateType,
 } from './types';
 import {normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD} from './matching';
@@ -143,42 +143,43 @@ export function parseTimeUnit(units?: string): TimeUnit | undefined {
 }
 
 /**
- * Enabled-only view of the stored time-series picks: tables whose current index column
+ * Non-default view of the stored axis-mode picks: tables whose current index column
  * is numeric or datetime. Stale picks (index switched away) don't resolve but are kept.
  */
-export function resolveTimeSeries(
+export function resolveAxisModes(
   entries: ComparisonEntryNodes[],
   indexColumns: Map<string, Map<string, string>>,
-  timeSeriesSelection: TimeSeriesSelection,
-): TimeSeriesConfigMap {
-  const map: TimeSeriesConfigMap = new Map();
+  axisModeSelection: AxisModeSelection,
+): AxisConfigMap {
+  const map: AxisConfigMap = new Map();
   for (const entry of entries) {
     for (const table of entry.tables) {
-      const stored = timeSeriesSelection[entry.entryId]?.[table.path];
-      if (!stored?.enabled)
+      const stored = axisModeSelection[entry.entryId]?.[table.path];
+      if (stored == null || stored.mode === 'series')
         continue;
       const indexName = indexColumns.get(entry.entryId)?.get(table.path);
       const column = indexName ? table.columns.find((col) => col.name === indexName) : undefined;
       if (!column || !isTimeIndexType(column.type))
         continue;
-      const tables = map.get(entry.entryId) ?? new Map<string, {units?: TimeUnit}>();
-      tables.set(table.path, isNumericType(column.type) ?
-        {units: stored.units ?? parseTimeUnit(column.units) ?? 's'} : {});
+      const tables = map.get(entry.entryId) ?? new Map<string, {mode: 'timeseries' | 'points', units?: TimeUnit}>();
+      tables.set(table.path, stored.mode === 'timeseries' && isNumericType(column.type) ?
+        {mode: stored.mode, units: stored.units ?? parseTimeUnit(column.units) ?? 's'} : {mode: stored.mode});
       map.set(entry.entryId, tables);
     }
   }
   return map;
 }
 
-/** Require-all gate: a target charts as a time series only when every bound table is configured. */
-export function targetTimeSeriesMode(
+/** Require-all gate: a target charts in the given mode only when every bound table is configured. */
+export function targetAxisMode(
   target: ColumnTarget,
-  timeSeries: TimeSeriesConfigMap,
+  axisModes: AxisConfigMap,
+  mode: 'timeseries' | 'points',
 ): 'full' | 'partial' | 'none' {
   if (target.bindings.length === 0)
     return 'none';
   const configured = target.bindings
-    .filter((b) => timeSeries.get(b.entryId)?.has(b.tablePath)).length;
+    .filter((b) => axisModes.get(b.entryId)?.get(b.tablePath)?.mode === mode).length;
   if (configured === 0)
     return 'none';
   return configured === target.bindings.length ? 'full' : 'partial';
@@ -188,12 +189,12 @@ export function targetTimeSeriesMode(
 // order; datetime-only targets have no units selector anywhere, so the unit is auto-picked
 export function resolveDisplayUnit(
   bindings: {entryId: string, tablePath: string}[],
-  timeSeries: TimeSeriesConfigMap,
+  axisModes: AxisConfigMap,
 ): TimeUnit | 'auto' {
   for (const binding of bindings) {
-    const units = timeSeries.get(binding.entryId)?.get(binding.tablePath)?.units;
-    if (units)
-      return units;
+    const config = axisModes.get(binding.entryId)?.get(binding.tablePath);
+    if (config?.mode === 'timeseries' && config.units)
+      return config.units;
   }
   return 'auto';
 }
@@ -239,7 +240,7 @@ export interface IndexRow {
   splitCandidates: ColumnInfo[];
   currentSplit: string;
   // set when the current index column is numeric or datetime; units for numeric only
-  timeSeries?: {enabled: boolean, units?: TimeUnit};
+  axis?: {mode: AxisMode, units?: TimeUnit};
 }
 
 /**
@@ -252,7 +253,7 @@ export function computeIndexRows(
   indexSelection: Record<string, Record<string, string>>,
   splitSelection: Record<string, Record<string, string>>,
   mergeSameFuncs: boolean,
-  timeSeriesSelection: TimeSeriesSelection,
+  axisModeSelection: AxisModeSelection,
 ): IndexRow[] {
   const perTable = entries.flatMap((entry) =>
     entry.tables.map((table) => ({entry, table})));
@@ -272,22 +273,24 @@ export function computeIndexRows(
   const indexCandidatesOf = (columns: ColumnInfo[], defaultIndexColumn?: string) =>
     columns.filter((col) => isIndexCandidateType(col.type) || col.name === defaultIndexColumn);
 
-  // merged rows agree like current/currentSplit: enabled only when every member is,
-  // shared units when members agree, else metadata prefill (index column of the seed table)
-  const timeSeriesOf = (
+  // merged rows agree like current/currentSplit: a non-default mode only when every
+  // member agrees on it, shared units when members agree, else metadata prefill
+  // (index column of the seed table)
+  const axisOf = (
     members: {entryId: string, tablePath: string}[],
     indexColumn?: ColumnInfo,
-  ): IndexRow['timeSeries'] => {
+  ): IndexRow['axis'] => {
     if (!indexColumn || !isTimeIndexType(indexColumn.type))
       return undefined;
-    const stored = members.map(({entryId, tablePath}) => timeSeriesSelection[entryId]?.[tablePath]);
-    const enabled = stored.every((config) => config?.enabled === true);
+    const stored = members.map(({entryId, tablePath}) => axisModeSelection[entryId]?.[tablePath]);
+    const modes = new Set(stored.map((config) => config?.mode ?? 'series'));
+    const mode: AxisMode = modes.size === 1 ? [...modes][0] : 'series';
     if (!isNumericType(indexColumn.type))
-      return {enabled};
+      return {mode};
     const units = new Set(stored.map((config) => config?.units)
       .filter((unit): unit is TimeUnit => unit != null));
     return {
-      enabled,
+      mode,
       units: units.size === 1 ? [...units][0] : parseTimeUnit(indexColumn.units) ?? 's',
     };
   };
@@ -307,7 +310,7 @@ export function computeIndexRows(
       current,
       splitCandidates,
       currentSplit: validCurrent(splitSelection, entry.entryId, table.path, splitCandidates),
-      timeSeries: timeSeriesOf(members, candidates.find((col) => col.name === current)),
+      axis: axisOf(members, candidates.find((col) => col.name === current)),
     };
   };
 
@@ -361,7 +364,7 @@ export function computeIndexRows(
       current,
       splitCandidates,
       currentSplit: currentSplits.size === 1 ? [...currentSplits][0] : '',
-      timeSeries: timeSeriesOf(members, candidates.find((col) => col.name === current)),
+      axis: axisOf(members, candidates.find((col) => col.name === current)),
     });
   }
   return rows;
@@ -376,8 +379,8 @@ export interface EntryStatus {
   entryId: string;
   matched: boolean;
   reason?: ExclusionReason;
-  // the run still charts — its table just lacks time-series settings on a partial target
-  warning?: 'time series not set';
+  // the run still charts — its table just lacks the axis-mode settings on a partial target
+  warning?: 'relative timeseries not set' | 'independent points not set';
 }
 
 /** Per-entry participation status for a selected target. */
@@ -385,19 +388,23 @@ export function getEntryStatuses(
   entries: ComparisonEntryNodes[],
   target: ComparisonTarget | null,
   indexColumns: Map<string, Map<string, string>>,
-  timeSeries?: TimeSeriesConfigMap,
+  axisModes?: AxisConfigMap,
 ): EntryStatus[] {
-  const tsMode = target?.kind === 'column' && timeSeries ?
-    targetTimeSeriesMode(target, timeSeries) : 'none';
+  const modeOf = (mode: 'timeseries' | 'points') =>
+    target?.kind === 'column' && axisModes ? targetAxisMode(target, axisModes, mode) : 'none';
+  const partialMode = modeOf('timeseries') === 'partial' ? 'timeseries' :
+    modeOf('points') === 'partial' ? 'points' : null;
   return entries.map((entry) => {
     if (!target)
       return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
     const binding = (target.bindings as {entryId: string, tablePath?: string}[])
       .find((b) => b.entryId === entry.entryId);
     if (binding) {
-      if (tsMode === 'partial' && binding.tablePath != null &&
-        !timeSeries!.get(entry.entryId)?.has(binding.tablePath))
-        return {entryId: entry.entryId, matched: true, warning: 'time series not set'};
+      if (partialMode != null && binding.tablePath != null &&
+        axisModes!.get(entry.entryId)?.get(binding.tablePath)?.mode !== partialMode) {
+        return {entryId: entry.entryId, matched: true,
+          warning: partialMode === 'timeseries' ? 'relative timeseries not set' : 'independent points not set'};
+      }
       return {entryId: entry.entryId, matched: true};
     }
     if (target.kind === 'column' &&

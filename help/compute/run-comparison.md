@@ -6,6 +6,7 @@ keywords:
   - comparison index column
   - comparison split column
   - time series comparison
+  - scatterplot comparison
 ---
 
 The run comparison tool compares outputs of model runs side by side: pick a model, add
@@ -64,24 +65,44 @@ marks a categorical column whose values are separate series within one run.
   chart splits by run and, when set, by the split column. There is no row alignment or
   tolerance logic — differing grids simply chart as separate lines.
 
-## Time series
+## Row semantics
 
-When a table's index column is numeric or datetime, a **time series** checkbox appears
-next to its pickers (off by default — plain axes are used). Enabling it charts the table
-on an elapsed-time axis, which lets runs with different time representations — a datetime
-column in a workflow dataframe, plain float seconds in a CSV — share one line chart.
+When a table's index column is numeric or datetime, a selector appears next to its
+pickers saying what the table's rows mean. The default is **series**: rows form an
+indexed sequence, and values chart as lines connected along the index. A value charts in
+a non-default mode only when **every** participating table has that mode set. Until then
+it charts as a plain series, and the runs whose tables lack the setting are flagged with
+an amber chip under Results.
+
+### Relative timeseries
+
+The **relative timeseries** mode charts the table on an elapsed-time axis, which lets
+runs with different time representations — a datetime column in a workflow dataframe,
+plain float seconds in a CSV — share one line chart.
 
 * Numeric indexes get a **units** selector (ms, s, min, h, days) saying what the numbers
   mean. It is prefilled from the column's units metadata when recognizable. Datetime
   indexes need no units.
-* Time series are aligned automatically: each table's earliest time point is treated
+* Runs are aligned automatically: each table's earliest time point is treated
   as 0, so runs overlay for shape comparison regardless of when they were recorded.
 * The chart axis is a float column labeled with its unit, for example `time (s)`. The
   unit comes from the first participating numeric index; a comparison of only datetime
   indexes picks a readable unit from the data range automatically.
-* A value charts as a time series only when **every** participating table has time
-  series enabled. Until then it charts with plain axes, and the runs whose tables lack
-  the setting are flagged with an amber chip under Results.
+
+### Independent points
+
+The **independent points** mode treats rows as unordered observations and charts them as
+unconnected (index, value) points instead of a line. Row order and grid alignment stop
+mattering, so this mode suits unordered data — optimization populations, sampled or
+stochastic results, per-item tables. And since any numeric column can serve as the index,
+it also gives value-vs-value views: pick one output quantity as the index and compare it
+against another across runs.
+
+* Points are colored by the split column when one is set, otherwise by run. When the
+  split takes the color, runs are distinguished by marker shapes.
+* With [multiple values](#multiple-values) selected, all values chart on one scatterplot
+  sharing the y axis, colored by value name with runs as marker shapes. Whether the
+  values are comparable on one scale (units, magnitude) is up to you.
 
 ## Default index/split annotations
 
@@ -109,7 +130,9 @@ Raw workspace tables have no annotations.
 When the selected column target has compatible siblings (values sharing at least one run
 from the same tables, with a line-chartable index), the **Multiple values** toggle (or
 Shift+click on a compare row) enables selecting several values at once. Each value becomes
-a stacked line-chart panel with runs (and split categories) as lines inside.
+a stacked line-chart panel with runs (and split categories) as lines inside. In the
+[independent points mode](#independent-points), the values share one scatterplot instead,
+colored by value name.
 
 Editing matches never exits the mode: a run that is missing or re-sourced from another
 table in one of the selected values shows as a gap in that panel, and the value's row is

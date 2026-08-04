@@ -321,7 +321,8 @@ category('RunComparison: time series dataframes', () => {
       .find((t): t is ColumnTarget => t.kind === 'column')!;
   const tsFor = (entries: ComparisonEntry[], units: (TimeUnit | undefined)[]) =>
     new Map(entries.map((e, i) => [e.id,
-      new Map([[e.nodes.tables[0].path, units[i] === undefined ? {} : {units: units[i]}]])]));
+      new Map([[e.nodes.tables[0].path, units[i] === undefined ?
+        {mode: 'timeseries' as const} : {mode: 'timeseries' as const, units: units[i]}]])]));
   // Array.from: toList() returns sparse arrays for null cells, and map() would skip the holes
   const numbers = (values: any[]) => Array.from(values, (v) => v == null || isNaN(v) ? null : v);
 
@@ -392,7 +393,7 @@ category('RunComparison: time series dataframes', () => {
       entryFromDataFrame(makeDf('r2', [floatCol('ts', [0, 60]), floatCol('v', [3, 4])])),
     ];
     const partial = new Map([[entries[0].id,
-      new Map([[entries[0].nodes.tables[0].path, {}]])]]);
+      new Map([[entries[0].nodes.tables[0].path, {mode: 'timeseries' as const}]])]]);
     const result = buildColumnComparison(targetFor(entries, 'ts'), entries, partial)!;
     expect(result.isKeyIndex, true);
     expect(result.timeSeriesUnit === undefined, true);
@@ -433,5 +434,109 @@ category('RunComparison: time series dataframes', () => {
     expect(result.timeSeriesUnit, 's');
     expect(numbers(result.chartDf.getCol('time (s)').toList()).join(','), '0,10,0,10');
     expect(result.valueColumnNames.join('|'), 'a|b');
+  });
+});
+
+category('RunComparison: independent points dataframes', () => {
+  const makeDf = (name: string, cols: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(cols);
+    df.name = name;
+    return df;
+  };
+  const floatCol = (name: string, values: (number | null)[]) =>
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+  const stringCol = (name: string, values: string[]) =>
+    DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values);
+  const indexesFor = (entries: ComparisonEntry[], column: string) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, column]])]));
+  const splitsFor = (entries: ComparisonEntry[], column: string) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, column]])]));
+  const pointsFor = (entries: ComparisonEntry[]) =>
+    new Map(entries.map((e) =>
+      [e.id, new Map([[e.nodes.tables[0].path, {mode: 'points' as const}]])]));
+  const columnTargetsFor = (
+    entries: ComparisonEntry[], column: string, splits?: Map<string, Map<string, string>>,
+  ) => matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, column), splits)
+    .filter((t): t is ColumnTarget => t.kind === 'column');
+
+  test('all-points targets keep the raw index and set the flag', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 10]), floatCol('v', [3, 4])])),
+    ];
+    const result = buildColumnComparison(
+      columnTargetsFor(entries, 'time')[0], entries, pointsFor(entries))!;
+    expect(result.isScatter, true);
+    expect(result.isKeyIndex, false);
+    expect(result.melted === undefined, true);
+    expect(result.timeSeriesUnit === undefined, true);
+    expect(result.indexColumnName, 'time');
+    expect(result.chartDf.getCol('time').toList().join(','), '10,20,0,10');
+    expect(result.chartDf.getCol('v').toList().join(','), '1,2,3,4');
+  });
+
+  test('partially configured targets chart as a line', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 10]), floatCol('v', [3, 4])])),
+    ];
+    const partial = new Map([[entries[0].id,
+      new Map([[entries[0].nodes.tables[0].path, {mode: 'points' as const}]])]]);
+    const result = buildColumnComparison(columnTargetsFor(entries, 'time')[0], entries, partial)!;
+    expect(result.isScatter, false);
+  });
+
+  test('a key index disables points mode', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [stringCol('key', ['x', 'y']), floatCol('v', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [stringCol('key', ['x', 'y']), floatCol('v', [3, 4])])),
+    ];
+    const result = buildColumnComparison(
+      columnTargetsFor(entries, 'key')[0], entries, pointsFor(entries))!;
+    expect(result.isKeyIndex, true);
+    expect(result.isScatter, false);
+  });
+
+  test('multi-value points mode melts values into one column keyed by target name', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('time', [10, 20]), floatCol('a', [1, 2]), floatCol('b', [5, 6])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('time', [0, 10]), floatCol('a', [3, 4]), floatCol('b', [7, 8])])),
+    ];
+    const result = buildMultiColumnComparison(
+      columnTargetsFor(entries, 'time'), entries, pointsFor(entries))!;
+    expect(result.isScatter, true);
+    expect(result.melted!.seriesColumnName, 'Data');
+    expect(result.melted!.valueColumnName, 'Value');
+    expect(result.chartDf.rowCount, 8);
+    expect(result.chartDf.getCol('time').toList().join(','), '10,20,0,10,10,20,0,10');
+    expect(result.chartDf.getCol(RUN_COLUMN).toList().join(','), 'r1,r1,r2,r2,r1,r1,r2,r2');
+    expect(result.chartDf.getCol('Data').toList().join(','), 'a,a,a,a,b,b,b,b');
+    expect(result.chartDf.getCol('Value').toList().join(','), '1,2,3,4,5,6,7,8');
+  });
+
+  test('melted column names avoid collisions with the index', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [floatCol('Value', [0, 1]), floatCol('a', [1, 2]), floatCol('b', [5, 6])])),
+      entryFromDataFrame(makeDf('r2', [floatCol('Value', [0, 1]), floatCol('a', [3, 4]), floatCol('b', [7, 8])])),
+    ];
+    const result = buildMultiColumnComparison(
+      columnTargetsFor(entries, 'Value'), entries, pointsFor(entries))!;
+    expect(result.melted!.valueColumnName, 'Value (2)');
+    expect(result.chartDf.getCol('Value (2)').toList().join(','), '1,2,3,4,5,6,7,8');
+  });
+
+  test('split columns carry into the melted frame', async () => {
+    const cols = (values: number[]) => [
+      floatCol('time', [0, 1]), stringCol('species', ['s1', 's2']),
+      floatCol('a', values.slice(0, 2)), floatCol('b', values.slice(2)),
+    ];
+    const entries = [
+      entryFromDataFrame(makeDf('r1', cols([1, 2, 5, 6]))),
+      entryFromDataFrame(makeDf('r2', cols([3, 4, 7, 8]))),
+    ];
+    const result = buildMultiColumnComparison(
+      columnTargetsFor(entries, 'time', splitsFor(entries, 'species')), entries, pointsFor(entries))!;
+    expect(result.splitColumnName, 'species');
+    expect(result.chartDf.getCol('species').toList().join(','), 's1,s2,s1,s2,s1,s2,s1,s2');
   });
 });
