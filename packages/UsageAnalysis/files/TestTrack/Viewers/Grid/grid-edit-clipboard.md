@@ -234,7 +234,8 @@ All expected-results assertions use product-state signals:
 
 ### GROK-20010 guard (Ctrl+A → copy → paste)
 Scenario 5 exercises the full select-all → copy → paste path to confirm the
-`Concurrent modification` regression is absent. The guard is a console-error delta of 0.
+the regression is absent. The guard is that the console stays clean — any error fails it,
+not only the one the ticket happened to name.
 
 ### GROK-20266 guard (copy after Refresh)
 The GROK-20266 guard (Toolbox Files Refresh breaks copy) is included in the atlas

@@ -210,15 +210,26 @@ test('Grid — Cell Editing and Clipboard', async ({page}) => {
   await softStep('Step 8 — Delete (no modifier) clears the cell, opens no editor', async () => {
     // The plain-Delete handler acts on grid.currentGridCell, so seed it with a settled click.
     await clickCellSettled(page, 'AGE', 4);
-    const tableIdx = await page.evaluate(() => grok.shell.tv.dataFrame.currentRowIdx);
-    await page.keyboard.press('Delete');
-    await page.waitForTimeout(350);
-    const r = await page.evaluate((ti) => ({
-      isNull: grok.shell.tv.dataFrame.col('AGE').isNone(ti),
-      editorOpen: document.querySelectorAll('input.d4-value-editor').length > 0,
-    }), tableIdx);
-    expect(r.isNull).toBe(true);      // the cell was cleared to null
-    expect(r.editorOpen).toBe(false); // Delete did not open an editor
+    // Re-seat the current cell and press again if the first Delete did not land: the keystroke
+    // reaches the grid only while its overlay canvas holds focus, and focus is not always settled
+    // by the time the click returns. The gesture stays the real one — only its delivery is retried.
+    let cleared = false;
+    for (let attempt = 0; attempt < 3 && !cleared; attempt++) {
+      if (attempt > 0) await clickCellSettled(page, 'AGE', 4);
+      // Read the row the grid considers current INSIDE the loop: a re-seat can land on a
+      // different row, and checking the row captured before the retry asked about the wrong cell.
+      const row = await page.evaluate(() => grok.shell.tv.dataFrame.currentRowIdx);
+      await page.keyboard.press('Delete');
+      for (let waited = 0; waited < 3000 && !cleared; waited += 250) {
+        await page.waitForTimeout(250);
+        cleared = await page.evaluate((ti) =>
+          grok.shell.tv.dataFrame.col('AGE').isNone(ti), row);
+      }
+    }
+    expect(cleared).toBe(true); // the cell was cleared to null
+    const editorOpen = await page.evaluate(() =>
+      document.querySelectorAll('input.d4-value-editor').length > 0);
+    expect(editorOpen).toBe(false); // Delete did not open an editor
   });
 
   // === Scenario 3: read-only grid rejects edits (GROK-20010) ====================

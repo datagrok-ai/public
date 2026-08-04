@@ -31,7 +31,7 @@ expected_results:
     is 0, df.columns.selected contains no selected columns, and df.currentRowIdx is -1.'
 - anchor: Step 10
   expectation: After rapid Ctrl+clicks across five or more column headers, the console-error delta is
-    0 — no 'Concurrent modification during iteration' error (GROK-17455 guard).
+    0 — no console error (GROK-17455 guard).
 - anchor: Step 13
   expectation: Arrow key presses move df.currentRowIdx by 1 each time in the expected direction; df.currentCol
     changes on left/right arrow.
@@ -119,7 +119,7 @@ Steps:
 
 Expected:
 - Step 3: the console-error count is unchanged from before the clicks — no
-  'Concurrent modification during iteration' error (GROK-17455 guard). Whether the columns
+  any console error (GROK-17455 guard). Whether the columns
   end up visibly selected is checked by hand (see the manual checklist).
 
 ### Scenario 3: Keyboard navigation — arrows, Ctrl+Home/End, PageDown twice (GROK-18104)
