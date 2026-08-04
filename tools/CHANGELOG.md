@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.5.3 (2026-08-04)
+
+* GROK-18695: Security — bumped `adm-zip` to 0.6.0 (CVE-2026-39244). Below 0.6.0 it sized a buffer from the ZIP header's declared uncompressed size before validating it, so a ~120-byte crafted archive forced a multi-GB allocation; `grok report` opens archives fetched from a server. The APIs it uses are unchanged. Also refreshed the lockfile to clear five more high-severity audit findings (`brace-expansion`, `fast-uri`, `ip-address`, `js-yaml`, `postcss`), all within existing ranges.
+
 ## 6.5.2 (2026-07-27)
 
 * `grok publish` — a failed `docker push` is no longer reported as a successful one. `image.json` claimed the tag regardless, so the server recorded a container image that was never published and the spawner failed validation forever ("Image ... not found in any registry") with no recovery short of another publish. The push failure now falls back to an image that is actually in the registry, and says so.
