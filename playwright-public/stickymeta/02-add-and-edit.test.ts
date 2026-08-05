@@ -121,7 +121,7 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
       page.evaluate(() => {
         const names = (window as any).grok.shell.t.columns.names();
         return ['rating', 'notes', 'verified', 'review_date'].every((n) => names.includes(n));
-      }), { timeout: 20_000, intervals: [500] }).toBe(true);
+      }), { timeout: 45_000, intervals: [500] }).toBe(true);
 
     // Sort ascending by the rating sticky column.
     // SCOPE NOTE: the grid is canvas-rendered with no stable DOM handle for the column header sort

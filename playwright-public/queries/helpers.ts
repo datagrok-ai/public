@@ -359,6 +359,7 @@ export function queryTreeNodeSuffix(friendlyName: string): string {
 
 /** Right-click a Browse tree node by its `name=` attribute. */
 export async function rightClickTreeNode(page: Page, nodeName: string): Promise<void> {
+  await revealTreeNode(page, nodeName);
   const node = treeNodeLocator(page, nodeName);
   await node.waitFor({ state: 'visible', timeout: 15_000 });
   await node.scrollIntoViewIfNeeded();

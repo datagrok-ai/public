@@ -121,11 +121,16 @@ export async function resetShell(page: Page) {
 export async function searchScript(page: Page, name: string) {
   const searchInput = page.locator('input[placeholder="Search scripts by name or by #tags"]');
   await expect(searchInput).toBeVisible();
-  await searchInput.fill('');
-  await searchInput.fill(name);
-  await searchInput.press('Enter');
   const card = getScriptCard(page, name);
-  await expect(card).toBeVisible({ timeout: 20_000 });
+  // The gallery answers from a list fetched when it opened, so a script re-created by
+  // beforeEach after the delete test is absent from it however long we wait. Re-issue
+  // the search instead of watching a stale result set.
+  await expect(async () => {
+    await searchInput.fill('');
+    await searchInput.fill(name);
+    await searchInput.press('Enter');
+    await expect(card).toBeVisible({ timeout: 5_000 });
+  }).toPass({ timeout: 30_000 });
   return card;
 }
 
