@@ -775,8 +775,16 @@ export const RunComparison = Vue.defineComponent({
                 selectedTargetKey.value = target.key;
                 return;
               }
-              multiKeys.value = multiKeys.value.includes(target.key) ?
+              const next = multiKeys.value.includes(target.key) ?
                 multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
+              multiKeys.value = next;
+              // unchecking the last value exits the mode (matching the initial
+              // no-selection state, where the toggle is not even shown) and keeps
+              // that value selected, so the chart stays put
+              if (next.length === 0) {
+                selectedTargetKey.value = target.key;
+                multiMode.value = false;
+              }
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
             const anchor = selectedTarget.value;

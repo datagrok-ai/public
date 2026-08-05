@@ -140,7 +140,8 @@ are present. Raw workspace tables have no annotations.
 ## Multiple values
 
 When the selected value has compatible siblings, the **Multiple values** toggle (or
-Shift+click on a compare row) enables selecting several values at once. Every scalar is
+Shift+click on a compare row) enables selecting several values at once. Unchecking the
+last selected value turns the mode off, keeping that value as the regular selection. Every scalar is
 compatible with every other scalar. Column values are compatible when they share at least
 one run from the same tables and their index is numeric or datetime everywhere. Scalars
 and columns never mix in one selection.

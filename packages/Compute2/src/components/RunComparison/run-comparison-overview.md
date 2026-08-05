@@ -86,7 +86,7 @@ Two design rules keep the model simple:
 | `selectedTargetKey` | which target is being charted |
 | `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves |
 | `expandedTargetKeys` | which target rows have their candidate checklist expanded |
-| `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys; the mode never auto-exits — keys are pruned only when their target vanishes structurally, and the chart pads conflicting/missing runs (`partial` chip on the row) |
+| `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys; unchecking the last value exits the mode (consistent with the initial no-selection state) with that value as the single selection — otherwise the mode never auto-exits: keys are pruned only when their target vanishes structurally, and the chart pads conflicting/missing runs (`partial` chip on the row) |
 | `scalarChartType` | radar/PC-plot switch for multi-scalar charts; `radarAvailable` (Charts package deployed?) forces PC plot and hides the switch when radar can't render |
 | `indexFilter`, `targetFilter` | list search boxes |
 | `chartViewer` | last-created `DG.Viewer`, kept for the workspace-snapshot export |
