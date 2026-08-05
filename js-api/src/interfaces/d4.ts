@@ -1948,6 +1948,10 @@ export interface IHistogramSettings {
   /// Bins that do not fit are clipped.
   yMax: number;
 
+  /// When enabled, shows wavy breaks and arrows on the bins
+  /// that are clipped by the vertical axis range.
+  showClippedBinIndicators: boolean;
+
   /// Whether the horizontal axis should be zoomed to the range of the visible bins.
   zoomToRange: boolean;
 

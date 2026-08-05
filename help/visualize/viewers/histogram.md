@@ -79,6 +79,7 @@ Distribution lines help visualize and compare the distribution patterns across d
 | Y Axis Type | string | Scale of the vertical (bin count) axis. On the logarithmic scale, bins with 0 and 1 rows are drawn at the baseline. |
 | Y Min | number | Lower bound of the vertical axis. Empty means zero. Set *Y Min* and *Y Max* to put different histograms on the same scale. |
 | Y Max | number | Upper bound of the vertical axis. Empty means the biggest bin count. Bins that do not fit are clipped. |
+| Show Clipped Bin Indicators | boolean | When enabled, shows wavy breaks and arrows on the bins that are clipped by the vertical axis range. |
 | Show Distribution Lines | boolean | Shows distribution lines for each stack or spline category in the histogram (see also **Split** and **Split Stack**). |
 | **General** | | |
 | Zoom To Range | boolean | Whether the horizontal axis should be zoomed to the range of the visible bins. |
