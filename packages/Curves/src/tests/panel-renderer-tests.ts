@@ -6,7 +6,8 @@ import {category, test, expect, expectArray, expectFloat, awaitCheck, delay} fro
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
-import {FitGridCellHandler, normalizeStatisticNames, chartPropertiesFor} from '../fit/fit-grid-cell-handler';
+import {FitGridCellHandler, normalizeStatisticNames, chartPropertiesFor, changeCurvesOptions} from '../fit/fit-grid-cell-handler';
+import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
 
 const CONCENTRATIONS = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4];
 
@@ -118,6 +119,33 @@ category('panel and renderer', () => {
     }
     await delay(500);
     expect(stat.version, before, 'a cosmetic rewrite recalculated the statistic column');
+  });
+
+  test('a column-level option overrides a cell-level one, without recalculating', async () => {
+    // drives the real handler: clearing the per-cell override is how a column-level option takes
+    // effect, but the rewrite must not read as a data change. Both halves in one test because fixing
+    // either one alone breaks the other - notifying recalculates, not notifying left the cache stale.
+    const cell = JSON.stringify({
+      chartOptions: {logX: true},
+      series: [{fitFunction: 'sigmoid', name: 'series', pointColor: '#ff0000', points: points(-6.5)}],
+    });
+    const col = DG.Column.fromStrings('curve', [cell, cell]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'panelColumnOverridesCell';
+    await addStatisticColumn(df, {propName: 'ic50', seriesNumber: 0});
+
+    const stat = df.col('curve 1 ic50')!;
+    const version = stat.version;
+    const gridCell = DG.Viewer.grid(df).cell('curve', 0);
+    const input = {property: {name: 'pointColor'}, value: '#00ff00'} as unknown as DG.InputBase;
+
+    changeCurvesOptions(gridCell, input, 'seriesOptions', 'Column');
+    await delay(500);
+
+    expect(getOrCreateParsedChartData(df.cell(0, 'curve')).series![0].pointColor === '#ff0000', false,
+      'the cell-level value still wins after the column-level change');
+    expect(stat.version, version, 'a cosmetic option change recalculated the statistic column');
   });
 
   test('property panel renders for a saved legacy statistic', async () => {

@@ -116,13 +116,26 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
   return mergedSeries;
 }
 
+function parsedChartDataKey(column: DG.Column, rowIdx: number): string {
+  return `tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${rowIdx}`;
+}
+
 /** Returns either cached or constructed chart data for the specified table cell. */
 export function getOrCreateParsedChartData(tableCell: DG.Cell, useCache = true): IFitChartData {
   const column = tableCell?.column;
   return (useCache && column && tableCell) ?
-    parsedCurves.getOrCreate(`tableId: ${column.dataFrame.id} || tableName: ${column.dataFrame.name} || colName: ${column.name} || colVersion: ${column.version} || rowIdx: ${tableCell?.rowIndex}`, () => {
-      return getChartData(tableCell);
-    }) : getChartData(tableCell);
+    parsedCurves.getOrCreate(parsedChartDataKey(column, tableCell.rowIndex), () => getChartData(tableCell)) :
+    getChartData(tableCell);
+}
+
+/** Re-parses a curve column into the cache. Writing cells without notifying leaves the column version
+ * untouched, and the cache is keyed on it - so without this the pre-rewrite parse keeps being served
+ * and a cell-level value the rewrite just removed still wins over the column-level one. */
+export function refreshParsedChartData(column: DG.Column): void {
+  if (!column.dataFrame)
+    return;
+  for (let i = 0; i < column.length; i++)
+    parsedCurves.set(parsedChartDataKey(column, i), getChartData(column.dataFrame.cell(i, column.name)));
 }
 
 /** Column and dataframe levels of the options cascade, applied on their own when there is no cell to

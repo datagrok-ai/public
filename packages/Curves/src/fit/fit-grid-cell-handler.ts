@@ -19,7 +19,7 @@ import {
 import {isColorValid, FitChartCellRenderer} from './fit-renderer';
 import {
   getOrCreateParsedChartData, getColumnChartOptions, getDataFrameChartOptions, mergeProperties,
-  substituteZeroes,
+  substituteZeroes, refreshParsedChartData,
 } from './fit-chart-data';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue, isNativeFormat} from './curve-converter';
@@ -150,7 +150,7 @@ function detectSettings(df: DG.DataFrame): void {
   }
 }
 
-function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, options: string, manipulationLevel: string): void {
+export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, options: string, manipulationLevel: string): void {
   if (gridCell.cell.column.temp[`${CHART_OPTIONS}-custom-title`] === undefined)
     detectSettings(gridCell.cell.dataFrame);
   const propertyName = inputBase.property.name as string;
@@ -218,11 +218,17 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
         }
         return JSON.stringify(chartData);
       };
+      let rewritten = false;
       for (let j = 0; j < columns[i].length; j++) {
         const updated = clearOverride(j);
-        if (updated !== columns[i].get(j))
+        if (updated !== columns[i].get(j)) {
           columns[i].set(j, updated, false);
+          rewritten = true;
+        }
       }
+      // the write did not bump the column version, so the cache still holds the pre-rewrite parse
+      if (rewritten)
+        refreshParsedChartData(columns[i]);
       columns[i].temp[`${options}-custom-${propertyName}`] = false;
     }
 
