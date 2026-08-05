@@ -437,6 +437,10 @@ export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, r
     const dataBox = renderOptions.dataBox;
     const ratio = renderOptions.ratio;
     g.font = '11px Roboto, "Roboto Local"';
+    // the legend positions its text by measured width, so it has to own its alignment - the axes
+    // labels rendered just before leave textAlign centred, which shifts every label half its width
+    // left, over the marker
+    g.textAlign = 'left';
     const columnNames = [...new Set(data.series?.map((series) => series.columnName))]
       .filter((colName) => colName !== null && colName !== undefined);
     let drawnCurvesInLegend = 0;
