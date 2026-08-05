@@ -110,11 +110,17 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     await page.waitForTimeout(1500);
 
     // Click "add all properties as columns" inside our schema's section (scoped by header text).
-    await page.evaluate((schemaName) => {
+    // The pane fills in asynchronously after `shell.o` is set, and the optional chaining below
+    // used to swallow a miss — the click did nothing and the column poll timed out with nothing
+    // to point at. Retry until the section and its button are actually there.
+    await expect.poll(async () => page.evaluate((schemaName) => {
       const section = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'))
         .find((s) => s.querySelector('.d4-flex-row')?.textContent?.trim() === schemaName);
-      (section?.querySelector('[name$="-properties-as-columns"]') as HTMLElement | null)?.click();
-    }, schemaName);
+      const button = section?.querySelector('[name$="-properties-as-columns"]') as HTMLElement | null;
+      if (!button) return false;
+      button.click();
+      return true;
+    }, schemaName), { timeout: 30_000, intervals: [1000] }).toBe(true);
 
     // Schema matching is async — poll for the four sticky columns to appear.
     await expect.poll(async () =>
@@ -140,11 +146,15 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     });
     expect(await page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating'))).toBe(false);
 
-    await page.evaluate((schemaName) => {
+    // Same silent-miss hazard as the add-all click above.
+    await expect.poll(async () => page.evaluate((schemaName) => {
       const section = Array.from(document.querySelectorAll('.grok-prop-panel .d4-build-root.ui-form'))
         .find((s) => s.querySelector('.d4-flex-row')?.textContent?.trim() === schemaName);
-      (section?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null)?.click();
-    }, schemaName);
+      const button = section?.querySelector('[name="button-Add-rating-as-a-column"]') as HTMLElement | null;
+      if (!button) return false;
+      button.click();
+      return true;
+    }, schemaName), { timeout: 30_000, intervals: [1000] }).toBe(true);
     await expect.poll(async () =>
       page.evaluate(() => (window as any).grok.shell.t.columns.contains('rating')),
       { timeout: 45_000, intervals: [500] }).toBe(true);
