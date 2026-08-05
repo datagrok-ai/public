@@ -32,7 +32,8 @@ export function parseComparisonDefaults(options?: Record<string, any>): Comparis
   let parsed: any = {};
   if (raw) {
     try {
-      parsed = JSON.parse(raw);
+      // 'null' parses to null — property access below must survive it
+      parsed = JSON.parse(raw) ?? {};
     } catch (e) {
       console.warn(`Run comparison: malformed comparison annotation: ${raw}`, e);
     }
@@ -172,9 +173,18 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   };
 }
 
+// same underlying table -> same entry id (so re-adding dedupes); keyed by the Dart
+// handle because names and row counts alone can collide across distinct tables
+const rawEntryIds = new WeakMap<object, string>();
+let rawEntryCounter = 0;
+
 /** Builds a raw-data comparison entry from an open workspace table. */
 export function entryFromDataFrame(df: DG.DataFrame): ComparisonEntry {
-  const id = `table:${df.name}:${df.rowCount}`;
+  let id = rawEntryIds.get(df.dart);
+  if (!id) {
+    id = `table:${df.name}:${++rawEntryCounter}`;
+    rawEntryIds.set(df.dart, id);
+  }
   const table: TableNodeInfo = {
     path: df.name,
     name: df.name,

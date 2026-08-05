@@ -33,15 +33,15 @@ FuncCall runs / open tables
 
 **`extractCallNodes`** does the per-call work: it iterates all input/output params, collecting numeric scalars (int/float/bigint) into `ScalarNodeInfo[]` and DataFrames into `TableNodeInfo[]` + a `Map<path, DG.DataFrame>`. Each node gets a stable `path` (config-id based, the identity) and a `friendlyPath` (step friendly names + captions, for display). It also reads the `{comparison: {...}}` function-annotation option off DataFrame outputs (index/split/mode/units, with `{comparisonIndex}`/`{comparisonSplit}` as legacy aliases) — these become default picker values later.
 
-**`entryFromDataFrame(df)`** wraps an open workspace table as a "raw" entry with one table and no scalars, so ad-hoc data can join the comparison.
+**`entryFromDataFrame(df)`** wraps an open workspace table as a "raw" entry with one table and no scalars, so ad-hoc data can join the comparison. Entry ids come from a `WeakMap` keyed by the table's Dart handle — the same table dedupes on re-add, while distinct tables sharing a name never collide.
 
 ## `comparison-builders.ts` — turning entries into charts
 
 All builders produce a *long/concatenated* DataFrame — there is deliberately no row alignment or delta computation (dropped in commit `2b73683a`); the chart's split-by-Run does the visual comparison:
 
-- **`buildScalarComparison`** — one row per run: `Run | Path | <value>` columns. Run names are forced to string type so numeric-looking names don't break legends.
+- **`buildScalarComparison`** — one row per run: `Run | Path | <value>` columns. Run names are forced to string type so numeric-looking names don't break legends. The value label is deduped against `Run`/`Path` (a scalar named `Run` must not shadow the run column) and returned as `valueColumnName` — the chart reads it from the result, never from `displayName`.
 - **`buildMultiScalarComparison(targets, entries)`** — the one *wide*-format exception: one row per run, `Run` plus one float column per selected scalar target (null where a run lacks that scalar), because radar and PC plot consume axes as columns. A run participates if it has a binding in at least one selected target; returns `null` when fewer than two runs participate. Shares the display-name dedupe (`(2)`, `(3)` suffixes) with the column builder.
-- **`buildMultiColumnComparison(targets, entries, axisModes?)`** — the workhorse. Consumes each target's *enabled* bindings (matching guarantees at most one per run). Concatenates raw rows of every participating run into one frame: index column (typed via `getIndexAxis`), optional split column, a `Run` column, and one float value column per target (nulls where a target has no binding for that run). Duplicate display names get `(2)`, `(3)` suffixes. Returns `null` when fewer than two runs participate. In multi-value scatter mode the wide value columns are replaced by a *melted* pair — a `Data` column holding the (deduped) target name and a `Value` column with the number, rows repeated per target — because a scatterplot charts a single y column; the melted names are deduped against the index/split/`Run` columns and returned as `melted: {seriesColumnName, valueColumnName}`.
+- **`buildMultiColumnComparison(targets, entries, axisModes?)`** — the workhorse. Consumes each target's *enabled* bindings (matching guarantees at most one per run). Concatenates raw rows of every participating run into one frame: index column (typed via `getIndexAxis`), optional split column, a `Run` column, and one float value column per target (nulls where a target has no binding for that run). Value labels are deduped with `(2)`, `(3)` suffixes — against each other *and* against the reserved `Run`/index/split names; the first label is also returned as `valueColumnName` for single-target charts. Returns `null` when fewer than two runs participate. In multi-value scatter mode the wide value columns are replaced by a *melted* pair — a `Data` column holding the (deduped) target name and a `Value` column with the number, rows repeated per target — because a scatterplot charts a single y column; the melted names are deduped against the index/split/`Run` columns and returned as `melted: {seriesColumnName, valueColumnName}`.
 - **`buildColumnComparison`** — the single-target special case, delegating to the multi version and stripping `valueColumnNames` (whose presence is the downstream marker for "multi-value result").
 
 `getIndexAxis` decides how the index behaves. Legacy rules (no `AxisConfigMap` passed, or the require-all gate fails): all-datetime → datetime index, any non-numeric → "key index" (string, drives a bar chart instead of a line chart), else float. With the `timeseries` mode configured on every participating table (and every index actually numeric/datetime), the axis is `elapsed`: each run's index converts to ms (datetime via epoch ms, numeric scaled by its declared units), always shifts by its own table's min non-null value (auto-alignment — first point is 0), and lands in one display unit as a 64-bit float column named `` `<index> (<unit>)` `` (`Column.fromFloat64Array` — `fromList(FLOAT)` can store 32-bit, which would quantize large values; label deduped against value columns). The result carries `timeSeriesUnit` on the elapsed path. The `points` mode does not touch the axis at all — the same require-all gate just sets `isScatter` on the result (a key index disables it), which flips the chart from a line to a scatterplot. The multi-value require-all gates are evaluated on `targets[0]`'s participating bindings — secondary targets' cross-table picks are padded rows and can't break the mode independently.
@@ -119,22 +119,28 @@ Everything re-derives from `entries` + the selections:
   | column target, numeric/datetime index | line chart: x = index, y = value column(s), split by `Run` (+ inner split column), `multiAxis: false` |
   | column target, relative timeseries (all tables configured) | same line chart over the converted `<index> (<unit>)` elapsed axis — no dedicated chart branch |
   | column target, independent points (all tables configured) | scatterplot: x = index pick, y = value, color = split ?? `Run` (runs move to marker shapes when split takes color); multi-value melts all values into one y column colored by target name, markers = `Run`, split unencoded |
+  | multi-value column selection, key index | no chart — a hint to pick a numeric/datetime index (multi-value suggestions are gated on a line-chartable index, but an index switched to a string column after selection would otherwise land the multi frame on a line chart) |
+
+  Single-value charts read their y column from the result's `valueColumnName` (the deduped label), not from `target.displayName`.
 
   Column multi-value mode scales the minimum chart height by the number of value columns (`250px` per value); multi-scalar uses a flat minimum (one chart, not stacked series).
-- **`openInWorkspace`** snapshots: clones `chartDf` into a new table view and re-adds a viewer using `chartViewer.getOptions()`, so user tweaks to the chart carry over.
+- **Export** (`exportComparison`): `snapshotView` clones `chartDf` into a table view and re-adds a viewer using `chartViewer.getOptions()`, so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (adds the snapshot view to the workspace) and SAVE & SHARE (`saveAndShare` — a detached snapshot view handed to the platform project-save dialog, which handles upload, layout linking, and sharing). `Project.showSaveDialog` is newer than the last released js-api, so it is reached via a cast and feature-detected at runtime, with `window.grok_Project_OpenSaveDialog` as the fallback binding; when neither exists, the dialog degrades to OPEN IN WORKSPACE only.
 
 ### UI color coding
 
-| Element | Value | Color |
+All chip styling lives in `RunComparison.css` (`c2-comparison-badge` base plus modifiers), colored with the platform design tokens from `datagrok.css`:
+
+| Element | Value | Class / token |
 |---|---|---|
-| Source badge | `workflow` | `#7b6fb3` (purple) |
-| Source badge | `function` | `#4a90d9` (blue) |
-| Source badge | `raw` | `#8a8a8a` (grey) |
-| Confidence chip | `exact` | `#3cb173` (green) |
-| Confidence chip | `normalized` | `#d9a544` (yellow) |
-| Confidence chip | `fuzzy` | `#d97b44` (orange) |
-| Exclusion chip | error | `#fbeaea` bg / `#a94442` text (red) |
-| Axis-mode warning chip | `relative timeseries not set` / `independent points not set` | `#fdf3e3` bg / `#8a6d3b` text (amber) |
+| Source badge | `workflow` | `c2-badge-workflow` — `--steel-5` |
+| Source badge | `function` | `c2-badge-function` — `--blue-1` |
+| Source badge | `raw` | `c2-badge-raw` — `--grey-4` |
+| Confidence chip | `exact` | `c2-confidence-exact` — `--green-2` |
+| Confidence chip | `normalized` | `c2-confidence-normalized` — `--orange-2` |
+| Confidence chip | `fuzzy` | `c2-confidence-fuzzy` — `--red-3` |
+| Exclusion chip | error | `c2-status-error` — `--red-1` bg / `--red-4` text |
+| Axis-mode warning chip | `relative timeseries not set` / `independent points not set` | `c2-status-warning` — `--orange-1` bg / `--orange-3` text |
+| Selected row / expansion | | `color-mix` over `--blue-1` |
 
 ## Entry points and tests
 

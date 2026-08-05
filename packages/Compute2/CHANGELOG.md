@@ -3,6 +3,7 @@
 ## v.next
 
 * Fixed context help not showing for functions annotated with `readme` instead of `help`
+* Added a general-purpose run comparison tool (Model Hub > Tools > Compare Runs)
 
 ## 1.5.8 (2026-07-07)
 

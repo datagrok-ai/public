@@ -27,17 +27,12 @@ import {
 } from './comparison-builders';
 import './RunComparison.css';
 
-const SOURCE_BADGES: Record<EntrySourceKind, {label: string, color: string}> = {
-  workflow: {label: 'workflow', color: '#7b6fb3'},
-  function: {label: 'function', color: '#4a90d9'},
-  raw: {label: 'raw', color: '#8a8a8a'},
-};
+// chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
+const sourceBadge = (kind: EntrySourceKind) =>
+  <span class={`c2-comparison-badge c2-badge-${kind}`}>{kind}</span>;
 
-const CONFIDENCE_COLORS: Record<MatchConfidence, string> = {
-  exact: '#3cb173',
-  normalized: '#d9a544',
-  fuzzy: '#d97b44',
-};
+const confidenceBadge = (confidence: MatchConfidence) =>
+  <span class={`c2-comparison-badge c2-confidence-${confidence}`}>{confidence}</span>;
 
 export const RunComparison = Vue.defineComponent({
   name: 'RunComparison',
@@ -549,7 +544,7 @@ export const RunComparison = Vue.defineComponent({
         { modelDropdownOpen.value &&
           <div style={{
             position: 'absolute', top: '100%', left: '0', right: '0', zIndex: '100',
-            background: 'var(--white, #fff)', border: '1px solid var(--grey-2)',
+            background: 'var(--white)', border: '1px solid var(--grey-2)',
             borderRadius: '3px', maxHeight: '300px', overflow: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}>
             <input
@@ -580,21 +575,17 @@ export const RunComparison = Vue.defineComponent({
         { entries.value.length === 0 &&
           <div style={{color: 'var(--grey-4)'}}>Select runs in the history and add them here</div> }
         <div class='c2-comparison-rows'>
-          { entries.value.map((entry) => {
-            const badge = SOURCE_BADGES[entry.sourceKind];
-            return <div key={entry.id} class='c2-comparison-row'
+          { entries.value.map((entry) =>
+            <div key={entry.id} class='c2-comparison-row'
               style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 6px'}}>
-            <span style={{
-              fontSize: '10px', color: 'white', background: badge.color,
-              borderRadius: '3px', padding: '0px 4px', flexShrink: '0',
-            }}>{badge.label}</span>
-            <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
-              title={entry.modelName ? `${entry.modelName}: ${entry.name}` : entry.name}>
-              {entry.name}
-            </span>
-            <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
-          </div>;
-          })}
+              { sourceBadge(entry.sourceKind) }
+              <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1'}}
+                title={entry.modelName ? `${entry.modelName}: ${entry.name}` : entry.name}>
+                {entry.name}
+              </span>
+              <IconFA name='times' tooltip='Remove from comparison' onClick={() => removeEntry(entry.id)}/>
+            </div>,
+          )}
         </div>
       </div>
     );
@@ -688,10 +679,7 @@ export const RunComparison = Vue.defineComponent({
           {candidate.binding.tableFriendlyPath ?? candidate.binding.tableName}
         </span>
         <span style={{color: 'var(--grey-5)', flexShrink: '0'}}>{candidate.binding.columnName}</span>
-        <span style={{
-          fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
-          background: CONFIDENCE_COLORS[candidate.confidence], flexShrink: '0',
-        }}>{candidate.confidence}</span>
+        { confidenceBadge(candidate.confidence) }
         { candidate.unitsWarn &&
           <IconFA name='exclamation-triangle' tooltip='Units are missing on some items'/> }
         { candidate.auto &&
@@ -719,23 +707,19 @@ export const RunComparison = Vue.defineComponent({
       >
         { candidateOverrides.value[target.key] &&
           <span
-            style={{fontSize: '11px', color: 'var(--blue-1, #2083d5)', cursor: 'pointer'}}
+            style={{fontSize: '11px', color: 'var(--blue-1)', cursor: 'pointer'}}
             onClick={() => resetTargetOverrides(target.key)}
           >Reset to auto</span> }
-        { groups.map(({entry, candidates}) => {
-          const badge = SOURCE_BADGES[entry.sourceKind];
-          return <div key={entry.id}>
+        { groups.map(({entry, candidates}) =>
+          <div key={entry.id}>
             <div style={{display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0px'}}>
-              <span style={{
-                fontSize: '10px', color: 'white', background: badge.color,
-                borderRadius: '3px', padding: '0px 4px', flexShrink: '0',
-              }}>{badge.label}</span>
+              { sourceBadge(entry.sourceKind) }
               <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
                 title={entry.name}>{entry.name}</span>
             </div>
             { candidates.map((candidate) => renderCandidateRow(target, candidate)) }
-          </div>;
-        })}
+          </div>,
+        )}
       </div>;
     };
 
@@ -806,7 +790,7 @@ export const RunComparison = Vue.defineComponent({
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
               style={{
                 padding: '3px 6px', cursor: 'pointer',
-                borderLeft: `3px solid ${isSelected ? 'var(--blue-1, #2083d5)' : 'transparent'}`,
+                borderLeft: `3px solid ${isSelected ? 'var(--blue-1)' : 'transparent'}`,
               }}
               onClick={onRowClick}
               onMousedown={(e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); }}
@@ -826,22 +810,16 @@ export const RunComparison = Vue.defineComponent({
             { target.unitsWarning ?
               <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
               <span></span> }
-            <span style={{
-              fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
-              background: CONFIDENCE_COLORS[target.confidence], flexShrink: '0',
-            }}>{target.confidence}</span>
+            { confidenceBadge(target.confidence) }
             <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>
               {target.coverage}/{target.total}
             </span>
             { gapRuns.length > 0 ?
               <span
+                class='c2-comparison-badge c2-badge-partial'
                 title={anchor!.kind === 'scalar' ?
                   `Missing value on: ${gapRuns.join(', ')}` :
                   `Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
-                style={{
-                  fontSize: '10px', color: 'white', borderRadius: '3px', padding: '0px 4px',
-                  background: '#8a8a8a', flexShrink: '0', justifySelf: 'start',
-                }}
               >partial</span> :
               <span></span> }
           </div>;
@@ -866,7 +844,7 @@ export const RunComparison = Vue.defineComponent({
             <span
               style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
-                cursor: 'pointer', color: 'var(--blue-1, #2083d5)',
+                cursor: 'pointer', color: 'var(--blue-1)',
               }}
               onClick={exportComparison}
             >
@@ -905,15 +883,11 @@ export const RunComparison = Vue.defineComponent({
         { chips.map(({entry, text, warning}) =>
           <span
             key={entry.id}
+            class={`c2-comparison-status ${warning ? 'c2-status-warning' : 'c2-status-error'}`}
             title={warning ?
               `The value charts as a plain series until every participating table has the ` +
               `${text === 'independent points not set' ? 'independent points' : 'relative timeseries'} mode set` :
-              entry.name}
-            style={{
-              fontSize: '11px', borderRadius: '3px', padding: '1px 6px',
-              background: warning ? '#fdf3e3' : '#fbeaea',
-              color: warning ? '#8a6d3b' : '#a94442',
-            }}>
+              entry.name}>
             {entry.name}: {text}
           </span>,
         )}
@@ -927,6 +901,15 @@ export const RunComparison = Vue.defineComponent({
       if (!currentComparison || currentComparison.chartDf.rowCount === 0) {
         return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
           Nothing to show: no data points across the selected runs
+        </div>;
+      }
+      // multi-value needs a line-chartable index (suggestions are gated on it), but an index
+      // switched to a string column after selection would land the frame on a line chart
+      if (currentComparison.kind === 'column' && currentComparison.isKeyIndex &&
+        'valueColumnNames' in currentComparison) {
+        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
+          Multiple values cannot chart over a categorical index — pick a numeric or datetime
+          index, or select a single value
         </div>;
       }
       const chartMinHeight = currentComparison.kind === 'multi-scalar' ? 300 :
@@ -966,19 +949,19 @@ export const RunComparison = Vue.defineComponent({
           style={chartStyle}
           onViewerChanged={onChartViewerChanged}
           options={{
-            valueColumnName: currentComparison.target.displayName,
+            valueColumnName: currentComparison.valueColumnName,
             valueAggrType: 'avg',
             splitColumnName: RUN_COLUMN,
           }}
         />;
-      } else if (currentComparison.isKeyIndex && !('valueColumnNames' in currentComparison)) {
+      } else if (currentComparison.isKeyIndex) {
         chart = <Viewer
           type={DG.VIEWER.BAR_CHART}
           dataFrame={currentComparison.chartDf}
           style={chartStyle}
           onViewerChanged={onChartViewerChanged}
           options={{
-            valueColumnName: currentComparison.target.displayName,
+            valueColumnName: currentComparison.valueColumnName,
             valueAggrType: 'avg',
             splitColumnName: currentComparison.indexColumnName,
             stackColumnName: RUN_COLUMN,
@@ -1001,14 +984,14 @@ export const RunComparison = Vue.defineComponent({
             markersColumnName: RUN_COLUMN,
           } : {
             xColumnName: currentComparison.indexColumnName,
-            yColumnName: currentComparison.target.displayName,
+            yColumnName: currentComparison.valueColumnName,
             colorColumnName: splitColumnName ?? RUN_COLUMN,
             ...splitColumnName ? {markersColumnName: RUN_COLUMN} : {},
           }}
         />;
       } else {
         const yColumnNames = 'valueColumnNames' in currentComparison ?
-          currentComparison.valueColumnNames as string[] : [currentComparison.target.displayName];
+          currentComparison.valueColumnNames as string[] : [currentComparison.valueColumnName];
         chart = <Viewer
           type={DG.VIEWER.LINE_CHART}
           dataFrame={currentComparison.chartDf}
@@ -1041,8 +1024,8 @@ export const RunComparison = Vue.defineComponent({
                   cursor: 'pointer', fontSize: '11px', borderRadius: '3px', padding: '1px 8px',
                   border: '1px solid var(--grey-2)',
                   background: effectiveScalarChartType.value === value ?
-                    'var(--blue-1, #2083d5)' : 'transparent',
-                  color: effectiveScalarChartType.value === value ? 'white' : 'var(--grey-5)',
+                    'var(--blue-1)' : 'transparent',
+                  color: effectiveScalarChartType.value === value ? 'var(--white)' : 'var(--grey-5)',
                 }}
               >{label}</span>,
             )}
