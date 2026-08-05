@@ -98,12 +98,24 @@ function treeNodeLocator(page: Page, nodeName: string) {
 export async function revealTreeNode(page: Page, nodeName: string): Promise<void> {
   if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 2_000 }).catch(() => false))
     return;
-  for (let i = 0; i < 5; i++) {
-    const more = page.locator('.d4-tree-view-list-more').first();
-    if (!await more.isVisible({ timeout: 1_000 }).catch(() => false))
+  // Scope to the node's own group — an unscoped search clicks whichever footer happens to
+  // be first on the page, which expands a sibling group and leaves this one truncated.
+  const parent = nodeName.replace(/---[^-]+(-[^-]+)*$/, '');
+  for (let i = 0; i < 6; i++) {
+    // The footer is a `.d4-tree-view-list-more` row in some templates and a plain element
+    // reading "..." / "Show more" in others; the connections suite hit both.
+    const clicked = await page.evaluate((sel) => {
+      const root = document.querySelector(`[name="${sel}"]`) ?? document;
+      const byClass = root.querySelector('.d4-tree-view-list-more') as HTMLElement | null;
+      const more = byClass ?? (Array.from(root.querySelectorAll('div, span, label')) as HTMLElement[])
+        .find((el) => ['...', 'Show more', 'more'].includes(el.textContent?.trim() ?? '') && el.offsetParent !== null);
+      if (!more) return false;
+      more.scrollIntoView({ block: 'center' });
+      more.click();
+      return true;
+    }, parent);
+    if (!clicked)
       return;
-    await more.scrollIntoViewIfNeeded();
-    await more.click();
     await page.waitForTimeout(700);
     if (await treeNodeLocator(page, nodeName).isVisible({ timeout: 1_000 }).catch(() => false))
       return;
