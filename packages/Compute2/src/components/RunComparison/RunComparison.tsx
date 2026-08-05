@@ -348,22 +348,62 @@ export const RunComparison = Vue.defineComponent({
     };
 
     // snapshot export: clone of the chart data plus the chart with its current options
-    const openInWorkspace = () => {
+    const snapshotView = (name: string, addToWorkspace: boolean) => {
+      const df = comparison.value!.chartDf.clone();
+      df.name = name;
+      const view = addToWorkspace ? grok.shell.addTableView(df) : DG.TableView.create(df, false);
+      const options = chartViewer.value?.getOptions();
+      if (options)
+        view.addViewer(options.type, options.look);
+      return view;
+    };
+
+    // the platform Save-project dialog handles upload, layout linking, and sharing.
+    // Project.showSaveDialog is newer than the last released js-api (added 2026-07-16,
+    // after datagrok-api 1.27.7), so it is reached via a cast and feature-detected at
+    // runtime; older platforms may have the Dart binding but not the wrapper
+    const jsApiShowSaveDialog = (DG.Project as any).showSaveDialog;
+    const canSaveProject = typeof jsApiShowSaveDialog === 'function' ||
+      typeof (window as any).grok_Project_OpenSaveDialog === 'function';
+
+    const showProjectSaveDialog = (view: DG.TableView, name: string): Promise<DG.Project | null> => {
+      if (typeof jsApiShowSaveDialog === 'function')
+        return jsApiShowSaveDialog.call(DG.Project, {tables: [view.dataFrame], views: [view], name});
+      return (window as any).grok_Project_OpenSaveDialog(
+        [view.dataFrame.dart], [view.dart], [], name, '', '');
+    };
+
+    const saveAndShare = async (name: string) => {
+      const view = snapshotView(name, false);
+      try {
+        await showProjectSaveDialog(view, name);
+      } catch (e: any) {
+        grok.shell.error(e);
+      } finally {
+        view.detach();
+      }
+    };
+
+    const exportComparison = () => {
       const currentComparison = comparison.value;
       if (!currentComparison || currentComparison.chartDf.rowCount === 0)
         return;
       const nameInput = ui.input.string('Name', {value: currentComparison.chartDf.name || 'Comparison'});
-      ui.dialog('Open in workspace')
-        .add(nameInput.root)
-        .onOK(() => {
-          const df = currentComparison.chartDf.clone();
-          df.name = nameInput.value || 'Comparison';
-          const view = grok.shell.addTableView(df);
-          const options = chartViewer.value?.getOptions();
-          if (options)
-            view.addViewer(options.type, options.look);
-        })
-        .show({center: true});
+      const dlg = ui.dialog('Export comparison').add(nameInput.root);
+      const openLabel = 'OPEN IN WORKSPACE';
+      if (canSaveProject) {
+        dlg.addButton(openLabel, () => {
+          dlg.close();
+          snapshotView(nameInput.value || 'Comparison', true);
+        });
+        dlg.onOK(() => saveAndShare(nameInput.value || 'Comparison'));
+        dlg.show({center: true});
+        dlg.getButton('OK').innerText = 'SAVE & SHARE';
+      } else {
+        dlg.onOK(() => snapshotView(nameInput.value || 'Comparison', true));
+        dlg.show({center: true});
+        dlg.getButton('OK').innerText = openLabel;
+      }
     };
 
     // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
@@ -828,13 +868,13 @@ export const RunComparison = Vue.defineComponent({
                 display: 'flex', alignItems: 'center', gap: '4px',
                 cursor: 'pointer', color: 'var(--blue-1, #2083d5)',
               }}
-              onClick={openInWorkspace}
+              onClick={exportComparison}
             >
               <IconFA
                 name='external-link'
-                tooltip='Open a snapshot of the data and chart in the workspace'
+                tooltip='Open a snapshot of the data and chart in the workspace, or save and share it as a project'
               />
-              <span>Open in workspace</span>
+              <span>Export...</span>
             </span>
           }
         </div>
