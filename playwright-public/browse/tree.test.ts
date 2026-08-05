@@ -20,7 +20,6 @@ import {
   expectNoErrors,
   expandTreeGroup,
   clickCollapseAll,
-  countExpandedNodes,
 } from './helpers';
 
 const FILES_CHILDREN = ['My files', 'App Data', 'Demo'];
@@ -139,9 +138,15 @@ test.describe('Browse tree (Browse-Tree-*)', () => {
   test('Browse-Tree-04 — sidebar toggle does not force-expand nested nodes', async ({ page }) => {
     const sink = watchErrors(page);
 
-    // Pre: expand exactly Files; leave others collapsed.
+    // Counted inside the Files subtree, not across the whole tree: the expanded set is
+    // persisted per user and the suite runs four files at once against one account, so
+    // re-opening the sidebar also restores whatever another spec expanded — the run that
+    // caught this had Apps > Demo > Cheminformatics open, none of it under Files.
+    // Force-expanded children, which is what GROK-19802 was, still show up here.
+    const filesSubtree = treeGroupByName(page, 'Files')
+      .locator('xpath=ancestor::*[contains(@class,"d4-tree-view-node")][1]');
     await expandTreeGroup(page, 'Files');
-    const expandedBefore = await countExpandedNodes(page);
+    const expandedBefore = await filesSubtree.locator(TREE_EXPAND_ARROW_EXPANDED).count();
 
     // Toggle the Browse sidebar tab off and back on.
     await page.locator(SIDEBAR_BROWSE_ICON).click();
@@ -151,7 +156,7 @@ test.describe('Browse tree (Browse-Tree-*)', () => {
     await page.waitForTimeout(500);
 
     // Nested nodes should NOT be force-expanded — count should be unchanged (or ≤ before).
-    const expandedAfter = await countExpandedNodes(page);
+    const expandedAfter = await filesSubtree.locator(TREE_EXPAND_ARROW_EXPANDED).count();
     expect(
       expandedAfter,
       'Toggling the sidebar must not force-expand nested nodes (GROK-19802)',
