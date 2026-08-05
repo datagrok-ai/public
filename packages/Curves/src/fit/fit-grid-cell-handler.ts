@@ -19,7 +19,7 @@ import {
 import {isColorValid, FitChartCellRenderer} from './fit-renderer';
 import {
   getOrCreateParsedChartData, getColumnChartOptions, getDataFrameChartOptions, mergeProperties,
-  substituteZeroes, refreshParsedChartData,
+  substituteZeroes,
 } from './fit-chart-data';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {parseCellValue, isNativeFormat} from './curve-converter';
@@ -119,9 +119,16 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
   }
 }
 
+const DETECTED_AT_VERSION = 'fit-overrides-detected-at-version';
+
+/** Records, per property, whether any cell of a curve column overrides it - so a Column or Dataframe
+ * level change knows whether it has to clear cell-level values. Stamped with the column version it
+ * was computed from: every cell write bumps that version, so the answer re-derives itself instead of
+ * going stale the moment a cell gains an override. */
 function detectSettings(df: DG.DataFrame): void {
   const fitColumns = df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
   for (let i = 0; i < fitColumns.length; i++) {
+    fitColumns[i].temp[DETECTED_AT_VERSION] = fitColumns[i].version;
     fitChartDataProperties.map((prop) => {
       fitColumns[i].temp[`${CHART_OPTIONS}-custom-${prop.name}`] = false;
     });
@@ -151,7 +158,7 @@ function detectSettings(df: DG.DataFrame): void {
 }
 
 export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, options: string, manipulationLevel: string): void {
-  if (gridCell.cell.column.temp[`${CHART_OPTIONS}-custom-title`] === undefined)
+  if (gridCell.cell.column.temp[DETECTED_AT_VERSION] !== gridCell.cell.column.version)
     detectSettings(gridCell.cell.dataFrame);
   const propertyName = inputBase.property.name as string;
   const chartOptions = manipulationLevel === MANIPULATION_LEVEL.DATAFRAME ?
@@ -170,9 +177,6 @@ export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBa
     const chartData: IFitChartData = JSON.parse(value ?? '{}') ?? {};
     changePlotOptions(chartData, inputBase, options);
     gridCell.cell.value = JSON.stringify(chartData);
-    // the cell now carries an override for this property. Without recording that, a later
-    // Column or Dataframe level change skips the rewrite that clears it and appears to do nothing
-    gridCell.cell.column.temp[`${options}-custom-${propertyName}`] = true;
   } else {
     let columns: DG.Column[];
     if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
@@ -229,9 +233,6 @@ export function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBa
           rewritten = true;
         }
       }
-      // the write did not bump the column version, so the cache still holds the pre-rewrite parse
-      if (rewritten)
-        refreshParsedChartData(columns[i]);
       columns[i].temp[`${options}-custom-${propertyName}`] = false;
     }
 

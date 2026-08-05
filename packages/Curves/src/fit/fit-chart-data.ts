@@ -128,16 +128,6 @@ export function getOrCreateParsedChartData(tableCell: DG.Cell, useCache = true):
     getChartData(tableCell);
 }
 
-/** Re-parses a curve column into the cache. Writing cells without notifying leaves the column version
- * untouched, and the cache is keyed on it - so without this the pre-rewrite parse keeps being served
- * and a cell-level value the rewrite just removed still wins over the column-level one. */
-export function refreshParsedChartData(column: DG.Column): void {
-  if (!column.dataFrame)
-    return;
-  for (let i = 0; i < column.length; i++)
-    parsedCurves.set(parsedChartDataKey(column, i), getChartData(column.dataFrame.cell(i, column.name)));
-}
-
 /** Column and dataframe levels of the options cascade, applied on their own when there is no cell to
  * reach them through - the recalculation path hands us a detached column. */
 export function mergeSourceChartOptions(cellChartData: IFitChartData, column: DG.Column,
